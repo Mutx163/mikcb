@@ -72,7 +72,7 @@ class AppLocalizationsKo extends AppLocalizations {
   String get languageSectionTitle => '앱 언어';
 
   @override
-  String get languageSectionSubtitle => '시스템 연동 또는 수동으로 지원 언어를 전환할 수 있습니다';
+  String get languageSectionSubtitle => '시스템 연동 또는 수동 전환';
 
   @override
   String get languageModeLabel => '언어 선택';
@@ -721,13 +721,13 @@ class AppLocalizationsKo extends AppLocalizations {
   String get unifiedCourseCardColorTitle => '수업 카드 색상 통일';
 
   @override
-  String get unifiedCourseCardColorSubtitle => '끄면 각 수업의 개별 색상을 계속 사용합니다';
+  String get unifiedCourseCardColorSubtitle => '끄면 수업별 개별 색상 유지';
 
   @override
   String get importRandomCourseColorTitle => '수업 색상 무작위';
 
   @override
-  String get importRandomCourseColorSubtitle => '수업명과 교수로 프리셋 색을 자동 배정';
+  String get importRandomCourseColorSubtitle => '이름과 교수로 색 자동 배정';
 
   @override
   String get importRandomColorGroupTitle => '랜덤 색상 그룹';
@@ -754,7 +754,7 @@ class AppLocalizationsKo extends AppLocalizations {
   String get colorGroupOcean => '오션';
 
   @override
-  String get courseRecolorTileTitle => '시간표 색상 다시 칠하기';
+  String get courseRecolorTileTitle => '시간표 다시 색칠';
 
   @override
   String get courseRecolorTileSubtitle => '다시 가져오지 않고 변경';
@@ -793,25 +793,25 @@ class AppLocalizationsKo extends AppLocalizations {
   String get importMethodIcsTitle => '.ics 캘린더 가져오기';
 
   @override
-  String get importMethodIcsSubtitle => '다른 시간표 앱에서 내보낸 캘린더 파일';
+  String get importMethodIcsSubtitle => '다른 앱의 캘린더 파일';
 
   @override
   String get importMethodAiTitle => '이미지 인식 가져오기';
 
   @override
-  String get importMethodAiSubtitle => '시간표 스크린샷에서 인식해 가져오기';
+  String get importMethodAiSubtitle => '스크린샷에서 인식해 가져오기';
 
   @override
   String get importMethodWarehouseTitle => '교무 시스템 가져오기';
 
   @override
-  String get importMethodWarehouseSubtitle => '학교 교무 시스템에 로그인하여 가져오기';
+  String get importMethodWarehouseSubtitle => '교무 시스템 로그인 후 가져오기';
 
   @override
   String get importMethodSpreadsheetTitle => '표 가져오기';
 
   @override
-  String get importMethodSpreadsheetSubtitle => 'Excel / CSV 템플릿을 작성해 가져오기';
+  String get importMethodSpreadsheetSubtitle => 'Excel/CSV 양식으로 가져오기';
 
   @override
   String get spreadsheetImportTitle => '표 가져오기';
@@ -2144,7 +2144,7 @@ class AppLocalizationsKo extends AppLocalizations {
   }
 
   @override
-  String get beforeEndSecondsLabel => '종료 전 초 단위 알림 임계값';
+  String get beforeEndSecondsLabel => '종료 전 초 임계값';
 
   @override
   String beforeEndSecondsOption(int seconds) {
@@ -2164,7 +2164,7 @@ class AppLocalizationsKo extends AppLocalizations {
       '학교 종이 시간표보다 몇 초 빠르면 \'앞당기기\', 느리면 \'늦추기\'로 설정하세요.';
 
   @override
-  String get duringEndTimeDisplayLabel => '수업 중/종료 알림 시간 스타일';
+  String get duringEndTimeDisplayLabel => '수업 중 시간 스타일';
 
   @override
   String get liveDisplayContentTitle => '표시 내용';
@@ -2176,7 +2176,7 @@ class AppLocalizationsKo extends AppLocalizations {
   String get preferShortNameTitle => '약칭 우선 표시';
 
   @override
-  String get preferShortNameSubtitle => '약칭을 입력하지 않으면 적용되지 않습니다';
+  String get preferShortNameSubtitle => '약칭 미입력 시 미적용';
 
   @override
   String get showLocationTitle => '장소 표시';
@@ -2188,13 +2188,13 @@ class AppLocalizationsKo extends AppLocalizations {
   String get countdownFormatLabel => '카운트다운 형식';
 
   @override
-  String get countdownFormatHelp => '분만 표시는 분마다, 초 포함은 초마다 갱신';
+  String get countdownFormatHelp => '분만 분마다, 초 포함 초마다';
 
   @override
-  String get showStageTextTitle => '스테이지 상태 텍스트 표시';
+  String get showStageTextTitle => '스테이지 상태 표시';
 
   @override
-  String get hidePrefixTextTitle => '\'수업 시작까지 / 수업 종료까지\' 접두사 숨기기';
+  String get hidePrefixTextTitle => '시작/종료 접두어 숨김';
 
   @override
   String get hidePrefixTextInactiveHint =>
@@ -2255,8 +2255,7 @@ class AppLocalizationsKo extends AppLocalizations {
   String get liveBeforeClassQuickActionAutoTitle => '자동 실행';
 
   @override
-  String get liveBeforeClassQuickActionAutoSubtitle =>
-      '수업 전 자동으로 켜고 수업 후 복원합니다';
+  String get liveBeforeClassQuickActionAutoSubtitle => '수업 전 자동 켜짐, 후 복원';
 
   @override
   String get liveBeforeClassQuickActionAutoOptionOff => '끄기';
@@ -2273,10 +2272,10 @@ class AppLocalizationsKo extends AppLocalizations {
   String get liveExpandedIconSectionTitle => '확장 카드 큰 아이콘';
 
   @override
-  String get liveMiuiLabelImageTitle => '샤오미 아일랜드 왼쪽 텍스트 아이콘';
+  String get liveMiuiLabelImageTitle => '아일랜드 왼쪽 아이콘';
 
   @override
-  String get liveMiuiLabelImageSubtitle => 'Xiaomi/Redmi 권장. 타 기기는 오류 가능';
+  String get liveMiuiLabelImageSubtitle => 'Xiaomi/Redmi 권장, 타 기기 주의';
 
   @override
   String get liveMiuiLabelAdvancedAccordionTitle => '타이포그래피 및 위치 미세 조정';
@@ -2299,7 +2298,7 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String liveMiuiLabelLogoCornerRadiusLabel(String value) {
-    return '왼쪽 아이콘 둥근 모서리 $value';
+    return '아이콘 모서리 $value';
   }
 
   @override
@@ -2309,12 +2308,12 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String liveMiuiLabelOffsetXLabel(String value) {
-    return '왼쪽 텍스트 수평 오프셋 $value';
+    return '가로 오프셋 $value';
   }
 
   @override
   String liveMiuiLabelOffsetYLabel(String value) {
-    return '왼쪽 텍스트 수직 오프셋 $value';
+    return '세로 오프셋 $value';
   }
 
   @override
@@ -2336,13 +2335,13 @@ class AppLocalizationsKo extends AppLocalizations {
   String get liveDisplayConfigModeTitle => '설정 모드';
 
   @override
-  String get followBeforeClassDisplayTitle => '수업 전 알림 설정에 연동';
+  String get followBeforeClassDisplayTitle => '수업 전 설정에 연동';
 
   @override
   String get liveKeepAliveTitle => '백그라운드 상주';
 
   @override
-  String get hideFromRecentsTitle => '최근 작업에서 앱 숨기기';
+  String get hideFromRecentsTitle => '최근 작업에서 숨기기';
 
   @override
   String get keepAliveServiceTitle => '경屿 시간표 백그라운드 상주 서비스';
@@ -2641,7 +2640,7 @@ class AppLocalizationsKo extends AppLocalizations {
   String get themeSeedSectionTitle => '앱 테마 색상';
 
   @override
-  String get themeSeedSectionSubtitle => '상단 바, 강조색 및 전반적인 주色调에 영향을 줍니다';
+  String get themeSeedSectionSubtitle => '상단 바와 강조색에 영향';
 
   @override
   String get frostedSheetSectionTitle => '글래스 소재';
@@ -2659,7 +2658,7 @@ class AppLocalizationsKo extends AppLocalizations {
   String get wallpaperSheetTabSettings => '설정';
 
   @override
-  String get homePageBackdropFollowsWeekPagerTitle => '배경이 주차 스와이프를 따라감';
+  String get homePageBackdropFollowsWeekPagerTitle => '주차 따라 배경 이동';
 
   @override
   String get homePageWallpaperBlurTitle => '배경화면 흐리게';
@@ -2784,7 +2783,7 @@ class AppLocalizationsKo extends AppLocalizations {
   String get bingWallpaperAutoApplyTitle => '매일 자동 변경';
 
   @override
-  String get bingWallpaperAutoApplySubtitle => '모든 시간표 공용, 현재 시간표만 변경';
+  String get bingWallpaperAutoApplySubtitle => '모든 시간표 공용, 현재만 변경';
 
   @override
   String get bingWallpaperAutoApplyApplying => '오늘의 배경화면으로 바꾸는 중';
@@ -2807,7 +2806,7 @@ class AppLocalizationsKo extends AppLocalizations {
   String get beforeClassDisplaySettingsTitle => '수업 전 알림 표시';
 
   @override
-  String get duringEndDisplaySettingsTitle => '수업 중/종료 알림 표시';
+  String get duringEndDisplaySettingsTitle => '수업·종료 알림 표시';
 
   @override
   String get liveDisplaySummaryShortName => '약칭';
@@ -3233,7 +3232,7 @@ class AppLocalizationsKo extends AppLocalizations {
   String get homeWidgetShowLocationTitle => '장소 표시';
 
   @override
-  String get homeWidgetShowLocationSubtitle => '끄면 주차와 수업 수를 대신 표시합니다';
+  String get homeWidgetShowLocationSubtitle => '끄면 주차와 수업 수 표시';
 
   @override
   String get homeWidgetShowCountdownTitle => '카운트다운 표시';
@@ -3254,13 +3253,13 @@ class AppLocalizationsKo extends AppLocalizations {
   String get homeWidgetHideCompletedTitle => '완료된 수업 숨기기';
 
   @override
-  String get homeWidgetHideCompletedSubtitle => '아직 끝나지 않은 수업만 표시합니다';
+  String get homeWidgetHideCompletedSubtitle => '끝나지 않은 수업만 표시';
 
   @override
-  String get homeWidgetShowTomorrowTitle => '수업 후 내일 수업 표시';
+  String get homeWidgetShowTomorrowTitle => '끝나면 내일 표시';
 
   @override
-  String get homeWidgetShowTomorrowSubtitle => '오늘 수업이 끝나면 내일 수업을 자동으로 표시합니다';
+  String get homeWidgetShowTomorrowSubtitle => '오늘 끝나면 내일 수업 표시';
 
   @override
   String get homeWidgetCourseAccentTitle => '수업 색상';
@@ -3371,10 +3370,10 @@ class AppLocalizationsKo extends AppLocalizations {
   String get layoutAutoFitHeightTitle => '화면 높이에 자동 맞춤';
 
   @override
-  String get layoutHideWeekendsTitle => '토요일과 일요일 숨기기';
+  String get layoutHideWeekendsTitle => '주말 숨기기';
 
   @override
-  String get layoutEnableHapticsTitle => '앱 내 진동 피드백 활성화';
+  String get layoutEnableHapticsTitle => '앱 내 진동 피드백';
 
   @override
   String get layoutEnableHapticsSubtitle => '끄면 전환 진동 없음';
@@ -3413,7 +3412,7 @@ class AppLocalizationsKo extends AppLocalizations {
   String get layoutShowTimeTitle => '시간 표시';
 
   @override
-  String get layoutShowTimeLabelsTitle => '수업 시작과 종료 텍스트 표시';
+  String get layoutShowTimeLabelsTitle => '시작·종료 시각 표시';
 
   @override
   String get layoutShowWeeksTitle => '주차 수 표시';
@@ -3425,7 +3424,7 @@ class AppLocalizationsKo extends AppLocalizations {
   String get layoutShowOtherWeeksTitle => '비이번주 수업 표시';
 
   @override
-  String get layoutShowOtherWeeksSubtitle => '현재 주가 아닌 수업은 반투명 회색으로 표시됩니다';
+  String get layoutShowOtherWeeksSubtitle => '이번 주 외 수업은 반투명 회색';
 
   @override
   String get weekGridShowExamsTitle => '주간 보기에 시험 표시';
@@ -4125,14 +4124,13 @@ class AppLocalizationsKo extends AppLocalizations {
   String get quickImportRetryAction => '재시도';
 
   @override
-  String get homePullQuickImportTitle => '홈 당겨서 빠른 가져오기';
+  String get homePullQuickImportTitle => '당겨서 자동 가져오기';
 
   @override
-  String get homePullQuickImportSubtitle =>
-      '홈 시간표를 아래로 당기면 교무 빠른 가져오기를 백그라운드에서 실행합니다';
+  String get homePullQuickImportSubtitle => '홈을 아래로 당기면 자동 가져오기';
 
   @override
-  String get longPressEmptySlotToAddTitle => '빈 칸을 길게 눌러 수업 추가';
+  String get longPressEmptySlotToAddTitle => '빈 칸 길게 눌러 추가';
 
   @override
   String get longPressEmptySlotToAddSubtitle => '길게 누른 뒤 점선 +를 탭하여 추가';
@@ -4223,7 +4221,7 @@ class AppLocalizationsKo extends AppLocalizations {
   String get openLoginInAppAction => '앱 내에서 로그인 항목 열기';
 
   @override
-  String get openInSystemBrowserAction => '시스템 브라우저에서 열기';
+  String get openInSystemBrowserAction => '브라우저로 열기';
 
   @override
   String get copiedImportLoginUrl => '교무 로그인 주소를 복사했습니다';
@@ -8341,8 +8339,7 @@ class AppLocalizationsKo extends AppLocalizations {
   String get cloudBackupMaxCountTitle => 'Maximum backups';
 
   @override
-  String get cloudBackupMaxCountSubtitle =>
-      'Oldest backups are removed when exceeded';
+  String get cloudBackupMaxCountSubtitle => '초과 시 가장 오래된 백업 삭제';
 
   @override
   String cloudBackupMaxCountOption(int count) {
@@ -8353,7 +8350,7 @@ class AppLocalizationsKo extends AppLocalizations {
   String get cloudBackupMaxAgeTitle => 'Maximum age';
 
   @override
-  String get cloudBackupMaxAgeSubtitle => 'Backups older than this are removed';
+  String get cloudBackupMaxAgeSubtitle => '초과 시 오래된 백업 삭제';
 
   @override
   String cloudBackupMaxAgeOption(int days) {
@@ -8389,7 +8386,7 @@ class AppLocalizationsKo extends AppLocalizations {
   String get timetableShareExportEmptyDay => 'No classes on this day';
 
   @override
-  String get settingsScreenshotShareTitle => 'Offer sharing after a screenshot';
+  String get settingsScreenshotShareTitle => '스크린샷 후 공유';
 
   @override
   String get settingsScreenshotShareSubtitle => '알림 후 눌러야 생성';
@@ -8410,7 +8407,7 @@ class AppLocalizationsKo extends AppLocalizations {
   String get unnamedTimetableProfile => 'Unnamed timetable';
 
   @override
-  String get cloudBackupManualProtectedTitle => 'Protect manual backups';
+  String get cloudBackupManualProtectedTitle => '수동 백업 무기한 보존';
 
   @override
   String courseImportPortalUrlMissingBody(
@@ -8426,7 +8423,7 @@ class AppLocalizationsKo extends AppLocalizations {
   }
 
   @override
-  String get locationTimeMatchEntryTitle => 'Location-based schedule';
+  String get locationTimeMatchEntryTitle => '위치 시간표 매칭';
 
   @override
   String get locationTimeMatchEntrySubtitle =>
@@ -8898,17 +8895,16 @@ class AppLocalizationsKo extends AppLocalizations {
       '액체 유리 튜닝만 초기화하며, 전체 재질과 다른 설정은 건드리지 않습니다';
 
   @override
-  String get liquidGlassDarkBoostLabel => '다크 모드에서 유리 어둡게';
+  String get liquidGlassDarkBoostLabel => '다크 모드 유리 어둡게';
 
   @override
   String get liquidGlassDarkBoostSubtitle => '회색, 더 흐리게, 가장자리 약하게';
 
   @override
-  String get liquidGlassDarkIndependentLabel => '다크 모드 설정 따로 하기';
+  String get liquidGlassDarkIndependentLabel => '다크 모드 따로 설정';
 
   @override
-  String get liquidGlassDarkIndependentSubtitle =>
-      '기본값은 라이트 설정을 따릅니다. 켜면 다크 전용으로 따로 조정할 수 있습니다';
+  String get liquidGlassDarkIndependentSubtitle => '기본은 라이트 설정을 따름';
 
   @override
   String get diagnosticsEntryTitle => '진단';
@@ -9815,7 +9811,7 @@ class AppLocalizationsKo extends AppLocalizations {
   String get weatherEnableTitle => '날씨 표시';
 
   @override
-  String get weatherEnableSubtitle => '끄면 날씨 데이터를 더 이상 가져오지 않습니다';
+  String get weatherEnableSubtitle => '끄면 날씨를 가져오지 않음';
 
   @override
   String get weatherCityLabel => '도시';
@@ -9938,7 +9934,7 @@ class AppLocalizationsKo extends AppLocalizations {
   String get appearanceEditorMaterialAction => '재질';
 
   @override
-  String get appearanceEditorEntrySubtitle => '전체 페이지 축소 미리보기에서 배경화면과 재질 조정';
+  String get appearanceEditorEntrySubtitle => '축소 미리보기에서 배경화면 조정';
 
   @override
   String get commonLoadingLabel => '불러오는 중';

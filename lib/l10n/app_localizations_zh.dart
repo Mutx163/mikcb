@@ -12056,7 +12056,7 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get duringClassReminderTitle => '課中與下課提醒';
 
   @override
-  String get liveClassReminderLeadTitle => '下課前多久切到超級島 / 重點提醒';
+  String get liveClassReminderLeadTitle => '重點提醒切入時機';
 
   @override
   String get liveClassReminderLeadOptionImmediate => '一上課就切換';
@@ -12115,7 +12115,7 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get timeCorrectionHelp => '如果學校鈴聲比課表快幾秒，就調成提前；如果鈴聲慢幾秒，就調成延後';
 
   @override
-  String get duringEndTimeDisplayLabel => '課中 / 下課提醒時間樣式';
+  String get duringEndTimeDisplayLabel => '課中時間樣式';
 
   @override
   String get liveDisplayContentTitle => '顯示內容';
@@ -22092,7 +22092,7 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get duringClassReminderTitle => '課中與下課提醒';
 
   @override
-  String get liveClassReminderLeadTitle => '下課前多久切到超級島 / 重點提醒';
+  String get liveClassReminderLeadTitle => '重點提醒切入時機';
 
   @override
   String get liveClassReminderLeadOptionImmediate => '一上課就切換';
@@ -22151,7 +22151,7 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get timeCorrectionHelp => '如果學校鈴聲比課表快幾秒，就調成提前；如果鈴聲慢幾秒，就調成延後';
 
   @override
-  String get duringEndTimeDisplayLabel => '課中 / 下課提醒時間樣式';
+  String get duringEndTimeDisplayLabel => '課中時間樣式';
 
   @override
   String get liveDisplayContentTitle => '顯示內容';

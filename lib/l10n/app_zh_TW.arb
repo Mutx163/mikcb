@@ -990,7 +990,7 @@
     }
   },
   "duringClassReminderTitle": "課中與下課提醒",
-  "liveClassReminderLeadTitle": "下課前多久切到超級島 / 重點提醒",
+  "liveClassReminderLeadTitle": "重點提醒切入時機",
   "liveClassReminderLeadOptionImmediate": "一上課就切換",
   "liveClassReminderLeadOptionMinutes": "下課前 {minutes} 分鐘切換",
   "@liveClassReminderLeadOptionMinutes": {
@@ -1034,7 +1034,7 @@
     }
   },
   "timeCorrectionHelp": "如果學校鈴聲比課表快幾秒，就調成提前；如果鈴聲慢幾秒，就調成延後",
-  "duringEndTimeDisplayLabel": "課中 / 下課提醒時間樣式",
+  "duringEndTimeDisplayLabel": "課中時間樣式",
   "liveDisplayContentTitle": "顯示內容",
   "showCourseNameTitle": "顯示課程名",
   "preferShortNameTitle": "優先顯示課程簡稱",

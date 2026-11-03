@@ -72,7 +72,7 @@ class AppLocalizationsJa extends AppLocalizations {
   String get languageSectionTitle => 'アプリ言語';
 
   @override
-  String get languageSectionSubtitle => 'システム連携または手動で対応言語に切り替え可能';
+  String get languageSectionSubtitle => 'システムに従うか手動で切替';
 
   @override
   String get languageModeLabel => '言語選択';
@@ -341,7 +341,7 @@ class AppLocalizationsJa extends AppLocalizations {
   String get cloudSyncSettingsSectionTitle => '同期設定';
 
   @override
-  String get cloudSyncEnabledTitle => 'クラウド同期を有効にする';
+  String get cloudSyncEnabledTitle => 'クラウド同期を有効化';
 
   @override
   String get cloudSyncProviderTitle => 'サービスプロバイダ';
@@ -723,13 +723,13 @@ class AppLocalizationsJa extends AppLocalizations {
   String get unifiedCourseCardColorTitle => '授業カードの色を統一';
 
   @override
-  String get unifiedCourseCardColorSubtitle => 'オフにすると各授業の個別カラーを使用';
+  String get unifiedCourseCardColorSubtitle => 'オフで各授業の色を使用';
 
   @override
   String get importRandomCourseColorTitle => '授業カラーをランダム';
 
   @override
-  String get importRandomCourseColorSubtitle => '授業名と教員でプリセット色を自動割り当て';
+  String get importRandomCourseColorSubtitle => '名前と教員で色を自動割り当て';
 
   @override
   String get importRandomColorGroupTitle => 'ランダム配色グループ';
@@ -792,10 +792,10 @@ class AppLocalizationsJa extends AppLocalizations {
   String get chooseImportMethodTitle => 'インポート方法を選択';
 
   @override
-  String get importMethodIcsTitle => '.icsカレンダーインポート';
+  String get importMethodIcsTitle => '.icsを読み込む';
 
   @override
-  String get importMethodIcsSubtitle => '他の時間割アプリから書き出したカレンダー';
+  String get importMethodIcsSubtitle => '他アプリのカレンダー';
 
   @override
   String get importMethodAiTitle => '画像認識インポート';
@@ -807,7 +807,7 @@ class AppLocalizationsJa extends AppLocalizations {
   String get importMethodWarehouseTitle => '教務システムインポート';
 
   @override
-  String get importMethodWarehouseSubtitle => '学校の教務システムにログインして取込';
+  String get importMethodWarehouseSubtitle => '教務システムにログインして取込';
 
   @override
   String get importMethodSpreadsheetTitle => '表インポート';
@@ -2091,10 +2091,10 @@ class AppLocalizationsJa extends AppLocalizations {
   }
 
   @override
-  String get duringClassReminderTitle => '授業中と終了リマインダー';
+  String get duringClassReminderTitle => '授業中・終了通知';
 
   @override
-  String get liveClassReminderLeadTitle => 'フォーカス切替タイミング';
+  String get liveClassReminderLeadTitle => 'フォーカス切替時点';
 
   @override
   String get liveClassReminderLeadOptionImmediate => '授業開始と同時に切替';
@@ -2108,7 +2108,7 @@ class AppLocalizationsJa extends AppLocalizations {
   String get liveDisplayModeTitle => '表示モード';
 
   @override
-  String get duringClassStatusNotificationTitle => '授業中ステータスバー通知';
+  String get duringClassStatusNotificationTitle => '授業中ステータス通知';
 
   @override
   String get duringClassStatusNotificationImmediate => 'ステータスバー通知を保持';
@@ -2120,7 +2120,7 @@ class AppLocalizationsJa extends AppLocalizations {
   String get duringClassStatusNotificationPersistent => '全体を通して通常通知';
 
   @override
-  String get enableIslandDisplayTitle => 'スーパーアイランドを表示';
+  String get enableIslandDisplayTitle => 'スーパーアイランド表示';
 
   @override
   String get liveTimeThresholdTitle => '時間しきい値';
@@ -2134,7 +2134,7 @@ class AppLocalizationsJa extends AppLocalizations {
   }
 
   @override
-  String get beforeEndSecondsLabel => '終了前秒単位リマインダーしきい値';
+  String get beforeEndSecondsLabel => '終了前の秒しきい値';
 
   @override
   String beforeEndSecondsOption(int seconds) {
@@ -2153,7 +2153,7 @@ class AppLocalizationsJa extends AppLocalizations {
   String get timeCorrectionHelp => '学校のチャイムが時間割より数秒早い場合は「早める」、遅い場合は「遅らせる」に設定。';
 
   @override
-  String get duringEndTimeDisplayLabel => '授業中/終了リマインダーの時間スタイル';
+  String get duringEndTimeDisplayLabel => '授業中の時間スタイル';
 
   @override
   String get liveDisplayContentTitle => '表示内容';
@@ -2177,13 +2177,13 @@ class AppLocalizationsJa extends AppLocalizations {
   String get countdownFormatLabel => 'カウントダウン形式';
 
   @override
-  String get countdownFormatHelp => '分のみは分単位、秒ありは秒単位で更新';
+  String get countdownFormatHelp => '分のみは分ごと、秒ありは秒ごと';
 
   @override
-  String get showStageTextTitle => 'ステージステータステキストを表示';
+  String get showStageTextTitle => 'ステージ表示';
 
   @override
-  String get hidePrefixTextTitle => '「授業開始まで / 授業終了まで」接頭辞を非表示';
+  String get hidePrefixTextTitle => '「まで」表記を隠す';
 
   @override
   String get hidePrefixTextInactiveHint => '現在は無効：上の「カウントダウンを表示」を有効にする必要があります';
@@ -2233,7 +2233,7 @@ class AppLocalizationsJa extends AppLocalizations {
   String get liveIslandPreviewSampleLocation => '3号館-401';
 
   @override
-  String get beforeClassQuickActionTitle => '授業前クイックアクション';
+  String get beforeClassQuickActionTitle => '授業前アクション';
 
   @override
   String get beforeClassQuickActionSubtitle =>
@@ -2260,10 +2260,10 @@ class AppLocalizationsJa extends AppLocalizations {
   String get liveExpandedIconSectionTitle => '展開カード大アイコン';
 
   @override
-  String get liveMiuiLabelImageTitle => '小米アイランド左側テキストアイコン';
+  String get liveMiuiLabelImageTitle => 'アイランド左側アイコン';
 
   @override
-  String get liveMiuiLabelImageSubtitle => 'Xiaomi/Redmi 推奨。他機種は不具合の可能性';
+  String get liveMiuiLabelImageSubtitle => 'Xiaomi/Redmi 推奨、他は非推奨';
 
   @override
   String get liveMiuiLabelAdvancedAccordionTitle => '文字組版と位置の微調整';
@@ -2296,12 +2296,12 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String liveMiuiLabelOffsetXLabel(String value) {
-    return '左側テキスト水平オフセット$value';
+    return '横オフセット $value';
   }
 
   @override
   String liveMiuiLabelOffsetYLabel(String value) {
-    return '左側テキスト垂直オフセット$value';
+    return '縦オフセット $value';
   }
 
   @override
@@ -2311,7 +2311,7 @@ class AppLocalizationsJa extends AppLocalizations {
   String get liveMiuiLabelRenderQualityLabel => '左側テキスト鮮明度';
 
   @override
-  String get liveMiuiExpandedIconLabel => '展開状態の大きなアイコン';
+  String get liveMiuiExpandedIconLabel => '展開時の大きいアイコン';
 
   @override
   String get selectImageAction => '画像を選択';
@@ -2323,13 +2323,13 @@ class AppLocalizationsJa extends AppLocalizations {
   String get liveDisplayConfigModeTitle => '設定モード';
 
   @override
-  String get followBeforeClassDisplayTitle => '授業前リマインダー設定に連携';
+  String get followBeforeClassDisplayTitle => '授業前設定に連携';
 
   @override
   String get liveKeepAliveTitle => 'バックグラウンド常駐';
 
   @override
-  String get hideFromRecentsTitle => '最近のタスクからアプリを非表示';
+  String get hideFromRecentsTitle => '最近タスクから隠す';
 
   @override
   String get keepAliveServiceTitle => '軽屿時間割バックグラウンド常駐サービス';
@@ -2628,7 +2628,7 @@ class AppLocalizationsJa extends AppLocalizations {
   String get themeSeedSectionTitle => 'アプリテーマカラー';
 
   @override
-  String get themeSeedSectionSubtitle => 'トップバー、アクセントカラーとグローバルメインカラーに影響';
+  String get themeSeedSectionSubtitle => 'トップバーとアクセントに影響';
 
   @override
   String get frostedSheetSectionTitle => 'ガラス素材';
@@ -2769,7 +2769,7 @@ class AppLocalizationsJa extends AppLocalizations {
   String get bingWallpaperAutoApplyTitle => '毎日自動で変更';
 
   @override
-  String get bingWallpaperAutoApplySubtitle => 'すべての時間割で共有、現在のものだけ変更';
+  String get bingWallpaperAutoApplySubtitle => '全時間割で共通、現在のみ変更';
 
   @override
   String get bingWallpaperAutoApplyApplying => '今日の壁紙に切り替えています';
@@ -2792,7 +2792,7 @@ class AppLocalizationsJa extends AppLocalizations {
   String get beforeClassDisplaySettingsTitle => '授業前リマインダー表示';
 
   @override
-  String get duringEndDisplaySettingsTitle => '授業中/終了リマインダー表示';
+  String get duringEndDisplaySettingsTitle => 'リマインダー表示';
 
   @override
   String get liveDisplaySummaryShortName => '略称';
@@ -3242,10 +3242,10 @@ class AppLocalizationsJa extends AppLocalizations {
   String get homeWidgetHideCompletedSubtitle => '終了していない授業のみ表示';
 
   @override
-  String get homeWidgetShowTomorrowTitle => '授業後に明日の授業を表示';
+  String get homeWidgetShowTomorrowTitle => '終了後、明日を表示';
 
   @override
-  String get homeWidgetShowTomorrowSubtitle => '今日の授業終了後は明日の授業を自動表示';
+  String get homeWidgetShowTomorrowSubtitle => '今日終了後、明日を自動表示';
 
   @override
   String get homeWidgetCourseAccentTitle => '授業の色';
@@ -3359,7 +3359,7 @@ class AppLocalizationsJa extends AppLocalizations {
   String get layoutHideWeekendsTitle => '土日を非表示';
 
   @override
-  String get layoutEnableHapticsTitle => 'アプリ内バイブレーションを有効化';
+  String get layoutEnableHapticsTitle => 'アプリ内の振動を有効化';
 
   @override
   String get layoutEnableHapticsSubtitle => 'オフで切替の振動なし';
@@ -3374,7 +3374,7 @@ class AppLocalizationsJa extends AppLocalizations {
   String get layoutTimeColumnWidthLabel => '時間列幅';
 
   @override
-  String get layoutBackToCurrentWeekButtonOpacityTitle => 'フローティングボタンの不透明度';
+  String get layoutBackToCurrentWeekButtonOpacityTitle => 'ボタンの不透明度';
 
   @override
   String get layoutCourseCardGapTitle => '授業カードの間隔';
@@ -3383,7 +3383,7 @@ class AppLocalizationsJa extends AppLocalizations {
   String get layoutSectionHeightTitle => '時間割の行の高さ';
 
   @override
-  String get layoutCompactFontSizeTitle => 'コンパクト時の文字サイズ';
+  String get layoutCompactFontSizeTitle => 'コンパクト時のサイズ';
 
   @override
   String get layoutCourseCardFontSizeTitle => '授業カードの文字サイズ';
@@ -3398,7 +3398,7 @@ class AppLocalizationsJa extends AppLocalizations {
   String get layoutShowTimeTitle => '時間を表示';
 
   @override
-  String get layoutShowTimeLabelsTitle => '授業開始と終了テキストを表示';
+  String get layoutShowTimeLabelsTitle => '開始・終了時刻を表示';
 
   @override
   String get layoutShowWeeksTitle => '週数を表示';
@@ -3410,7 +3410,7 @@ class AppLocalizationsJa extends AppLocalizations {
   String get layoutShowOtherWeeksTitle => '非今週の授業を表示';
 
   @override
-  String get layoutShowOtherWeeksSubtitle => '今週以外の授業は半透明のグレーで表示';
+  String get layoutShowOtherWeeksSubtitle => '今週外は薄いグレーで表示';
 
   @override
   String get weekGridShowExamsTitle => '週表示に試験を表示';
@@ -3431,7 +3431,7 @@ class AppLocalizationsJa extends AppLocalizations {
   String get layoutHorizontalAlignLabel => '水平レイアウト';
 
   @override
-  String get layoutShowConflictBadgeTitle => 'ホームに競合カプセルを表示';
+  String get layoutShowConflictBadgeTitle => '競合カプセルを表示';
 
   @override
   String get layoutConflictOpacityTitle => '競合授業の透明度';
@@ -4108,14 +4108,13 @@ class AppLocalizationsJa extends AppLocalizations {
   String get quickImportRetryAction => '再試行';
 
   @override
-  String get homePullQuickImportTitle => 'ホーム下引きでクイックインポート';
+  String get homePullQuickImportTitle => '下引きで自動取込';
 
   @override
-  String get homePullQuickImportSubtitle =>
-      'ホーム画面を下に引くと、教務のクイックインポートをバックグラウンドで実行します';
+  String get homePullQuickImportSubtitle => 'ホームを下に引くと自動で取込';
 
   @override
-  String get longPressEmptySlotToAddTitle => '空きコマを長押しして授業を追加';
+  String get longPressEmptySlotToAddTitle => '空きコマ長押しで追加';
 
   @override
   String get longPressEmptySlotToAddSubtitle => '長押し後、点線の＋をタップして追加';
@@ -4212,13 +4211,13 @@ class AppLocalizationsJa extends AppLocalizations {
   String get copiedImportLoginUrl => '教務ログインアドレスをコピーしました';
 
   @override
-  String get copyLoginAddressAction => 'ログインアドレスをコピー';
+  String get copyLoginAddressAction => 'ログインURLをコピー';
 
   @override
   String get copiedScriptRawUrl => 'スクリプトの生アドレスをコピーしました';
 
   @override
-  String get copyScriptAddressAction => 'スクリプトアドレスをコピー';
+  String get copyScriptAddressAction => 'スクリプトURLをコピー';
 
   @override
   String get customLoginAddressAction => 'カスタムログインアドレス';
@@ -5420,7 +5419,7 @@ class AppLocalizationsJa extends AppLocalizations {
   String get themeManageTitle => 'テーマ管理';
 
   @override
-  String get themeManageSubtitle => 'テーマのエクスポート、インポート、切り替え';
+  String get themeManageSubtitle => '書き出し・読み込み・切替';
 
   @override
   String get themePreset => 'プリセットテーマ';
@@ -8313,8 +8312,7 @@ class AppLocalizationsJa extends AppLocalizations {
   String get cloudBackupMaxCountTitle => 'Maximum backups';
 
   @override
-  String get cloudBackupMaxCountSubtitle =>
-      'Oldest backups are removed when exceeded';
+  String get cloudBackupMaxCountSubtitle => '最古のバックアップを自動削除';
 
   @override
   String cloudBackupMaxCountOption(int count) {
@@ -8325,7 +8323,7 @@ class AppLocalizationsJa extends AppLocalizations {
   String get cloudBackupMaxAgeTitle => 'Maximum age';
 
   @override
-  String get cloudBackupMaxAgeSubtitle => 'Backups older than this are removed';
+  String get cloudBackupMaxAgeSubtitle => '超えた分は自動削除';
 
   @override
   String cloudBackupMaxAgeOption(int days) {
@@ -8361,7 +8359,7 @@ class AppLocalizationsJa extends AppLocalizations {
   String get timetableShareExportEmptyDay => 'No classes on this day';
 
   @override
-  String get settingsScreenshotShareTitle => 'Offer sharing after a screenshot';
+  String get settingsScreenshotShareTitle => 'スクショ後に共有';
 
   @override
   String get settingsScreenshotShareSubtitle => 'まず通知、タップで生成';
@@ -8382,7 +8380,7 @@ class AppLocalizationsJa extends AppLocalizations {
   String get unnamedTimetableProfile => 'Unnamed timetable';
 
   @override
-  String get cloudBackupManualProtectedTitle => 'Protect manual backups';
+  String get cloudBackupManualProtectedTitle => '手動バックアップ無期限';
 
   @override
   String courseImportPortalUrlMissingBody(
@@ -8398,7 +8396,7 @@ class AppLocalizationsJa extends AppLocalizations {
   }
 
   @override
-  String get locationTimeMatchEntryTitle => 'Location-based schedule';
+  String get locationTimeMatchEntryTitle => '位置スケジュール';
 
   @override
   String get locationTimeMatchEntrySubtitle =>
@@ -8786,7 +8784,7 @@ class AppLocalizationsJa extends AppLocalizations {
   String get liquidGlassScopeDockTitle => 'ガラスドック操作';
 
   @override
-  String get liquidGlassScopeDockSubtitle => '下部のフローティングピルと授業追加ボタン';
+  String get liquidGlassScopeDockSubtitle => '下部のピルと追加ボタン';
 
   @override
   String get frostedGlassModeLiquid => 'リキッドガラス';
@@ -8798,7 +8796,7 @@ class AppLocalizationsJa extends AppLocalizations {
   String get advancedMaterialTitle => '高度なマテリアル';
 
   @override
-  String get liquidGlassPresetLabel => 'リキッドガラスプリセット';
+  String get liquidGlassPresetLabel => 'ガラスプリセット';
 
   @override
   String get liquidGlassRefractionLabel => '屈折の強さ';
@@ -8870,7 +8868,7 @@ class AppLocalizationsJa extends AppLocalizations {
       '液体ガラスの調整のみを初期化します。全体材質や他の設定には触れません';
 
   @override
-  String get liquidGlassDarkBoostLabel => 'ダークモードでガラスを暗く';
+  String get liquidGlassDarkBoostLabel => 'ダークでガラスを暗く';
 
   @override
   String get liquidGlassDarkBoostSubtitle => 'グレー、ぼかし強め、縁を弱く';
@@ -8879,8 +8877,7 @@ class AppLocalizationsJa extends AppLocalizations {
   String get liquidGlassDarkIndependentLabel => 'ダーク用を個別に設定';
 
   @override
-  String get liquidGlassDarkIndependentSubtitle =>
-      '既定ではライト用を流用します。オンにするとダーク専用に調整できます';
+  String get liquidGlassDarkIndependentSubtitle => '既定はライトを流用、オンで専用調整';
 
   @override
   String get diagnosticsEntryTitle => '診断';
@@ -9240,7 +9237,7 @@ class AppLocalizationsJa extends AppLocalizations {
   String get taskDeleted => 'タスクを削除しました';
 
   @override
-  String get icsExportSectionTitle => 'カレンダーをエクスポート';
+  String get icsExportSectionTitle => 'カレンダー書き出し';
 
   @override
   String get icsExportTitle => 'カレンダーをエクスポート';
@@ -9435,7 +9432,7 @@ class AppLocalizationsJa extends AppLocalizations {
   String get glassDockCustomizeSectionTitle => '下部ナビゲーション';
 
   @override
-  String get glassDockCustomizeTitle => 'ドックボタンをカスタマイズ';
+  String get glassDockCustomizeTitle => 'ドックをカスタマイズ';
 
   @override
   String get homeDockEditorViewCategory => 'ビュー切替';
@@ -9465,7 +9462,7 @@ class AppLocalizationsJa extends AppLocalizations {
   String get homeMenuStyleGridSubtitle => 'アイコンタイル、カスタマイズ可';
 
   @override
-  String get homeMenuCustomizeTitle => 'メニューボタンのカスタマイズ';
+  String get homeMenuCustomizeTitle => 'メニューをカスタマイズ';
 
   @override
   String homeGridCustomizeDetails(int count, int max) {
@@ -9785,7 +9782,7 @@ class AppLocalizationsJa extends AppLocalizations {
   String get weatherEnableTitle => '天気を表示';
 
   @override
-  String get weatherEnableSubtitle => 'オフにすると天気データを取得しなくなります';
+  String get weatherEnableSubtitle => 'オフで天気を取得しない';
 
   @override
   String get weatherCityLabel => '都市';
@@ -9827,7 +9824,7 @@ class AppLocalizationsJa extends AppLocalizations {
   String get weatherShowOnWeekCardTitle => '週表示のカード';
 
   @override
-  String get weatherShowOnWeekCardSubtitle => 'マスが狭いので 1 項目だけ（気温優先）';
+  String get weatherShowOnWeekCardSubtitle => '狭いので気温を優先表示';
 
   @override
   String get weatherShowOnSheetTitle => '授業詳細シート';
@@ -9908,7 +9905,7 @@ class AppLocalizationsJa extends AppLocalizations {
   String get appearanceEditorMaterialAction => 'マテリアル';
 
   @override
-  String get appearanceEditorEntrySubtitle => 'ページ全体の縮小プレビューで壁紙とマテリアルを調整';
+  String get appearanceEditorEntrySubtitle => '縮小プレビューで壁紙と素材を調整';
 
   @override
   String get commonLoadingLabel => '読み込み中';

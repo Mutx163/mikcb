@@ -72,8 +72,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get languageSectionTitle => 'App Language';
 
   @override
-  String get languageSectionSubtitle =>
-      'Follow system or switch manually to supported locales';
+  String get languageSectionSubtitle => 'Follow system or pick one';
 
   @override
   String get languageModeLabel => 'Language';
@@ -711,7 +710,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get lanEditLastActivityLabel => 'Last activity';
 
   @override
-  String get lanEditKeepAliveWhenLeavingTitle => 'Keep open after leaving';
+  String get lanEditKeepAliveWhenLeavingTitle => 'Stay open on exit';
 
   @override
   String get lanEditKeepAliveWhenLeavingSubtitle => 'Off: stops when you leave';
@@ -744,18 +743,16 @@ class AppLocalizationsEn extends AppLocalizations {
   String get selectSemesterWeekCountTitle => 'Select Semester Week Count';
 
   @override
-  String get unifiedCourseCardColorTitle => 'Use Unified Course Card Color';
+  String get unifiedCourseCardColorTitle => 'Unified card color';
 
   @override
-  String get unifiedCourseCardColorSubtitle =>
-      'If disabled, each course keeps its own color';
+  String get unifiedCourseCardColorSubtitle => 'Off: each keeps own color';
 
   @override
-  String get importRandomCourseColorTitle => 'Random course colors';
+  String get importRandomCourseColorTitle => 'Random colors';
 
   @override
-  String get importRandomCourseColorSubtitle =>
-      'Assign preset colors by course name and teacher';
+  String get importRandomCourseColorSubtitle => 'Colors by name and teacher';
 
   @override
   String get importRandomColorGroupTitle => 'Random color group';
@@ -819,20 +816,19 @@ class AppLocalizationsEn extends AppLocalizations {
   String get chooseImportMethodTitle => 'Choose Import Method';
 
   @override
-  String get importMethodIcsTitle => '.ics Calendar Import';
+  String get importMethodIcsTitle => 'Import .ics file';
 
   @override
-  String get importMethodIcsSubtitle =>
-      'Calendar files from other timetable apps';
+  String get importMethodIcsSubtitle => 'Calendar files from apps';
 
   @override
   String get importMethodAiTitle => 'Image Import';
 
   @override
-  String get importMethodAiSubtitle => 'Import from timetable screenshots';
+  String get importMethodAiSubtitle => 'From screenshots';
 
   @override
-  String get importMethodWarehouseTitle => 'Academic System Import';
+  String get importMethodWarehouseTitle => 'School system';
 
   @override
   String get importMethodWarehouseSubtitle => 'Sign in to your school system';
@@ -841,8 +837,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get importMethodSpreadsheetTitle => 'Spreadsheet Import';
 
   @override
-  String get importMethodSpreadsheetSubtitle =>
-      'Import from an Excel or CSV template';
+  String get importMethodSpreadsheetSubtitle => 'From an Excel/CSV template';
 
   @override
   String get spreadsheetImportTitle => 'Spreadsheet Import';
@@ -2161,15 +2156,15 @@ class AppLocalizationsEn extends AppLocalizations {
   String get liveReminderSwitchesTitle => 'Reminder Switches';
 
   @override
-  String get beforeClassReminderTitle => 'Before Class Reminder';
+  String get beforeClassReminderTitle => 'Pre-class reminder';
 
   @override
   String beforeClassReminderSubtitle(int minutes) {
-    return 'Trigger $minutes minutes before class starts';
+    return '$minutes min early';
   }
 
   @override
-  String get duringClassReminderTitle => 'During Class and Before End Reminder';
+  String get duringClassReminderTitle => 'Class & end alerts';
 
   @override
   String get liveClassReminderLeadTitle => 'Highlight timing';
@@ -2186,8 +2181,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get liveDisplayModeTitle => 'Display Style';
 
   @override
-  String get duringClassStatusNotificationTitle =>
-      'During-class Status Notification';
+  String get duringClassStatusNotificationTitle => 'Class status notice';
 
   @override
   String get duringClassStatusNotificationImmediate =>
@@ -2208,7 +2202,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get liveTimeThresholdTitle => 'Timing Thresholds';
 
   @override
-  String get beforeClassPopupLabel => 'Before-class trigger';
+  String get beforeClassPopupLabel => 'Class-start trigger';
 
   @override
   String beforeClassMinutesOption(int minutes) {
@@ -2216,7 +2210,7 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get beforeEndSecondsLabel => 'Before-end second-level threshold';
+  String get beforeEndSecondsLabel => 'Pre-end seconds';
 
   @override
   String beforeEndSecondsOption(int seconds) {
@@ -2225,7 +2219,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String timeCorrectionLabel(String value) {
-    return 'Bell-time correction: $value';
+    return 'Correction: $value';
   }
 
   @override
@@ -2236,8 +2230,7 @@ class AppLocalizationsEn extends AppLocalizations {
       'If the school bell is early, shift earlier. If the bell is late, shift later.';
 
   @override
-  String get duringEndTimeDisplayLabel =>
-      'During-class / before-end time style';
+  String get duringEndTimeDisplayLabel => 'Class time style';
 
   @override
   String get liveDisplayContentTitle => 'Display Content';
@@ -2246,11 +2239,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get showCourseNameTitle => 'Show Course Name';
 
   @override
-  String get preferShortNameTitle => 'Prefer Short Course Name';
+  String get preferShortNameTitle => 'Prefer short name';
 
   @override
-  String get preferShortNameSubtitle =>
-      'Takes effect only if short name is filled in';
+  String get preferShortNameSubtitle => 'Only if short name is set';
 
   @override
   String get showLocationTitle => 'Show Location';
@@ -2262,14 +2254,13 @@ class AppLocalizationsEn extends AppLocalizations {
   String get countdownFormatLabel => 'Countdown Format';
 
   @override
-  String get countdownFormatHelp =>
-      'Minutes only refreshes per minute; with seconds per second';
+  String get countdownFormatHelp => 'Per minute, or per second';
 
   @override
   String get showStageTextTitle => 'Show Stage Label';
 
   @override
-  String get hidePrefixTextTitle => 'Hide \"Starts in / Ends in\" Prefix';
+  String get hidePrefixTextTitle => 'Hide time prefix';
 
   @override
   String get hidePrefixTextInactiveHint =>
@@ -2320,7 +2311,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get liveIslandPreviewSampleLocation => 'Bldg 3-401';
 
   @override
-  String get beforeClassQuickActionTitle => 'Before-class Quick Action';
+  String get beforeClassQuickActionTitle => 'Pre-class action';
 
   @override
   String get beforeClassQuickActionSubtitle =>
@@ -2331,7 +2322,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get liveBeforeClassQuickActionAutoSubtitle =>
-      'Turns on automatically before class and restores after class';
+      'Auto-on before, restore after';
 
   @override
   String get liveBeforeClassQuickActionAutoOptionOff => 'Off';
@@ -2348,11 +2339,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get liveExpandedIconSectionTitle => 'Expanded Card Large Icon';
 
   @override
-  String get liveMiuiLabelImageTitle => 'Xiaomi Island Left Text Icon';
+  String get liveMiuiLabelImageTitle => 'Island left icon';
 
   @override
-  String get liveMiuiLabelImageSubtitle =>
-      'For Xiaomi/Redmi; others may glitch';
+  String get liveMiuiLabelImageSubtitle => 'Xiaomi/Redmi only';
 
   @override
   String get liveMiuiLabelAdvancedAccordionTitle =>
@@ -2376,7 +2366,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String liveMiuiLabelLogoCornerRadiusLabel(String value) {
-    return 'Left Icon Corner Radius $value';
+    return 'Corner radius $value';
   }
 
   @override
@@ -2386,19 +2376,19 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String liveMiuiLabelOffsetXLabel(String value) {
-    return 'Left Text Horizontal Offset $value';
+    return 'Text X offset $value';
   }
 
   @override
   String liveMiuiLabelOffsetYLabel(String value) {
-    return 'Left Text Vertical Offset $value';
+    return 'Text Y offset $value';
   }
 
   @override
   String get liveMiuiLabelFontWeightLabel => 'Left Text Weight';
 
   @override
-  String get liveMiuiLabelRenderQualityLabel => 'Left Text Render Quality';
+  String get liveMiuiLabelRenderQualityLabel => 'Text sharpness';
 
   @override
   String get liveMiuiExpandedIconLabel => 'Expanded Large Icon';
@@ -2413,8 +2403,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get liveDisplayConfigModeTitle => 'Configuration Mode';
 
   @override
-  String get followBeforeClassDisplayTitle =>
-      'Follow Before-class Display Settings';
+  String get followBeforeClassDisplayTitle => 'Sync with pre-class';
 
   @override
   String get liveKeepAliveTitle => 'Keep Alive';
@@ -2570,7 +2559,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get sharedInfoTitle => 'Shared Info';
 
   @override
-  String get reuseExistingCourseLabel => 'Reuse Existing Course';
+  String get reuseExistingCourseLabel => 'Reuse course';
 
   @override
   String get reuseExistingCourseHelper => 'Fills in existing info';
@@ -2725,8 +2714,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get themeSeedSectionTitle => 'App theme color';
 
   @override
-  String get themeSeedSectionSubtitle =>
-      'Affects the top bar, accent color, and global primary tone';
+  String get themeSeedSectionSubtitle => 'Affects top bar and accents';
 
   @override
   String get frostedSheetSectionTitle => 'Glass Material';
@@ -2745,8 +2733,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get wallpaperSheetTabSettings => 'Settings';
 
   @override
-  String get homePageBackdropFollowsWeekPagerTitle =>
-      'Background follows week swipe';
+  String get homePageBackdropFollowsWeekPagerTitle => 'Follows week swipe';
 
   @override
   String get homePageWallpaperBlurTitle => 'Wallpaper blur';
@@ -2873,8 +2860,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get bingWallpaperAutoApplyTitle => 'Change daily';
 
   @override
-  String get bingWallpaperAutoApplySubtitle =>
-      'Shared by all timetables, changes the current one only';
+  String get bingWallpaperAutoApplySubtitle => 'Shared by all timetables';
 
   @override
   String get bingWallpaperAutoApplyApplying =>
@@ -2896,10 +2882,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get defaultTimetablePreviewName => 'Default timetable';
 
   @override
-  String get beforeClassDisplaySettingsTitle => 'Before-class reminder display';
+  String get beforeClassDisplaySettingsTitle => 'Pre-class display';
 
   @override
-  String get duringEndDisplaySettingsTitle => 'In-class / end reminder display';
+  String get duringEndDisplaySettingsTitle => 'Reminder display';
 
   @override
   String get liveDisplaySummaryShortName => 'Short name';
@@ -3338,15 +3324,13 @@ class AppLocalizationsEn extends AppLocalizations {
   String get homeWidgetShowLocationTitle => 'Show location';
 
   @override
-  String get homeWidgetShowLocationSubtitle =>
-      'When turned off, shows week number and course count instead';
+  String get homeWidgetShowLocationSubtitle => 'Off: shows week and count';
 
   @override
   String get homeWidgetShowCountdownTitle => 'Show countdown';
 
   @override
-  String get homeWidgetShowCountdownSubtitle =>
-      'Show a countdown to the next class';
+  String get homeWidgetShowCountdownSubtitle => 'Countdown to next class';
 
   @override
   String get homeWidgetCountdownLeadTitle => 'Countdown lead time';
@@ -3358,18 +3342,16 @@ class AppLocalizationsEn extends AppLocalizations {
   String get widgetCountdownStyleTitle => 'Countdown style';
 
   @override
-  String get homeWidgetHideCompletedTitle => 'Hide completed classes';
+  String get homeWidgetHideCompletedTitle => 'Hide ended classes';
 
   @override
-  String get homeWidgetHideCompletedSubtitle =>
-      'Show only classes that have not ended yet';
+  String get homeWidgetHideCompletedSubtitle => 'Only classes not yet ended';
 
   @override
-  String get homeWidgetShowTomorrowTitle => 'Show tomorrow\'s classes';
+  String get homeWidgetShowTomorrowTitle => 'Show tomorrow';
 
   @override
-  String get homeWidgetShowTomorrowSubtitle =>
-      'Automatically show tomorrow\'s classes after today\'s classes end';
+  String get homeWidgetShowTomorrowSubtitle => 'Tomorrow shown after today';
 
   @override
   String get homeWidgetCourseAccentTitle => 'Course colors';
@@ -3480,29 +3462,28 @@ class AppLocalizationsEn extends AppLocalizations {
   String get homeWidgetPreviewUnavailable => 'Preview unavailable';
 
   @override
-  String get layoutAutoFitHeightTitle => 'Auto fill screen height';
+  String get layoutAutoFitHeightTitle => 'Fill screen height';
 
   @override
   String get layoutHideWeekendsTitle => 'Hide weekends';
 
   @override
-  String get layoutEnableHapticsTitle => 'Enable in-app haptic feedback';
+  String get layoutEnableHapticsTitle => 'In-app haptics';
 
   @override
   String get layoutEnableHapticsSubtitle => 'Off stops the page-switch buzz';
 
   @override
-  String get pageTransitionSpeedTitle => 'Page transition speed';
+  String get pageTransitionSpeedTitle => 'Transition speed';
 
   @override
-  String get layoutTimeColumnDisplayLabel => 'Home page time column';
+  String get layoutTimeColumnDisplayLabel => 'Time column';
 
   @override
   String get layoutTimeColumnWidthLabel => 'Time column width';
 
   @override
-  String get layoutBackToCurrentWeekButtonOpacityTitle =>
-      'Floating button opacity';
+  String get layoutBackToCurrentWeekButtonOpacityTitle => 'Button opacity';
 
   @override
   String get layoutCourseCardGapTitle => 'Course card spacing';
@@ -3514,7 +3495,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get layoutCompactFontSizeTitle => 'Compact font size';
 
   @override
-  String get layoutCourseCardFontSizeTitle => 'Course card font size';
+  String get layoutCourseCardFontSizeTitle => 'Card font size';
 
   @override
   String get layoutShowTeacherTitle => 'Show teacher';
@@ -3526,30 +3507,28 @@ class AppLocalizationsEn extends AppLocalizations {
   String get layoutShowTimeTitle => 'Show time';
 
   @override
-  String get layoutShowTimeLabelsTitle => 'Show start and end labels';
+  String get layoutShowTimeLabelsTitle => 'Show time labels';
 
   @override
   String get layoutShowWeeksTitle => 'Show weeks';
 
   @override
-  String get layoutShowDescriptionTitle => 'Show course description';
+  String get layoutShowDescriptionTitle => 'Show description';
 
   @override
-  String get layoutShowOtherWeeksTitle =>
-      'Show courses outside the current week';
+  String get layoutShowOtherWeeksTitle => 'Show other weeks';
 
   @override
-  String get layoutShowOtherWeeksSubtitle =>
-      'Courses outside the current week are shown in semi-transparent gray';
+  String get layoutShowOtherWeeksSubtitle => 'Shown faint outside this week';
 
   @override
-  String get weekGridShowExamsTitle => 'Show exams in week view';
+  String get weekGridShowExamsTitle => 'Show exams';
 
   @override
   String get weekGridShowExamsSubtitle => 'Long-press add skips exams';
 
   @override
-  String get weekGridShowSchedulesTitle => 'Show schedules in week view';
+  String get weekGridShowSchedulesTitle => 'Show schedules';
 
   @override
   String get weekGridShowSchedulesSubtitle => 'By time; multi-day full column';
@@ -3558,14 +3537,13 @@ class AppLocalizationsEn extends AppLocalizations {
   String get layoutVerticalAlignLabel => 'Vertical alignment';
 
   @override
-  String get layoutHorizontalAlignLabel => 'Horizontal alignment';
+  String get layoutHorizontalAlignLabel => 'Alignment';
 
   @override
-  String get layoutShowConflictBadgeTitle =>
-      'Show conflict pill on the home page';
+  String get layoutShowConflictBadgeTitle => 'Home conflict pill';
 
   @override
-  String get layoutConflictOpacityTitle => 'Conflict course opacity';
+  String get layoutConflictOpacityTitle => 'Conflict opacity';
 
   @override
   String currentWeekCompact(int week) {
@@ -3707,7 +3685,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get aboutRecommended => 'Recommended';
 
   @override
-  String get aboutCheckPrereleaseTitle => 'Check prerelease versions';
+  String get aboutCheckPrereleaseTitle => 'Check prerelease';
 
   @override
   String get aboutCheckPrereleaseSubtitle => 'May add unstable test builds';
@@ -4266,19 +4244,16 @@ class AppLocalizationsEn extends AppLocalizations {
   String get quickImportRetryAction => 'Retry';
 
   @override
-  String get homePullQuickImportTitle => 'Pull to quick-import';
+  String get homePullQuickImportTitle => 'Pull to import';
 
   @override
-  String get homePullQuickImportSubtitle =>
-      'Pull down on the home timetable to run warehouse quick import in the background';
+  String get homePullQuickImportSubtitle => 'Pull down home to import';
 
   @override
-  String get longPressEmptySlotToAddTitle =>
-      'Long-press empty slot to add course';
+  String get longPressEmptySlotToAddTitle => 'Long-press to add';
 
   @override
-  String get longPressEmptySlotToAddSubtitle =>
-      'Long-press a slot, then tap the dashed plus';
+  String get longPressEmptySlotToAddSubtitle => 'Tap the dashed plus after';
 
   @override
   String get homePullQuickImportFetchingCourses => 'Fetching new courses…';
@@ -4369,7 +4344,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get openLoginInAppAction => 'Open login page in app';
 
   @override
-  String get openInSystemBrowserAction => 'Open in system browser';
+  String get openInSystemBrowserAction => 'Open in browser';
 
   @override
   String get copiedImportLoginUrl => 'Academic-system login URL copied';
@@ -4420,7 +4395,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get courseConflictDetailTitle => 'Conflict details';
 
   @override
-  String get courseConflictDetailEntryTitle => 'View conflict details';
+  String get courseConflictDetailEntryTitle => 'Conflict details';
 
   @override
   String courseConflictWithCourse(String name) {
@@ -5223,7 +5198,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get holidaySettingsTitle => 'Holiday Marking';
 
   @override
-  String get holidayEnableTitle => 'Enable holiday marking';
+  String get holidayEnableTitle => 'Holiday marking';
 
   @override
   String get holidayEnableSubtitle => 'Marks holidays and make-up';
@@ -5235,7 +5210,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get holidayAdvancedTitle => 'Holiday Data Update';
 
   @override
-  String get holidayNoUpcoming => 'No upcoming holidays';
+  String get holidayNoUpcoming => 'No holidays soon';
 
   @override
   String get holidayBadgeLabel => 'Holiday';
@@ -5562,7 +5537,7 @@ class AppLocalizationsEn extends AppLocalizations {
       'Reminders and widgets will hide all courses';
 
   @override
-  String get textColorIndependentDetail => 'Set detail colors independently';
+  String get textColorIndependentDetail => 'Own detail colors';
 
   @override
   String get textColorCourseCardTitle => 'Course card title color';
@@ -5604,7 +5579,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get themeManageTitle => 'Theme Manager';
 
   @override
-  String get themeManageSubtitle => 'Export, import and switch themes';
+  String get themeManageSubtitle => 'Export / import / switch';
 
   @override
   String get themePreset => 'Preset Themes';
@@ -5918,7 +5893,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get statisticsWeekCurrentHint => 'This week';
 
   @override
-  String get weeklyReportTitle => 'Weekly Course Summary';
+  String get weeklyReportTitle => 'Weekly summary';
 
   @override
   String weeklyReportBody(
@@ -5946,7 +5921,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get weeklyReportDisabledHint => 'Weekly report disabled';
 
   @override
-  String get statisticsCompareTitle => 'Timetable Comparison';
+  String get statisticsCompareTitle => 'Compare timetables';
 
   @override
   String get statisticsCompareActive => 'Active';
@@ -6073,7 +6048,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get statisticsSemesterProgressEstimated => 'Estimated by week';
 
   @override
-  String get statisticsTrendTitle => 'Weekly Sections Trend';
+  String get statisticsTrendTitle => 'Weekly trend';
 
   @override
   String statisticsTrendTooltip(int week, int sections) {
@@ -6207,7 +6182,7 @@ class AppLocalizationsEn extends AppLocalizations {
       'Treat the week containing this date as calendar week 1';
 
   @override
-  String get importFirstCourseWeekMappingLabel => 'Week 1 = school week';
+  String get importFirstCourseWeekMappingLabel => 'Maps to school week';
 
   @override
   String get importFirstCourseWeekMappingSubtitle =>
@@ -8522,8 +8497,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get cloudBackupMaxCountTitle => 'Maximum backups';
 
   @override
-  String get cloudBackupMaxCountSubtitle =>
-      'Oldest backups are removed when exceeded';
+  String get cloudBackupMaxCountSubtitle => 'Auto-deletes oldest backups';
 
   @override
   String cloudBackupMaxCountOption(int count) {
@@ -8534,7 +8508,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get cloudBackupMaxAgeTitle => 'Maximum age';
 
   @override
-  String get cloudBackupMaxAgeSubtitle => 'Backups older than this are removed';
+  String get cloudBackupMaxAgeSubtitle => 'Auto-deletes older backups';
 
   @override
   String cloudBackupMaxAgeOption(int days) {
@@ -8570,7 +8544,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get timetableShareExportEmptyDay => 'No classes on this day';
 
   @override
-  String get settingsScreenshotShareTitle => 'Offer sharing after a screenshot';
+  String get settingsScreenshotShareTitle => 'Screenshot share';
 
   @override
   String get settingsScreenshotShareSubtitle =>
@@ -8592,7 +8566,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get unnamedTimetableProfile => 'Unnamed timetable';
 
   @override
-  String get cloudBackupManualProtectedTitle => 'Protect manual backups';
+  String get cloudBackupManualProtectedTitle => 'Manual backups kept';
 
   @override
   String courseImportPortalUrlMissingBody(
@@ -8608,7 +8582,7 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get locationTimeMatchEntryTitle => 'Location-based schedule';
+  String get locationTimeMatchEntryTitle => 'Location schedule';
 
   @override
   String get locationTimeMatchEntrySubtitle =>
@@ -8738,7 +8712,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get locationTimeMatchBoundSchemeLabel => 'Bound time scheme';
 
   @override
-  String get locationTimeMatchNeedTimeScheme => 'Create a time scheme first';
+  String get locationTimeMatchNeedTimeScheme => 'No time scheme yet';
 
   @override
   String get locationTimeMatchEnabledLabel => 'Enable this group';
@@ -8993,11 +8967,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get liquidGlassScopeHomeChromeTitle => 'Home chrome glass';
 
   @override
-  String get liquidGlassScopeDockTitle => 'Glass dock navigation';
+  String get liquidGlassScopeDockTitle => 'Glass dock';
 
   @override
-  String get liquidGlassScopeDockSubtitle =>
-      'Floating bottom pill and add-course button';
+  String get liquidGlassScopeDockSubtitle => 'Bottom pill and add button';
 
   @override
   String get frostedGlassModeLiquid => 'Liquid Glass';
@@ -9015,7 +8988,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get liquidGlassRefractionLabel => 'Refraction strength';
 
   @override
-  String get liquidGlassRefractionBandLabel => 'Refraction band width';
+  String get liquidGlassRefractionBandLabel => 'Refraction width';
 
   @override
   String get liquidGlassRefractionEdgePowLabel => 'Edge falloff';
@@ -9081,18 +9054,17 @@ class AppLocalizationsEn extends AppLocalizations {
       'Restores the liquid-glass tuning only; the master material and other settings stay untouched';
 
   @override
-  String get liquidGlassDarkBoostLabel => 'Darker glass in dark mode';
+  String get liquidGlassDarkBoostLabel => 'Darker in dark mode';
 
   @override
   String get liquidGlassDarkBoostSubtitle => 'Grey, blurrier, dimmer rim';
 
   @override
-  String get liquidGlassDarkIndependentLabel =>
-      'Set dark appearance separately';
+  String get liquidGlassDarkIndependentLabel => 'Dark set separately';
 
   @override
   String get liquidGlassDarkIndependentSubtitle =>
-      'Dark mode follows the light settings; turn on to tune a separate set';
+      'Uses light settings by default';
 
   @override
   String get diagnosticsEntryTitle => 'Diagnostics';
@@ -9491,7 +9463,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get icsExportSchedules => 'Schedules';
 
   @override
-  String get icsExportSkipHolidayCourses => 'Skip holiday classes';
+  String get icsExportSkipHolidayCourses => 'Skip holidays';
 
   @override
   String get icsExportSkipHolidayCoursesSubtitle =>
@@ -9667,7 +9639,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get glassDockCustomizeSectionTitle => 'Bottom dock';
 
   @override
-  String get glassDockCustomizeTitle => 'Customize dock buttons';
+  String get glassDockCustomizeTitle => 'Customize dock';
 
   @override
   String get homeDockEditorViewCategory => 'View switching';
@@ -9682,7 +9654,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get glassDockExtraButtonSemanticLabel => 'Add';
 
   @override
-  String get homeMenuStyleLabel => 'Top-right menu style';
+  String get homeMenuStyleLabel => 'Menu style';
 
   @override
   String get homeMenuStyleList => 'List menu';
@@ -9697,7 +9669,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get homeMenuStyleGridSubtitle => 'Icon grid, customizable';
 
   @override
-  String get homeMenuCustomizeTitle => 'Customize menu buttons';
+  String get homeMenuCustomizeTitle => 'Customize menu';
 
   @override
   String homeGridCustomizeDetails(int count, int max) {
@@ -9716,7 +9688,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get homeGridEditorRemoveTooltip => 'Remove';
 
   @override
-  String get homeGridEditorResetAction => 'Reset to default order';
+  String get homeGridEditorResetAction => 'Reset order';
 
   @override
   String get homeGridEditorAllAdded => 'All entries are enabled';
@@ -10023,8 +9995,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get weatherEnableTitle => 'Show weather';
 
   @override
-  String get weatherEnableSubtitle =>
-      'Turning this off stops fetching weather data';
+  String get weatherEnableSubtitle => 'Off stops weather updates';
 
   @override
   String get weatherCityLabel => 'City';
@@ -10066,8 +10037,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get weatherShowOnWeekCardTitle => 'Week view cards';
 
   @override
-  String get weatherShowOnWeekCardSubtitle =>
-      'Narrow cells — one item only, temperature first';
+  String get weatherShowOnWeekCardSubtitle => 'One item only, temp first';
 
   @override
   String get weatherShowOnSheetTitle => 'Course detail sheet';
@@ -10100,7 +10070,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get weatherSectionSourceTitle => 'Data source';
 
   @override
-  String get weatherUseCurrentLocation => 'Use current location';
+  String get weatherUseCurrentLocation => 'Use my location';
 
   @override
   String get weatherLocating => 'Locating…';
@@ -10152,8 +10122,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get appearanceEditorMaterialAction => 'Material';
 
   @override
-  String get appearanceEditorEntrySubtitle =>
-      'Full-page mini preview — adjust the wallpaper and the material';
+  String get appearanceEditorEntrySubtitle => 'Whole-page mini preview';
 
   @override
   String get commonLoadingLabel => 'Loading…';
