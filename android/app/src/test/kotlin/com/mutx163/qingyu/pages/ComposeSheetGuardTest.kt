@@ -82,6 +82,49 @@ class ComposeSheetGuardTest {
         )
     }
 
+    @Test
+    fun `S1D 判据必须剥掉注释——注释里写 insideMargin 不算传了`() {
+        // 假绿盲区的原始形状（2026-11-03 另一路探针踩中）：实参区只有**注释**写了
+        // insideMargin，真没传。裸 contains 会放行 ⇒ 必须判红。
+        val commentOnly = """
+            OverlayDialog(
+                show = true,
+                // insideMargin = DpSize(16.dp, 16.dp) 的口径见套件文档
+                title = "T",
+            ) { }
+        """.trimIndent()
+        assertTrue(
+            "实参区只有注释写了 insideMargin（真没传）必须判红",
+            dialogInsideMarginViolations(commentOnly).isNotEmpty(),
+        )
+
+        // 块注释同罪；且 Kotlin 块注释可嵌套，剥的时候得配平。
+        val blockCommentOnly = """
+            OverlayDialog(
+                show = true,
+                /* 口径是 insideMargin = DpSize(16.dp, 16.dp)，/* 嵌套一层 */ 注释结束 */
+                title = "T",
+            ) { }
+        """.trimIndent()
+        assertTrue(
+            "实参区只有块注释写了 insideMargin（真没传）必须判红",
+            dialogInsideMarginViolations(blockCommentOnly).isNotEmpty(),
+        )
+
+        // 真传了必须判绿——含「注释 + 真参」同框与字符串里的 //（不许把同行真参吃掉）。
+        val realPass = """
+            OverlayDialog(
+                show = true,
+                insideMargin = DpSize(16.dp, 16.dp), // 官方默认 24，收成 16
+                title = "https://example.com/a",
+            ) { }
+        """.trimIndent()
+        assertTrue(
+            "真传 insideMargin（含注释与字符串 // 同框）不应判红",
+            dialogInsideMarginViolations(realPass).isEmpty(),
+        )
+    }
+
     // ------------------------------------------------------------------
     // 判据
     // ------------------------------------------------------------------
@@ -162,6 +205,16 @@ class ComposeSheetGuardTest {
      * 24dp 而守卫看不见。只卡「有没有显式传」这一个判据：数值是否凑够本仓口径
      *（横 16，或横 0/8 + 内容自带 padding 补齐）由评审把关——文本层判数值会误伤
      * `DpSize(0.dp, 16.dp)` 这类合理写法。
+     *
+     * ## 假绿盲区（2026-11-03 另一路探针踩中后补的）
+     *
+     * 第一版判据是裸 `args.contains("insideMargin")`：实参区里只要有一行**注释**写了
+     * 这四个字（比如「`insideMargin` 的口径见套件文档」），真没传也会放行。所以先
+     * [stripKotlinComments] 剥掉 `//` 与 `/* */`（块注释按 Kotlin 语义**可嵌套**），
+     * 再按命名参数形态 `\binsideMargin\s*=` 匹配——注释即使没剥干净也写不出带 `=`
+     * 的实参位。剥注释对**字符串字面量**感知（`"https://…"` 里的 `//` 不会被当成
+     * 行注释吃掉后半段实参）。是否有专用测试钉这条盲区，见
+     * `S1D 判据必须剥掉注释`。
      */
     private fun dialogInsideMarginViolations(text: String): List<Int> {
         val hits = mutableListOf<Int>()
@@ -177,13 +230,88 @@ class ComposeSheetGuardTest {
             val openParen = start + DIALOG_CALL.length - 1
             val close = matchingParen(text, openParen)
             if (close < 0) break
-            val args = text.substring(openParen + 1, close)
-            if (!args.contains("insideMargin")) {
+            val args = stripKotlinComments(text.substring(openParen + 1, close))
+            if (!INSIDE_MARGIN_NAMED_ARG.containsMatchIn(args)) {
                 hits += text.take(start).count { it == '\n' } + 1
             }
             from = close
         }
         return hits
+    }
+
+    /**
+     * 剥掉 Kotlin 源码里的注释，供「只看代码」的判据用（与样式守卫 `Get-CodeLines`
+     * 的「只看代码行」同一目的，但按字符状态机做，不依赖行首形状）。
+     *
+     * - `//` 行注释：剥到行尾（换行符保留，不影响别的按行数落点的逻辑）。
+     * - 斜杠星块注释：按 Kotlin 语义**可嵌套**（`/* /* */ */` 才算完，写在这里都
+     *   得逐字配平，否则本文件自己就先被注释吞了）。
+     * - 字符串字面量（`"…"` / `'…'`）内容原样保留且其中的注释标记不算注释；
+     *   转义（`\"`）不终结字符串——否则 `"https://…"` 会把同行后面的真实参一起吃掉。
+     */
+    private fun stripKotlinComments(source: String): String {
+        val sb = StringBuilder(source.length)
+        var i = 0
+        var inLineComment = false
+        var inBlockComment = false
+        var blockDepth = 0
+        var stringQuote: Char? = null
+        while (i < source.length) {
+            val ch = source[i]
+            val next = if (i + 1 < source.length) source[i + 1] else ' '
+            when {
+                inLineComment -> {
+                    if (ch == '\n') {
+                        inLineComment = false
+                        sb.append(ch)
+                    }
+                    i++
+                }
+                inBlockComment -> {
+                    if (ch == '/' && next == '*') {
+                        blockDepth++
+                        i += 2
+                    } else if (ch == '*' && next == '/') {
+                        blockDepth--
+                        i += 2
+                        if (blockDepth == 0) inBlockComment = false
+                    } else {
+                        i++
+                    }
+                }
+                stringQuote != null -> {
+                    sb.append(ch)
+                    if (ch == '\\' && i + 1 < source.length) {
+                        sb.append(source[i + 1])
+                        i += 2
+                    } else {
+                        if (ch == stringQuote) stringQuote = null
+                        i++
+                    }
+                }
+                ch == '/' && next == '/' -> {
+                    inLineComment = true
+                    sb.append(' ')
+                    i += 2
+                }
+                ch == '/' && next == '*' -> {
+                    inBlockComment = true
+                    blockDepth = 1
+                    sb.append(' ')
+                    i += 2
+                }
+                ch == '"' || ch == '\'' -> {
+                    stringQuote = ch
+                    sb.append(ch)
+                    i++
+                }
+                else -> {
+                    sb.append(ch)
+                    i++
+                }
+            }
+        }
+        return sb.toString()
     }
 
     private fun matchingParen(text: String, openIndex: Int): Int {
@@ -348,6 +476,13 @@ class ComposeSheetGuardTest {
 
         /** `OverlayDialog(` 调用标记（规则 S1D，取实参用，按括号配平）。 */
         const val DIALOG_CALL = "OverlayDialog("
+
+        /**
+         * S1D 的「真传了」判据：命名参数形态 `\binsideMargin\s*=`。
+         * 裸 `contains("insideMargin")` 会被实参区**注释**里的这四个字骗成假绿
+         *（2026-11-03 另一路探针踩中）；剥注释之后再要求带 `=`，双保险。
+         */
+        val INSIDE_MARGIN_NAMED_ARG = Regex("""\binsideMargin\s*=""")
 
         const val TEXT_BUTTON_CALL = "textButtonColors("
 
