@@ -23,6 +23,7 @@ import com.mutx163.qingyu.components.QingyuPageList
 import com.mutx163.qingyu.components.QingyuPageTheme
 import com.mutx163.qingyu.components.QingyuSectionTitle
 import com.mutx163.qingyu.components.QingyuWeightDelta
+import com.mutx163.qingyu.components.rememberShellShouldShowBackButton
 import com.mutx163.qingyu.components.shiftWeight
 import com.mutx163.qingyu.theme.QingyuTheme
 import top.yukonga.miuix.kmp.basic.Button
@@ -78,12 +79,16 @@ fun LanEditPage(
                     largeTitle = model.title,
                     scrollBehavior = scrollBehavior,
                     navigationIcon = {
-                        IconButton(onClick = onBack) {
-                            Icon(
-                                imageVector = MiuixIcons.Back,
-                                contentDescription = model.title,
-                                tint = Color(QingyuTheme.actionIcon(dark)),
-                            )
+                        // 从底栏进入的根页没有上一级可回，不画返回键；推入的二级页照常画。
+                        // 判据取法与全站骨架同一份（rememberShellShouldShowBackButton）。
+                        if (rememberShellShouldShowBackButton()) {
+                            IconButton(onClick = onBack) {
+                                Icon(
+                                    imageVector = MiuixIcons.Back,
+                                    contentDescription = model.title,
+                                    tint = Color(QingyuTheme.actionIcon(dark)),
+                                )
+                            }
                         }
                     },
                 )

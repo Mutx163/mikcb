@@ -33,6 +33,7 @@ import com.mutx163.qingyu.components.QingyuPageCardMargin
 import com.mutx163.qingyu.components.QingyuPageList
 import com.mutx163.qingyu.components.QingyuSectionTitle
 import com.mutx163.qingyu.components.QingyuWeightDelta
+import com.mutx163.qingyu.components.rememberShellShouldShowBackButton
 import com.mutx163.qingyu.components.shiftWeight
 import com.mutx163.qingyu.theme.QingyuIconColors
 import com.mutx163.qingyu.theme.QingyuTheme
@@ -83,12 +84,16 @@ fun ScheduleListPage(
                     largeTitle = ScheduleStrings.scheduleListTitle.zh,
                     scrollBehavior = scrollBehavior,
                     navigationIcon = {
-                        IconButton(onClick = onBack) {
-                            Icon(
-                                imageVector = MiuixIcons.Back,
-                                contentDescription = ScheduleStrings.cancelAction.zh,
-                                tint = Color(QingyuTheme.actionIcon(dark)),
-                            )
+                        // 从底栏进入的根页没有上一级可回，不画返回键；推入的二级页照常画。
+                        // 判据取法与全站骨架同一份（rememberShellShouldShowBackButton）。
+                        if (rememberShellShouldShowBackButton()) {
+                            IconButton(onClick = onBack) {
+                                Icon(
+                                    imageVector = MiuixIcons.Back,
+                                    contentDescription = ScheduleStrings.cancelAction.zh,
+                                    tint = Color(QingyuTheme.actionIcon(dark)),
+                                )
+                            }
                         }
                     },
                     // Dart 侧顶栏右侧是 FHeaderAction(Icons.add_rounded) 图标按钮，

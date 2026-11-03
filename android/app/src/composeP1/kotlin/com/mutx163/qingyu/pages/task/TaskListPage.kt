@@ -34,6 +34,7 @@ import com.mutx163.qingyu.components.QingyuPageCardMargin
 import com.mutx163.qingyu.components.QingyuPageList
 import com.mutx163.qingyu.components.QingyuPageTheme
 import com.mutx163.qingyu.components.QingyuSectionTitle
+import com.mutx163.qingyu.components.rememberShellShouldShowBackButton
 import com.mutx163.qingyu.core.CourseTask
 import com.mutx163.qingyu.theme.QingyuTheme
 import top.yukonga.miuix.kmp.basic.BasicComponent
@@ -139,13 +140,17 @@ fun TaskListPage(
                     largeTitle = TaskStrings.taskListTitle,
                     scrollBehavior = scrollBehavior,
                     navigationIcon = {
-                        IconButton(onClick = onBack) {
-                            Icon(
-                                imageVector = MiuixIcons.Back,
-                                // A8：读屏念「返回」，不是「取消」。
-                                contentDescription = CommonUiStrings.back,
-                                tint = Color(QingyuTheme.actionIcon(dark)),
-                            )
+                        // 从底栏进入的根页没有上一级可回，不画返回键；推入的二级页照常画。
+                        // 判据取法与全站骨架同一份（rememberShellShouldShowBackButton）。
+                        if (rememberShellShouldShowBackButton()) {
+                            IconButton(onClick = onBack) {
+                                Icon(
+                                    imageVector = MiuixIcons.Back,
+                                    // A8：读屏念「返回」，不是「取消」。
+                                    contentDescription = CommonUiStrings.back,
+                                    tint = Color(QingyuTheme.actionIcon(dark)),
+                                )
+                            }
                         }
                     },
                     actions = {

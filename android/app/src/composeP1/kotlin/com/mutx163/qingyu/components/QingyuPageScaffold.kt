@@ -89,6 +89,18 @@ fun QingyuBackIconButton(
  */
 val LocalQingyuPageIsRootEntry = staticCompositionLocalOf<Boolean?> { null }
 
+/**
+ * 「顶栏该不该画返回键」的**唯一取法**（组合局部判据，2026-11-03）。
+ *
+ * 壳注入的根页标记（[LocalQingyuPageIsRootEntry]）经 [ShellRootEntryRule.shouldShowBackButton]
+ * 收敛成一个布尔。消费者两类：[QingyuPageScaffold]（全站骨架）与**手拼顶栏的少数页面**
+ * （任务清单 / 日程列表 / 课程总览 / 局域网传输——它们不走骨架，但取法必须同这一处，
+ * 守卫 `RootEntryBackGuardTest` 钉住「谁再自己读 local 另判一套 → 红」）。
+ */
+@Composable
+fun rememberShellShouldShowBackButton(): Boolean =
+    ShellRootEntryRule.shouldShowBackButton(LocalQingyuPageIsRootEntry.current)
+
 /** 内容槽拿到的东西：内边距与顶栏折叠行为。 */
 class QingyuPageContentScope(
     val innerPadding: PaddingValues,
@@ -167,8 +179,9 @@ fun QingyuPageScaffold(
     val scrollBehavior = MiuixScrollBehavior()
     // 返回键显隐的唯一判定（2026-11-03）：从底栏进入的根页没有上一级可回，不画返回键；
     // 推入的二级/更深页照常画。壳在 entry 分支注入页面栈的真实结构，这里一处消费——
-    // 页面零传参，51 处调用点全站生效；判据本体在 ShellRootEntryRule（纯函数 + JVM 单测）。
-    val showBackButton = ShellRootEntryRule.shouldShowBackButton(LocalQingyuPageIsRootEntry.current)
+    // 页面零传参，51 处调用点全站生效；取法本体在 rememberShellShouldShowBackButton
+    // （手拼顶栏页与骨架共用同一份），纯函数在 ShellRootEntryRule（JVM 单测钉住）。
+    val showBackButton = rememberShellShouldShowBackButton()
     // 顶栏与页面底色必须同源：模糊层靠它铺底，否则内容里的透明区
     // 会在大标题下糊出色块（`docs/guide/blur.md:105-118`）。
     val pageBackground = Color(QingyuTheme.scaffoldBackground(dark))

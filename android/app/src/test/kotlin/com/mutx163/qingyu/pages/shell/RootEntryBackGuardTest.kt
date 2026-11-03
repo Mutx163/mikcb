@@ -28,8 +28,8 @@ class RootEntryBackGuardTest {
     fun `骨架的返回键必须由根页判据守着`() {
         val scaffold = codeOnly(source(SCAFFOLD))
         assertTrue(
-            "QingyuPageScaffold 没有消费根页标记（LocalQingyuPageIsRootEntry.current + " +
-                "ShellRootEntryRule.shouldShowBackButton）——判定被删后箭头会全站回到常显",
+            "QingyuPageScaffold 没有经唯一取法 rememberShellShouldShowBackButton() 消费根页标记" +
+                "——判定被删后箭头会全站回到常显",
             scaffoldGatesBackIcon(scaffold),
         )
         assertTrue(
@@ -39,12 +39,43 @@ class RootEntryBackGuardTest {
         )
         // 反向探针：把判定改成常显，判据必须红。
         val broken = scaffold.replace(
-            "val showBackButton = ShellRootEntryRule.shouldShowBackButton(LocalQingyuPageIsRootEntry.current)",
+            "val showBackButton = rememberShellShouldShowBackButton()",
             "val showBackButton = true",
         )
         assertFalse(
             "咬合探针失效：判据改成常显后守卫仍为真",
             scaffoldGatesBackIcon(broken),
+        )
+    }
+
+    @Test
+    fun `四个手拼顶栏页必须消费同一份判据`() {
+        for ((label, path) in HAND_BUILT_PAGES) {
+            val code = codeOnly(source(path))
+            assertTrue(
+                "$label 没有消费 rememberShellShouldShowBackButton( ——手拼顶栏的返回键显隐" +
+                    "必须走与骨架同一份判据，不许自己另写一套",
+                code.contains("if (rememberShellShouldShowBackButton())"),
+            )
+            assertFalse(
+                "$label 直读了 LocalQingyuPageIsRootEntry ——取法只能有一处实现" +
+                    "（components.rememberShellShouldShowBackButton），页面不得自己读 local 判定",
+                code.contains("LocalQingyuPageIsRootEntry"),
+            )
+            assertFalse(
+                "$label 出现了 isRoot/showBack 类参数——根页判定不许退化成逐页传参",
+                code.contains("isRoot:") || code.contains("showBack:"),
+            )
+        }
+        // 反向探针：把任务清单页的判定改成常显，判据必须红。
+        val taskPath = HAND_BUILT_PAGES.first { it.first == "任务清单页" }.second
+        val broken = codeOnly(source(taskPath)).replace(
+            "if (rememberShellShouldShowBackButton()) {",
+            "if (true) {",
+        )
+        assertFalse(
+            "咬合探针失效：任务清单页判定改成常显后守卫仍为真",
+            broken.contains("if (rememberShellShouldShowBackButton())"),
         )
     }
 
@@ -98,9 +129,11 @@ class RootEntryBackGuardTest {
     // ------------------------------------------------------------------ 判据
 
     private fun scaffoldGatesBackIcon(text: String): Boolean =
-        text.contains("LocalQingyuPageIsRootEntry.current") &&
+        text.contains("val showBackButton = rememberShellShouldShowBackButton()") &&
+            text.contains("backIconOrNull(") &&
+            text.contains("fun rememberShellShouldShowBackButton(): Boolean") &&
             text.contains("ShellRootEntryRule.shouldShowBackButton(") &&
-            text.contains("backIconOrNull(")
+            text.contains("LocalQingyuPageIsRootEntry.current")
 
     private fun shellInjectsRootEntry(text: String): Boolean =
         text.contains("LocalQingyuPageIsRootEntry provides true") &&
@@ -143,5 +176,16 @@ class RootEntryBackGuardTest {
 
         const val ACTIVITY =
             "android/app/src/main/kotlin/com/mutx163/qingyu/pages/PagesShellActivity.kt"
+
+        /**
+         * 手拼顶栏的根页候选（不走 QingyuPageScaffold，判据取法守卫到这里）。
+         * 月视图与课表管理在 timetable 域（另一条会话在改），收口后再接——不进本清单。
+         */
+        val HAND_BUILT_PAGES = listOf(
+            "任务清单页" to "android/app/src/composeP1/kotlin/com/mutx163/qingyu/pages/task/TaskListPage.kt",
+            "日程列表页" to "android/app/src/composeP1/kotlin/com/mutx163/qingyu/pages/schedule/ScheduleListPage.kt",
+            "课程总览页" to "android/app/src/composeP1/kotlin/com/mutx163/qingyu/pages/course/CourseOverviewPage.kt",
+            "局域网传输页" to "android/app/src/composeP1/kotlin/com/mutx163/qingyu/pages/transfer/LanEditPage.kt",
+        )
     }
 }
