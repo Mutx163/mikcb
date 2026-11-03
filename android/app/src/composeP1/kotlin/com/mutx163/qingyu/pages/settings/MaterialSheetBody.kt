@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.calculateEndPadding
 import androidx.compose.foundation.layout.calculateStartPadding
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.ime
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.pager.HorizontalPager
@@ -16,6 +17,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -38,9 +40,6 @@ object MaterialSheetPages {
  * 面板**整体**最多占屏幕一半。超出的内容由每一页自己的滚动承担。
  */
 private const val MATERIAL_SHEET_MAX_HEIGHT_FACTOR = 0.5f
-
-/** Dart `hyperosMiuixBottomSheetContentBottomGap`（`lib/ui/hyperos/miuix_bottom_sheet.dart:451`）。 */
-private val MATERIAL_SHEET_CONTENT_BOTTOM_GAP = 16.dp
 
 /**
  * 官方弹层载体头的高度：把手条 24（`DragHandleArea`）+ 空标题行 18。
@@ -89,7 +88,7 @@ private val MATERIAL_SHEET_CARRIER_CHROME = 42.dp
  * | :2325-2337 页签行 = 把手让位 + 居中胶囊 + `generalSettingsTitle` / `surfaceCourseCard` | [TabRowWithContour] + `SettingsMaterialSheetPage.TAB_LABELS`（官方轮廓轨道，0/∞ 铺满整行） |
  * | :2338-2351 `PageView` + `onPageChanged` 回收索引 | [HorizontalPager]（`currentPage` 由 pager 自己维护，滑页后页签跟着亮） |
  * | :2338-2339 面板总高由外层 `maxHeight`（半屏）顶住 | [MATERIAL_SHEET_MAX_HEIGHT_FACTOR] + 载体头 [MATERIAL_SHEET_CARRIER_CHROME] |
- * | :955-960 / :1230-1235 每页自带顶部让位与底部留白 | 顶部为 0（见上）；底部 = 手势区 + [MATERIAL_SHEET_CONTENT_BOTTOM_GAP] |
+ * | :955-960 / :1230-1235 每页自带顶部让位与底部留白 | 顶部为 0（见上）；底部 = 手势区 + 16（键盘弹出时只留 16，见 [SheetContentBottomGap]） |
  * | :947-960 / :1226-1235 每页一层独立竖向滚动 | 每页 [SettingsNodeList]（内部 `QingyuPageList`：官方三件套 + 滚动条） |
  * | :2348-2349 两页 child 顺序 | [materialPageNodes] 按下标分派 |
  *
@@ -168,8 +167,15 @@ fun MaterialSheetBody(
     // Dart `bottomGapInsetOf`（`miuix_bottom_sheet.dart:459-461`）= 系统手势区 + 16。官方弹层只按
     // 键盘让位（`imePadding`）、不管导航栏，所以这一截必须由**滚动内容自己**带：垫在视口外面的话，
     // 内容永远滚不进那一块，面板底下会留一块空玻璃（:890-894 的同一条说明）。
-    val bottomGap = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding() +
-        MATERIAL_SHEET_CONTENT_BOTTOM_GAP
+    //
+    // 键盘弹出时面板已经被官方弹层抬到键盘上方，面板底边与键盘之间没有手势区；仍按
+    // 「手势区 + 16」垫就会多出一截空白。判据走共享纯函数，与 `QingyuSheet` 同一口径。
+    val density = LocalDensity.current
+    val navBottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
+    val bottomGap = SheetContentBottomGap.bottomGapDp(
+        imeVisible = SheetContentBottomGap.isImeVisible(WindowInsets.ime.getBottom(density)),
+        navigationBarBottomDp = navBottom.value,
+    ).dp
 
     val layoutDirection = LocalLayoutDirection.current
     val pagePadding = PaddingValues(

@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.ime
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.items
@@ -21,6 +22,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.mutx163.qingyu.components.QingyuPageList
@@ -556,23 +558,30 @@ internal fun WallpaperPageList(
 }
 
 /**
- * 面板滚动内容的底部留白 = 系统手势区 + 16dp。
+ * 面板滚动内容的底部留白 = 系统手势区 + 16dp（**键盘弹出时只留 16dp**）。
  *
  * Dart 的唯一真源是 `bottomGapInsetOf`（`lib/ui/hyperos/miuix_bottom_sheet.dart:455-458`：
  * `MediaQuery.paddingOf(context).bottom + hyperosMiuixBottomSheetContentBottomGap(16)`）——
  * 能滚动的弹窗把这一截**加在滚动内容里**，而不是垫在滚动视口外面，否则内容滚不进去、
  * 面板底下永远空一块玻璃板（同文件 `:100-111`）。
  *
+ * 键盘弹出时官方弹层已经把面板抬到键盘上方，面板底边与键盘之间没有手势区；仍叠导航栏
+ * 高度就会多出一截空白。判据收在 [SheetContentBottomGap]，与 [MaterialSheetBody] 和
+ * `QingyuSheet` 同一口径（2026-11-03）。
+ *
  * 宿主把它传给 [WallpaperSheetBody] 的 `contentPadding`。
  */
 @Composable
-fun wallpaperSheetBottomGap(): PaddingValues = PaddingValues(
-    bottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding() +
-        PANEL_CONTENT_BOTTOM_GAP_DP.dp,
-)
-
-/** `hyperosMiuixBottomSheetContentBottomGap`（`miuix_bottom_sheet.dart:451`）。 */
-private const val PANEL_CONTENT_BOTTOM_GAP_DP = 16.0
+fun wallpaperSheetBottomGap(): PaddingValues {
+    val density = LocalDensity.current
+    val navBottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
+    return PaddingValues(
+        bottom = SheetContentBottomGap.bottomGapDp(
+            imeVisible = SheetContentBottomGap.isImeVisible(WindowInsets.ime.getBottom(density)),
+            navigationBarBottomDp = navBottom.value,
+        ).dp,
+    )
+}
 
 /** 壁纸面板状态 → 壁纸流程输入（同一份真源，只换一次形状）。 */
 internal fun backdropFlowState(state: AppearanceEditorState): BackdropFlowState =
