@@ -62,7 +62,6 @@
     <string name="widget_countdown_until_end">종료까지 %1$s</string>
     <string name="widget_countdown_until_start">시작까지 %1$s</string>
 
-    <string name="widget_exam_day">시험일 %1$s%2$s%3$s</string>
     <string name="widget_exam_today">오늘 시험 %1$s%2$s%3$s</string>
     <string name="widget_exam_ongoing">시험 중 %1$s · %2$s까지%3$s</string>
     <string name="widget_exam_until">%1$s까지</string>

@@ -62,7 +62,6 @@
     <string name="widget_countdown_until_end">還有 %1$s 下課</string>
     <string name="widget_countdown_until_start">還有 %1$s 上課</string>
 
-    <string name="widget_exam_day">考試日 %1$s%2$s%3$s</string>
     <string name="widget_exam_today">今天考試 %1$s%2$s%3$s</string>
     <string name="widget_exam_ongoing">考試中 %1$s · 至%2$s%3$s</string>
     <string name="widget_exam_until">至 %1$s</string>
