@@ -518,9 +518,10 @@ object AddCourseFormLogic {
                 " – " +
                 AddCourseStrings.weekLabel.filled("week", endWeek.toString())
         }
+        // Dart `:1599-1600` 是两个独立 `if`：单双周同时为真时**单周先命中**。
         val suffix = when {
-            isOddWeek && !isEvenWeek -> " · " + AddCourseStrings.oddWeeksFilter.zh
-            isEvenWeek && !isOddWeek -> " · " + AddCourseStrings.evenWeeksFilter.zh
+            isOddWeek -> " · " + AddCourseStrings.oddWeeksFilter.zh
+            isEvenWeek -> " · " + AddCourseStrings.evenWeeksFilter.zh
             else -> ""
         }
         return label + suffix

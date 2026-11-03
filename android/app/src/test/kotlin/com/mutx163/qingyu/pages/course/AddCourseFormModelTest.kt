@@ -591,6 +591,25 @@ class AddCourseFormModelTest {
     }
 
     @Test
+    fun `范围模式单双周同时为真时单周先命中`() {
+        // Dart `add_course_screen.dart:1599-1600` 是两个独立 `if`：两者都为 true 时
+        // 先返回单周后缀（不是把后缀整个吞掉，也不是拼两段）。
+        // 这种状态能从既有数据/导入回填进来（该文件 :27-30 明说「单双周可以都为 true」）。
+        assertEquals(
+            "第 1 周 – 第 16 周 · 单周",
+            AddCourseFormLogic.selectedWeeksSummaryText(
+                selectedWeeks = emptyList(),
+                availableWeeks = availableWeeks20,
+                startWeek = 1,
+                endWeek = 16,
+                isOddWeek = true,
+                isEvenWeek = true,
+                mode = AddCourseWeekSelectionMode.RANGE,
+            ),
+        )
+    }
+
+    @Test
     fun `自定义模式摘要空集为空串全选为全部`() {
         assertEquals(
             "",
