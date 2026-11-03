@@ -243,10 +243,6 @@ class LocaleFormatGuardTest {
                 "作用域外（sync 线）。备份文件名时间戳，需 Locale.ROOT，待该线收口。",
             ),
             WhitelistEntry(
-                "main/kotlin/com/mutx163/qingyu/pages/timetable/",
-                "作用域外（timetable 线）。网格时刻展示文本。",
-            ),
-            WhitelistEntry(
                 "main/kotlin/com/mutx163/qingyu/pages/time_scheme/",
                 "作用域外（time_scheme 线）。作息时刻展示文本。",
             ),

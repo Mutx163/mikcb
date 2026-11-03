@@ -4,6 +4,7 @@ import java.math.BigDecimal
 import java.math.MathContext
 import java.math.RoundingMode
 import java.security.MessageDigest
+import java.util.Locale
 
 /**
  * 快照合并判据 / 冲突检测 / 内容哈希纯逻辑。
@@ -209,7 +210,9 @@ fun computeContentSha256(payload: Map<String, Any?>): String {
     val canonical = canonicalize(forHash)
     val json = canonicalJson(canonical)
     val digest = MessageDigest.getInstance("SHA-256").digest(json.toByteArray(Charsets.UTF_8))
-    return digest.joinToString("") { "%02x".format(it) }
+    // 哈希片段是落盘/云端判定依据，必须固定 ASCII 十六进制；
+    // 默认 Locale（如 ar-EG）下 `%02x` 会产出非 ASCII 数字，跨端哈希直接对不上。
+    return digest.joinToString("") { String.format(Locale.ROOT, "%02x", it) }
 }
 
 /** 递归排序 Map 键（键按 toString 排），List 保持序（Dart `_canonicalize` 原样）。 */
