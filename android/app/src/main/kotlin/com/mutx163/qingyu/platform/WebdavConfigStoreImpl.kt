@@ -130,11 +130,15 @@ class WebdavConfigStoreImpl(
          * IV 序列化、`FlutterSecureStorageConfiguration:<name>` 里的算法/迁移标记），
          * 一旦插件升级就是静默失效——比重新输入一次密码糟得多。
          *
-         * 而且**当前根本读不到**：`composeUi` 壳是**独立包名**（`.ui`），它的应用私有目录与
-         * KeyStore 命名空间和正式版是两个，跨包共享在构造上就不可能。
+         * 而旧值**不是读不到**：`applicationId` 已于 2026-10-29 合并 flavor 统一为
+         * `com.mutx163.qingyu`（`android/app/build.gradle:7`、`:146` 记录 composeP1 / composeUi
+         * 两个 flavor 删除、页面并入 `main`），旧版的 `FlutterSecureStorage.xml` 仍在同一 UID 的
+         * 应用私有目录里，**技术上可读**。不迁移是**成本取舍**（复刻插件私有格式会随插件升级
+         * 静默失效），不是「跨包不可能」。
          *
-         * 所以这里用自己的一把 KeyStore 密钥 + 自己的键名，并把 `v2` 写进键名：
-         * Phase 5（正式包接管）时若要做一次性迁移，能一眼区分「插件格式」与「我们的格式」。
+         * 所以这里用自己的一把 KeyStore 密钥 + 自己的键名，并把 `v2` 写进键名。Phase 5 的
+         * 一次性自动迁移已裁决**不做**（2026-11-04，见 `docs/plans/2026-11-03-night-autopilot-log.md`
+         * §10.35），`v2` 只留作「插件格式」与「我们的格式」的区分标记。
          * 代价写清楚：**用户需要重新输入一次网盘密码**（不是静默丢数据）。
          */
         const val PASSWORD_BLOB_KEY = "mikcb_webdav_password_v2"

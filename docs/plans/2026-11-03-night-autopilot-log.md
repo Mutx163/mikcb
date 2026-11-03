@@ -1520,7 +1520,9 @@ _（空，各线按「键名建议 / 所在文件:行号 / 中文原文 / 占位
 - 标记键与 Dart 共享 `FlutterSharedPreferences` 文件；物理键 `flutter.webdav_password_legacy_reprompt_v1`
   与既有业务键无冲突，Dart 侧不读它，不影响回退。
 
-**L0**：见下方实测行（本批仅 KDoc 改动 + 新增日志）。
+**L0**：`scripts/test-kotlin-module.ps1 -Module diagnostics`（pwsh 7，编译 170 文件）
+**OK (245 tests)**，exit 0；未裸跑 gradlew、未跑整包。只声明编译通过 / JVM 单测通过，
+不声明真机通过（探测类本身不在 L0 内）。
 
 ---
 
