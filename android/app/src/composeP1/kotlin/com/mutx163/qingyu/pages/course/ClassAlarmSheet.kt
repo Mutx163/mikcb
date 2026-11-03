@@ -125,7 +125,7 @@ fun ClassAlarmSheet(
                         imageVector = MiuixIcons.Alarm,
                         contentDescription = null,
                         modifier = Modifier.size(18.dp),
-                        tint = Color(QingyuTheme.primary(dark)),
+                        tint = Color(QingyuTheme.primary(dark = dark)),
                     )
                     Spacer(modifier = Modifier.width(10.dp))
                     Text(
