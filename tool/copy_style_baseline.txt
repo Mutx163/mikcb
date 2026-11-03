@@ -9,7 +9,6 @@
 #
 # 2026-10-21 立基线：202 条，其中中文仅 5 条、外语 197 条。
 en/aboutCheckPrereleaseTitle
-en/appearanceEditorEntrySubtitle
 en/beforeClassDisplaySettingsTitle
 en/beforeClassPopupLabel
 en/beforeClassQuickActionTitle
@@ -51,7 +50,6 @@ en/importMethodWarehouseTitle
 en/importRandomCourseColorSubtitle
 en/importRandomCourseColorTitle
 en/lanEditKeepAliveWhenLeavingTitle
-en/languageSectionSubtitle
 en/layoutAutoFitHeightTitle
 en/layoutBackToCurrentWeekButtonOpacityTitle
 en/layoutConflictOpacityTitle
@@ -89,7 +87,6 @@ en/statisticsCompareTitle
 en/statisticsTrendTitle
 en/textColorIndependentDetail
 en/themeManageSubtitle
-en/themeSeedSectionSubtitle
 en/timeCorrectionLabel
 en/unifiedCourseCardColorSubtitle
 en/unifiedCourseCardColorTitle
@@ -99,7 +96,6 @@ en/weatherUseCurrentLocation
 en/weekGridShowExamsTitle
 en/weekGridShowSchedulesTitle
 en/weeklyReportTitle
-ja/appearanceEditorEntrySubtitle
 ja/beforeClassQuickActionTitle
 ja/beforeEndSecondsLabel
 ja/bingWallpaperAutoApplySubtitle
@@ -127,7 +123,6 @@ ja/importMethodIcsSubtitle
 ja/importMethodIcsTitle
 ja/importMethodWarehouseSubtitle
 ja/importRandomCourseColorSubtitle
-ja/languageSectionSubtitle
 ja/layoutBackToCurrentWeekButtonOpacityTitle
 ja/layoutCompactFontSizeTitle
 ja/layoutEnableHapticsTitle
@@ -147,11 +142,9 @@ ja/longPressEmptySlotToAddTitle
 ja/settingsScreenshotShareTitle
 ja/showStageTextTitle
 ja/themeManageSubtitle
-ja/themeSeedSectionSubtitle
 ja/unifiedCourseCardColorSubtitle
 ja/weatherEnableSubtitle
 ja/weatherShowOnWeekCardSubtitle
-ko/appearanceEditorEntrySubtitle
 ko/beforeEndSecondsLabel
 ko/bingWallpaperAutoApplySubtitle
 ko/cloudBackupManualProtectedTitle
@@ -174,7 +167,6 @@ ko/importMethodIcsSubtitle
 ko/importMethodSpreadsheetSubtitle
 ko/importMethodWarehouseSubtitle
 ko/importRandomCourseColorSubtitle
-ko/languageSectionSubtitle
 ko/layoutEnableHapticsTitle
 ko/layoutHideWeekendsTitle
 ko/layoutShowTimeLabelsTitle
@@ -192,7 +184,6 @@ ko/openInSystemBrowserAction
 ko/preferShortNameSubtitle
 ko/settingsScreenshotShareTitle
 ko/showStageTextTitle
-ko/themeSeedSectionSubtitle
 ko/unifiedCourseCardColorSubtitle
 ko/weatherEnableSubtitle
 zh_HK/duringEndTimeDisplayLabel
