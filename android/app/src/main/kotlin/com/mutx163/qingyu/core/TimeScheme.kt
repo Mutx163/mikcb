@@ -1,6 +1,7 @@
 package com.mutx163.qingyu.core
 
 import java.time.LocalDateTime
+import java.util.Locale
 
 /**
  * 节次时间与时间模板（移植自 lib/models/settings/timetable_settings_live.dart
@@ -304,5 +305,5 @@ fun minutesToClock(minutes: Int): String {
     val normalized = minutes % (24 * 60)
     val hour = normalized / 60
     val minute = normalized % 60
-    return "%02d:%02d".format(hour, minute)
+    return String.format(Locale.ROOT, "%02d:%02d", hour, minute)
 }

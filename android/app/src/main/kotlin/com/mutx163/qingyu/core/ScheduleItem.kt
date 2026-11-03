@@ -1,6 +1,7 @@
 package com.mutx163.qingyu.core
 
 import java.time.LocalDateTime
+import java.util.Locale
 
 /**
  * 日程条目（移植自 lib/models/schedule_item.dart）。
@@ -103,7 +104,7 @@ data class ScheduleItem(
 
         /** `yyyy-MM-dd`（schedule_item.dart:458-464）。 */
         fun formatCalendarDate(value: LocalDateTime): String =
-            "%04d-%02d-%02d".format(value.year, value.monthValue, value.dayOfMonth)
+            String.format(Locale.ROOT, "%04d-%02d-%02d", value.year, value.monthValue, value.dayOfMonth)
 
         /** `seriesId@yyyy-MM-dd`（schedule_item.dart:450-452）。 */
         fun buildOccurrenceId(seriesId: String, date: LocalDateTime): String =

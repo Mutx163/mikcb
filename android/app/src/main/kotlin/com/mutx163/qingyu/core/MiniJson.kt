@@ -1,5 +1,7 @@
 package com.mutx163.qingyu.core
 
+import java.util.Locale
+
 /**
  * DartFormatException：Dart 侧 `throw FormatException(...)` 的对应物。
  *
@@ -112,7 +114,7 @@ object MiniJson {
                 ch == '\n' -> sb.append("\\n")
                 ch == '\r' -> sb.append("\\r")
                 ch == '\t' -> sb.append("\\t")
-                ch < ' ' -> sb.append("\\u").append(String.format("%04x", ch.code))
+                ch < ' ' -> sb.append("\\u").append(String.format(Locale.ROOT, "%04x", ch.code))
                 else -> sb.append(ch)
             }
         }

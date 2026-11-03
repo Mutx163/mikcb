@@ -1,5 +1,7 @@
 package com.mutx163.qingyu.statistics
 
+import java.util.Locale
+
 /**
  * "HH:MM" 时钟串的容错解析（源：lib/utils/clock_time.dart，逐行移植）。
  *
@@ -16,7 +18,7 @@ data class ClockTime(val hour: Int, val minute: Int) {
 
     /** 规范化文本形态 HH:MM（clock_time.dart:54-55）。 */
     val formatted: String
-        get() = "%02d:%02d".format(hour, minute)
+        get() = String.format(Locale.ROOT, "%02d:%02d", hour, minute)
 
     companion object {
         /**

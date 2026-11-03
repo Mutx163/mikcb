@@ -1,6 +1,7 @@
 package com.mutx163.qingyu.core
 
 import java.time.LocalDateTime
+import java.util.Locale
 
 /**
  * 单节课统计（移植自 lib/domain/course_session_stats.dart，纯逻辑无 IO）。
@@ -265,7 +266,7 @@ object CourseSessionStatsCalculator {
     }
 
     private fun formatDate(date: LocalDateTime): String =
-        "%04d-%02d-%02d".format(date.year, date.monthValue, date.dayOfMonth)
+        String.format(Locale.ROOT, "%04d-%02d-%02d", date.year, date.monthValue, date.dayOfMonth)
 }
 
 /**

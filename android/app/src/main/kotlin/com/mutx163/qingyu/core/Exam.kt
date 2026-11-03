@@ -1,6 +1,7 @@
 package com.mutx163.qingyu.core
 
 import java.time.LocalDateTime
+import java.util.Locale
 
 /**
  * 考试模型（移植自 lib/models/exam.dart）。
@@ -120,7 +121,7 @@ data class Exam(
             ) {
                 return fallback
             }
-            return "%02d:%02d".format(hour, minute)
+            return String.format(Locale.ROOT, "%02d:%02d", hour, minute)
         }
 
         /** 拆分时刻（exam.dart:144-159）；解析失败按 fallback 小时/分钟。 */
@@ -131,7 +132,7 @@ data class Exam(
         ): Pair<Int, Int> {
             val normalized = normalizeTimeOfDay(
                 raw,
-                fallback = "%02d:%02d".format(fallbackHour, fallbackMinute),
+                fallback = String.format(Locale.ROOT, "%02d:%02d", fallbackHour, fallbackMinute),
             )
             val parts = normalized.split(":")
             return (parts[0].toIntOrNull() ?: fallbackHour) to
