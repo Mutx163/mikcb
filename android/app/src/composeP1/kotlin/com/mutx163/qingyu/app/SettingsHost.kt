@@ -50,6 +50,7 @@ import com.mutx163.qingyu.pages.settings.SettingsPageScreen
 import com.mutx163.qingyu.pages.settings.SettingsPageSpec
 import com.mutx163.qingyu.pages.settings.SettingsResetScope
 import com.mutx163.qingyu.pages.settings.SettingsRow
+import com.mutx163.qingyu.pages.settings.SettingsRowRenderTable
 import com.mutx163.qingyu.pages.settings.SettingsStrings
 import com.mutx163.qingyu.pages.settings.SettingsThemeManagePage
 import com.mutx163.qingyu.pages.settings.SettingsStringsExt1
