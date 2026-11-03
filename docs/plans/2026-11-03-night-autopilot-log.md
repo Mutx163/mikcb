@@ -171,15 +171,45 @@ miuix-only UI、无写死 sp/颜色/字重、无自研动画/转场、测试目�
 
 ---
 
-## 六、需 Lead 处理项
+## 六、五线并行分工与文件域锁定（2026-11-03 02:45 起）
+
+> **并行方式已由内部子代理切换为 5 条可见的独立会话**（用户拍板）。原因：可核验性——独立会话的产出与提交在 GitHub 上逐线可追溯，内部子代理的工作区改动混在一处难以审计归口。内部 Task 派工已停止，不再补派。
+> 本代理 = **A 线（文案/l10n）+ 协调线**。
+
+### 通用红线（各线必须遵守）
+- UI 只用 miuix + `QingyuPageScaffold`/`QingyuPageList`/`QingyuCard`；**禁止写死 sp/颜色/字重**、禁止自研动画；转场只用 miuix-nav `NavDisplay`。
+- 弹层必须**常驻组合 + show 驱动 + remember 保留最后非空**，禁止 `if(show){Dialog}` 条件挂载。
+- 测试新增只允许：`integration_test/`、`test/services/`、`test/domain/`、`test/models/`、`test/utils/`、`android/app/src/test/kotlin/`。
+- Gradle 只走 `scripts/safe-gradle.ps1`；**禁止** `flutter build`/`assemble`/`bundle`/`adb` 及任何真机操作。
+- 禁改：`android/app/build.gradle`、`theme/`、两个壳 Activity（PagesShellActivity/MainActivity）、`lib/ui/`、路由表、`lib/**`、`pubspec.yaml`。
+- git：禁 `--amend`、`reset --hard`、`checkout --`、`clean -fd`、`add .`、强推、推 main、打 tag；提交只做路径限定。
+
+### 各线文件域锁定
+
+| 线 | 文件路径白名单 | 当前任务 | 验收闸门 | 禁止触碰 |
+|---|---|---|---|---|
+| **A（本代理）文案/l10n + 协调** | `lib/l10n/*.arb`、`android/app/src/**/i18n/**`（含 cjk-literal-baseline.txt / cjk_hardcode_baseline.txt）、`pages/timetable/TimetableStrings.kt`、`tool/` 下文案与样式基线及 copy_style 相关脚本、`docs/plans/` 日志 | copy_style 203 条欠账收敛、dead key 1 条、ARB 六份同步与 gen-l10n | 门4 + L0 | 其他线白名单外的一切 |
+| **B 课表/课程/共享件** | `android/app/src/**/pages/course/**`、`pages/timetable/**`（**不含** `TimetableStrings.kt`）、`components/QingyuSheet.kt`、`pages/ComposeSheetGuardTest.kt` | QingyuSheet IME 叠加（:104-106）、标题动作对齐、弹层毛玻璃未接（QingyuSheet 零 blur 引用）评估与实现、守卫只拦 OverlayBottomSheet 的补全 | L0 + 门3 | lib/**、ARB、build.gradle、theme/、壳 |
+| **C sync 族** | `android/app/src/**/pages/sync/**` | 云备份差异预览（CloudBackupDetailHost.kt:52-54）、sync 域剩余弹层与文案一致性（不动 ARB，需要的键报给 A） | L0 + 门3 | lib/**、ARB、其他域 |
+| **D settings** | `android/app/src/**/app/SettingsHost.kt`、`pages/settings/**` | 主题动作表灰实心、设置子集（LanTransferApplier.kt:30 归属按台账核）、SettingsHost 剩余样式债 | L0 + 门3 | lib/**、ARB、其他域 |
+| **E statistics + import** | `android/app/src/**/pages/statistics/**`、`pages/import/**`、`pages/import/warehouse/**` | I2 四件（原生 confirm/prompt、`saveCourseConfig` 落盘、替换/合并弹窗、宏录制，见 WIRING-NOTE.md:286-348） | L0 + 门3 | lib/**、ARB、其他域 |
+
+### 协调线职责（本代理）
+- 每小时用 `git push https://github.com/Mutx163/mikcb.git compose-migration:compose-migration` 推送一次。
+- 每轮收口跑门 1（L1 编译）与门 2（整包单测）并回填日志（含时间戳）。
+- 各线提交只做路径限定；若发现越界，立刻记日志「越界提交 + 哈希 + 文件」，**不回滚**。
+
+---
+
+## 七、需 Lead 处理项
 
 1. **Pub 缓存目录锁定**：`C:\Users\Administrator\AppData\Local\Pub\Cache` 被系统/安全软件占用，Gradle 写冲突。建议长期方案：为 Gradle/Pub 缓存加杀软白名单，或统一改用仓库内/非系统盘缓存。
 2. **Android Studio 缺失**：L0 脚本默认找 AS 内置 kotlinc。便携 kotlinc 已 workaround，但 AS 缺失也意味着无法使用 IDE 调试。
 3. **safe-gradle.ps1 BOM**：仓库脚本无 BOM，PS 5.1 无法直接运行；pwsh 7 正常。若团队仍有 PS 5.1 环境，建议给 `scripts/*.ps1` 统一加 BOM。
 
-## 七、当前状态
+## 八、当前状态（2026-11-03 02:45 更新）
 
-- HEAD 达标（`5a2d60b3` ✅）。
-- 环境已配齐（Git/pwsh/JDK21/SDK/Flutter/Python/kotlinc 全部可用）。
-- 门 1（flutter --version）✅；门 2（L0 pages/shell）✅；门 3（L1 编译）进行中，阻塞在 Pub 缓存目录权限/锁定。
-- 尚未进入 5 子代理自动推进；等门 3 通过后按派工大表认领域。
+- HEAD = 远端 = `9e604163`（已核对一致，无 ahead/behind）。
+- 环境已配齐（Git/pwsh 7.5.4/JDK21/SDK android-37.0/Flutter 3.44.8/Python 3.13.9/kotlinc 2.4.21，全便携不写全局）。
+- 四道门全绿（L1 编译 ✅ 02:20、L2 整包单测 ✅ 02:26、样式守卫 ✅ 02:35、文案门禁+cjk 棘轮 ✅ 02:35）。
+- 5 路（A~E + 补 F）已全部完成并经 L0/门3 验证；并行方式切换为 5 条独立会话，A 线（本代理）继续 copy_style 欠账与 ARB 同步。
