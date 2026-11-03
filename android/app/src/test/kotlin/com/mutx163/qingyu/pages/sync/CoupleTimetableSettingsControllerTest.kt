@@ -170,10 +170,9 @@ class CoupleTimetableSettingsControllerTest {
         }
         val partner = FakePartnerPort()
         val toast = controller(partnerPort = partner, transport = transport).pullNow()
-        // Dart `service_message_localizer.dart` 没有登记 `couple_webdav_partner_file_not_json`，
-        // 于是它走 default 分支：像内部码 → 「发生未知错误」。这里**照抄 Dart 的结果**，
-        // 不擅自换成更好听的文案（否则就与正式版不一致了；记录见审核文档 §二 I4）。
-        assertEquals(CoupleStrings.quickImportUnknownError.zh, toast.message)
+        // 裁决：不复刻 Dart 的折叠口径（Dart 这里显示「发生未知错误」）。
+        // 非 JSON 的对方包按「文件无效」提示，复用既有 `importFailedInvalidFile` 键。
+        assertEquals(CoupleStrings.importFailedInvalidFile.zh, toast.message)
         assertEquals(0, partner.importCalls)
     }
 
@@ -185,7 +184,7 @@ class CoupleTimetableSettingsControllerTest {
         }
         val partner = FakePartnerPort()
         val toast = controller(partnerPort = partner, transport = transport).pullNow()
-        assertEquals(CoupleStrings.quickImportUnknownError.zh, toast.message)
+        assertEquals(CoupleStrings.importFailedInvalidFile.zh, toast.message)
         assertEquals(0, partner.importCalls)
     }
 

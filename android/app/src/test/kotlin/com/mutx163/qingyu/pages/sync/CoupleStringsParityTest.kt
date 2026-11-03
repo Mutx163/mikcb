@@ -43,6 +43,47 @@ class CoupleStringsParityTest {
         assertEquals("", CoupleStrings.localizeServiceMessage(null))
     }
 
+    /**
+     * 裁决：情侣页的传输类错误按真实原因提示，不复刻 Dart 的折叠口径
+     * （Dart 把 401/超时/网络错误说成「对方还没上传」，会把用户引向错误方向）。
+     * 文案全部复用既有键，不新增 ARB 键。
+     */
+    @Test
+    fun `传输类七个错误码复用云同步文案`() {
+        assertEquals(SyncStrings.syncErrorAuthFailed.zh, CoupleStrings.localizeServiceMessage("auth_failed"))
+        assertEquals(SyncStrings.syncErrorAccessDenied.zh, CoupleStrings.localizeServiceMessage("access_denied"))
+        assertEquals(
+            SyncStrings.syncErrorCertificateError.zh,
+            CoupleStrings.localizeServiceMessage("certificate_error"),
+        )
+        assertEquals(
+            SyncStrings.syncErrorConnectionTimeout.zh,
+            CoupleStrings.localizeServiceMessage("connection_timeout"),
+        )
+        assertEquals(
+            SyncStrings.syncErrorConnectionFailed.zh,
+            CoupleStrings.localizeServiceMessage("connection_failed"),
+        )
+        assertEquals(SyncStrings.syncErrorNetworkError.zh, CoupleStrings.localizeServiceMessage("network_error"))
+        assertEquals(
+            SyncStrings.syncErrorInvalidResponse.zh,
+            CoupleStrings.localizeServiceMessage("invalid_response"),
+        )
+        // 地址不合法 → 复用云同步「仅支持 HTTPS」键；非 UTF-8 / 非 JSON → 复用「文件无效」键
+        assertEquals(
+            SyncStrings.syncErrorInsecureUrl.zh,
+            CoupleStrings.localizeServiceMessage("couple_webdav_invalid_base_url"),
+        )
+        assertEquals(
+            CoupleStrings.importFailedInvalidFile.zh,
+            CoupleStrings.localizeServiceMessage("couple_webdav_partner_file_not_utf8"),
+        )
+        assertEquals(
+            CoupleStrings.importFailedInvalidFile.zh,
+            CoupleStrings.localizeServiceMessage("couple_webdav_partner_file_not_json"),
+        )
+    }
+
     @Test
     fun `占位符插值函数按预期生成文案`() {
         assertEquals("课程数量：12 门", CoupleStrings.courseCountBullet.filled("count", "12"))

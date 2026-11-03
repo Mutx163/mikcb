@@ -72,7 +72,14 @@ class CouplePartnerPortImpl(
         val snapshot = repository.snapshot
         val next = snapshot.profiles.filter { it.id != CoupleTimetableSettingsLogic.PARTNER_PROFILE_ID }
         if (next.size != snapshot.profiles.size) {
-            repository.replaceAllProfiles(next, snapshot.activeProfileId)
+            // Dart `timetable_partner_service.dart:161-184`：active 正是被删的情侣档时，
+            // 切回第一份非情侣档并落盘；否则界面会停在一份已删除的课表上。
+            val nextActiveId = if (snapshot.activeProfileId == CoupleTimetableSettingsLogic.PARTNER_PROFILE_ID) {
+                next.firstOrNull()?.id ?: snapshot.activeProfileId
+            } else {
+                snapshot.activeProfileId
+            }
+            repository.replaceAllProfiles(next, nextActiveId)
         }
     }
 

@@ -122,9 +122,16 @@ object CoupleStrings {
     /**
      * 服务层码 → 屏上文案。
      *
-     * 只覆盖本页会出现的三个情侣码（Dart `service_message_localizer.dart` 里
-     * `couple_webdav_*` 那三个 case），其余按 Dart 兜底口径：
-     * 像内部机器码 → 「发生未知错误」；本来就是人话 → 原样透出。
+     * 覆盖 Dart `service_message_localizer.dart` 里的情侣码，另接三类码：
+     * - 传输类 7 码直接委托 [SyncStrings.localizeSyncError]，与云同步同文案；
+     * - `couple_webdav_invalid_base_url` 复用云同步的「地址不安全」键；
+     * - `not_utf8` / `not_json` 复用 [importFailedInvalidFile]。
+     *
+     * **有意偏离 Dart**（裁决记录）：Dart 把 401/超时/网络错误折叠成
+     * `couple_webdav_partner_file_missing`（「请让对方先上传」），属误导性文案——
+     * 真实原因可能是网络。这里按真实原因提示。
+     *
+     * 其余仍按 Dart 兜底口径：像内部机器码 → 「发生未知错误」；本来就是人话 → 原样透出。
      */
     fun localizeServiceMessage(code: String?): String {
         val raw = code?.trim().orEmpty()
@@ -135,6 +142,16 @@ object CoupleStrings {
             "partner_import_requires_single_profile" -> partnerImportRequiresSingleProfile.zh
             "unrecognized_mikcb_data_file" -> serviceMsgUnrecognizedMikcbDataFile.zh
             "missing_settings_data" -> serviceMsgMissingSettingsData.zh
+            "couple_webdav_invalid_base_url" -> SyncStrings.syncErrorInsecureUrl.zh
+            "couple_webdav_partner_file_not_utf8",
+            "couple_webdav_partner_file_not_json" -> importFailedInvalidFile.zh
+            "auth_failed",
+            "access_denied",
+            "certificate_error",
+            "connection_timeout",
+            "connection_failed",
+            "network_error",
+            "invalid_response" -> SyncStrings.localizeSyncError(raw)
             else -> if (internalCodePattern.matches(raw)) quickImportUnknownError.zh else raw
         }
     }
