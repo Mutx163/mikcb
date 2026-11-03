@@ -954,12 +954,13 @@ L0 `OK (129 tests)`（原 64 例）；样式守卫 `time_scheme` 域 0 违规。
 
 **仍未做（诚实清单，2026-11-01 复核）**：① **一页都没真机对照**（壳里 **87** 条可点，入口齐了，就差用户走一遍；口径见 `ShellPageCatalogTest.kt:36-45`，旧写的 78 已过期）；
 ② ~~局域网 `import/apply` 保持 501~~ → **已接真应用**（`378b801f`，2026-10-30：`transfer/lan/LanTransferLogic.kt`
-+ `LanTransferApplier.kt`，本机实跑 354 例 L0 绿；2026-11-01 复核）。该端点剩余的缺口已换成两条：
-「导入后没有撤销点（`transferId` 恒 null）」「设置只应用已移植子集」，
-见 `.agents/compose-phase3/claims/F17-lan-apply-501.md` §明确没做；
-③ 备份写回**只解决了一半**：仓储原子入口已交付（`TimetableRepository.kt:197` `replaceActiveProfileContent(courses, tasks, exams)`、`:236` `replaceAllProfiles`），文件导入确实写回 tasks/exams（`DataTransferHost.kt:473-480`）；**WebDAV 云端恢复仍只下载快照、不写回仓储**（`CloudSyncCoordinator.kt:25-27` 自认归 task-14），局域网多档案包明确拒绝而非恢复（`LanTransferLogic.kt:109`）；
++ `LanTransferApplier.kt`，本机实跑 354 例 L0 绿；2026-11-01 复核）。该端点此前的两条缺口一条已清：
+~~「导入后没有撤销点（`transferId` 恒 null）」~~ → **已交付**（`eb32ae25` 撤销端点 + `45cfb149` 整份恢复，
+`transferId` = 撤销点 id，`POST /api/v1/import/undo`；2026-11-03 复核）；
+剩「设置只应用已移植子集」一条，见 `.agents/compose-phase3/claims/F17-lan-apply-501.md` §明确没做；
+③ ~~备份写回**只解决了一半**~~ → **两条路都已全通（2026-11-03 复核）**：仓储原子入口已交付（`TimetableRepository.kt:197` `replaceActiveProfileContent(courses, tasks, exams)`、`:236` `replaceAllProfiles`），文件导入确实写回 tasks/exams（`DataTransferHost.kt:477-486`）；~~WebDAV 云端恢复仍只下载快照、不写回仓储~~ → 已写回（`c701a6b7`）且改两步制——`prepareRestore` 先算差异概要、确认后写回同一份快照字节（`27f8ac2e`/`8ee25744`/`c6e374cd`，`CloudSyncController.kt:463-485`）；~~局域网多档案包明确拒绝而非恢复~~ → 已放行为整份快照恢复（`45cfb149`，分层拒绝矩阵 `LanTransferLogic.kt:118`）；
 ④ ~~相机真依赖未加~~ → **已加**（`android/app/build.gradle:363-368`：CameraX `1.6.1` + MLKit `17.3.0`）；真机取景仍未验；
-⑤ **毛玻璃顶栏已接（弹层仍未逐项核），字重已清、裸 Card 已核销**：`layerBackdrop` 仅 4 处（玻璃坞、首页壁纸、展示册、壳采样），~~截至 HEAD 页面顶栏/弹层未接~~ **页面顶栏已由 `08246e26` 接入（见 §9.10、派工表 §五②），弹层仍未逐项核**（2026-11-02 修订）；页面层硬写 `fontWeight` 已于 **2026-11-01 清零**（311 → 15，剩余 15 处全在 `pages/showcase/` 展厅、按规则豁免；功能字重 `fontWeight = weight` 不计），新增 R7 守卫与 `QingyuWeightDelta` / `shiftWeight` 套件，见 `claims/STYLE-fontweight-sweep.md`；裸 `Card(` 复核后**真违例为 0**——旧记的「26 处 / 2 文件」是原始 grep 把 `showcase/MiuixShowcaseSubpages.kt` 的 25 处展厅样例（规则 §五 豁免）与 `WeekSelectorSheet.kt:42` 的**注释文字**（1 处）都数了进去。
+⑤ **毛玻璃顶栏已接，弹窗已完成全量审核并大批修复，字重已清、裸 Card 已核销**：`layerBackdrop` 仅 4 处（玻璃坞、首页壁纸、展示册、壳采样），~~截至 HEAD 页面顶栏/弹层未接~~ **页面顶栏已由 `08246e26` 接入（见 §9.10、派工表 §五②）**；~~弹层仍未逐项核~~ → **2026-11-02 已做 138 条弹窗全量审核**（`docs/plans/2026-11-02-compose-dialog-full-audit.md`，逐条回填）且修复大批落地，仅剩 26 条仍成立（多为已拍板保留或等上游组件能力，2026-11-03 复核）；页面层硬写 `fontWeight` 已于 **2026-11-01 清零**（311 → 15，剩余 15 处全在 `pages/showcase/` 展厅、按规则豁免；功能字重 `fontWeight = weight` 不计），新增 R7 守卫与 `QingyuWeightDelta` / `shiftWeight` 套件，见 `claims/STYLE-fontweight-sweep.md`；裸 `Card(` 复核后**真违例为 0**——旧记的「26 处 / 2 文件」是原始 grep 把 `showcase/MiuixShowcaseSubpages.kt` 的 25 处展厅样例（规则 §五 豁免）与 `WeekSelectorSheet.kt:42` 的**注释文字**（1 处）都数了进去。
 
 **这一轮反复踩到的结构性问题（建议专门收一次）**：
 `app/` `share/` `sync/` `transfer/` 这些共享模型目录**被每次 L0 与 Gradle 编译无条件收录**，
@@ -1055,7 +1056,7 @@ F24 认领文件：`.agents/compose-phase3/claims/F24-parallel-hardening.md`（�
 
 **收口验收（2026-11-01，Lead 重跑；原文「本节只是占位、不声明任何一条已完成」随本批交付失效）**：L1 `:app:compileDevDebugKotlin` `BUILD SUCCESSFUL`；L2 `:app:testDevDebugUnitTest` **5569 例全绿**；样式闸门 settings 0 处、exam 1 处（已登记理由）；探针「改坏恢复默认弹窗正文 / 取景拖动方向」→ 3 条用例红 → 还原后 `OK (776 tests)`（`.agents/compose-phase3/claims/F24-parallel-hardening.md:46-68`）。**真机逐页对照仍归用户**。C 线的拖动/捏合手势用标准 Compose `transformable`（miuix 0.9.4 无取景组件），例外登记**待用户确认**，登记表尚未写入（同上 `:78-82`）。
 
-**本节还取代了 §9.5 ⑤ 的「F24 E 线在途」**：顶栏毛玻璃已由 E 线 `08246e26` 交付（2026-11-01）。另两条跨批状态（2026-11-02 复核）：云备份恢复撤销 UI 已交付（`bc0a02c6`，差异预览仍无）；单节课提醒 `classReminders` 与局域网撤销点/真实 `transferId` 已实现但**工作区未提交**。
+**本节还取代了 §9.5 ⑤ 的「F24 E 线在途」**：顶栏毛玻璃已由 E 线 `08246e26` 交付（2026-11-01）。另两条跨批状态（**2026-11-03 复核，均已提交**）：云备份恢复撤销 UI 已交付（`bc0a02c6`），且恢复已改两步制——差异概要先算、确认后写回同一份快照字节（`27f8ac2e`/`8ee25744`/`c6e374cd`，原「差异预览仍无」过期）；单节课提醒 `classReminders`（字段 `50e8af4c` + 课卡铃铛与课程弹层「已设提醒+取消」接线 `7adf26a2`）与局域网撤销点/真实 `transferId`（`eb32ae25`/`45cfb149`）均已落库。
 
 ---
 

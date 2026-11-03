@@ -217,10 +217,21 @@ Compose 版继续按老格式读写 `FlutterSharedPreferences` 与既有文件�
 （`android/app/src/main/kotlin/` 54 个文件 1.95 万行，其中只有 5 个耦合 Flutter），
 预期大部分原样复用，只需换掉与 Flutter 通信的那几条 `MethodChannel`。
 
+> **现状（2026-11-03 注记，逐项证据见派工大表 §五）**：本阶段已**大体完成**——桌面小组件刷新已接线（`480bf611`）、
+> 前台服务与保活页已接真状态、通知渠道与点击路由已换 Kotlin 侧（`bd1bbeb0`，超级岛/考试/周报/局域网四处
+> `NotificationLaunchTarget.intent` 不再写死 `.MainActivity`）、相机与扫码已进构建、局域网收发/撤销/整份恢复
+> 已交付（`eb32ae25`/`45cfb149`）。**仍缺**：超级岛展示层方案未拍板（`P3-L` ⏸，RemoteViews vs Glance）、
+> 通知点击落页参数壳侧未消费、宽屏适配 0 处使用（方案文档编写中）、埋点管道/截屏提示面板/教务网页原生对话框进行中。
+
 ### Phase 5 · 收尾
 
 删 Flutter 依赖与两个 fork（`flutter_miuix` / `inspire_blur`）、删 Dart 代码与测试、
 确认回退窗口关闭（此时才允许考虑换新格式）。
+
+> **现状（2026-11-03 注记）**：**未开始**。前置条件已就绪一半：正式包启动页已切到 Compose 壳
+> `PagesShellActivity`（`1158ee20`，回退方式写在 `main/AndroidManifest.xml:159-160`）；Compose 读路径资产已独立
+> （`android/app/src/main/assets`，守卫 `FlutterAssetsDecouplingGuardTest` 钉死）。回退窗口仍开着，`lib/**` 保持只读对照物；
+> 删除动作等真机逐页对照走完、且 Phase 4 剩余项收口后再做（归 Lead + 用户）。
 
 ### Phase 0 的具体任务（开工第一刀）
 

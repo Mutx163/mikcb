@@ -7,20 +7,20 @@
 
 ---
 
-## 复核结论（2026-11-02 晚回填，先读这段再看正文）
+## 复核结论（2026-11-02 晚回填；2026-11-03 二次下探，先读这段再看正文）
 
-> 本节与两表新增的「回填 11-02」列，是 2026-11-02 晚的二次复核结果：5 组并行逐条重读**当前工作区代码**（含未提交改动）后回填。原条目一字未删，正文保留当时行号与口径备查；**行号已整体漂移，一律以回填列的当前行号为准**。
+> 本节与两表新增的「回填 11-02」列，是 2026-11-02 晚的二次复核结果：5 组并行逐条重读**当前工作区代码**（含未提交改动）后回填。原条目一字未删，正文保留当时行号与口径备查；**行号已整体漂移，一律以回填列的当前行号为准**。**2026-11-03 起以本节计数为准**：晚间回填后又落地一批修复（`bcbc8ab6` 成就弹层等），逐条状态以两表回填列 + 11-03 追记为准。
 
 ### 总数
 
 | 口径 | 条数 |
 |---|---:|
 | 表行总数（附表 120 + 查漏 18；一行含多个位置的按一行计） | **138** |
-| 已不成立（代码已修，回填列写明现状与对应修复） | **104** |
-| 仍成立（回填列已更新为当前行号；含登记过的已知债） | **29** |
+| 已不成立（代码已修，回填列写明现状与对应修复） | **107** |
+| 仍成立（回填列已更新为当前行号；含登记过的已知债） | **26** |
 | 部分成立（主问题已修、残留半条，回填列说明剩余） | **5** |
 
-> 早间汇总曾按「65 仍成立 / 76 已不成立」通报；晚间逐条回填的实测为上表数字。差异来自两部分：晚间又落地了一批弹层修复提交（见下表），以及「部分成立 / 已知债」的归类口径。**以本节逐条回填为准。**
+> 早间汇总曾按「65 仍成立 / 76 已不成立」通报；2026-11-02 晚间逐条回填的实测为 104 / 29 / 5。**2026-11-03 二次下探**：成就详情弹层 3 条（附表 110-112）由 `bcbc8ab6` 修掉（常驻组合退场 + per-id 语义色），计数更新为上表 107 / 26 / 5。**以本节 + 两表回填列的逐条状态为准。**
 
 ### 行号漂移规律
 
@@ -41,11 +41,12 @@
 | transfer/export/about/showcase/diagnostics | `abdb222e` ICS 正文居中；`625302a3` 镜像弹窗取消键；`a7701c17` showcase；`ea21e4ed`+`32d7679c` 支持作者；`baeb8624` 关于弹层常驻；`661f5441` 内存统计常驻快照+日志框边距 |
 | 课表管理 | 整页弹窗重构：原生 `Dialog` 清零，4 弹窗走 `OverlayDialog`、更多操作走 `QingyuSheet` |
 | 云同步 | WebDAV 连接重写为 `QingyuSheet`；`SyncConflictDialog` 接上真实调用并改官方 `OverlayDialog` |
+| statistics（11-03） | `bcbc8ab6` 成就详情弹层常驻组合退场 + 徽章按成就 id 取语义色（附表 110-112 三条清掉） |
 | shell（WebDAV 接线） | `7f085ef3` 连接/测试挪 IO 线程 + 真状态接线 |
 
-### 仍成立的 29 条速览
+### 仍成立的 26 条速览（2026-11-03）
 
-42dp 无标题空档 ×4（`CourseActionSheet` / `CourseNoteSheet` / `WeekSelectorSheet` / `AppearanceEditorHost`，等上游悬浮把手）、裸 `Popup` ×1（`CourseOverviewPage`）、调课列表 480dp、备注顶部 16dp、周格白字、周加/减无障碍、学期滚轮抢手势、选周结构分歧（按拍板保留）、`TimetableProfilesStrings` 中文常量、未使用 import ×1、输入自动聚焦 4 处未加（按拍板默认不加；课表管理一处已加，见拍板 #1）、`QingyuSheet` 标题动作贴边（潜在）/ IME 叠加 / 官方字阶（按拍板接受）、成就弹层 ×3、云备份详情确认整组 ×4、解绑确认红色+10dp、WebDAV 连接弹层静态 show+动作不固定、主题动作表非删除行灰实心、说明框行尾 8dp、ICS 菜单形态（按拍板保留结构）、`SyncConflictChoiceDialog` 三动作同行。明细见两表回填列。
+42dp 无标题空档 ×4（`CourseActionSheet` / `CourseNoteSheet` / `WeekSelectorSheet` / `AppearanceEditorHost`，等上游悬浮把手）、裸 `Popup` ×1（`CourseOverviewPage`）、调课列表 480dp、备注顶部 16dp、周格白字、周加/减无障碍、学期滚轮抢手势、选周结构分歧（按拍板保留）、`TimetableProfilesStrings` 中文常量、未使用 import ×1、输入自动聚焦 4 处未加（按拍板默认不加；课表管理一处已加，见拍板 #1）、`QingyuSheet` 标题动作贴边（潜在）/ IME 叠加 / 官方字阶（按拍板接受）、云备份详情确认整组 ×4、解绑确认红色+10dp、WebDAV 连接弹层静态 show+动作不固定、主题动作表非删除行灰实心、说明框行尾 8dp、ICS 菜单形态（按拍板保留结构）、`SyncConflictChoiceDialog` 三动作同行。~~成就弹层 ×3~~ → 已由 `bcbc8ab6` 修掉（2026-11-03）。明细见两表回填列。
 
 ### 需拍板的 8 个决策点（2026-11-02 暂按「能不折腾就不折腾」定默认）
 
@@ -323,9 +324,9 @@
 | **P3** | `pages/exam/ExamPickerSheets.kt:149` | missing-content | 周次行缺少 Dart 的 36dp 周数字徽章（选中=主色实心、本周=次色、其余=浅底） | 按 Dart 在行首加 36dp 圆角色块 + 周数字，三种状态分别用 primary / secondary / surfaceContainerHighest。 | EXTRA(复核补) | 已不成立：补 `WeekBadge` 36dp 三态徽章（现 `ExamPickerSheets.kt:172-177`/`:713-739`，`fd1d07e5`）。 |
 | **P3** | `pages/exam/ExamPickerSheets.kt:161` | typography | 考试选择器选项行用 body1(16sp)/footnote1(13sp)，Dart 对应 listTitle(17sp)=main、listDetail(14sp)=body2 | 标题改 `MiuixTheme.textStyles.main`，副题改 `MiuixTheme.textStyles.body2`（两处列表都改）。 | CONFIRMED | 已不成立：主行 `textStyles.main`、副行 `body2`，两处列表同口径（现 `ExamPickerSheets.kt:184`/`:190`/`:563`/`:571`，`38c7de30`）。 |
 | **P3** | `pages/exam/ExamPickerSheets.kt:181` | divider | 列表最后一项之后仍画分割线，底部多出一条悬空线 | 改用 `itemsIndexed`，`if (index < weeks.lastIndex)`（课程弹层同理）再画分割线。 | CONFIRMED | 已不成立：末项后不再画分割线（现 `ExamPickerSheets.kt:205`/`:588`，`2618d5af`）。 |
-| **P3** | `pages/statistics/AchievementDetailSheet.kt:55` | animation | achievement 变成 null 时整个 composable 提前 return，弹层被移出组合，关闭时没有退场动画 | 外部一直保留调用，`show = achievement != null`，内部用 remember 保存最后一份非空 achievement 供退场渲染。 | CONFIRMED | 成立：仍 `if (achievement == null) return` + `show = true`（现 `AchievementDetailSheet.kt:55`/`:71`），关闭无退场动画。 |
-| **P3** | `pages/statistics/AchievementDetailSheet.kt:59` | color | 已解锁徽章也用主题 primary 而非该成就的 per-id 语义色；CourseStatisticsPage 的徽章格子同样如此，与 Dart 的每个成就颜色身份不一致 | 把 accent 放进 AchievementView 或按 rawAchievement.id 复用 AchievementModel.accentOf，已解锁/未解锁两态都从该 accent 派生。 | EXTRA(复核补) | 成立：accent 仍取主题 `QingyuTheme.primary`（现 `AchievementDetailSheet.kt:58`），非 per-id 语义色。 |
-| **P3** | `pages/statistics/AchievementDetailSheet.kt:88` | color | 未解锁徽章用中性 surfaceContainerHighest 填底，Dart 用该成就自身强调色的 14%（暗色 26%）淡染，徽章失去了每个成就的颜色身份 | 按 achievement.id 取同一套 accent（Dart `_achievementAccent`），用它做 14%/26% 的淡染与描边；或把 accent 放进 AchievementView 模型。 | CONFIRMED | 成立：未解锁徽章仍中性 `surfaceContainerHighest` 填底（现 `AchievementDetailSheet.kt:59-63`），无 per-id 淡染。 |
+| **P3** | `pages/statistics/AchievementDetailSheet.kt:55` | animation | achievement 变成 null 时整个 composable 提前 return，弹层被移出组合，关闭时没有退场动画 | 外部一直保留调用，`show = achievement != null`，内部用 remember 保存最后一份非空 achievement 供退场渲染。 | CONFIRMED | 已不成立（2026-11-03 复核）：常驻组合、`show = achievement != null` + `lastAchievement` 最后非空快照退场渲染（现 `AchievementDetailSheet.kt:61-66`/`:94`，`bcbc8ab6`）。 |
+| **P3** | `pages/statistics/AchievementDetailSheet.kt:59` | color | 已解锁徽章也用主题 primary 而非该成就的 per-id 语义色；CourseStatisticsPage 的徽章格子同样如此，与 Dart 的每个成就颜色身份不一致 | 把 accent 放进 AchievementView 或按 rawAchievement.id 复用 AchievementModel.accentOf，已解锁/未解锁两态都从该 accent 派生。 | EXTRA(复核补) | 已不成立（2026-11-03 复核）：accent 按成就 id 取 `achievementAccentColor(AchievementModel.accentOf(id))`，与 Dart `_achievementAccent` 及主页徽章格子同源（现 `AchievementDetailSheet.kt:69-74`，`bcbc8ab6`）。 |
+| **P3** | `pages/statistics/AchievementDetailSheet.kt:88` | color | 未解锁徽章用中性 surfaceContainerHighest 填底，Dart 用该成就自身强调色的 14%（暗色 26%）淡染，徽章失去了每个成就的颜色身份 | 按 achievement.id 取同一套 accent（Dart `_achievementAccent`），用它做 14%/26% 的淡染与描边；或把 accent 放进 AchievementView 模型。 | CONFIRMED | 已不成立（2026-11-03 复核）：未解锁改同一 accent 的淡染底 + 描边 + 图标淡染（14%/26% 底、28%/44% 边，现 `AchievementDetailSheet.kt:75-91`，`bcbc8ab6`）。 |
 | **P3** | `pages/sync/CloudBackupDetailHost.kt:102` | animation | 两个 OverlayDialog 都写成「if (state) { show = true }」，状态一变整棵对话框就被移出组合，官方 260ms 退场动画永远不会播 | 把 OverlayDialog 提到条件外，`show = confirmRestore` / `show = confirmDelete`；CloudBackupDetailSheet 的显隐也由 entryId 驱动而不是靠 if 包住。 | CONFIRMED | 成立：仍 `if (confirmRestore)` / `if (confirmDelete) { OverlayDialog(show = true) }`（现 `CloudBackupDetailHost.kt:102`/`:105`/`:145`/`:148`），退场动画永不播。 |
 | **P3** | `pages/sync/CloudBackupDetailHost.kt:110` | typography | 确认框正文左对齐，Dart 的对话框 message 是居中 | 给 Text 补 textAlign = TextAlign.Center（或改用 summary 槽并统一 14sp 样式）。 | CONFIRMED | 成立：确认框正文仍左对齐（现 `CloudBackupDetailHost.kt:110-117`，全文件无 `TextAlign`）。 |
 | **P3** | `pages/sync/CloudBackupDetailSheet.kt:55` | animation | 静态 show = true，宿主 entryId 置空时整棵弹层先被移出组合，关闭没有退场动画 | 把弹层提升为常驻组合，show = entryId != null，并用最后一份非空 view 渲染退场内容。 | EXTRA(复核补) | 成立：仍 `show = true`，宿主 `if (entryId == null) return` 整棵移出组合（现 `CloudBackupDetailSheet.kt:55`，宿主 `CloudBackupDetailHost.kt:67`）。 |
@@ -335,4 +336,4 @@
 | **P3** | `pages/sync/CoupleWebdavConnectSheet.kt:74` | animation | 静态 show = true，宿主 showConnectSheet 置 false 时直接移出组合，关闭没有退场动画 | 让组件常驻组合，show = showConnectSheet，标题/正文在退场期间用最后一份快照。 | EXTRA(复核补) | 成立：仍 `show = true` 静态（现 `CoupleWebdavConnectSheet.kt:74`），宿主 `CoupleTimetableSettingsHost.kt:228` `if (showConnectSheet)` 条件组合，无退场动画。 |
 | **P3** | `pages/sync/CoupleWebdavConnectSheet.kt:143` | layout | 动作按钮放在弹层滚动内容里，Dart 的 PickerSheetScaffold 把动作固定在弹层底部；键盘弹出或小屏时主按钮可能被推到可视区外 | 把动作行移出滚动内容、固定在弹层底部（套件需要增加固定 footer 槽，或调用方自行分段）。 | EXTRA(复核补) | 成立：动作行仍在弹层滚动内容内（现 `CoupleWebdavConnectSheet.kt:80-166`），非固定底部。 |
 
-合计 120 条（已剔除复核明确驳回的条目）。**2026-11-02 回填**：另有查漏 18 条，两表合计 138 行——已不成立 101 / 仍成立 30 / 部分成立 7；逐条现状见「回填 11-02」列，汇总见顶部「复核结论」。
+合计 120 条（已剔除复核明确驳回的条目）。**2026-11-02 回填**：另有查漏 18 条，两表合计 138 行。**2026-11-03 二次下探**：成就详情弹层 3 条（附表 110-112）由 `bcbc8ab6` 修掉——两表合计 **已不成立 107 / 仍成立 26 / 部分成立 5**；逐条现状见「回填 11-02」列（含 11-03 追记），汇总见顶部「复核结论」。
