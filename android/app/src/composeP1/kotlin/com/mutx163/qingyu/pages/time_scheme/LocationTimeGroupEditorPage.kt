@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.runtime.Composable
@@ -24,7 +25,7 @@ import com.mutx163.qingyu.components.QingyuCard
 import com.mutx163.qingyu.components.QingyuCardDefaults
 import com.mutx163.qingyu.components.QingyuPageCardMargin
 import com.mutx163.qingyu.components.QingyuPageList
-import com.mutx163.qingyu.components.QingyuPageTheme
+import com.mutx163.qingyu.components.QingyuPageScaffold
 import com.mutx163.qingyu.components.QingyuSectionTitle
 import com.mutx163.qingyu.components.QingyuWeightDelta
 import com.mutx163.qingyu.components.shiftWeight
@@ -32,17 +33,13 @@ import com.mutx163.qingyu.core.LocationKeyword
 import com.mutx163.qingyu.core.LocationKeywordMatchMode
 import com.mutx163.qingyu.core.LocationTimeGroup
 import com.mutx163.qingyu.theme.QingyuTheme
-import top.yukonga.miuix.kmp.basic.Icon
-import top.yukonga.miuix.kmp.basic.IconButton
-import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
-import top.yukonga.miuix.kmp.basic.Scaffold
 import top.yukonga.miuix.kmp.basic.Text
+import top.yukonga.miuix.kmp.basic.TextButton
+import top.yukonga.miuix.kmp.basic.ButtonDefaults
 import top.yukonga.miuix.kmp.basic.TextField
-import top.yukonga.miuix.kmp.basic.TopAppBar
-import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.Add
-import top.yukonga.miuix.kmp.icon.extended.Back
 import top.yukonga.miuix.kmp.preference.ArrowPreference
+import top.yukonga.miuix.kmp.preference.RadioButtonPreference
 import top.yukonga.miuix.kmp.preference.SwitchPreference
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
@@ -132,41 +129,27 @@ fun LocationTimeGroupEditorPage(
         LocationBuildingClusterLogic.uncoveredClusters(availableLocations, coveredKeywords)
     }
 
-    // 顶栏折叠行为：一页一个实例，同时喂给 TopAppBar 与 QingyuPageList（组件内部已接 nestedScroll）。
-    val scrollBehavior = MiuixScrollBehavior()
-
-    QingyuPageTheme {
-        Scaffold(
-            containerColor = Color(QingyuTheme.scaffoldBackground(dark)),
-            topBar = {
-                TopAppBar(
-                    title = title,
-                    largeTitle = title,
-                    scrollBehavior = scrollBehavior,
-                    navigationIcon = {
-                        IconButton(onClick = onBack) {
-                            Icon(MiuixIcons.Back, contentDescription = title, tint = Color(QingyuTheme.actionIcon(dark)))
-                        }
-                    },
-                    actions = {
-                        Text(
-                            text = LocationTimeMatchStrings.saveAction.zh,
-                            style = MiuixTheme.textStyles.body1.shiftWeight(QingyuWeightDelta.MEDIUM),
-                            color = Color(QingyuTheme.primary(dark = dark)),
-                            modifier = Modifier
-                                .clickable { trySave() }
-                                .padding(horizontal = 12.dp, vertical = 8.dp),
-                        )
-                    },
-                )
-            },
-        ) { innerPadding ->
-            QingyuPageList(
-                innerPadding = innerPadding,
-                scrollBehavior = scrollBehavior,
-                horizontalPadding = QingyuPageCardMargin,
-                verticalArrangement = Arrangement.spacedBy(12.dp),
-            ) {
+    // 共享骨架：官方 TopAppBar + 标准返回键 + 顶栏毛玻璃 + actions 槽；大标题可折叠。
+    QingyuPageScaffold(
+        title = title,
+        onBack = onBack,
+        actions = {
+            // Dart `:1271-1277` 的 FHeaderAction：永远可点，点了直接提交流程（校验在 trySave）。
+            TextButton(
+                text = LocationTimeMatchStrings.saveAction.zh,
+                onClick = { trySave() },
+                colors = ButtonDefaults.textButtonColorsPrimary(),
+            )
+        },
+    ) {
+        // 官方页面骨架 + imePadding：本页两处输入框（组名 / 关键词），键盘不遮输入。
+        QingyuPageList(
+            modifier = Modifier.imePadding(),
+            innerPadding = innerPadding,
+            scrollBehavior = scrollBehavior,
+            horizontalPadding = QingyuPageCardMargin,
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
                 item {
                     Column(
                         modifier = Modifier.fillMaxWidth(),
@@ -209,10 +192,10 @@ fun LocationTimeGroupEditorPage(
                             QingyuCard(modifier = Modifier.fillMaxWidth()) {
                                 Column {
                                     schemes.forEach { scheme ->
-                                        val selected = scheme.id == timeSchemeId
-                                        ArrowPreference(
-                                            title = (if (selected) "● " else "○ ") + scheme.name,
-                                            summary = null,
+                                        // 单选用官方 RadioButtonPreference，不再用 ●/○ 前缀拼箭头行。
+                                        RadioButtonPreference(
+                                            title = scheme.name,
+                                            selected = scheme.id == timeSchemeId,
                                             onClick = { timeSchemeId = scheme.id },
                                         )
                                     }
@@ -354,7 +337,6 @@ fun LocationTimeGroupEditorPage(
                         }
                     }
                 }
-            }
         }
     }
 }

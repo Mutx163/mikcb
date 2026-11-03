@@ -7,9 +7,9 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -26,7 +26,7 @@ import com.mutx163.qingyu.components.QingyuCard
 import com.mutx163.qingyu.components.QingyuCardDefaults
 import com.mutx163.qingyu.components.QingyuPageCardMargin
 import com.mutx163.qingyu.components.QingyuPageList
-import com.mutx163.qingyu.components.QingyuPageTheme
+import com.mutx163.qingyu.components.QingyuPageScaffold
 import com.mutx163.qingyu.components.QingyuSectionTitle
 import com.mutx163.qingyu.components.QingyuWeightDelta
 import com.mutx163.qingyu.components.shiftWeight
@@ -34,14 +34,10 @@ import com.mutx163.qingyu.theme.QingyuTheme
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.IconButton
-import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
-import top.yukonga.miuix.kmp.basic.Scaffold
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TextField
-import top.yukonga.miuix.kmp.basic.TopAppBar
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.Add
-import top.yukonga.miuix.kmp.icon.extended.Back
 import top.yukonga.miuix.kmp.preference.ArrowPreference
 import top.yukonga.miuix.kmp.preference.SwitchPreference
 
@@ -92,45 +88,29 @@ fun LocationTimeMatchPage(
     val dark = isSystemInDarkTheme()
     var previewInput by remember { mutableStateOf("") }
 
-    // 顶栏折叠行为：一页一个实例，同时喂给 TopAppBar 与 QingyuPageList（组件内部已接 nestedScroll）。
-    val scrollBehavior = MiuixScrollBehavior()
-
-    QingyuPageTheme {
-        Scaffold(
-            containerColor = Color(QingyuTheme.scaffoldBackground(dark)),
-            topBar = {
-                TopAppBar(
-                    title = model.title,
-                    largeTitle = model.title,
-                    scrollBehavior = scrollBehavior,
-                    navigationIcon = {
-                        IconButton(onClick = onBack) {
-                            Icon(
-                                imageVector = MiuixIcons.Back,
-                                contentDescription = model.title,
-                                tint = Color(QingyuTheme.actionIcon(dark)),
-                            )
-                        }
-                    },
-                    actions = {
-                        IconButton(onClick = onCreateGroup) {
-                            Icon(
-                                imageVector = MiuixIcons.Add,
-                                contentDescription = model.createGroupLabel,
-                                tint = Color(QingyuTheme.actionIcon(dark)),
-                            )
-                        }
-                    },
+    // 共享骨架：官方 TopAppBar + 标准返回键 + 顶栏毛玻璃 + actions 槽；大标题可折叠。
+    QingyuPageScaffold(
+        title = model.title,
+        onBack = onBack,
+        actions = {
+            IconButton(onClick = onCreateGroup) {
+                Icon(
+                    imageVector = MiuixIcons.Add,
+                    contentDescription = model.createGroupLabel,
+                    tint = Color(QingyuTheme.actionIcon(dark)),
                 )
-            },
-        ) { innerPadding ->
-            // 官方页面骨架：LazyColumn + 滚动条 + 末端触感（见 QingyuPageList 注释）
-            QingyuPageList(
-                innerPadding = innerPadding,
-                scrollBehavior = scrollBehavior,
-                horizontalPadding = QingyuPageCardMargin,
-                verticalArrangement = Arrangement.spacedBy(12.dp),
-            ) {
+            }
+        },
+    ) {
+        // 官方页面骨架：LazyColumn + 滚动条 + 末端触感（见 QingyuPageList 注释）
+        // 试匹配输入框在列表里：imePadding 把列表抬到键盘之上。
+        QingyuPageList(
+            modifier = Modifier.imePadding(),
+            innerPadding = innerPadding,
+            scrollBehavior = scrollBehavior,
+            horizontalPadding = QingyuPageCardMargin,
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
                 item {
                     Column(
                         modifier = Modifier.fillMaxWidth(),
@@ -209,7 +189,6 @@ fun LocationTimeMatchPage(
 
                     }
                 }
-            }
         }
     }
 }

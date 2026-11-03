@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -108,7 +109,9 @@ fun TimeSchemeEditorPage(
     ) {
         // 官方页面骨架：LazyColumn + 滚动三件套 + 滚动条（见 QingyuPageList 注释）。
         // Dart 用的是 `HyperosListView`（标准列表路径，大标题可折叠）——同一个角色。
+        // 表单页：imePadding 把整页抬到键盘之上（壳是 edge-to-edge，adjustResize 不生效）。
         QingyuPageList(
+            modifier = Modifier.imePadding(),
             innerPadding = innerPadding,
             scrollBehavior = scrollBehavior,
             horizontalPadding = QingyuPageCardMargin,
