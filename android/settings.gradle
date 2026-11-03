@@ -57,6 +57,11 @@ if (System.getenv("CNB_BUILD_ID") != null || System.getenv("CNB_BRANCH") != null
 
 include ":app"
 
+// miuix-ui 本地 fork（2026-11-03 用户批准「改库」）：弹窗玻璃材质画在官方容器
+// `DialogContentLayout` 同一节点里，调用侧封装做不到，所以整份源码进仓。
+// 依赖替换接线在 android/build.gradle 的 allprojects 块里，:app 的依赖声明不用改。
+include ":third_party:miuix-ui"
+
 // CNB 专用：为所有子项目 buildscript.repositories 注入国内镜像。
 // Flutter 插件（device_info_plus 等）的 build.gradle 中 buildscript.repositories
 // 仅声明 google()+mavenCentral()，不受 dependencyResolutionManagement 管理，

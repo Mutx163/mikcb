@@ -29,6 +29,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.DpSize
@@ -38,10 +39,11 @@ import com.mutx163.qingyu.components.QingyuPageCardMargin
 import com.mutx163.qingyu.components.QingyuPageList
 import com.mutx163.qingyu.components.QingyuPageTheme
 import com.mutx163.qingyu.components.QingyuWeightDelta
-import com.mutx163.qingyu.components.glass.GlassOverlayDialog
+import com.mutx163.qingyu.components.glass.LocalQingyuPageBackdrop
 import com.mutx163.qingyu.components.shiftWeight
 import com.mutx163.qingyu.core.Course
 import com.mutx163.qingyu.core.CourseNature
+import com.mutx163.qingyu.core.DialogGlassSpec
 import com.mutx163.qingyu.theme.QingyuTheme
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.IconButton
@@ -56,6 +58,7 @@ import top.yukonga.miuix.kmp.icon.extended.Back
 import top.yukonga.miuix.kmp.icon.extended.Delete
 import top.yukonga.miuix.kmp.icon.extended.Ok
 import top.yukonga.miuix.kmp.icon.extended.Remove
+import top.yukonga.miuix.kmp.layout.DialogGlass
 import top.yukonga.miuix.kmp.overlay.OverlayDialog
 import top.yukonga.miuix.kmp.preference.WindowDropdownPreference
 import top.yukonga.miuix.kmp.theme.MiuixTheme
@@ -576,13 +579,36 @@ fun AddCoursePage(
 
     if (confirmDelete && isEditing) {
         val deleteTargetName = courseGroup?.name ?: initialCourse?.name.orEmpty()
-        // 弹窗玻璃试点（2026-11-03，用户批准）：全仓唯一玻璃调用点，其余弹窗保持官方实心；
-        // QingyuDialogGlass.enabled = false 一键回退实心板。守卫 QingyuGlassDialogGuardTest 钉住。
-        GlassOverlayDialog(
+        // 弹窗玻璃试点（2026-11-03，用户批准「改库」）：全仓唯一走本地 fork 玻璃的调用点。
+        // 玻璃画在官方容器的同一节点里（third_party/miuix-ui 的 OverlayDialog(glass = …)），
+        // 取值只在 core/DialogGlassSpec（纯 Kotlin，JVM 可测）；把 DialogGlassSpec.enabled
+        // 置 false 即一键回退官方实心板。本试点由 QingyuGlassDialogGuardTest 钉住，不许铺开。
+        val schemeBackground = MiuixTheme.colorScheme.background
+        val glassDark = DialogGlassSpec.isDarkBackground(schemeBackground.toArgb())
+        val glassOn = DialogGlassSpec.enabled
+        OverlayDialog(
             insideMargin = DpSize(16.dp, 16.dp),
             show = true,
             title = AddCourseStrings.deleteCourseTitle.zh,
             summary = AddCourseStrings.confirmDeleteCourseMessage.filled("name", deleteTargetName),
+            // 圆角钉 32dp：官方贴底档下限，玻璃面与面板同值（容器内两者共用推导值）。
+            cornerRadius = DialogGlassSpec.CORNER_RADIUS_DP.dp,
+            // 要玻璃时底色必须半透明（压色落在模糊层上）；关玻璃就退回实心，观感与官方一致。
+            backgroundColor = if (glassOn) {
+                schemeBackground.copy(alpha = DialogGlassSpec.tintAlpha(glassDark))
+            } else {
+                schemeBackground
+            },
+            glass = if (glassOn) {
+                DialogGlass(
+                    backdrop = LocalQingyuPageBackdrop.current,
+                    blurRadius = DialogGlassSpec.BLUR_RADIUS_DP.dp,
+                    saturation = DialogGlassSpec.SATURATION,
+                    dark = glassDark,
+                )
+            } else {
+                null
+            },
             onDismissRequest = { confirmDelete = false },
         ) {
             Row(

@@ -1,0 +1,3 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 上游 miuix-ui 的 AAR 清单只有包声明，无组件、无权限；fork 保持一致。 -->
+<manifest xmlns:android="http://schemas.android.com/apk/res/android" />

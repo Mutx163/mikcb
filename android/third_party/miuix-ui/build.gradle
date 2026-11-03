@@ -1,0 +1,53 @@
+// 本地 fork 的 miuix-ui（上游 compose-miuix-ui/miuix 0.9.4，Apache-2.0，源码来自其
+// 官方 sources jar 的 commonMain + androidMain 两个源集）。
+//
+// 为什么 fork：弹窗表面材质要改在 `layout/DialogContentLayout.kt` 里（玻璃要画在官方容器
+// 同一节点、且必须按容器圆角裁切），调用侧包一层做不到。用户 2026-11-03 明确批准「改库」。
+//
+// 接法：`settings.gradle` 只多一行 include，`android/build.gradle` 用 dependencySubstitution
+// 把 `top.yukonga.miuix.kmp:miuix-ui-android` 换成这个工程——`app/build.gradle` 一字未改。
+// 回滚：删掉两处接线即恢复用官方 AAR。升级与上游合并步骤见同目录 README.md。
+plugins {
+    id "com.android.library"
+    id "org.jetbrains.kotlin.android"
+    // 上游是 Compose Multiplatform 工程；这里是单源集 Android 库，Compose 编译器插件由
+    // KGP 侧接管（与 :app 同版本，见 settings.gradle 的 pluginManagement）。
+    id "org.jetbrains.kotlin.plugin.compose"
+}
+
+android {
+    namespace = "top.yukonga.miuix.kmp"
+    compileSdk = 37
+
+    defaultConfig {
+        minSdk = 33
+        // :app 有 env 维度（dev/perf/prod/itest），本库不带 flavor：声明兜底维度，
+        // 否则 AGP 变体匹配直接失败（"No matching variant"）。
+        missingDimensionStrategy "env", "prod"
+    }
+
+    compileOptions {
+        sourceCompatibility = JavaVersion.VERSION_17
+        targetCompatibility = JavaVersion.VERSION_17
+    }
+
+    buildFeatures {
+        compose = true
+    }
+}
+
+dependencies {
+    // 与上游 miuix-ui 的 POM 一致（0.9.4）：core / squircle / compose-foundation 是 api，
+    // 其余三项上游声明为 runtime，这里同样只进运行时 classpath。
+    def miuixVersion = "0.9.4"
+    api "top.yukonga.miuix.kmp:miuix-core-android:$miuixVersion"
+    api "top.yukonga.miuix.kmp:miuix-squircle-android:$miuixVersion"
+    api "org.jetbrains.compose.foundation:foundation-android:1.12.0"
+    // 本地补丁新增（上游 miuix-ui 不依赖 miuix-blur）：弹窗玻璃要实时模糊，需要
+    // LayerBackdrop / drawBackdrop / Highlight。用 api 是因为 `DialogGlass` 的公开签名
+    // 暴露了 `Backdrop` 类型。
+    api "top.yukonga.miuix.kmp:miuix-blur-android:$miuixVersion"
+    implementation "androidx.navigationevent:navigationevent-compose-android:1.1.2"
+    implementation "org.jetbrains.compose.material3:material3-window-size-class-android:1.12.0-alpha03"
+    implementation "com.materialkolor:material-color-utilities-android:5.0.1"
+}

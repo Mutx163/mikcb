@@ -5,22 +5,22 @@ import org.junit.Test
 import java.io.File
 
 /**
- * 弹窗玻璃试点守卫（2026-11-03 材质批，用户批准「先改一个看看效果」）。
+ * 弹窗玻璃试点守卫（2026-11-03 材质批；同日按用户批准「改库」改为钉本地 fork 玻璃）。
  *
  * ## 三条判据
  *
- * 1. **试点弹窗确实走玻璃路径**：加课页「删除课程确认」调用 `GlassOverlayDialog(`
- *    （而不是官方实心 `OverlayDialog(`）。
- * 2. **一键回退开关存在且默认开**：`QingyuDialogGlass` 有 `var enabled: Boolean = true`。
+ * 1. **试点弹窗确实走 fork 玻璃**：加课页「删除课程确认」调用 `glass = DialogGlass(`，
+ *    且不再出现 `GlassOverlayDialog(`（表面材质由库内 `DialogContentLayout` 画，调用侧封装已下线）。
+ * 2. **一键回退开关存在且默认开**：`core/DialogGlassSpec` 有 `var enabled: Boolean = true`。
  *    用户看过真机效果后，`false` 一行即全量回实心，不用改调用点。
- * 3. **试点没有变全量**：`GlassOverlayDialog(` 在整个 composeP1 渲染层只允许出现
- *    **1 个调用点**（其余 46 处官方 `OverlayDialog` 与全部底部弹层保持现状）——
+ * 3. **试点没有变全量**：`glass = DialogGlass(` 在整个 composeP1 渲染层只允许出现
+ *    **1 个调用点**（其余官方 `OverlayDialog` 调用与全部底部弹层保持现状）——
  *    防止后续改动顺手扩散；铺开必须经用户看过效果拍板后再加。
  *
  * 判据**先剥注释再数**（字符串感知，`ComposeSheetGuardTest` 同款）：注释里写
- * `GlassOverlayDialog(` 不计数，也不会把真调用藏进注释里绕过。
+ * `glass = DialogGlass(` 不计数，也不会把真调用藏进注释里绕过。
  *
- * 放在 course 域随 L0 跑（宿主域 git 状态干净；被钉文件在 components/ 与 course 域）。
+ * 放在 course 域随 L0 跑（宿主域 git 状态干净；被钉文件在 core/ 与 course 域）。
  */
 class QingyuGlassDialogGuardTest {
 
@@ -28,8 +28,8 @@ class QingyuGlassDialogGuardTest {
         stripKotlinComments(readAndroidSource(ADD_COURSE_PATH))
     }
 
-    private val glassSource: String by lazy {
-        stripKotlinComments(readAndroidSource(GLASS_DIALOG_PATH))
+    private val specSource: String by lazy {
+        stripKotlinComments(readAndroidSource(DIALOG_GLASS_SPEC_PATH))
     }
 
     private val allPageSources: List<String> by lazy {
@@ -37,28 +37,33 @@ class QingyuGlassDialogGuardTest {
     }
 
     @Test
-    fun `试点弹窗必须走玻璃组件`() {
+    fun `试点弹窗必须走 fork 玻璃`() {
         assertTrue(
-            "加课页「删除课程确认」不再是 GlassOverlayDialog ——玻璃试点调用点丢失或被改回实心。" +
+            "加课页「删除课程确认」没走本地 fork 玻璃（缺 `DialogGlass(` 或 `glass =`）——" +
                 "这是用户批准的唯一试点；若要撤试点请连守卫一起改并说明。",
-            addCourseSource.contains("GlassOverlayDialog("),
+            addCourseSource.contains("DialogGlass(") && addCourseSource.contains("glass ="),
+        )
+        assertTrue(
+            "加课页仍在用 GlassOverlayDialog ——材质已进本地 fork 的 DialogContentLayout，" +
+                "调用侧封装留着会变成两条并行玻璃路径。",
+            !addCourseSource.contains("GlassOverlayDialog("),
         )
     }
 
     @Test
     fun `一键回退开关必须存在且默认开启`() {
         assertTrue(
-            "QingyuDialogGlass 缺少回退开关（var enabled: Boolean = true）——" +
+            "DialogGlassSpec 缺少回退开关（var enabled: Boolean = true）——" +
                 "一键回退是试点的交付承诺，删掉开关等于把玻璃硬编进调用点。",
-            glassSource.contains("var enabled: Boolean = true"),
+            specSource.contains("var enabled: Boolean = true"),
         )
     }
 
     @Test
     fun `玻璃调用点必须保持唯一试点`() {
-        val calls = allPageSources.sumOf { Regex("""\bGlassOverlayDialog\(""").findAll(it).count() }
+        val calls = allPageSources.sumOf { Regex("""\bDialogGlass\(""").findAll(it).count() }
         assertTrue(
-            "GlassOverlayDialog 调用点 $calls 处 ≠ 1。试点期全仓只允许加课页删除确认这一个玻璃弹窗；" +
+            "fork 玻璃调用点 $calls 处 ≠ 1。试点期全仓只允许加课页删除确认这一个玻璃弹窗；" +
                 "铺开须经用户看过真机效果拍板，届时连同本守卫的计数一起改。",
             calls == 1,
         )
@@ -158,10 +163,10 @@ class QingyuGlassDialogGuardTest {
         const val ADD_COURSE_PATH =
             "android/app/src/composeP1/kotlin/com/mutx163/qingyu/pages/course/AddCoursePage.kt"
 
-        const val GLASS_DIALOG_PATH =
-            "android/app/src/composeP1/kotlin/com/mutx163/qingyu/components/glass/QingyuDialogGlass.kt"
+        const val DIALOG_GLASS_SPEC_PATH =
+            "android/app/src/main/kotlin/com/mutx163/qingyu/core/DialogGlassSpec.kt"
 
-        // 只扫 pages/ 子树：组件定义在 components/glass/（`fun GlassOverlayDialog(` 不计入），
+        // 只扫 pages/ 子树：玻璃参数定义在库内（`data class DialogGlass(` 不计入），
         // 这里数的是「调用点」。
         const val PAGES_ROOT = "android/app/src/composeP1/kotlin/com/mutx163/qingyu/pages"
     }

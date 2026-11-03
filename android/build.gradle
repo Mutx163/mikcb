@@ -11,6 +11,23 @@ allprojects {
     }
 }
 
+// miuix-ui 换成本地 fork（android/third_party/miuix-ui，2026-11-03 用户批准「改库」）。
+//
+// 机制：**依赖替换**而不是改依赖声明——凡是请求
+// `top.yukonga.miuix.kmp:miuix-ui-android`（:app 的直接声明、miuix-preference /
+// miuix-icons / miuix-nav 的传递依赖都算）一律解析到本地工程，因此不会出现
+// 「官方 AAR 与 fork 同名类」的 dex 重复类错误，`app/build.gradle` 也一字不用改。
+//
+// 回滚：注释/删掉本块 + settings.gradle 里的 `include ":third_party:miuix-ui"`，
+// 立即回到官方 AAR（fork 源码留着不参与构建）。
+allprojects {
+    configurations.configureEach { configuration ->
+        configuration.resolutionStrategy.dependencySubstitution {
+            substitute module('top.yukonga.miuix.kmp:miuix-ui-android') using project(':third_party:miuix-ui')
+        }
+    }
+}
+
 rootProject.buildDir = "../build"
 subprojects {
     // 只有**工程目录内**的模块才把产物集中到 Flutter 的 build/ 下。
