@@ -241,6 +241,15 @@ fun TimetableWeekPage(
     dayContent: (@Composable (contentTop: Dp) -> Unit)? = null,
     /** 用户设置的页面转场速度（1.0 = 原速；周→日展开与其它转场同一口径缩放）。 */
     transitionSpeed: Double = 1.0,
+    /**
+     * 截屏「分享课表图」提示是否接到本页（提示壳见 [ScreenshotSharePromptHost]）。
+     *
+     * 宿主按用户存档 `screenshotSharePromptEnabled` 喂；**预览卡必须传 false**——
+     * 外观编辑页的缩尺预览复用整个宿主链，预览再接一份监听等于截一次屏弹两次提示
+     * （Dart `_isPreview` 守卫，`timetable_screen.dart:913-917`）。默认 false：
+     * 没接宿主的调用方（历史零参调用）保持完全旧行为。
+     */
+    screenshotSharePromptEnabled: Boolean = false,
     modifier: Modifier = Modifier,
 ) {
     val dark = isSystemInDarkTheme()
@@ -758,6 +767,20 @@ fun TimetableWeekPage(
                 }
             }
         }
+
+        // ── 截屏「分享课表图」提示（Dart timetable_screen.dart:935-963）────────
+        // 挂在根 Box 最后一层：压在内容 / 日视图展开层之上，但弹层通道（Overlay 系列）
+        // 仍在其上。检测事件由壳挂的 ScreenCaptureWatcher 出，门控三道（设置开关 /
+        // 本页置顶 / 6 秒冷却）在提示宿主里。胶囊抬到「回本周」浮钮上方，不再压住它。
+        ScreenshotSharePromptHost(
+            enabled = screenshotSharePromptEnabled,
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .padding(
+                    bottom = (floatingButtonBottomInset
+                        ?: (innerPadding.calculateBottomPadding() + 72.dp)) + 48.dp,
+                ),
+        )
         }
     }
 

@@ -93,6 +93,15 @@ fun TimetableHost(
     dayContent: (@Composable (contentTop: Dp) -> Unit)? = null,
     /** 用户「页面转场速度」，周→日展开按同一倍率缩放。 */
     transitionSpeed: Double = 1.0,
+    /**
+     * 截屏「分享课表图」提示是否接到这棵宿主树（默认接；**预览卡必须传 false**）。
+     *
+     * 外观编辑页的缩尺预览复用整个 [TimetableHost]——预览再接一份截屏监听，
+     * 等于截一次屏弹两次提示（Dart `_isPreview` 守卫，`timetable_screen.dart:913-917`）。
+     * 最终生效 = 本参数 × 用户存档 `screenshotSharePromptEnabled`，与页面 / 门控的
+     * 同名参数是两道不同的门：这里守「预览不接」，门控守「开关关不弹」。
+     */
+    screenshotSharePromptEnabled: Boolean = true,
 ) {
     // 首帧直接用仓储当前快照，避免「先画空网格再跳成有课」的闪一下。
     // ⚠️ 这不是优化，是**接口语义**：`TimetableRepository.observe` 只在**后续变更**时回调，
@@ -266,5 +275,9 @@ fun TimetableHost(
         pageColorArgb = homeChrome.pageColorArgb,
         // 浮钮避让（玻璃坞形态 = 药丸占用 + 12；经典形态 = 24 + 系统手势条）。
         floatingButtonBottomInset = floatingInsets.buttonBottom,
+        // 截屏提示：宿主意愿 × 用户存档开关（Dart `_syncScreenshotListener` 读
+        // `settings.screenshotSharePromptEnabled` 同口径）。存档没接（null）按关处理。
+        screenshotSharePromptEnabled =
+            screenshotSharePromptEnabled && settingsModel?.screenshotSharePromptEnabled == true,
     )
 }

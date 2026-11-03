@@ -842,6 +842,9 @@ private fun TimetablePreviewPage(
                     onOpenAddCourse = { _, _ -> },
                     onOpenCourse = {},
                     settingsModel = settingsModel,
+                    // 预览不接截屏监听：真首页那一份已经接上了，再来一份等于截一次屏
+                    // 弹两次提示（Dart `_isPreview` 守卫，timetable_screen.dart:913-917）。
+                    screenshotSharePromptEnabled = false,
                 )
             }
         }
