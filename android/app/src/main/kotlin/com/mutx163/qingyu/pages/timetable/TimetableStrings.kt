@@ -93,6 +93,12 @@ object TimetableStrings {
     val weekdaySat = ArbText("weekdaySat", "周六")
     val weekdaySun = ArbText("weekdaySun", "周日")
 
+    // ── 截屏「分享课表图」提示（Dart timetable_screen.dart:956-961 的胶囊文案）──
+    // 提示壳见 composeP1 的 ScreenshotSharePromptHost。Dart 版还有动作键
+    // timetableSharePromptAction（「分享」），动作对应导出分享面板——该面板还没移植，
+    // 按钮不画（没有去处的按钮不画），键也先不进 Compose。
+    val timetableSharePromptMessage = ArbText("timetableSharePromptMessage", "要分享一张干净的课表图吗？")
+
     // ── 周视图表头 / 课卡 / 周次选择器（全部来自 ARB，2026-10-29 重做时补齐）──
     /** 星期栏左端周次简写（Dart `timetable_weekday_header.dart:181`，`{week} 周` 带半角空格）。 */
     val currentWeekCompact = ArbText("currentWeekCompact", "{week} 周")
@@ -329,6 +335,7 @@ object TimetableStrings {
             addCourseTitle,
             addScheduleAction,
             addExam,
+            timetableSharePromptMessage,
             weekdayMon,
             weekdayTue,
             weekdayWed,
