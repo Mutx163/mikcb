@@ -185,6 +185,18 @@ fun DayViewPage(
      */
     showWeekdayHeader: Boolean = true,
     dataProvider: (week: Int, dayOfWeek: Int) -> DayViewPageData,
+    /**
+     * 装配结果的**失效信号**：变了才重新调 [dataProvider]。
+     *
+     * 2026-11-03：`dataProvider` 原先直接写在 Pager 页内容里、没有任何 remember，
+     * 而同一作用域里的进度快照 `remember` 又读了每秒变化的 `currentMinuteOfDay`
+     * ⇒ **每秒**重跑一次整页装配（全量课程过滤 + 冲突表 + 日程/考试/任务扫描）。
+     * 这里把装配结果按「周次 + 星期 + 数据版本」缓存：心跳只重算进度，不再重装配。
+     *
+     * 调用方传**仓库快照**（`TimetableRepository.snapshot`）或等价的不可变数据版本；
+     * 传 null = 不缓存（预览等静态场景）。
+     */
+    dataVersion: Any? = null,
     onCloseToWeekView: () -> Unit,
     onOpenCourse: ((courseId: String) -> Unit)? = null,
     /**
@@ -596,6 +608,17 @@ fun DayViewPage(
                 }
             }
             }
+            // ── 独立路由顶缝（2026-11-03 补齐）：与展开层同一条 14dp ──
+            // 只给独立路由 `c3.day`（`contentTopInset == null`，自己画顶栏/星期栏的那条）：
+            // 它的带子底边到 pager 首卡原本是 0dp，日期卡直接抵着顶栏下沿，用户口径
+            // 「日视图的卡片插到顶栏里面」。缝在滚动区**外**，吸顶时也不会被顶没。
+            //
+            // 展开层**不能**再加这一条：它在上面的 if 分支里已经加了
+            // `contentTopInset + 14dp`（现在宿主传 0dp），这里再无条件加一次会变成 28dp
+            //（2026-11-03 合并两边的改动时踩过，用户口径「缝突然变宽」）。
+            if (contentTopInset == null) {
+                Spacer(modifier = Modifier.height(DAY_VIEW_CONTENT_TOP_SEAM_DP.dp))
+            }
             // 下方内容：从玻璃带底部开始，占满剩余高度（底部仍铺到屏幕最底）。
             Box(
                 modifier = Modifier
@@ -608,7 +631,11 @@ fun DayViewPage(
                 ) { page ->
                     val target = DayViewPaging.targetForGlobalPage(visibleDays, page)
                     if (target != null) {
-                        val pageData = dataProvider(target.week, target.dayOfWeek)
+                        // 装配结果按「周次 + 星期 + 数据版本」缓存：1Hz 心跳只重算下面的
+                        // progressMap，不再每秒重跑 DayViewDataAssembler。
+                        val pageData = remember(target.week, target.dayOfWeek, dataVersion) {
+                            dataProvider(target.week, target.dayOfWeek)
+                        }
 
                         // 仅在当前查看的日子是今天时，计算进行中的进度快照
                         val progressMap = remember(

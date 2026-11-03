@@ -976,6 +976,8 @@ private fun DayViewPreview(
                 },
             )
         },
+        // 装配结果跟着仓储快照失效：预览也订了同一份仓储，课程/任务变了要跟着变。
+        dataVersion = snapshot,
         // 预览里点任何东西都会被吞掉，这几个回调不会被调用。
         onCloseToWeekView = {},
         homeTitleStyle = settingsModel.homeTitleStyle,

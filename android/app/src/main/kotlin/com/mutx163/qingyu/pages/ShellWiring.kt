@@ -833,6 +833,9 @@ fun TimetableWithCourseActions(
                         wiring.setHomeSelection(week, dayOfWeek)
                     },
                     onRequestClose = { wiring.switchHomeViewMode(TimetableHomeViewMode.WEEK) },
+                    // 宿主刚解析过的设置模型直接借给日视图：展开首帧不再重复解析整份
+                    // timetable_settings（见 `DayViewOverlayBinding.settingsModel` 的 KDoc）。
+                    settingsModel = settingsModel,
                 ),
             )
         },

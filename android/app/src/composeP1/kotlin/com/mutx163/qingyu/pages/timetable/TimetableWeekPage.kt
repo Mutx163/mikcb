@@ -32,11 +32,13 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
@@ -45,8 +47,6 @@ import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.geometry.CornerRadius
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.geometry.RoundRect
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
@@ -54,17 +54,15 @@ import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.graphics.drawscope.clipPath
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.boundsInRoot
-import androidx.compose.ui.layout.onGloballyPositioned
-import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.layout.layout
 import androidx.compose.ui.layout.positionInRoot
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.platform.LocalView
+import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
-import androidx.compose.ui.unit.IntOffset
-import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import androidx.core.view.WindowCompat
 import com.mutx163.qingyu.app.HomeMenuStyle
@@ -328,16 +326,30 @@ fun TimetableWeekPage(
             ),
         )
     }
-    // 收起动画还没走完时，展开层必须继续留在树上（否则会看到日视图瞬间消失再收回）。
-    // `closing` 只在动画起止各改一次：若直接用 `dayExpand.value > 0` 判断可见性，
-    // 进度每帧变化都会让整页重组一次（几何已经走 layout 阶段的逐帧读，见下方窗口）。
-    var closing by remember { mutableStateOf(false) }
+    // ── 展开层的可见性：由 `dayMode` + 动画进度**同步派生**（2026-11-03 修）──
+    //
+    // 旧写法用 `closing` 状态、在 LaunchedEffect(dayMode) 里置位。收起时 dayMode 先变假，
+    // 组合期读到的 `closing` 还是 false ⇒ dayVisible 当帧为假 ⇒ 日视图整棵被销毁；
+    // 下一帧 effect 才把 closing 置真、再把整棵重建。结果是收起方向每次多付一次首组合，
+    // 日视图内部的 pager / 列表滚动位置也一起丢（用户报「切周视图也会卡」）。
+    //
+    // 现在用 derivedStateOf：布尔值只在「进度跨过 0」时翻一次，动画期间不会逐帧重组
+    //（直接读 `dayExpand.value` 才会）。收起动画因此在原树上播完，播完那一帧才交接。
+    val currentDayMode by rememberUpdatedState(dayMode)
+    val dayVisible by remember {
+        derivedStateOf { currentDayMode || dayExpand.value > 0f }
+    }
+    // 展开层是否**已经挂载过**：打开过一次就跨开合保活，收起后不再卸载整棵树。
+    // 只有「从没打开过」才完全不组合（不占内存、不跑日视图的任何 effect）。
+    var dayLayerReady by remember { mutableStateOf(dayMode) }
     LaunchedEffect(dayMode) {
-        if (dayMode) {
-            closing = false
-        } else if (dayExpand.value > 0f) {
-            closing = true
-        }
+        if (dayMode) dayLayerReady = true
+    }
+    // 展开层**是否留在树上**：可见时当然留；不可见但已预热/挂载过也留（保活）。
+    // 注意与 `dayVisible` 的分工：dayMounted 决定「组合/测量」，dayVisible 决定
+    // 「绘制与命中」——隐藏时树还在，但不画、不接事件（见下方展开层的 inert 门控）。
+    val dayMounted = dayVisible || dayLayerReady
+    LaunchedEffect(dayMode) {
         val expandTarget = if (dayMode) 1f else 0f
         if (dayExpandReducedMotion) {
             // 降级：两个方向都直接落定（Dart `controller.value = 1/0` 同口径）。
@@ -350,9 +362,7 @@ fun TimetableWeekPage(
                 animationSpec = tween(durationMillis = dayExpandDuration, easing = dayExpandEasing),
             )
         }
-        if (!dayMode) closing = false
     }
-    val dayVisible = dayMode || closing
 
     // 收起落定后把周 pager 对到「日视图刚才看的那一周」：否则收起会跳回进日视图前的旧周。
     var wasDayMode by remember { mutableStateOf(dayMode) }
@@ -363,13 +373,6 @@ fun TimetableWeekPage(
         }
         wasDayMode = dayMode
     }
-
-    // 展开窗口的几何先量根布局与内容区（左右安全区内缩之后）的位置 / 尺寸。
-    // 不能用 `LocalConfiguration.screenWidthDp` 推算：内容区被安全区缩过，
-    // 星期栏的列宽与网格列宽必须用**同一份**实测值，否则窗口起点会偏一列。
-    var rootSize by remember { mutableStateOf(IntSize.Zero) }
-    var rootOrigin by remember { mutableStateOf(Offset.Zero) }
-    var contentBounds by remember { mutableStateOf(Rect.Zero) }
 
     val accentColor = Color(QingyuTheme.primary(dark = dark))
     val textColor = Color(QingyuTheme.primaryText(dark))
@@ -386,9 +389,6 @@ fun TimetableWeekPage(
     // 设备支持 RuntimeShader」三件事同时成立才录，否则省掉整层采样。
     // 课卡玻璃（下面 `cardGlassActive`）复用同一层录像带。
     val density = LocalDensity.current
-    // 内容区顶边 = 顶栏玻璃带底边（状态栏 + 标题行 + 星期栏）。展开层的窗口从这里开始，
-    // 上面的共享带保持不动 —— 用户看到的是「下面那块网格长成了日视图」。
-    val contentTopPx = (contentBounds.top - rootOrigin.y).coerceAtLeast(0f)
     // ── 整页只有**一层**壁纸录像带 ──
     // 顶栏玻璃带与周网格课程卡片都从它采样。卡片数量多（一屏 20~50 张），
     // 一张卡建一层录像带会把整屏复制几十份；Dart 也是同一结论
@@ -488,12 +488,7 @@ fun TimetableWeekPage(
         modifier = modifier.fillMaxSize(),
     ) { innerPadding ->
         Box(
-            modifier = Modifier
-                .fillMaxSize()
-                // 展开窗口的坐标系以本页根布局为原点；NavDisplay 条目在转场中可能带偏移，
-                // 所以内容区的位置要减去根节点的 `positionInRoot` 再换算（见下方展开层的绘制）。
-                .onSizeChanged { rootSize = it }
-                .onGloballyPositioned { rootOrigin = it.positionInRoot() },
+            modifier = Modifier.fillMaxSize(),
         ) {
         // 壁纸层在最底（Dart 的层次：壁纸 → 内容）。没有壁纸时这一行什么也不画。
         // 顶栏玻璃带与课卡玻璃都要采样它，所以包一层（只有真要玻璃时才挂 `layerBackdrop`）。
@@ -631,19 +626,20 @@ fun TimetableWeekPage(
             Box(
                 modifier = Modifier
                     .weight(1f)
-                    .fillMaxWidth()
-                    // 展开窗口的起点 / 底边都按这块真实区域算（见下方展开层的绘制）。
-                    .onGloballyPositioned { contentBounds = it.boundsInRoot() }
-                    // 日视图铺满后周网格整块被盖住：只在 progress == 1 这一刻跳过绘制
-                    //（Dart `timetable_week_page_body.dart:82-93` 的 Opacity 0/1 同口径）。
-                    // 展开 / 收起全程照画，否则邻居列会在中途消失。
-                    .drawWithContent {
-                        if (!dayVisible || dayExpand.value < 0.999f) drawContent()
-                    },
+                    .fillMaxWidth(),
             ) {
                 HorizontalPager(
                     state = pagerState,
-                    modifier = Modifier.fillMaxSize(),
+                    modifier = Modifier
+                        .fillMaxSize()
+                        // 日视图铺满后周网格整块被盖住：只在 progress == 1 这一刻跳过绘制
+                        //（Dart `timetable_week_page_body.dart:82-93` 的 Opacity 0/1 同口径）。
+                        // 展开 / 收起全程照画，否则邻居列会在中途消失。
+                        // ⚠️ 守卫必须挂在 **pager 自己**身上、不能挂外层 Box：外层还要画
+                        // 日视图展开层与「回今日」浮钮，挂外层会把它们一起跳过（2026-11-03）。
+                        .drawWithContent {
+                            if (!dayVisible || dayExpand.value < 0.999f) drawContent()
+                        },
                 ) { page ->
                     WeekPageContent(
                         pageWeek = page + 1,
@@ -705,99 +701,101 @@ fun TimetableWeekPage(
                             ),
                     )
                 }
-            }
-        }
 
-        // ── 日视图展开层（2026-11-02）────────────────────────────────────
-        // 窗口从「选中那一列」长到整屏（几何见 `homeViewExpandWindow`）。放在 Column
-        // **之后**、同一个根 Box 里：底下的周视图照常绘制（邻居列还在），上层只盖住
-        // 窗口区域；顶栏 / 星期栏属于上面的 Column，不被窗口盖住 —— 展开全程可见、可点。
-        //
-        // 窗口里的日视图是**整屏排版好**的页面（不重排、不拉伸），只是被外层 Box 裁切，
-        // 与原版「窗口取样」同一条做法。`contentTopInset` 让它跳过自己的顶栏/星期栏，
-        // 正文正好接在首页那条共享带下面。
-        if (
-            dayVisible &&
-            dayContent != null &&
-            rootSize != IntSize.Zero &&
-            contentBounds != Rect.Zero
-        ) {
-            val contentTopDp = with(density) { contentTopPx.toDp() }
-            val contentHeightDp = with(density) {
-                (rootSize.height - contentTopPx).coerceAtLeast(1f).toDp()
-            }
-            val screenWidthDp = with(density) { rootSize.width.toDp() }
-            val screenHeightDp = with(density) { rootSize.height.toDp() }
-            // 窗口边界在 **draw 阶段** 读 `dayExpand.value`：逐帧只重绘，不重组、不重排。
-            // 日视图本身仍是整屏排版（不重排、不拉伸），只是被这个窗口裁切 —— 与原版
-            // 「窗口取样」同一条做法。纵向裁到内容区，横向从选中列长到整屏。
-            val contentLeftPx = (contentBounds.left - rootOrigin.x).coerceAtLeast(0f)
-            val contentWidthPx = contentBounds.width
-            val timeColumnPx = with(density) { style.timeColumnWidthDp.dp.toPx() }
-            // 圆角裁切路径：**一个节点一份、逐帧 rewind 复用**（draw 阶段读动画值，
-            // 不重组、不重排，也不逐帧分配 Path）。
-            val expandWindowClip = remember { Path() }
-            Box(
-                modifier = Modifier
-                    // 只覆盖内容区（不含顶栏/星期栏）：上面的共享带保持可见、可点。
-                    .offset { IntOffset(0, contentTopPx.roundToInt()) }
-                    .fillMaxWidth()
-                    .height(contentHeightDp)
-                    .clipToBounds()
-                    // 命中测试也停在内容区：日视图展开时不能把事件漏给下面的周网格
-                    // （否则长按空白格加课会在日视图上误触发）。这个节点只宣称命中、
-                    // 不消费，窗口里的真实控件照常拿事件。
-                    // （Dart 侧还有 `ignoring: progress < 0.05` 的收起尾段放行——Compose
-                    // 的命中模型没有「逐帧条件命中」，per-event 消费又会连窗口内真实
-                    // 控件一起点不了，权衡后保持常驻宣称；阈值常量与单测留在
-                    // [HOME_VIEW_EXPAND_INPUT_GATE]，见该常量 KDoc。）
-                    .pointerInput(Unit) {
-                        awaitPointerEventScope {
-                            while (true) {
-                                awaitPointerEvent()
-                            }
+                // ── 日视图展开层（2026-11-03：重定位到「内容区」里）──────────────
+                // 以前的写法：日视图按**整屏**排版（`requiredSize(屏宽, 屏高)`），再
+                // `offset(y = -顶栏高度)` 把它整体上移，让窗口裁掉它自己的顶栏那一段。
+                // 「顶栏高度」是从 `contentBounds.top - rootOrigin.y` 反算出来的**测量值**，
+                // 一旦测得比真实带子矮一丁点，日视图的首卡就会钻进星期栏 —— 用户口径
+                // 「日期卡片插到顶栏里面」，反复加 14dp 缝都修不好，根因就在这个负 offset。
+                //
+                // 现在改成：展开层**与周网格同一个 Box**（内容区），它的顶边由布局给出，
+                // 就是玻璃带底边，不再有任何「测量 → 负 offset 抵消」的环节。日视图
+                // 直接铺满内容区，`contentTopInset = 0` ⇒ 页面自己只加正文顶缝 14dp。
+                // 横向擦除窗口照旧走 `homeViewExpandWindow`，坐标改为**本 Box 本地**
+                // （contentLeft = 0、宽度 = 本 Box 宽），同样不依赖根布局测量。
+                if (dayMounted && dayContent != null) {
+                    val timeColumnPx = with(density) { style.timeColumnWidthDp.dp.toPx() }
+                    // 圆角裁切路径：**一个节点一份、逐帧 rewind 复用**（draw 阶段读动画值，
+                    // 不重组、不重排，也不逐帧分配 Path）。
+                    val expandWindowClip = remember { Path() }
+                    Box(
+                        modifier = Modifier
+                            .matchParentSize()
+                            .clipToBounds()
+                            // 命中测试也停在内容区：日视图展开时不能把事件漏给下面的周网格
+                            // （否则长按空白格加课会在日视图上误触发）。这个节点只宣称命中、
+                            // 不消费，窗口里的真实控件照常拿事件。
+                            // （Dart 侧还有 `ignoring: progress < 0.05` 的收起尾段放行——Compose
+                            // 的命中模型没有「逐帧条件命中」，per-event 消费又会连窗口内真实
+                            // 控件一起点不了，权衡后保持常驻宣称；阈值常量与单测留在
+                            // [HOME_VIEW_EXPAND_INPUT_GATE]，见该常量 KDoc。）
+                            //
+                            // 只有可见时才宣称命中：隐藏（保活/预热）的日视图不参与命中，
+                            // 否则它虽然不画，却会把周视图的点击全部吞掉。
+                            .then(
+                                if (dayVisible) {
+                                    Modifier.pointerInput(Unit) {
+                                        awaitPointerEventScope {
+                                            while (true) {
+                                                awaitPointerEvent()
+                                            }
+                                        }
+                                    }
+                                } else {
+                                    Modifier
+                                },
+                            )
+                            .drawWithContent {
+                                // 隐藏（收起播完 / 预热）时只保留组合与测量，不绘制。
+                                if (!dayVisible) return@drawWithContent
+                                val progress = dayExpand.value
+                                val window = homeViewExpandWindow(
+                                    progress = progress,
+                                    // 本地坐标：本 Box 的原点就是内容区左上角。
+                                    viewportWidth = size.width.toFloat(),
+                                    contentLeft = 0f,
+                                    contentWidth = size.width.toFloat(),
+                                    timeColumnWidth = timeColumnPx,
+                                    visibleDays = visibleDays,
+                                    selectedDayOfWeek = selectedDayOfWeek,
+                                )
+                                // ── 圆角形变窗口（2026-11-03，替换直角 clipRect）──
+                                // 种子面板 28dp 圆角全程保持满值，只在贴边前的最后 0.002 带内
+                                // 收平（数值出处见 homeViewExpandCornerRadiusFactor 的 KDoc）。
+                                // 落定帧（含「减少动画」snapTo）progress 恰为 1.0 ⇒ 因子恰为 0
+                                // ⇒ RoundRect 退化为全屏矩形，裁切是 no-op，真面板无任何残角。
+                                val cornerPx = HOME_VIEW_EXPAND_SEED_CORNER_DP.dp.toPx() *
+                                    homeViewExpandCornerRadiusFactor(progress)
+                                expandWindowClip.rewind()
+                                expandWindowClip.addRoundRect(
+                                    RoundRect(
+                                        left = window.left,
+                                        top = 0f,
+                                        right = window.right,
+                                        bottom = size.height,
+                                        cornerRadius = CornerRadius(cornerPx, cornerPx),
+                                    ),
+                                )
+                                clipPath(expandWindowClip) {
+                                    this@drawWithContent.drawContent()
+                                }
+                            },
+                    ) {
+                        // contentTopInset = 0：窗口顶边已经是带子底边，日视图只需再加
+                        // 正文顶缝（`DAY_VIEW_CONTENT_TOP_SEAM_DP`）。
+                        //
+                        // 隐藏时走 [inertUnless]：子树照常组合/测量（保活、保滚动位置），
+                        // 但不 place ⇒ 不绘制、不参与命中、不进无障碍焦点。真展开时
+                        // 这个修饰器是 no-op，布局与之前逐像素一致。
+                        Box(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .inertUnless(dayVisible),
+                        ) {
+                            dayContent(0.dp)
                         }
                     }
-                    .drawWithContent {
-                        val progress = dayExpand.value
-                        val window = homeViewExpandWindow(
-                            progress = progress,
-                            viewportWidth = rootSize.width.toFloat(),
-                            contentLeft = contentLeftPx,
-                            contentWidth = contentWidthPx,
-                            timeColumnWidth = timeColumnPx,
-                            visibleDays = visibleDays,
-                            selectedDayOfWeek = selectedDayOfWeek,
-                        )
-                        // ── 圆角形变窗口（2026-11-03，替换直角 clipRect）──
-                        // 种子面板 28dp 圆角全程保持满值，只在贴边前的最后 0.002 带内
-                        // 收平（数值出处见 homeViewExpandCornerRadiusFactor 的 KDoc）。
-                        // 落定帧（含「减少动画」snapTo）progress 恰为 1.0 ⇒ 因子恰为 0
-                        // ⇒ RoundRect 退化为全屏矩形，裁切是 no-op，真面板无任何残角。
-                        val cornerPx = HOME_VIEW_EXPAND_SEED_CORNER_DP.dp.toPx() *
-                            homeViewExpandCornerRadiusFactor(progress)
-                        expandWindowClip.rewind()
-                        expandWindowClip.addRoundRect(
-                            RoundRect(
-                                left = window.left,
-                                top = 0f,
-                                right = window.right,
-                                bottom = size.height,
-                                cornerRadius = CornerRadius(cornerPx, cornerPx),
-                            ),
-                        )
-                        clipPath(expandWindowClip) {
-                            this@drawWithContent.drawContent()
-                        }
-                    },
-            ) {
-                Box(
-                    modifier = Modifier
-                        .requiredSize(screenWidthDp, screenHeightDp)
-                        // 把整屏日视图上移一个顶栏高度：它的正文正好落在内容区顶部。
-                        .offset(y = -contentTopDp),
-                ) {
-                    dayContent(contentTopDp)
                 }
             }
         }
@@ -969,6 +967,29 @@ private fun WeekPageContent(
 
 /** 周网格底部避让：手势条之上再留 64dp 给浮坞。 */
 private const val WEEK_GRID_BOTTOM_CLEARANCE_DP = 64f
+
+/**
+ * **保活但不参与绘制 / 命中 / 无障碍焦点**的修饰器（日视图展开层专用）。
+ *
+ * 为什么需要它：展开层收起后如果直接不组合，下一次展开又要在动画起步帧重建整棵树
+ *（pager、滚动位置、两层录像带全丢）。反过来，若只把子树的绘制关掉、仍让它参与命中，
+ * 隐藏的日视图会把周视图的点击全部吞掉。这里用 `layout(0, 0) { }`：
+ * 子树**照常测量**（组合与布局状态都保留），只是不 place —— 不绘制、不进命中测试；
+ * `clearAndSetSemantics {}` 再把语义清掉，读屏也不会聚焦到一块看不见的页面上。
+ *
+ * [active] 为真时是 no-op（直接返回 this），所以真展开时的布局与未加修饰器逐像素一致。
+ */
+private fun Modifier.inertUnless(active: Boolean): Modifier =
+    if (active) {
+        this
+    } else {
+        this
+            .clearAndSetSemantics { }
+            .layout { measurable, constraints ->
+                measurable.measure(constraints)
+                layout(0, 0) { }
+            }
+    }
 
 /** 某周某天的真实日期（Dart `timetable_weekday_header.dart:_dateForWeekDay`）。 */
 fun dateForWeekDay(semesterStart: LocalDate?, week: Int, dayOfWeek: Int): LocalDate? =

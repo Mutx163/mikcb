@@ -297,6 +297,17 @@ data class DayViewOverlayBinding(
     val requestedDayOfWeek: Int,
     val onPageChanged: (week: Int, dayOfWeek: Int) -> Unit,
     val onRequestClose: () -> Unit,
+    /**
+     * 首页宿主**已经解析好**的设置模型（2026-11-03 修）。
+     *
+     * 展开层里的日视图是 `c3.day` 那条分支，它自己也会 `wiring.settingsModel.load()`——
+     * 而同一帧里首页宿主（`TimetableWithCourseActions`）刚解析过一份。同一份
+     * `timetable_settings` JSON 在展开第一帧被完整解析两遍（MiniJson + 80+ 键 fromJson），
+     * 正好压在动画起步帧上。首页宿主把自己那份传进来，日视图就不再重复解析。
+     *
+     * null = 独立页面 / 页面索引进入（没有宿主可借），仍按旧路径自己 `load()`。
+     */
+    val settingsModel: TimetableSettingsModel? = null,
 )
 
 /**
@@ -735,7 +746,13 @@ fun ShellPageContent(
             }
             // 设置存储没有变更通道：读壳的变更序号，回到主屏时才重读一次盘
             // （详见 `ShellWiring.settingsRevision`；也供下面的「上次看的是哪天」用）。
-            val appSettings = remember(wiring.settingsRevision) { wiring.settingsModel.load() }
+            //
+            // 2026-11-03：作为首页展开层时，宿主（`TimetableWithCourseActions`）已经
+            // 解析过同一份设置，经 `DayViewOverlayBinding.settingsModel` 传下来；
+            // 这里直接用，不再重复 MiniJson 解析 + 80+ 键 fromJson（那是展开首帧的固定成本）。
+            // 独立页面 / 页面索引进入时没有宿主可借，仍按旧路径自己 load()。
+            val appSettings = dayOverlay?.settingsModel
+                ?: remember(wiring.settingsRevision) { wiring.settingsModel.load() }
             // ── 首页壁纸 / 材质 / 顶栏墨色（2026-11-01）──
             // 与周视图同一条推导（`rememberHomeBackdropChrome` 是唯一出口）：
             // 不接这一层时，日视图是一块不透明主题底 —— 用户在周视图看到的壁纸与玻璃
@@ -874,8 +891,10 @@ fun ShellPageContent(
                         ),
                     )
                 },
-                // 摘要卡上的关闭叉：独立路由时回上一页；作为首页展开层时**收回到周视图**
-                // （Dart `closeDayView`，不是弹路由）。
+                // 装配结果的失效信号：仓储快照变了才重跑 `dataProvider`。
+                // 不传的话，页面里每秒跳动的心跳会把整页装配（全量过滤 + 冲突表）
+                // 一起重跑一遍（见 DayViewPage `dataVersion` 的 KDoc）。
+                dataVersion = snapshot,
                 onCloseToWeekView = dayOverlay?.onRequestClose ?: onBack,
                 // 待办带里「关联课程」的名字与颜色（Dart `provider.getCourseForTask`）。
                 courseResolver = { task ->
