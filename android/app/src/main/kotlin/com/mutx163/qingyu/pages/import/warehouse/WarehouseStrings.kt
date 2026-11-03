@@ -82,6 +82,12 @@ object WarehouseStrings {
     val courseImportSaveRecordingTitle = WarehouseArbText("courseImportSaveRecordingTitle", "保存录制")
     val calendarWeekOption = WarehouseArbText("calendarWeekOption", "校历第 {week} 周")
     val courseImportOverwriteAction = WarehouseArbText("courseImportOverwriteAction", "覆盖导入")
+    val courseImportSectionCountInsufficientTitle = WarehouseArbText("courseImportSectionCountInsufficientTitle", "时间模板节次不足")
+    val courseImportSectionCountInsufficientMessage = WarehouseArbText(
+        "courseImportSectionCountInsufficientMessage",
+        "当前课表时间模板只有 {current} 节，但导入数据需要到第 {required} 节，是否自动补齐后继续导入？",
+    )
+    val courseImportAutoFillAndImportAction = WarehouseArbText("courseImportAutoFillAndImportAction", "自动补齐并导入")
     val courseImportTitle = WarehouseArbText("courseImportTitle", "导入课程")
     val courseImportUpdateRecommendedAction = WarehouseArbText("courseImportUpdateRecommendedAction", "更新课表 推荐")
     val courseImportScriptFailed = WarehouseArbText("courseImportScriptFailed", "脚本执行失败")
@@ -138,6 +144,7 @@ object WarehouseStrings {
     val importFirstCourseWeekMappingLabel = WarehouseArbText("importFirstCourseWeekMappingLabel", "第 1 周对应校历第几周")
     val importFirstCourseWeekMappingSubtitle = WarehouseArbText("importFirstCourseWeekMappingSubtitle", "如果第一周没课，就选第 2 周")
     val importFailedStatus = WarehouseArbText("importFailedStatus", "导入失败")
+    val importInterruptedStatus = WarehouseArbText("importInterruptedStatus", "导入已中断")
     val importFromFileAction = WarehouseArbText("importFromFileAction", "从文件导入")
     val importMethodAiTitle = WarehouseArbText("importMethodAiTitle", "识图导入")
     val importMethodWarehouseTitle = WarehouseArbText("importMethodWarehouseTitle", "教务系统导入")
@@ -302,6 +309,9 @@ object WarehouseStrings {
         courseImportSaveRecordingTitle,
         courseImportScriptFailed,
         courseImportOverwriteAction,
+        courseImportSectionCountInsufficientTitle,
+        courseImportSectionCountInsufficientMessage,
+        courseImportAutoFillAndImportAction,
         courseImportTitle,
         courseImportUpdateRecommendedAction,
         courseImportWeekNotProvided,
@@ -347,6 +357,7 @@ object WarehouseStrings {
         importFirstCourseWeekMappingSubtitle,
         importFailedStatus,
         importFromFileAction,
+        importInterruptedStatus,
         importMethodAiTitle,
         importMethodWarehouseTitle,
         importSemesterMappingNoShiftHint,

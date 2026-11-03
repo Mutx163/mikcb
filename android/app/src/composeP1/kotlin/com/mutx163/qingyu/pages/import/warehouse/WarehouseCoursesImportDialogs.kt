@@ -96,6 +96,48 @@ fun WarehouseReplaceExistingDialog(
 }
 
 /**
+ * 第三步（按需）：现有节次表装不下导入课程时，问是否「自动补齐并导入」。
+ *
+ * 对齐旧版 `ensureImportSectionCapacity`（`import_shared.dart:446`）的确认框：
+ * 标题/正文/按钮文字全部取 ARB；取消 = 中止整次导入（旧版同语义，落到
+ * 「导入已中断」）。正文数字由宿主填（现节次数 / 需要到的节号）。
+ */
+@Composable
+fun WarehouseSectionExpansionDialog(
+    show: Boolean,
+    currentSectionCount: Int,
+    requiredSectionCount: Int,
+    onConfirm: () -> Unit,
+    onCancel: () -> Unit,
+) {
+    OverlayDialog(
+        insideMargin = DpSize(16.dp, 16.dp),
+        show = show,
+        title = WarehouseStrings.courseImportSectionCountInsufficientTitle.zh,
+        summary = WarehouseStrings.courseImportSectionCountInsufficientMessage.filled(
+            "current" to currentSectionCount.toString(),
+            "required" to requiredSectionCount.toString(),
+        ),
+        onDismissRequest = onCancel,
+    ) {
+        Column(modifier = Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            TextButton(
+                modifier = Modifier.fillMaxWidth(),
+                text = WarehouseStrings.cancelAction.zh,
+                onClick = onCancel,
+            )
+            Button(
+                onClick = onConfirm,
+                modifier = Modifier.fillMaxWidth(),
+                colors = ButtonDefaults.buttonColorsPrimary(),
+            ) {
+                Text(text = WarehouseStrings.courseImportAutoFillAndImportAction.zh)
+            }
+        }
+    }
+}
+
+/**
  * 第二步：确认开学日期与「课表第 1 周 = 校历第几周」。
  *
  * 形态对齐 Dart `pickImportSemesterConfig`（`import_shared.dart:275`）：标题 +
