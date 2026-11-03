@@ -1,9 +1,6 @@
 package com.mutx163.qingyu.pages.settings
 
 import com.mutx163.qingyu.app.TimetableSettingsModel
-import com.mutx163.qingyu.app.WallpaperHistoryRowModel
-import com.mutx163.qingyu.weather.WallpaperHistoryEntry
-import com.mutx163.qingyu.weather.pushWallpaperHistory
 import kotlin.math.roundToInt
 
 /**
@@ -35,6 +32,8 @@ import kotlin.math.roundToInt
  * | `_scaleAtGestureStart * details.scale`（`:743-746`） | [scaleAfterPinch] | Compose 的 `zoomChange` 是增量，乘上去即可 |
  * | `Transform.scale(alignment:)` 的几何 | [alignFraction] | Dart 等价于「放大后的溢出 × 对齐比例」 |
  * | `_confirm`（`:497-507`） | [settingsAfterConfirm] | 写路径 + 三个取景值 + 补记「最近使用」 |
+ * | `_switchWallpaper`（`:429-465`） | 页面宿主 + [ManagedWallpaperNaming] / `ManagedWallpaperStore` | 就地换图：URI → 受管目录 → 预览，确认时才写设置 |
+ * | `onPickNewImage` 返回 null（`:435-437`） | 不写任何设置 | 取消选图 = 当前取景原样保留 |
  * | 百分比 | [scalePercent] | 取景页本身不显示百分比（Dart 也没有），保留给读数/测试 |
  */
 object SettingsWallpaperPositionPage {
@@ -52,6 +51,9 @@ object SettingsWallpaperPositionPage {
 
     /** 底部「重置」（ARB `wallpaperPositionPickerResetTooltip`，`:658`）。 */
     val RESET = SettingsStringsExt1.wallpaperPositionPickerReset
+
+    /** 底部「换壁纸」（ARB `wallpaperPositionPickerSwitchWallpaper`，`:663-667`）。 */
+    val SWITCH = SettingsStringsExt1.wallpaperPositionPickerSwitch
 
     // ------------------------------------------------------------ 数值口径
 
@@ -196,26 +198,41 @@ object SettingsWallpaperPositionPage {
         usedAtMs: Long = System.currentTimeMillis(),
     ): TimetableSettingsModel? {
         if (path.isNullOrBlank()) return null
-        val framing = WallpaperFraming(
+        // 「补历史」只有一处实现（[WallpaperHistoryLedger.applyPicked]）：与壁纸面板的
+        // 「相册选图直接应用」「切回最近使用」共用同一份去重 / 置顶 / 10 条上限。
+        // 本页此前自己 push 了一份，两处规则迟早漂开。
+        return WallpaperHistoryLedger.applyPicked(
+            current = current,
+            path = path,
             alignX = clampAlign(alignX),
             alignY = clampAlign(alignY),
             scale = clampScale(scale),
-        )
-        val pushed = pushWallpaperHistory(
-            history = current.wallpaperHistory.map { it.toWeatherEntry() },
-            key = path,
-            alignX = framing.alignX,
-            alignY = framing.alignY,
-            scale = framing.scale,
             usedAt = usedAtMs,
-        )
-        return current.copy(
-            homePageWallpaperPath = path,
-            homePageWallpaperAlignX = framing.alignX,
-            homePageWallpaperAlignY = framing.alignY,
-            homePageWallpaperScale = framing.scale,
-            wallpaperHistory = pushed.history.map { it.toRowModel() },
-        )
+        )?.settings
+    }
+
+    /**
+     * 一次取景交互结束时，**本次新落盘但没有任何设置引用**的图（Dart
+     * `_discardUnreferencedBackdrops`，`settings_home_backdrop_flow.dart:1097-1130`）。
+     *
+     * 取景页「换壁纸」每选一张就落一份文件；用户连选两张只确认第二张、或选完直接
+     * 退出时，前一张/这张就成了没人引用的垃圾。判据是「谁在引用它」，不是「哪张是
+     * 新的」：当前壁纸与「最近使用」里的一律不动，只清剩下的。
+     *
+     * 纯运算（不摸盘）；真删文件由宿主在设置落盘**之后**调用。
+     */
+    fun unreferencedPicked(
+        pickedPaths: Collection<String>,
+        settings: TimetableSettingsModel?,
+    ): List<String> {
+        if (pickedPaths.isEmpty()) return emptyList()
+        val referenced = buildSet {
+            settings?.homePageWallpaperPath?.takeIf { it.isNotBlank() }?.let(::add)
+            settings?.wallpaperHistory?.forEach { row ->
+                if (row.key.isNotBlank()) add(row.key)
+            }
+        }
+        return pickedPaths.filter { it.isNotBlank() && it !in referenced }.distinct()
     }
 }
 
@@ -231,20 +248,3 @@ data class WallpaperFraming(
     }
 }
 
-private fun WallpaperHistoryRowModel.toWeatherEntry(): WallpaperHistoryEntry =
-    WallpaperHistoryEntry(
-        key = key,
-        alignX = alignX,
-        alignY = alignY,
-        scale = scale,
-        usedAt = usedAt,
-    )
-
-private fun WallpaperHistoryEntry.toRowModel(): WallpaperHistoryRowModel =
-    WallpaperHistoryRowModel(
-        key = key,
-        alignX = alignX,
-        alignY = alignY,
-        scale = scale,
-        usedAt = usedAt,
-    )

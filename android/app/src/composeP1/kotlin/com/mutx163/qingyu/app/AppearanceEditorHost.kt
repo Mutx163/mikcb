@@ -1,6 +1,5 @@
 package com.mutx163.qingyu.app
 
-import android.content.Context
 import android.net.Uri
 import android.util.Log
 import android.widget.Toast
@@ -60,6 +59,7 @@ import com.mutx163.qingyu.pages.shell.homeDockVisible
 import com.mutx163.qingyu.pages.shell.rememberHomeDockUsesBackdrop
 import com.mutx163.qingyu.pages.shell.rememberHomeFloatingInsets
 import com.mutx163.qingyu.pages.shellTimetableMenuPageId
+import com.mutx163.qingyu.platform.ManagedWallpaperStore
 import com.mutx163.qingyu.platform.PrefsKeyValueStore
 import com.mutx163.qingyu.pages.timetable.day.DayAgendaEntry
 import com.mutx163.qingyu.pages.timetable.day.DayViewPage
@@ -229,8 +229,9 @@ fun AppearanceEditorHost(
     val autoApplySnapshot = remember(bingStore, bingRevision) { bingStore.snapshot() }
 
     val bingSource = remember { BingGalleryDataSource() }
-    // 受管壁纸目录与图库宿主同名（App 私有，卸载即清）。
-    val wallpaperDir = remember(context) { File(context.filesDir, WALLPAPER_DIR_NAME) }
+    // 受管壁纸目录（App 私有，卸载即清）。真源在 `ManagedWallpaperStore`：取景页
+    // 就地「换壁纸」与本页选图必须落进同一个目录，不能各拼一份。
+    val wallpaperDir = remember(context) { ManagedWallpaperStore.directory(context) }
     val bingDownloader = remember(wallpaperDir) { BingGalleryDownloader(wallpaperDir) }
     val screenSize = remember(context) {
         val metrics = context.resources.displayMetrics
@@ -371,21 +372,8 @@ fun AppearanceEditorHost(
     }
 
     /** 相册 URI → 受管壁纸目录；读不出来返回 null（取消 / 权限 / 空文件）。 */
-    fun importPickedWallpaper(uri: Uri): String? {
-        val bytes = runCatching {
-            context.contentResolver.openInputStream(uri)?.use { it.readBytes() }
-        }.getOrNull()
-        if (bytes == null || bytes.isEmpty()) return null
-        val dir = wallpaperDir.apply { mkdirs() }
-        val target = File(
-            dir,
-            "wallpaper_${System.currentTimeMillis()}.${wallpaperExtensionOf(context, uri)}",
-        )
-        return runCatching {
-            target.writeBytes(bytes)
-            target.absolutePath
-        }.getOrNull()
-    }
+    fun importPickedWallpaper(uri: Uri): String? =
+        ManagedWallpaperStore.storePickedImage(context, uri)
 
     /** 「选择图片」返回：先收进受管目录，再记历史 + 写路径与居中取景（Dart `:1007-1019`）。 */
     fun applyPickedWallpaper(uriText: String) {
@@ -994,35 +982,6 @@ private data class PendingWallpaperRemoval(
     val path: String,
     val previousHistory: List<WallpaperHistoryRowModel>,
 )
-
-/** 受管壁纸目录（与 `BingGalleryHost` 同名：App 私有，卸载即清，不进相册）。 */
-private const val WALLPAPER_DIR_NAME = "wallpapers"
-
-/**
- * 相册 URI 的落盘扩展名：先看 MIME，再看路径后缀，最后退回 png。
- *
- * 不用 `MimeTypeMap`：它需要平台映射表，而这层只要图片常见的几种；
- * 认不出来时 png 是安全的（解码只看内容，不看扩展名）。
- */
-private fun wallpaperExtensionOf(context: Context, uri: Uri): String {
-    val mime = runCatching { context.contentResolver.getType(uri) }.getOrNull()
-    when (mime) {
-        "image/jpeg" -> return "jpg"
-        "image/png" -> return "png"
-        "image/webp" -> return "webp"
-        "image/gif" -> return "gif"
-        "image/heic", "image/heif" -> return "heic"
-    }
-    val extension = uri.lastPathSegment
-        ?.substringAfterLast('.', missingDelimiterValue = "")
-        ?.lowercase()
-        .orEmpty()
-    return if (extension.length in 1..5 && extension.all { it.isLetterOrDigit() }) {
-        extension
-    } else {
-        "png"
-    }
-}
 
 /**
  * 滑杆行的落盘防抖判据（Dart `_updateDraft(..., debounce: true)` 的调用点，`:622-631`）。

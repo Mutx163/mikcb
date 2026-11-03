@@ -107,15 +107,17 @@ object SettingsStringsExt1 {
     val homePageWallpaperBlurTitle = ArbText("homePageWallpaperBlurTitle", "壁纸模糊")
     val homePageWallpaperBlurOff = ArbText("homePageWallpaperBlurOff", "关闭")
 
-    // ---- 取景页（Dart `wallpaper_position_picker_sheet.dart`，:609 / :634 / :658） ----
-    // 只登记这一页实际会上屏的四条；ARB 里还有 dragHint / switchWallpaper 两条，
-    // 但 Dart 的拖动提示没有渲染、本仓也还没做「换壁纸」按钮，先不建死键。
+    // ---- 取景页（Dart `wallpaper_position_picker_sheet.dart`，:609 / :634 / :658 / :663-667） ----
+    // 只登记这一页实际会上屏的五条；ARB 里还有 dragHint 一条，Dart 的拖动提示
+    // 没有渲染，本仓也不建死键。
     val wallpaperPositionPickerTitle =
         ArbText("wallpaperPositionPickerTitle", "调整壁纸显示位置")
     val wallpaperPositionPickerExit = ArbText("wallpaperPositionPickerExit", "退出")
     val wallpaperPositionPickerDone = ArbText("wallpaperPositionPickerDone", "完成")
     val wallpaperPositionPickerReset =
         ArbText("wallpaperPositionPickerResetTooltip", "重置")
+    val wallpaperPositionPickerSwitch =
+        ArbText("wallpaperPositionPickerSwitchWallpaper", "换壁纸")
     val bingWallpaperAutoApplyTitle = ArbText("bingWallpaperAutoApplyTitle", "每天自动更换")
     val bingWallpaperAutoApplySubtitle =
         ArbText("bingWallpaperAutoApplySubtitle", "所有课表共用，只换当前这份")

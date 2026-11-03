@@ -210,7 +210,8 @@ fun WallpaperSheetBody(
     // 系统图片选择器：`ActivityResultContracts.PickVisualMedia`（Android 13 起是系统
     // 相册，更老的系统自动退回 `ACTION_OPEN_DOCUMENT`）。与 Dart `:1025-1029` 的
     // `pickAndStoreManagedImage` 同一条：选完 → 定位 → 确认；这里只负责「选」，
-    // 收进受管目录与落盘由数据侧按 [WallpaperSheetTargets.PICKED_PREFIX] 做。
+    // 收进受管目录由宿主走 `platform/ManagedWallpaperStore`（取景页「换壁纸」同一个
+    // 入口），写设置由分派器按 [WallpaperSheetTargets.PICKED_PREFIX] 做。
     val picker = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.PickVisualMedia(),
     ) { uri ->
