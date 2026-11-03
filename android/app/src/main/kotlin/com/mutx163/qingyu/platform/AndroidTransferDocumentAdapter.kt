@@ -56,7 +56,9 @@ class AndroidTransferDocumentAdapter(private val context: Context) {
          * 字节读到了，但不是合法 UTF-8（截断序列 / 非法字节 / 越界码点）。
          *
          * 与 Dart 文件通道的 `utf8.decode` 同口径：畸形字节直接拒绝，不做替换字符兜底。
-         * 用户文案由壳接线层决定；ARB 目前没有对应的键（见回报），**本类不造字符串**。
+         * Dart 的 `TransferPackage.decodeBytes` 里定义了 `transfer_package_utf8_invalid`，
+         * 但文件通道**没有走那条路**（`data_transfer_screen.dart:415` 直接 `utf8.decode`），
+         * 所以本码目前没有 ARB 文案键——用户文案由壳接线层决定，**本类不造字符串**。
          */
         data object InvalidEncoding : ReadResult
     }

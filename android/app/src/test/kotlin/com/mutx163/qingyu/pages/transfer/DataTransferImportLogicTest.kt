@@ -178,6 +178,39 @@ class DataTransferImportLogicTest {
         assertEquals("张老师", parsed.plan.courses[0].teacher)
     }
 
+    // ---------- 多缺陷包：首个错误码优先级（已知差异，未修） ----------
+
+    @Test
+    fun `多缺陷包的首个错误码与 Dart 不一致`() {
+        // Dart `TransferPackage._parseList` 是「逐条：先查必填字段 → model parse →
+        // 下一条」，所以**前面实体**的模型错误会先抛出；Kotlin 的
+        // `validateTransferPackageJson` 第 12 步只做字段/类型/id 检查，模型 parse
+        // 统一留到本文件 `parse` 里最后跑 ⇒ 后面实体的缺字段码会先返回。
+        //
+        // 要对齐必须把模型 parse 前移（happy path 双解析）或改成单趟构建，
+        // 改动面过大（还会牵动 core 模型的严格度），故此处只钉当前行为。
+        //
+        // 缺陷 A：第 1 门课的 `sessionNotes.text` 是数字。Dart
+        // `CourseSessionNote.fromJson` 用裸 `as String?` → TypeError →
+        // `_parseList` 包成 `transfer_course_invalid`；Kotlin 的
+        // `CourseSessionNote.fromJson` 用 `as? String ?: ""`，收下后按空备注跳过。
+        val nestedModelDefect = singleProfilePackage.replace(
+            """"endTime":"09:40"}],"""",
+            """"endTime":"09:40","sessionNotes":{"1":{"text":123}}}],"""",
+        )
+        val accepted = valid(DataTransferImportLogic.parse(nestedModelDefect))
+        assertEquals("高等数学", accepted.plan.courses[0].name)
+
+        // 再加缺陷 B：exams 少了 `name`。Kotlin 的门先返回
+        // `transfer_exam_name_required`；Dart 在 courses 阶段就已经抛
+        // `transfer_course_invalid`，根本走不到 exams。
+        val twoDefects = nestedModelDefect.replace(""""name":"期中",""", "")
+        assertEquals(
+            "transfer_exam_name_required",
+            invalidCode(DataTransferImportLogic.parse(twoDefects)),
+        )
+    }
+
     @Test
     fun `超长字段按原样保留不截断`() {
         // 两端都没有字段长度硬上限：20 万字符的课名仍是合法字符串，
