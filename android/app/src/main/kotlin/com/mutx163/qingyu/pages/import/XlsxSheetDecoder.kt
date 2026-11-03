@@ -43,7 +43,8 @@ object XlsxSheetDecoder {
     private const val MAX_ENTRY_BYTES: Long = 64L * 1024 * 1024
 
     private val SHEET_ENTRY_PATTERN = Regex("""^xl/worksheets/sheet(\d+)\.xml$""")
-    private val ROW_PATTERN = Regex("""<row(?:\s[^>]*)?>(.*?)</row>""", RegexOption.DOT_MATCHES_ALL)
+    private val ROW_PATTERN = Regex("""<row(\s[^>]*)?>(.*?)</row>""", RegexOption.DOT_MATCHES_ALL)
+    private val ROW_NUMBER_PATTERN = Regex("""\br="(\d+)"""")
     private val CELL_PATTERN = Regex("""<c(\s[^>]*)?>(.*?)</c>""", RegexOption.DOT_MATCHES_ALL)
     private val CELL_REF_PATTERN = Regex("""r="([A-Z]+)(\d+)"""")
     private val CELL_TYPE_PATTERN = Regex("""t="([^"]+)"""")
@@ -138,38 +139,73 @@ object XlsxSheetDecoder {
     // sheetN.xml
     // ------------------------------------------------------------------
 
+    /**
+     * 与 Dart `table_parser` 的 `XlsxDecoder._parseRow` + `Table._normalizeTable`
+     * （`xlsx.dart` 行解析、`table.dart:277-303`）同解：
+     *
+     * - 行号 `r` 缺档时补空行（空行仍占行号，警告里的 `rowNumber` 与 Dart 一致）；
+     * - 整行取不到任何值 → 记成空行，而不是塞一串空串；
+     * - 列宽按**出现过非空值的最右列**定，所有行补齐到该宽度（尾部空列不算）；
+     * - 尾部空行裁掉。
+     */
     private fun parseRows(sheetXml: String, sharedStrings: List<String>): List<List<String>> {
-        val rows = mutableListOf<List<String>>()
+        val rows = mutableListOf<MutableList<String?>>()
         for (rowMatch in ROW_PATTERN.findAll(sheetXml)) {
-            val row = mutableListOf<String>()
-            for (cellMatch in CELL_PATTERN.findAll(rowMatch.groupValues[1])) {
+            val rowNumber = ROW_NUMBER_PATTERN.find(rowMatch.groupValues[1])
+                ?.groupValues?.get(1)
+                ?.toIntOrNull()
+            if (rowNumber != null) {
+                while (rows.size < rowNumber - 1) rows.add(mutableListOf())
+            }
+            val row = mutableListOf<String?>()
+            var hasValue = false
+            for (cellMatch in CELL_PATTERN.findAll(rowMatch.groupValues[2])) {
                 val attributes = cellMatch.groupValues[1]
                 val body = cellMatch.groupValues[2]
                 val columnIndex = CELL_REF_PATTERN.find(attributes)
                     ?.groupValues?.get(1)
                     ?.let(::columnIndex)
                     ?: row.size
-                while (row.size < columnIndex) row.add("")
+                while (row.size < columnIndex) row.add(null)
                 val text = cellText(attributes, body, sharedStrings)
+                if (text != null) hasValue = true
                 if (row.size == columnIndex) row.add(text) else row[columnIndex] = text
             }
-            rows.add(row)
+            rows.add(if (hasValue) row else mutableListOf())
         }
-        return rows
+
+        val lastNonEmpty = rows.indexOfLast { row -> row.any { it != null } }
+        if (lastNonEmpty < 0) return emptyList()
+        val kept = rows.subList(0, lastNonEmpty + 1)
+        var maxColumns = 0
+        for (row in kept) {
+            row.forEachIndexed { index, value ->
+                if (value != null && index + 1 > maxColumns) maxColumns = index + 1
+            }
+        }
+        if (maxColumns == 0) return emptyList()
+        return kept.map { row -> List(maxColumns) { index -> row.getOrNull(index) ?: "" } }
     }
 
     /**
-     * 单元格取值。类型码见 ECMA-376 18.18.11（`t` 属性）：
+     * 单元格取值；`null` = 这个格子没有值（Dart 侧 `value == null`，不参与列宽/空行判定）。
+     * 类型码见 ECMA-376 18.18.11（`t` 属性）：
      * `s` 共享字符串下标、`inlineStr` 内联富文本、`str` 公式的字符串结果、
      * `b` 布尔、`n`/缺省 数字。
+     *
+     * 布尔按 Dart `bool.toString()` 写成小写 `true`/`false`（Dart `_cellToString`
+     * 走 `value.toString()`，不是 Excel 的 `TRUE`/`FALSE`）。
      */
-    private fun cellText(attributes: String, body: String, sharedStrings: List<String>): String {
+    private fun cellText(attributes: String, body: String, sharedStrings: List<String>): String? {
         val type = CELL_TYPE_PATTERN.find(attributes)?.groupValues?.get(1)
-        val rawValue = VALUE_PATTERN.find(body)?.groupValues?.get(1)?.let(::unescape).orEmpty()
+        val rawValue = VALUE_PATTERN.find(body)?.groupValues?.get(1)?.let(::unescape)
         return when (type) {
-            "s" -> sharedStrings.getOrNull(rawValue.trim().toIntOrNull() ?: -1).orEmpty()
+            "s" -> rawValue
+                ?.trim()
+                ?.toIntOrNull()
+                ?.let(sharedStrings::getOrNull)
             "inlineStr" -> TEXT_PATTERN.findAll(body).joinToString("") { unescape(it.groupValues[1]) }
-            "b" -> if (rawValue.trim() == "1") "TRUE" else "FALSE"
+            "b" -> rawValue?.let { if (it.trim() == "1") "true" else "false" }
             else -> rawValue
         }
     }

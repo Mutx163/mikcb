@@ -45,10 +45,14 @@ class WarehouseCourseWriteBackTest {
         customWeeks = weeks,
     )
 
-    private fun profileWith(courses: List<Course>): TimetableProfile = TimetableProfile(
+    private fun profileWith(
+        courses: List<Course>,
+        settings: TimetableSettings = TimetableSettings.defaults(),
+    ): TimetableProfile = TimetableProfile(
         id = "p1",
         name = "默认课表",
         courses = courses,
+        settings = settings,
         currentWeek = 1,
         createdAt = LocalDateTime.of(2026, 9, 1, 0, 0),
         lastUsedAt = LocalDateTime.of(2026, 9, 1, 0, 0),
@@ -65,13 +69,27 @@ class WarehouseCourseWriteBackTest {
         return TimetableRepository(TimetableStore(raw))
     }
 
-    /** 写 `timetable_profiles` 一律抛错的存储替身（模拟磁盘写满）。 */
+    /**
+     * 指定 key 的写入失败。
+     *
+     * [failOnMatch] = -1：每次命中都失败；正数 N：**第 N 次**命中才失败。
+     * 设置单一真源后 settings 与 courses 都写在 `timetable_profiles` 里，
+     * 「设置已落盘、课程落盘失败、回滚」只能靠计数区分第几次写。
+     */
     private class FailingWriteStore(
         private val delegate: InMemoryKeyValueStore,
         private val failKey: String,
+        private val failOnMatch: Int = -1,
     ) : KeyValueStore by delegate {
+        private var matchCount = 0
+
         override fun putString(key: String, value: String) {
-            if (key == failKey) throw IllegalStateException("disk_full")
+            if (key == failKey) {
+                matchCount += 1
+                if (failOnMatch < 0 || matchCount == failOnMatch) {
+                    throw IllegalStateException("disk_full")
+                }
+            }
             delegate.putString(key, value)
         }
     }
@@ -88,11 +106,17 @@ class WarehouseCourseWriteBackTest {
         courses: List<Course> = emptyList(),
         store: (InMemoryKeyValueStore) -> KeyValueStore = { it },
     ): TimetableRepository {
+        // 设置单一真源在档案内嵌 `settings`（`TimetableStore.loadSettings`）；顶层
+        // `timetable_settings` 在有档案时只是旧世界镜像，读侧不再走它。
         val raw = InMemoryKeyValueStore(
             mapOf(
-                "timetable_profiles" to MiniJson.encode(listOf(profileWith(courses).toJson())),
-                "timetable_settings" to MiniJson.encode(
-                    TimetableSettings.defaults().copy(sections = sections).toJson(),
+                "timetable_profiles" to MiniJson.encode(
+                    listOf(
+                        profileWith(
+                            courses,
+                            TimetableSettings.defaults().copy(sections = sections),
+                        ).toJson(),
+                    ),
                 ),
             ),
         )
@@ -208,11 +232,13 @@ class WarehouseCourseWriteBackTest {
     fun `导入只会抬高学期周数 不会把用户设的周数压回去`() {
         val raw = InMemoryKeyValueStore(
             mapOf(
-                "timetable_profiles" to MiniJson.encode(listOf(profileWith(emptyList()).toJson())),
-                "timetable_settings" to MiniJson.encode(
-                    com.mutx163.qingyu.core.TimetableSettings.defaults()
-                        .copy(semesterWeekCount = 30)
-                        .toJson(),
+                "timetable_profiles" to MiniJson.encode(
+                    listOf(
+                        profileWith(
+                            emptyList(),
+                            TimetableSettings.defaults().copy(semesterWeekCount = 30),
+                        ).toJson(),
+                    ),
                 ),
             ),
         )
@@ -416,18 +442,19 @@ class WarehouseCourseWriteBackTest {
     fun `课程落盘失败时回滚已写入的开学日`() {
         val oldStart = LocalDateTime.of(2026, 2, 23, 0, 0)
         val newStart = LocalDateTime.of(2026, 9, 7, 0, 0)
-        val profile = profileWith(listOf(course("old", name = "旧课")))
+        val profile = profileWith(
+            listOf(course("old", name = "旧课")),
+            TimetableSettings.defaults().copy(semesterStartDate = oldStart),
+        )
         val raw = InMemoryKeyValueStore(
             mapOf(
                 "timetable_profiles" to MiniJson.encode(listOf(profile.toJson())),
-                "timetable_settings" to MiniJson.encode(
-                    com.mutx163.qingyu.core.TimetableSettings.defaults()
-                        .copy(semesterStartDate = oldStart)
-                        .toJson(),
-                ),
             ),
         )
-        val repository = TimetableRepository(TimetableStore(FailingWriteStore(raw, "timetable_profiles")))
+        // 第 1 次写 = 开学日设置落盘（成功）；第 2 次写 = 课程落盘（失败）；第 3 次 = 回滚。
+        val repository = TimetableRepository(
+            TimetableStore(FailingWriteStore(raw, "timetable_profiles", failOnMatch = 2)),
+        )
 
         val result = WarehouseCourseWriteBack.apply(
             repository = repository,

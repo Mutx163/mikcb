@@ -39,6 +39,59 @@ class XlsxSheetDecoderTest {
     }
 
     @Test
+    fun `行号缺档保留空行 与 Dart 的 rowNumber 口径一致`() {
+        val shared = listOf("课程名")
+        val sheet = worksheet(
+            row(1, cell(1, 1, sharedIndex = 0)),
+            // 第 2 行整行没写：Dart `_parseRow` 会补一个空行占位，行号不能塌缩。
+            row(3, cell(1, 3, raw = "1")),
+        )
+        val rows = XlsxSheetDecoder.decodeFirstSheet(buildXlsx(sheet, shared))
+        assertEquals(3, rows.size)
+        assertEquals(listOf("课程名"), rows[0])
+        // 归一化后所有行补齐到表宽：缺档行是「一个空串列」，但仍占行号。
+        assertEquals(listOf(""), rows[1])
+        assertEquals(listOf("1"), rows[2])
+    }
+
+    @Test
+    fun `尾部短行按全表最右非空列补齐`() {
+        val headers = listOf("课程名称", "星期", "开始节数", "结束节数", "老师", "地点", "周数")
+        val shared = headers + listOf("高数")
+        val sheet = worksheet(
+            row(
+                1,
+                *headers.indices
+                    .map { cell(column = it + 1, rowIndex = 1, sharedIndex = it) }
+                    .toTypedArray(),
+            ),
+            // 数据行只写到第 5 列；Dart `_normalizeTable` 会补到 7 列。
+            row(2, cell(1, 2, sharedIndex = 7), cell(2, 2, raw = "1"), cell(5, 2, inline = "李老师")),
+        )
+        val rows = XlsxSheetDecoder.decodeFirstSheet(buildXlsx(sheet, shared))
+        assertEquals(7, rows[1].size)
+        assertEquals(listOf("高数", "1", "", "", "李老师", "", ""), rows[1])
+        // 补齐后列数检查不再误报「列不足」，而是落到具体字段解析（这里节次为空）。
+        val result = SpreadsheetImportModel.parseRows(rows, "课表.xlsx", TimetableSettings.defaults())
+        val messages = result.warnings
+        assertTrue(messages.toString(), messages.none { "insufficient_columns" in it })
+        assertTrue(messages.toString(), messages.any { "field_must_be_integer" in it })
+    }
+
+    @Test
+    fun `尾部空行裁掉 布尔按 Dart 小写`() {
+        val sheet = worksheet(
+            row(1, cell(1, 1, raw = "1"), cell(2, 1, boolean = "1")),
+            row(2, cell(1, 2, raw = "2"), cell(2, 2, boolean = "0")),
+            "<row r=\"3\"></row>",
+        )
+        val rows = XlsxSheetDecoder.decodeFirstSheet(buildXlsx(sheet, emptyList()))
+        assertEquals(2, rows.size)
+        assertEquals(listOf("1", "true"), rows[0])
+        assertEquals(listOf("2", "false"), rows[1])
+    }
+
+    @Test
     fun `解出来的行矩阵能直接喂给表格模型`() {
         // 用 WakeUp 同列的 7 列格式，验证「解码 → parseRows」这条链路端到端成立。
         val headers = listOf("课程名称", "星期", "开始节数", "结束节数", "老师", "地点", "周数")
@@ -111,11 +164,13 @@ class XlsxSheetDecoderTest {
         sharedIndex: Int? = null,
         inline: String? = null,
         raw: String? = null,
+        boolean: String? = null,
     ): String {
         val ref = "${columnLetter(column)}$rowIndex"
         return when {
             sharedIndex != null -> "<c r=\"$ref\" t=\"s\"><v>$sharedIndex</v></c>"
             inline != null -> "<c r=\"$ref\" t=\"inlineStr\"><is><t>$inline</t></is></c>"
+            boolean != null -> "<c r=\"$ref\" t=\"b\"><v>$boolean</v></c>"
             raw != null -> "<c r=\"$ref\"><v>$raw</v></c>"
             else -> ""
         }

@@ -27,6 +27,7 @@ class ImportFlowModelTest {
         dayOfWeek: Int = 1,
         startSection: Int = 1,
         endSection: Int = 2,
+        endWeek: Int = 16,
         color: String = "#2196F3",
     ): Course = Course(
         id = id,
@@ -38,6 +39,7 @@ class ImportFlowModelTest {
         endSection = endSection,
         startTime = "08:00",
         endTime = "08:45",
+        endWeek = endWeek,
         color = color,
     )
 
@@ -267,5 +269,27 @@ class ImportFlowModelTest {
     fun `体积上限文案与 Dart 同口径`() {
         assertEquals("20 MB", ImportFlowModel.formatSizeLimit(20 * 1024 * 1024))
         assertEquals("512 B", ImportFlowModel.formatSizeLimit(512))
+    }
+
+    // ------------------------------------------------------------------
+    // 导入后置：学期总周数（Dart `importParsedCourses`）
+    // ------------------------------------------------------------------
+
+    @Test
+    fun `学期总周数按导入课程抬升`() {
+        // Dart：nextSemesterWeekCount = max(当前, maxCourseWeek(合并后课程))
+        assertEquals(20, ImportFlowModel.nextSemesterWeekCount(20, emptyList()))
+        assertEquals(25, ImportFlowModel.nextSemesterWeekCount(20, listOf(course("a", endWeek = 25))))
+        assertEquals(16, ImportFlowModel.nextSemesterWeekCount(16, listOf(course("a", endWeek = 8))))
+        assertEquals(30, ImportFlowModel.nextSemesterWeekCount(20, listOf(course("a", endWeek = 40))))
+    }
+
+    @Test
+    fun `学期总周数只升不降 自定义周次也参与抬升`() {
+        assertEquals(18, ImportFlowModel.nextSemesterWeekCount(18, listOf(course("a", endWeek = 16))))
+        val custom = course("a", endWeek = 16).copy(customWeeks = listOf(1, 3, 21))
+        assertEquals(21, ImportFlowModel.nextSemesterWeekCount(16, listOf(custom)))
+        // 空课表保持当前值（不能落成 0）
+        assertEquals(30, ImportFlowModel.nextSemesterWeekCount(30, emptyList()))
     }
 }

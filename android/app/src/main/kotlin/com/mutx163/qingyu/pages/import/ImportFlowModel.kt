@@ -3,6 +3,7 @@ package com.mutx163.qingyu.pages.import
 import com.mutx163.qingyu.core.Course
 import com.mutx163.qingyu.core.SectionTime
 import com.mutx163.qingyu.transfer.buildExpandedSections
+import com.mutx163.qingyu.transfer.maxCourseWeek
 import com.mutx163.qingyu.transfer.replaceImportedCoursesPreservingLocalFields
 import com.mutx163.qingyu.transfer.syncImportedCourses
 import kotlin.random.Random
@@ -167,6 +168,14 @@ object ImportFlowModel {
      */
     fun sectionsForImport(currentSections: List<SectionTime>, requiredCount: Int): List<SectionTime> =
         buildExpandedSections(currentSections, requiredCount)
+
+    /**
+     * 导入成功后要写入的学期总周数（Dart `importParsedCourses`）：
+     * 取「当前值」与「合并后课程的最大周次」中较大者——**只升不降**，封顶 30 周
+     * （与 `maxCourseWeek` 同一常量）。课程为空时保持当前值。
+     */
+    fun nextSemesterWeekCount(currentWeekCount: Int, courses: List<Course>): Int =
+        maxOf(currentWeekCount, maxCourseWeek(courses, currentWeekCount))
 
     // ------------------------------------------------------------------
     // 随机配色

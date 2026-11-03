@@ -38,12 +38,14 @@ class SpreadsheetImportModelTest {
     }
 
     @Test
-    fun `只有空行的 CSV 抛格式无法识别`() {
+    fun `只有空行的 CSV 抛编码无法识别`() {
+        // Dart `_csvContent.trim().isEmpty` ⇒ tables 为空 ⇒ 没有表可识别，
+        // 一路走到 utf8/gbk 两条路都拿不到行矩阵，最终报「编码无法识别」。
         try {
             SpreadsheetImportModel.parseBytes("\r\n\r\n".toByteArray(Charsets.UTF_8), "a.csv", settings)
             throw AssertionError("应抛出 FormatException")
         } catch (expected: com.mutx163.qingyu.core.FormatException) {
-            assertEquals("spreadsheet_format_unrecognized", expected.message)
+            assertEquals("spreadsheet_format_or_encoding_unrecognized", expected.message)
         }
     }
 
@@ -641,5 +643,155 @@ class SpreadsheetImportModelTest {
         // 从第一个左括号剥到第一个右括号 → `2-3`。
         assertEquals(listOf(2, 3), parseWeeks("(备注(1)2-3"))
         assertEquals(listOf(2, 3), parseWeeks("（备注（1）2-3"))
+    }
+
+    // ==========================================
+    // 11. 表格导入对拍（2026-11-04）：表头 / 节次写法 / 分隔符 / Dart 行号口径
+    // ==========================================
+
+    @Test
+    fun `表头两侧空白被裁掉仍按 WakeUp 识别`() {
+        val result = SpreadsheetImportModel.parseBytes(
+            csv(" 课程名称 , 星期 , 开始节数 , 结束节数 , 老师 , 地点 , 周数 ", "高数,1,1,2,李,楼,1-2"),
+            "a.csv",
+            settings,
+        )
+        assertEquals(SpreadsheetImportModel.FORMAT_WAKEUP, result.format)
+        assertEquals(1, result.courses.size)
+    }
+
+    @Test
+    fun `英文表头与多行表头都不被识别`() {
+        // Dart `_detectFormat` 只看第 0 行（或元数据行之后的第 1 行），没有英文别名，
+        // 也不会向下搜索真正的表头。
+        for (header in listOf(
+            "Course,Day,Start Section,End Section,Teacher,Location,Week",
+            "课程信息表",
+        )) {
+            try {
+                SpreadsheetImportModel.parseBytes(csv(header, "高数,1,1,2,李,楼,1-2"), "a.csv", settings)
+                throw AssertionError("表头 '$header' 应判为无法识别")
+            } catch (expected: com.mutx163.qingyu.core.FormatException) {
+                assertEquals("spreadsheet_format_unrecognized", expected.message)
+            }
+        }
+    }
+
+    @Test
+    fun `制表符分隔与 Dart 一样不支持`() {
+        // Dart 固定用逗号（`shouldParseNumbers: false`），整行只会成为一列，
+        // 于是落回「格式无法识别」。
+        val tab = "课程名称\t星期\t开始节数\t结束节数\t老师\t地点\t周数"
+        try {
+            SpreadsheetImportModel.parseBytes(csv(tab, "高数\t1\t1\t2\t李\t楼\t1-2"), "a.csv", settings)
+            throw AssertionError("Tab 分隔应判为无法识别")
+        } catch (expected: com.mutx163.qingyu.core.FormatException) {
+            assertEquals("spreadsheet_format_unrecognized", expected.message)
+        }
+    }
+
+    @Test
+    fun `节次列只认整数 范围与中文写法逐行落警告`() {
+        // Dart 表格导入的节次列是 `_readRequiredInt`，没有 `3-4` / `3~4` / `第三节`
+        // 这类写法（那是就绪/AI 导入的解析）；这里钉住「逐行跳过、不整表拒绝」。
+        for (raw in listOf("3-4", "3~4", "第三节")) {
+            val result = SpreadsheetImportModel.parseBytes(
+                csv(wakeupHeader, "高数,1,$raw,4,李,楼,1-2"),
+                "a.csv",
+                settings,
+            )
+            assertTrue("'$raw' 不应产出课程", result.courses.isEmpty())
+            assertEquals(
+                "'$raw' 的警告不符",
+                "spreadsheet_row_warning|rowNumber=2|inner=field_must_be_integer|field=start_section",
+                result.warnings.single(),
+            )
+        }
+    }
+
+    @Test
+    fun `单节次按该节的起止时间展开`() {
+        val course = SpreadsheetImportModel.parseBytes(
+            csv(wakeupHeader, "高数,1,3,3,李,楼,1-2"),
+            "a.csv",
+            settings,
+        ).courses.single()
+        assertEquals(3, course.startSection)
+        assertEquals(3, course.endSection)
+        assertEquals("10:00", course.startTime) // 默认作息第 3 节
+        assertEquals("10:45", course.endTime)
+    }
+
+    @Test
+    fun `节次超出作息表容量逐行落 section_out_of_range`() {
+        val result = SpreadsheetImportModel.parseBytes(
+            csv(wakeupHeader, "高数,1,11,11,李,楼,1-2"),
+            "a.csv",
+            settings,
+        )
+        assertTrue(result.courses.isEmpty())
+        assertEquals(
+            "spreadsheet_row_warning|rowNumber=2|inner=section_out_of_range|section=11|maxSection=10",
+            result.warnings.single(),
+        )
+        // 被拒的行不计入 requiredSectionCount（不会触发扩容对话框）。
+        assertEquals(0, result.requiredSectionCount)
+    }
+
+    @Test
+    fun `空行跳过后的行号与 Dart 一致`() {
+        // Dart `_parseContent` 先丢掉 trim 为空的行，行号只数非空行：
+        // 表头=1、好行=2、坏行=3（Kotlin 旧实现把空行也数进去 → 4）。
+        val result = SpreadsheetImportModel.parseBytes(
+            csv(wakeupHeader, "", "高数,1,1,2,李,楼,1-2", "", "坏行,1,x,2,李,楼,1-2"),
+            "a.csv",
+            settings,
+        )
+        assertEquals(1, result.courses.size)
+        assertEquals(
+            "spreadsheet_row_warning|rowNumber=3|inner=field_must_be_integer|field=start_section",
+            result.warnings.single(),
+        )
+    }
+
+    @Test
+    fun `引号内的换行按 Dart 切成两行 而不是一个字段`() {
+        // Dart table_parser 1.0.1 先 split 换行再处理引号（csv.dart:53），
+        // 所以跨行字段不成立：`"数据` 与 `结构",1,1,...` 各成一行、各只有 1 列。
+        // 第二行的 `"` 会开启引号并吞掉后面的逗号 —— 两行都落「列不足」。
+        val result = SpreadsheetImportModel.parseBytes(
+            csv(wakeupHeader, "\"数据\n结构\",1,1,2,张,楼,1-2"),
+            "a.csv",
+            settings,
+        )
+        assertTrue(result.courses.isEmpty())
+        assertEquals(
+            listOf(
+                // Dart 行级 catch 会把抛出的消息再包一层 `spreadsheet_row_warning`，
+                // 内层消息自身也带 rowNumber（同源重复，不是本实现新造）。
+                "spreadsheet_row_warning|rowNumber=2|inner=spreadsheet_wakeup_insufficient_columns|rowNumber=2|columnCount=1",
+                "spreadsheet_row_warning|rowNumber=3|inner=spreadsheet_wakeup_insufficient_columns|rowNumber=3|columnCount=1",
+            ),
+            result.warnings,
+        )
+    }
+
+    @Test
+    fun `教师与地点列整列缺失或单元格为空都回落空串`() {
+        val missing = SpreadsheetImportModel.parseBytes(
+            csv("课程名,星期,开始节,结束节,上课周", "高数,1,1,2,1-4"),
+            "a.csv",
+            settings,
+        ).courses.single()
+        assertEquals("", missing.teacher)
+        assertEquals("", missing.location)
+
+        val empty = SpreadsheetImportModel.parseBytes(
+            csv("课程名,星期,开始节,结束节,老师,地点,上课周", "高数,1,1,2,,,1-4"),
+            "a.csv",
+            settings,
+        ).courses.single()
+        assertEquals("", empty.teacher)
+        assertEquals("", empty.location)
     }
 }
