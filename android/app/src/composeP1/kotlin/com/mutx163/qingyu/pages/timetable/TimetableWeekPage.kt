@@ -3,6 +3,9 @@ package com.mutx163.qingyu.pages.timetable
 import android.app.Activity
 import android.content.Context
 import android.content.ContextWrapper
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.CubicBezierEasing
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.isSystemInDarkTheme
@@ -18,8 +21,9 @@ import androidx.compose.foundation.layout.calculateStartPadding
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.requiredSize
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.rememberScrollState
@@ -38,15 +42,25 @@ import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.draw.clipToBounds
+import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.RectangleShape
+import androidx.compose.ui.graphics.drawscope.clipRect
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.layout.boundsInRoot
+import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.layout.positionInRoot
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
@@ -83,6 +97,7 @@ import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import java.time.LocalDate
 import java.time.LocalDateTime
+import kotlin.math.roundToInt
 
 /**
  * 课表周视图完整页面（对应 Flutter `lib/screens/timetable_screen.dart` 的周视图部分）。
@@ -101,8 +116,9 @@ import java.time.LocalDateTime
  *
  * ## 已知未复刻（见 `docs/plans/2026-10-29-compose-week-view-audit.md` §六）
  *
- * 壁纸与玻璃坞（属于壳）、下拉快捷导入（`homePull`）、周↔日/月飞行动效、
- * 课卡天气行、情侣课表叠加。这些不是本页能单独补齐的。
+ * 壁纸 / 玻璃坞 / 课卡天气行已由宿主接上；周↔日已有**锚点窗口展开**
+ *（2026-11-02，见下方 `dayMode`）；逐卡飞行、月视图飞行动效尚未复刻。
+ * 仍未接：下拉快捷导入（`homePull`）、情侣课表叠加。
  */
 @Composable
 fun TimetableWeekPage(
@@ -197,6 +213,34 @@ fun TimetableWeekPage(
      * `null` = 宿主没接 ⇒ 退回旧口径（系统内边距 + 72dp）。
      */
     floatingButtonBottomInset: Dp? = null,
+    // ── 首页「周 ↔ 日」展开态（2026-11-02）────────────────────────────────
+    /** 当前是不是日视图展开态（首页宿主的状态，不是本页自己记的）。 */
+    dayMode: Boolean = false,
+    /** 日视图正看着的那一周（星期栏在日视图下显示它，而不是周 pager 的当前页）。 */
+    selectedWeek: Int = 1,
+    /** 日视图正看着的那一天（1..7）。 */
+    selectedDayOfWeek: Int = 1,
+    /**
+     * 首帧展开进度（0 = 周视图，1 = 日视图）。
+     *
+     * 只在**宿主被重建**时需要：从别的底栏页切回课表时，路由替换是瞬时的，
+     * 新宿主首帧如果直接落定就看不到展开/收起。常驻时切换不看它（`dayMode` 变化
+     * 本身会触发动画）。
+     */
+    dayProgressSeed: Float = 0f,
+    /** 点了星期栏某一天 / 翻到另一周某一天。宿主据此切到日视图并记住选中日。 */
+    onSelectDay: (week: Int, dayOfWeek: Int) -> Unit = { _, _ -> },
+    /** 日视图摘要卡上的关闭叉（收回周视图）。 */
+    onCloseDay: () -> Unit = {},
+    /**
+     * 日视图正文（整屏尺寸的页面），由壳注入。
+     *
+     * 参数是「首页顶栏玻璃带的高度」：日视图在展开窗口里只画正文，顶栏 / 星期栏
+     * 由本页画（与周视图共用一条带），正文从这条高度往下开始。
+     */
+    dayContent: (@Composable (contentTop: Dp) -> Unit)? = null,
+    /** 用户设置的页面转场速度（1.0 = 原速；周→日展开与其它转场同一口径缩放）。 */
+    transitionSpeed: Double = 1.0,
     modifier: Modifier = Modifier,
 ) {
     val dark = isSystemInDarkTheme()
@@ -236,6 +280,51 @@ fun TimetableWeekPage(
             }
     }
 
+    // ── 周 ↔ 日展开态（2026-11-02）──
+    //
+    // 日视图不是一页路由，而是首页内部的一层：选中那一天从网格列位长到整屏。
+    // 这里只负责把 `dayMode` 变成 0..1 的进度，几何交给 `homeViewExpandWindow`
+    // （纯函数，单测在 `HomeViewExpandMotionTest`）。时长与曲线对齐 Dart
+    // `DayViewExpandMotion`：210ms × 用户倍率、Cubic(0.25, 0, 0.75, 1)（严格对称，
+    // 展开到一半反向收起也不会跳）。
+    val dayExpand = remember { Animatable(dayProgressSeed.coerceIn(0f, 1f)) }
+    val dayExpandEasing = remember { CubicBezierEasing(0.25f, 0f, 0.75f, 1f) }
+    val dayExpandDuration = homeViewExpandDurationMillis(transitionSpeed)
+    // 收起动画还没走完时，展开层必须继续留在树上（否则会看到日视图瞬间消失再收回）。
+    // `closing` 只在动画起止各改一次：若直接用 `dayExpand.value > 0` 判断可见性，
+    // 进度每帧变化都会让整页重组一次（几何已经走 layout 阶段的逐帧读，见下方窗口）。
+    var closing by remember { mutableStateOf(false) }
+    LaunchedEffect(dayMode) {
+        if (dayMode) {
+            closing = false
+        } else if (dayExpand.value > 0f) {
+            closing = true
+        }
+        dayExpand.animateTo(
+            targetValue = if (dayMode) 1f else 0f,
+            animationSpec = tween(durationMillis = dayExpandDuration, easing = dayExpandEasing),
+        )
+        if (!dayMode) closing = false
+    }
+    val dayVisible = dayMode || closing
+
+    // 收起落定后把周 pager 对到「日视图刚才看的那一周」：否则收起会跳回进日视图前的旧周。
+    var wasDayMode by remember { mutableStateOf(dayMode) }
+    LaunchedEffect(dayMode) {
+        if (wasDayMode && !dayMode) {
+            val targetPage = (selectedWeek - 1).coerceIn(0, pageCount - 1)
+            if (pagerState.currentPage != targetPage) pagerState.scrollToPage(targetPage)
+        }
+        wasDayMode = dayMode
+    }
+
+    // 展开窗口的几何先量根布局与内容区（左右安全区内缩之后）的位置 / 尺寸。
+    // 不能用 `LocalConfiguration.screenWidthDp` 推算：内容区被安全区缩过，
+    // 星期栏的列宽与网格列宽必须用**同一份**实测值，否则窗口起点会偏一列。
+    var rootSize by remember { mutableStateOf(IntSize.Zero) }
+    var rootOrigin by remember { mutableStateOf(Offset.Zero) }
+    var contentBounds by remember { mutableStateOf(Rect.Zero) }
+
     val accentColor = Color(QingyuTheme.primary(dark = dark))
     val textColor = Color(QingyuTheme.primaryText(dark))
     val subTextColor = Color(QingyuTheme.secondaryText(dark))
@@ -251,6 +340,9 @@ fun TimetableWeekPage(
     // 设备支持 RuntimeShader」三件事同时成立才录，否则省掉整层采样。
     // 课卡玻璃（下面 `cardGlassActive`）复用同一层录像带。
     val density = LocalDensity.current
+    // 内容区顶边 = 顶栏玻璃带底边（状态栏 + 标题行 + 星期栏）。展开层的窗口从这里开始，
+    // 上面的共享带保持不动 —— 用户看到的是「下面那块网格长成了日视图」。
+    val contentTopPx = (contentBounds.top - rootOrigin.y).coerceAtLeast(0f)
     // ── 整页只有**一层**壁纸录像带 ──
     // 顶栏玻璃带与周网格课程卡片都从它采样。卡片数量多（一屏 20~50 张），
     // 一张卡建一层录像带会把整屏复制几十份；Dart 也是同一结论
@@ -329,6 +421,11 @@ fun TimetableWeekPage(
     // 旧实现写成 `coerceAtLeast(12)`，用户把作息表配成 10 节时 Compose 仍画 12 行、Dart 只画 10 行。
     val sectionCount = sectionTimes.size
     val semesterStart = settings.semesterStartDate?.toLocalDate()
+    // 单节课提醒键（`courseId|yyyy-MM-dd`）：课卡右上角铃铛的唯一数据源
+    //（`core/TimetableSettings.classReminders`，随仓储快照进来）。
+    val reminderKeys = remember(settings.classReminders) {
+        settings.classReminders.map { it.key }.toSet()
+    }
     val realCurrentWeek = currentSemesterWeek(semesterStart, totalWeeks, todayDate)
     val showBackToCurrentWeek = style.showBackToCurrentWeek &&
         realCurrentWeek != null &&
@@ -352,7 +449,14 @@ fun TimetableWeekPage(
         containerColor = if (backdrop == null) scaffoldBg else Color.Transparent,
         modifier = modifier.fillMaxSize(),
     ) { innerPadding ->
-        Box(modifier = Modifier.fillMaxSize()) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                // 展开窗口的坐标系以本页根布局为原点；NavDisplay 条目在转场中可能带偏移，
+                // 所以内容区的位置要减去根节点的 `positionInRoot` 再换算（见下方展开层的绘制）。
+                .onSizeChanged { rootSize = it }
+                .onGloballyPositioned { rootOrigin = it.positionInRoot() },
+        ) {
         // 壁纸层在最底（Dart 的层次：壁纸 → 内容）。没有壁纸时这一行什么也不画。
         // 顶栏玻璃带与课卡玻璃都要采样它，所以包一层（只有真要玻璃时才挂 `layerBackdrop`）。
         if (backdrop != null) {
@@ -447,8 +551,10 @@ fun TimetableWeekPage(
 
                     // ── 星期栏：从 pager 里提出来，不跟横向翻页滑动 ──
                     // 显示「落定后的那一页」；滑动过程中保持上一页（见 displayedPage）。
+                    // 日视图展开时改跟「日视图正在看的那一周/那一天」：日视图可以连续翻周，
+                    // 而周 pager 停在下面不动，继续读 displayedPage 会把星期栏钉在旧周上。
                     TimetableWeekdayHeader(
-                        week = displayedPage + 1,
+                        week = if (dayVisible) selectedWeek else displayedPage + 1,
                         currentWeek = currentWeek,
                         todayDate = todayDate,
                         semesterStartDate = semesterStart,
@@ -462,16 +568,41 @@ fun TimetableWeekPage(
                             bandOverWallpaper
                         },
                         timeColumnWidth = style.timeColumnWidthDp.dp,
+                        // 日视图用强调色标出正在看的那一天（Dart 同一条栏、同一个高亮）；
+                        // 周视图不标。
+                        selectedDayOfWeek = selectedDayOfWeek.takeIf { dayVisible },
                         hasExamOnDate = hasExamOnDate,
                         hasScheduleOnDate = hasScheduleOnDate,
-                        onDayClick = onDayClick,
+                        // 周视图：点哪天 = 从周视图展开到那一天（不再推 c3.day 路由）。
+                        // 日视图：点另一天 = 在同一展开层里换日；点**当前这一天** = 收起
+                        //（Dart `DayViewTransitionController.toggle` 的
+                        // `sameSelectionCloses = true`，底栏与星期栏同一条口径）。
+                        onDayClick = { dayOfWeek ->
+                            when {
+                                dayMode && dayOfWeek == selectedDayOfWeek -> onCloseDay()
+                                dayMode -> onSelectDay(selectedWeek, dayOfWeek)
+                                else -> onSelectDay(displayedPage + 1, dayOfWeek)
+                            }
+                        },
                         onWeekTitleClick = { showWeekSelectorDialog = true },
                     )
                 }
             }
 
             // 下方内容：从玻璃带底部开始，占满剩余高度（底部仍铺到屏幕最底）。
-            Box(modifier = Modifier.weight(1f).fillMaxWidth()) {
+            Box(
+                modifier = Modifier
+                    .weight(1f)
+                    .fillMaxWidth()
+                    // 展开窗口的起点 / 底边都按这块真实区域算（见下方展开层的绘制）。
+                    .onGloballyPositioned { contentBounds = it.boundsInRoot() }
+                    // 日视图铺满后周网格整块被盖住：只在 progress == 1 这一刻跳过绘制
+                    //（Dart `timetable_week_page_body.dart:82-93` 的 Opacity 0/1 同口径）。
+                    // 展开 / 收起全程照画，否则邻居列会在中途消失。
+                    .drawWithContent {
+                        if (!dayVisible || dayExpand.value < 0.999f) drawContent()
+                    },
+            ) {
                 HorizontalPager(
                     state = pagerState,
                     modifier = Modifier.fillMaxSize(),
@@ -479,6 +610,7 @@ fun TimetableWeekPage(
                     WeekPageContent(
                         pageWeek = page + 1,
                         semesterStart = semesterStart,
+                        reminderKeys = reminderKeys,
                         visibleDays = visibleDays,
                         courses = courses,
                         style = style,
@@ -501,7 +633,9 @@ fun TimetableWeekPage(
                 }
 
                 // ── 「回本周」浮钮（Dart 浮钮唯一入口）──
-                if (showBackToCurrentWeek) {
+                // 日视图展开时不画：那是周视图的浮钮，日视图有自己的「回今日」
+                // （Dart 两套独立体系，见 `_shouldShowFloatingBackToTodayButton`）。
+                if (showBackToCurrentWeek && !dayVisible) {
                     // Dart 把 `timetableFloatingBackToCurrentWeekButtonOpacity` 分别压在
                     // **染色**与**内容**两层，而不是包住整块玻璃（`timetable_back_to_current_week_button.dart:40-82`）：
                     // 包住会让采样失真。这里同口径。
@@ -550,6 +684,80 @@ fun TimetableWeekPage(
                 }
             }
         }
+
+        // ── 日视图展开层（2026-11-02）────────────────────────────────────
+        // 窗口从「选中那一列」长到整屏（几何见 `homeViewExpandWindow`）。放在 Column
+        // **之后**、同一个根 Box 里：底下的周视图照常绘制（邻居列还在），上层只盖住
+        // 窗口区域；顶栏 / 星期栏属于上面的 Column，不被窗口盖住 —— 展开全程可见、可点。
+        //
+        // 窗口里的日视图是**整屏排版好**的页面（不重排、不拉伸），只是被外层 Box 裁切，
+        // 与原版「窗口取样」同一条做法。`contentTopInset` 让它跳过自己的顶栏/星期栏，
+        // 正文正好接在首页那条共享带下面。
+        if (
+            dayVisible &&
+            dayContent != null &&
+            rootSize != IntSize.Zero &&
+            contentBounds != Rect.Zero
+        ) {
+            val contentTopDp = with(density) { contentTopPx.toDp() }
+            val contentHeightDp = with(density) {
+                (rootSize.height - contentTopPx).coerceAtLeast(1f).toDp()
+            }
+            val screenWidthDp = with(density) { rootSize.width.toDp() }
+            val screenHeightDp = with(density) { rootSize.height.toDp() }
+            // 窗口边界在 **draw 阶段** 读 `dayExpand.value`：逐帧只重绘，不重组、不重排。
+            // 日视图本身仍是整屏排版（不重排、不拉伸），只是被这个窗口裁切 —— 与原版
+            // 「窗口取样」同一条做法。纵向裁到内容区，横向从选中列长到整屏。
+            val contentLeftPx = (contentBounds.left - rootOrigin.x).coerceAtLeast(0f)
+            val contentWidthPx = contentBounds.width
+            val timeColumnPx = with(density) { style.timeColumnWidthDp.dp.toPx() }
+            Box(
+                modifier = Modifier
+                    // 只覆盖内容区（不含顶栏/星期栏）：上面的共享带保持可见、可点。
+                    .offset { IntOffset(0, contentTopPx.roundToInt()) }
+                    .fillMaxWidth()
+                    .height(contentHeightDp)
+                    .clipToBounds()
+                    // 命中测试也停在内容区：日视图展开时不能把事件漏给下面的周网格
+                    // （否则长按空白格加课会在日视图上误触发）。这个节点只宣称命中、
+                    // 不消费，窗口里的真实控件照常拿事件。
+                    .pointerInput(Unit) {
+                        awaitPointerEventScope {
+                            while (true) {
+                                awaitPointerEvent()
+                            }
+                        }
+                    }
+                    .drawWithContent {
+                        val window = homeViewExpandWindow(
+                            progress = dayExpand.value,
+                            viewportWidth = rootSize.width.toFloat(),
+                            contentLeft = contentLeftPx,
+                            contentWidth = contentWidthPx,
+                            timeColumnWidth = timeColumnPx,
+                            visibleDays = visibleDays,
+                            selectedDayOfWeek = selectedDayOfWeek,
+                        )
+                        clipRect(
+                            left = window.left,
+                            top = 0f,
+                            right = window.right,
+                            bottom = size.height,
+                        ) {
+                            this@drawWithContent.drawContent()
+                        }
+                    },
+            ) {
+                Box(
+                    modifier = Modifier
+                        .requiredSize(screenWidthDp, screenHeightDp)
+                        // 把整屏日视图上移一个顶栏高度：它的正文正好落在内容区顶部。
+                        .offset(y = -contentTopDp),
+                ) {
+                    dayContent(contentTopDp)
+                }
+            }
+        }
         }
     }
 
@@ -562,13 +770,19 @@ fun TimetableWeekPage(
         // 可选周次 = 1..总周数（Dart `settings.availableWeeks` 即 startWeek..endWeek，
         // 学期周数在宿主侧已经钳过，这里不再二次过滤）。
         availableWeeks = (1..pageCount).toList(),
-        visibleWeek = browsingWeek,
+        // 日视图展开时显示「日视图正在看的那一周」，否则显示周 pager 落定的那一周。
+        visibleWeek = if (dayVisible) selectedWeek else browsingWeek,
         currentSemesterWeek = realCurrentWeek,
         onDismiss = { showWeekSelectorDialog = false },
         onSelect = { week ->
             showWeekSelectorDialog = false
-            coroutineScope.launch {
-                pagerState.animateScrollToPage((week - 1).coerceIn(0, pageCount - 1))
+            if (dayVisible) {
+                // 展开层常驻：换周不重建日视图，交给它按 requested 目标滚过去。
+                onSelectDay(week, selectedDayOfWeek)
+            } else {
+                coroutineScope.launch {
+                    pagerState.animateScrollToPage((week - 1).coerceIn(0, pageCount - 1))
+                }
             }
         },
     )
@@ -584,6 +798,8 @@ fun TimetableWeekPage(
 private fun WeekPageContent(
     pageWeek: Int,
     semesterStart: LocalDate?,
+    /** 已设单节课提醒键（`courseId|yyyy-MM-dd`），空集 = 真的没设过。 */
+    reminderKeys: Set<String> = emptySet(),
     visibleDays: List<Int>,
     courses: List<Course>,
     style: WeekViewStyle,
@@ -608,13 +824,15 @@ private fun WeekPageContent(
     /** 时间列那档壁纸亮度；null = 没壁纸（保持设置里的字色）。 */
     wallpaperLuminance: Double? = null,
 ) {
-    val cardsByDay = remember(courses, pageWeek, style, visibleDays, weatherOf) {
+    val cardsByDay = remember(courses, pageWeek, style, visibleDays, weatherOf, reminderKeys, semesterStart) {
         WeekGridCourseMapping.cardsForWeek(
             courses = courses,
             week = pageWeek,
             style = style,
             visibleDays = visibleDays,
             weatherOf = weatherOf,
+            reminderKeys = reminderKeys,
+            semesterStartDate = semesterStart,
         )
     }
     val agendaByDay = remember(exams, scheduleItems, pageWeek, style, visibleDays, semesterStart) {

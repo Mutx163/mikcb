@@ -26,7 +26,6 @@ import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -39,6 +38,7 @@ import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
 import androidx.core.content.ContextCompat
 import com.mutx163.qingyu.LiveUpdateScheduler
+import com.mutx163.qingyu.ExamReminderCoordinator
 import com.mutx163.qingyu.ScheduleReminderCoordinator
 import com.mutx163.qingyu.app.AppFontMode
 import com.mutx163.qingyu.app.AppThemeMode
@@ -61,15 +61,13 @@ import com.mutx163.qingyu.pages.shell.rememberHomeDockUsesBackdrop
 import kotlin.math.roundToInt
 import java.util.Locale
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import kotlinx.coroutines.sync.Mutex
-import kotlinx.coroutines.sync.withLock
 import top.yukonga.miuix.kmp.basic.Scaffold
 import top.yukonga.miuix.kmp.nav.core.NavDisplay
 import top.yukonga.miuix.kmp.nav.core.NavDisplayEffects
 import top.yukonga.miuix.kmp.nav.core.NavKey
 import top.yukonga.miuix.kmp.nav.core.navBackStackOf
+import top.yukonga.miuix.kmp.nav.runtime.NavChange
 import top.yukonga.miuix.kmp.nav.runtime.NavProgrammaticEasing
 import top.yukonga.miuix.kmp.nav.transition.NavMotion
 import top.yukonga.miuix.kmp.nav.transition.NavSettleSpec
@@ -223,6 +221,9 @@ class PagesShellActivity : ComponentActivity() {
             LaunchedEffect(wiring) {
                 withContext(Dispatchers.IO) {
                     ScheduleReminderCoordinator.install(applicationContext, wiring.timetable)
+                    // 考试提醒：考试 / 课程 / 日程增删改与冷启动、恢复备份后整表重排
+                    //（对位上面日程提醒的安装；开机 / 换时区补排走 ExamReminderReceiver，无需在此装）。
+                    ExamReminderCoordinator.install(applicationContext, wiring.timetable)
                     ScheduleDateRuleAutoApplyHost.applyDue(wiring.timetable, schedulePrefs)
                 }
             }
@@ -491,26 +492,14 @@ private fun PagesShell(
         pushRoute(ShellRoute.ZoomPage(id, pushToken = pushSeq.incrementAndGet()))
     }
 
-    // ── 视图档落盘：**必须离开点击所在的那一帧** ─────────────────────────────
-    // `settingsModel.save` 内部是两次 `SharedPreferences.commit()`（同步等磁盘落盘），
-    // 其中 `saveSettingsPatchToActiveProfile` 还会把整份课表档案 JSON（全部课程 /
-    // 任务 / 考试）读出来、解析、重编码再写回。这一句原先就写在 [selectRoot] 里，
-    // 于是「点底栏 日/周/月 切视图」= 在下一帧画出来之前把主线程堵住 —— 用户反馈的
-    // 那一下「顿」（2026-11-01，性能版）。
-    //
-    // 三条纪律：
-    // 1. 写盘在 IO 线程，屏幕不等磁盘（与 Dart `timetable_screen.dart:1011-1016` 的
-    //    lightweight path 同口径：先改内存、后异步落盘）。
-    // 2. 互斥量串行：连点两次时两次写同时起飞，先发起的那次可能最后落盘，冷启动就
-    //    会恢复成上一个视图；串行保证「最后一次点击 = 最后一次写」。
-    // 3. **不写 `settingsModel` 这个 state**：它不影响屏幕上的任何一个像素，写它只会
-    //    让整个壳——含底栏三层玻璃的 effects——白白重组一遍，比它要省下的那次落盘贵
-    //    得多。「当前停在哪一档」以路由（`backStack`）为准，那才是真源。
-    //
-    // 只写 `timetableHomeViewMode` 一个键（`saveHomeViewMode`），不再拿整份设置快照
-    // 覆盖：底栏只在栈底可见，此时写设置页的路径都不在栈顶，单键写的窗口更小。
-    val persistScope = rememberCoroutineScope()
-    val persistMutex = remember { Mutex() }
+    // 外部入口落点（R1 补口 2026-11-02）：VIEW/SEND 导入 / umeng scheme / mikcb-debug
+    // 深链由透明跳板 ShellExternalEntryActivity 解析后 post 到 hub，这里一行消费推页。
+    ShellExternalEntryEffect(onOpenPage = { target -> pushPage(target) })
+
+    // 视图档落盘（`timetableHomeViewMode` / `timetableLastViewedDayOfWeek`）已搬进
+    // `ShellWiring.switchHomeViewMode` / `setHomeSelection`：周 / 日是页内展开态，
+    // 写入口不止底栏一处（星期栏点某天、日视图翻页也要写），放到壳里会变成多份
+    // 互斥量/线程池。那边仍是「先改内存、IO 线程串行单键写」，纪律不变。
 
     /** 切到主屏某个条目（= Flutter 玻璃坞点某个槽位）。 */
     fun selectRoot(itemId: String) {
@@ -529,20 +518,46 @@ private fun PagesShell(
             if (HomeDockNavModel.zoomsFromHome(target)) pushZoomPage(target) else pushPage(target)
             return
         }
+
         val mode = homeViewModeOf(itemId)
-        // 当前视图档必须在改 `backStack` **之前**取（改完就拿到新值了）。
-        val currentMode = homeViewModeOf(
-            (backStack.lastOrNull() as? ShellRoute.Dock)?.itemId ?: ROOT_WEEK,
-        )
-        if (backStack.size == 1) backStack[0] = ShellRoute.Dock(itemId)
-        // 视图档写回存档（Dart `timetableHomeViewMode` 同样是「切了就存」）；
-        // 同档重复点不写。
-        if (mode == null || mode == currentMode) return
-        persistScope.launch(Dispatchers.IO) {
-            persistMutex.withLock {
-                runCatching { wiring.settingsModel.saveHomeViewMode(mode) }
+        val dock = backStack.lastOrNull() as? ShellRoute.Dock
+        val currentRootId = dock?.itemId ?: ROOT_WEEK
+        val inTimetableHome = currentRootId == ROOT_WEEK
+
+        // ── 周 / 日：同一个首页宿主的两种展开态，**不换路由** ──
+        // 原版 Flutter 的底栏「日/周」就是在首页内部切展开态（`toggleDayView`），
+        // 不是推页。以前这里把 `Dock(itemId)` 换掉，miuix 把栈底替换播成
+        // 「从左侧滑入」——与原版「选中那一列长成整屏」完全不同（2026-11-02 用户实报）。
+        // 现在只改 `ShellWiring.homeViewMode`，页面自己播窗口动画，栈底始终是课表宿主。
+        if (mode == TimetableHomeViewMode.WEEK || mode == TimetableHomeViewMode.DAY) {
+            if (!inTimetableHome) {
+                // 从别的底栏页切回课表：这一下确实换了内容宿主，只能换路由。
+                // 栈底替换用瞬时转场（`instantOnReplace`）。进的是日视图时告诉新宿主
+                // 「从周视图起步」，展开动画从 `dayProgressSeed` 开始播，看不到侧滑；
+                // 进的是周视图则不需要（新宿主本来就停在周视图）。
+                if (mode == TimetableHomeViewMode.DAY) {
+                    wiring.requestHomeViewMotion(TimetableHomeViewMode.WEEK)
+                }
+                wiring.switchHomeViewMode(mode)
+                backStack[0] = ShellRoute.Dock(ROOT_WEEK)
+                return
             }
+            if (mode == TimetableHomeViewMode.DAY) {
+                // 重复点「日」同档：无动作（Dart `timetable_dock_actions.dart` 同口径）。
+                if (wiring.homeViewMode == TimetableHomeViewMode.DAY) return
+                wiring.setHomeSelection(wiring.homeSelectedWeek, wiring.homeSelectedDayOfWeek)
+                wiring.switchHomeViewMode(TimetableHomeViewMode.DAY)
+            } else {
+                if (wiring.homeViewMode == TimetableHomeViewMode.WEEK) return
+                wiring.switchHomeViewMode(TimetableHomeViewMode.WEEK)
+            }
+            return
         }
+
+        // ── 其余主屏条目（任务 / 设置 / 月视图…）仍按路由切换 ──
+        if (currentRootId == itemId) return
+        if (mode != null) wiring.switchHomeViewMode(mode)
+        backStack[0] = ShellRoute.Dock(itemId)
     }
 
     /** 圆钮（右侧独立按钮）：Dart `handleRoundButtonTap`（`home_menu_controller.dart:306-333`）。 */
@@ -580,9 +595,20 @@ private fun PagesShell(
         }
     }
 
-    // 系统返回：压着页面时由 NavDisplay.onBack 弹层；栈底且不在周视图时回周视图。
-    BackHandler(enabled = atRoot && currentRootId != ROOT_WEEK) {
-        selectRoot(ROOT_WEEK)
+    // 系统返回：压着页面时由 NavDisplay.onBack 弹层；栈底时——
+    // ① 日视图展开中 → 先收回周视图（Dart `closeDayView`，不是回退路由）；
+    // ② 别的底栏页 → 回周视图。
+    BackHandler(
+        enabled = atRoot && !(
+            currentRootId == ROOT_WEEK &&
+                wiring.homeViewMode == TimetableHomeViewMode.WEEK
+            ),
+    ) {
+        if (atRoot && currentRootId == ROOT_WEEK) {
+            wiring.switchHomeViewMode(TimetableHomeViewMode.WEEK)
+        } else {
+            selectRoot(ROOT_WEEK)
+        }
     }
 
     // 玻璃的背景采样源：**栈底条目的页面内容**先被录进这个 layer，坞再拿它当 backdrop。
@@ -625,7 +651,7 @@ private fun PagesShell(
                 //
                 // 内容由底栏条目 id 决定：`week`/`day`/`monthView` → 周 / 日 / 月视图；
                 // 内嵌页（Dart `inlineDockPages`）→ 对应页面，坞常驻；返回回到周视图。
-                entry<ShellRoute.Dock> { route ->
+                entry<ShellRoute.Dock>(transition = pageTransition.instantOnReplace()) { route ->
                     Box(modifier = Modifier.fillMaxSize()) {
                         Box(
                             modifier = Modifier
@@ -660,7 +686,16 @@ private fun PagesShell(
                         }
                         HomeGlassDock(
                             settingsModel = settingsModel,
-                            selectedId = route.itemId,
+                            // 课表宿主的路由固定在 `week`（周 / 日是页内展开态，不换路由），
+                            // 所以高亮要跟 `homeViewMode` 走；其它条目仍就是路由 id。
+                            selectedId = if (route.itemId == ROOT_WEEK) {
+                                when (wiring.homeViewMode) {
+                                    TimetableHomeViewMode.DAY -> HomeDockNavModel.ACTION_DAY
+                                    else -> ROOT_WEEK
+                                }
+                            } else {
+                                route.itemId
+                            },
                             // 底栏条目 → 壳页面：与「有没有去处」同一张表（视图动作另有分支）。
                             isNavigable = { id -> rootPageIdFor(id) != null },
                             onSelect = { id -> selectRoot(id) },
@@ -720,7 +755,9 @@ private const val ROOT_WEEK_PAGE_ID = "c1.week"
  */
 private fun rootPageIdFor(itemId: String): String? = when (itemId) {
     ROOT_WEEK -> ROOT_WEEK_PAGE_ID
-    HomeDockNavModel.ACTION_DAY -> "c3.day"
+    // 日视图（2026-11-02 起）是 `c1.week` 宿主里的展开态，不再有自己的页面。
+    // 保留这个映射是为了「存档里残留 day / 从别处进来的 day 路由」也落在同一个宿主。
+    HomeDockNavModel.ACTION_DAY -> ROOT_WEEK_PAGE_ID
     else -> shellTimetableMenuPageId(itemId)
 }
 
@@ -734,8 +771,10 @@ private fun homeViewModeOf(itemId: String): TimetableHomeViewMode? = when (itemI
 
 /** 冷启动时按存档的视图档选栈底条目（Dart `timetableHomeViewMode` 的恢复）。 */
 private fun rootItemIdForView(mode: TimetableHomeViewMode): String = when (mode) {
+    // 周 / 日共用同一个栈底路由：日视图是页内展开态，冷启动恢复也走 `homeViewMode`，
+    // 不靠路由 id（否则首帧会先落到 c3.day 再切回来）。
     TimetableHomeViewMode.WEEK -> ROOT_WEEK
-    TimetableHomeViewMode.DAY -> HomeDockNavModel.ACTION_DAY
+    TimetableHomeViewMode.DAY -> ROOT_WEEK
     TimetableHomeViewMode.MONTH -> "monthView"
 }
 
@@ -792,6 +831,45 @@ private fun NavTransition.scaledToUserSpeed(speed: Double): NavTransition {
         override val motion: NavMotion get() = scaledMotion
 
         override fun scrimFraction(scope: NavTransitionScope): Float = delegate.scrimFraction(scope)
+    }
+}
+
+/**
+ * 栈底**替换**（底栏切页）走瞬时切换，其余情况（被推入页覆盖时的视差等）仍用官方预设。
+ *
+ * ## 为什么只改替换这一种
+ *
+ * 原版 Flutter 的玻璃坞内嵌页切换是「闪现直切、无滑动转场」
+ * （`timetable_home_dock_shell.dart:123-124`），而 miuix 会把 `backStack[0]` 的替换
+ * 归成 `NavChange.Replace` 并套用推入/退出的位移 —— 观感就是「新页面从左侧滑进来」。
+ * 周 / 日现在已改成同一宿主的页内展开（不经过这条），但任务 / 设置 / 月视图等
+ * 底栏切换仍是路由替换，同样不该滑。把 Replace 的 transform 置空即可；几何一点没写，
+ * 只是**不插一脚**，仍是官方 `NavTransition` 接口 + 官方预设。
+ *
+ * 被页面层覆盖（`relativeDepth > 0`）时照常委托官方预设：推入页的视差 / 变暗
+ * 必须保留，那不是「底栏切换」。
+ */
+private fun NavTransition.instantOnReplace(): NavTransition {
+    val delegate = this
+    // 与 `InstantSwap` 同一条纪律：替换虽然零位移，但驱动 float 仍要走完一个时长，
+    // 这段时间里看不见的旧条目会挡点击。100ms 足够把旧条目卸掉，又不会让底栏切页
+    // 之后有半秒「点了没反应」（2026-11-01 外观编辑页事故的同一成因）。
+    val fastMotion = NavMotion(
+        programmatic = NavSettleSpec.Tween(INSTANT_SWAP_DURATION_MS, NavProgrammaticEasing),
+    )
+    return object : NavTransition {
+        private fun NavTransitionScope.isReplace(): Boolean =
+            change is NavChange.Replace || change is NavChange.ReplaceAll
+
+        override fun Modifier.transformEntry(scope: NavTransitionScope): Modifier =
+            if (scope.isReplace()) Modifier else with(delegate) { transformEntry(scope) }
+
+        override val opaqueDepth: Float get() = delegate.opaqueDepth
+        override val dismissDirection: NavSwipeDirection get() = delegate.dismissDirection
+        override val motion: NavMotion get() = fastMotion
+
+        override fun scrimFraction(scope: NavTransitionScope): Float =
+            if (scope.isReplace()) 0f else delegate.scrimFraction(scope)
     }
 }
 

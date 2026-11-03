@@ -30,10 +30,16 @@ class DayViewWiringGuardTest {
     @Test
     fun `日视图必须接收点击意图而不是恒取今天`() {
         val branch = branchBody("c3.day")
+        // 2026-11-02：日视图同时有两种入口——独立路由（`c3.day`）和首页里的展开层
+        // （`dayOverlay != null`）。展开层的选中日由首页宿主直接给，不再借道单次意图。
         assertTrue(
-            "`c3.day` 分支里没有把 `pendingDayViewDayOfWeek` 传进 `initialDayOfWeek`——" +
+            "`c3.day` 分支没有优先读展开层给的 `initialDayOfWeek`——" +
                 "点星期栏某天会再次落到今天（P0-2 回退）。分支体：\n$branch",
-            "initialDayOfWeek = dayIntent" in branch,
+            "initialDayOfWeek = dayOverlay?.initialDayOfWeek" in branch,
+        )
+        assertTrue(
+            "`c3.day` 分支没有保留独立路由的意图回落（`dayIntent ?: timetableLastViewedDayOfWeek`）",
+            "dayIntent ?: appSettings.timetableLastViewedDayOfWeek" in branch,
         )
         assertTrue(
             "`c3.day` 分支里仍出现 `initialDayOfWeek = LocalDate.now()`——这就是 P0-2 的原写法",
@@ -161,12 +167,35 @@ class DayViewWiringGuardTest {
     }
 
     @Test
-    fun `星期栏点击必须写入意图`() {
+    fun `星期栏点击必须直接切到日视图展开态`() {
+        // 2026-11-02：点星期栏某天**不再推 `c3.day` 路由**（推页会被 miuix 播成
+        // 「从左侧滑入」，与原版「选中的列长成整屏」完全不同）。现在走首页的
+        // `onSelectDay`：记下选中日 + 切到日视图展开态，由页面自己播窗口动画。
         val wiring = readSource("android/app/src/main/kotlin/com/mutx163/qingyu/pages/ShellWiring.kt")
+        val weekPage = readSource(
+            "android/app/src/composeP1/kotlin/com/mutx163/qingyu/pages/timetable/TimetableWeekPage.kt",
+        )
         assertTrue(
-            "`ShellWiring` 的 `onOpenDay` 没有把点的那一天写进 `pendingDayViewDayOfWeek`——" +
-                "日视图拿不到意图，P0-2 就会回来。",
-            "pendingDayViewDayOfWeek = dayOfWeek" in wiring,
+            "`ShellWiring` 的日视图入口没有调用 `wiring.setHomeSelection(selectedWeek, selectedDayOfWeek)`——" +
+                "日视图拿不到「点的是哪一天」。",
+            "wiring.setHomeSelection(selectedWeek, selectedDayOfWeek)" in wiring,
+        )
+        assertTrue(
+            "`ShellWiring` 的日视图入口没有切到 `TimetableHomeViewMode.DAY`——点了不会进日视图。",
+            "wiring.switchHomeViewMode(TimetableHomeViewMode.DAY)" in wiring,
+        )
+        assertTrue(
+            "`ShellWiring` 仍在为星期栏点击推 `c3.day` 路由（`onNavigate(\"c3.day\")`）——" +
+                "那正是「从左侧滑入」的来源，必须改走页内展开。",
+            "onNavigate(\"c3.day\")" !in wiring,
+        )
+        assertTrue(
+            "`TimetableWeekPage` 的星期栏点击没有接到 `onSelectDay`：周视图点某天不会切到日视图。",
+            "onSelectDay(displayedPage + 1, dayOfWeek)" in weekPage,
+        )
+        assertTrue(
+            "`TimetableWeekPage` 的日视图内换日没有接到 `onSelectDay`：点另一天不会切过去。",
+            "onSelectDay(selectedWeek, dayOfWeek)" in weekPage,
         )
     }
 

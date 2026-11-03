@@ -14,6 +14,7 @@ import androidx.compose.ui.platform.LocalContext
 import com.mutx163.qingyu.app.CourseActionDispatcher
 import com.mutx163.qingyu.app.KeyValueStore
 import com.mutx163.qingyu.app.ScheduleEditDispatcher
+import com.mutx163.qingyu.app.TimetableHomeViewMode
 import com.mutx163.qingyu.app.TimetableHost
 import com.mutx163.qingyu.app.TimetableRepository
 import com.mutx163.qingyu.app.TimetableSaveDispatcher
@@ -53,6 +54,12 @@ import com.mutx163.qingyu.weather.WeatherPreferences
 import com.mutx163.qingyu.weather.WeatherProvider
 import com.mutx163.qingyu.weather.WeatherService
 import java.time.LocalDate
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 
 /**
  * 壳的**接线层**（Phase 3.5 · L5，Lead 专属写作用域）。
@@ -174,6 +181,94 @@ class ShellWiring(context: Context) {
      * 换成空实现 —— 这样 miuix 组件自带的触感（滚轮、滚到尽头）也跟着这个开关走。
      */
     var enableHaptics: Boolean by mutableStateOf(initialSettings.enableHaptics)
+
+    // ── 首页课表的「周 / 日」展开态（2026-11-02）────────────────────────────
+    //
+    // 原版 Flutter 里，日视图**不是一页路由**，而是首页内部的一种展开态：
+    // 点星期栏某一天 / 底栏「日」，选中那天从网格列位长到整屏，底栏始终保留
+    // （`day_view_transition_controller.dart` 的 `toggle`）。迁移到 Compose 后曾把它做成
+    // 独立页面 `c3.day`：周→日是「推一页」、底栏切换是「替换栈底」，miuix 按 pop 播
+    // 「从左侧滑入」——与原版差得很远（2026-11-02 用户实报）。
+    //
+    // 现在周 / 日共用同一个首页宿主（`c1.week`），切换只改下面这三个状态，
+    // 不碰返回栈 ⇒ 不存在路由转场，展开动画由页面自己按 `homeViewExpandWindow` 播。
+
+    /** 首页课表当前停在周视图还是日视图（Dart `timetableHomeViewMode`）。 */
+    var homeViewMode: TimetableHomeViewMode by mutableStateOf(initialSettings.timetableHomeViewMode)
+
+    /** 日视图「正看着」的那一周（底栏「日」进入时取当前浏览周）。 */
+    var homeSelectedWeek: Int by mutableIntStateOf(
+        timetable.snapshot.currentWeek.coerceAtLeast(1),
+    )
+
+    /** 日视图「正看着」的那一天（1..7；Dart `timetableLastViewedDayOfWeek`）。 */
+    var homeSelectedDayOfWeek: Int by mutableIntStateOf(
+        initialSettings.timetableLastViewedDayOfWeek.coerceIn(1, 7),
+    )
+
+    /**
+     * 下一次宿主挂载时，首页展开动画该从哪一档起步。
+     *
+     * 只在「底栏从别的页面切回课表」这种**宿主会被重建**的路径上需要：
+     * 路由替换是瞬时切换（`PagesShellActivity.instantOnReplace`），新宿主第一帧
+     * 如果直接按 `homeViewMode` 落定，就会跳过展开/收起动画。页面在常驻时切换
+     * 不读这个值（`dayMode` 变化本身就会触发动画），由 `PagesShellActivity` 在换路由前
+     * 经 [requestHomeViewMotion] 显式登记。
+     *
+     * `consumeHomeViewMotionSeed()` 读一次就清：冷启动不应该播动画。
+     */
+    private var homeViewMotionSeed: TimetableHomeViewMode? = null
+
+    /** 设置落盘串行、离屏（整份档案 JSON 的重编码很贵，不能堵主线程）。 */
+    private val homeViewPersistScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+    private val homeViewPersistMutex = Mutex()
+
+    /**
+     * 切周 / 日课表（Dart `timetableHomeViewMode` 的写入口）。
+     *
+     * 只在真的换档时改状态：重复点当前档不写盘、也不触发动画（Dart
+     * `timetable_dock_actions.dart` 的「重复点日/周 Tab 无动作」同口径）。
+     */
+    fun switchHomeViewMode(mode: TimetableHomeViewMode) {
+        if (mode == homeViewMode) return
+        homeViewMode = mode
+        homeViewPersistScope.launch {
+            homeViewPersistMutex.withLock {
+                runCatching { settingsModel.saveHomeViewMode(mode) }
+            }
+        }
+    }
+
+    /**
+     * 标记「这次周/日切换会让首页宿主**重建**」，让新宿主首帧知道从哪一档起步。
+     *
+     * 只在底栏从**别的页面**切回课表时调用（那一路径必须换栈底路由）；页内切换
+     * 不需要它 —— 宿主常驻，`dayMode` 变化本身就会触发动画。
+     */
+    fun requestHomeViewMotion(from: TimetableHomeViewMode) {
+        homeViewMotionSeed = from
+    }
+
+    /** 记下日视图正在看的那一天/周（翻页停稳、点某天、底栏进入都走这里）。 */
+    fun setHomeSelection(week: Int, dayOfWeek: Int) {
+        val normalizedWeek = week.coerceAtLeast(1)
+        val normalizedDay = dayOfWeek.coerceIn(1, 7)
+        homeSelectedWeek = normalizedWeek
+        if (normalizedDay == homeSelectedDayOfWeek) return
+        homeSelectedDayOfWeek = normalizedDay
+        homeViewPersistScope.launch {
+            homeViewPersistMutex.withLock {
+                runCatching { settingsModel.saveLastViewedDayOfWeek(normalizedDay) }
+            }
+        }
+    }
+
+    /** 宿主挂载时取一次「展开动画从哪档起步」，读完即清（理由见字段注释）。 */
+    fun consumeHomeViewMotionSeed(): TimetableHomeViewMode? {
+        val seed = homeViewMotionSeed
+        homeViewMotionSeed = null
+        return seed
+    }
 
     /**
      * 节假日数据（设备级状态：年度缓存 / 自定义假期 / 更新日志），2026-10-29 新增。
@@ -639,6 +734,18 @@ fun TimetableWithCourseActions(
         )
     }
 
+    // 首页周 / 日展开态的初始进度：只在宿主**被重建**时才有意义（冷启动 = 直接落定，
+    // 从别的底栏页切回来 = 播一次展开/收起）。种子读一次即清，见 `ShellWiring`。
+    val homeMotionSeed = remember { wiring.consumeHomeViewMotionSeed() }
+    val dayProgressSeed = when {
+        wiring.homeViewMode == TimetableHomeViewMode.DAY &&
+            homeMotionSeed == TimetableHomeViewMode.WEEK -> 0f
+        wiring.homeViewMode == TimetableHomeViewMode.WEEK &&
+            homeMotionSeed == TimetableHomeViewMode.DAY -> 1f
+        wiring.homeViewMode == TimetableHomeViewMode.DAY -> 1f
+        else -> 0f
+    }
+
     TimetableHost(
         repository = repository,
         onOpenAddCourse = { dayOfWeek, section ->
@@ -653,14 +760,49 @@ fun TimetableWithCourseActions(
         },
         // T1：点课程 → 先弹操作层，不直接进编辑页。
         onOpenCourse = { course -> actionTarget = course },
-        onWeekChanged = { repository.setCurrentWeek(it) },
-        // 点星期栏某一天 → 日视图（Dart `TimetableDayViewPart` 的入口）。
-        // 把「点的是哪一天」经 `pendingDayViewDayOfWeek` 带进去：日视图的
-        // `initialDayOfWeek` 是显式意图，不传才回落今天（2026-10-30 修 P0-2：
-        // 原先这里丢掉参数且宿主恒取 `LocalDate.now()`，点周五看到的是今天）。
-        onOpenDay = { dayOfWeek ->
-            wiring.pendingDayViewDayOfWeek = dayOfWeek
-            onNavigate("c3.day")
+        onWeekChanged = { week ->
+            repository.setCurrentWeek(week)
+            // 周视图翻到哪一周也要更新「日视图的落点周」：底栏「日」进入时 Dart 取的是
+            // 当前浏览周（`visibleWeek`），不取仓储里可能更旧的值。
+            wiring.homeSelectedWeek = week
+        },
+        // 点星期栏某一天 / 底栏「日」→ 首页在同一页里展开日视图（Dart
+        // `DayViewTransitionController.toggle` 的入口）。**不推页面**：推一页会被
+        // miuix 播成「从左侧滑入」，与原版「选中的那一列长成整屏」完全不同
+        // （2026-11-02 用户实报）。周 / 日是同一宿主里的两种展开态。
+        homeViewMode = wiring.homeViewMode,
+        selectedWeek = wiring.homeSelectedWeek,
+        selectedDayOfWeek = wiring.homeSelectedDayOfWeek,
+        dayProgressSeed = dayProgressSeed,
+        onSelectDay = { selectedWeek, selectedDayOfWeek ->
+            wiring.setHomeSelection(selectedWeek, selectedDayOfWeek)
+            wiring.switchHomeViewMode(TimetableHomeViewMode.DAY)
+            // 仓储当前周跟着「正在看的那一周」走：日视图跨周翻页后收起，周视图要落在同一周。
+            repository.setCurrentWeek(selectedWeek)
+        },
+        onCloseDay = { wiring.switchHomeViewMode(TimetableHomeViewMode.WEEK) },
+        transitionSpeed = wiring.pageTransitionSpeed,
+        // 日视图的**内容**仍由 `c3.day` 那一条分支提供（数据装配、点击落点都只有一份）。
+        // 这里只是把同一个页面塞进首页的展开窗口里，并告诉它「顶栏/星期栏已由周视图画好，
+        // 你的正文从 contentTop 开始」——避免两套壳重叠、也避免再抄一份 200 行接线。
+        dayContent = { contentTopInset ->
+            ShellPageContent(
+                pageId = "c3.day",
+                onBack = {},
+                wiring = wiring,
+                onOpenPage = onNavigate,
+                dayOverlay = DayViewOverlayBinding(
+                    contentTopInset = contentTopInset,
+                    initialWeek = wiring.homeSelectedWeek,
+                    initialDayOfWeek = wiring.homeSelectedDayOfWeek,
+                    requestedWeek = wiring.homeSelectedWeek,
+                    requestedDayOfWeek = wiring.homeSelectedDayOfWeek,
+                    onPageChanged = { week, dayOfWeek ->
+                        wiring.setHomeSelection(week, dayOfWeek)
+                    },
+                    onRequestClose = { wiring.switchHomeViewMode(TimetableHomeViewMode.WEEK) },
+                ),
+            )
         },
         // 周网格里的考试 / 日程卡：Dart 侧考试卡 → 考试页、日程卡 → 日程编辑页
         // （`week_grid_agenda_card.dart` 的 closedBuilder/openBuilder 同一条路）。

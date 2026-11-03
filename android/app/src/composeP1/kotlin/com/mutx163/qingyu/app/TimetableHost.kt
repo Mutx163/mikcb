@@ -8,6 +8,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.unit.Dp
 import com.mutx163.qingyu.pages.shell.rememberHomeFloatingInsets
 import com.mutx163.qingyu.platform.PrefsKeyValueStore
 import com.mutx163.qingyu.calendar.HolidayData
@@ -52,7 +53,6 @@ import java.time.LocalDateTime
  * @param repository 课表仓储（task-7 交付）。
  * @param onOpenAddCourse **长按**空白格加课（带星期几与节次预填）。
  * @param onOpenCourse 点课程卡片：由壳决定先去操作层还是编辑页。
- * @param onOpenDay 点表头某一天（日视图入口）。
  * @param onSwitchProfile 点标题区：切换课表（Dart 标题触发器口径）。
  * @param onWeekChanged 翻周/选周后回调，壳写回 `currentWeek`（Dart `commitPendingWeek`）。
  * @param onAgendaClicked 点周网格里的考试/日程卡（Dart 去考试页 / 日程编辑页）。
@@ -64,7 +64,6 @@ fun TimetableHost(
     repository: TimetableRepository,
     onOpenAddCourse: (dayOfWeek: Int, section: Int) -> Unit,
     onOpenCourse: (Course) -> Unit,
-    onOpenDay: (dayOfWeek: Int) -> Unit = {},
     onSwitchProfile: () -> Unit = {},
     onWeekChanged: (week: Int) -> Unit = {},
     onAgendaClicked: (WeekAgendaCardModel) -> Unit = {},
@@ -78,6 +77,22 @@ fun TimetableHost(
     // 天气：设备级 provider 只在壳里（`ShellWiring` 那一份）。不传 = 课卡不出现天气行
     //（Dart `weatherShowOnWeekCard` 默认开，但没有数据时同样不画）。
     weatherProvider: WeatherProvider? = null,
+    // ── 首页「周 ↔ 日」展开态（2026-11-02）────────────────────────────────
+    // 日视图是同一页里的展开层，不是路由：状态由壳持有（底栏也要读它），
+    // 页面只负责按 `homeViewMode` 播窗口动画。
+    homeViewMode: TimetableHomeViewMode = TimetableHomeViewMode.WEEK,
+    selectedWeek: Int = repository.snapshot.currentWeek.coerceAtLeast(1),
+    selectedDayOfWeek: Int = 1,
+    /** 宿主被重建时的首帧展开进度（0/1）；常驻切换不看它。 */
+    dayProgressSeed: Float = 0f,
+    /** 点星期栏某天：壳记下选中日并切到日视图。 */
+    onSelectDay: (week: Int, dayOfWeek: Int) -> Unit = { _, _ -> },
+    /** 日视图摘要卡的关闭叉：壳收回周视图。 */
+    onCloseDay: () -> Unit = {},
+    /** 日视图正文（整屏页面），窗口 / 裁切由页面负责；参数是顶栏高度。 */
+    dayContent: (@Composable (contentTop: Dp) -> Unit)? = null,
+    /** 用户「页面转场速度」，周→日展开按同一倍率缩放。 */
+    transitionSpeed: Double = 1.0,
 ) {
     // 首帧直接用仓储当前快照，避免「先画空网格再跳成有课」的闪一下。
     // ⚠️ 这不是优化，是**接口语义**：`TimetableRepository.observe` 只在**后续变更**时回调，
@@ -222,7 +237,15 @@ fun TimetableHost(
         // 开关开着时才装长按手势。
         onLongPressEmptySlot = { dayOfWeek, section -> onOpenAddCourse(dayOfWeek, section) },
         onAgendaClick = onAgendaClicked,
-        onDayClick = onOpenDay,
+        // 首页「周 ↔ 日」展开态（2026-11-02）：不再把日视图当成一页推出去。
+        dayMode = homeViewMode == TimetableHomeViewMode.DAY,
+        selectedWeek = selectedWeek,
+        selectedDayOfWeek = selectedDayOfWeek,
+        dayProgressSeed = dayProgressSeed,
+        onSelectDay = onSelectDay,
+        onCloseDay = onCloseDay,
+        dayContent = dayContent,
+        transitionSpeed = transitionSpeed,
         onSwitchProfileClick = onSwitchProfile,
         onWeekChanged = onWeekChanged,
         // 标题样式取自用户存档（Dart `homeTitleStyle`，:1478 默认 classic）。

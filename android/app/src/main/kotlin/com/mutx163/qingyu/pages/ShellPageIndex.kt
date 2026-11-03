@@ -29,6 +29,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
@@ -273,6 +274,30 @@ import androidx.compose.runtime.staticCompositionLocalOf
 private val LocalShellOpenPage = staticCompositionLocalOf<(String) -> Unit> { {} }
 
 /**
+ * 把日视图塞进首页展开窗口时，壳需要额外知道的那几件事（2026-11-02）。
+ *
+ * 日视图的数据装配 / 点击落点仍然只有 `c3.day` 这一条分支（一份接线原则）；
+ * 首页宿主（`TimetableWeekPage` 的展开层）只负责画窗口、算裁切，并把下面这些
+ * 「窗口里的日视图该怎么表现」传进来：
+ *
+ * - [contentTopInset]：首页顶栏玻璃带的高度。日视图在窗口里**不画自己的顶栏/星期栏**
+ *   （那两样由首页画，和周视图共用一条带），正文从这里往下开始。
+ * - [initialWeek] / [initialDayOfWeek]：窗口第一次组合时落在哪一天。
+ * - [requestedWeek] / [requestedDayOfWeek]：首页星期栏当前选中的那天。日视图翻页后
+ *   会经 [onPageChanged] 回写，二者保持同源；外部点另一天时靠这两个值驱动 pager。
+ * - [onRequestClose]：日视图摘要卡上那个「关闭」叉（回到周视图）。
+ */
+data class DayViewOverlayBinding(
+    val contentTopInset: Dp,
+    val initialWeek: Int,
+    val initialDayOfWeek: Int,
+    val requestedWeek: Int,
+    val requestedDayOfWeek: Int,
+    val onPageChanged: (week: Int, dayOfWeek: Int) -> Unit,
+    val onRequestClose: () -> Unit,
+)
+
+/**
  * 页面索引的**分派层**：一个 id 一个 Composable。
  *
  * ## 这个文件解决的问题
@@ -296,6 +321,7 @@ private val LocalShellOpenPage = staticCompositionLocalOf<(String) -> Unit> { {}
  * 这些数据是「给壳看的壳数据」，没有任何业务语义（例如进度卡的 20 周、示例日程的三条），
  * 放进模型层会被误当成业务默认值。模型层只留真正的逻辑（`buildViewState` 之类）。
  */
+
 @Composable
 fun ShellPageContent(
     pageId: String,
@@ -312,6 +338,8 @@ fun ShellPageContent(
      * 不传 = 旧行为（设置仍会落盘，只是要等回到主屏才换肤）。
      */
     onSettingsChanged: (TimetableSettingsModel) -> Unit = {},
+    /** 非空 = 本页正作为**首页的日视图展开层**渲染（见 [DayViewOverlayBinding]）。 */
+    dayOverlay: DayViewOverlayBinding? = null,
 ) {
     // 单一天气 provider（设备级状态：开关/城市/预报缓存）。2026-10-29 起实例住在
     // `ShellWiring.weather`（`by lazy`），不再在这里 `remember` 一份 —— 因为**底部坞**那条
@@ -716,7 +744,13 @@ fun ShellPageContent(
             // 「点星期栏某一天」是**单次意图**：`ShellWiring.onOpenDay` 写进
             // `pendingDayViewDayOfWeek`，这里读一次就清。读完不清会让下一次从底栏或
             // 菜单进日视图时沿用上一次点的那天。
-            val dayIntent = remember { wiring.consumeDayViewDayOfWeek() }
+            //
+            // 作为首页展开层（`dayOverlay != null`）时**不消费**这个意图：窗口里的
+            // 初始日由首页宿主当下的选中日直接给（同一个值，但不必借道单次意图，
+            // 否则关掉日视图再开时会拿到已清空的值）。
+            val dayIntent = remember(dayOverlay) {
+                if (dayOverlay == null) wiring.consumeDayViewDayOfWeek() else null
+            }
             // 翻页停稳后把「看的是哪一天」写回存档（Dart `persistHomeViewState` 的日那半边）。
             // 不写它会有两个可感知的后果：① 从底栏再进日视图回到今天而不是上次看的那天；
             // ② 外观编辑页的日预览按这个键取日期，会停在旧值上（用户 2026-11-02 实报
@@ -750,12 +784,13 @@ fun ShellPageContent(
             val taskController = remember(repository) { TaskListController(repository) }
             Box(modifier = Modifier.fillMaxSize()) {
             DayViewPage(
-                initialWeek = snapshot.currentWeek.coerceAtLeast(1),
+                initialWeek = dayOverlay?.initialWeek ?: snapshot.currentWeek.coerceAtLeast(1),
                 // 有显式意图（点星期栏某天）就用它；否则回到**上次看的那一天**，与 Dart
                 // `_restoreViewStateFromProvider`（`timetable_screen.dart:862-890`）同口径。
                 // 不能回落「今天」：从底栏再进日视图会跳回今天，与外观编辑页的预览
                 //（按同一个键取日期）对不上（2026-11-02 用户实报）。
-                initialDayOfWeek = dayIntent ?: appSettings.timetableLastViewedDayOfWeek,
+                initialDayOfWeek = dayOverlay?.initialDayOfWeek
+                    ?: (dayIntent ?: appSettings.timetableLastViewedDayOfWeek),
                 visibleDays = visibleDays,
                 // 学期周数必须下传：页面默认 30 周，不传就能翻到学期之外。
                 totalWeeks = snapshot.settings.semesterWeekCount,
@@ -774,6 +809,14 @@ fun ShellPageContent(
                 weekdayStyle = TimetableStyleMapping.weekViewStyle(appSettings),
                 // 「课卡显示冲突角标」开关（Dart `showConflictBadgeOnTimetable`）。
                 showConflictBadge = appSettings.showConflictBadgeOnTimetable,
+                // ── 作为首页展开层时：顶栏 / 星期栏由首页画（周视图那条共享玻璃带），
+                // 日视图只画正文；正文从 homePager 的顶栏高度开始，避免两套壳重叠。
+                showTopBar = dayOverlay == null,
+                showWeekdayHeader = dayOverlay == null,
+                contentTopInset = dayOverlay?.contentTopInset,
+                // 首页星期栏点另一天：日视图 pager 跟着走（窗口常驻，不能靠 initial* 重开一页）。
+                requestedWeek = dayOverlay?.requestedWeek,
+                requestedDayOfWeek = dayOverlay?.requestedDayOfWeek,
                 hasExamOnDate = { date ->
                     repository.exams.any { exam ->
                         CourseTask.dateOnly(exam.dateTime).toLocalDate() == date
@@ -829,7 +872,9 @@ fun ShellPageContent(
                         ),
                     )
                 },
-                onCloseToWeekView = onBack,
+                // 摘要卡上的关闭叉：独立路由时回上一页；作为首页展开层时**收回到周视图**
+                // （Dart `closeDayView`，不是弹路由）。
+                onCloseToWeekView = dayOverlay?.onRequestClose ?: onBack,
                 // 待办带里「关联课程」的名字与颜色（Dart `provider.getCourseForTask`）。
                 courseResolver = { task ->
                     snapshot.courses.firstOrNull { it.id == task.courseId }
@@ -925,6 +970,9 @@ fun ShellPageContent(
                 //   只在真的变了才写（首帧停稳也会上报一次），写盘在 IO 上串行。
                 onPageChanged = { week, dayOfWeek ->
                     if (snapshot.currentWeek != week) repository.setCurrentWeek(week)
+                    // 作为首页展开层时，翻到哪一天要立刻回写首页（星期栏高亮、收起后的
+                    // 落点都读它）。独立路由时 dayOverlay 为 null，不额外绕路。
+                    dayOverlay?.onPageChanged?.invoke(week, dayOfWeek)
                     dayPersistScope.launch {
                         dayPersistMutex.withLock {
                             runCatching {
