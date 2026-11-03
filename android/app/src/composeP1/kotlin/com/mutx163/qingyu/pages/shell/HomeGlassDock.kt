@@ -50,6 +50,9 @@ import top.yukonga.miuix.kmp.theme.MiuixTheme
  *
  * @param backdrop 玻璃采样源：调用方把**页面内容**（不含底栏自己）录进这个 backdrop，
  *   坞才采得到「它底下的画面」。null = 不采样，坞退回实体档（低版本无 runtime shader 时同此）。
+ * @param replacedByRail 宽屏档被左侧 [ShellNavigationRail] 取代时由壳传 true：坞整块
+ *   **不组合**（不是 alpha 藏起来，省一层图层；方案迁移顺序第 2 批的口径）。默认 false，
+ *   外观编辑页的缩尺预览卡不受影响——预览的是紧凑形态，坞照画。
  */
 @Composable
 fun HomeGlassDock(
@@ -60,8 +63,9 @@ fun HomeGlassDock(
     onRoundButton: () -> Unit,
     modifier: Modifier = Modifier,
     backdrop: Backdrop? = null,
+    replacedByRail: Boolean = false,
 ) {
-    if (!homeDockVisible(settingsModel)) return
+    if (!homeDockVisible(settingsModel) || replacedByRail) return
 
     // 底栏条目：**由用户存档决定**（Dart `resolveGlassDockActionIds`）。空表回退默认三格；
     // 用户没自定义过时，开发壳的「页面索引」追加到末尾（与拆壳前的壳层口径一致）。
@@ -201,9 +205,11 @@ fun rememberHomeFloatingInsets(settingsModel: TimetableSettingsModel?): HomeFloa
  * 原先是 `PagesShellActivity` 的私有件；底栏搬进页面层时一并搬到这里，
  * 让壳与预览卡用的是同一颗按钮（守卫 `GlassDockRoundButtonIconWiringGuardTest`
  * 盯的仍是「设置里的图标名必须传到这里」）。
+ * `internal`：宽屏档的侧边导航栏（[ShellNavigationRail]）把这颗圆钮放进官方
+ * `header` 槽复用同一颗，图标解析也走同一个 `glassDockRoundButtonIcon`。
  */
 @Composable
-private fun GlassDockRoundButton(
+internal fun GlassDockRoundButton(
     icon: ImageVector,
     contentDescription: String,
     onClick: () -> Unit,

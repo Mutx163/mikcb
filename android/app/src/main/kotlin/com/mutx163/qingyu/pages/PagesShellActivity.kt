@@ -18,6 +18,7 @@ import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
@@ -30,6 +31,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.hapticfeedback.HapticFeedback
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
@@ -45,7 +47,9 @@ import com.mutx163.qingyu.app.AppFontMode
 import com.mutx163.qingyu.app.AppThemeMode
 import com.mutx163.qingyu.app.TimetableSettingsModel
 import com.mutx163.qingyu.app.TimetableStore
+import com.mutx163.qingyu.components.QingyuLocalWindowAdaptive
 import com.mutx163.qingyu.components.QingyuPageTheme
+import com.mutx163.qingyu.components.rememberQingyuShellRailAdaptive
 import com.mutx163.qingyu.app.TimetableHomeViewMode
 import com.mutx163.qingyu.pages.schedule.ScheduleDateRuleAutoApplyHost
 import com.mutx163.qingyu.pages.live.LiveSnapshotBuilder
@@ -56,6 +60,7 @@ import com.mutx163.qingyu.platform.PerfProbe
 import com.mutx163.qingyu.platform.ScreenCaptureWatcher
 import com.mutx163.qingyu.pages.shell.HomeDockNavModel
 import com.mutx163.qingyu.pages.shell.HomeGlassDock
+import com.mutx163.qingyu.pages.shell.ShellNavigationRail
 import com.mutx163.qingyu.pages.shell.homeDockVisible
 import com.mutx163.qingyu.pages.shell.localeTagFromRawSettingsJson
 import com.mutx163.qingyu.pages.shell.rememberHomeDockUsesBackdrop
@@ -449,6 +454,14 @@ private fun PagesShell(
     // 坞层连建都不建）。这里照做：classic 不画底栏，也不录它的采样层。
     val showDock = homeDockVisible(settingsModel)
 
+    // ── 宽屏三档（2026-11-03 第 2 批：壳层侧边导航栏）────────────────────────
+    // Rail 是玻璃坞在宽档的替身：只在「玻璃坞形态 + 真实宽窗口」（平板 / 折叠屏内屏）
+    // 出现——classic 档用户显式关掉了导航，宽屏也不加回（尊重用户的选择）。
+    // 判据与数值全在 core/QingyuAdaptiveRules.kt；Rail 出现后页面骨架按「内容区宽」
+    // 取值，经下方 CompositionLocalProvider 注入（第 1 批预留的 QingyuLocalWindowAdaptive）。
+    // 手机竖屏（<600dp）时 railVisible 恒 false，下方 Row 退化为单个内容盒，逐像素同前。
+    val shellRail = rememberQingyuShellRailAdaptive(railEnabled = showDock)
+
     // ── 两个「运行期偏好」：改了当场生效，不用重启（Dart 是同一个形态）───────────────
     val systemHaptics = LocalHapticFeedback.current
     val shellHaptics: HapticFeedback =
@@ -582,6 +595,20 @@ private fun PagesShell(
         backStack[0] = ShellRoute.Dock(itemId)
     }
 
+    /**
+     * 侧边导航栏（宽屏档）点条目：**先弹回主屏，再切换**（demo `AppContent.kt:371`
+     * `popUntil { it is Route.Main }` 同口径）。
+     *
+     * 为什么不能直接用 [selectRoot]：它带「栈上有推入页就忽略」的守卫（紧凑档坞被页面
+     * 盖住、点不到，所以那条守卫是对的）；Rail 在宽档**常驻**、压着页面也能点，
+     * 直接调会变成「点了没反应」。先弹回主屏再走同一条 [selectRoot] 分流
+     * （非 `rendersAsRoot` 条目照样推页）。
+     */
+    fun railSelectRoot(itemId: String) {
+        while (backStack.size > 1) backStack.removeLastOrNull()
+        selectRoot(itemId)
+    }
+
     /** 圆钮（右侧独立按钮）：Dart `handleRoundButtonTap`（`home_menu_controller.dart:306-333`）。 */
     fun handleRoundButton() {
         val action = HomeDockNavModel.roundButtonAction(settingsModel.glassDockButtonEntryId)
@@ -600,6 +627,16 @@ private fun PagesShell(
     val topRoute = backStack.lastOrNull()
     val currentRootId = (topRoute as? ShellRoute.Dock)?.itemId ?: ROOT_WEEK
     val atRoot = topRoute is ShellRoute.Dock
+
+    // 高亮口径（侧边导航栏与玻璃坞**同源**，2026-11-03 第 2 批）：课表宿主的路由固定在
+    // `week`（周 / 日是页内展开态，不换路由），高亮跟 `homeViewMode` 走（[dockSelectedIdOf]）。
+    // Rail 的选中从**返回栈底部**的主屏条目取（不是栈顶）：压着页面时 Rail 仍亮它背后的
+    // 那个条目——与 demo「推页不改 Rail 选中」一致；坞条目在各自 entry 里按自己的
+    // `route.itemId` 算（推入转场期间坞还露着，高亮不能闪到别的条目上）。
+    val railSelectedId = dockSelectedIdOf(
+        itemId = (backStack.firstOrNull() as? ShellRoute.Dock)?.itemId ?: ROOT_WEEK,
+        homeViewMode = wiring.homeViewMode,
+    )
 
     // 回到主屏时重读设置：设置页里改完底栏排列 / 形态 / 圆钮图标，返回主屏立刻是新的。
     // 设置页与图标挑选页都压在这个返回栈里（`ShellRoute.Page`）：push 时 `atRoot` 变 false，
@@ -644,9 +681,11 @@ private fun PagesShell(
     // 绘制（栈底条目不再重绘），这段录制也随之停下。
     val backdrop = rememberLayerBackdrop()
     val glassAvailable = isRuntimeShaderSupported()
-    // 只有坞**真的会采样**（液态 / 磨砂档 + 设备支持）才挂录像层：实体档 / 关掉时
-    // 坞不跑 drawBackdrop，录像纯属每次重绘多画一遍整页（2026-11-01 审计）。
-    val recordBackdrop = glassAvailable && rememberHomeDockUsesBackdrop(settingsModel)
+    // 只有坞**真的会采样**（液态 / 磨砂档 + 设备支持 + 宽屏档坞没被 Rail 取代）才挂录像层：
+    // 实体档 / 关掉时坞不跑 drawBackdrop，录像纯属每次重绘多画一遍整页（2026-11-01 审计）；
+    // 宽屏档坞整块不组合（`replacedByRail`），采样源也随之停掉。
+    val recordBackdrop = glassAvailable && !shellRail.railVisible &&
+        rememberHomeDockUsesBackdrop(settingsModel)
 
     // 根 Scaffold：只为一件事——把弹层（`OverlayBottomSheet` / `OverlayListPopup`）的宿主
     // 抬到玻璃底栏之上。miuix 的弹层走「root scaffold」这条通道；没有这层根 Scaffold 时，
@@ -657,16 +696,46 @@ private fun PagesShell(
         contentWindowInsets = WindowInsets(0, 0, 0, 0),
     ) { _ ->
     // 震动总开关的落点：整棵页面树都挂在它下面（含玻璃坞与两个入口页）。
-    CompositionLocalProvider(LocalHapticFeedback provides shellHaptics) {
+    // 宽屏自适应注入（第 2 批）：Rail 出现后，页面骨架的限宽/顶栏按「内容区宽」取值
+    // （`QingyuPageScaffold` 经第 1 批预留的 [QingyuLocalWindowAdaptive] 消费）；
+    // 无 Rail 时注入值与按窗口宽自算等价，手机竖屏行为不变。
+    CompositionLocalProvider(
+        LocalHapticFeedback provides shellHaptics,
+        QingyuLocalWindowAdaptive provides shellRail.contentAdaptive,
+    ) {
         Box(modifier = Modifier.fillMaxSize()) {
-            NavDisplay(
-                backStack = backStack,
-                onBack = { popPage() },
-                // 官方预设 + 按用户倍率缩放过的时长（见 [scaledToUserSpeed]）。
-                transition = pageTransition,
-                effects = NavDisplayEffects.Default,
-                modifier = Modifier.fillMaxSize(),
-            ) {
+            // 宽屏档：Rail 在 NavDisplay 左侧（demo `AppContent.kt:251-276` 同一结构）。
+            // Row 无条件存在、Rail 条件组合——NavDisplay 保持**同一个组合位置**，
+            // 宽窄切换（旋转/分屏）只增删外壳，不重建当前路由、不丢返回栈与转场状态。
+            Row(modifier = Modifier.fillMaxSize()) {
+                if (shellRail.railVisible) {
+                    ShellNavigationRail(
+                        settingsModel = settingsModel,
+                        selectedId = railSelectedId,
+                        // 条目 → 壳页面：与坞同一张表（视图动作另有分支）。
+                        isNavigable = { id -> rootPageIdFor(id) != null },
+                        // Rail 常驻可点：先弹回主屏再切换（`selectRoot` 的栈守卫会把
+                        // 压着页面时的点击吞掉，见 [railSelectRoot] 注释）。
+                        onSelect = { id -> railSelectRoot(id) },
+                        onRoundButton = { handleRoundButton() },
+                        expanded = shellRail.railExpanded,
+                    )
+                }
+                Box(
+                    modifier = Modifier
+                        .weight(1f)
+                        .fillMaxSize()
+                        // 宽屏档转场层不许画到 Rail 上面（demo `AppContent.kt:263` 同一条）。
+                        .then(if (shellRail.railVisible) Modifier.clipToBounds() else Modifier),
+                ) {
+                    NavDisplay(
+                        backStack = backStack,
+                        onBack = { popPage() },
+                        // 官方预设 + 按用户倍率缩放过的时长（见 [scaledToUserSpeed]）。
+                        transition = pageTransition,
+                        effects = NavDisplayEffects.Default,
+                        modifier = Modifier.fillMaxSize(),
+                    ) {
                 // 栈底：主屏 = **页面内容 + 玻璃坞**。坞由这一层自己画（2026-11-01 搬层），
                 // 于是它与首页同属一棵子树：页面推入 / 缩放时坞跟着一起动，而不是整块消失；
                 // 外观编辑页的缩尺预览卡也画这同一个组件，卡片里从此有坞。
@@ -708,16 +777,10 @@ private fun PagesShell(
                         }
                         HomeGlassDock(
                             settingsModel = settingsModel,
-                            // 课表宿主的路由固定在 `week`（周 / 日是页内展开态，不换路由），
-                            // 所以高亮要跟 `homeViewMode` 走；其它条目仍就是路由 id。
-                            selectedId = if (route.itemId == ROOT_WEEK) {
-                                when (wiring.homeViewMode) {
-                                    TimetableHomeViewMode.DAY -> HomeDockNavModel.ACTION_DAY
-                                    else -> ROOT_WEEK
-                                }
-                            } else {
-                                route.itemId
-                            },
+                            // 高亮口径与 Rail 同源（见 [dockSelectedIdOf] 与 railSelectedId 注释）。
+                            selectedId = dockSelectedIdOf(route.itemId, wiring.homeViewMode),
+                            // 宽屏档整块不组合，由左侧 Rail 接管导航（方案第 2 批口径）。
+                            replacedByRail = shellRail.railVisible,
                             // 底栏条目 → 壳页面：与「有没有去处」同一张表（视图动作另有分支）。
                             isNavigable = { id -> rootPageIdFor(id) != null },
                             onSelect = { id -> selectRoot(id) },
@@ -754,7 +817,9 @@ private fun PagesShell(
                     )
                 }
             }
+                }
         }
+            }
     }
     }
 }
@@ -764,6 +829,22 @@ private const val ROOT_WEEK = "week"
 
 /** 周视图对应的壳页面 id（`ShellPageIndex` 的 `c1.week` = 真宿主 `TimetableWithCourseActions`）。 */
 private const val ROOT_WEEK_PAGE_ID = "c1.week"
+
+/**
+ * 主屏条目的**高亮 id**（玻璃坞与侧边导航栏同源的口径，2026-11-03 第 2 批）。
+ *
+ * 课表宿主的路由固定在 [ROOT_WEEK]（周 / 日是页内展开态，不换路由），
+ * 所以「日」档时高亮要落在日动作条目上；其余条目就是路由 id 本身。
+ */
+private fun dockSelectedIdOf(itemId: String, homeViewMode: TimetableHomeViewMode): String =
+    if (itemId == ROOT_WEEK) {
+        when (homeViewMode) {
+            TimetableHomeViewMode.DAY -> HomeDockNavModel.ACTION_DAY
+            else -> ROOT_WEEK
+        }
+    } else {
+        itemId
+    }
 
 /**
  * 底栏条目 id → 壳页面 id。
