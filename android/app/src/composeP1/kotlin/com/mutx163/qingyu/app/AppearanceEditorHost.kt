@@ -23,6 +23,9 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import com.mutx163.qingyu.components.QingyuSheet
 import com.mutx163.qingyu.core.MiniJson
 import com.mutx163.qingyu.pages.settings.AppearanceEditorBridge
@@ -47,6 +50,7 @@ import com.mutx163.qingyu.pages.settings.WallpaperHistoryLedger
 import com.mutx163.qingyu.pages.settings.WallpaperSheetBody
 import com.mutx163.qingyu.pages.settings.WallpaperSheetIntent
 import com.mutx163.qingyu.pages.settings.WallpaperSheetPages
+import com.mutx163.qingyu.pages.settings.appearanceEditorResyncOnResume
 import com.mutx163.qingyu.pages.settings.backdropFlowState
 import com.mutx163.qingyu.pages.settings.parseWallpaperSheetTarget
 import com.mutx163.qingyu.pages.settings.wallpaperSheetBottomGap
@@ -671,6 +675,41 @@ fun AppearanceEditorHost(
     // 离开本页时补写最后那档（`:586-592` 同一件事：防抖未到期不能丢）。
     DisposableEffect(Unit) {
         onDispose { persistNow() }
+    }
+
+    // 回到页顶时把草稿对齐盘上真值（2026-11-03 用户实报「Bing 壁纸点应用，
+    // 预览要点完成才变」）。
+    //
+    // 根因：Bing 图库 / 调整位置这类被本页推开的整页，应用结果直接 `store.save()`
+    // 落盘、不经过本页草稿；而本页被覆盖期间**仍组合着**（miuix `NavDisplay` 可见
+    // 窗口 `opaqueDepth = 1`，depth=1 的被覆盖页不销毁），返回后草稿还是旧内存值，
+    // 预览（读草稿）就停在旧壁纸上——直到「完成」退出本页、首页按 `settingsRevision`
+    // 重读盘才看到。
+    //
+    // 修法：NavDisplay 给每个条目发独立生命周期（页顶 RESUMED、被覆盖 STARTED，
+    // 官方 `NavEntryLifecycle.kt` §5.3，经 `LocalLifecycleOwner` 注入本页）。监听
+    // ON_RESUME：先补写欠档（防抖里那一档不丢），再读一次盘，与本页不同就把草稿
+    // 对齐——预览与首页从此同一份真值，「应用」那一刻（落盘后立刻 pop 回本页）
+    // 预览当场跟上，「完成」只负责收尾，不再承担刷新职责。
+    val entryLifecycle = LocalLifecycleOwner.current
+    DisposableEffect(entryLifecycle) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (event != Lifecycle.Event.ON_RESUME) return@LifecycleEventObserver
+            if (!persistNow()) return@LifecycleEventObserver
+            val resync = appearanceEditorResyncOnResume(
+                disk = store.load(),
+                draft = model,
+                exiting = exiting,
+            )
+            if (resync != null) {
+                model = resync
+                // 盘上真值同时是「最近一次确认已落盘」的新基准（外部页写的键也要算数，
+                // 否则下一次 writeVerified 的改动键比对会拿旧基准误判）。
+                landed = resync
+            }
+        }
+        entryLifecycle.lifecycle.addObserver(observer)
+        onDispose { entryLifecycle.lifecycle.removeObserver(observer) }
     }
 
     // 系统返回 = 取消。面板开着时**不接管**：那一下应该先关面板（Dart 的 `_popSelf`
