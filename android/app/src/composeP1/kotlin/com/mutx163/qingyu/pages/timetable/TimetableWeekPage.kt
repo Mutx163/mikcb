@@ -63,7 +63,6 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.window.Dialog
 import androidx.core.view.WindowCompat
 import com.mutx163.qingyu.app.HomeMenuStyle
 import com.mutx163.qingyu.app.HomeTitleStyle
@@ -250,6 +249,16 @@ fun TimetableWeekPage(
      * 没接宿主的调用方（历史零参调用）保持完全旧行为。
      */
     screenshotSharePromptEnabled: Boolean = false,
+    /**
+     * 截屏提示上「分享」按钮的动作（2026-11-03 导出链路落地后接通）。
+     *
+     * 参数是**页面侧**算好的「用户正看着哪张图」：周图 `(week, null)`、日图
+     * `(selectedWeek, selectedDayOfWeek)`——与 Dart `_shareTimetableImage`（:969-986）
+     * 用 `_visibleWeek` / `_selectedDayOfWeek` 同一取数口径。只有页面知道当前可见周，
+     * 宿主拿不到 pager 内部状态，所以由页面组装请求、宿主实现动作（null = 不画按钮，
+     * 历史零参调用保持旧行为）。
+     */
+    onShareScreenshot: ((week: Int, dayOfWeek: Int?) -> Unit)? = null,
     modifier: Modifier = Modifier,
 ) {
     val dark = isSystemInDarkTheme()
@@ -774,6 +783,17 @@ fun TimetableWeekPage(
         // 本页置顶 / 6 秒冷却）在提示宿主里。胶囊抬到「回本周」浮钮上方，不再压住它。
         ScreenshotSharePromptHost(
             enabled = screenshotSharePromptEnabled,
+            onShare = onShareScreenshot?.let { onShare ->
+                {
+                    // 与 Dart _shareTimetableImage（:981-984）同一取数：日视图分享
+                    // 「正在看的那一天」，周视图分享当前可见周。
+                    if (dayVisible) {
+                        onShare(selectedWeek, selectedDayOfWeek)
+                    } else {
+                        onShare(browsingWeek, null)
+                    }
+                }
+            },
             modifier = Modifier
                 .align(Alignment.BottomCenter)
                 .padding(

@@ -35,14 +35,15 @@ import com.mutx163.qingyu.platform.ScreenCaptureWatcher
  * * **冷却**：`ScreenshotSharePromptGate.COOLDOWN_MILLIS`（6 秒，Dart 同值），
  *   连拍截屏不叠提示。
  *
- * ## 与 Dart 的两处刻意差异（都记在交付说明里）
+ * ## 与 Dart 的差异
  *
- * 1. **没有「分享」动作按钮**：Dart 点按钮进导出分享面板，那份「干净课表图」
- *    光栅化还没移植到 Compose——没有去处的按钮不画（假入口纪律）。等导出面板
- *    落地后把 `AppToastCapsule` 的 `actionLabel` / `onAction` 接上即可。
- * 2. **监听不跟随开关即时注册/注销**：壳恒注册（`attach` 缺省恒想听），开关只在
+ * 1. **监听不跟随开关即时注册/注销**：壳恒注册（`attach` 缺省恒想听），开关只在
  *    门上拦。与 Dart「关开关就 stop 监听」的差别只是注册成本，行为一致；
  *    且本 App 的设置改动本来就只在回到首页时生效（壳同一条口径）。
+ * 2. **「分享」按钮只在动作有去处时画**（[onShare] 非空才传 `actionLabel`）：
+ *    2026-11-03 导出链路（[TimetableShareImageModel]/[TimetableShareImageRender]/
+ *    `shareTimetableImage`）落地后由宿主喂动作，没接宿主的调用方（历史零参）不画按钮
+ *    （假入口纪律：文案键 `timetableSharePromptAction` 已在六语 ARB）。
  *
  * ## 预览守卫
  *
@@ -51,12 +52,15 @@ import com.mutx163.qingyu.platform.ScreenCaptureWatcher
  * 等于截一次屏弹两次提示）。
  *
  * @param enabled 总开关（设置 × 宿主意愿，与门控的 enabled 同源）。
+ * @param onShare 点「分享」的动作（直接导出当前视图的干净课表图并拉起系统分享，
+ *   Dart `_shareTimetableImage` 同口径）。null = 不画按钮。
  * @param modifier 胶囊的摆放（调用方用 `align(BottomCenter)` + 内边距定位）。
  */
 @Composable
 fun ScreenshotSharePromptHost(
     enabled: Boolean,
     modifier: Modifier = Modifier,
+    onShare: (() -> Unit)? = null,
 ) {
     if (!enabled) return
     val dark = isSystemInDarkTheme()
@@ -91,11 +95,17 @@ fun ScreenshotSharePromptHost(
 
     // 可见性由状态驱动；胶囊本体（样式 / 自动消失 / 读屏播报）在共享件 AppToastCapsule，
     // 「数据备份」「情侣课表」页同款。这里传 5 秒档（Dart _screenshotPromptDuration）。
+    // 「分享」按钮只在动作有去处时画（Dart showAppToastWithAction 的 actionLabel 同位）。
     if (!promptVisible) return
     AppToastCapsule(
         message = TimetableStrings.timetableSharePromptMessage.zh,
         dark = dark,
         modifier = modifier.padding(horizontal = 16.dp),
+        actionLabel = onShare?.let { TimetableStrings.timetableSharePromptAction.zh },
+        onAction = {
+            promptVisible = false
+            onShare?.invoke()
+        },
         autoDismissMillis = ScreenshotSharePromptGate.PROMPT_DURATION_MILLIS,
         onDismiss = { promptVisible = false },
     )

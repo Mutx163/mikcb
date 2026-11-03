@@ -16,6 +16,8 @@ import com.mutx163.qingyu.calendar.HolidayPreferences
 import com.mutx163.qingyu.core.Course
 import com.mutx163.qingyu.core.clampCurrentWeekToSettings
 import com.mutx163.qingyu.pages.timetable.TimetableMenuItem
+import com.mutx163.qingyu.pages.timetable.TimetableShareImageModel
+import com.mutx163.qingyu.pages.timetable.TimetableShareRequests
 import com.mutx163.qingyu.pages.timetable.TimetableStyleMapping
 import com.mutx163.qingyu.pages.timetable.TimetableWeekPage
 import com.mutx163.qingyu.pages.timetable.WeekAgendaCardModel
@@ -23,6 +25,7 @@ import com.mutx163.qingyu.pages.timetable.TimetableDateLogic
 import com.mutx163.qingyu.pages.timetable.TimetableStrings
 import com.mutx163.qingyu.pages.timetable.WeekHolidayMarking
 import com.mutx163.qingyu.pages.timetable.WeekViewStyle
+import com.mutx163.qingyu.pages.timetable.shareTimetableImage
 import com.mutx163.qingyu.pages.weather.WeatherStrings
 import com.mutx163.qingyu.weather.WeatherProvider
 import java.time.LocalDate
@@ -279,5 +282,35 @@ fun TimetableHost(
         // `settings.screenshotSharePromptEnabled` 同口径）。存档没接（null）按关处理。
         screenshotSharePromptEnabled =
             screenshotSharePromptEnabled && settingsModel?.screenshotSharePromptEnabled == true,
+        // 截屏提示「分享」按钮的动作（2026-11-03 导出链路落地）：页面给「用户正看着的
+        // 周 / 日」，这里组装导出文档并发起系统分享（Dart `_shareTimetableImage` 同口径——
+        // 截屏提示直接分享当前视图的图，没有中间面板）。dayOfWeek = null ⇒ 周图。
+        onShareScreenshot = { week, dayOfWeek ->
+            shareTimetableImage(
+                context = appContext,
+                doc = if (dayOfWeek == null) {
+                    TimetableShareRequests.weekDocument(
+                        courses = snapshot.courses,
+                        week = week,
+                        settings = settings,
+                        style = style,
+                        visibleDays = visibleDays,
+                        today = LocalDate.now(),
+                    )
+                } else {
+                    TimetableShareRequests.dayDocument(
+                        courses = snapshot.courses,
+                        week = week,
+                        dayOfWeek = dayOfWeek,
+                        settings = settings,
+                        showNonCurrentWeekCourses = style.showNonCurrentWeekCourses,
+                    )
+                },
+                exportWidthDp = TimetableShareImageModel.exportWidthDp(
+                    appContext.resources.displayMetrics.widthPixels /
+                        appContext.resources.displayMetrics.density,
+                ),
+            )
+        },
     )
 }
