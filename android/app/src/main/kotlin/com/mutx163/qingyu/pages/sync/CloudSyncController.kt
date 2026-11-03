@@ -51,15 +51,6 @@ import java.util.concurrent.CopyOnWriteArrayList
  * 仍是纯逻辑，不把 Compose 拖进 L0 classpath。
  */
 
-/** 配置读写缝（生产用 SharedPreferences/加密存储，单测用内存实现）。密码也走这里。 */
-interface WebdavConfigStore {
-    fun loadConfig(): WebdavSyncConfig
-    fun saveConfig(config: WebdavSyncConfig)
-    fun hasStoredPassword(): Boolean
-    fun storePassword(password: String)
-    fun clearPassword()
-}
-
 /** 连接结果：成功 / 失败 + 可本地化的错误码。 */
 data class CloudSyncConnectResult(val success: Boolean, val errorCode: String? = null)
 

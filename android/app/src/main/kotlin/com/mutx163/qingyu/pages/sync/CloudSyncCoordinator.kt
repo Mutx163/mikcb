@@ -134,15 +134,6 @@ sealed interface BackupIndexLoad {
 }
 
 /**
- * 本机快照读写接缝（生产用存储层实现，单测用内存假实现）。
- * 只读写「当前快照」这一份字节；多档案/任务写回归仓储（不在本层）。
- */
-interface LocalSnapshotStore {
-    fun readSnapshot(): ByteArray?
-    fun writeSnapshot(bytes: ByteArray)
-}
-
-/**
  * 云同步收发协调器。
  *
  * @param transport 真实收发通道（生产由 [createWebdavRemoteTransport] 构造）。
