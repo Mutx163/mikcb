@@ -1911,24 +1911,14 @@ fun ShellPageContent(
             onBack = onBack,
             onOpenPage = onOpenPage,
         )
-        "g2.adapterDetail" -> {
-            // 详情页要学校 + 适配器两份暂存；缺任一份就退回选校页，不留空白页。
-            if (warehouseState.school == null || warehouseState.adapter == null) {
-                WarehouseImportPickerHost(
-                    state = warehouseState,
-                    prefs = warehousePrefs,
-                    onBack = onBack,
-                    onOpenPage = onOpenPage,
-                )
-            } else {
-                WarehouseAdapterDetailHost(
-                    state = warehouseState,
-                    prefs = warehousePrefs,
-                    onBack = onBack,
-                    onOpenPage = onOpenPage,
-                )
-            }
-        }
+        // 详情页要学校 + 适配器两份暂存：交给宿主自己取交接件（[WarehouseImportHandoff]），
+        // 拿不到时宿主显示诚实空态；壳里若改画选校页，用户会以为「点详情被弹回了列表」。
+        "g2.adapterDetail" -> WarehouseAdapterDetailHost(
+            state = warehouseState,
+            prefs = warehousePrefs,
+            onBack = onBack,
+            onOpenPage = onOpenPage,
+        )
         // 2026-11-01 F28：换成真宿主。地址链路（自定义覆盖 > 适配器 import_url）在宿主里，
         // 没有可用地址时由宿主自己显示诚实空态；抓回来的课表暂只记类型日志（见 F28 认领）。
         "g2.webLogin" -> WarehouseWebLoginHost(

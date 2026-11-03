@@ -229,12 +229,18 @@ fun WarehouseSchoolAdaptersHost(
 ) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
-    val school = state.school
+    // 从选校页推进来时，学校经交接件带过来（壳给每个路由条目独立的 WarehouseShellState，
+    // 见 WarehouseImportHandoff）；同一组合实例内（选校页 → 本页）则直接读 state。
+    val handoff = remember { WarehouseImportHandoff.take() }
+    val school = state.school ?: handoff?.school
     if (school == null) {
-        // 直接进这一页（壳的页面清单里点进来）时没有选中学校：退回选择页，而不是拿演示学校凑合。
-        LaunchedEffect(Unit) { onOpenPage(WarehouseRoutes.IMPORT_PICKER) }
+        // 直接从页面清单 / 全功能页进来时没有选中学校：给诚实空态 + 返回键，
+        // **不再跳回选校页**——那会让人以为「点了没反应、被弹回去」。
+        LaunchedEffect(Unit) { Log.w(LOG_TAG, "schoolAdapters opened without school") }
+        WarehouseNoTargetPage(WarehouseStrings.importMethodWarehouseTitle.zh, onBack)
         return
     }
+    LaunchedEffect(Unit) { if (state.school == null) state.school = school }
 
     val service = remember(fetch) { WarehouseRepositoryService(fetch) }
     // 宏持久化（P1）：与网页登录宿主同一套键（Dart SharedPreferences 同键共读），

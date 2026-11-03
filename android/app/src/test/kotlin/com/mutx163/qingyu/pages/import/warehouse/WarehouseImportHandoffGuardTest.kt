@@ -169,22 +169,58 @@ class WarehouseImportHandoffGuardTest {
         )
     }
 
+    @Test
+    fun `适配器列表页拿不到学校时不得静默跳回选校页`() {
+        val host = stripKotlinComments(source("WarehouseImportHosts.kt").readText(Charsets.UTF_8))
+        val body = functionBody(host, "fun WarehouseSchoolAdaptersHost(")
+
+        assertTrue("列表页也必须先看交接件（否则从选校页推进来的新条目拿不到学校）", body.contains("WarehouseImportHandoff.take()"))
+        assertFalse(
+            "列表页不许再静默退回选校页（用户会以为点击被弹回）",
+            body.contains("onOpenPage(WarehouseRoutes.IMPORT_PICKER)"),
+        )
+        assertTrue("拿不到学校时必须渲染诚实空态", body.contains("WarehouseNoTargetPage("))
+    }
+
+    @Test
+    fun `壳的详情分支必须交给宿主取交接件 不许再画选校页`() {
+        val shell = stripKotlinComments(
+            relativeSource("android/app/src/main/kotlin/com/mutx163/qingyu/pages/ShellPageIndex.kt")
+                .readText(Charsets.UTF_8),
+        )
+        val start = shell.indexOf("\"g2.adapterDetail\" ->")
+        assertTrue("壳里找不到 g2.adapterDetail 分派分支", start >= 0)
+        val end = shell.indexOf("\"g2.webLogin\" ->", start)
+        assertTrue("找不到分支边界 g2.webLogin（解析可能失效）", end > start)
+        val branch = shell.substring(start, end)
+
+        assertTrue(
+            "详情分支必须调 WarehouseAdapterDetailHost（由宿主 take 交接件并给诚实空态）",
+            branch.contains("WarehouseAdapterDetailHost("),
+        )
+        assertFalse(
+            "详情分支不许再直接画选校页 WarehouseImportPickerHost",
+            branch.contains("WarehouseImportPickerHost("),
+        )
+    }
+
     // -------------------------------------------------------------------
     // 工具
     // -------------------------------------------------------------------
 
     /** 从工作目录向上找 composeP1 下的那个文件。 */
-    private fun source(fileName: String): File {
+    private fun source(fileName: String): File =
+        relativeSource("android/app/src/composeP1/kotlin/com/mutx163/qingyu/pages/import/warehouse/$fileName")
+
+    /** 从工作目录向上找仓库根，再定位任意相对路径。 */
+    private fun relativeSource(relative: String): File {
         var dir: File? = File("").absoluteFile
         repeat(8) {
-            val candidate = File(
-                dir,
-                "android/app/src/composeP1/kotlin/com/mutx163/qingyu/pages/import/warehouse/$fileName",
-            )
+            val candidate = File(dir, relative)
             if (candidate.isFile) return candidate
             dir = dir?.parentFile
         }
-        error("找不到 $fileName（工作目录 ${File("").absolutePath}）；守卫不许因为路径变了静默跳过")
+        error("找不到 $relative（工作目录 ${File("").absolutePath}）；守卫不许因为路径变了静默跳过")
     }
 
     /** 取顶层函数体文本（从签名到下一个行首 `}`）。 */
@@ -219,6 +255,20 @@ class WarehouseImportHandoffGuardTest {
                 continue
             }
             when {
+                source.startsWith("\"\"\"", i) -> {
+                    // 原始字符串：内部的双斜杠 / 星号都不算注释，原样搬到下一个三引号。
+                    out.append("\"\"\"")
+                    i += 3
+                    while (i < source.length && !source.startsWith("\"\"\"", i)) {
+                        out.append(source[i])
+                        i += 1
+                    }
+                    if (i < source.length) {
+                        out.append("\"\"\"")
+                        i += 3
+                    }
+                }
+
                 source.startsWith("//", i) -> {
                     while (i < source.length && source[i] != '\n') i++
                 }
