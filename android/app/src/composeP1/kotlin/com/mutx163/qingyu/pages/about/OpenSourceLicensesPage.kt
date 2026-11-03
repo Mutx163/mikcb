@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.items
 import androidx.compose.runtime.Composable
@@ -57,7 +58,9 @@ fun OpenSourceLicensesPage(
     val dark = isSystemInDarkTheme()
 
     QingyuPageScaffold(title = OpenSourceLicensesStrings.title, onBack = onBack) {
+        // 列表头部有搜索输入框：imePadding 把列表抬到键盘之上（壳是 edge-to-edge）。
         QingyuPageList(
+            modifier = Modifier.imePadding(),
             innerPadding = innerPadding,
             scrollBehavior = scrollBehavior,
             // 官方配方：横向留白由卡片自己带（12dp），滚动条才贴得到屏幕边缘。
@@ -135,7 +138,7 @@ fun OpenSourceLicensesPage(
                     HintRow(OpenSourceLicensesStrings.empty)
                 }
 
-                else -> items(filtered) { pkg ->
+                else -> items(filtered, key = { it.packageName }) { pkg ->
                     QingyuRow(
                         title = pkg.packageName,
                         subtitle = OpenSourceLicensesStrings.packageSubtitle(pkg.licenseBodies.size),

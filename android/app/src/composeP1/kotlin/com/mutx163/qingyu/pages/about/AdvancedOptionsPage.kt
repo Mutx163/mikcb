@@ -1,7 +1,6 @@
 package com.mutx163.qingyu.pages.about
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
@@ -25,23 +24,18 @@ import com.mutx163.qingyu.components.QingyuCard
 import com.mutx163.qingyu.components.QingyuPageCardMargin
 import com.mutx163.qingyu.components.QingyuPageList
 import com.mutx163.qingyu.components.QingyuSectionTitle
-import com.mutx163.qingyu.components.QingyuWeightDelta
-import com.mutx163.qingyu.components.shiftWeight
 import com.mutx163.qingyu.infra.AppUpdateCheckResult
 import com.mutx163.qingyu.infra.AppUpdateDownloadChannel
 import com.mutx163.qingyu.infra.AppUpdateDownloadSource
 import top.yukonga.miuix.kmp.basic.Button
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
-import top.yukonga.miuix.kmp.basic.HorizontalDivider
-import top.yukonga.miuix.kmp.basic.Icon
-import top.yukonga.miuix.kmp.basic.Switch
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TextButton
 import top.yukonga.miuix.kmp.basic.TextField
-import top.yukonga.miuix.kmp.icon.MiuixIcons
-import top.yukonga.miuix.kmp.icon.extended.ChevronForward
-import top.yukonga.miuix.kmp.icon.extended.Ok
 import top.yukonga.miuix.kmp.overlay.OverlayDialog
+import top.yukonga.miuix.kmp.preference.ArrowPreference
+import top.yukonga.miuix.kmp.preference.RadioButtonPreference
+import top.yukonga.miuix.kmp.preference.SwitchPreference
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 /**
@@ -119,12 +113,11 @@ fun AdvancedOptionsPage(
             // 1. 弹窗提醒
             item(key = "prompt") {
                 GroupCard {
-                    ToggleRow(
+                    SwitchPreference(
                         title = AboutUpdatePageStrings.updatePromptTitle,
-                        subtitle = AboutUpdatePageStrings.updatePromptSubtitle,
+                        summary = AboutUpdatePageStrings.updatePromptSubtitle,
                         checked = settings.promptEnabled,
-                        onChange = onPromptEnabledChange,
-                        showDivider = false,
+                        onCheckedChange = onPromptEnabledChange,
                     )
                 }
             }
@@ -135,12 +128,11 @@ fun AdvancedOptionsPage(
                 GroupCard {
                     val channels = AppUpdateDownloadChannel.entries
                     channels.forEachIndexed { index, item ->
-                        ChoiceRow(
+                        RadioButtonPreference(
                             title = AboutUpdatePageStrings.channelLabel(item),
-                            subtitle = AboutUpdatePageStrings.channelDescription(item),
+                            summary = AboutUpdatePageStrings.channelDescription(item),
                             selected = channel == item,
                             onClick = { onDownloadChannelChange(item) },
-                            showDivider = index < channels.lastIndex,
                         )
                     }
                 }
@@ -150,19 +142,17 @@ fun AdvancedOptionsPage(
             item(key = "method-title") { QingyuSectionTitle(AboutUpdatePageStrings.downloadPackageMethodTitle) }
             item(key = "method-group") {
                 GroupCard {
-                    ChoiceRow(
+                    RadioButtonPreference(
                         title = AboutUpdatePageStrings.inAppDownloadTitle,
-                        subtitle = AboutUpdatePageStrings.inAppDownloadSubtitle,
+                        summary = AboutUpdatePageStrings.inAppDownloadSubtitle,
                         selected = !settings.useSystemDownloader,
                         onClick = { onUseSystemDownloaderChange(false) },
-                        showDivider = true,
                     )
-                    ChoiceRow(
+                    RadioButtonPreference(
                         title = AboutUpdatePageStrings.systemDownloaderTitle,
-                        subtitle = AboutUpdatePageStrings.systemDownloaderChoiceSubtitle,
+                        summary = AboutUpdatePageStrings.systemDownloaderChoiceSubtitle,
                         selected = settings.useSystemDownloader,
                         onClick = { onUseSystemDownloaderChange(true) },
-                        showDivider = false,
                     )
                 }
             }
@@ -170,12 +160,11 @@ fun AdvancedOptionsPage(
             // 4. 检测测试版本
             item(key = "prerelease") {
                 GroupCard {
-                    ToggleRow(
+                    SwitchPreference(
                         title = AboutUpdatePageStrings.checkPrereleaseTitle,
-                        subtitle = AboutUpdatePageStrings.checkPrereleaseSubtitle,
+                        summary = AboutUpdatePageStrings.checkPrereleaseSubtitle,
                         checked = settings.includePrerelease,
-                        onChange = onIncludePrereleaseChange,
-                        showDivider = false,
+                        onCheckedChange = onIncludePrereleaseChange,
                     )
                 }
             }
@@ -194,24 +183,23 @@ fun AdvancedOptionsPage(
                                     AboutUpdatePageStrings.fillCustomMirrorFirst
                                 else -> resolveMirrorUrlPrefix(preset, customPrefix)
                             }
-                            ChoiceRow(
+                            RadioButtonPreference(
                                 title = if (isRecommended) {
                                     "${AboutUpdatePageStrings.presetLabel(preset)} · ${AboutUpdatePageStrings.recommended}"
                                 } else {
                                     AboutUpdatePageStrings.presetLabel(preset)
                                 },
-                                subtitle = subtitle,
+                                summary = subtitle,
                                 selected = settings.mirrorPreset == preset,
                                 onClick = { onMirrorPresetChange(preset) },
-                                showDivider = index < presets.lastIndex,
-                                trailing = probe?.let { result -> { ProbeChip(result) } },
+                                endActions = probe?.let { result -> { ProbeChip(result) } },
                             )
                         }
                     }
                 }
                 item(key = "mirror-actions") {
                     GroupCard {
-                        ArrowRow(
+                        ArrowPreference(
                             title = if (probing) {
                                 AboutUpdatePageStrings.probingMirrors
                             } else {
@@ -220,8 +208,7 @@ fun AdvancedOptionsPage(
                             enabled = !probing,
                             onClick = onProbeMirrors,
                         )
-                        HorizontalDivider(Modifier.padding(start = 16.dp))
-                        ArrowRow(
+                        ArrowPreference(
                             title = if (settings.mirrorPreset == MirrorPreset.CUSTOM) {
                                 AboutUpdatePageStrings.editCustomMirrorAction
                             } else {
@@ -237,7 +224,7 @@ fun AdvancedOptionsPage(
             item(key = "diag-title") { QingyuSectionTitle(AboutUpdatePageStrings.diagnosticsTitle) }
             item(key = "diag-group") {
                 GroupCard {
-                    ArrowRow(
+                    ArrowPreference(
                         title = AboutUpdatePageStrings.viewPhoneLogsAction,
                         onClick = onOpenDiagnostics,
                     )
@@ -305,106 +292,6 @@ fun AdvancedOptionsPage(
 @Composable
 private fun GroupCard(content: @Composable ColumnScope.() -> Unit) {
     QingyuCard(modifier = Modifier.fillMaxWidth()) { content() }
-}
-
-@Composable
-private fun ToggleRow(
-    title: String,
-    subtitle: String,
-    checked: Boolean,
-    onChange: (Boolean) -> Unit,
-    showDivider: Boolean,
-) {
-    val colors = MiuixTheme.colorScheme
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable { onChange(!checked) }
-            .padding(horizontal = 16.dp, vertical = 12.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Column(modifier = Modifier.weight(1f)) {
-            Text(
-                text = title,
-                style = MiuixTheme.textStyles.body1.shiftWeight(QingyuWeightDelta.MEDIUM),
-                color = colors.onSurface,
-            )
-            if (subtitle.isNotEmpty()) {
-                Text(
-                    text = subtitle,
-                    style = MiuixTheme.textStyles.footnote1,
-                    color = colors.onSurfaceVariantSummary,
-                )
-            }
-        }
-        Switch(checked = checked, onCheckedChange = onChange)
-    }
-    if (showDivider) HorizontalDivider(Modifier.padding(start = 16.dp))
-}
-
-@Composable
-private fun ChoiceRow(
-    title: String,
-    subtitle: String,
-    selected: Boolean,
-    onClick: () -> Unit,
-    showDivider: Boolean,
-    trailing: (@Composable () -> Unit)? = null,
-) {
-    val colors = MiuixTheme.colorScheme
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable { onClick() }
-            .padding(horizontal = 16.dp, vertical = 12.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Column(modifier = Modifier.weight(1f)) {
-            Text(
-                text = title,
-                style = MiuixTheme.textStyles.body1
-                    .shiftWeight(if (selected) QingyuWeightDelta.SEMIBOLD else QingyuWeightDelta.MEDIUM),
-                color = if (selected) colors.primary else colors.onSurface,
-            )
-            if (subtitle.isNotEmpty()) {
-                Text(
-                    text = subtitle,
-                    style = MiuixTheme.textStyles.footnote1,
-                    color = colors.onSurfaceVariantSummary,
-                )
-            }
-        }
-        trailing?.invoke()
-        if (selected) {
-            Spacer(Modifier.width(8.dp))
-            Icon(imageVector = MiuixIcons.Ok, contentDescription = null, tint = colors.primary)
-        }
-    }
-    if (showDivider) HorizontalDivider(Modifier.padding(start = 16.dp))
-}
-
-@Composable
-private fun ArrowRow(title: String, onClick: () -> Unit, enabled: Boolean = true) {
-    val colors = MiuixTheme.colorScheme
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable(enabled = enabled) { onClick() }
-            .padding(horizontal = 16.dp, vertical = 12.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Text(
-            text = title,
-            style = MiuixTheme.textStyles.body1.shiftWeight(QingyuWeightDelta.MEDIUM),
-            color = if (enabled) colors.onSurface else colors.onSurfaceVariantSummary,
-            modifier = Modifier.weight(1f),
-        )
-        Icon(
-            imageVector = MiuixIcons.ChevronForward,
-            contentDescription = null,
-            tint = colors.onSurfaceVariantSummary,
-        )
-    }
 }
 
 /** 镜像测速结果小胶囊：成功显示耗时（ms），失败显示「失败」（Dart `_buildMirrorProbeStatusChip`）。 */
