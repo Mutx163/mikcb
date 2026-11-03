@@ -16,7 +16,6 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -37,9 +36,6 @@ import androidx.compose.ui.unit.IntRect
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.window.Popup
-import androidx.compose.ui.window.PopupProperties
-import androidx.compose.ui.window.PopupPositionProvider
 import com.mutx163.qingyu.components.QingyuCard
 import com.mutx163.qingyu.components.QingyuPageCardMargin
 import com.mutx163.qingyu.components.QingyuPageList
@@ -50,9 +46,13 @@ import com.mutx163.qingyu.theme.QingyuIconColors
 import com.mutx163.qingyu.theme.QingyuTheme
 import kotlin.math.roundToInt
 import top.yukonga.miuix.kmp.basic.Button
+import top.yukonga.miuix.kmp.basic.DropdownImpl
+import top.yukonga.miuix.kmp.basic.DropdownItem
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.IconButton
+import top.yukonga.miuix.kmp.basic.ListPopupColumn
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
+import top.yukonga.miuix.kmp.basic.PopupPositionProvider
 import top.yukonga.miuix.kmp.basic.Scaffold
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TopAppBar
@@ -62,8 +62,8 @@ import top.yukonga.miuix.kmp.icon.extended.Back
 import top.yukonga.miuix.kmp.icon.extended.ChevronForward
 import top.yukonga.miuix.kmp.icon.extended.ContactsBook
 import top.yukonga.miuix.kmp.icon.extended.Info
-import top.yukonga.miuix.kmp.icon.extended.Ok
 import top.yukonga.miuix.kmp.icon.extended.Sort
+import top.yukonga.miuix.kmp.overlay.OverlayListPopup
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 /**
@@ -99,12 +99,12 @@ import top.yukonga.miuix.kmp.theme.MiuixTheme
  * ## 与 Dart 的渲染层差异（都记在这里，不进别的文件）
  *
  * - **排序弹层**：Dart 用 `HyperosSelectPopup`（常驻挂载 + 锚定矩形 + 切 show）。
- *   Miuix 0.9.4 没有「任意锚点的选择弹层」这种组件——`WindowDropdownPreference` /
- *   `OverlayDropdownPreference` 都是**设置行**形态（自带标题行），不能挂到顶栏图标下。
- *   所以这里用共享 [QingyuCard] + 官方 [Text] 行组合出弹层，弹层容器用 Compose 原生 [Popup]
- *   （`focusable = true`，点空白/返回键即关，对齐 Dart `onDismiss` 语义）。**锚点位置按排序
- *   图标实测的屏幕矩形动态计算**（`onGloballyPositioned` 取 `boundsInWindow()`，右对齐、
- *   贴图标下方 4dp），不再写死「状态栏 + 60dp」——大标题折叠态下也贴得住。
+ *   Compose 侧用官方 [OverlayListPopup] + [ListPopupColumn] + [DropdownImpl]（遮罩、
+ *   进出场、返回键与点空白关闭都是官方组件自带；2026-11-03 弹窗审计收尾，弃裸
+ *   `androidx.compose.ui.window.Popup` + [QingyuCard] 手拼）。**锚点位置按排序图标实测的
+ *   屏幕矩形动态计算**（`onGloballyPositioned` 取 `boundsInWindow()`，经官方
+ *   [PopupPositionProvider] 扩展点右对齐、贴图标下方 4dp），不再写死「状态栏 + 60dp」
+ *   ——大标题折叠态下也贴得住。
  * - **冲突入口图标**：Dart 用 `Icons.warning_amber_rounded` + `HyperosIconColors.orange`
  *   （`0xFFFF6B00`）。Miuix 0.9.4 的 extended 图标里**没有**警告类字形，取最接近的官方
  *   [MiuixIcons.Info]，颜色沿用 Dart 的橙色（语义由橙色 + 行内标题承载，不靠字形）。
@@ -141,7 +141,8 @@ fun CourseOverviewPage(
     var sortAnchorBounds by remember { mutableStateOf<Rect?>(null) }
 
     QingyuPageTheme {
-        // 弹层要锚在「整个页面坐标系」的右上，所以 Scaffold 外面再包一层 Box。
+        // 页面根容器。排序弹层本体挂在下面 Scaffold 的 content 末尾——官方 Overlay 系
+        // 弹层的宿主由 Scaffold 注入，挂到 Scaffold 子树外面弹不出来。
         Box(modifier = Modifier.fillMaxSize()) {
             Scaffold(
                 containerColor = Color(QingyuTheme.scaffoldBackground(dark)),
@@ -232,13 +233,13 @@ fun CourseOverviewPage(
                         }
                     }
                 }
-            }
-
-            if (sortPopupOpen) {
+                // 排序弹层：常驻组合、按 show 切显示（官方 OverlayListPopup 内部驱动进出场、
+                // 遮罩与返回/点空白关闭）。必须挂在 Scaffold 子树里——官方 Overlay 系的弹层
+                // 宿主由 Scaffold 注入，挂到 Scaffold 外面弹不出来。
                 CourseOverviewSortPopup(
+                    show = sortPopupOpen,
                     options = viewState.sortOptions,
-                    dark = dark,
-                    anchorBounds = sortAnchorBounds,
+                    anchor = sortAnchorBounds,
                     onSelect = { option ->
                         onSortModeSelected(option.mode)
                         sortPopupOpen = false
@@ -467,89 +468,72 @@ private fun CourseGroupRow(
 /**
  * 「排序」选择弹层（Dart `HyperosSelectPopup` 的三项 + 当前档）。
  *
- * 形态差异见文件头第一条：官方 Card 容器的弹层，**右对齐到排序图标、贴其下方 4dp**
- * （锚点矩形由调用方在 `onGloballyPositioned` 实测传入）。三项文案与顺序来自
- * [CourseOverviewViewState.sortOptions]（added → name → schedule），当前档由 `isSelected`
- * 标出（文字转主题色 + 尾部对勾）。
+ * 官方 [OverlayListPopup] + [ListPopupColumn] + [DropdownImpl]：行内边距（首/末 20dp、
+ * 中间 12dp、横向 20dp，官方默认值恰是 Dart `HyperosMiuixDropdown` 的口径）、选中态
+ * （主题色字 + 尾部对勾）、遮罩、进出场动画、返回键与点空白关闭全部是官方组件自带
+ *（2026-11-03 弹窗审计收尾，弃裸 `androidx.compose.ui.window.Popup` + [QingyuCard] 手拼）。
  *
- * 行内边距对齐 Dart `HyperosMiuixDropdown`：首/末行纵向 20dp、中间行 12dp、横向 20dp。
+ * 定位走官方 [PopupPositionProvider] 扩展点：**右对齐到排序图标、贴其下方 4dp**——
+ * [anchor] 由调用方在排序图标的 `onGloballyPositioned` 实测传入（`boundsInWindow()`）。
+ * 官方组件自带的锚是弹层的父布局（整页内容区），覆盖不到顶栏图标，所以按官方参数
+ * 自定义定位；大标题折叠态下也贴得住。
  */
 @Composable
 private fun CourseOverviewSortPopup(
+    show: Boolean,
     options: List<CourseSortOption>,
-    dark: Boolean,
-    anchorBounds: Rect?,
+    anchor: Rect?,
     onSelect: (CourseSortOption) -> Unit,
     onDismiss: () -> Unit,
 ) {
     val density = LocalDensity.current
-    val gapPx = with(density) { 4.dp.roundToPx() }
-    val positionProvider = remember(anchorBounds) {
+    val positionProvider = remember(anchor, density) {
+        val gapPx = with(density) { 4.dp.roundToPx() }
         object : PopupPositionProvider {
             override fun calculatePosition(
-                anchorBoundsPx: IntRect,
-                windowSize: IntSize,
+                anchorBounds: IntRect,
+                windowBounds: IntRect,
                 layoutDirection: LayoutDirection,
                 popupContentSize: IntSize,
+                popupMargin: IntRect,
+                alignment: PopupPositionProvider.Align,
             ): IntOffset {
                 // 右对齐到排序图标、贴其下方；锚点还没测到时退回窗口右上角。
-                val iconRight = anchorBounds?.right?.roundToInt() ?: windowSize.width
-                val iconBottom = anchorBounds?.bottom?.roundToInt() ?: 0
-                val x = (iconRight - popupContentSize.width).coerceAtLeast(gapPx)
-                return IntOffset(x = x, y = iconBottom + gapPx)
+                // 第一个参数是「弹层父布局」的矩形（整页内容区），锚定一律用实测的 anchor。
+                val x = (anchor?.right?.roundToInt() ?: windowBounds.right) - popupContentSize.width
+                val y = (anchor?.bottom?.roundToInt() ?: windowBounds.top) + gapPx
+                return IntOffset(
+                    x = x.coerceIn(
+                        windowBounds.left,
+                        (windowBounds.right - popupContentSize.width).coerceAtLeast(windowBounds.left),
+                    ),
+                    y = y.coerceIn(
+                        windowBounds.top,
+                        (windowBounds.bottom - popupContentSize.height).coerceAtLeast(windowBounds.top),
+                    ),
+                )
             }
+
+            override fun getMargins(): PaddingValues = PaddingValues(0.dp)
         }
     }
 
-    Popup(
+    // 常驻组合、按 show 切显示：进出场由官方组件内部驱动，退场动画能播完。
+    OverlayListPopup(
+        show = show,
         popupPositionProvider = positionProvider,
+        alignment = PopupPositionProvider.Align.End,
         onDismissRequest = onDismiss,
-        properties = PopupProperties(focusable = true),
     ) {
-        QingyuCard(
-            modifier = Modifier.widthIn(min = 180.dp),
-            insideMargin = PaddingValues(0.dp),
-        ) {
-            Column(modifier = Modifier.fillMaxWidth()) {
-                options.forEachIndexed { index, option ->
-                    val isFirst = index == 0
-                    val isLast = index == options.lastIndex
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clickable { onSelect(option) }
-                            .padding(
-                                start = 20.dp,
-                                end = 20.dp,
-                                top = if (isFirst) 20.dp else 12.dp,
-                                bottom = if (isLast) 20.dp else 12.dp,
-                            ),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                    ) {
-                        Text(
-                            text = option.label,
-                            // Dart 弹层条目 = preferenceTitleSize 17sp。
-                            style = MiuixTheme.textStyles.main.shiftWeight(
-                                if (option.isSelected) QingyuWeightDelta.MEDIUM else 0,
-                            ),
-                            color = if (option.isSelected) {
-                                Color(QingyuTheme.primary(dark = dark))
-                            } else {
-                                Color(QingyuTheme.primaryText(dark))
-                            },
-                        )
-                        if (option.isSelected) {
-                            Spacer(modifier = Modifier.width(12.dp))
-                            Icon(
-                                imageVector = MiuixIcons.Ok,
-                                contentDescription = null,
-                                tint = Color(QingyuTheme.primary(dark = dark)),
-                                modifier = Modifier.size(20.dp),
-                            )
-                        }
-                    }
-                }
+        ListPopupColumn {
+            options.forEachIndexed { index, option ->
+                DropdownImpl(
+                    item = DropdownItem(text = option.label, selected = option.isSelected),
+                    optionSize = options.size,
+                    isSelected = option.isSelected,
+                    index = index,
+                    onSelectedIndexChange = { onSelect(option) },
+                )
             }
         }
     }
