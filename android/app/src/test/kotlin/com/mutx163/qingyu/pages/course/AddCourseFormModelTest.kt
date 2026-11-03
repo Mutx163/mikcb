@@ -138,6 +138,16 @@ class AddCourseFormModelTest {
         assertEquals((1..12).toList(), AddCourseFormLogic.editableSectionNumbers(12, null, 6, 8))
     }
 
+    @Test
+    fun `模板外只并入现存起止两个端点`() {
+        // Dart add_course_screen.dart:92-93 只 add(currentStart)/add(currentEnd)，
+        // 不把中间的 15..19 铺进候选。
+        assertEquals(
+            (1..12).toList() + listOf(14, 20),
+            AddCourseFormLogic.editableSectionNumbers(12, 12, 14, 20),
+        )
+    }
+
     // ==========================================
     // 3. 条目 <-> Course 互转（_ScheduleEntryData.fromCourse / toCourse）
     // ==========================================
@@ -159,6 +169,32 @@ class AddCourseFormModelTest {
         assertTrue(entry.selectedCustomWeeks.isEmpty())
         assertTrue(entry.isOddWeek)
         assertFalse(entry.isEvenWeek)
+    }
+
+    @Test
+    fun `越界自定义周按 Dart 归一后再进编辑器`() {
+        // Dart course.dart:169 用的是 normalizedCustomWeeks（丢越界/去重/升序），
+        // 不是裸 customWeeks；否则表单会把 0/31/555 这类周次也画进勾选格。
+        val mixed = testCourse(customWeeks = listOf(0, 2, 31, 40, 2))
+        val entry = AddCourseScheduleEntryData.fromCourse(mixed)
+        assertEquals(AddCourseWeekSelectionMode.CUSTOM, entry.weekSelectionMode)
+        assertEquals(setOf(2), entry.selectedCustomWeeks)
+
+        val allInvalid = testCourse(customWeeks = listOf(-3, 0, 31, 555))
+        val fallback = AddCourseScheduleEntryData.fromCourse(allInvalid)
+        assertEquals(AddCourseWeekSelectionMode.RANGE, fallback.weekSelectionMode)
+        assertTrue(fallback.selectedCustomWeeks.isEmpty())
+    }
+
+    @Test
+    fun `越界停课周按 Dart 归一后再进编辑器`() {
+        // Dart add_course_screen.dart:185 用 normalizedSuspendedWeeks（丢越界/去重/升序）。
+        val mixed = testCourse(suspendedWeeks = listOf(0, 3, 31, 3))
+        val entry = AddCourseScheduleEntryData.fromCourse(mixed)
+        assertEquals(listOf(3), entry.suspendedWeeks)
+
+        val allInvalid = testCourse(suspendedWeeks = listOf(-1, 0, 31, 555))
+        assertNull(AddCourseScheduleEntryData.fromCourse(allInvalid).suspendedWeeks)
     }
 
     @Test

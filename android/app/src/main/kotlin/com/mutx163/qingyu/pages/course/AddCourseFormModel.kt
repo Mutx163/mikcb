@@ -60,10 +60,12 @@ data class AddCourseScheduleEntryData(
         /**
          * 从既有课程建条目（Dart `_ScheduleEntryData.fromCourse`）。
          *
-         * `customWeeks != null` → 自定义模式并勾选这些周；否则范围模式。
+         * `normalizedCustomWeeks != null` → 自定义模式并勾选这些周；否则范围模式。
          */
         fun fromCourse(course: Course): AddCourseScheduleEntryData {
-            val custom = course.customWeeks
+            // Dart `_ScheduleEntryData.fromCourse` 用的是 `course.normalizedCustomWeeks`
+            // （course.dart:169），不是裸 `customWeeks`：越界/畸形周在编辑器里就该消失。
+            val custom = course.normalizedCustomWeeks
             return AddCourseScheduleEntryData(
                 id = course.id,
                 dayOfWeek = course.dayOfWeek,
@@ -83,7 +85,9 @@ data class AddCourseScheduleEntryData(
                 selectedCustomWeeks = custom?.toSet() ?: emptySet(),
                 note = course.note,
                 sessionNotes = course.sessionNotes,
-                suspendedWeeks = course.suspendedWeeks,
+                // Dart add_course_screen.dart:185 同样用 normalizedSuspendedWeeks，
+                // 裸列表会把 0/31 这类畸形停课周带进编辑器。
+                suspendedWeeks = course.normalizedSuspendedWeeks,
                 timeSchemeIdOverride = course.timeSchemeIdOverride,
                 originalCourse = course,
             )
@@ -259,12 +263,10 @@ object AddCourseFormLogic {
         }
         val base = if (count <= 0) emptyList() else (1..count).toList()
         val merged = LinkedHashSet(base)
-        // 现存节次越界时并入：起止都可能越界，逐节加。
-        if (currentEndSection >= currentStartSection) {
-            for (section in currentStartSection..currentEndSection) {
-                if (section > 0) merged.add(section)
-            }
-        }
+        // Dart :92-93 只并入「现存起止」两个端点，不铺开中间节次：
+        // 中间节次若超出模板，本来就不该出现在候选里。
+        if (currentStartSection >= 1) merged.add(currentStartSection)
+        if (currentEndSection >= 1) merged.add(currentEndSection)
         return merged.sorted()
     }
 
