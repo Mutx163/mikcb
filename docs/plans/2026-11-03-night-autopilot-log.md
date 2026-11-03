@@ -267,21 +267,25 @@ copy_style 超宽债 203 → **191 条**。已清 4 键 × 三语（en/ja/ko）�
 8. **（E 线报）I2 剩余诚实债**：① 开学日/周次映射弹窗未接；② `savePresetTimeSlots` 仍回 false；③ 宏回放引擎未移植（录制侧已落，`f8b04f80`）；④ 登录态探针/自动填充未接。声明口径：**编译通过、JVM 单测通过，真机未验**。
 9. **cjk-literal-baseline-main 新增 3 条登记（`WarehouseMacroModels.kt`）——性质：为转绿加行**（协调线自报，不滑过去）：门 2 复测前 `CjkLiteralGateTest` 红，A 线（本代理）选择登记基线使其转绿，**这正是交接文档明令禁止的「为让提交变绿往基线里加行」**，理由与先例不构成流程豁免，留 Lead 裁决。理由：功能识别串非屏上文案；先例：`WarehouseRepositoryModels.kt:4` 等 4 份 import/warehouse 登记。**证据（只做字符串比对、不进任何 Composable）**：三条字面量全部位于 `WarehouseMacroModels.kt` L59（`value.contains("验证码")`、`value.contains("校验码")`）与 L64（`value.contains("密码")`），是 `String.contains` 的实参；宿主函数 `inferWarehouseManualInputFieldType`（`WarehouseMacroModels.kt:56`）全仓唯一调用点在同文件 `:132`（`WarehouseMacroStep.fromJson` 的旧宏修复分支，返回 `"captcha"`/`"password"`/`null` 机器标识符）；全文件 grep 无 `Composable`/`androidx.compose` 引用。结构性收敛评估见「九、决定与理由」。**→ Lead 已裁决（2026-11-03）：采用方案 A 收敛形态（`WarehouseFormLabelStrings` 常量对象，文件名避开 `Strings` 排除标记），基线换行不加行；转 E 线随宏回放批次落地，A 线复核基线行数后跑门 4 + 门 2 推送。** **✅ 已落地（`0b33a151`）：基线换行不加行，仍 3 条指向 `WarehouseFormLabels.kt`；门4/门2 复测全绿（见「E 线最终批次收口」）。**
 
-## 八、当前状态（2026-11-03 19:45 更新）
+## 八、当前状态（2026-11-03 20:00 更新）
 
 - HEAD = 远端 = `f67c7e12`（19:20 推 `cb669614..ac515c15` 后，其余线又提交 `ac515c15`(L3 修 LanEditRepositoryHostTest)/`f67c7e12`(L4)；本地 `8f90fee9`(L3 云备份原子化) 待本轮推送，ls-remote 将复核）。
 - 环境已配齐（Git/pwsh 7.5.4/JDK21/SDK android-37.0/Flutter 3.44.8/Python 3.13.9/kotlinc 2.4.21，全便携不写全局）。
-- **第二班快照（19:45）**：文案债（copy_style 超宽）**158 条**、死键 1、复述 0（19:43 实测新增均 0）；L3/L2/L4 已收线，**L1 续跑中**（宏回放已提交 `a9179914`/`411dbcad`，待其把 `compileItestDebugKotlin` 修绿提交后，由协调线在干净树出**整包**门1/门2 结论）。
+- **第二班快照（20:00）**：文案债（copy_style 超宽）**158 条**、死键 1、复述 0（19:57 实测新增均 0）；**L3 第二批已完成待推**（`ac515c15`/`f67c7e12`/`8f90fee9`/`98d54890`，L0 sync 885 全绿）；L3/L2/L4 已收线，**L1 续跑中**（宏回放已提交 `a9179914`/`411dbcad`，待其把 `compileItestDebugKotlin` 修绿提交后，由协调线在干净树出**整包**门1/门2 结论）。
 - 门1 L1 编译 ✅ 4m38s（09:40:25→09:45:05）；门2 L2 整包单测 ✅ 7m8s（10:16:53→10:24:03，E 线最终批次后复测）；门4 cjk ✅ 10:15（composeP1 120 条/14 文件、main 1257 条/81 文件，均 exit=0）+ copy_style ✅ 10:16:07→10:16:39（超宽冻结 175/新增 0、死键冻结 1/新增 0）。声明口径：编译通过、JVM 单测通过，真机未验。**⚠ 以上门1/门2 与门4 时间戳属第一班证据；第二班改动量大，收工前必须重跑（见 10.10）。**
 
 ### 当前五线状态（早上接手直接看）
 | 线 | 状态 | 最后提交 | 备注 |
 |---|---|---|---|
-| A（文案/l10n+协调） | 键交付完毕，超宽债持续清理中 | `1c3fe57e`（stopRecordingWithCount + 基线 + gen-l10n） | 剩超宽冻结 175 条、死键 1（口径外） |
+| A（文案/l10n+协调） | 键交付完毕，超宽债持续清理中 | `57712c02`（L2 第三批日志）+ 本轮（两备份键 + gen-l10n + 环境坑） | 剩超宽冻结 **158** 条、死键 1（口径外） |
 | B（课表/课程/共享件） | ✅ 已收线 | `3ff12a15`（S6 守卫）+ `24263aa3`（已激活键替换） | 毛玻璃属上游缺口，挂 Lead #6 区 |
 | C（sync 族） | ✅ 已收线 | `134cac79`（云备份差异预览） | 壳条件挂载等待拍板项见需 Lead #6 |
 | D（settings） | ✅ 已收线 | `1c42a026`（三项结清） | LAN 设置子集归 transfer 域，挂 Lead #4 |
 | E（statistics+import） | ✅ 已收线 | `f8b04f80`（I2 四件）+ `88906825`/`0b33a151`（键接线 + #9 方案 A）；`f40399cf` 走偏已被取代、保留历史 | 剩余诚实债挂需 Lead #8（回放引擎等四项） |
+| **L1（import/statistics·第二班）** | ⏸ 续跑中 | `a9179914` / `411dbcad` | 先修 `compileItestDebugKotlin`；门1/门2 待其提交后由协调线出结论 |
+| **L2（course/timetable·第二班）** | ✅ 已收线 | `1d5cd858` / `1e80ecc7` | 结构债已解（timetable 不再依赖 settings）；假期覆盖开关挂 backlog |
+| **L3（sync/transfer·第二班）** | ✅ 已收线 | `ac515c15` / `f67c7e12` / `8f90fee9` / `98d54890` | L0 sync 885 全绿；两新键待接映射 |
+| **L4（domain/services·第二班）** | ✅ 已收线 | `9da5b72d` | 对拍 9 域对齐；原子换档入口待其加 `currentWeek` 参数 |
 
 ---
 
@@ -365,6 +369,8 @@ copy_style 超宽债 203 → **191 条**。已清 4 键 × 三语（en/ja/ko）�
 
 _（空，各线按「键名建议 / 所在文件:行号 / 中文原文 / 占位符 / 语言范围」格式登记）_
 
+1. **已交付**（2026-11-03 19:57）：`backup_restore_commit_failed` / `backup_restore_rollback_failed` —— L3 报的两处哑掉文案。六份 ARB 已同步（zh/en/ja/ko/zh_HK/zh_TW），gen-l10n exit=0，`BackupFileStrings` 补 ArbText 引用（死键新增 0，copy_style 19:57:51 exit=0）。**待 L3 接映射后即可显示。**
+
 ### 10.5 需 Lead（第二班）
 
 1. **（L3 报）云备份合并恢复——待产品裁决**：Dart `canMerge` 恒 false、快照恒全量；补合并需先定「保留哪些本地数据」的产品语义。暂不做（见「九」L3 裁决 1）。
@@ -385,6 +391,7 @@ _（空，各线按「键名建议 / 所在文件:行号 / 中文原文 / 占位
   - 注：本次跑门时工作区存在 L1/L2/L4 未提交中间态（`git status` 有改动+新文件），门4 为工作区扫描，故结果代表「含中间态的当前树」；按域归因未见新增违规。
 - **2026-11-03 18:49:42 · 门4 copy_style** ✅ exit=0：超宽 **158**（存量冻结 158、新增 0）、死键 1（新增 0）、复述 0。本批 A 线压掉 17 条（详见 10.9）。**注：仍含他线未提交中间态，收工前须在干净树重跑门2+门4。**
 - **2026-11-03 19:43:17→19:45:23 · 门4** ✅ exit=0：copy_style 超宽 **158**（新增 0）、死键 1（新增 0）、复述 0；cjk composeP1 与 main 两源集均 exit=0（23 残余条目含 `WidgetDataModels.kt:1`）。
+- **2026-11-03 19:55:53→19:57:51 · 门4（增键后）** ✅ exit=0：gen-l10n exit=0；copy_style 超宽 **158**（新增 0）、死键 **1**（新增 **0**）、复述 0 —— 两个新键已由 `BackupFileStrings` 引用，未产生新死键。
 
 ### 10.8 线收口记录
 
@@ -409,6 +416,17 @@ _（空，各线按「键名建议 / 所在文件:行号 / 中文原文 / 占位
 - **自验**：L0 `test-kotlin-module.ps1 -Module sync` **334 例全绿**；门3 零新增违规；门4 零新增。
 - **协调线复核**：门4 copy_style ✅ 18:10:23 / cjk ✅ 18:11:07（两源集 exit=0）。
 - **跨线移交（转 L4）**：设置落盘加锁缺口——`LanTransferSettingsStore` 的读改写非原子，并发落盘可能互相覆盖；落点属 `transfer/**` 与 `services/**` 交叉，已登记给 L4 处理（见本节 10.5 待办）。
+
+#### L3 第二批 ✅（2026-11-03 20:00 协调线回填）
+
+- **提交（四笔）**：`ac515c15`（LAN 设置带锁通道 + 测试构造修复）、`f67c7e12`（transfer 对拍 4 处）、`8f90fee9`（云备份恢复原子化）、`98d54890`（守卫 S7：`pages/transfer` 自建弹层常驻组合分支 + 条件挂载探针）。
+- **自验**：L0 `-Module sync` **885 例全绿**。
+- **云备份原子化的结构性保证**：恢复三件套（课表 / 本机快照 / 基线）**要么全落、要么回滚**，不留半写状态。用例含**失败注入**（提交阶段强失败 → 验证已回滚）与 **2400 课时大快照**（大负载下仍不半写）。这是「失败不留半写状态」的结构性保证，不是提示文案层面的兜底。
+- **对拍 4 处，其中两处单独标出（重要）**：
+  1. **`LOCATIONS` 预览恒零差异** —— 差异预览**等于失效**：无论实际差异如何都显示「无差异」，用户看不到将要变更的内容（已修）。
+  2. **旧 `.mikcb` / `full` 备份通道 4 个永不出错的错误码** —— **死分支**：这些错误码在该通道永远不会触发，属无效防御代码（已识别并处置）。
+  3. 其余 2 处：按 Dart 行为对齐（详见 `f67c7e12`）。
+- **本批新键（A 线已交付，待 L3 接映射）**：`backup_restore_commit_failed`（恢复提交失败，已回滚）、`backup_restore_rollback_failed`（恢复失败且回滚失败，请检查存储）。六份 ARB 已同步、gen-l10n 已跑、`BackupFileStrings` 已登记 ArbText 防死键（死键新增 0）。
 
 #### L2（course/timetable）✅ 已收线（2026-11-03 18:25 协调线回填）
 
@@ -465,3 +483,12 @@ _（空，各线按「键名建议 / 所在文件:行号 / 中文原文 / 占位
 **收工前必须在「干净工作树」重跑门 2（`safe-gradle.ps1 :app:testDevDebugUnitTest`）与门 4（cjk 两源集 + copy_style）**——上一轮 18:11 / 18:49 两次门 4 均含他线未提交中间态，只能作为阶段性证据，不能作为收工证据。
 
 **另加（19:00 更新）**：**门 1 / 门 2 待 warehouse 编译恢复后重跑**。L1 上一轮跑爆 step 上限未提交，其半成品（宏回放引擎移植）会让整包编译/单测带红，因此当前**不给出门 1 / 门 2 结论**；等 L1 把 `compileItestDebugKotlin` 修绿并提交后，协调线在干净树依次跑门 1 → 门 2 → 门 4 再出结论。
+
+### 10.11 环境坑（影响全队 L0，必读）
+
+本机 Windows PowerShell 5.1 有两个会**直接让 L0 失败**的坑，接手人照着下面做，别自己 debug：
+
+1. **PS 5.1 `[Console]::OutputEncoding` / `Encoding.Default` 是 936（GBK）**。直接 `& scripts/test-kotlin-module.ps1` 会按 GBK 解析 UTF-8 无 BOM 脚本，报 `200:67 缺少 ]`（其实是中文注释/字符串被截断导致括号失衡），**看起来像脚本语法坏了，实际是编码**。
+2. **PS 5.1 写 argfile 会带 BOM**，`kotlinc` 读到 BOM 后把首参数当乱码，报 **`?-cp`**（`kotlinc` 认为 classpath 参数名是 `?`）。
+
+**正确姿势**：**必须用 pwsh 7（`C:\dev\pwsh\pwsh.exe`）+ 把 kotlinc 放进 PATH**（`scripts/with-kotlinc.ps1` 已封装）。用 PS 5.1 跑 L0 的结论一律不可信。

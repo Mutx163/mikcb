@@ -10515,4 +10515,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String scheduleQuickPresetHoursMinutes(int hours, int minutes) {
     return '$hours hr $minutes min';
   }
+
+  @override
+  String get backup_restore_commit_failed => 'Restore failed; rolled back';
+
+  @override
+  String get backup_restore_rollback_failed => 'Both failed; check storage';
 }

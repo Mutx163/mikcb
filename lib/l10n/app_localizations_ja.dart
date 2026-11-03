@@ -10282,4 +10282,10 @@ class AppLocalizationsJa extends AppLocalizations {
   String scheduleQuickPresetHoursMinutes(int hours, int minutes) {
     return '$hours 時間 $minutes 分';
   }
+
+  @override
+  String get backup_restore_commit_failed => '復元に失敗し、ロールバック済み';
+
+  @override
+  String get backup_restore_rollback_failed => '復元・ロールバック失敗、要確認';
 }

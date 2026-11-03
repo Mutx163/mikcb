@@ -10010,6 +10010,12 @@ class AppLocalizationsZh extends AppLocalizations {
   String scheduleQuickPresetHoursMinutes(int hours, int minutes) {
     return '$hours 小时 $minutes 分';
   }
+
+  @override
+  String get backup_restore_commit_failed => '恢复提交失败，已回滚';
+
+  @override
+  String get backup_restore_rollback_failed => '恢复失败且回滚失败，请检查存储';
 }
 
 /// The translations for Chinese, as used in Hong Kong (`zh_HK`).
@@ -20058,6 +20064,12 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String scheduleQuickPresetHoursMinutes(int hours, int minutes) {
     return '$hours 小時 $minutes 分';
   }
+
+  @override
+  String get backup_restore_commit_failed => '恢復提交失敗，已回滾';
+
+  @override
+  String get backup_restore_rollback_failed => '恢復失敗且回滾失敗，請檢查儲存空間';
 }
 
 /// The translations for Chinese, as used in Taiwan (`zh_TW`).
@@ -30107,4 +30119,10 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String scheduleQuickPresetHoursMinutes(int hours, int minutes) {
     return '$hours 小時 $minutes 分';
   }
+
+  @override
+  String get backup_restore_commit_failed => '恢復提交失敗，已回滾';
+
+  @override
+  String get backup_restore_rollback_failed => '恢復失敗且回滾失敗，請檢查儲存空間';
 }

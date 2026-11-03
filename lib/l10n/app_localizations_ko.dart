@@ -10311,4 +10311,10 @@ class AppLocalizationsKo extends AppLocalizations {
   String scheduleQuickPresetHoursMinutes(int hours, int minutes) {
     return '$hours시간 $minutes분';
   }
+
+  @override
+  String get backup_restore_commit_failed => '복원 실패, 롤백됨';
+
+  @override
+  String get backup_restore_rollback_failed => '복원·롤백 실패, 저장소 확인';
 }

@@ -6165,5 +6165,7 @@
         "type": "int"
       }
     }
-  }
+  },
+  "backup_restore_commit_failed": "恢复提交失败，已回滚",
+  "backup_restore_rollback_failed": "恢复失败且回滚失败，请检查存储"
 }

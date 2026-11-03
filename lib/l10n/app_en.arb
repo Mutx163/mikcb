@@ -5986,5 +5986,7 @@
   "scheduleQuickPresetCommute": "Commute",
   "scheduleQuickPresetHoursOnly": "{hours} hr",
   "scheduleQuickPresetMinutesOnly": "{minutes} min",
-  "scheduleQuickPresetHoursMinutes": "{hours} hr {minutes} min"
+  "scheduleQuickPresetHoursMinutes": "{hours} hr {minutes} min",
+  "backup_restore_commit_failed": "Restore failed; rolled back",
+  "backup_restore_rollback_failed": "Both failed; check storage"
 }

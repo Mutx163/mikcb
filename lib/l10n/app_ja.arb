@@ -5824,5 +5824,7 @@
   "scheduleQuickPresetCommute": "移動",
   "scheduleQuickPresetHoursOnly": "{hours} 時間",
   "scheduleQuickPresetMinutesOnly": "{minutes} 分",
-  "scheduleQuickPresetHoursMinutes": "{hours} 時間 {minutes} 分"
+  "scheduleQuickPresetHoursMinutes": "{hours} 時間 {minutes} 分",
+  "backup_restore_commit_failed": "復元に失敗し、ロールバック済み",
+  "backup_restore_rollback_failed": "復元・ロールバック失敗、要確認"
 }
