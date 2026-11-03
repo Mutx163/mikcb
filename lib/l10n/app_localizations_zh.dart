@@ -984,6 +984,9 @@ class AppLocalizationsZh extends AppLocalizations {
   String get switchToThisTimetable => '切换到此课表';
 
   @override
+  String get timetableProfileActiveBadge => '已激活';
+
+  @override
   String get renameAction => '重命名';
 
   @override
@@ -10982,6 +10985,9 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
 
   @override
   String get switchToThisTimetable => '切換到此課表';
+
+  @override
+  String get timetableProfileActiveBadge => '已啟用';
 
   @override
   String get renameAction => '重新命名';
@@ -21022,6 +21028,9 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get switchToThisTimetable => '切換到此課表';
+
+  @override
+  String get timetableProfileActiveBadge => '已啟用';
 
   @override
   String get renameAction => '重新命名';

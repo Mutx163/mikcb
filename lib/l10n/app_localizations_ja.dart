@@ -72,7 +72,7 @@ class AppLocalizationsJa extends AppLocalizations {
   String get languageSectionTitle => 'アプリ言語';
 
   @override
-  String get languageSectionSubtitle => 'システム連携または手動で対応言語に切り替え可能';
+  String get languageSectionSubtitle => 'システム連携または手動切り替え';
 
   @override
   String get languageModeLabel => '言語選択';
@@ -1000,6 +1000,9 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get switchToThisTimetable => 'この時間割に切替';
+
+  @override
+  String get timetableProfileActiveBadge => '有効';
 
   @override
   String get renameAction => '名前変更';
@@ -2181,7 +2184,7 @@ class AppLocalizationsJa extends AppLocalizations {
   String get countdownFormatLabel => 'カウントダウン形式';
 
   @override
-  String get countdownFormatHelp => '分のみは分単位、秒ありは秒単位で更新';
+  String get countdownFormatHelp => '分のみは分ごと、秒ありは秒ごと';
 
   @override
   String get showStageTextTitle => 'ステージステータステキストを表示';
@@ -2632,7 +2635,7 @@ class AppLocalizationsJa extends AppLocalizations {
   String get themeSeedSectionTitle => 'アプリテーマカラー';
 
   @override
-  String get themeSeedSectionSubtitle => 'トップバー、アクセントカラーとグローバルメインカラーに影響';
+  String get themeSeedSectionSubtitle => 'トップバー・アクセント・メイン色に';
 
   @override
   String get frostedSheetSectionTitle => 'ガラス素材';
@@ -3249,7 +3252,7 @@ class AppLocalizationsJa extends AppLocalizations {
   String get homeWidgetShowTomorrowTitle => '授業後に明日の授業を表示';
 
   @override
-  String get homeWidgetShowTomorrowSubtitle => '今日の授業終了後は明日の授業を自動表示';
+  String get homeWidgetShowTomorrowSubtitle => '今日終了後は明日を自動表示';
 
   @override
   String get homeWidgetCourseAccentTitle => '授業の色';
@@ -3414,7 +3417,7 @@ class AppLocalizationsJa extends AppLocalizations {
   String get layoutShowOtherWeeksTitle => '非今週の授業を表示';
 
   @override
-  String get layoutShowOtherWeeksSubtitle => '今週以外の授業は半透明のグレーで表示';
+  String get layoutShowOtherWeeksSubtitle => '今週以外は半透明グレーで表示';
 
   @override
   String get weekGridShowExamsTitle => '週表示に試験を表示';
@@ -4115,8 +4118,7 @@ class AppLocalizationsJa extends AppLocalizations {
   String get homePullQuickImportTitle => 'ホーム下引きでクイックインポート';
 
   @override
-  String get homePullQuickImportSubtitle =>
-      'ホーム画面を下に引くと、教務のクイックインポートをバックグラウンドで実行します';
+  String get homePullQuickImportSubtitle => '下に引くと自動でクイックインポート';
 
   @override
   String get longPressEmptySlotToAddTitle => '空きコマを長押しして授業を追加';
@@ -8883,8 +8885,7 @@ class AppLocalizationsJa extends AppLocalizations {
   String get liquidGlassDarkIndependentLabel => 'ダーク用を個別に設定';
 
   @override
-  String get liquidGlassDarkIndependentSubtitle =>
-      '既定ではライト用を流用します。オンにするとダーク専用に調整できます';
+  String get liquidGlassDarkIndependentSubtitle => '既定はライト流用。オンでダーク専用';
 
   @override
   String get diagnosticsEntryTitle => '診断';
@@ -9912,7 +9913,7 @@ class AppLocalizationsJa extends AppLocalizations {
   String get appearanceEditorMaterialAction => 'マテリアル';
 
   @override
-  String get appearanceEditorEntrySubtitle => 'ページ全体の縮小プレビューで壁紙とマテリアルを調整';
+  String get appearanceEditorEntrySubtitle => '縮小表示で壁紙と材質調整';
 
   @override
   String get commonLoadingLabel => '読み込み中';

@@ -72,7 +72,7 @@ class AppLocalizationsKo extends AppLocalizations {
   String get languageSectionTitle => '앱 언어';
 
   @override
-  String get languageSectionSubtitle => '시스템 연동 또는 수동으로 지원 언어를 전환할 수 있습니다';
+  String get languageSectionSubtitle => '시스템 연동 또는 수동 전환';
 
   @override
   String get languageModeLabel => '언어 선택';
@@ -1001,6 +1001,9 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get switchToThisTimetable => '이 시간표로 전환';
+
+  @override
+  String get timetableProfileActiveBadge => '활성';
 
   @override
   String get renameAction => '이름 변경';
@@ -2192,7 +2195,7 @@ class AppLocalizationsKo extends AppLocalizations {
   String get countdownFormatLabel => '카운트다운 형식';
 
   @override
-  String get countdownFormatHelp => '분만 표시는 분마다, 초 포함은 초마다 갱신';
+  String get countdownFormatHelp => '분은 분마다, 초는 초마다';
 
   @override
   String get showStageTextTitle => '스테이지 상태 텍스트 표시';
@@ -2259,8 +2262,7 @@ class AppLocalizationsKo extends AppLocalizations {
   String get liveBeforeClassQuickActionAutoTitle => '자동 실행';
 
   @override
-  String get liveBeforeClassQuickActionAutoSubtitle =>
-      '수업 전 자동으로 켜고 수업 후 복원합니다';
+  String get liveBeforeClassQuickActionAutoSubtitle => '수업 전 자동, 후 복원';
 
   @override
   String get liveBeforeClassQuickActionAutoOptionOff => '끄기';
@@ -2645,7 +2647,7 @@ class AppLocalizationsKo extends AppLocalizations {
   String get themeSeedSectionTitle => '앱 테마 색상';
 
   @override
-  String get themeSeedSectionSubtitle => '상단 바, 강조색 및 전반적인 주色调에 영향을 줍니다';
+  String get themeSeedSectionSubtitle => '상단 바·강조색·메인 색조에 영향';
 
   @override
   String get frostedSheetSectionTitle => '글래스 소재';
@@ -3237,7 +3239,7 @@ class AppLocalizationsKo extends AppLocalizations {
   String get homeWidgetShowLocationTitle => '장소 표시';
 
   @override
-  String get homeWidgetShowLocationSubtitle => '끄면 주차와 수업 수를 대신 표시합니다';
+  String get homeWidgetShowLocationSubtitle => '끄면 주차·수업 수 표시';
 
   @override
   String get homeWidgetShowCountdownTitle => '카운트다운 표시';
@@ -3264,7 +3266,7 @@ class AppLocalizationsKo extends AppLocalizations {
   String get homeWidgetShowTomorrowTitle => '수업 후 내일 수업 표시';
 
   @override
-  String get homeWidgetShowTomorrowSubtitle => '오늘 수업이 끝나면 내일 수업을 자동으로 표시합니다';
+  String get homeWidgetShowTomorrowSubtitle => '오늘 끝나면 내일 자동 표시';
 
   @override
   String get homeWidgetCourseAccentTitle => '수업 색상';
@@ -3429,7 +3431,7 @@ class AppLocalizationsKo extends AppLocalizations {
   String get layoutShowOtherWeeksTitle => '비이번주 수업 표시';
 
   @override
-  String get layoutShowOtherWeeksSubtitle => '현재 주가 아닌 수업은 반투명 회색으로 표시됩니다';
+  String get layoutShowOtherWeeksSubtitle => '다른 주는 반투명 회색으로 표시';
 
   @override
   String get weekGridShowExamsTitle => '주간 보기에 시험 표시';
@@ -4132,8 +4134,7 @@ class AppLocalizationsKo extends AppLocalizations {
   String get homePullQuickImportTitle => '홈 당겨서 빠른 가져오기';
 
   @override
-  String get homePullQuickImportSubtitle =>
-      '홈 시간표를 아래로 당기면 교무 빠른 가져오기를 백그라운드에서 실행합니다';
+  String get homePullQuickImportSubtitle => '당기면 빠른 가져오기 자동 실행';
 
   @override
   String get longPressEmptySlotToAddTitle => '빈 칸을 길게 눌러 수업 추가';
@@ -8911,8 +8912,7 @@ class AppLocalizationsKo extends AppLocalizations {
   String get liquidGlassDarkIndependentLabel => '다크 모드 설정 따로 하기';
 
   @override
-  String get liquidGlassDarkIndependentSubtitle =>
-      '기본값은 라이트 설정을 따릅니다. 켜면 다크 전용으로 따로 조정할 수 있습니다';
+  String get liquidGlassDarkIndependentSubtitle => '기본 라이트 따름. 켜면 다크 조정';
 
   @override
   String get diagnosticsEntryTitle => '진단';
@@ -9942,7 +9942,7 @@ class AppLocalizationsKo extends AppLocalizations {
   String get appearanceEditorMaterialAction => '재질';
 
   @override
-  String get appearanceEditorEntrySubtitle => '전체 페이지 축소 미리보기에서 배경화면과 재질 조정';
+  String get appearanceEditorEntrySubtitle => '축소 미리보기로 배경·재질 조정';
 
   @override
   String get commonLoadingLabel => '불러오는 중';

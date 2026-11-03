@@ -1934,6 +1934,12 @@ abstract class AppLocalizations {
   /// **'切换到此课表'**
   String get switchToThisTimetable;
 
+  /// No description provided for @timetableProfileActiveBadge.
+  ///
+  /// In zh, this message translates to:
+  /// **'已激活'**
+  String get timetableProfileActiveBadge;
+
   /// No description provided for @renameAction.
   ///
   /// In zh, this message translates to:

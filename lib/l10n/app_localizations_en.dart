@@ -72,8 +72,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get languageSectionTitle => 'App Language';
 
   @override
-  String get languageSectionSubtitle =>
-      'Follow system or switch manually to supported locales';
+  String get languageSectionSubtitle => 'Follow system or hand switch';
 
   @override
   String get languageModeLabel => 'Language';
@@ -1036,6 +1035,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get switchToThisTimetable => 'Switch to this timetable';
+
+  @override
+  String get timetableProfileActiveBadge => 'Active';
 
   @override
   String get renameAction => 'Rename';
@@ -2266,8 +2268,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get countdownFormatLabel => 'Countdown Format';
 
   @override
-  String get countdownFormatHelp =>
-      'Minutes only refreshes per minute; with seconds per second';
+  String get countdownFormatHelp => 'Refresh per min or sec';
 
   @override
   String get showStageTextTitle => 'Show Stage Label';
@@ -2335,7 +2336,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get liveBeforeClassQuickActionAutoSubtitle =>
-      'Turns on automatically before class and restores after class';
+      'On pre-class, off after class';
 
   @override
   String get liveBeforeClassQuickActionAutoOptionOff => 'Off';
@@ -2729,8 +2730,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get themeSeedSectionTitle => 'App theme color';
 
   @override
-  String get themeSeedSectionSubtitle =>
-      'Affects the top bar, accent color, and global primary tone';
+  String get themeSeedSectionSubtitle => 'Affects top bar, accent color';
 
   @override
   String get frostedSheetSectionTitle => 'Glass Material';
@@ -3342,8 +3342,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get homeWidgetShowLocationTitle => 'Show location';
 
   @override
-  String get homeWidgetShowLocationSubtitle =>
-      'When turned off, shows week number and course count instead';
+  String get homeWidgetShowLocationSubtitle => 'Off: shows week & course count';
 
   @override
   String get homeWidgetShowCountdownTitle => 'Show countdown';
@@ -3372,8 +3371,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get homeWidgetShowTomorrowTitle => 'Show tomorrow\'s classes';
 
   @override
-  String get homeWidgetShowTomorrowSubtitle =>
-      'Automatically show tomorrow\'s classes after today\'s classes end';
+  String get homeWidgetShowTomorrowSubtitle => 'Show tomorrow after today ends';
 
   @override
   String get homeWidgetCourseAccentTitle => 'Course colors';
@@ -3543,8 +3541,7 @@ class AppLocalizationsEn extends AppLocalizations {
       'Show courses outside the current week';
 
   @override
-  String get layoutShowOtherWeeksSubtitle =>
-      'Courses outside the current week are shown in semi-transparent gray';
+  String get layoutShowOtherWeeksSubtitle => 'Off-week courses dimmed';
 
   @override
   String get weekGridShowExamsTitle => 'Show exams in week view';
@@ -4273,8 +4270,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get homePullQuickImportTitle => 'Pull to quick-import';
 
   @override
-  String get homePullQuickImportSubtitle =>
-      'Pull down on the home timetable to run warehouse quick import in the background';
+  String get homePullQuickImportSubtitle => 'Auto quick-import on pull-down';
 
   @override
   String get longPressEmptySlotToAddTitle =>
@@ -9096,7 +9092,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get liquidGlassDarkIndependentSubtitle =>
-      'Dark mode follows the light settings; turn on to tune a separate set';
+      'Default light; on tunes dark';
 
   @override
   String get diagnosticsEntryTitle => 'Diagnostics';
@@ -10156,8 +10152,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get appearanceEditorMaterialAction => 'Material';
 
   @override
-  String get appearanceEditorEntrySubtitle =>
-      'Full-page mini preview — adjust the wallpaper and the material';
+  String get appearanceEditorEntrySubtitle => 'Preview wallpaper & material';
 
   @override
   String get commonLoadingLabel => 'Loading…';
