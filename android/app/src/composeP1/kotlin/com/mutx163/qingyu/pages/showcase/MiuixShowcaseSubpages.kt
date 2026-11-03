@@ -40,7 +40,6 @@ import top.yukonga.miuix.kmp.basic.ButtonDefaults
 import top.yukonga.miuix.kmp.basic.Card
 import top.yukonga.miuix.kmp.basic.Checkbox
 import top.yukonga.miuix.kmp.basic.CircularProgressIndicator
-import top.yukonga.miuix.kmp.basic.HorizontalDivider
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.IconButton
 import top.yukonga.miuix.kmp.basic.SmallTitle
@@ -289,7 +288,6 @@ private fun ShowcaseInputsSection(
                         onCheckedChange = { onStateChange(state.toggleWifi()) }
                     )
                 }
-                HorizontalDivider()
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
@@ -301,7 +299,6 @@ private fun ShowcaseInputsSection(
                         onCheckedChange = { onStateChange(state.toggleBluetooth()) }
                     )
                 }
-                HorizontalDivider()
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
@@ -332,7 +329,6 @@ private fun ShowcaseInputsSection(
                     Spacer(modifier = Modifier.width(10.dp))
                     Text(ShowcaseStrings.inputRememberPassword.zh, style = MiuixTheme.textStyles.body1)
                 }
-                HorizontalDivider()
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -368,7 +364,6 @@ private fun ShowcaseInputsSection(
                     onValueChange = { onStateChange(state.setContinuousSlider(it)) },
                     modifier = Modifier.fillMaxWidth()
                 )
-                HorizontalDivider()
                 Text(
                     "${ShowcaseStrings.inputSteppedSlider.zh}: ${state.steppedSliderValue} 档",
                     style = MiuixTheme.textStyles.body2
@@ -412,7 +407,6 @@ private fun ShowcaseMenusSection(
         Card(insideMargin = PaddingValues(16.dp)) {
             Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                 options.forEachIndexed { index, name ->
-                    if (index > 0) HorizontalDivider()
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -515,18 +509,15 @@ private fun ShowcasePreferencesSection(
                     summary = ShowcaseStrings.prefSecuritySummary.zh,
                     onClick = {}
                 )
-                HorizontalDivider()
                 ArrowPreference(
                     title = ShowcaseStrings.prefGeneral.zh,
                     onClick = {}
                 )
-                HorizontalDivider()
                 SwitchPreference(
                     title = ShowcaseStrings.prefLocation.zh,
                     checked = state.locationEnabled,
                     onCheckedChange = { onStateChange(state.toggleLocation()) }
                 )
-                HorizontalDivider()
                 CheckboxPreference(
                     title = ShowcaseStrings.inputRememberPassword.zh,
                     checked = state.rememberPassword,
@@ -544,7 +535,6 @@ private fun ShowcasePreferencesSection(
                     ShowcaseStrings.prefThemeDark.zh
                 )
                 themes.forEachIndexed { index, name ->
-                    if (index > 0) HorizontalDivider()
                     RadioButtonPreference(
                         title = name,
                         selected = state.themeModeIndex == index,
@@ -694,7 +684,6 @@ private fun ShowcaseFeedbackSection(
                     CircularProgressIndicator(modifier = Modifier.size(28.dp))
                     Text("环形旋转进度指示器", style = MiuixTheme.textStyles.body2)
                 }
-                HorizontalDivider()
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
@@ -944,7 +933,6 @@ private fun ShowcaseThemingSection(
                         }
                     }
                 }
-                HorizontalDivider()
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
