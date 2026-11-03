@@ -60,6 +60,7 @@ import com.mutx163.qingyu.pages.settings.SettingsStringsExt2
 import com.mutx163.qingyu.pages.settings.SettingsStringsExt4
 import com.mutx163.qingyu.pages.settings.SettingsTimetablePageSettingsPage
 import com.mutx163.qingyu.core.MiniJson
+import com.mutx163.qingyu.platform.ScreenCaptureWatcher
 import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
@@ -1333,7 +1334,14 @@ fun TimetablePageSettingsHost(
     Box(modifier = Modifier.fillMaxSize()) {
         SettingsPageScreen(
             spec = SettingsTimetablePageSettingsPage.spec(
-                SettingsPageBridge.toTimetablePageState(model),
+                // 截屏检测开关的行可见性跟着设备能力走：Android 14+（官方
+                // ScreenCaptureCallback）才出现这一行，不支持的平台整行不出现
+                // （Dart `_screenshotShareSupported` 同口径）。此前走桥的默认 false，
+                // 恒隐藏；能力判据唯一真源在 ScreenCaptureWatcher.isSupported。
+                SettingsPageBridge.toTimetablePageState(
+                    model,
+                    screenshotShareSupported = ScreenCaptureWatcher.isSupported,
+                ),
             ),
             preview = preview,
             onBack = onBack,
