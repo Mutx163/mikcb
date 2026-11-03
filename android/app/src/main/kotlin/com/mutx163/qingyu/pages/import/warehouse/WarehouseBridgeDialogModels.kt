@@ -182,6 +182,24 @@ fun warehouseBridgeFormValues(edits: List<WarehouseBridgeFormFieldEdit>): Linked
 }
 
 // ---------------------------------------------------------------------------
+// toast / error 的正文提取
+// ---------------------------------------------------------------------------
+
+/**
+ * 桥接消息里的展示文本（`message` 字段）。`toast` 与 `error` 共用同一字段名
+ * （对齐网页端垫片：`{type:'toast',message}` / `{type:'error',message}`）。
+ *
+ * 缺字段 / 非字符串 / trim 后为空一律回 null：调用方对 toast 丢掉不显示
+ * （对齐 Dart「空 toast 不弹」），对 error 落到兜底文案（`courseImportScriptFailed`）。
+ */
+fun warehouseBridgeMessageText(raw: String?): String? {
+    val text = raw?.trim().orEmpty()
+    if (text.isEmpty()) return null
+    val parsed = MiniJson.tryParse(text) as? Map<*, *> ?: return null
+    return (parsed["message"] as? String)?.trim()?.takeIf { it.isNotEmpty() }
+}
+
+// ---------------------------------------------------------------------------
 // 请求解析
 // ---------------------------------------------------------------------------
 

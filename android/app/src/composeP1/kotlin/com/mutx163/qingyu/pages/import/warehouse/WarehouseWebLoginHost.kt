@@ -22,11 +22,15 @@ import com.mutx163.qingyu.components.QingyuCardDefaults
 import com.mutx163.qingyu.components.QingyuPageCardMargin
 import com.mutx163.qingyu.components.QingyuPageList
 import com.mutx163.qingyu.components.QingyuPageScaffold
+import com.mutx163.qingyu.core.Course
+import com.mutx163.qingyu.core.MiniJson
+import com.mutx163.qingyu.transfer.MAX_ALLOWED_SEMESTER_WEEK_COUNT
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.theme.MiuixTheme
+import java.time.LocalDate
 import java.util.UUID
 
 /**
@@ -49,7 +53,8 @@ import java.util.UUID
  * | 真 WebView | [WarehouseWebLoginPage] → [WarehouseWebViewHost] |
  * | 加载进度 / 错误上屏 | [WarehouseWebLoginWebState]（错误文案优先取 ARB） |
  * | 「执行导入脚本」 | 拉脚本（[WarehouseRepositoryService.loadAdapterScript]，含 SHA-256 校验）→ 包桥接垫片 → 注入 |
- * | 脚本回传 `courses` | [WarehouseCourseImportLogic] 解析 → [WarehouseCourseWriteBack] 走仓储原子入口写回当前档案 |
+ * | 脚本回传 `courses` | 两步确认（覆盖/更新 → 开学日/首周）→ 周次平移 → [WarehouseCourseWriteBack] 写回当前档案 |
+ * | 网页 `toast` / `error` | 轻提示显示脚本原文（error 缺省兜底固定文案） |
  * | 网页 `confirm` / `prompt` / 单选 | [WarehouseBridgeDialogHost] 原生弹层（F32 收口），回传契约见模型层文件头 |
  * | 网页 `saveCourseConfig` | 字段表单 → 白名单字段落盘（[warehouseCourseConfigResolution]）→ `true`/`false` |
  * | 网页 `savePresetTimeSlots` | 载荷是节次数组、无界面可弹：直接走写链路（[WarehousePresetTimeSlotsWriteBack]）→ 落盘成功 `true` / 失败 `false` |
@@ -57,9 +62,12 @@ import java.util.UUID
  *
  * ## 诚实边界（别删）
  *
- * 1. **抓回来的课直接写当前档案**：没有 Dart 的「替换/合并」弹窗与开学日/周次映射弹窗；
- *    默认策略是「空表替换、非空合并」（见 [WarehouseCourseWriteBack]）。周次按脚本原值写入，
- *    不做 `firstCourseWeek` 平移。
+ * 1. **抓回来的课写当前档案前问两步**（覆盖/更新、开学日/首周，任一取消=中止导入，
+ *    对齐 Dart `askImportReplaceExisting` / `pickImportSemesterConfig`）；按用户确认的
+ *    「课表第 1 周 = 校历第 N 周」平移周次后写回（[warehouseShiftCoursesToFirstWeek]）。
+ *    与 Dart 的差异：节次容量自动扩展（`ensureImportSectionCapacity`）、随机配色、
+ *    作息应用链（`_applyPendingImportedSectionsIfNeeded`，见 `savePresetTimeSlots`）
+ *    未接入本流程；设置与课程是两次独立落盘，中间失败可能出现「设置已新、课程未动」。
  * 2. **`savePresetTimeSlots` 没有界面，但它不是「用户输入」型交互**：脚本的语义就是
  *    「存这套全局作息」，直接落盘并套用（解析 → 校验 → 仓储 createTimeScheme/updateTimeScheme
  *    + applyTimeScheme）；写链路失败回 `false` 并提示，不静默、也不画一个什么都不存的确认框。
@@ -70,6 +78,20 @@ import java.util.UUID
  */
 
 private const val LOG_TAG = "WarehouseWebLogin"
+
+/**
+ * 一次待用户确认的脚本课程包（courses 写回前的两步确认期间持有）。
+ *
+ * `courses` 已过 [WarehouseCourseImportLogic.parse]（坏记录已剔除并计数），
+ * 写回前还要问两步：覆盖还是更新（[WarehouseReplaceExistingDialog]）、
+ * 开学日/首周（[WarehouseSemesterMappingSheet]）；计数留给完成提示的文案。
+ */
+private class WarehouseCoursesImportSession(
+    val courses: List<Course>,
+    val receivedCount: Int,
+    val droppedCount: Int,
+    val weeksTrimmedCount: Int,
+)
 
 /**
  * @param state 选校/适配器暂存（壳里 `remember { WarehouseShellState() }`）
@@ -282,6 +304,15 @@ fun WarehouseWebLoginHost(
         return messages
     }
 
+    /** 一次待确认的脚本课程包：解析结果 + 上屏要用的计数（F32 前缺的两步确认挂这里）。 */
+    var coursesSession by remember { mutableStateOf<WarehouseCoursesImportSession?>(null) }
+
+    /** 第一步（覆盖/更新）是否还在问；false 且 [coursesSession] 非空 = 已进第二步。 */
+    var coursesAskReplace by remember { mutableStateOf(false) }
+
+    /** 用户在第一步的选择：true = 覆盖导入（替换），false = 更新课表（合并）。 */
+    var coursesReplaceExisting by remember { mutableStateOf(true) }
+
     fun handleCoursesMessage(raw: String) {
         val payload = warehouseBridgeCoursesPayload(raw)
         if (payload == null) {
@@ -295,21 +326,134 @@ fun WarehouseWebLoginHost(
             showToasts(listOf(WarehouseStrings.importFailedStatus.zh))
             return
         }
+        if (coursesSession != null) {
+            // 上一次导入还挂着确认弹层：丢弃新包（对齐旧版模态弹窗期间不收新 courses）。
+            Log.w(LOG_TAG, "courses dropped: previous import session still open")
+            return
+        }
         scope.launch {
-            val result = withContext(Dispatchers.IO) {
-                WarehouseCourseWriteBack.applyPayload(
-                    repository = repo,
-                    payload = payload,
+            val parsed = withContext(Dispatchers.IO) {
+                val decoded = MiniJson.tryParse(payload)
+                if (decoded !is List<*>) return@withContext null
+                var dropped = 0
+                var trimmed = 0
+                val courses = WarehouseCourseImportLogic.parse(
+                    rawCourses = decoded,
+                    idFactory = { UUID.randomUUID().toString() },
                     unknownTeacher = WarehouseStrings.unknownTeacher.zh,
                     unknownLocation = WarehouseStrings.unknownLocation.zh,
-                    idFactory = { UUID.randomUUID().toString() },
-                )
+                    maxWeek = MAX_ALLOWED_SEMESTER_WEEK_COUNT,
+                ) { reason, _, _ ->
+                    when (reason) {
+                        WarehouseCourseImportLogic.SkipReason.MALFORMED,
+                        WarehouseCourseImportLogic.SkipReason.UNUSABLE,
+                        -> dropped += 1
+
+                        WarehouseCourseImportLogic.SkipReason.PARTIAL_WEEKS -> trimmed += 1
+                    }
+                }
+                Triple(courses, dropped, trimmed)
             }
-            Log.i(
-                LOG_TAG,
-                "courses write-back result=${result.javaClass.simpleName}",
+            if (parsed == null) {
+                // 载荷不是数组：对齐旧版直接报格式错误，不进弹窗。
+                showToasts(listOf(WarehouseStrings.invalidCourseDataFormat.zh))
+                return@launch
+            }
+            val (courses, dropped, trimmed) = parsed
+            if (courses.isEmpty()) {
+                // 对齐旧版：解析后一门都没有 → 提示 + 丢弃计数，不进弹窗。
+                val toasts = mutableListOf(WarehouseStrings.noImportableCoursesFromScript.zh)
+                if (dropped > 0) {
+                    toasts.add(
+                        WarehouseStrings.importCourseRecordsDropped.filled(
+                            "imported" to (courses.size + dropped).toString(),
+                            "dropped" to dropped.toString(),
+                        ),
+                    )
+                }
+                showToasts(toasts)
+                return@launch
+            }
+            coursesSession = WarehouseCoursesImportSession(
+                courses = courses,
+                receivedCount = courses.size + dropped,
+                droppedCount = dropped,
+                weeksTrimmedCount = trimmed,
             )
-            showToasts(messagesFor(result))
+            // 对齐旧版 `provider.courses.isEmpty ? true : ask…`：空表不问、直接替换，
+            // 进第二步（开学日/首周）。
+            val empty = withContext(Dispatchers.IO) { repo.snapshot.courses.isEmpty() }
+            if (empty) {
+                coursesReplaceExisting = true
+                coursesAskReplace = false
+            } else {
+                coursesAskReplace = true
+            }
+        }
+    }
+
+    /** 两步确认任一步取消：中止整次导入（对齐旧版——不写回、提示、结束执行期）。 */
+    fun cancelCoursesImport() {
+        coursesSession = null
+        coursesAskReplace = false
+        scriptActive = false
+        Log.i(LOG_TAG, "courses import cancelled by user")
+        showToasts(listOf(WarehouseStrings.importCancelledStatus.zh))
+    }
+
+    /** 第二步确认：按「课表第 1 周 = 校历第 N 周」平移，写回设置与课程。 */
+    fun confirmCoursesImport(startDate: LocalDate, firstCourseWeek: Int) {
+        val session = coursesSession ?: return
+        val repo = repository ?: return
+        val replaceExisting = coursesReplaceExisting
+        coursesSession = null
+        coursesAskReplace = false
+        scope.launch {
+            val result = withContext(Dispatchers.IO) {
+                try {
+                    val shifted = warehouseShiftCoursesToFirstWeek(session.courses, firstCourseWeek)
+                    // 对齐旧版 importParsedCourses（timetable_import_export_service.dart:596-601）：
+                    // 用户确认的开学日写进设置；课程需要的周数比现设大就自动扩。
+                    val before = repo.snapshot.settings
+                    val requiredWeeks = warehouseMaxCourseWeek(shifted, before.semesterWeekCount)
+                    repo.updateSettings(
+                        before.copy(
+                            semesterStartDate = startDate.atStartOfDay(),
+                            semesterWeekCount = maxOf(before.semesterWeekCount, requiredWeeks),
+                        ),
+                    )
+                    WarehouseCourseWriteBack.apply(
+                        repository = repo,
+                        courses = shifted,
+                        requestedMode = if (replaceExisting) {
+                            WarehouseCourseWriteBack.Mode.REPLACE
+                        } else {
+                            WarehouseCourseWriteBack.Mode.MERGE
+                        },
+                        droppedCount = session.droppedCount,
+                        weeksTrimmedCount = session.weeksTrimmedCount,
+                    )
+                } catch (error: Exception) {
+                    Log.w(LOG_TAG, "courses write-back failed: ${error.javaClass.simpleName}")
+                    WarehouseCourseWriteBack.Result.Failed(error)
+                }
+            }
+            // messagesFor 吃的是 PayloadResult 形状；补上收到总数供文案用。
+            val payloadResult = when (result) {
+                is WarehouseCourseWriteBack.Result.Done ->
+                    WarehouseCourseWriteBack.PayloadResult.Done(result.outcome, session.receivedCount)
+
+                is WarehouseCourseWriteBack.Result.NoImportableCourses ->
+                    WarehouseCourseWriteBack.PayloadResult.NoImportableCourses(
+                        result.droppedCount,
+                        session.receivedCount,
+                    )
+
+                is WarehouseCourseWriteBack.Result.Failed ->
+                    WarehouseCourseWriteBack.PayloadResult.Failed(result.cause, session.receivedCount)
+            }
+            Log.i(LOG_TAG, "courses write-back result=${result.javaClass.simpleName}")
+            showToasts(messagesFor(payloadResult))
         }
     }
 
@@ -347,6 +491,12 @@ fun WarehouseWebLoginHost(
             return
         }
         val resolution = warehouseCourseConfigResolution(action.values)
+        // 上游会下发本 App 收不下的键（firstDayOfWeek 等）：记执行日志，不静默丢弃
+        // （对齐 Dart `_handleSaveCourseConfig` 的 received-but-unsupported 日志）。
+        val ignoredKeys = warehouseUnsupportedCourseConfigKeysIn(action.values)
+        if (ignoredKeys.isNotEmpty()) {
+            Log.i(LOG_TAG, "courseConfig received-but-unsupported keys=$ignoredKeys")
+        }
         if (!resolution.hasAnything) {
             // 没有可落盘的合法字段：设置保持现值，对脚本按成功回话（对齐 Dart「hasAnything 才写」）。
             answerAndClose(warehouseBridgeSaveConfigAnswer(action.requestId, saved = true))
@@ -458,6 +608,16 @@ fun WarehouseWebLoginHost(
                 }
             }
 
+            "toast" -> {
+                // 对齐旧版（`_handleBridgeMessage` 的 toast 分支）：正文取脚本给的
+                // message 原文，空不弹。脚本「正在获取课表…」「成功导入 N 条」全靠它。
+                // 宏回放期间的成功提示抑制判据属回放引擎（F08-8c），本批不移植。
+                val text = warehouseBridgeMessageText(raw)
+                if (text != null) {
+                    Toast.makeText(context, text, Toast.LENGTH_SHORT).show()
+                }
+            }
+
             "confirm",
             "prompt",
             "singleSelection",
@@ -501,8 +661,14 @@ fun WarehouseWebLoginHost(
             "error" -> {
                 cancelPendingDialog("error")
                 scriptActive = false
+                // 对齐旧版：轻提示显示脚本上报的具体原因，缺省才落到固定文案。
                 Log.w(LOG_TAG, "bridge error reported by adapter script")
-                showToasts(listOf(WarehouseStrings.courseImportScriptFailed.zh))
+                showToasts(
+                    listOf(
+                        warehouseBridgeMessageText(raw)
+                            ?: WarehouseStrings.courseImportScriptFailed.zh,
+                    ),
+                )
             }
 
             else -> Log.i(LOG_TAG, "bridge message type=$type")
@@ -607,6 +773,30 @@ fun WarehouseWebLoginHost(
                         answerAndClose(warehouseBridgeSelectionAnswer(action.requestId, action.index))
                 }
             },
+        )
+
+        // courses 写回前的两步确认（对齐 Dart askImportReplaceExisting / pickImportSemesterConfig）：
+        // 常驻组合、show 由导入流程状态驱动；取消任一步 = 中止整次导入。
+        val importSession = coursesSession
+        WarehouseReplaceExistingDialog(
+            show = importSession != null && coursesAskReplace,
+            courseCount = importSession?.courses?.size ?: 0,
+            onPick = { replaceExisting ->
+                coursesReplaceExisting = replaceExisting
+                coursesAskReplace = false
+            },
+            onCancel = { cancelCoursesImport() },
+        )
+        WarehouseSemesterMappingSheet(
+            show = importSession != null && !coursesAskReplace,
+            // 初值对齐旧版：现设开学日，没设过用今天（`provider.settings.semesterStartDate ?? DateTime.now()`）。
+            initialStartDate = remember(importSession) {
+                repository?.snapshot?.settings?.semesterStartDate?.toLocalDate() ?: LocalDate.now()
+            },
+            onConfirm = { startDate, firstCourseWeek ->
+                confirmCoursesImport(startDate, firstCourseWeek)
+            },
+            onDismiss = { cancelCoursesImport() },
         )
     }
 }

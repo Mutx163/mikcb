@@ -80,6 +80,10 @@ object WarehouseStrings {
     val courseImportSaveAutoRecordingMessage = WarehouseArbText("courseImportSaveAutoRecordingMessage", "导入成功。已记录 {count} 个操作步骤，是否保存本次导入路径，以便下次快捷导入？")
     val courseImportSaveRecordingMessage = WarehouseArbText("courseImportSaveRecordingMessage", "录制了 {count} 个操作步骤，是否保存为快捷导入？")
     val courseImportSaveRecordingTitle = WarehouseArbText("courseImportSaveRecordingTitle", "保存录制")
+    val calendarWeekOption = WarehouseArbText("calendarWeekOption", "校历第 {week} 周")
+    val courseImportOverwriteAction = WarehouseArbText("courseImportOverwriteAction", "覆盖导入")
+    val courseImportTitle = WarehouseArbText("courseImportTitle", "导入课程")
+    val courseImportUpdateRecommendedAction = WarehouseArbText("courseImportUpdateRecommendedAction", "更新课表 推荐")
     val courseImportScriptFailed = WarehouseArbText("courseImportScriptFailed", "脚本执行失败")
     val courseImportWeekNotProvided = WarehouseArbText("courseImportWeekNotProvided", "未提供周次")
     val customDebugIntroSubtitle = WarehouseArbText("customDebugIntroSubtitle", "保存每所学校的网址与脚本，下次一键复用")
@@ -114,10 +118,25 @@ object WarehouseStrings {
     val importAiReplaceMessage = WarehouseArbText("importAiReplaceMessage", "是否使用解析结果替换现有课程？此操作将同时清空自习等独立日程。")
     val importAiResultTitle = WarehouseArbText("importAiResultTitle", "导入 AI 解析结果")
     val importCleartextBlockedHint = WarehouseArbText("importCleartextBlockedHint", "该站点暂不支持 HTTPS 访问且未在明文白名单内，无法在此打开")
+    val importCancelledStatus = WarehouseArbText("importCancelledStatus", "已取消导入")
     val importConfirmSemesterMappingTitle = WarehouseArbText("importConfirmSemesterMappingTitle", "确认开学日期和周次对应")
+    val importConfirmSemesterMappingSubtitleWarehouse = WarehouseArbText(
+        "importConfirmSemesterMappingSubtitleWarehouse",
+        "已获取课程周次，请确认校历开学日期。若开学前几周无课，可将第 1 周对应至校历实际周次。",
+    )
+    val importCourseCountPrompt = WarehouseArbText("importCourseCountPrompt", "识别到 {count} 门课程，是否导入？")
     val importCourseRecordsDropped = WarehouseArbText("importCourseRecordsDropped", "共收到 {imported} 门课程，其中 {dropped} 门数据有误未能导入")
     val importCourseWeeksTrimmed = WarehouseArbText("importCourseWeeksTrimmed", "另有 {count} 门课的部分周次没能识别，请对照教务系统核对")
     val importFileTooLarge = WarehouseArbText("importFileTooLarge", "文件超出大小上限 {size}，请选择较小的文件")
+    val importSemesterMappingNoShiftHint = WarehouseArbText("importSemesterMappingNoShiftHint", "导入后会直接把课表第 1 周当作校历第 1 周")
+    val importSemesterMappingShiftHint = WarehouseArbText(
+        "importSemesterMappingShiftHint",
+        "导入后会把所有课程周次整体顺延 {shiftedWeeks} 周，让课表第 1 周落在校历第 {calendarWeek} 周",
+    )
+    val importSemesterStartDateSubtitle = WarehouseArbText("importSemesterStartDateSubtitle", "按这一天所在周作为校历第 1 周")
+    val importSemesterStartDateTitle = WarehouseArbText("importSemesterStartDateTitle", "开学日期")
+    val importFirstCourseWeekMappingLabel = WarehouseArbText("importFirstCourseWeekMappingLabel", "第 1 周对应校历第几周")
+    val importFirstCourseWeekMappingSubtitle = WarehouseArbText("importFirstCourseWeekMappingSubtitle", "如果第一周没课，就选第 2 周")
     val importFailedStatus = WarehouseArbText("importFailedStatus", "导入失败")
     val importFromFileAction = WarehouseArbText("importFromFileAction", "从文件导入")
     val importMethodAiTitle = WarehouseArbText("importMethodAiTitle", "识图导入")
@@ -189,6 +208,7 @@ object WarehouseStrings {
     val scriptFileReadFailed = WarehouseArbText("scriptFileReadFailed", "无法读取脚本文件")
     val scriptInjectionFailed = WarehouseArbText("scriptInjectionFailed", "脚本注入失败")
     val scriptLoadedLength = WarehouseArbText("scriptLoadedLength", "脚本已成功读取，长度 {count} 字符")
+    val spreadsheetImportWarningsContinue = WarehouseArbText("spreadsheetImportWarningsContinue", "继续导入")
     val scriptPathLabel = WarehouseArbText("scriptPathLabel", "脚本路径")
     val scriptStatusTitle = WarehouseArbText("scriptStatusTitle", "脚本状态")
     val searchSchoolHint = WarehouseArbText("searchSchoolHint", "搜索学校或适配器名称")
@@ -253,6 +273,7 @@ object WarehouseStrings {
         autofillLoginMessage,
         autofillLoginTitle,
         availableWeeksCount,
+        calendarWeekOption,
         cancelAction,
         categoryLabel,
         clearAction,
@@ -280,6 +301,9 @@ object WarehouseStrings {
         courseImportSaveRecordingMessage,
         courseImportSaveRecordingTitle,
         courseImportScriptFailed,
+        courseImportOverwriteAction,
+        courseImportTitle,
+        courseImportUpdateRecommendedAction,
         courseImportWeekNotProvided,
         customDebugIntroSubtitle,
         customDebugIntroTitle,
@@ -314,13 +338,21 @@ object WarehouseStrings {
         importAiResultTitle,
         importCleartextBlockedHint,
         importConfirmSemesterMappingTitle,
+        importConfirmSemesterMappingSubtitleWarehouse,
+        importCourseCountPrompt,
         importCourseRecordsDropped,
         importCourseWeeksTrimmed,
         importFileTooLarge,
+        importFirstCourseWeekMappingLabel,
+        importFirstCourseWeekMappingSubtitle,
         importFailedStatus,
         importFromFileAction,
         importMethodAiTitle,
         importMethodWarehouseTitle,
+        importSemesterMappingNoShiftHint,
+        importSemesterMappingShiftHint,
+        importSemesterStartDateSubtitle,
+        importSemesterStartDateTitle,
         importNoCourseChanges,
         importOverwriteCount,
         importReplaceExistingTitle,
@@ -388,6 +420,7 @@ object WarehouseStrings {
         scriptFileReadFailed,
         scriptInjectionFailed,
         scriptLoadedLength,
+        spreadsheetImportWarningsContinue,
         scriptPathLabel,
         scriptStatusTitle,
         searchSchoolHint,

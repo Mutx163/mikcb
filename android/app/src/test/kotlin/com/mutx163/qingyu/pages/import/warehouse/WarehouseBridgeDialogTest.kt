@@ -254,11 +254,155 @@ class WarehouseBridgeDialogTest {
     }
 
     // ---------------------------------------------------------------------------
+    // toast / error 的正文提取
+    // ---------------------------------------------------------------------------
+
+    @Test
+    fun `toast 与 error 从消息里取 message 原文 空与坏载荷回 null`() {
+        assertEquals(
+            "正在获取课表…",
+            warehouseBridgeMessageText("""{"type":"toast","message":"正在获取课表…"}"""),
+        )
+        assertEquals(
+            // 两侧空格被 trim（脚本文案带空白不进轻提示）。
+            "week table not found",
+            warehouseBridgeMessageText("""{"type":"error","message":" week table not found "}"""),
+        )
+        // 空串 / 缺字段 / 坏 JSON：toast 丢掉、error 落兜底。
+        assertNull(warehouseBridgeMessageText("""{"type":"toast","message":"   "}"""))
+        assertNull(warehouseBridgeMessageText("""{"type":"error"}"""))
+        assertNull(warehouseBridgeMessageText("not json"))
+        assertNull(warehouseBridgeMessageText(null))
+        // 非字符串 message 不当文本展示。
+        assertNull(warehouseBridgeMessageText("""{"type":"toast","message":123}"""))
+    }
+
+    // ---------------------------------------------------------------------------
+    // courses 写回：周次平移 + 学期周数扩容（对齐 Dart ImportWeekAlignmentService）
+    // ---------------------------------------------------------------------------
+
+    @Test
+    fun `平移偏移为0时课程原样返回`() {
+        val courses = listOf(testCourse(startWeek = 3, endWeek = 18))
+        val shifted = warehouseShiftCoursesToFirstWeek(courses, firstCourseWeek = 1)
+        assertEquals(3, shifted[0].startWeek)
+        assertEquals(18, shifted[0].endWeek)
+    }
+
+    @Test
+    fun `区间式周次整体平移 奇数偏移时单双周互换`() {
+        val oddWeeks = testCourse(startWeek = 1, endWeek = 15, isOddWeek = true)
+        val shiftedBy1 = warehouseShiftCoursesToFirstWeek(listOf(oddWeeks), firstCourseWeek = 2)[0]
+        // 1,3,5…15 顺延一周变 2,4,…16：单周课变双周课。
+        assertEquals(2, shiftedBy1.startWeek)
+        assertEquals(16, shiftedBy1.endWeek)
+        assertTrue(shiftedBy1.isEvenWeek)
+        assertFalse(shiftedBy1.isOddWeek)
+
+        val shiftedBy2 = warehouseShiftCoursesToFirstWeek(listOf(oddWeeks), firstCourseWeek = 3)[0]
+        assertEquals(3, shiftedBy2.startWeek)
+        assertTrue(shiftedBy2.isOddWeek)
+        assertFalse(shiftedBy2.isEvenWeek)
+    }
+
+    @Test
+    fun `自定义周次表逐周平移重排并清掉单双周标志`() {
+        val custom = testCourse(startWeek = 1, endWeek = 5, customWeeks = listOf(1, 3, 5))
+        val shifted = warehouseShiftCoursesToFirstWeek(listOf(custom), firstCourseWeek = 3)[0]
+        assertEquals(listOf(3, 5, 7), shifted.customWeeks)
+        assertEquals(3, shifted.startWeek)
+        assertEquals(7, shifted.endWeek)
+        assertFalse(shifted.isOddWeek)
+        assertFalse(shifted.isEvenWeek)
+    }
+
+    @Test
+    fun `学期周数取课程最靠后的一周 空表用现值 越界收进上限`() {
+        assertEquals(20, warehouseMaxCourseWeek(emptyList(), fallbackWeekCount = 20))
+        val courses = listOf(
+            testCourse(startWeek = 1, endWeek = 16),
+            testCourse(startWeek = 2, endWeek = 18, customWeeks = listOf(2, 6, 21)),
+        )
+        // 自定义周次表的末项（21）才是最靠后的周。
+        assertEquals(21, warehouseMaxCourseWeek(courses, fallbackWeekCount = 20))
+        assertEquals(30, warehouseMaxCourseWeek(courses, fallbackWeekCount = 20) + 9)
+    }
+
+    // ---------------------------------------------------------------------------
+    // saveCourseConfig 收不下的键：记日志不静默（F32 顺手项）
+    // ---------------------------------------------------------------------------
+
+    @Test
+    fun `不支持的配置键按名单识别 值为null视为没下发`() {
+        val ignored = warehouseUnsupportedCourseConfigKeysIn(
+            mapOf(
+                "semesterTotalWeeks" to 20L,
+                "firstDayOfWeek" to 1L,
+                "defaultClassDuration" to 45L,
+            ),
+        )
+        assertEquals(listOf("firstDayOfWeek", "defaultClassDuration"), ignored)
+        assertTrue(warehouseUnsupportedCourseConfigKeysIn(mapOf("firstDayOfWeek" to null)).isEmpty())
+        assertTrue(warehouseUnsupportedCourseConfigKeysIn(emptyMap<Any?, Any?>()).isEmpty())
+    }
+
+    // ---------------------------------------------------------------------------
     // 宿主接线守卫（composeP1 不在 L0 编译范围，接线事实按源码结构判）
     // ---------------------------------------------------------------------------
 
     private val hostSource: String by lazy { readSource("WarehouseWebLoginHost.kt") }
     private val dialogHostSource: String by lazy { readSource("WarehouseBridgeDialogHost.kt") }
+    private val importDialogsSource: String by lazy { readSource("WarehouseCoursesImportDialogs.kt") }
+
+    @Test
+    fun `courses 写回前必须问两步并按用户选择平移写回`() {
+        assertTrue("必须持有待确认课程包状态", hostSource.contains("coursesSession"))
+        assertTrue("必须问覆盖还是更新", hostSource.contains("WarehouseReplaceExistingDialog("))
+        assertTrue("必须确认开学日与首周", hostSource.contains("WarehouseSemesterMappingSheet("))
+        assertTrue("写回前必须按首周平移", hostSource.contains("warehouseShiftCoursesToFirstWeek("))
+        assertTrue("周数不够必须自动扩（对齐旧版 importParsedCourses）", hostSource.contains("warehouseMaxCourseWeek("))
+        assertTrue("用户选择必须传给 requestedMode", hostSource.contains("requestedMode = if (replaceExisting)"))
+        assertTrue("取消必须结束导入执行期", hostSource.contains("fun cancelCoursesImport()"))
+    }
+
+    @Test
+    fun `toast 与 error 必须消费脚本给的原文`() {
+        assertTrue("toast 分支必须取 message 原文", hostSource.contains("warehouseBridgeMessageText(raw)"))
+        assertTrue("error 缺省必须兜底固定文案", hostSource.contains("?: WarehouseStrings.courseImportScriptFailed.zh"))
+    }
+
+    @Test
+    fun `对话框宿主必须常驻组合且 show 由请求驱动`() {
+        assertTrue("弹层必须常驻组合（不许条件挂载）", dialogHostSource.contains("var shown by remember"))
+        assertTrue("confirm 必须用官方 OverlayDialog", dialogHostSource.contains("OverlayDialog("))
+        assertTrue("OverlayDialog 必须显式传本仓 insideMargin", dialogHostSource.contains("DpSize(16.dp, 16.dp)"))
+        assertTrue("prompt 与单选必须走共享弹层套件", dialogHostSource.contains("QingyuSheet("))
+        assertTrue("替换/合并弹窗必须显式 insideMargin", importDialogsSource.contains("DpSize(16.dp, 16.dp)"))
+    }
+
+    /** 课程构造的测试助手：只给周次相关的最小字段。 */
+    private fun testCourse(
+        startWeek: Int,
+        endWeek: Int,
+        isOddWeek: Boolean = false,
+        isEvenWeek: Boolean = false,
+        customWeeks: List<Int>? = null,
+    ) = com.mutx163.qingyu.core.Course(
+        id = "course-test",
+        name = "数学",
+        teacher = "",
+        location = "",
+        dayOfWeek = 1,
+        startSection = 1,
+        endSection = 2,
+        startWeek = startWeek,
+        endWeek = endWeek,
+        startTime = "",
+        endTime = "",
+        isOddWeek = isOddWeek,
+        isEvenWeek = isEvenWeek,
+        customWeeks = customWeeks,
+    )
 
     @Test
     fun `宿主必须在脚本窗口结束时排空挂起弹层`() {
@@ -282,14 +426,6 @@ class WarehouseBridgeDialogTest {
         assertTrue("回话必须经 resolve 脚本注入", hostSource.contains("warehouseBridgeResolveScript("))
         // 降级路径不许删：解析不出界面时仍要按默认值回话。
         assertTrue("降级路径必须保留", hostSource.contains("handleDialogFallback(raw)"))
-    }
-
-    @Test
-    fun `对话框宿主必须常驻组合且 show 由请求驱动`() {
-        assertTrue("弹层必须常驻组合（不许条件挂载）", dialogHostSource.contains("var shown by remember"))
-        assertTrue("confirm 必须用官方 OverlayDialog", dialogHostSource.contains("OverlayDialog("))
-        assertTrue("OverlayDialog 必须显式传本仓 insideMargin", dialogHostSource.contains("DpSize(16.dp, 16.dp)"))
-        assertTrue("prompt 与单选必须走共享弹层套件", dialogHostSource.contains("QingyuSheet("))
     }
 
     private fun readSource(fileName: String): String {

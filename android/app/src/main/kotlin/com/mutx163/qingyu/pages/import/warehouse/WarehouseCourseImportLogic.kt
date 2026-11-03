@@ -241,3 +241,71 @@ object WarehouseCourseImportLogic {
     private val CLOCK_PATTERN = Regex("""^(\d{1,2}):(\d{1,2})(?::(\d{2}))?$""")
     private val NORMALIZED_CLOCK_PATTERN = Regex("""^(\d{1,2}):(\d{2})$""")
 }
+
+/**
+ * 上游脚本会下发、但本 App 无处可存的 `saveCourseConfig` 键（F32 顺手项）。
+ *
+ * * `firstDayOfWeek` —— 周起始日在周计算/统计/考试排期三处硬编码为周一，没有可配置项；
+ * * `defaultClassDuration` / `defaultBreakDuration` —— 只在生成时间模板时当入参用，
+ *   模型不持久化，存下来就是死状态。
+ *
+ * 与 Dart `warehouse_course_import_logic.dart` 的同名清单逐字一致；宿主对
+ * payload 里值非 null 的这些键记一条执行日志（不静默丢弃，也不给用户摆码）。
+ */
+val warehouseUnsupportedCourseConfigKeys: List<String> = listOf(
+    "firstDayOfWeek",
+    "defaultClassDuration",
+    "defaultBreakDuration",
+)
+
+/** 编辑后的配置值树里实际出现了哪些「收不下」的键（值为 null 视为没下发）。 */
+fun warehouseUnsupportedCourseConfigKeysIn(values: Map<*, *>): List<String> =
+    warehouseUnsupportedCourseConfigKeys.filter { values[it] != null }
+
+/**
+ * 把整份课表的周次按「课表第 1 周 = 校历第 [firstCourseWeek] 周」平移
+ * （F32 之前的导入缺这一步：脚本课表若不从校历第 1 周开始，整学期错位）。
+ *
+ * 逐条对齐 Dart `ImportWeekAlignmentService.shiftCoursesToSemesterWeeks`：
+ * - 偏移为 0 原样返回（不复制）；
+ * - 自定义周次表：每周 +offset 后重排，start/end 取首尾，单双周标志清掉
+ *   （显式周次表下单双周由表自身表达）；
+ * - 区间式周次：start/end +offset，**奇数偏移时单双周互换**（1,3,5 平移 1 周变 2,4,6）。
+ */
+fun warehouseShiftCoursesToFirstWeek(courses: List<Course>, firstCourseWeek: Int): List<Course> {
+    val offset = firstCourseWeek - 1
+    if (offset == 0) return courses.toList()
+    return courses.map { course ->
+        val custom = course.normalizedCustomWeeks
+        if (custom != null) {
+            val shifted = custom.map { it + offset }.sorted()
+            course.copy(
+                startWeek = shifted.first(),
+                endWeek = shifted.last(),
+                customWeeks = shifted,
+                isOddWeek = false,
+                isEvenWeek = false,
+            )
+        } else {
+            course.copy(
+                startWeek = course.startWeek + offset,
+                endWeek = course.endWeek + offset,
+                isOddWeek = if (offset % 2 != 0) course.isEvenWeek else course.isOddWeek,
+                isEvenWeek = if (offset % 2 != 0) course.isOddWeek else course.isEvenWeek,
+            )
+        }
+    }
+}
+
+/**
+ * 课程需要的学期周数（Dart `ImportExportLogic.maxCourseWeek` 的对应物）：
+ * 全部课程里最靠后的那一周（自定义周次表取末项，否则取 endWeek），
+ * 收进合法上限。写回时现设周数比它小就扩到它（对齐旧版导入的周数自动扩容）。
+ */
+fun warehouseMaxCourseWeek(courses: List<Course>, fallbackWeekCount: Int): Int {
+    if (courses.isEmpty()) {
+        return fallbackWeekCount.coerceIn(1, MAX_ALLOWED_SEMESTER_WEEK_COUNT)
+    }
+    val raw = courses.maxOf { it.normalizedCustomWeeks?.last() ?: it.endWeek }
+    return raw.coerceIn(1, MAX_ALLOWED_SEMESTER_WEEK_COUNT)
+}
