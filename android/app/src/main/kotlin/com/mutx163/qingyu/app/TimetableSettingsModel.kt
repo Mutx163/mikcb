@@ -10,10 +10,11 @@ import java.util.Locale
  * ## 它解决什么问题
  *
  * `core/TimetableSettings.kt` 只搬了时间/周次 **4 个键**（sections / activeTimeSchemeId /
- * semesterWeekCount / semesterStartDate），而设置族页面要读几十个显示设置键。
+ * semesterWeekCount / semesterStartDate）+ 单节课提醒 **classReminders**，而设置族页面
+ * 要读几十个显示设置键。
  * 在那层补齐之前，页面根本读不出值——这就是本文件。
  *
- * **所有权划分（不重叠）**：core 4 键仍归 `core/TimetableSettings` +
+ * **所有权划分（不重叠）**：core 4 键 + `classReminders` 仍归 `core/TimetableSettings` +
  * `TimetableStore.saveSettings`；本模型只拥有下面 [OWNED_KEYS] 列出的显示设置键。
  * 两者都通过 `TimetableStore.saveSettingsPatch` 做**读-合并-写**，所以谁都不会覆盖谁。
  *
@@ -1119,7 +1120,7 @@ data class TimetableSettingsModel(
 /**
  * 设置族完整模型的**读写入口**：`timetable_settings` 的读-合并-写。
  *
- * 与 `TimetableStore.loadSettings/saveSettings`（core 4 键）共用同一个键与同一套合并语义
+ * 与 `TimetableStore.loadSettings/saveSettings`（core 4 键 + `classReminders`）共用同一个键与同一套合并语义
  * （都走 `TimetableStore.saveSettingsPatch`），所以两边互不覆盖。
  */
 class TimetableSettingsModelStore(private val store: TimetableStore) {
