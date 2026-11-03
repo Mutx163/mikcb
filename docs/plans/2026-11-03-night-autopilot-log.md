@@ -189,7 +189,7 @@ miuix-only UI、无写死 sp/颜色/字重、无自研动画/转场、测试目�
 | 线 | 文件路径白名单 | 当前任务 | 验收闸门 | 禁止触碰 |
 |---|---|---|---|---|
 | **A（本代理）文案/l10n + 协调** | `lib/l10n/*.arb`、`android/app/src/**/i18n/**`（含 cjk-literal-baseline.txt / cjk_hardcode_baseline.txt）、`pages/timetable/TimetableStrings.kt`、`tool/` 下文案与样式基线及 copy_style 相关脚本、`docs/plans/` 日志 | copy_style 203 条欠账收敛、dead key 1 条、ARB 六份同步与 gen-l10n | 门4 + L0 | 其他线白名单外的一切 |
-| **B 课表/课程/共享件** | `android/app/src/**/pages/course/**`、`pages/timetable/**`（**不含** `TimetableStrings.kt`）、`components/QingyuSheet.kt`、`pages/ComposeSheetGuardTest.kt` | QingyuSheet IME 叠加（:104-106）、标题动作对齐、弹层毛玻璃未接（QingyuSheet 零 blur 引用）评估与实现、守卫只拦 OverlayBottomSheet 的补全 | L0 + 门3 | lib/**、ARB、build.gradle、theme/、壳 |
+| **B 课表/课程/共享件** | `android/app/src/**/pages/course/**`、`pages/timetable/**`（**不含** `TimetableStrings.kt`）、`components/QingyuSheet.kt`、`pages/ComposeSheetGuardTest.kt` | QingyuSheet IME 叠加（:104-106）、标题动作对齐、弹层毛玻璃未接（QingyuSheet 零 blur 引用）评估与实现、守卫只拦 OverlayBottomSheet 的补全 | L0 + 门3 | ✅ **已收线**（见下「B 线收口」） |
 | **C sync 族** | `android/app/src/**/pages/sync/**` | 云备份差异预览（CloudBackupDetailHost.kt:52-54）、sync 域剩余弹层与文案一致性（不动 ARB，需要的键报给 A） | L0 + 门3 | lib/**、ARB、其他域 |
 | **D settings** | `android/app/src/**/app/SettingsHost.kt`、`pages/settings/**` | 主题动作表灰实心、设置子集（LanTransferApplier.kt:30 归属按台账核）、SettingsHost 剩余样式债 | L0 + 门3 | ✅ **已收线**（见下「D 线收口」） |
 | **E statistics + import** | `android/app/src/**/pages/statistics/**`、`pages/import/**`、`pages/import/warehouse/**` | I2 四件（原生 confirm/prompt、`saveCourseConfig` 落盘、替换/合并弹窗、宏录制，见 WIRING-NOTE.md:286-348） | L0 + 门3 | lib/**、ARB、其他域 |
@@ -211,6 +211,15 @@ copy_style 超宽债 203 → **191 条**。已清 4 键 × 三语（en/ja/ko）�
 - 验收：L0 `pages/settings` 971 例 JVM 单测通过（kotlinc 编译 247 文件，exit=0）、门3 `-Domain settings` 0 违规（本轮实测）；零代码改动、零提交，L1/L2 未重跑属正常（沿用 02:20/02:26 证据 + 此后仅 docs 提交）。
 - 拍板挡住不动：主题命名输入框自动聚焦（拍板 #1，`SettingsPageRenderers.kt:838-839` 已有「不抢焦点」取舍）。
 
+### B 线收口（2026-11-03 08:50，B 线自验回填）
+- **IME 叠加与标题动作「已不成立」**：`52379d98`，`QingyuSheet.kt:121-124` 用 `navigationBars.exclude(ime)`、`:101`/`:106-111` 标题动作与内容内边距解耦。
+- **弹层毛玻璃「上游能力缺口、需 Lead」**：miuix 0.9.4 `OverlayBottomSheet` 无 blur 属性，`textureBlur` 只能挂同层节点，自绘即自研 UI 踩红线——不自行实现。
+- **守卫补 S6 并做咬合探针**：`3ff12a15`，`ComposeSheetGuardTest.kt` +35/-0 新增 S6 平台 `window.Dialog`/`Popup` 拦截守卫（查漏 11 个自建弹窗同款形态；咬合探针：种 import 探针红、删探针回绿，基线零新增）。
+- 验收：course 样式 lint 0 违规、timetable 5 处均在基线例外。
+
+### A 线回 B 线（键名交付）
+- `TimetableProfilesPage.kt:490` 的 `contentDescription = "已激活"` 写死中文 → 已新增键 **`timetableProfileActiveBadge`**（六份 ARB 同步 + gen-l10n + copy_style 无新增死键），并在 `TimetableStrings.kt` 补 `ArbText` 引用使其非死键（`86765ada`）。B 线替换后把 cjk 基线 `TimetableProfilesPage.kt` 行 4→3 压行。
+
 ---
 
 ## 七、需 Lead 处理项
@@ -219,7 +228,8 @@ copy_style 超宽债 203 → **191 条**。已清 4 键 × 三语（en/ja/ko）�
 2. **Android Studio 缺失**：L0 脚本默认找 AS 内置 kotlinc。便携 kotlinc 已 workaround，但 AS 缺失也意味着无法使用 IDE 调试。
 3. **safe-gradle.ps1 BOM**：仓库脚本无 BOM，PS 5.1 无法直接运行；pwsh 7 正常。若团队仍有 PS 5.1 环境，建议给 `scripts/*.ps1` 统一加 BOM。
 4. **（D 线报）LAN 导入的设置子集补全属 transfer 域**：`LanTransferLogic.kt:51` 自认只比时间/周次子集，需 transfer 域 Owner 接手；台账同条「撤销点 transferId 恒 null」已不成立（`LanTransferUndoStore` 已在）。
-5. **（A 线报）copy_style 超宽债 203 条需逐条压缩外语 ARB**：判据只扫 lib 行控件绑定 × ARB 词条，改短外语词条即可清（在 A 线白名单内）。已清 21 条（203→182）。死键 `cloudSyncBaseUrlSecurityNote` 被 test 引用，判据口径外，不删。
+5. **（B 线报）timetable 域 L0 跑不过属既有结构债**：`TimetableProfilesController.kt`/`DayAgendaSurfaceLogic.kt` 反向引用 `pages/settings` 8+ 个类（旧提交 06522f5c/49eaf778），ExtraSources 补 6 文件仍不闭合，`test-kotlin-module.ps1:176-179` 自述同类未修。**是否解耦或扩脚本白名单需裁决。**
+6. **（A 线报）copy_style 超宽债 203 条需逐条压缩外语 ARB**：判据只扫 lib 行控件绑定 × ARB 词条，改短外语词条即可清（在 A 线白名单内）。已清 21 条（203→182）。死键 `cloudSyncBaseUrlSecurityNote` 被 test 引用，判据口径外，不删。
 
 ## 八、当前状态（2026-11-03 02:45 更新）
 
