@@ -32,6 +32,7 @@ import com.mutx163.qingyu.pages.time_scheme.TimeSchemeServiceMessages
 import com.mutx163.qingyu.platform.PrefsKeyValueStore
 import com.mutx163.qingyu.transfer.MAX_ALLOWED_SEMESTER_WEEK_COUNT
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import top.yukonga.miuix.kmp.basic.Text
@@ -384,6 +385,145 @@ fun WarehouseWebLoginHost(
         macroDialogResponses[key] = value
     }
 
+    // ---- 宏回放（P2，对齐 Dart _startPlayback / PlaybackUiState / 完成处置）----
+    // 本会话要回放的宏（快捷导入入口从适配器列表/课程导入页带来，消费一次即清）。
+    var playbackMacroRecord by remember { mutableStateOf<WarehouseMacroRecord?>(null) }
+    var playbackJob by remember { mutableStateOf<Job?>(null) }
+    var playbackUiState by remember { mutableStateOf<WarehousePlaybackUiState?>(null) }
+    var playbackProgress by remember { mutableStateOf<WarehouseReplayProgress?>(null) }
+    // 暂停「继续/取消」的续跑闸：覆盖层按钮改这个状态。回调 → suspend 的桥接必须
+    // 有一个续体容器；与 Dart 裸 Completer 的差别是取消路径**必** resume（见下），
+    // 不存在悬挂（方案 §4.6 反对的是忘 complete 的裸 Completer，不是这个桥本身）。
+    var pauseGate by remember { mutableStateOf<((Boolean) -> Unit)?>(null) }
+    // complete 处置（N10）：回放自动执行脚本后等课程期间 = true；写回落定后复位。
+    var playbackWaitingForCourses by remember { mutableStateOf(false) }
+    // 完成 sheet 一次性闸（Dart _quickImportResultHandled：complete 在定局后到达即忽略）。
+    var quickResultHandled by remember { mutableStateOf(false) }
+    var showFinishedSheet by remember { mutableStateOf(false) }
+    var finishedScriptStatus by remember { mutableStateOf<String?>(null) }
+    // 回放完成后的「自动执行导入脚本」请求：onComplete 在前部声明（不能前向引用
+    // executeImportScript），由后部 LaunchedEffect 消费（延迟 500ms，Dart 同款）。
+    var autoExecuteRequested by remember { mutableStateOf(false) }
+
+    fun isMacroReplaying(): Boolean = playbackJob?.isActive == true
+
+    /** 求值 JS 并归一化结果（suspend 桥：`evaluateJavascript` 是回调；结果已解引号转义）。 */
+    suspend fun evalJsNormalized(script: String): String? =
+        kotlinx.coroutines.suspendCancellableCoroutine { cont ->
+            try {
+                controller.evaluateJavaScript(script) { result ->
+                    if (cont.isActive) cont.resume(result, onCancellation = null)
+                }
+            } catch (error: Exception) {
+                // 视图已离开组合等：按「这一拍读不到」处理，轮询下一拍重试。
+                if (cont.isActive) cont.resume(null, onCancellation = null)
+            }
+        }
+
+    fun resetPlaybackUi() {
+        playbackUiState = null
+        playbackProgress = null
+    }
+
+    fun cancelMacroPlayback() {
+        playbackJob?.cancel()
+        playbackJob = null
+        // 取消路径必须续跑闸也释放（协程已取消，resume(false) 会被 cont.isActive 拦下，
+        // 但闸要清空，避免泄漏旧闭包）。
+        pauseGate?.invoke(false)
+        pauseGate = null
+        playbackWaitingForCourses = false
+        resetPlaybackUi()
+    }
+
+    fun startMacroPlayback(record: WarehouseMacroRecord) {
+        if (playbackJob?.isActive == true) return
+        playbackMacroRecord = record
+        playbackUiState = WarehousePlaybackUiState.PLAYING
+        playbackProgress = null
+        quickResultHandled = false
+        playbackWaitingForCourses = false
+        playbackJob = scope.launch {
+            val replayer = WarehouseMacroReplayer(
+                evalJs = { script -> evalJsNormalized(script) },
+                loadUrl = { url -> controller.loadUrl(url) },
+                // 生产等待原语：协程 delay（响应取消）；时钟用默认系统毫秒。
+                sleep = { kotlinx.coroutines.delay(it) },
+                onSkipLog = { Log.w(LOG_TAG, it) },
+                callbacks = object : WarehouseMacroReplayer.Callbacks {
+                    override fun onProgress(progress: WarehouseReplayProgress) {
+                        playbackProgress = progress
+                    }
+
+                    override suspend fun onPauseForManualInput(
+                        step: WarehouseMacroStep,
+                        reason: String,
+                    ): Boolean = kotlinx.coroutines.suspendCancellableCoroutine { cont ->
+                        playbackProgress = playbackProgress?.copy(
+                            status = ReplayStepStatus.PAUSED_FOR_INPUT,
+                            pauseReason = reason,
+                        )
+                        playbackUiState = WarehousePlaybackUiState.PAUSED_FOR_INPUT
+                        pauseGate = { shouldContinue ->
+                            pauseGate = null
+                            if (cont.isActive) {
+                                if (shouldContinue) {
+                                    playbackUiState = WarehousePlaybackUiState.PLAYING
+                                    playbackProgress = playbackProgress?.copy(
+                                        status = ReplayStepStatus.RUNNING,
+                                        pauseReason = null,
+                                    )
+                                }
+                                cont.resume(shouldContinue, onCancellation = null)
+                            }
+                        }
+                    }
+
+                    override fun onShowTip(message: String) {
+                        Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
+                    }
+
+                    override fun onComplete(success: Boolean, errorMessage: String?) {
+                        when {
+                            success -> {
+                                // 回放完成 → 覆盖层切「执行导入脚本」；真正的执行由
+                                // 后部 LaunchedEffect 消费（延迟 500ms，Dart
+                                // _autoExecuteImportAfterPlayback 同款——不能在这里
+                                // 直接调 executeImportScript：局部函数没有前向引用）。
+                                playbackWaitingForCourses = true
+                                autoExecuteRequested = true
+                                playbackUiState = WarehousePlaybackUiState.EXECUTING_IMPORT
+                            }
+
+                            errorMessage != null -> {
+                                playbackUiState = WarehousePlaybackUiState.ERROR
+                                playbackProgress = playbackProgress?.copy(
+                                    status = ReplayStepStatus.FAILED,
+                                    errorMessage = errorMessage,
+                                )
+                            }
+
+                            else -> {
+                                // 用户取消：cancelMacroPlayback 已复位 UI，这里兜底收层。
+                                playbackUiState = null
+                            }
+                        }
+                    }
+                },
+            )
+            replayer.execute(record)
+        }
+    }
+
+    fun retryMacroPlayback() {
+        val record = playbackMacroRecord ?: return
+        playbackJob?.cancel()
+        playbackJob = null
+        // Dart _retryPlayback：重载入口地址后从头回放（从干净页面起步）。
+        controller.loadUrl(target.loginUrl)
+        startMacroPlayback(record)
+    }
+
     /** 把一条回答 resolve 给网页并收起挂起弹层（requestId 不可信时脚本是空串，注入为安全 no-op）。 */
     fun answerAndClose(answer: WarehouseBridgeDialogAnswer) {
         pendingDialog = null
@@ -490,6 +630,187 @@ fun WarehouseWebLoginHost(
     /** 第三步（节次补齐确认）是否在问。 */
     var coursesAskExpansion by remember { mutableStateOf(false) }
 
+    // handleCoursesMessage 在 confirmCoursesImport 之后声明：回放旁路要直接调它落盘
+    // （Kotlin 局部函数没有前向引用，见宏方法块的同款注释）。
+
+    /** 两步确认任一步取消：中止整次导入（对齐旧版——不写回、提示、结束执行期）。 */
+    fun cancelCoursesImport(interrupted: Boolean = false) {
+        coursesSession = null
+        coursesAskReplace = false
+        coursesFinalizePlan = null
+        coursesAskExpansion = false
+        scriptActive = false
+        // 回放等课程期间被用户取消：等待标志复位——其后到达的 complete 走 IGNORE，
+        // 不把取消翻成成功（N10 的定局口径）。
+        playbackWaitingForCourses = false
+        Log.i(LOG_TAG, "courses import cancelled by user interrupted=$interrupted")
+        // 第三步（节次补齐确认）取消落在「导入已中断」，与旧版 capacity 路径同文案。
+        showToasts(
+            listOf(
+                if (interrupted) WarehouseStrings.importInterruptedStatus.zh
+                else WarehouseStrings.importCancelledStatus.zh,
+            ),
+        )
+    }
+
+    /** 完成提示（Done 文案口径与旧写回层一致，计数来自本次会话）。 */
+    fun doneMessagesFor(plan: WarehouseCoursesFinalizePlan, importedCount: Int): List<String> {
+        val messages = mutableListOf<String>()
+        messages.add(
+            when {
+                importedCount == 0 -> WarehouseStrings.importNoCourseChanges.zh
+                plan.replaceExisting -> WarehouseStrings.importOverwriteCount.filled("count", importedCount.toString())
+                else -> WarehouseStrings.importUpdatedCount.filled("count", importedCount.toString())
+            },
+        )
+        if (plan.droppedCount > 0) {
+            messages.add(
+                WarehouseStrings.importCourseRecordsDropped.filled(
+                    "imported" to plan.receivedCount.toString(),
+                    "dropped" to plan.droppedCount.toString(),
+                ),
+            )
+        }
+        if (plan.weeksTrimmedCount > 0) {
+            messages.add(
+                WarehouseStrings.importCourseWeeksTrimmed.filled("count", plan.weeksTrimmedCount.toString()),
+            )
+        }
+        return messages
+    }
+
+    /** 第三步确认或无需扩节：落盘（扩节 + 学期设置 + 课程），失败提示并已回滚。 */
+    fun finalizeCoursesImport(plan: WarehouseCoursesFinalizePlan, expandSections: Boolean) {
+        val repo = repository ?: return
+        coursesFinalizePlan = null
+        coursesAskExpansion = false
+        scriptActive = false
+        scope.launch {
+            val result = withContext(Dispatchers.IO) {
+                WarehouseCoursesImportApply.apply(
+                    repository = repo,
+                    request = WarehouseCoursesImportApply.Request(
+                        courses = plan.courses,
+                        semesterStartDate = plan.startDate,
+                        replaceExisting = plan.replaceExisting,
+                        preserveLocalColors = plan.preserveLocalColors,
+                        expandSections = expandSections,
+                    ),
+                )
+            }
+            when (result) {
+                is WarehouseCoursesImportApply.Result.Done -> {
+                    Log.i(LOG_TAG, "courses import done importedCount=${result.importedCount}")
+                    showToasts(doneMessagesFor(plan, result.importedCount))
+                    // 导入成功（写回课程数 > 0）且正在录制：自动完成录制并询问保存
+                    // （对齐 Dart `importedCount > 0 && recording → _completeMacroAndPop`）。
+                    if (result.importedCount > 0 && macroState == WarehouseMacroActionState.RECORDING) {
+                        completeMacroAndPop()
+                    }
+                    // 回放成功收尾（对齐 Dart `_markMacroImportCompleted`）：记账
+                    // （成功计数 +1、scriptPageUrl 更新为本次脱敏地址；**绝不抛**——
+                    // 导入已成功，存储异常不能把成功翻成失败）→ 覆盖层切 FINISHED →
+                    // 弹「导入完成」sheet（一次性闸置位，其后到达的 complete 一律忽略）。
+                    if (playbackWaitingForCourses) {
+                        playbackWaitingForCourses = false
+                        quickResultHandled = true
+                        playbackUiState = WarehousePlaybackUiState.FINISHED
+                        finishedScriptStatus = doneMessagesFor(plan, result.importedCount)
+                            .joinToString(separator = " ")
+                        scope.launch {
+                            withContext(Dispatchers.IO) {
+                                macroStore.recordSuccessfulImport(
+                                    schoolId = school.id,
+                                    adapterId = adapter.id,
+                                    scriptPageUrl = sanitizeWarehouseScriptPageUrl(
+                                        controller.liveUrl() ?: target.loginUrl,
+                                    ),
+                                )
+                            }
+                            showFinishedSheet = true
+                        }
+                    }
+                }
+
+                is WarehouseCoursesImportApply.Result.Failed -> {
+                    // 服务码（如节次补不满）过本地化再展示；其余落固定文案。
+                    val text = result.serviceMessage
+                        ?.let { TimeSchemeServiceMessages.localize(it) }
+                        ?: WarehouseStrings.importFailedStatus.zh
+                    Log.w(LOG_TAG, "courses import failed serviceMessage=${result.serviceMessage}")
+                    showToasts(listOf(text))
+                    // 回放等课程期间的写回失败：覆盖层切 ERROR（失败可重试/关闭），
+                    // 等待标志复位——其后到达的 complete 走 IGNORE，不再翻成成功。
+                    if (playbackWaitingForCourses) {
+                        playbackWaitingForCourses = false
+                        playbackUiState = WarehousePlaybackUiState.ERROR
+                        playbackProgress = playbackProgress?.copy(
+                            status = ReplayStepStatus.FAILED,
+                            errorMessage = text,
+                        )
+                    }
+                }
+            }
+        }
+    }
+
+    /** 第二步确认：平移 + 按偏好配色，然后视节次容量直接落盘或先进第三步确认。 */
+    fun confirmCoursesImport(startDate: LocalDate, firstCourseWeek: Int) {
+        val session = coursesSession ?: return
+        val repo = repository ?: return
+        val replaceExisting = coursesReplaceExisting
+        coursesSession = null
+        coursesAskReplace = false
+        // 录制态：把开学日/首周应答存进宏（N6 固定键 semesterConfig：ISO 日期 + 首周数）。
+        if (macroState == WarehouseMacroActionState.RECORDING) {
+            macroDialogResponses["semesterConfig"] = linkedMapOf<String, Any?>(
+                "startDate" to startDate.toString(),
+                "firstCourseWeek" to firstCourseWeek,
+            )
+        }
+        scope.launch {
+            val plan = withContext(Dispatchers.IO) {
+                // 随机配色（Dart coursesWithOptionalRandomColors）：开关关→原样；
+                // 开→按用户选的色板组给「同名同教师」派生同色。
+                val colorPrefs = ImportRandomColorStore(PrefsKeyValueStore(context)).snapshot()
+                val shifted = warehouseShiftCoursesToFirstWeek(session.courses, firstCourseWeek)
+                val colored = ImportFlowModel.coursesWithOptionalRandomColors(shifted, colorPrefs)
+                val preserveLocalColors = ImportFlowModel.shouldPreserveLocalColors(
+                    replaceExisting = replaceExisting,
+                    randomColorsEnabled = colorPrefs.enabled,
+                )
+                // 节次容量判据（Dart previewImportedCourseRequiredSectionCount）：
+                // 最大结束节号 vs 当前生效节次表（有主模板取模板）。
+                val snapshot = repo.snapshot
+                val currentSections = WarehouseCoursesImportApply.activeSections(
+                    snapshot.settings,
+                    TimetableHostLogic.resolveActiveTimeScheme(
+                        schemes = snapshot.timeSchemes,
+                        activeTimeSchemeId = snapshot.activeTimeSchemeId,
+                    )?.sections,
+                )
+                WarehouseCoursesFinalizePlan(
+                    courses = colored,
+                    replaceExisting = replaceExisting,
+                    preserveLocalColors = preserveLocalColors,
+                    startDate = startDate,
+                    receivedCount = session.receivedCount,
+                    droppedCount = session.droppedCount,
+                    weeksTrimmedCount = session.weeksTrimmedCount,
+                    requiredSectionCount = WarehouseCoursesImportApply.requiredSectionCount(colored),
+                    currentSectionCount = currentSections.size,
+                )
+            }
+            if (plan.requiredSectionCount > plan.currentSectionCount) {
+                // 第三步：节次不够，先问用户（旧版 ensureImportSectionCapacity 的确认框）。
+                coursesFinalizePlan = plan
+                coursesAskExpansion = true
+            } else {
+                finalizeCoursesImport(plan, expandSections = false)
+            }
+        }
+    }
+
     fun handleCoursesMessage(raw: String) {
         val payload = warehouseBridgeCoursesPayload(raw)
         if (payload == null) {
@@ -560,153 +881,35 @@ fun WarehouseWebLoginHost(
             // 对齐旧版 `provider.courses.isEmpty ? true : ask…`：空表不问、直接替换，
             // 进第二步（开学日/首周）。
             val empty = withContext(Dispatchers.IO) { repo.snapshot.courses.isEmpty() }
-            if (empty) {
-                coursesReplaceExisting = true
+            // 回放旁路（N6 取用侧，Dart `recordedReplaceExisting` / `recordedSemesterConfig`）：
+            // 录过的答案直接用，不弹窗；**没录过的照常弹窗**（前台回放未记录时 Dart
+            // 也是照常问，不替用户编答案）。空课表恒按覆盖走（与旧版同一口径）。
+            val replayRecord = playbackMacroRecord
+            val replaying = replayRecord != null && isMacroReplaying()
+            val recordedReplace = if (replaying) {
+                replayRecord.dialogResponses["replaceExisting"] as? Boolean
+            } else {
+                null
+            }
+            val recordedSemester = if (replaying) {
+                replayRecord.dialogResponses["semesterConfig"] as? Map<*, *>
+            } else {
+                null
+            }
+            val recordedStartDate = (recordedSemester?.get("startDate") as? String)
+                ?.let { warehouseSemesterStartDate(it)?.toLocalDate() }
+            val recordedFirstWeek = (recordedSemester?.get("firstCourseWeek") as? Number)?.toInt()
+            if (empty || recordedReplace != null) {
+                coursesReplaceExisting = empty || recordedReplace == true
                 coursesAskReplace = false
+                if (recordedStartDate != null && recordedFirstWeek != null) {
+                    // 两步都有录制值：直接落盘，一次弹窗都不问。
+                    confirmCoursesImport(recordedStartDate, recordedFirstWeek)
+                }
+                // 只跳过了第一步（缺开学日录制值）：第二步照常弹（页面按
+                // coursesAskReplace=false 呈现开学日/首周确认）。
             } else {
                 coursesAskReplace = true
-            }
-        }
-    }
-
-    /** 两步确认任一步取消：中止整次导入（对齐旧版——不写回、提示、结束执行期）。 */
-    fun cancelCoursesImport(interrupted: Boolean = false) {
-        coursesSession = null
-        coursesAskReplace = false
-        coursesFinalizePlan = null
-        coursesAskExpansion = false
-        scriptActive = false
-        Log.i(LOG_TAG, "courses import cancelled by user interrupted=$interrupted")
-        // 第三步（节次补齐确认）取消落在「导入已中断」，与旧版 capacity 路径同文案。
-        showToasts(
-            listOf(
-                if (interrupted) WarehouseStrings.importInterruptedStatus.zh
-                else WarehouseStrings.importCancelledStatus.zh,
-            ),
-        )
-    }
-
-    /** 完成提示（Done 文案口径与旧写回层一致，计数来自本次会话）。 */
-    fun doneMessagesFor(plan: WarehouseCoursesFinalizePlan, importedCount: Int): List<String> {
-        val messages = mutableListOf<String>()
-        messages.add(
-            when {
-                importedCount == 0 -> WarehouseStrings.importNoCourseChanges.zh
-                plan.replaceExisting -> WarehouseStrings.importOverwriteCount.filled("count", importedCount.toString())
-                else -> WarehouseStrings.importUpdatedCount.filled("count", importedCount.toString())
-            },
-        )
-        if (plan.droppedCount > 0) {
-            messages.add(
-                WarehouseStrings.importCourseRecordsDropped.filled(
-                    "imported" to plan.receivedCount.toString(),
-                    "dropped" to plan.droppedCount.toString(),
-                ),
-            )
-        }
-        if (plan.weeksTrimmedCount > 0) {
-            messages.add(
-                WarehouseStrings.importCourseWeeksTrimmed.filled("count", plan.weeksTrimmedCount.toString()),
-            )
-        }
-        return messages
-    }
-
-    /** 第三步确认或无需扩节：落盘（扩节 + 学期设置 + 课程），失败提示并已回滚。 */
-    fun finalizeCoursesImport(plan: WarehouseCoursesFinalizePlan, expandSections: Boolean) {
-        val repo = repository ?: return
-        coursesFinalizePlan = null
-        coursesAskExpansion = false
-        scriptActive = false
-        scope.launch {
-            val result = withContext(Dispatchers.IO) {
-                WarehouseCoursesImportApply.apply(
-                    repository = repo,
-                    request = WarehouseCoursesImportApply.Request(
-                        courses = plan.courses,
-                        semesterStartDate = plan.startDate,
-                        replaceExisting = plan.replaceExisting,
-                        preserveLocalColors = plan.preserveLocalColors,
-                        expandSections = expandSections,
-                    ),
-                )
-            }
-            when (result) {
-                is WarehouseCoursesImportApply.Result.Done -> {
-                    Log.i(LOG_TAG, "courses import done importedCount=${result.importedCount}")
-                    showToasts(doneMessagesFor(plan, result.importedCount))
-                    // 导入成功（写回课程数 > 0）且正在录制：自动完成录制并询问保存
-                    // （对齐 Dart `importedCount > 0 && recording → _completeMacroAndPop`）。
-                    if (result.importedCount > 0 && macroState == WarehouseMacroActionState.RECORDING) {
-                        completeMacroAndPop()
-                    }
-                }
-
-                is WarehouseCoursesImportApply.Result.Failed -> {
-                    // 服务码（如节次补不满）过本地化再展示；其余落固定文案。
-                    val text = result.serviceMessage
-                        ?.let { TimeSchemeServiceMessages.localize(it) }
-                        ?: WarehouseStrings.importFailedStatus.zh
-                    Log.w(LOG_TAG, "courses import failed serviceMessage=${result.serviceMessage}")
-                    showToasts(listOf(text))
-                }
-            }
-        }
-    }
-
-    /** 第二步确认：平移 + 按偏好配色，然后视节次容量直接落盘或先进第三步确认。 */
-    fun confirmCoursesImport(startDate: LocalDate, firstCourseWeek: Int) {
-        val session = coursesSession ?: return
-        val repo = repository ?: return
-        val replaceExisting = coursesReplaceExisting
-        coursesSession = null
-        coursesAskReplace = false
-        // 录制态：把开学日/首周应答存进宏（N6 固定键 semesterConfig：ISO 日期 + 首周数）。
-        if (macroState == WarehouseMacroActionState.RECORDING) {
-            macroDialogResponses["semesterConfig"] = linkedMapOf<String, Any?>(
-                "startDate" to startDate.toString(),
-                "firstCourseWeek" to firstCourseWeek,
-            )
-        }
-        scope.launch {
-            val plan = withContext(Dispatchers.IO) {
-                // 随机配色（Dart coursesWithOptionalRandomColors）：开关关→原样；
-                // 开→按用户选的色板组给「同名同教师」派生同色。
-                val colorPrefs = ImportRandomColorStore(PrefsKeyValueStore(context)).snapshot()
-                val shifted = warehouseShiftCoursesToFirstWeek(session.courses, firstCourseWeek)
-                val colored = ImportFlowModel.coursesWithOptionalRandomColors(shifted, colorPrefs)
-                val preserveLocalColors = ImportFlowModel.shouldPreserveLocalColors(
-                    replaceExisting = replaceExisting,
-                    randomColorsEnabled = colorPrefs.enabled,
-                )
-                // 节次容量判据（Dart previewImportedCourseRequiredSectionCount）：
-                // 最大结束节号 vs 当前生效节次表（有主模板取模板）。
-                val snapshot = repo.snapshot
-                val currentSections = WarehouseCoursesImportApply.activeSections(
-                    snapshot.settings,
-                    TimetableHostLogic.resolveActiveTimeScheme(
-                        schemes = snapshot.timeSchemes,
-                        activeTimeSchemeId = snapshot.activeTimeSchemeId,
-                    )?.sections,
-                )
-                WarehouseCoursesFinalizePlan(
-                    courses = colored,
-                    replaceExisting = replaceExisting,
-                    preserveLocalColors = preserveLocalColors,
-                    startDate = startDate,
-                    receivedCount = session.receivedCount,
-                    droppedCount = session.droppedCount,
-                    weeksTrimmedCount = session.weeksTrimmedCount,
-                    requiredSectionCount = WarehouseCoursesImportApply.requiredSectionCount(colored),
-                    currentSectionCount = currentSections.size,
-                )
-            }
-            if (plan.requiredSectionCount > plan.currentSectionCount) {
-                // 第三步：节次不够，先问用户（旧版 ensureImportSectionCapacity 的确认框）。
-                coursesFinalizePlan = plan
-                coursesAskExpansion = true
-            } else {
-                finalizeCoursesImport(plan, expandSections = false)
             }
         }
     }
@@ -863,6 +1066,75 @@ fun WarehouseWebLoginHost(
             state.autoRecordMacro = false
             startMacroRecording(autoRecord = true)
         }
+        // 快捷导入入口（P2）：列表页/课程导入页带来的宏，进页即自动回放
+        //（Dart initState postFrame → _startPlayback 的等价位，同样消费一次即清）。
+        val pendingReplay = state.playbackMacro
+        if (pendingReplay != null) {
+            state.playbackMacro = null
+            startMacroPlayback(pendingReplay)
+        }
+    }
+
+    // 回放完成 → 自动执行导入脚本（延迟 500ms，Dart _autoExecuteImportAfterPlayback 同款）。
+    // 放在 executeImportScript 声明之后：局部函数没有前向引用。
+    LaunchedEffect(playbackUiState) {
+        if (playbackUiState == WarehousePlaybackUiState.EXECUTING_IMPORT && autoExecuteRequested) {
+            autoExecuteRequested = false
+            kotlinx.coroutines.delay(500)
+            executeImportScript()
+        }
+    }
+
+    /**
+     * 回放旁路（N6 取用侧）：confirm / prompt / singleSelection 用录制的应答直接
+     * resolve，不进挂起弹层；`saveCourseConfig` 是表单交互，没有录制应答，
+     * 照常弹给用户（与 Dart 一致）。
+     *
+     * 兜底口径（逐字对齐 Dart §1.5 表）：confirm 未记录**默认 true**（自动化导入
+     * 不因旧宏没见过该弹窗而被取消）；prompt 未记录用脚本 defaultValue；
+     * singleSelection 未记录/答案过期回退脚本 selectedIndex。
+     */
+    fun resolveReplayDialogAnswer(record: WarehouseMacroRecord, raw: String) {
+        val request = warehouseBridgeDialogRequest(raw)
+        if (request == null) {
+            handleDialogFallback(raw)
+            return
+        }
+        val type = warehouseBridgeMessageType(raw).orEmpty()
+        val key = warehouseDialogResponseKey(
+            type,
+            MiniJson.tryParse(raw) as? Map<*, *> ?: emptyMap<Any?, Any?>(),
+        )
+        val recorded = record.dialogResponses[key]
+        when (request) {
+            is WarehouseBridgeDialogRequest.Confirm ->
+                answerRequest(
+                    request.requestId,
+                    ((recorded as? Boolean) ?: true).toString(),
+                    kind = "confirm(replay)",
+                )
+
+            is WarehouseBridgeDialogRequest.Prompt ->
+                answerRequest(
+                    request.requestId,
+                    MiniJson.encode((recorded as? String) ?: request.defaultValue),
+                    kind = "prompt(replay)",
+                )
+
+            is WarehouseBridgeDialogRequest.SingleSelection -> {
+                val index = resolveWarehouseRecordedSelectionIndex(
+                    recorded = recorded,
+                    options = request.options,
+                    fallbackIndex = request.selectedIndex,
+                ) ?: request.selectedIndex
+                answerRequest(request.requestId, index.toString(), kind = "singleSelection(replay)")
+            }
+
+            is WarehouseBridgeDialogRequest.SaveConfig ->
+                // 不可达兜底：挂点已排除 saveCourseConfig（表单交互不旁路，照常弹层）。
+                // 万一上游条件变化走到这里，降级默认值回答比挂死脚本的 Promise 好。
+                handleDialogFallback(raw)
+        }
     }
 
     fun handleBridgeMessage(raw: String) {
@@ -879,9 +1151,13 @@ fun WarehouseWebLoginHost(
             "toast" -> {
                 // 对齐旧版（`_handleBridgeMessage` 的 toast 分支）：正文取脚本给的
                 // message 原文，空不弹。脚本「正在获取课表…」「成功导入 N 条」全靠它。
-                // 宏回放期间的成功提示抑制判据属回放引擎（F08-8c），本批不移植。
+                // 回放期间成功/进度类脚本提示抑制（N9）：完成 sheet / 覆盖层已会
+                // 展示结果，不叠两条提示。
                 val text = warehouseBridgeMessageText(raw)
-                if (text != null) {
+                val suppressedByReplay = isMacroReplaying() &&
+                    (isWarehouseScriptImportSuccessToast(text) ||
+                        isWarehouseScriptImportProgressToast(text))
+                if (text != null && !suppressedByReplay) {
                     Toast.makeText(context, text, Toast.LENGTH_SHORT).show()
                 }
             }
@@ -906,8 +1182,15 @@ fun WarehouseWebLoginHost(
                         }
 
                         else -> {
-                            rememberPendingDialogKey(raw)
-                            pendingDialog = request
+                            val replayRecord = playbackMacroRecord
+                            if (replayRecord != null && isMacroReplaying() && type != "saveCourseConfig") {
+                                // 回放旁路（N6 取用侧）：录过的答案直接 resolve，
+                                // 不进挂起弹层（门禁后、分发前，对齐方案 §4.12）。
+                                resolveReplayDialogAnswer(replayRecord, raw)
+                            } else {
+                                rememberPendingDialogKey(raw)
+                                pendingDialog = request
+                            }
                         }
                     }
                 }
@@ -929,8 +1212,31 @@ fun WarehouseWebLoginHost(
 
             "complete" -> {
                 cancelPendingDialog("complete")
-                scriptActive = false
-                Log.i(LOG_TAG, "bridge complete")
+                // complete 的处置判定（N10）：saveImportedCourses 在 JS 侧是
+                // fire-and-forget，complete 完全可能落在「本轮已定局」之后——
+                // 不忽略它，取消掉的导入会在状态栏显示成功。判定顺序：
+                // 已定局（执行期已结束）> 回放等课程（只更新状态文字）> 正常收尾。
+                val action = warehouseImportCompletionAction(
+                    importExecutionActive = scriptActive,
+                    macroReplayActive = isMacroReplaying() || playbackWaitingForCourses,
+                    playbackWaitingForCourses = playbackWaitingForCourses,
+                    quickResultHandled = quickResultHandled,
+                )
+                when (action) {
+                    WarehouseImportCompletionAction.FINALIZE -> {
+                        scriptActive = false
+                        Log.i(LOG_TAG, "bridge complete: finalize")
+                    }
+
+                    WarehouseImportCompletionAction.SHOW_STATUS_ONLY -> {
+                        // 回放还在等课程：保持执行期（courses 随后到达），complete 本身不动收尾。
+                        Log.i(LOG_TAG, "bridge complete during playback waiting for courses: status only")
+                    }
+
+                    WarehouseImportCompletionAction.IGNORE -> {
+                        Log.i(LOG_TAG, "bridge complete after settlement: ignored")
+                    }
+                }
             }
 
             "error" -> {
@@ -959,6 +1265,7 @@ fun WarehouseWebLoginHost(
             ),
             webViewController = controller,
             trustedLoginUrls = trustedLoginUrls,
+            foregroundReplayActive = isMacroReplaying(),
             onBack = onBack,
             onWebProgress = { progress ->
                 session = session.withStage(WarehouseWebLoginWebState.stageForProgress(progress))
@@ -1130,6 +1437,32 @@ fun WarehouseWebLoginHost(
             autoRecord = savePrompt?.autoRecord ?: false,
             onSave = { saveCurrentMacro() },
             onDiscard = { discardCurrentMacro() },
+        )
+
+        // 回放过程覆盖层（P2 / N11）：常驻组合、内容按 uiState 渲染，hidden（null）不出内容。
+        WarehouseMacroPlaybackOverlay(
+            uiState = playbackUiState,
+            progress = playbackProgress,
+            schoolName = school.name,
+            adapterName = adapter.adapterName,
+            onCancel = { cancelMacroPlayback() },
+            onRetry = { retryMacroPlayback() },
+            onDismiss = { resetPlaybackUi() },
+            onContinueAfterPause = { pauseGate?.invoke(true) },
+        )
+
+        // 快捷导入完成 sheet（P2 / N12）：常驻组合、show 由状态驱动；「完成」退页。
+        WarehouseQuickImportFinishedDialog(
+            show = showFinishedSheet,
+            schoolName = school.name,
+            adapterName = adapter.adapterName,
+            scriptStatus = finishedScriptStatus,
+            onDismiss = {
+                showFinishedSheet = false
+                finishedScriptStatus = null
+                resetPlaybackUi()
+                onBack()
+            },
         )
     }
 }
