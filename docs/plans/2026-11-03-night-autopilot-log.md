@@ -1747,11 +1747,51 @@ _（空，各线按「键名建议 / 所在文件:行号 / 中文原文 / 占位
 - `-Module pages/settings -ExtraSources '…/pages/ShellPageIndex.kt'` → **编译失败**：ShellPageIndex 依赖
   `android.widget.Toast` 等 Android/Compose 全量编译面，L0 单文件收不进来（unresolved `Toast`，`ShellPageIndex.kt:2540`）。
   该文件的编译保障只能由门 1/门 2 整包负责；本批未裸跑 gradlew、未跑整包。
+
 - 咬合探针：`weekToCommitOnDayChange` 去掉 `takeIf`、`isToday` 改恒真 → **3 红**；还原后 299 绿。
 
 **6. 未触碰**：`ShellWiring.kt`、`app/TimetableStore.kt`、`app/AppGlobalSettingsStore.kt`、`app/TimetableSettingsModel.kt`、
 `pages/ShellPageIndex.kt` 其它区块、`pages/import/**`、`pages/sync/**`、`TimetableProfilesController.kt`、
 `components/**`、`theme/`、两个壳 Activity、`lib/ui/`、路由表。
+
+### 10.39 ✅ 样式基线欠账清理：timetable 5 处逐条判定 + 1 处字面量收口（2026-11-04）
+
+**范围**：`pages/timetable/**`（`DayViewCourseCard.kt` + 新增守卫测试）；`pages/course/**` 复扫 0 命中，未改。
+禁碰清单全部未动：`components/**`、`pages/ShellPageIndex.kt`、`pages/ShellWiring.kt`、`app/TimetableStore.kt`、
+`app/AppGlobalSettingsStore.kt`、`app/TimetableSettingsModel.kt`、`pages/import|sync/**`、
+`pages/timetable/TimetableProfilesController.kt`、`pages/home` 装配、`theme/`、两个壳 Activity、`lib/ui/`、路由表。
+
+**1. 5 处判定表**
+| # | 位置 | 规则 | 判定 | 依据 |
+|---|------|------|------|------|
+| 1 | `timetable/CourseGridCard.kt`（3 处） | R5 | 误报 / 数据色保留 | 课程色解析兜底 `0xFF2196F3` 与对比墨色 `0xFF1E293B`，Dart 同口径（`course_color_palette.dart:34/56`）；与主题无关，改主题色会撞用户自选课色 |
+| 2 | `timetable/day/DayViewCommon.kt`（2 处） | R5 | 误报 / 数据色保留 | 同上：`parseHexColorOrFallback` 默认兜底 + `calculateCardInk` 深墨；Dart 同名函数也是 `const Color(0xFF2196F3)` 字面量，无命名 token 可复用 |
+| 3 | `timetable/day/DayViewCourseCard.kt`（修前 4 处） | R5 | **1 处真需修 + 3 处数据色保留** | 非本周灰 `Color(0xFF94A3B8)` 与 `WeekGridCourseMapping.NON_CURRENT_WEEK_COLOR_HEX`（Dart `kNonCurrentWeekCourseColorHex`）重复 ⇒ 已改走 token；其余 3 处为课程色兜底、情侣粉 `0xFFE91E63`（Dart `Colors.pink`）、停课红 `0xFFD32F2F`（Dart `Colors.red.shade700`），均为 Dart 逐字数据色 |
+| 4 | `timetable/month/MonthViewPage.kt`（R2，:695） | R2 | 误报 / 结构性例外 | `LazyColumn` 只有一项且 `userScrollEnabled = false`，随月网格拖拽联动做位移，无用户直滚语义；滚动条/触感反馈不适用 |
+| 5 | `timetable/TimetableWeekPage.kt`（R2，:659） | R2 | 误报 / 结构性例外 | 自定义 Canvas 周网格，单一纵向滚动承载整周（Dart `SingleChildScrollView` 同构），Lazy 化会拆掉固定行高/粘性表头 |
+
+**2. 落地改动**
+- `DayViewCourseCard.kt:88-92`：非本周灰 `Color(0xFF94A3B8)` → `parseHexColorOrFallback(WeekGridCourseMapping.NON_CURRENT_WEEK_COLOR_HEX)`，并加 import。
+- 新增 `test/.../pages/timetable/day/DayViewColorTokenGuardTest.kt`：断言日卡引用 token、且行首不再出现 `Color(0xFF94A3B8)`。
+- 基线文件：**未跑 `-Write`（会抹掉基线行里的例外原因）**，也**未新增任何基线行**、**未删行**。
+  删不了行的原因：基线是文件级键（`rel|rule`），`DayViewCourseCard.kt` 仍有 3 处数据色命中，删行会因「新增违规」判红，故该行必须留。
+
+**3. 三组数字（`scripts/compose-style-lint.ps1`）**
+- timetable：修前 **5 处（明细命中 11：R5 3+2+4 / R2 1+1）** → 修后 **5 处（明细命中 10：R5 3+2+3 / R2 1+1）** → 基线 **5 行**（未增未删）。
+- course：修前 **0 处** → 修后 **0 处** → 基线 **0 行**（仅表头注释）。
+- components：脚本 **不支持 `components` 域**（实测报「没有这个域」），无基线可清；建议后续给脚本补域，或把组件层
+  `Color.White` 顶栏 tint 写进规则豁免说明——本轮按纪律未动 `components/**`。
+
+**4. 咬合探针**
+- 把 `DayViewCourseCard` 的非本周灰改回 `Color(0xFF94A3B8)` → `-Module timetable` **299 例中 1 红**，
+  精确命中 `DayViewColorTokenGuardTest.kt:25`；还原后 **299 全绿**。
+
+**5. L0**
+- `-Module course` = **OK (234 tests)**
+- `-Module timetable` = **OK (299 tests)**
+- 未裸跑 gradlew、未跑整包；composeP1 仍不在 L0 编译单元，只声明 JVM 单测通过。未推送。
+
+**6. 补记**：上一轮条件挂载清单漏报的 `AddCoursePage.kt:576` 已在 §10.34 记录并随 `07c5b418` 修复（同文件第 4 处）。
 
 
 
