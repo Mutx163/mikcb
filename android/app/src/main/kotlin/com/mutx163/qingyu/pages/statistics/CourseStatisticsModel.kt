@@ -319,12 +319,15 @@ object CourseStatisticsLogic {
             )
         }
 
+        // 与 SemesterProgressModel 共用同一个钳位入口，别再各自写 coerceIn。
+        val ratio = semesterProgressRatio(progress)
+
         return SemesterProgressView(
             title = StatisticsStrings.statisticsSemesterProgressTitle.zh,
             weekLabel = "${progress.weeksElapsed}/${progress.totalWeeks}",
             rangeLabel = rangeLabel,
-            percent = progress.percent,
-            percentText = "${(progress.percent * 100).roundToInt()}%",
+            percent = ratio,
+            percentText = percentText(ratio),
             detailLabel = detailLabel,
             isBeforeStart = isBeforeStart,
             factLabel = factLabel,

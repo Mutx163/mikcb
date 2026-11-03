@@ -266,6 +266,14 @@ class CourseStatisticsModelTest {
         assertEquals("33%", view.percentText) // 33.33 → 33
     }
 
+    @Test
+    fun `超过计划的进度也钳到一百`() {
+        // 与图表侧共用 semesterProgressRatio：156/100 → 100%，不印 156%
+        val view = CourseStatisticsLogic.buildProgress(progress(done = 156, total = 100, remaining = 0))
+        assertEquals(1.0, view.percent, 1e-9)
+        assertEquals("100%", view.percentText)
+    }
+
     // ── 7. 本周小结（weekly_comparison_card.dart） ──
 
     @Test

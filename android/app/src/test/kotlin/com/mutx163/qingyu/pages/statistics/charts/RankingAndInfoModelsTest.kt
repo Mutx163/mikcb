@@ -314,7 +314,8 @@ class StatsInfoModelsTest {
 
     @Test
     fun `进度比例钳在零到一之间`() {
-        // 已上节数超过计划（换课/加课导致）：钳到 100%，不出现 156%
+        // 已上节数超过计划（换课/加课导致）：与 CourseStatisticsModel 共用
+        // semesterProgressRatio，钳到 100%，不出现 156%
         val spec = SemesterProgressModel.build(
             SemesterProgress(
                 semesterStartDate = LocalDate.of(2026, 9, 1),
