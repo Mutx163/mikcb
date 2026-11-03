@@ -27,6 +27,12 @@ com/mutx163/qingyu/app/WeeklyReportScheduleLogic.kt:11
 com/mutx163/qingyu/pages/about/OpenSourceLicensesModel.kt:11
 com/mutx163/qingyu/WidgetHolidayLogic.kt:10
 com/mutx163/qingyu/calendar/HolidayResolver.kt:10
+# pages/import/warehouse/WarehouseMacroReplayLogic.kt 的 10 条 = 宏回放 toast 抑制判据的匹配串
+# （成功类 5：成功导入/导入成功/导入完成/导入/条课程；进度类 5：正在通过接口/正在获取/正在导入/请稍候/请稍等）：
+# 匹配对象是注入脚本与教务网页发出的中文 toast，语言由脚本侧决定、不随 App 语言变；
+# 与 Dart lib/domain/warehouse_bridge_gate.dart（isScriptImportSuccessToast/isScriptImportProgressToast）
+# 及注入 JS 三侧逐字同源冻结，改词即漏抑制。无 ArbText 键可引，登记放行。
+com/mutx163/qingyu/pages/import/warehouse/WarehouseMacroReplayLogic.kt:10
 com/mutx163/qingyu/CountdownFormat.kt:9
 com/mutx163/qingyu/pages/ShellPageIndex.kt:6
 com/mutx163/qingyu/pages/settings/SettingsLiveSelfCheckPage.kt:7
