@@ -872,6 +872,10 @@ _（空，各线按「键名建议 / 所在文件:行号 / 中文原文 / 占位
 
 **检查点之后又落的 6 条（`0d38f686..13ba097a`，未含在本结论内）**：`8821ced7`（日视图当前周与装配器同一次取钟 + 跨日写回当前周）、`010c2e21`（日卡非本周灰复用域内 token）、`16717a2e`（日志 10.39 样式基线欠账）、`b3ffa81f`（日志 10.39 classReminders 移植评估）、`77974526`（备份快照携带并恢复档案完整内嵌 settings C1）、`13ba097a`（顶栏浅色 tint 收进具名常量）。
 
+**最新批次（`13ba097a..66287833`，5 条，已推，同样未含在本结论内）**：`2e735b9d` fix(transfer): LAN HTTP 体超限/超时错误码对齐 Dart；`6a00dd98` test(l0): pages/sync 模块补纯 Kotlin 依赖；`d39c4a49` l10n: 新增 `webdavPasswordReentryBody`；`46280a4b` feat(sync): 升级后一次性 WebDAV 密码重填提示；`66287833` docs: pages/sync L0 自包含记录。
+
+- **越界提交（记录，不回滚）**：`d39c4a49` 由他线直接改 `lib/l10n/app_en/ja/ko/zh/zh_HK/zh_TW.arb` 六份 + `app_localizations*.dart` 生成文件（共 11 文件）。按 §六「六份 ARB 只归 A」及 C 线约束「不动 ARB，需要的键报给 A」，该键应由 A 线落。本轮只记录，不回滚；A 线待复核 6 语言文案一致性、`l10n_untranslated.json` 与生成产物是否需重跑 `gen-l10n`。
+
 - `5289c6da` 门 1 ✅ 绿（02:13:05→02:27:44，Gradle 14m00s / 墙钟 14m39s，exit=0）——A+B 迁移后的首次全量主源集编译。
 - `df1a9873` 门 1 ✅ 绿 / 门 2 ❌ 红（数字同上）。
 - 前序：`4d534e04` 门 1 绿 / 门 2 红（`WidgetWeekendMoodTest` Double vs Int，已由 `6a6ab1b8` 修）；`f1472e58`/`58693492` 门 1 红为**真实编译错误**（`DataTransferHost.kt:217` 缺 `InvalidEncoding`），不是流程故障。
