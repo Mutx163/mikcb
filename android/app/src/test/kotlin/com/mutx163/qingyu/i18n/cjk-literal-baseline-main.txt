@@ -28,6 +28,9 @@ com/mutx163/qingyu/pages/about/OpenSourceLicensesModel.kt:11
 com/mutx163/qingyu/WidgetHolidayLogic.kt:10
 com/mutx163/qingyu/calendar/HolidayResolver.kt:10
 com/mutx163/qingyu/CountdownFormat.kt:9
+# pages/import/IcsHeaderKeywords.kt 的 9 条 = ICS 表头匹配串（第/节/教师/老师/地点/教室/简介/描述/备注）：
+# 仅对 ICS 文件内容做 contains / 前缀比对，永不上屏；Lead 批准 2026-11-04 一次性基线登记（数据匹配串）。
+com/mutx163/qingyu/pages/import/IcsHeaderKeywords.kt:9
 com/mutx163/qingyu/pages/ShellPageIndex.kt:6
 com/mutx163/qingyu/pages/settings/SettingsLiveSelfCheckPage.kt:7
 com/mutx163/qingyu/pages/transfer/DataTransferPackageLogic.kt:7
@@ -77,7 +80,6 @@ com/mutx163/qingyu/pages/exam/ExamListModel.kt:1
 com/mutx163/qingyu/pages/export/IcsExportModel.kt:1
 com/mutx163/qingyu/pages/export/IcsShareModel.kt:1
 com/mutx163/qingyu/pages/export/IcsShareWiring.kt:1
-com/mutx163/qingyu/pages/import/IcsImportModel.kt:1
 com/mutx163/qingyu/pages/import/warehouse/WarehouseRepositoryParsers.kt:1
 com/mutx163/qingyu/pages/settings/SettingsTimetablePageSettingsPage.kt:1
 com/mutx163/qingyu/pages/sync/CoupleTimetableSettingsModel.kt:1

@@ -1,7 +1,9 @@
 package com.mutx163.qingyu.pages.import
 
+import java.io.File
 import java.time.LocalDateTime
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -607,5 +609,67 @@ class IcsImportModelTest {
         assertEquals(1, course.startWeek)
         assertEquals(3, course.endWeek)
         assertEquals("A", course.description)
+    }
+
+    // ==========================================
+    // 13. 结构收敛：ICS 表头匹配串集中外提（Lead 2026-11-04）
+    // ==========================================
+
+    @Test
+    fun `ICS 表头关键字集中在常量文件 且解析器不再含中文字面量`() {
+        val modelSource = repoFile(
+            "android/app/src/main/kotlin/com/mutx163/qingyu/pages/import/IcsImportModel.kt",
+        ).readText()
+        assertTrue(
+            "解析器仍有中文字面量：${cjkLiteralsIn(modelSource)}",
+            cjkLiteralsIn(modelSource).isEmpty(),
+        )
+
+        val keywordsFile = repoFile(
+            "android/app/src/main/kotlin/com/mutx163/qingyu/pages/import/IcsHeaderKeywords.kt",
+        )
+        val keywordsSource = keywordsFile.readText()
+        // 门禁按文件名排除整文件；撞 Strings/Arb 会让基线行悬空并隐身。
+        assertFalse(keywordsFile.name.contains("Strings"))
+        assertFalse(keywordsFile.name.contains("Arb"))
+        // 只做数据匹配，不参与渲染（照 WarehouseFormLabelStrings 先例）。
+        assertFalse(keywordsSource.contains("Composable"))
+        assertFalse(keywordsSource.contains("androidx.compose"))
+        assertFalse(keywordsSource.contains("ArbText"))
+
+        val constants = Regex("""const val (\w+)""").findAll(keywordsSource)
+            .map { it.groupValues[1] }
+            .toList()
+        assertEquals(9, constants.size)
+        for (name in constants) {
+            assertTrue(
+                "$name 没有被比较逻辑引用（不该为 UI 保留死串）",
+                modelSource.contains("IcsHeaderKeywords.$name"),
+            )
+        }
+    }
+
+    /** 与 `CjkLiteralGateTest` 相同的字面量判据（注释行跳过）。 */
+    private fun cjkLiteralsIn(source: String): List<String> = source.lineSequence()
+        .filterNot {
+            val trimmed = it.trimStart()
+            trimmed.startsWith("*") || trimmed.startsWith("//") || trimmed.startsWith("/*")
+        }
+        .flatMap { line ->
+            LITERAL_REGEX.findAll(line)
+                .map { it.groupValues[1] }
+                .filter { text -> text.any { c -> c in '一'..'鿿' } }
+        }
+        .toList()
+
+    private val LITERAL_REGEX = Regex("\"((?:[^\"\\\\]|\\\\.)*)\"")
+
+    private fun repoFile(relative: String): File {
+        var dir: File? = File("").absoluteFile
+        repeat(8) {
+            if (File(dir, "lib/l10n/app_zh.arb").isFile) return File(dir!!, relative)
+            dir = dir?.parentFile
+        }
+        error("找不到仓库根（未定位到 lib/l10n/app_zh.arb）")
     }
 }

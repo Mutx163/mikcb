@@ -49,9 +49,9 @@ object IcsImportModel {
      * 3. 裸区间 `X-Y节`；4. `Section/Period X-Y`。
      */
     private val SECTION_PATTERNS = listOf(
-        Regex("""第${WS}*(\d+)${WS}*-${WS}*(\d+)${WS}*节"""),
+        Regex("""${IcsHeaderKeywords.SECTION_OPEN}${WS}*(\d+)${WS}*-${WS}*(\d+)${WS}*${IcsHeaderKeywords.SECTION_CLOSE}"""),
         Regex("""^${WS}*(?:sections?|periods?)${WS}*[:：]${WS}*(\d+)${WS}*-${WS}*(\d+)${WS}*$""", RegexOption.IGNORE_CASE),
-        Regex("""^${WS}*(\d+)${WS}*-${WS}*(\d+)${WS}*节${WS}*$"""),
+        Regex("""^${WS}*(\d+)${WS}*-${WS}*(\d+)${WS}*${IcsHeaderKeywords.SECTION_CLOSE}${WS}*$"""),
         Regex("""^${WS}*(?:section|period)${WS}+(\d+)${WS}*-${WS}*(\d+)${WS}*$""", RegexOption.IGNORE_CASE),
     )
 
@@ -59,7 +59,10 @@ object IcsImportModel {
     private val KNOWN_PREFIXES = listOf(
         "teacher", "instructor", "location", "room", "section", "period",
         "description", "note", "session note", "homework",
-        "教师", "老师", "地点", "教室", "简介", "描述", "备注",
+        IcsHeaderKeywords.TEACHER, IcsHeaderKeywords.TEACHER_ALT,
+        IcsHeaderKeywords.LOCATION, IcsHeaderKeywords.LOCATION_ALT,
+        IcsHeaderKeywords.DESCRIPTION, IcsHeaderKeywords.DESCRIPTION_ALT,
+        IcsHeaderKeywords.NOTE,
     )
 
     private val SUMMARY_BADGE_PATTERN = Regex("""\[\d+]\[[^\]]+]$""")
@@ -231,15 +234,18 @@ object IcsImportModel {
 
         // 显式前缀（本 App 导出侧就是这种）：`Teacher: 张三` / `教师：张三`。
         val explicitTeacher = prefixedValue(
-            contentLines, listOf("teacher", "instructor", "教师", "老师"),
+            contentLines,
+            listOf("teacher", "instructor", IcsHeaderKeywords.TEACHER, IcsHeaderKeywords.TEACHER_ALT),
         )
         val explicitLocation = prefixedValue(
-            contentLines, listOf("location", "room", "地点", "教室"),
+            contentLines,
+            listOf("location", "room", IcsHeaderKeywords.LOCATION, IcsHeaderKeywords.LOCATION_ALT),
         )
         val explicitDescription = prefixedValue(
-            contentLines, listOf("description", "简介", "描述"),
+            contentLines,
+            listOf("description", IcsHeaderKeywords.DESCRIPTION, IcsHeaderKeywords.DESCRIPTION_ALT),
         )
-        val explicitNote = prefixedValue(contentLines, listOf("note", "备注"))
+        val explicitNote = prefixedValue(contentLines, listOf("note", IcsHeaderKeywords.NOTE))
         // 被前缀行用掉的那些行不再参与位置式配对。
         val pairingLines = contentLines.filter { !hasKnownPrefix(it) }
 
