@@ -7195,7 +7195,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get hyperosShowcaseRootPageDetails => '无返回键根页';
 
   @override
-  String get hyperosShowcaseSubpageSubtitle => '当前页即 Subpage + HyperosListView';
+  String get hyperosShowcaseSubpageSubtitle => 'Subpage + HyperosListView';
 
   @override
   String get hyperosShowcaseAlreadyInSubpage => '已在 Subpage 中';
@@ -7237,7 +7237,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get hyperosShowcaseRootShellLabel => '根页壳层';
 
   @override
-  String get hyperosShowcasePushSubtitle => '通过 HyperosNavigation.push 进入';
+  String get hyperosShowcasePushSubtitle => 'HyperosNavigation.push 进入';
 
   @override
   String get hyperosShowcaseSampleText => '示例文本';
@@ -17246,7 +17246,7 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get hyperosShowcaseRootPageDetails => '無返回鍵根頁';
 
   @override
-  String get hyperosShowcaseSubpageSubtitle => '當前頁即 Subpage + HyperosListView';
+  String get hyperosShowcaseSubpageSubtitle => 'Subpage + HyperosListView';
 
   @override
   String get hyperosShowcaseAlreadyInSubpage => '已在 Subpage 中';
@@ -17288,7 +17288,7 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get hyperosShowcaseRootShellLabel => '根頁殼層';
 
   @override
-  String get hyperosShowcasePushSubtitle => '通過 HyperosNavigation.push 進入';
+  String get hyperosShowcasePushSubtitle => 'HyperosNavigation.push 進入';
 
   @override
   String get hyperosShowcaseSampleText => '示例文本';
@@ -27297,8 +27297,7 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get hyperosShowcaseRootPageDetails => '無返回鍵的根頁面';
 
   @override
-  String get hyperosShowcaseSubpageSubtitle =>
-      '目前頁面就是 Subpage + HyperosListView';
+  String get hyperosShowcaseSubpageSubtitle => 'Subpage + HyperosListView';
 
   @override
   String get hyperosShowcaseAlreadyInSubpage => '已在 Subpage 中';
@@ -27340,7 +27339,7 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get hyperosShowcaseRootShellLabel => '根頁殼層';
 
   @override
-  String get hyperosShowcasePushSubtitle => '透過 HyperosNavigation.push 進入';
+  String get hyperosShowcasePushSubtitle => 'HyperosNavigation.push 進入';
 
   @override
   String get hyperosShowcaseSampleText => '示例文本';

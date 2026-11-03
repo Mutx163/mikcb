@@ -4355,7 +4355,7 @@
   "hyperosShowcaseSectionPressable": "底層列 · HyperosPressableRow",
   "hyperosShowcaseSectionShell": "頁面外框",
   "hyperosShowcaseRootPageDetails": "無返回鍵的根頁面",
-  "hyperosShowcaseSubpageSubtitle": "目前頁面就是 Subpage + HyperosListView",
+  "hyperosShowcaseSubpageSubtitle": "Subpage + HyperosListView",
   "hyperosShowcaseAlreadyInSubpage": "已在 Subpage 中",
   "hyperosShowcaseSectionFrosted": "模糊頂部列 · 滾動物理效果",
   "hyperosShowcaseSectionFeedback": "回饋 · 彈出層",
@@ -4369,7 +4369,7 @@
   "hyperosShowcaseRefreshDone": "刷新完成",
   "hyperosShowcaseSearchTooltip": "搜索",
   "hyperosShowcaseRootShellLabel": "根頁殼層",
-  "hyperosShowcasePushSubtitle": "透過 HyperosNavigation.push 進入",
+  "hyperosShowcasePushSubtitle": "HyperosNavigation.push 進入",
   "hyperosShowcaseSampleText": "示例文本",
   "courseImportQuickImportDescription": "快捷匯入 {schoolName} {adapterName}",
   "@courseImportQuickImportDescription": {

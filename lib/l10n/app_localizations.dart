@@ -13001,7 +13001,7 @@ abstract class AppLocalizations {
   /// No description provided for @hyperosShowcaseSubpageSubtitle.
   ///
   /// In zh, this message translates to:
-  /// **'当前页即 Subpage + HyperosListView'**
+  /// **'Subpage + HyperosListView'**
   String get hyperosShowcaseSubpageSubtitle;
 
   /// No description provided for @hyperosShowcaseAlreadyInSubpage.
@@ -13085,7 +13085,7 @@ abstract class AppLocalizations {
   /// No description provided for @hyperosShowcasePushSubtitle.
   ///
   /// In zh, this message translates to:
-  /// **'通过 HyperosNavigation.push 进入'**
+  /// **'HyperosNavigation.push 进入'**
   String get hyperosShowcasePushSubtitle;
 
   /// No description provided for @hyperosShowcaseSampleText.

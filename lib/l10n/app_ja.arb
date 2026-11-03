@@ -4307,7 +4307,7 @@
   "hyperosShowcaseSectionPressable": "HyperosPressableRow",
   "hyperosShowcaseSectionShell": "Page shell",
   "hyperosShowcaseRootPageDetails": "Root page without back button",
-  "hyperosShowcaseSubpageSubtitle": "Current page is Subpage + HyperosListView",
+  "hyperosShowcaseSubpageSubtitle": "Subpage + HyperosListView",
   "hyperosShowcaseAlreadyInSubpage": "Already in Subpage",
   "hyperosShowcaseSectionFrosted": "Frosted header · scroll physics",
   "hyperosShowcaseSectionFeedback": "Feedback · overlays",
@@ -4321,7 +4321,7 @@
   "hyperosShowcaseRefreshDone": "Refresh complete",
   "hyperosShowcaseSearchTooltip": "Search",
   "hyperosShowcaseRootShellLabel": "Root shell",
-  "hyperosShowcasePushSubtitle": "Enter via HyperosNavigation.push",
+  "hyperosShowcasePushSubtitle": "Via HyperosNavigation.push",
   "hyperosShowcaseSampleText": "Sample text",
   "courseImportQuickImportDescription": "Quick import {schoolName} {adapterName}",
   "@courseImportQuickImportDescription": {

@@ -7365,8 +7365,7 @@ class AppLocalizationsKo extends AppLocalizations {
   String get hyperosShowcaseRootPageDetails => 'Root page without back button';
 
   @override
-  String get hyperosShowcaseSubpageSubtitle =>
-      'Current page is Subpage + HyperosListView';
+  String get hyperosShowcaseSubpageSubtitle => 'Subpage + HyperosListView';
 
   @override
   String get hyperosShowcaseAlreadyInSubpage => 'Already in Subpage';
@@ -7410,7 +7409,7 @@ class AppLocalizationsKo extends AppLocalizations {
   String get hyperosShowcaseRootShellLabel => 'Root shell';
 
   @override
-  String get hyperosShowcasePushSubtitle => 'Enter via HyperosNavigation.push';
+  String get hyperosShowcasePushSubtitle => 'Via HyperosNavigation.push';
 
   @override
   String get hyperosShowcaseSampleText => 'Sample text';

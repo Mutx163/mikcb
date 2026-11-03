@@ -4664,7 +4664,7 @@
   "hyperosShowcaseSectionPressable": "底层行 · HyperosPressableRow",
   "hyperosShowcaseSectionShell": "页面壳层",
   "hyperosShowcaseRootPageDetails": "无返回键根页",
-  "hyperosShowcaseSubpageSubtitle": "当前页即 Subpage + HyperosListView",
+  "hyperosShowcaseSubpageSubtitle": "Subpage + HyperosListView",
   "hyperosShowcaseAlreadyInSubpage": "已在 Subpage 中",
   "hyperosShowcaseSectionFrosted": "模糊顶栏 · 滚动物理",
   "hyperosShowcaseSectionFeedback": "反馈 · 弹层",
@@ -4678,7 +4678,7 @@
   "hyperosShowcaseRefreshDone": "刷新完成",
   "hyperosShowcaseSearchTooltip": "搜索",
   "hyperosShowcaseRootShellLabel": "根页壳层",
-  "hyperosShowcasePushSubtitle": "通过 HyperosNavigation.push 进入",
+  "hyperosShowcasePushSubtitle": "HyperosNavigation.push 进入",
   "hyperosShowcaseSampleText": "示例文本",
   "courseImportQuickImportDescription": "快捷导入 {schoolName} {adapterName}",
   "@courseImportQuickImportDescription": {
