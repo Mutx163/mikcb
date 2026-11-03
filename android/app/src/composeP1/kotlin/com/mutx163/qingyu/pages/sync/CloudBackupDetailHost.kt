@@ -155,7 +155,7 @@ fun CloudBackupDetailHost(
             )
             // 差异概要（prepare 成功必有值；null 只出现在退场/隐藏期，不渲染）。
             restoreDiff?.let { diff ->
-                val diffLines = RestoreDiffStrings.buildDiffLines(diff)
+                val diffLines = RestoreDiffLogic.buildDiffLines(diff)
                 if (diffLines.isNotEmpty()) {
                     Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
                         diffLines.forEach { line ->

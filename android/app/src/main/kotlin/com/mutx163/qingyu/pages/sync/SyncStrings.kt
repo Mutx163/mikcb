@@ -137,6 +137,11 @@ object SyncStrings {
     val cloudBackupUndoRestoreSummary = ArbText("cloudBackupUndoRestoreSummary", "重启应用后失效")
     val cloudBackupUndoRestoreSuccess = ArbText("cloudBackupUndoRestoreSuccess", "已撤销恢复")
     val cloudBackupUndoRestoreFailed = ArbText("cloudBackupUndoRestoreFailed", "撤销失败：{message}")
+    // 恢复差异概要（2026-11-03 新增；Dart 源码无对应文案）。整宽段落，不适用行内单行口径。
+    val cloudRestoreDiffProfiles = ArbText("cloudRestoreDiffProfiles", "课表：新增 {added}、覆盖 {overridden}、删除 {removed}")
+    val cloudRestoreDiffCourses = ArbText("cloudRestoreDiffCourses", "课程：新增 {added}、覆盖 {overridden}、删除 {removed}")
+    val cloudRestoreDiffTimeSchemes =
+        ArbText("cloudRestoreDiffTimeSchemes", "作息时间：新增 {added}、覆盖 {overridden}、删除 {removed}")
     val cloudBackupDeleteTitle = ArbText("cloudBackupDeleteTitle", "删除此备份")
     val cloudBackupDeleteBody = ArbText("cloudBackupDeleteBody", "确定删除 {time} 的云端备份吗？此操作不可撤销")
     val cloudBackupDeleteSuccess = ArbText("cloudBackupDeleteSuccess", "备份已删除")
@@ -290,6 +295,9 @@ object SyncStrings {
             cloudBackupUndoRestoreSummary,
             cloudBackupUndoRestoreSuccess,
             cloudBackupUndoRestoreFailed,
+            cloudRestoreDiffProfiles,
+            cloudRestoreDiffCourses,
+            cloudRestoreDiffTimeSchemes,
             cloudBackupDeleteTitle,
             cloudBackupDeleteBody,
             cloudBackupDeleteSuccess,

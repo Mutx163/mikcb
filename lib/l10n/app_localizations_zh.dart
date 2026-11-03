@@ -569,6 +569,21 @@ class AppLocalizationsZh extends AppLocalizations {
   }
 
   @override
+  String cloudRestoreDiffProfiles(int added, int overridden, int removed) {
+    return '课表：新增 $added、覆盖 $overridden、删除 $removed';
+  }
+
+  @override
+  String cloudRestoreDiffCourses(int added, int overridden, int removed) {
+    return '课程：新增 $added、覆盖 $overridden、删除 $removed';
+  }
+
+  @override
+  String cloudRestoreDiffTimeSchemes(int added, int overridden, int removed) {
+    return '作息时间：新增 $added、覆盖 $overridden、删除 $removed';
+  }
+
+  @override
   String get cloudBackupDeleteTitle => '删除此备份';
 
   @override
@@ -10562,6 +10577,21 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   @override
   String cloudBackupUndoRestoreFailed(String message) {
     return '撤銷失敗：$message';
+  }
+
+  @override
+  String cloudRestoreDiffProfiles(int added, int overridden, int removed) {
+    return '課表：新增 $added、覆蓋 $overridden、刪除 $removed';
+  }
+
+  @override
+  String cloudRestoreDiffCourses(int added, int overridden, int removed) {
+    return '課程：新增 $added、覆蓋 $overridden、刪除 $removed';
+  }
+
+  @override
+  String cloudRestoreDiffTimeSchemes(int added, int overridden, int removed) {
+    return '作息時間：新增 $added、覆蓋 $overridden、刪除 $removed';
   }
 
   @override
@@ -20598,6 +20628,21 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   @override
   String cloudBackupUndoRestoreFailed(String message) {
     return '撤銷失敗：$message';
+  }
+
+  @override
+  String cloudRestoreDiffProfiles(int added, int overridden, int removed) {
+    return '課表：新增 $added、覆蓋 $overridden、刪除 $removed';
+  }
+
+  @override
+  String cloudRestoreDiffCourses(int added, int overridden, int removed) {
+    return '課程：新增 $added、覆蓋 $overridden、刪除 $removed';
+  }
+
+  @override
+  String cloudRestoreDiffTimeSchemes(int added, int overridden, int removed) {
+    return '作息時間：新增 $added、覆蓋 $overridden、刪除 $removed';
   }
 
   @override

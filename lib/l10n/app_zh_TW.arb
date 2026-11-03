@@ -160,6 +160,48 @@
       }
     }
   },
+  "cloudRestoreDiffProfiles": "課表：新增 {added}、覆蓋 {overridden}、刪除 {removed}",
+  "@cloudRestoreDiffProfiles": {
+    "placeholders": {
+      "added": {
+        "type": "int"
+      },
+      "overridden": {
+        "type": "int"
+      },
+      "removed": {
+        "type": "int"
+      }
+    }
+  },
+  "cloudRestoreDiffCourses": "課程：新增 {added}、覆蓋 {overridden}、刪除 {removed}",
+  "@cloudRestoreDiffCourses": {
+    "placeholders": {
+      "added": {
+        "type": "int"
+      },
+      "overridden": {
+        "type": "int"
+      },
+      "removed": {
+        "type": "int"
+      }
+    }
+  },
+  "cloudRestoreDiffTimeSchemes": "作息時間：新增 {added}、覆蓋 {overridden}、刪除 {removed}",
+  "@cloudRestoreDiffTimeSchemes": {
+    "placeholders": {
+      "added": {
+        "type": "int"
+      },
+      "overridden": {
+        "type": "int"
+      },
+      "removed": {
+        "type": "int"
+      }
+    }
+  },
   "cloudBackupDeleteTitle": "刪除此備份",
   "cloudBackupDeleteBody": "確定刪除 {time} 的雲端備份嗎？此操作不可撤銷",
   "@cloudBackupDeleteBody": {

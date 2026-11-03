@@ -154,7 +154,7 @@ class RestoreDiffLogicTest {
         assertNull(summary.timeSchemes)
         assertEquals(
             listOf("课表：新增 1、覆盖 0、删除 0", "课程：新增 1、覆盖 0、删除 0"),
-            RestoreDiffStrings.buildDiffLines(summary),
+            RestoreDiffLogic.buildDiffLines(summary),
         )
     }
 
@@ -168,7 +168,7 @@ class RestoreDiffLogicTest {
         assertNull(summary.profiles)
         assertNull(summary.courses)
         assertEquals(RestoreDiffCounts(1, 0, 0), summary.timeSchemes)
-        assertTrue(RestoreDiffStrings.buildDiffLines(summary).size == 1)
+        assertTrue(RestoreDiffLogic.buildDiffLines(summary).size == 1)
     }
 
     // ── 脏条目：解析不出 id 的不参与计数（与撤销规划器同口径） ──
@@ -207,7 +207,7 @@ class RestoreDiffLogicTest {
                 "课程：新增 4、覆盖 5、删除 6",
                 "作息时间：新增 7、覆盖 8、删除 9",
             ),
-            RestoreDiffStrings.buildDiffLines(summary),
+            RestoreDiffLogic.buildDiffLines(summary),
         )
     }
 
@@ -222,6 +222,6 @@ class RestoreDiffLogicTest {
         assertNull(summary.profiles)
         assertNull(summary.courses)
         assertNull(summary.timeSchemes)
-        assertTrue(RestoreDiffStrings.buildDiffLines(summary).isEmpty())
+        assertTrue(RestoreDiffLogic.buildDiffLines(summary).isEmpty())
     }
 }

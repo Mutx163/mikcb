@@ -280,6 +280,48 @@
       }
     }
   },
+  "cloudRestoreDiffProfiles": "课表：新增 {added}、覆盖 {overridden}、删除 {removed}",
+  "@cloudRestoreDiffProfiles": {
+    "placeholders": {
+      "added": {
+        "type": "int"
+      },
+      "overridden": {
+        "type": "int"
+      },
+      "removed": {
+        "type": "int"
+      }
+    }
+  },
+  "cloudRestoreDiffCourses": "课程：新增 {added}、覆盖 {overridden}、删除 {removed}",
+  "@cloudRestoreDiffCourses": {
+    "placeholders": {
+      "added": {
+        "type": "int"
+      },
+      "overridden": {
+        "type": "int"
+      },
+      "removed": {
+        "type": "int"
+      }
+    }
+  },
+  "cloudRestoreDiffTimeSchemes": "作息时间：新增 {added}、覆盖 {overridden}、删除 {removed}",
+  "@cloudRestoreDiffTimeSchemes": {
+    "placeholders": {
+      "added": {
+        "type": "int"
+      },
+      "overridden": {
+        "type": "int"
+      },
+      "removed": {
+        "type": "int"
+      }
+    }
+  },
   "cloudBackupDeleteTitle": "删除此备份",
   "cloudBackupDeleteBody": "确定删除 {time} 的云端备份吗？此操作不可撤销",
   "@cloudBackupDeleteBody": {

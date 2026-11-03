@@ -280,6 +280,48 @@
       }
     }
   },
+  "cloudRestoreDiffProfiles": "Timetables: {added} to add, {overridden} to overwrite, {removed} to remove",
+  "@cloudRestoreDiffProfiles": {
+    "placeholders": {
+      "added": {
+        "type": "int"
+      },
+      "overridden": {
+        "type": "int"
+      },
+      "removed": {
+        "type": "int"
+      }
+    }
+  },
+  "cloudRestoreDiffCourses": "Courses: {added} to add, {overridden} to overwrite, {removed} to remove",
+  "@cloudRestoreDiffCourses": {
+    "placeholders": {
+      "added": {
+        "type": "int"
+      },
+      "overridden": {
+        "type": "int"
+      },
+      "removed": {
+        "type": "int"
+      }
+    }
+  },
+  "cloudRestoreDiffTimeSchemes": "Schedules: {added} to add, {overridden} to overwrite, {removed} to remove",
+  "@cloudRestoreDiffTimeSchemes": {
+    "placeholders": {
+      "added": {
+        "type": "int"
+      },
+      "overridden": {
+        "type": "int"
+      },
+      "removed": {
+        "type": "int"
+      }
+    }
+  },
   "cloudBackupDeleteTitle": "Delete this backup",
   "cloudBackupDeleteBody": "Delete the cloud backup from {time}? This cannot be undone.",
   "@cloudBackupDeleteBody": {

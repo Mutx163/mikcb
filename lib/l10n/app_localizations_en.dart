@@ -595,6 +595,21 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String cloudRestoreDiffProfiles(int added, int overridden, int removed) {
+    return 'Timetables: $added to add, $overridden to overwrite, $removed to remove';
+  }
+
+  @override
+  String cloudRestoreDiffCourses(int added, int overridden, int removed) {
+    return 'Courses: $added to add, $overridden to overwrite, $removed to remove';
+  }
+
+  @override
+  String cloudRestoreDiffTimeSchemes(int added, int overridden, int removed) {
+    return 'Schedules: $added to add, $overridden to overwrite, $removed to remove';
+  }
+
+  @override
   String get cloudBackupDeleteTitle => 'Delete this backup';
 
   @override

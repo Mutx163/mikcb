@@ -1160,6 +1160,24 @@ abstract class AppLocalizations {
   /// **'撤销失败：{message}'**
   String cloudBackupUndoRestoreFailed(String message);
 
+  /// No description provided for @cloudRestoreDiffProfiles.
+  ///
+  /// In zh, this message translates to:
+  /// **'课表：新增 {added}、覆盖 {overridden}、删除 {removed}'**
+  String cloudRestoreDiffProfiles(int added, int overridden, int removed);
+
+  /// No description provided for @cloudRestoreDiffCourses.
+  ///
+  /// In zh, this message translates to:
+  /// **'课程：新增 {added}、覆盖 {overridden}、删除 {removed}'**
+  String cloudRestoreDiffCourses(int added, int overridden, int removed);
+
+  /// No description provided for @cloudRestoreDiffTimeSchemes.
+  ///
+  /// In zh, this message translates to:
+  /// **'作息时间：新增 {added}、覆盖 {overridden}、删除 {removed}'**
+  String cloudRestoreDiffTimeSchemes(int added, int overridden, int removed);
+
   /// No description provided for @cloudBackupDeleteTitle.
   ///
   /// In zh, this message translates to:

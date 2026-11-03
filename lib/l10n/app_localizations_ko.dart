@@ -580,6 +580,21 @@ class AppLocalizationsKo extends AppLocalizations {
   }
 
   @override
+  String cloudRestoreDiffProfiles(int added, int overridden, int removed) {
+    return '시간표: 추가 $added개, 덮어쓰기 $overridden개, 삭제 $removed개';
+  }
+
+  @override
+  String cloudRestoreDiffCourses(int added, int overridden, int removed) {
+    return '강의: 추가 $added개, 덮어쓰기 $overridden개, 삭제 $removed개';
+  }
+
+  @override
+  String cloudRestoreDiffTimeSchemes(int added, int overridden, int removed) {
+    return '시간표 패턴: 추가 $added개, 덮어쓰기 $overridden개, 삭제 $removed개';
+  }
+
+  @override
   String get cloudBackupDeleteTitle => '이 백업 삭제';
 
   @override

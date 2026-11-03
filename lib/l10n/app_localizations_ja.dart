@@ -581,6 +581,21 @@ class AppLocalizationsJa extends AppLocalizations {
   }
 
   @override
+  String cloudRestoreDiffProfiles(int added, int overridden, int removed) {
+    return '時間割：追加 $added、上書き $overridden、削除 $removed';
+  }
+
+  @override
+  String cloudRestoreDiffCourses(int added, int overridden, int removed) {
+    return '授業：追加 $added、上書き $overridden、削除 $removed';
+  }
+
+  @override
+  String cloudRestoreDiffTimeSchemes(int added, int overridden, int removed) {
+    return '時間割パターン：追加 $added、上書き $overridden、削除 $removed';
+  }
+
+  @override
   String get cloudBackupDeleteTitle => 'このバックアップを削除';
 
   @override

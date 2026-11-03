@@ -27,8 +27,28 @@ import com.mutx163.qingyu.sync.canonicalize
  * 的脏条目无法追踪归属，不参与计数（与 [CloudRestoreUndoPlanner] 同口径）。
  *
  * 本机没有用户数据（无档案）时按空表比对：全部计「新增」。
+ *
+ * 概要行文案见 [buildDiffLines]（模板在 [SyncStrings]，与 ARB 逐字对拍）。
  */
 object RestoreDiffLogic {
+
+    /**
+     * 差异概要行（按 课表 → 课程 → 作息时间 排序）。
+     * 某类拿不到（null）时整行省略，不给「0 0 0」假装能算。
+     */
+    fun buildDiffLines(summary: RestoreDiffSummary): List<String> {
+        val out = ArrayList<String>(3)
+        summary.profiles?.let { out.add(SyncStrings.cloudRestoreDiffProfiles.filled(it)) }
+        summary.courses?.let { out.add(SyncStrings.cloudRestoreDiffCourses.filled(it)) }
+        summary.timeSchemes?.let { out.add(SyncStrings.cloudRestoreDiffTimeSchemes.filled(it)) }
+        return out
+    }
+
+    private fun ArbText.filled(counts: RestoreDiffCounts): String = filled(
+        "added" to counts.added.toString(),
+        "overridden" to counts.overridden.toString(),
+        "removed" to counts.removed.toString(),
+    )
 
     /** 比对两份快照 payload，算三类概要。[local] 为 null = 本机没有用户数据。 */
     fun summarize(

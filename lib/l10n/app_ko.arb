@@ -160,6 +160,48 @@
       }
     }
   },
+  "cloudRestoreDiffProfiles": "시간표: 추가 {added}개, 덮어쓰기 {overridden}개, 삭제 {removed}개",
+  "@cloudRestoreDiffProfiles": {
+    "placeholders": {
+      "added": {
+        "type": "int"
+      },
+      "overridden": {
+        "type": "int"
+      },
+      "removed": {
+        "type": "int"
+      }
+    }
+  },
+  "cloudRestoreDiffCourses": "강의: 추가 {added}개, 덮어쓰기 {overridden}개, 삭제 {removed}개",
+  "@cloudRestoreDiffCourses": {
+    "placeholders": {
+      "added": {
+        "type": "int"
+      },
+      "overridden": {
+        "type": "int"
+      },
+      "removed": {
+        "type": "int"
+      }
+    }
+  },
+  "cloudRestoreDiffTimeSchemes": "시간표 패턴: 추가 {added}개, 덮어쓰기 {overridden}개, 삭제 {removed}개",
+  "@cloudRestoreDiffTimeSchemes": {
+    "placeholders": {
+      "added": {
+        "type": "int"
+      },
+      "overridden": {
+        "type": "int"
+      },
+      "removed": {
+        "type": "int"
+      }
+    }
+  },
   "cloudBackupDeleteTitle": "이 백업 삭제",
   "cloudBackupDeleteBody": "{time} 클라우드 백업을 삭제할까요? 되돌릴 수 없습니다.",
   "@cloudBackupDeleteBody": {

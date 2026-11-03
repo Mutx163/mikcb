@@ -160,6 +160,48 @@
       }
     }
   },
+  "cloudRestoreDiffProfiles": "時間割：追加 {added}、上書き {overridden}、削除 {removed}",
+  "@cloudRestoreDiffProfiles": {
+    "placeholders": {
+      "added": {
+        "type": "int"
+      },
+      "overridden": {
+        "type": "int"
+      },
+      "removed": {
+        "type": "int"
+      }
+    }
+  },
+  "cloudRestoreDiffCourses": "授業：追加 {added}、上書き {overridden}、削除 {removed}",
+  "@cloudRestoreDiffCourses": {
+    "placeholders": {
+      "added": {
+        "type": "int"
+      },
+      "overridden": {
+        "type": "int"
+      },
+      "removed": {
+        "type": "int"
+      }
+    }
+  },
+  "cloudRestoreDiffTimeSchemes": "時間割パターン：追加 {added}、上書き {overridden}、削除 {removed}",
+  "@cloudRestoreDiffTimeSchemes": {
+    "placeholders": {
+      "added": {
+        "type": "int"
+      },
+      "overridden": {
+        "type": "int"
+      },
+      "removed": {
+        "type": "int"
+      }
+    }
+  },
   "cloudBackupDeleteTitle": "このバックアップを削除",
   "cloudBackupDeleteBody": "{time} のクラウドバックアップを削除しますか？元に戻せません。",
   "@cloudBackupDeleteBody": {
