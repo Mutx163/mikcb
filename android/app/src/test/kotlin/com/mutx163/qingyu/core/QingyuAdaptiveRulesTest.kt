@@ -66,6 +66,48 @@ class QingyuAdaptiveRulesTest {
         assertFalse(QingyuAdaptiveRules.isWideScreen(0f, 0f))
         assertFalse(QingyuAdaptiveRules.shouldLimitContentWidth(0f))
     }
+
+    // ───────────── 2026-11-03 第 2 批：Rail 展开阈值与内容区宽 ─────────────
+
+    @Test
+    fun `Rail 展开阈值 1200`() {
+        assertFalse(QingyuAdaptiveRules.shouldExpandNavigationRail(1199.9f))
+        assertTrue(QingyuAdaptiveRules.shouldExpandNavigationRail(1200f))
+        assertEquals(1200f, QingyuAdaptiveRules.EXPANDED_RAIL_MIN_WIDTH_DP, 0f)
+    }
+
+    @Test
+    fun `无 Rail 时内容区取值与窗口宽等价`() {
+        // 紧凑档 / 用户关掉导航形态：railWidth = 0，与第 1 批的窗口宽判据完全一致。
+        assertEquals(
+            QingyuAdaptiveRules.isWideScreen(411f, 891f),
+            QingyuAdaptiveRules.contentAreaAdaptive(411f, 891f, 0f).isWideScreen,
+        )
+        assertEquals(
+            QingyuAdaptiveRules.shouldLimitContentWidth(800f),
+            QingyuAdaptiveRules.contentAreaAdaptive(800f, 1280f, 0f).limitContentWidth,
+        )
+    }
+
+    @Test
+    fun `Rail 占掉左侧后 页面档位按内容区宽重算`() {
+        // 850x1280 平板竖屏：窗口宽 850 ≥ 840 → Rail 出现（收起 80dp）；
+        // 内容区 = 770 宽 × 1280 高，高宽比 1.66 > 1.2 → 页面**不是**宽屏档（中宽）。
+        // 若错按窗口宽算，页面会误切小顶栏——这正是内容区注入要防的错位。
+        val area = QingyuAdaptiveRules.contentAreaAdaptive(850f, 1280f, 80f)
+        assertTrue(area.limitContentWidth)
+        assertFalse(area.isWideScreen)
+
+        // 1280x800 横扁：Rail 展开态 240dp；内容区 1040 宽 → 仍是宽屏档。
+        val wide = QingyuAdaptiveRules.contentAreaAdaptive(1280f, 800f, 240f)
+        assertTrue(wide.isWideScreen)
+        assertTrue(wide.limitContentWidth)
+
+        // 内容区被 Rail 压到 600 以下（如分屏窄窗 + 展开态 Rail）：限宽退回紧凑档。
+        val squeezed = QingyuAdaptiveRules.contentAreaAdaptive(660f, 900f, 240f)
+        assertFalse(squeezed.limitContentWidth)
+        assertFalse(squeezed.isWideScreen)
+    }
 }
 
 /**

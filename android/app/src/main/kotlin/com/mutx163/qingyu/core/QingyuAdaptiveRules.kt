@@ -57,4 +57,36 @@ object QingyuAdaptiveRules {
 
     /** 内容列是否限宽居中：中宽与宽档都限（640dp），紧凑档保持通栏（现状）。 */
     fun shouldLimitContentWidth(widthDp: Float): Boolean = widthDp >= MEDIUM_WIDE_MIN_WIDTH_DP
+
+    /**
+     * Rail 展开态（带文字标签，宽 240dp）的最小窗口宽（dp）。
+     * 数值出处：demo `AdaptiveUtils.kt:24-40`（`shouldExpandNavigationRail`）。
+     */
+    const val EXPANDED_RAIL_MIN_WIDTH_DP = 1200f
+
+    /** Rail 是否用展开态：≥ 1200dp 展开，否则收起（80dp 图标条）。 */
+    fun shouldExpandNavigationRail(widthDp: Float): Boolean = widthDp >= EXPANDED_RAIL_MIN_WIDTH_DP
+
+    /**
+     * 壳层用：Rail 出现后，页面骨架的自适应按「内容区宽」（窗口宽 − Rail 宽）算——
+     * 否则限宽列会对着 Rail 底下的区域居中、顶栏档位也会判错。
+     * [railWidthDp] 传 0 = 无 Rail（紧凑档或用户关掉导航形态），此时与按窗口宽算等价。
+     */
+    fun contentAreaAdaptive(
+        windowWidthDp: Float,
+        windowHeightDp: Float,
+        railWidthDp: Float,
+    ): ContentAreaAdaptive {
+        val width = windowWidthDp - railWidthDp
+        return ContentAreaAdaptive(
+            isWideScreen = isWideScreen(width, windowHeightDp),
+            limitContentWidth = shouldLimitContentWidth(width),
+        )
+    }
 }
+
+/** [contentAreaAdaptive] 的结果：给 composeP1 的注入层换算成 [QingyuWindowAdaptive] 同名字段。 */
+data class ContentAreaAdaptive(
+    val isWideScreen: Boolean,
+    val limitContentWidth: Boolean,
+)
