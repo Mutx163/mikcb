@@ -82,6 +82,7 @@ import com.mutx163.qingyu.pages.shell.HomeBackgroundModel
 import com.mutx163.qingyu.pages.timetable.day.DayViewDataAssembler
 import com.mutx163.qingyu.pages.timetable.day.DayViewStrings
 import com.mutx163.qingyu.pages.timetable.day.LocalEmbeddedDayGlassBackdrop
+import com.mutx163.qingyu.pages.timetable.day.LocalEmbeddedDayWallpaperBackdrop
 import com.mutx163.qingyu.pages.timetable.day.LocalEmbeddedDayTransitionSettled
 import com.mutx163.qingyu.pages.shell.HomeInkPolarity
 import com.mutx163.qingyu.core.Exam
@@ -535,9 +536,13 @@ fun TimetableWeekPage(
             materialSpec?.dock == SurfaceMaterialState.FROST)
 
     // pageBackdrop 只给顶栏带 / 课卡玻璃采样（只录壁纸）；「回本周」浮钮改用独立的
-    // contentBackdrop（录真实内容），不再需要 pageBackdrop，故这里不含 floatingGlassActive
-    // （否则浮钮一开就要多录一层整屏，等于双重录制）。
-    val pageBackdropActive = bandBlurActive || cardGlassActive
+    // contentBackdrop（录真实内容），故这里不含 floatingGlassActive（否则浮钮一开就多录一层）。
+    // 但嵌入日页的「回今日」浮钮要按**窗口坐标**采这一层壁纸（避免日页面板内本地补画下偏），
+    // 所以「日视图可见 + 有壁纸 + 支持 shader + 浮钮玻璃档」时也要录这层壁纸交给嵌入日页。
+    val dayFabGlassActive = dayVisible && hasBackdrop && isRuntimeShaderSupported() &&
+        (materialSpec?.dock == SurfaceMaterialState.LIQUID_GLASS ||
+            materialSpec?.dock == SurfaceMaterialState.FROST)
+    val pageBackdropActive = bandBlurActive || cardGlassActive || dayFabGlassActive
 
     Scaffold(
         // 有壁纸时底色必须透明，否则不透明主题底会把壁纸整张盖掉。
@@ -806,12 +811,15 @@ fun TimetableWeekPage(
                 // 不做按当天列的水平锚点 / 宽度收缩，也**不做垂直位移**——内容与壁纸都钉在顶部，
                 // 避免带动壁纸上下动；壁纸由页面级最底层那层静态画（见上方 `backdrop`）。
                 if (dayMounted && dayContent != null) {
-                    // 日视图展开时宣称命中，避免落到下面周网格（否则长按空白格会误触加课）。
+                    // 日视图展开时**真拦截**命中：不只是「宣称」——pointerInput 必须 consume 掉事件，
+                    // 否则下层周网格（长按空白格加课）仍能收到。周 pager 的横滑只移绘制
+                    // （graphicsLayer translationX 不改命中区），所以拦截必须在这一层做。
                     val hitGate = if (dayVisible) {
                         Modifier.pointerInput(Unit) {
                             awaitPointerEventScope {
                                 while (true) {
-                                    awaitPointerEvent()
+                                    val event = awaitPointerEvent()
+                                    event.changes.forEach { it.consume() }
                                 }
                             }
                         }
@@ -834,6 +842,7 @@ fun TimetableWeekPage(
                             CompositionLocalProvider(
                                 LocalEmbeddedDayGlassBackdrop provides cardGlassSource,
                                 LocalEmbeddedDayTransitionSettled provides dayExpandSettled,
+                                LocalEmbeddedDayWallpaperBackdrop provides pageBackdrop,
                             ) {
                                 dayContent(0.dp, Modifier)
                             }
@@ -872,6 +881,7 @@ fun TimetableWeekPage(
                                     CompositionLocalProvider(
                                         LocalEmbeddedDayGlassBackdrop provides cardGlassSource,
                                         LocalEmbeddedDayTransitionSettled provides dayExpandSettled,
+                                        LocalEmbeddedDayWallpaperBackdrop provides pageBackdrop,
                                     ) {
                                         dayContent(0.dp, Modifier)
                                     }

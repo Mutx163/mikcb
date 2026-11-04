@@ -90,6 +90,17 @@ import java.time.LocalDateTime
 val LocalEmbeddedDayGlassBackdrop = compositionLocalOf<Backdrop?> { null }
 
 /**
+ * 首页「周↔日」展开层里，嵌入日视图「回今日」浮钮补壁纸用的**页面级全屏壁纸 Backdrop**
+ * （窗口坐标、sharp，不是预糊层）。由 `TimetableWeekPage` 用其 `pageBackdrop` 提供。
+ *
+ * 用途：嵌入日页自己不画壁纸（靠页面级静态底），浮钮在「无内容、纯壁纸」处要采到壁纸模糊
+ * 而不是黑。直接在日页**本地**用 composable 补画壁纸会随日页面板（位于顶栏玻璃带下方）
+ * 下移/横滑而错位；改成在录制层里按**窗口坐标**采样这一层，天然与页面级静态底逐像素对齐。
+ * 非展开层（独立日页 / 预览）为 null——那些场景本页自己画壁纸，不需要。
+ */
+val LocalEmbeddedDayWallpaperBackdrop = compositionLocalOf<Backdrop?> { null }
+
+/**
  * 首页「周↔日」展开层里，日视图「回今日」浮钮**是否已等展开过渡落定**。
  *
  * 由 `TimetableWeekPage` 在渲染 `dayContent` 时用 `dayExpand` 的落定态提供：展开/收起
@@ -497,6 +508,8 @@ fun DayViewPage(
     // 判据：c3.day 展开层由宿主传 0.dp（contentTopInset 非空）；独立日页 / 设置页预览为 null。
     val embeddedInHomePanel = contentTopInset != null
     val embeddedGlass = LocalEmbeddedDayGlassBackdrop.current
+    // 「回今日」浮钮补壁纸用的窗口坐标全屏壁纸层（sharp），仅嵌入日程由宿主提供。
+    val embeddedWallpaper = LocalEmbeddedDayWallpaperBackdrop.current
     // 展开过渡是否已落定（见 [LocalEmbeddedDayTransitionSettled]）：独立页/预览恒 true。
     val embeddedTransitionSettled = LocalEmbeddedDayTransitionSettled.current
     // 真实内容录制层是否生效：浮钮玻璃档 + （独立页恒真 / 嵌入页需展开过渡落定）。
@@ -545,12 +558,19 @@ fun DayViewPage(
                 ),
         ) {
         // 嵌入日程时本页不画壁纸（壁纸由页面级静态底画）。为了让浮钮「无内容、纯壁纸」时
-        // 也采到壁纸模糊而不是黑，落定后把同一张壁纸补画进录制层——像素与静态壁纸一致、且
-        // 落定无位移，视觉不变，只为把壁纸录进 contentBackdrop（有内容时内容压在它上面）。
-        if (embeddedInHomePanel && contentRecordActive && backdrop != null) {
-            Box(modifier = Modifier.fillMaxSize()) {
-                backdrop.invoke(this)
-            }
+        // 也采到壁纸模糊而不是黑，落定后把**页面级壁纸层按窗口坐标采样**画进录制层——
+        // pageBackdrop 是窗口坐标的壁纸录像层，采样天然与页面级静态底逐像素对齐，不受日页
+        // 面板下移 / 横滑影响（不能用 composable 本地补画，那会随面板偏移往下偏）。
+        if (embeddedInHomePanel && contentRecordActive && embeddedWallpaper != null) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .drawBackdrop(
+                        backdrop = embeddedWallpaper,
+                        shape = { RectangleShape },
+                        effects = {},
+                    ),
+            )
         }
         // 壁纸层在最底（Dart 的层次：壁纸 → 内容）。没有壁纸时这一行什么也不画。
         // 顶栏玻璃带与议程卡都要采样它，所以包一层（只有真要玻璃时才挂 `layerBackdrop`）。

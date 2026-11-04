@@ -8,6 +8,7 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
 import com.mutx163.qingyu.components.liquid.lens
 import com.mutx163.qingyu.core.HomeMaterialRenderSpec
+import com.mutx163.qingyu.core.SurfaceMaterialState
 import top.yukonga.miuix.kmp.blur.Backdrop
 import top.yukonga.miuix.kmp.blur.drawBackdrop
 
@@ -78,8 +79,14 @@ fun Modifier.courseCardGlassSurface(
             }
         },
         // 边缘高光：与底栏**同一份** specular，强度同一口径。
-        highlight = {
-            GlassDockSpecular.copy(alpha = glassRimAlpha(material?.liquidRimStrength))
+        // ⚠️ 仅**液态玻璃档**加边光——磨砂 / 高斯 / 实体等其它档不应冒出边光（那是观感变化）。
+        // 当前两处调用点本就只在 LIQUID_GLASS 时才调本件；这里再门控一道防呆，避免日后误用。
+        highlight = if (material?.courseCard == SurfaceMaterialState.LIQUID_GLASS) {
+            {
+                GlassDockSpecular.copy(alpha = glassRimAlpha(material?.liquidRimStrength))
+            }
+        } else {
+            null
         },
         onDrawSurface = { drawRect(fill) },
     )
