@@ -402,7 +402,9 @@ private fun TimetableHomeMenuSheet(
 ) {
     QingyuSheet(
         show = show,
-        title = TimetableStrings.moreTooltip.zh,
+        // 八宫格档**不显示顶部标题**（用户口径：显示「更多」标题很怪）。
+        // 不传 `title` → QingyuSheet 的 title 默认 null，不再画那行文字。
+        // 网格 / 间距 / 每格卡片全部保持不动；list 档是另一套组件，不受影响。
         onDismissRequest = onDismiss,
         // 瓷贴网格自带 4dp 微调（不足以顶掉套件 16dp）：保持套件侧边距 ⇒ 单边 20dp。
         contentPadsHorizontally = false,
