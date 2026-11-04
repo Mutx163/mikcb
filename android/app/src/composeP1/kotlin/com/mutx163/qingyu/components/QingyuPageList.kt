@@ -2,6 +2,7 @@ package com.mutx163.qingyu.components
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.calculateEndPadding
 import androidx.compose.foundation.layout.calculateStartPadding
@@ -13,10 +14,15 @@ import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.derivedStateOf
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalLayoutDirection
+import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
@@ -84,42 +90,83 @@ fun QingyuPageList(
     content: LazyListScope.() -> Unit,
 ) {
     val layoutDirection = LocalLayoutDirection.current
+    val density = LocalDensity.current
+    val isDockRootPage = LocalQingyuPageIsRootEntry.current == true
+    val dockScrollRelief = LocalGlassDockScrollRelief.current
     val top = innerPadding.calculateTopPadding() + extraTopPadding
-    val bottom = innerPadding.calculateBottomPadding() + contentPadding.calculateBottomPadding()
     val start = horizontalPadding + contentPadding.calculateStartPadding(layoutDirection)
     val end = horizontalPadding + contentPadding.calculateEndPadding(layoutDirection)
-    val padding = PaddingValues(start = start, top = top, end = end, bottom = bottom)
 
-    Box(modifier = modifier.fillMaxSize()) {
-        LazyColumn(
-            state = state,
-            // 官方 pageScrollModifiers 的三件：末端触感 + 过度滚动 + 顶栏联动
-            modifier = Modifier
-                .then(if (enableScrollEndHaptic) Modifier.scrollEndHaptic() else Modifier)
-                .overScrollVertical()
-                .then(
-                    if (scrollBehavior != null) {
-                        Modifier.nestedScroll(scrollBehavior.nestedScrollConnection)
-                    } else {
-                        Modifier
-                    },
-                )
-                .fillMaxHeight(),
-            contentPadding = padding,
-            verticalArrangement = verticalArrangement,
-            content = content,
-        )
+    BoxWithConstraints(modifier = modifier.fillMaxSize()) {
+        // 首页根页（Dock 栈底）底部**动态留白**：视口高 − 末项高，等效让最后一项能顶到
+        // 屏幕最上沿；再叠加坞避让（内容从半透明坞下方穿过）。推入页 / 无坞 = 0，与改动前一致。
+        val rootBottomPadding = if (isDockRootPage) {
+            val lastItemHeight = rememberReachTopLastItemHeight(state, density)
+            (maxHeight - lastItemHeight).coerceAtLeast(0.dp) + dockScrollRelief
+        } else {
+            0.dp
+        }
+        val bottom = innerPadding.calculateBottomPadding() +
+            contentPadding.calculateBottomPadding() +
+            rootBottomPadding
+        val padding = PaddingValues(start = start, top = top, end = end, bottom = bottom)
 
-        if (showScrollBar) {
-            VerticalScrollBar(
-                adapter = rememberScrollBarAdapter(state),
+        Box(modifier = Modifier.fillMaxSize()) {
+            LazyColumn(
+                state = state,
+                // 官方 pageScrollModifiers 的三件：末端触感 + 过度滚动 + 顶栏联动
                 modifier = Modifier
-                    .align(Alignment.CenterEnd)
+                    .then(if (enableScrollEndHaptic) Modifier.scrollEndHaptic() else Modifier)
+                    .overScrollVertical()
+                    .then(
+                        if (scrollBehavior != null) {
+                            Modifier.nestedScroll(scrollBehavior.nestedScrollConnection)
+                        } else {
+                            Modifier
+                        },
+                    )
                     .fillMaxHeight(),
-                trackPadding = padding,
+                contentPadding = padding,
+                verticalArrangement = verticalArrangement,
+                content = content,
             )
+
+            if (showScrollBar) {
+                VerticalScrollBar(
+                    adapter = rememberScrollBarAdapter(state),
+                    modifier = Modifier
+                        .align(Alignment.CenterEnd)
+                        .fillMaxHeight(),
+                    trackPadding = padding,
+                )
+            }
         }
     }
+}
+
+/** 「末项到顶」留白里末项高度的兜底（末项尚未可见 / 列表空时用）；动态值测得后即替换。 */
+private val ReachTopLastItemFallback = 96.dp
+
+/**
+ * 读「当前列表最后一项」的高度，用于把底部留白算成「视口高 − 末项高」，让末项能滚到屏幕最上沿。
+ *
+ * 末项还没进入可视区（长列表初始态）时退回 [ReachTopLastItemFallback]：不影响首屏观感
+ * （留白在底部），滚到接近末尾、末项测得真实高度后自动收紧到精确值。
+ */
+@Composable
+private fun rememberReachTopLastItemHeight(state: LazyListState, density: Density): Dp {
+    val height by remember(state, density) {
+        derivedStateOf {
+            val info = state.layoutInfo
+            val last = info.visibleItemsInfo.lastOrNull()
+            if (last != null && last.index == info.totalItemsCount - 1) {
+                with(density) { last.size.toDp() }
+            } else {
+                ReachTopLastItemFallback
+            }
+        }
+    }
+    return height
 }
 
 /**

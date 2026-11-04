@@ -918,7 +918,13 @@ private fun PagesShell(
                     // 注入 true 后骨架不再画返回箭头——根页没有上一级可回。消费方只有
                     // QingyuPageScaffold（一处判定、全站生效）；物理返回键行为不在这里，
                     // 仍由下方 BackHandler / NavDisplay.onBack 负责，语义不变。
-                    CompositionLocalProvider(LocalQingyuPageIsRootEntry provides true) {
+                    CompositionLocalProvider(
+                        LocalQingyuPageIsRootEntry provides true,
+                        // 玻璃坞满屏悬浮时，把「坞占用+系统安全区」作为底部滚动余量注入首页根页；
+                        // QingyuPageList 自动消费（复刻 Flutter GlassDockScrollReliefScope）。
+                        com.mutx163.qingyu.components.LocalGlassDockScrollRelief provides
+                            com.mutx163.qingyu.pages.shell.rememberHomeFloatingInsets(settingsModel).contentBottom,
+                    ) {
                         Box(modifier = Modifier.fillMaxSize()) {
                             Box(
                                 modifier = Modifier
