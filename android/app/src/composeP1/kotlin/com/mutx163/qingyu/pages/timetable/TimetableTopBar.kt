@@ -5,11 +5,13 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -28,6 +30,8 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.mutx163.qingyu.app.HomeMenuStyle
+import com.mutx163.qingyu.components.QingyuCard
+import com.mutx163.qingyu.components.QingyuCardDefaults
 import com.mutx163.qingyu.components.QingyuSheet
 import com.mutx163.qingyu.components.QingyuWeightDelta
 import com.mutx163.qingyu.components.shiftWeight
@@ -403,29 +407,42 @@ private fun TimetableHomeMenuSheet(
         // 瓷贴网格自带 4dp 微调（不足以顶掉套件 16dp）：保持套件侧边距 ⇒ 单边 20dp。
         contentPadsHorizontally = false,
     ) {
-        Column(
+        BoxWithConstraints(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(horizontal = 4.dp, vertical = 4.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            entries.chunked(TimetableTopBarMetrics.MENU_COLUMNS).forEach { rowItems ->
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                ) {
-                    rowItems.forEach { item ->
-                        TimetableMenuTile(
-                            item = item,
-                            accent = accent,
-                            primaryText = primaryText,
-                            modifier = Modifier.weight(1f),
-                            onClick = { onSelect(item.id) },
-                        )
-                    }
-                    // 尾行不满时补空位，保证每格等宽、不向中间挤。
-                    repeat(TimetableTopBarMetrics.MENU_COLUMNS - rowItems.size) {
-                        Spacer(modifier = Modifier.weight(1f))
+            val columns = TimetableTopBarMetrics.MENU_COLUMNS
+            val gapCount = columns - 1
+            // 对齐 Flutter v2.1.4.1（home_top_menu.dart:158-199）：
+            // 单格宽 (可用宽-10×3)/4 再 clamp(64,112)dp；列/行间距 10dp；
+            // 宽屏多出来的宽度均摊成列间隙，瓷贴本身不被拉宽。
+            val spacing = 10.dp
+            val rawItemWidth = (maxWidth - spacing * gapCount.toFloat()) / columns.toFloat()
+            val itemWidth = rawItemWidth.coerceIn(64.dp, 112.dp)
+            val itemGap = if (rawItemWidth > 112.dp) {
+                (maxWidth - itemWidth * columns.toFloat()) / gapCount.toFloat()
+            } else {
+                spacing
+            }
+            Column(
+                modifier = Modifier.fillMaxWidth(),
+                verticalArrangement = Arrangement.spacedBy(spacing),
+            ) {
+                entries.chunked(columns).forEach { rowItems ->
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(itemGap),
+                    ) {
+                        rowItems.forEach { item ->
+                            TimetableMenuTile(
+                                item = item,
+                                accent = accent,
+                                primaryText = primaryText,
+                                modifier = Modifier.width(itemWidth),
+                                onClick = { onSelect(item.id) },
+                            )
+                        }
                     }
                 }
             }
@@ -433,7 +450,15 @@ private fun TimetableHomeMenuSheet(
     }
 }
 
-/** 单个菜单瓷贴：图标井 + 下方一行文案。 */
+/**
+ * 单个菜单瓷贴：**整格卡片**（[QingyuCard]）+ 图标井 + 下方文案。
+ *
+ * 对齐 Flutter v2.1.4.1 `_HomeMenuActionTile`（`lib/widgets/home_top_menu.dart:289-346`）：
+ * 每格是一块圆角 24dp 的卡片底（`HyperosFrostedSurface(borderRadius: cardBorderRadius)`，
+ * 卡半径 = `HyperosMiuixSpec.settingsGroupRadius` 24），内边距 横 7 / 纵 13；
+ * 卡片**无描边**（Flutter 侧无 BorderSide），底色用 [QingyuCard] 默认主题色。
+ * 图标井保留原样：46dp / 圆角 14 / accent 12% / 图标 24；井到文字 7dp；文字最多 2 行。
+ */
 @Composable
 private fun TimetableMenuTile(
     item: TimetableMenuItem,
@@ -442,34 +467,38 @@ private fun TimetableMenuTile(
     modifier: Modifier = Modifier,
     onClick: () -> Unit,
 ) {
-    Column(
-        modifier = modifier
-            .clip(RoundedCornerShape(12.dp))
-            .clickable(onClick = onClick)
-            .padding(vertical = 6.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
+    QingyuCard(
+        modifier = modifier,
+        cornerRadius = QingyuCardDefaults.SettingsGroupCorner,
+        insideMargin = PaddingValues(horizontal = 7.dp, vertical = 13.dp),
+        onClick = onClick,
     ) {
-        Box(
-            modifier = Modifier
-                .size(TimetableTopBarMetrics.TILE_WELL.dp)
-                .clip(RoundedCornerShape(14.dp))
-                .background(accent.copy(alpha = 0.12f)),
-            contentAlignment = Alignment.Center,
+        Column(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalAlignment = Alignment.CenterHorizontally,
         ) {
-            Icon(
-                imageVector = item.icon,
-                contentDescription = item.label,
-                tint = accent,
-                modifier = Modifier.size(TimetableTopBarMetrics.TILE_ICON.dp),
+            Box(
+                modifier = Modifier
+                    .size(TimetableTopBarMetrics.TILE_WELL.dp)
+                    .clip(RoundedCornerShape(14.dp))
+                    .background(accent.copy(alpha = 0.12f)),
+                contentAlignment = Alignment.Center,
+            ) {
+                Icon(
+                    imageVector = item.icon,
+                    contentDescription = item.label,
+                    tint = accent,
+                    modifier = Modifier.size(TimetableTopBarMetrics.TILE_ICON.dp),
+                )
+            }
+            Spacer(modifier = Modifier.height(7.dp))
+            Text(
+                text = item.label,
+                style = MiuixTheme.textStyles.footnote2,
+                color = primaryText,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis,
             )
         }
-        Spacer(modifier = Modifier.height(6.dp))
-        Text(
-            text = item.label,
-            style = MiuixTheme.textStyles.footnote2,
-            color = primaryText,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
-        )
     }
 }
