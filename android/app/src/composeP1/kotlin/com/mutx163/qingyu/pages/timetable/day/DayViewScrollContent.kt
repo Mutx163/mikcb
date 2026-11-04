@@ -2,7 +2,10 @@ package com.mutx163.qingyu.pages.timetable.day
 
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.calculateEndPadding
+import androidx.compose.foundation.layout.calculateStartPadding
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -13,11 +16,18 @@ import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.derivedStateOf
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalLayoutDirection
+import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.Dp
 import top.yukonga.miuix.kmp.utils.overScrollVertical
 import top.yukonga.miuix.kmp.utils.scrollEndHaptic
 import androidx.compose.ui.unit.dp
+import com.mutx163.qingyu.components.LocalQingyuPageIsRootEntry
 import com.mutx163.qingyu.core.Course
 import com.mutx163.qingyu.core.CourseTask
 import com.mutx163.qingyu.pages.settings.HomeMaterialRenderSpec
@@ -106,11 +116,30 @@ fun DayViewScrollContent(
         bottom = bottomInset,
     ),
 ) {
-    LazyColumn(
-        state = lazyListState,
-        modifier = modifier.fillMaxSize().scrollEndHaptic().overScrollVertical(),
-        contentPadding = contentPadding,
-    ) {
+    val layoutDirection = LocalLayoutDirection.current
+    val density = LocalDensity.current
+    val isDockRootPage = LocalQingyuPageIsRootEntry.current == true
+    BoxWithConstraints(modifier = modifier.fillMaxSize()) {
+        // 首页根页（Dock 栈底）：底部动态留白 = max(原坞/今按钮避让, 视口高 − 末项高)，
+        // 让最后一张卡能顶到屏幕最上沿（因此能滚过底部居中的「今」浮钮）；非根页保持原样。
+        val lastItemHeight = rememberDayReachTopLastItemHeight(lazyListState, density)
+        val reachTop = if (isDockRootPage) {
+            (maxHeight - lastItemHeight).coerceAtLeast(0.dp)
+        } else {
+            0.dp
+        }
+        val effectiveBottom = maxOf(contentPadding.calculateBottomPadding(), reachTop)
+        val effectivePadding = PaddingValues(
+            start = contentPadding.calculateStartPadding(layoutDirection),
+            top = contentPadding.calculateTopPadding(),
+            end = contentPadding.calculateEndPadding(layoutDirection),
+            bottom = effectiveBottom,
+        )
+        LazyColumn(
+            state = lazyListState,
+            modifier = Modifier.fillMaxSize().scrollEndHaptic().overScrollVertical(),
+            contentPadding = effectivePadding,
+        ) {
         // ── 吸顶全天概览卡 ──
         // 12dp 的下内边距就是概览卡与议程列表之间的呼吸间距：
         // 静止时间距优美，列表滑动时自然滑入概览卡底下。
@@ -213,5 +242,25 @@ fun DayViewScrollContent(
                 Spacer(modifier = Modifier.height(8.dp))
             }
         }
+        }
     }
+}
+
+/** 「末项到顶」留白里末项高度的兜底（末项未可见 / 空态时用）；测得真值后替换。 */
+private val DayReachTopLastItemFallback = 96.dp
+
+@Composable
+private fun rememberDayReachTopLastItemHeight(state: LazyListState, density: Density): Dp {
+    val height by remember(state, density) {
+        derivedStateOf {
+            val info = state.layoutInfo
+            val last = info.visibleItemsInfo.lastOrNull()
+            if (last != null && last.index == info.totalItemsCount - 1) {
+                with(density) { last.size.toDp() }
+            } else {
+                DayReachTopLastItemFallback
+            }
+        }
+    }
+    return height
 }
