@@ -9,13 +9,11 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -24,11 +22,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.input.nestedscroll.nestedScroll
-import top.yukonga.miuix.kmp.utils.overScrollVertical
-import top.yukonga.miuix.kmp.utils.scrollEndHaptic
 import androidx.compose.ui.unit.dp
 import com.mutx163.qingyu.components.QingyuCard
+import com.mutx163.qingyu.components.QingyuPageList
 import com.mutx163.qingyu.components.QingyuWeightDelta
 import com.mutx163.qingyu.components.shiftWeight
 import com.mutx163.qingyu.theme.QingyuTheme
@@ -90,70 +86,68 @@ fun MoreFeaturesPage(
             )
         }
     ) { innerPadding ->
-        Column(modifier = Modifier.fillMaxSize().padding(innerPadding)) {
-            LazyColumn(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .scrollEndHaptic()
-                    .overScrollVertical()
-                    .nestedScroll(scrollBehavior.nestedScrollConnection),
-                contentPadding = PaddingValues(
-                    start = 16.dp,
-                    end = 16.dp,
-                    top = 4.dp,
-                    bottom = innerPadding.calculateBottomPadding() + 24.dp
-                ),
-                verticalArrangement = Arrangement.spacedBy(16.dp)
-            ) {
-                // 顶部搜索胶囊入口
-                item {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clip(RoundedCornerShape(24.dp))
-                            .background(Color(QingyuTheme.card(dark)))
-                            .clickable(onClick = onOpenSearch)
-                            .padding(horizontal = 16.dp, vertical = 12.dp)
-                    ) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Icon(
-                                imageVector = MiuixIcons.Search,
-                                contentDescription = null,
-                                tint = Color(QingyuTheme.secondaryText(dark)),
-                                modifier = Modifier.size(18.dp)
-                            )
-                            Spacer(modifier = Modifier.width(10.dp))
-                            Text(
-                                text = GuideStrings.homeMenuMoreSearchHint.zh,
-                                style = MiuixTheme.textStyles.body2,
-                                color = Color(QingyuTheme.secondaryText(dark))
-                            )
-                        }
+        // 页面级主滚动走共享列表（2026-11-04 收口）：原 Column(padding(innerPadding)) 里的裸 LazyColumn。
+        // 版面账：innerPadding 交给组件算；顶栏下 4dp 走 extraTopPadding，左右 16dp 与
+        // 底部「再叠一次手势条 + 24dp」的账保持原样。
+        QingyuPageList(
+            innerPadding = innerPadding,
+            scrollBehavior = scrollBehavior,
+            extraTopPadding = 4.dp,
+            contentPadding = PaddingValues(
+                start = 16.dp,
+                end = 16.dp,
+                bottom = innerPadding.calculateBottomPadding() + 24.dp
+            ),
+            verticalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
+            // 顶部搜索胶囊入口
+            item {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(24.dp))
+                        .background(Color(QingyuTheme.card(dark)))
+                        .clickable(onClick = onOpenSearch)
+                        .padding(horizontal = 16.dp, vertical = 12.dp)
+                ) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(
+                            imageVector = MiuixIcons.Search,
+                            contentDescription = null,
+                            tint = Color(QingyuTheme.secondaryText(dark)),
+                            modifier = Modifier.size(18.dp)
+                        )
+                        Spacer(modifier = Modifier.width(10.dp))
+                        Text(
+                            text = GuideStrings.homeMenuMoreSearchHint.zh,
+                            style = MiuixTheme.textStyles.body2,
+                            color = Color(QingyuTheme.secondaryText(dark))
+                        )
                     }
                 }
+            }
 
-                // 6 个任务分组卡片
-                items(groups, key = { it.id }) { group ->
-                    Column {
-                        Text(
-                            text = group.title,
-                            style = MiuixTheme.textStyles.footnote1.shiftWeight(QingyuWeightDelta.SEMIBOLD),
-                            color = primaryColor,
-                            modifier = Modifier.padding(start = 6.dp, bottom = 6.dp)
-                        )
+            // 6 个任务分组卡片
+            items(groups, key = { it.id }) { group ->
+                Column {
+                    Text(
+                        text = group.title,
+                        style = MiuixTheme.textStyles.footnote1.shiftWeight(QingyuWeightDelta.SEMIBOLD),
+                        color = primaryColor,
+                        modifier = Modifier.padding(start = 6.dp, bottom = 6.dp)
+                    )
 
-                        QingyuCard(
-                            modifier = Modifier.fillMaxWidth(),
-                            insideMargin = PaddingValues(horizontal = 14.dp, vertical = 6.dp)
-                        ) {
-                            Column {
-                                group.items.forEachIndexed { index, item ->
-                                    if (index > 0) HorizontalDivider()
-                                    FeatureItemRow(
-                                        item = item,
-                                        onClick = { onOpenFeature(item.id) }
-                                    )
-                                }
+                    QingyuCard(
+                        modifier = Modifier.fillMaxWidth(),
+                        insideMargin = PaddingValues(horizontal = 14.dp, vertical = 6.dp)
+                    ) {
+                        Column {
+                            group.items.forEachIndexed { index, item ->
+                                if (index > 0) HorizontalDivider()
+                                FeatureItemRow(
+                                    item = item,
+                                    onClick = { onOpenFeature(item.id) }
+                                )
                             }
                         }
                     }

@@ -20,7 +20,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
@@ -37,13 +36,11 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.input.nestedscroll.nestedScroll
 import com.mutx163.qingyu.components.QingyuCard
+import com.mutx163.qingyu.components.QingyuPageList
 import com.mutx163.qingyu.components.QingyuSheet
 import com.mutx163.qingyu.components.QingyuWeightDelta
 import com.mutx163.qingyu.components.shiftWeight
-import top.yukonga.miuix.kmp.utils.overScrollVertical
-import top.yukonga.miuix.kmp.utils.scrollEndHaptic
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
@@ -200,70 +197,65 @@ fun TimetableProfilesPage(
             )
         },
     ) { innerPadding ->
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                // 不手写 statusBarsPadding()：miuix Scaffold 的 contentWindowInsets
-                // 默认含 systemBars 顶部，TopAppBar 自己也会加 systemBars.only(Top)，
-                // 再写一次是第三次叠加，标题会下移一个多状态栏高（2026-10-27）。
-                .padding(innerPadding),
-        ) {
-            Column(modifier = Modifier.fillMaxSize()) {
-                // ── 2. 课表列表 ──
-                LazyColumn(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .scrollEndHaptic()
-                        .overScrollVertical()
-                        .nestedScroll(scrollBehavior.nestedScrollConnection),
-                    contentPadding = PaddingValues(
-                        start = 16.dp,
-                        end = 16.dp,
-                        top = 8.dp,
-                        // 底部把系统手势条那段算进去，否则最后一行钻到小白条底下。
-                        bottom = innerPadding.calculateBottomPadding() + 8.dp,
-                    ),
-                ) {
-                    item {
-                        QingyuCard(
-                            modifier = Modifier.fillMaxWidth(),
-                            insideMargin = PaddingValues(0.dp),
-                        ) {
-                            Column(modifier = Modifier.fillMaxWidth()) {
-                                profiles.forEachIndexed { index, profile ->
-                                    if (index > 0) {
-                                        HorizontalDivider(
-                                            modifier = Modifier.padding(horizontal = 16.dp),
-                                            color = Color(QingyuTheme.dividerLine(dark)),
-                                        )
-                                    }
-                                    TimetableProfileRow(
-                                        profile = profile,
-                                        dark = dark,
-                                        onRowClick = {
-                                            if (!profile.isActive && !profile.isPartnerImported) {
-                                                onSwitchProfile(profile.id)
-                                            }
-                                        },
-                                        onMoreClick = {
-                                            activeMenuProfile = profile
-                                        },
+        // 页面级主滚动走共享列表（2026-11-04 收口）：原先 Box(padding(innerPadding)) 里再套
+        // Column 的裸 LazyColumn。外层 Box 继续留着——Toast 要压在列表上（align BottomCenter）。
+        // 版面账：列表的 innerPadding 交给组件；Toast 原先在带 innerPadding 的 Box 里，
+        // 现在改由自己补同样的底部偏移（innerPadding.bottom + 32dp），位置一分不差。
+        Box(modifier = Modifier.fillMaxSize()) {
+            QingyuPageList(
+                innerPadding = innerPadding,
+                scrollBehavior = scrollBehavior,
+                extraTopPadding = 8.dp,
+                contentPadding = PaddingValues(
+                    start = 16.dp,
+                    end = 16.dp,
+                    // 组件内部已算一次 innerPadding 底部；保持原先「再叠一次 + 8dp」的账。
+                    bottom = innerPadding.calculateBottomPadding() + 8.dp,
+                ),
+            ) {
+                item {
+                    QingyuCard(
+                        modifier = Modifier.fillMaxWidth(),
+                        insideMargin = PaddingValues(0.dp),
+                    ) {
+                        Column(modifier = Modifier.fillMaxWidth()) {
+                            profiles.forEachIndexed { index, profile ->
+                                if (index > 0) {
+                                    HorizontalDivider(
+                                        modifier = Modifier.padding(horizontal = 16.dp),
+                                        color = Color(QingyuTheme.dividerLine(dark)),
                                     )
                                 }
+                                TimetableProfileRow(
+                                    profile = profile,
+                                    dark = dark,
+                                    onRowClick = {
+                                        if (!profile.isActive && !profile.isPartnerImported) {
+                                            onSwitchProfile(profile.id)
+                                        }
+                                    },
+                                    onMoreClick = {
+                                        activeMenuProfile = profile
+                                    },
+                                )
                             }
                         }
                     }
                 }
             }
 
-            // ── 3. 底部 Toast 提示浮层 ──
+            // ── 底部 Toast 提示浮层 ──
             AnimatedVisibility(
                 visible = currentToast != null,
                 enter = fadeIn() + slideInVertically { it / 2 },
                 exit = fadeOut() + slideOutVertically { it / 2 },
                 modifier = Modifier
                     .align(Alignment.BottomCenter)
-                    .padding(bottom = 32.dp, start = 24.dp, end = 24.dp),
+                    .padding(
+                        start = 24.dp,
+                        end = 24.dp,
+                        bottom = innerPadding.calculateBottomPadding() + 32.dp,
+                    ),
             ) {
                 Box(
                     modifier = Modifier

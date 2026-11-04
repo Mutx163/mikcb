@@ -8,13 +8,11 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
@@ -27,12 +25,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.input.nestedscroll.nestedScroll
-import top.yukonga.miuix.kmp.utils.overScrollVertical
-import top.yukonga.miuix.kmp.utils.scrollEndHaptic
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.mutx163.qingyu.components.QingyuCard
+import com.mutx163.qingyu.components.QingyuPageList
 import com.mutx163.qingyu.components.QingyuWeightDelta
 import com.mutx163.qingyu.components.shiftWeight
 import com.mutx163.qingyu.theme.QingyuTheme
@@ -102,62 +98,63 @@ fun StartupFlowPage(
             )
         }
     ) { innerPadding ->
-        Column(modifier = Modifier.fillMaxSize().padding(innerPadding)) {
-            when (currentState.currentStep) {
-                StartupStep.MIGRATION_CHECK -> {
-                    MigrationGuideContent(
-                        innerPadding = innerPadding,
-                        scrollBehavior = scrollBehavior,
-                        isOpeningOldApp = currentState.isOpeningOldApp,
-                        onOpenOldApp = {
-                            stateMachine.setOpeningOldApp(true)
-                            currentState = stateMachine.state
-                            onOpenOldApp()
-                            // 立刻复位「正在打开」：宿主那一步是同步的（`startActivity` 发完就返回），
-                            // Dart 原件也是在 await 之后 setState 复位（`startup_flow_screens.dart:181-192`）。
-                            // 不复位的话按钮会**永久**停在「正在打开旧版……」——用户从旧版回来时
-                            // 会看到「正在打开」和「未能打开旧版应用」两句互相矛盾的话。
-                            stateMachine.setOpeningOldApp(false)
-                            currentState = stateMachine.state
-                        },
-                        onGoImport = {
-                            stateMachine.onMigrationAction(MigrationFlowAction.RESTORE_BACKUP)
-                            currentState = stateMachine.state
-                            onGoImportBackup()
-                        },
-                        onSkip = {
-                            stateMachine.onMigrationAction(MigrationFlowAction.SKIP)
-                            currentState = stateMachine.state
-                        }
-                    )
-                }
+        // 页面级主滚动走共享列表（2026-11-04 收口）：原来外层 Column 吃 innerPadding、
+        // 子内容各自再把它塞进 contentPadding 底部（底部账面因此叠了两次手势条）。
+        // 现在 innerPadding 只由 QingyuPageList 算，子内容各自补同样的 +24dp 即可，账面不变。
+        when (currentState.currentStep) {
+            StartupStep.MIGRATION_CHECK -> {
+                MigrationGuideContent(
+                    innerPadding = innerPadding,
+                    scrollBehavior = scrollBehavior,
+                    isOpeningOldApp = currentState.isOpeningOldApp,
+                    onOpenOldApp = {
+                        stateMachine.setOpeningOldApp(true)
+                        currentState = stateMachine.state
+                        onOpenOldApp()
+                        // 立刻复位「正在打开」：宿主那一步是同步的（`startActivity` 发完就返回），
+                        // Dart 原件也是在 await 之后 setState 复位（`startup_flow_screens.dart:181-192`）。
+                        // 不复位的话按钮会**永久**停在「正在打开旧版……」——用户从旧版回来时
+                        // 会看到「正在打开」和「未能打开旧版应用」两句互相矛盾的话。
+                        stateMachine.setOpeningOldApp(false)
+                        currentState = stateMachine.state
+                    },
+                    onGoImport = {
+                        stateMachine.onMigrationAction(MigrationFlowAction.RESTORE_BACKUP)
+                        currentState = stateMachine.state
+                        onGoImportBackup()
+                    },
+                    onSkip = {
+                        stateMachine.onMigrationAction(MigrationFlowAction.SKIP)
+                        currentState = stateMachine.state
+                    }
+                )
+            }
 
-                StartupStep.DATE_SETUP, StartupStep.GUIDE_TOUR, StartupStep.COMPLETED -> {
-                    DateSetupContent(
-                        innerPadding = innerPadding,
-                        scrollBehavior = scrollBehavior,
-                        initialDate = currentState.semesterStartDate ?: "2026-09-01",
-                        initialWeeks = currentState.totalWeeks,
-                        calculatedWeek = currentState.currentWeek,
-                        onDateChanged = { newDate ->
-                            stateMachine.onUpdateSemesterStartDate(newDate)
+            StartupStep.DATE_SETUP, StartupStep.GUIDE_TOUR, StartupStep.COMPLETED -> {
+                DateSetupContent(
+                    innerPadding = innerPadding,
+                    scrollBehavior = scrollBehavior,
+                    initialDate = currentState.semesterStartDate ?: "2026-09-01",
+                    initialWeeks = currentState.totalWeeks,
+                    calculatedWeek = currentState.currentWeek,
+                    onDateChanged = { newDate ->
+                        stateMachine.onUpdateSemesterStartDate(newDate)
+                        currentState = stateMachine.state
+                    },
+                    onWeeksChanged = { newWeeks ->
+                        stateMachine.onUpdateTotalWeeks(newWeeks)
+                        currentState = stateMachine.state
+                    },
+                    onConfirm = {
+                        if (stateMachine.onCompleteDateSetup()) {
                             currentState = stateMachine.state
-                        },
-                        onWeeksChanged = { newWeeks ->
-                            stateMachine.onUpdateTotalWeeks(newWeeks)
-                            currentState = stateMachine.state
-                        },
-                        onConfirm = {
-                            if (stateMachine.onCompleteDateSetup()) {
-                                currentState = stateMachine.state
-                                onFinishStartupFlow(
-                                    currentState.semesterStartDate ?: "2026-09-01",
-                                    currentState.totalWeeks
-                                )
-                            }
+                            onFinishStartupFlow(
+                                currentState.semesterStartDate ?: "2026-09-01",
+                                currentState.totalWeeks
+                            )
                         }
-                    )
-                }
+                    }
+                )
             }
         }
     }
@@ -180,12 +177,16 @@ private fun MigrationGuideContent(
 
     // 折叠手势喂给页面唯一的 scrollBehavior。每一步的内容都是互斥渲染的，
     // 同一时刻只会有一个列表在吃手势，所以每处都接上不会把滚动量送两遍。
-    LazyColumn(
-        modifier = Modifier.fillMaxSize().scrollEndHaptic().overScrollVertical().nestedScroll(scrollBehavior.nestedScrollConnection),
+    // 2026-11-04 收口：裸 LazyColumn → 共享 QingyuPageList；innerPadding 不再由外层
+    // Column 吃，改由组件算，这里只保留原先的 +24dp 底部留白与顶栏下 8dp。
+    QingyuPageList(
+        innerPadding = innerPadding,
+        scrollBehavior = scrollBehavior,
+        extraTopPadding = 8.dp,
         contentPadding = PaddingValues(
             start = 16.dp,
             end = 16.dp,
-            top = 8.dp,
+            // 组件内部已算一次 innerPadding 底部；保持原先「再叠一次 + 24dp」的账。
             bottom = innerPadding.calculateBottomPadding() + 24.dp
         ),
         verticalArrangement = Arrangement.spacedBy(14.dp)
@@ -382,14 +383,16 @@ private fun DateSetupContent(
 
     // 本页主体滚动容器：4 个步骤里 3 个（DATE_SETUP / GUIDE_TOUR / COMPLETED）都渲染这一份，
     // 折叠手势喂给页面唯一的 scrollBehavior。
-    LazyColumn(
-        modifier = Modifier
-            .fillMaxSize()
-            .nestedScroll(scrollBehavior.nestedScrollConnection),
+    // 2026-11-04 收口：裸 LazyColumn → 共享 QingyuPageList。原先这一份只接了 nestedScroll，
+    // 减震/回弹/滚动条由组件统一补齐（与上一步 MigrationGuideContent 口径一致）。
+    QingyuPageList(
+        innerPadding = innerPadding,
+        scrollBehavior = scrollBehavior,
+        extraTopPadding = 8.dp,
         contentPadding = PaddingValues(
             start = 16.dp,
             end = 16.dp,
-            top = 8.dp,
+            // 组件内部已算一次 innerPadding 底部；保持原先「再叠一次 + 24dp」的账。
             bottom = innerPadding.calculateBottomPadding() + 24.dp
         ),
         verticalArrangement = Arrangement.spacedBy(14.dp)

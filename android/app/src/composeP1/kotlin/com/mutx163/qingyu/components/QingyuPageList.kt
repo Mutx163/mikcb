@@ -64,6 +64,7 @@ import top.yukonga.miuix.kmp.utils.scrollEndHaptic
  * （`SettingsPage.kt:120-302`），不是一行一个 item。
  *
  * @param innerPadding 来自 `Scaffold` 的 `innerPadding`（顶栏已吃掉系统栏顶部）
+ * @param extraTopPadding 顶栏下方额外呼吸留白（官方页面普遍另加 4~8dp；默认 0 = 不留）
  * @param contentPadding 额外底部留白（例如底部 dock 高度）
  * @param enableScrollEndHaptic 滚到头是否轻震（官方 demo 由设置项控制，默认开）
  */
@@ -76,12 +77,13 @@ fun QingyuPageList(
     enableScrollEndHaptic: Boolean = true,
     scrollBehavior: ScrollBehavior? = null,
     horizontalPadding: Dp = 0.dp,
+    extraTopPadding: Dp = 0.dp,
     verticalArrangement: Arrangement.Vertical = Arrangement.Top,
     showScrollBar: Boolean = true,
     content: LazyListScope.() -> Unit,
 ) {
     val layoutDirection = LocalLayoutDirection.current
-    val top = innerPadding.calculateTopPadding()
+    val top = innerPadding.calculateTopPadding() + extraTopPadding
     val bottom = innerPadding.calculateBottomPadding() + contentPadding.calculateBottomPadding()
     val start = horizontalPadding + contentPadding.calculateStartPadding(layoutDirection)
     val end = horizontalPadding + contentPadding.calculateEndPadding(layoutDirection)

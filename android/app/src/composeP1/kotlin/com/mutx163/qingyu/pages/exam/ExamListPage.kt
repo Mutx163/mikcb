@@ -8,13 +8,11 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -26,12 +24,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import com.mutx163.qingyu.components.QingyuCard
+import com.mutx163.qingyu.components.QingyuPageList
 import com.mutx163.qingyu.components.QingyuSectionTitle
 import com.mutx163.qingyu.components.QingyuWeightDelta
 import com.mutx163.qingyu.components.shiftWeight
@@ -57,8 +55,6 @@ import top.yukonga.miuix.kmp.icon.extended.Months
 import top.yukonga.miuix.kmp.icon.extended.Notes
 import top.yukonga.miuix.kmp.icon.extended.Timer
 import top.yukonga.miuix.kmp.overlay.OverlayDialog
-import top.yukonga.miuix.kmp.utils.overScrollVertical
-import top.yukonga.miuix.kmp.utils.scrollEndHaptic
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 /** 进行中徽标用的橙色（取应用层彩豆 token，对齐 Dart `HyperosIconColors.orange`）。 */
@@ -127,90 +123,84 @@ fun ExamListPage(
             )
         },
     ) { innerPadding ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(innerPadding),
+        // 页面级主滚动走共享列表（2026-11-04 收口）：原本是 Column(padding(innerPadding)) 里
+        // 的裸 LazyColumn，换成 QingyuPageList 后拿到官方滚动三件套 + 滚动条。
+        // 版面账：innerPadding 原样由组件算（含底部手势条），这里只补原先的额外留白——
+        // 顶栏下 8dp 走 extraTopPadding，底部 28dp 走 contentPadding，左右各 16dp 不变。
+        QingyuPageList(
+            innerPadding = innerPadding,
+            scrollBehavior = scrollBehavior,
+            extraTopPadding = 8.dp,
+            contentPadding = PaddingValues(
+                start = 16.dp,
+                end = 16.dp,
+                // 组件内部已经算过一次 innerPadding 底部；这里保持原先「再叠一次手势条 + 28dp」的账。
+                bottom = innerPadding.calculateBottomPadding() + 28.dp,
+            ),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            LazyColumn(
-                modifier = Modifier
-                    .fillMaxSize()
-                    // 官方滚动手感：末端轻震 + 过度滚动回弹。
-                    .scrollEndHaptic()
-                    .overScrollVertical()
-                    .nestedScroll(scrollBehavior.nestedScrollConnection),
-                contentPadding = PaddingValues(
-                    start = 16.dp,
-                    end = 16.dp,
-                    top = 8.dp,
-                    // 底部把系统手势条那段算进去，否则最后一行钻到小白条底下。
-                    bottom = innerPadding.calculateBottomPadding() + 28.dp,
-                ),
-                verticalArrangement = Arrangement.spacedBy(12.dp),
-            ) {
-                if (viewState.isEmpty) {
+            if (viewState.isEmpty) {
+                item {
+                    ExamEmptyState(dark = dark, onAddExam = onAddExam)
+                }
+            } else {
+                val overview = viewState.overview
+                if (overview != null) {
                     item {
-                        ExamEmptyState(dark = dark, onAddExam = onAddExam)
+                        ExamOverviewCard(
+                            overview = overview,
+                            dark = dark,
+                            onClick = { onOpenExam(overview.exam) },
+                        )
                     }
-                } else {
-                    val overview = viewState.overview
-                    if (overview != null) {
-                        item {
-                            ExamOverviewCard(
-                                overview = overview,
-                                dark = dark,
-                                onClick = { onOpenExam(overview.exam) },
-                            )
-                        }
-                    }
+                }
 
-                    if (viewState.upcoming.isNotEmpty()) {
-                        item {
-                            QingyuCard(
-                                modifier = Modifier.fillMaxWidth(),
-                                insideMargin = PaddingValues(vertical = 2.dp),
-                            ) {
-                                viewState.upcoming.forEachIndexed { index, row ->
-                                    if (index > 0) {
-                                        HorizontalDivider(
-                                            modifier = Modifier.padding(horizontal = 14.dp),
-                                            color = Color(QingyuTheme.dividerLine(dark)),
-                                        )
-                                    }
-                                    ExamRow(
-                                        row = row,
-                                        dark = dark,
-                                        onClick = { onOpenExam(row.exam) },
-                                        onDelete = { pendingDelete = row.exam },
+                if (viewState.upcoming.isNotEmpty()) {
+                    item {
+                        QingyuCard(
+                            modifier = Modifier.fillMaxWidth(),
+                            insideMargin = PaddingValues(vertical = 2.dp),
+                        ) {
+                            viewState.upcoming.forEachIndexed { index, row ->
+                                if (index > 0) {
+                                    HorizontalDivider(
+                                        modifier = Modifier.padding(horizontal = 14.dp),
+                                        color = Color(QingyuTheme.dividerLine(dark)),
                                     )
                                 }
+                                ExamRow(
+                                    row = row,
+                                    dark = dark,
+                                    onClick = { onOpenExam(row.exam) },
+                                    onDelete = { pendingDelete = row.exam },
+                                )
                             }
                         }
                     }
+                }
 
-                    if (viewState.past.isNotEmpty()) {
-                        item {
-                            QingyuSectionTitle(ExamStrings.examPassed.zh)
-                        }
-                        item {
-                            QingyuCard(
-                                modifier = Modifier.fillMaxWidth(),
-                                insideMargin = PaddingValues(vertical = 2.dp),
-                            ) {
-                                viewState.past.forEachIndexed { index, row ->
-                                    if (index > 0) {
-                                        HorizontalDivider(
-                                            modifier = Modifier.padding(horizontal = 14.dp),
-                                            color = Color(QingyuTheme.dividerLine(dark)),
-                                        )
-                                    }
-                                    ExamRow(
-                                        row = row,
-                                        dark = dark,
-                                        onClick = { onOpenExam(row.exam) },
-                                        onDelete = { pendingDelete = row.exam },
+                if (viewState.past.isNotEmpty()) {
+                    item {
+                        QingyuSectionTitle(ExamStrings.examPassed.zh)
+                    }
+                    item {
+                        QingyuCard(
+                            modifier = Modifier.fillMaxWidth(),
+                            insideMargin = PaddingValues(vertical = 2.dp),
+                        ) {
+                            viewState.past.forEachIndexed { index, row ->
+                                if (index > 0) {
+                                    HorizontalDivider(
+                                        modifier = Modifier.padding(horizontal = 14.dp),
+                                        color = Color(QingyuTheme.dividerLine(dark)),
                                     )
                                 }
+                                ExamRow(
+                                    row = row,
+                                    dark = dark,
+                                    onClick = { onOpenExam(row.exam) },
+                                    onDelete = { pendingDelete = row.exam },
+                                )
                             }
                         }
                     }
