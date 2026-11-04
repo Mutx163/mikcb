@@ -677,10 +677,12 @@ private fun PagesShell(
                     // 重复点「日」同档：无动作（Dart `timetable_dock_actions.dart` 同口径）。
                     if (wiring.homeViewMode == TimetableHomeViewMode.DAY) return
                     wiring.setHomeSelection(wiring.homeSelectedWeek, wiring.homeSelectedDayOfWeek)
-                    wiring.switchHomeViewMode(TimetableHomeViewMode.DAY)
+                    // 底栏两格互点：横向 translateX 滑入/滑出（animate=true + horizontal=true）。
+                    wiring.switchHomeViewMode(TimetableHomeViewMode.DAY, animate = true, horizontal = true)
                 } else {
                     if (wiring.homeViewMode == TimetableHomeViewMode.WEEK) return
-                    wiring.switchHomeViewMode(TimetableHomeViewMode.WEEK)
+                    // 底栏两格互点：横向 translateX 滑入/滑出。
+                    wiring.switchHomeViewMode(TimetableHomeViewMode.WEEK, animate = true, horizontal = true)
                 }
                 return
             }
@@ -690,7 +692,8 @@ private fun PagesShell(
             // 现在不登记起点：宿主首帧直接按目标档落定（`dayProgressSeed` = 1/0），
             // 只有 Pager 的左右滑；「点星期栏某天进日视图」的 top-down 仍由
             // `switchHomeViewMode` → `dayExpand` 页内动画负责，与本路径无关。
-            wiring.switchHomeViewMode(mode)
+            // 跨页来源：animate=false（页面 snapTo，不播 dayExpand），只让 Pager 横滑。
+            wiring.switchHomeViewMode(mode, animate = false)
             currentRootId = ROOT_WEEK
             animateDockPagerTo(ROOT_WEEK)
             return

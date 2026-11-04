@@ -210,6 +210,22 @@ class ShellWiring(context: Context) {
     /** 首页课表当前停在周视图还是日视图（Dart `timetableHomeViewMode`）。 */
     var homeViewMode: TimetableHomeViewMode by mutableStateOf(initialSettings.timetableHomeViewMode)
 
+    /**
+     * 本次周↔日切换**是否要 `animateTo`**（来源判据）。`false` = 直接 `snapTo`。
+     *
+     * 用户口径（2026-11-04）：底栏「周/日」两格互点 = 横滑（`animate=true` + [homeViewSwitchHorizontal]=true）；
+     * 从别页切回课表 = 只让 Pager 横滑（`animate=false`，页面 snapTo）；
+     * 点星期栏 / 页内关闭 = 默认 `animate=true`（上下翻）。系统「减少动画」仍优先 snapTo。
+     */
+    var homeViewSwitchAnimate by mutableStateOf(true)
+
+    /**
+     * 本次周↔日切换**几何是否走横滑**（translateX）：`true` = 周内容左出、日内容右入；
+     * `false` = 原 heightFactor 上下翻。与 [homeViewSwitchAnimate] 正交：
+     * 底栏两格互点 `(animate=true, horizontal=true)`；点星期栏/页内关闭默认 horizontal=false。
+     */
+    var homeViewSwitchHorizontal by mutableStateOf(false)
+
     /** 日视图「正看着」的那一周（底栏「日」进入时取当前浏览周）。 */
     var homeSelectedWeek: Int by mutableIntStateOf(
         timetable.snapshot.currentWeek.coerceAtLeast(1),
@@ -243,7 +259,17 @@ class ShellWiring(context: Context) {
      * 只在真的换档时改状态：重复点当前档不写盘、也不触发动画（Dart
      * `timetable_dock_actions.dart` 的「重复点日/周 Tab 无动作」同口径）。
      */
-    fun switchHomeViewMode(mode: TimetableHomeViewMode) {
+    fun switchHomeViewMode(
+        mode: TimetableHomeViewMode,
+        animate: Boolean = true,
+        horizontal: Boolean = false,
+    ) {
+        // 每次调用都显式落一次来源标志，先记再判「是否换档」，避免上一次的值残留：
+        // 底栏两格互点：animate=true, horizontal=true（横向 translateX）；
+        // 跨页切回课表：animate=false（snap，只让 Pager 滑）；
+        // 点星期栏 / 页内关闭：默认 animate=true, horizontal=false（上下翻）。
+        homeViewSwitchAnimate = animate
+        homeViewSwitchHorizontal = horizontal
         if (mode == homeViewMode) return
         homeViewMode = mode
         homeViewPersistScope.launch {
@@ -806,6 +832,8 @@ fun TimetableWithCourseActions(
         selectedWeek = wiring.homeSelectedWeek,
         selectedDayOfWeek = wiring.homeSelectedDayOfWeek,
         dayProgressSeed = dayProgressSeed,
+        daySwitchAnimate = wiring.homeViewSwitchAnimate,
+        daySwitchHorizontal = wiring.homeViewSwitchHorizontal,
         onSelectDay = { selectedWeek, selectedDayOfWeek ->
             wiring.setHomeSelection(selectedWeek, selectedDayOfWeek)
             wiring.switchHomeViewMode(TimetableHomeViewMode.DAY)

@@ -236,6 +236,17 @@ fun TimetableWeekPage(
      * 本身会触发动画）。
      */
     dayProgressSeed: Float = 0f,
+    /**
+     * 本次周↔日切换是否 `animateTo`（来源判据）：`false` = 直接 `snapTo`（跨页切回课表，
+     * 只让外层 Pager 横滑）；`true` = 播动画（几何看 [daySwitchHorizontal]）。
+     */
+    daySwitchAnimate: Boolean = true,
+    /**
+     * 本次周↔日切换几何是否走横滑（translateX）：`true` = 周内容左出、日内容右入（底栏
+     * 「周/日」两格互点）；`false` = 原 heightFactor 从上往下展开（点星期栏某天/页内关闭）。
+     * 两者共用同一个 [dayExpand] 进度；与 [daySwitchAnimate] 正交。
+     */
+    daySwitchHorizontal: Boolean = false,
     /** 点了星期栏某一天 / 翻到另一周某一天。宿主据此切到日视图并记住选中日。 */
     onSelectDay: (week: Int, dayOfWeek: Int) -> Unit = { _, _ -> },
     /** 日视图摘要卡上的关闭叉（收回周视图）。 */
@@ -350,6 +361,9 @@ fun TimetableWeekPage(
     // 现在用 derivedStateOf：布尔值只在「进度跨过 0」时翻一次，动画期间不会逐帧重组
     //（直接读 `dayExpand.value` 才会）。收起动画因此在原树上播完，播完那一帧才交接。
     val currentDayMode by rememberUpdatedState(dayMode)
+    // 本次切换是否播上下翻：底栏/导航栏/跨页来源 = false（snapTo），点星期栏某天 = true（animateTo）。
+    // 用 rememberUpdatedState 读，保证 LaunchedEffect(dayMode) 只按 dayMode 触发时也能拿到最新来源。
+    val currentDaySwitchAnimate by rememberUpdatedState(daySwitchAnimate)
     val dayVisible by remember {
         derivedStateOf { currentDayMode || dayExpand.value > 0f }
     }
@@ -372,10 +386,13 @@ fun TimetableWeekPage(
 
     LaunchedEffect(dayMode) {
         val expandTarget = if (dayMode) 1f else 0f
-        if (dayExpandReducedMotion) {
-            // 降级：两个方向都直接落定（Dart `controller.value = 1/0` 同口径）。
-            // snap 后 value 恰为 1.0/0.0，下方的落定判据（dayVisible + `value < 0.999f`
-            // 才画周网格）当帧即成立——不存在「已落定但真面板还没接管」的中间帧。
+        if (dayExpandReducedMotion || !currentDaySwitchAnimate) {
+            // 两条都直接落定、不播逐帧形变：
+            // ① 系统「减少动画」降级（Dart `controller.value = 1/0` 同口径）；
+            // ② **底栏 / 导航栏 / 跨页来源的切换**（`daySwitchAnimate = false`）——用户口径
+            //   「底栏/导航栏就是左右滑」，绝不能再播从上往下的展开/收起；横向由外层 Pager
+            //   负责，这里瞬时落定。
+            // snap 后 value 恰为 1.0/0.0，下方落定判据当帧即成立，不存在中间帧。
             dayExpand.snapTo(expandTarget)
         } else {
             dayExpand.animateTo(
@@ -714,10 +731,18 @@ fun TimetableWeekPage(
                         // 普通周浏览（dayExpand 稳定 0、dayVisible=false）不挂任何 alpha 层，
                         // 否则整块 pager 每帧走离屏合成 → 周视图左右滑卡顿。
                         .then(
-                            if (dayVisible) {
-                                Modifier.graphicsLayer { alpha = (1f - dayExpand.value).coerceIn(0f, 1f) }
-                            } else {
-                                Modifier
+                            when {
+                                !dayVisible -> Modifier
+                                // 横滑（底栏「周/日」两格互点）：周内容随进度向左滑出（p: 0→1）。
+                                // 只做绘制期 translationX，不挂 alpha、不加手势。
+                                daySwitchHorizontal -> Modifier.graphicsLayer {
+                                    translationX =
+                                        -dayExpandEasing.transform(dayExpand.value) * size.width.toFloat()
+                                }
+                                // 上下翻（点星期栏某天）：周网格按原始进度淡出（2141 口径，不缓动）。
+                                else -> Modifier.graphicsLayer {
+                                    alpha = (1f - dayExpand.value).coerceIn(0f, 1f)
+                                }
                             },
                         ),
                 ) { page ->
@@ -807,53 +832,75 @@ fun TimetableWeekPage(
                 // 不做按当天列的水平锚点 / 宽度收缩，也**不做垂直位移**——内容与壁纸都钉在顶部，
                 // 避免带动壁纸上下动；壁纸由页面级最底层那层静态画（见上方 `backdrop`）。
                 if (dayMounted && dayContent != null) {
-                    val rawValue = dayExpand.value
-                    val progress = dayExpandEasing.transform(rawValue)
-                    val heightFactor = max(0.04f, progress)
-                    val panelAlpha = homeViewEaseOutCubic(progress)
-                    val cornerDp = 28f * homeViewExpandCornerRadiusFactor(progress)
-                    BoxWithConstraints(
-                        modifier = Modifier
-                            .matchParentSize()
-                            .clipToBounds()
-                            // 日视图展开时宣称命中，避免落到下面周网格（否则长按空白格会误触加课）。
-                            .then(
-                                if (dayVisible) {
-                                    Modifier.pointerInput(Unit) {
-                                        awaitPointerEventScope {
-                                            while (true) {
-                                                awaitPointerEvent()
-                                            }
-                                        }
-                                    }
-                                } else {
-                                    Modifier
-                                },
-                            ),
-                    ) {
-                        val maxW = maxWidth
-                        val maxH = maxHeight
-                        val panelH = maxH * heightFactor
+                    // 日视图展开时宣称命中，避免落到下面周网格（否则长按空白格会误触加课）。
+                    val hitGate = if (dayVisible) {
+                        Modifier.pointerInput(Unit) {
+                            awaitPointerEventScope {
+                                while (true) {
+                                    awaitPointerEvent()
+                                }
+                            }
+                        }
+                    } else {
+                        Modifier
+                    }
+                    if (daySwitchHorizontal) {
+                        // 横滑（底栏「周/日」两格互点）：日内容从右滑入、周内容向左滑出。
+                        // 与上下翻共用同一个 dayExpand 进度；只做绘制期 translationX、不加手势。
                         Box(
                             modifier = Modifier
-                                .align(Alignment.TopCenter)
-                                .width(maxW)
-                                .height(panelH)
-                                .clip(RoundedCornerShape(cornerDp.dp)),
+                                .matchParentSize()
+                                .clipToBounds()
+                                .graphicsLayer {
+                                    translationX =
+                                        (1f - dayExpandEasing.transform(dayExpand.value)) * size.width.toFloat()
+                                }
+                                .then(hitGate),
                         ) {
+                            CompositionLocalProvider(
+                                LocalEmbeddedDayGlassBackdrop provides cardGlassSource,
+                                LocalEmbeddedDayTransitionSettled provides dayExpandSettled,
+                            ) {
+                                dayContent(0.dp, Modifier)
+                            }
+                        }
+                    } else {
+                        // 上下翻（点星期栏某天 / 页内关闭）：原 heightFactor 顶部往下展开，几何不动。
+                        val rawValue = dayExpand.value
+                        val progress = dayExpandEasing.transform(rawValue)
+                        val heightFactor = max(0.04f, progress)
+                        val panelAlpha = homeViewEaseOutCubic(progress)
+                        val cornerDp = 28f * homeViewExpandCornerRadiusFactor(progress)
+                        BoxWithConstraints(
+                            modifier = Modifier
+                                .matchParentSize()
+                                .clipToBounds()
+                                .then(hitGate),
+                        ) {
+                            val maxW = maxWidth
+                            val maxH = maxHeight
+                            val panelH = maxH * heightFactor
                             Box(
                                 modifier = Modifier
-                                    .requiredSize(maxW, maxH)
-                                    .graphicsLayer { alpha = panelAlpha },
+                                    .align(Alignment.TopCenter)
+                                    .width(maxW)
+                                    .height(panelH)
+                                    .clip(RoundedCornerShape(cornerDp.dp)),
                             ) {
-                                // contentTopInset = 0：面板铺满内容区，页面自己只加正文顶缝 14dp。
-                                // 壁纸由本页最底层静态画；把**页面级预糊层**经 CompositionLocal 交给
-                                // 嵌入的日视图做卡片玻璃采样——它自己不再画壁纸，壁纸因此不随展开层移动。
-                                CompositionLocalProvider(
-                                    LocalEmbeddedDayGlassBackdrop provides cardGlassSource,
-                                    LocalEmbeddedDayTransitionSettled provides dayExpandSettled,
+                                Box(
+                                    modifier = Modifier
+                                        .requiredSize(maxW, maxH)
+                                        .graphicsLayer { alpha = panelAlpha },
                                 ) {
-                                    dayContent(0.dp, Modifier)
+                                    // contentTopInset = 0：面板铺满内容区，页面自己只加正文顶缝 14dp。
+                                    // 壁纸由本页最底层静态画；把**页面级预糊层**经 CompositionLocal 交给
+                                    // 嵌入的日视图做卡片玻璃采样——它自己不再画壁纸，壁纸因此不随展开层移动。
+                                    CompositionLocalProvider(
+                                        LocalEmbeddedDayGlassBackdrop provides cardGlassSource,
+                                        LocalEmbeddedDayTransitionSettled provides dayExpandSettled,
+                                    ) {
+                                        dayContent(0.dp, Modifier)
+                                    }
                                 }
                             }
                         }

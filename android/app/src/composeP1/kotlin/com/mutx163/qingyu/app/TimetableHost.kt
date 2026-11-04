@@ -91,14 +91,18 @@ fun TimetableHost(
     /** 宿主被重建时的首帧展开进度（0/1）；常驻切换不看它。 */
     dayProgressSeed: Float = 0f,
     /**
-     * 本次周↔日切换是否播 [TimetableWeekPage] 的 `dayExpand` 上下翻（来源判据）。
+     * 本次周↔日切换是否 `animateTo`（来源判据）。`false` = 页面直接 `snapTo`。
      *
-     * `true` = 点星期栏（周几表头那行）某天进日视图，保留从上往下展开；
-     * `false` = 底栏/导航栏/跨页来源（周/日两格同页互点、从别页切回课表等）——
-     * 页面直接 `snapTo`、不播上下翻，横向由外层 `HorizontalPager` 负责。
-     * 由 [com.mutx163.qingyu.pages.ShellWiring] 的 `homeViewSwitchAnimate` 透传。
+     * 由 [com.mutx163.qingyu.pages.ShellWiring] 的 `homeViewSwitchAnimate` 透传：
+     * 底栏两格互点 = `true`（配合 [daySwitchHorizontal] 横滑）；跨页切回课表 = `false`
+     * （snap，只让 Pager 横滑）；点星期栏/页内关闭 = `true`（上下翻）。
      */
     daySwitchAnimate: Boolean = true,
+    /**
+     * 本次周↔日切换几何是否走横滑（translateX）——底栏「周/日」两格互点 = `true`；
+     * 点星期栏 / 页内关闭 = `false`（heightFactor 上下翻）。与 [daySwitchAnimate] 正交。
+     */
+    daySwitchHorizontal: Boolean = false,
     /** 点星期栏某天：壳记下选中日并切到日视图。 */
     onSelectDay: (week: Int, dayOfWeek: Int) -> Unit = { _, _ -> },
     /** 日视图摘要卡的关闭叉：壳收回周视图。 */
@@ -335,6 +339,7 @@ fun TimetableHost(
         selectedDayOfWeek = selectedDayOfWeek,
         dayProgressSeed = dayProgressSeed,
         daySwitchAnimate = daySwitchAnimate,
+        daySwitchHorizontal = daySwitchHorizontal,
         onSelectDay = onSelectDay,
         onCloseDay = onCloseDay,
         dayContent = dayContent,
