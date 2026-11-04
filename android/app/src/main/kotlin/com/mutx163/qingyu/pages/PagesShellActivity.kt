@@ -684,12 +684,12 @@ private fun PagesShell(
                 }
                 return
             }
-            // 从别的底栏页切回课表：Pager 滑过去。进的是日视图时告诉新宿主
-            // 「从周视图起步」，展开动画从 `dayProgressSeed` 开始播，与滑动叠加不冲突
-            //（新宿主在滑动中组合，展开动画在落定后接着播）；进周视图则不需要种子。
-            if (mode == TimetableHomeViewMode.DAY) {
-                wiring.requestHomeViewMotion(TimetableHomeViewMode.WEEK)
-            }
+            // 从别的底栏页切回课表：只让 Pager 做一次水平滑动，**不再重放日视图展开**。
+            // 旧写法在进日视图时登记 `requestHomeViewMotion(WEEK)`，新宿主会把 `dayExpand`
+            // 从 0 播到 1（从上往下展开），叠在横滑上就是用户报的「底栏切换上下翻」。
+            // 现在不登记起点：宿主首帧直接按目标档落定（`dayProgressSeed` = 1/0），
+            // 只有 Pager 的左右滑；「点星期栏某天进日视图」的 top-down 仍由
+            // `switchHomeViewMode` → `dayExpand` 页内动画负责，与本路径无关。
             wiring.switchHomeViewMode(mode)
             currentRootId = ROOT_WEEK
             animateDockPagerTo(ROOT_WEEK)
