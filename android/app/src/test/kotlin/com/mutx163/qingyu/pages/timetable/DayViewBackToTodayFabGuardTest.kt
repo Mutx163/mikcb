@@ -66,9 +66,9 @@ class DayViewBackToTodayFabGuardTest {
                 source.contains("visible = "),
             )
             assertTrue(
-                "$name 没有把页面壁纸录像层传给浮钮（backdrop = pageBackdrop）——" +
-                    "玻璃会采到空层。",
-                source.contains("backdrop = pageBackdrop"),
+                "$name 没有把「真实内容录制层」传给浮钮（backdrop 走 contentBackdrop）——" +
+                    "B1 口径：浮钮要采它背后的真实内容，而不是只录壁纸的 pageBackdrop。",
+                source.contains("BackToTodayFab(") && source.contains("contentBackdrop"),
             )
             assertTrue(
                 "$name 没有把材质快照传给浮钮（material = ...）——浮钮会永远画实底。",
@@ -79,11 +79,10 @@ class DayViewBackToTodayFabGuardTest {
                 source.contains("hasBackdrop = hasBackdrop"),
             )
             assertTrue(
-                "$name 没有把浮钮算进 pageBackdropActive——壁纸层不会被录，" +
-                    "浮钮玻璃无源可采（表现为透明/发黑的胶囊）。",
-                source.contains(
-                    "pageBackdropActive = bandBlurActive || cardGlassActive || floatingGlassActive",
-                ),
+                "$name 没有在浮动玻璃档挂真实内容录制层（layerBackdrop(contentBackdrop)）——" +
+                    "B1 口径：浮钮采 contentBackdrop（壁纸+内容），不再只录 pageBackdrop。",
+                source.contains("floatingGlassActive") &&
+                    source.contains("layerBackdrop(contentBackdrop)"),
             )
         }
     }

@@ -441,6 +441,10 @@ fun TimetableWeekPage(
     // 课卡的**共享预糊层**：整屏只糊这一趟，卡片各自从这张图里取自己那一块
     // （Dart `PreblurredWallpaperCache` 的 Compose 等价物）。
     val cardGlassBackdrop = rememberLayerBackdrop()
+    // ── 「回本周」浮钮的**真实内容**录制层（B1，2026-11-04）──
+    // 浮钮原采 pageBackdrop（只录壁纸），即便下面压着课卡也只看得到壁纸。这一层录
+    // [壁纸 + 预糊层 + 内容 Column]（不含浮钮自己），浮钮摘成录制层外的兄弟再采它。
+    val contentBackdrop = rememberLayerBackdrop()
     val materialSpec = material
     // 玻璃带是否处于「液态档 + 真有壁纸 + 设备支持」，判据与渲染层同一份
     //（`TimetableChromeBandGlass` 里那段 `when`）；这里单独留一份只是为了给
@@ -530,9 +534,10 @@ fun TimetableWeekPage(
         (materialSpec?.dock == SurfaceMaterialState.LIQUID_GLASS ||
             materialSpec?.dock == SurfaceMaterialState.FROST)
 
-    // 录像带只在**真有人采**时才挂：顶栏带要采、课卡液态档要采、浮钮玻璃也要采。
-    // 漏掉最后一项时浮钮采到的是空层——画出来是一块透明/发黑的胶囊。
-    val pageBackdropActive = bandBlurActive || cardGlassActive || floatingGlassActive
+    // pageBackdrop 只给顶栏带 / 课卡玻璃采样（只录壁纸）；「回本周」浮钮改用独立的
+    // contentBackdrop（录真实内容），不再需要 pageBackdrop，故这里不含 floatingGlassActive
+    // （否则浮钮一开就要多录一层整屏，等于双重录制）。
+    val pageBackdropActive = bandBlurActive || cardGlassActive
 
     Scaffold(
         // 有壁纸时底色必须透明，否则不透明主题底会把壁纸整张盖掉。
@@ -541,6 +546,19 @@ fun TimetableWeekPage(
     ) { innerPadding ->
         Box(
             modifier = Modifier.fillMaxSize(),
+        ) {
+        // ── 真实内容录制层（B1）：录 [壁纸 + 预糊层 + 内容 Column]，浮钮放在本层之外 ──
+        // 只有「回本周」浮钮真要采玻璃时才挂录像（录制 = 整屏离屏重画一帧，门控同 dock）。
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .then(
+                    if (floatingGlassActive) {
+                        Modifier.layerBackdrop(contentBackdrop)
+                    } else {
+                        Modifier
+                    },
+                ),
         ) {
         // 壁纸层在最底（Dart 的层次：壁纸 → 内容）。没有壁纸时这一行什么也不画。
         // 顶栏玻璃带与课卡玻璃都要采样它，所以包一层（只有真要玻璃时才挂 `layerBackdrop`）。
@@ -783,50 +801,6 @@ fun TimetableWeekPage(
                     )
                 }
 
-                // ── 「回本周」浮钮（Dart 浮钮唯一入口）──
-                // 日视图展开时不画：那是周视图的浮钮，日视图有自己的「回今日」
-                // （Dart 两套独立体系，见 `_shouldShowFloatingBackToTodayButton`）。
-                // 2026-11-03：与日视图「回今日」换成**同一颗共用件**
-                // [BackToTodayFab]（玻璃/形状/描边/投影只有一处实现，用户口径
-                // 「周视图也用同一个按钮」）；可见字同为单字「今」，
-                // 读屏念完整语义「回本周」（`backToCurrentWeekAction`）。
-                // 旧版行为原样保留：浏览周 ≠ 真实当前周才出现（显隐判据见
-                // [showBackToCurrentWeek]），点按回到本周；透明度设置压在
-                // 染色与文字上（`backToCurrentWeekOpacity`）。
-                //
-                // 可见性交给共用件的 `visible`（而不是外层 `if`）：外层 `if` 会把节点
-                // 直接摘掉，退场动画没有机会播，钮是「啪」地消失的。
-                val buttonOpacity = style.backToCurrentWeekOpacity.coerceIn(0f, 1f)
-                BackToTodayFab(
-                    onClick = {
-                        realCurrentWeek?.let { target ->
-                            coroutineScope.launch {
-                                pagerState.animateScrollToPage(
-                                    (target - 1).coerceIn(0, pageCount - 1),
-                                )
-                            }
-                        }
-                    },
-                    label = DayViewStrings.backToTodayShort.zh,
-                    contentDescription = TimetableStrings.backToCurrentWeekAction.zh,
-                    visible = !previewMode && showBackToCurrentWeek && !dayVisible,
-                    backdrop = pageBackdrop,
-                    material = materialSpec,
-                    hasBackdrop = hasBackdrop,
-                    alpha = buttonOpacity,
-                    modifier = Modifier
-                        .align(Alignment.BottomCenter)
-                        // 底边距由宿主按玻璃坞药丸的真实占用算好（见 `HomeFloatingMetrics`）；
-                        // 宿主没接时退回旧口径（系统内边距 + 72dp），不再自己猜坞的高度。
-                        .padding(
-                            // 共用件为阴影加了 FAB_SHADOW_REACH_DP 的透明留白；这里减回同一值，
-                            // 胶囊屏上位置不变（留白只兜阴影、不挪钮）。
-                            bottom = (floatingButtonBottomInset
-                                ?: (innerPadding.calculateBottomPadding() + 72.dp)) -
-                                FAB_SHADOW_REACH_DP.dp,
-                        ),
-                )
-
                 // ── 日视图展开层（2026-11-04 用户口径：全宽 + 从上往下展开 + 壁纸页面级静态不动）──
                 // 只做「高度从顶部往下长大露出」：全宽面板、Alignment.TopCenter、heightFactor 裁剪窗口。
                 // 不做按当天列的水平锚点 / 宽度收缩，也**不做垂直位移**——内容与壁纸都钉在顶部，
@@ -908,6 +882,38 @@ fun TimetableWeekPage(
                 }
             }
         }
+        }  // 关闭真实内容录制层（B1）
+
+        // ── 「回本周」浮钮（搬出录制层，采它背后的真实内容）──
+        // 与日视图「回今日」共用同一颗 [BackToTodayFab]；backdrop 从 pageBackdrop（只录壁纸）
+        // 改为 contentBackdrop（壁纸 + 课卡 + 文字）。可见性 / 点击行为不变。
+        val buttonOpacity = style.backToCurrentWeekOpacity.coerceIn(0f, 1f)
+        BackToTodayFab(
+            onClick = {
+                realCurrentWeek?.let { target ->
+                    coroutineScope.launch {
+                        pagerState.animateScrollToPage(
+                            (target - 1).coerceIn(0, pageCount - 1),
+                        )
+                    }
+                }
+            },
+            label = DayViewStrings.backToTodayShort.zh,
+            contentDescription = TimetableStrings.backToCurrentWeekAction.zh,
+            visible = !previewMode && showBackToCurrentWeek && !dayVisible,
+            backdrop = if (floatingGlassActive) contentBackdrop else pageBackdrop,
+            material = materialSpec,
+            hasBackdrop = hasBackdrop,
+            alpha = buttonOpacity,
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                // 底边距由宿主按玻璃坞药丸的真实占用算好（见 `HomeFloatingMetrics`）。
+                .padding(
+                    bottom = (floatingButtonBottomInset
+                        ?: (innerPadding.calculateBottomPadding() + 72.dp)) -
+                        FAB_SHADOW_REACH_DP.dp,
+                ),
+        )
 
         // ── 截屏「分享课表图」提示（Dart timetable_screen.dart:935-963）────────
         // 挂在根 Box 最后一层：压在内容 / 日视图展开层之上，但弹层通道（Overlay 系列）

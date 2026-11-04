@@ -439,6 +439,11 @@ fun DayViewPage(
     val scaffoldBg = Color(QingyuTheme.scaffoldBackground(dark))
     val pageBackdrop = rememberLayerBackdrop()
     val cardGlassBackdrop = rememberLayerBackdrop()
+    // ── 「回今日」浮钮的**真实内容**录制层（B1，2026-11-04）──
+    // 浮钮原采 pageBackdrop / embeddedGlass（只录壁纸 / 预糊壁纸），压着日卡也只看得到壁纸。
+    // 这一层录 [壁纸(非嵌入时) + 预糊层 + 内容 Column]（不含浮钮自己），浮钮摘成录制层外的
+    // 兄弟再采它。嵌入日程时本页不画壁纸，录到的是日卡本身，浮钮即透出它压着的卡片内容。
+    val contentBackdrop = rememberLayerBackdrop()
     // 玻璃带是否「液态档 + 真有壁纸 + 设备支持」：判据与渲染层同一份
     //（`TimetableChromeBandGlass` 里那段 `when`）。这里留一份只为给下面的
     // `pageBackdropActive`（要不要挂录像层）用，不参与画玻璃。
@@ -495,7 +500,9 @@ fun DayViewPage(
     // 展开过渡是否已落定（见 [LocalEmbeddedDayTransitionSettled]）：独立页/预览恒 true。
     val embeddedTransitionSettled = LocalEmbeddedDayTransitionSettled.current
 
-    val pageBackdropActive = bandBlurActive || cardGlassActive || floatingGlassActive
+    // pageBackdrop 只给顶栏带 / 议程卡玻璃采样（只录壁纸）；「回今日」浮钮改用独立
+    // contentBackdrop（录真实内容），故这里不含 floatingGlassActive（否则双重整屏录制）。
+    val pageBackdropActive = bandBlurActive || cardGlassActive
     val cardGlassSource: Backdrop? = when {
         !cardGlassActive -> null
         // 首页展开层：吃宿主页面级预糊层（壁纸在页面级静态底画，本页不画）。
@@ -519,6 +526,19 @@ fun DayViewPage(
                 if (showsBackToToday) HomeFloatingMetrics.BACK_TO_TODAY_SCROLL_EXTRA_DP.dp else 0.dp,
         )
         Box(modifier = Modifier.fillMaxSize()) {
+        // ── 真实内容录制层（B1）：录 [壁纸(非嵌入) + 预糊层 + 内容 Column]，浮钮在本层之外 ──
+        // 只有「回今日」浮钮真要采玻璃时才挂录像（录制 = 整屏离屏重画一帧，门控同 dock）。
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .then(
+                    if (floatingGlassActive) {
+                        Modifier.layerBackdrop(contentBackdrop)
+                    } else {
+                        Modifier
+                    },
+                ),
+        ) {
         // 壁纸层在最底（Dart 的层次：壁纸 → 内容）。没有壁纸时这一行什么也不画。
         // 顶栏玻璃带与议程卡都要采样它，所以包一层（只有真要玻璃时才挂 `layerBackdrop`）。
         if (backdrop != null && !embeddedInHomePanel) {
@@ -743,46 +763,47 @@ fun DayViewPage(
                     }
                 }
 
-                // 「回今日」浮钮（Dart `timetable_screen.dart:1556-1574`）：
-                // 翻到别的日期后一键回到今天；停在今天时不出现。
-                // 2026-11-03：与周视图「回本周」换成**同一颗共用件** [BackToTodayFab]
-                // （玻璃胶囊、液态折射、亮棱、彩色浮影——只有一处实现，
-                // 用户口径「周视图也用同一个按钮」）。可见字是专用短键
-                // `backToTodayShort`（单字「今」），读屏念完整语义 `backToTodayAction`。
-                // 可见性交给 `visible`：外层 `if` 会把节点摘掉，退场动画没机会播。
-                BackToTodayFab(
-                    onClick = {
-                        scope.launch {
-                            pagerState.animateScrollToPage(
-                                DayViewPaging.globalPage(
-                                    visibleDays = visibleDays,
-                                    week = todayWeek,
-                                    dayOfWeek = todayDate.dayOfWeek.value,
-                                ).coerceIn(0, pageCount - 1),
-                            )
-                        }
-                    },
-                    label = DayViewStrings.backToTodayShort.zh,
-                    contentDescription = DayViewStrings.backToTodayAction.zh,
-                    visible = showsBackToToday &&
-                        (!embeddedInHomePanel || embeddedTransitionSettled),
-                    backdrop = if (embeddedInHomePanel) embeddedGlass else pageBackdrop,
-                    material = material,
-                    hasBackdrop = hasBackdrop,
-                    modifier = Modifier
-                        .align(Alignment.BottomCenter)
-                        // 底边距由宿主按玻璃坞药丸的真实占用算好（见 `HomeFloatingMetrics`）；
-                        // 宿主没接时退回旧口径（系统内边距 + 20dp）。
-                        .padding(
-                            // 共用件为阴影加了 FAB_SHADOW_REACH_DP 的透明留白；这里减回同一值，
-                            // 胶囊屏上位置不变（留白只兜阴影、不挪钮）。
-                            bottom = (floatingButtonBottomInset
-                                ?: (innerPadding.calculateBottomPadding() + 20.dp)) -
-                                FAB_SHADOW_REACH_DP.dp,
-                        ),
-                )
+
             }
         }
+        }  // 关闭真实内容录制层（B1）
+
+        // ── 「回今日」浮钮（搬出录制层，采它背后的真实内容）──
+        // 与周视图「回本周」同一颗 [BackToTodayFab]；backdrop 改为真实内容录制层
+        // contentBackdrop（不再只采壁纸 / 预糊壁纸）。嵌入日程时本页不画壁纸，录到的是
+        // 日卡本身，浮钮即透出它压着的真实卡片内容。
+        BackToTodayFab(
+            onClick = {
+                scope.launch {
+                    pagerState.animateScrollToPage(
+                        DayViewPaging.globalPage(
+                            visibleDays = visibleDays,
+                            week = todayWeek,
+                            dayOfWeek = todayDate.dayOfWeek.value,
+                        ).coerceIn(0, pageCount - 1),
+                    )
+                }
+            },
+            label = DayViewStrings.backToTodayShort.zh,
+            contentDescription = DayViewStrings.backToTodayAction.zh,
+            visible = showsBackToToday &&
+                (!embeddedInHomePanel || embeddedTransitionSettled),
+            backdrop = when {
+                floatingGlassActive -> contentBackdrop
+                embeddedInHomePanel -> embeddedGlass
+                else -> pageBackdrop
+            },
+            material = material,
+            hasBackdrop = hasBackdrop,
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                // 底边距由宿主按玻璃坞药丸的真实占用算好（见 `HomeFloatingMetrics`）。
+                .padding(
+                    bottom = (floatingButtonBottomInset
+                        ?: (innerPadding.calculateBottomPadding() + 20.dp)) -
+                        FAB_SHADOW_REACH_DP.dp,
+                ),
+        )
         }
     }
 
