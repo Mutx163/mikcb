@@ -98,9 +98,11 @@ class TimetableDayPanelGuardTest {
             // 旧的「无条件」离屏层两处都不得回归
             !s.contains(".graphicsLayer { alpha = (1f - dayExpand.value).coerceIn(0f, 1f) },") &&
                 !s.contains(".graphicsLayer { alpha = 1f },") &&
-                // 2141 淡出层本身要保留（只是被 dayVisible 门控）
+                // 2141 淡出层本身要保留（只是被 dayVisible 门控到 else 分支）
                 s.contains("1f - dayExpand.value") &&
-                s.contains("if (dayVisible)")
+                // 精确钉「门控结构」：外层 `when` 的首支必须是 `!dayVisible -> Modifier`
+                //（旧判据 `contains("if (dayVisible)")` 会被无关的 hitGate `if (dayVisible)` 误命中）
+                s.contains("!dayVisible -> Modifier")
         assertTrue("真实源码应通过（离屏层受 dayVisible 门控、淡出层仍在）", okAlpha(weekPage))
         assertFalse(
             "回归无条件外层 alpha 离屏层应判红（整块 pager 每帧离屏→左右滑卡顿）",
@@ -109,6 +111,10 @@ class TimetableDayPanelGuardTest {
         assertFalse(
             "回归无条件每页 alpha 离屏层应判红（每页一层离屏）",
             okAlpha(weekPage + "\n .graphicsLayer { alpha = 1f },"),
+        )
+        assertFalse(
+            "门控结构退化（丢了 !dayVisible -> Modifier）应判红",
+            okAlpha(weekPage.replace("!dayVisible -> Modifier", "dayVisible -> Modifier")),
         )
     }
 

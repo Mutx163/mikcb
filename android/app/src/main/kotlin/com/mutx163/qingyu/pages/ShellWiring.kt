@@ -236,19 +236,6 @@ class ShellWiring(context: Context) {
         initialSettings.timetableLastViewedDayOfWeek.coerceIn(1, 7),
     )
 
-    /**
-     * 下一次宿主挂载时，首页展开动画该从哪一档起步。
-     *
-     * 只在「底栏从别的页面切回课表」这种**宿主会被重建**的路径上需要：
-     * 主屏内容区是 HorizontalPager（2026-11-03 起），课表页在转场目标页进入视口时
-     * 才组合（或重建），新宿主第一帧如果直接按 `homeViewMode` 落定，就会跳过
-     * 展开/收起动画。页面在常驻时切换不读这个值（`dayMode` 变化本身就会触发动画），
-     * 由 `PagesShellActivity.selectRoot` 在触发滑动前经 [requestHomeViewMotion] 显式登记。
-     *
-     * `consumeHomeViewMotionSeed()` 读一次就清：冷启动不应该播动画。
-     */
-    private var homeViewMotionSeed: TimetableHomeViewMode? = null
-
     /** 设置落盘串行、离屏（整份档案 JSON 的重编码很贵，不能堵主线程）。 */
     private val homeViewPersistScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private val homeViewPersistMutex = Mutex()
@@ -279,16 +266,6 @@ class ShellWiring(context: Context) {
         }
     }
 
-    /**
-     * 标记「这次周/日切换会让首页宿主**重建**」，让新宿主首帧知道从哪一档起步。
-     *
-     * 只在底栏从**别的页面**切回课表时调用（那一路径必须换栈底路由）；页内切换
-     * 不需要它 —— 宿主常驻，`dayMode` 变化本身就会触发动画。
-     */
-    fun requestHomeViewMotion(from: TimetableHomeViewMode) {
-        homeViewMotionSeed = from
-    }
-
     /** 记下日视图正在看的那一天/周（翻页停稳、点某天、底栏进入都走这里）。 */
     fun setHomeSelection(week: Int, dayOfWeek: Int) {
         val normalizedWeek = week.coerceAtLeast(1)
@@ -301,13 +278,6 @@ class ShellWiring(context: Context) {
                 runCatching { settingsModel.saveLastViewedDayOfWeek(normalizedDay) }
             }
         }
-    }
-
-    /** 宿主挂载时取一次「展开动画从哪档起步」，读完即清（理由见字段注释）。 */
-    fun consumeHomeViewMotionSeed(): TimetableHomeViewMode? {
-        val seed = homeViewMotionSeed
-        homeViewMotionSeed = null
-        return seed
     }
 
     /**
@@ -792,17 +762,10 @@ fun TimetableWithCourseActions(
         )
     }
 
-    // 首页周 / 日展开态的初始进度：只在宿主**被重建**时才有意义（冷启动 = 直接落定，
-    // 从别的底栏页切回来 = 播一次展开/收起）。种子读一次即清，见 `ShellWiring`。
-    val homeMotionSeed = remember { wiring.consumeHomeViewMotionSeed() }
-    val dayProgressSeed = when {
-        wiring.homeViewMode == TimetableHomeViewMode.DAY &&
-            homeMotionSeed == TimetableHomeViewMode.WEEK -> 0f
-        wiring.homeViewMode == TimetableHomeViewMode.WEEK &&
-            homeMotionSeed == TimetableHomeViewMode.DAY -> 1f
-        wiring.homeViewMode == TimetableHomeViewMode.DAY -> 1f
-        else -> 0f
-    }
+    // 首页周 / 日展开态的初始进度：只在宿主**被重建**时才有意义。底栏/导航栏来源一律不播
+    // 展开动画（横滑或 snap，页面按目标档变化），所以宿主重建时直接按目标档落定：
+    // 目标 DAY = 1f（已展开）、否则 0f（周）。点星期栏某天不重建宿主，走页面内动画。
+    val dayProgressSeed = if (wiring.homeViewMode == TimetableHomeViewMode.DAY) 1f else 0f
 
     TimetableHost(
         repository = repository,
