@@ -2400,6 +2400,76 @@ BackupFileStrings,CloudBackupListModel,CloudSyncPorts}.kt + pages/import/{IcsImp
 **Phase 1/2/3**：Phase 1 已完成；Phase 2/3 仍按 §10.43 的依赖挂起（ARB 占用 / 设置族授权 /
 store·壳授权 / C1 与门禁）。
 
+### 10.47 ✅ 页面级主滚动收口 6 处 / 保持 3 处例外（2026-11-04，pages + components）
+
+**结论**：收口 **6 处**、保持 **3 处**例外（2 处基线例外 + 1 处结构性例外）、跳过 **0 个文件**
+（6 个候选文件动手前逐个 `git status --short` + `git diff HEAD` 核对，全部干净，无他线在途改动）。
+
+**逐处对照（收口后行号）**
+
+| 位置 | 原写法 | 收口后 | 版面账 |
+|---|---|---|---|
+| `pages/exam/ExamListPage.kt:130` | `Column(padding(innerPadding))` + 裸 `LazyColumn`（手脚：16/16，顶 8，底 `inner+28`，间距 12） | `QingyuPageList` | innerPadding 交组件；顶 8 → `extraTopPadding`；底仍 `inner.bottom+28`（保持原先「再叠一次手势条」的账） |
+| `pages/guide/StartupFlowPage.kt:182`（迁移引导） | 同上（顶 8，底 `inner+24`，间距 14） | `QingyuPageList` | 同上；原 `scrollEndHaptic/overScrollVertical/nestedScroll` 三件套由组件接管 |
+| `pages/guide/StartupFlowPage.kt:388`（开学日期） | 同上，但当时**只接了 nestedScroll**（缺减震/回弹） | `QingyuPageList` | 顶 8 / 底 `inner+24` 不变；缺的两件由组件补齐，与上一处口径统一 |
+| `pages/guide/MoreFeaturesPage.kt:92` | 同上（顶 4，底 `inner+24`，间距 16） | `QingyuPageList` | 顶 4 → `extraTopPadding = 4.dp`，其余不变 |
+| `pages/guide/HyperosShowcasePage.kt:126` | 同上（顶 8，底 `inner+32`，间距 16） | `QingyuPageList` | 顶 8，其余不变 |
+| `pages/timetable/TimetableProfilesPage.kt:205` | `Box(padding(innerPadding))` → `Column` → 裸 `LazyColumn` + Toast 浮层同 Box | `Box` 保留（只压 Toast），列表走 `QingyuPageList` | 列表账不变；Toast 原先吃父 Box 的 innerPadding，现在自己补 `innerPadding.bottom+32dp`，位置一分不差 |
+
+**保持例外（3 处）**
+
+- `pages/timetable/month/MonthViewPage.kt:695`、`pages/timetable/TimetableWeekPage.kt:659`：既有基线例外
+  （R2 存量），本批按约定不动。
+- `pages/timetable/day/DayViewScrollContent.kt:92`：**结构性例外**，不换。原因：(1) `LazyListState`
+  由外部注入、每天一份独立状态（跨日切换要保留各自滚动位置）；(2) `stickyHeader` 与「回到今天」浮钮、
+  玻璃坞的位置耦合；(3) 视口刻意铺到屏幕底（不吃 `innerPadding`），底部只留自定义 `bottomInset`。
+  `QingyuPageList` 的「innerPadding + contentPadding + 强制滚动条」模型表达不了这份布局，
+  强换会让滚动条压到玻璃坞上、并丢掉每日独立滚动位置 —— 按「不为凑数改坏结构」保持原样。
+
+**视觉增量（披露）**：6 处换完后唯一可见增量是 **R2 要求的滚动条 + 末端轻震/过度回弹**
+（`QingyuPageList` 既定行为，也是这轮收口的合规目标）；间距、内边距、间距（spacedBy）、
+Toast 偏移逐项对照后与换前一致，未做「差不多就行」的近似。
+
+**组件改动**：`components/QingyuPageList.kt` 新增 `extraTopPadding: Dp = 0.dp`（默认 0，现有调用零变化），
+只用于承接各页原先「顶栏下再垫 4/8dp」的本地留白，避免为对齐 8dp 去动 `contentPadding` 语义。
+
+**守卫（行首锚定，注释掉也红）**
+
+- `pages/exam/ExamListScrollGuardTest`（3 条）、`pages/guide/GuidePageScrollGuardTest`（3 条，
+  按文件钉调用次数：StartupFlow 2 / MoreFeatures 1 / HyperosShowcase 1）、
+  `pages/timetable/TimetableProfilesScrollGuardTest`（3 条，另钉 Toast 必须补
+  `innerPadding.calculateBottomPadding()` 偏移）。
+- 判据先剥注释行再按 `^\s*QingyuPageList\(` / `^\s*LazyColumn\(` 匹配：把调用注释掉 → 正向判据红；
+  行首重新出现裸 `LazyColumn(` → 反向判据红。
+
+**咬合探针**：把 `TimetableProfilesPage.kt` 的 `QingyuPageList(` 临时改回 `LazyColumn(`
+（仅文本替换，`composeP1` 不进 L0 编译，不会连带编译错）→ `-Module timetable` **3 红**：
+「出现了行首 LazyColumn(」「没有行首 QingyuPageList(」「没有 scrollBehavior」；
+从备份还原后再跑 **OK**。探针文件已删除，未进任何提交。
+
+**L0（本批实际跑）**
+
+```
+-Module course      → OK (234 tests)
+-Module timetable   → OK (310 tests，含本批新增 3 条守卫)
+-Module exam        → OK (119 tests，含本批新增 3 条守卫)
+-Module guide       → OK (40 tests，含本批新增 3 条守卫)
+```
+
+`-Module guide` 需要 `-ExtraSources android/app/src/main/.../pages/shell/ShellPageCatalog.kt`：
+guide 域既有测试（`MoreFeaturesNavigationGuardTest`）引用 `ShellPageCatalog`，而该文件不在 guide
+模块目录 —— 这是**既有模块缺口**，与本批无关；使用 escaping door 已在此明示。
+`pages/exam|guide` 的 composeP1 页面本身不进 L0 编译，**不声明 UI 编译通过**，由门 2 覆盖。
+
+**样式脚本回归**：`-Domain all` 仍 **5 处**（全部 timetable，明细 10），本批未新增命中；
+`-Domain components` 仍 0 处。
+
+**边界声明**：只动 `components/QingyuPageList.kt`、6 个页面文件与 3 个守卫测试；
+`pages/ShellPageIndex.kt`、`pages/ShellWiring.kt`、`app/TimetableStore.kt`、
+`app/AppGlobalSettingsStore.kt`、`app/TimetableSettingsModel.kt`、`pages/import|sync/**`、`theme/`、
+两个壳 Activity、`lib/ui/`、路由表一律未碰。提交 `7823e09e`（pathspec 限定，未 add 后裸 commit），
+**未推送**。
+
 
 
 
