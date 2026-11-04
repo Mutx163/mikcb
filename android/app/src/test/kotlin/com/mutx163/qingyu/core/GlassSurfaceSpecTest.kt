@@ -1,7 +1,6 @@
 package com.mutx163.qingyu.core
 
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertNotEquals
 import org.junit.Test
 
 /**
@@ -85,38 +84,41 @@ class GlassSurfaceSpecTest {
         assertEquals(TopBarGlassBand.resolveBandHeightPx(expandedPx, 0f, limitPx), heights.first())
     }
 
+    /**
+     * 单档化（2026-11-04）：整段折叠范围（含跨 0.5）模糊带高度都恒等于展开高度。
+     *
+     * 这是顶栏抖动 / 闪烁修复的核心回归锚点：**一旦有人把 `resolveBandHeightPx` 改回
+     * 「展开 / 折叠两档」**（跨 0.5 换档），下面 `assertEquals(atTop, h)` 在折叠半程起
+     * 就会拿到 `collapsedPx` ⇒ 本条必红。咬合探针见本条 KDoc 末尾。
+     *
+     * 探针：把 `TopBarGlassBand.resolveBandHeightPx` 恢复成旧的离散两档实现 →
+     * `band height is constant across the whole collapse range` 红 → 还原即绿。
+     */
     @Test
-    fun `band height switches only when crossing the collapse threshold`() {
+    fun `band height is constant across the whole collapse range`() {
         val expandedPx = 300f
         val limitPx = -150f
-        val expanded = TopBarGlassBand.resolveBandHeightPx(
+        val atTop = TopBarGlassBand.resolveBandHeightPx(
             currentHeightPx = expandedPx,
             heightOffsetPx = 0f,
             heightOffsetLimitPx = limitPx,
         )
-        val collapsed = TopBarGlassBand.resolveBandHeightPx(
+        val atFullCollapse = TopBarGlassBand.resolveBandHeightPx(
             currentHeightPx = expandedPx + limitPx,
             heightOffsetPx = limitPx,
             heightOffsetLimitPx = limitPx,
         )
-        assertNotEquals(expanded, collapsed)
-        // 0.49 仍属展开档；0.51 才换折叠档。
-        assertEquals(
-            expanded,
-            TopBarGlassBand.resolveBandHeightPx(
-                currentHeightPx = expandedPx + limitPx * 0.49f,
-                heightOffsetPx = limitPx * 0.49f,
+        assertEquals("单档：完全折叠也不得换档，恒等于展开高度", atTop, atFullCollapse)
+        // 折叠全程（0 → 1，含 0.5 阈值两侧）每一档都必须与展开高度相同（回退两档时红）。
+        // offset = limit * f 为负（合法），current = expanded + limit * f 随折叠收缩。
+        listOf(0f, 0.25f, 0.49f, 0.5f, 0.51f, 0.75f, 1f).forEach { f ->
+            val h = TopBarGlassBand.resolveBandHeightPx(
+                currentHeightPx = expandedPx + limitPx * f,
+                heightOffsetPx = limitPx * f,
                 heightOffsetLimitPx = limitPx,
-            ),
-        )
-        assertEquals(
-            collapsed,
-            TopBarGlassBand.resolveBandHeightPx(
-                currentHeightPx = expandedPx + limitPx * 0.51f,
-                heightOffsetPx = limitPx * 0.51f,
-                heightOffsetLimitPx = limitPx,
-            ),
-        )
+            )
+            assertEquals("折叠比例 $f 处模糊带高度不应变化", atTop, h)
+        }
     }
 
     @Test

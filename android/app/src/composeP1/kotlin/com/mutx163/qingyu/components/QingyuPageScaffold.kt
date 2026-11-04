@@ -19,14 +19,17 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clipToBounds
+import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.RectangleShape
+import androidx.compose.ui.graphics.drawscope.clipRect
 import androidx.compose.ui.layout.Layout
 import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.dp
 import com.mutx163.qingyu.app.CommonUiStrings
 import com.mutx163.qingyu.components.glass.LocalQingyuPageBackdrop
 import com.mutx163.qingyu.components.glass.QingyuGlassSurface
@@ -43,13 +46,14 @@ import top.yukonga.miuix.kmp.basic.Scaffold
 import top.yukonga.miuix.kmp.basic.ScrollBehavior
 import top.yukonga.miuix.kmp.basic.SmallTopAppBar
 import top.yukonga.miuix.kmp.basic.TopAppBar
+import top.yukonga.miuix.kmp.basic.TopAppBarDefaults
 import top.yukonga.miuix.kmp.blur.LayerBackdrop
 import top.yukonga.miuix.kmp.blur.ProgressiveBlur
 import top.yukonga.miuix.kmp.blur.isRuntimeShaderSupported
 import top.yukonga.miuix.kmp.blur.layerBackdrop
 import top.yukonga.miuix.kmp.blur.rememberLayerBackdrop
 import top.yukonga.miuix.kmp.icon.MiuixIcons
-import top.yukonga.miuix.kmp.icon.extended.Back
+import top.yukonga.miuix.kmp.icon.extended.ChevronBackward
 
 /**
  * 全站统一的「子页返回键」。
@@ -82,7 +86,7 @@ fun QingyuBackIconButton(
     val dark = isSystemInDarkTheme()
     IconButton(onClick = onBack) {
         Icon(
-            imageVector = MiuixIcons.Back,
+            imageVector = MiuixIcons.ChevronBackward,
             contentDescription = contentDescription,
             tint = tint ?: Color(QingyuTheme.actionIcon(dark)),
         )
@@ -204,7 +208,14 @@ fun QingyuPageScaffold(
     Scaffold(
         containerColor = pageBackground,
         topBar = {
-            QingyuBlurredTopBar(backdrop = backdrop, dark = dark, scrollBehavior = scrollBehavior) {
+            QingyuBlurredTopBar(
+                backdrop = backdrop,
+                dark = dark,
+                pageBackground = pageBackground,
+                scrollBehavior = scrollBehavior,
+                // 只有走大标题 TopAppBar 的分支可折叠（小标题 / 宽屏档不可折叠）。
+                collapsible = !smallTopBar && !adaptive.isWideScreen,
+            ) {
                 // 宽屏/中宽档把顶栏内容限制到与正文同一根内容列（毛玻璃面仍然通栏）：
                 // 限宽只包内容、不包模糊面，标题/返回键/动作键与正文左缘保持对齐。
                 // 宽屏档的大标题换成单行小标题（demo AdaptiveTopAppBar 的等价分支），
@@ -351,21 +362,64 @@ private fun qingyuTopBarTint(dark: Boolean): Color =
     }
 
 /**
- * 顶栏渐进模糊：官方 `BlurredBar` 的等价物（`PageUtils.kt:126-168`），但接的是官方
- * **渐进档**，且渲染走全站唯一实现 [QingyuGlassSurface]。
+ * 顶栏叠色 scrim 的**新形态**（2026-11-04 P1）：带内基本均匀、只在底部短渐隐。
  *
- * ## 为什么不再用 `matchParentSize()`（2026-11-03 真机抖动修复）
+ * 旧形态从顶到底**整段线性**淡到透明，中段偏薄、与 Flutter 原版「一层独立线性纱」的
+ * 观感有差。现在改成「前 ~62% 保持满浓度、末段 ~38% 收到透明」：带内读起来基本均匀，
+ * 到正文交界处才柔和收尾——配合下沿 [TopBarBlurOverhang] 让这条渐隐尾巴落进正文顶部空隙，
+ * 交界无硬边。
+ *
+ * 颜色口径不变：浅 White@0.70 / 深 #565656@0.475（`TopBarProgressiveBlurGuardTest` 钉死）。
+ */
+private fun qingyuTopBarScrim(dark: Boolean): Brush {
+    val tint = qingyuTopBarTint(dark)
+    return Brush.verticalGradient(
+        0.0f to tint,
+        0.62f to tint,
+        1.0f to tint.copy(alpha = 0f),
+    )
+}
+
+/**
+ * 顶栏模糊下沿**向下多画**的高度上限（只向下画、不改布局高）。
+ *
+ * Flutter 的 `subpageBandBottomOverhang` 请求 20dp，被「大标题内容间距」封顶；这里取
+ * `min(20dp, 大标题底部留白)`——本仓 miuix 该留白是 `TopAppBarDefaults.LargeTitleBottomPadding`
+ * （4dp），所以实际外推 4dp，落在正文顶部那段设计留白里，不会真正盖住内容。
+ */
+private val TopBarBlurOverhang: Dp = minOf(20.dp, TopAppBarDefaults.LargeTitleBottomPadding)
+
+/** 可折叠大标题栏「内容已压到带下」的滚动判据（px）：`heightOffset < -该值` 即视为压带。 */
+private const val UnderHeaderScrollEpsilonPx = 0.5f
+
+/**
+ * 顶栏渐进模糊：官方 `BlurredBar` 的等价物（`PageUtils.kt:126-168`），接官方**渐进档**，
+ * 渲染走全站唯一实现 [QingyuGlassSurface]。
+ *
+ * ## 尺寸恒定（2026-11-04 P0，根除抖动 / 闪）
  *
  * 大标题 [TopAppBar] 的高度 = 常量高度 - `heightOffset`，`heightOffset` 由滚动逐帧写入。
- * 旧实现让模糊层跟顶栏同高，于是模糊层的**采样裁剪尺寸**每帧变：
+ * 旧实现让模糊层跟顶栏同高，尺寸每帧变 ⇒ `progressiveTextureBlurEffect` 每次重建
+ * RenderEffect、合成层重新分配纹理，真机读成「糊的东西一直在颤」。
  *
- * - miuix 的 `progressiveTextureBlurEffect` 把 `paddedW/paddedH` 当缓存键，尺寸一变就
- *   重建 RenderEffect（原生分配 + uniform 上传）；
- * - 多级合成层的 `recordLayer(size=…)` 尺寸一变就重新分配纹理；
+ * 现在模糊层只认**展开高度**（[TopBarGlassBand] 单档化）：展开高度只由首次测量确定、
+ * 不随滚动变。`expandedHeightPx` 用**单调取大**缓存——只在高度变大时写一次状态，滚动收起
+ * 时不再写、不再逐帧重组；`bandHeightPx` 用 `remember(expandedHeightPx)` 缓存成稳定 Int，
+ * Layout 读它不会在滚动中被反复 invalidate。外层只按**真实栏高**做裁剪，裁剪在 draw 期
+ * 发生、每帧变但**不触发模糊层重建**。
  *
- * 真机上读起来就是「糊的东西一直在颤」。现在改为 [TopBarGlassBand] 的**离散两档**：
- * 档内高度恒定（模糊层尺寸、σ、采样矩形都不变），跨 0.5 才换档；外层只用当前顶栏
- * 高度做裁剪，裁剪矩形每帧变但**不触发模糊层重建**。
+ * ## 下沿 overhang（2026-11-04 P1）
+ *
+ * 模糊层向下多量 [TopBarBlurOverhang]（= min(20dp, 大标题内容间距)），把「底边归 0」的渐隐
+ * 尾巴画进正文顶部空隙，交界处不留硬边。**只向下画、不改布局高**：Layout 仍报真实栏高、
+ * 不挤正文，只把外层裁剪矩形下边界放宽 `overhang`，多出的尾巴落在正文顶部设计留白里。
+ *
+ * ## opaqueAtRest（2026-11-04 P1）
+ *
+ * Flutter 在「没有内容压到带下」时用**不透明页底色**衬底，内容滚上来才切玻璃纱。这里用
+ * `state.heightOffset < 0`（可折叠栏一旦滚动）作压带信号：静止时 `onDrawSurface` 直接铺
+ * 不透明 `pageBackground`，压带后切 [qingyuTopBarScrim]。**不可折叠栏**（骨架传入
+ * `collapsible=false`，即小标题 / 宽屏档）永远保持常驻玻璃纱，避免回归。
  *
  * [backdrop] 为 null 时退化成普通 `Box`，与改动前的布局完全一致。
  */
@@ -373,52 +427,85 @@ private fun qingyuTopBarTint(dark: Boolean): Color =
 private fun QingyuBlurredTopBar(
     backdrop: LayerBackdrop?,
     dark: Boolean,
+    pageBackground: Color,
     scrollBehavior: ScrollBehavior?,
+    collapsible: Boolean,
     content: @Composable () -> Unit,
 ) {
-    var measuredHeightPx by remember { mutableIntStateOf(0) }
     val state = scrollBehavior?.state
-    // 档内恒定：只读 state 的 float 不会让子树每帧重组（derivedStateOf 只在结果变化时通知）。
-    val bandHeightPx by remember(state) {
+    // 展开高度只在「变大」时写一次（单调取大）：滚动收起不再写状态 → 不逐帧重组、尺寸恒定。
+    var expandedHeightPx by remember { mutableIntStateOf(0) }
+    // 模糊带高度只随 expandedHeightPx 变（几乎只算一次），remember 成稳定 Int：
+    // 滚动中 Layout 读它不会反复 invalidate，模糊层尺寸不变。
+    val bandHeightPx = remember(expandedHeightPx) {
+        if (expandedHeightPx <= 0) {
+            0
+        } else {
+            TopBarGlassBand.resolveBandHeightPx(
+                currentHeightPx = expandedHeightPx.toFloat(),
+                heightOffsetPx = 0f,
+                heightOffsetLimitPx = 0f,
+            )
+        }
+    }
+    // 是否「内容已压到带下」：可折叠大标题栏滚动后 heightOffset<0 即视为压带。
+    // 骨架已通过 [collapsible] 告知本栏是否可折叠（走大标题 TopAppBar）；不可折叠的小标题 /
+    // 宽屏分支永远保持玻璃纱，避免回归。`heightOffset` 是 snapshot 状态，派生状态只在翻转时通知。
+    val underHeader by remember(state, collapsible) {
         derivedStateOf {
-            when {
-                measuredHeightPx <= 0 -> 0
-                state == null -> measuredHeightPx
-                else -> TopBarGlassBand.resolveBandHeightPx(
-                    currentHeightPx = measuredHeightPx.toFloat(),
-                    heightOffsetPx = state.heightOffset,
-                    heightOffsetLimitPx = state.heightOffsetLimit,
-                )
+            if (!collapsible || state == null) {
+                true
+            } else {
+                state.heightOffset < -UnderHeaderScrollEpsilonPx
             }
         }
     }
+    val overhangPx = with(LocalDensity.current) { TopBarBlurOverhang.toPx() }
+    // scrim 只在 dark 变化时重建一次，不在 draw 期每帧新建 Brush（避免滚动期 GC 抖动）。
+    val scrimBrush = remember(dark) { qingyuTopBarScrim(dark) }
     Layout(
         content = {
             if (backdrop != null) {
-                val tint = qingyuTopBarTint(dark)
                 QingyuGlassSurface(
                     backdrop = backdrop,
                     spec = QingyuTopBarGlassSpec,
                     shape = RectangleShape,
                     progressive = QingyuTopBarGradient,
                     onDrawSurface = {
-                        drawRect(
-                            brush = Brush.verticalGradient(
-                                colors = listOf(tint, tint.copy(alpha = 0f)),
-                            ),
-                        )
+                        if (underHeader) {
+                            drawRect(brush = scrimBrush)
+                        } else {
+                            // opaqueAtRest：无内容压带时铺不透明页底色（静止即实底）。
+                            drawRect(color = pageBackground)
+                        }
                     },
                 )
             }
-            Box(Modifier.onSizeChanged { measuredHeightPx = it.height }) { content() }
+            Box(
+                Modifier.onSizeChanged {
+                    // 单调取大：只记录最大（展开）高度，滚动收起时不更新，避免逐帧写状态。
+                    if (it.height > expandedHeightPx) expandedHeightPx = it.height
+                },
+            ) { content() }
         },
-        modifier = Modifier.clipToBounds(),
+        modifier = Modifier.drawWithContent {
+            // 裁剪下边界放宽 overhang：模糊层可向下多画一点（渐隐尾巴落进正文顶部空隙），
+            // 但 Layout 报的高度仍是真实栏高 —— 不挤正文。
+            clipRect(
+                left = 0f,
+                top = 0f,
+                right = size.width,
+                bottom = size.height + overhangPx,
+            ) {
+                this@drawWithContent.drawContent()
+            }
+        },
     ) { measurables, constraints ->
         val contentPlaceable = measurables.last().measure(constraints)
         val width = contentPlaceable.width.coerceAtLeast(constraints.minWidth)
         val height = contentPlaceable.height
         val blurPlaceable = if (backdrop != null && bandHeightPx > 0) {
-            measurables.first().measure(Constraints.fixed(width, bandHeightPx))
+            measurables.first().measure(Constraints.fixed(width, bandHeightPx + overhangPx.toInt()))
         } else {
             null
         }
