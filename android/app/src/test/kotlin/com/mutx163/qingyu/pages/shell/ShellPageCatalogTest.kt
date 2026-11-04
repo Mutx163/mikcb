@@ -18,7 +18,7 @@ import org.junit.Test
  *
  * ## 钉住的是「不许悄悄变少」
  *
- * **当前口径（2026-11-01 核对）**：总数 89 / 可进入 88 / 暂不可用 0 / 常驻 1，
+ * **当前口径（2026-11-04 更新，R13 合并壁纸路由）**：总数 88 / 可进入 87 / 暂不可用 0 / 常驻 1，
  * 与下面的断言逐条一致。早期快照是「82 / 78 / 3」（照
  * `docs/plans/2026-10-27-compose-phase3-l4-checklist.md` §2 数出来的），
  * 后来补口与新增入口把可进入抬到 88（新增「壁纸取景」一条）、暂不可用清零。
@@ -35,7 +35,7 @@ class ShellPageCatalogTest {
 
     @Test
     fun `总数与四档合计对得上`() {
-        assertEquals("目录总条数", 89, ShellPageCatalog.totalCount)
+        assertEquals("目录总条数", 88, ShellPageCatalog.totalCount)
 
         val sum = ShellPageDataKind.entries.sumOf { ShellPageCatalog.countOf(it) }
         assertEquals("四档数量之和必须等于总数（kind 不许漏档）", ShellPageCatalog.totalCount, sum)
@@ -43,7 +43,7 @@ class ShellPageCatalogTest {
 
     @Test
     fun `可进入与不可用的数量`() {
-        assertEquals("可进入条数", 88, ShellPageCatalog.openable.size)
+        assertEquals("可进入条数", 87, ShellPageCatalog.openable.size)
         assertEquals("暂不可用条数", 0, ShellPageCatalog.countOf(ShellPageDataKind.UNAVAILABLE))
         assertEquals("常驻条数（底部玻璃坞自身）", 1, ShellPageCatalog.countOf(ShellPageDataKind.ALWAYS_VISIBLE))
     }
@@ -168,7 +168,7 @@ class ShellPageCatalogTest {
 
     @Test
     fun `可点判据只有直连与演示数据两档`() {
-        assertEquals(88, ShellPageCatalog.all.count { it.isOpenable })
+        assertEquals(87, ShellPageCatalog.all.count { it.isOpenable })
 
         val clickable = ShellPageCatalog.all.filter { it.isOpenable }
         assertTrue(

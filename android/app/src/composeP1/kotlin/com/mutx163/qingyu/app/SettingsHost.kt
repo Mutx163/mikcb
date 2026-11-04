@@ -1225,10 +1225,9 @@ fun HomeNavigationHost(
  *   确认后仍走同一条 `WRITE_SETTING`（`ROW_TP_TEXT_*`），不另建写路径。
  * - `RESET_SCOPE`：先弹确认框，确认后 [SettingsActionDispatcher.applyResetScope]。
  *   作用域字段清单在分派器里（`SCOPE_TIMETABLE_PAGE`），本宿主不复制。
- * - `SHEET`：壁纸选图 / 最近使用。面板宿主在 `b.backdropFlow` / `b.recentWallpaper`，
- *   本宿主按 rowId 认领这两行并 `onNavigate(route)` 推页。**遗留一步**：壳的
- *   `shellPageIdForRoute` 还缺这两条出站路由（ShellWiring 属 Lead 写作用域），补齐前
- *   会先判一次映射、解析不到就如实提示不可用（不静默吞点击）；需补的两行见交付报告。
+ * - `SHEET`：壁纸选图 / 最近使用。两行合并到同一个壁纸面板入口 `b.backdropFlow`
+ *   （R13：PICKER 页本身就含选图与「最近使用」，不再单列 `b.recentWallpaper`），
+ *   本宿主按 rowId 认领这两行并 `onNavigate(route)` 推页；路由已在壳里接好。
  *
  * ## 背景色板的 rowId 翻译（重要）
  *
@@ -1391,13 +1390,11 @@ fun TimetablePageSettingsHost(
                         }
                     }
 
-                    // 壁纸选图 / 最近使用：面板宿主已存在（`b.backdropFlow` / `b.recentWallpaper`），
-                    // 这两行从「一律提示不可用」改为真的推页。落点靠 rowId 区分（SHEET 动作的
-                    // target 是空的，见 SettingsActionDispatcher.writeSetting）。
-                    //
-                    // ⚠️ 壳的 `shellPageIdForRoute` 还没映射这两条出站路由；映射前 `onNavigate`
-                    // 会静默 no-op。所以这里先判一次映射：能解析就推页，解析不到**如实提示**
-                    // （不做「点了没反应」）。补的是 ShellWiring 里的两行，不在本文件。
+                    // 壁纸选图 / 最近使用：两行合并到同一个壁纸面板入口 `b.backdropFlow`
+                    // （R13：PICKER 页本身就含选图与「最近使用」，不再单列 `b.recentWallpaper`）。
+                    // 落点靠 rowId 区分（SHEET 动作的 target 是空的，见
+                    // SettingsActionDispatcher.writeSetting）。路由已在壳里接好；这里仍先判一次
+                    // 映射：能解析就推页，解析不到**如实提示**（不做「点了没反应」）。
                     SettingsActionKind.SHEET -> {
                         val route = timetablePageSheetRoute(rowId)
                         if (route != null && shellPageIdForRoute(route) != null) {
@@ -1451,11 +1448,8 @@ private fun menuEditorSeed(raw: List<String>): List<String> =
         SettingsHomeMenuEditorPage.sanitizeSeed(raw, diagnosticsBuild = false)
     }
 
-/** 课表页「背景图片」行的目标页：壁纸面板第一页。 */
+/** 课表页「背景图片」行与「最近使用」行共同的目标页：壁纸面板第一页（R13 合并）。 */
 private const val ROUTE_BACKDROP_FLOW = "b.backdropFlow"
-
-/** 课表页「最近使用」行的目标页：最近壁纸面板。 */
-private const val ROUTE_RECENT_WALLPAPER = "b.recentWallpaper"
 
 /**
  * 课表页两个 `SHEET` 行 → 已存在的面板宿主页 id。
@@ -1467,8 +1461,11 @@ private const val ROUTE_RECENT_WALLPAPER = "b.recentWallpaper"
  * 自映射（见本批报告的待办），补齐前点这两行不会跳转。
  */
 private fun timetablePageSheetRoute(rowId: String): String? = when (rowId) {
-    SettingsActionDispatcher.ROW_TP_BG_IMAGE -> ROUTE_BACKDROP_FLOW
-    SettingsActionDispatcher.ROW_TP_BG_RECENT -> ROUTE_RECENT_WALLPAPER
+    // 两行都进同一个壁纸面板：PICKER 页本身就含「选图行 + 最近使用缩略图条」，没有
+    // 独立的「最近使用」页（Dart `settings_home_backdrop_flow.dart:439-472`）。R13 前
+    // 这里映射到多余的 `b.recentWallpaper`，两条路由都落 PICKER、语义重复，现合并。
+    SettingsActionDispatcher.ROW_TP_BG_IMAGE,
+    SettingsActionDispatcher.ROW_TP_BG_RECENT -> ROUTE_BACKDROP_FLOW
     else -> null
 }
 

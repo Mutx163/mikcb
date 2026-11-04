@@ -144,7 +144,6 @@ object ShellPageCatalog {
                 page("P3-B", "materialGeneral", "设置 · 材质（通用页签）", ShellPageDataKind.DEMO),
                 page("P3-B", "materialCourseCard", "设置 · 材质（课程卡页签）", ShellPageDataKind.DEMO),
                 page("P3-B", "backdropFlow", "设置 · 首页背景", ShellPageDataKind.DEMO),
-                page("P3-B", "recentWallpaper", "设置 · 最近壁纸", ShellPageDataKind.DEMO),
                 page("P3-B", "bingGallery", "设置 · Bing 壁纸画廊", ShellPageDataKind.DEMO),
                 // 2026-11-01 F24：壁纸取景页（外观编辑 → 壁纸面板 → 调整位置）。
                 // 真实入口是壁纸面板；这里登记是为了 L4 能直接点到它做对照。

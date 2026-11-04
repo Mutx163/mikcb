@@ -3,7 +3,7 @@
 # 规则见 CjkLiteralGateTest.kt；修复某文件后必须下调该行数字，不得上调。
 # 已排除：i18n 文案表（*Strings*.kt / *Arb*.kt / *ServiceMessages.kt / *LogMessages.kt / *Localizer.kt）与生成代码；Log.* 行整行跳过。
 com/mutx163/qingyu/pages/diagnostics/MemoryStatsModel.kt:123
-com/mutx163/qingyu/pages/shell/ShellPageCatalog.kt:116
+com/mutx163/qingyu/pages/shell/ShellPageCatalog.kt:115
 com/mutx163/qingyu/pages/guide/MoreFeaturesModel.kt:101
 com/mutx163/qingyu/pages/import/SpreadsheetImportModel.kt:82
 com/mutx163/qingyu/pages/weather/WeatherCityPickerModel.kt:81

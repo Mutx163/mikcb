@@ -252,7 +252,6 @@ class DiagnosticsWiringGuardTest {
             "b.materialGeneral" to listOf("AppearanceEditorHost", "MaterialSheetPages.GENERAL"),
             "b.materialCourseCard" to listOf("AppearanceEditorHost", "MaterialSheetPages.COURSE_CARD"),
             "b.backdropFlow" to listOf("AppearanceEditorHost", "WallpaperSheetPages.PICKER"),
-            "b.recentWallpaper" to listOf("AppearanceEditorHost", "WallpaperSheetPages.PICKER"),
             "b.bingGallery" to listOf("BingGalleryHost"),
             "b.homeNavigation" to listOf("HomeNavigationHost"),
             // 2026-10-31 F20：桌面小组件页从空构造 state 换成真宿主（读设置模型 +

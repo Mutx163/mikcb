@@ -1102,10 +1102,10 @@ fun shellPageIdForRoute(route: String?): String? = when (route) {
     // 所以这条只能靠人守——删了不会有测试报红。
     "backdrop.image.adjust" -> "b.wallpaperPosition"
     // 课表页面设置里「背景图片 / 最近使用」两行的去向（2026-11-01）。分派器产出的 SHEET
-    // 不带 target，`TimetablePageSettingsHost` 按 rowId 翻成下面这两个页 id；这里是
-    // 页 id → 页 id 的自映射，只为让 `shellPageIdForRoute` 有出口，别误当成 Dart 路由串。
+    // 不带 target，`TimetablePageSettingsHost` 按 rowId 翻成页 id；这里是页 id → 页 id
+    // 的自映射，只为让 `shellPageIdForRoute` 有出口，别误当成 Dart 路由串。
+    // R13：两行合并到同一个壁纸面板入口，「最近使用」不再单列一条路由。
     "b.backdropFlow" -> "b.backdropFlow"
-    "b.recentWallpaper" -> "b.recentWallpaper"
     "/settings/semester" -> "b.semester"
     "/settings/time-schemes" -> "d3.timeSchemes"
     // 时间模板「编辑节次」子页（P35-TS）：列表页点卡片按钮 / 新建成功后推这一页，

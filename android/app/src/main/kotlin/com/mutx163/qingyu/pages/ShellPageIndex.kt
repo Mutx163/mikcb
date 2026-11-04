@@ -491,15 +491,12 @@ fun ShellPageContent(
             onNavigate = { route -> shellPageIdForRoute(route)?.let(onOpenPage) },
             initialMaterialPage = MaterialSheetPages.COURSE_CARD,
         )
-        // 这两条同理：壁纸面板的两个页签（`_WallpaperSheetBody`，:2104-2224）。
+        // 壁纸面板只有一个入口（Dart `settings_home_backdrop_flow.dart:439-472`：第一页
+        // 同时含选图行与「最近使用」缩略图条，没有独立的「最近使用」页）。原先
+        // `b.recentWallpaper` 与 `b.backdropFlow` 都落 PICKER、语义重复（R13），已合并为
+        // 这一条；课表页「最近使用」行改由 `SettingsHost.timetablePageSheetRoute` 映射到
+        // 同一个 `b.backdropFlow`。
         "b.backdropFlow" -> AppearanceEditorHost(
-            store = wiring.settingsModel,
-            repository = wiring.timetable,
-            onBack = onBack,
-            onNavigate = { route -> shellPageIdForRoute(route)?.let(onOpenPage) },
-            initialWallpaperPage = WallpaperSheetPages.PICKER,
-        )
-        "b.recentWallpaper" -> AppearanceEditorHost(
             store = wiring.settingsModel,
             repository = wiring.timetable,
             onBack = onBack,
