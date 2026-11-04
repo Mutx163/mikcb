@@ -1596,10 +1596,12 @@ fun ShellPageContent(
             // 壳内局部状态：分段（学期/周）与周视图选中的周。
             var semesterView by remember { mutableStateOf(true) }
             var selectedWeek by remember { mutableStateOf<Int?>(null) }
-            // 一次装配两份状态——`StatisticsFeed` 的 KDoc 明说必须同源，
-            // 否则「主页说 3 门课、明细页只有一个可选」这类不一致会天天出现。
-            val feedState = remember(snapshot, semesterView, selectedWeek) {
-                StatisticsFeed.feed(
+            // P0-a（切页首帧减负）：统计主页**只用 home**，不再调 `StatisticsFeed.feed(...)`
+            // ——feed 会连 `session` 一起装配（`StatisticsFeed.kt:289-315`，对每门课跑
+            // `CourseSessionStatsCalculator` 遍历整学期），对主页纯属白算；session 明细是
+            // `e.session` 页才用。这里只算 home，首帧不再背那坨同步 CPU。行为不变（同源）。
+            val homeState = remember(snapshot, semesterView, selectedWeek) {
+                StatisticsFeed.homeViewState(
                     input = StatisticsFeed.Input.fromSnapshot(snapshot),
                     now = LocalDateTime.now(),
                     selectedWeek = selectedWeek,
@@ -1607,7 +1609,7 @@ fun ShellPageContent(
                 )
             }
             CourseStatisticsPage(
-                viewState = feedState.home,
+                viewState = homeState,
                 onBack = onBack,
                 // tab 0 = 学期视图（`CourseStatisticsPage.kt:170` `selectedTabIndex == 0 && semester != null`）
                 onTabSelected = { index -> semesterView = index == 0 },
@@ -1622,10 +1624,9 @@ fun ShellPageContent(
                 onOpenShare = {
                     shareStatisticsText(
                         context = context,
-                        // `StatisticsShareText.build` 要的是页面视图状态（`CourseStatisticsViewState`），
-                        // 而 `feedState` 是 feed 整体（含 home/analysis/session 三份）——
-                        // 统计主页那份是 `feedState.home`（与本分支 `viewState = feedState.home` 同源）。
-                        text = StatisticsShareText.build(feedState.home),
+                        // `StatisticsShareText.build` 要的是页面视图状态（`CourseStatisticsViewState`）；
+                        // 与本分支 `viewState = homeState` 同源，直接用同一份 home。
+                        text = StatisticsShareText.build(homeState),
                         subject = StatisticsShareText.subject(),
                     )
                 },
