@@ -2009,6 +2009,36 @@ C:\dev\pwsh\pwsh.exe -NoProfile -Command "& ./scripts/test-kotlin-module.ps1 -Mo
 
 **门禁/边界**：`dart run tool/copy_style_lint.dart` → 行内超宽 130 条（存量 130，新增 **0**）、死键 0 新增、复述标题 0 新增。未改 `theme/`、两个壳 Activity、`lib/ui/`、路由表、`app/TimetableStore.kt`；未跑 gradlew/整包；ARB 六份 + 生成物单独一笔（`d39c4a49`）。
 
+### 10.43 门 3 / 门 4 全量清扫（HEAD `e8e27ce8`，2026-11-04）
+
+**门 3（`scripts/compose-style-lint.ps1 -Domain all`）**：22 个域，`components` 域已合入脚本（基线键前缀 `components/`）。三组数字（命中处 / 明细处 / 基线行）：
+
+- `timetable`：**5 / 10 / 5**；
+- 其余 21 域（about、components、conflict、course、diagnostics、exam、export、feedback、guide、import、live、schedule、settings、shell、showcase、statistics、sync、task、time_scheme、transfer、weather）：**0 / 0 / 0**；
+- 合计 5 处，与基线 5 行一一对应，**无新增、无基线改动**。
+
+5 条全部是**例外，不是可修的样式违规**（没有一条能用 `MiuixTheme.*`/主题令牌替代），明细：
+
+1. `CourseGridCard.kt:83` R5 ×3：课程底色解析失败兜底 `#2196F3` + 课卡墨色。Dart 依据：`lib/widgets/course_recolor_sheet.dart:402`（`tryParseHexColor(...) ?? const Color(0xFF2196F3)`）、`lib/widgets/course_card.dart:121`（同兜底）、`lib/utils/card_surface_ink.dart:40-43`（`cardInkDark 0xFF1A1A1A` / `cardInkLight 0xFFFFFFFF`）。
+2. `day/DayViewCommon.kt:38` R5 ×2：同上，`calculateCardInk` 的墨色档。
+3. `day/DayViewCourseCard.kt:85` R5 ×3：同上，日视图课卡墨色/兜底色。
+4. `month/MonthViewPage.kt:695` R2：`LazyColumn(userScrollEnabled = false)` 由外层拖拽区驱动。Dart 依据：`lib/widgets/timetable/month_view/month_panel_drag_area.dart:39,113`（列表用户滚动必须 `NeverScrollableScrollPhysics`，位移由拖拽区 `jumpTo`），属结构性例外。
+5. `TimetableWeekPage.kt:659` R2：`Column + verticalScroll` 充当主滚动（周网格固定行高、时间列冻结）。Dart 依据：`lib/widgets/timetable/timetable_week_page_body.dart:35,53` 同样用 `SingleChildScrollView`（非惰性），属结构性例外。
+
+**遗留观察（不属门 3，未改）**：上面 1–3 的深色墨 Kotlin 取 `#1E293B`，Dart `cardInkDark` 是 `#1A1A1A`；亮度判据也分别用 `0.299/0.587/0.114` 与 WCAG 相对亮度。这是课卡墨色专项的 parity 债，改动会影响像素，留给专项裁决。
+
+**门 4（全量，每类「存量 / 新增」）**：
+
+- `dart run tool/copy_style_lint.dart`：行内超宽 **130 / 0**（开发者页 11 条按规则不计）；死键 **1 / 0**；说明句复述标题 **0 / 0**。
+- `python scripts/i18n-cjk-baseline.py`（两个源集）：
+  - `composeP1`：**120 / 0**（14 文件）；
+  - `main`：**1263 / 0**（79 文件）。
+  两侧当前统计与基线逐文件相等，无新增。
+
+**ARB 一致性**：六份 `lib/l10n/app_{zh,en,ja,ko,zh_TW,zh_HK}.arb` 均为 **3009** 个键（键集一致）；`webdavPasswordReentryBody` 六份各 1 处，`gen-l10n` 产物（`app_localizations.dart` + `_en/_ja/_ko/_zh`）均含该 getter，生成物已在 `d39c4a49` 提交。唯一存量死键 `cloudSyncBaseUrlSecurityNote` 为 2026-11-02 遗留（仅被 `test/l10n/localization_completeness_test.dart` 引用），与本键无关。
+
+**结论**：本轮**没有可修的样式违规落盘**（`components/**` 动手前 `git status` 确认无他线未提交改动，实测 0 命中），因此无代码提交；只追加本节日志。未松动任何规则、未新增基线行，未碰禁改路径，未跑 gradlew/整包、未推送。
+
 ### 10.42 ✅ compose-style-lint 补 components 域 + 顶栏浅色 tint 具名化（2026-11-04，scripts + components）
 
 **范围**：`scripts/compose-style-lint.ps1`、`test/.../pages/ComposePageStyleGuardTest.kt`、
