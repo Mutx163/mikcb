@@ -5,6 +5,7 @@ import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -142,7 +143,13 @@ fun TimeSchemeManagementPage(
 
             // ── index 1 + 2：分段间距（由 spacedBy 承担）+ 分区标题 ──
             item(key = "timeSchemeSectionTitle") {
-                QingyuSectionTitle(text = TimeSchemeManagementStrings.timeSchemeEntryTitle.zh)
+                // 「时间模板」小灰字：与 Flutter v2.1.4.1 `HyperosSectionLabel` 同口径——
+                // 左右 16dp 对齐 28dp 文字轴，纵向不再叠 SmallTitle 默认的 8dp（列表 spacedBy 已给 12dp），
+                // 否则上下各 ~20dp 一大片空白。
+                QingyuSectionTitle(
+                    text = TimeSchemeManagementStrings.timeSchemeEntryTitle.zh,
+                    insideMargin = PaddingValues(start = 16.dp, end = 16.dp, top = 0.dp, bottom = 0.dp),
+                )
             }
 
             // ── index 3+：空态一行 / 模板卡 ──
@@ -175,7 +182,11 @@ private fun EntryCard(
     val locationDetails = model.locationEntryDetails
     val dateRuleDetails = model.dateRuleEntryDetails
 
-    QingyuCard(modifier = Modifier.fillMaxWidth()) {
+    QingyuCard(
+        modifier = Modifier.fillMaxWidth(),
+        // 与 Flutter `HyperosListGroup` / `HyperosAdaptiveCard` 一致：设置组卡片圆角 24dp。
+        cornerRadius = QingyuCardDefaults.SettingsGroupCorner,
+    ) {
         ArrowPreference(
             title = TimeSchemeManagementStrings.locationTimeMatchEntryTitle.zh,
             startAction = {
@@ -217,6 +228,7 @@ private fun EmptyStateRow() {
     val dark = isSystemInDarkTheme()
     QingyuCard(
         modifier = Modifier.fillMaxWidth(),
+        cornerRadius = QingyuCardDefaults.SettingsGroupCorner,
         insideMargin = QingyuCardDefaults.ContentInsideMargin,
     ) {
         Text(
@@ -260,9 +272,9 @@ private fun SchemeCard(
 
     QingyuCard(
         modifier = Modifier.fillMaxWidth(),
-        // 包普通内容（非 Preference 行）必须给内边距，等价 Dart `HyperosControlCard`
-        // 的 headerlessBodyPadding（四边 16）。
-        insideMargin = QingyuCardDefaults.ContentInsideMargin,
+        // 与 Flutter `HyperosControlCard` 一致：设置组圆角 24dp + headerlessBodyPadding(16,16,16,12)。
+        cornerRadius = QingyuCardDefaults.SettingsGroupCorner,
+        insideMargin = PaddingValues(start = 16.dp, top = 16.dp, end = 16.dp, bottom = 12.dp),
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             LeadingIconBadge(icon = MiuixIcons.Timer, accent = badgeAccent)
@@ -380,9 +392,14 @@ private fun SecondaryButton(
         onClick = onClick,
         modifier = modifier,
         enabled = enabled,
+        // 对齐 Flutter `HyperosButtonVariant.secondary`（非磨砂面板）：底色 `secondary`、
+        // 字色 `onSecondaryVariant`、禁用用各自的 disabled 档。原来自定义的
+        // surfaceVariant 底与卡片底太接近，读起来像纯文字、不像按钮。
         colors = ButtonDefaults.buttonColors(
-            color = MiuixTheme.colorScheme.surfaceVariant,
-            contentColor = MiuixTheme.colorScheme.primary,
+            color = MiuixTheme.colorScheme.secondary,
+            disabledColor = MiuixTheme.colorScheme.disabledSecondary,
+            contentColor = MiuixTheme.colorScheme.onSecondaryVariant,
+            disabledContentColor = MiuixTheme.colorScheme.disabledOnSecondaryVariant,
         ),
     ) {
         Text(
