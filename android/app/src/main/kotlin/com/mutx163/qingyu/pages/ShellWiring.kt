@@ -205,7 +205,7 @@ class ShellWiring(context: Context) {
     // 「从左侧滑入」——与原版差得很远（2026-11-02 用户实报）。
     //
     // 现在周 / 日共用同一个首页宿主（`c1.week`），切换只改下面这三个状态，
-    // 不碰返回栈 ⇒ 不存在路由转场，展开动画由页面自己按 `homeViewExpandWindow` 播。
+    // 不碰返回栈 ⇒ 不存在路由转场，展开动画由页面自己按 2141 简单面板（宽高因子+裁剪）播。
 
     /** 首页课表当前停在周视图还是日视图（Dart `timetableHomeViewMode`）。 */
     var homeViewMode: TimetableHomeViewMode by mutableStateOf(initialSettings.timetableHomeViewMode)

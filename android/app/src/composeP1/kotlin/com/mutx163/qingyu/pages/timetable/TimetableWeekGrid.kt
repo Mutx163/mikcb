@@ -67,11 +67,6 @@ fun TimetableWeekGrid(
      * null = 各卡走原有透明度填充；非空时所有卡片采同一层，不额外建录像带。
      */
     cardGlassBackdrop: Backdrop? = null,
-    /**
-     * 首页展开飞行用：本网格属于哪一周（`courseFlightCardKey` 的第一段）。
-     * null = 独立周视图 / 预览，不登记飞行两端。
-     */
-    flightWeek: Int? = null,
 ) {
     val totalHeight = sectionHeight * sectionCount
     val dayCount = visibleDays.size.coerceAtLeast(1)
@@ -128,12 +123,6 @@ fun TimetableWeekGrid(
                                 style = style,
                                 sectionHeight = sectionHeight,
                                 isHoliday = holidayForDay(dayOfWeek),
-                                // P-5：飞行键用**原始** course.startSection（与日侧同源），
-                                // 越界规整统一交给 courseFlightCardKey 的 coerceAtLeast(1)；
-                                // 布局仍用上面 clamp 过的 startSection。
-                                flightCardKey = flightWeek?.let { week ->
-                                    courseFlightCardKey(week, dayOfWeek, card.course.id, card.course.startSection)
-                                },
                                 onClick = { onCourseClick(card.course) },
                                 material = material,
                                 glassBackdrop = cardGlassBackdrop,

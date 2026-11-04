@@ -25,6 +25,8 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.requiredSize
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.rememberScrollState
@@ -43,18 +45,16 @@ import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.BiasAlignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.draw.drawWithContent
-import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
-import androidx.compose.ui.geometry.RoundRect
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.RectangleShape
-import androidx.compose.ui.graphics.drawscope.clipPath
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.boundsInRoot
@@ -82,7 +82,6 @@ import com.mutx163.qingyu.pages.settings.SurfaceMaterialState
 import com.mutx163.qingyu.pages.shell.HomeBackgroundModel
 import com.mutx163.qingyu.pages.timetable.day.DayViewDataAssembler
 import com.mutx163.qingyu.pages.timetable.day.DayViewStrings
-import com.mutx163.qingyu.pages.timetable.day.DayViewSummaryFlightLayer
 import com.mutx163.qingyu.pages.shell.HomeInkPolarity
 import com.mutx163.qingyu.core.Exam
 import com.mutx163.qingyu.core.ScheduleItem
@@ -90,6 +89,7 @@ import com.mutx163.qingyu.core.SectionTime
 import com.mutx163.qingyu.core.TimeScheme
 import com.mutx163.qingyu.core.TimetableSettings
 import com.mutx163.qingyu.theme.QingyuTheme
+import kotlin.math.max
 import kotlinx.coroutines.launch
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.Scaffold
@@ -306,15 +306,13 @@ fun TimetableWeekPage(
             }
     }
 
-    // ── 周 ↔ 日展开态（2026-11-02）──
+    // ── 周 ↔ 日展开态（对齐已发布 2141 / tag v2.1.4.1）──
     //
-    // 日视图不是一页路由，而是首页内部的一层：选中那一天从网格列位长到整屏。
-    // 这里只负责把 `dayMode` 变成 0..1 的进度，几何交给 `homeViewExpandWindow`
-    // （纯函数，单测在 `HomeViewExpandMotionTest`）。时长与曲线对齐 Dart
-    // `DayViewExpandMotion`：210ms × 用户倍率、Cubic(0.25, 0, 0.75, 1)（严格对称，
-    // 展开到一半反向收起也不会跳）。
+    // 2141：日视图是一整块面板——从「当天列顶部锚点」按 widthFactor/heightFactor 逐渐露出
+    // （裁剪窗口长大，非缩放、非逐卡飞行），同时淡入 + 上移 + 圆角收平；周网格按原始进度淡出。
+    // 时长 360ms、面板进度曲线 easeInOutCubicEmphasized（三点贝塞尔，见 HomeViewExpandMotion）。
     val dayExpand = remember { Animatable(dayProgressSeed.coerceIn(0f, 1f)) }
-    val dayExpandEasing = remember { CubicBezierEasing(0.25f, 0f, 0.75f, 1f) }
+    val dayExpandEasing = remember { homeViewEaseInOutCubicEmphasized }
     val dayExpandDuration = homeViewExpandDurationMillis(transitionSpeed)
     // ── 「减少动画」降级（2026-11-03 补齐，对齐 Flutter DayViewExpandMotion.expand/collapse）──
     // 系统把「动画时长缩放」归零时，展开/收起都**不播逐帧形变**：直接 snap 到目标值。
@@ -357,17 +355,6 @@ fun TimetableWeekPage(
     // 「绘制与命中」——隐藏时树还在，但不画、不接事件（见下方展开层的 inert 门控）。
     val dayMounted = dayVisible || dayLayerReady
 
-    // ── 课程卡逐卡飞行登记处（阶段 B，2026-11-04）────────────────────────
-    // active 严格 0 < v < 1：展开与收起**双向**都为真，但起点(v=0)/落定(v=1)两帧为假——
-    // 落定那一帧把「两端都在的真卡」交回来（否则日视图卡被藏死变空白）。
-    val flightHost = remember {
-        CourseFlightMeasureHost(
-            active = { dayVisible && dayExpand.value > 0f && dayExpand.value < 1f },
-        )
-    }
-    DisposableEffect(flightHost) {
-        onDispose { flightHost.clear() }
-    }
     LaunchedEffect(dayMode) {
         val expandTarget = if (dayMode) 1f else 0f
         if (dayExpandReducedMotion) {
@@ -487,42 +474,6 @@ fun TimetableWeekPage(
     val sectionCount = sectionTimes.size
     val semesterStart = settings.semesterStartDate?.toLocalDate()
 
-    // ── 摘要卡飞行（阶段 A，2026-11-03）────────────────────────────────────
-    //
-    // 用户口径「还是很恶心的展开效果」：只做圆角窗口裁切，读起来是**一块窗口从
-    // 选中列擦开**，不是 Flutter 原版的「卡片自己飞过去」。这一步把摘要卡那一颗
-    // 补上（课程卡逐卡飞行是阶段 B）。
-    //
-    // 起点**算**：星期格 = 时间列宽 + 下标 × 日宽，纯布局产物。
-    // 终点**量**：摘要卡高度随内容变（考试 / 进行中 / 冲突），算不出来。
-    // 两处都在**内容区局部坐标**里比较（相减同一个根原点），不写死任何比例。
-    var flightContentOrigin by remember { mutableStateOf<Offset?>(null) }
-    var flightHeaderBounds by remember { mutableStateOf<Rect?>(null) }
-    var flightSummaryBounds by remember { mutableStateOf<Rect?>(null) }
-    val flightDate = WeekdayHeaderMetrics.dateForWeekDay(
-        semesterStartDate = semesterStart,
-        week = selectedWeek,
-        dayOfWeek = selectedDayOfWeek,
-    )
-    val flightWeekdayLabel = TimetableStrings.formatWeekday(selectedDayOfWeek)
-    val flightCellDateLabel = flightDate?.let { WeekdayHeaderMetrics.dateText(it) }.orEmpty()
-    val flightTitleLabel = DayViewDataAssembler.dateLabel(flightDate, selectedDayOfWeek)
-    val flightMetaLabel = if (flightDate != null && flightDate == todayDate) {
-        "${DayViewStrings.todayTimetableTitle.zh} · ${DayViewStrings.weekLabel(selectedWeek)}"
-    } else {
-        DayViewStrings.weekLabel(selectedWeek)
-    }
-    // 真摘要卡在飞行期间**不画**（否则一张卡从起点一路被裁到终点，读起来还是擦除）。
-    // 读进度必须在 **draw 阶段**：drawWithContent 的 lambda 只在绘制时执行，
-    // 不会触发组合，动画期间不额外重组页面。
-    val summaryFlightModifier = remember {
-        Modifier
-            .onGloballyPositioned { coords -> flightSummaryBounds = coords.boundsInRoot() }
-            .drawWithContent {
-                if (dayVisible && dayExpand.value < 0.999f) return@drawWithContent
-                drawContent()
-            }
-    }
     // 单节课提醒键（`courseId|yyyy-MM-dd`）：课卡右上角铃铛的唯一数据源
     //（`core/TimetableSettings.classReminders`，随仓储快照进来）。
     val reminderKeys = remember(settings.classReminders) {
@@ -649,11 +600,7 @@ fun TimetableWeekPage(
                     // 日视图展开时改跟「日视图正在看的那一周/那一天」：日视图可以连续翻周，
                     // 而周 pager 停在下面不动，继续读 displayedPage 会把星期栏钉在旧周上。
                     TimetableWeekdayHeader(
-                        // 摘要卡飞行的**起点**要从这条栏实测：格子宽高与顶边都由它给出，
-                        // 不靠常量反推（栏高以后改 38/42dp 时飞行起点自动跟着走）。
-                        modifier = Modifier.onGloballyPositioned {
-                            flightHeaderBounds = it.boundsInRoot()
-                        },
+                        // 2141：不再需要飞行起点测量。
                         week = if (dayVisible) selectedWeek else displayedPage + 1,
                         currentWeek = currentWeek,
                         todayDate = todayDate,
@@ -693,26 +640,15 @@ fun TimetableWeekPage(
             Box(
                 modifier = Modifier
                     .weight(1f)
-                    .fillMaxWidth()
-                    // 飞行层与日视图层的坐标原点（只量不画）：两者的测量值都减去它，
-                    // 换成「内容区局部坐标」。布局稳定，动画期间不会重测。
-                    .onGloballyPositioned { flightContentOrigin = it.positionInRoot() },
+                    .fillMaxWidth(),
             ) {
-                // 课程卡飞行的两端登记只在首页展开态存在：provider 包住周网格(pager) +
-                // 日视图(dayContent) + 摘要层，让两张卡都读到同一个 flightHost。
-                CompositionLocalProvider(LocalCourseFlightMeasure provides flightHost) {
                 HorizontalPager(
                     state = pagerState,
                     modifier = Modifier
                         .fillMaxSize()
-                        // 日视图铺满后周网格整块被盖住：只在 progress == 1 这一刻跳过绘制
-                        //（Dart `timetable_week_page_body.dart:82-93` 的 Opacity 0/1 同口径）。
-                        // 展开 / 收起全程照画，否则邻居列会在中途消失。
-                        // ⚠️ 守卫必须挂在 **pager 自己**身上、不能挂外层 Box：外层还要画
-                        // 日视图展开层与「回今日」浮钮，挂外层会把它们一起跳过（2026-11-03）。
-                        .drawWithContent {
-                            if (!dayVisible || dayExpand.value < 0.999f) drawContent()
-                        },
+                        // 2141：周网格按原始进度淡出（alpha = 1 - value，不缓动）。
+                        // 只挂 pager 自己：外层还要画日面板与「回今日」浮钮。
+                        .graphicsLayer { alpha = (1f - dayExpand.value).coerceIn(0f, 1f) },
                 ) { page ->
                     WeekPageContent(
                         pageWeek = page + 1,
@@ -734,8 +670,6 @@ fun TimetableWeekPage(
                         onLongPressEmptySlot = onLongPressEmptySlot,
                         material = material,
                         cardGlassBackdrop = cardGlassSource,
-                        // P0-3：pager 里第 page 页 = 第 page+1 周，传给网格做飞行卡键。
-                        flightWeek = page + 1,
                         // 时间列压在壁纸的正文带上：同一档亮度决定字色。
                         wallpaperLuminance = wallpaperBands?.body,
                         // ── 内容层缓存（2026-11-03 卡顿修复）──
@@ -792,37 +726,29 @@ fun TimetableWeekPage(
                         ),
                 )
 
-                // ── 日视图展开层（2026-11-03：重定位到「内容区」里）──────────────
-                // 以前的写法：日视图按**整屏**排版（`requiredSize(屏宽, 屏高)`），再
-                // `offset(y = -顶栏高度)` 把它整体上移，让窗口裁掉它自己的顶栏那一段。
-                // 「顶栏高度」是从 `contentBounds.top - rootOrigin.y` 反算出来的**测量值**，
-                // 一旦测得比真实带子矮一丁点，日视图的首卡就会钻进星期栏 —— 用户口径
-                // 「日期卡片插到顶栏里面」，反复加 14dp 缝都修不好，根因就在这个负 offset。
-                //
-                // 现在改成：展开层**与周网格同一个 Box**（内容区），它的顶边由布局给出，
-                // 就是玻璃带底边，不再有任何「测量 → 负 offset 抵消」的环节。日视图
-                // 直接铺满内容区，`contentTopInset = 0` ⇒ 页面自己只加正文顶缝 14dp。
-                // 横向擦除窗口照旧走 `homeViewExpandWindow`，坐标改为**本 Box 本地**
-                // （contentLeft = 0、宽度 = 本 Box 宽），同样不依赖根布局测量。
+                // ── 日视图展开层（2141：整块面板按宽高因子从当天列顶部锚点长大露出）──────
+                // 面板按整屏排版（requiredSize 满屏、正常布局/测量），外层套一个不断变大的
+                // 裁剪窗口（内容不缩放、只逐渐露出）——等价 2141 的 Align(widthFactor,heightFactor)+Clip；
+                // 同期按 easeOutCubic 淡入、(1-progress)*(-24) 上移、圆角收平（anchorExpandRadius）。
                 if (dayMounted && dayContent != null) {
-                    val timeColumnPx = with(density) { style.timeColumnWidthDp.dp.toPx() }
-                    // 圆角裁切路径：**一个节点一份、逐帧 rewind 复用**（draw 阶段读动画值，
-                    // 不重组、不重排，也不逐帧分配 Path）。
-                    val expandWindowClip = remember { Path() }
-                    Box(
+                    val rawValue = dayExpand.value
+                    val progress = dayExpandEasing.transform(rawValue)
+                    val widthFactor = 0.18f + 0.82f * progress
+                    val heightFactor = max(0.04f, progress)
+                    val translateYDp = (1f - progress) * (-24f)
+                    val panelAlpha = homeViewEaseOutCubic(progress)
+                    val cornerDp = 28f * homeViewExpandCornerRadiusFactor(progress)
+                    val anchorIndex = visibleDays.indexOf(selectedDayOfWeek).let { if (it < 0) 0 else it }
+                    val anchorX = if (visibleDays.size <= 1) {
+                        0f
+                    } else {
+                        ((anchorIndex + 0.5f) / visibleDays.size) * 2f - 1f
+                    }
+                    BoxWithConstraints(
                         modifier = Modifier
                             .matchParentSize()
                             .clipToBounds()
-                            // 命中测试也停在内容区：日视图展开时不能把事件漏给下面的周网格
-                            // （否则长按空白格加课会在日视图上误触发）。这个节点只宣称命中、
-                            // 不消费，窗口里的真实控件照常拿事件。
-                            // （Dart 侧还有 `ignoring: progress < 0.05` 的收起尾段放行——Compose
-                            // 的命中模型没有「逐帧条件命中」，per-event 消费又会连窗口内真实
-                            // 控件一起点不了，权衡后保持常驻宣称；阈值常量与单测留在
-                            // [HOME_VIEW_EXPAND_INPUT_GATE]，见该常量 KDoc。）
-                            //
-                            // 只有可见时才宣称命中：隐藏（保活/预热）的日视图不参与命中，
-                            // 否则它虽然不画，却会把周视图的点击全部吞掉。
+                            // 日视图展开时宣称命中，避免落到下面周网格（否则长按空白格会误触加课）。
                             .then(
                                 if (dayVisible) {
                                     Modifier.pointerInput(Unit) {
@@ -835,129 +761,32 @@ fun TimetableWeekPage(
                                 } else {
                                     Modifier
                                 },
-                            )
-                            .drawWithContent {
-                                // 隐藏（收起播完 / 预热）时只保留组合与测量，不绘制。
-                                if (!dayVisible) return@drawWithContent
-                                val progress = dayExpand.value
-                                val window = homeViewExpandWindow(
-                                    progress = progress,
-                                    // 本地坐标：本 Box 的原点就是内容区左上角。
-                                    viewportWidth = size.width.toFloat(),
-                                    contentLeft = 0f,
-                                    contentWidth = size.width.toFloat(),
-                                    timeColumnWidth = timeColumnPx,
-                                    visibleDays = visibleDays,
-                                    selectedDayOfWeek = selectedDayOfWeek,
-                                )
-                                // ── 圆角形变窗口（2026-11-03，替换直角 clipRect）──
-                                // 种子面板 28dp 圆角全程保持满值，只在贴边前的最后 0.002 带内
-                                // 收平（数值出处见 homeViewExpandCornerRadiusFactor 的 KDoc）。
-                                // 落定帧（含「减少动画」snapTo）progress 恰为 1.0 ⇒ 因子恰为 0
-                                // ⇒ RoundRect 退化为全屏矩形，裁切是 no-op，真面板无任何残角。
-                                val cornerPx = HOME_VIEW_EXPAND_SEED_CORNER_DP.dp.toPx() *
-                                    homeViewExpandCornerRadiusFactor(progress)
-                                expandWindowClip.rewind()
-                                expandWindowClip.addRoundRect(
-                                    RoundRect(
-                                        left = window.left,
-                                        top = 0f,
-                                        right = window.right,
-                                        bottom = size.height,
-                                        cornerRadius = CornerRadius(cornerPx, cornerPx),
-                                    ),
-                                )
-                                clipPath(expandWindowClip) {
-                                    this@drawWithContent.drawContent()
-                                }
-                            },
+                            ),
                     ) {
-                        // contentTopInset = 0：窗口顶边已经是带子底边，日视图只需再加
-                        // 正文顶缝（`DAY_VIEW_CONTENT_TOP_SEAM_DP`）。
-                        //
-                        // 隐藏时走 [inertUnless]：子树照常组合/测量（保活、保滚动位置），
-                        // 但不 place ⇒ 不绘制、不参与命中、不进无障碍焦点。真展开时
-                        // 这个修饰器是 no-op，布局与之前逐像素一致。
+                        val maxW = maxWidth
+                        val maxH = maxHeight
+                        val panelW = maxW * widthFactor
+                        val panelH = maxH * heightFactor
+                        // 整屏面板相对较小裁剪窗口的水平对齐偏移（按 anchorX 侧对齐）。
+                        val childOffsetX = -(maxW - panelW) * ((anchorX + 1f) / 2f)
                         Box(
                             modifier = Modifier
-                                .fillMaxSize()
-                                // 内容层缓存（2026-11-03 卡顿修复）：与周网格同一个理由——
-                                // 外层 draw 块逐帧读进度，子树必须有**自己的恒定图层**，
-                                // 否则整棵日视图的绘制命令每帧被重录进外层 DisplayList。
-                                // 这里只放恒定配置（alpha = 1f），绝不接 `dayExpand`，
-                                // 一旦接了进度，图层逐帧失效、缓存失效。
-                                .graphicsLayer { alpha = 1f }
-                                .inertUnless(dayVisible),
+                                .align(BiasAlignment(anchorX, -1f))
+                                .width(panelW)
+                                .height(panelH)
+                                .clip(RoundedCornerShape(cornerDp.dp)),
                         ) {
-                            // summaryModifier：真摘要卡在飞行期间不画 + 把落点实测回去。
-                            dayContent(0.dp, summaryFlightModifier)
+                            Box(
+                                modifier = Modifier
+                                    .requiredSize(maxW, maxH)
+                                    .offset(x = childOffsetX, y = translateYDp.dp)
+                                    .graphicsLayer { alpha = panelAlpha },
+                            ) {
+                                // contentTopInset = 0：面板铺满内容区，页面自己只加正文顶缝 14dp。
+                                dayContent(0.dp, Modifier)
+                            }
                         }
                     }
-                }
-
-                // ── 摘要卡飞行层（阶段 A，2026-11-03）─────────────────────────
-                // ⚠️ 必须是裁切盒子的**兄弟**、且排在它后面：父链没有 clip，
-                // 飞行起点在星期栏里（内容区局部 y 为负），只有兄弟层才画得上去；
-                // 放进裁切盒子里会被 `clipToBounds` 连同窗口一起裁掉。
-                if (dayContent != null) {
-                    val origin = flightContentOrigin
-                    val headerBounds = flightHeaderBounds
-                    val summaryBounds = flightSummaryBounds
-                    if (origin != null && headerBounds != null && summaryBounds != null) {
-                        val startCell = homeViewSummaryStartCell(
-                            header = HomeViewFlightRect(
-                                left = headerBounds.left - origin.x,
-                                top = headerBounds.top - origin.y,
-                                right = headerBounds.right - origin.x,
-                                bottom = headerBounds.bottom - origin.y,
-                            ),
-                            timeColumnWidth = with(density) {
-                                style.timeColumnWidthDp.dp.toPx()
-                            },
-                            visibleDayCount = visibleDays.size,
-                            selectedDayIndex = visibleDays.indexOf(selectedDayOfWeek),
-                        )
-                        val endCell = HomeViewFlightRect(
-                            left = summaryBounds.left - origin.x,
-                            top = summaryBounds.top - origin.y,
-                            right = summaryBounds.right - origin.x,
-                            bottom = summaryBounds.bottom - origin.y,
-                        )
-                        DayViewSummaryFlightLayer(
-                            progress = { dayExpand.value },
-                            visible = dayVisible,
-                            startCell = startCell,
-                            endCell = endCell,
-                            weekdayLabel = flightWeekdayLabel,
-                            cellDateLabel = flightCellDateLabel,
-                            titleLabel = flightTitleLabel,
-                            metaLabel = flightMetaLabel,
-                            dark = dark,
-                            material = materialSpec,
-                            glassBackdrop = cardGlassSource,
-                            modifier = Modifier.matchParentSize(),
-                        )
-                    }
-                }
-
-                // ── 课程卡逐卡飞行层（阶段 B，v2：四元配对 / 两端必读 / 双射可逆）──
-                // cardKeys 只取「选中日的 + 周侧也量到」的键：startsWith 限定当日，
-                // weekSurfaces.containsKey 保证两端都在——绝不单端兜底成摘要，也不按 course.id 粗配。
-                val courseOrigin = flightContentOrigin
-                if (courseOrigin != null) {
-                    TimetableCourseFlightLayer(
-                        progress = { dayExpand.value },
-                        host = flightHost,
-                        cardKeys = flightHost.daySurfaces.keys.filter { key ->
-                            key.startsWith("$selectedWeek|$selectedDayOfWeek|") &&
-                                flightHost.weekSurfaces.containsKey(key)
-                        },
-                        origin = courseOrigin,
-                        material = materialSpec,
-                        glassBackdrop = cardGlassSource,
-                        modifier = Modifier.matchParentSize(),
-                    )
-                }
                 }
             }
         }
@@ -1051,8 +880,6 @@ private fun WeekPageContent(
     cardGlassBackdrop: Backdrop? = null,
     /** 时间列那档壁纸亮度；null = 没壁纸（保持设置里的字色）。 */
     wallpaperLuminance: Double? = null,
-    /** 首页展开飞行用：本网格是第几周（`courseFlightCardKey` 第一段）。null = 独立周视图，不登记。 */
-    flightWeek: Int? = null,
     /** 内容层外壳（缓存图层挂在这里，见 pager 调用处的说明）。 */
     modifier: Modifier = Modifier,
 ) {
@@ -1125,8 +952,6 @@ private fun WeekPageContent(
                     modifier = Modifier.weight(1f),
                     material = material,
                     cardGlassBackdrop = cardGlassBackdrop,
-                    // P0-3：周网格卡的飞行键用真实周次，与日视图 viewedWeek 配对。
-                    flightWeek = flightWeek,
                 )
             }
         }

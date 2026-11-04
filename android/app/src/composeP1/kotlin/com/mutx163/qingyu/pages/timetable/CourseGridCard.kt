@@ -160,12 +160,6 @@ fun CourseGridCard(
      * `course_surface.dart:197-208` 同一条性能口径）。
      */
     glassBackdrop: Backdrop? = null,
-    /**
-     * 首页展开飞行用的卡片键（`courseFlightCardKey(...)`）。非空且宿主在展开态时，
-     * 本卡登记**卡面四边 + 每行文字锚点**，并在飞行期间「只登记、不绘制」——
-     * 飞行层替它画（见 [TimetableCourseFlightLayer]）。null = 独立周视图页，不参与飞行。
-     */
-    flightCardKey: String? = null,
 ) {
     val course = model.course
     val dark = isSystemInDarkTheme()
@@ -222,12 +216,8 @@ fun CourseGridCard(
         WeekCardMetrics.INNER_VERTICAL_REGULAR_DP
     }
 
-    // ── 首页展开飞行登记（2026-11-03，阶段 B）──
-    // 只在首页展开态存在宿主；卡片本身照常按设置排版，这里只是把「卡面 + 每行文字」
-    // 的实测坐标登记出去。飞行期间本卡不画（由 `TimetableCourseFlightLayer` 替它画），
-    // 判据是一个布尔而非逐帧进度，不会让恒定图层缓存（2026-11-03 卡顿修复）失效。
-    val flightHost = LocalCourseFlightMeasure.current
-    val flightKey = flightCardKey?.takeIf { flightHost != null }
+    // 2141 简单面板：不再有逐卡飞行；保留一个空修饰器占位，避免大改每行文字的调用点。
+    @Suppress("UNUSED_PARAMETER")
     fun flightAnchor(
         lineId: String,
         text: String,
@@ -236,19 +226,7 @@ fun CourseGridCard(
         anchorInk: Color,
         maxLines: Int = 1,
         lineHeightSp: Float = 0f,
-    ): Modifier = if (flightHost != null && flightKey != null) {
-        flightHost.weekTextModifier(flightKey, lineId, text, fontSizeSp, weight, anchorInk, maxLines, lineHeightSp)
-    } else {
-        Modifier
-    }
-    // P-4：本卡离开组合（滚出 pager 邻居页 / 跨周回收）时移除它的周侧登记，避免跨周翻页无限增长。
-    DisposableEffect(flightKey) {
-        onDispose {
-            val host = flightHost
-            val key = flightKey
-            if (host != null && key != null) host.removeWeek(key)
-        }
-    }
+    ): Modifier = Modifier
 
     // Dart 的压淡：停课 0.4、假期 0.3（`CourseCard.build` 顶部的 Opacity 分支）。
     val dim = when {
@@ -321,20 +299,7 @@ fun CourseGridCard(
             .clip(shape)
             .then(surfaceModifier)
             .then(borderModifier)
-            .clickable(onClick = onClick)
-            .then(
-                if (flightHost != null && flightKey != null) {
-                    flightHost.weekSurfaceModifier(flightKey, fill)
-                } else {
-                    Modifier
-                },
-            )
-            .drawWithContent {
-                if (flightHost != null && flightKey != null && flightHost.isFlying(flightKey)) {
-                    return@drawWithContent
-                }
-                drawContent()
-            },
+            .clickable(onClick = onClick),
     ) {
         Column(
             modifier = Modifier

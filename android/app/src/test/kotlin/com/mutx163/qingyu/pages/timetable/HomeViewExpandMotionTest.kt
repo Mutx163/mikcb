@@ -6,167 +6,87 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 /**
- * 首页「周 ↔ 日」展开窗口的几何契约（2026-11-02）。
+ * 首页「周 ↔ 日」切换的时长 / 曲线 / 降级判据（对齐已发布 2141）。
  *
- * 这些断言钉的是**观感的几何前提**，不是实现细节：
- * 1. 进度 0 时窗口正好是选中那一列（多一列 / 少一列，展开起点就错了）；
- * 2. 进度 1 时铺满整屏（差 1px 都会在落定帧看到一条边）；
- * 3. 全程左右边界单调（中间反弹一次就会读成「弹一下」）；
- * 4. 隐藏周末时数组下标仍按可见日算（按 1..7 直接取下标会落到错误的列）。
+ * 2141 的观感：周网格按原始进度淡出；日面板整块按 `easeInOutCubicEmphasized` 缓出的进度
+ * 从当天列顶部「长」到整屏（宽高因子 + 裁剪），同时 `easeOutCubic` 淡入、上移兜底。
+ * 这里钉住能靠纯函数/常量证明的部分。
  */
 class HomeViewExpandMotionTest {
 
-    private val viewport = 1080f
-    private val contentLeft = 24f
-    private val contentWidth = 1032f
-    private val timeColumn = 102f
-    private val days = listOf(1, 2, 3, 4, 5, 6, 7)
-
     @Test
-    fun `进度 0 时窗口正好是选中那一列`() {
-        val dayWidth = (contentWidth - timeColumn) / days.size
-        val window = homeViewExpandWindow(
-            progress = 0f,
-            viewportWidth = viewport,
-            contentLeft = contentLeft,
-            contentWidth = contentWidth,
-            timeColumnWidth = timeColumn,
-            visibleDays = days,
-            selectedDayOfWeek = 4, // 周四
-        )
-        val expectedLeft = contentLeft + timeColumn + 3 * dayWidth
-        assertEquals(expectedLeft, window.left, 0.01f)
-        assertEquals(expectedLeft + dayWidth, window.right, 0.01f)
-    }
-
-    @Test
-    fun `进度 1 时铺满整屏`() {
-        val window = homeViewExpandWindow(
-            progress = 1f,
-            viewportWidth = viewport,
-            contentLeft = contentLeft,
-            contentWidth = contentWidth,
-            timeColumnWidth = timeColumn,
-            visibleDays = days,
-            selectedDayOfWeek = 1,
-        )
-        assertEquals(0f, window.left, 0.01f)
-        assertEquals(viewport, window.right, 0.01f)
-    }
-
-    @Test
-    fun `全程左右边界单调`() {
-        var lastLeft = Float.MAX_VALUE
-        var lastRight = -Float.MAX_VALUE
-        for (step in 0..20) {
-            val window = homeViewExpandWindow(
-                progress = step / 20f,
-                viewportWidth = viewport,
-                contentLeft = contentLeft,
-                contentWidth = contentWidth,
-                timeColumnWidth = timeColumn,
-                visibleDays = days,
-                selectedDayOfWeek = 6,
-            )
-            assertTrue("left 在 progress=${step / 20f} 反弹了：${window.left}", window.left <= lastLeft + 0.001f)
-            assertTrue("right 在 progress=${step / 20f} 反弹了：${window.right}", window.right >= lastRight - 0.001f)
-            lastLeft = window.left
-            lastRight = window.right
-        }
-    }
-
-    @Test
-    fun `隐藏周末时按可见日下标取列`() {
-        val weekdays = listOf(1, 2, 3, 4, 5)
-        val dayWidth = (contentWidth - timeColumn) / weekdays.size
-        val window = homeViewExpandWindow(
-            progress = 0f,
-            viewportWidth = viewport,
-            contentLeft = contentLeft,
-            contentWidth = contentWidth,
-            timeColumnWidth = timeColumn,
-            visibleDays = weekdays,
-            selectedDayOfWeek = 5, // 周五 = 第 5 列（下标 4）
-        )
-        assertEquals(contentLeft + timeColumn + 4 * dayWidth, window.left, 0.01f)
-    }
-
-    @Test
-    fun `选中日不在可见日里时退回第一列`() {
-        val weekdays = listOf(1, 2, 3, 4, 5)
-        val dayWidth = (contentWidth - timeColumn) / weekdays.size
-        val window = homeViewExpandWindow(
-            progress = 0f,
-            viewportWidth = viewport,
-            contentLeft = contentLeft,
-            contentWidth = contentWidth,
-            timeColumnWidth = timeColumn,
-            visibleDays = weekdays,
-            selectedDayOfWeek = 6, // 周六被隐藏
-        )
-        assertEquals(contentLeft + timeColumn, window.left, 0.01f)
-        assertEquals(contentLeft + timeColumn + dayWidth, window.right, 0.01f)
-    }
-
-    @Test
-    fun `时长按用户速度缩放且夹在 0_5x 到 2_5x`() {
-        assertEquals(210, homeViewExpandDurationMillis(1.0))
-        assertEquals(105, homeViewExpandDurationMillis(2.0))
-        assertEquals(420, homeViewExpandDurationMillis(0.5))
-        // 超出滑杆区间的值按边界算，不能把时长打成 0 或负数。
-        assertEquals(420, homeViewExpandDurationMillis(0.1))
-        assertEquals(84, homeViewExpandDurationMillis(2.5))
-        assertEquals(84, homeViewExpandDurationMillis(9.0))
+    fun `时长按用户速度缩放_基准 360ms`() {
+        assertEquals(360, homeViewExpandDurationMillis(1.0))
+        assertEquals(180, homeViewExpandDurationMillis(2.0))
+        assertEquals(720, homeViewExpandDurationMillis(0.5))
+        // 超出滑杆区间按边界算，不能把时长打成 0 或负数。
+        assertEquals(720, homeViewExpandDurationMillis(0.1))
+        assertEquals(144, homeViewExpandDurationMillis(2.5))
+        assertEquals(144, homeViewExpandDurationMillis(9.0))
     }
 
     @Test
     fun `减少动画判据_缩放归零即降级`() {
-        // 系统关动画 = ANIMATOR_DURATION_SCALE == 0（Flutter disableAnimations 的 Android 等价）。
         assertTrue(homeViewExpandReducedMotion(0f))
     }
 
     @Test
     fun `减少动画判据_正常缩放不降级`() {
-        assertFalse(homeViewExpandReducedMotion(1f)) // 系统默认
-        assertFalse(homeViewExpandReducedMotion(0.5f)) // 用户在开发者选项调慢（仍是动画，不降级）
-        assertFalse(homeViewExpandReducedMotion(2.5f)) // 调快同理
+        assertFalse(homeViewExpandReducedMotion(1f))
+        assertFalse(homeViewExpandReducedMotion(0.5f))
+        assertFalse(homeViewExpandReducedMotion(2.5f))
     }
 
     @Test
     fun `减少动画判据_负数按不播动画处理`() {
-        // 现实不会出现，但判据必须站在「不开动画」那一边（漏判降级比多判更伤用户）。
         assertTrue(homeViewExpandReducedMotion(-1f))
     }
 
     @Test
-    fun `圆角因子_起手与中段保持满值`() {
-        // Flutter 反面教材（2026-10-17 真机）：线性 28×(1-p) 会在页面还差一截没贴边时
-        // 圆角就没了。所以 0 与中段都必须是满圆角（1.0）。
-        assertEquals(1f, homeViewExpandCornerRadiusFactor(0f))
-        assertEquals(1f, homeViewExpandCornerRadiusFactor(0.5f))
-        assertEquals(1f, homeViewExpandCornerRadiusFactor(0.99f))
+    fun `easeOutCubic 端点与中点`() {
+        assertEquals(0f, homeViewEaseOutCubic(0f), 1e-5f)
+        assertEquals(1f, homeViewEaseOutCubic(1f), 1e-5f)
+        // 1 - (1-0.5)^3 = 1 - 0.125 = 0.875
+        assertEquals(0.875f, homeViewEaseOutCubic(0.5f), 1e-4f)
+        // 越界夹取。
+        assertEquals(0f, homeViewEaseOutCubic(-1f), 1e-5f)
+        assertEquals(1f, homeViewEaseOutCubic(2f), 1e-5f)
     }
 
     @Test
-    fun `圆角因子_只在收尾带宽内收平`() {
-        // band = 0.002：进度 0.999 时 (1-0.999)/0.002 = 0.5（带内中点）。
-        assertEquals(0.5f, homeViewExpandCornerRadiusFactor(0.999f), 0.0001f)
-        // 贴边（1.0）必须恰好为 0——落定帧（含「减少动画」snapTo(1f)）不能有残角。
-        assertEquals(0f, homeViewExpandCornerRadiusFactor(1f))
-        assertEquals(0f, homeViewExpandCornerRadiusFactor(1.5f))
+    fun `easeInOutCubicEmphasized 是三点贝塞尔 端点与中点值对齐`() {
+        val e = homeViewEaseInOutCubicEmphasized
+        assertEquals(0f, e.transform(0f), 1e-4f)
+        assertEquals(1f, e.transform(1f), 1e-4f)
+        // 第一段终点（x=midX=0.166666）必须落在 y=midY=0.4 —— 这是 ThreePointCubic 的定义点。
+        assertEquals(0.4f, e.transform(0.166666f), 2e-3f)
     }
 
     @Test
-    fun `圆角因子_带宽为0退化为二值开关`() {
-        assertEquals(0f, homeViewExpandCornerRadiusFactor(1f, band = 0f))
-        assertEquals(1f, homeViewExpandCornerRadiusFactor(0.999f, band = 0f))
+    fun `easeInOutCubicEmphasized 全程单调不减`() {
+        val e = homeViewEaseInOutCubicEmphasized
+        var last = -1f
+        for (i in 0..100) {
+            val y = e.transform(i / 100f)
+            assertTrue("progress=${i / 100f} 处曲线回退：$y < $last", y >= last - 1e-4f)
+            assertTrue("取值越界：$y", y >= -1e-4f && y <= 1.0001f)
+            last = y
+        }
     }
 
     @Test
-    fun `挡输入阈值与种子圆角取值对齐Flutter`() {
-        // 阈值与几何常量是观感契约的一部分，改值必须是有意的（出处见各自 KDoc）。
-        assertEquals(0.05f, HOME_VIEW_EXPAND_INPUT_GATE)
-        assertEquals(28f, HOME_VIEW_EXPAND_SEED_CORNER_DP)
-        assertEquals(0.002f, HOME_VIEW_EXPAND_CORNER_SETTLE_BAND)
+    fun `easeInOutCubicEmphasized 起步比线性快_不是慢起步`() {
+        // 三点贝塞尔的「强调」：前 1/6 就跑完约 40%（y(0.1667)=0.4），远快于线性 0.1667。
+        assertTrue(homeViewEaseInOutCubicEmphasized.transform(0.166666f) > 0.3f)
+    }
+
+    @Test
+    fun `圆角收束_全程保 28dp 仅贴边 0_2% 收平`() {
+        assertEquals(1f, homeViewExpandCornerRadiusFactor(0f), 1e-5f)
+        assertEquals(1f, homeViewExpandCornerRadiusFactor(0.5f), 1e-5f)
+        assertEquals(1f, homeViewExpandCornerRadiusFactor(0.99f), 1e-5f)
+        // (1-0.999)/0.002 = 0.5
+        assertEquals(0.5f, homeViewExpandCornerRadiusFactor(0.999f), 5e-3f)
+        assertEquals(0f, homeViewExpandCornerRadiusFactor(1f), 1e-5f)
     }
 }

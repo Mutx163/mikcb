@@ -74,13 +74,20 @@ class DayViewOverlayPerfWiringGuardTest {
             "`TimetableWeekPage` 没有 `dayMounted = dayVisible || dayLayerReady`——收起后又把整棵树卸载了。",
             "val dayMounted = dayVisible || dayLayerReady" in week,
         )
+        // 2141 简单面板改版（2026-11-04）：不再用 drawWithContent 裁切，隐藏靠
+        // ① 组合门 `if (dayMounted && dayContent != null)`；② 面板 alpha=panelAlpha
+        // （收起 progress=0 → easeOutCubic(0)=0，透明）；③ 命中层按 `if (dayVisible)` 门控 pointerInput。
         assertTrue(
-            "隐藏的展开层没有提前退出绘制——保活的日视图仍会每帧重画。",
-            "if (!dayVisible) return@drawWithContent" in week,
+            "展开层没有 `if (dayMounted && dayContent != null)` 组合门——收起且未就绪时面板仍被组合/绘制。",
+            "if (dayMounted && dayContent != null)" in week,
         )
         assertTrue(
-            "隐藏的展开层没有 `inertUnless(dayVisible)`——不绘制的子树仍会抢走周视图的点击。",
-            ".inertUnless(dayVisible)" in week,
+            "隐藏的展开层没有按 `graphicsLayer { alpha = panelAlpha }` 绘制（收起 progress=0 → alpha=0 透明）——保活的日视图仍会每帧重画。",
+            "graphicsLayer { alpha = panelAlpha }" in week,
+        )
+        assertTrue(
+            "展开层的命中层没有按 `if (dayVisible)` 门控 pointerInput——不绘制时仍抢周视图点击。",
+            ("if (dayVisible) {" in week) && ("Modifier.pointerInput(Unit)" in week),
         )
     }
 

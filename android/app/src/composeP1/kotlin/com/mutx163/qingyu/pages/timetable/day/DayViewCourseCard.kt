@@ -35,7 +35,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.mutx163.qingyu.components.QingyuWeightDelta
 import com.mutx163.qingyu.pages.settings.HomeMaterialRenderSpec
-import com.mutx163.qingyu.pages.timetable.LocalCourseFlightMeasure
 import com.mutx163.qingyu.theme.QingyuTheme
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.Text
@@ -82,11 +81,6 @@ fun DayViewCourseCard(
      * 非空且生效档为液态时才真采样，否则退回卡色填充（见 [dayAgendaSurface]）。
      */
     glassBackdrop: Backdrop? = null,
-    /**
-     * 首页展开飞行用的卡片键（`courseFlightCardKey(...)`）。非空且宿主在展开态时，
-     * 本卡登记卡面 / 每行文字，并在飞行期间不绘制（由 `TimetableCourseFlightLayer` 替画）。
-     */
-    flightCardKey: String? = null,
     modifier: Modifier = Modifier,
 ) {
     val dark = isSystemInDarkTheme()
@@ -107,11 +101,8 @@ fun DayViewCourseCard(
         Modifier
     }
 
-    // ── 首页展开飞行登记（2026-11-03，阶段 B）──
-    // 与周网格课卡同一套登记：卡面 + 每行文字；飞行期间本卡不画，由飞行层替画。
-    // 这里**不做逐帧读进度**，判据是布尔，保证日视图卡片的恒定图层缓存不被击穿。
-    val flightHost = LocalCourseFlightMeasure.current
-    val flightKey = flightCardKey?.takeIf { flightHost != null }
+    // 2141 简单面板：不再有逐卡飞行；保留空修饰器占位，避免大改每行文字调用点。
+    @Suppress("UNUSED_PARAMETER")
     fun flightAnchor(
         lineId: String,
         text: String,
@@ -120,19 +111,7 @@ fun DayViewCourseCard(
         anchorInk: Color,
         maxLines: Int = 1,
         lineHeightSp: Float = 0f,
-    ): Modifier = if (flightHost != null && flightKey != null) {
-        flightHost.dayTextModifier(flightKey, lineId, text, fontSizeSp, weight, anchorInk, maxLines, lineHeightSp)
-    } else {
-        Modifier
-    }
-    // P-4：本卡离开组合（换日/换周后议程项回收）时移除它的日侧登记，避免日侧无限增长。
-    DisposableEffect(flightKey) {
-        onDispose {
-            val host = flightHost
-            val key = flightKey
-            if (host != null && key != null) host.removeDay(key)
-        }
-    }
+    ): Modifier = Modifier
     val nameFontSize = MiuixTheme.textStyles.main.fontSize.value
     val infoFontSize = MiuixTheme.textStyles.footnote1.fontSize.value
     val chipFontSize = MiuixTheme.textStyles.footnote2.fontSize.value
@@ -147,20 +126,7 @@ fun DayViewCourseCard(
                 fill = cardColor,
             )
             .then(borderModifier)
-            .then(if (onTap != null) Modifier.clickable(onClick = onTap) else Modifier)
-            .then(
-                if (flightHost != null && flightKey != null) {
-                    flightHost.daySurfaceModifier(flightKey, cardColor)
-                } else {
-                    Modifier
-                },
-            )
-            .drawWithContent {
-                if (flightHost != null && flightKey != null && flightHost.isFlying(flightKey)) {
-                    return@drawWithContent
-                }
-                drawContent()
-            },
+            .then(if (onTap != null) Modifier.clickable(onClick = onTap) else Modifier),
     ) {
         // 进行中状态 600ms 动态进度背景填充
         if (progress != null) {
