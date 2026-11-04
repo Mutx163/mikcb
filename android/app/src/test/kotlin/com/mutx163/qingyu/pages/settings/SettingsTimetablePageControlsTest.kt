@@ -35,11 +35,11 @@ import org.junit.Test
  * 宿主里的选色弹窗 / 恢复默认确认框是 Compose 层，JVM 单测看不到；这里只钉它们
  * 依赖的纯逻辑（动作 → 分派器 → 字段）。弹窗接线由 L1 编译与真机验收。
  *
- * ## 仍诚实不可用的两项
+ * ## 「壁纸 / 最近使用」两行是 SHEET（弹层由宿主执行）
  *
- * 「壁纸」「最近使用」两行是 `SHEET`，面板宿主在 `b.backdropFlow` / `b.recentWallpaper`，
- * 但壳路由表还没有这两条出站路由（ShellWiring 属 Lead 写作用域）。宿主现在会明确提示
- * 不可用；**不要把这两条断言改成「已接」**，除非路由表真的补上并在真机上验过。
+ * 两行都映射到同一个壁纸面板 `b.backdropFlow`（R13 已合并，壳路由表已接）。
+ * `SHEET` 表示弹层与选图由宿主执行、这里不写设置，断言仍是 `action == SHEET`，
+ * 不代表「未接」。
  */
 class SettingsTimetablePageControlsTest {
 
@@ -322,9 +322,8 @@ class SettingsTimetablePageControlsTest {
 
     @Test
     fun `壁纸与最近使用仍是 SHEET 且没有被伪装成已接`() {
-        // 面板宿主（b.backdropFlow / b.recentWallpaper）已存在，但壳路由表还没有这两条
-        // 出站路由；宿主遇到 SHEET 会明确提示不可用。等 Lead 补路由后，这两条断言应改成
-        // 「action == NAVIGATE 且 target 有落点」。
+        // 两行都映射到同一个壁纸面板 `b.backdropFlow`（R13 已合并，壳路由表已接）。
+        // 断言仍是 SHEET：弹层与选图由宿主执行，不写设置；不代表「未接」。
         assertEquals(
             SettingsAction.SHEET,
             page().row("timetablePage.background.image").action,
