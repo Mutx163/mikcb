@@ -149,6 +149,16 @@ object HomeNavIcons {
     }
 
     /**
+     * **周视图**底栏图标：与日图标同族——`MiuixIcons.Th1`…`Th31`，把「开学第几周」这个数字
+     * 直接作为日历主体内容显示（和 [dayIconOf] 同一套日历数字图标，纯 miuix、零自绘）。
+     *
+     * 不用通知角标（Badge）那种「角落红点」观感——用户反馈那看起来像「9 条未读消息」。
+     * 越界 / 未开学 / 无学期数据时调用方不调用本函数，保持原 `MiuixIcons.Weeks` 图标。
+     * 周数在 1..31 内（学期最多三十来周），直接复用 [dayIconOf] 的 1…31 映射。
+     */
+    fun weekIconOf(weekNumber: Int): ImageVector = dayIconOf(weekNumber)
+
+    /**
      * 「更多」菜单一个条目（`TimetableMenuItem` 只描述界面，不认路由）。
      *
      * 二级子项（列表档里「添加」展开的课程 / 日程 / 考试三选）由

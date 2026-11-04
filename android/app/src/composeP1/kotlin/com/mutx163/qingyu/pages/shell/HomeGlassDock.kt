@@ -157,9 +157,10 @@ fun HomeGlassDock(
                 // 日视图：换成「今天几号」的日历图标（Th{d}）。
                 id == HomeDockNavModel.ACTION_DAY ->
                     HomeNavIcons.dockItem(id).copy(icon = dayIcon)
-                // 周视图：学期内才叠「开学第几周」徽标；weekNumber 为 null 时保持原 Weeks 图标。
+                // 周视图：学期内换成与日图标同族的「周数」日历图标（数字进主体，不用角标）；
+                // weekNumber 为 null（越界 / 未开学 / 无数据）时保持原 Weeks 图标。
                 id == HomeDockNavModel.ACTION_WEEK && weekNumber != null ->
-                    HomeNavIcons.dockItem(id).copy(badgeText = weekNumber.toString())
+                    HomeNavIcons.dockItem(id).copy(icon = HomeNavIcons.weekIconOf(weekNumber))
                 else -> HomeNavIcons.dockItem(id)
             }
         },
