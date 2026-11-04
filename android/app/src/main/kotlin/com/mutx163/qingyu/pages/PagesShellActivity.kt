@@ -2,6 +2,7 @@ package com.mutx163.qingyu.pages
 
 import android.Manifest
 import android.content.Context
+import android.content.Intent
 import android.content.pm.PackageManager
 import android.content.res.Configuration
 import android.os.Build
@@ -48,6 +49,7 @@ import androidx.core.content.ContextCompat
 import com.mutx163.qingyu.LiveUpdateScheduler
 import com.mutx163.qingyu.ExamReminderCoordinator
 import com.mutx163.qingyu.ScheduleReminderCoordinator
+import com.mutx163.qingyu.NotificationLaunchTarget
 import com.mutx163.qingyu.app.AppFontMode
 import com.mutx163.qingyu.app.AppThemeMode
 import com.mutx163.qingyu.app.TimetableSettingsModel
@@ -171,6 +173,23 @@ class PagesShellActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
+        // R09 通知点击落页（冷启动）：解析 open_route / open_lan_edit，投进
+        // ShellExternalEntryHub；壳里既有的 ShellExternalEntryEffect 负责推页
+        //（组合树尚未建立也能落页，hub 是进程级状态）。无页面参数时是空操作。
+        //
+        // 守卫为什么是 savedInstanceState == null：本 Activity 在 manifest 的
+        // configChanges 已含 orientation|screenSize，**旋转 / 分屏不重建 Activity**，
+        // 所以这里防的不是旋转，而是「进程被系统回收后按原任务恢复」——那会把用户
+        // 已经关掉的页面重新推出来。非空 savedInstanceState 只在恢复场景出现，故跳过。
+        //
+        // ⚠️ 已知边缘（真机确认项，别当没有）：进程死亡后用户从通知栏点一条**新**通知
+        // 冷启，若系统同时带回非空 savedInstanceState，本守卫会把这条新落点一起吞掉，
+        // 表现为「点通知回到壳却没进对应页」。需真机复现「杀进程 → 点通知」确认；
+        // 若命中，改用「该 Intent 是否真的携带页面 extra」而非 savedInstanceState 作判据。
+        if (savedInstanceState == null) {
+            NotificationLaunchTarget.postLaunchPage(intent)
+        }
+
         // 实时活动的设置只在 Compose 宿主落盘（`timetable_settings`），而原生岛读的是
         // `LiveUpdateScheduler` 的 `snapshot_json`——两者之间原本没有桥，于是「改了显示
         // 设置，岛毫无变化」。这里把同步器挂到进程级注册点，由 [LiveSnapshotSyncRegistry]
@@ -293,6 +312,20 @@ class PagesShellActivity : ComponentActivity() {
         Choreographer.getInstance().postFrameCallback {
             PerfProbe.markStartup("firstFrame")
         }
+    }
+
+    /**
+     * R09 通知点击落页（后台 singleTop 复用）：manifest 里本 Activity 是
+     * `launchMode="singleTop"`，通知 Intent 带 FLAG_ACTIVITY_SINGLE_TOP 时走这里，
+     * 不重建 Activity。解析后同样投进 ShellExternalEntryHub，推页由壳的组合钩子完成。
+     *
+     * `setIntent` 保证后续代码（含 Activity 重建）读到的是最新 Intent；已解析的
+     * extra 由 [NotificationLaunchTarget.postLaunchPage] 移除，重建不会重复推页。
+     */
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        NotificationLaunchTarget.postLaunchPage(intent)
     }
 
     /** 当前资源配置是否为深色。仅作首帧兜底，组合内以「主题模式 + 系统」解析出的明暗为准。 */
