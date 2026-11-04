@@ -17,13 +17,11 @@ import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.absoluteOffset
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.systemBars
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -206,11 +204,6 @@ fun AppearanceEditorScreen(
     // 进度用 `Animatable` 而不是 `animateFloatAsState`：退场要在回调宿主之前先播完，
     // 且入场没播完就点取消时要能从当前值反向续播（`Animatable.animateTo` 自带互斥）。
     val entrance = remember { Animatable(0f) }
-    // 卡片内层那 1.5dp 内缩（见下方卡片 Box）**只在落定时加**；入场 / 退场动画期间去掉，
-    // 让副本最后一帧的内容区 = 整屏、与真首页像素对齐 —— 否则 1.5dp 内缩会被约 1.4x 的
-    // 放大还原成 ~2dp（右/下还被内层裁角少裁一点），交接真首页时整页往上「归位」一下。
-    // 用 derivedStateOf：只在跨过 0.999 时翻一次，动画期间不逐帧重组卡片子树。
-    val cardInsetSettled by remember { derivedStateOf { entrance.value >= 0.999f } }
     // 预览全程**恒开玻璃、不做切换**（用户拍板方案②）：不再有"过渡期关、落定开"的开关可露；
     // 逐帧缩放的玻璃接缝靠"整像素对齐 + 卡内同色内边 + 缩放层离屏合成(Offscreen)"压住。
     // 连点退出的守门：动画期间第二下直接忽略，回调只发一次。
@@ -366,17 +359,24 @@ fun AppearanceEditorScreen(
                             screenHeightDp = screenHeight.value,
                             landing = landingBox,
                         )
-                        // 按**整像素**对齐绘制矩形（消「非整数倍缩放」下裁边 / 内容的亚像素 AA 抖动）：
-                        // 把目标矩形四边取整到设备像素，再反推 scale / translation。
+                        // 连续内缩（原来的 1.5dp「卡边 scrim 内边」）：绘制期按进度算，不触发
+                        // 重组、也没有阈值。entrance=1（落定）→ 四边各 1.5dp（观感与原来一致）；
+                        // entrance=0（退场末帧）→ 0，铺满整屏（与真首页像素对齐，不再上跳）。
+                        // 横 / 纵分别用 scaleX / scaleY，四边才都是 1.5dp（用同一 scale 会让纵向≈3dp）；
+                        // 退场末帧 inset=0，两者恰好都收敛到整屏比例，不产生变形。
+                        val insetPx = 1.5.dp.toPx() *
+                            AppearanceEditorEntranceSpec.eased(entrance.value)
+                        // 目标绘制矩形 = 落点帧矩形，再四边各内缩 insetPx（边取整到设备像素）。
                         val nodeLeftPx = landingBox.cardLeftDp.dp.toPx()
                         val nodeTopPx = landingBox.cardTopDp.dp.toPx()
                         val landingWPx = landingBox.cardWidthDp.dp.toPx()
-                        val drawnWpx = frame.cardWidthDp.dp.toPx().roundToInt().toFloat()
-                        val alignedScale = if (landingWPx > 0.5f) drawnWpx / landingWPx else 1f
-                        val drawnLeftPx = frame.cardLeftDp.dp.toPx().roundToInt().toFloat()
-                        val drawnTopPx = frame.cardTopDp.dp.toPx().roundToInt().toFloat()
-                        scaleX = alignedScale
-                        scaleY = alignedScale
+                        val landingHPx = landingBox.cardHeightDp.dp.toPx()
+                        val drawnWpx = (frame.cardWidthDp.dp.toPx() - 2f * insetPx).roundToInt().toFloat()
+                        val drawnHpx = (frame.cardHeightDp.dp.toPx() - 2f * insetPx).roundToInt().toFloat()
+                        val drawnLeftPx = (frame.cardLeftDp.dp.toPx() + insetPx).roundToInt().toFloat()
+                        val drawnTopPx = (frame.cardTopDp.dp.toPx() + insetPx).roundToInt().toFloat()
+                        scaleX = if (landingWPx > 0.5f) drawnWpx / landingWPx else 1f
+                        scaleY = if (landingHPx > 0.5f) drawnHpx / landingHPx else 1f
                         // 绕左上角缩放，位移补齐到整像素。
                         transformOrigin = TransformOrigin(0f, 0f)
                         translationX = drawnLeftPx - nodeLeftPx
@@ -397,19 +397,13 @@ fun AppearanceEditorScreen(
                     ),
             ) {
                 // 缩尺首页 + 可选的真实转场重放（见 AppearanceEditorPreviewStage）。
-                // 卡内留 1.5dp `AppearanceEditorScrim` 内边：让最外层随缩放抖动的粗边是「scrim vs 页面 scrim」
-                // 同色不可见，把壁纸的高对比边收进去，减轻「边缘有线在闪」。
-                // 内层也按 squircle 裁到 `圆角 - 1.5dp`：否则 1.5dp 是矩形内缩，
-                // 四角会露出「方形内角 vs 圆弧外角」不重合的深色楔形/月牙。
+                // 1.5dp 卡边内边改由外层 `graphicsLayer` 的连续内缩绘制（见上）——这里内容恒
+                // 填满卡片、按卡片 squircle 裁角；落定 / 过渡期都连续，不再有二段跳。
                 Box(
                     modifier = Modifier
                         .fillMaxSize()
-                        // 动画期间 inset=0：副本内容区＝整屏，退场最后一帧与真首页像素对齐；
-                        // 只有落定、卡片作为缩略窗展示时才加那层 1.5dp scrim 内边 + 内层裁角。
-                        .padding(if (cardInsetSettled) 1.5.dp else 0.dp)
                         .squircleClip(
-                            cornerRadius = (geometry.radius - if (cardInsetSettled) 1.5.dp else 0.dp)
-                                .coerceAtLeast(0.dp),
+                            cornerRadius = geometry.radius,
                             extension = APPEARANCE_EDITOR_SQUIRCLE_EXTENSION,
                         ),
                 ) {
