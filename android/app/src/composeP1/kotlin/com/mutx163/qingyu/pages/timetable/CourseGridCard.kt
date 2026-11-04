@@ -33,6 +33,8 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.mutx163.qingyu.components.QingyuWeightDelta
+import com.mutx163.qingyu.components.glass.GlassDockSpecular
+import com.mutx163.qingyu.components.glass.glassRimAlpha
 import com.mutx163.qingyu.components.liquid.lens
 import com.mutx163.qingyu.components.shiftWeight
 import com.mutx163.qingyu.core.Course
@@ -284,6 +286,12 @@ fun CourseGridCard(
                         chromaticAberration = cardDispersion,
                     )
                 }
+            },
+            // 边缘高光：与底栏**同一份** specular（`GlassDockSpecular`），强度按
+            // `material.liquidRimStrength` 走同一口径（`glassRimAlpha`），让静止时卡片
+            // 也有一圈像玻璃的边光，而不是只靠动起来才看得见的折射。
+            highlight = {
+                GlassDockSpecular.copy(alpha = glassRimAlpha(material?.liquidRimStrength))
             },
             onDrawSurface = { drawRect(fill) },
         )

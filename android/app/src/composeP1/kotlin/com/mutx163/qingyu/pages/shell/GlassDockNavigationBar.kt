@@ -64,6 +64,8 @@ import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import com.mutx163.qingyu.components.QingyuWeightDelta
 import com.mutx163.qingyu.components.shiftWeight
+import com.mutx163.qingyu.components.glass.GlassDockSpecular
+import com.mutx163.qingyu.components.glass.glassRimAlpha
 import com.mutx163.qingyu.components.liquid.DampedDragAnimation
 import com.mutx163.qingyu.components.liquid.InnerShadow
 import com.mutx163.qingyu.components.liquid.InteractiveHighlight
@@ -92,7 +94,6 @@ import top.yukonga.miuix.kmp.blur.drawBackdrop
 import top.yukonga.miuix.kmp.blur.highlight.BloomStroke
 import top.yukonga.miuix.kmp.blur.highlight.Highlight
 import top.yukonga.miuix.kmp.blur.highlight.LightPosition
-import top.yukonga.miuix.kmp.blur.highlight.LightSource
 import top.yukonga.miuix.kmp.blur.isRuntimeShaderSupported
 import top.yukonga.miuix.kmp.blur.layerBackdrop
 import top.yukonga.miuix.kmp.blur.rememberLayerBackdrop
@@ -290,12 +291,8 @@ fun GlassDockNavigationBar(
         (material?.liquidRefractionBand ?: LiquidGlassTuning.DEFAULT_REFRACTION_BAND.toFloat()) /
             LiquidGlassTuning.DEFAULT_REFRACTION_BAND.toFloat()
     // 边光强度：出厂 0.2 对应原来的 0.75 alpha；旋钮拉到 0 就完全不要边光。
-    val defaultRimStrength = LiquidGlassTuning.DEFAULT_RIM_STRENGTH.toFloat()
-    val rimHighlightAlpha = (
-        0.75f * (
-            (material?.liquidRimStrength ?: defaultRimStrength) / defaultRimStrength
-            )
-        ).coerceIn(0f, 1f)
+    // 口径与课卡同一份实现（components/glass/GlassHighlights.kt 的 glassRimAlpha）。
+    val rimHighlightAlpha = glassRimAlpha(material?.liquidRimStrength)
 
     val pillShape = remember { CircleShape }
     val isLtr = LocalLayoutDirection.current == LayoutDirection.Ltr
@@ -876,33 +873,6 @@ private fun labelTextStyle(): TextStyle {
         styles.footnote2
     }
 }
-
-/**
- * 玻璃边缘的扫光（specular）。
- *
- * 与 miuix 的 `Highlight.GlassStrokeMiddleLight` 不同：这里用 `dualPeak = true`
- * （两个 180° 对置的峰），所以**上下两条边同时**有高光，读起来更像一根玻璃棒
- * 而不是一块有厚度的板。这是 demo 为指示器单独调的预设。
- */
-private val GlassDockSpecular: Highlight = Highlight(
-    width = 1.dp,
-    alpha = 1f,
-    style = BloomStroke(
-        color = Color.White.copy(alpha = 0.12f),
-        innerBlurRadius = 2.0.dp,
-        primaryLight = LightSource(
-            position = LightPosition(0.5f, -0.3f, -0.05f),
-            color = Color.White,
-            intensity = 1f,
-        ),
-        secondaryLight = LightSource(
-            position = LightPosition(0.5f, 0.8f, -0.5f),
-            color = Color.White,
-            intensity = 0.4f,
-        ),
-        dualPeak = true,
-    ),
-)
 
 // 与 `HighlightStyle.kt` 的 LIGHT_REF 保持一致（那里是光源参考点）。
 private const val LIGHT_REF_X = 0.5f

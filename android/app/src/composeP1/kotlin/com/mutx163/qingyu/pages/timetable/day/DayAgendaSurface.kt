@@ -4,6 +4,8 @@ import androidx.compose.foundation.background
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
+import com.mutx163.qingyu.components.glass.GlassDockSpecular
+import com.mutx163.qingyu.components.glass.glassRimAlpha
 import com.mutx163.qingyu.pages.settings.HomeMaterialRenderSpec
 import com.mutx163.qingyu.pages.settings.SurfaceMaterialState
 import top.yukonga.miuix.kmp.blur.Backdrop
@@ -22,17 +24,25 @@ import top.yukonga.miuix.kmp.blur.drawBackdrop
  * @param glassBackdrop 共享采样层；`null` = 这一档不该采样（实体 / 高斯 / 没壁纸 /
  *   没材质快照），退回 [background] 的实底填充。
  * @param fill 卡面填充色（**已含**算好的 alpha）。
+ * @param material 材质快照：只用来取 `liquidRimStrength` 决定边光强度，与底栏同一口径；
+ *   `null` 时按出厂值（0.75）。
  */
 fun Modifier.dayAgendaSurface(
     glassBackdrop: Backdrop?,
     shape: Shape,
     fill: Color,
+    material: HomeMaterialRenderSpec? = null,
 ): Modifier = if (glassBackdrop != null) {
     drawBackdrop(
         backdrop = glassBackdrop,
         shape = { shape },
         // 共享层已经糊过一遍；这里只取像素，效果链留空（与周网格课卡同一条）。
         effects = {},
+        // 边缘高光：与底栏 / 周网格课卡**同一份** specular（`GlassDockSpecular`），
+        // 强度按 `material.liquidRimStrength` 同一口径缩放，静止时也有一圈玻璃边光。
+        highlight = {
+            GlassDockSpecular.copy(alpha = glassRimAlpha(material?.liquidRimStrength))
+        },
         onDrawSurface = { drawRect(fill) },
     )
 } else {

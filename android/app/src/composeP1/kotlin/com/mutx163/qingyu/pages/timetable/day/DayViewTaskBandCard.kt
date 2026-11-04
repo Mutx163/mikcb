@@ -91,6 +91,7 @@ fun DayViewTaskBandCard(
                         glassBackdrop = glass,
                         shape = shape,
                         fill = MiuixTheme.colorScheme.surface.copy(alpha = fillAlpha),
+                        material = material,
                     )
                 } else {
                     Modifier

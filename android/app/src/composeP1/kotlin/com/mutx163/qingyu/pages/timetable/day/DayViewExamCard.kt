@@ -78,6 +78,7 @@ fun DayViewExamCard(
                 glassBackdrop = dayAgendaGlassBackdrop(material, glassBackdrop),
                 shape = shape,
                 fill = cardColor,
+                material = material,
             )
             .then(if (onTap != null) Modifier.clickable(onClick = onTap) else Modifier),
     ) {
