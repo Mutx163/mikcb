@@ -23,6 +23,7 @@ import androidx.compose.foundation.layout.systemBars
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -164,6 +165,14 @@ fun AppearanceEditorScreen(
     onMaterial: () -> Unit,
     modifier: Modifier = Modifier,
     requestBackExit: Boolean = false,
+    /**
+     * 退场动画**开始那一刻**的回调（`isCancel` = 取消 / 系统返回，`false` = 完成）。
+     *
+     * 宿主用它把「取消的回滚」提前到这里：否则 500ms 退场里缩小版还显示**改后**的观感，
+     * 等动画播完才在 `cancel()` 里回滚、pop 揭开的却是**已回滚**的真首页 —— 内容突变一下。
+     * 提前后整段退场显示的就已是回滚后的样子。只在 [requestExit] 的 `exiting` 守卫后触发一次。
+     */
+    onExitStart: (isCancel: Boolean) -> Unit = { _ -> },
     previewReady: Boolean = true,
     enableTransitionPreview: Boolean = APPEARANCE_EDITOR_TRANSITION_PREVIEW_ENABLED,
     preview: @Composable (dayView: Boolean, glassSurfacesEnabled: Boolean) -> Unit,
@@ -197,6 +206,11 @@ fun AppearanceEditorScreen(
     // 进度用 `Animatable` 而不是 `animateFloatAsState`：退场要在回调宿主之前先播完，
     // 且入场没播完就点取消时要能从当前值反向续播（`Animatable.animateTo` 自带互斥）。
     val entrance = remember { Animatable(0f) }
+    // 卡片内层那 1.5dp 内缩（见下方卡片 Box）**只在落定时加**；入场 / 退场动画期间去掉，
+    // 让副本最后一帧的内容区 = 整屏、与真首页像素对齐 —— 否则 1.5dp 内缩会被约 1.4x 的
+    // 放大还原成 ~2dp（右/下还被内层裁角少裁一点），交接真首页时整页往上「归位」一下。
+    // 用 derivedStateOf：只在跨过 0.999 时翻一次，动画期间不逐帧重组卡片子树。
+    val cardInsetSettled by remember { derivedStateOf { entrance.value >= 0.999f } }
     // 预览全程**恒开玻璃、不做切换**（用户拍板方案②）：不再有"过渡期关、落定开"的开关可露；
     // 逐帧缩放的玻璃接缝靠"整像素对齐 + 卡内同色内边 + 缩放层离屏合成(Offscreen)"压住。
     // 连点退出的守门：动画期间第二下直接忽略，回调只发一次。
@@ -218,9 +232,11 @@ fun AppearanceEditorScreen(
      * 缓动由纯模型 [AppearanceEditorEntranceSpec.eased] 负责，这里用线性 `tween` 只当
      * 计时器——曲线只有一份，单测才能逐点断言。
      */
-    fun requestExit(finish: () -> Unit) {
+    fun requestExit(isCancel: Boolean, finish: () -> Unit) {
         if (exiting) return
         exiting = true
+        // 退场一开始的钩子：取消时把回滚提前（副本尾段即显示回滚后的样子）。
+        onExitStart(isCancel)
         exitScope.launch {
             // 入场还没播完就退出时（进页 380ms 内按返回），先吃掉剩下的入场再反向：
             // `animateTo(0f)` 会从**当前进度**直接反向，那一段的位移显得比正常退场短
@@ -256,7 +272,7 @@ fun AppearanceEditorScreen(
     // [requestBackExit] 为 true 时成立 —— 面板开着时宿主传 false，那一下必须留给官方
     // `OverlayBottomSheet` 自己关面板（Dart `_popSelf` 也是先摘弹层再摘自己）。
     // 「取消」= 回滚到进页快照（Dart `:735-740`），所以退场回调 [onCancel]。
-    BackHandler(enabled = requestBackExit) { requestExit(onCancel) }
+    BackHandler(enabled = requestBackExit) { requestExit(isCancel = true, finish = onCancel) }
 
     // 退场动画期间吞掉系统返回（本页的再吞一层，宿主的 `enabled` 已随 [requestBackExit]
     // 关掉；两层都留着是为了让「动画期间第二下无效」不依赖宿主那一侧的判据）。
@@ -388,9 +404,12 @@ fun AppearanceEditorScreen(
                 Box(
                     modifier = Modifier
                         .fillMaxSize()
-                        .padding(1.5.dp)
+                        // 动画期间 inset=0：副本内容区＝整屏，退场最后一帧与真首页像素对齐；
+                        // 只有落定、卡片作为缩略窗展示时才加那层 1.5dp scrim 内边 + 内层裁角。
+                        .padding(if (cardInsetSettled) 1.5.dp else 0.dp)
                         .squircleClip(
-                            cornerRadius = (geometry.radius - 1.5.dp).coerceAtLeast(0.dp),
+                            cornerRadius = (geometry.radius - if (cardInsetSettled) 1.5.dp else 0.dp)
+                                .coerceAtLeast(0.dp),
                             extension = APPEARANCE_EDITOR_SQUIRCLE_EXTENSION,
                         ),
                 ) {
@@ -430,8 +449,8 @@ fun AppearanceEditorScreen(
                     dayView = dayView,
                     onDayViewChange = { dayView = it },
                     // 退场先播完缩放再回调宿主；连点只认第一下。
-                    onCancel = { requestExit(onCancel) },
-                    onDone = { requestExit(onDone) },
+                    onCancel = { requestExit(isCancel = true, finish = onCancel) },
+                    onDone = { requestExit(isCancel = false, finish = onDone) },
                     topInset = topInset,
                     modifier = Modifier.align(Alignment.TopCenter),
                 )

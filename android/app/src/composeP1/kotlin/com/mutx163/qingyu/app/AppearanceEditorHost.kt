@@ -182,6 +182,15 @@ fun AppearanceEditorHost(
     onBack: () -> Unit,
     onNavigate: (route: String) -> Unit = {},
     onIntent: (SettingsDispatch) -> Unit = {},
+    /**
+     * 退场收尾（`done()` / `cancel()` 在 `onBack()` 之前）请壳做「让真首页就位」的动作。
+     *
+     * 现在接的是 `wiring.settingsRevision++`：让背后的首页在**这次 pop 之前**就按最终设置
+     * 重读、排到最终布局。这样 pop 揭开时真首页已经是终态，不会「动画播完才整页跳一下」
+     * （原来的重读发生在 pop 之后的 `LaunchedEffect(atRoot)`，要慢一帧/几帧才排到位）。
+     * 默认空 = 不接线时行为不变（页面索引演示等）。
+     */
+    onBeforeExit: () -> Unit = {},
     initialMaterialPage: Int? = null,
     initialWallpaperPage: Int? = null,
     // 首页**实时**当前选择（挖洞预览要显示用户此刻看的那天/那周，而不是仓储当前周）。
@@ -565,21 +574,33 @@ fun AppearanceEditorHost(
      * 与「完成后不退出」不同，取消**无论如何都要离开**：用户已经决定放弃这一页的改动，
      * 回滚写失败时提示一句就够（Dart `_popSelf` 同样不等回滚结果）。
      */
-    fun cancel() {
-        if (exiting) return
-        exiting = true
+    /**
+     * 取消要做的「回滚」部分（可重入）：清掉欠写的防抖档、把草稿拉回进页快照。
+     *
+     * 退出动画**开始时**（`onExitStart`）先跑一遍，让缩小版尾段就显示回滚后的样子；
+     * `cancel()` 落地时再跑一遍是空操作（`model == openedWith`）。幂等，两处复用。
+     */
+    fun rollbackDraftToOpenedWith() {
         // Dart 取消时把防抖计时器直接 cancel（`:622-628` 之后走 `_updateDraft(_openedWith)`），
         // 那一档草稿**不写**：盘上最终只应留下进页快照。
         saveJob?.cancel()
         saveJob = null
         pendingSave = null
-        // 本页退出后弹层不能继续压在新页面上（`:679-727`）。
-        materialSheet = false
-        wallpaperSheet = false
         if (model != openedWith) {
             model = openedWith
             writeVerified(openedWith)
         }
+    }
+
+    fun cancel() {
+        if (exiting) return
+        exiting = true
+        rollbackDraftToOpenedWith()
+        // 本页退出后弹层不能继续压在新页面上（`:679-727`）。
+        materialSheet = false
+        wallpaperSheet = false
+        // pop 前先让真首页就位（重读设置、排到最终布局），避免揭开后再排一次。
+        onBeforeExit()
         onBack()
     }
 
@@ -598,6 +619,8 @@ fun AppearanceEditorHost(
         exiting = true
         materialSheet = false
         wallpaperSheet = false
+        // 写完欠档后、pop 前先让真首页就位（重读设置、排到最终布局）。
+        onBeforeExit()
         onBack()
     }
 
@@ -743,6 +766,8 @@ fun AppearanceEditorHost(
         initialDayView = homeViewMode == TimetableHomeViewMode.DAY,
         onCancel = { cancel() },
         onDone = { done() },
+        // 取消的回滚提前到退场动画一开始（缩小版尾段即显示回滚后的样子）。
+        onExitStart = { isCancel -> if (isCancel) rollbackDraftToOpenedWith() },
         onAdjustWallpaper = {
             // 底部圆钮永远从「壁纸」那页开（Dart `_openWallpaperSheet` 不带页参数，`:777-807`）。
             openWallpaper(WallpaperSheetPages.PICKER)
@@ -909,6 +934,10 @@ private fun TimetablePreviewPage(
             onSelect = {},
             onRoundButton = {},
             backdrop = if (glassAvailable) dockBackdrop else null,
+            // 周视图「开学第几周」徽标：与壳同源，取仓储快照里的 core 学期设置；
+            // 日视图「今天几号」不需要学期数据，组件内部按本机日期自算。
+            semesterStartDate = repository.snapshot.settings.semesterStartDate?.toLocalDate(),
+            semesterWeekCount = repository.snapshot.settings.semesterWeekCount,
             modifier = Modifier.align(Alignment.BottomCenter),
         )
     }
