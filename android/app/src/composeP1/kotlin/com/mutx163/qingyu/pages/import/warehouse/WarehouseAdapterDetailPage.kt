@@ -10,10 +10,6 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -21,7 +17,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.mutx163.qingyu.components.QingyuCard
@@ -29,17 +25,15 @@ import com.mutx163.qingyu.components.QingyuCardDefaults
 import com.mutx163.qingyu.components.QingyuPageCardMargin
 import com.mutx163.qingyu.components.QingyuPageList
 import com.mutx163.qingyu.components.QingyuPageScaffold
+import com.mutx163.qingyu.components.QingyuSectionGap
+import com.mutx163.qingyu.components.QingyuSectionTitle
 import com.mutx163.qingyu.components.QingyuWeightDelta
 import com.mutx163.qingyu.components.shiftWeight
 import top.yukonga.miuix.kmp.basic.Button
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
 import top.yukonga.miuix.kmp.basic.HorizontalDivider
-import top.yukonga.miuix.kmp.basic.Icon
-import top.yukonga.miuix.kmp.basic.IconButton
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TextField
-import top.yukonga.miuix.kmp.icon.MiuixIcons
-import top.yukonga.miuix.kmp.icon.extended.Copy
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 /**
@@ -49,6 +43,13 @@ import top.yukonga.miuix.kmp.theme.MiuixTheme
  * 2. 脚本使用说明与描述；
  * 3. 自定义登录入口地址覆盖编辑与恢复；
  * 4. 复制地址、脚本链接及直接拉起网页登录。
+ *
+ * 2026-11-04 排版重排（对照 Flutter 发布版的「分组标题 + 卡片」信息节奏）：
+ * - 原本四张卡片**没有分组标题、彼此竖直贴死**、卡内标题层级不一（元数据卡无标题、
+ *   其余卡自带 body1 标题），整页看不出信息分组 ⇒ 统一改成官方配方
+ *   「[QingyuSectionTitle] → [QingyuCard]」一组一个 `item`，卡间统一 12dp 竖向间距；
+ * - 元数据行改成「左标签 / 右取值右对齐 + 可换行」，长值（类别、适配者、学校代码）不再挤压或溢出；
+ * - 卡内重复的标题（"使用说明""链接与调试"）上提为分组标题，链接分组复用 ARB 文案「更多操作」。
  */
 @Composable
 fun WarehouseAdapterDetailPage(
@@ -65,10 +66,11 @@ fun WarehouseAdapterDetailPage(
     var editUrl by remember(customImportUrl) { mutableStateOf(customImportUrl ?: "") }
     val isCustomized = !customImportUrl.isNullOrBlank()
 
-    // Dart warehouse_adapter_detail_screen.dart 的 HyperosSubpage 标题是纯 Text ⇒ 可折叠大标题。
-    // 骨架、顶栏、返回键统一走共享套件（R1）；滚动走 QingyuPageList（R2）。
+    // Dart warehouse_adapter_detail_screen.dart 的 HyperosSubpage 标题是纯 Text ⇒ 可折叠大标题，
+    // 标题取适配器名（与 Flutter 发布版 `title: Text(adapter.adapterName)` 一致），
+    // 避免与下方「适配器信息」分组标题重复。骨架、顶栏、返回键走共享套件（R1）；滚动走 QingyuPageList（R2）。
     QingyuPageScaffold(
-        title = WarehouseStrings.adapterInfoTitle.zh,
+        title = adapter.adapterName.ifEmpty { WarehouseStrings.adapterInfoTitle.zh },
         onBack = onBack,
         bottomBar = {
             Box(
@@ -85,17 +87,21 @@ fun WarehouseAdapterDetailPage(
             }
         },
     ) {
+        // 页面横向留白由每张卡片自带 12dp；配合卡内 16dp = 文字左缘 28dp，
+        // 与 QingyuSectionTitle 默认 28dp 左缘对齐（样式规范 §三 标准配方）。
         QingyuPageList(
             innerPadding = innerPadding,
             scrollBehavior = scrollBehavior,
             contentPadding = PaddingValues(bottom = 12.dp),
         ) {
-            // 元数据卡片
-            item(key = "meta_card") {
+            // ── 分组：适配器信息（名称 / 学校 / 类别 / 适配者 / 学校代码）──
+            item(key = "meta") {
+                QingyuSectionTitle(WarehouseStrings.adapterInfoTitle.zh)
                 QingyuCard(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = QingyuPageCardMargin),
+                        .padding(horizontal = QingyuPageCardMargin)
+                        .padding(bottom = QingyuSectionGap),
                     // 卡片里是普通内容（非 Preference 行），内边距必须自己给。
                     insideMargin = QingyuCardDefaults.ContentInsideMargin,
                 ) {
@@ -115,60 +121,60 @@ fun WarehouseAdapterDetailPage(
                         Spacer(modifier = Modifier.height(12.dp))
 
                         DetailMetaRow(WarehouseStrings.categoryLabel.zh, adapter.category)
-                        Spacer(modifier = Modifier.height(6.dp))
+                        Spacer(modifier = Modifier.height(8.dp))
                         DetailMetaRow(WarehouseStrings.maintainerLabel.zh, adapter.maintainer.ifEmpty { "社区成员" })
                         if (adapter.schoolCode.isNotEmpty()) {
-                            Spacer(modifier = Modifier.height(6.dp))
+                            Spacer(modifier = Modifier.height(8.dp))
                             DetailMetaRow("学校代码", adapter.schoolCode)
                         }
                     }
                 }
             }
 
-            // 说明卡片
+            // ── 分组：使用说明 ──
             if (adapter.description.isNotBlank()) {
-                item(key = "desc_card") {
+                item(key = "desc") {
+                    QingyuSectionTitle("使用说明")
                     QingyuCard(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(horizontal = QingyuPageCardMargin),
+                            .padding(horizontal = QingyuPageCardMargin)
+                            .padding(bottom = QingyuSectionGap),
                         insideMargin = QingyuCardDefaults.ContentInsideMargin,
                     ) {
-                        Column(modifier = Modifier.fillMaxWidth()) {
-                            Text(
-                                text = "使用说明",
-                                style = MiuixTheme.textStyles.body1.shiftWeight(QingyuWeightDelta.SEMIBOLD),
-                            )
-                            Spacer(modifier = Modifier.height(8.dp))
-                            Text(
-                                text = adapter.description,
-                                style = MiuixTheme.textStyles.footnote1,
-                                color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-                                lineHeight = 18.sp,
-                            )
-                        }
+                        Text(
+                            text = adapter.description,
+                            style = MiuixTheme.textStyles.footnote1,
+                            color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                            lineHeight = 18.sp,
+                        )
                     }
                 }
             }
 
-            // 自定义登录入口地址卡片
-            item(key = "custom_url_card") {
+            // ── 分组：自定义登录地址 ──
+            item(key = "custom_url") {
+                QingyuSectionTitle(WarehouseStrings.customLoginAddressAction.zh)
                 QingyuCard(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = QingyuPageCardMargin),
+                        .padding(horizontal = QingyuPageCardMargin)
+                        .padding(bottom = QingyuSectionGap),
                     insideMargin = QingyuCardDefaults.ContentInsideMargin,
                 ) {
                     Column(modifier = Modifier.fillMaxWidth()) {
                         Text(
-                            text = WarehouseStrings.customLoginAddressAction.zh,
-                            style = MiuixTheme.textStyles.body1.shiftWeight(QingyuWeightDelta.SEMIBOLD),
-                        )
-                        Spacer(modifier = Modifier.height(4.dp))
-                        Text(
-                            text = if (isCustomized) WarehouseStrings.adapterOverrideImportUrlHint.zh else "可覆盖默认登录地址（如学校内网或 VPN 登录页）",
+                            text = if (isCustomized) {
+                                WarehouseStrings.adapterOverrideImportUrlHint.zh
+                            } else {
+                                "可覆盖默认登录地址（如学校内网或 VPN 登录页）"
+                            },
                             style = MiuixTheme.textStyles.footnote1,
-                            color = if (isCustomized) MiuixTheme.colorScheme.primary else MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                            color = if (isCustomized) {
+                                MiuixTheme.colorScheme.primary
+                            } else {
+                                MiuixTheme.colorScheme.onSurfaceVariantSummary
+                            },
                         )
                         Spacer(modifier = Modifier.height(10.dp))
                         TextField(
@@ -208,43 +214,38 @@ fun WarehouseAdapterDetailPage(
                 }
             }
 
-            // 快捷复制卡片
-            item(key = "links_card") {
+            // ── 分组：更多操作（复制登录地址 / 复制脚本地址）──
+            item(key = "links") {
+                QingyuSectionTitle(WarehouseStrings.moreActionsTooltip.zh)
                 QingyuCard(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = QingyuPageCardMargin),
+                        .padding(horizontal = QingyuPageCardMargin)
+                        .padding(bottom = QingyuSectionGap),
                     insideMargin = QingyuCardDefaults.ContentInsideMargin,
                 ) {
-                    Column(modifier = Modifier.fillMaxWidth()) {
-                        Text(
-                            text = "链接与调试",
-                            style = MiuixTheme.textStyles.body1.shiftWeight(QingyuWeightDelta.SEMIBOLD),
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(10.dp),
+                    ) {
+                        Button(
+                            onClick = onCopyLoginUrl,
+                            modifier = Modifier.weight(1f),
+                            content = { Text(text = WarehouseStrings.copyLoginAddressAction.zh) },
+                            colors = ButtonDefaults.buttonColors(
+                                color = MiuixTheme.colorScheme.surfaceVariant,
+                                contentColor = MiuixTheme.colorScheme.primary,
+                            ),
                         )
-                        Spacer(modifier = Modifier.height(10.dp))
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(10.dp),
-                        ) {
-                            Button(
-                                onClick = onCopyLoginUrl,
-                                modifier = Modifier.weight(1f),
-                                content = { Text(text = WarehouseStrings.copyLoginAddressAction.zh) },
-                                colors = ButtonDefaults.buttonColors(
-                                    color = MiuixTheme.colorScheme.surfaceVariant,
-                                    contentColor = MiuixTheme.colorScheme.primary,
-                                ),
-                            )
-                            Button(
-                                onClick = onCopyScriptUrl,
-                                modifier = Modifier.weight(1f),
-                                content = { Text(text = WarehouseStrings.copyScriptAddressAction.zh) },
-                                colors = ButtonDefaults.buttonColors(
-                                    color = MiuixTheme.colorScheme.surfaceVariant,
-                                    contentColor = MiuixTheme.colorScheme.primary,
-                                ),
-                            )
-                        }
+                        Button(
+                            onClick = onCopyScriptUrl,
+                            modifier = Modifier.weight(1f),
+                            content = { Text(text = WarehouseStrings.copyScriptAddressAction.zh) },
+                            colors = ButtonDefaults.buttonColors(
+                                color = MiuixTheme.colorScheme.surfaceVariant,
+                                contentColor = MiuixTheme.colorScheme.primary,
+                            ),
+                        )
                     }
                 }
             }
@@ -252,21 +253,29 @@ fun WarehouseAdapterDetailPage(
     }
 }
 
+/**
+ * 元数据一行：左侧标签（次要色）+ 右侧取值（右对齐、可换行）。
+ *
+ * 取值用 `weight(1f)` 吃掉剩余宽度并右对齐，长文本（长类别名 / 长适配者名 / 学校代码）
+ * 会折行而不是把标签挤走或溢出屏幕——这是原 `SpaceBetween` 写法在窄屏下的主要乱源。
+ */
 @Composable
 private fun DetailMetaRow(label: String, value: String) {
     Row(
         modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Text(
             text = label,
             style = MiuixTheme.textStyles.footnote1,
             color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+            modifier = Modifier.padding(end = 16.dp),
         )
         Text(
             text = value,
             style = MiuixTheme.textStyles.footnote1.shiftWeight(QingyuWeightDelta.MEDIUM),
+            modifier = Modifier.weight(1f),
+            textAlign = TextAlign.End,
         )
     }
 }

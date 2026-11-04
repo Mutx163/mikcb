@@ -8,7 +8,7 @@ com/mutx163/qingyu/pages/guide/HyperosShowcasePage.kt:11
 com/mutx163/qingyu/pages/showcase/MiuixShowcasePage.kt:7
 com/mutx163/qingyu/pages/guide/StartupFlowPage.kt:5
 com/mutx163/qingyu/pages/import/warehouse/AiImageCourseImportPage.kt:5
-com/mutx163/qingyu/pages/import/warehouse/WarehouseAdapterDetailPage.kt:5
+com/mutx163/qingyu/pages/import/warehouse/WarehouseAdapterDetailPage.kt:4
 com/mutx163/qingyu/pages/import/ImportCommon.kt:1
 com/mutx163/qingyu/pages/import/warehouse/WarehouseCourseImportPage.kt:2
 com/mutx163/qingyu/pages/import/warehouse/WarehouseCustomDebugPage.kt:2
