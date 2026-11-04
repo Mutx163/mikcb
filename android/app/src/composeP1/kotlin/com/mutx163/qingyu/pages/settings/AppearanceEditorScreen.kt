@@ -3,6 +3,9 @@ package com.mutx163.qingyu.pages.settings
 import android.app.Activity
 import android.content.Context
 import android.content.ContextWrapper
+import android.graphics.BlurMaskFilter
+import android.graphics.Paint
+import android.graphics.RectF
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.LinearEasing
@@ -30,9 +33,13 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.graphics.TransformOrigin
+import androidx.compose.ui.graphics.drawscope.clipRect
+import androidx.compose.ui.graphics.drawscope.drawIntoCanvas
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.graphics.nativeCanvas
 import androidx.compose.ui.input.pointer.PointerEventPass
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalConfiguration
@@ -45,6 +52,7 @@ import androidx.compose.ui.zIndex
 import androidx.core.view.WindowCompat
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import kotlin.math.roundToInt
 
 /**
  * 外观编辑页的**沉浸式页面壳**：整屏暗底 + 中间一张「真课表页等比缩尺卡」+
@@ -280,49 +288,60 @@ fun AppearanceEditorScreen(
                 bottomInset = bottomInset,
             )
             val cardShape = RoundedCornerShape(geometry.radius)
-            // 纯模型的落点矩形（入场 / 退场插值的终点）。
-            val landingBox = geometry.toCardBox()
-
-            // ── 中间那张卡：整屏尺寸的真课表页，等比缩进来 ──────────────
-            // 位置用 `absoluteOffset`（不跟随 RTL 镜像）：Dart 的 `Positioned(left:)`
-            // 也是物理左边；卡片横向居中、纵向居中于「上下 chrome 之间」那条带（`:1647-1650`）。
-            //
-            // 入场 / 退场不改布局：容器始终按**落点**尺寸摆放，变化只发生在
-            // `graphicsLayer`（绘制层）——子树一次都不会重新 measure，真课表页仍是
-            // 整屏 1:1 排版。进度在 `graphicsLayer` 的 lambda 里读（绘制期快照读），
-            // 不会让整棵预览树逐帧重组。
+            // ── 中间那张卡：整屏尺寸的真课表页，等比缩进落点卡 ──────────────
+            // 位置用 `absoluteOffset`（不跟随 RTL）。**内容静态**：卡片按落点尺寸布局，
+            // 里面 `AppearanceEditorPreviewStage` 用单层静态 scale 把整屏页缩进卡片。
+            // ⚠️ 入场 / 退场**绝不对含玻璃的内容做 graphicsLayer 缩放或 alpha**——那样会
+            // 每帧重采样 BackdropFilter，正是「遮罩边缘一直闪」的根因。这里只做两件
+            // 绘制期的事，不重排版、不重测玻璃子树：① 圆角柔影（`drawBehind`）；② 卡片
+            // 裁剪窗自上而下展开/收起（`drawWithContent` + `clipRect`）。
             Box(
                 modifier = Modifier
                     .absoluteOffset(x = geometry.cardLeft, y = geometry.cardTop)
                     .size(width = geometry.cardWidth, height = geometry.cardHeight)
-                    // 入场期间卡片盖在 chrome 之上（整屏快照盖住 chrome、
-                    // 随缩小把 chrome 让出来）。落定后两者几何上不重叠，恒为 1 无副作用。
-                    // 加载罩用更高的 zIndex 压住它。
                     .zIndex(1f)
-                    .graphicsLayer {
-                        val frame = appearanceEditorEntranceFrame(
-                            progress = entrance.value,
-                            screenWidthDp = screenWidth.value,
-                            screenHeightDp = screenHeight.value,
-                            landing = landingBox,
-                        )
-                        scaleX = frame.cardDrawScale
-                        scaleY = frame.cardDrawScale
-                        // 绕左上角缩放，位移另行补齐：绘制矩形 = 落点矩形插值到整屏。
-                        transformOrigin = TransformOrigin(0f, 0f)
-                        translationX = (frame.cardLeftDp - landingBox.cardLeftDp).dp.toPx()
-                        translationY = (frame.cardTopDp - landingBox.cardTopDp).dp.toPx()
+                    // 浮影：Dart `0x66000000 / blur 32 / spread 2`。官方 `Modifier.shadow`
+                    // 是 elevation 平台投影（大、偏下、与 BoxShadow 不等价 → 预览下方那大块
+                    // 黑影），这里改用 `drawBehind` + `BlurMaskFilter(32dp)` 画等价的柔和
+                    // 圆角阴影，外扩 2dp、黑 40%，alpha 按入场 grow 门控（落定才全显，避免
+                    // 落定帧阶跃暗闪）。
+                    .drawBehind {
+                        val grow = AppearanceEditorEntranceSpec.eased(entrance.value)
+                        if (grow > 0.001f) {
+                            val spreadPx = 2.dp.toPx()
+                            val radiusPx = geometry.radius.toPx() + spreadPx
+                            val blurPx = APPEARANCE_EDITOR_CARD_SHADOW_BLUR.toPx()
+                            val alpha255 = (AppearanceEditorTransitionSpec.CARD_SHADOW_ALPHA * grow * 255f)
+                                .roundToInt().coerceIn(0, 255)
+                            val paint = Paint().apply {
+                                isAntiAlias = true
+                                color = android.graphics.Color.argb(alpha255, 0, 0, 0)
+                                maskFilter = BlurMaskFilter(blurPx, BlurMaskFilter.Blur.NORMAL)
+                            }
+                            drawIntoCanvas { canvas ->
+                                val r = RectF(
+                                    -spreadPx,
+                                    -spreadPx,
+                                    size.width + spreadPx,
+                                    size.height + spreadPx,
+                                )
+                                canvas.nativeCanvas.drawRoundRect(r, radiusPx, radiusPx, paint)
+                            }
+                        }
                     }
-                    // 浮影：Dart 是 `0x66000000 / blur 32 / spread 2`（`:1835-1841`）。
-                    // 官方 `Modifier.shadow` 没有 spread 参数，2dp 的扩张用 elevation 的
-                    // 平台模糊近似（颜色固定 40% 黑，不跟主题）。
-                    .shadow(
-                        elevation = APPEARANCE_EDITOR_CARD_SHADOW_BLUR,
-                        shape = cardShape,
-                        clip = false,
-                        ambientColor = AppearanceEditorCardShadow,
-                        spotColor = AppearanceEditorCardShadow,
-                    )
+                    // 入场/退场：**只裁窗不缩内容**——按 grow 高度裁出「自上而下展开」的窗口。
+                    // 绘制期读 `entrance.value`，不触发重组、不改布局，玻璃只录一次。
+                    .drawWithContent {
+                        val reveal = AppearanceEditorEntranceSpec.eased(entrance.value)
+                        clipRect(
+                            left = 0f,
+                            top = 0f,
+                            right = size.width,
+                            bottom = size.height * reveal,
+                        ) {
+                            this@drawWithContent.drawContent()
+                        }
+                    }
                     .clip(cardShape)
                     // 预览图出来之前那块底：与整页暗底同色，避免先白一下（Dart 卡片
                     // 在没图时是 `SizedBox.expand()`，透出来的是暗底，`:1815-1817`）。
