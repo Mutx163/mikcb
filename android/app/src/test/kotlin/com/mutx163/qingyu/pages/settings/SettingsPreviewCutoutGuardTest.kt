@@ -128,6 +128,32 @@ class SettingsPreviewCutoutGuardTest {
         )
     }
 
+    /**
+     * 2026-11-04 用户口径：两块设置页预览「完整显示星期栏 + 上/下不要圆角」。
+     * 钉住壳里的预览槽必须走**按框自适应**（fitToBox=true，不再整屏 1:1 缩放裁剪）、
+     * **方角**（cornerRadius=0.dp，对齐 Flutter 已发布版）、并传 previewMode=true
+     * （不画状态栏留白与顶栏、星期栏当首行、网格按框高自适应）。改回缩放裁剪或圆角都会红。
+     */
+    @Test
+    fun `两页预览槽走按框自适应且无圆角`() {
+        val shell = codeOf(sourceOf("main/kotlin/com/mutx163/qingyu/pages/ShellPageIndex.kt"))
+        assertEquals(
+            "设置页预览槽必须 fitToBox = true（按框自适应；整屏 1:1 缩放会只露顶部、裁掉星期栏）",
+            1,
+            Regex("fitToBox = true").findAll(shell).count(),
+        )
+        assertEquals(
+            "设置页预览槽必须 cornerRadius = 0.dp（方角，对齐 Flutter 已发布版无圆角）",
+            1,
+            Regex("cornerRadius = 0\\.dp").findAll(shell).count(),
+        )
+        assertEquals(
+            "设置页预览槽必须传 previewMode = true（不画状态栏/顶栏、星期栏当首行）",
+            1,
+            Regex("previewMode = true").findAll(shell).count(),
+        )
+    }
+
     @Test
     fun `禁交互拦截只有一份实现且使用面收敛在三个文件`() {
         val sources = allKotlinCode()

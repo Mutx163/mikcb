@@ -2239,13 +2239,15 @@ private fun SettingsScreen(
 }
 
 /**
- * 课程卡片 / 课表页面两页顶部那块预览：**真组件挖洞**（2026-11-03 用户口径）。
+ * 课程卡片 / 课表页面两页顶部那块预览：**真组件预览**（2026-11-03 用户口径「真组件挖洞」，
+ * 2026-11-04 用户口径「完整显示星期栏 + 上/下不要圆角」）。
  *
- * 旧的实现是自绘缩略图（星期栏 + Canvas 网格 + 色块）——「重新做样式」被用户否掉：
- * 预览应该是挖洞，把真实首页课表露在窗口里。现在与外观编辑页同一套：
- * [TimetableHost] 按整屏 1:1 排版、绘制层缩进 [QingyuPreviewCutout] 的圆角窗口，
- * 初始露出上半部分，窗口内可上下滚动；点击 / 长按 / 内部滚动在组件里整体关掉，
- * 读屏也聚焦不到内部控件（实现细节见该组件的 KDoc）。
+ * 旧的自绘缩略图（星期栏 + Canvas 网格 + 色块）已被用户否掉，必须露出真实组件。2026-11-04
+ * 起不再用「整屏 1:1 缩放进圆角窗口」（那样只露出顶部 app 标题行、星期栏被裁、四角全圆）：
+ * 改用 [QingyuPreviewCutout] 的**按框自适应**模式（`fitToBox = true`、`cornerRadius = 0.dp`
+ * ⇒ 不缩放、不裁、方角对齐 Flutter），[TimetableHost] 以 `previewMode = true` 组合——
+ * 不画状态栏留白与顶栏「轻屿课表」，[TimetableWeekdayHeader] 当首行，网格按预览框高自适应
+ * 铺满。点击 / 长按 / 内部滚动在组件里整体关掉，读屏也聚焦不到内部控件（见该组件 KDoc）。
  *
  * 数据：课程随仓储快照订阅实时变；显示偏好取**宿主当前草稿**——两页宿主把 `model`
  * 顺着 `preview(model)` 传进来（唯一取用口径 `settingsPreviewDraft`），改开关 / 拖滑杆
@@ -2258,6 +2260,9 @@ private fun SettingsTimetablePreviewSlot(wiring: ShellWiring, settingsModel: Tim
     QingyuPreviewCutout(
         contentWidth = configuration.screenWidthDp.dp,
         contentHeight = configuration.screenHeightDp.dp,
+        // 2026-11-04：方角（对齐 Flutter 已发布版预览无圆角）+ 按框自适应（不缩放不裁）。
+        cornerRadius = 0.dp,
+        fitToBox = true,
     ) {
         TimetableHost(
             repository = wiring.timetable,
@@ -2269,6 +2274,8 @@ private fun SettingsTimetablePreviewSlot(wiring: ShellWiring, settingsModel: Tim
             // 预览不接截屏监听：真首页那一份已经接上了，再来一份等于截一次屏
             // 弹两次提示（Dart `_isPreview` 守卫，timetable_screen.dart:913-917）。
             screenshotSharePromptEnabled = false,
+            // 2026-11-04：预览模式——不画状态栏留白与顶栏，星期栏当首行、网格按框高自适应。
+            previewMode = true,
         )
     }
 }

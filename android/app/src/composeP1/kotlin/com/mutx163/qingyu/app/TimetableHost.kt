@@ -113,6 +113,11 @@ fun TimetableHost(
      * 同名参数是两道不同的门：这里守「预览不接」，门控守「开关关不弹」。
      */
     screenshotSharePromptEnabled: Boolean = true,
+    /**
+     * 设置页顶部预览模式（2026-11-04）：透传给 [TimetableWeekPage]，预览里不画状态栏留白
+     * 与顶栏「轻屿课表」，星期栏当首行、网格按预览框高自适应。只给两个设置页挖洞预览用。
+     */
+    previewMode: Boolean = false,
 ) {
     // 首帧直接用仓储当前快照，避免「先画空网格再跳成有课」的闪一下。
     // ⚠️ 这不是优化，是**接口语义**：`TimetableRepository.observe` 只在**后续变更**时回调，
@@ -360,5 +365,6 @@ fun TimetableHost(
         // 同一份（Dart `_shareTimetableImage` 同口径——截屏提示直接分享当前视图的图，
         // 没有中间面板）。dayOfWeek = null ⇒ 周图。
         onShareScreenshot = { week, dayOfWeek -> shareCurrentView(week, dayOfWeek) },
+        previewMode = previewMode,
     )
 }

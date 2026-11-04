@@ -70,8 +70,27 @@ fun QingyuPreviewCutout(
     contentHeight: Dp,
     modifier: Modifier = Modifier,
     cornerRadius: Dp = 16.dp,
+    /**
+     * 按框自适应模式（2026-11-04，课程卡片 / 课表页面设置页预览用）：
+     * 内容**直接按窗口尺寸排版**、不按「内容设计尺寸」缩放、不裁剪内容，
+     * 圆角只由 [cornerRadius] 决定（方角传 0.dp）。正常挖洞（缩尺全屏页）仍走 false。
+     */
+    fitToBox: Boolean = false,
     content: @Composable () -> Unit,
 ) {
+    if (fitToBox) {
+        Box(modifier = modifier.fillMaxSize().clip(RoundedCornerShape(cornerRadius))) {
+            Box(
+                modifier = Modifier
+                    .matchParentSize()
+                    .consumeAllPointerEvents()
+                    .clearAndSetSemantics { },
+            ) {
+                content()
+            }
+        }
+        return
+    }
     BoxWithConstraints(modifier = modifier.fillMaxSize().clip(RoundedCornerShape(cornerRadius))) {
         val scale = PreviewCutoutGeometry.scale(maxWidth.value, contentWidth.value)
         val scaledContentHeight = PreviewCutoutGeometry
