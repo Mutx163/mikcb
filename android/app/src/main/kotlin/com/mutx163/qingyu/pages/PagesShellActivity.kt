@@ -774,20 +774,24 @@ private fun PagesShell(
         }
     }
 
-    // 系统返回：压着页面时由 NavDisplay.onBack 弹层；栈底时——
-    // ① 日视图展开中 → 先收回周视图（Dart `closeDayView`，不是回退路由）；
-    // ② 别的底栏页 → 回周视图。
-    BackHandler(
-        enabled = atRoot && !(
-            currentRootId == ROOT_WEEK &&
-                wiring.homeViewMode == TimetableHomeViewMode.WEEK
-            ),
-    ) {
-        if (atRoot && currentRootId == ROOT_WEEK) {
-            wiring.switchHomeViewMode(TimetableHomeViewMode.WEEK)
-        } else {
-            selectRoot(ROOT_WEEK)
-        }
+    // 系统返回：压着页面（ShellRoute.Page / ZoomPage）时由 NavDisplay.onBack 弹层；
+    // 停在主屏时 → 直接回**首页根**（2026-11-04 用户口径：回首页，不是回周视图）。
+    //
+    // 首页根 = 课表宿主 `c1.week`（周 / 日两档同页）+ 月档的 `monthView` 页；视图档
+    // 原样取 `wiring.homeViewMode`（日→日、周→周、月→月），**不写死 WEEK** —— 从任意
+    // 底栏内嵌页（任务 / 设置 / 统计 / 考试 / 总览…）按返回都回到用户当前所在的课表
+    // 视图，而不是被强行拉回周视图。条目映射复用冷启动恢复的 `rootItemIdForView`
+    // （WEEK/DAY → ROOT_WEEK、MONTH → monthView），不新增常量。
+    //
+    // 已停在首页根（周视图 / 日视图 / 月视图本身）时不拦，交系统退 App（与发布版一致）；
+    // 日视图不再「收起成周视图」——那正是要修掉的「返回周视图」。
+    val homeRootId = rootItemIdForView(wiring.homeViewMode)
+    BackHandler(enabled = atRoot && currentRootId != homeRootId) {
+        // 只切栈底条目 + Pager 滑回首页根；不调 switchHomeViewMode，避免把日/月档写成 WEEK。
+        // animateDockPagerTo 走 indexOfPage 命中才滑（与底栏切换同一套对齐逻辑，不猜）：
+        // 月档页在 homeViewMode=MONTH 时必在 dockPageIds（底栏格或冷启动 ensure 补入）。
+        currentRootId = homeRootId
+        animateDockPagerTo(homeRootId)
     }
 
     // 玻璃的背景采样源：**栈底条目的页面内容**先被录进这个 layer，坞再拿它当 backdrop。
@@ -932,6 +936,8 @@ private fun PagesShell(
                                 // 墨色判据要知道「坞底下是不是照片」：周 / 日 / 月视图是，
                                 // 任务、设置这些内嵌页是不透明主题面（Dart `isInlinePage` 同口径）。
                                 overWallpaper = DockPagerMotion.showsWallpaper(currentRootId),
+                                semesterStartDate = wiring.timetable.snapshot.settings.semesterStartDate?.toLocalDate(),
+                                semesterWeekCount = wiring.timetable.snapshot.settings.semesterWeekCount,
                                 modifier = Modifier.align(Alignment.BottomCenter),
                             )
                         }
