@@ -86,6 +86,8 @@ import kotlin.math.roundToInt
 import kotlin.math.sign
 import kotlin.math.sin
 import kotlinx.coroutines.launch
+import top.yukonga.miuix.kmp.basic.Badge
+import top.yukonga.miuix.kmp.basic.BadgedBox
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.blur.Backdrop
@@ -106,6 +108,14 @@ data class GlassDockItem(
     val icon: ImageVector,
     val label: String?,
     val contentDescription: String? = null,
+    /**
+     * 图标右上角的数字徽标（如周视图的「开学第几周」）；`null` = 不叠徽标。
+     *
+     * 用官方 [BadgedBox] / [Badge] 画（miuix 文档给的就是「导航栏里显示待办数量」这一场景），
+     * 不自绘徽标。日视图的「今天几号」不靠它——那是直接换 [icon]（Th{d}）；只有周视图
+     * 这种「原图标 + 一个数字」才走这里。
+     */
+    val badgeText: String? = null,
 )
 
 /**
@@ -520,13 +530,35 @@ fun GlassDockNavigationBar(
                 // 以前图标吃的是 `LocalContentColor` 的主题墨色、文字有时被另一层
                 // provider 覆盖，于是会出现「图标还行、字发灰」。
                 CompositionLocalProvider(LocalContentColor provides itemInk) {
-                    Icon(
-                        modifier = Modifier.size(GlassDockGeometry.GlassIconSizeDp.dp),
-                        imageVector = item.icon,
-                        // 装饰性：相邻的文字已经说明了这一项是什么，
-                        // 这里再给 contentDescription 会让读屏念两遍。
-                        contentDescription = null,
-                    )
+                    val badgeText = item.badgeText
+                    if (badgeText != null) {
+                        // 周视图：把「开学第几周」用官方 Badge 叠在图标右上角。
+                        // miuix 文档明确把 Badge 定位为「导航栏里显示动态数字」，不自绘徽标。
+                        BadgedBox(
+                            badge = {
+                                Badge(
+                                    containerColor = accentColor,
+                                    contentColor = MiuixTheme.colorScheme.onPrimary,
+                                ) {
+                                    Text(text = badgeText)
+                                }
+                            },
+                        ) {
+                            Icon(
+                                modifier = Modifier.size(GlassDockGeometry.GlassIconSizeDp.dp),
+                                imageVector = item.icon,
+                                contentDescription = null,
+                            )
+                        }
+                    } else {
+                        Icon(
+                            modifier = Modifier.size(GlassDockGeometry.GlassIconSizeDp.dp),
+                            imageVector = item.icon,
+                            // 装饰性：相邻的文字已经说明了这一项是什么，
+                            // 这里再给 contentDescription 会让读屏念两遍。
+                            contentDescription = null,
+                        )
+                    }
                     val label = item.label
                     if (label != null) {
                         Text(

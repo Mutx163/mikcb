@@ -21,6 +21,7 @@ import com.mutx163.qingyu.app.rememberHomeBackdropChrome
 import com.mutx163.qingyu.pages.settings.HomeMaterialRenderSpec
 import com.mutx163.qingyu.pages.settings.SettingsMaterialModel
 import com.mutx163.qingyu.pages.settings.SurfaceMaterialState
+import java.time.LocalDate
 import top.yukonga.miuix.kmp.basic.FloatingActionButton
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.blur.Backdrop
@@ -81,8 +82,23 @@ fun HomeGlassDock(
      * 不传（默认 null）则内部按缓存版本响应式回读 `cachedWallpaperInkBands` 兜底。
      */
     wallpaperLuminance: Double? = null,
+    /**
+     * 学期开学日（本机本地日期）。周视图图标算「开学第几周」用；null = 无学期数据，
+     * 不显示周数、保留原周视图图标。由调用方从仓储快照的 core 设置传入。
+     */
+    semesterStartDate: LocalDate? = null,
+    /** 学期总周数（`TimetableSettings.semesterWeekCount`），用于判定今天是否仍在学期内。 */
+    semesterWeekCount: Int = 0,
 ) {
     if (!homeDockVisible(settingsModel) || replacedByRail) return
+
+    // 底栏「日」「周」两格的图标（用户 2026-11-04 报「日课表图标永远显示 1」）：
+    //  · 日视图 → 按**今天几号**选 miuix Th{d}（原写死 Th1，日历中间永远是 1）；
+    //  · 周视图 → 学期内叠「开学第几周」徽标，学期外（没开学 / 已过 / 无数据）保留原图标。
+    // 日期取**本机本地日期**（LocalDate.now()），随系统日期走；每次重组时重算。
+    val today = LocalDate.now()
+    val dayIcon = HomeNavIcons.dayIconOf(today.dayOfMonth)
+    val weekNumber = HomeDockNavModel.dockWeekNumber(today, semesterStartDate, semesterWeekCount)
 
     // 底栏条目：**由用户存档决定**（Dart `resolveGlassDockActionIds`）。空表回退默认三格；
     // 用户没自定义过时，开发壳的「页面索引」追加到末尾（与拆壳前的壳层口径一致）。
@@ -136,7 +152,17 @@ fun HomeGlassDock(
     val resolvedWallpaperLuminance = wallpaperLuminance ?: cachedDockLuminance
 
     GlassDockNavigationBar(
-        items = dockIds.map { HomeNavIcons.dockItem(it) },
+        items = dockIds.map { id ->
+            when {
+                // 日视图：换成「今天几号」的日历图标（Th{d}）。
+                id == HomeDockNavModel.ACTION_DAY ->
+                    HomeNavIcons.dockItem(id).copy(icon = dayIcon)
+                // 周视图：学期内才叠「开学第几周」徽标；weekNumber 为 null 时保持原 Weeks 图标。
+                id == HomeDockNavModel.ACTION_WEEK && weekNumber != null ->
+                    HomeNavIcons.dockItem(id).copy(badgeText = weekNumber.toString())
+                else -> HomeNavIcons.dockItem(id)
+            }
+        },
         selectedIndex = HomeDockNavModel.selectedIndex(dockIds, selectedId),
         onSelect = { index -> onSelect(dockIds[index]) },
         // 设备不支持 runtime shader 时别把 backdrop 传进去：传了也画不出模糊，

@@ -1,5 +1,6 @@
 package com.mutx163.qingyu.pages.shell
 
+import java.time.LocalDate
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -234,5 +235,68 @@ class HomeNavModelTest {
             listOf("overview", "support"),
             HomeMenuNavModel.resolveIds(raw) { true },
         )
+    }
+
+    // ---------------------------------------------------------------- 周视图「开学第几周」
+
+    // 2026-09-07 是周一（本机日历）；以它为开学日，往后 14 天 = 第 3 周的周一。
+    private val semesterStartMonday = LocalDate.of(2026, 9, 7)
+    private val week3Monday = LocalDate.of(2026, 9, 21)
+
+    @Test
+    fun `学期内返回开学第几周`() {
+        assertEquals(
+            3,
+            HomeDockNavModel.dockWeekNumber(week3Monday, semesterStartMonday, 20),
+        )
+        // 开学当周 = 第 1 周。
+        assertEquals(
+            1,
+            HomeDockNavModel.dockWeekNumber(semesterStartMonday, semesterStartMonday, 20),
+        )
+        // 正好落在最后一周（= 学期周数）仍算在范围内。
+        assertEquals(
+            3,
+            HomeDockNavModel.dockWeekNumber(week3Monday, semesterStartMonday, 3),
+        )
+    }
+
+    @Test
+    fun `开学日不是周一时按所在周的周一锚定`() {
+        // 开学日 2026-09-09（周三），归到同周周一 09-07；今天 09-21 仍是第 3 周。
+        assertEquals(
+            3,
+            HomeDockNavModel.dockWeekNumber(
+                week3Monday,
+                LocalDate.of(2026, 9, 9),
+                20,
+            ),
+        )
+    }
+
+    @Test
+    fun `还没开学返回 null 保持原图标`() {
+        // 今天早于开学日：getWeekIndex 返回 null。
+        assertEquals(
+            null,
+            HomeDockNavModel.dockWeekNumber(LocalDate.of(2026, 9, 1), semesterStartMonday, 20),
+        )
+    }
+
+    @Test
+    fun `学期已过返回 null 保持原图标`() {
+        // 第 3 周但学期只有 2 周 ⇒ 超出范围。
+        assertEquals(
+            null,
+            HomeDockNavModel.dockWeekNumber(week3Monday, semesterStartMonday, 2),
+        )
+    }
+
+    @Test
+    fun `没有学期数据返回 null 保持原图标`() {
+        // 没设开学日。
+        assertEquals(null, HomeDockNavModel.dockWeekNumber(week3Monday, null, 20))
+        // 周数非正（视为无有效学期）。
+        assertEquals(null, HomeDockNavModel.dockWeekNumber(week3Monday, semesterStartMonday, 0))
     }
 }

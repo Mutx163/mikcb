@@ -1,5 +1,8 @@
 package com.mutx163.qingyu.pages.shell
 
+import com.mutx163.qingyu.core.WeekCalculator
+import java.time.LocalDate
+
 /**
  * 首页底栏（玻璃坞）**槽位排列**的解析 —— 纯 Kotlin，不含 Compose 依赖。
  *
@@ -235,5 +238,33 @@ object HomeDockNavModel {
         val id = entryId?.trim().orEmpty()
         if (id.isEmpty() || id == ACTION_ADD_COURSE) return ACTION_ADD_COURSE
         return id
+    }
+
+    /**
+     * **周视图**底栏图标要不要显示「开学第几周」：返回要显示的数字，或 `null`（保持原图标）。
+     *
+     * 口径（用户 2026-11-04 追加）：以**今天（本机本地日期）**算
+     * [WeekCalculator.getWeekIndex]，从学期开学日数到今天是第几周（周一为每周第一天，
+     * 与课表内部周次同一套算法，不另写一份日期差）。
+     *
+     * 只有「有开学日 + 周次落在 `1..semesterWeekCount`」才返回数字，其余一律 `null`：
+     * * 没设开学日 / 无学期数据（`semesterStart == null` 或周数 <= 0）→ null；
+     * * 今天早于开学日（还没开学）→ [WeekCalculator.getWeekIndex] 返回 null；
+     * * 今天已超出学期周数（学期已过）→ 周次 > `semesterWeekCount`。
+     *
+     * 返回 null 时调用方**保留原来的周视图图标**（`MiuixIcons.Weeks`），不显示数字。
+     */
+    fun dockWeekNumber(
+        today: LocalDate,
+        semesterStart: LocalDate?,
+        semesterWeekCount: Int,
+    ): Int? {
+        if (semesterStart == null || semesterWeekCount <= 0) return null
+        val week = WeekCalculator.getWeekIndex(
+            today.atStartOfDay(),
+            semesterStart.atStartOfDay(),
+        ) ?: return null
+        if (week < 1 || week > semesterWeekCount) return null
+        return week.toInt()
     }
 }

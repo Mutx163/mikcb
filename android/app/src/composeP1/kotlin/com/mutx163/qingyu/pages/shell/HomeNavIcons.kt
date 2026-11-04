@@ -37,6 +37,36 @@ import top.yukonga.miuix.kmp.icon.extended.Sidebar
 import top.yukonga.miuix.kmp.icon.extended.Tasks
 import top.yukonga.miuix.kmp.icon.extended.Theme
 import top.yukonga.miuix.kmp.icon.extended.Th1
+import top.yukonga.miuix.kmp.icon.extended.Th2
+import top.yukonga.miuix.kmp.icon.extended.Th3
+import top.yukonga.miuix.kmp.icon.extended.Th4
+import top.yukonga.miuix.kmp.icon.extended.Th5
+import top.yukonga.miuix.kmp.icon.extended.Th6
+import top.yukonga.miuix.kmp.icon.extended.Th7
+import top.yukonga.miuix.kmp.icon.extended.Th8
+import top.yukonga.miuix.kmp.icon.extended.Th9
+import top.yukonga.miuix.kmp.icon.extended.Th10
+import top.yukonga.miuix.kmp.icon.extended.Th11
+import top.yukonga.miuix.kmp.icon.extended.Th12
+import top.yukonga.miuix.kmp.icon.extended.Th13
+import top.yukonga.miuix.kmp.icon.extended.Th14
+import top.yukonga.miuix.kmp.icon.extended.Th15
+import top.yukonga.miuix.kmp.icon.extended.Th16
+import top.yukonga.miuix.kmp.icon.extended.Th17
+import top.yukonga.miuix.kmp.icon.extended.Th18
+import top.yukonga.miuix.kmp.icon.extended.Th19
+import top.yukonga.miuix.kmp.icon.extended.Th20
+import top.yukonga.miuix.kmp.icon.extended.Th21
+import top.yukonga.miuix.kmp.icon.extended.Th22
+import top.yukonga.miuix.kmp.icon.extended.Th23
+import top.yukonga.miuix.kmp.icon.extended.Th24
+import top.yukonga.miuix.kmp.icon.extended.Th25
+import top.yukonga.miuix.kmp.icon.extended.Th26
+import top.yukonga.miuix.kmp.icon.extended.Th27
+import top.yukonga.miuix.kmp.icon.extended.Th28
+import top.yukonga.miuix.kmp.icon.extended.Th29
+import top.yukonga.miuix.kmp.icon.extended.Th30
+import top.yukonga.miuix.kmp.icon.extended.Th31
 import top.yukonga.miuix.kmp.icon.extended.Timer
 import top.yukonga.miuix.kmp.icon.extended.Tune
 import top.yukonga.miuix.kmp.icon.extended.Update
@@ -57,8 +87,9 @@ import top.yukonga.miuix.kmp.icon.extended.Weeks
  *
  * 优先挑**语义最近**的官方 miuix 图标；同一语义族（如两个统计入口）允许复用，
  * 但不允许把「设置」画成「加号」这类误导。找不到贴切图标的走 [MiuixIcons.More]
- * ——宁可模糊，不给错暗示。日/周两个视图动作分别用「带日号的日历」(`Th1`)
- * 与「周历」(`Weeks`)，对应 Dart 的 `Icons.today_rounded` / `Icons.calendar_view_week_rounded`。
+ * ——宁可模糊，不给错暗示。日视图用「带日号的日历」（按今天几号选 `Th1`…`Th31`，
+ * 见 [dayIconOf]），周视图用「周历」(`Weeks`)，对应 Dart 的
+ * `Icons.today_rounded` / `Icons.calendar_view_week_rounded`。
  *
  * ## 文案从哪来
  *
@@ -73,6 +104,49 @@ object HomeNavIcons {
         icon = iconOf(id),
         label = labelOf(id),
     )
+
+    /**
+     * **日视图**底栏图标：按「今天几号」选 miuix 带日号的日历图标（[MiuixIcons.Th1]…[MiuixIcons.Th31]）。
+     *
+     * 底栏「日课表」那一格原先写死 [MiuixIcons.Th1] —— 日历中间永远是「1」，用户报
+     * 「图标永远显示 1」。改成跟着**本机本地日期**走：`LocalDate.now().dayOfMonth` →
+     * `Th{d}`。同族 1…31 逐日一套，外观与原 Th1 完全一致，纯 miuix 图标、零自绘。
+     * `dayOfMonth` 恒为 1…31；越界（理论上不会发生）兜底 Th1，绝不返回空白。
+     */
+    fun dayIconOf(dayOfMonth: Int): ImageVector = when (dayOfMonth) {
+        1 -> MiuixIcons.Th1
+        2 -> MiuixIcons.Th2
+        3 -> MiuixIcons.Th3
+        4 -> MiuixIcons.Th4
+        5 -> MiuixIcons.Th5
+        6 -> MiuixIcons.Th6
+        7 -> MiuixIcons.Th7
+        8 -> MiuixIcons.Th8
+        9 -> MiuixIcons.Th9
+        10 -> MiuixIcons.Th10
+        11 -> MiuixIcons.Th11
+        12 -> MiuixIcons.Th12
+        13 -> MiuixIcons.Th13
+        14 -> MiuixIcons.Th14
+        15 -> MiuixIcons.Th15
+        16 -> MiuixIcons.Th16
+        17 -> MiuixIcons.Th17
+        18 -> MiuixIcons.Th18
+        19 -> MiuixIcons.Th19
+        20 -> MiuixIcons.Th20
+        21 -> MiuixIcons.Th21
+        22 -> MiuixIcons.Th22
+        23 -> MiuixIcons.Th23
+        24 -> MiuixIcons.Th24
+        25 -> MiuixIcons.Th25
+        26 -> MiuixIcons.Th26
+        27 -> MiuixIcons.Th27
+        28 -> MiuixIcons.Th28
+        29 -> MiuixIcons.Th29
+        30 -> MiuixIcons.Th30
+        31 -> MiuixIcons.Th31
+        else -> MiuixIcons.Th1
+    }
 
     /**
      * 「更多」菜单一个条目（`TimetableMenuItem` 只描述界面，不认路由）。
