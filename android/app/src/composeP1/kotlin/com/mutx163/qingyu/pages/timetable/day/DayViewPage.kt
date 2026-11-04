@@ -819,6 +819,8 @@ fun DayViewPage(
                             showConflictBadge = showConflictBadge,
                             // 空态文字直接压在壁纸上：正文那档亮度决定字色。
                             wallpaperLuminance = wallpaperBands?.body,
+                            // 摘要卡墨色：按壁纸**星期栏那档**亮度（发布版 `_weekdayInkLuminance` 口径）翻黑/白。
+                            summaryWallpaperLuminance = wallpaperBands?.weekday,
                             // 天气行：装配器按课程 id 算好的「一行文本」，不传就永远不显示
                             //（2026-10-29 二轮审核 P1-12 的病根就在这一行缺失）。
                             weatherLines = pageData.weatherLines,

@@ -21,6 +21,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -29,6 +30,7 @@ import com.mutx163.qingyu.components.QingyuCardDefaults
 import com.mutx163.qingyu.components.QingyuWeightDelta
 import com.mutx163.qingyu.components.shiftWeight
 import com.mutx163.qingyu.pages.settings.HomeMaterialRenderSpec
+import com.mutx163.qingyu.pages.shell.HomeBackgroundModel
 import com.mutx163.qingyu.theme.QingyuTheme
 import top.yukonga.miuix.kmp.basic.Card
 import top.yukonga.miuix.kmp.basic.CardDefaults
@@ -58,6 +60,11 @@ fun DayViewSummaryCard(
     material: HomeMaterialRenderSpec? = null,
     /** 液态档的整页共享背景采样源（见 [dayAgendaSurface]）。 */
     glassBackdrop: Backdrop? = null,
+    /**
+     * 卡背后壁纸的**星期栏那档**亮度（对齐发布版 `_weekdayInkLuminance`）：玻璃压壁纸时用它按
+     * 卡面有效亮度自动翻黑/白，避免灰字糊在灰玻璃上。null = 没壁纸 / 亮度未知 ⇒ 用主题前景。
+     */
+    wallpaperLuminance: Double? = null,
     modifier: Modifier = Modifier,
 ) {
     val dark = isSystemInDarkTheme()
@@ -70,6 +77,28 @@ fun DayViewSummaryCard(
     val glass = dayAgendaGlassBackdrop(material, glassBackdrop)
     val fillAlpha = dayAgendaSurfaceAlpha(material, 1f).coerceIn(0.08f, 1f)
     val translucent = glass != null || fillAlpha < 1f
+
+    // ── 摘要卡文字墨色（对齐发布版 v2.1.4.1 `_buildDayViewSummary`）──
+    // 玻璃压壁纸时：按**卡面有效亮度**（卡底色 × 染色强度 + 壁纸亮度 ×(1−染色)）自动翻黑/白，
+    // 而不是用固定的主题灰（浅色主题 secondaryText = #999999 压在灰玻璃上几乎看不见）。
+    // 非玻璃档：用主题前景色（深/浅主题各有足够对比），次级行用其派生 muted。
+    val cardFillLuminance = MiuixTheme.colorScheme.surface.luminance().toDouble()
+    val inkArgb = if (glass != null && wallpaperLuminance != null) {
+        val surfaceLuminance = HomeBackgroundModel.cardGlassSurfaceLuminance(
+            cardFillLuminance = cardFillLuminance,
+            washAlpha = fillAlpha.toDouble(),
+            wallpaperLuminance = wallpaperLuminance,
+        )
+        HomeBackgroundModel.inkOverWallpaperArgb(
+            configuredArgb = null,
+            fallbackArgb = QingyuTheme.primaryText(dark),
+            wallpaperLuminance = surfaceLuminance,
+        )
+    } else {
+        QingyuTheme.primaryText(dark)
+    }
+    val summaryInk = Color(inkArgb)
+    val summaryMutedInk = Color(HomeBackgroundModel.mutedInkOverWallpaperArgb(inkArgb))
 
     QingyuCard(
         modifier = modifier
@@ -109,18 +138,18 @@ fun DayViewSummaryCard(
                         Text(
                             text = DayViewStrings.todayTimetableTitle.zh,
                             style = MiuixTheme.textStyles.footnote1.shiftWeight(QingyuWeightDelta.MEDIUM),
-                            color = Color(QingyuTheme.secondaryText(dark)),
+                            color = summaryMutedInk,
                         )
                         Text(
                             text = " · ",
                             style = MiuixTheme.textStyles.footnote1.shiftWeight(QingyuWeightDelta.MEDIUM),
-                            color = Color(QingyuTheme.secondaryText(dark)),
+                            color = summaryMutedInk,
                         )
                     }
                     Text(
                         text = DayViewStrings.weekLabel(state.week),
                         style = MiuixTheme.textStyles.footnote1.shiftWeight(QingyuWeightDelta.MEDIUM),
-                        color = Color(QingyuTheme.secondaryText(dark)),
+                        color = summaryMutedInk,
                     )
                 }
 
@@ -131,7 +160,7 @@ fun DayViewSummaryCard(
                     Icon(
                         imageVector = MiuixIcons.Close,
                         contentDescription = DayViewStrings.backToWeekViewAction.zh,
-                        tint = Color(QingyuTheme.actionIcon(dark)),
+                        tint = summaryInk,
                         modifier = Modifier.size(16.dp),
                     )
                 }
@@ -146,7 +175,7 @@ fun DayViewSummaryCard(
                 lineHeight = 26.sp,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
-                color = Color(QingyuTheme.primaryText(dark)),
+                color = summaryInk,
             )
 
             Spacer(modifier = Modifier.height(10.dp))
@@ -157,11 +186,11 @@ fun DayViewSummaryCard(
                 verticalArrangement = Arrangement.spacedBy(6.dp),
             ) {
                 // 主计数胶囊（"4 门课" 或 "日程 2 项" 或 "作业 1 项" 或 "0 门课"）
-                SummaryNeutralCapsule(text = state.countLabel, dark = dark)
+                SummaryNeutralCapsule(text = state.countLabel, ink = summaryInk, mutedInk = summaryMutedInk)
 
                 // 辅日程计数胶囊（既有课又有日程时展示）
                 if (!state.scheduleLabel.isNullOrBlank()) {
-                    SummaryNeutralCapsule(text = state.scheduleLabel, dark = dark)
+                    SummaryNeutralCapsule(text = state.scheduleLabel, ink = summaryInk, mutedInk = summaryMutedInk)
                 }
 
                 // 议程时间区间（如 "08:00 开始 · 20:30 结束"）
@@ -169,7 +198,7 @@ fun DayViewSummaryCard(
                     Text(
                         text = state.agendaRangeLabel,
                         style = MiuixTheme.textStyles.footnote2.shiftWeight(QingyuWeightDelta.MEDIUM),
-                        color = Color(QingyuTheme.secondaryText(dark)),
+                        color = summaryMutedInk,
                     )
                 }
             }
@@ -182,7 +211,7 @@ fun DayViewSummaryCard(
                     verticalArrangement = Arrangement.spacedBy(6.dp),
                 ) {
                     state.statusChips.forEach { chip ->
-                        SummaryStatusCapsule(chip = chip, dark = dark)
+                        SummaryStatusCapsule(chip = chip, dark = dark, mutedInk = summaryMutedInk)
                     }
                 }
             }
@@ -196,18 +225,19 @@ fun DayViewSummaryCard(
 @Composable
 private fun SummaryNeutralCapsule(
     text: String,
-    dark: Boolean,
+    ink: Color,
+    mutedInk: Color,
 ) {
     Box(
         modifier = Modifier
             .clip(RoundedCornerShape(7.dp))
-            .background(Color(QingyuTheme.primaryText(dark)).copy(alpha = 0.08f))
+            .background(ink.copy(alpha = 0.10f))
             .padding(horizontal = 8.dp, vertical = 3.dp),
     ) {
         Text(
             text = text,
             style = MiuixTheme.textStyles.footnote2.shiftWeight(QingyuWeightDelta.SEMIBOLD),
-            color = Color(QingyuTheme.secondaryText(dark)),
+            color = mutedInk,
         )
     }
 }
@@ -219,11 +249,12 @@ private fun SummaryNeutralCapsule(
 private fun SummaryStatusCapsule(
     chip: SummaryChip,
     dark: Boolean,
+    mutedInk: Color,
 ) {
     val accentColor = when (chip.kind) {
         SummaryChipKind.ONGOING_COURSE -> Color(QingyuTheme.primary(null, dark))
         SummaryChipKind.CONFLICT -> Color(QingyuTheme.error(dark))
-        SummaryChipKind.NON_CURRENT_WEEK -> Color(QingyuTheme.secondaryText(dark))
+        SummaryChipKind.NON_CURRENT_WEEK -> mutedInk
         SummaryChipKind.EXAM -> Color(QingyuTheme.error(dark))
     }
 

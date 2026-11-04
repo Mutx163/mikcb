@@ -81,6 +81,11 @@ fun DayViewScrollContent(
     /** 空态那块的壁纸亮度（正文带）；null = 没壁纸，保持主题原色。 */
     wallpaperLuminance: Double? = null,
     /**
+     * 摘要卡背后壁纸的**星期栏那档**亮度（玻璃压壁纸时按卡面有效亮度翻墨色，对齐发布版）；
+     * null = 没壁纸 / 亮度未知 ⇒ 摘要卡用主题前景色。
+     */
+    summaryWallpaperLuminance: Double? = null,
+    /**
      * 真摘要卡的附加修饰器（首页展开态的飞行测量 + 飞行期间不画）。
      *
      * 挂**卡本身**而不是外面的 stickyHeader 盒子：飞行终点要的是卡片四边，
@@ -120,6 +125,7 @@ fun DayViewScrollContent(
                     onClose = onCloseToWeekView,
                     material = material,
                     glassBackdrop = glassBackdrop,
+                    wallpaperLuminance = summaryWallpaperLuminance,
                     modifier = summaryModifier,
                 )
             }
