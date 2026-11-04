@@ -132,21 +132,24 @@ object TimetableDateLogic {
      * 跨日把「当前周」写回仓储的判据（Dart `_syncTemporalContextImpl`：
      * 只有 `didChangeWeek` 命中且夹到学期内才写，`timetable_provider.dart:3271-3287`）。
      *
-     * 返回 `null` = 这一跳不用写：没配开学日（算不出日历周）或仓储已经就是这个周。
-     * 调用方拿返回值直接写回即可，天然幂等——写成功后下一跳的 [currentWeek] 已更新，
-     * 再次调用返回 null。写失败只需等下一跳重试，不会累积。
+     * 返回 `null` = 这一跳不用写：没配开学日（算不出日历周）、周数坏值（`<= 0`）、
+     * 开学前（日历周 0）、或夹取后仓储已经就是这个周。
+     * **夹取发生在比对之前**：[clamp] 由调用方注入
+     * （`TimetableRepository::clampWeekToSettings`，只算不写）：学期结束后先算**不设上限**的
+     * 日历周、夹回 `1..semesterWeekCount` 再比对，因此「快照已是第 21 周」仍会写出 18。
+     * 幂等：写成功后下一跳快照已是夹取结果，再次调用返回 null；写失败等下一跳重试。
      */
     fun weekToCommitOnDayChange(
         semesterStart: LocalDate?,
         totalWeeks: Int,
         today: LocalDate,
         currentWeek: Int,
+        clamp: (Int) -> Int,
     ): Int? {
-        val calendarWeek = currentSemesterWeek(
-            semesterStart = semesterStart,
-            totalWeeks = totalWeeks,
-            today = today,
-        ) ?: return null
-        return calendarWeek.takeIf { it != currentWeek }
+        val start = semesterStart ?: return null
+        if (totalWeeks <= 0) return null
+        val rawWeek = (ChronoUnit.DAYS.between(mondayOf(start), today) / 7).toInt() + 1
+        if (rawWeek < 1) return null
+        return clamp(rawWeek).takeIf { it != currentWeek }
     }
 }

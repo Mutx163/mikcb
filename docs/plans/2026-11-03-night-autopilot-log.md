@@ -2357,6 +2357,49 @@ BackupFileStrings,CloudBackupListModel,CloudSyncPorts}.kt + pages/import/{IcsImp
 逐语言断言存在。删该键会同时造成 getter 消失与测试编译/断言失败，属**判据盲区**，
 不是死键——后续任何人不要以 lint「存量 1」为由去删。与 §10.43 的口径一致。
 
+### 10.46 ✅ 跨日写回接上学期末夹取（`TimetableHost` 分钟心跳 + `weekToCommitOnDayChange`；2026-11-04）
+
+**背景**：store 线 `f52fa36f` 交付 `TimetableRepository.clampWeekToSettings(week)`（只算不写）。
+此前 `weekToCommitOnDayChange` 直接复用 `currentSemesterWeek`，学期结束后（第 21 周 / 18 周）
+越界返回 **null** ⇒ 这一跳根本不写 ⇒ 旧周次可能停在学期内任意一周。本批补上「越界也夹」那一半。
+
+**改动（3 个文件，均未越界）**
+
+1. `pages/timetable/TimetableDateLogic.kt:142-153` — `weekToCommitOnDayChange` 增加必填
+   `clamp: (Int) -> Int`，实现改为：
+   `rawWeek = (today - 学期周一) / 7 + 1`（**不设上限**）→ `rawWeek < 1` 或 `totalWeeks <= 0`
+   或无开学日 ⇒ null → `clamp(rawWeek).takeIf { it != currentWeek }`。
+   **夹取在比对之前**，所以「快照已是 21」仍会写出 18。KDoc 同步改写。
+2. `composeP1/…/app/TimetableHost.kt:135-141` — 分钟心跳跨日分支传入
+   `clamp = repository::clampWeekToSettings`，仍是 `if (commitWeek != null) runCatching { onWeekChanged(commitWeek) }`
+   （失败吞掉、下一分钟重试；幂等=与 `snapshot.currentWeek` 比对）。
+3. `TimetableDateLogicTest.kt` 既有 4 处调用补 `clamp = { it }`（保留学期内旧口径）；
+   新增 `TimetableDateLogicWeekCommitTest.kt`（8 例）。
+
+**用例（8 例，锚点：开学日 2026-09-01 周二 ⇒ 周一 08-31；第 21 周自 2027-01-18 起）**
+
+- 学期内同周不写（第 9 周 / current 9 ⇒ null）、学期内跨周写出真实周次（current 8 ⇒ 9）；
+- **学期结束第 21 周夹到 18 才写**（current 17 ⇒ 18）；
+- **夹取后再比对：快照已是 21 仍写 18**（顺序断言，若不先夹会判「无需写」停在 21）；
+- 夹到 18 后幂等（current 18 ⇒ null）；无开学日不写；`semesterWeekCount = 0`（坏值）不写；
+- 开学前（2026-08-24 ⇒ 日历周 0）不写。
+
+**咬合探针**：把 `clamp(rawWeek)` 改成 `rawWeek`（等价「去掉夹取」）→ 单次跑
+`Tests run: 310, Failures: 3`，且 3 红全部落在本批：`学期结束第21周夹到18才写`、
+`夹取后再比对_快照已是21仍写18`、`夹到18后幂等`；还原后 **OK (310 tests)**。
+
+**L0**：`C:\dev\pwsh\pwsh.exe -Command "& './scripts/test-kotlin-module.ps1' -Module 'timetable'"`
+→ **OK (310 tests)** = 既有 299 + 本批 8 + 他线新增 3（`TimetableProfilesScrollGuardTest`，当前已绿）。
+首次跑曾出现该他线 guard 的 3 红（其页面改动在途），与本批无关，随后其侧落地后消失。
+**未跑整包、未裸跑 gradlew。**
+
+**边界声明**：`TimetableHost` 属 `composeP1`，**不在 L0 编译单元**——本批只保证纯逻辑与
+`TimetableDateLogic` 编译/用例通过，**不声明 UI 编译通过**，由最终门禁（门 1/门 2）覆盖。
+`TimetableHost.kt` 动手前已 `git status --short` 核对：该文件无他线在途改动（其余在途文件均为他线）。
+
+**Phase 1/2/3**：Phase 1 已完成；Phase 2/3 仍按 §10.43 的依赖挂起（ARB 占用 / 设置族授权 /
+store·壳授权 / C1 与门禁）。
+
 
 
 

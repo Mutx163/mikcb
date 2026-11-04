@@ -137,6 +137,7 @@ fun TimetableHost(
                     totalWeeks = settings.semesterWeekCount,
                     today = fresh.toLocalDate(),
                     currentWeek = snapshot.currentWeek,
+                    clamp = repository::clampWeekToSettings,
                 )
                 if (commitWeek != null) runCatching { onWeekChanged(commitWeek) }
             }

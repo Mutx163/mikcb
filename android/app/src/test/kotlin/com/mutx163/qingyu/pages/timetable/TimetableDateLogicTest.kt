@@ -119,6 +119,7 @@ class TimetableDateLogicTest {
                 totalWeeks = 20,
                 today = LocalDate.of(2026, 10, 28),
                 currentWeek = weekOfNow,
+                clamp = { it },
             ),
         )
         // 跨到下一周：写出新周（Dart `_syncTemporalContextImpl` 的 `didChangeWeek`）。
@@ -127,6 +128,7 @@ class TimetableDateLogicTest {
             totalWeeks = 20,
             today = LocalDate.of(2026, 11, 2),
             currentWeek = weekOfNow,
+            clamp = { it },
         )
         assertTrue("应算出大于当前周的周次", nextWeek != null && nextWeek > weekOfNow)
         // 写回后再跳一次：周次已一致，必须返回 null（幂等，不会反复落盘）。
@@ -137,6 +139,7 @@ class TimetableDateLogicTest {
                 totalWeeks = 20,
                 today = LocalDate.of(2026, 11, 2),
                 currentWeek = nextWeek!!,
+                clamp = { it },
             ),
         )
         // 没配开学日：算不出日历周，不写。
@@ -147,6 +150,7 @@ class TimetableDateLogicTest {
                 totalWeeks = 20,
                 today = LocalDate.of(2026, 11, 2),
                 currentWeek = 8,
+                clamp = { it },
             ),
         )
     }
