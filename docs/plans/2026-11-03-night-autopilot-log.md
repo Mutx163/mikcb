@@ -2302,6 +2302,48 @@ C:\dev\pwsh\pwsh.exe -NoProfile -Command "& 'scripts/test-kotlin-module.ps1' -Mo
 
 ---
 
+### 10.41 ✅ 升级链路端到端矩阵：7 格 JVM 测试钉住今晚升级级修复（2026-11-04）
+
+**产物**：新增 `android/app/src/test/kotlin/com/mutx163/qingyu/app/UpgradeScenarioTest.kt`（8 个 `@Test`，
+格 4 拆 4a/4b）；**零生产代码改动**；夹具全为 `InMemoryKeyValueStore`（逻辑 key）+ 注入假 cipher，
+无 `android.*`、无 Robolectric。
+
+**L0（统一入口，不裸跑 gradlew）**：
+`scripts/test-kotlin-module.ps1 -Module pages/settings -ExtraSources <UpgradeScenarioTest.kt +
+platform/WebdavConfigStoreImpl.kt + platform/SecretCipher.kt + pages/sync/{CloudSyncModel,SyncStrings,
+BackupFileStrings,CloudBackupListModel,CloudSyncPorts}.kt + pages/import/{IcsImportModel,IcsHeaderKeywords}.kt>`
+（pwsh 7）→ **OK (984 tests)**，exit 0（基线 976 + 本文件 8）。
+
+**7 格 ↔ 对应修复提交**
+
+| 格 | 钉住的升级口径 | 对应修复 |
+|---|---|---|
+| 1 | 旧盘 + `courses` + 无 profiles → 1 份档案、`currentWeek=5`、`semesterWeekCount=18`、`semester_start` 经 `DartTime.fromEpochMillis` 保留、`appLocaleTag=ja`、bootstrap marker 写且重跑不重复建档 | `e57607b5` |
+| 2 | 档案内嵌 settings 18 优先于顶层镜像 25；`saveSettingsPatch` 后内嵌/镜像都为 20，且镜像 `appLocaleTag` 仍为 ja | `e57607b5` |
+| 3 | `app_global_settings_v1` 缺失 → 44 键按活动档案播种一次 + marker；切档后 6 键（`appThemeMode`/`appFontMode`/`appFontWeight`/`appLocaleTag`/`courseCardSurfaceStyle`/`homeNavigationForm`）不变 | `30e2aca6` |
+| 4a | 整份坏 JSON `[1,2,3]` → 默认模型 + `foruiTheme=MIUI` | `d00b284e` |
+| 4b | 合法 JSON 缺 `foruiTheme` 键 → `BLUE` | `d00b284e` |
+| 5 | 旧 `courses` 全坏 → `courses_unparsed_items` count=1，原 key 留档后删除 | `e57607b5` |
+| 6 | `hasStoredPassword=false` + 旧键存在 → 判据为 true；标记只写一次（走真入口 `CloudSyncLogic.shouldPromptLegacyPasswordReentry:198` / `takeLegacyPasswordReentryPrompt:213`） | `f39bcd11` + `46280a4b` |
+| 7 | 18 门课 ICS 导出→导入逐字段一致、简介/备注保留、`teacher` 不被地点末段污染 | `498efac3`（往返口径另参 `2d10e39b`） |
+
+**咬合探针**：一次性把 6 格的关键断言改坏（只改测试内期望/数据，不动生产），单次跑：
+`currentWeek 5→6`（格1）、切档期望 `p1→p2`（格3）、缺键期望 `BLUE→MIUI`（格4b）、
+`quarantinedCourses 1→2`（格5）、`markCalls 1→2`（格6）、导入条数 `18→17`（格7）
+→ `Tests run: 984, Failures: 6`，**一格一例、无串扰**（未改的格2/4a 仍绿）；还原后同一命令
+`OK (984 tests)`。
+
+**两处口径更正**
+1. 格5：原任务描述「旧 key 保留」只对**部分坏**分支成立。**全坏**走
+   `archiveCorrupt("courses")`（`TimetableStore.kt:430-437`）→ 留档到
+   `courses_corrupt_backup_<micros>` 后**删除原 key**。测试按生产真值断言（留档键在、原 key 不在）。
+2. 格6：§10.35 的「判据待同步线实现」已作废——同步线已落地
+   `CloudSyncLogic.shouldPromptLegacyPasswordReentry`（`:198`）与一次性入口
+   `takeLegacyPasswordReentryPrompt`（`:213`，commit `46280a4b`）；测试直接用真入口，未复制规则。
+
+**生产 bug**：无。**未验证项**：真机升级链（旧 Dart 安全存储实际文件 → 同包名覆盖安装 →
+首次进云端页只弹一次）仍只能真机验；本矩阵钉住的是 JVM 可复现的盘上契约与纯判据。
+
 
 
 
