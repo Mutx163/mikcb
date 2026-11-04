@@ -578,6 +578,44 @@ class TimetableRepository(private val store: TimetableStore) : TimetableCoursePo
         pendingNotify = true
     }
 
+    /**
+     * 把「按日历算出的周次」夹回本机学期范围（**纯计算，不写回**）。
+     *
+     * 对齐 Dart `syncTemporalContext`（`timetable_provider.dart:3259-3302`）：日历周由
+     * `WeekCalculator.calendarWeekForDate`（`lib/domain/week_calculator.dart`，Kotlin
+     * [com.mutx163.qingyu.core.WeekCalculator.calendarWeekForDate]）算出，学期结束后
+     * 会得到大于 `semesterWeekCount` 的值、开学前得到 0；Dart 在 `:3286` 用
+     * `clampCurrentWeekToSettings`（`timetable_profile.dart:27-38`）夹回展示范围再写
+     * `_currentDateWeek`。Kotlin 首页线此前走 `TimetableDateLogic.currentSemesterWeek`
+     * （Dart `_resolveCurrentSemesterWeek` 口径，`timetable_screen.dart:1392-1420`），
+     * 学期外返回 null ⇒ 不写 ⇒ 停在旧周次；本 API 补上「越界也夹」的那一半。
+     *
+     * 口径：
+     * 1. 学期内（`1..semesterWeekCount`）原样返回；
+     * 2. `week < 1` ⇒ 1（开学前日历周为 0）；`week > semesterWeekCount` ⇒
+     *    `semesterWeekCount`（学期结束后停在最后一周，与 Dart 同）；
+     * 3. `semesterStartDate == null` ⇒ 原样返回：开学日未知时日历周推导无意义，
+     *    Dart `_resolveCurrentCalendarWeek:3338-3341` 同样直接回落 `_currentWeek`；
+     * 4. `semesterWeekCount <= 0` ⇒ 原样返回：周数缺失/坏值不具上限语义，夹到 1 会把
+     *    用户当前周强行改成「第 1 周」，比不夹更坏。[clampCurrentWeekToSettings] 的
+     *    `maxWeek = max(1, count)` 是**写入口**的兜底，不用于展示口径。
+     *
+     * 节假日不参与：本 API 只按数值边界夹取；节假日仅由 `ScheduleDateRule` 换课，
+     * 不改变周次编号（Dart `syncTemporalContext` 同样没有节假日分支）。
+     *
+     * 与 [setCurrentWeek] 的关系：**只算不写**——不落盘、不改 `loadedCurrentWeek`、
+     * 不通知监听者。是否写回由调用方决定（首页分钟心跳拿到结果后再自行调
+     * [setCurrentWeek]）。
+     */
+    @Synchronized
+    fun clampWeekToSettings(week: Int): Int {
+        val settings = loadedSettings
+        if (settings.semesterStartDate == null) return week
+        val count = settings.semesterWeekCount
+        if (count <= 0) return week
+        return week.coerceIn(1, count)
+    }
+
     // ---------- TimetableCoursePort ----------
 
     override var courses: List<Course>

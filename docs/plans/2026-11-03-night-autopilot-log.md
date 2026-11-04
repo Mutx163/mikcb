@@ -2202,6 +2202,49 @@ C:\dev\pwsh\pwsh.exe -Command "& './scripts/test-kotlin-module.ps1' -Module 'tim
 
 ---
 
+### 10.44 ✅ 周次夹取 API `TimetableRepository.clampWeekToSettings`（2026-11-04，app/store）
+
+**结论**：补齐「学期外也写回」的一半。Dart `syncTemporalContext`（`timetable_provider.dart:3259-3302`）在 `:3286` 走 `clampCurrentWeekToSettings`（定义 `timetable_profile.dart:27-38`）；Kotlin 首页线原走 `TimetableDateLogic.currentSemesterWeek`，学期外返回 null ⇒ 不写 ⇒ 停在旧周（`8821ced7` 已接线的跨日写回因此缺最后一击）。
+
+**API（纯计算，不写回）**：
+
+```kotlin
+@Synchronized
+fun clampWeekToSettings(week: Int): Int
+```
+
+KDoc 要点（均写进方法注释）：
+1. 学期内 `1..semesterWeekCount` 原样返回；
+2. `week < 1` ⇒ 1；`week > semesterWeekCount` ⇒ `semesterWeekCount`（学期结束停在最后一周，与 Dart 同）；
+3. `semesterStartDate == null` ⇒ 原样（Dart `_resolveCurrentCalendarWeek:3338-3341` 同样直接回落 `_currentWeek`）；
+4. `semesterWeekCount <= 0` ⇒ 原样（周数缺失/坏值不具上限语义，夹到 1 会把用户当前周强行改成「第 1 周」，比不夹更坏；`clampCurrentWeekToSettings` 的 `maxWeek = max(1, count)` 是**写入口**兜底，不用于展示口径）；
+5. 节假日不参与：只按数值边界夹取，节假日仅由 `ScheduleDateRule` 换课、不改周次编号（Dart `syncTemporalContext` 同样没有节假日分支）；
+6. **与 `setCurrentWeek` 的关系**：本 API **只算不写**——不落盘、不改 `loadedCurrentWeek`、不通知监听者；写回由调用方决定（**等首页线接线：`TimetableHost` 分钟心跳处调用**）。
+
+**用例（6 例，`app/TimetableRepositoryWeekClampTest.kt`）**：
+
+- 学期内 `5 → 5`；`0 → 1`；`count+3`（21）→ `semesterWeekCount`（18）；
+- 节假日不参与：`WeekCalculator.calendarWeekForDate(2026-10-01, 开学 2026-08-31) = 5`，夹取后仍是 5（国庆不跳周）；
+- 无开学日：25 → 25、0 → 0；
+- `semesterWeekCount = 0`（`updateSettings` 注入）：25 → 25、0 → 0。
+
+**咬合探针**：把 `return week.coerceIn(1, count)` 改成 `return week` → **2 红**（`第 0 周夹到第 1 周` expected `<1> but was:<0>`；`超出学期周数夹到最后一击` expected `<18> but was:<21>`），982 例中 `Failures: 2` → 还原后 982 全绿。
+
+**L0（实际命令与数字）**：
+
+```
+C:\dev\pwsh\pwsh.exe -NoProfile -Command "& 'scripts/test-kotlin-module.ps1' -Module 'pages/settings' -ExtraSources 'android/app/src/test/kotlin/com/mutx163/qingyu/app/TimetableRepositoryWeekClampTest.kt'"
+```
+
+- **OK (982 tests)** = `pages/settings` 既有 976 例 + 本批 6 例（共享目录含 `app/` 与 `transfer/`，他线新增文件已计入）。
+- 探针期：`Tests run: 982, Failures: 2`（仅上述两条）。
+- 中途一次编译因他线 `transfer/LegacyBackupPackage.kt` 未落盘 unresolved（非本批），其修复后全量复跑绿；曾用 `-ExcludeShared transfer` 单独验证探针红。
+- 未裸跑 gradlew、未跑整包。
+
+**边界**：未碰禁碰清单（`app/AppGlobalSettingsStore.kt`、`app/TimetableSettingsModel.kt`、`pages/sync/**`（含 `TimetableSnapshotBridge.kt`）、`pages/ShellPageIndex.kt`、`pages/ShellWiring.kt`、`pages/import/**`、`pages/timetable/**`、`components/**`、`theme/`、两个壳 Activity、`lib/ui/`、路由表）。`pages/sync` 的 C3 未跑（同步线在修）。
+
+---
+
 
 
 
