@@ -172,6 +172,8 @@ fun HomeGlassDock(
         material = material,
         wallpaperLuminance = resolvedWallpaperLuminance,
         overWallpaper = overWallpaper,
+        // 真正有没有壁纸可采样（路径非空）：无壁纸时坞墨色按页面底色判，不走「壁纸未知→浅墨」。
+        hasWallpaper = hasBackdrop,
         modifier = modifier,
         // 只有「点开换主屏内容」的条目（视图动作 / 内嵌页）才挪选中指示器；
         // 点开是推一层页面的条目（外观编辑器、表单页）主屏没换，指示器必须留在原格，

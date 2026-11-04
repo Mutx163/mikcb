@@ -8,31 +8,34 @@ import org.junit.Test
 import java.io.File
 
 /**
- * 子页顶栏「渐进模糊」守卫（2026-11-02 建立）。
+ * 子页顶栏玻璃守卫（2026-11-02 建立；2026-11-04 随「换方案」改为**单档磨砂 + 两段线性白纱**）。
  *
- * ## 它钉住的是什么
+ * ## 它钉住的是什么（新方案实质，不是放水）
  *
- * 用户要求把顶栏换成渐变模糊。Flutter 原版子页顶栏从 2026-09-23 起就锁死了渐进档
- * （`2026-09-23-lock-subpage-progressive-blur.md`），Compose 迁移时先接了均匀档
- * （`textureBlur(25f)`），本次补回。这条链路有三个**静默**失败点：
+ * 用户口径：原来的 miuix 多级渐进 stack 观感廉价，要求换成更高级的通透做法。现方案 =
+ * 单档均匀磨砂 + 两段线性白纱。本守卫钉住这五条实质，任一条被改回旧方案就红：
  *
- * 1. 退回 `textureBlur`：能编译、能上屏，只是顶栏又变成一整条均匀糊；
- * 2. `progressiveGradient` 与 effects 里的 `gradient` 不是同一份：miuix 不报错，
- *    draw 路径直接退回单级模糊，清晰端不再真正锐利；
- * 3. 参数漂移：半径 / 曲线 / 叠色都是从 Flutter 原版换算出来的，随手改一个数
- *    就与正式版观感对不上，而单测不会红。
+ * 1. 顶栏玻璃走共享件 `QingyuGlassSurface`，且 **单档**（`progressive = null`），不再有
+ *    `ProgressiveBlur` 多级 stack / `progressiveTextureBlurEffect`；
+ * 2. 白纱是**两段纯线性 `[顶边 tint → 带底 transparent]`**（旧的「前 62% 满浓度」实心段视为红）；
+ * 3. 暗色用**亮白纱**（`Color.White.copy` + `DarkVeilAlpha`），退回灰 `#565656` 视为红；
+ * 4. 玻璃面/带底与**内容起点对齐**（`bandHeightPx + contentGapPx` 且 `layout(width, height + contentGapPx)`），
+ *    保证底部平滑归零、无硬线；
+ * 5. 不用自研转场/动画（不出现 `textureBlur(` / `drawBackdrop(` / `progressiveTextureBlurEffect(`）。
  *
  * ## 为什么是文本守卫
  *
- * Compose 的绘制效果在纯 JVM 里跑不起来（`drawBackdrop` 依赖 RuntimeShader / 设备）。
- * 和 `PageScaffoldGuardTest` 同一套路：只钉「必须出现的最小集合」与关键数字，
- * 不规定书写格式。找不到源文件时**失败而不是跳过**——跳过等于守卫不存在。
+ * Compose 的绘制效果在纯 JVM 里跑不起来（`drawBackdrop` / `BackdropFilter` 依赖 RuntimeShader / 设备）。
+ * 和 `PageScaffoldGuardTest` 同一套路：只钉「必须出现的最小集合」与关键数字，不规定书写格式。
+ * 找不到源文件时**失败而不是跳过**——跳过等于守卫不存在。
  *
  * ## 咬合探针（改这条测试或改接线时必须做）
  *
- * - 把 `MaxRadiusDp` 49f 改成 25f → `numbers stay pinned` 与 `49dp peak` 必须红；
- * - 把 `progressiveGradient = QingyuTopBarGradient` 删掉 → 第 1 条必须红；
- * - 把 `drawBackdrop` 整段换回 `Modifier.textureBlur` → 第 1 条必须红。
+ * - 把 scrim 改回 `0.62f to tint`（实心段）→ 第 1 条必红；
+ * - 把 `progressive = null` 改回 `progressive = QingyuTopBarGradient`（多级）→ 第 1 条必红；
+ * - 把暗色改回 `Color(0xFF565656)` → 第 1 条必红；
+ * - 把 `bandHeightPx + contentGapPx` 改回 `+ overhangPx` → 第 1 条必红；
+ * - 把 `MaxRadiusDp` 49f 改成 25f → `numbers` 与 `49dp peak` 必红。
  */
 class TopBarProgressiveBlurGuardTest {
 
@@ -61,7 +64,7 @@ class TopBarProgressiveBlurGuardTest {
     /**
      * 只留代码：先把块注释 / KDoc 和行注释剥掉。
      *
-     * 负向断言（不许出现 `.textureBlur(`）**必须**只看代码——注释里留一句历史说明
+     * 负向断言（不许出现 `.textureBlur(` 等）**必须**只看代码——注释里留一句历史说明
      * 不该把守卫判红。`PageScaffoldGuardTest` 也踩过同类假红。
      */
     private fun codeOnly(source: String): String = source
@@ -92,45 +95,66 @@ class TopBarProgressiveBlurGuardTest {
     }
 
     @Test
-    fun `top bar uses progressive blur wiring, not uniform textureBlur`() {
+    fun `top bar uses single-pass blur and two-stop linear veil`() {
         val code = codeOnly(scaffoldSource())
         assertTrue(
             "顶栏必须走全站唯一玻璃件：缺少 QingyuGlassSurface(",
             code.contains("QingyuGlassSurface("),
         )
         assertTrue(
-            "顶栏必须把渐进曲线交给共享件（漏传会静默退回单级模糊）",
-            code.contains("progressive = QingyuTopBarGradient"),
-        )
-        assertTrue(
-            "渐变必须是 ProgressiveBlur.Top + 原版曲线",
-            code.contains("ProgressiveBlur.Top.copy(curve = QingyuTopBarBlur.Curve)"),
-        )
-        assertTrue(
-            "叠色必须是独立的线性 scrim（跟 Flutter 原版一样淡到透明）",
-            code.contains("Brush.verticalGradient"),
+            "顶栏必须单档模糊（progressive = null）；改回多级渐进视为方案回退",
+            code.contains("progressive = null"),
         )
         assertFalse(
-            "顶栏退回了均匀模糊：渐进档的顶强底清与叠色渐变都会消失",
-            Regex("""(?<!progressive)\.textureBlur\s*\(""").containsMatchIn(code),
+            "顶栏退回了多级渐进 stack（出现 ProgressiveBlur）",
+            code.contains("ProgressiveBlur"),
         )
         assertFalse(
-            "顶栏不得绕过共享件自己拼玻璃链（drawBackdrop / blur / lens 只许出现在 QingyuGlassSurface）",
+            "顶栏自己拼渐进模糊（出现 progressiveTextureBlurEffect）",
+            code.contains("progressiveTextureBlurEffect("),
+        )
+        assertFalse(
+            "顶栏不得绕过共享件自己拼玻璃链（drawBackdrop / blur / textureBlur 只许在 QingyuGlassSurface）",
             code.contains("drawBackdrop(") ||
                 Regex("""\blur\s*\(""").containsMatchIn(code) ||
-                code.contains("progressiveTextureBlurEffect("),
+                Regex("""(?<!progressive)\.textureBlur\s*\(""").containsMatchIn(code),
+        )
+        assertTrue("白纱必须是 Brush.verticalGradient", code.contains("Brush.verticalGradient"))
+        assertTrue("白纱必须是两段线性：顶边满浓度（0.0f to tint）", code.contains("0.0f to tint"))
+        assertTrue(
+            "白纱必须两段线性：带底全透明（1.0f to tint.copy(alpha = 0f)）",
+            code.contains("1.0f to tint.copy(alpha = 0f)"),
+        )
+        assertFalse(
+            "白纱退回了旧的「前 62% 满浓度」实心段（0.62f to tint）",
+            code.contains("0.62f to tint"),
+        )
+        assertTrue("暗色必须用亮白纱：Color.White.copy(", code.contains("Color.White.copy("))
+        assertTrue(
+            "暗色亮白纱 alpha 必须取 QingyuTopBarBlur.DarkVeilAlpha",
+            code.contains("QingyuTopBarBlur.DarkVeilAlpha"),
+        )
+        assertFalse("暗色退回了灰纱 #565656", code.contains("0xFF565656"))
+        assertTrue(
+            "玻璃面高度必须对齐真实底边（bandHeightPx + contentGapPx）",
+            code.contains("bandHeightPx + contentGapPx"),
+        )
+        assertTrue(
+            "顶栏 Layout 高度必须含内容间距（layout(width, height + contentGapPx)），保证无硬线",
+            code.contains("height + contentGapPx"),
         )
     }
 
     @Test
     fun `shared glass surface owns the progressive wiring`() {
+        // 共享玻璃件仍保留“渐进档”能力供其它表面使用；顶栏只是不再传它。
         val code = codeOnly(glassSurfaceSource())
         assertTrue(
-            "共享件必须调官方渐进档",
+            "共享件必须仍能调官方渐进档（progressiveTextureBlurEffect）",
             code.contains("progressiveTextureBlurEffect("),
         )
         assertTrue(
-            "共享件必须把同一份 gradient 同时交给 effects 与 progressiveGradient（漏传会静默退回单级模糊）",
+            "共享件必须把同一份 gradient 同时交给 effects 与 progressiveGradient",
             code.contains("gradient = progressive") && code.contains("progressiveGradient = progressive"),
         )
         assertTrue(
@@ -140,12 +164,10 @@ class TopBarProgressiveBlurGuardTest {
     }
 
     @Test
-    fun `numbers stay pinned to the Flutter original`() {
-        assertEquals(49f, QingyuTopBarBlur.MaxRadiusDp, 0f)
-        assertEquals(0.5f, QingyuTopBarBlur.Curve, 0f)
-        assertEquals(0.70f, QingyuTopBarBlur.LightTintAlpha, 0f)
-        assertEquals(0.475f, QingyuTopBarBlur.DarkTintAlpha, 0f)
-        assertEquals(0xFF565656, QingyuTopBarBlur.DarkTintArgb)
+    fun `numbers stay pinned to the approved scheme`() {
+        assertEquals("σ≈22 的模糊半径", 49f, QingyuTopBarBlur.MaxRadiusDp, 0f)
+        assertEquals("浅色白纱 alpha", 0.62f, QingyuTopBarBlur.LightTintAlpha, 0f)
+        assertEquals("暗色亮白纱 alpha", 0.24f, QingyuTopBarBlur.DarkVeilAlpha, 0f)
     }
 
     @Test
@@ -156,6 +178,34 @@ class TopBarProgressiveBlurGuardTest {
             22.0,
             QingyuTopBarBlur.MaxRadiusDp.toDouble() * HomeBackgroundModel.MIUIX_BLUR_SIGMA_PER_RADIUS,
             0.1,
+        )
+    }
+
+    @Test
+    fun `back button glass appears only once content tucks under the bar`() {
+        val code = codeOnly(scaffoldSource())
+        assertTrue(
+            "必须有共享玻璃图标按钮 QingyuGlassIconButton(",
+            code.contains("fun QingyuGlassIconButton("),
+        )
+        assertTrue("圆底必须是 CircleShape", code.contains("CircleShape"))
+        assertTrue("玻璃按钮必须带外浮影（Modifier.shadow）", code.contains(".shadow("))
+        assertTrue("玻璃按钮必须有细边（Modifier.border）", code.contains(".border("))
+        assertTrue(
+            "返回键必须按「内容压到带下」才切玻璃（LocalQingyuBackButtonGlass.current）",
+            code.contains("LocalQingyuBackButtonGlass.current"),
+        )
+        assertTrue(
+            "骨架必须在顶栏子树注入压带判据（provides contentUnderHeader）",
+            code.contains("LocalQingyuBackButtonGlass provides contentUnderHeader"),
+        )
+        assertTrue(
+            "压带判据必须来自滚动量（contentOffset <），不能恒真",
+            code.contains("contentOffset <"),
+        )
+        assertFalse(
+            "返回键不得无条件走玻璃（把 current 去掉/改成 true 视为回退）",
+            Regex("""LocalQingyuBackButtonGlass\.current\s*\|\|\s*true""").containsMatchIn(code),
         )
     }
 }

@@ -207,6 +207,14 @@ fun GlassDockNavigationBar(
      * 仅用于「壁纸页但亮度未知」时保守取浅墨兜底，见下方 `unknownWallpaperBackdrop`。
      */
     overWallpaper: Boolean = false,
+    /**
+     * 用户是否**真的设了壁纸**（壁纸/背景图路径非空）。
+     *
+     * 与 [overWallpaper] 不同的两件事：`overWallpaper` 是**路由语义**（周/日/月本应显示壁纸），
+     * 用户可能没设壁纸（纯色/纯背景页）；[hasWallpaper] 才是「此刻有没有壁纸可采样」。
+     * 没有壁纸时墨色必须按**页面底色**判（浅底深字、深底白字），不能沿用「亮度未知→浅墨」的兜底。
+     */
+    hasWallpaper: Boolean = true,
     modifier: Modifier = Modifier,
     maxWidthDp: Int = 380,
     trailingContent: (@Composable () -> Unit)? = null,
@@ -262,14 +270,22 @@ fun GlassDockNavigationBar(
         wallpaperLuminance = if (isBlurActive) wallpaperLuminance else null,
         tintAlpha = containerColor.alpha.toDouble(),
     )
-    // 兜底：壁纸页 + 玻璃在采样 + 壁纸亮度**未知**（缓存冷 / 异步未到）时，别拿纯白
-    // `surfaceContainer` 判深墨——那会把近黑字压在半透明深/黑药丸上，看不见（2026-11-04）。
-    // 保守取浅墨（`DockInkRule.resolve(0.0)` ⇒ useLightInk=true），真值到位后自动精确翻面。
-    val unknownWallpaperBackdrop = overWallpaper && isBlurActive && wallpaperLuminance == null
-    val inkState = if (unknownWallpaperBackdrop) {
-        DockInkRule.resolve(0.0, isDarkTheme = isDark)
-    } else {
-        DockInkRule.resolve(dockLuminance, isDarkTheme = isDark)
+    // 页面底色亮度：坞是半透明药丸，压在页面底色上。没有壁纸时，坞底下**真实露出的**
+    // 就是主题页底（scaffoldBackground），按它判墨（浅底深字、深底白字）。
+    val pageBackgroundLuminance = HomeBackgroundModel.relativeLuminance(
+        QingyuTheme.scaffoldBackground(isDark),
+    )
+    // 墨色状态（三分支，判据全在 DockInkRule）：
+    // ① **没有壁纸**（纯色 / 纯背景页）→ 按**页面底色**判，绝不能用「壁纸未知→浅墨」兜底
+    //    —— 那正是「无壁纸浅色页给出白字」的根因。
+    // ② 有壁纸 + 玻璃在采样 + 壁纸亮度**未知**（缓存冷 / 异步未到）→ 保守取浅墨
+    //    （`resolve(0.0)`），避免近黑字压暗/黑壁纸看不见；真值到位后自动精确翻面。
+    // ③ 其余（有壁纸且亮度已知，或实体档按主题面）→ 用药丸+壁纸合成亮度判。
+    val inkState = when {
+        !hasWallpaper -> DockInkRule.resolveOpaquePage(pageBackgroundLuminance)
+        overWallpaper && isBlurActive && wallpaperLuminance == null ->
+            DockInkRule.resolve(0.0, isDarkTheme = isDark)
+        else -> DockInkRule.resolve(dockLuminance, isDarkTheme = isDark)
     }
     // 墨色本体：浅墨走主题近白；深墨必须用**近黑令牌** `ON_LIGHT_INK_ARGB`（#1A1A1A，
     // 与首页 chrome `homePageChromeForegroundForLuminance` 同源），不能再用

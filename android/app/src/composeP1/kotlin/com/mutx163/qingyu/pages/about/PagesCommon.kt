@@ -179,6 +179,16 @@ fun QingyuRow(
 /** 列表条目间距：全族统一 12dp（官方 demo 分段间距；此前关于页独写 8dp，已收编）。 */
 val AboutPageListSpacing: Arrangement.Vertical = Arrangement.spacedBy(QingyuPageCardMargin)
 
+/**
+ * [AboutPageListSpacing] 的**内容居中版**：同样 12dp 间距，额外把整组内容在视口里垂直居中
+ * ——用于内容通常不满一屏、又不该在底部留一大片空白的页面（如「版本更新」页）。
+ * 内容超过一屏时 LazyColumn 不会居中，照常从顶部排列并可滚动。
+ *
+ * 名字沿用 `AboutPageListSpacing` 前缀：它仍是**全族共享的列表间距常量**，页面不许写死间距。
+ */
+val AboutPageListSpacingCentered: Arrangement.Vertical =
+    Arrangement.spacedBy(QingyuPageCardMargin, Alignment.CenterVertically)
+
 /** 列表底部额外留白：全族统一 24dp（叠在 [QingyuPageList] 的 innerPadding.bottom 之上）。 */
 val AboutPageListBottomPadding: Dp = 24.dp
 

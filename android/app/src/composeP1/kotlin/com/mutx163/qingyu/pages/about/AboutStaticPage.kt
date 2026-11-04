@@ -7,6 +7,7 @@ import android.content.Intent
 import android.net.Uri
 import android.widget.Toast
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -44,7 +45,6 @@ import com.mutx163.qingyu.theme.QingyuTheme
 import top.yukonga.miuix.kmp.basic.Button
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
 import top.yukonga.miuix.kmp.basic.Text
-import top.yukonga.miuix.kmp.basic.TextButton
 import top.yukonga.miuix.kmp.preference.ArrowPreference
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
@@ -387,19 +387,49 @@ private fun AboutRepositorySheet(
             ) {
                 Text(AboutRepositoryStrings.openGitHubAction)
             }
-            TextButton(
+            RepositorySecondaryButton(
                 text = AboutRepositoryStrings.openWarehouseRepoAction,
                 onClick = onOpenWarehouseRepo,
-                modifier = Modifier.fillMaxWidth(),
-                colors = ButtonDefaults.textButtonColors(),
             )
-            TextButton(
+            RepositorySecondaryButton(
                 text = AboutRepositoryStrings.copyAddress,
                 onClick = onCopyAddress,
-                modifier = Modifier.fillMaxWidth(),
-                colors = ButtonDefaults.textButtonColors(),
             )
         }
+    }
+}
+
+/**
+ * 开源仓库弹层的**次级按钮**（打开适配仓 / 复制地址）。
+ *
+ * 为什么不用 `TextButton`：miuix `TextButton` 其实不是透明文字按钮，它的填充来自
+ * `ButtonDefaults.textButtonColors()` 的 `color = secondaryVariant`；本仓 `QingyuPageTheme`
+ * 把 `surfaceContainerHigh`（= secondaryVariant 的来源）覆写成了 `card` 色（亮 #FFFFFF / 暗 #2D2D2D），
+ * 而 `QingyuSheet` 面板底是 `background`（亮 #F2F2F2 / 暗 #242424）——两者几乎同色，按钮就“融进弹层”。
+ *
+ * 按 Flutter v2.1.4.1 `_showRepositorySheet` 在磨砂面板上的做法（次级按钮要有可见边界）：
+ * **主题 card 底色 + 1dp 主题 outline 描边**，主按钮仍是主色实心，主次一眼可分；官方 `Button` + 主题语义色，不自造控件。
+ */
+@Composable
+private fun RepositorySecondaryButton(text: String, onClick: () -> Unit) {
+    val dark = isSystemInDarkTheme()
+    Button(
+        onClick = onClick,
+        modifier = Modifier
+            .fillMaxWidth()
+            .border(
+                width = 1.dp,
+                color = Color(QingyuTheme.outline(dark)),
+                shape = RoundedCornerShape(16.dp),
+            ),
+        colors = ButtonDefaults.buttonColors(
+            color = Color(QingyuTheme.card(dark)),
+            contentColor = Color(QingyuTheme.primaryText(dark)),
+            disabledColor = Color(QingyuTheme.card(dark)),
+            disabledContentColor = Color(QingyuTheme.secondaryText(dark)),
+        ),
+    ) {
+        Text(text = text)
     }
 }
 

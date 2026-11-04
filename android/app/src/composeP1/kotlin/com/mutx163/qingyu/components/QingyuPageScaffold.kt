@@ -1,6 +1,8 @@
 package com.mutx163.qingyu.components
 
 import android.animation.ValueAnimator
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
@@ -8,7 +10,9 @@ import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.derivedStateOf
@@ -19,11 +23,15 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.RectangleShape
+import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.drawscope.clipRect
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.Layout
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalDensity
@@ -48,7 +56,6 @@ import top.yukonga.miuix.kmp.basic.SmallTopAppBar
 import top.yukonga.miuix.kmp.basic.TopAppBar
 import top.yukonga.miuix.kmp.basic.TopAppBarDefaults
 import top.yukonga.miuix.kmp.blur.LayerBackdrop
-import top.yukonga.miuix.kmp.blur.ProgressiveBlur
 import top.yukonga.miuix.kmp.blur.isRuntimeShaderSupported
 import top.yukonga.miuix.kmp.blur.layerBackdrop
 import top.yukonga.miuix.kmp.blur.rememberLayerBackdrop
@@ -77,19 +84,102 @@ import top.yukonga.miuix.kmp.icon.extended.ChevronBackward
  * 两个变体共用同一个 [QingyuBackIconButton]，所以返回键的图标、颜色、命中区、
  * 位置完全一致。
  */
+/** 顶栏/图标按钮的玻璃口径：小圆钮用薄磨砂，不做折射/高光（对齐发布版 `maxRefraction = 0`）。 */
+private val QingyuChromeGlassSpec: GlassSpec = GlassSpecResolver.resolve(
+    GlassTuning(
+        blurSigmaDp = 18f,
+        tintAlpha = 0f,
+        vibrancy = 1.15f,
+        rimStrength = 0f,
+        rimWidthDp = 0f,
+        refractionBandDp = 0f,
+        refractionAmountDp = 0f,
+        dispersion = 0f,
+    ),
+)
+
+/**
+ * 共享玻璃图标按钮（顶栏返回/动作键的统一外观）：
+ * **44×44 圆底 + 磨砂玻璃 + 1dp 细边 + 小外浮影**，深浅色都用亮白纱低 alpha。
+ *
+ * 发布版口径：`HyperosBackButton` 的液态玻璃标准档圆底 + `HyperosGlassShadow.compactShadow`
+ * （blur≈4 / offset≈1.5 的外浮影）。这里用共享玻璃件 + Compose 小阴影等价实现，没有自研动画。
+ * 无实时玻璃能力（`backdrop == null` / 关模糊）时退化成同色半透明实底圆，观感一致。
+ *
+ * 本轮只供 [QingyuBackIconButton] 使用；右上动作键仍由各页自绘，后续批次再统一替换为它。
+ */
+@Composable
+fun QingyuGlassIconButton(
+    onClick: () -> Unit,
+    contentDescription: String?,
+    icon: ImageVector,
+    tint: Color? = null,
+    modifier: Modifier = Modifier,
+) {
+    val dark = isSystemInDarkTheme()
+    val backdrop = LocalQingyuPageBackdrop.current
+    val veil = Color.White.copy(alpha = if (dark) 0.16f else 0.42f)
+    val borderColor = Color.White.copy(alpha = if (dark) 0.18f else 0.55f)
+    val iconTint = tint ?: Color(QingyuTheme.actionIcon(dark))
+    Box(
+        modifier = modifier
+            .size(44.dp)
+            .shadow(elevation = 2.dp, shape = CircleShape, clip = false)
+            .clip(CircleShape)
+            .border(width = 0.75.dp, color = borderColor, shape = CircleShape),
+    ) {
+        val button: @Composable () -> Unit = {
+            IconButton(onClick = onClick, modifier = Modifier.fillMaxSize()) {
+                Icon(
+                    imageVector = icon,
+                    contentDescription = contentDescription,
+                    tint = iconTint,
+                )
+            }
+        }
+        if (backdrop != null) {
+            QingyuGlassSurface(
+                backdrop = backdrop,
+                spec = QingyuChromeGlassSpec,
+                modifier = Modifier.fillMaxSize(),
+                shape = CircleShape,
+                tintBrush = SolidColor(veil),
+                content = button,
+            )
+        } else {
+            Box(modifier = Modifier.fillMaxSize().background(veil, CircleShape)) { button() }
+        }
+    }
+}
+
+/**
+ * 返回键是否已处于「内容压到顶栏带下面」——发布版的圆底只在此时出现。
+ * 骨架在顶栏子树注入；不注入（手拼顶栏的页 / 独立预览）默认 false = 保持光箭头。
+ */
+internal val LocalQingyuBackButtonGlass = staticCompositionLocalOf { false }
+
 @Composable
 fun QingyuBackIconButton(
     onBack: () -> Unit,
     contentDescription: String = CommonUiStrings.back,
     tint: Color? = null,
 ) {
-    val dark = isSystemInDarkTheme()
-    IconButton(onClick = onBack) {
-        Icon(
-            imageVector = MiuixIcons.ChevronBackward,
+    if (LocalQingyuBackButtonGlass.current) {
+        QingyuGlassIconButton(
+            onClick = onBack,
             contentDescription = contentDescription,
-            tint = tint ?: Color(QingyuTheme.actionIcon(dark)),
+            icon = MiuixIcons.ChevronBackward,
+            tint = tint,
         )
+    } else {
+        val dark = isSystemInDarkTheme()
+        IconButton(onClick = onBack) {
+            Icon(
+                imageVector = MiuixIcons.ChevronBackward,
+                contentDescription = contentDescription,
+                tint = tint ?: Color(QingyuTheme.actionIcon(dark)),
+            )
+        }
     }
 }
 
@@ -147,14 +237,15 @@ private fun backIconOrNull(
  *
  * 1. [rememberQingyuBlurBackdrop] 造一个「录像带」（`LayerBackdrop`），并先铺一层页面底色；
  * 2. `Modifier.layerBackdrop(backdrop)` 挂在**页面内容**容器上，把已画出的像素录进去；
- * 3. [QingyuBlurredTopBar] 用 `drawBackdrop + progressiveTextureBlurEffect` 把**渐进**
- *    模糊面垫在顶栏下（上沿最强、到顶栏底边收敛到 0），同时顶栏底色改成 `Color.Transparent`。
+ * 3. [QingyuBlurredTopBar] 用共享玻璃件 `QingyuGlassSurface` 把**单档均匀磨砂**面垫在顶栏下，
+ *    再叠一层两段线性白纱（顶浓 → 带底透明），同时顶栏底色改成 `Color.Transparent`。
  *
  * 三步缺一：只有 3 会采样到空气（黑/透明），只有 2 则毫无视觉变化。
  *
- * 为什么不用官方 demo 的均匀档 / 也不用 demo 的 `curve = 2.2f`：Flutter 原版子页顶栏
- * 锁死的是渐进档（`2026-09-23-lock-subpage-progressive-blur.md`），参数换算写在
- * [QingyuTopBarBlur] 上；Compose 迁移时先接了均匀档，本次补回原版观感。
+ * 2026-11-04 换方案：发布版 v2.1.4.1 的 `InspireHeaderBlur` 是一次变量模糊 + 两段线性白纱；
+ * 旧的 miuix 多级渐进 stack（逐点弧度 + 锐化 overlay + dither）层数多、每帧重建多，读起来有
+ * 一层层叠出来的廉价带且滑动发闪。现改为更稳更通透的「单档均匀磨砂 + 两段线性白纱」，
+ * 模糊粗细仍对齐发布版 σ≈22。参数见 [QingyuTopBarBlur]。
  *
  * ## 退化路径（都回到改动前的样子，不会白屏/闪烁）
  *
@@ -214,63 +305,82 @@ fun QingyuPageScaffold(
     // 宽屏三档取值：页面显式传入的 maxContentWidth 优先，缺省时中宽/宽档用 640dp 默认值。
     val adaptive = rememberQingyuWindowAdaptive()
     val cap = maxContentWidth ?: adaptive.maxContentWidth
+    // 发布版口径：返回键的玻璃圆底只在「内容已压到顶栏带下面」时出现，停在页顶是光箭头。
+    // MiuixScrollBehavior.state.contentOffset 在 pinned 小标题栏下也会累计，故大小标题共用同一判据。
+    val collapsibleTopBar = !smallTopBar && !adaptive.isWideScreen
+    val contentUnderHeader by remember(scrollBehavior) {
+        derivedStateOf { scrollBehavior.state.contentOffset < -UnderHeaderScrollEpsilonPx }
+    }
     Scaffold(
         containerColor = pageBackground,
         topBar = {
-            QingyuBlurredTopBar(
-                backdrop = backdrop,
-                dark = dark,
-                pageBackground = pageBackground,
-                scrollBehavior = scrollBehavior,
-                // 只有走大标题 TopAppBar 的分支可折叠（小标题 / 宽屏档不可折叠）。
-                collapsible = !smallTopBar && !adaptive.isWideScreen,
+            CompositionLocalProvider(
+                // 返回键玻璃需要采样源（顶栏子树不在正文那层 CompositionLocalProvider 里，这里补一份）。
+                LocalQingyuPageBackdrop provides backdrop,
+                LocalQingyuBackButtonGlass provides contentUnderHeader,
             ) {
-                // 宽屏/中宽档把顶栏内容限制到与正文同一根内容列（毛玻璃面仍然通栏）：
-                // 限宽只包内容、不包模糊面，标题/返回键/动作键与正文左缘保持对齐。
-                // 宽屏档的大标题换成单行小标题（demo AdaptiveTopAppBar 的等价分支），
-                // 小标题在通栏窗口上不再有「32sp 大标题 + 永远收不起」的观感问题。
-                val bar: @Composable () -> Unit = {
-                    when {
-                        smallTopBar -> {
-                            SmallTopAppBar(
-                                title = title,
-                                color = barColor,
-                                navigationIcon = backIconOrNull(showBackButton, onBack),
-                                actions = actions,
-                            )
-                        }
-                        adaptive.isWideScreen -> {
-                            SmallTopAppBar(
-                                title = title,
-                                color = barColor,
-                                navigationIcon = backIconOrNull(showBackButton, onBack),
-                                actions = actions,
-                            )
-                        }
-                        else -> {
-                            TopAppBar(
-                                title = title,
-                                color = barColor,
-                                largeTitle = title,
-                                scrollBehavior = scrollBehavior,
-                                navigationIcon = backIconOrNull(showBackButton, onBack),
-                                actions = actions,
-                            )
+                QingyuBlurredTopBar(
+                    backdrop = backdrop,
+                    dark = dark,
+                    pageBackground = pageBackground,
+                    scrollBehavior = scrollBehavior,
+                    // 只有走大标题 TopAppBar 的分支可折叠（小标题 / 宽屏档不可折叠）。
+                    collapsible = collapsibleTopBar,
+                ) {
+                    // 宽屏/中宽档把顶栏内容限制到与正文同一根内容列（毛玻璃面仍然通栏）：
+                    // 限宽只包内容、不包模糊面，标题/返回键/动作键与正文左缘保持对齐。
+                    // 宽屏档的大标题换成单行小标题（demo AdaptiveTopAppBar 的等价分支），
+                    // 小标题在通栏窗口上不再有「32sp 大标题 + 永远收不起」的观感问题。
+                    val bar: @Composable () -> Unit = {
+                        when {
+                            smallTopBar -> {
+                                SmallTopAppBar(
+                                    title = title,
+                                    color = barColor,
+                                    navigationIcon = backIconOrNull(showBackButton, onBack),
+                                    actions = actions,
+                                    // 必须把 scrollBehavior 传进来：官方 SmallTopAppBar 在
+                                    // SideEffect 里把 heightOffsetLimit 钉成 0（固定不折叠）；
+                                    // 不传的话它保持默认 -Float.MAX，onPreScroll 会整段吞掉一个
+                                    // 方向的滚动 ⇒ 小标题页接上列表后变成「只能单向滚」。
+                                    scrollBehavior = scrollBehavior,
+                                )
+                            }
+                            adaptive.isWideScreen -> {
+                                SmallTopAppBar(
+                                    title = title,
+                                    color = barColor,
+                                    navigationIcon = backIconOrNull(showBackButton, onBack),
+                                    actions = actions,
+                                    // 宽屏档同样走 SmallTopAppBar，同样要钉 0，否则宽屏列表也只会单向滚。
+                                    scrollBehavior = scrollBehavior,
+                                )
+                            }
+                            else -> {
+                                TopAppBar(
+                                    title = title,
+                                    color = barColor,
+                                    largeTitle = title,
+                                    scrollBehavior = scrollBehavior,
+                                    navigationIcon = backIconOrNull(showBackButton, onBack),
+                                    actions = actions,
+                                )
+                            }
                         }
                     }
-                }
-                if (cap != null) {
-                    Box(modifier = Modifier.fillMaxWidth()) {
-                        Box(
-                            modifier = Modifier
-                                .align(Alignment.TopCenter)
-                                .widthIn(max = cap),
-                        ) {
-                            bar()
+                    if (cap != null) {
+                        Box(modifier = Modifier.fillMaxWidth()) {
+                            Box(
+                                modifier = Modifier
+                                    .align(Alignment.TopCenter)
+                                    .widthIn(max = cap),
+                            ) {
+                                bar()
+                            }
                         }
+                    } else {
+                        bar()
                     }
-                } else {
-                    bar()
                 }
             }
         },
@@ -307,44 +417,35 @@ fun QingyuPageScaffold(
 }
 
 /**
- * 子页顶栏渐进模糊的参数（对齐 Flutter 原版 `InspireHeaderBlur`，不是官方 demo 的取值）。
+ * 子页顶栏玻璃参数（2026-11-04 换方案：**单档均匀磨砂 + 两段线性白纱**）。
  *
- * ## 为什么是这几个数
+ * ## 为什么换
  *
- * - **半径 49dp**：Flutter 渐进档的固定高斯 sigma = 22 逻辑 px
- *   （`lib/ui/hyperos/inspire/inspire_header_blur.dart` 的 `progressiveSigma`）。
- *   miuix 的换算是 `sigma_px = 0.45 × radius_dp × density`，22 / 0.45 ≈ 48.9 → 49dp。
- * - **曲线 0.5**：Flutter 的强度分布是 `easeInSine(1 - t)`（1/3 处 50%、1/2 处 29%）；
- *   miuix 的强度是 `1 - smoothstep(t)^curve`，curve = 0.5 时约为 1/3 处 49%、
- *   1/2 处 29%（误差 < 1 个百分点）。官方 demo 的 2.2 是「前重后轻」的陡降，
- *   不对应产品原版。
- * - **叠色**：Flutter 是**独立**的一层线性 scrim（不跟模糊曲线收）：浅色 white@0.70、
- *   深色 #565656@0.475（`hyperos_blurred_header.dart` 的 `_frostedScrimColor`）。
- *   所以这里用 `onDrawSurface` 另画，不塞进 `BlurColors`——后者会被 ramp 一起调制，
- *   中段会比原版淡。
+ * 旧实现走 miuix「多级渐进 stack + 锐化 overlay + dither」：层数多、每帧重建多，读起来有
+ * 一层层叠出来的廉价带、滑动还会逐帧重糊发闪。发布版 v2.1.4.1（`InspireHeaderBlur`）是
+ * **一次变量模糊** + 两段线性白纱（`tintGradient`：`[tint → transparent]`）+ 带底收 0。
+ * 这里换成更稳更通透的等价做法：单档均匀高斯磨砂 + 两段线性白纱。
  *
- * 改这里必须同步 `TopBarProgressiveBlurGuardTest`（数字与接线都被它钉住）。
+ * ## 数值
+ * - **半径 49dp**：miuix `sigma_px = 0.45 × radius_dp × density`，49 → σ≈22，对齐发布版
+ *   `progressiveSigma = 22`（粗细一致，只是不再逐点渐进）。
+ * - **白纱两段线性**：顶边满浓度 → 带底全透明（发布版 `tintGradient(bottomScale=0)`）。
+ *   旧「前 62% 满浓度、末段才收」大半条是实心白板，显廉价，已废。
+ * - **浅 white@0.62 / 暗色亮 white@0.24**：暗色必须用**亮 veil**（用灰 `#565656` 压在暗底上
+ *   会发灰、读成脏/透明），对齐发布版 `_frostedScrimColor` 暗色 0.16~0.30 档。
+ *
+ * 改这里必须同步 `TopBarProgressiveBlurGuardTest`（新方案实质被它钉住）。
  */
 internal object QingyuTopBarBlur {
-    /** 顶边满强度处的半径（dp）。 */
+    /** 单档模糊半径（dp），σ≈22 对齐发布版 progressiveSigma。 */
     const val MaxRadiusDp = 49f
 
-    /** miuix 幂曲线，复现 Flutter 的 `easeInSine(1 - t)`。 */
-    const val Curve = 0.5f
+    /** 浅色白纱 alpha（顶边满浓度，线性淡到带底 0）。 */
+    const val LightTintAlpha = 0.62f
 
-    /** 浅色叠色：纯白（#FFFFFF），与深色叠色成对命名（2026-11-04 顶栏固定 tint 收口）。 */
-    const val LightTintArgb = 0xFFFFFFFF
-
-    /** 浅色叠色 alpha：纯白 70%。 */
-    const val LightTintAlpha = 0.70f
-
-    /** 深色叠色：中性灰 #565656，alpha 按 `sheetTintAlpha` 换算后为 0.475。 */
-    const val DarkTintArgb = 0xFF565656
-    const val DarkTintAlpha = 0.475f
+    /** 暗色**亮白纱** alpha（暗底上用亮 veil 才有对比）。 */
+    const val DarkVeilAlpha = 0.24f
 }
-
-private val QingyuTopBarGradient: ProgressiveBlur =
-    ProgressiveBlur.Top.copy(curve = QingyuTopBarBlur.Curve)
 
 /**
  * 顶栏带的固定玻璃口径（不读用户设置，与 Flutter 原版锁死的那一档一致）。
@@ -367,27 +468,21 @@ private val QingyuTopBarGlassSpec: GlassSpec = GlassSpecResolver.resolve(
 )
 
 private fun qingyuTopBarTint(dark: Boolean): Color =
-    if (dark) {
-        Color(QingyuTopBarBlur.DarkTintArgb).copy(alpha = QingyuTopBarBlur.DarkTintAlpha)
-    } else {
-        Color(QingyuTopBarBlur.LightTintArgb).copy(alpha = QingyuTopBarBlur.LightTintAlpha)
-    }
+    Color.White.copy(
+        alpha = if (dark) QingyuTopBarBlur.DarkVeilAlpha else QingyuTopBarBlur.LightTintAlpha,
+    )
 
 /**
- * 顶栏叠色 scrim 的**新形态**（2026-11-04 P1）：带内基本均匀、只在底部短渐隐。
+ * 顶栏白纱（2026-11-04 换方案）：**两段纯线性 `[顶边 tint → 带底 transparent]`**。
  *
- * 旧形态从顶到底**整段线性**淡到透明，中段偏薄、与 Flutter 原版「一层独立线性纱」的
- * 观感有差。现在改成「前 ~62% 保持满浓度、末段 ~38% 收到透明」：带内读起来基本均匀，
- * 到正文交界处才柔和收尾——配合下沿 [TopBarBlurOverhang] 让这条渐隐尾巴落进正文顶部空隙，
- * 交界无硬边。
- *
- * 颜色口径不变：浅 White@0.70 / 深 #565656@0.475（`TopBarProgressiveBlurGuardTest` 钉死）。
+ * 发布版 `InspireHeaderBlur.tintGradient(bottomScale=0)` 就是两段线性；旧的
+ * 「0→62% 满浓度、末段才收」大半条是实心白纱，读成一块廉价白板，已废。
+ * 带底全透明 → 与下方清晰内容交界处不会切出横向硬边（配合下沿对齐内容起点）。
  */
 private fun qingyuTopBarScrim(dark: Boolean): Brush {
     val tint = qingyuTopBarTint(dark)
     return Brush.verticalGradient(
         0.0f to tint,
-        0.62f to tint,
         1.0f to tint.copy(alpha = 0f),
     )
 }
@@ -498,6 +593,15 @@ private fun QingyuBlurredTopBar(
     }
     // scrim 只在 dark 变化时重建一次，不在 draw 期每帧新建 Brush（避免滚动期 GC 抖动）。
     val scrimBrush = remember(dark) { qingyuTopBarScrim(dark) }
+    // 带底「渐回页底色」：单档均匀磨砂没有 blur→0 的收尾，若直接与内容交界会留一条模糊硬边。
+    // 用最后 ~7%（正好是 TopBarContentGap 那段）由透明渐到页底色，把磨砂影像柔和压回底色。
+    val bottomFadeBrush = remember(pageBackground) {
+        Brush.verticalGradient(
+            0.0f to Color.Transparent,
+            0.93f to Color.Transparent,
+            1.0f to pageBackground,
+        )
+    }
     Layout(
         content = {
             if (backdrop != null) {
@@ -505,10 +609,14 @@ private fun QingyuBlurredTopBar(
                     backdrop = backdrop,
                     spec = QingyuTopBarGlassSpec,
                     shape = RectangleShape,
-                    progressive = QingyuTopBarGradient,
+                    // 单档均匀磨砂：不传渐进档（progressive = null ⇒ QingyuGlassSurface 走单次 blur，
+                    // 不再建多级 stack/锐化/dither，薄而稳，治“一层层”的廉价带与逐帧重糊发闪）。
+                    progressive = null,
                     onDrawSurface = {
                         if (underHeader) {
                             drawRect(brush = scrimBrush)
+                            // 磨砂没有“模糊归零”的收尾：用最后一段渐回页底色压掉与内容的交界硬边。
+                            drawRect(brush = bottomFadeBrush)
                         } else {
                             // opaqueAtRest：无内容压带时铺不透明页底色（静止即实底）。
                             drawRect(color = pageBackground)

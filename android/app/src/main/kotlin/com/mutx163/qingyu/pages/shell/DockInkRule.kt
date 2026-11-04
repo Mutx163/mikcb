@@ -98,4 +98,17 @@ object DockInkRule {
             unselectedAlpha = if (useLightInk) UNSELECTED_ALPHA_LIGHT else UNSELECTED_ALPHA_DARK,
         )
     }
+
+    /**
+     * **无壁纸**（纯色 / 纯背景页）时的墨色兜底：坞底下真实露出的是**页面底色**（不是壁纸），
+     * 直接按页面底色亮度翻黑白 —— 浅色页底 ⇒ 深墨（近黑），深色页底 ⇒ 浅墨。
+     *
+     * 阈值 / alpha 与 [resolve] 完全同一套，只是把输入从「壁纸合成亮度」换成「页面底色亮度」。
+     * 供渲染层在「用户没设壁纸」时调用：此时**不能**沿用「壁纸亮度未知 → 保守浅墨」的兜底，
+     * 否则浅色纯背景页会被判成深色、给出白字（2026-11-04 用户报的 bug）。
+     *
+     * @param pageBackgroundLuminance 页面底色（`QingyuTheme.scaffoldBackground`）的相对亮度。
+     */
+    fun resolveOpaquePage(pageBackgroundLuminance: Double): DockInkColors =
+        resolve(backgroundLuminance = pageBackgroundLuminance, isDarkTheme = false)
 }

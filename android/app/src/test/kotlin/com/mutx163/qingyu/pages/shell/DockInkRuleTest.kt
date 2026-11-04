@@ -104,4 +104,32 @@ class DockInkRuleTest {
         assertEquals(1.0, DockInkRule.effectiveLuminance(1.4, 2.0, 0.4), 1e-9)
         assertEquals(0.0, DockInkRule.effectiveLuminance(-0.3, -1.0, 0.4), 1e-9)
     }
+
+    // ── 无壁纸（纯色 / 纯背景页）兜底：按页面底色判墨，不是「壁纸未知→浅墨」 ──
+
+    @Test
+    fun `无壁纸浅色页底兜底用深墨`() {
+        // 用户 2026-11-04 报的 bug：课表页没设壁纸（浅色纯背景），底栏字不该是白的。
+        // 页面底色亮度 ~0.9（浅底）⇒ 必须深墨（近黑）。
+        val ink = DockInkRule.resolveOpaquePage(0.9)
+        assertFalse("无壁纸浅色页底必须用深墨（近黑），不能给白字", ink.useLightInk)
+        assertFalse("选中不用主题主色", ink.selectedUsesAccent)
+        assertEquals(DockInkRule.SELECTED_ALPHA_DARK, ink.selectedAlpha, 0f)
+        assertEquals(DockInkRule.UNSELECTED_ALPHA_DARK, ink.unselectedAlpha, 0f)
+    }
+
+    @Test
+    fun `无壁纸深色页底兜底用浅墨`() {
+        // 无壁纸 + 深色页底 ⇒ 白/浅，仍要看得清。
+        val ink = DockInkRule.resolveOpaquePage(0.1)
+        assertTrue("无壁纸深色页底必须用浅墨", ink.useLightInk)
+        assertEquals(DockInkRule.UNSELECTED_ALPHA_LIGHT, ink.unselectedAlpha, 0f)
+    }
+
+    @Test
+    fun `无壁纸兜底阈值与壁纸判据同一条`() {
+        // 复用同一条 0.45 阈值（恰好等于按亮底处理），不另发明判据。
+        assertFalse(DockInkRule.resolveOpaquePage(0.45).useLightInk)
+        assertTrue(DockInkRule.resolveOpaquePage(0.4499).useLightInk)
+    }
 }

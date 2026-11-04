@@ -1,6 +1,7 @@
 package com.mutx163.qingyu.pages.about
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -116,7 +117,6 @@ fun AboutUpdatePage(
 
             AboutUpdatePagePhase.CHECK_FAILED -> AboutUpdateCheckFailedView(
                 innerPadding = innerPadding,
-                scrollBehavior = scrollBehavior,
                 onRefresh = onRefresh,
             )
 
@@ -180,44 +180,27 @@ private fun AboutUpdateCheckingView(appName: String, innerPadding: PaddingValues
 @Composable
 private fun AboutUpdateCheckFailedView(
     innerPadding: PaddingValues,
-    scrollBehavior: ScrollBehavior,
     onRefresh: () -> Unit,
 ) {
     val colors = MiuixTheme.colorScheme
-    QingyuPageList(
-        innerPadding = innerPadding,
-        scrollBehavior = scrollBehavior,
-        horizontalPadding = QingyuPageCardMargin,
-        contentPadding = PaddingValues(bottom = AboutPageListBottomPadding),
-        verticalArrangement = AboutPageListSpacing,
+    Box(
+        modifier = Modifier.fillMaxSize().padding(innerPadding),
+        contentAlignment = Alignment.Center,
     ) {
-        item(key = "check-failed") {
-            QingyuCard(
-                modifier = Modifier.fillMaxWidth(),
-                insideMargin = QingyuCardDefaults.ContentInsideMargin,
-            ) {
-                Column(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                ) {
-                    AppIconBadge()
-                    Spacer(Modifier.height(16.dp))
-                    Text(
-                        text = AboutUpdateStrings.checkFailedTitle,
-                        style = MiuixTheme.textStyles.main,
-                        color = colors.onSurface,
-                        textAlign = TextAlign.Center,
-                    )
-                    Spacer(Modifier.height(20.dp))
-                    Button(
-                        onClick = onRefresh,
-                        modifier = Modifier.fillMaxWidth(),
-                        colors = ButtonDefaults.buttonColorsPrimary(),
-                    ) {
-                        Text(AboutUpdateStrings.retryAction)
-                    }
-                }
-            }
+        Column(
+            modifier = Modifier.padding(horizontal = 32.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+        ) {
+            AppIconBadge()
+            Spacer(Modifier.height(16.dp))
+            Text(
+                text = AboutUpdateStrings.checkFailedTitle,
+                style = MiuixTheme.textStyles.main,
+                color = colors.onSurface,
+                textAlign = TextAlign.Center,
+            )
+            Spacer(Modifier.height(12.dp))
+            InlineTextAction(text = AboutUpdateStrings.retryAction, onClick = onRefresh)
         }
     }
 }
@@ -240,7 +223,9 @@ private fun AboutUpdateReadyView(
         scrollBehavior = scrollBehavior,
         horizontalPadding = QingyuPageCardMargin,
         contentPadding = PaddingValues(bottom = AboutPageListBottomPadding),
-        verticalArrangement = AboutPageListSpacing,
+        // 内容不满一屏时整块**垂直居中**（消灭“全堆上半屏、下面空半屏”）；超过一屏时
+        // 照常从顶部排列并可滚动（居中只作用于有富余空间的情形）。间距走全族共享常量。
+        verticalArrangement = AboutPageListSpacingCentered,
     ) {
         item(key = "status") {
             AboutUpdateStatusCardFull(
@@ -300,6 +285,7 @@ private fun AboutUpdateStatusCardFull(
             }
         }
     }
+    val openReleaseList: () -> Unit = { onOpenUrl(releaseListUrlFor(channel)) }
 
     QingyuCard(
         modifier = Modifier.fillMaxWidth(),
@@ -310,7 +296,7 @@ private fun AboutUpdateStatusCardFull(
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
             AppIconBadge()
-            Spacer(Modifier.height(16.dp))
+            Spacer(Modifier.height(14.dp))
             Text(
                 text = if (hasUpdate) {
                     AboutUpdateStrings.updateAvailableHeadline
@@ -322,22 +308,14 @@ private fun AboutUpdateStatusCardFull(
                 color = if (hasUpdate) colors.primary else colors.onSurface,
                 textAlign = TextAlign.Center,
             )
-            Spacer(Modifier.height(8.dp))
+            Spacer(Modifier.height(6.dp))
             if (hasUpdate) {
                 VersionTransition(
                     currentVersion = result.currentVersion,
                     latestVersion = release?.version ?: AboutUpdatePageStrings.unreleasedLabel,
                 )
-            } else {
-                Text(
-                    text = "${AboutUpdateStrings.currentVersionLabel} ${result.currentVersion}",
-                    style = MiuixTheme.textStyles.footnote1,
-                    color = colors.onSurfaceVariantSummary,
-                    textAlign = TextAlign.Center,
-                )
-            }
-            Spacer(Modifier.height(20.dp))
-            if (hasUpdate) {
+                Spacer(Modifier.height(20.dp))
+                // 只有「有更新」才用醒目的主按钮下载——本页唯一的主操作。
                 Button(
                     onClick = onPrimary,
                     modifier = Modifier.fillMaxWidth(),
@@ -345,30 +323,50 @@ private fun AboutUpdateStatusCardFull(
                 ) {
                     Text(primaryLabel)
                 }
-            } else {
-                Button(
-                    onClick = onRefresh,
-                    modifier = Modifier.fillMaxWidth(),
-                    colors = ButtonDefaults.buttonColors(),
-                ) {
-                    Text(AboutUpdateStrings.retryAction)
+                // 主按钮已经是「查看 Release」时不再重复给文字链接，避免两处同一动作。
+                if (primaryAction != AboutUpdatePrimaryAction.OPEN_RELEASE_PAGE) {
+                    Spacer(Modifier.height(4.dp))
+                    InlineTextAction(text = AboutUpdateStrings.viewReleaseAction, onClick = openReleaseList)
                 }
-            }
-            // 「查看 Release」是次级出口：用居中的文字动作，不做第二个通栏按钮（形状别和主按钮抢）。
-            if (!hasUpdate || primaryAction != AboutUpdatePrimaryAction.OPEN_RELEASE_PAGE) {
-                Spacer(Modifier.height(8.dp))
+            } else {
+                // 已是最新：版本号降级成一行弱化小字；动作收成一行纯文字
+                //（不再是灰色通栏大按钮 + 灰色药丸两个叠着的块）。
+                Text(
+                    text = result.currentVersion,
+                    style = MiuixTheme.textStyles.footnote1,
+                    color = colors.onSurfaceVariantSummary,
+                    textAlign = TextAlign.Center,
+                )
+                Spacer(Modifier.height(10.dp))
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.Center,
+                    verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    TextButton(
-                        text = AboutUpdateStrings.viewReleaseAction,
-                        onClick = { onOpenUrl(releaseListUrlFor(channel)) },
-                    )
+                    InlineTextAction(text = AboutUpdateStrings.retryAction, onClick = onRefresh)
+                    Spacer(Modifier.width(4.dp))
+                    InlineTextAction(text = AboutUpdateStrings.viewReleaseAction, onClick = openReleaseList)
                 }
             }
         }
     }
+}
+
+/**
+ * 一行纯文字动作：主色可点、无底色、无药丸背景——用于「重新检查 / 查看 Release」这类次级出口，
+ * 与「有更新」时那颗醒目的填充主按钮形成明确主次（避免再出现两个上下叠的灰色按钮块）。
+ */
+@Composable
+private fun InlineTextAction(text: String, onClick: () -> Unit) {
+    Text(
+        text = text,
+        style = MiuixTheme.textStyles.footnote1.shiftWeight(QingyuWeightDelta.MEDIUM),
+        color = MiuixTheme.colorScheme.primary,
+        modifier = Modifier
+            .clip(RoundedCornerShape(6.dp))
+            .clickable(onClick = onClick)
+            .padding(horizontal = 8.dp, vertical = 4.dp),
+    )
 }
 
 /** Dart `_buildVersionTransition`：旧版本弱化 → 箭头 → 新版本强调（版本号走正文字阶，不用等宽）。 */

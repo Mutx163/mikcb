@@ -242,7 +242,10 @@ fun LiveDiagnosticsLogPage(
                             onToggleEntry = onToggleEntry,
                             onToggleDeviceInfo = onToggleDeviceInfo,
                             dark = dark,
-                            scrollBehavior = scrollBehavior,
+                            // 不接 scrollBehavior：小顶栏页（smallTopBar）不折叠，QingyuPageScaffold 的
+                            // SmallTopAppBar 分支又没把 scrollBehavior 传给它 ⇒ 该 behavior 的
+                            // heightOffsetLimit 保持默认 -Float.MAX，nestedScroll.onPreScroll 会把
+                            // 一个方向的滚动整段吞掉（列表只能单向滚）。列表不挂它即恢复双向滚动。
                             listState = listState,
                             modifier = Modifier.weight(1f),
                         )
@@ -413,7 +416,12 @@ private fun DiagnosticsLogList(
     onToggleEntry: (String) -> Unit,
     onToggleDeviceInfo: () -> Unit,
     dark: Boolean,
-    scrollBehavior: ScrollBehavior,
+    /**
+     * 顶栏折叠行为。**日志页是 smallTopBar 页、不折叠**，调用方传 null；
+     * 传了非 null 且其 `heightOffsetLimit` 未被 SmallTopAppBar 钉成 0 时，
+     * `nestedScroll.onPreScroll` 会吞掉一个方向的列表滚动（只能单向滚）。
+     */
+    scrollBehavior: ScrollBehavior? = null,
     listState: LazyListState,
     modifier: Modifier = Modifier,
 ) {
