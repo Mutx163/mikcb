@@ -306,35 +306,54 @@ copy_style 超宽债 203 → **191 条**。已清 4 键 × 三语（en/ja/ko）�
 - **过程事故（留痕）**：`9dd376d2` 的 stat 里出现本日志 18 行改动——原因是协调线 `git add` 后提交时撞上他线 `index.lock`，日志已暂存；他线随后 `commit` 把它一并带入。**内容无误、已复核**。**规矩**：并发共享工作区里，`git add` 与 `commit` 要挨着做；等待锁后重试前先看 `status`，避免把别人暂存内容夹带进提交。
 - **`f52fa36f` 复算（2026-11-04 08:05，干净 worktree 实扫）**：**47 / 47 / 0 / 16**，算术对得上（TOTAL=COVERED=47）。比 `d53b8ae6` 的 48 少 1 个**覆盖站点**——他线清掉了一处豁免站点，**债务只降不增，符合守卫纪律**；ENTRIES 仍 16。方法：`git worktree add --detach` 到干净树后跑 `recount_locale.py`（同口径：两种写法 + 注释屏蔽 + 顶层切参 + 白名单前缀现读 Kotlin；脚本落在 workspace 根，不在仓内），**避免脏主树 16 个在途文件污染口径**。
 
-### 冻结后交接三段（草稿，待 Lead 冻结信号后一次成型填数）
+### 冻结收口（FINAL HEAD `7fee77b5`，2026-11-04 09:12–09:26）
 
-**① 门禁表最终三块（必须同 HEAD）**
+**① 门禁表三块（同 HEAD `7fee77b5`）**
 
-| 块 | HEAD | 结果 | 起止 / 耗时 | 来源 |
-|---|---|---|---|---|
-| 门 1 `:app:compileDevDebugKotlin` | `<冻结 HEAD>` | 待填 | 待填 | A 线只读 worktree 实测 |
-| 门 2 `:app:testDevDebugUnitTest` | `<冻结 HEAD>` | 待填（tests / suites / failed） | 待填 | A 线同一 worktree 实测 |
-| 门 3 style lint + 门 4 copy_style / cjk | `<冻结 HEAD>` | 待填 | 待填 | **同步线 lint 结果，A 线不重复跑** |
+| 块 | 结果 | 起止 / 耗时 | 来源 |
+|---|---|---|---|
+| 门 1 `:app:compileDevDebugKotlin` | ✅ 绿 exit=0 BUILD SUCCESSFUL | 09:13:06→09:18:04（4m56s / 4m58s） | A 线只读 worktree `mikcb-gate` |
+| 门 2 `:app:testDevDebugUnitTest` | ✅ 绿 exit=0 · **6697 tests / 543 suites / 0 failed / 0 error / 0 skipped** | 09:20:56→09:26:10（5m13s / 5m14s） | 同一 worktree、同一 HEAD |
+| 门 3 `compose-style-lint.ps1 -Domain all` | ✅ exit=0 · 22 域**合计 5 处，全在 `timetable` 基线例外**（R5×3：`CourseGridCard.kt:83` / `day/DayViewCommon.kt:38` / `day/DayViewCourseCard.kt:85`；R2×2：`month/MonthViewPage.kt:695` / `TimetableWeekPage.kt:659`），其余 21 域 0 处 | 09:12:12→09:12:20 | A 线实测（仓库根，不进构建锁） |
+| 门 4 `copy_style` | ✅ exit=0 · 超宽 **130（存量 130 / 新增 0）**、死键 **1（存量 1 / 新增 0）**、复述 **0**；开发者页 11 条按口径不计入 | 09:12:20→09:12:5x | A 线实测 |
+| 门 4 `cjk` 双源集 | ✅ exit=0 · `composeP1` **120 条 / 14 文件**、`main` **1263 条 / 79 文件**，均未超基线 | 09:12:5x | A 线实测 |
 
-**② 白名单三元组**
+> 门 1 前后各核一次 HEAD，均 = `7fee77b5`，**「三块同 HEAD」成立**。
 
-`TOTAL=<n> / COVERED=<n> / UNCOVERED=0 / ENTRIES=<n> @ HEAD <冻结 HEAD> @ 2026-11-04 <HH:mm>`
+**② 白名单三元组（FINAL HEAD）**
 
-- 口径：`TOTAL` = 未传 `Locale` 的调用点（违规总数）；`COVERED` = 命中白名单前缀的站点；`ENTRIES` = `WhitelistEntry` 条数（可因拆分而变）。
-- 必检算术：`COVERED == TOTAL` 且 `UNCOVERED == 0`；数字对不上（如「4 例差额」类）当场复算，不许只抄上一行。
-- 参考基线（非冻结）：`47 / 47 / 0 / 16 @ f52fa36f`（08:05）。
-- 复算命令：`& .tools\python313\tools\python.exe recount_locale.py <干净 worktree>`。
+`TOTAL 47 / COVERED 47 / UNCOVERED 0 / ENTRIES 16 @ 7fee77b5 @ 2026-11-04 09:13`
 
-**③ 五线状态 + 「需 Lead」清单**
+- 算术自检：`TOTAL == COVERED + UNCOVERED` 通过，且 `COVERED == TOTAL`（UNCOVERED = 0）。
+- 相对 `d53b8ae6` 的 48 少 1 个**覆盖站点**（他线清掉一处豁免站点，债务只降不增）。
+- 复算方式：干净 `git worktree` 于 `7fee77b5` + 参数化脚本（守卫同口径；脚本在 workspace 根，不在仓内）。
 
-- 五线状态：沿用上面「当前五线状态」表，冻结时把「最后提交」一列换成冻结前最后一笔，不再逐线重述。
-- **需 Lead 清单**：①`canMerge` 有意降级（快照恒全量，不摆合并按钮）；②`classReminders` Phase 2/3 未开工；③`platform/` 端口搬出（`d68e2b88` 只做了一部分）；④`maybePullRemote` 未接线（四缺口，需壳文件授权约 10 行）；⑤ARB 越界已**追认**（仅 `webdavPasswordReentryBody`，归属同步线，见 10.13）。
+**③ 五线状态（全部已收线）**
 
-**④ 交接区（明早接手第一件事）**
+| 线 | 状态 | 冻结前最后提交 |
+|---|---|---|
+| 课程/课表（含跨日写回） | ✅ 收线 | `ab000c57`（跨日写回先按学期夹取） |
+| 样式/文案（A + 样式线） | ✅ 收线 | `b00950ce`（10.47 保留项说明）、`7823e09e`（页面主滚动 6 处收口） |
+| 同步 | ✅ 收线 | `5474e692`（升级链矩阵 7 格）、`b4e43d5c`（10.41 收尾） |
+| 导入/传输 | ✅ 收线 | `e20bf954`（导出名 80 codePoint）、`09c526e7`（QR 严格 UTF-8）、`286ed221`（LAN 旧单档兼容）、`7fee77b5`（10.48） |
+| 数据/域服务 | ✅ 收线 | `9b3a4bc2`（周次夹取 API） |
 
-- **未完成项**：上面三个块填数；`classReminders` Phase 2/3；`platform/` 端口续搬；`maybePullRemote` 接线。
-- **卡点**：HEAD 每 20–30 分钟落 3–5 条，**任何门禁结论 30 分钟内可能作废** → 只能「冻结后一次成型」。
-- **明早第一件事**：`git ls-remote` 核对远端 = 本地 → 取冻结 HEAD 建只读 worktree（复制 `local.properties` / `gradle.properties` / `.dart_tool`）→ 门 1 → 门 2 → 汇总同步线门 3/门 4 → 复算白名单三元组 → 回填本表 → 清理 worktree（`prune` + `robocopy` 空目录 `/MIR` + `Remove-Item`）。
+**④ 「需 Lead」清单（冻结时仍开放）**
+1. `canMerge` **有意降级**（快照恒全量，不摆合并按钮）。
+2. `classReminders` **Phase 2/3 未开工**（单节提醒纯计算 `e8e27ce8` 已落）。
+3. `platform/` **端口搬出仅部分**（`d68e2b88`）。
+4. `maybePullRemote` **未接线**（四缺口，需壳文件授权约 10 行）。
+5. 课卡深墨 **`#1E293B` vs `#1A1A1A`**：Lead 决定**不动**，需真机肉眼判断。
+6. 死键判据盲区 **`cloudSyncBaseUrlSecurityNote` 不许删**（ARB 有、静态引用判不到）。
+7. **`guide` 模块 `-ExtraSources` 既有缺口**（样式/文案扫描不覆盖该模块额外源）。
+8. ARB 归属临时授权仅 `webdavPasswordReentryBody`（已追认，见 10.13）。
+
+**⑤ 需真机验收四条**：①升级链（旧盘 bootstrap → 内嵌 settings → 全局播种 → 凭据重输 → ICS 往返）；②Doze / 厂商后台限制下的提醒与自动备份；③免打扰与通知渠道表现；④超级岛共存。
+
+**⑥ 交接区（明早接手第一件事）**
+- **未完成项**：上列「需 Lead」第 2/3/4/7 项 + 真机四条。
+- **卡点**：无代码卡点；唯一风险是**冻结后再落提交 → 本结论作废**。
+- **明早第一件事**：`git ls-remote` 核对远端 = 本地 = `7fee77b5`；若必须改代码，改完重跑门 1 → 门 2（门 3/门 4 用 `scripts/compose-style-lint.ps1 -Domain all` + `dart run tool/copy_style_lint.dart` + `i18n-cjk-baseline.py`）→ 复算白名单 → 回填本表。
 
 ---
 
@@ -879,10 +898,13 @@ _（空，各线按「键名建议 / 所在文件:行号 / 中文原文 / 占位
 | `2b4feefd` | 门 2 `:app:testDevDebugUnitTest` | ⛔ **未跑 · 作废** | — | — | 门 1 跑完时 HEAD 已前移到 `0d38f686`（新增 5 条：`07c5b418`/`b3fe554c`/`1b6d02c8`/`132bfc2a`/`0d38f686`）；按 10.12 第 4 条「HEAD 变了旧结论作废」，把 worktree 切到 `0d38f686` 重跑，不在旧 HEAD 上单跑门 2 |
 | **`0d38f686`** | 门 1 `:app:compileDevDebugKotlin` | ✅ **绿（exit=0，BUILD SUCCESSFUL）** | **06:46:42→07:05:50** | **18m48s（Gradle）/ 19m08s 墙钟** | 同一 worktree 切 HEAD 后重跑，`compileDevDebugKotlin` 3 executed / 10 up-to-date，无 error，仅存量 warning |
 | **`0d38f686`** | 门 2 `:app:testDevDebugUnitTest` | ✅ **绿（exit=0，BUILD SUCCESSFUL）** | **07:09:45→07:29:40** | **19m22s（Gradle）/ 19m55s 墙钟** | **6626 tests / 532 suites / 0 failed / 0 error / 0 skipped**（按 worktree 根 `build/app/test-results/testDevDebugUnitTest/TEST-*.xml` 汇总）。`f40f998c` 那 1 例（`TimetableSettingsModelTest.corruptSettingsJsonIsArchivedAndDefaultsAreReturned:813`）**已由 `d00b284e` 修好并归零**；`WebdavHttpTransportTest.getBytesGivesUpAfterMaxRedirects` **未复现**，不计 flaky |
+| **`7fee77b5` 🔒FINAL** | 门 1 `:app:compileDevDebugKotlin` | ✅ **绿（exit=0，BUILD SUCCESSFUL）** | **09:13:06→09:18:04** | **4m56s（Gradle）/ 4m58s 墙钟** | 冻结信号后新建只读 worktree `mikcb-gate` 冷跑；仅存量 warning |
+| **`7fee77b5` 🔒FINAL** | 门 2 `:app:testDevDebugUnitTest` | ✅ **绿（exit=0，BUILD SUCCESSFUL）** | **09:20:56→09:26:10** | **5m13s（Gradle）/ 5m14s 墙钟** | **6697 tests / 543 suites / 0 failed / 0 error / 0 skipped**；同一 worktree 同一 HEAD，门 1 前后各核一次 HEAD 均未变 |
+| **`7fee77b5` 🔒FINAL** | 门 3 + 门 4 | ✅ **全绿（exit=0）** | 09:12:12→09:12:5x（约 40s） | 见 §八「冻结收口」明细：门 3 22 域合计 5 处全在 timetable 基线；copy_style 130/1/0 新增全 0；cjk 双源集在基线内 |
 
-> **最新完整绿 = `0d38f686`（门 1 + 门 2，6626 tests / 0 failed）；其后的 HEAD 全部未覆盖。** 主工作树当时 30 个未提交文件（他线在途），未混入。其后到 `a5634e51` 又落 11 条、到 `f52fa36f` 再落 4 条（`b7732ff1`/`e8e27ce8`/`72d42643`/`3bac8338`），均**不在本结论内**。
+> **最终有效结论（冻结）= `7fee77b5`：门 1 ✅ / 门 2 ✅（6697 tests / 543 suites / 0 failed）/ 门 3 ✅ / 门 4 ✅；白名单 47/47/0/16。远端 = 本地 = `7fee77b5`。** 此前各轮（`2ff51dab` 6566、`0d38f686` 6626）为历史记录，**现以本行为准**。
 
-> **检查点策略改（2026-11-04 07:50 起，Lead 定）**：A 线**不再自行追 HEAD**。等 Lead 的「冻结」信号，届时取最终 HEAD 跑门 1 → 门 2 →（门 3/门 4 直接用同步线 lint 结果，不重复跑）一次成型。冻结前 A 线只做两件：`git fetch` + 补推保远端不缺账；维护日志与门禁表措辞。
+> **检查点策略（2026-11-04 07:50 起，Lead 定）**：A 线不再自行追 HEAD；已按冻结信号在 FINAL HEAD 一次成型（09:12–09:26）。若冻结后再有提交，本结论作废、整轮重跑。
 
 **自上次门禁以来的变更清单（`f40f998c..0d38f686`，共 19 条）**
 1. `60b4bc91` 对齐桌面快照 `nextExamDaysUntil` 到生成时刻并补 Locale 回归测试
