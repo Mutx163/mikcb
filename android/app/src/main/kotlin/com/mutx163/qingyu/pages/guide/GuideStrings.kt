@@ -109,6 +109,7 @@ object GuideStrings {
 
     // ── 用户指南：个性化定制页 ──
     val guidePersonalizePageTitle = ArbText("guidePersonalizePageTitle", "个性化定制")
+    val guidePersonalizeSubtitle = ArbText("guidePersonalizeSubtitle", "更改即时生效，可随时在 设置 外观 中调整")
     val guidePersonalizeMenuStyleTitle = ArbText("guidePersonalizeMenuStyleTitle", "菜单样式")
     val homeMenuStyleList = ArbText("homeMenuStyleList", "列表菜单")
     val homeMenuStyleListSubtitle = ArbText("homeMenuStyleListSubtitle", "锚定列表，可自定义")
@@ -319,6 +320,7 @@ object GuideStrings {
             guideStatusDoNotDisturbAccessHint,
             refreshStatusTooltip,
             guidePersonalizePageTitle,
+            guidePersonalizeSubtitle,
             guidePersonalizeMenuStyleTitle,
             homeMenuStyleList,
             homeMenuStyleListSubtitle,

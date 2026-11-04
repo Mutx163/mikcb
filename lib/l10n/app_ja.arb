@@ -2826,6 +2826,7 @@
   "guidePermissionsPageTitle": "システム権限",
   "guideTipsPageTitle": "使い方のコツ",
   "guidePersonalizePageTitle": "カスタマイズ",
+  "guidePersonalizeSubtitle": "選択はすぐに反映され、後から「設定 → 外観」でいつでも変更できます",
   "guidePersonalizeMenuStyleTitle": "メニュー形式",
   "guidePersonalizeVisualEffectSolid": "ソリッドカード",
   "guideVisualEffectLiquidDesc": "リキッドグラスの屈折で質感をプラス",

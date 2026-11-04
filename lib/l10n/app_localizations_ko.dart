@@ -5336,6 +5336,10 @@ class AppLocalizationsKo extends AppLocalizations {
   String get guidePersonalizePageTitle => '개인화 설정';
 
   @override
+  String get guidePersonalizeSubtitle =>
+      '선택한 항목은 즉시 적용되며, 언제든지 \'설정 → 화면\'에서 변경할 수 있습니다';
+
+  @override
   String get guidePersonalizeMenuStyleTitle => '메뉴 스타일';
 
   @override

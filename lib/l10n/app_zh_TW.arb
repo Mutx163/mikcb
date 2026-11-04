@@ -2826,6 +2826,7 @@
   "guidePermissionsPageTitle": "系統權限",
   "guideTipsPageTitle": "使用技巧",
   "guidePersonalizePageTitle": "個人化設定",
+  "guidePersonalizeSubtitle": "更改即時生效，可隨時在 設置 外觀 中調整",
   "guidePersonalizeMenuStyleTitle": "選單樣式",
   "guidePersonalizeVisualEffectSolid": "實體卡片",
   "guideVisualEffectLiquidDesc": "液態玻璃折射，更具質感",

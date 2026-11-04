@@ -5317,6 +5317,9 @@ class AppLocalizationsJa extends AppLocalizations {
   String get guidePersonalizePageTitle => 'カスタマイズ';
 
   @override
+  String get guidePersonalizeSubtitle => '選択はすぐに反映され、後から「設定 → 外観」でいつでも変更できます';
+
+  @override
   String get guidePersonalizeMenuStyleTitle => 'メニュー形式';
 
   @override

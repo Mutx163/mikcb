@@ -5243,6 +5243,9 @@ class AppLocalizationsZh extends AppLocalizations {
   String get guidePersonalizePageTitle => '个性化定制';
 
   @override
+  String get guidePersonalizeSubtitle => '更改即时生效，可随时在 设置 外观 中调整';
+
+  @override
   String get guidePersonalizeMenuStyleTitle => '菜单样式';
 
   @override
@@ -15293,6 +15296,9 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
 
   @override
   String get guidePersonalizePageTitle => '個人化設定';
+
+  @override
+  String get guidePersonalizeSubtitle => '更改即時生效，可隨時在 設置 外觀 中調整';
 
   @override
   String get guidePersonalizeMenuStyleTitle => '選單樣式';
@@ -25385,6 +25391,9 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get guidePersonalizePageTitle => '個人化設定';
+
+  @override
+  String get guidePersonalizeSubtitle => '更改即時生效，可隨時在 設置 外觀 中調整';
 
   @override
   String get guidePersonalizeMenuStyleTitle => '選單樣式';

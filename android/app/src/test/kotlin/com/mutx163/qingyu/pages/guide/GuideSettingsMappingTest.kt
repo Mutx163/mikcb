@@ -6,7 +6,6 @@ import com.mutx163.qingyu.app.HomeMenuStyle
 import com.mutx163.qingyu.app.TimetableSettingsModel
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
-import org.junit.Assert.assertSame
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -62,11 +61,18 @@ class GuideSettingsMappingTest {
     }
 
     @Test
-    fun `MaterialSolid 补丁不改模型且快照恒为 false`() {
+    fun `MaterialSolid 写入 frostedBlurEnabled 且快照回环`() {
+        // 默认 frostedBlurEnabled=true（磨砂/液态玻璃）⇒ 快照 materialSolid=false。
         val base = TimetableSettingsModel()
-        val patched = GuideSettingsMapping.applyPatch(base, GuideSettingsPatch.MaterialSolid(true))
-        assertSame("MaterialSolid 目前应为 no-op，返回同一实例", base, patched)
-        assertFalse(GuideSettingsMapping.snapshotFrom(base).materialSolid)
+        assertFalse("默认应为液态玻璃", GuideSettingsMapping.snapshotFrom(base).materialSolid)
+
+        val solid = GuideSettingsMapping.applyPatch(base, GuideSettingsPatch.MaterialSolid(true))
+        assertFalse("实体 ⇒ frostedBlurEnabled=false", solid.frostedBlurEnabled)
+        assertTrue("实体 ⇒ 快照 materialSolid=true", GuideSettingsMapping.snapshotFrom(solid).materialSolid)
+
+        val liquid = GuideSettingsMapping.applyPatch(solid, GuideSettingsPatch.MaterialSolid(false))
+        assertTrue("液态 ⇒ frostedBlurEnabled=true", liquid.frostedBlurEnabled)
+        assertFalse("液态 ⇒ 快照 materialSolid=false", GuideSettingsMapping.snapshotFrom(liquid).materialSolid)
     }
 
     @Test

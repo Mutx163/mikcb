@@ -5473,6 +5473,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get guidePersonalizePageTitle => 'Personalize';
 
   @override
+  String get guidePersonalizeSubtitle =>
+      'These apply immediately and can be changed anytime in Settings → Appearance';
+
+  @override
   String get guidePersonalizeMenuStyleTitle => 'Menu style';
 
   @override

@@ -41,6 +41,7 @@ import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.state.ToggleableState
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.mutx163.qingyu.components.QingyuBackIconButton
@@ -62,11 +63,12 @@ import top.yukonga.miuix.kmp.basic.CircularProgressIndicator
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.IconButton
 import top.yukonga.miuix.kmp.basic.Scaffold
-import top.yukonga.miuix.kmp.basic.TabRow
+import top.yukonga.miuix.kmp.basic.TabRowWithContour
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.ChevronForward
 import top.yukonga.miuix.kmp.icon.extended.Refresh
+import top.yukonga.miuix.kmp.preference.RadioButtonPreference
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 /**
@@ -321,6 +323,14 @@ private fun WelcomePage(
     ) {
         item(key = "header") {
             GuideHeader(title, pageIndex, onBack, eyebrow = GuideStrings.welcomeAppName.zh)
+        }
+        item(key = "subtitle") {
+            Text(
+                text = GuideStrings.welcomeSubtitle.zh,
+                style = MiuixTheme.textStyles.footnote1,
+                color = Color(QingyuTheme.secondaryText(dark)),
+                modifier = Modifier.padding(horizontal = 4.dp),
+            )
         }
         item(key = "actions") {
             QingyuCard(
@@ -587,6 +597,17 @@ private fun permissionActionOf(id: String): GuidePermissionAction? =
 
 // ───────────────────────────── 个性化页 ─────────────────────────────
 
+/** 卡片内分组标题：与官方选择行的 16dp 行内边距左缘对齐。 */
+@Composable
+private fun GuideCardTitle(text: String, dark: Boolean, top: Dp = 12.dp) {
+    Text(
+        text = text,
+        style = MiuixTheme.textStyles.footnote1.shiftWeight(QingyuWeightDelta.BOLD),
+        color = Color(QingyuTheme.secondaryText(dark)),
+        modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = top, bottom = 2.dp),
+    )
+}
+
 @Composable
 private fun PersonalizePage(
     innerPadding: PaddingValues,
@@ -607,28 +628,69 @@ private fun PersonalizePage(
     ) {
         item(key = "header") { GuideHeader(title, pageIndex, onBack) }
 
+        item(key = "subtitle") {
+            Text(
+                text = GuideStrings.guidePersonalizeSubtitle.zh,
+                style = MiuixTheme.textStyles.footnote1,
+                color = Color(QingyuTheme.secondaryText(dark)),
+                modifier = Modifier.padding(horizontal = 4.dp),
+            )
+        }
+
+        // 菜单样式：两条官方单选行（对齐发布版 HyperosChoiceTile，不再用画歪的分段控件）
         item(key = "menuStyle") {
-            QingyuCard(
-                modifier = Modifier.fillMaxWidth(),
-                insideMargin = QingyuCardDefaults.ContentInsideMargin,
-            ) {
+            QingyuCard(modifier = Modifier.fillMaxWidth()) {
                 Column {
-                    GuideGroupTitle(GuideStrings.guidePersonalizeMenuStyleTitle.zh, dark)
-                    Spacer(Modifier.height(10.dp))
-                    TabRow(
-                        tabs = listOf(
-                            GuideStrings.homeMenuStyleList.zh,
-                            GuideStrings.homeMenuStyleGrid.zh,
-                        ),
-                        selectedTabIndex = if (settings.homeMenuGrid) 1 else 0,
-                        onTabSelected = { index ->
-                            onSettingsPatch(GuideSettingsPatch.HomeMenuGrid(index == 1))
-                        },
+                    GuideCardTitle(GuideStrings.guidePersonalizeMenuStyleTitle.zh, dark)
+                    RadioButtonPreference(
+                        title = GuideStrings.homeMenuStyleList.zh,
+                        summary = GuideStrings.homeMenuStyleListSubtitle.zh,
+                        selected = !settings.homeMenuGrid,
+                        onClick = { onSettingsPatch(GuideSettingsPatch.HomeMenuGrid(false)) },
                     )
+                    RadioButtonPreference(
+                        title = GuideStrings.homeMenuStyleGrid.zh,
+                        summary = GuideStrings.homeMenuStyleGridSubtitle.zh,
+                        selected = settings.homeMenuGrid,
+                        onClick = { onSettingsPatch(GuideSettingsPatch.HomeMenuGrid(true)) },
+                    )
+                    Spacer(Modifier.height(4.dp))
                 }
             }
         }
 
+        // 默认材质：液态玻璃 / 实体卡片（对齐发布版；实体档省性能，玻璃档提示需配壁纸）
+        item(key = "material") {
+            QingyuCard(modifier = Modifier.fillMaxWidth()) {
+                Column {
+                    GuideCardTitle(GuideStrings.frostedGlassModeLabel.zh, dark)
+                    RadioButtonPreference(
+                        title = GuideStrings.frostedGlassModeLiquid.zh,
+                        summary = GuideStrings.guideVisualEffectLiquidDesc.zh,
+                        selected = !settings.materialSolid,
+                        onClick = { onSettingsPatch(GuideSettingsPatch.MaterialSolid(false)) },
+                    )
+                    RadioButtonPreference(
+                        title = GuideStrings.guidePersonalizeVisualEffectSolid.zh,
+                        summary = GuideStrings.guideVisualEffectSolidDesc.zh,
+                        selected = settings.materialSolid,
+                        onClick = { onSettingsPatch(GuideSettingsPatch.MaterialSolid(true)) },
+                    )
+                    if (!settings.materialSolid) {
+                        Text(
+                            text = GuideStrings.guideVisualEffectWallpaperHint.zh,
+                            style = MiuixTheme.textStyles.footnote2,
+                            color = Color(QingyuTheme.secondaryText(dark)),
+                            modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 6.dp, bottom = 12.dp),
+                        )
+                    } else {
+                        Spacer(Modifier.height(8.dp))
+                    }
+                }
+            }
+        }
+
+        // 深浅色模式：官方轮廓分段（TabRowWithContour，对齐发布版 HyperosTabRow 默认 contour 档）
         item(key = "themeMode") {
             QingyuCard(
                 modifier = Modifier.fillMaxWidth(),
@@ -637,7 +699,7 @@ private fun PersonalizePage(
                 Column {
                     GuideGroupTitle(GuideStrings.guidePersonalizeThemeModeTitle.zh, dark)
                     Spacer(Modifier.height(10.dp))
-                    TabRow(
+                    TabRowWithContour(
                         tabs = listOf(
                             GuideStrings.themeModeSystem.zh,
                             GuideStrings.themeModeLight.zh,
@@ -659,6 +721,7 @@ private fun PersonalizePage(
                                 ),
                             )
                         },
+                        modifier = Modifier.fillMaxWidth(),
                     )
                 }
             }
@@ -688,68 +751,6 @@ private fun PersonalizePage(
                     }
                 }
             }
-        }
-    }
-}
-
-/** 菜单样式预览：中性灰块的「列表 / 宫格」示意，选中用主色描边。 */
-@Composable
-private fun MenuStylePreview(
-    label: String,
-    grid: Boolean,
-    selected: Boolean,
-    dark: Boolean,
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier,
-) {
-    val primary = Color(QingyuTheme.primary(dark = dark))
-    val shape = RoundedCornerShape(14.dp)
-    val blockColor = Color(QingyuTheme.secondaryText(dark)).copy(alpha = 0.22f)
-    Box(
-        modifier = modifier
-            .clip(shape)
-            .background(
-                if (selected) primary.copy(alpha = 0.06f) else Color(QingyuTheme.card(dark)),
-            )
-            .border(
-                width = if (selected) 2.dp else 1.dp,
-                color = if (selected) primary else Color(QingyuTheme.dividerLine(dark)),
-                shape = shape,
-            )
-            .clickable(onClick = onClick)
-            // 预览块本身是纯图形，唯一可读信息是下方 label；合并后读成一个可选项。
-            .semantics(mergeDescendants = true) {
-                role = Role.RadioButton
-                this.selected = selected
-            }
-            .padding(horizontal = 14.dp, vertical = 14.dp),
-    ) {
-        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            if (grid) {
-                Row(horizontalArrangement = Arrangement.spacedBy(7.dp)) {
-                    repeat(3) {
-                        Box(Modifier.size(16.dp).clip(RoundedCornerShape(4.dp)).background(blockColor))
-                    }
-                }
-                Row(horizontalArrangement = Arrangement.spacedBy(7.dp)) {
-                    repeat(3) {
-                        Box(Modifier.size(16.dp).clip(RoundedCornerShape(4.dp)).background(blockColor))
-                    }
-                }
-            } else {
-                repeat(3) {
-                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(7.dp)) {
-                        Box(Modifier.size(14.dp).clip(RoundedCornerShape(4.dp)).background(blockColor))
-                        Box(Modifier.height(6.dp).weight(1f).clip(RoundedCornerShape(3.dp)).background(blockColor))
-                    }
-                }
-            }
-            Text(
-                text = label,
-                style = MiuixTheme.textStyles.footnote1.shiftWeight(QingyuWeightDelta.MEDIUM),
-                color = if (selected) primary else Color(QingyuTheme.secondaryText(dark)),
-                modifier = Modifier.fillMaxWidth(),
-            )
         }
     }
 }
@@ -929,20 +930,19 @@ private fun GuideBottomBar(
             .background(Color(QingyuTheme.scaffoldBackground(dark)))
             .padding(start = 24.dp, end = 24.dp, top = 12.dp, bottom = 20.dp),
     ) {
-        // 分段进度条：靠图形说明「走到第几步」。
+        // 分段进度条：靠图形说明「走到第几步」，等分撑满更整齐。
         Row(
             modifier = Modifier.fillMaxWidth().clearAndSetSemantics {
                 contentDescription = "${currentPage + 1} / $TOTAL_GUIDE_PAGES"
             },
-            horizontalArrangement = Arrangement.Center,
+            horizontalArrangement = Arrangement.spacedBy(4.dp),
         ) {
             for (i in 0 until TOTAL_GUIDE_PAGES) {
                 Box(
                     modifier = Modifier
-                        .padding(horizontal = 3.dp)
-                        .height(5.dp)
-                        .width(40.dp)
-                        .clip(RoundedCornerShape(3.dp))
+                        .weight(1f)
+                        .height(4.dp)
+                        .clip(RoundedCornerShape(2.dp))
                         .background(
                             if (i <= currentPage) primary
                             else Color(QingyuTheme.secondaryText(dark)).copy(alpha = 0.25f),
@@ -950,11 +950,11 @@ private fun GuideBottomBar(
                 )
             }
         }
-        Spacer(Modifier.height(14.dp))
+        Spacer(Modifier.height(16.dp))
         Row(
             modifier = Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(10.dp),
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             val showPrev = isPrivacyPage || currentPage > 0
             if (showPrev) {

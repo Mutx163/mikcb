@@ -3083,6 +3083,7 @@
   "guidePermissionsPageTitle": "Permissions",
   "guideTipsPageTitle": "Tips",
   "guidePersonalizePageTitle": "Personalize",
+  "guidePersonalizeSubtitle": "These apply immediately and can be changed anytime in Settings → Appearance",
   "guidePersonalizeMenuStyleTitle": "Menu style",
   "guidePersonalizeVisualEffectSolid": "Solid cards",
   "guideVisualEffectLiquidDesc": "Liquid glass refraction with extra depth",

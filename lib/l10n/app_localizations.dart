@@ -9632,6 +9632,12 @@ abstract class AppLocalizations {
   /// **'个性化定制'**
   String get guidePersonalizePageTitle;
 
+  /// No description provided for @guidePersonalizeSubtitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'更改即时生效，可随时在 设置 外观 中调整'**
+  String get guidePersonalizeSubtitle;
+
   /// No description provided for @guidePersonalizeMenuStyleTitle.
   ///
   /// In zh, this message translates to:

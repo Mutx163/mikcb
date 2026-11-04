@@ -21,20 +21,17 @@ import com.mutx163.qingyu.app.TimetableSettingsModel
 object GuideSettingsMapping {
 
     /**
-     * 默认材质目前**恒为 false（液态玻璃）**。
+     * 默认材质映射：`TimetableSettingsModel.frostedBlurEnabled`（对齐 Dart `GlassModeChoice`）。
      *
-     * 原因：Compose 侧的 `TimetableSettingsModel` 目前**没有**对应 Dart `frostedBlur` /
-     * `GlassModeChoice` 的字段（玻璃材质调参由外观编辑器的材质系统单独接入）。
-     * 在材质系统接进设置模型之前，个性化页的材质卡只能显示默认态，写回也走 [GuideSettingsPatch.MaterialSolid]
-     * 的 no-op 分支——等材质字段落地后，这里再改成从模型读取。
+     * `frostedBlurEnabled = true`（默认，磨砂）⇒ 液态玻璃；`false` ⇒ 实体卡片。
+     * 与设置分发器 `SettingsActionDispatcher` 的 `"glass"/"solid"` 分支同一口径。
      */
-    private const val MATERIAL_SOLID_UNAVAILABLE = false
 
     /** 从 `TimetableSettingsModel` 投射出个性化页的只读快照。 */
     fun snapshotFrom(model: TimetableSettingsModel): GuideSettingsSnapshot {
         return GuideSettingsSnapshot(
             homeMenuGrid = model.homeMenuStyle == HomeMenuStyle.GRID,
-            materialSolid = MATERIAL_SOLID_UNAVAILABLE,
+            materialSolid = !model.frostedBlurEnabled,
             themeMode = toGuideThemeMode(model.appThemeMode),
             // 快照的 seedHex 用来高亮色板里“当前选中”的那一块，所以取 foruiTheme 的种子色，
             // 保证它一定是 [seedOptions] 里某个已存在的色值（themeSeedColor 可能是自定义色，
@@ -49,7 +46,7 @@ object GuideSettingsMapping {
      * - [GuideSettingsPatch.HomeMenuGrid]：写 `homeMenuStyle`；
      * - [GuideSettingsPatch.ThemeMode]：写 `appThemeMode`；
      * - [GuideSettingsPatch.SeedColor]：写 `foruiTheme`（按 seedHex 反查最近枚举）+ `themeSeedColor`；
-     * - [GuideSettingsPatch.MaterialSolid]：**原样返回**（模型暂无材质字段，见 [MATERIAL_SOLID_UNAVAILABLE]）。
+     * - [GuideSettingsPatch.MaterialSolid]：写 `frostedBlurEnabled`（solid=true ⇒ 关闭磨砂）。
      */
     fun applyPatch(model: TimetableSettingsModel, patch: GuideSettingsPatch): TimetableSettingsModel {
         return when (patch) {
@@ -69,8 +66,8 @@ object GuideSettingsMapping {
                 model.copy(foruiTheme = matched, themeSeedColor = patch.hex)
             }
 
-            // 材质字段尚未接入 Compose 设置模型：补丁落地为 no-op，等材质系统接入后再实现。
-            is GuideSettingsPatch.MaterialSolid -> model
+            // 默认材质：实体卡片 = 关闭磨砂（frostedBlurEnabled=false）；液态玻璃 = 开启。
+            is GuideSettingsPatch.MaterialSolid -> model.copy(frostedBlurEnabled = !patch.solid)
         }
     }
 
