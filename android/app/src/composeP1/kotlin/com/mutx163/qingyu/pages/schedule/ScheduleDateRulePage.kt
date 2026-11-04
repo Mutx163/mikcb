@@ -3,7 +3,6 @@ package com.mutx163.qingyu.pages.schedule
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -12,6 +11,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -25,6 +25,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import com.mutx163.qingyu.components.QingyuCard
@@ -50,6 +51,7 @@ import com.mutx163.qingyu.components.QingyuPageTheme
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
 import top.yukonga.miuix.kmp.basic.TopAppBar
 import top.yukonga.miuix.kmp.icon.extended.Add
+import top.yukonga.miuix.kmp.icon.extended.Months
 import top.yukonga.miuix.kmp.preference.SwitchPreference
 
 /**
@@ -144,14 +146,16 @@ fun ScheduleDateRulePage(
                 ),
                 verticalArrangement = Arrangement.spacedBy(12.dp),
             ) {
-                // 说明小标题
-                item(key = "subtitle") {
-                    Text(
-                        text = ScheduleStrings.scheduleDateRuleSectionSubtitle.zh,
-                        style = MiuixTheme.textStyles.footnote1,
-                        color = Color(QingyuTheme.secondaryText(dark)),
-                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
-                    )
+                // 说明小标题：仅在有规则时显示；空态走统一空状态，不再「说明一行 + 空卡片」叠着。
+                if (rules.isNotEmpty()) {
+                    item(key = "subtitle") {
+                        Text(
+                            text = ScheduleStrings.scheduleDateRuleSectionSubtitle.zh,
+                            style = MiuixTheme.textStyles.footnote1,
+                            color = Color(QingyuTheme.secondaryText(dark)),
+                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
+                        )
+                    }
                 }
 
                 bannerMessage?.let { banner ->
@@ -172,51 +176,50 @@ fun ScheduleDateRulePage(
                 }
 
                 if (rules.isEmpty()) {
-                    // ── 空态 ──
+                    // ── 空态：与 App 其它页（TaskEmptyState / CourseOverviewEmptyState）统一：
+                    // 居中 图标(48) + 主标题(headline1) + 主操作按钮；不再 fillParentMaxSize + 空卡片。──
                     item(key = "empty") {
-                        Box(
+                        Column(
                             modifier = Modifier
-                                .fillParentMaxSize()
-                                .padding(24.dp),
-                            contentAlignment = Alignment.Center,
+                                .fillMaxWidth()
+                                .padding(horizontal = 32.dp, vertical = 48.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally,
                         ) {
-                            QingyuCard(
-                                modifier = Modifier.fillMaxWidth(),
-                                insideMargin = PaddingValues(24.dp),
-                            ) {
-                                Column(
-                                    modifier = Modifier.fillMaxWidth(),
-                                    horizontalAlignment = Alignment.CenterHorizontally,
-                                    verticalArrangement = Arrangement.spacedBy(16.dp),
-                                ) {
-                                    Text(
-                                        text = ScheduleStrings.scheduleDateRuleEmpty.zh,
-                                        style = MiuixTheme.textStyles.body1,
-                                        color = Color(QingyuTheme.secondaryText(dark)),
+                            Icon(
+                                imageVector = MiuixIcons.Months,
+                                contentDescription = null,
+                                tint = Color(QingyuTheme.secondaryText(dark)),
+                                modifier = Modifier.size(48.dp),
+                            )
+                            Spacer(modifier = Modifier.height(16.dp))
+                            Text(
+                                text = ScheduleStrings.scheduleDateRuleEmpty.zh,
+                                style = MiuixTheme.textStyles.headline1,
+                                color = Color(QingyuTheme.primaryText(dark)),
+                                textAlign = TextAlign.Center,
+                            )
+                            Spacer(modifier = Modifier.height(20.dp))
+                            ScheduleActionButton(
+                                text = ScheduleStrings.scheduleDateRuleAdd.zh,
+                                primary = true,
+                                onClick = {
+                                    if (availableSchemes.isEmpty()) {
+                                        bannerMessage = ScheduleStrings.scheduleDateRuleNeedScheme.zh
+                                        return@ScheduleActionButton
+                                    }
+                                    bannerMessage = null
+                                    isAddingNew = true
+                                    editingRule = ScheduleDateRuleData(
+                                        id = "rule_${System.currentTimeMillis()}",
+                                        name = "",
+                                        timeSchemeId = availableSchemes.first().first,
+                                        startDate = "2026-10-01",
+                                        endDate = "2027-04-30",
+                                        enabled = true,
                                     )
-                                    ScheduleActionButton(
-                                        text = ScheduleStrings.scheduleDateRuleAdd.zh,
-                                        onClick = {
-                                            if (availableSchemes.isEmpty()) {
-                                                bannerMessage = ScheduleStrings.scheduleDateRuleNeedScheme.zh
-                                                return@ScheduleActionButton
-                                            }
-                                            bannerMessage = null
-                                            isAddingNew = true
-                                            editingRule = ScheduleDateRuleData(
-                                                id = "rule_${System.currentTimeMillis()}",
-                                                name = "",
-                                                timeSchemeId = availableSchemes.first().first,
-                                                startDate = "2026-10-01",
-                                                endDate = "2027-04-30",
-                                                enabled = true,
-                                            )
-                                            editorSession++
-                                        },
-                                        primary = true,
-                                    )
-                                }
-                            }
+                                    editorSession++
+                                },
+                            )
                         }
                     }
                 } else {

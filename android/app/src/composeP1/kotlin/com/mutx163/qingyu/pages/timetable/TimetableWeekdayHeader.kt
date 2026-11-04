@@ -16,12 +16,14 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.tween
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -239,12 +241,19 @@ fun TimetableWeekdayHeader(
     val effectiveWeek = selectionBridge?.week ?: week
     val effectiveSelectedDayOfWeek = selectionBridge?.dayOfWeek ?: selectedDayOfWeek
     val selectionIndex = effectiveSelectedDayOfWeek?.let { visibleDays.indexOf(it) } ?: -1
-    // 蓝条位置用动画追到目标格：切换日时平滑滑过去，不瞬移（简化版 Dart selection indicator）。
-    val selectionAnim = animateFloatAsState(
-        targetValue = if (selectionIndex >= 0) selectionIndex.toFloat() else 0f,
-        animationSpec = tween(durationMillis = WeekdayHeaderMetrics.SELECTION_BAR_ANIM_MS),
-        label = "weekdaySelectionBar",
-    )
+    // 蓝条位置：以「有/无选中」为 key 重建 Animatable —— 首次出现（周视图→日视图首帧）直接
+    // 定位到目标格、**不做滑动**；同一选中态内的真实切日才 animateTo 平滑滑过去（跟手）。
+    val barAnim = remember(selectionIndex >= 0) {
+        Animatable(if (selectionIndex >= 0) selectionIndex.toFloat() else 0f)
+    }
+    LaunchedEffect(selectionIndex) {
+        if (selectionIndex >= 0) {
+            barAnim.animateTo(
+                targetValue = selectionIndex.toFloat(),
+                animationSpec = tween(durationMillis = WeekdayHeaderMetrics.SELECTION_BAR_ANIM_MS),
+            )
+        }
+    }
     // 墨色来源：用户设置的星期栏字色 / 强调色（Dart `:210-237` 读的两个 hex 键）。
     // 解析失败时回落主题语义槽（Dart `themeFallback`），不写死任何色值。
     // 压在壁纸上时再经 [HomeBackgroundModel.inkOverWallpaperArgb] 做对比度适配。
@@ -310,7 +319,7 @@ fun TimetableWeekdayHeader(
                     .weight(1f)
                     .fillMaxHeight()
                     // 选中指示蓝条（简化版 Dart selection indicator）：画在本行底边，
-                    // 位置随 selectionAnim 平滑滑到选中格；仅在选中日落在可见天内时画。
+                    // 位置随 barAnim 平滑滑到选中格（首次出现是直接定位、不滑）；仅在选中日落在可见天内时画。
                     .drawBehind {
                         if (selectionIndex < 0 || visibleDays.isEmpty()) return@drawBehind
                         val slot = size.width / visibleDays.size
@@ -319,7 +328,7 @@ fun TimetableWeekdayHeader(
                             slot * WeekdayHeaderMetrics.SELECTION_BAR_WIDTH_RATIO,
                         )
                         val barH = WeekdayHeaderMetrics.SELECTION_BAR_HEIGHT_DP.dp.toPx()
-                        val left = slot * selectionAnim.value + (slot - barW) / 2f
+                        val left = slot * barAnim.value + (slot - barW) / 2f
                         drawRoundRect(
                             color = accentInk,
                             topLeft = Offset(left, size.height - barH),

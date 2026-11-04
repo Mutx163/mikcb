@@ -3,12 +3,10 @@ package com.mutx163.qingyu.pages.about
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -185,31 +183,32 @@ val AboutPageListSpacing: Arrangement.Vertical = Arrangement.spacedBy(QingyuPage
 val AboutPageListBottomPadding: Dp = 24.dp
 
 /**
- * 关于族统一的「应用图标身份块」（自适应启动图两层 PNG，圆角 = 尺寸 × 22%）。
+ * 关于族统一的「应用图标身份块」（圆角 = 尺寸 × 24/84，与 Flutter `AppIconBadge` 同比例）。
  *
- * 两层 PNG 的避法与根因见 `AboutUpdatePage.AppIconBadge` 的历史注释——这里收成
- * 全族唯一实现，关于页头部卡与更新页（检查中 / 状态卡）共用，不再各画各的。
- * 实现只此一份：`ic_launcher_background/foreground` 字面量只允许出现在本文件
- * （[AboutStyleRatchetGuardTest] 钉着）。
+ * ## 只画**一层**
+ *
+ * 历史根因（2026-11-04 用户反馈「一个大图标上又叠了一个小图标，还有两个点」）：
+ * 自适应启动图被拆成 `ic_launcher_background`（不透明整图，与 Flutter
+ * `assets/branding/launcher_icon.png` 逐像素一致）与 `ic_launcher_foreground`
+ * （只含安全区内的前景、四周透明）两枚 PNG。以前把两枚都按 `ContentScale.Crop` 铺满同一
+ * 方块——背景层已经是完整图标，再把前景层按 1:1 叠上去，就等于在正常图标上又叠了一个
+ * 偏小的图标（前景层的边角露出成「多余的两个点」）。
+ *
+ * 正确做法：**只画背景层那一枚**（它本身就是完整、不透明的 App 图标）。这样是干净的单层
+ * logo，无重影、无多余的点；也避免 `painterResource(applicationInfo.icon)` 在 API26+ 解析到
+ * adaptive-icon XML 直接抛异常（进页闪退）。
+ *
+ * 实现只此一份：`ic_launcher_background` 字面量只允许出现在本文件
+ * （[AboutStyleRatchetGuardTest] 钉着），关于页头部卡与更新页（检查中 / 状态卡）共用。
  */
 @Composable
 fun AboutAppIconBadge(size: Dp) {
-    Box(
+    Image(
+        painter = painterResource(id = R.mipmap.ic_launcher_background),
+        contentDescription = null,
+        contentScale = ContentScale.Crop,
         modifier = Modifier
             .size(size)
-            .clip(RoundedCornerShape(size * 0.22f)),
-    ) {
-        Image(
-            painter = painterResource(id = R.mipmap.ic_launcher_background),
-            contentDescription = null,
-            contentScale = ContentScale.Crop,
-            modifier = Modifier.fillMaxSize(),
-        )
-        Image(
-            painter = painterResource(id = R.mipmap.ic_launcher_foreground),
-            contentDescription = null,
-            contentScale = ContentScale.Crop,
-            modifier = Modifier.fillMaxSize(),
-        )
-    }
+            .clip(RoundedCornerShape(size * 24f / 84f)),
+    )
 }

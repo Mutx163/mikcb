@@ -224,6 +224,8 @@ import com.mutx163.qingyu.pages.timetable.TimetableDateLogic
 import com.mutx163.qingyu.pages.timetable.toastOrNull
 import com.mutx163.qingyu.pages.timetable.TimetableProfilesPage
 import com.mutx163.qingyu.pages.timetable.TimetableWeekPage
+import com.mutx163.qingyu.pages.timetable.WeekdayHeaderMetrics
+import com.mutx163.qingyu.pages.timetable.weekSectionHeight
 import com.mutx163.qingyu.pages.timetable.day.DayViewDataAssembler
 import com.mutx163.qingyu.pages.timetable.day.DayViewStrings
 import com.mutx163.qingyu.pages.timetable.day.DayViewWeather
@@ -2286,7 +2288,8 @@ private fun SettingsScreen(
  * 2026-11-04（第二轮）用户口径：预览要**和首页同比例**（不被 40% 高预览框逐节压扁）+ **框内上下滑**。
  * 对齐发布版（v2.1.4.1 `settings_course_card.dart` 的 `SingleChildScrollView` 套真
  * `TimetableWeekPreview`）：走 [QingyuPreviewCutout] 的**静态 1:1 裁窗 + 框内滚动**分支
- * （`fitToBox = false`、`contentWidth = 窗口宽` ⇒ scale=1 整像素不缩放、`contentHeight = 整屏高`
+ * （`fitToBox = false`、`contentWidth = 窗口宽` ⇒ scale=1 整像素不缩放、`contentHeight = 真实自然高`
+ * （星期栏高 + 节数 × 首页节高，2026-11-04 三修：不再用整屏高，避免拉到底多出空白）
  * ⇒ 按首页节高自然排版、`cornerRadius = 0.dp` 方角），[TimetableHost] 以 `previewMode = true`
  * 组合（不画状态栏留白与顶栏、[TimetableWeekdayHeader] 当首行）。点击 / 长按 / 内部滚动在组件里
  * 整体关掉、读屏聚焦不到内部控件；玻璃恒开、不做逐帧 graphicsLayer 缩放。
@@ -2301,19 +2304,43 @@ private fun SettingsTimetablePreviewSlot(wiring: ShellWiring, settingsModel: Tim
     val configuration = LocalConfiguration.current
     // 2026-11-04 用户口径：预览要**和首页同比例**（不被 40% 高的预览框压扁）+ **框内上下滑**。
     // 对齐发布版（v2.1.4.1 `settings_course_card.dart` 的 `SingleChildScrollView` 套真
-    // `TimetableWeekPreview`）：静态挖洞「按窗口宽 1:1 排版（scale = 窗口宽 / 内容宽 = 1，
-    // 整像素、不缩放）+ 内容高给整屏高 + 框内纵向滚动」，玻璃恒开、不做逐帧 graphicsLayer 缩放。
+    // `TimetableWeekPreview`）：按窗口宽 1:1 排版（scale = 窗口宽 / 内容宽 = 1，整像素、不缩放）
+    // + 框内纵向滚动，玻璃恒开、不做逐帧 graphicsLayer 缩放。
+    //
+    // 2026-11-04 三修（用户实报「顶部看不到星期栏、从第 4 节开始、拉到底多出半屏空白」）：
+    // 内容高**不再固定取「整屏高」**，改成**真实自然高 = 星期栏高 + 节数 × 首页节高**。
+    // 首页节高复用 `weekSectionHeight`（与真首页同一口径：自动充满档按可用高算、固定节高档用
+    // `style.sectionHeightDp`）。滚动总高（= contentHeight × scale）遂与内容实际高相等，
+    // 拉到底不再多出空白；初始滚动固定 0 ⇒ 顶部就是星期栏。
+    val snapshot = wiring.timetable.snapshot
+    val style = TimetableStyleMapping.weekViewStyle(settingsModel)
+    val sectionCount = TimetableHostLogic
+        .resolveActiveTimeScheme(snapshot.timeSchemes, snapshot.activeTimeSchemeId)
+        ?.sections?.takeIf { it.isNotEmpty() }
+        ?.size
+        ?: snapshot.settings.sections.size
+    // 星期栏高：previewMode 下顶栏只剩星期栏，取其固定高度 40dp（`WeekdayHeaderMetrics.HEIGHT_DP`）。
+    val weekbarHeightDp = WeekdayHeaderMetrics.HEIGHT_DP
+    val contentHeightDp = weekbarHeightDp + sectionCount * weekSectionHeight(
+        style = style,
+        // 自动充满档：与真首页口径一致，用整屏高算「首页节高 = (整屏高 − 星期栏高) / 节数」；
+        // 固定节高档不看这个值（直接返回 style.sectionHeightDp）。两档都得到「自然高」。
+        availableHeightDp = configuration.screenHeightDp.toFloat(),
+        weekdayHeaderHeightDp = weekbarHeightDp,
+        sectionCount = sectionCount,
+    )
     BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
         QingyuPreviewCutout(
             // 内容宽 = 窗口宽 ⇒ scale 恒为 1（1:1、整像素、不缩放）。
             contentWidth = maxWidth,
-            // 内容高 = 整屏高 ⇒ week 网格按首页节高自然排版（不是按 40% 框高逐节压扁），
-            // 超高部分在预览框内纵向滚动查看。
-            contentHeight = configuration.screenHeightDp.dp,
+            // 内容高 = 真实自然高（星期栏 + 节数 × 首页节高），滚动总高与内容一致、底部不出空白。
+            contentHeight = contentHeightDp.dp,
             // 方角（对齐 Flutter 已发布版预览无圆角）。
             cornerRadius = 0.dp,
             // 走「静态裁窗 + 框内滚动」分支（不再按框自适应压扁）。
             fitToBox = false,
+            // 初始滚动固定从 0（顶部 / 星期栏）开始，不沿用上一次滚到的位置。
+            initialScroll = 0,
         ) {
             TimetableHost(
                 repository = wiring.timetable,

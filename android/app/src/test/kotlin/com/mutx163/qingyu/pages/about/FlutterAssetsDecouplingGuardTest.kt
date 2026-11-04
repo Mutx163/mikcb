@@ -309,8 +309,8 @@ class FlutterAssetsDecouplingGuardTest {
      * 本仓 classpath 的 compose ui 1.12 只认 `<vector>` XML 与位图；adaptive-icon /
      * layer-list / selector / shape XML 会直接抛 IllegalArgumentException
      * （2026-11-03「进版本更新页闪退」的根因类，详见 AboutUpdatePage.AppIconBadge 注释）。
-     * 全仓 6 处调用（about/settings/statistics 各两层 PNG）已核为位图——本守卫把它们
-     * 与「以后任何人新加的调用」一起钉住：喂 XML 非 vector 资源就红。
+     * 全仓 5 处调用（about 背景层 1（单层，2026-11-04 去重影）/ settings 2 / statistics 2）已核为位图——
+     * 本守卫把它们与「以后任何人新加的调用」一起钉住：喂 XML 非 vector 资源就红。
      */
     @Test
     fun `painterResource targets resolve to vector xml or bitmaps never other xml types`() {
@@ -356,10 +356,11 @@ class FlutterAssetsDecouplingGuardTest {
             }
         }
         assertTrue(
-            "全仓 painterResource 调用反查数异常（现状：2 个位图资源 × 6 处调用 = " +
-                "about/settings/statistics 各两层 PNG）。实际资源 ${checked.keys}，" +
+            "全仓 painterResource 调用反查数异常（现状：2 个位图资源 × 5 处调用 = " +
+                "about 背景层 1 处（2026-11-04 去重影后只画单层背景，不再叠 foreground）" +
+                " + settings 2 处 + statistics 2 处）。实际资源 ${checked.keys}，" +
                 "调用 ${checked.values.sum()} 处",
-            checked.size >= 2 && checked.values.sum() >= 6,
+            checked.size >= 2 && checked.values.sum() >= 5,
         )
         assertTrue(
             "painterResource 喂了非 <vector> 的 XML 资源（真机进页即闪退）：\n" +

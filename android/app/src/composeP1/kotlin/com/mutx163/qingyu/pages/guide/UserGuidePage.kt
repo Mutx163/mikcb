@@ -34,6 +34,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
@@ -923,6 +924,9 @@ private fun GuideBottomBar(
     onNext: () -> Unit,
 ) {
     val primary = Color(QingyuTheme.primary(dark = dark))
+    // 「下一步」按钮压在 primary 实底上：墨色按底色亮度翻黑/白（对齐发布版 onAccentInk），
+    // 避免选了浅色主题种子（如黄）时白字压浅底看不清。
+    val onAccentInk = if (primary.luminance() > 0.5f) Color.Black else Color.White
 
     Column(
         modifier = Modifier
@@ -977,7 +981,7 @@ private fun GuideBottomBar(
                     } else {
                         GuideStrings.guideNextButton.zh
                     },
-                    color = Color.White,
+                    color = onAccentInk,
                     style = MiuixTheme.textStyles.body2.shiftWeight(QingyuWeightDelta.MEDIUM),
                 )
             }

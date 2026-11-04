@@ -61,17 +61,21 @@ class GuideSettingsMappingTest {
     }
 
     @Test
-    fun `MaterialSolid 写入 frostedBlurEnabled 且快照回环`() {
-        // 默认 frostedBlurEnabled=true（磨砂/液态玻璃）⇒ 快照 materialSolid=false。
-        val base = TimetableSettingsModel()
+    fun `MaterialSolid 写入 frostedBlurEnabled 且液态两件都写`() {
+        // 基线：磨砂默认开；坞开关先置 false，好验证「液态档会把它打开、实体档不碰」。
+        val base = TimetableSettingsModel(liquidGlassDockEnabled = false)
         assertFalse("默认应为液态玻璃", GuideSettingsMapping.snapshotFrom(base).materialSolid)
 
+        // 实体卡片：只关磨砂，不碰坞（坞保持 false）。
         val solid = GuideSettingsMapping.applyPatch(base, GuideSettingsPatch.MaterialSolid(true))
         assertFalse("实体 ⇒ frostedBlurEnabled=false", solid.frostedBlurEnabled)
+        assertFalse("实体不应改坞开关", solid.liquidGlassDockEnabled)
         assertTrue("实体 ⇒ 快照 materialSolid=true", GuideSettingsMapping.snapshotFrom(solid).materialSolid)
 
+        // 液态玻璃：磨砂 + 玻璃坞**两件都写**（对齐 SettingsActionDispatcher 液态档）。
         val liquid = GuideSettingsMapping.applyPatch(solid, GuideSettingsPatch.MaterialSolid(false))
         assertTrue("液态 ⇒ frostedBlurEnabled=true", liquid.frostedBlurEnabled)
+        assertTrue("液态 ⇒ 必须同时打开 liquidGlassDockEnabled", liquid.liquidGlassDockEnabled)
         assertFalse("液态 ⇒ 快照 materialSolid=false", GuideSettingsMapping.snapshotFrom(liquid).materialSolid)
     }
 

@@ -821,6 +821,9 @@ fun DayViewPage(
                             wallpaperLuminance = wallpaperBands?.body,
                             // 摘要卡墨色：按壁纸**星期栏那档**亮度（发布版 `_weekdayInkLuminance` 口径）翻黑/白。
                             summaryWallpaperLuminance = wallpaperBands?.weekday,
+                            // 摘要卡与星期栏**同一套自定义字色**（未配置/等于默认值时按亮度翻黑白）。
+                            summaryWeekdayFontColorHex = if (dark) weekdayStyle.weekdayFontColorDark else weekdayStyle.weekdayFontColorLight,
+                            summaryWeekdayFontDefaultHex = if (dark) WeekViewStyle().weekdayFontColorDark else WeekViewStyle().weekdayFontColorLight,
                             // 天气行：装配器按课程 id 算好的「一行文本」，不传就永远不显示
                             //（2026-10-29 二轮审核 P1-12 的病根就在这一行缺失）。
                             weatherLines = pageData.weatherLines,

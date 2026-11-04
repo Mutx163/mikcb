@@ -9,6 +9,7 @@ import android.widget.Toast
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -198,26 +199,46 @@ fun DiagnosticsLogHost(
     )
 
     // 贴最新端判定（Dart `_syncStickToLatest` 382-400 行）。
-    // 这个 effect 只在切换排序方向时重启，滚动事件里必须读**当下**的窗口：
-    // 直接用闭包捕获的 resolvedViewport 会拿到首次组合时的快照（钉住的起点永远不更新）。
+    //
+    // **只在「用户滚动停下」时改 stick**：内容追加造成的 canScrollForward 变化不算
+    // 「用户离开最新端」——否则自动跟最新时会被自己的追加误判成离开而停更。
+    // 拖动过程中一旦离开边缘就立刻解钉，绝不和手指抢（这是「每次更新把人拽回底部、
+    // 只能朝一个方向滑」的根因）。
     val latestResolvedViewport = rememberUpdatedState(resolvedViewport)
     LaunchedEffect(listState, viewState.latestAtBottom) {
-        snapshotFlow { listState.canScrollForward to listState.canScrollBackward }
-            .collect { (forward, backward) ->
-                val next = isStuckToLatest(viewState.latestAtBottom, forward, backward)
-                viewport = DiagnosticsLogPaging.onStickToLatestChange(latestResolvedViewport.value, next)
+        var wasScrolling = false
+        snapshotFlow {
+            Triple(
+                listState.isScrollInProgress,
+                listState.canScrollForward,
+                listState.canScrollBackward,
+            )
+        }.collect { (scrolling, forward, backward) ->
+            val atEdge = isStuckToLatest(viewState.latestAtBottom, forward, backward)
+            if (scrolling) {
+                if (!atEdge && latestResolvedViewport.value.stickToLatest) {
+                    viewport = DiagnosticsLogPaging.onStickToLatestChange(latestResolvedViewport.value, false)
+                }
+                wasScrolling = true
+            } else if (wasScrolling) {
+                viewport = DiagnosticsLogPaging.onStickToLatestChange(latestResolvedViewport.value, atEdge)
+                wasScrolling = false
             }
+        }
     }
 
-    // 贴最新端时，新增条目后自动滚到最新那一端（Dart `_scheduleAutoScroll` 402-444 行）。
-    LaunchedEffect(viewState.entries.size, resolvedViewport.stickToLatest, viewState.latestAtBottom) {
-        if (!resolvedViewport.stickToLatest || viewState.entries.isEmpty()) {
-            return@LaunchedEffect
-        }
-        val target = latestEdgeItemIndex(
-            latestAtBottom = viewState.latestAtBottom,
-            itemCount = listState.layoutInfo.totalItemsCount,
-        )
+    // 列表项总数（派生值：滚动时 layoutInfo 每帧变、但总数不变，避免每帧重组）。
+    val totalItems by remember {
+        derivedStateOf { listState.layoutInfo.totalItemsCount }
+    }
+
+    // 贴最新端时，新增条目 / 首次布局后自动滚到最新那一端（Dart `_scheduleAutoScroll` 402-444 行）。
+    // 只有「仍贴最新端且用户没在拖动」才跟；用户手动翻历史（stick=false）时绝不打断。
+    LaunchedEffect(viewState.entries.size, totalItems, viewState.latestAtBottom) {
+        if (!latestResolvedViewport.value.stickToLatest) return@LaunchedEffect
+        if (viewState.entries.isEmpty() || listState.isScrollInProgress) return@LaunchedEffect
+        if (totalItems <= 0) return@LaunchedEffect
+        val target = latestEdgeItemIndex(viewState.latestAtBottom, totalItems)
         runCatching { listState.scrollToItem(target) }
     }
 

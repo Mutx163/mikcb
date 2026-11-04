@@ -95,6 +95,9 @@ fun DayViewScrollContent(
      * null = 没壁纸 / 亮度未知 ⇒ 摘要卡用主题前景色。
      */
     summaryWallpaperLuminance: Double? = null,
+    /** 摘要卡用的自定义星期栏字色（hex）与默认值（hex，用于识别"没改过=按亮度翻"）。 */
+    summaryWeekdayFontColorHex: String? = null,
+    summaryWeekdayFontDefaultHex: String? = null,
     /**
      * 真摘要卡的附加修饰器（首页展开态的飞行测量 + 飞行期间不画）。
      *
@@ -136,6 +139,8 @@ fun DayViewScrollContent(
                     material = material,
                     glassBackdrop = glassBackdrop,
                     wallpaperLuminance = summaryWallpaperLuminance,
+                    weekdayFontColorHex = summaryWeekdayFontColorHex,
+                    weekdayFontColorDefaultHex = summaryWeekdayFontDefaultHex,
                     modifier = summaryModifier,
                 )
             }

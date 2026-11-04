@@ -6,6 +6,7 @@ import android.content.Intent
 import android.net.Uri
 import android.os.Environment
 import android.widget.Toast
+import androidx.activity.compose.BackHandler
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -308,8 +309,14 @@ fun AboutUpdateHostPage(
     // 页内日志查看器优先：从「高级选项 → 打开日志页」进来时，高级选项的状态要留着，
     // 返回时还在原位（Dart 是 push 一层路由，语义一致）。
     if (showLogs) {
+        // 页内嵌的日志查看器是同一宿主里的**一层子视图**（不是壳路由）：系统返回键要先退这一层，
+        // 不能让它冒泡到壳把整个「版本更新」页 pop 掉——否则就是"多退一层"回到「关于」。
+        BackHandler { showLogs = false }
         DiagnosticsLogHost(onBack = { showLogs = false })
     } else if (showAdvanced) {
+        // 高级选项同样是本宿主的页内子页（showAdvanced 状态层）：系统返回键只退回版本更新页，
+        // 版本更新页再按返回才回关于页（逐层退）。缺了这颗 BackHandler 就会越级退出。
+        BackHandler { showAdvanced = false }
         AdvancedOptionsPage(
             onBack = { showAdvanced = false },
             settings = settings,

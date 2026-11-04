@@ -187,6 +187,15 @@ fun QingyuPageScaffold(
     bottomBar: (@Composable () -> Unit)? = null,
     smallTopBar: Boolean = false,
     maxContentWidth: Dp? = null,
+    /**
+     * 是否给「页面内容」挂顶栏毛玻璃的实时采样层（`Modifier.layerBackdrop`）。
+     *
+     * 含 **WebView / 视频 / 相机等自绘控件** 的页面必须传 `false`：这些控件被录进实时
+     * backdrop 层、随顶栏模糊逐帧重录时会出现**持续闪烁/重绘**（教务导入 WebView 实测）。
+     * 关掉后顶栏退化为不透明页底色（无实时模糊），页面其余部分不受影响。
+     * 默认 `true`，与既有页面观感完全一致。
+     */
+    enableTopBarBlur: Boolean = true,
     content: @Composable QingyuPageContentScope.() -> Unit,
 ) {
     val dark = isSystemInDarkTheme()
@@ -200,7 +209,7 @@ fun QingyuPageScaffold(
     // 顶栏与页面底色必须同源：模糊层靠它铺底，否则内容里的透明区
     // 会在大标题下糊出色块（`docs/guide/blur.md:105-118`）。
     val pageBackground = Color(QingyuTheme.scaffoldBackground(dark))
-    val backdrop = rememberQingyuBlurBackdrop(pageBackground)
+    val backdrop = rememberQingyuBlurBackdrop(pageBackground, enabled = enableTopBarBlur)
     val barColor = if (backdrop != null) Color.Transparent else pageBackground
     // 宽屏三档取值：页面显式传入的 maxContentWidth 优先，缺省时中宽/宽档用 640dp 默认值。
     val adaptive = rememberQingyuWindowAdaptive()
@@ -392,6 +401,23 @@ private fun qingyuTopBarScrim(dark: Boolean): Brush {
  */
 private val TopBarBlurOverhang: Dp = minOf(20.dp, TopAppBarDefaults.LargeTitleBottomPadding)
 
+/**
+ * 顶栏与正文之间的**设计间距**（标题 → 正文），8dp。
+ *
+ * 对齐 Flutter 发布版：`HyperosMiuixTopAppBar.largeTitleContentGap = 8`，Dart 的
+ * `HyperosBlurredHeader.contentTopInset` 把它算进 body 顶部 inset（`safeTop + 头栏 + gap`），
+ * 小标题页另加 `_headerPaddingBottom = 4`。Compose 此前只把「栏体高度」报给 Scaffold，
+ * 少了这段 ⇒ 首个 item 贴着（半透明）顶栏下沿、像顶进标题栏（用户 2026-11-04 实报）。
+ *
+ * 做法：让顶栏 Layout 的高度多报这一段（透明留白，模糊带尾巴落进来），Scaffold 的
+ * `innerPadding.top` 随之为「栏体 + 间距」，所有页内容第一项自动落在顶栏下方；
+ * 滚动时列表照旧从顶栏下穿过（边缘到边缘效果不变）。
+ */
+private val TopBarContentGap: Dp = 8.dp
+
+/** 小标题（不可折叠）栏的「标题→正文」间距，4dp（Dart `_headerPaddingBottom = 4`）。 */
+private val TopBarContentGapSmall: Dp = 4.dp
+
 /** 可折叠大标题栏「内容已压到带下」的滚动判据（px）：`heightOffset < -该值` 即视为压带。 */
 private const val UnderHeaderScrollEpsilonPx = 0.5f
 
@@ -464,6 +490,12 @@ private fun QingyuBlurredTopBar(
         }
     }
     val overhangPx = with(LocalDensity.current) { TopBarBlurOverhang.toPx() }
+    // 顶栏下方「标题→正文」设计间距（见 [TopBarContentGap]）：算进本栏 Layout 高度，
+    // 让 Scaffold 的 innerPadding.top 把这段一起让给内容，首个 item 不贴顶栏。
+    // 可折叠大标题 8dp、小标题 4dp，与 Flutter 发布版一致。
+    val contentGapPx = with(LocalDensity.current) {
+        (if (collapsible) TopBarContentGap else TopBarContentGapSmall).roundToPx()
+    }
     // scrim 只在 dark 变化时重建一次，不在 draw 期每帧新建 Brush（避免滚动期 GC 抖动）。
     val scrimBrush = remember(dark) { qingyuTopBarScrim(dark) }
     Layout(
@@ -508,11 +540,15 @@ private fun QingyuBlurredTopBar(
         val width = contentPlaceable.width.coerceAtLeast(constraints.minWidth)
         val height = contentPlaceable.height
         val blurPlaceable = if (backdrop != null && bandHeightPx > 0) {
-            measurables.first().measure(Constraints.fixed(width, bandHeightPx + overhangPx.toInt()))
+            // 玻璃/模糊面高度要对齐到**真实底边**（栏体 + 标题→正文间距 = 本 Layout 底边 = 内容起点），
+            // 这样 ProgressiveBlur 的零强度点（endFraction=1，映射到本面投影高度）正好落在内容起始处，
+            // 底部平滑渐隐到 0；若仍只量到「栏体 + overhang」，零强度边会在内容上方留下一段错位带，
+            // 表现为一条硬分界线（且滑动时副本与实时内容错位 → 闪）。见 TopBarContentGap。
+            measurables.first().measure(Constraints.fixed(width, bandHeightPx + contentGapPx))
         } else {
             null
         }
-        layout(width, height) {
+        layout(width, height + contentGapPx) {
             blurPlaceable?.place(0, 0)
             contentPlaceable.place(0, 0)
         }
@@ -531,7 +567,10 @@ private fun QingyuBlurredTopBar(
  * 内容若有透明区，模糊会把颜色扩散成色块（`docs/guide/blur.md:105-118`）。
  */
 @Composable
-private fun rememberQingyuBlurBackdrop(pageBackground: Color): LayerBackdrop? {
+private fun rememberQingyuBlurBackdrop(pageBackground: Color, enabled: Boolean = true): LayerBackdrop? {
+    // 关闭实时采样层（含 WebView/视频等自绘控件的页面走这条）：返回 null ⇒ 不挂
+    // `layerBackdrop`、不逐帧重录内容，顶栏按不透明页底色绘制。
+    if (!enabled) return null
     if (!isRuntimeShaderSupported() || !ValueAnimator.areAnimatorsEnabled()) return null
     return rememberLayerBackdrop {
         drawRect(pageBackground)

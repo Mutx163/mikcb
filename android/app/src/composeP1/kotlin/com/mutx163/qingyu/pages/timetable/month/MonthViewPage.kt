@@ -1,8 +1,8 @@
 package com.mutx163.qingyu.pages.timetable.month
 
-import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.CubicBezierEasing
 import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.animate
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.gestures.detectVerticalDragGestures
 import androidx.compose.foundation.layout.Box
@@ -25,6 +25,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -39,10 +40,12 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.input.pointer.util.VelocityTracker
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalLayoutDirection
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import com.mutx163.qingyu.app.HomeMenuStyle
 import com.mutx163.qingyu.app.HomeTitleStyle
+import com.mutx163.qingyu.components.LocalGlassDockScrollRelief
 import com.mutx163.qingyu.components.QingyuBackIconButton
 import com.mutx163.qingyu.components.rememberShellShouldShowBackButton
 import com.mutx163.qingyu.pages.timetable.TimetableMenuItem
@@ -54,6 +57,7 @@ import com.mutx163.qingyu.pages.settings.SettingsMaterialModel
 import com.mutx163.qingyu.pages.settings.SurfaceMaterialState
 import com.mutx163.qingyu.pages.shell.HomeInkPolarity
 import com.mutx163.qingyu.theme.QingyuTheme
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import top.yukonga.miuix.kmp.basic.Scaffold
 import top.yukonga.miuix.kmp.blur.isRuntimeShaderSupported
@@ -156,7 +160,13 @@ fun MonthViewPage(
     val focusedYear = focused.first
     val focusedMonth = focused.second
     var selectedDate by remember { mutableStateOf<LocalDateTime?>(null) }
-    val expand = remember { Animatable(1f) }
+    // 展开进度（1 = 展开、0 = 收起）。用普通 Float 状态而不是 `Animatable`：
+    // 拖拽中每次指针事件**同步**写入（Compose 快照合并到每帧一次重组），
+    // 不再为每个事件 `launch { snapTo() }`（那会排队/掉帧，是收起生硬的根因之一）；
+    // 松手吸附用官方 `animate(...)` 一次性驱动（见 onDragEnd）。
+    var expandValue by remember { mutableFloatStateOf(1f) }
+    // 进行中的吸附动画：新一次按下/松手先取消它，避免两条动画抢同一个值。
+    var settleJob by remember { mutableStateOf<Job?>(null) }
     // 拖拽起点：松手判「翻面还是弹回」的基准（判据在 settleTarget）。
     var dragStart by remember { mutableStateOf(1f) }
 
@@ -315,8 +325,9 @@ fun MonthViewPage(
                 focusedYear = focusedYear,
                 focusedMonth = focusedMonth,
                 isCurrentMonth = isCurrentMonth,
-                expandProgress = { expand.value },
+                expandProgress = { expandValue },
                 showWeekNumbers = showWeekNumbers,
+                innerBottomPadding = innerPadding.calculateBottomPadding(),
                 dragState = dragState,
                 onPreviousMonth = { shiftMonth(-1) },
                 onNextMonth = { shiftMonth(1) },
@@ -344,35 +355,35 @@ fun MonthViewPage(
                 onAddCourse = onAddCourse,
                 onDragStart = {
                     // 手指按下即接管：停掉正在跑的吸附动画，记下起点。
-                    dragStart = expand.value
-                    scope.launch { expand.stop() }
+                    settleJob?.cancel()
+                    dragStart = expandValue
                 },
                 onDragUpdate = { dy, rowHeightDp, rowCount ->
-                    scope.launch {
-                        expand.snapTo(
-                            MonthPanelModel.progressAfterDrag(
-                                progress = expand.value.toDouble(),
-                                deltaDy = dy.toDouble(),
-                                rowHeightDp = rowHeightDp,
-                                rowCount = rowCount,
-                            ).toFloat(),
-                        )
-                    }
+                    // 同步写入（不 launch）：每帧指针事件合并成一次重组，跟手不排队。
+                    expandValue = MonthPanelModel.progressAfterDrag(
+                        progress = expandValue.toDouble(),
+                        deltaDy = dy.toDouble(),
+                        rowHeightDp = rowHeightDp,
+                        rowCount = rowCount,
+                    ).toFloat()
                 },
                 onDragEnd = { velocityDy ->
                     val target = MonthPanelModel.settleTarget(
                         startValue = dragStart.toDouble(),
-                        currentValue = expand.value.toDouble(),
+                        currentValue = expandValue.toDouble(),
                         velocityDy = velocityDy.toDouble(),
                     )
-                    scope.launch {
-                        expand.animateTo(
+                    settleJob?.cancel()
+                    settleJob = scope.launch {
+                        // 官方 animate：从当前值平滑吸到端点（简单、不收自研动画）。
+                        animate(
+                            initialValue = expandValue,
                             targetValue = target.toFloat(),
                             animationSpec = tween(
                                 durationMillis = GRID_COLLAPSE_MS,
                                 easing = FastOutSlowInEasing,
                             ),
-                        )
+                        ) { value, _ -> expandValue = value }
                     }
                 },
             )
@@ -416,6 +427,8 @@ private fun MonthViewBody(
     isCurrentMonth: Boolean,
     expandProgress: () -> Float,
     showWeekNumbers: Boolean,
+    /** Scaffold 的底部内边距（系统栏内边距）：与坞避让取 max 去重，不双计。 */
+    innerBottomPadding: Dp,
     dragState: MonthPanelDragState,
     onPreviousMonth: () -> Unit,
     onNextMonth: () -> Unit,
@@ -602,7 +615,9 @@ private fun MonthViewBody(
                                     selectedDate = pageSelected,
                                     onDayTap = onDayTap,
                                     rowHeight = pageLayout.rowHeight.dp,
-                                    visibleRows = pageGrid.rowsInMonth,
+                                    // 窗口行数（含小数）跟着展开进度走：收起只露 1 行，
+                                    // 拖拽时连续变化；MonthGrid 内部据此裁剪、内容整体上移。
+                                    visibleRows = pageLayout.visibleRows.toFloat(),
                                     rowOffset = pageLayout.scrollOffset.dp,
                                     showWeekNumbers = showWeekNumbers,
                                 )
@@ -622,6 +637,7 @@ private fun MonthViewBody(
                     agendaRows = agendaRows,
                     upcoming = upcoming,
                     selectedInMonth = selectedInMonth,
+                    innerBottomPadding = innerBottomPadding,
                     dragState = dragState,
                     onDaySelect = onDaySelect,
                     onOpenAgendaRow = onOpenAgendaRow,
@@ -662,17 +678,28 @@ private fun MonthPanelContent(
     agendaRows: List<MonthAgendaRow>,
     upcoming: List<MonthDayEntry>,
     selectedInMonth: LocalDateTime?,
+    innerBottomPadding: Dp,
     dragState: MonthPanelDragState,
     onDaySelect: (LocalDateTime) -> Unit,
     onOpenAgendaRow: (MonthAgendaRow) -> Unit,
     onAddCourse: (LocalDateTime) -> Unit,
 ) {
+    // 底部避让：取「设计留白 / Scaffold 系统栏内边距 / 共享坞避让」三者**最大**值去重
+    //（不相加，系统导航条不双计；口径与列表页 / 日 / 周视图一致）。
+    // 之前月视图这套自定义滚动漏了坞避让，议程最后一行一直停在底部导航栏（坞）后面、
+    // 无法再上滑露出 —— 这就是「最底下内容被坞遮挡」的根因。
+    val dockRelief = LocalGlassDockScrollRelief.current
+    val bottomInset = maxOf(
+        MonthMetrics.PANEL_BOTTOM_INSET.dp,
+        innerBottomPadding,
+        dockRelief,
+    )
     val padding = PaddingValues(
         start = MonthMetrics.CARD_INSET.dp,
         end = MonthMetrics.CARD_INSET.dp,
         top = MonthMetrics.ITEM_GAP.dp,
         // 底部留白：玻璃坞药丸悬在它上面，滚到底时最后一张卡不被压住。
-        bottom = MonthMetrics.PANEL_BOTTOM_INSET.dp,
+        bottom = bottomInset,
     )
 
     if (selectedInMonth == null) {

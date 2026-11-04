@@ -131,10 +131,11 @@ class SettingsPreviewCutoutGuardTest {
     /**
      * 2026-11-04 用户口径：两块设置页预览「和首页同比例 + 框内上下滑 + 完整显示星期栏 + 无圆角」。
      * 钉住预览槽走**静态 1:1 裁窗 + 框内纵向滚动**：`contentWidth = 窗口宽`（scale 恒 1、整像素、
-     * 不缩放）、`contentHeight = 整屏高`（按首页节高自然排版、不被 40% 高预览框逐节压扁）、
-     * `fitToBox = false`（走滚动分支而非按框自适应）、`cornerRadius = 0.dp`（方角）、
-     * `previewMode = true`（不画状态栏/顶栏、星期栏当首行）。
-     * 改回 `fitToBox = true`（按框压扁）、圆角、或内容不再取整屏高都会红。
+     * 不缩放）、`contentHeight = 真实自然高`（星期栏高 + 节数 × 首页节高；2026-11-04 三修，不再取
+     * 整屏高，否则拉到底多出空白）、`fitToBox = false`（走滚动分支而非按框自适应）、
+     * `cornerRadius = 0.dp`（方角）、`previewMode = true`（不画状态栏/顶栏、星期栏当首行）、
+     * `initialScroll = 0`（初始从顶部/星期栏开始）。
+     * 改回 `fitToBox = true`（按框压扁）、圆角、内容高不再按自然高算、或初始滚动非 0 都会红。
      */
     @Test
     fun `两页预览槽走1比1静态裁窗加框内滚动且无圆角`() {
@@ -150,9 +151,30 @@ class SettingsPreviewCutoutGuardTest {
             Regex("contentWidth = maxWidth").findAll(shell).count(),
         )
         assertEquals(
-            "预览槽 contentHeight 必须取整屏高（按首页节高自然排版、不被 40% 框压扁）",
+            "预览槽 contentHeight 必须取真实自然高（contentHeightDp），不再取整屏高——" +
+                "否则滚动总高比内容多，拉到底会多出空白",
             1,
+            Regex("contentHeight = contentHeightDp\\.dp").findAll(shell).count(),
+        )
+        assertEquals(
+            "旧写法「contentHeight = 整屏高」必须删净（滚动总高比内容多会多出底部空白）",
+            0,
             Regex("contentHeight = configuration\\.screenHeightDp\\.dp").findAll(shell).count(),
+        )
+        assertEquals(
+            "预览槽必须用 weekSectionHeight 按首页节高算自然高（不强行拉满屏高）",
+            1,
+            Regex("weekSectionHeight\\(").findAll(shell).count(),
+        )
+        assertEquals(
+            "预览槽必须用 WeekdayHeaderMetrics.HEIGHT_DP 当星期栏高参与自然高计算",
+            1,
+            Regex("WeekdayHeaderMetrics\\.HEIGHT_DP").findAll(shell).count(),
+        )
+        assertEquals(
+            "预览槽必须传 initialScroll = 0（初始从顶部/星期栏开始，不沿用上次滚动位）",
+            1,
+            Regex("initialScroll = 0").findAll(shell).count(),
         )
         assertEquals(
             "预览槽必须 cornerRadius = 0.dp（方角，对齐 Flutter 已发布版无圆角）",

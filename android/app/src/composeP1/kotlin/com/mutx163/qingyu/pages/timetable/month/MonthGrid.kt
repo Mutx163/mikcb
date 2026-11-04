@@ -9,8 +9,8 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.requiredHeight
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.runtime.Composable
@@ -23,6 +23,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -48,8 +49,8 @@ import java.time.LocalDateTime
  *
  * 收起是**裁剪 + 平移**而不是隐藏行：表头固定，只裁剪平移行区 —— Dart
  * 2026-10-21 实测过：把表头一起平移，收起后会露出半格上一行、表头也不见了。
- * 本组件接收两个量：[visibleRows]（窗口行数，收起时=1）与 [rowOffset]（内容
- * 上移量），页面每帧改这两个参数即可。
+ * 本组件接收两个量：[visibleRows]（窗口行数，**含小数**，收起时≈1）与 [rowOffset]
+ * （内容上移量），页面每帧改这两个参数即可。
  *
  * ⚠️ 与 Dart 的唯一差别：Dart 的 42 格**始终在树上**，是为了保住 `InkWell`
  * 的按压状态与 widget key；Compose 这边的格子是**无状态**的（选中/今天都由
@@ -66,7 +67,8 @@ fun MonthGrid(
     onDayTap: (LocalDateTime) -> Unit,
     rowHeight: Dp,
     modifier: Modifier = Modifier,
-    visibleRows: Int = grid.rowsInMonth,
+    /** 窗口露几行（**含小数**：拖拽时直线插值，收起态≈1）。 */
+    visibleRows: Float = grid.rowsInMonth.toFloat(),
     rowOffset: Dp = 0.dp,
     showWeekNumbers: Boolean = true,
 ) {
@@ -77,7 +79,6 @@ fun MonthGrid(
 
     // 周次行标列：只在真的能算出周次时占位（学期未配置时整列收起）。
     val weekNumberColumnVisible = showWeekNumbers && grid.days.any { it.weekIndex != null }
-    val rows = visibleRows.coerceIn(1, grid.rowsInMonth)
     val todayDay = dayOnly(today)
     val selectedDay = selectedDate?.let { dayOnly(it) }
 
@@ -113,18 +114,34 @@ fun MonthGrid(
         }
 
         // 行区：表头固定，只裁剪平移这一块。
+        //
+        // 复刻 Dart `month_grid.dart`（ClipRect + SizedBox(visibleRows×rowHeight) +
+        // OverflowBox(maxHeight=∞) + Transform.translate）：
+        //  * 外层 Box 高度 = **窗口**高度（visibleRows 行，含小数 ⇒ 拖拽连续）；
+        //  * 内层 Column 用 `requiredHeight(全部行)` **无视父级窗口约束**、按全部行满高
+        //    布局，再整体上移 rowOffset，只靠外层 clip 露窗口那几行。
+        //
+        // ⚠️ 之前内层 Column 被父级高度约束（`Modifier.height` 会被窗口压回去），
+        // 收起时 `offset(-rowOffset)` 把整块内容推出窗口 ⇒ **一行都不剩**——这就是
+        // 「上滑收起后日期表格消失」的根因（keptRow>0 时必现）。用 requiredHeight 兜住，
+        // 与 Dart 的 OverflowBox 同义。
+        val windowRows = visibleRows.coerceIn(1f, grid.rowsInMonth.toFloat())
+        val rowOffsetPx = with(LocalDensity.current) { rowOffset.toPx() }
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(rowHeight * rows)
+                .height(rowHeight * windowRows)
                 .clipToBounds(),
         ) {
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .offset(y = -rowOffset),
+                    .requiredHeight(rowHeight * grid.rowsInMonth)
+                    // 平移用 graphicsLayer（绘制期变换，不触发子项重新测量/布局）：
+                    // 每帧只改这一个平移量，42 格不必逐帧重排。
+                    .graphicsLayer { translationY = -rowOffsetPx },
             ) {
-                for (row in 0 until rows) {
+                for (row in 0 until grid.rowsInMonth) {
                     MonthWeekRow(
                         week = grid.weeks[row],
                         weekNumberColumnVisible = weekNumberColumnVisible,

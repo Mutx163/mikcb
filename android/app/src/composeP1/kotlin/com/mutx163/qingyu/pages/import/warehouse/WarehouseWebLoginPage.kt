@@ -89,6 +89,9 @@ fun WarehouseWebLoginPage(
         title = title,
         onBack = onBack,
         smallTopBar = true,
+        // 教务导入页正文是真 WebView：不能把 WebView 录进顶栏毛玻璃的实时 backdrop 层
+        // （layerBackdrop 每帧重录自绘控件 ⇒ 网页持续闪烁）。关掉实时模糊，顶栏用不透明页底色。
+        enableTopBarBlur = false,
         actions = {
             // 宏录制开关（对齐 Dart 顶栏 FHeaderAction：只有图标 + 无障碍文案，
             // 执行导入期间禁用 `_isExecutingImport ? null : _toggleMacroRecording`）。

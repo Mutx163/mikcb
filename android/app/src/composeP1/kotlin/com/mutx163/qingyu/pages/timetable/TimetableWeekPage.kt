@@ -291,9 +291,6 @@ fun TimetableWeekPage(
 ) {
     val dark = isSystemInDarkTheme()
     val coroutineScope = rememberCoroutineScope()
-    // 日视图实时选中桥：DayViewPage 分页器把「当前页」写进来，星期栏读它 → 选中高亮即时跟手、
-    // 蓝条平滑滑动（只驱动显示，不落盘）。初值用宿主当前选中播种，首帧不闪。
-    val daySelectionBridge = remember { DaySelectionBridge().also { it.update(selectedWeek, selectedDayOfWeek) } }
 
     val pageCount = totalWeeks.coerceAtLeast(1)
     val startPage = (initialWeek - 1).coerceIn(0, pageCount - 1)
@@ -384,9 +381,12 @@ fun TimetableWeekPage(
     val dayVisible by remember {
         derivedStateOf { currentDayMode || dayExpand.value > 0f }
     }
-    // 进入 / 切回日视图时用宿主当前选中给桥播种，避免首帧蓝条从默认格滑过来。
-    LaunchedEffect(dayVisible) {
-        if (dayVisible) daySelectionBridge.update(selectedWeek, selectedDayOfWeek)
+    // 日视图实时选中桥：DayViewPage 分页器把「当前页」写进来，星期栏读它 → 选中高亮即时跟手、
+    // 蓝条平滑滑动（只驱动显示，不落盘）。
+    // 关键：桥在**组合期**用 `remember(dayVisible)` 播种 —— 进入日视图那一帧就以「宿主当前选中」
+    // 建桥，避免先记住旧值导致首帧错位/蓝条从左边滑一下（不用组合后才跑的 LaunchedEffect 播种）。
+    val daySelectionBridge = remember(dayVisible) {
+        DaySelectionBridge().also { it.update(selectedWeek, selectedDayOfWeek) }
     }
     // 展开/收起过渡是否**已落定**（dayExpand 到终值）：布尔只在跨过 0.999 时翻一次，
     // 动画期间不逐帧重组。日视图拿它门控「回今日」浮钮——过渡期间不显示、不随转场位移，

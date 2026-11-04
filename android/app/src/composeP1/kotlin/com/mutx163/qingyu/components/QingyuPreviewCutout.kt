@@ -78,6 +78,8 @@ fun QingyuPreviewCutout(
      * 圆角只由 [cornerRadius] 决定（方角传 0.dp）。正常挖洞（缩尺全屏页）仍走 false。
      */
     fitToBox: Boolean = false,
+    /** 框内初始滚动位置（px）。默认 0 ⇒ 每次进页都从顶部（星期栏）开始，不沿用上一次滚到的位置。 */
+    initialScroll: Int = 0,
     content: @Composable () -> Unit,
 ) {
     if (fitToBox) {
@@ -98,7 +100,7 @@ fun QingyuPreviewCutout(
         val scaledContentHeight = PreviewCutoutGeometry
             .scaledContentHeight(contentHeight.value, scale)
             .dp
-        val scrollState = rememberScrollState()
+        val scrollState = rememberScrollState(initialScroll)
 
         // ── 底层：真实内容，1:1 排版 + 绘制层缩放，交互与语义全关 ──
         // 关键：内容随滚动状态**真实位移**（`offset{-scroll}`）——旧实现只滚了顶层空白

@@ -233,6 +233,9 @@ fun LiveDiagnosticsLogPage(
                         )
                     } else {
                         // 主滚动容器走官方配方的 QingyuPageList：三件套 + 右侧滚动条。
+                        // 外层是 Column（筛选条固定在上），列表必须 weight(1f) 吃掉**剩余高度**，
+                        // 否则 fillMaxSize 的列表会按整屏高度布局、底部一截被挤出屏幕 →
+                        // 最后若干条日志永远滚不到可见区（“浏览不全”）。
                         DiagnosticsLogList(
                             viewState = viewState,
                             onLoadEarlier = onLoadEarlier,
@@ -241,6 +244,7 @@ fun LiveDiagnosticsLogPage(
                             dark = dark,
                             scrollBehavior = scrollBehavior,
                             listState = listState,
+                            modifier = Modifier.weight(1f),
                         )
                     }
                 }

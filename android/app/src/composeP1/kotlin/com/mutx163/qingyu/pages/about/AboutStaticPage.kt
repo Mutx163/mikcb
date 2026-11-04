@@ -16,7 +16,6 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -44,20 +43,8 @@ import com.mutx163.qingyu.components.shiftWeight
 import com.mutx163.qingyu.theme.QingyuTheme
 import top.yukonga.miuix.kmp.basic.Button
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
-import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TextButton
-import top.yukonga.miuix.kmp.icon.MiuixIcons
-import top.yukonga.miuix.kmp.icon.extended.Community
-import top.yukonga.miuix.kmp.icon.extended.Favorites
-import top.yukonga.miuix.kmp.icon.extended.Import
-import top.yukonga.miuix.kmp.icon.extended.Info
-import top.yukonga.miuix.kmp.icon.extended.Link
-import top.yukonga.miuix.kmp.icon.extended.Messages
-import top.yukonga.miuix.kmp.icon.extended.Notes
-import top.yukonga.miuix.kmp.icon.extended.Recent
-import top.yukonga.miuix.kmp.icon.extended.Report
-import top.yukonga.miuix.kmp.icon.extended.Update
 import top.yukonga.miuix.kmp.preference.ArrowPreference
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
@@ -126,7 +113,6 @@ fun AboutStaticPage(
                             ArrowPreference(
                                 title = entry.title,
                                 summary = entry.subtitle.takeIf { it.isNotEmpty() },
-                                startAction = { RowIcon(entry) },
                                 onClick = {
                                     when (entry.kind) {
                                         // 说明层：页内弹层，不外跳。
@@ -193,7 +179,7 @@ private fun routeOf(kind: AboutEntryKind): String = when (kind) {
 /** 头部信息卡：对照 `AboutScreen.build` 的第一张卡（Dart :252-294）。
  *
  *  2026-11-03 版面收口：内边距收 [QingyuCardDefaults.ContentInsideMargin]（16dp，与全族一致）；
- *  图标换共享 [AboutAppIconBadge]（两层 PNG，与更新页同一身份块）；版本号等宽字体，
+ *  图标换共享 [AboutAppIconBadge]（单层干净图标，与更新页同一身份块）；版本号等宽字体，
  *  与「当前版本 / 最新版本」的更新页口径一致。 */
 @Composable
 private fun AboutHeroCard() {
@@ -415,31 +401,6 @@ private fun AboutRepositorySheet(
             )
         }
     }
-}
-
-/** 行首图标：矢量取自官方图标包，配色取自 Flutter 同行的彩豆；全族行首图标统一 24dp。 */
-@Composable
-private fun RowIcon(entry: AboutInfoEntry) {
-    Icon(
-        imageVector = iconOf(entry.icon),
-        contentDescription = null,
-        tint = Color(entry.accentArgb),
-        modifier = Modifier.size(24.dp),
-    )
-}
-
-/** [AboutRowIcon] → 官方图标包里的矢量。 */
-private fun iconOf(icon: AboutRowIcon) = when (icon) {
-    AboutRowIcon.FAVORITES -> MiuixIcons.Favorites
-    AboutRowIcon.MESSAGES -> MiuixIcons.Messages
-    AboutRowIcon.UPDATE -> MiuixIcons.Update
-    AboutRowIcon.RECENT -> MiuixIcons.Recent
-    AboutRowIcon.NOTES -> MiuixIcons.Notes
-    AboutRowIcon.INFO -> MiuixIcons.Info
-    AboutRowIcon.IMPORT -> MiuixIcons.Import
-    AboutRowIcon.COMMUNITY -> MiuixIcons.Community
-    AboutRowIcon.LINK -> MiuixIcons.Link
-    AboutRowIcon.REPORT -> MiuixIcons.Report
 }
 
 /** 用系统浏览器打开一个外部链接。 */

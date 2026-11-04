@@ -11,7 +11,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
@@ -46,7 +45,6 @@ import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TextButton
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.Tune
-import top.yukonga.miuix.kmp.icon.extended.Update
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import java.util.Locale
 
@@ -137,7 +135,7 @@ fun AboutUpdatePage(
     }
 }
 
-/** 应用图标徽标：全族共享 [AboutAppIconBadge]（两层 PNG；历史根因见 PagesCommon 注释）。 */
+/** 应用图标徽标：全族共享 [AboutAppIconBadge]（单层干净图标；历史根因见 PagesCommon 注释）。 */
 @Composable
 private fun AppIconBadge(size: Dp = 72.dp) {
     AboutAppIconBadge(size = size)
@@ -154,7 +152,7 @@ private fun AboutUpdateCheckingView(appName: String, innerPadding: PaddingValues
             modifier = Modifier.padding(horizontal = 32.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
-            AppIconBadge(size = 96.dp)
+            AppIconBadge()
             if (appName.isNotEmpty()) {
                 Spacer(Modifier.height(16.dp))
                 Text(
@@ -405,61 +403,48 @@ private fun VersionTransition(currentVersion: String, latestVersion: String) {
 }
 
 /**
- * 「更新说明」卡：一张卡里做「头部（更新图标 + 标题 + 更新时间）→ 分隔线 → 正文」，
- * 与 Flutter `_buildNotesHeader` / `_buildNotesDigest` + `_buildNotesSurface` 同构。
- *
- * 以前这里是 `QingyuSectionTitle` + 独立头部卡 + 独立正文卡：一屏出现三次「更新说明」、
- * 两张相邻卡片，层级又散又重复——这是"丑"的主因之一。
+ * 更新说明正文卡：**不再贴「更新说明」标题与装饰图标**——状态卡已经在陈述“这次更新”，
+ * 卡片正文本身就是更新内容，再压一个章节标题属于重复的次要标签（用户原则：让布局自己说话、
+ * 一条信息只出现一次）。这里只保留一行 `更新于 {时间}` 元信息，用一根 1dp 细线与正文分隔；
+ * 没有更新时间时正文直接从卡片内边距开始。文案键仍复用既有 [AboutUpdatePageStrings]（与 ARB 逐字对拍）。
  */
 @Composable
 private fun NotesSection(release: AppReleaseInfo?) {
     val colors = MiuixTheme.colorScheme
     val body = release?.body.orEmpty()
+    val updatedText = release?.updatedAtMillis?.let {
+        AboutUpdatePageStrings.updatedAt(formatUpdateDateTime(it))
+    }
     QingyuCard(
         modifier = Modifier.fillMaxWidth(),
         insideMargin = PaddingValues(0.dp),
     ) {
         Column(modifier = Modifier.fillMaxWidth()) {
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(start = 16.dp, top = 14.dp, end = 16.dp, bottom = 10.dp),
-            ) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(
-                        imageVector = MiuixIcons.Update,
-                        contentDescription = null,
-                        tint = colors.primary,
-                        modifier = Modifier.size(18.dp),
-                    )
-                    Spacer(Modifier.width(8.dp))
-                    Text(
-                        text = AboutUpdatePageStrings.releaseNotesTitle,
-                        style = MiuixTheme.textStyles.main,
-                        color = colors.onSurface,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                    )
-                }
-                release?.updatedAtMillis?.let { millis ->
-                    Spacer(Modifier.height(4.dp))
-                    Text(
-                        text = AboutUpdatePageStrings.updatedAt(formatUpdateDateTime(millis)),
-                        style = MiuixTheme.textStyles.footnote1,
-                        color = colors.onSurfaceVariantSummary,
-                    )
-                }
+            if (updatedText != null) {
+                Text(
+                    text = updatedText,
+                    style = MiuixTheme.textStyles.footnote1,
+                    color = colors.onSurfaceVariantSummary,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(start = 16.dp, top = 14.dp, end = 16.dp, bottom = 12.dp),
+                )
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(1.dp)
+                        .background(colors.secondaryContainer),
+                )
             }
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(1.dp)
-                    .background(colors.secondaryContainer),
-            )
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(start = 16.dp, top = 12.dp, end = 16.dp, bottom = 16.dp),
+                    .padding(
+                        start = 16.dp,
+                        top = if (updatedText != null) 12.dp else 16.dp,
+                        end = 16.dp,
+                        bottom = 16.dp,
+                    ),
             ) {
                 NotesBodyContent(body)
             }

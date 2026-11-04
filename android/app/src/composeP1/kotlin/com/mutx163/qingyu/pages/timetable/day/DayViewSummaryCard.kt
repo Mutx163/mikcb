@@ -65,6 +65,14 @@ fun DayViewSummaryCard(
      * 卡面有效亮度自动翻黑/白，避免灰字糊在灰玻璃上。null = 没壁纸 / 亮度未知 ⇒ 用主题前景。
      */
     wallpaperLuminance: Double? = null,
+    /**
+     * 用户自定义的**星期栏字色**（hex，`WeekViewStyle.weekdayFontColorLight/Dark` 同一对键）：
+     * 摘要卡墨色本来就与星期栏同一套配色；非空且非默认时优先用它（对比不足再按亮度推）。
+     * null = 没接 / 未配置 ⇒ 维持「按明暗自动翻黑/白」。
+     */
+    weekdayFontColorHex: String? = null,
+    /** 该主题档下「星期栏字色」的**内置默认值**（hex）：等于它时视作「没改过」⇒ 按亮度翻黑/白。 */
+    weekdayFontColorDefaultHex: String? = null,
     modifier: Modifier = Modifier,
 ) {
     val dark = isSystemInDarkTheme()
@@ -90,9 +98,11 @@ fun DayViewSummaryCard(
             wallpaperLuminance = wallpaperLuminance,
         )
         HomeBackgroundModel.inkOverWallpaperArgb(
-            configuredArgb = null,
+            // 与星期栏同一套自定义字色：配置了就用它（对比不足按亮度推），未配置/默认则按亮度翻黑白。
+            configuredArgb = HomeBackgroundModel.parseInkArgb(weekdayFontColorHex),
             fallbackArgb = QingyuTheme.primaryText(dark),
             wallpaperLuminance = surfaceLuminance,
+            builtInDefaultArgb = HomeBackgroundModel.parseInkArgb(weekdayFontColorDefaultHex),
         )
     } else {
         QingyuTheme.primaryText(dark)

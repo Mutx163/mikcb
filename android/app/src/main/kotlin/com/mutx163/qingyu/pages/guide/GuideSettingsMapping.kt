@@ -66,8 +66,15 @@ object GuideSettingsMapping {
                 model.copy(foruiTheme = matched, themeSeedColor = patch.hex)
             }
 
-            // 默认材质：实体卡片 = 关闭磨砂（frostedBlurEnabled=false）；液态玻璃 = 开启。
-            is GuideSettingsPatch.MaterialSolid -> model.copy(frostedBlurEnabled = !patch.solid)
+            // 默认材质（对齐 SettingsActionDispatcher 的 glass/solid 两档）：
+            // - 实体卡片：仅关磨砂（frostedBlurEnabled=false），不碰坞开关；
+            // - 液态玻璃：开磨砂**且**顺手打开玻璃坞（liquidGlassDockEnabled=true）两件都写。
+            is GuideSettingsPatch.MaterialSolid ->
+                if (patch.solid) {
+                    model.copy(frostedBlurEnabled = false)
+                } else {
+                    model.copy(frostedBlurEnabled = true, liquidGlassDockEnabled = true)
+                }
         }
     }
 

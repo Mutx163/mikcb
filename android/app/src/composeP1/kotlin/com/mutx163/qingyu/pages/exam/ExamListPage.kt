@@ -39,6 +39,7 @@ import com.mutx163.qingyu.core.Exam
 import com.mutx163.qingyu.theme.QingyuIconColors
 import com.mutx163.qingyu.theme.QingyuTheme
 import top.yukonga.miuix.kmp.basic.Button
+import top.yukonga.miuix.kmp.basic.ButtonDefaults
 import top.yukonga.miuix.kmp.basic.HorizontalDivider
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.IconButton
@@ -206,35 +207,38 @@ fun ExamListPage(
     }
 }
 
-/** 空态：图标 + 「暂无考试安排」+ 添加按钮。 */
+/**
+ * 空态：与 App 其它页（`TaskEmptyState` / `CourseOverviewEmptyState`）统一——
+ * 居中 图标(48) + 主标题(headline1) + 主操作按钮，不再套一张大卡片（Flutter v2.1.4.1
+ * `exam_list_screen.dart:102-115` 是 `Center(HyperosEmptyState(icon,title,action))`）。
+ */
 @Composable
 private fun ExamEmptyState(dark: Boolean, onAddExam: () -> Unit) {
-    QingyuCard(
+    Column(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(top = 48.dp),
-        insideMargin = PaddingValues(horizontal = 24.dp, vertical = 32.dp),
+            .padding(horizontal = 32.dp, vertical = 48.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        Column(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(14.dp),
+        Icon(
+            imageVector = MiuixIcons.Notes,
+            contentDescription = null,
+            tint = Color(QingyuTheme.secondaryText(dark)),
+            modifier = Modifier.size(48.dp),
+        )
+        Spacer(modifier = Modifier.height(16.dp))
+        Text(
+            text = ExamStrings.noExams.zh,
+            style = MiuixTheme.textStyles.headline1,
+            color = Color(QingyuTheme.primaryText(dark)),
+            textAlign = TextAlign.Center,
+        )
+        Spacer(modifier = Modifier.height(20.dp))
+        Button(
+            onClick = onAddExam,
+            colors = ButtonDefaults.buttonColorsPrimary(),
         ) {
-            Icon(
-                imageVector = MiuixIcons.Notes,
-                contentDescription = null,
-                tint = Color(QingyuTheme.secondaryText(dark)),
-                modifier = Modifier.size(44.dp),
-            )
-            Text(
-                text = ExamStrings.noExams.zh,
-                style = MiuixTheme.textStyles.body1,
-                color = Color(QingyuTheme.secondaryText(dark)),
-                textAlign = TextAlign.Center,
-            )
-            Button(onClick = onAddExam) {
-                Text(text = ExamStrings.addExam.zh)
-            }
+            Text(text = ExamStrings.addExam.zh)
         }
     }
 }
