@@ -26,9 +26,9 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import com.mutx163.qingyu.components.QingyuSheet
+import com.mutx163.qingyu.core.CourseTask
 import com.mutx163.qingyu.core.MiniJson
 import com.mutx163.qingyu.pages.settings.AppearanceEditorBridge
-import com.mutx163.qingyu.pages.settings.AppearanceEditorPreviewStrings
 import com.mutx163.qingyu.pages.settings.AppearanceEditorScreen
 import com.mutx163.qingyu.pages.settings.BingGalleryApplyPlanner
 import com.mutx163.qingyu.pages.settings.BingGalleryDataSource
@@ -61,10 +61,11 @@ import com.mutx163.qingyu.pages.shell.rememberHomeFloatingInsets
 import com.mutx163.qingyu.pages.shellTimetableMenuPageId
 import com.mutx163.qingyu.platform.ManagedWallpaperStore
 import com.mutx163.qingyu.platform.PrefsKeyValueStore
-import com.mutx163.qingyu.pages.timetable.day.DayAgendaEntry
+import com.mutx163.qingyu.pages.timetable.TimetableDateLogic
+import com.mutx163.qingyu.pages.timetable.TimetableStyleMapping
+import com.mutx163.qingyu.pages.timetable.day.DayViewDataAssembler
 import com.mutx163.qingyu.pages.timetable.day.DayViewPage
-import com.mutx163.qingyu.pages.timetable.day.DayViewPageData
-import com.mutx163.qingyu.pages.timetable.day.DayViewSummaryLogic
+import com.mutx163.qingyu.pages.timetable.day.dayViewPageDataOf
 import com.mutx163.qingyu.weather.BingAutoApplyDecision
 import com.mutx163.qingyu.weather.DailyApplyOutcome
 import com.mutx163.qingyu.weather.DailyWallpaperMapper
@@ -974,8 +975,6 @@ private fun DayViewPreview(
     // 优先用首页**实时选中**的那天/那周（挖洞应显示用户当前正看的那天），否则退回持久化 / 仓储当前值。
     val initialDayOfWeek = (homeSelectedDayOfWeek ?: lastViewedDay)
         .let { if (it in visibleDays) it else visibleDays.first() }
-    val today = LocalDate.now()
-    val todayOfWeek = today.dayOfWeek.value
 
     // 预览里的壁纸 / 材质：与真页面同一条推导（草稿模型 ⇒ 卡片当场跟着变）。
     val homeChrome = rememberHomeBackdropChrome(settingsModel)
@@ -987,6 +986,24 @@ private fun DayViewPreview(
         initialDayOfWeek = initialDayOfWeek,
         visibleDays = visibleDays,
         totalWeeks = snapshot.settings.semesterWeekCount,
+        // ── 与壳里 `c3.day` 同源：星期栏日期 / 今天标记 / 考试·日程圆点全靠这几样 ──
+        semesterStartDate = snapshot.settings.semesterStartDate?.toLocalDate(),
+        // 「今天在哪一周」必须按开学日现算（不能传 snapshot.currentWeek —— 那是浏览周）。
+        realCurrentWeek = TimetableDateLogic.currentSemesterWeek(
+            semesterStart = snapshot.settings.semesterStartDate?.toLocalDate(),
+            totalWeeks = snapshot.settings.semesterWeekCount,
+            today = LocalDate.now(),
+        ),
+        weekdayStyle = TimetableStyleMapping.weekViewStyle(settingsModel),
+        showConflictBadge = settingsModel.showConflictBadgeOnTimetable,
+        hasExamOnDate = { date ->
+            repository.exams.any { exam ->
+                CourseTask.dateOnly(exam.dateTime).toLocalDate() == date
+            }
+        },
+        hasScheduleOnDate = { date ->
+            snapshot.scheduleItems.any { item -> item.occursOn(date.atStartOfDay()) }
+        },
         // 壁纸层 + 材质快照 + 顶栏墨色（与壳里的 `c3.day` 同一份）。
         backdrop = homeChrome.backdrop,
         chromeInk = homeChrome.chromeInk,
@@ -997,32 +1014,30 @@ private fun DayViewPreview(
         pageColorArgb = homeChrome.pageColorArgb,
         floatingButtonBottomInset = floatingInsets.buttonBottom,
         contentBottomInset = floatingInsets.contentBottom,
+        // 数据装配**与壳里 `c3.day` 同一份**（`DayViewDataAssembler` + `dayViewPageDataOf`）：
+        // 标题（「11月4日 周三」）、今天/第几周、课程/日程/考试/待办/冲突/非本周/空态全部同源。
+        // 天气行预览不接（无 weatherProvider）：weatherOf 留空，其余内容与真页一致。
         dataProvider = { week, dayOfWeek ->
-            // 与壳的日视图页同一套数据形状（`ShellPageIndex` 的 `c3.day`）：课程按周过滤、
-            // 日程/考试那几块在壳里也还没接，预览保持同形。
-            val dayCourses = snapshot.courses.filter { course ->
-                course.dayOfWeek == dayOfWeek && course.isActiveInWeek(week)
-            }
-            DayViewPageData(
-                summaryState = DayViewSummaryLogic.buildSummaryState(
+            dayViewPageDataOf(
+                DayViewDataAssembler.build(
                     week = week,
-                    dateLabel = AppearanceEditorPreviewStrings.dayLabel(week, dayOfWeek),
-                    isToday = week == snapshot.currentWeek && dayOfWeek == todayOfWeek,
-                    courseCount = dayCourses.size,
-                    scheduleCount = 0,
+                    dayOfWeek = dayOfWeek,
+                    courses = snapshot.courses,
+                    settings = snapshot.settings,
+                    currentWeek = snapshot.currentWeek,
+                    scheduleItems = snapshot.scheduleItems,
+                    exams = repository.exams,
+                    tasks = repository.tasks,
+                    showNonCurrentWeekCourses = settingsModel.timetableShowNonCurrentWeekCourses,
                 ),
-                agendaEntries = dayCourses.map { course ->
-                    DayAgendaEntry.CourseEntry(
-                        course = course,
-                        isCurrentWeekCourse = true,
-                    )
-                },
             )
         },
         // 装配结果跟着仓储快照失效：预览也订了同一份仓储，课程/任务变了要跟着变。
         dataVersion = snapshot,
         // 预览里点任何东西都会被吞掉，这几个回调不会被调用。
         onCloseToWeekView = {},
+        // 待办带里「关联课程」的名字与颜色（与壳同源）。
+        courseResolver = { task -> snapshot.courses.firstOrNull { it.id == task.courseId } },
         homeTitleStyle = settingsModel.homeTitleStyle,
         homeMenuStyle = settingsModel.homeMenuStyle,
         profileName = TimetableHostLogic.resolveProfileName(
