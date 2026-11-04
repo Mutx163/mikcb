@@ -13,10 +13,14 @@ import com.mutx163.qingyu.core.TimeScheme
 import com.mutx163.qingyu.core.TimetableSettings
 import com.mutx163.qingyu.share.TransferApplyMode
 import com.mutx163.qingyu.share.TransferChannel
+import com.mutx163.qingyu.share.TransferEnvelope
 import com.mutx163.qingyu.share.TransferScope
 import com.mutx163.qingyu.share.carriesSettings
 import com.mutx163.qingyu.share.overwriteUsesMergeSemantics
 import com.mutx163.qingyu.sync.validateTransferPackageJson
+import com.mutx163.qingyu.transfer.LegacyBackupPackage
+import com.mutx163.qingyu.transfer.LegacyBackupParseResult
+import com.mutx163.qingyu.transfer.LegacyBackupPayload
 
 /**
  * 局域网 `POST /api/v1/import/preview` 与 `POST /api/v1/import/apply` 的**纯逻辑**层
@@ -92,12 +96,31 @@ object LanTransferLogic {
     // -----------------------------------------------------------------------
 
     /**
-     * 严格解析一份局域网传来的传输包。
+     * 解析一份局域网传来的传输包。
      *
-     * @throws FormatException 结构门失败、整设备写入、profiles 非空时；
+     * Dart 局域网走 `parseCompatible`（`lan_edit_provider_host.dart:342-344`）：
+     * 当前信封优先；**不是信封**时才回落到旧 `.mikcb` 单档备份（老 5 键包）。
+     * 信封本身损坏时整份拒收，绝不借旧通道「救回」。
+     *
+     * @throws FormatException 结构门失败、整设备写入、profiles 非空、旧包解析失败时；
      *   消息是错误码串（路由层折成 400 `invalid_request`）。
      */
     fun parseIncoming(content: String): LanTransferIncoming {
+        return try {
+            parseStrictIncoming(content)
+        } catch (strictError: FormatException) {
+            // 信封坏 = 整份拒收（Dart `parseCompatible` 的 fail closed）。
+            if (TransferEnvelope.isTransferEnvelopeJson(content)) throw strictError
+            val root = LegacyBackupPackage.decodeRoot(content) ?: throw strictError
+            if (!LegacyBackupPackage.looksLikeLegacyBackup(root)) throw strictError
+            when (val legacy = LegacyBackupPackage.parse(root, TransferChannel.LAN)) {
+                is LegacyBackupParseResult.Invalid -> throw FormatException(legacy.code)
+                is LegacyBackupParseResult.Valid -> legacyIncoming(legacy.payload)
+            }
+        }
+    }
+
+    private fun parseStrictIncoming(content: String): LanTransferIncoming {
         val validation = validateTransferPackageJson(content)
         // 结构门错误与结构诊断共用一张 errors 表，这里先按码分开（见 DEFERRED_DIAGNOSTICS）。
         val gateError = validation.errors.firstOrNull { it !in DEFERRED_DIAGNOSTICS }
@@ -150,6 +173,49 @@ object LanTransferLogic {
                 locationTimeGroups = parseTransferList("location_group", json["locationTimeGroups"], LocationTimeGroup::fromJson),
                 settings = parseSettings(json["settings"]),
                 settingsJson = parseSettingsJson(json["settings"]),
+            ),
+        )
+    }
+
+    /**
+     * 旧 `.mikcb` 单档备份 → 局域网 preview/apply 的统一入参。
+     *
+     * 旧包没有 `packageType` / `scope`，Dart `parseBackupJson` 一律折成
+     * `current_timetable`；落盘走与信封包相同的「整份替换 / 合并」分支
+     * （`LanTransferApplier.applyIncoming`），不在这里再分叉。
+     */
+    private fun legacyIncoming(payload: LegacyBackupPayload): LanTransferIncoming {
+        // Dart `_rejectWholeDeviceWrite`：全量旧备份也不许走局域网整设备覆盖。
+        if (payload.isFullBackup || payload.scope == TransferScope.ALL_DATA) {
+            throw FormatException("use_profile_backup_not_full")
+        }
+        if (payload.profiles.isNotEmpty()) {
+            throw FormatException(ERROR_PROFILE_BACKUP_PROFILES_UNSUPPORTED)
+        }
+        return LanTransferIncoming(
+            packageId = payload.packageId.trim(),
+            scope = payload.scope,
+            channel = TransferChannel.LAN,
+            profileName = payload.profileName?.trim()?.ifEmpty { null },
+            currentWeek = payload.currentWeek,
+            activeProfileId = payload.activeProfileId?.trim()?.ifEmpty { null },
+            isFullBackup = false,
+            profileCount = 0,
+            // 旧包没有信封的结构校验，没有可复用的诊断；apply 侧照常做引用检查。
+            diagnostics = emptyList(),
+            warnings = emptyList(),
+            source = LanTransferDiffSource(
+                courses = payload.courses.map { course ->
+                    course.copy(color = normalizeLanCourseColor(course.color))
+                },
+                tasks = payload.tasks,
+                scheduleItems = payload.scheduleItems,
+                exams = payload.exams,
+                timeSchemes = payload.timeSchemes,
+                scheduleDateRules = payload.scheduleDateRules,
+                locationTimeGroups = payload.locationTimeGroups,
+                settings = payload.settings,
+                settingsJson = payload.settingsJson,
             ),
         )
     }
