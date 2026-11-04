@@ -33,6 +33,7 @@ import com.mutx163.qingyu.components.QingyuWeightDelta
 import com.mutx163.qingyu.components.shiftWeight
 import com.mutx163.qingyu.pages.statistics.charts.AchievementModel
 import com.mutx163.qingyu.pages.statistics.charts.achievementAccentColor
+import com.mutx163.qingyu.pages.statistics.charts.achievementIconVector
 import com.mutx163.qingyu.theme.QingyuTheme
 import top.yukonga.miuix.kmp.basic.Button
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
@@ -124,7 +125,7 @@ fun AchievementDetailSheet(
                 contentAlignment = Alignment.Center,
             ) {
                 Icon(
-                    imageVector = MiuixIcons.Favorites,
+                    imageVector = achievementIconVector(AchievementModel.iconOf(current.id)),
                     contentDescription = null,
                     tint = iconTint,
                     modifier = Modifier.size(40.dp),

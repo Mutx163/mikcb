@@ -22,6 +22,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.style.TextAlign
@@ -37,12 +38,20 @@ import com.mutx163.qingyu.theme.QingyuTheme
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.icon.MiuixIcons
-import top.yukonga.miuix.kmp.icon.extended.Favorites
+import top.yukonga.miuix.kmp.icon.extended.Alarm
 import top.yukonga.miuix.kmp.icon.extended.Location
 import top.yukonga.miuix.kmp.icon.extended.Months
 import top.yukonga.miuix.kmp.icon.extended.Notes
+import top.yukonga.miuix.kmp.icon.extended.NotesFill
 import top.yukonga.miuix.kmp.icon.extended.Ok
 import top.yukonga.miuix.kmp.icon.extended.Recent
+import top.yukonga.miuix.kmp.icon.extended.Sort
+import top.yukonga.miuix.kmp.icon.extended.Stopwatch
+import top.yukonga.miuix.kmp.icon.extended.Store
+import top.yukonga.miuix.kmp.icon.extended.Tasks
+import top.yukonga.miuix.kmp.icon.extended.Timer
+import top.yukonga.miuix.kmp.icon.extended.TopDownloads
+import top.yukonga.miuix.kmp.icon.extended.WorldClock
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 /**
@@ -307,7 +316,7 @@ private fun AchievementMedal(
                 contentAlignment = Alignment.Center,
             ) {
                 Icon(
-                    imageVector = MiuixIcons.Favorites,
+                    imageVector = achievementIconVector(model.icon),
                     contentDescription = null,
                     tint = iconTint,
                     modifier = Modifier.size(20.dp),
@@ -409,7 +418,7 @@ fun AchievementDetailContent(
             contentAlignment = Alignment.Center,
         ) {
             Icon(
-                imageVector = MiuixIcons.Favorites,
+                imageVector = achievementIconVector(model.icon),
                 contentDescription = null,
                 tint = if (model.unlocked) Color(QingyuTheme.onAccent(dark)) else accent,
                 modifier = Modifier.size(28.dp),
@@ -469,6 +478,28 @@ fun AchievementDetailContent(
             dark = dark,
         )
     }
+}
+
+/**
+ * 成就图标语义 → miuix 图标（12 枚**两两不同**，用户核心诉求：别所有勋章都一样）。
+ *
+ * miuix-icons 0.9.4 没有太阳/奖杯/书/天平/月亮/火/大楼/日出 等语义图标（全量 156 个
+ * extended 逐一核过），这里按语义取最贴近的 miuix 图标。枚举穷尽，无未知分支（未知 id
+ * 在 [AchievementModel.iconOf] 已回落 STAR）。
+ */
+fun achievementIconVector(icon: AchievementIcon): ImageVector = when (icon) {
+    AchievementIcon.SUN -> MiuixIcons.Alarm
+    AchievementIcon.STAR -> MiuixIcons.Ok
+    AchievementIcon.TROPHY -> MiuixIcons.TopDownloads
+    AchievementIcon.MEDAL -> MiuixIcons.Tasks
+    AchievementIcon.BOOK -> MiuixIcons.NotesFill
+    AchievementIcon.BALANCE -> MiuixIcons.Sort
+    AchievementIcon.MOON -> MiuixIcons.WorldClock
+    AchievementIcon.COMPASS -> MiuixIcons.Location
+    AchievementIcon.FIRE -> MiuixIcons.Stopwatch
+    AchievementIcon.BUILDING -> MiuixIcons.Store
+    AchievementIcon.SUNRISE -> MiuixIcons.Recent
+    AchievementIcon.TIMER -> MiuixIcons.Timer
 }
 
 /** 成就语义色 → 实际颜色（主页徽章与分析页共用同一套映射）。 */

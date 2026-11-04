@@ -172,6 +172,15 @@ object DataStoryModel {
 /** 成就的语义色（Dart `_achievementAccent` 的 12 个 id 映射）。 */
 enum class AchievementAccent { ORANGE, GREEN, PURPLE, YELLOW, BLUE, TEAL, INDIGO, CYAN, RED }
 
+/**
+ * 成就的图标语义（Dart `Achievement.icon` 的 12 个 id 映射归并成 12 种）。
+ *
+ * 纯逻辑层只携带这个**语义枚举**，不碰 Compose 的 `ImageVector`；渲染层
+ * `achievementIconVector` 再把它映射到 miuix-icons。这样 L0 JVM 单测能直接断言
+ * 「12 枚两两不同、未知回落 STAR」，而 Compose 类型不进纯逻辑层。
+ */
+enum class AchievementIcon { SUN, STAR, TROPHY, MEDAL, BOOK, BALANCE, MOON, COMPASS, FIRE, BUILDING, SUNRISE, TIMER }
+
 /** 徽章渲染所需的全部信息。 */
 data class AchievementBadgeModel(
     val name: String,
@@ -182,6 +191,8 @@ data class AchievementBadgeModel(
     val progressLabel: String?,
     /** 进度比例 0..1（详情页进度条用；没有进度时 0）。 */
     val progressFraction: Double,
+    /** 勋章图标语义（按 id 映射，渲染层再转 miuix 图标）。 */
+    val icon: AchievementIcon,
     val accent: AchievementAccent,
 )
 
@@ -202,6 +213,7 @@ object AchievementModel {
         unlocked = achievement.isUnlocked,
         progressLabel = progressLabel(achievement),
         progressFraction = progressFraction(achievement),
+        icon = iconOf(achievement.id),
         accent = accentOf(achievement.id),
     )
 
@@ -245,6 +257,26 @@ object AchievementModel {
         "morning_person" -> AchievementAccent.YELLOW
         "gap_master" -> AchievementAccent.CYAN
         else -> AchievementAccent.BLUE
+    }
+
+    /**
+     * id → 图标语义；12 个 id 各一、互不相同；未知 id 回落 [AchievementIcon.STAR]。
+     * 与 Dart `achievement.icon` 对齐，具体 miuix 图标由渲染层 `achievementIconVector` 决定。
+     */
+    fun iconOf(id: String): AchievementIcon = when (id) {
+        "early_bird" -> AchievementIcon.SUN
+        "perfect_attendance" -> AchievementIcon.STAR
+        "weekend_warrior" -> AchievementIcon.TROPHY
+        "class_king" -> AchievementIcon.MEDAL
+        "scholar" -> AchievementIcon.BOOK
+        "balanced" -> AchievementIcon.BALANCE
+        "night_owl" -> AchievementIcon.MOON
+        "explorer" -> AchievementIcon.COMPASS
+        "full_day_king" -> AchievementIcon.FIRE
+        "building_hopper" -> AchievementIcon.BUILDING
+        "morning_person" -> AchievementIcon.SUNRISE
+        "gap_master" -> AchievementIcon.TIMER
+        else -> AchievementIcon.STAR
     }
 
     /** 徽章尺寸与圆角（`_medalSize` / `_medalRadius`）。 */

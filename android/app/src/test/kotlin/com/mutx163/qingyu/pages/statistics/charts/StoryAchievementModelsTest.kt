@@ -245,6 +245,24 @@ class AchievementModelTest {
     }
 
     @Test
+    fun `十二个成就的图标语义两两不同且未知回落 STAR`() {
+        val ids = listOf(
+            "early_bird", "perfect_attendance", "weekend_warrior", "class_king",
+            "scholar", "balanced", "night_owl", "explorer",
+            "full_day_king", "building_hopper", "morning_person", "gap_master",
+        )
+        val icons = ids.map { AchievementModel.iconOf(it) }
+        assertEquals("12 枚勋章图标必须两两不同", ids.size, icons.toSet().size)
+        // 未知 id 回落 STAR（Dart `achievement.icon` 缺省）
+        assertEquals(AchievementIcon.STAR, AchievementModel.iconOf("nope"))
+        // badge() 也把图标带进渲染模型
+        assertEquals(
+            AchievementIcon.BOOK,
+            AchievementModel.badge(Achievement(id = "scholar", isUnlocked = true)).icon,
+        )
+    }
+
+    @Test
     fun `勋章尺寸与锁定态透明度照抄 Dart`() {
         assertEquals(36f, AchievementModel.MEDAL_SIZE_DP, 1e-4f)
         assertEquals(12f, AchievementModel.MEDAL_RADIUS_DP, 1e-4f)

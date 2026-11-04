@@ -57,6 +57,7 @@ import com.mutx163.qingyu.pages.statistics.charts.ChartPalette
 import com.mutx163.qingyu.pages.statistics.charts.DailyChartModel
 import com.mutx163.qingyu.pages.statistics.charts.DonutRingCanvas
 import com.mutx163.qingyu.pages.statistics.charts.achievementAccentColor
+import com.mutx163.qingyu.pages.statistics.charts.achievementIconVector
 import com.mutx163.qingyu.theme.QingyuTheme
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.IconButton
@@ -698,10 +699,11 @@ private fun AchievementBadge(
                 ),
             contentAlignment = Alignment.Center,
         ) {
-            Text(
-                text = "★",
-                style = MiuixTheme.textStyles.body1,
-                color = if (item.isUnlocked) Color(QingyuTheme.onAccent(dark)) else lockIcon,
+            Icon(
+                imageVector = achievementIconVector(AchievementModel.iconOf(item.id)),
+                contentDescription = null,
+                tint = if (item.isUnlocked) Color(QingyuTheme.onAccent(dark)) else lockIcon,
+                modifier = Modifier.size(20.dp),
             )
         }
         Text(
