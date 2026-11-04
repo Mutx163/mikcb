@@ -2180,6 +2180,8 @@ C:\dev\pwsh\pwsh.exe -Command "& './scripts/test-kotlin-module.ps1' -Module 'tim
 `app/TimetableStore.kt:49` 注释称 `core/TimetableSettings` 已含「单节提醒 `classReminders`」键，
 但 `core/TimetableSettings.kt` 实际只有 4 个键（sections / activeTimeSchemeId / semesterWeekCount / semesterStartDate）。
 注释与实现不一致，Phase 2 加键时要一并核对（否则按注释判断会以为已就绪）。
+**注释与实现不符（注释称含 `classReminders`，实际只有 4 键）→ Phase 2 落地时必须同时修注释与 `OWNED_KEYS`。**
+（另：文件头「显式差异，均为确定性/边界收紧，不是语义漂移」即「有意加强，不是偏离」的口径。）
 
 **7. Phase 2 / Phase 3：待排期与依赖（谁授权、卡在哪）**
 
