@@ -10,7 +10,7 @@ import java.io.File
  *
  * ## 用户口径（三档，来源区分）
  *
- * - 底栏 / 导航栏「周/日」两格互点 → **横滑 translateX**（周内容左出、日内容右入），
+ * - 底栏 / 导航栏「周/日」两格互点 → **横滑 translateX**（周内容右出、日内容左入），
  *   即 `switchHomeViewMode(..., animate = true, horizontal = true)`；
  * - 从别的底栏页切回课表 → **只让 Pager 横滑**，页面 `snapTo`（`animate = false`）；
  * - 点星期栏某天 / 页内关闭（BackHandler）→ **heightFactor 从上往下**（`horizontal = false`，默认）；
@@ -75,12 +75,12 @@ class DockSwitchNoDayReplayGuardTest {
     fun `页面按来源分两套几何_横滑用 translateX_上下翻保留`() {
         // 横滑几何：周内容 -p*W、日内容 (1-p)*W（都读同一个 dayExpand 缓动进度）。
         assertTrue(
-            "TimetableWeekPage 缺横滑的周内容 translationX（-dayExpandEasing.transform(...)*size.width）。",
-            weekPage.contains("-dayExpandEasing.transform(dayExpand.value) * size.width.toFloat()"),
+            "TimetableWeekPage 缺横滑的周内容 translationX（+dayExpandEasing.transform(...)*size.width）。",
+            weekPage.contains("dayExpandEasing.transform(dayExpand.value) * size.width.toFloat()"),
         )
         assertTrue(
-            "TimetableWeekPage 缺横滑的日内容 translationX（(1f - dayExpandEasing.transform(...))*size.width）。",
-            weekPage.contains("(1f - dayExpandEasing.transform(dayExpand.value)) * size.width.toFloat()"),
+            "TimetableWeekPage 缺横滑的日内容 translationX（-(1f - dayExpandEasing.transform(...))*size.width）。",
+            weekPage.contains("-(1f - dayExpandEasing.transform(dayExpand.value)) * size.width.toFloat()"),
         )
         assertTrue("TimetableWeekPage 缺 daySwitchHorizontal 分支参数。", weekPage.contains("daySwitchHorizontal: Boolean = false"))
         // 上下翻几何仍在（点星期栏用），且默认 animate=true 时仍 animateTo。
@@ -110,7 +110,7 @@ class DockSwitchNoDayReplayGuardTest {
     // 咬合探针 2：把周内容的 translationX 去掉，几何判据必须变红。
     @Test
     fun `负例自测_去掉 translateX 会被判红`() {
-        val week = "-dayExpandEasing.transform(dayExpand.value) * size.width.toFloat()"
+        val week = "dayExpandEasing.transform(dayExpand.value) * size.width.toFloat()"
         assertTrue("原文件应通过（有周内容 translateX）", weekPage.contains(week))
         val mutated = weekPage.replace(week, "0f")
         assertFalse("探针失效：去掉 translationX 后判据仍为真", mutated.contains(week))

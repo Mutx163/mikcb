@@ -751,11 +751,11 @@ fun TimetableWeekPage(
                         .then(
                             when {
                                 !dayVisible -> Modifier
-                                // 横滑（底栏「周/日」两格互点）：周内容随进度向左滑出（p: 0→1）。
+                                // 横滑（底栏「周/日」两格互点）：周内容随进度向**右**滑出（p: 0→1）。
                                 // 只做绘制期 translationX，不挂 alpha、不加手势。
                                 daySwitchHorizontal -> Modifier.graphicsLayer {
                                     translationX =
-                                        -dayExpandEasing.transform(dayExpand.value) * size.width.toFloat()
+                                        dayExpandEasing.transform(dayExpand.value) * size.width.toFloat()
                                 }
                                 // 上下翻（点星期栏某天）：周网格按原始进度淡出（2141 口径，不缓动）。
                                 else -> Modifier.graphicsLayer {
@@ -819,7 +819,7 @@ fun TimetableWeekPage(
                         Modifier
                     }
                     if (daySwitchHorizontal) {
-                        // 横滑（底栏「周/日」两格互点）：日内容从右滑入、周内容向左滑出。
+                        // 横滑（底栏「周/日」两格互点）：日内容从**左**滑入、周内容向右滑出。
                         // 与上下翻共用同一个 dayExpand 进度；只做绘制期 translationX、不加手势。
                         Box(
                             modifier = Modifier
@@ -827,7 +827,7 @@ fun TimetableWeekPage(
                                 .clipToBounds()
                                 .graphicsLayer {
                                     translationX =
-                                        (1f - dayExpandEasing.transform(dayExpand.value)) * size.width.toFloat()
+                                        -(1f - dayExpandEasing.transform(dayExpand.value)) * size.width.toFloat()
                                 }
                                 .then(hitGate),
                         ) {
