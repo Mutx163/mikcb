@@ -16,6 +16,7 @@ class TimetableDayPanelGuardTest {
 
     private val weekPage: String by lazy { strip(read(WEEK_PAGE)) }
     private val motion: String by lazy { strip(read(MOTION)) }
+    private val dayPage: String by lazy { strip(read(DAY_PAGE)) }
 
     @Test
     fun `面板公式在场`() {
@@ -90,6 +91,57 @@ class TimetableDayPanelGuardTest {
         )
     }
 
+    // ── ① 去掉周页 alpha 离屏层：只在日视图可见/过渡（dayVisible）时挂，普通周浏览不挂 ──
+    @Test
+    fun `① 周页 alpha 离屏层仅日可见时挂`() {
+        fun okAlpha(s: String): Boolean =
+            // 旧的「无条件」离屏层两处都不得回归
+            !s.contains(".graphicsLayer { alpha = (1f - dayExpand.value).coerceIn(0f, 1f) },") &&
+                !s.contains(".graphicsLayer { alpha = 1f },") &&
+                // 2141 淡出层本身要保留（只是被 dayVisible 门控）
+                s.contains("1f - dayExpand.value") &&
+                s.contains("if (dayVisible)")
+        assertTrue("真实源码应通过（离屏层受 dayVisible 门控、淡出层仍在）", okAlpha(weekPage))
+        assertFalse(
+            "回归无条件外层 alpha 离屏层应判红（整块 pager 每帧离屏→左右滑卡顿）",
+            okAlpha(weekPage + "\n .graphicsLayer { alpha = (1f - dayExpand.value).coerceIn(0f, 1f) },"),
+        )
+        assertFalse(
+            "回归无条件每页 alpha 离屏层应判红（每页一层离屏）",
+            okAlpha(weekPage + "\n .graphicsLayer { alpha = 1f },"),
+        )
+    }
+
+    // ── ② 嵌入日视图不画自己壁纸、吃页面级预糊层（壁纸不随展开层移动）──
+    @Test
+    fun `② 嵌入日页不画自己壁纸_吃页面级预糊层`() {
+        val w = weekPage
+        val d = dayPage
+        assertTrue(
+            "TimetableWeekPage 未把页面级预糊层经 CompositionLocal 交给嵌入日视图",
+            w.contains("LocalEmbeddedDayGlassBackdrop provides cardGlassSource"),
+        )
+        assertTrue(
+            "DayViewPage 缺嵌入判据 embeddedInHomePanel",
+            d.contains("val embeddedInHomePanel = contentTopInset != null"),
+        )
+        assertTrue("嵌入日视图没跳过自己的壁纸层", d.contains("if (backdrop != null && !embeddedInHomePanel)"))
+        assertTrue("嵌入日视图没跳过本地预糊层", d.contains("if (cardPreblurActive && !embeddedInHomePanel)"))
+        assertTrue("嵌入日视图 cardGlassSource 未改吃 embeddedGlass", d.contains("embeddedInHomePanel -> embeddedGlass"))
+    }
+
+    @Test
+    fun `负例自测_嵌入日页若又画自己壁纸应红`() {
+        fun okEmbedded(d: String): Boolean =
+            d.contains("if (backdrop != null && !embeddedInHomePanel)") &&
+                !d.contains("if (backdrop != null) {")
+        assertTrue("真实源码应通过", okEmbedded(dayPage))
+        assertFalse(
+            "退回「嵌入也画自己壁纸」应判红",
+            okEmbedded(dayPage.replace("if (backdrop != null && !embeddedInHomePanel)", "if (backdrop != null)")),
+        )
+    }
+
     private fun read(rel: String): String {
         var dir: File? = File("").absoluteFile
         while (dir != null) {
@@ -109,5 +161,7 @@ class TimetableDayPanelGuardTest {
             "android/app/src/composeP1/kotlin/com/mutx163/qingyu/pages/timetable/TimetableWeekPage.kt"
         const val MOTION =
             "android/app/src/main/kotlin/com/mutx163/qingyu/pages/timetable/HomeViewExpandMotion.kt"
+        const val DAY_PAGE =
+            "android/app/src/composeP1/kotlin/com/mutx163/qingyu/pages/timetable/day/DayViewPage.kt"
     }
 }

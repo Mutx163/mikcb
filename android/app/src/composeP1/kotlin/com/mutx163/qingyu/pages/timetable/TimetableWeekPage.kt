@@ -80,6 +80,7 @@ import com.mutx163.qingyu.pages.settings.SurfaceMaterialState
 import com.mutx163.qingyu.pages.shell.HomeBackgroundModel
 import com.mutx163.qingyu.pages.timetable.day.DayViewDataAssembler
 import com.mutx163.qingyu.pages.timetable.day.DayViewStrings
+import com.mutx163.qingyu.pages.timetable.day.LocalEmbeddedDayGlassBackdrop
 import com.mutx163.qingyu.pages.shell.HomeInkPolarity
 import com.mutx163.qingyu.core.Exam
 import com.mutx163.qingyu.core.ScheduleItem
@@ -373,6 +374,12 @@ fun TimetableWeekPage(
                 targetValue = expandTarget,
                 animationSpec = tween(durationMillis = dayExpandDuration, easing = dayExpandEasing),
             )
+        }
+        // 收起**动画播完**后把展开层卸载：日视图关闭后隐藏的 DayViewPage 不再常驻组合树，
+        // 周浏览时省掉它的布局/effect 成本（R07 减负）。只在落定（value==0）且已非日模式时卸，
+        // 不在收起动画中途卸，避免重组打断收起动画。
+        if (!dayMode && dayExpand.value <= 0f) {
+            dayLayerReady = false
         }
     }
 
@@ -695,7 +702,16 @@ fun TimetableWeekPage(
                         .fillMaxSize()
                         // 2141：周网格按原始进度淡出（alpha = 1 - value，不缓动）。
                         // 只挂 pager 自己：外层还要画日面板与「回今日」浮钮。
-                        .graphicsLayer { alpha = (1f - dayExpand.value).coerceIn(0f, 1f) },
+                        // ⚠️ 性能（R07）：仅在日视图可见/过渡（dayVisible）时才挂这层离屏 alpha；
+                        // 普通周浏览（dayExpand 稳定 0、dayVisible=false）不挂任何 alpha 层，
+                        // 否则整块 pager 每帧走离屏合成 → 周视图左右滑卡顿。
+                        .then(
+                            if (dayVisible) {
+                                Modifier.graphicsLayer { alpha = (1f - dayExpand.value).coerceIn(0f, 1f) }
+                            } else {
+                                Modifier
+                            },
+                        ),
                 ) { page ->
                     WeekPageContent(
                         pageWeek = page + 1,
@@ -726,9 +742,11 @@ fun TimetableWeekPage(
                         // 挂一层**配置恒定**（不读进度、不读动画状态）的 `graphicsLayer`，
                         // 内容录一次后复用，动画帧只换外层裁切。配置一旦随进度变化
                         // （例如把 alpha/scale 接到 dayExpand），图层失效，缓存等于没挂。
+                        // 同一条性能口径（R07）：每页这层常驻 alpha 只在日过渡期用于缓存周内容；
+                        // 普通周浏览不挂（省掉每页一层离屏合成）。
                         modifier = Modifier
                             .fillMaxSize()
-                            .graphicsLayer { alpha = 1f },
+                            .then(if (dayVisible) Modifier.graphicsLayer { alpha = 1f } else Modifier),
                     )
                 }
 
@@ -818,7 +836,13 @@ fun TimetableWeekPage(
                                     .graphicsLayer { alpha = panelAlpha },
                             ) {
                                 // contentTopInset = 0：面板铺满内容区，页面自己只加正文顶缝 14dp。
-                                dayContent(0.dp, Modifier)
+                                // 壁纸由本页最底层静态画；把**页面级预糊层**经 CompositionLocal 交给
+                                // 嵌入的日视图做卡片玻璃采样——它自己不再画壁纸，壁纸因此不随展开层移动。
+                                CompositionLocalProvider(
+                                    LocalEmbeddedDayGlassBackdrop provides cardGlassSource,
+                                ) {
+                                    dayContent(0.dp, Modifier)
+                                }
                             }
                         }
                     }

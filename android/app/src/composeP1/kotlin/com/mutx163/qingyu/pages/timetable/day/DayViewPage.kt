@@ -18,6 +18,7 @@ import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableDoubleStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -77,6 +78,15 @@ import top.yukonga.miuix.kmp.blur.rememberLayerBackdrop
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import java.time.LocalDate
 import java.time.LocalDateTime
+
+/**
+ * 首页「周↔日」展开层里，嵌入日视图应采样的**页面级预糊/壁纸 Backdrop**。
+ *
+ * 由 `TimetableWeekPage` 渲染 `dayContent` 时用其 `cardGlassSource` 提供：壁纸只由页面级
+ * 静态底画，展开层里的日视图自己**不画壁纸**、卡片玻璃改吃这一层，避免壁纸随展开层移动。
+ * 非展开层（独立日页 `c3.day` / 设置页预览）为 null，行为不变。
+ */
+val LocalEmbeddedDayGlassBackdrop = compositionLocalOf<Backdrop?> { null }
 
 /**
  * 单日页面全量数据载体。
@@ -463,16 +473,26 @@ fun DayViewPage(
             material?.dock == SurfaceMaterialState.FROST)
     // 录像带只在真有人采时才挂：顶栏带要采、议程卡液态档要采、浮钮玻璃也要采。
     // 漏掉最后一项时浮钮采到的是空层——画出来是一块透明/发黑的胶囊。
+    // ── 首页展开层（被塞进 TimetableWeekPage 的展开窗口）──
+    // 此时壁纸由页面级静态底画；本页不画自己的壁纸、不录本地采样层，卡片玻璃改吃宿主
+    // 经 CompositionLocal 提供的页面级预糊层（`TimetableWeekPage.cardGlassSource`）。
+    // 判据：c3.day 展开层由宿主传 0.dp（contentTopInset 非空）；独立日页 / 设置页预览为 null。
+    val embeddedInHomePanel = contentTopInset != null
+    val embeddedGlass = LocalEmbeddedDayGlassBackdrop.current
+
     val pageBackdropActive = bandBlurActive || cardGlassActive || floatingGlassActive
     val cardGlassSource: Backdrop? = when {
         !cardGlassActive -> null
+        // 首页展开层：吃宿主页面级预糊层（壁纸在页面级静态底画，本页不画）。
+        embeddedInHomePanel -> embeddedGlass
         cardPreblurActive -> cardGlassBackdrop
         else -> pageBackdrop
     }
 
     Scaffold(
         // 有壁纸时底色必须透明，否则不透明主题底会把壁纸整张盖掉。
-        containerColor = if (backdrop == null) scaffoldBg else Color.Transparent,
+        // 展开层里本页不画壁纸 ⇒ 容器必须透明，让页面级静态壁纸透出（否则整块盖掉）。
+        containerColor = if (backdrop == null && !embeddedInHomePanel) scaffoldBg else Color.Transparent,
         modifier = modifier.fillMaxSize(),
     ) { innerPadding ->
         // 列表底部避让的账（Dart `_glassDockContentScrollInset` + `_backToTodayButtonScrollInset`）：
@@ -486,7 +506,7 @@ fun DayViewPage(
         Box(modifier = Modifier.fillMaxSize()) {
         // 壁纸层在最底（Dart 的层次：壁纸 → 内容）。没有壁纸时这一行什么也不画。
         // 顶栏玻璃带与议程卡都要采样它，所以包一层（只有真要玻璃时才挂 `layerBackdrop`）。
-        if (backdrop != null) {
+        if (backdrop != null && !embeddedInHomePanel) {
             Box(
                 modifier = Modifier
                     .fillMaxSize()
@@ -504,7 +524,7 @@ fun DayViewPage(
         // ── 议程卡的共享预糊层：整屏只糊**这一趟** ──
         // `alpha(0f)` = 这一层不上屏，唯一作用是把自己录进 `cardGlassBackdrop`。
         // 所有卡随后都只从这张图里取自己那块：一屏十来张卡共用一次高斯。
-        if (cardPreblurActive) {
+        if (cardPreblurActive && !embeddedInHomePanel) {
             Box(
                 modifier = Modifier
                     .fillMaxSize()
@@ -730,7 +750,7 @@ fun DayViewPage(
                     label = DayViewStrings.backToTodayShort.zh,
                     contentDescription = DayViewStrings.backToTodayAction.zh,
                     visible = showsBackToToday,
-                    backdrop = pageBackdrop,
+                    backdrop = if (embeddedInHomePanel) embeddedGlass else pageBackdrop,
                     material = material,
                     hasBackdrop = hasBackdrop,
                     modifier = Modifier
