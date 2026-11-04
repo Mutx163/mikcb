@@ -1,15 +1,14 @@
 package com.mutx163.qingyu.pages.timetable.day
 
 import androidx.compose.foundation.background
+import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
-import com.mutx163.qingyu.components.glass.GlassDockSpecular
-import com.mutx163.qingyu.components.glass.glassRimAlpha
+import com.mutx163.qingyu.components.glass.courseCardGlassSurface
 import com.mutx163.qingyu.pages.settings.HomeMaterialRenderSpec
 import com.mutx163.qingyu.pages.settings.SurfaceMaterialState
 import top.yukonga.miuix.kmp.blur.Backdrop
-import top.yukonga.miuix.kmp.blur.drawBackdrop
 
 /**
  * 日视图卡面的**画法**：有共享采样层时画「模糊背景 + 卡色染色」，否则就是原来的实底填充。
@@ -27,23 +26,20 @@ import top.yukonga.miuix.kmp.blur.drawBackdrop
  * @param material 材质快照：只用来取 `liquidRimStrength` 决定边光强度，与底栏同一口径；
  *   `null` 时按出厂值（0.75）。
  */
+@Composable
 fun Modifier.dayAgendaSurface(
     glassBackdrop: Backdrop?,
     shape: Shape,
     fill: Color,
     material: HomeMaterialRenderSpec? = null,
 ): Modifier = if (glassBackdrop != null) {
-    drawBackdrop(
+    // 与周网格课卡同一份实现：折射(padding+lens) + 边光 + 染色都在共享件里
+    //（[courseCardGlassSurface]），采样源仍是整页共享的预糊壁纸层。
+    this.courseCardGlassSurface(
         backdrop = glassBackdrop,
-        shape = { shape },
-        // 共享层已经糊过一遍；这里只取像素，效果链留空（与周网格课卡同一条）。
-        effects = {},
-        // 边缘高光：与底栏 / 周网格课卡**同一份** specular（`GlassDockSpecular`），
-        // 强度按 `material.liquidRimStrength` 同一口径缩放，静止时也有一圈玻璃边光。
-        highlight = {
-            GlassDockSpecular.copy(alpha = glassRimAlpha(material?.liquidRimStrength))
-        },
-        onDrawSurface = { drawRect(fill) },
+        shape = shape,
+        fill = fill,
+        material = material,
     )
 } else {
     background(fill, shape)

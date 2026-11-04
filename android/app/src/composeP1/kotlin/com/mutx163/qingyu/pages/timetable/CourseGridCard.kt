@@ -25,7 +25,6 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
-import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -33,9 +32,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.mutx163.qingyu.components.QingyuWeightDelta
-import com.mutx163.qingyu.components.glass.GlassDockSpecular
-import com.mutx163.qingyu.components.glass.glassRimAlpha
-import com.mutx163.qingyu.components.liquid.lens
+import com.mutx163.qingyu.components.glass.courseCardGlassSurface
 import com.mutx163.qingyu.components.shiftWeight
 import com.mutx163.qingyu.core.Course
 import com.mutx163.qingyu.pages.settings.HomeMaterialRenderSpec
@@ -44,7 +41,6 @@ import com.mutx163.qingyu.theme.QingyuTheme
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.blur.Backdrop
-import top.yukonga.miuix.kmp.blur.drawBackdrop
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.Alarm
 import top.yukonga.miuix.kmp.icon.extended.Tasks
@@ -253,47 +249,17 @@ fun CourseGridCard(
     val cardBackdrop = glassBackdrop?.takeIf {
         material?.courseCard == SurfaceMaterialState.LIQUID_GLASS
     }
-    // ── 液态档的折射参数（2026-11-01 补）──
-    // 取**卡片自己那套** `courseCardGlassTuning`，与顶栏带的全局调参刻意分开
-    //（`HomeMaterialRenderSpec` 类注释：调一处不许两处都变）。
-    val density = LocalDensity.current
-    val cardRefractionPx = with(density) {
-        (material?.courseCardRefraction ?: 0f).dp.toPx()
-    }
-    val cardRefractionBandPx = with(density) {
-        (material?.courseCardRefractionBand ?: 0f).dp.toPx()
-    }
-    val cardDispersion = material?.courseCardDispersion ?: 0f
-    // 课色染在模糊后的背景上：`fill` 的 alpha 就是 `courseCardTintAlpha`（× 压暗），
-    // 与 Dart `CourseSurface.washAlpha` 同口径（见上方 [fillAlpha] 的三档）。
+    // ── 液态档折射 / 高光统一走共享卡面件（2026-11-04）──
+    // 与日视图各卡**同一份** `courseCardGlassSurface`：折射三参取卡片自己那套
+    //（`material.courseCardRefraction/Band/Dispersion`），边光走 `glassRimAlpha`。
+    // 采样源仍是整页共享的预糊壁纸层（不改实时内容，否则把卡后文字糊进卡面）。
+    // 课色染在模糊后的背景上：`fill` 的 alpha 就是 `courseCardTintAlpha`（× 压暗）。
     val surfaceModifier = if (cardBackdrop != null) {
-        Modifier.drawBackdrop(
+        Modifier.courseCardGlassSurface(
             backdrop = cardBackdrop,
-            shape = { shape },
-            // 磨砂在**整页共享的那一层**里糊过一次（见 `TimetableWeekPage` 的
-            // `cardGlassBackdrop`）；折射则必须在这里、按**每张卡自己的圆角形状**做：
-            // 共享层是一整块全屏矩形，在那儿折射只会弯屏幕的四条边，弯不到任何一张卡的边。
-            // Dart 同结构 —— 预糊位图共享、折射逐卡跑（`course_surface.dart:209-259`）。
-            effects = {
-                // 折射朝卡外采样：先按位移量把采样层撑起来。
-                // ⚠️ 必须在任何读 padding 的效果之前抬（同玻璃坞）。
-                padding = maxOf(padding, cardRefractionPx)
-                // 两根滑杆任一为 0 时 `lens()` 自己 return（清档 = 不折射）。
-                if (cardRefractionBandPx > 0f && cardRefractionPx > 0f) {
-                    lens(
-                        refractionHeight = cardRefractionBandPx,
-                        refractionAmount = cardRefractionPx,
-                        chromaticAberration = cardDispersion,
-                    )
-                }
-            },
-            // 边缘高光：与底栏**同一份** specular（`GlassDockSpecular`），强度按
-            // `material.liquidRimStrength` 走同一口径（`glassRimAlpha`），让静止时卡片
-            // 也有一圈像玻璃的边光，而不是只靠动起来才看得见的折射。
-            highlight = {
-                GlassDockSpecular.copy(alpha = glassRimAlpha(material?.liquidRimStrength))
-            },
-            onDrawSurface = { drawRect(fill) },
+            shape = shape,
+            fill = fill,
+            material = material,
         )
     } else {
         Modifier.background(fill)

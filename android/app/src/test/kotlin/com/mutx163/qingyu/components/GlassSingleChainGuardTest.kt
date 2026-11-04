@@ -41,6 +41,7 @@ class GlassSingleChainGuardTest {
     /** 允许持有 miuix 调用的底层封装（共享件本体）。 */
     private val allowedOwners = listOf(
         "components/glass/QingyuGlassSurface.kt",
+        "components/glass/CourseCardGlassSurface.kt",
         "components/liquid/LiquidVibrancy.kt",
         "components/liquid/LiquidLens.kt",
         "components/liquid/LiquidCombinedBackdrop.kt",
@@ -57,16 +58,8 @@ class GlassSingleChainGuardTest {
             "回今日/本周浮钮：本轮未迁；下一批迁 QingyuGlassSurface",
         ),
         Pending(
-            "pages/timetable/CourseGridCard.kt",
-            "周视图课卡：课表域在改，按用户要求本轮不碰",
-        ),
-        Pending(
             "pages/timetable/TimetableChromeBandGlass.kt",
             "课表顶栏玻璃带：课表域在改，按用户要求本轮不碰",
-        ),
-        Pending(
-            "pages/timetable/day/DayAgendaSurface.kt",
-            "日视图议程卡：课表域在改，按用户要求本轮不碰",
         ),
         Pending(
             "pages/timetable/TimetableWeekPage.kt",
