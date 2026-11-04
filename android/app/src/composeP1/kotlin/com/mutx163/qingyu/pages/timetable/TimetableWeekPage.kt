@@ -1053,7 +1053,7 @@ private fun WeekPageContent(
      */
     sectionHeightOverride: Dp? = null,
     /** 底部避让余量；预览里传 0，避免 64dp 坞避让把网格撑出框。 */
-    bottomClearanceDp: Dp = WEEK_GRID_BOTTOM_CLEARANCE_DP.dp,
+    bottomClearanceDp: Dp = 0.dp,
     /** 内容层外壳（缓存图层挂在这里，见 pager 调用处的说明）。 */
     modifier: Modifier = Modifier,
 ) {
@@ -1133,8 +1133,8 @@ private fun WeekPageContent(
     }
 }
 
-/** 周网格底部避让：手势条之上再留 64dp 给浮坞。 */
-private const val WEEK_GRID_BOTTOM_CLEARANCE_DP = 64f
+// 周网格底部避让：改用共享坞避让（LocalGlassDockScrollRelief）+ 今浮钮动态避让，
+// 不再无条件留固定的 64dp（那会在本周/无浮钮时也顶出空隙）。
 
 /**
  * **保活但不参与绘制 / 命中 / 无障碍焦点**的修饰器（日视图展开层专用）。

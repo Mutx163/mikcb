@@ -116,31 +116,10 @@ fun DayViewScrollContent(
         bottom = bottomInset,
     ),
 ) {
-    val layoutDirection = LocalLayoutDirection.current
-    val density = LocalDensity.current
-    val isDockRootPage = LocalQingyuPageIsRootEntry.current == true
-    BoxWithConstraints(modifier = modifier.fillMaxSize()) {
-        // 首页根页（Dock 栈底）且内容**超过视口**时：底部 = max(原坞/今钮避让, 视口高 − 末项高)，
-        // 让最后一张卡能顶到屏幕最上沿（因此滚过底部居中的「今」浮钮）；短列表/非根页保持原避让。
-        val contentOverflows by remember(lazyListState) {
-            derivedStateOf { lazyListState.canScrollForward || lazyListState.canScrollBackward }
-        }
-        val reachTop = if (isDockRootPage && contentOverflows) {
-            (maxHeight - rememberDayReachTopLastItemHeight(lazyListState, density)).coerceAtLeast(0.dp)
-        } else {
-            0.dp
-        }
-        val effectiveBottom = maxOf(contentPadding.calculateBottomPadding(), reachTop)
-        val effectivePadding = PaddingValues(
-            start = contentPadding.calculateStartPadding(layoutDirection),
-            top = contentPadding.calculateTopPadding(),
-            end = contentPadding.calculateEndPadding(layoutDirection),
-            bottom = effectiveBottom,
-        )
-        LazyColumn(
-            state = lazyListState,
-            modifier = Modifier.fillMaxSize().scrollEndHaptic().overScrollVertical(),
-            contentPadding = effectivePadding,
+    LazyColumn(
+        state = lazyListState,
+        modifier = modifier.fillMaxSize().scrollEndHaptic().overScrollVertical(),
+        contentPadding = contentPadding,
         ) {
         // ── 吸顶全天概览卡 ──
         // 12dp 的下内边距就是概览卡与议程列表之间的呼吸间距：
@@ -244,26 +223,5 @@ fun DayViewScrollContent(
                 Spacer(modifier = Modifier.height(8.dp))
             }
         }
-        }
     }
-}
-
-/** 「末项到顶」留白里末项高度的兜底（末项未可见 / 空态时用）；测得真值后替换。 */
-private val DayReachTopLastItemFallback = 96.dp
-
-@Composable
-private fun rememberDayReachTopLastItemHeight(state: LazyListState, density: Density): Dp {
-    val height by remember(state, density) {
-        derivedStateOf {
-            val info = state.layoutInfo
-            val last = info.visibleItemsInfo.lastOrNull()
-            if (last != null && last.index == info.totalItemsCount - 1) {
-                val measured = with(density) { last.size.toDp() }
-                if (measured > DayReachTopLastItemFallback) measured else DayReachTopLastItemFallback
-            } else {
-                DayReachTopLastItemFallback
-            }
-        }
-    }
-    return height
 }
