@@ -91,6 +91,26 @@ class TransferTextDecodingTest {
     }
 
     @Test
+    fun `二维码接收走严格解码：畸形字节得 null 且不产出替换字符`() {
+        // `pages/transfer/DataTransferHost` 的扫码入口用同一个函数；返回 null 即走
+        // 「导入失败」分支，不会把 U+FFFD 文本送进 JSON 门（Dart utf8.decode 同判据）。
+        val malformed = listOf(
+            byteArrayOf(0xC3.toByte(), 0x28),
+            byteArrayOf(0xED.toByte(), 0xA0.toByte(), 0x80.toByte()), // UTF-8 编码的代理区
+            byteArrayOf(0xEF.toByte(), 0xBF.toByte(), 0xBD.toByte(), 0xC3.toByte()), // 合法 U+FFFD + 断尾
+        )
+        for (bytes in malformed) {
+            assertNull(
+                "畸形字节不应解出文本（否则会把 U+FFFD 带进 JSON）",
+                TransferTextDecoding.decodeStrictUtf8(bytes),
+            )
+        }
+        assertNotNull(
+            TransferTextDecoding.decodeStrictUtf8("{\"a\":1}".toByteArray(Charsets.UTF_8)),
+        )
+    }
+
+    @Test
     fun `空内容与仅空白内容判失败并复用 importFileReadFailed`() {
         val blanks = listOf(
             ByteArray(0),

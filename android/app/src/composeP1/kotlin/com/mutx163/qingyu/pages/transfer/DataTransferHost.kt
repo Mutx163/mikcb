@@ -240,7 +240,8 @@ fun DataTransferHost(
         val bytes = bridge.inboundBytes ?: return@LaunchedEffect
         bridge.inboundBytes = null
         isImporting = true
-        val text = withContext(Dispatchers.IO) { runCatching { String(bytes, Charsets.UTF_8) }.getOrNull() }
+        // 严格 UTF-8：畸形字节不落成 U+FFFD 文本，直接走下面的「导入失败」分支。
+        val text = withContext(Dispatchers.IO) { DataTransferInboundDecoding.decodeTransferText(bytes) }
         isImporting = false
         if (text == null) {
             // Dart：UTF-8 解码失败统一落到「导入失败，请确认文件有效」（`:551-563`）。
