@@ -499,6 +499,11 @@ fun DayViewPage(
     val embeddedGlass = LocalEmbeddedDayGlassBackdrop.current
     // 展开过渡是否已落定（见 [LocalEmbeddedDayTransitionSettled]）：独立页/预览恒 true。
     val embeddedTransitionSettled = LocalEmbeddedDayTransitionSettled.current
+    // 真实内容录制层是否生效：浮钮玻璃档 + （独立页恒真 / 嵌入页需展开过渡落定）。
+    // 嵌入页过渡期浮钮本来就不画（visible 需 settled），此时不录、也不往面板里补壁纸，
+    // 免得壁纸跟着横滑/渐显一起动；落定后补的壁纸像素与页面级静态壁纸一致，视觉不变。
+    val contentRecordActive = floatingGlassActive &&
+        (!embeddedInHomePanel || embeddedTransitionSettled)
 
     // pageBackdrop 只给顶栏带 / 议程卡玻璃采样（只录壁纸）；「回今日」浮钮改用独立
     // contentBackdrop（录真实内容），故这里不含 floatingGlassActive（否则双重整屏录制）。
@@ -526,19 +531,27 @@ fun DayViewPage(
                 if (showsBackToToday) HomeFloatingMetrics.BACK_TO_TODAY_SCROLL_EXTRA_DP.dp else 0.dp,
         )
         Box(modifier = Modifier.fillMaxSize()) {
-        // ── 真实内容录制层（B1）：录 [壁纸(非嵌入) + 预糊层 + 内容 Column]，浮钮在本层之外 ──
+        // ── 真实内容录制层（B1）：录 [壁纸 + 预糊层 + 内容 Column]，浮钮在本层之外 ──
         // 只有「回今日」浮钮真要采玻璃时才挂录像（录制 = 整屏离屏重画一帧，门控同 dock）。
         Box(
             modifier = Modifier
                 .fillMaxSize()
                 .then(
-                    if (floatingGlassActive) {
+                    if (contentRecordActive) {
                         Modifier.layerBackdrop(contentBackdrop)
                     } else {
                         Modifier
                     },
                 ),
         ) {
+        // 嵌入日程时本页不画壁纸（壁纸由页面级静态底画）。为了让浮钮「无内容、纯壁纸」时
+        // 也采到壁纸模糊而不是黑，落定后把同一张壁纸补画进录制层——像素与静态壁纸一致、且
+        // 落定无位移，视觉不变，只为把壁纸录进 contentBackdrop（有内容时内容压在它上面）。
+        if (embeddedInHomePanel && contentRecordActive && backdrop != null) {
+            Box(modifier = Modifier.fillMaxSize()) {
+                backdrop.invoke(this)
+            }
+        }
         // 壁纸层在最底（Dart 的层次：壁纸 → 内容）。没有壁纸时这一行什么也不画。
         // 顶栏玻璃带与议程卡都要采样它，所以包一层（只有真要玻璃时才挂 `layerBackdrop`）。
         if (backdrop != null && !embeddedInHomePanel) {
@@ -789,7 +802,7 @@ fun DayViewPage(
             visible = showsBackToToday &&
                 (!embeddedInHomePanel || embeddedTransitionSettled),
             backdrop = when {
-                floatingGlassActive -> contentBackdrop
+                contentRecordActive -> contentBackdrop
                 embeddedInHomePanel -> embeddedGlass
                 else -> pageBackdrop
             },
