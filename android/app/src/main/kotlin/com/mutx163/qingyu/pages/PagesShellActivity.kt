@@ -636,6 +636,50 @@ private fun PagesShell(
         pushRoute(ShellRoute.ZoomPage(id, pushToken = pushSeq.incrementAndGet()))
     }
 
+    /**
+     * 打开「首页缩放」档页面（外观编辑）：先把主屏 Pager 滑回周视图，**落定后**再推 ZoomPage。
+     *
+     * 为什么要先滑回周视图：ZoomPage 的入场是「把整屏首页缩进预览卡」，收缩底图 = 栈底
+     * Pager 的当前页。若此刻停在统计 / 设置等非课表页，直接 pushZoomPage 会把那一页
+     * 缩进卡片（用户 2026-11-04 报：别的页面点外观编辑，缩放底图不是周视图）。故先
+     * `currentRootId = ROOT_WEEK` 再滑到周视图页，等 `springAnimateToPage` 挂起返回（= 落定）
+     * 后再推页，避免 InstantSwap 把滑动从中间截断。
+     *
+     * 压着推入页（从设置页点进）时先弹回主屏让 Pager 可见 —— 这正是「先滑回周视图」的前提，
+     * 与「返回键回首页」BackHandler 不冲突（滑完推页后 atRoot 变 false，本函数不在其块内）。
+     */
+    fun openZoomFromWeek(id: String) {
+        // 先弹回主屏：设置页 / 深层页压着时 Pager 在下面看不见，谈不上「滑回周视图」。
+        while (backStack.size > 1) backStack.removeLastOrNull()
+        val target = DockPagerMotion.indexOfPage(dockPageIds, ROOT_WEEK)
+        if (target == null) {
+            // 极端：底栏里根本没有周视图页（日/周都移出底栏且冷启动不在周）。无可滑目标，
+            // 退化为直接推页，不猜、不崩。
+            pushZoomPage(id)
+            return
+        }
+        // 与点底栏同一套：取消在飞的滑动协程，避免连点 / 横滑动画叠加。
+        pagerAnimJobRef.getAndSet(null)?.cancel()
+        pagerAnimJobRef.set(
+            pagerAnimScope.launch {
+                currentRootId = ROOT_WEEK
+                if (pagerReducedMotion) {
+                    pagerState.scrollToPage(target)
+                } else {
+                    // 挂起函数：animateToPage 播完、updateCurrentPage 后才返回 = Pager 落定。
+                    pagerState.springAnimateToPage(target)
+                }
+                // 落定后再缩放进入，缩放底图此刻必是周视图。
+                pushZoomPage(id)
+            },
+        )
+    }
+
+    /** 页面推入口统一出口：外观编辑走「先回周视图再缩放」，其余照旧普通推页。 */
+    fun openPage(target: String) {
+        if (HomeDockNavModel.zoomsFromHome(target)) openZoomFromWeek(target) else pushPage(target)
+    }
+
     // 外部入口落点（R1 补口 2026-11-02）：VIEW/SEND 导入 / umeng scheme / mikcb-debug
     // 深链由透明跳板 ShellExternalEntryActivity 解析后 post 到 hub，这里一行消费推页。
     ShellExternalEntryEffect(onOpenPage = { target -> pushPage(target) })
@@ -659,7 +703,7 @@ private fun PagesShell(
             val target = rootPageIdFor(itemId) ?: return
             // 「首页缩放」档（目前只有外观编辑页）：那一页自己把首页缩进预览卡，
             // 壳用瞬时切换、不再叠侧滑（见 [ShellRoute.ZoomPage]）。
-            if (HomeDockNavModel.zoomsFromHome(target)) pushZoomPage(target) else pushPage(target)
+            if (HomeDockNavModel.zoomsFromHome(target)) openZoomFromWeek(target) else pushPage(target)
             return
         }
 
@@ -904,7 +948,7 @@ private fun PagesShell(
                                         // 开发壳专属：页面索引（L4 逐页对照）。它不是一个业务页面，
                                         // 所以直接画在这里，不进 `ShellPageContent` 的分派表。
                                         ShellPageIndexScreen(
-                                            onOpenPage = { target -> pushPage(target) },
+                                            onOpenPage = { target -> openPage(target) },
                                             onBack = { selectRoot(ROOT_WEEK) },
                                         )
                                     } else {
@@ -912,7 +956,7 @@ private fun PagesShell(
                                             pageId = rootPageIdFor(pageItemId) ?: ROOT_WEEK_PAGE_ID,
                                             onBack = { selectRoot(ROOT_WEEK) },
                                             wiring = wiring,
-                                            onOpenPage = { target -> pushPage(target) },
+                                            onOpenPage = { target -> openPage(target) },
                                             // 设置页当场换肤：把新模型回推到 `setContent` 顶层的
                                             // `settingsModel`，`QingyuPageTheme` 立刻重建。
                                             onSettingsChanged = onReloadSettings,
@@ -953,7 +997,7 @@ private fun PagesShell(
                             onBack = { popPage() },
                             wiring = wiring,
                             // 页面内部「推新页」：路由字符串 → 壳页面 id（映射表在 ShellWiring.kt）。
-                            onOpenPage = { target -> pushPage(target) },
+                            onOpenPage = { target -> openPage(target) },
                             onSettingsChanged = onReloadSettings,
                         )
                     }
@@ -968,7 +1012,7 @@ private fun PagesShell(
                             pageId = route.id,
                             onBack = { popPage() },
                             wiring = wiring,
-                            onOpenPage = { target -> pushPage(target) },
+                            onOpenPage = { target -> openPage(target) },
                             onSettingsChanged = onReloadSettings,
                         )
                     }
