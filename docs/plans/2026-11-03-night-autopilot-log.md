@@ -2474,6 +2474,73 @@ guide 域既有测试（`MoreFeaturesNavigationGuardTest`）引用 `ShellPageCat
 两个壳 Activity、`lib/ui/`、路由表一律未碰。提交 `7823e09e`（pathspec 限定，未 add 后裸 commit），
 **未推送**。
 
+### 10.48 ✅ 导出名 80 codePoint 截断 / QR 严格解码 / LAN 旧 5 键包兼容（2026-11-04）
+
+**结论**：三项全部落地，各有咬合探针与回归用例；第 3 项做到「legacy 解析下沉 `transfer/`、不反向依赖
+`pages/`」，**无卡点**。三次提交均 path 限定，未推送。
+
+**1. 导出文件名按 80 codePoint 截断（`e20bf954`）**
+
+- Dart 依据 `lib/services/ics_export_service.dart:751-754`：`_sanitizeFileNameSegment` 之后还有
+  `safe.runes.take(80)`，按 rune（codePoint）截断，避免把 emoji 代理对截半。
+  Kotlin `sanitizeFileNameSegment` 此前只做净化、不设上限，超长名直接进文件名。
+- 修：`pages/export/IcsExportModel.kt:297-303` 用 `safe.codePoints().toArray()` 计数，超 80 时
+  `appendCodePoint` 逐个拼前 80 个；ASCII/BMP 与 `String.length` 同结果，代理对整体保留。
+- 用例（`IcsExportModelTest`，新增 3 条）：ASCII 80/81、emoji 80/81（`codePointCount` 恰为 80、
+  `assertNoLoneSurrogate` 检查高/低位代理配对）、混合 `"a" + emoji.*` 时截断落在字符边界。
+- 探针：删掉整段截断 → `-Module pages/export` **`Tests run: 82, Failures: 3`**；还原后 **82 OK**。
+
+**2. QR/文件接收严格 UTF-8（`09c526e7`）**
+
+- Dart 依据 `data_transfer_screen.dart:415` 走严格 `utf8.decode`（畸形即失败）；
+  `pages/transfer/DataTransferHost.kt:243` 原 `String(bytes, Charsets.UTF_8)` 会把畸形字节洗成
+  `U+FFFD` 并当正常文本继续解析。
+- 修：新增可单测接缝 `pages/transfer/DataTransferInboundDecoding.kt`
+  （`decodeTransferText = TransferTextDecoding.decodeStrictUtf8`），Host 改为单行委托；返回 `null`
+  仍走既有 `InvalidEncoding` 分支（不新增错误码）。
+- 用例：`DataTransferInboundDecodingTest`（`0xC3 0x28`、代理区 `0xED 0xA0 0x80`、
+  `U+FFFD+断尾`、`0xFF` 全部得 `null` 且不产出替换字符；合法 UTF-8 原样返回）；
+  `TransferTextDecodingTest` 同步补同类回归。
+- 探针：把 helper 换回宽松 `String(bytes, UTF_8)` → **`Tests run: 561, Failures: 1`**；还原后绿。
+
+**3. LAN 旧 5 键包兼容，legacy 解析下沉 `transfer/`（`286ed221`）**
+
+- Dart 依据 `lan_edit_provider_host.dart:342-344`：`parseCompatible` 在类型门接受旧包，折成
+  `current_timetable`，后续仍走既有 overwrite 整份替换 / merge 合并语义。
+- 分层：新增 `transfer/LegacyBackupPackage.kt`（信封 fail closed → `backupType:"full"` 全量 →
+  旧 5 键单档；`looksLikeLegacyBackup` 只认 `app=="mikcb" && packageType!=transfer`，外加
+  `backupType=="full"`），只依赖 `core/share`。`pages/transfer/DataTransferLegacyBackupLogic` 改委托
+  本实现，既有行为与用例不变。
+- `transfer/lan/LanTransferLogic.kt`：`parseIncoming:108-121` 变「先 strict，FormatException 后
+  再判 legacy」，原体改名 `parseStrictIncoming`；`legacyIncoming:187+` 组装
+  `LanTransferIncoming`：全量包 / `all_data` 仍拒 `use_profile_backup_not_full`、`profiles` 非空仍拒
+  `profile_backup_profiles_unsupported`，单档按 `current_timetable` 交给既有 applier。
+- 回归：`LanTransferLogicTest` 新增 3 条（旧 5 键包在类型门被接受、旧全量仍被整设备写入拒绝、
+  信封损坏不被旧包通道救回）；`LanTransferApplyTest` 新增 2 条（overwrite 真删本地独有课、
+  merge 保留本地课）。`pages/transfer` 侧原路径由既有用例回归，证明行为不变。
+- 探针：注释掉 legacy 回退 → **`Tests run: 561, Failures: 4`**；还原后绿。
+
+**L0（本批实际跑，均在还原探针后的 HEAD 上复跑确认）**
+
+```
+-C:\dev\pwsh\pwsh.exe -> ./scripts/test-kotlin-module.ps1 -Module transfer \
+   -ExtraSources <transfer 15 个 main + 16 个 test + pages/import/IcsImportModel.kt + IcsHeaderKeywords.kt>
+  → 编译 202 文件，OK (561 tests)
+-Module pages/export → 编译 149 文件，OK (82 tests)
+-Module pages/import → 编译 232 文件，OK (522 tests)
+```
+
+未裸跑 gradlew、未跑整包；只声明编译通过 / JVM 单测通过。
+
+**边界声明**：只动 `pages/export/IcsExportModel.kt`（+测试）、`pages/transfer/DataTransferHost.kt`、
+新增 `pages/transfer/DataTransferInboundDecoding.kt`（+测试）、`transfer/TransferTextDecodingTest.kt`、
+新增 `transfer/LegacyBackupPackage.kt`、`transfer/lan/LanTransferLogic.kt`（+测试）、
+`transfer/lan/LanTransferApplyTest.kt`、`pages/transfer/DataTransferLegacyBackupLogic.kt`；
+未碰 `pages/sync/**`、`pages/ShellPageIndex.kt`、`pages/ShellWiring.kt`、`app/TimetableStore.kt`、
+`app/AppGlobalSettingsStore.kt`、`app/TimetableSettingsModel.kt`、`pages/timetable/**`、`components/**`、
+`theme/`、两壳 Activity、`lib/ui/`、路由表。提交均 `git commit -m "..." -- <自身路径>`（未 add 后裸
+commit），未 push；未使用 --amend / reset --hard / checkout -- / clean -fd / add .。
+
 
 
 
