@@ -472,6 +472,9 @@ fun ShellPageContent(
             repository = wiring.timetable,
             onBack = onBack,
             onNavigate = { route -> shellPageIdForRoute(route)?.let(onOpenPage) },
+            homeViewMode = wiring.homeViewMode,
+            homeSelectedWeek = wiring.homeSelectedWeek,
+            homeSelectedDayOfWeek = wiring.homeSelectedDayOfWeek,
         )
         // 「材质（通用 / 课程卡片）」在原版里**不是两页**，是外观编辑页那个底部弹层的
         // 两个页签（`settings_appearance_editor.dart:2253-2255`）。所以这两条路由直达同一
@@ -483,6 +486,9 @@ fun ShellPageContent(
             onBack = onBack,
             onNavigate = { route -> shellPageIdForRoute(route)?.let(onOpenPage) },
             initialMaterialPage = MaterialSheetPages.GENERAL,
+            homeViewMode = wiring.homeViewMode,
+            homeSelectedWeek = wiring.homeSelectedWeek,
+            homeSelectedDayOfWeek = wiring.homeSelectedDayOfWeek,
         )
         "b.materialCourseCard" -> AppearanceEditorHost(
             store = wiring.settingsModel,
@@ -490,6 +496,9 @@ fun ShellPageContent(
             onBack = onBack,
             onNavigate = { route -> shellPageIdForRoute(route)?.let(onOpenPage) },
             initialMaterialPage = MaterialSheetPages.COURSE_CARD,
+            homeViewMode = wiring.homeViewMode,
+            homeSelectedWeek = wiring.homeSelectedWeek,
+            homeSelectedDayOfWeek = wiring.homeSelectedDayOfWeek,
         )
         // 壁纸面板只有一个入口（Dart `settings_home_backdrop_flow.dart:439-472`：第一页
         // 同时含选图行与「最近使用」缩略图条，没有独立的「最近使用」页）。原先
@@ -502,6 +511,9 @@ fun ShellPageContent(
             onBack = onBack,
             onNavigate = { route -> shellPageIdForRoute(route)?.let(onOpenPage) },
             initialWallpaperPage = WallpaperSheetPages.PICKER,
+            homeViewMode = wiring.homeViewMode,
+            homeSelectedWeek = wiring.homeSelectedWeek,
+            homeSelectedDayOfWeek = wiring.homeSelectedDayOfWeek,
         )
         // 2026-10-30 F05 收尾：这一页原先走空 state（永远「加载中」、点哪都没下文），
         // 换成真宿主：拉 Bing 每日壁纸清单 + 缩略图 + 点一张下载落盘并写设置。

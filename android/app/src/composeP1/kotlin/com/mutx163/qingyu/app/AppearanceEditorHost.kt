@@ -184,6 +184,10 @@ fun AppearanceEditorHost(
     onIntent: (SettingsDispatch) -> Unit = {},
     initialMaterialPage: Int? = null,
     initialWallpaperPage: Int? = null,
+    // 首页**实时**当前选择（挖洞预览要显示用户此刻看的那天/那周，而不是仓储当前周）。
+    homeViewMode: TimetableHomeViewMode = TimetableHomeViewMode.WEEK,
+    homeSelectedWeek: Int? = null,
+    homeSelectedDayOfWeek: Int? = null,
 ) {
     // 草稿：一进页就从盘上读一份。
     var model by remember(store) { mutableStateOf(store.load()) }
@@ -735,8 +739,8 @@ fun AppearanceEditorHost(
     }
 
     AppearanceEditorScreen(
-        // 初值跟首页当前视图走（Dart `:203-204`）：三者一致，进页那一帧才不会闪跳。
-        initialDayView = appearance.previewDayView,
+        // 初值跟首页**实时**当前视图走：日/周态与时间都对上首页，进页那一帧不闪跳。
+        initialDayView = homeViewMode == TimetableHomeViewMode.DAY,
         onCancel = { cancel() },
         onDone = { done() },
         onAdjustWallpaper = {
@@ -752,11 +756,14 @@ fun AppearanceEditorHost(
         requestBackExit = backExitEnabled,
         // 见类注释「已知差异」第 1 条。
         previewReady = true,
-        preview = { dayView ->
+        preview = { dayView, glassSurfacesEnabled ->
             TimetablePreviewPage(
                 dayView = dayView,
+                glassSurfacesEnabled = glassSurfacesEnabled,
                 repository = repository,
                 settingsModel = model,
+                homeSelectedWeek = homeSelectedWeek,
+                homeSelectedDayOfWeek = homeSelectedDayOfWeek,
             )
         },
     )
@@ -837,8 +844,11 @@ fun AppearanceEditorHost(
 @Composable
 private fun TimetablePreviewPage(
     dayView: Boolean,
+    glassSurfacesEnabled: Boolean,
     repository: TimetableRepository,
     settingsModel: TimetableSettingsModel,
+    homeSelectedWeek: Int? = null,
+    homeSelectedDayOfWeek: Int? = null,
 ) {
     // 预览卡 = **整个首页**：课表页（周 / 日）+ 玻璃坞。
     //
@@ -860,7 +870,13 @@ private fun TimetablePreviewPage(
                 ),
         ) {
             if (dayView) {
-                DayViewPreview(repository = repository, settingsModel = settingsModel)
+                DayViewPreview(
+                    repository = repository,
+                    settingsModel = settingsModel,
+                    glassSurfacesEnabled = glassSurfacesEnabled,
+                    homeSelectedWeek = homeSelectedWeek,
+                    homeSelectedDayOfWeek = homeSelectedDayOfWeek,
+                )
             } else {
                 TimetableHost(
                     repository = repository,
@@ -869,9 +885,14 @@ private fun TimetablePreviewPage(
                     onOpenAddCourse = { _, _ -> },
                     onOpenCourse = {},
                     settingsModel = settingsModel,
+                    // 周预览也显示首页**实时**浏览的那一周（而非仓储当前周）。
+                    selectedWeek = homeSelectedWeek
+                        ?: repository.snapshot.currentWeek.coerceAtLeast(1),
                     // 预览不接截屏监听：真首页那一份已经接上了，再来一份等于截一次屏
                     // 弹两次提示（Dart `_isPreview` 守卫，timetable_screen.dart:913-917）。
                     screenshotSharePromptEnabled = false,
+                    // 玻璃开关（方案②恒开，由调用方传 true）。
+                    glassSurfacesEnabled = glassSurfacesEnabled,
                 )
             }
         }
@@ -903,6 +924,9 @@ private fun TimetablePreviewPage(
 private fun DayViewPreview(
     repository: TimetableRepository,
     settingsModel: TimetableSettingsModel,
+    glassSurfacesEnabled: Boolean = true,
+    homeSelectedWeek: Int? = null,
+    homeSelectedDayOfWeek: Int? = null,
 ) {
     var snapshot by remember(repository) { mutableStateOf(repository.snapshot) }
     DisposableEffect(repository) {
@@ -918,7 +942,9 @@ private fun DayViewPreview(
     // 隐藏周末时那个日子可能不在可见列里（例如上次看周六），此时退到可见的第一天，
     // 否则日视图的页号与「第几周 · 周几」会对不上。
     val lastViewedDay = settingsModel.timetableLastViewedDayOfWeek.coerceIn(1, 7)
-    val initialDayOfWeek = if (lastViewedDay in visibleDays) lastViewedDay else visibleDays.first()
+    // 优先用首页**实时选中**的那天/那周（挖洞应显示用户当前正看的那天），否则退回持久化 / 仓储当前值。
+    val initialDayOfWeek = (homeSelectedDayOfWeek ?: lastViewedDay)
+        .let { if (it in visibleDays) it else visibleDays.first() }
     val today = LocalDate.now()
     val todayOfWeek = today.dayOfWeek.value
 
@@ -928,7 +954,7 @@ private fun DayViewPreview(
     val floatingInsets = rememberHomeFloatingInsets(settingsModel)
 
     DayViewPage(
-        initialWeek = snapshot.currentWeek.coerceAtLeast(1),
+        initialWeek = homeSelectedWeek ?: snapshot.currentWeek.coerceAtLeast(1),
         initialDayOfWeek = initialDayOfWeek,
         visibleDays = visibleDays,
         totalWeeks = snapshot.settings.semesterWeekCount,
@@ -937,8 +963,8 @@ private fun DayViewPreview(
         chromeInk = homeChrome.chromeInk,
         // 星期栏 / 空态压在壁纸上的字色（2026-11-01）。
         wallpaperBands = homeChrome.bands,
-        material = homeChrome.material,
-        hasBackdrop = homeChrome.hasBackdrop,
+        material = if (glassSurfacesEnabled) homeChrome.material else null,
+        hasBackdrop = glassSurfacesEnabled && homeChrome.hasBackdrop,
         pageColorArgb = homeChrome.pageColorArgb,
         floatingButtonBottomInset = floatingInsets.buttonBottom,
         contentBottomInset = floatingInsets.contentBottom,

@@ -106,8 +106,9 @@ internal fun AppearanceEditorPreviewStage(
     topInset: Dp,
     bottomInset: Dp,
     replayTransition: Boolean,
+    glassSurfacesEnabled: Boolean = true,
     modifier: Modifier = Modifier,
-    preview: @Composable (dayView: Boolean) -> Unit,
+    preview: @Composable (dayView: Boolean, glassSurfacesEnabled: Boolean) -> Unit,
 ) {
     // 所有输入都在这一层被吃掉：预览不是第二个可操作首页（Dart `IgnorePointer`，`:1776`）。
     // 演示里的 mini chrome 也不该能点。
@@ -120,6 +121,7 @@ internal fun AppearanceEditorPreviewStage(
                 screenHeight = screenHeight,
                 topInset = topInset,
                 bottomInset = bottomInset,
+                glassSurfacesEnabled = glassSurfacesEnabled,
                 preview = preview,
             )
         } else {
@@ -128,7 +130,7 @@ internal fun AppearanceEditorPreviewStage(
                 screenWidth = screenWidth,
                 screenHeight = screenHeight,
             ) {
-                preview(dayView)
+                preview(dayView, glassSurfacesEnabled)
             }
         }
     }
@@ -213,7 +215,8 @@ private fun AppearanceTransitionReplay(
     screenHeight: Dp,
     topInset: Dp,
     bottomInset: Dp,
-    preview: @Composable (dayView: Boolean) -> Unit,
+    glassSurfacesEnabled: Boolean = true,
+    preview: @Composable (dayView: Boolean, glassSurfacesEnabled: Boolean) -> Unit,
 ) {
     val backStack = remember { navBackStackOf(AppearanceReplayBase) }
     var played by remember { mutableStateOf(false) }
@@ -266,7 +269,7 @@ private fun AppearanceTransitionReplay(
                 screenWidth = screenWidth,
                 screenHeight = screenHeight,
             ) {
-                preview(dayView)
+                preview(dayView, glassSurfacesEnabled)
             }
         }
         entry<AppearanceReplayEditor> {

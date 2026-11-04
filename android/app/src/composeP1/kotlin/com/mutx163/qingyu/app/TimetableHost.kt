@@ -90,6 +90,15 @@ fun TimetableHost(
     selectedDayOfWeek: Int = 1,
     /** 宿主被重建时的首帧展开进度（0/1）；常驻切换不看它。 */
     dayProgressSeed: Float = 0f,
+    /**
+     * 本次周↔日切换是否播 [TimetableWeekPage] 的 `dayExpand` 上下翻（来源判据）。
+     *
+     * `true` = 点星期栏（周几表头那行）某天进日视图，保留从上往下展开；
+     * `false` = 底栏/导航栏/跨页来源（周/日两格同页互点、从别页切回课表等）——
+     * 页面直接 `snapTo`、不播上下翻，横向由外层 `HorizontalPager` 负责。
+     * 由 [com.mutx163.qingyu.pages.ShellWiring] 的 `homeViewSwitchAnimate` 透传。
+     */
+    daySwitchAnimate: Boolean = true,
     /** 点星期栏某天：壳记下选中日并切到日视图。 */
     onSelectDay: (week: Int, dayOfWeek: Int) -> Unit = { _, _ -> },
     /** 日视图摘要卡的关闭叉：壳收回周视图。 */
@@ -118,6 +127,13 @@ fun TimetableHost(
      * 与顶栏「轻屿课表」，星期栏当首行、网格按预览框高自适应。只给两个设置页挖洞预览用。
      */
     previewMode: Boolean = false,
+    /**
+     * 玻璃 / backdrop 表面是否启用（默认 true，其它调用点行为不变）。
+     *
+     * 外观编辑页的入场缩放期间传 false：预览按**实心**渲染（不建 BackdropFilter 采样层），
+     * 缩放的是不透明层、不会每帧重采样玻璃；落定后再置回 true 显示实时玻璃。
+     */
+    glassSurfacesEnabled: Boolean = true,
 ) {
     // 首帧直接用仓储当前快照，避免「先画空网格再跳成有课」的闪一下。
     // ⚠️ 这不是优化，是**接口语义**：`TimetableRepository.observe` 只在**后续变更**时回调，
@@ -318,6 +334,7 @@ fun TimetableHost(
         selectedWeek = selectedWeek,
         selectedDayOfWeek = selectedDayOfWeek,
         dayProgressSeed = dayProgressSeed,
+        daySwitchAnimate = daySwitchAnimate,
         onSelectDay = onSelectDay,
         onCloseDay = onCloseDay,
         dayContent = dayContent,
@@ -351,8 +368,8 @@ fun TimetableHost(
         // 壁纸三档亮度带：星期栏 / 时间列压在壁纸上的字色靠它翻深/翻浅（2026-11-01）。
         wallpaperBands = homeChrome.bands,
         // 材质快照（2026-11-01）：让「默认材质 / 顶栏玻璃 / 八根旋钮」真正落到屏幕上。
-        material = homeChrome.material,
-        hasBackdrop = homeChrome.hasBackdrop,
+        material = if (glassSurfacesEnabled) homeChrome.material else null,
+        hasBackdrop = glassSurfacesEnabled && homeChrome.hasBackdrop,
         pageColorArgb = homeChrome.pageColorArgb,
         // 浮钮避让（玻璃坞形态 = 药丸占用 + 12；经典形态 = 24 + 系统手势条）。
         floatingButtonBottomInset = floatingInsets.buttonBottom,

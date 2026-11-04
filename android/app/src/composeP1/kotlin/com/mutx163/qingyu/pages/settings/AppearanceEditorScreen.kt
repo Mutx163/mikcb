@@ -5,7 +5,6 @@ import android.content.Context
 import android.content.ContextWrapper
 import android.graphics.BlurMaskFilter
 import android.graphics.Paint
-import android.graphics.RectF
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.LinearEasing
@@ -18,9 +17,9 @@ import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.absoluteOffset
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.systemBars
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -32,11 +31,11 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.blur
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
-import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.ui.graphics.CompositingStrategy
+import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.TransformOrigin
-import androidx.compose.ui.graphics.drawscope.clipRect
+import androidx.compose.ui.graphics.asAndroidPath
 import androidx.compose.ui.graphics.drawscope.drawIntoCanvas
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.nativeCanvas
@@ -50,6 +49,9 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
 import androidx.core.view.WindowCompat
+import top.yukonga.miuix.kmp.squircle.addSquircleRect
+import top.yukonga.miuix.kmp.squircle.squircleClip
+import top.yukonga.miuix.kmp.squircle.squircleSurface
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlin.math.roundToInt
@@ -164,7 +166,7 @@ fun AppearanceEditorScreen(
     requestBackExit: Boolean = false,
     previewReady: Boolean = true,
     enableTransitionPreview: Boolean = APPEARANCE_EDITOR_TRANSITION_PREVIEW_ENABLED,
-    preview: @Composable (dayView: Boolean) -> Unit,
+    preview: @Composable (dayView: Boolean, glassSurfacesEnabled: Boolean) -> Unit,
 ) {
     // 状态栏图标：Dart 用 `AnnotatedRegion<SystemUiOverlayStyle>(value: light)`（`:1598-1600`），
     // 也就是「暗底 → 浅色图标」。Compose 侧等价物是窗口的 insets controller；离开本页
@@ -195,6 +197,8 @@ fun AppearanceEditorScreen(
     // 进度用 `Animatable` 而不是 `animateFloatAsState`：退场要在回调宿主之前先播完，
     // 且入场没播完就点取消时要能从当前值反向续播（`Animatable.animateTo` 自带互斥）。
     val entrance = remember { Animatable(0f) }
+    // 预览全程**恒开玻璃、不做切换**（用户拍板方案②）：不再有"过渡期关、落定开"的开关可露；
+    // 逐帧缩放的玻璃接缝靠"整像素对齐 + 卡内同色内边 + 缩放层离屏合成(Offscreen)"压住。
     // 连点退出的守门：动画期间第二下直接忽略，回调只发一次。
     var exiting by remember { mutableStateOf(false) }
     val exitScope = rememberCoroutineScope()
@@ -287,82 +291,123 @@ fun AppearanceEditorScreen(
                 topInset = topInset,
                 bottomInset = bottomInset,
             )
-            val cardShape = RoundedCornerShape(geometry.radius)
-            // ── 中间那张卡：整屏尺寸的真课表页，等比缩进落点卡 ──────────────
-            // 位置用 `absoluteOffset`（不跟随 RTL）。**内容静态**：卡片按落点尺寸布局，
-            // 里面 `AppearanceEditorPreviewStage` 用单层静态 scale 把整屏页缩进卡片。
-            // ⚠️ 入场 / 退场**绝不对含玻璃的内容做 graphicsLayer 缩放或 alpha**——那样会
-            // 每帧重采样 BackdropFilter，正是「遮罩边缘一直闪」的根因。这里只做两件
-            // 绘制期的事，不重排版、不重测玻璃子树：① 圆角柔影（`drawBehind`）；② 卡片
-            // 裁剪窗自上而下展开/收起（`drawWithContent` + `clipRect`）。
+            val landingBox = geometry.toCardBox()
+            // ── 卡片浮影（独立兄弟层，在离屏缩放层之外）────────────────────
+            // 阴影只在落定帧全显；画在**兄弟节点**（非 offscreen、不缩放）上 → 模糊边不随逐帧
+            // 缩放抖动，也不会被卡片的离屏缓冲裁掉。
             Box(
                 modifier = Modifier
                     .absoluteOffset(x = geometry.cardLeft, y = geometry.cardTop)
                     .size(width = geometry.cardWidth, height = geometry.cardHeight)
-                    .zIndex(1f)
-                    // 浮影：Dart `0x66000000 / blur 32 / spread 2`。官方 `Modifier.shadow`
-                    // 是 elevation 平台投影（大、偏下、与 BoxShadow 不等价 → 预览下方那大块
-                    // 黑影），这里改用 `drawBehind` + `BlurMaskFilter(32dp)` 画等价的柔和
-                    // 圆角阴影，外扩 2dp、黑 40%，alpha 按入场 grow 门控（落定才全显，避免
-                    // 落定帧阶跃暗闪）。
+                    .zIndex(0.9f)
                     .drawBehind {
-                        val grow = AppearanceEditorEntranceSpec.eased(entrance.value)
-                        if (grow > 0.001f) {
+                        if (entrance.value >= 0.999f) {
                             val spreadPx = 2.dp.toPx()
                             val radiusPx = geometry.radius.toPx() + spreadPx
                             val blurPx = APPEARANCE_EDITOR_CARD_SHADOW_BLUR.toPx()
-                            val alpha255 = (AppearanceEditorTransitionSpec.CARD_SHADOW_ALPHA * grow * 255f)
+                            val alpha255 = (AppearanceEditorTransitionSpec.CARD_SHADOW_ALPHA * 255f)
                                 .roundToInt().coerceIn(0, 255)
                             val paint = Paint().apply {
                                 isAntiAlias = true
                                 color = android.graphics.Color.argb(alpha255, 0, 0, 0)
                                 maskFilter = BlurMaskFilter(blurPx, BlurMaskFilter.Blur.NORMAL)
                             }
-                            drawIntoCanvas { canvas ->
-                                val r = RectF(
-                                    -spreadPx,
-                                    -spreadPx,
-                                    size.width + spreadPx,
-                                    size.height + spreadPx,
+                            // 阴影与卡片同一 squircle 轮廓：纯圆弧的 drawRoundRect 在较大的
+                            // 圆角上会和 squircle 卡边不贴（角上露出错位）。这里按 Dart 柔影的
+                            // 外扩 2dp / 半径同量放大 / 模糊 32dp 不变，只把轮廓换成连续圆角路径。
+                            val shadowPath = Path().apply {
+                                addSquircleRect(
+                                    width = size.width + spreadPx * 2f,
+                                    height = size.height + spreadPx * 2f,
+                                    cornerRadius = radiusPx,
+                                    extension = APPEARANCE_EDITOR_SQUIRCLE_EXTENSION,
                                 )
-                                canvas.nativeCanvas.drawRoundRect(r, radiusPx, radiusPx, paint)
+                            }
+                            drawIntoCanvas { canvas ->
+                                canvas.nativeCanvas.save()
+                                canvas.nativeCanvas.translate(-spreadPx, -spreadPx)
+                                canvas.nativeCanvas.drawPath(shadowPath.asAndroidPath(), paint)
+                                canvas.nativeCanvas.restore()
                             }
                         }
+                    },
+            )
+
+            // ── 中间那张卡：整屏尺寸的真课表页，等比缩进落点卡（**保住缩放**）──────
+            // 内容按落点尺寸布局、内层单层静态 scale 缩好；入场/退场靠外层 `graphicsLayer` 的
+            // 整像素对齐 scale/translation 从整屏缩进/缩出。玻璃**全程恒开、不切换**（方案②）：
+            // 无"实体↔玻璃"开关可露；逐帧放大的玻璃接缝靠 `compositingStrategy=Offscreen`——
+            // 把本层先按节点分辨率渲进离屏缓冲、再当纹理按 scale 缩放合成（栅格化与缩放解耦）。
+            Box(
+                modifier = Modifier
+                    .absoluteOffset(x = geometry.cardLeft, y = geometry.cardTop)
+                    .size(width = geometry.cardWidth, height = geometry.cardHeight)
+                    .zIndex(1f)
+                    .graphicsLayer {
+                        val frame = appearanceEditorEntranceFrame(
+                            progress = entrance.value,
+                            screenWidthDp = screenWidth.value,
+                            screenHeightDp = screenHeight.value,
+                            landing = landingBox,
+                        )
+                        // 按**整像素**对齐绘制矩形（消「非整数倍缩放」下裁边 / 内容的亚像素 AA 抖动）：
+                        // 把目标矩形四边取整到设备像素，再反推 scale / translation。
+                        val nodeLeftPx = landingBox.cardLeftDp.dp.toPx()
+                        val nodeTopPx = landingBox.cardTopDp.dp.toPx()
+                        val landingWPx = landingBox.cardWidthDp.dp.toPx()
+                        val drawnWpx = frame.cardWidthDp.dp.toPx().roundToInt().toFloat()
+                        val alignedScale = if (landingWPx > 0.5f) drawnWpx / landingWPx else 1f
+                        val drawnLeftPx = frame.cardLeftDp.dp.toPx().roundToInt().toFloat()
+                        val drawnTopPx = frame.cardTopDp.dp.toPx().roundToInt().toFloat()
+                        scaleX = alignedScale
+                        scaleY = alignedScale
+                        // 绕左上角缩放，位移补齐到整像素。
+                        transformOrigin = TransformOrigin(0f, 0f)
+                        translationX = drawnLeftPx - nodeLeftPx
+                        translationY = drawnTopPx - nodeTopPx
+                        // 关键（方案②）：本层离屏合成——玻璃按固定（节点）分辨率栅格化后整体按
+                        // scale 缩放，帧间只缩放纹理、玻璃/接缝不逐帧重采样。
+                        compositingStrategy = CompositingStrategy.Offscreen
                     }
-                    // 入场/退场：**只裁窗不缩内容**——按 grow 高度裁出「自上而下展开」的窗口。
-                    // 绘制期读 `entrance.value`，不触发重组、不改布局，玻璃只录一次。
-                    .drawWithContent {
-                        val reveal = AppearanceEditorEntranceSpec.eased(entrance.value)
-                        clipRect(
-                            left = 0f,
-                            top = 0f,
-                            right = size.width,
-                            bottom = size.height * reveal,
-                        ) {
-                            this@drawWithContent.drawContent()
-                        }
-                    }
-                    .clip(cardShape)
+                    // 卡片外形改用 miuix-squircle（连续曲率圆角），替代
+                    // `clip(RoundedCornerShape) + background`：填充与裁剪同一条轮廓、一体完成。
+                    // cornerRadius 用静态布局值（不随 entrance 动画变），shader 输出可缓存。
                     // 预览图出来之前那块底：与整页暗底同色，避免先白一下（Dart 卡片
                     // 在没图时是 `SizedBox.expand()`，透出来的是暗底，`:1815-1817`）。
-                    .background(AppearanceEditorScrim),
+                    .squircleSurface(
+                        color = AppearanceEditorScrim,
+                        cornerRadius = geometry.radius,
+                        extension = APPEARANCE_EDITOR_SQUIRCLE_EXTENSION,
+                    ),
             ) {
-                // 缩尺首页 + 可选的真实转场重放（见 AppearanceEditorPreviewStage）：
-                // 整屏 1:1 排版、绘制层缩放、吞掉所有输入都在那个文件里。
-                //
-                // 演示只在**加载罩撤掉之后**跑：罩子盖着时重放没有意义，而且会与
-                // 遮罩层的淡出重叠。
-                AppearanceEditorPreviewStage(
-                    dayView = dayView,
-                    scale = geometry.scale,
-                    screenWidth = screenWidth,
-                    screenHeight = screenHeight,
-                    topInset = topInset,
-                    bottomInset = bottomInset,
-                    replayTransition = enableTransitionPreview && !coverMounted,
-                    modifier = Modifier.fillMaxSize(),
-                    preview = preview,
-                )
+                // 缩尺首页 + 可选的真实转场重放（见 AppearanceEditorPreviewStage）。
+                // 卡内留 1.5dp `AppearanceEditorScrim` 内边：让最外层随缩放抖动的粗边是「scrim vs 页面 scrim」
+                // 同色不可见，把壁纸的高对比边收进去，减轻「边缘有线在闪」。
+                // 内层也按 squircle 裁到 `圆角 - 1.5dp`：否则 1.5dp 是矩形内缩，
+                // 四角会露出「方形内角 vs 圆弧外角」不重合的深色楔形/月牙。
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(1.5.dp)
+                        .squircleClip(
+                            cornerRadius = (geometry.radius - 1.5.dp).coerceAtLeast(0.dp),
+                            extension = APPEARANCE_EDITOR_SQUIRCLE_EXTENSION,
+                        ),
+                ) {
+                    AppearanceEditorPreviewStage(
+                        dayView = dayView,
+                        scale = geometry.scale,
+                        screenWidth = screenWidth,
+                        screenHeight = screenHeight,
+                        topInset = topInset,
+                        bottomInset = bottomInset,
+                        replayTransition = enableTransitionPreview && !coverMounted,
+                        modifier = Modifier.fillMaxSize(),
+                        preview = preview,
+                        // 方案②：玻璃全程恒开、不切换（无实体↔玻璃开关可露）。
+                        glassSurfacesEnabled = true,
+                    )
+                }
             }
 
             // ── 上下 chrome：位置固定，弹层打开期间不动 ─────────────────
@@ -559,6 +604,18 @@ internal val APPEARANCE_EDITOR_CARD_SHADOW_BLUR: Dp =
 /** 卡片相对可用宽度的上限比例：Dart `_cardMaxWidthFactor = 0.86`（`:109-114`）。 */
 internal const val APPEARANCE_EDITOR_CARD_MAX_WIDTH_FACTOR =
     AppearanceEditorCardGeometrySpec.CARD_MAX_WIDTH_FACTOR
+
+/**
+ * 预览卡连续圆角（squircle）的曲率延伸倍数。
+ *
+ * 半径仍**严格对齐 Flutter 发布版**（`cardRadius = min(displayCornerRadiusDp * scale, cardHeight/2)`，
+ * 见 [appearanceEditorCardBox]）；这里只调「角部曲线怎么转折」——`extension` 越大，直线与弧之间的
+ * 曲率过渡区越宽、越连续圆润。miuix 默认 1.1（标准 squircle）；`1.0` 等同标准圆弧。
+ *
+ * 用户要「明显更圆润」的 Capsule 式连续圆角，故取 1.4（在 1.2–1.5 区间；真机若仍嫌不够再往 1.5 抬）。
+ * 卡片填充/裁剪、内层 1.5dp 内边、阴影路径三处必须用**同一个值**，形状才重合。
+ */
+internal const val APPEARANCE_EDITOR_SQUIRCLE_EXTENSION = 1.4f
 
 /**
  * 卡片的落点几何（单位都是 dp / 无单位缩放比）。
