@@ -145,6 +145,43 @@ class TimetableStoreTest {
     }
 
     @Test
+    fun itemLevelDropArchivesQuarantinedItemsToUnparsedKey() {
+        // Dart 侧把条目级坏数据留档到滚动 key `timetable_profiles_unparsed_items`
+        // （storage_service.dart:1127,1136-1150）。Compose 侧过去只把 quarantinedItems
+        // 放内存、不落盘，release 包下条目级丢课没有任何可找回痕迹。
+        // 本条**直接断言该 key 被写入**（不走 find.byType / 内存字段这种间接判据）。
+        val payload = """
+            [{"id":"p1","name":"课表-p1","currentWeek":3,"courses":[
+              {"id":"c1","name":"数学","teacher":"张老师","location":"A101",
+               "dayOfWeek":1,"startSection":1,"endSection":2,
+               "startTime":"08:00","endTime":"09:40"},
+              "garbage-course-entry"
+            ]}]
+        """.trimIndent()
+        val (raw, store) = newStore(mapOf("timetable_profiles" to payload))
+
+        store.loadProfiles()
+
+        val archived = raw.getString("timetable_profiles_unparsed_items")
+        assertNotNull("条目级坏数据必须落盘到 timetable_profiles_unparsed_items", archived)
+        val json = MiniJson.parse(archived!!) as Map<*, *>
+        // 与 Dart payload 同 schema：{archivedAt, count, items}。
+        assertEquals(1, (json["count"] as Number).toInt())
+        val items = json["items"] as List<*>
+        assertEquals(1, items.size)
+        assertTrue(
+            "留档要保留原始坏条目文本",
+            (items.single() as String).contains("garbage-course-entry"),
+        )
+        assertTrue(
+            "archivedAt 必须是非空字符串",
+            (json["archivedAt"] as? String)?.isNotEmpty() == true,
+        )
+        // 条目级损坏「不写回」：原 key 仍在。
+        assertTrue(raw.contains("timetable_profiles"))
+    }
+
+    @Test
     fun repeatedCorruptionKeepsOnlyNewestBackup() {
         val raw = InMemoryKeyValueStore()
         var micros = 100L

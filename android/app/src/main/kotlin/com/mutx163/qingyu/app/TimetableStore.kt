@@ -7,6 +7,7 @@ import com.mutx163.qingyu.core.TimeScheme
 import com.mutx163.qingyu.core.TimetableProfile
 import com.mutx163.qingyu.core.TimetableSettings
 import java.io.IOException
+import java.time.LocalDateTime
 
 /**
  * 课表相关 key 的**领域存储**（纯 Kotlin，无 Android 依赖）。
@@ -27,6 +28,7 @@ import java.io.IOException
  * | `schedule_date_rules` | String(JSON) | 作息日期规则数组 |
  * | `location_time_groups` | String(JSON) | 地点作息分组数组 |
  * | `teacher_records` / `location_records` | **List<String>** | 教师/地点历史（走 [FrozenValueCodec]） |
+ * | `timetable_profiles_unparsed_items` | String(JSON) | 条目级坏数据滚动留档 `{archivedAt, count, items}` |
  *
  * `flutter.` 前缀由 [KeyValueStore] 的实现负责，本层永远只说**契约 key**。
  *
@@ -107,12 +109,42 @@ class TimetableStore(
                 corruptBackupKey = archiveCorrupt(KEY_PROFILES),
             )
         }
+        // 坏条目一律先留档再返回（Dart storage_service.dart:1102-1103 同口径）：
+        // 只要还有可用档案、且确有条目被丢弃，就把原始条目写进滚动 key。
+        // 与 Dart 一致地**不写回**清洗结果——写回等于把「解析器读不懂」变成永久删除。
+        if (parsed.didDrop && parsed.profiles.isNotEmpty()) {
+            archiveUnparsedProfileItems(parsed.quarantinedItems)
+        }
         return ProfilesLoadResult(
             profiles = parsed.profiles,
             didDrop = parsed.didDrop,
             itemLevelOnlyDrop = parsed.hasItemLevelOnlyDrops,
             quarantinedItems = parsed.quarantinedItems,
         )
+    }
+
+    /**
+     * 把条目级坏数据留档到**单个滚动 key** `timetable_profiles_unparsed_items`
+     * （Dart `_archiveUnparsedProfileItems`，storage_service.dart:1136-1150 同口径）。
+     *
+     * 覆盖写、不按次追加 `*_corrupt_backup_<ts>`：条目级损坏每次冷启动都会重现，
+     * 追加会把留档本身长成新的存储问题。留档写失败不阻断读取——坏条目已进不了
+     * 内存视图，这里只是尽力保留找回的可能（与 Dart 的 try/catch 同口径）。
+     */
+    private fun archiveUnparsedProfileItems(items: List<String>) {
+        if (items.isEmpty()) return
+        try {
+            val payload = MiniJson.encode(
+                linkedMapOf<String, Any>(
+                    "archivedAt" to LocalDateTime.now().toString(),
+                    "count" to items.size,
+                    "items" to items,
+                ),
+            )
+            store.putString(KEY_PROFILES_UNPARSED_ITEMS, payload)
+        } catch (error: Exception) {
+            error.printStackTrace()
+        }
     }
 
     /** 写全量档案数组并盖 schema 版本章（Dart `_writeProfilesWithoutLock:1216-1226`）。 */
@@ -510,6 +542,9 @@ class TimetableStore(
         const val KEY_LOCATION_TIME_GROUPS = "location_time_groups"
         const val KEY_TEACHER_RECORDS = "teacher_records"
         const val KEY_LOCATION_RECORDS = "location_records"
+
+        /** 条目级坏数据滚动留档 key（Dart `_unparsedProfileItemsKey`，storage_service.dart:1127）。 */
+        const val KEY_PROFILES_UNPARSED_ITEMS = "timetable_profiles_unparsed_items"
 
         /** 当前 profiles 存储布局版本（数据契约 §2.1：v1 = 单 key 全量数组）。 */
         const val PROFILES_SCHEMA_VERSION = 1
