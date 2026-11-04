@@ -304,6 +304,37 @@ copy_style 超宽债 203 → **191 条**。已清 4 键 × 三语（en/ja/ko）�
 - **UNCOVERED=2（两个 HEAD 上守卫都是红的）**：`main/kotlin/com/mutx163/qingyu/pages/timetable/TimetableGridMetrics.kt:57` 两处 `String.format("%02d:00"/"%02d:45")` 未传 Locale。根因是 **`pages/timetable/` 白名单条目已在 HEAD 删除、但修复代码还没提交**（工作树版本 61-62 行已改 `Locale.ROOT`，属课表线 5 个未提交文件之一）。**这就是「先删登记后修代码」的典型口径差**：工作树看着绿，HEAD 是红的。
 - **处置**：不跑门（跑了门 2 必红）；等课表线 5 文件落库后，对新 HEAD 复算应归零（预期 TOTAL 48 / COVERED 48 / UNCOVERED 0 / ENTRIES 16），再跑门 1 → 门 2。
 - **过程事故（留痕）**：`9dd376d2` 的 stat 里出现本日志 18 行改动——原因是协调线 `git add` 后提交时撞上他线 `index.lock`，日志已暂存；他线随后 `commit` 把它一并带入。**内容无误、已复核**。**规矩**：并发共享工作区里，`git add` 与 `commit` 要挨着做；等待锁后重试前先看 `status`，避免把别人暂存内容夹带进提交。
+- **`f52fa36f` 复算（2026-11-04 08:05，干净 worktree 实扫）**：**47 / 47 / 0 / 16**，算术对得上（TOTAL=COVERED=47）。比 `d53b8ae6` 的 48 少 1 个**覆盖站点**——他线清掉了一处豁免站点，**债务只降不增，符合守卫纪律**；ENTRIES 仍 16。方法：`git worktree add --detach` 到干净树后跑 `recount_locale.py`（同口径：两种写法 + 注释屏蔽 + 顶层切参 + 白名单前缀现读 Kotlin；脚本落在 workspace 根，不在仓内），**避免脏主树 16 个在途文件污染口径**。
+
+### 冻结后交接三段（草稿，待 Lead 冻结信号后一次成型填数）
+
+**① 门禁表最终三块（必须同 HEAD）**
+
+| 块 | HEAD | 结果 | 起止 / 耗时 | 来源 |
+|---|---|---|---|---|
+| 门 1 `:app:compileDevDebugKotlin` | `<冻结 HEAD>` | 待填 | 待填 | A 线只读 worktree 实测 |
+| 门 2 `:app:testDevDebugUnitTest` | `<冻结 HEAD>` | 待填（tests / suites / failed） | 待填 | A 线同一 worktree 实测 |
+| 门 3 style lint + 门 4 copy_style / cjk | `<冻结 HEAD>` | 待填 | 待填 | **同步线 lint 结果，A 线不重复跑** |
+
+**② 白名单三元组**
+
+`TOTAL=<n> / COVERED=<n> / UNCOVERED=0 / ENTRIES=<n> @ HEAD <冻结 HEAD> @ 2026-11-04 <HH:mm>`
+
+- 口径：`TOTAL` = 未传 `Locale` 的调用点（违规总数）；`COVERED` = 命中白名单前缀的站点；`ENTRIES` = `WhitelistEntry` 条数（可因拆分而变）。
+- 必检算术：`COVERED == TOTAL` 且 `UNCOVERED == 0`；数字对不上（如「4 例差额」类）当场复算，不许只抄上一行。
+- 参考基线（非冻结）：`47 / 47 / 0 / 16 @ f52fa36f`（08:05）。
+- 复算命令：`& .tools\python313\tools\python.exe recount_locale.py <干净 worktree>`。
+
+**③ 五线状态 + 「需 Lead」清单**
+
+- 五线状态：沿用上面「当前五线状态」表，冻结时把「最后提交」一列换成冻结前最后一笔，不再逐线重述。
+- **需 Lead 清单**：①`canMerge` 有意降级（快照恒全量，不摆合并按钮）；②`classReminders` Phase 2/3 未开工；③`platform/` 端口搬出（`d68e2b88` 只做了一部分）；④`maybePullRemote` 未接线（四缺口，需壳文件授权约 10 行）；⑤ARB 越界已**追认**（仅 `webdavPasswordReentryBody`，归属同步线，见 10.13）。
+
+**④ 交接区（明早接手第一件事）**
+
+- **未完成项**：上面三个块填数；`classReminders` Phase 2/3；`platform/` 端口续搬；`maybePullRemote` 接线。
+- **卡点**：HEAD 每 20–30 分钟落 3–5 条，**任何门禁结论 30 分钟内可能作废** → 只能「冻结后一次成型」。
+- **明早第一件事**：`git ls-remote` 核对远端 = 本地 → 取冻结 HEAD 建只读 worktree（复制 `local.properties` / `gradle.properties` / `.dart_tool`）→ 门 1 → 门 2 → 汇总同步线门 3/门 4 → 复算白名单三元组 → 回填本表 → 清理 worktree（`prune` + `robocopy` 空目录 `/MIR` + `Remove-Item`）。
 
 ---
 
