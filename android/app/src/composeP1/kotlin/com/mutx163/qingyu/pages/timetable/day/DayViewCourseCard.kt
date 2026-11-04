@@ -21,17 +21,21 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.mutx163.qingyu.components.QingyuWeightDelta
 import com.mutx163.qingyu.pages.settings.HomeMaterialRenderSpec
+import com.mutx163.qingyu.pages.timetable.LocalCourseFlightMeasure
 import com.mutx163.qingyu.theme.QingyuTheme
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.Text
@@ -78,6 +82,11 @@ fun DayViewCourseCard(
      * 非空且生效档为液态时才真采样，否则退回卡色填充（见 [dayAgendaSurface]）。
      */
     glassBackdrop: Backdrop? = null,
+    /**
+     * 首页展开飞行用的卡片键（`courseFlightCardKey(...)`）。非空且宿主在展开态时，
+     * 本卡登记卡面 / 每行文字，并在飞行期间不绘制（由 `TimetableCourseFlightLayer` 替画）。
+     */
+    flightCardKey: String? = null,
     modifier: Modifier = Modifier,
 ) {
     val dark = isSystemInDarkTheme()
@@ -98,6 +107,36 @@ fun DayViewCourseCard(
         Modifier
     }
 
+    // ── 首页展开飞行登记（2026-11-03，阶段 B）──
+    // 与周网格课卡同一套登记：卡面 + 每行文字；飞行期间本卡不画，由飞行层替画。
+    // 这里**不做逐帧读进度**，判据是布尔，保证日视图卡片的恒定图层缓存不被击穿。
+    val flightHost = LocalCourseFlightMeasure.current
+    val flightKey = flightCardKey?.takeIf { flightHost != null }
+    fun flightAnchor(
+        lineId: String,
+        text: String,
+        fontSizeSp: Float,
+        weight: FontWeight,
+        anchorInk: Color,
+        maxLines: Int = 1,
+        lineHeightSp: Float = 0f,
+    ): Modifier = if (flightHost != null && flightKey != null) {
+        flightHost.dayTextModifier(flightKey, lineId, text, fontSizeSp, weight, anchorInk, maxLines, lineHeightSp)
+    } else {
+        Modifier
+    }
+    // P-4：本卡离开组合（换日/换周后议程项回收）时移除它的日侧登记，避免日侧无限增长。
+    DisposableEffect(flightKey) {
+        onDispose {
+            val host = flightHost
+            val key = flightKey
+            if (host != null && key != null) host.removeDay(key)
+        }
+    }
+    val nameFontSize = MiuixTheme.textStyles.main.fontSize.value
+    val infoFontSize = MiuixTheme.textStyles.footnote1.fontSize.value
+    val chipFontSize = MiuixTheme.textStyles.footnote2.fontSize.value
+
     Box(
         modifier = modifier
             .fillMaxWidth()
@@ -108,7 +147,20 @@ fun DayViewCourseCard(
                 fill = cardColor,
             )
             .then(borderModifier)
-            .then(if (onTap != null) Modifier.clickable(onClick = onTap) else Modifier),
+            .then(if (onTap != null) Modifier.clickable(onClick = onTap) else Modifier)
+            .then(
+                if (flightHost != null && flightKey != null) {
+                    flightHost.daySurfaceModifier(flightKey, cardColor)
+                } else {
+                    Modifier
+                },
+            )
+            .drawWithContent {
+                if (flightHost != null && flightKey != null && flightHost.isFlying(flightKey)) {
+                    return@drawWithContent
+                }
+                drawContent()
+            },
     ) {
         // 进行中状态 600ms 动态进度背景填充
         if (progress != null) {
@@ -157,10 +209,18 @@ fun DayViewCourseCard(
                                 tint = ink,
                             )
                             Spacer(modifier = Modifier.width(4.dp))
+                            val timeLabel = "${entry.course.startTime} - ${entry.course.endTime}"
                             Text(
-                                text = "${entry.course.startTime} - ${entry.course.endTime}",
+                                text = timeLabel,
                                 style = MiuixTheme.textStyles.footnote2,
                                 color = ink,
+                                modifier = flightAnchor(
+                                    "time",
+                                    timeLabel,
+                                    chipFontSize,
+                                    FontWeight.Normal,
+                                    ink,
+                                ),
                             )
                         }
                     }
@@ -264,6 +324,15 @@ fun DayViewCourseCard(
                 maxLines = 2,
                 overflow = TextOverflow.Ellipsis,
                 lineHeight = 22.sp,
+                modifier = flightAnchor(
+                    "name",
+                    entry.course.name,
+                    nameFontSize,
+                    MiuixTheme.textStyles.main.fontWeight ?: FontWeight.Normal,
+                    ink,
+                    maxLines = 2,
+                    lineHeightSp = 22f,
+                ),
             )
 
             Spacer(modifier = Modifier.height(8.dp))
@@ -271,19 +340,35 @@ fun DayViewCourseCard(
             // 教师与节次
             val teacher = entry.course.teacher.trim().ifEmpty { DayViewStrings.unknownTeacher.zh }
             val section = DayViewStrings.sectionRangeLabel(entry.course.startSection, entry.course.endSection)
+            val teacherLabel = "${DayViewStrings.teacherPrefix(teacher)} · $section"
             DayAgendaInfoRow(
                 icon = MiuixIcons.ContactsCircle,
-                text = "${DayViewStrings.teacherPrefix(teacher)} · $section",
+                text = teacherLabel,
                 ink = ink,
+                textModifier = flightAnchor(
+                    "teacher",
+                    teacherLabel,
+                    infoFontSize,
+                    FontWeight.Normal,
+                    ink.copy(alpha = 0.85f),
+                ),
             )
 
             // 地点
             val location = entry.course.location.trim().ifEmpty { DayViewStrings.unknownLocation.zh }
+            val locationLabel = DayViewStrings.locationPrefix(location)
             Spacer(modifier = Modifier.height(4.dp))
             DayAgendaInfoRow(
                 icon = MiuixIcons.Location,
-                text = DayViewStrings.locationPrefix(location),
+                text = locationLabel,
                 ink = ink,
+                textModifier = flightAnchor(
+                    "location",
+                    locationLabel,
+                    infoFontSize,
+                    FontWeight.Normal,
+                    ink.copy(alpha = 0.85f),
+                ),
             )
 
             // 天气
@@ -293,6 +378,13 @@ fun DayViewCourseCard(
                     icon = MiuixIcons.Background,
                     text = weatherInfo,
                     ink = ink,
+                    textModifier = flightAnchor(
+                        "weather",
+                        weatherInfo,
+                        infoFontSize,
+                        FontWeight.Normal,
+                        ink.copy(alpha = 0.85f),
+                    ),
                 )
             }
 
@@ -304,6 +396,13 @@ fun DayViewCourseCard(
                     icon = MiuixIcons.Notes,
                     text = sessionNote,
                     ink = ink,
+                    textModifier = flightAnchor(
+                        "note",
+                        sessionNote,
+                        infoFontSize,
+                        FontWeight.Normal,
+                        ink.copy(alpha = 0.85f),
+                    ),
                 )
             }
         }

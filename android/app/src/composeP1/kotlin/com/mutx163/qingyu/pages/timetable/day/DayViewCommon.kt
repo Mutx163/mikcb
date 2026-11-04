@@ -240,6 +240,7 @@ fun DayAgendaInfoRow(
     text: String,
     ink: Color,
     modifier: Modifier = Modifier,
+    textModifier: Modifier = Modifier,
 ) {
     Row(
         modifier = modifier,
@@ -258,6 +259,7 @@ fun DayAgendaInfoRow(
             color = ink.copy(alpha = 0.85f),
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
+            modifier = textModifier,
         )
     }
 }

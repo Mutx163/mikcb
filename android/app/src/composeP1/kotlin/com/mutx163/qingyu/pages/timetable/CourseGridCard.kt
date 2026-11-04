@@ -17,13 +17,16 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
@@ -157,6 +160,12 @@ fun CourseGridCard(
      * `course_surface.dart:197-208` 同一条性能口径）。
      */
     glassBackdrop: Backdrop? = null,
+    /**
+     * 首页展开飞行用的卡片键（`courseFlightCardKey(...)`）。非空且宿主在展开态时，
+     * 本卡登记**卡面四边 + 每行文字锚点**，并在飞行期间「只登记、不绘制」——
+     * 飞行层替它画（见 [TimetableCourseFlightLayer]）。null = 独立周视图页，不参与飞行。
+     */
+    flightCardKey: String? = null,
 ) {
     val course = model.course
     val dark = isSystemInDarkTheme()
@@ -211,6 +220,34 @@ fun CourseGridCard(
         WeekCardMetrics.INNER_VERTICAL_COMPACT_DP
     } else {
         WeekCardMetrics.INNER_VERTICAL_REGULAR_DP
+    }
+
+    // ── 首页展开飞行登记（2026-11-03，阶段 B）──
+    // 只在首页展开态存在宿主；卡片本身照常按设置排版，这里只是把「卡面 + 每行文字」
+    // 的实测坐标登记出去。飞行期间本卡不画（由 `TimetableCourseFlightLayer` 替它画），
+    // 判据是一个布尔而非逐帧进度，不会让恒定图层缓存（2026-11-03 卡顿修复）失效。
+    val flightHost = LocalCourseFlightMeasure.current
+    val flightKey = flightCardKey?.takeIf { flightHost != null }
+    fun flightAnchor(
+        lineId: String,
+        text: String,
+        fontSizeSp: Float,
+        weight: FontWeight,
+        anchorInk: Color,
+        maxLines: Int = 1,
+        lineHeightSp: Float = 0f,
+    ): Modifier = if (flightHost != null && flightKey != null) {
+        flightHost.weekTextModifier(flightKey, lineId, text, fontSizeSp, weight, anchorInk, maxLines, lineHeightSp)
+    } else {
+        Modifier
+    }
+    // P-4：本卡离开组合（滚出 pager 邻居页 / 跨周回收）时移除它的周侧登记，避免跨周翻页无限增长。
+    DisposableEffect(flightKey) {
+        onDispose {
+            val host = flightHost
+            val key = flightKey
+            if (host != null && key != null) host.removeWeek(key)
+        }
     }
 
     // Dart 的压淡：停课 0.4、假期 0.3（`CourseCard.build` 顶部的 Opacity 分支）。
@@ -284,7 +321,20 @@ fun CourseGridCard(
             .clip(shape)
             .then(surfaceModifier)
             .then(borderModifier)
-            .clickable(onClick = onClick),
+            .clickable(onClick = onClick)
+            .then(
+                if (flightHost != null && flightKey != null) {
+                    flightHost.weekSurfaceModifier(flightKey, fill)
+                } else {
+                    Modifier
+                },
+            )
+            .drawWithContent {
+                if (flightHost != null && flightKey != null && flightHost.isFlying(flightKey)) {
+                    return@drawWithContent
+                }
+                drawContent()
+            },
     ) {
         Column(
             modifier = Modifier
@@ -326,6 +376,13 @@ fun CourseGridCard(
                     textAlign = textAlign,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
+                    modifier = flightAnchor(
+                        "overline",
+                        overline,
+                        overlineFontSize,
+                        FontWeight.Normal,
+                        detailInk,
+                    ),
                 )
                 Spacer(modifier = Modifier.height(WeekCardMetrics.LINE_GAP_DP.dp))
             }
@@ -334,64 +391,130 @@ fun CourseGridCard(
 
             if (style.showName) {
                 hasAnyField = true
+                val nameMaxLines = if (span >= 3) 4 else if (span >= 2) 3 else 2
                 Text(
                     text = course.name,
                     style = MiuixTheme.textStyles.footnote2.shiftWeight(QingyuWeightDelta.BOLD),
                     fontSize = titleFontSize.sp,
                     color = ink,
                     textAlign = textAlign,
-                    maxLines = if (span >= 3) 4 else if (span >= 2) 3 else 2,
+                    maxLines = nameMaxLines,
                     overflow = TextOverflow.Ellipsis,
+                    modifier = flightAnchor(
+                        "name",
+                        course.name,
+                        titleFontSize,
+                        FontWeight.Bold,
+                        ink,
+                        maxLines = nameMaxLines,
+                    ),
                 )
             }
             if (style.showTeacher && course.teacher.isNotBlank()) {
                 hasAnyField = true
-                CardDetailLine(course.teacher.trim(), detailFontSize, detailInk, textAlign)
+                CardDetailLine(
+                    text = course.teacher.trim(),
+                    fontSize = detailFontSize,
+                    color = detailInk,
+                    textAlign = textAlign,
+                    modifier = flightAnchor(
+                        "teacher",
+                        course.teacher.trim(),
+                        detailFontSize,
+                        FontWeight.Normal,
+                        detailInk,
+                    ),
+                )
             }
             if (style.showLocation && course.location.isNotBlank()) {
                 hasAnyField = true
-                CardDetailLine(course.location.trim(), detailFontSize, detailInk, textAlign)
+                CardDetailLine(
+                    text = course.location.trim(),
+                    fontSize = detailFontSize,
+                    color = detailInk,
+                    textAlign = textAlign,
+                    modifier = flightAnchor(
+                        "location",
+                        course.location.trim(),
+                        detailFontSize,
+                        FontWeight.Normal,
+                        detailInk,
+                    ),
+                )
             }
             if (style.showTime) {
                 hasAnyField = true
+                val startLabel = if (style.showTimeLabels) {
+                    TimetableStrings.formatClassStartsAt(course.startTime)
+                } else {
+                    course.startTime
+                }
                 CardDetailLine(
-                    text = if (style.showTimeLabels) {
-                        TimetableStrings.formatClassStartsAt(course.startTime)
-                    } else {
-                        course.startTime
-                    },
+                    text = startLabel,
                     fontSize = detailFontSize,
                     color = detailInk,
                     textAlign = textAlign,
+                    modifier = flightAnchor(
+                        "time",
+                        startLabel,
+                        detailFontSize,
+                        FontWeight.Normal,
+                        detailInk,
+                    ),
                 )
+                val endLabel = if (style.showTimeLabels) {
+                    TimetableStrings.formatClassEndsAt(course.endTime)
+                } else {
+                    course.endTime
+                }
                 CardDetailLine(
-                    text = if (style.showTimeLabels) {
-                        TimetableStrings.formatClassEndsAt(course.endTime)
-                    } else {
-                        course.endTime
-                    },
+                    text = endLabel,
                     fontSize = detailFontSize,
                     color = detailInk,
                     textAlign = textAlign,
+                    modifier = flightAnchor(
+                        "timeEnd",
+                        endLabel,
+                        detailFontSize,
+                        FontWeight.Normal,
+                        detailInk,
+                    ),
                 )
             }
             if (style.showWeeks) {
                 hasAnyField = true
+                val weeksLabel = TimetableStrings.formatCourseWeekDescription(course)
                 CardDetailLine(
-                    text = TimetableStrings.formatCourseWeekDescription(course),
+                    text = weeksLabel,
                     fontSize = detailFontSize,
                     color = detailInk,
                     textAlign = textAlign,
+                    modifier = flightAnchor(
+                        "weeks",
+                        weeksLabel,
+                        detailFontSize,
+                        FontWeight.Normal,
+                        detailInk,
+                    ),
                 )
             }
             if (style.showDescription && !course.description.isNullOrBlank()) {
                 hasAnyField = true
+                val descriptionLabel = course.description!!.trim()
                 CardDetailLine(
-                    text = course.description!!.trim(),
+                    text = descriptionLabel,
                     fontSize = detailFontSize,
                     color = detailInk,
                     textAlign = textAlign,
                     maxLines = 2,
+                    modifier = flightAnchor(
+                        "description",
+                        descriptionLabel,
+                        detailFontSize,
+                        FontWeight.Normal,
+                        detailInk,
+                        maxLines = 2,
+                    ),
                 )
             }
             // ── 天气一行（Dart `weather:` → `CourseWeatherDisplay`；受
@@ -399,7 +522,19 @@ fun CourseGridCard(
             val weatherText = model.weatherText
             if (weatherText != null) {
                 hasAnyField = true
-                CardDetailLine(weatherText, detailFontSize, detailInk, textAlign)
+                CardDetailLine(
+                    text = weatherText,
+                    fontSize = detailFontSize,
+                    color = detailInk,
+                    textAlign = textAlign,
+                    modifier = flightAnchor(
+                        "weather",
+                        weatherText,
+                        detailFontSize,
+                        FontWeight.Normal,
+                        detailInk,
+                    ),
+                )
             }
             // Dart 的兜底：七个字段全关也必须有课名，否则卡上只剩留白。
             if (!hasAnyField) {
@@ -411,6 +546,13 @@ fun CourseGridCard(
                     textAlign = textAlign,
                     maxLines = 2,
                     overflow = TextOverflow.Ellipsis,
+                    modifier = flightAnchor(
+                        "name",
+                        course.name,
+                        titleFontSize,
+                        FontWeight.Bold,
+                        ink,
+                    ),
                 )
             }
         }
@@ -503,6 +645,7 @@ private fun CardDetailLine(
     color: Color,
     textAlign: TextAlign,
     maxLines: Int = 1,
+    modifier: Modifier = Modifier,
 ) {
     Spacer(modifier = Modifier.height(WeekCardMetrics.LINE_GAP_DP.dp))
     Text(
@@ -513,6 +656,7 @@ private fun CardDetailLine(
         textAlign = textAlign,
         maxLines = maxLines,
         overflow = TextOverflow.Ellipsis,
+        modifier = modifier,
     )
 }
 

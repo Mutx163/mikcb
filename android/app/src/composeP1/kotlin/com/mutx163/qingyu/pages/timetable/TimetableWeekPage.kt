@@ -30,6 +30,7 @@ import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
@@ -355,6 +356,18 @@ fun TimetableWeekPage(
     // 注意与 `dayVisible` 的分工：dayMounted 决定「组合/测量」，dayVisible 决定
     // 「绘制与命中」——隐藏时树还在，但不画、不接事件（见下方展开层的 inert 门控）。
     val dayMounted = dayVisible || dayLayerReady
+
+    // ── 课程卡逐卡飞行登记处（阶段 B，2026-11-04）────────────────────────
+    // active 严格 0 < v < 1：展开与收起**双向**都为真，但起点(v=0)/落定(v=1)两帧为假——
+    // 落定那一帧把「两端都在的真卡」交回来（否则日视图卡被藏死变空白）。
+    val flightHost = remember {
+        CourseFlightMeasureHost(
+            active = { dayVisible && dayExpand.value > 0f && dayExpand.value < 1f },
+        )
+    }
+    DisposableEffect(flightHost) {
+        onDispose { flightHost.clear() }
+    }
     LaunchedEffect(dayMode) {
         val expandTarget = if (dayMode) 1f else 0f
         if (dayExpandReducedMotion) {
@@ -685,6 +698,9 @@ fun TimetableWeekPage(
                     // 换成「内容区局部坐标」。布局稳定，动画期间不会重测。
                     .onGloballyPositioned { flightContentOrigin = it.positionInRoot() },
             ) {
+                // 课程卡飞行的两端登记只在首页展开态存在：provider 包住周网格(pager) +
+                // 日视图(dayContent) + 摘要层，让两张卡都读到同一个 flightHost。
+                CompositionLocalProvider(LocalCourseFlightMeasure provides flightHost) {
                 HorizontalPager(
                     state = pagerState,
                     modifier = Modifier
@@ -718,6 +734,8 @@ fun TimetableWeekPage(
                         onLongPressEmptySlot = onLongPressEmptySlot,
                         material = material,
                         cardGlassBackdrop = cardGlassSource,
+                        // P0-3：pager 里第 page 页 = 第 page+1 周，传给网格做飞行卡键。
+                        flightWeek = page + 1,
                         // 时间列压在壁纸的正文带上：同一档亮度决定字色。
                         wallpaperLuminance = wallpaperBands?.body,
                         // ── 内容层缓存（2026-11-03 卡顿修复）──
@@ -921,6 +939,26 @@ fun TimetableWeekPage(
                         )
                     }
                 }
+
+                // ── 课程卡逐卡飞行层（阶段 B，v2：四元配对 / 两端必读 / 双射可逆）──
+                // cardKeys 只取「选中日的 + 周侧也量到」的键：startsWith 限定当日，
+                // weekSurfaces.containsKey 保证两端都在——绝不单端兜底成摘要，也不按 course.id 粗配。
+                val courseOrigin = flightContentOrigin
+                if (courseOrigin != null) {
+                    TimetableCourseFlightLayer(
+                        progress = { dayExpand.value },
+                        host = flightHost,
+                        cardKeys = flightHost.daySurfaces.keys.filter { key ->
+                            key.startsWith("$selectedWeek|$selectedDayOfWeek|") &&
+                                flightHost.weekSurfaces.containsKey(key)
+                        },
+                        origin = courseOrigin,
+                        material = materialSpec,
+                        glassBackdrop = cardGlassSource,
+                        modifier = Modifier.matchParentSize(),
+                    )
+                }
+                }
             }
         }
 
@@ -1013,6 +1051,8 @@ private fun WeekPageContent(
     cardGlassBackdrop: Backdrop? = null,
     /** 时间列那档壁纸亮度；null = 没壁纸（保持设置里的字色）。 */
     wallpaperLuminance: Double? = null,
+    /** 首页展开飞行用：本网格是第几周（`courseFlightCardKey` 第一段）。null = 独立周视图，不登记。 */
+    flightWeek: Int? = null,
     /** 内容层外壳（缓存图层挂在这里，见 pager 调用处的说明）。 */
     modifier: Modifier = Modifier,
 ) {
@@ -1085,6 +1125,8 @@ private fun WeekPageContent(
                     modifier = Modifier.weight(1f),
                     material = material,
                     cardGlassBackdrop = cardGlassBackdrop,
+                    // P0-3：周网格卡的飞行键用真实周次，与日视图 viewedWeek 配对。
+                    flightWeek = flightWeek,
                 )
             }
         }

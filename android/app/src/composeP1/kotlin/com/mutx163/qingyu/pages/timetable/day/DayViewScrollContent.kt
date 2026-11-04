@@ -21,6 +21,7 @@ import androidx.compose.ui.unit.dp
 import com.mutx163.qingyu.core.Course
 import com.mutx163.qingyu.core.CourseTask
 import com.mutx163.qingyu.pages.settings.HomeMaterialRenderSpec
+import com.mutx163.qingyu.pages.timetable.courseFlightCardKey
 import top.yukonga.miuix.kmp.blur.Backdrop
 
 /**
@@ -180,6 +181,11 @@ fun DayViewScrollContent(
                             showConflictBadge = showConflictBadge,
                             material = material,
                             glassBackdrop = glassBackdrop,
+                            // 首页展开态：本卡登记飞行两端（起点在周网格，终点就是这里）。
+                            // dayOfWeek 为 null（独立日视图没给星期）时不登记。
+                            flightCardKey = dayOfWeek?.let { day ->
+                                courseFlightCardKey(viewedWeek, day, entry.course.id, entry.course.startSection)
+                            },
                         )
                     }
 
