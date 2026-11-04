@@ -63,9 +63,12 @@ import com.mutx163.qingyu.pages.timetable.TimetableTopBar
 import com.mutx163.qingyu.pages.timetable.TimetableWeekdayHeader
 import com.mutx163.qingyu.pages.timetable.WeekSelectorSheet
 import com.mutx163.qingyu.pages.timetable.WeekViewStyle
+import com.mutx163.qingyu.pages.timetable.DaySelectionBridge
+import com.mutx163.qingyu.pages.timetable.LocalDaySelectionBridge
 import com.mutx163.qingyu.pages.timetable.TimetableChromeBandGlass
 import com.mutx163.qingyu.theme.QingyuTheme
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import top.yukonga.miuix.kmp.basic.Scaffold
@@ -362,6 +365,10 @@ fun DayViewPage(
         pageCount = { pageCount },
     )
 
+    // 首页嵌入时，把分页器的**实时选中**写给外层星期栏（经 CompositionLocal 桥）：
+    // 只驱动高亮跟手 + 蓝条滑动，不落盘（落盘仍走下面「停稳后 onPageChanged」）。
+    val selectionBridge = LocalDaySelectionBridge.current
+
     val scope = rememberCoroutineScope()
     var showWeekSelector by remember { mutableStateOf(false) }
 
@@ -443,6 +450,18 @@ fun DayViewPage(
                 if (target != null) {
                     onPageChanged?.invoke(target.week, target.dayOfWeek)
                 }
+            }
+    }
+
+    // 实时选中桥：每翻到新的一页（含甩动途中越过页中点）就更新一次，星期栏据此**即时跟手**，
+    // 不等停稳。只写内存状态，不落盘 —— 快速连续切日不会每页重写整份设置 JSON。
+    LaunchedEffect(pagerState, visibleDays, selectionBridge) {
+        val bridge = selectionBridge ?: return@LaunchedEffect
+        snapshotFlow { pagerState.currentPage }
+            .distinctUntilChanged()
+            .collect { page ->
+                val target = DayViewPaging.targetForGlobalPage(visibleDays, page) ?: return@collect
+                bridge.update(target.week, target.dayOfWeek)
             }
     }
 

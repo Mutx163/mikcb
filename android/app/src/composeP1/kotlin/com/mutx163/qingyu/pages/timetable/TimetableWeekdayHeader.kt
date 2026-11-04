@@ -16,10 +16,17 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.compositionLocalOf
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
@@ -99,6 +106,15 @@ object WeekdayHeaderMetrics {
     const val MUTED_INK_DARK_ALPHA = 0.70f
 
     /**
+     * 选中指示蓝条（简化自 Dart `timetable_weekday_selection_indicator.dart`，动效保持简单）：
+     * 高度 3dp、最大宽 22dp、宽占格比 0.34、滑动时长 220ms。
+     */
+    const val SELECTION_BAR_HEIGHT_DP = 3f
+    const val SELECTION_BAR_MAX_WIDTH_DP = 22f
+    const val SELECTION_BAR_WIDTH_RATIO = 0.34f
+    const val SELECTION_BAR_ANIM_MS = 220
+
+    /**
      * `MM/DD` 两位补零（Dart `:309` `padLeft(2, '0')`）。
      *
      * 固定用 [Locale.ROOT]：Dart 的 `padLeft` 产出的是 ASCII 数字，
@@ -124,6 +140,26 @@ object WeekdayHeaderMetrics {
         return monday.plusDays(((week - 1) * 7 + (dayOfWeek - 1)).toLong())
     }
 }
+
+/**
+ * 首页嵌入日视图时，把「分页器实时选中（第几周 / 星期几）」回传给外层星期栏用的桥。
+ *
+ * 只驱动**显示**（选中高亮 + 蓝条滑动），**不落盘**：落盘仍走 `DayViewPage` 停稳后的
+ * `onPageChanged`（避免快速连续切日时每页重写整份设置 JSON）。
+ * 由 `TimetableWeekPage` 用 `CompositionLocalProvider` 注入给 dayContent；周视图 / 独立日页 / 预览为 null。
+ */
+class DaySelectionBridge {
+    var week by mutableIntStateOf(1)
+    var dayOfWeek by mutableIntStateOf(1)
+
+    fun update(week: Int, dayOfWeek: Int) {
+        this.week = week
+        this.dayOfWeek = dayOfWeek
+    }
+}
+
+/** `null` = 不是首页嵌入的日视图（周视图 / 独立日页 / 预览），星期栏用传入的参数值。 */
+val LocalDaySelectionBridge = compositionLocalOf<DaySelectionBridge?> { null }
 
 /**
  * 课表周视图的星期信息栏（对应 Flutter `lib/widgets/timetable/timetable_weekday_header.dart`）。
@@ -191,9 +227,24 @@ fun TimetableWeekdayHeader(
     height: Dp = WeekdayHeaderMetrics.HEIGHT_DP.dp,
     onDayClick: (dayOfWeek: Int) -> Unit = {},
     onWeekTitleClick: () -> Unit = {},
+    /**
+     * 首页嵌入日视图时的**实时选中桥**（`null` = 周视图 / 独立日页 / 预览，用 [week]/[selectedDayOfWeek] 参数）。
+     * 非 null 时星期栏改读桥里的实时值：切换日时选中高亮即时跟手、蓝条平滑滑动，不受外层「停稳才回写」影响。
+     */
+    selectionBridge: DaySelectionBridge? = null,
     modifier: Modifier = Modifier,
 ) {
     val dark = isSystemInDarkTheme()
+    // 生效的周次 / 选中日：嵌日视图时用实时桥（每翻一页即更新），否则用传入参数。
+    val effectiveWeek = selectionBridge?.week ?: week
+    val effectiveSelectedDayOfWeek = selectionBridge?.dayOfWeek ?: selectedDayOfWeek
+    val selectionIndex = effectiveSelectedDayOfWeek?.let { visibleDays.indexOf(it) } ?: -1
+    // 蓝条位置用动画追到目标格：切换日时平滑滑过去，不瞬移（简化版 Dart selection indicator）。
+    val selectionAnim = animateFloatAsState(
+        targetValue = if (selectionIndex >= 0) selectionIndex.toFloat() else 0f,
+        animationSpec = tween(durationMillis = WeekdayHeaderMetrics.SELECTION_BAR_ANIM_MS),
+        label = "weekdaySelectionBar",
+    )
     // 墨色来源：用户设置的星期栏字色 / 强调色（Dart `:210-237` 读的两个 hex 键）。
     // 解析失败时回落主题语义槽（Dart `themeFallback`），不写死任何色值。
     // 压在壁纸上时再经 [HomeBackgroundModel.inkOverWallpaperArgb] 做对比度适配。
@@ -240,7 +291,7 @@ fun TimetableWeekdayHeader(
                 contentAlignment = Alignment.Center,
             ) {
                 Text(
-                    text = TimetableStrings.formatCurrentWeekCompact(week),
+                    text = TimetableStrings.formatCurrentWeekCompact(effectiveWeek),
                     style = MiuixTheme.textStyles.footnote2.shiftWeight(QingyuWeightDelta.EXTRABOLD),
                     fontSize = WeekdayHeaderMetrics.WEEK_LABEL_SP.sp,
                     color = weekdayInk,
@@ -257,16 +308,34 @@ fun TimetableWeekdayHeader(
             Row(
                 modifier = Modifier
                     .weight(1f)
-                    .fillMaxHeight(),
+                    .fillMaxHeight()
+                    // 选中指示蓝条（简化版 Dart selection indicator）：画在本行底边，
+                    // 位置随 selectionAnim 平滑滑到选中格；仅在选中日落在可见天内时画。
+                    .drawBehind {
+                        if (selectionIndex < 0 || visibleDays.isEmpty()) return@drawBehind
+                        val slot = size.width / visibleDays.size
+                        val barW = minOf(
+                            WeekdayHeaderMetrics.SELECTION_BAR_MAX_WIDTH_DP.dp.toPx(),
+                            slot * WeekdayHeaderMetrics.SELECTION_BAR_WIDTH_RATIO,
+                        )
+                        val barH = WeekdayHeaderMetrics.SELECTION_BAR_HEIGHT_DP.dp.toPx()
+                        val left = slot * selectionAnim.value + (slot - barW) / 2f
+                        drawRoundRect(
+                            color = accentInk,
+                            topLeft = Offset(left, size.height - barH),
+                            size = Size(barW, barH),
+                            cornerRadius = CornerRadius(barH / 2f),
+                        )
+                    },
             ) {
                 for (dayOfWeek in visibleDays) {
                     val date = WeekdayHeaderMetrics.dateForWeekDay(
                         semesterStartDate = semesterStartDate,
-                        week = week,
+                        week = effectiveWeek,
                         dayOfWeek = dayOfWeek,
                     )
                     val isToday = date != null && date == todayDate
-                    val isSelected = selectedDayOfWeek == dayOfWeek
+                    val isSelected = effectiveSelectedDayOfWeek == dayOfWeek
                     // Dart `:246`：选中日不画今天下划线，两者互斥。
                     val showsTodayMarker = isToday && !isSelected
 
