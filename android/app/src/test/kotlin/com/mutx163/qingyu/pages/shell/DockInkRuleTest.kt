@@ -40,13 +40,17 @@ class DockInkRuleTest {
     }
 
     @Test
-    fun `亮壁纸浅色主题用深墨且选中项走主色`() {
+    fun `亮壁纸浅色主题用深墨_选中也不走主色`() {
         val luminance = DockInkRule.effectiveLuminance(lightSurface, 0.85, 0.4)
         val ink = DockInkRule.resolve(luminance, isDarkTheme = false)
         assertFalse("亮底应该用深墨", ink.useLightInk)
-        assertTrue("浅色主题亮底上的主色对比够，选中项应该用主色", ink.selectedUsesAccent)
-        assertEquals(1f, ink.selectedAlpha, 0f)
+        assertFalse("选中不再用主题主色，深墨档选中也是近黑", ink.selectedUsesAccent)
+        assertEquals(DockInkRule.SELECTED_ALPHA_DARK, ink.selectedAlpha, 0f)
         assertEquals(DockInkRule.UNSELECTED_ALPHA_DARK, ink.unselectedAlpha, 0f)
+        assertTrue(
+            "选中应比未选中更实（选中靠透明度+玻璃指示器框+字重区分，不靠颜色）",
+            ink.selectedAlpha > ink.unselectedAlpha,
+        )
     }
 
     @Test
@@ -70,8 +74,8 @@ class DockInkRuleTest {
 
     @Test
     fun `深色模式亮壁纸且药丸刷实时不许用主色`() {
-        // 0.2 * 0.15 + 0.8 * 0.90 = 0.75 ⇒ 亮底；深色主题的主色偏亮，压不住，
-        // 选中项必须退到 0.80 的深墨（Dart `:172-173` 同一条）。
+        // 0.2 * 0.15 + 0.8 * 0.90 = 0.75 ⇒ 亮底；深色主题的主色偏亮，压不住。
+        // 选中项不用主色、退到近黑深墨（满不透明 1.0），与未选中同墨只更实一点。
         val luminance = DockInkRule.effectiveLuminance(darkSurface, 0.90, 0.2)
         val ink = DockInkRule.resolve(luminance, isDarkTheme = true)
         assertFalse(ink.useLightInk)
@@ -86,7 +90,7 @@ class DockInkRuleTest {
         val luminance = DockInkRule.effectiveLuminance(lightSurface, 0.10, 0.9)
         val ink = DockInkRule.resolve(luminance, isDarkTheme = false)
         assertFalse("药丸已刷实，底色是浅色", ink.useLightInk)
-        assertTrue(ink.selectedUsesAccent)
+        assertFalse("选中恒不用主色", ink.selectedUsesAccent)
     }
 
     @Test

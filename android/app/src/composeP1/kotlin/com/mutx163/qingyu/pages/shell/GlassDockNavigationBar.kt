@@ -271,13 +271,19 @@ fun GlassDockNavigationBar(
     } else {
         DockInkRule.resolve(dockLuminance, isDarkTheme = isDark)
     }
-    // 墨色本体仍是主题令牌（与课表顶栏同一套近白 / 近黑），不在这里写死色值。
-    val baseInk = Color(QingyuTheme.primaryText(dark = inkState.useLightInk))
-    val selectedInk = if (inkState.selectedUsesAccent) {
-        accentColor
+    // 墨色本体：浅墨走主题近白；深墨必须用**近黑令牌** `ON_LIGHT_INK_ARGB`（#1A1A1A，
+    // 与首页 chrome `homePageChromeForegroundForLuminance` 同源），不能再用
+    // `primaryText(dark=false)` 的 #333——那是深灰，压在白底上就是用户看到的「发灰」。
+    // 仍只用主题/调色板令牌，不写死 `Color(0xFF…)`。
+    val baseInk = if (inkState.useLightInk) {
+        Color(QingyuTheme.primaryText(dark = true))
     } else {
-        baseInk.copy(alpha = inkState.selectedAlpha)
+        Color(HomeBackgroundModel.ON_LIGHT_INK_ARGB)
     }
+    // 选中/未选中**同墨同色**（都是 `baseInk`：深墨档近黑、浅墨档近白），只差一点 alpha
+    // （选中更实）。选中态由那圈玻璃指示器框 + 半粗字重区分，**不再用主题主色**
+    // （2026-11-04 用户拍板：选中也近黑，别靠彩色区分）。
+    val selectedInk = baseInk.copy(alpha = inkState.selectedAlpha)
     val unselectedInk = baseInk.copy(alpha = inkState.unselectedAlpha)
     val dockBlurRadiusPx = with(density) {
         (material?.liquidBlurSigma ?: GlassDockGeometry.GlassBlurRadiusDp).dp.toPx()

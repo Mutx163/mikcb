@@ -15,7 +15,9 @@ package com.mutx163.qingyu.pages.shell
  *
  * 判据来自 Dart 旧版 `lib/widgets/timetable/timetable_glass_dock.dart:86-98,160-174`：
  * 半透明材质按**壁纸亮度**翻黑 / 白（阈值 0.45），实体档按主题；未选中 0.62（白）/
- * 0.48（黑），选中为白（浅墨档）或主色（深墨档，深色主题 + 亮底时退到 0.80 的黑）。
+ * 0.90（黑）。选中**不再走主题主色**（2026-11-04 用户拍板）：选中态由那圈玻璃指示器框 +
+ * 半粗字重区分，文字/图标与未选中**同墨**（深墨档都近黑 #1A1A1A、浅墨档都近白），
+ * 仅「选中 alpha 更实一点」——深墨档选中 1.0 / 未选中 0.90。
  *
  * ## 与旧版的唯一一处差异
  *
@@ -31,7 +33,8 @@ data class DockInkColors(
     val useLightInk: Boolean,
     /**
      * 选中项是否改用主题主色（`MiuixTheme.colorScheme.primary`）。
-     * 浅底上的主色对比够；深色主题 + 亮底时不够，此时为 false（退成深墨 0.80）。
+     * **2026-11-04 起恒为 false**：选中态已由玻璃指示器框 + 半粗字重区分，文字/图标不再
+     * 换色（深墨档近黑、浅墨档近白，选中仅比未选中更实一点）。字段保留只为判据/守卫兼容。
      */
     val selectedUsesAccent: Boolean,
     val selectedAlpha: Float,
@@ -46,11 +49,15 @@ object DockInkRule {
     /** 未选中的浅墨透明度（Dart `timetable_glass_dock.dart:166`）。 */
     const val UNSELECTED_ALPHA_LIGHT = 0.62f
 
-    /** 未选中的深墨透明度（Dart `:167`）。 */
-    const val UNSELECTED_ALPHA_DARK = 0.48f
+    /**
+     * 未选中的深墨透明度。Dart 旧版 `:167` 是 0.48，但 0.48 的深墨压在白底上≈半透明灰
+     * （#9D 级）——用户 2026-11-04 报「浅色/白底上底栏字与图标发灰、看不清」，就是这条。
+     * 现行口径：深墨=近黑靠字重/选中指示器区分，故抬到 0.90（近实色黑，仍留一点未选中层次）。
+     */
+    const val UNSELECTED_ALPHA_DARK = 0.90f
 
-    /** 深色主题 + 亮底时选中项的深墨透明度（Dart `:172-173`）。 */
-    const val SELECTED_ALPHA_DARK = 0.80f
+    /** 深墨档（近黑）选中项透明度；选中必须 ≥ 未选中，取满不透明。 */
+    const val SELECTED_ALPHA_DARK = 1.0f
 
     /**
      * 药丸实际底色压出来的有效亮度。
@@ -75,12 +82,15 @@ object DockInkRule {
      * 由有效亮度给出四档墨色参数。
      *
      * @param backgroundLuminance [effectiveLuminance] 的结果。
-     * @param isDarkTheme 当前是否深色主题（决定亮底上的选中项能不能用主色）。
+     * @param isDarkTheme 当前是否深色主题。**已不参与选中项取色**（选中不再用主题主色，
+     *   2026-11-04 起两者恒同墨）；保留入参只为既有调用方/单测签名稳定。
      */
     fun resolve(backgroundLuminance: Double, isDarkTheme: Boolean): DockInkColors {
         // 恰好等于阈值按「亮底」处理（与 Dart `< 0.45` 同方向）。
         val useLightInk = backgroundLuminance < INK_FLIP_LUMINANCE
-        val selectedUsesAccent = !useLightInk && !isDarkTheme
+        // 选中恒不用主题主色：那圈玻璃指示器框 + 半粗字重已足够区分，改主色反而让深墨档
+        // 选中项在白底上变成彩色、与「文字/图标都要黑」的口径冲突（2026-11-04 用户拍板）。
+        val selectedUsesAccent = false
         return DockInkColors(
             useLightInk = useLightInk,
             selectedUsesAccent = selectedUsesAccent,
