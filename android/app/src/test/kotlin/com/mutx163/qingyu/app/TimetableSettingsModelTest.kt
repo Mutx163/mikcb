@@ -42,7 +42,7 @@ class TimetableSettingsModelTest {
         assertEquals(AppFontMode.SYSTEM, model.appFontMode) // :1467
         assertEquals(400, model.appFontWeight) // :1468 → kAppFontWeightDefault
         assertEquals(1.0, model.appTextScale, 0.0) // :1471 → kAppTextScaleDefault
-        assertEquals(ForuiTheme.MIUI, model.foruiTheme) // :1697
+        assertEquals(ForuiTheme.BLUE, model.foruiTheme) // enums:87-92（缺键回落 blue）
         // 坑：构造默认是 #3482FF，读侧缺键默认是 #2563EB。
         assertEquals("#2563EB", model.themeSeedColor)
         assertNull(model.themeCheckpointName)
@@ -133,9 +133,9 @@ class TimetableSettingsModelTest {
         assertEquals(AppThemeMode.SYSTEM, model.appThemeMode)
         // lenientString(42) = "42" → 不是合法值 → system
         assertEquals(AppFontMode.SYSTEM, model.appFontMode)
-        assertEquals(ForuiTheme.MIUI, model.foruiTheme)
-        // 老字符串 'liquidGlass' 不是磁盘值（磁盘值是 refraction）→ 回落 solid
-        assertEquals(CourseCardSurfaceStyle.SOLID, model.courseCardSurfaceStyle)
+        assertEquals(ForuiTheme.BLUE, model.foruiTheme) // enums:87-92
+        // 老字符串 'liquidGlass' 指当年那档液态玻璃 ⇒ 高斯磨砂（extensions:332-349）
+        assertEquals(CourseCardSurfaceStyle.GAUSSIAN, model.courseCardSurfaceStyle)
         assertEquals(CourseCardVerticalAlign.CENTER, model.courseCardVerticalAlign)
         assertEquals(CourseCardHorizontalAlign.CENTER, model.courseCardHorizontalAlign)
     }
@@ -814,8 +814,36 @@ class TimetableSettingsModelTest {
             TimetableSettingsModel(glassDockActions = listOf("day", "week")),
             model,
         )
+        // 坏盘 = Dart `storage_service.dart:806-814` → `TimetableSettings.defaults()`，
+        // 构造默认 foruiTheme 是 miui（`timetable_settings.dart:890`），**不是** blue。
+        assertEquals(ForuiTheme.MIUI, model.foruiTheme)
         assertEquals("[1,2,3]", raw.rawSnapshot()["flutter.timetable_settings_corrupt_backup_999"])
         assertFalse(raw.contains("timetable_settings"))
+    }
+
+    @Test
+    fun validSettingsJsonWithoutForuiThemeUsesDartOrElseBlue() {
+        // JSON 合法、只是缺 key / 值未知 → Dart `ForuiThemeX.fromValue` 的 orElse = blue
+        // （`timetable_settings.dart:1697` / `settings/timetable_settings_enums.dart:87-92`）。
+        // 与「整份坏盘 → defaults() → miui」真值不同，两条路径必须分开。
+        val missingKey = TimetableSettingsModelStore(
+            TimetableStore(
+                InMemoryKeyValueStore(
+                    mapOf("timetable_settings" to """{"appThemeMode":"dark"}"""),
+                ),
+            ),
+        ).load()
+        assertEquals(ForuiTheme.BLUE, missingKey.foruiTheme)
+        assertEquals(AppThemeMode.DARK, missingKey.appThemeMode)
+
+        val unknownValue = TimetableSettingsModelStore(
+            TimetableStore(
+                InMemoryKeyValueStore(
+                    mapOf("timetable_settings" to """{"foruiTheme":"brand-new"}"""),
+                ),
+            ),
+        ).load()
+        assertEquals(ForuiTheme.BLUE, unknownValue.foruiTheme)
     }
 
     @Test

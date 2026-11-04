@@ -142,7 +142,7 @@ class SettingsAppearancePageTest {
             row.options.map { it.label },
         )
         assertEquals(
-            listOf("system", "sansSerif", "miSans", "harmonyOS", "oppoSans", "pingFang", "notoSans", "serif", "songti", "monospace"),
+            listOf("system", "sans_serif", "mi_sans", "harmony_os", "oppo_sans", "ping_fang", "noto_sans", "serif", "songti", "monospace"),
             row.options.map { it.id },
         )
     }

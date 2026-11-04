@@ -35,6 +35,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.mutx163.qingyu.components.QingyuWeightDelta
 import com.mutx163.qingyu.pages.settings.HomeMaterialRenderSpec
+import com.mutx163.qingyu.pages.timetable.WeekGridCourseMapping
 import com.mutx163.qingyu.theme.QingyuTheme
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.Text
@@ -86,7 +87,12 @@ fun DayViewCourseCard(
     val dark = isSystemInDarkTheme()
     val rawColor = parseHexColorOrFallback(entry.course.color, fallback = Color(0xFF2196F3))
     val isSuspended = entry.course.isSuspendedInWeek(week)
-    val baseCardColor = if (!entry.isCurrentWeekCourse) Color(0xFF94A3B8) else rawColor
+    // 非本周灰改用域内唯一 token（Dart `kNonCurrentWeekCourseColorHex`），不再写第二份字面量。
+    val baseCardColor = if (!entry.isCurrentWeekCourse) {
+        parseHexColorOrFallback(WeekGridCourseMapping.NON_CURRENT_WEEK_COLOR_HEX)
+    } else {
+        rawColor
+    }
     val cardAlpha = if (isSuspended) 0.84f else if (!entry.isCurrentWeekCourse) 0.62f else 1f
     // 卡面档位（实体 / 高斯降级 / 液态染色）与周网格课卡同一条口径，见 [dayAgendaSurfaceAlpha]。
     val cardColor = baseCardColor.copy(

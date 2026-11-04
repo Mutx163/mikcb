@@ -62,7 +62,8 @@ fun DayViewScheduleCard(
     glassBackdrop: Backdrop? = null,
     modifier: Modifier = Modifier,
 ) {
-    val baseColor = parseHexColorOrFallback(entry.scheduleItem.color, fallback = Color(0xFF5B9CF6))
+    // 日程色是用户数据色；缺省/解析失败时退回主题 primary（不写死字面量，R5）。
+    val baseColor = parseHexColorOrFallback(entry.scheduleItem.color, fallback = MiuixTheme.colorScheme.primary)
     // 卡面档位与周网格课卡同一条口径（见 [dayAgendaSurfaceAlpha]）：实体 0.95、
     // 高斯降级 0.55×、液态走卡片自己的染色旋钮。
     val cardColor = baseColor.copy(

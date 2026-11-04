@@ -270,7 +270,8 @@ private fun TaskBandItemRow(
                     horizontalArrangement = Arrangement.spacedBy(6.dp),
                 ) {
                     if (courseName.isNotEmpty()) {
-                        val dotColor = parseHexColorOrFallback(course?.color, fallback = Color(0xFF2196F3))
+                        // 课程色是数据色；缺省时退回主题 primary（不写死字面量，R5）。
+                        val dotColor = parseHexColorOrFallback(course?.color, fallback = MiuixTheme.colorScheme.primary)
                         DayCourseDot(color = dotColor)
                         Text(
                             text = courseName,

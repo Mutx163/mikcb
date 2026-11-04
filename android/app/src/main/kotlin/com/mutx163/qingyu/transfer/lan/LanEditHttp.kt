@@ -61,8 +61,16 @@ object LanEditHttpLimits {
     const val BACKLOG = 32
 }
 
-/** 请求行解析失败 / 报文越界的种类；每种带一个 HTTP 状态码与稳定的 error 串。 */
-enum class LanEditHttpFailure(val status: Int, val error: String) {
+/**
+ * 请求行解析失败 / 报文越界的种类；每种带一个 HTTP 状态码与稳定的 error/message 串。
+ *
+ * `error` 是响应体 `{"error":…}`；`message` 是 `{"message":…}`。两者在 Dart
+ * `lan_edit_api_handlers.dart:207-233` 是分开的：体超限/超时都归 `invalid_request`，
+ * 只有 message 分别是 `request_body_too_large` / `request_body_timeout`。
+ * 2026-11-04 修：早先这两条把 `payload_too_large` / `request_timeout` 写进 error，
+ * 与 Dart 的 HTTP 契约不一致（网页端按 error 分流时会误判）。
+ */
+enum class LanEditHttpFailure(val status: Int, val error: String, val message: String = error) {
     MALFORMED_REQUEST_LINE(400, "bad_request"),
     UNSUPPORTED_HTTP_VERSION(505, "http_version_not_supported"),
     INVALID_HEADER(400, "bad_request"),
@@ -70,8 +78,17 @@ enum class LanEditHttpFailure(val status: Int, val error: String) {
     TOO_MANY_HEADERS(431, "request_header_fields_too_large"),
     INVALID_CONTENT_LENGTH(400, "bad_request"),
     UNSUPPORTED_METHOD(405, "method_not_allowed"),
-    BODY_TOO_LARGE(413, "payload_too_large"),
-    BODY_TIMEOUT(408, "request_timeout"),
+    BODY_TOO_LARGE(413, "invalid_request", "request_body_too_large"),
+    BODY_TIMEOUT(408, "invalid_request", "request_body_timeout"),
+
+    /**
+     * 请求体不是合法 UTF-8。
+     *
+     * Dart 走 `utf8.decode`（`lan_edit_api_handlers.dart:1019`，`allowMalformed` 默认 false）
+     * → `FormatException` → 400 `invalid_request`。这里同样先判体编码再进路由，
+     * 避免用替换字符 `U+FFFD` 把畸形字节洗成「能解析的 JSON」。
+     */
+    INVALID_BODY_ENCODING(400, "invalid_request", "invalid_utf8"),
 }
 
 /** 报文层异常：带一个可直接映射成响应的 [failure]。 */

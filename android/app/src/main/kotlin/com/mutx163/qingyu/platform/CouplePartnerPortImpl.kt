@@ -17,6 +17,7 @@ import com.mutx163.qingyu.pages.sync.newCouplePackageId
 import java.security.MessageDigest
 import java.time.Instant
 import java.time.LocalDateTime
+import java.util.Locale
 import kotlin.random.Random
 
 /**
@@ -71,7 +72,14 @@ class CouplePartnerPortImpl(
         val snapshot = repository.snapshot
         val next = snapshot.profiles.filter { it.id != CoupleTimetableSettingsLogic.PARTNER_PROFILE_ID }
         if (next.size != snapshot.profiles.size) {
-            repository.replaceAllProfiles(next, snapshot.activeProfileId)
+            // Dart `timetable_partner_service.dart:161-184`：active 正是被删的情侣档时，
+            // 切回第一份非情侣档并落盘；否则界面会停在一份已删除的课表上。
+            val nextActiveId = if (snapshot.activeProfileId == CoupleTimetableSettingsLogic.PARTNER_PROFILE_ID) {
+                next.firstOrNull()?.id ?: snapshot.activeProfileId
+            } else {
+                snapshot.activeProfileId
+            }
+            repository.replaceAllProfiles(next, nextActiveId)
         }
     }
 
@@ -169,7 +177,9 @@ class CouplePartnerPortImpl(
     private fun sha256Hex(content: String): String {
         val digest = MessageDigest.getInstance("SHA-256")
             .digest(content.toByteArray(Charsets.UTF_8))
-        return digest.joinToString("") { "%02x".format(it) }
+        // 来源哈希会作为对方端点 id 落盘；默认 Locale 下 `%02x` 可能产出非 ASCII 数字，
+        // 会让同一份内容在两端得到不同 id，必须固定 ASCII 十六进制。
+        return digest.joinToString("") { String.format(Locale.ROOT, "%02x", it) }
     }
 
     companion object {

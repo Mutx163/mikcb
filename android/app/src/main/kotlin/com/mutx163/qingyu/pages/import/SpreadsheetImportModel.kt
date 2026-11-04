@@ -5,6 +5,7 @@ import com.mutx163.qingyu.core.CourseNature
 import com.mutx163.qingyu.core.FormatException
 import com.mutx163.qingyu.core.ServiceMessage
 import com.mutx163.qingyu.core.TimetableSettings
+import java.util.Locale
 import java.util.UUID
 
 /**
@@ -171,7 +172,8 @@ object WeekExpressionParser {
  * ## 移植边界
  *
  * - **CSV 全链路在本层**：字节 → 编码探测（UTF-8 优先、GBK 兜底）→
- *   RFC4180 解析（引号字段、`""` 转义、引号内逗号不当分隔符）→ 格式识别 → 行解析。
+ *   逐行解析（引号字段、`""` 转义、引号内逗号不当分隔符；**引号内换行按 Dart
+ *   `table_parser` 的真实行为切成两行**）→ 格式识别 → 行解析。
  * - **xlsx（zip+XML 容器）解码不在纯逻辑层**：Dart 侧由 `table_parser` 包完成，
  *   Kotlin 侧容器解码属应用层职责——解码出的行矩阵走 [parseRows]。
  *   [parseBytes] 对 `.xlsx` 字节输入抛同源报错码
@@ -276,7 +278,11 @@ object SpreadsheetImportModel {
      * 连 CSV 语法都解析不了才抛「编码无法识别」。
      */
     fun decodeCsvRows(bytes: ByteArray): List<List<String>> {
-        val utf8Content = String(bytes, Charsets.UTF_8) // 宽容解码：坏字节 → U+FFFD
+        // Dart `String.trim()` 的空白清单含 BOM U+FEFF（dart-sdk `lib/core/string.dart:380-397`），
+        // 所以带 UTF-8 BOM 的 CSV 在 Dart 侧 `_isHeaderRow`（spreadsheet_import_service.dart:313）
+        // 能认出表头。Kotlin `String.trim()` 不含 U+FEFF，BOM 留在首个表头格里会导致
+        // 「格式无法识别」——这是真差异。BOM 按规范只出现在文件首字节，在解码入口统一剥一次即可。
+        val utf8Content = stripLeadingBom(String(bytes, Charsets.UTF_8)) // 宽容解码：坏字节 → U+FFFD
         val utf8Rows = tryParseCsvContent(utf8Content)
         if (utf8Rows != null && detectFormat(utf8Rows) != null) {
             return utf8Rows
@@ -290,7 +296,7 @@ object SpreadsheetImportModel {
             null
         }
         if (gbkCharset != null) {
-            val gbkContent = String(bytes, gbkCharset)
+            val gbkContent = stripLeadingBom(String(bytes, gbkCharset))
             val gbkRows = tryParseCsvContent(gbkContent)
             if (gbkRows != null && detectFormat(gbkRows) != null) {
                 return gbkRows
@@ -303,7 +309,21 @@ object SpreadsheetImportModel {
         throw FormatException("spreadsheet_format_or_encoding_unrecognized")
     }
 
-    /** RFC4180 CSV 解析：`"` 引号字段、`""` 转义、引号内逗号/换行不当结构符。 */
+    /**
+     * CSV 解析，逐字对齐 Dart `table_parser-1.0.1` 的 `CsvDecoder._parseContent`
+     * （`lib/src/csv.dart:48-75` + `lib/src/table.dart:237-255`）：
+     *
+     * - **先按行切，再解析每行引号语法**：`split(RegExp(r'\r?\n'))` 发生在引号处理之前，
+     *   所以「引号内的换行」**不会**把字段拼回来——它会变成两行（第二行照常参与导入）。
+     *   **这是有意退回 Dart，不是退步**：早期 Kotlin 实现支持过 RFC4180 跨行字段，
+     *   现已按 Dart 真值退回「先切行再解析」。**后续不要重新实现跨行支持**——
+     *   要支持跨行属于产品决策，必须先改 Dart 侧的 `CsvDecoder._parseContent`。
+     * - **空白行整行跳过**（`line.trim().isEmpty`）：行号因此只数非空行，警告里的
+     *   `rowNumber` 与 Dart 一致。
+     * - **空白内容（含全空格）没有表** → [tryParseCsvContent] 返回 null，外层落到
+     *   「编码无法识别」，与 Dart 的 tables 为空同解。
+     * - 行内引号：`""` 转义成一个字面引号，引号内的逗号不当分隔符。
+     */
     fun tryParseCsvContent(content: String): List<List<String>>? = try {
         val rows = parseCsv(content)
         if (rows.isEmpty()) null else rows
@@ -311,74 +331,64 @@ object SpreadsheetImportModel {
         null
     }
 
+    /** 只剥文件首字节的 UTF-8 BOM（Dart 的 `trim()` 把 U+FEFF 当空白，见 [decodeCsvRows] 注释）。 */
+    private fun stripLeadingBom(text: String): String =
+        if (text.startsWith('\uFEFF')) text.substring(1) else text
+
     private fun parseCsv(content: String): List<List<String>> {
-        if (content.isEmpty()) {
-            // 零字节内容：Dart TableParser 的 tables 为空 → tryParseCsvContent 返回
-            // null，外层一路走到「编码无法识别」。这里返回空行使同一判定成立。
-            return emptyList()
-        }
+        // Dart `_csvContent.trim().isEmpty` → tables 为空。
+        if (content.trim().isEmpty()) return emptyList()
         val rows = mutableListOf<List<String>>()
-        val field = StringBuilder()
-        var row = mutableListOf<String>()
-        var inQuotes = false
-        var i = 0
-        val n = content.length
-        while (i < n) {
-            val c = content[i]
-            if (inQuotes) {
-                when (c) {
-                    '"' -> {
-                        if (i + 1 < n && content[i + 1] == '"') {
-                            field.append('"')
-                            i += 2
-                        } else {
-                            inQuotes = false
-                            i += 1
-                        }
-                    }
-                    else -> {
-                        field.append(c)
-                        i += 1
-                    }
-                }
-                continue
-            }
-            when (c) {
-                '"' -> {
-                    inQuotes = true
-                    i += 1
-                }
-                ',' -> {
-                    row.add(field.toString())
-                    field.setLength(0)
-                    i += 1
-                }
-                '\r' -> {
-                    row.add(field.toString())
-                    field.setLength(0)
-                    rows.add(row)
-                    row = mutableListOf()
-                    i += 1
-                    if (i < n && content[i] == '\n') i += 1
-                }
-                '\n' -> {
-                    row.add(field.toString())
-                    field.setLength(0)
-                    rows.add(row)
-                    row = mutableListOf()
-                    i += 1
-                }
-                else -> {
-                    field.append(c)
-                    i += 1
-                }
-            }
+        for (line in content.split(Regex("""\r?\n"""))) {
+            if (line.trim().isEmpty()) continue
+            rows.add(parseCsvLine(line))
         }
-        // 收尾：最后一个字段（空内容 + 已有行也补一个空行尾，与逐行切分一致）
-        row.add(field.toString())
-        rows.add(row)
         return rows
     }
+
+    private fun parseCsvLine(line: String): List<String> {
+        val fields = mutableListOf<String>()
+        val current = StringBuilder()
+        var inQuotes = false
+        var i = 0
+        while (i < line.length) {
+            val c = line[i]
+            if (c == '"') {
+                if (inQuotes && i + 1 < line.length && line[i + 1] == '"') {
+                    // `""` → 一个字面引号（Dart csv.dart:88-92）
+                    current.append('"')
+                    i += 2
+                    continue
+                }
+                inQuotes = !inQuotes
+                i += 1
+                continue
+            }
+            if (!inQuotes && c == ',') {
+                fields.add(stripOuterQuotes(current.toString()))
+                current.setLength(0)
+                i += 1
+                continue
+            }
+            current.append(c)
+            i += 1
+        }
+        fields.add(stripOuterQuotes(current.toString()))
+        return fields
+    }
+
+    /**
+     * Dart `_parseValue`（`shouldParseNumbers: false`）只做一件事：字段同时以引号
+     * 开头和结尾时剥掉一层。通常行内解析已把引号去干净，这里主要覆盖转义残留。
+     * 单字符 `"` 会像 Dart 的 `substring(1, 0)` 一样抛下标越界 → 整份 CSV 判为
+     * 解析失败（外层 catch 折成 null）。
+     */
+    private fun stripOuterQuotes(value: String): String =
+        if (value.length >= 1 && value.startsWith('"') && value.endsWith('"')) {
+            value.substring(1, value.length - 1)
+        } else {
+            value
+        }
 
     // ------------------------------------------------------------------
     // 格式识别
@@ -746,7 +756,7 @@ object SpreadsheetImportModel {
         if (minute < 0 || minute > 59) return null
         if (allowEndOfDay && hour == 24 && minute == 0) return "24:00"
         if (hour < 0 || hour > 23) return null
-        return "%02d:%02d".format(hour, minute)
+        return String.format(Locale.ROOT, "%02d:%02d", hour, minute)
     }
 
     /**

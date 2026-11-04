@@ -359,6 +359,57 @@ class IcsExportModelTest {
         )
     }
 
+    private fun buildName(profileName: String): String =
+        IcsExportLogic.buildFileName(
+            profileName,
+            LocalDate.of(2026, 3, 2),
+            LocalDate.of(2026, 7, 5),
+        )
+
+    @Test
+    fun `文件名课表名按 codePoint 截到 80`() {
+        val suffix = "-20260302-20260705.ics"
+        assertEquals("a".repeat(80) + suffix, buildName("a".repeat(80)))
+        assertEquals("a".repeat(80) + suffix, buildName("a".repeat(81)))
+    }
+
+    @Test
+    fun `含 emoji 的课表名按 codePoint 截断且不留孤立代理项`() {
+        val suffix = "-20260302-20260705.ics"
+        val eighty = "😀".repeat(80)
+        assertEquals(eighty + suffix, buildName(eighty))
+        val truncated = buildName("😀".repeat(81)).removeSuffix(suffix)
+        assertEquals(eighty, truncated)
+        assertEquals(80, Character.codePointCount(truncated, 0, truncated.length))
+        assertNoLoneSurrogate(truncated)
+    }
+
+    @Test
+    fun `混合 ASCII 与 emoji 时截断落在字符边界`() {
+        val suffix = "-20260302-20260705.ics"
+        val eighty = "a" + "😀".repeat(79)
+        assertEquals(eighty + suffix, buildName(eighty))
+        // 81 个 codePoint：多出来的那个 emoji 必须整颗丢掉，不能只留半个代理对。
+        assertEquals(eighty + suffix, buildName("a" + "😀".repeat(80)))
+    }
+
+    private fun assertNoLoneSurrogate(text: String) {
+        var index = 0
+        while (index < text.length) {
+            val ch = text[index]
+            if (Character.isHighSurrogate(ch)) {
+                assertTrue(
+                    "index=$index 的高位代理项没有配对",
+                    index + 1 < text.length && Character.isLowSurrogate(text[index + 1]),
+                )
+                index += 2
+            } else {
+                assertFalse("index=$index 是孤立低位代理项", Character.isLowSurrogate(ch))
+                index += 1
+            }
+        }
+    }
+
     @Test
     fun `文件名日期补足位数`() {
         assertEquals(

@@ -403,37 +403,38 @@ fun AddExamPage(
         }
     }
 
-    if (confirmDelete) {
-        OverlayDialog(
-            insideMargin = DpSize(16.dp, 16.dp),
-            show = true,
-            title = ExamStrings.deleteExam.zh,
-            summary = ExamStrings.deleteExamConfirm.filled("name", viewState.name),
-            onDismissRequest = { confirmDelete = false },
+    // 常驻组合（2026-11-04 弹层债收口）：显隐只由 `show` 驱动，关闭不再整棵摘出组合，
+    // 官方退场动画（fadeOut + scaleOut + slideOut）才能播完。正文取自 `viewState.name`，
+    // 不是会被清空的瞬时状态，退场期间照常可读。
+    OverlayDialog(
+        insideMargin = DpSize(16.dp, 16.dp),
+        show = confirmDelete,
+        title = ExamStrings.deleteExam.zh,
+        summary = ExamStrings.deleteExamConfirm.filled("name", viewState.name),
+        onDismissRequest = { confirmDelete = false },
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(10.dp),
         ) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(10.dp),
+            top.yukonga.miuix.kmp.basic.Button(
+                onClick = { confirmDelete = false },
+                modifier = Modifier.weight(1f),
             ) {
-                top.yukonga.miuix.kmp.basic.Button(
-                    onClick = { confirmDelete = false },
-                    modifier = Modifier.weight(1f),
-                ) {
-                    Text(text = ExamStrings.cancelAction.zh)
-                }
-                top.yukonga.miuix.kmp.basic.Button(
-                    onClick = {
-                        confirmDelete = false
-                        onDelete()
-                    },
-                    modifier = Modifier.weight(1f),
-                    colors = top.yukonga.miuix.kmp.basic.ButtonDefaults.buttonColors(
-                        color = Color(QingyuTheme.error(dark)),
-                        contentColor = Color(QingyuTheme.onError(dark)),
-                    ),
-                ) {
-                    Text(text = ExamStrings.deleteAction.zh)
-                }
+                Text(text = ExamStrings.cancelAction.zh)
+            }
+            top.yukonga.miuix.kmp.basic.Button(
+                onClick = {
+                    confirmDelete = false
+                    onDelete()
+                },
+                modifier = Modifier.weight(1f),
+                colors = top.yukonga.miuix.kmp.basic.ButtonDefaults.buttonColors(
+                    color = Color(QingyuTheme.error(dark)),
+                    contentColor = Color(QingyuTheme.onError(dark)),
+                ),
+            ) {
+                Text(text = ExamStrings.deleteAction.zh)
             }
         }
     }

@@ -208,6 +208,70 @@ class LanTransferUndoTest {
         assertTrue("导入新建的课也要撤掉", repository.courses.none { it.id == "c9" })
     }
 
+    @Test
+    fun `导入后用户改过的新建模板撤销时保留`() {
+        val store = InMemoryKeyValueStore()
+        val repository = repositoryOn(store)
+        val host = LanEditRepositoryHost(repository, LanTransferUndoStore())
+
+        val applied = host.applyTransferJson(
+            packageJson(
+                courses = listOf(course("c9", "外来课程")),
+                timeSchemes = listOf(scheme("s_remote", "外来新建模板", sectionsThree())),
+            ),
+            TransferApplyMode.MERGE,
+        )
+        assertEquals(true, applied["applied"])
+        val createdId = repository.snapshot.timeSchemes.single().id
+
+        // 导入之后用户自己改了这套模板：撤销点必须尊重「之后的编辑」，
+        // 只回退这一批导入造成的差异，不能把用户改名一起抹掉。
+        repository.updateTimeScheme(createdId, "用户改名", sectionsTwo())
+
+        val undone = host.undoTransferJson(applied["transferId"] as String)
+        assertEquals(true, undone["undo"])
+        val kept = repository.snapshot.timeSchemes.single { it.id == createdId }
+        assertEquals("用户改名", kept.name)
+        assertFalse("撤销仍要撤掉这批导入的课", repository.courses.any { it.id == "c9" })
+    }
+
+    @Test
+    fun `连续两次导入叠加 先撤 B 再撤 A 各自的撤销点都能用`() {
+        // 对应 Dart `TransferUndoService` 的多槽语义（capacity=3）：
+        // apply B 不许把 apply A 的撤销点顶掉，两次 undo 各消费自己的 id。
+        val store = InMemoryKeyValueStore()
+        val repository = repositoryOn(store)
+        repository.addCourse(course("keep", "原有课程"))
+        val host = LanEditRepositoryHost(repository, LanTransferUndoStore())
+
+        val appliedA = host.applyTransferJson(
+            packageJson(courses = listOf(course("ca", "A 课程"))),
+            TransferApplyMode.MERGE,
+        )
+        assertEquals(true, appliedA["applied"])
+        val idA = appliedA["transferId"] as String
+
+        val appliedB = host.applyTransferJson(
+            packageJson(courses = listOf(course("cb", "B 课程"))),
+            TransferApplyMode.MERGE,
+        )
+        assertEquals(true, appliedB["applied"])
+        val idB = appliedB["transferId"] as String
+        assertNotEquals("两次导入必须各自生成撤销点 id", idA, idB)
+
+        // 先撤 B：只回 B，A 仍在。
+        val undoB = host.undoTransferJson(idB)
+        assertEquals("撤 B 必须成功：$undoB", true, undoB["undo"])
+        assertFalse("B 课程要撤掉", repository.courses.any { it.id == "cb" })
+        assertTrue("A 课程必须留着（B 的撤销点不该覆盖 A 的现场）", repository.courses.any { it.id == "ca" })
+
+        // 再撤 A：A 的撤销点仍可按自己的 id 取到。
+        val undoA = host.undoTransferJson(idA)
+        assertEquals("撤 A 必须成功：$undoA", true, undoA["undo"])
+        assertFalse("A 课程要撤掉", repository.courses.any { it.id == "ca" })
+        assertTrue("导入前的课必须还在", repository.courses.any { it.id == "keep" })
+    }
+
     // -----------------------------------------------------------------------
     // 工具
     // -----------------------------------------------------------------------

@@ -25,6 +25,10 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.layout.Layout
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.unit.Constraints
+import kotlin.math.roundToInt
 import com.mutx163.qingyu.theme.QingyuIconColors
 import com.mutx163.qingyu.theme.QingyuTheme
 import top.yukonga.miuix.kmp.basic.Icon
@@ -173,7 +177,7 @@ fun TrendLineCanvas(
 
         // ② 已过周：面积 + 曲线
         val elapsedPoints = spec.elapsed.map { datum ->
-            ChartPoint(TrendChartModel.pointX(datum.week, spec.minWeek, spec.weekSlotCount, w), TrendChartModel.pointY(datum.sections, spec.maxY, h))
+            ChartPoint(TrendChartModel.pointX(datum.week, spec.minWeek, spec.maxWeek, w), TrendChartModel.pointY(datum.sections, spec.maxY, h))
         }
         if (elapsedPoints.isNotEmpty()) {
             val curve = ChartMath.sampleCurve(elapsedPoints)
@@ -214,7 +218,7 @@ fun TrendLineCanvas(
                 if (anchor != null) {
                     add(
                         ChartPoint(
-                            TrendChartModel.pointX(anchor.week, spec.minWeek, spec.weekSlotCount, w),
+                            TrendChartModel.pointX(anchor.week, spec.minWeek, spec.maxWeek, w),
                             TrendChartModel.pointY(anchor.sections, spec.maxY, h),
                         ),
                     )
@@ -222,7 +226,7 @@ fun TrendLineCanvas(
                 for (datum in spec.future) {
                     add(
                         ChartPoint(
-                            TrendChartModel.pointX(datum.week, spec.minWeek, spec.weekSlotCount, w),
+                            TrendChartModel.pointX(datum.week, spec.minWeek, spec.maxWeek, w),
                             TrendChartModel.pointY(datum.sections, spec.maxY, h),
                         ),
                     )
@@ -465,6 +469,69 @@ fun ChartAxisLabelRow(
                     .weight(1f)
                     .padding(top = topPaddingDp.dp),
             )
+        }
+    }
+}
+
+/**
+ * 折线图横轴标签行：标签中心按 fl_chart 的**边到边**口径绝对定位。
+ *
+ * 第 `i` 个标签的中心 x = `i / (n - 1) * width`（首周贴左边缘、末周贴右边缘），
+ * 与 [TrendChartModel.pointX] 的 `mapX` 同口径，所以折线点位与刻度天然对齐。
+ * 只有一个周次时整行居中（值域退化，与 `mapX` 的兜底一致）。
+ *
+ * 文本首尾各自贴边时，居中会让半个字伸出画布：这里把落点钳在
+ * `[0, width - textWidth]`，保证字不出界、也不压到左侧纵轴刻度列。
+ *
+ * 字号/颜色走主题（`footnote2` + `secondaryText`），不写死 sp/dp。
+ *
+ * 说明：本函数由 205 线（origin/compose-migration）引入，供折线图横轴对齐用；
+ * 与沿用当前线的 [ChartLeftAxisLabels]（整数刻度）并存。
+ */
+@Composable
+fun ChartEdgeAxisLabelRow(
+    labels: List<String?>,
+    dark: Boolean,
+    modifier: Modifier = Modifier,
+    topPaddingDp: Float = 6f,
+) {
+    if (labels.isEmpty()) return
+    val style = MiuixTheme.textStyles.footnote2
+    val color = Color(QingyuTheme.secondaryText(dark))
+    val topPadding = with(LocalDensity.current) { topPaddingDp.dp.roundToPx() }
+    // 保留原始下标：null 位置的槽位不占布局，但它的序号仍决定其余标签的落点。
+    val entries = labels.mapIndexedNotNull { index, label -> label?.let { index to it } }
+
+    Layout(
+        content = {
+            entries.forEach { (_, label) ->
+                Text(
+                    text = label,
+                    style = style,
+                    textAlign = TextAlign.Center,
+                    maxLines = 1,
+                    color = color,
+                )
+            }
+        },
+        modifier = modifier.fillMaxWidth(),
+    ) { measurables, constraints ->
+        val width = constraints.maxWidth
+        val placeables = measurables.map { it.measure(Constraints()) }
+        val textHeight = placeables.maxOfOrNull { it.height } ?: 0
+        layout(width, textHeight + topPadding) {
+            val denominator = (labels.size - 1).coerceAtLeast(1)
+            placeables.forEachIndexed { position, placeable ->
+                val index = entries[position].first
+                val center = if (labels.size <= 1) {
+                    width / 2f
+                } else {
+                    width.toFloat() * index / denominator
+                }
+                val maxX = (width - placeable.width).coerceAtLeast(0).toFloat()
+                val x = (center - placeable.width / 2f).coerceIn(0f, maxX)
+                placeable.placeRelative(x.roundToInt(), topPadding)
+            }
         }
     }
 }

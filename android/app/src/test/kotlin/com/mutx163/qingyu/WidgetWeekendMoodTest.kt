@@ -1,5 +1,6 @@
 package com.mutx163.qingyu
 
+import com.mutx163.qingyu.core.MiniJson
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
@@ -21,6 +22,8 @@ class WidgetWeekendMoodTest {
         weekendMood: WidgetWeekendMood = WidgetWeekendMood.NONE,
         tomorrowCourseCount: Int = 0,
         examName: String? = null,
+        heightAdjustment: Double = 0.0,
+        cornerRadius: Double = 16.0,
     ) = TodayWidgetSnapshotInfo(
         profileName = "默认课表",
         currentWeek = 6,
@@ -30,8 +33,8 @@ class WidgetWeekendMoodTest {
         showCountdown = true,
         countdownTextStyle = "smart",
         hideCompletedCourses = false,
-        heightAdjustment = 0,
-        cornerRadius = 16,
+        heightAdjustment = heightAdjustment,
+        cornerRadius = cornerRadius,
         totalTodayCourseCount = 0,
         todayCourses = emptyList(),
         visibleTodayCourses = emptyList(),
@@ -83,6 +86,21 @@ class WidgetWeekendMoodTest {
         assertTrue(TodayWidgetSupport.isDayOff(snapshot(state = "holiday")))
         assertTrue(TodayWidgetSupport.isDayOff(snapshot(weekendMood = WidgetWeekendMood.REST)))
         assertTrue(TodayWidgetSupport.isDayOff(snapshot(weekendMood = WidgetWeekendMood.AHEAD)))
+    }
+
+    @Test
+    fun appearanceValuesEncodeAsDoubleWithDecimalPoint() {
+        // Dart `HomeWidgetSnapshot.heightAdjustment/cornerRadius` 是 double：
+        // `jsonEncode` 输出 `8.0`/`16.0`；Kotlin 若用 Int 会落成 `8`/`16`，跨端字节与哈希都对不上。
+        val snapshot = snapshot(heightAdjustment = 8.0, cornerRadius = 16.0)
+        val json = MiniJson.encode(
+            linkedMapOf(
+                "heightAdjustment" to snapshot.heightAdjustment,
+                "cornerRadius" to snapshot.cornerRadius,
+            ),
+        )
+        assertTrue(json, json.contains("\"heightAdjustment\":8.0"))
+        assertTrue(json, json.contains("\"cornerRadius\":16.0"))
     }
 
     @Test

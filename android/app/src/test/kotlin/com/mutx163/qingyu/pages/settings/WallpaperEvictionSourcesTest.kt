@@ -1,5 +1,6 @@
 package com.mutx163.qingyu.pages.settings
 
+import com.mutx163.qingyu.weather.WallpaperEvictionRules
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
@@ -225,14 +226,14 @@ class WallpaperEvictionSourcesTest {
     @Test
     fun `咬合对照 旧口径只护当前课表确实会误删`() {
         // 旧口径（本批之前）：白名单里只有当前课表
-        val oldWhitelist = WallpaperHistoryLedger.evictionWhitelist(
+        val oldWhitelist = WallpaperEvictionRules.evictionWhitelist(
             allProfilesCurrentPaths = listOf("/w/a.jpg"),
             profilesReadable = true,
             draftPath = "/w/a.jpg",
         )
         assertEquals(
             listOf("/w/b.jpg"),
-            WallpaperHistoryLedger.deletable(listOf("/w/b.jpg"), oldWhitelist),
+            WallpaperEvictionRules.deletable(listOf("/w/b.jpg"), oldWhitelist),
         )
 
         // 新口径：另一份档案正在用的 /w/b.jpg 必须被拦住

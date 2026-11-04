@@ -58,13 +58,29 @@ class TrendChartModelTest {
     }
 
     @Test
+    fun `空周是零值点而非断点`() {
+        // Dart `calculateWeeklyTrend` 用 List.generate 铺满 1..总周数：
+        // 没课的周仍产出 WeeklyTrendPoint(sections: 0)，折线落到底部而不是断开。
+        val trend = listOf(
+            trendPoint(1, 4),
+            trendPoint(2, 6),
+            trendPoint(3, 0),
+            trendPoint(4, 2),
+        )
+        val spec = TrendChartModel.build(trend, currentWeek = 4)!!
+        assertEquals(4, spec.elapsed.size)
+        assertEquals(3, spec.elapsed[2].week)
+        assertEquals(0, spec.elapsed[2].sections)
+        // 0 值点贴画布底边（不是被跳过后的直线插值）
+        assertEquals(160f, TrendChartModel.pointY(spec.elapsed[2].sections, spec.maxY, 160f), 1e-4f)
+    }
+
+    @Test
     fun `坐标轴范围与上限`() {
         val trend = (1..20).map { trendPoint(it, it * 2) }
         val spec = TrendChartModel.build(trend, currentWeek = 8)!!
         assertEquals(1, spec.minWeek)
         assertEquals(20, spec.maxWeek)
-        // 槽位总数 = 20 - 1 + 1
-        assertEquals(20, spec.weekSlotCount)
         // 最大课时 40 → 上限 41（+1 留白）
         assertEquals(40, spec.maxSections)
         assertEquals(41.0, spec.maxY, 1e-9)
@@ -78,13 +94,13 @@ class TrendChartModelTest {
         val spec = TrendChartModel.build((1..10).map { trendPoint(it, 3) }, currentWeek = 10)!!
         assertEquals(4.0, spec.maxY, 1e-9)
         assertEquals(2, spec.leftInterval)
-        // 10 周 ≤ 12 → 周刻度间隔 2
-        assertEquals(listOf(1, null, 3, null, 5, null, 7, null, 9, 10), spec.weekLabels)
+        // 10 周 ≤ 12 → 周刻度间隔 2；末周 10 不是间隔整数倍，Dart 也不标
+        assertEquals(listOf(1, null, 3, null, 5, null, 7, null, 9, null), spec.weekLabels)
     }
 
     @Test
-    fun `周标签只在首周 末周 与间隔整数倍处出现`() {
-        // 20 周 → 间隔 4；fl_chart 从轴最小值起递增：1、5、9、13、17，末周 20 补标
+    fun `周标签只在首周与间隔整数倍处出现`() {
+        // 20 周 → 间隔 4；fl_chart 从轴最小值起递增：1、5、9、13、17，末周 20 不补标
         val labels = TrendChartModel.weekLabels(1, 20, 4)
         assertEquals(20, labels.size)
         assertEquals(1, labels[0])
@@ -95,17 +111,17 @@ class TrendChartModelTest {
         assertEquals(9, labels[8])
         assertEquals(13, labels[12])
         assertEquals(17, labels[16])
-        assertEquals(20, labels[19])
+        assertNull(labels[19])
 
-        // 末周不是间隔整数倍时也要标（第 18 周，间隔 4）
+        // 末周不是间隔整数倍时同样不标（第 18 周，间隔 4）
         val uneven = TrendChartModel.weekLabels(1, 18, 4)
-        assertEquals(18, uneven[17])
-        // 首周不是间隔整数倍时也要标（从第 3 周起，间隔 4 → 3、7、11，末周 14）
+        assertNull(uneven[17])
+        // 首周不是间隔整数倍时仍要标（从第 3 周起，间隔 4 → 3、7、11，末周 14 不标）
         val offset = TrendChartModel.weekLabels(3, 14, 4)
         assertEquals(3, offset[0])
         assertEquals(7, offset[4])
         assertEquals(11, offset[8])
-        assertEquals(14, offset[11])
+        assertNull(offset[11])
         // 中间那些周不标
         assertNull(offset[1])
         assertNull(offset[10])
@@ -115,14 +131,31 @@ class TrendChartModelTest {
     }
 
     @Test
-    fun `点位落在槽位中心`() {
-        // 20 槽、宽 400 → 每槽 20；第 1 周中心 10，第 20 周中心 390
-        assertEquals(10f, TrendChartModel.pointX(1, 1, 20, 400f), 1e-4f)
-        assertEquals(30f, TrendChartModel.pointX(2, 1, 20, 400f), 1e-4f)
-        assertEquals(390f, TrendChartModel.pointX(20, 1, 20, 400f), 1e-4f)
+    fun `点位按 fl_chart 边到边映射 首末周贴边`() {
+        // fl_chart `getPixelX`：x = (value - minX) / (maxX - minX) * width，
+        // 周次 1..20、宽 400 → 第 1 周在 0、第 20 周在 400（不是槽心 10 / 390）
+        assertEquals(0f, TrendChartModel.pointX(1, 1, 20, 400f), 1e-4f)
+        assertEquals(400f, TrendChartModel.pointX(20, 1, 20, 400f), 1e-4f)
+        // 第 2 周 = 400 × 1/19 ≈ 21.05
+        assertEquals(400f / 19f, TrendChartModel.pointX(2, 1, 20, 400f), 1e-4f)
+        // 起点不是第 1 周时同样按 minWeek..maxWeek 铺满：周次 3..14，第 7 周 = 400 × 4/11
+        assertEquals(400f * 4f / 11f, TrendChartModel.pointX(7, 3, 14, 400f), 1e-4f)
+        // 只有一个周次：值域退化（fl_chart 会算 NaN），退到画布正中
+        assertEquals(200f, TrendChartModel.pointX(5, 5, 5, 400f), 1e-4f)
         // 纵轴：上限 4、高 160，值 3 → 160 - 3/4*160 = 40
         assertEquals(40f, TrendChartModel.pointY(3, 4.0, 160f), 1e-4f)
         assertEquals(160f, TrendChartModel.pointY(0, 4.0, 160f), 1e-4f)
+    }
+
+    @Test
+    fun `周标签的落点与折线点位同口径`() {
+        // 标签行第 i 个槽位的中心 = width × i/(n-1)；点位应是同一个 x，
+        // 否则刻度会与折线错位（这正是上一版槽心映射的问题）。
+        val labels = TrendChartModel.weekLabels(1, 20, 4)
+        val indexOfWeek5 = labels.indexOf(5)
+        assertEquals(4, indexOfWeek5)
+        val labelCenter = 400f * indexOfWeek5 / (labels.size - 1)
+        assertEquals(labelCenter, TrendChartModel.pointX(5, 1, 20, 400f), 1e-4f)
     }
 
     @Test

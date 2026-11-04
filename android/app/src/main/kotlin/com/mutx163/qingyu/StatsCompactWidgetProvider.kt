@@ -44,14 +44,14 @@ class StatsCompactWidgetProvider : BaseQingyuWidgetProvider() {
         views.setInt(
             R.id.widget_card,
             "setBackgroundResource",
-            TodayWidgetSupport.backgroundRes(chrome.backgroundStyle, chrome.cornerRadius),
+            TodayWidgetSupport.backgroundRes(chrome.backgroundStyle, chrome.cornerRadius.toInt()),
         )
         TodayWidgetSupport.applyAdaptiveVerticalPadding(
             views,
             R.id.widget_root,
             profile,
             baseVerticalDp = 14,
-            heightAdjustmentDp = chrome.heightAdjustment,
+            heightAdjustmentDp = chrome.heightAdjustment.toInt(),
             targetAspect = 1f,
         )
 
@@ -155,7 +155,7 @@ class StatsCompactWidgetProvider : BaseQingyuWidgetProvider() {
         // （用户 2×2 格位实测被裁）。
         // 判据与预算口径见 TodayWidgetSupport.statsCompactDetailRowCount。
         val detailRows = if (snapshot != null && !profile.isShort && !profile.isNarrow) {
-            TodayWidgetSupport.statsCompactDetailRowCount(profile, chrome.heightAdjustment)
+            TodayWidgetSupport.statsCompactDetailRowCount(profile, chrome.heightAdjustment.toInt())
         } else {
             0
         }

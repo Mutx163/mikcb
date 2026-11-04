@@ -213,7 +213,9 @@ class LanEditSessionTest {
         Thread {
             try {
                 start.await()
-                while (writersDone.count > 0) {
+                // do-while：保证至少真读一轮——快机上写侧可能先于读线程启动跑完，
+                // `while (count > 0)` 会一轮不进、让下面 reads>0 的断言时序性翻车。
+                do {
                     // 任何一个读在加锁前都可能撞并发修改异常或拿到撕裂状态。
                     session.connectedClientCount
                     session.isPinLocked
@@ -222,7 +224,7 @@ class LanEditSessionTest {
                     session.lastActivityAtMillis
                     session.boundProfileId
                     reads.incrementAndGet()
-                }
+                } while (writersDone.count > 0)
             } catch (throwable: Throwable) {
                 errors.compareAndSet(null, throwable)
             } finally {

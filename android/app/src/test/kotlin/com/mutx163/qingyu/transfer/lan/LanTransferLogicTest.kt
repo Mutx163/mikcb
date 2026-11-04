@@ -124,10 +124,7 @@ class LanTransferLogicTest {
     // -----------------------------------------------------------------------
 
     @Test
-    fun `整份备份缺档案与 all_data 仍拒 分层矩阵里它们没有可恢复内容`() {
-        // 两条都不带 profiles：full 缺档案（无可恢复内容）与 all_data 非 full
-        // （bf09a7c3 的清表绕过形状）仍拒；full + profiles 的整份包已放行，
-        // 见 LanTransferWholeRestoreTest。
+    fun `整份备份与 all_data 一律拒 防止配对端一键覆盖整台设备`() {
         assertEquals(
             "use_profile_backup_not_full",
             parseError(packageJson(scope = TransferScope.ALL_DATA)),
@@ -412,16 +409,13 @@ class LanTransferLogicTest {
             packageJson(channel = TransferChannel.FILE, courses = listOf(course("c1", "高数"))),
         )
         val preview = LanTransferLogic.previewJson(incoming, LanTransferDiffSource())
-        // wholeRestore 是 Kotlin 侧新增的标记位（网页端据此禁用合并按钮）；
-        // 其余六键与 Dart `LanTransferPreview.toJson()` 逐字同形。
         assertEquals(
-            listOf("transferId", "channel", "scope", "mergeDiff", "overwriteDiff", "diff", "wholeRestore"),
+            listOf("transferId", "channel", "scope", "mergeDiff", "overwriteDiff", "diff"),
             preview.keys.toList(),
         )
         assertEquals("transfer-test-1", preview["transferId"])
         assertEquals("lan", preview["channel"])
         assertEquals("current_timetable", preview["scope"])
-        assertEquals(false, preview["wholeRestore"])
 
         @Suppress("UNCHECKED_CAST")
         val merge = preview["mergeDiff"] as Map<String, Any?>
@@ -457,6 +451,48 @@ class LanTransferLogicTest {
         assertEquals(false, failed["applied"])
         assertEquals("overwrite", failed["mode"])
         assertEquals("transfer_package_empty", failed["error"])
+    }
+
+    // -----------------------------------------------------------------------
+    // 旧 5 键包（老 `.mikcb` 单档备份，局域网也要吃）
+    // -----------------------------------------------------------------------
+
+    @Test
+    fun `旧 5 键包在类型门被接受并按 current_timetable 解析`() {
+        val incoming = LanTransferLogic.parseIncoming(
+            legacyBackupJson(courses = listOf(course("c1", "高数"))),
+        )
+        assertEquals(TransferScope.CURRENT_TIMETABLE, incoming.scope)
+        assertEquals(TransferChannel.LAN, incoming.channel)
+        assertEquals("legacy-1", incoming.packageId)
+        assertEquals("旧课表", incoming.profileName)
+        assertEquals(3, incoming.currentWeek)
+        assertFalse(incoming.isFullBackup)
+        assertEquals(0, incoming.profileCount)
+        assertEquals(listOf("c1"), incoming.source.courses.map { it.id })
+        assertEquals("高数", incoming.source.courses.single().name)
+        assertTrue(incoming.diagnostics.isEmpty())
+    }
+
+    @Test
+    fun `旧 5 键全量备份仍被整设备写入拒绝`() {
+        assertEquals("use_profile_backup_not_full", parseError(legacyFullBackupJson()))
+    }
+
+    @Test
+    fun `信封损坏不被旧 5 键通道救回`() {
+        // 信封三件套在场但缺其余必需列表；旧通道绝不能把它当单档备份收下。
+        val brokenEnvelope = MiniJson.encode(
+            linkedMapOf(
+                "app" to "mikcb",
+                "packageType" to "transfer",
+                "schemaVersion" to 1,
+                "packageId" to "p",
+                "courses" to listOf(course("c1", "高数").toJson()),
+                "settings" to TimetableSettings.defaults().toJson(),
+            ),
+        )
+        assertEquals("transfer_task_list_required", parseError(brokenEnvelope))
     }
 
     // -----------------------------------------------------------------------
@@ -568,5 +604,40 @@ class LanTransferLogicTest {
         id = id,
         name = name,
         timeSchemeId = schemeId,
+    )
+
+    /** 老 `.mikcb` 单档备份：只有 `app` + `schemaVersion` + `courses` + `settings`（5 键含 packageId/currentWeek）。 */
+    private fun legacyBackupJson(
+        courses: List<Course> = emptyList(),
+        settings: TimetableSettings = TimetableSettings.defaults(),
+        currentWeek: Int = 3,
+    ): String = MiniJson.encode(
+        linkedMapOf(
+            "app" to "mikcb",
+            "schemaVersion" to 1,
+            "packageId" to "legacy-1",
+            "profileName" to "旧课表",
+            "currentWeek" to currentWeek,
+            "courses" to courses.map { it.toJson() },
+            "settings" to settings.toJson(),
+        ),
+    )
+
+    private fun legacyFullBackupJson(): String = MiniJson.encode(
+        linkedMapOf(
+            "app" to "mikcb",
+            "schemaVersion" to 1,
+            "backupType" to "full",
+            "profiles" to listOf(
+                TimetableProfile(
+                    id = "p1",
+                    name = "全量备份",
+                    currentWeek = 1,
+                    createdAt = stamp,
+                    lastUsedAt = stamp,
+                ).toJson(),
+            ),
+            "timeSchemes" to listOf(scheme("s1", "默认").toJson()),
+        ),
     )
 }

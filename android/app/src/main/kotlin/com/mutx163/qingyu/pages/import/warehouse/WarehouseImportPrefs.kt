@@ -23,7 +23,7 @@ import com.mutx163.qingyu.app.KeyValueStore
  * 这三块本刀都不碰——它们分别属于网页登录（8c）、自定义调试页（8c）与云同步，
  * 硬塞进来会让「改个地址」变成一次跨模块重构。
  */
-class WarehouseImportPrefs(private val store: KeyValueStore) {
+class WarehouseImportPrefs(internal val store: KeyValueStore) {
 
     /** 用户为该适配器手填的登录地址；没填过回 `null`（`""` 也算没填）。 */
     fun customImportUrl(adapterId: String): String? =

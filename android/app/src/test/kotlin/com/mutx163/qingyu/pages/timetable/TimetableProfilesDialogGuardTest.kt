@@ -91,6 +91,69 @@ class TimetableProfilesDialogGuardTest {
     }
 
     @Test
+    fun `新建课表弹窗必须常驻组合 显隐只由 show 驱动`() {
+        val source = pageSource()
+        assertFalse(
+            "禁止条件挂载：`if (showCreateDialog)` 会让官方退场动画一次都播不出来",
+            source.contains("if (showCreateDialog)"),
+        )
+        assertTrue(
+            "CreateProfileDialog 必须常驻组合，显隐由 `show = showCreateDialog` 驱动",
+            source.contains("show = showCreateDialog"),
+        )
+    }
+
+    @Test
+    fun `四个更多操作弹层也必须常驻组合 不得用 _let 条件挂载`() {
+        val source = pageSource()
+        // `?.let {}` 与 `if (...) {}` 同属条件挂载：宿主把状态置空的那一刻弹层就被拆掉，
+        // 官方退场动画一次都播不出来（`.let` 只是换了个写法的 `if`）。
+        listOf(
+            "activeMenuProfile?.let {",
+            "renamingProfile?.let {",
+            "clearingProfile?.let {",
+            "deletingProfile?.let {",
+        ).forEach { conditional ->
+            assertFalse(
+                "禁止条件挂载：`$conditional` 会让弹层随状态置空立即销毁",
+                source.contains(conditional),
+            )
+        }
+        listOf(
+            "show = activeMenuProfile != null",
+            "show = renamingProfile != null",
+            "show = clearingProfile != null",
+            "show = deletingProfile != null",
+        ).forEach { driver ->
+            assertTrue("弹层显隐必须由 `$driver` 驱动", source.contains(driver))
+        }
+        assertTrue(
+            "退场动画期间要用 rememberLastNonNull 钉住最后一份非空快照",
+            source.contains("rememberLastNonNull("),
+        )
+
+        // 函数体内部：入参可空 + 显隐参数化 + 快照兜底，三者缺一不可。
+        // （新建弹窗没有实体入参，只需 `show` 驱动，见上一条用例。）
+        listOf(RENAME, CLEAR, DELETE, MORE_ACTIONS).forEach { marker ->
+            val block = functionBlock(source, marker)
+            assertTrue(
+                "$marker 的入参必须可空（profileOrNull），否则退场期只能强拆",
+                "profileOrNull: TimetableProfileItem?" in block,
+            )
+            assertTrue("$marker 必须显式接收 `show: Boolean`", "show: Boolean" in block)
+            assertFalse("$marker 仍在写死 `show = true`，退场动画无从播放", "show = true" in block)
+            assertTrue(
+                "$marker 必须用 `show = show` 驱动显隐",
+                "show = show" in block,
+            )
+            assertTrue(
+                "$marker 必须用 rememberLastNonNull 钉住入参",
+                "rememberLastNonNull(profileOrNull)" in block,
+            )
+        }
+    }
+
+    @Test
     fun `清空与删除使用危险色实心按钮`() {
         listOf(CLEAR, DELETE).forEach { marker ->
             val block = functionBlock(pageSource(), marker)

@@ -19,7 +19,9 @@ import com.mutx163.qingyu.app.TimetableRepository
 import com.mutx163.qingyu.app.TimetableSnapshot
 import com.mutx163.qingyu.core.Course
 import com.mutx163.qingyu.core.FormatException
+import com.mutx163.qingyu.core.TimeSchemeLogic
 import com.mutx163.qingyu.core.TimetableSettings
+import com.mutx163.qingyu.core.WeekCalculator
 import com.mutx163.qingyu.pages.ShellExternalEntryHub
 import com.mutx163.qingyu.pages.shell.ShellExternalEntry
 import com.mutx163.qingyu.platform.AndroidImportDocumentReader
@@ -51,7 +53,7 @@ import java.time.LocalDateTime
  * | 解析 | ICS→[IcsImportModel]；表格 csv→[SpreadsheetImportModel.parseBytes]、xlsx→[XlsxSheetDecoder] + [SpreadsheetImportModel.parseRows] |
  * | 预览确认 | [ImportPreviewDialog]（识别到几门 / 开学日 / 第 1 周对应校历第几周 / 覆盖还是更新）——**确认前一字节都不落盘** |
  * | 节次不足 | [ImportCapacityDialog] → 补节写时间模板（有主模板时写模板，否则写设置），失败回滚 |
- * | 落盘 | `repository.replaceActiveProfileContent` + `updateSettings(semesterStartDate)` |
+ * | 落盘 | `updateSettings`（开学日 + 学期总周数只升不降）+ `replaceActiveProfileContent`（课程）+ 重算当前周 |
  * | 下载模板 | [ImportTemplateModel] 正文 → `cacheDir/transfer-share/` → FileProvider → 系统分享面板 |
  *
  * ## 为什么写在 Compose 层而不是模型层
@@ -666,7 +668,8 @@ private fun parseSpreadsheet(
 /**
  * 真正落盘（Dart `provider.importParsedCourses` 的 Kotlin 侧等价物）。
  *
- * 顺序与 Dart 一致：**先确认节次够（必要时当场补表并落盘）→ 再写课程 → 最后写开学日**。
+ * 顺序与 Dart 一致：**先确认节次够（必要时当场补表并落盘）→ 写学期设置（总周数只升不降、
+ * 开学日）→ 按生效模板同步课程钟点后写课程 → 重算当前周、清实时卡片**。
  * 任一步抛错就把已改的设置/节次回滚回去——「导入失败但作息被改了」是最难解释的状态。
  *
  * 课程写入走 `replaceActiveProfileContent`（一次落盘 + 一次通知），作业与考试原样带上，
@@ -702,14 +705,49 @@ private fun applyImport(
                 repository.updateSettings(before.settings.copy(sections = nextSections))
             }
         }
-        request.semesterStartDate?.let { start ->
-            repository.updateSettings(repository.snapshot.settings.copy(semesterStartDate = start))
+        // Dart `importParsedCourses`：学期总周数按合并后课程的最大周次**只升不降**落盘；
+        // 开学日若有变化一并在同一次设置写入里提交（模板路径已先改写节次镜像，这里重取快照）。
+        val baseSettings = repository.snapshot.settings
+        val nextSettings = baseSettings.copy(
+            semesterStartDate = request.semesterStartDate ?: baseSettings.semesterStartDate,
+            semesterWeekCount = ImportFlowModel.nextSemesterWeekCount(
+                baseSettings.semesterWeekCount,
+                plan.courses,
+            ),
+        )
+        if (nextSettings != baseSettings) {
+            repository.updateSettings(nextSettings)
         }
+        // Dart 写入前会按生效时间模板重新绑定课程节次（`syncCoursesWithEffectiveTimeSchemes`），
+        // 补过节的模板也在这时生效。
+        val syncedCourses = TimeSchemeLogic.syncCoursesWithEffectiveTimeSchemes(
+            source = plan.courses,
+            schemes = repository.snapshot.timeSchemes,
+            settings = repository.snapshot.settings,
+            locationTimeGroups = repository.snapshot.locationTimeGroups,
+            scheduleDateRules = repository.snapshot.scheduleDateRules,
+        )
         repository.replaceActiveProfileContent(
-            courses = plan.courses,
+            courses = syncedCourses,
             tasks = repository.tasks,
             exams = repository.exams,
         )
+        // Dart：给了开学日就按今天重算当前周；课程写成功后再落，失败不留半张课表。
+        request.semesterStartDate?.let {
+            runCatching {
+                val settings = repository.snapshot.settings
+                repository.setCurrentWeek(
+                    WeekCalculator.weekForDate(
+                        date = LocalDateTime.now(),
+                        semesterStart = settings.semesterStartDate,
+                        semesterWeekCount = settings.semesterWeekCount,
+                        fallback = before.currentWeek,
+                    ),
+                )
+            }
+        }
+        // Dart：导入后清掉「正在上课」实时卡片，等下一轮按新课表重算。
+        runCatching { repository.clearCurrentLiveCourseId() }
         ApplyResult.Done(
             message = ImportSharedModel.buildImportResultMessage(
                 importedCount = plan.importedCount,

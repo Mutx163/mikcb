@@ -6,6 +6,7 @@ import com.mutx163.qingyu.core.Exam
 import com.mutx163.qingyu.core.ScheduleItem
 import com.mutx163.qingyu.core.TimetableSettings
 import com.mutx163.qingyu.pages.timetable.TimetableDateLogic
+import com.mutx163.qingyu.pages.timetable.WeekAgendaLogic
 import com.mutx163.qingyu.pages.timetable.WeekGridCourseMapping
 import java.time.LocalDate
 import java.time.LocalDateTime
@@ -246,17 +247,9 @@ object DayViewDataAssembler {
         return DayViewStrings.dateWithWeekday(date.monthValue, date.dayOfMonth, dayOfWeek)
     }
 
-    /** 考试是否已过期（Dart `Exam.isExpired`：结束时间早于此刻）。 */
-    fun isExamExpired(exam: Exam, now: LocalDateTime = LocalDateTime.now()): Boolean {
-        val end = exam.dateTime.toLocalDate()
-            .atTime(parseClock(exam.endTime) ?: return now.toLocalDate() > exam.dateTime.toLocalDate())
-        return end.isBefore(now)
-    }
-
-    private fun parseClock(text: String): java.time.LocalTime? = runCatching {
-        val parts = text.trim().split(':')
-        java.time.LocalTime.of(parts[0].toInt(), parts[1].toInt())
-    }.getOrNull()
+    /** 考试是否已过期（Dart `Exam.isExpired`：结束时间早于此刻，结束钟点缺省 23:59）。 */
+    fun isExamExpired(exam: Exam, now: LocalDateTime = LocalDateTime.now()): Boolean =
+        WeekAgendaLogic.isExamExpired(exam, now)
 
     /** 分钟数 → `HH:mm`（摘要卡的议程区间文案用）。 */
     private fun clockText(minutes: Int): String =

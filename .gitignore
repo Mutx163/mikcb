@@ -216,3 +216,9 @@ docs/WSL-DSH-*.md
 /store_screenshots/
 /package.json
 /thinking-effort-loaded.json
+
+# 本机 JDK 路径覆盖（compose-migration 需 JDK 21，各机路径不同，不进库）
+/gradle.properties
+
+# Kotlin 构建缓存目录（本机构建产物，不进库）
+/android/.kotlin/

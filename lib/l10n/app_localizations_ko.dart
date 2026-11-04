@@ -10337,4 +10337,22 @@ class AppLocalizationsKo extends AppLocalizations {
   String colorOptionLabel(String name) {
     return '$name';
   }
+
+  @override
+  String get backupRestoreCommitFailed => '복원 실패, 롤백됨';
+
+  @override
+  String get backupRestoreRollbackFailed => '복원·롤백 실패, 저장소 확인';
+
+  @override
+  String stopRecordingWithCount(int count) {
+    return '녹화 중지 ($count)';
+  }
+
+  @override
+  String get timetableProfileActiveBadge => '활성';
+
+  @override
+  String get webdavPasswordReentryBody =>
+      '이번 업데이트로 비밀번호 저장 방식이 변경되었습니다. 앱 비밀번호를 한 번 다시 입력해 주세요. 서버 주소, 계정 및 동기화 설정은 유지됩니다.';
 }

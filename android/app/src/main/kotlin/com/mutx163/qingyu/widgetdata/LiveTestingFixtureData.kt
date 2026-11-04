@@ -2,6 +2,7 @@ package com.mutx163.qingyu.widgetdata
 
 import com.mutx163.qingyu.core.Course
 import java.time.LocalDateTime
+import java.util.Locale
 
 /**
  * 自检预设课/测试课表合成（移植 lib/services/live_testing_fixture_service.dart
@@ -35,7 +36,7 @@ object LiveTestingFixtureData {
     /** 1-based section number → stable fixture id (`live_test_01` …)。 */
     fun fixtureIdForSection(sectionNumber: Int): String {
         val normalized = if (sectionNumber < 1) 1 else sectionNumber
-        return "$COURSE_ID_PREFIX%02d".format(normalized)
+        return String.format(Locale.ROOT, "$COURSE_ID_PREFIX%02d", normalized)
     }
 
     /**
@@ -116,7 +117,7 @@ object LiveTestingFixtureData {
     ): Course {
         val normalizedSection = if (sectionNumber < 1) 1 else sectionNumber
         val color = colorForSection(normalizedSection, 24)
-        val padded = "%02d".format(normalizedSection)
+        val padded = String.format(Locale.ROOT, "%02d", normalizedSection)
         return Course(
             id = fixtureIdForSection(normalizedSection),
             name = "测试 第${normalizedSection}节",
@@ -164,8 +165,8 @@ object LiveTestingFixtureData {
         val endHour = if (hour == 23) 23 else hour + 1
         val endMinute = if (hour == 23) 59 else 0
         SectionTimeData(
-            startTime = "%02d:00".format(hour),
-            endTime = "%02d:%02d".format(endHour, endMinute),
+            startTime = String.format(Locale.ROOT, "%02d:00", hour),
+            endTime = String.format(Locale.ROOT, "%02d:%02d", endHour, endMinute),
         )
     }
 
@@ -222,7 +223,8 @@ object LiveTestingFixtureData {
             in 4.0..<5.0 -> Triple(x, 0.0, c)
             else -> Triple(c, 0.0, x)
         }
-        fun channel(v: Double): String = "%02x".format(((v + m) * 255.0).toInt().coerceIn(0, 255))
+        fun channel(v: Double): String =
+            String.format(Locale.ROOT, "%02x", ((v + m) * 255.0).toInt().coerceIn(0, 255))
         return "#${channel(r)}${channel(g)}${channel(b)}"
     }
 }

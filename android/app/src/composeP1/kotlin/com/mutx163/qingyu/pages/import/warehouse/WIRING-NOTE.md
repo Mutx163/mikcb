@@ -285,11 +285,12 @@ pwsh -NoProfile -File scripts/safe-gradle.ps1 :app:compileComposeUiDebugKotlin -
 
 ### 仍未接（诚实清单）
 
-- 脚本回传的 `courses` 只记日志：写课表需要 `TimetableRepository`，属上层接线；
-- 桥接对话框（confirm/prompt/单选框）没有原生 UI；原生回答可用
-  `warehouseBridgeResolveScript(requestId, jsonValue)` 注入，对话框由上层做；
+- ~~脚本回传的 `courses` 只记日志~~：已由 F32 写回（见 §10）；
+- ~~桥接对话框（confirm/prompt/单选框）没有原生 UI~~：已由 I2-1 接原生弹窗
+  （`WarehouseBridgeDialogs.kt`，回答经 `warehouseBridgeResolveScript` 回网页）；
 - 登录态探针/自动填充仍缺（见 §7 #2）；
-- `saveCourseConfig` / `savePresetTimeSlots` 需要落盘，未接；
+- ~~`saveCourseConfig` / `savePresetTimeSlots` 需要落盘，未接~~：`saveCourseConfig`
+  已由 I2-2 落盘（学期周数/开学日）；`savePresetTimeSlots` 仍诚实回 `false`（作息切换链路未移植）；
 - 真机全未验。
 
 ## 10. F32（2026-11-01）：抓回课程写入仓储 + 网页对话框降级
@@ -313,18 +314,22 @@ pwsh -NoProfile -File scripts/safe-gradle.ps1 :app:compileComposeUiDebugKotlin -
 | 没有 | `REPLACE` |
 | 有 | `MERGE`（绝不静默清空用户已有课表） |
 
-显式替换还没有入口（Dart 会弹「替换/合并」），`applyPayload` 的 `requestedMode` 是给
-后续原生弹窗预留的。解析后没有可导入课程时**不写盘**，避免一键清空。
+显式替换入口已由 I2-3 接上：当前档案已有课时，解析后先弹「替换/合并」（复用导入域
+`ImportPreviewDialog`，`requestedMode` 按选择传入），用户取消则本次导入中止、不写盘。
+解析后没有可导入课程时**不写盘**，避免一键清空。
 
-### 网页对话框降级（原生对话框未移植）
+### 网页对话框（I2-1/I2-2 已接原生；降级只剩一条兜底）
 
-| 网页调用 | 原生回答 | 说明 |
+| 网页调用 | 原生行为 | 说明 |
 |---|---|---|
-| `confirm` / `showAlert` | `true` | 对齐 Dart 宏回放：未录到的 confirm 默认确认 |
-| `prompt` | 脚本自带 `defaultValue` | 用户看不到输入框，只是不挂起 |
-| `singleSelection` | 脚本自带 `selectedIndex`（缺省 0） | 同上 |
-| `saveCourseConfig` / `savePresetTimeSlots` | `false` | 诚实不可用：配置没落盘 |
+| `confirm` / `showAlert` | 原生确认弹窗（`WarehouseScriptConfirmDialog`） | 取消/点外部 resolve `false` |
+| `prompt` | 原生输入弹窗（`validateYearInput` 本地校验 4 位年份） | 取消 resolve `null` |
+| `singleSelection` | 原生单选弹窗 | 取消 resolve `null`；录制期存「选中项文字」 |
+| `saveCourseConfig` | 真落盘（学期周数/开学日，无效值不覆盖）后回 `true`；失败回 `false` | I2-2 |
+| `savePresetTimeSlots` | 仍回 `false` | 诚实不可用：作息切换链路未移植 |
 
+降级回答（`warehouseBridgeFallbackAnswer`）只剩两个用途：`savePresetTimeSlots`，
+以及「已有弹窗待答时并发到来第二个弹窗」的防挂起兜底。
 以上都记 `WarehouseWebLogin` 日志；`requestId` 与原有 resolve 共用同一份白名单校验。
 
 ### 壳侧必须补的一个参数（本泳道不改 `ShellPageIndex.kt`）
@@ -341,9 +346,16 @@ pwsh -NoProfile -File scripts/safe-gradle.ps1 :app:compileComposeUiDebugKotlin -
 
 ### 仍未接（诚实清单）
 
-- 「替换 / 合并」与「开学日 / 周次映射」弹窗：当前周次按脚本原值写入，不做 `firstCourseWeek` 平移；
-- 原生 confirm / prompt / 单选界面：现在只有确定性降级回答；
-- `saveCourseConfig` / `savePresetTimeSlots` 落盘：现在回答 `false`；
-- 宏录制/快捷导入、登录态探针/自动填充：仍未移植；
+- 「开学日 / 周次映射」弹窗：当前周次按脚本原值写入，不做 `firstCourseWeek` 平移
+  （「替换/合并」选择已由 I2-3 接上：已有课时弹 `ImportPreviewDialog` 的替换/合并分支，
+  空表仍直接 REPLACE 不问）；
+- ~~原生 confirm / prompt / 单选界面~~：已由 I2-1 接上（`WarehouseBridgeDialogs.kt`；
+  录制期应答按 Dart 口径记入宏的 `dialogResponses`）；
+- ~~`saveCourseConfig` 落盘~~：已由 I2-2 接上（`resolveWarehouseCourseConfig` →
+  `TimetableRepository.updateSettings`；无效值不覆盖用户设置；`firstDayOfWeek` 等
+  不支持键记日志后忽略）。`savePresetTimeSlots` 仍回答 `false`（作息切换链路未移植）；
+- 宏录制已由 I2-4 接上（录制 JS 注入/重注、`macro:event` 收集、事件转步骤、
+  保存到与 Dart 同一份 prefs 键）；**快捷导入（宏回放）仍未移植**——
+  列表页「快捷导入」入口按真值显示，但点了仍是「不可用」实话；
 - 真机全未验：只能声明「L0 单测通过」。
 

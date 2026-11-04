@@ -287,33 +287,45 @@ private fun CoverageLine(row: CoverageRow) {
     }
 }
 
-/** 课次行（Dart `_SessionTile`：阶段徽标 + 副标题 + 备注）。 */
+/** 课次行（Dart `_SessionRow`：标题 + 考试/阶段徽标 + 副标题 + 备注）。 */
 @Composable
 private fun SessionLine(row: SessionRow) {
     val dark = isSystemInDarkTheme()
     Column(modifier = Modifier.fillMaxWidth()) {
         Row(verticalAlignment = Alignment.CenterVertically) {
-            Box(
-                modifier = Modifier
-                    .clip(RoundedCornerShape(6.dp))
-                    .background(Color(QingyuTheme.rowHighlight(dark)))
-                    .padding(horizontal = 8.dp, vertical = 3.dp),
-            ) {
-                Text(
-                    text = row.phaseLabel,
-                    style = MiuixTheme.textStyles.footnote1.shiftWeight(QingyuWeightDelta.MEDIUM),
-                    color = Color(QingyuTheme.primaryText(dark)),
+            Text(
+                text = row.title,
+                modifier = Modifier.weight(1f),
+                style = MiuixTheme.textStyles.body1,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                color = Color(QingyuTheme.primaryText(dark)),
+            )
+            val examBadge = row.examBadge
+            if (examBadge != null) {
+                Spacer(Modifier.width(8.dp))
+                Badge(
+                    text = examBadge,
+                    textColor = QingyuTheme.error(dark),
+                    backgroundColor = QingyuTheme.error(dark),
+                    backgroundAlpha = 0.12f,
                 )
             }
-            Spacer(Modifier.width(8.dp))
-            Text(
-                text = row.subtitle,
-                style = MiuixTheme.textStyles.body2,
-                maxLines = 2,
-                overflow = TextOverflow.Ellipsis,
-                color = Color(QingyuTheme.secondaryText(dark)),
+            Spacer(Modifier.width(6.dp))
+            Badge(
+                text = row.phaseLabel,
+                textColor = QingyuTheme.primaryText(dark),
+                backgroundColor = QingyuTheme.rowHighlight(dark),
             )
         }
+        Spacer(Modifier.height(2.dp))
+        Text(
+            text = row.subtitle,
+            style = MiuixTheme.textStyles.body2,
+            maxLines = 2,
+            overflow = TextOverflow.Ellipsis,
+            color = Color(QingyuTheme.secondaryText(dark)),
+        )
         val note = row.noteText
         if (note != null) {
             Spacer(Modifier.height(4.dp))
@@ -325,6 +337,28 @@ private fun SessionLine(row: SessionRow) {
                 color = Color(QingyuTheme.primaryText(dark)),
             )
         }
+    }
+}
+
+/** 行内小徽标（Dart `HyperosTag`：圆角底 + footnote2 + 中等字重）。 */
+@Composable
+private fun Badge(
+    text: String,
+    textColor: Int,
+    backgroundColor: Int,
+    backgroundAlpha: Float = 1f,
+) {
+    Box(
+        modifier = Modifier
+            .clip(RoundedCornerShape(6.dp))
+            .background(Color(backgroundColor).copy(alpha = backgroundAlpha))
+            .padding(horizontal = 8.dp, vertical = 3.dp),
+    ) {
+        Text(
+            text = text,
+            style = MiuixTheme.textStyles.footnote1.shiftWeight(QingyuWeightDelta.MEDIUM),
+            color = Color(textColor),
+        )
     }
 }
 

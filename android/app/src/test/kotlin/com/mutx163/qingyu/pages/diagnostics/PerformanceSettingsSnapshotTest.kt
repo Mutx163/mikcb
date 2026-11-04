@@ -157,7 +157,7 @@ class PerformanceSettingsSnapshotTest {
         val snapshot = PerformanceSnapshot.buildSettingsDerivedSnapshot(model, core())
 
         assertEquals("dark", snapshot["themeMode"])
-        assertEquals("miSans", snapshot["fontMode"])
+        assertEquals("mi_sans", snapshot["fontMode"])
         assertEquals(500, snapshot["fontWeight"])
         assertEquals(1.25, snapshot["textScale"])
         assertEquals(1.5, snapshot["pageTransitionSpeed"])

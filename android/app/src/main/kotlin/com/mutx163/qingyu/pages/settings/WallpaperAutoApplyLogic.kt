@@ -6,6 +6,7 @@ import com.mutx163.qingyu.weather.BingWallpaperDaily
 import com.mutx163.qingyu.weather.BingWallpaperItem
 import com.mutx163.qingyu.weather.BingWallpaperLedger
 import com.mutx163.qingyu.weather.DailyApplyOutcome
+import com.mutx163.qingyu.weather.WallpaperEvictionRules
 import java.time.LocalDate
 import java.time.LocalDateTime
 
@@ -194,7 +195,7 @@ object WallpaperAutoApplyLogic {
     /**
      * 自动换淘汰文件的待删清单：过一遍三路并集白名单。
      *
-     * 与手动路径共用 [WallpaperHistoryLedger.evictionWhitelist] —— 自动换写下的那张
+     * 与手动路径共用 [WallpaperEvictionRules.evictionWhitelist] —— 自动换写下的那张
      * **不在历史里**，只按历史当白名单会把它删掉、首页当场裂图（Dart `:265-274`）。
      *
      * ⚠️ [allProfilesCurrentPaths] 与 [profilesReadable] **都必填、无默认值**：
@@ -207,9 +208,9 @@ object WallpaperAutoApplyLogic {
         profilesReadable: Boolean,
         draftPath: String? = null,
         snapshot: WallpaperAutoApplySnapshot = WallpaperAutoApplySnapshot(),
-    ): List<String> = WallpaperHistoryLedger.deletable(
+    ): List<String> = WallpaperEvictionRules.deletable(
         evictedPaths = evictedPaths,
-        whitelist = WallpaperHistoryLedger.evictionWhitelist(
+        whitelist = WallpaperEvictionRules.evictionWhitelist(
             allProfilesCurrentPaths = allProfilesCurrentPaths,
             profilesReadable = profilesReadable,
             draftPath = draftPath,

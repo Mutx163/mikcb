@@ -826,6 +826,10 @@ fun ShellPageContent(
             val shellContext = LocalContext.current
             val taskController = remember(repository) { TaskListController(repository) }
             Box(modifier = Modifier.fillMaxSize()) {
+            // 日视图分支**只取一次钟**：上面「今天在哪一周」按 `today` 现算，下面装配器按 `now`
+            // 判「今天/进行中/考试过期」。两处各自 `now()` 时跨零点一瞬会出现周次与「今天」错位
+            //（例如 00:00:00 前取到周次、00:00:01 后取到日期）。
+            val dayViewNow = LocalDateTime.now()
             DayViewPage(
                 summaryModifier = dayOverlay?.summaryModifier ?: Modifier,
                 initialWeek = dayOverlay?.initialWeek ?: snapshot.currentWeek.coerceAtLeast(1),
@@ -848,7 +852,7 @@ fun ShellPageContent(
                 realCurrentWeek = TimetableDateLogic.currentSemesterWeek(
                     semesterStart = snapshot.settings.semesterStartDate?.toLocalDate(),
                     totalWeeks = snapshot.settings.semesterWeekCount,
-                    today = LocalDate.now(),
+                    today = dayViewNow.toLocalDate(),
                 ),
                 weekdayStyle = TimetableStyleMapping.weekViewStyle(appSettings),
                 // 「课卡显示冲突角标」开关（Dart `showConflictBadgeOnTimetable`）。
@@ -906,13 +910,18 @@ fun ShellPageContent(
                             courses = snapshot.courses,
                             settings = snapshot.settings,
                             currentWeek = snapshot.currentWeek,
+                            // 与上面 `realCurrentWeek` 同一次取钟，杜绝跨零点错位。
+                            now = dayViewNow,
                             scheduleItems = snapshot.scheduleItems,
                             exams = repository.exams,
                             tasks = repository.tasks,
                             showNonCurrentWeekCourses =
                                 appSettings.timetableShowNonCurrentWeekCourses,
-                            // 日卡天气行：只在「日视图课卡显示天气」开着且有 provider 时返回非空。
-                            weatherOf = weatherOf,
+                            // 日卡天气行：取数器带当前页的 week，停课周整行不挂
+                            //（Dart `day_view_course_agenda_card_variants.dart:166-169`）。
+                            weatherOf = weatherOf?.let { resolve ->
+                                { date, course -> resolve(week, date, course) }
+                            },
                         ),
                     )
                 },
@@ -1092,15 +1101,22 @@ fun ShellPageContent(
                     val sections = snapshot.settings.sections
                     val index = (entry.startSection - 1).coerceAtLeast(0)
                     val section = sections.getOrNull(index)
-                    if (section != null) {
-                        AddCourseEntryClock(startTime = section.startTime, endTime = section.endTime)
-                    } else {
-                        val startMinutes = 8 * 60 + index * 55
-                        AddCourseEntryClock(
-                            startTime = clockText(startMinutes),
-                            endTime = clockText(startMinutes + 45),
-                        )
-                    }
+                    val templateStartTime = section?.startTime ?: clockText(8 * 60 + index * 55)
+                    val templateEndTime = section?.endTime ?: clockText(8 * 60 + index * 55 + 45)
+                    // Dart add_course_screen.dart:2021-2039：编辑既有课且原文 hasCustomTime、节次未变时，
+                    // 模板不得覆盖适配脚本钉住的钟点（否则「改个教师再保存」会把 07:00 静默改回 08:00）。
+                    val clock = com.mutx163.qingyu.course.CourseDomain.editCourseClock(
+                        original = entry.originalCourse,
+                        startSection = entry.startSection,
+                        endSection = entry.endSection,
+                        templateStartTime = templateStartTime,
+                        templateEndTime = templateEndTime,
+                    )
+                    AddCourseEntryClock(
+                        startTime = clock.startTime,
+                        endTime = clock.endTime,
+                        hasCustomTime = clock.hasCustomTime,
+                    )
                 },
                 onSave = { payload ->
                     // 服务校验 / 落盘失败会抛异常。不接的话异常从 Compose 点击回调里逃逸，
@@ -1669,6 +1685,9 @@ fun ShellPageContent(
                 // 「已到点」也算已到点、顺延一周）；标题/正文对齐 `:36` / `:38-71`。
                 // 统计数字**不重算**——复用已交付的 `statistics/StatisticsService`。
                 onWeeklyReportToggle = { enabled ->
+                    // Lead 授权例外科改（行为接线，仅本函数体）：开关值同时写 settings，
+                    // 否则备份/导出永远读到旧的 false。settings 已是唯一真源（见 TimetableStore）。
+                    wiring.timetable.writeRawSettingsPatch(mapOf("weeklyReportEnabled" to enabled))
                     if (enabled) {
                         val now = LocalDateTime.now()
                         val snap = wiring.timetable.snapshot
@@ -2133,6 +2152,9 @@ fun ShellPageContent(
                 ),
                 onBack = onBack,
                 onPersistHideFromRecents = { hidden ->
+                    // Lead 授权例外科改（行为接线，仅本函数体）：开关值同时写 settings，
+                    // 保证备份/导出与运行时一致（否则导出永远读到旧的 false）。
+                    wiring.timetable.writeRawSettingsPatch(mapOf("liveHideFromRecents" to hidden))
                     // `apply()` 是异步写，失败拿不到结果：会出现「开关看着关了、实际没关」。
                     // 改成 `commit()` 并检查返回值；失败交回页面（页面会把开关弹回原值），这里补 toast。
                     val prefs = context.getSharedPreferences("native_runtime_prefs", android.content.Context.MODE_PRIVATE)

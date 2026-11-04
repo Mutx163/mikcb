@@ -300,7 +300,10 @@ class LanEditRepositoryHostTest {
             warnings = listOf("w1"),
             format = "csv",
         )
-        val host = LanEditRepositoryHost(repository) { _, _, _ -> parsed }
+        val host = LanEditRepositoryHost(
+            repository = repository,
+            parseSpreadsheet = { _, _, _ -> parsed },
+        )
 
         val appended = host.importSpreadsheetBytes("a,b".toByteArray(), "x.csv", replaceExisting = false)
         assertEquals(2, appended.importedCount)
@@ -320,9 +323,12 @@ class LanEditRepositoryHostTest {
         repository.addCourse(course("old", "旧课"))
         val before = store.rawSnapshot()
 
-        val host = LanEditRepositoryHost(repository) { _, _, _ ->
-            LanEditSpreadsheetParse(emptyList(), listOf("no rows"), "csv")
-        }
+        val host = LanEditRepositoryHost(
+            repository = repository,
+            parseSpreadsheet = { _, _, _ ->
+                LanEditSpreadsheetParse(emptyList(), listOf("no rows"), "csv")
+            },
+        )
         val outcome = host.importSpreadsheetBytes("a,b".toByteArray(), "x.csv", replaceExisting = true)
 
         assertEquals(0, outcome.importedCount)
@@ -349,9 +355,12 @@ class LanEditRepositoryHostTest {
         // 节次倒挂（endSection < startSection）：prepareForImport 的校验会拒。
         val bad = course("n2", "新课二").copy(startSection = 3, endSection = 1)
         val good3 = course("n3", "新课三")
-        val host = LanEditRepositoryHost(repository) { _, _, _ ->
-            LanEditSpreadsheetParse(listOf(good1, bad, good3), emptyList(), "csv")
-        }
+        val host = LanEditRepositoryHost(
+            repository = repository,
+            parseSpreadsheet = { _, _, _ ->
+                LanEditSpreadsheetParse(listOf(good1, bad, good3), emptyList(), "csv")
+            },
+        )
 
         val error = try {
             host.importSpreadsheetBytes("a,b".toByteArray(), "x.csv", replaceExisting = true)
@@ -384,13 +393,16 @@ class LanEditRepositoryHostTest {
         val store = InMemoryKeyValueStore()
         val repository = repositoryOn(store)
         repository.addCourse(course("old", "旧课"))
-        val host = LanEditRepositoryHost(repository) { _, _, _ ->
-            LanEditSpreadsheetParse(
-                listOf(course("n1", "新课一"), course("n2", "新课二")),
-                emptyList(),
-                "csv",
-            )
-        }
+        val host = LanEditRepositoryHost(
+            repository = repository,
+            parseSpreadsheet = { _, _, _ ->
+                LanEditSpreadsheetParse(
+                    listOf(course("n1", "新课一"), course("n2", "新课二")),
+                    emptyList(),
+                    "csv",
+                )
+            },
+        )
 
         val outcome = host.importSpreadsheetBytes("a,b".toByteArray(), "x.csv", replaceExisting = true)
 

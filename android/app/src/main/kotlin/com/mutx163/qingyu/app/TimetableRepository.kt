@@ -137,7 +137,17 @@ class TimetableRepository(
     @Synchronized
     fun reload() {
         val profilesResult = store.loadProfiles()
-        loadedProfiles = profilesResult.profiles
+        // 旧 `courses` 通道 bootstrap：只在「盘上还没有可用档案」时组装默认档案
+        // （Dart `storage_service.dart:1637-1651`）。幂等标记与「不覆盖已有档案」
+        // 由 TimetableStore 保证；这里只把迁移结果并入本次装载视图。
+        var profiles = profilesResult.profiles
+        if (profiles.isEmpty()) {
+            val bootstrap = store.bootstrapLegacyProfileIfNeeded(currentProfilesEmpty = true)
+            if (bootstrap.bootstrapped) {
+                bootstrap.profile?.let { profiles = listOf(it) }
+            }
+        }
+        loadedProfiles = profiles
         val storedActiveId = store.loadActiveProfileId()
         // 悬空 id（指向不存在的档案）回落第一份，避免 activeProfileId 指向空气。
         loadedActiveProfileId = storedActiveId
@@ -148,6 +158,11 @@ class TimetableRepository(
         loadedTimeSchemes = store.loadTimeSchemes().schemes
         loadedScheduleDateRules = store.loadScheduleDateRules()
         loadedLocationTimeGroups = store.loadLocationTimeGroups()
+        // D1：整条档案坏掉时把清洗结果写回（坏记录已由 store.loadProfiles 先留档）。
+        // 写回只切除坏记录、其余条目逐字节保留；写入在本对象的锁内完成，与 UI 写入串行。
+        profilesResult.prunedRawProfiles?.let { pruned ->
+            runCatching { store.saveRawProfiles(pruned) }
+        }
     }
 
     /** 盘上档案的解析结果（含「只是条目级损坏」信号，供宿主决定是否提示用户）。 */
@@ -159,6 +174,14 @@ class TimetableRepository(
      * 只给「删档案后回收独占用图」的引用扫描用——本层不认识壁纸键，也不做可用性判断。
      */
     fun rawStoredJson(key: String): String? = store.rawJson(key)
+
+    /**
+     * 盘上每份档案**内嵌**的完整 `settings`（id → 键值表，只读）。
+     *
+     * 云备份写快照要用：`TimetableProfile.settings` 只带 core 4 键，整份 250+ 键
+     * 设置只存在于磁盘档案里（见 [TimetableStore.embeddedSettingsById]）。
+     */
+    fun embeddedSettingsById(): Map<String, Map<String, Any?>> = store.embeddedSettingsById()
 
     // ---------- 对外只读视图 ----------
 
@@ -395,6 +418,56 @@ class TimetableRepository(
         return out
     }
 
+    // ---------- 整份原始 settings 的带锁通道 ----------
+
+    /**
+     * **带锁读盘上整份 settings**（原样键集，含本层不认识的 Dart 侧 250+ 键）。
+     *
+     * 给「必须按整份 JSON 处理、又不该绕过仓储直接摸 `KeyValueStore`」的调用方
+     * （当前是局域网导入）。返回值是副本，调用方随便改不会影响内存或盘上状态。
+     *
+     * 注意：盘上可能保留合并写产生的显式 `null`（表示「该键已删除」）。本方法原样返回，
+     * 语义判断留给调用方，与 [TimetableStore.loadSettingsJson] 一致。
+     */
+    fun readRawSettings(): Map<String, Any?> = readRawSettingsLocked()
+
+    @Synchronized
+    private fun readRawSettingsLocked(): Map<String, Any?> = LinkedHashMap(store.loadSettingsJson())
+
+    /**
+     * **带锁按 patch 合并写整份 settings**：只覆盖 [patch] 里出现的键，值 `null` 表示删键。
+     *
+     * 口径与 [TimetableStore.saveSettingsPatch] / [TimetableStore.saveSettingsPatchToActiveProfile]
+     * 完全相同（后者同步活动档案内嵌的 `settings`，桌面小组件读的是那一份）；
+     * 区别只在于**整段读-合并-写发生在同一把锁内**，与 UI 设置编辑并发时不会丢更新。
+     *
+     * 成功后从盘上重载一次内存快照并通知监听者（patch 可能改到核心键，
+     * 如 `semesterWeekCount` / `sections`，不能只写盘不改内存）。
+     *
+     * @return true = 已落盘且快照已刷新；false = 底层抛错（内存不动）。
+     */
+    fun writeRawSettingsPatch(patch: Map<String, Any?>): Boolean {
+        if (patch.isEmpty()) return true
+        val ok = writeRawSettingsPatchLocked(patch)
+        if (ok) drainPendingNotify()
+        return ok
+    }
+
+    @Synchronized
+    private fun writeRawSettingsPatchLocked(patch: Map<String, Any?>): Boolean =
+        try {
+            // saveSettingsPatch 现在同时写活动档案内嵌 settings（真源）与顶层镜像，
+            // 不必再单独调 saveSettingsPatchToActiveProfile（避免同一份档案写两遍）。
+            store.saveSettingsPatch(patch)
+            reload()
+            pendingNotify = true
+            true
+        } catch (_: Exception) {
+            // 顶层写与档案内嵌写之间失败时，盘上可能只落了前一半；
+            // 本层不实现跨 key 事务（见 replaceActiveProfileContent 的同类说明），内存保持旧值。
+            false
+        }
+
     // ---------- 备份恢复用的原子入口 ----------
 
     /**
@@ -493,8 +566,15 @@ class TimetableRepository(
         profiles: List<TimetableProfile>,
         activeProfileId: String?,
         settings: TimetableSettings,
+        /**
+         * 可选的日历周（调用方已按新 [settings] 算好并 clamp）。
+         *
+         * 非空时与 [profiles] / [settings] 在**同一次锁定写入**里落盘（`current_week` 键 +
+         * 活动档案内嵌的 `currentWeek`），并且仍然只通知一次；为空时行为与旧签名完全一致。
+         */
+        currentWeek: Int? = null,
     ) {
-        replaceAllProfilesAndSettingsLocked(profiles, activeProfileId, settings)
+        replaceAllProfilesAndSettingsLocked(profiles, activeProfileId, settings, currentWeek)
         drainPendingNotify()
         // 日期规则自动套用会整块换档案（含日程与考试），绕过了写服务的提醒漏斗，
         // 这里补一次重排（`ScheduleReminderScheduler.reconcile` KDoc 列明的
@@ -507,13 +587,31 @@ class TimetableRepository(
         profiles: List<TimetableProfile>,
         activeProfileId: String?,
         settings: TimetableSettings,
+        currentWeek: Int?,
     ) {
+        // 周次非空：先把新设置下的钳制结果同步进活动档案（Dart `_persistActiveProfileState`
+        // 的一致性口径），再与其余 key 一起落盘。悬空 id 回落第一份，与 [reload] 读侧一致。
+        val clampedWeek = currentWeek
+            ?.let { clampCurrentWeekToSettings(it.toLong(), settings).toInt() }
+        val nextProfiles = if (clampedWeek == null) {
+            profiles
+        } else {
+            val targetId = activeProfileId
+                ?.takeIf { id -> profiles.any { it.id == id } }
+                ?: profiles.firstOrNull()?.id
+            profiles.map { profile ->
+                if (profile.id == targetId) profile.copy(currentWeek = clampedWeek.toLong())
+                else profile
+            }
+        }
         store.saveSettings(settings)
-        store.saveProfiles(profiles)
+        store.saveProfiles(nextProfiles)
         store.saveActiveProfileId(activeProfileId)
+        if (clampedWeek != null) store.saveCurrentWeek(clampedWeek)
         loadedSettings = settings
-        loadedProfiles = profiles
+        loadedProfiles = nextProfiles
         loadedActiveProfileId = activeProfileId
+        if (clampedWeek != null) loadedCurrentWeek = clampedWeek
         pendingNotify = true
     }
 
@@ -546,6 +644,13 @@ class TimetableRepository(
         locationTimeGroups: List<LocationTimeGroup>,
         /** 快照里携带的全局设置（core 四键）；null = 取激活档案内嵌的那份。 */
         settings: TimetableSettings? = null,
+        /**
+         * 快照里每份档案**完整内嵌**的 settings（id → 键值表）。
+         *
+         * 备份恢复时这里的键优先落盘，不被本机当前内嵌覆盖；老备份只带 core 4 键时，
+         * 本机其余键仍按 [TimetableStore.saveProfiles] 的铺底口径保留。
+         */
+        preferredEmbeddedSettings: Map<String, Map<String, Any?>> = emptyMap(),
     ) {
         restoreFromCloudSnapshotLocked(
             profiles,
@@ -554,6 +659,7 @@ class TimetableRepository(
             scheduleDateRules,
             locationTimeGroups,
             settings,
+            preferredEmbeddedSettings,
         )
         drainPendingNotify()
         // 云恢复整块替换了课 / 作业 / 考试 / 日程，绕过了写服务的提醒漏斗；
@@ -570,6 +676,7 @@ class TimetableRepository(
         scheduleDateRules: List<ScheduleDateRule>,
         locationTimeGroups: List<LocationTimeGroup>,
         settings: TimetableSettings?,
+        preferredEmbeddedSettings: Map<String, Map<String, Any?>>,
     ) {
         require(profiles.isNotEmpty()) { "restore snapshot must contain at least one profile" }
         val resolvedActiveId = activeProfileId
@@ -580,7 +687,7 @@ class TimetableRepository(
         val restoredWeek = clampCurrentWeekToSettings(active.currentWeek, restoredSettings).toInt()
 
         // 先落盘：全部成功后才改内存，失败时界面保持旧状态。
-        store.saveProfiles(profiles)
+        store.saveProfiles(profiles, preferredEmbeddedSettings)
         store.saveActiveProfileId(resolvedActiveId)
         store.saveSettings(restoredSettings)
         store.saveCurrentWeek(restoredWeek)
@@ -625,6 +732,44 @@ class TimetableRepository(
         currentLiveCourseId = null
         persistActiveProfileState()
         pendingNotify = true
+    }
+
+    /**
+     * 把「按日历算出的周次」夹回本机学期范围（**纯计算，不写回**）。
+     *
+     * 对齐 Dart `syncTemporalContext`（`timetable_provider.dart:3259-3302`）：日历周由
+     * `WeekCalculator.calendarWeekForDate`（`lib/domain/week_calculator.dart`，Kotlin
+     * [com.mutx163.qingyu.core.WeekCalculator.calendarWeekForDate]）算出，学期结束后
+     * 会得到大于 `semesterWeekCount` 的值、开学前得到 0；Dart 在 `:3286` 用
+     * `clampCurrentWeekToSettings`（`timetable_profile.dart:27-38`）夹回展示范围再写
+     * `_currentDateWeek`。Kotlin 首页线此前走 `TimetableDateLogic.currentSemesterWeek`
+     * （Dart `_resolveCurrentSemesterWeek` 口径，`timetable_screen.dart:1392-1420`），
+     * 学期外返回 null ⇒ 不写 ⇒ 停在旧周次；本 API 补上「越界也夹」的那一半。
+     *
+     * 口径：
+     * 1. 学期内（`1..semesterWeekCount`）原样返回；
+     * 2. `week < 1` ⇒ 1（开学前日历周为 0）；`week > semesterWeekCount` ⇒
+     *    `semesterWeekCount`（学期结束后停在最后一周，与 Dart 同）；
+     * 3. `semesterStartDate == null` ⇒ 原样返回：开学日未知时日历周推导无意义，
+     *    Dart `_resolveCurrentCalendarWeek:3338-3341` 同样直接回落 `_currentWeek`；
+     * 4. `semesterWeekCount <= 0` ⇒ 原样返回：周数缺失/坏值不具上限语义，夹到 1 会把
+     *    用户当前周强行改成「第 1 周」，比不夹更坏。[clampCurrentWeekToSettings] 的
+     *    `maxWeek = max(1, count)` 是**写入口**的兜底，不用于展示口径。
+     *
+     * 节假日不参与：本 API 只按数值边界夹取；节假日仅由 `ScheduleDateRule` 换课，
+     * 不改变周次编号（Dart `syncTemporalContext` 同样没有节假日分支）。
+     *
+     * 与 [setCurrentWeek] 的关系：**只算不写**——不落盘、不改 `loadedCurrentWeek`、
+     * 不通知监听者。是否写回由调用方决定（首页分钟心跳拿到结果后再自行调
+     * [setCurrentWeek]）。
+     */
+    @Synchronized
+    fun clampWeekToSettings(week: Int): Int {
+        val settings = loadedSettings
+        if (settings.semesterStartDate == null) return week
+        val count = settings.semesterWeekCount
+        if (count <= 0) return week
+        return week.coerceIn(1, count)
     }
 
     // ---------- TimetableCoursePort ----------

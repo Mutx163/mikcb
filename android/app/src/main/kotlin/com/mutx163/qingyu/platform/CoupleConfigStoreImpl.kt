@@ -88,9 +88,12 @@ class CoupleConfigStoreImpl(
         /**
          * 密码密文键。
          *
-         * **刻意不等于** Dart 的 `couple_webdav_password`：壳是独立包名，本来就读不到正式版的
-         * 安全存储命名空间；同名只会让后来者误以为「两个实现共用一份密码」。换了键的代价是
-         * 用户重输一次，不是静默丢数据（与 `WebdavConfigStoreImpl.PASSWORD_BLOB_KEY` 同一条取舍）。
+         * **刻意不等于** Dart 的 `couple_webdav_password`：同名只会让后来者误以为「两个实现
+         * 共用一份密码」。旧值**不是读不到**——`applicationId` 已于 2026-10-29 统一为
+         * `com.mutx163.qingyu`（`android/app/build.gradle:7`、`:146` 记录 flavor 合并），旧版
+         * `FlutterSecureStorage.xml` 仍在同一 UID 下、技术可读；不复用是**成本取舍**（复刻插件
+         * 私有格式会随插件升级静默失效）。换了键的代价是用户重输一次，不是静默丢数据
+         * （与 `WebdavConfigStoreImpl.PASSWORD_BLOB_KEY` 同一条取舍）。
          */
         const val PASSWORD_BLOB_KEY: String = "couple_webdav_password_blob_v1"
     }

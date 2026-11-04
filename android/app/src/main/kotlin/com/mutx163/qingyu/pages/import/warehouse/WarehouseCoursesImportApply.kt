@@ -122,6 +122,8 @@ object WarehouseCoursesImportApply {
                     WarehouseCourseWriteBack.Mode.MERGE
                 },
                 preserveLocalColors = request.preserveLocalColors,
+                // 用户拒绝扩节时，写回层不得再补节（本层上面已按同一 flag 判断过一次）。
+                allowSectionExpansion = request.expandSections,
             )) {
                 is WarehouseCourseWriteBack.Result.Done -> Result.Done(result.outcome.importedCount)
                 // 到不了：宿主在进确认流程前已挡掉空课表；防御性按「无事发生」收尾。

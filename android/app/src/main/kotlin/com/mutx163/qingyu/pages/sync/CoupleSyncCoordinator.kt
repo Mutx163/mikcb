@@ -63,11 +63,14 @@ class CoupleSyncCoordinator(
             return CouplePullOutcome(CouplePullKind.FAILED, errorCode = fetched.errorMessage ?: "sync_failed")
         }
         if (fetched.isNotFound || fetched.isEmpty) {
-            return CouplePullOutcome(CouplePullKind.FAILED, errorCode = "couple_webdav_pull_failed")
+            // Dart `couple_webdav_service.pullPartnerTimetable`：404 / 空正文 =
+            // `couple_webdav_partner_file_missing`（不是泛化 pull_failed）。
+            // 旧实现与 Dart、与页面控制器（CoupleTimetableSettingsController:206-216）都不一致。
+            return CouplePullOutcome(CouplePullKind.FAILED, errorCode = "couple_webdav_partner_file_missing")
         }
         val bytes = fetched.bytes ?: return CouplePullOutcome(
             CouplePullKind.FAILED,
-            errorCode = "couple_webdav_pull_failed",
+            errorCode = "couple_webdav_partner_file_missing",
         )
         if (cancelled) return CouplePullOutcome(CouplePullKind.CANCELLED)
 

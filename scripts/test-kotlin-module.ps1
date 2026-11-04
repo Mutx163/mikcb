@@ -58,10 +58,23 @@ param(
     # 2. 交付证据里必须写明用了它、排除了哪个目录（否则等于悄悄缩小了验证面）；
     # 3. 排除掉的是**别人**的半成品；你自己的半成品请自己修完再跑。
     [Parameter(Mandatory = $false)]
-    [string[]]$ExcludeShared = @()
+    [string[]]$ExcludeShared = @(),
+
+    # 显式指定 kotlinc 可执行文件（优先级最高）。
+    # 不给时按顺序探测：仓库便携 kotlinc（.tools/kotlinc/bin）→ PATH → Android Studio 内置。
+    [Parameter(Mandatory = $false)]
+    [string]$KotlincPath
 )
 
 $ErrorActionPreference = "Stop"
+
+# 本脚本按仓库既定「全程 pwsh 7」运行：PS 5.1 会把 UTF-8 无 BOM 脚本按 GBK(936) 解析，
+# 中文注释/字符串被截断后会报莫名其妙的语法错（如「200:67 缺少 ]」）。
+# 这里显式拒绝 5.1，避免用一份看不懂的报错误导排查。
+if ($PSVersionTable.PSVersion.Major -lt 7) {
+    Write-Error "[test-kotlin-module] 本脚本要求 PowerShell 7+（当前 $($PSVersionTable.PSVersion)）。请用 C:\dev\pwsh\pwsh.exe -File scripts/test-kotlin-module.ps1 ... 运行。"
+    exit 1
+}
 
 # 统一规整模块路径（去掉前缀 pages/ 或 android/app/src/...）
 $cleanModule = $Module -replace "^android/app/src/(main|test)/kotlin/com/mutx163/qingyu/pages/", "" `
@@ -74,25 +87,50 @@ $slug = $cleanModule -replace "[^A-Za-z0-9_.\-]", "_"
 
 $repoRoot = Split-Path -Parent $PSScriptRoot
 
-# 1. 定位 kotlinc
-$kotlinc = "C:\Program Files\Android\Android Studio\plugins\Kotlin\kotlinc\bin\kotlinc.bat"
-if (-not (Test-Path $kotlinc)) {
-    $found = Get-Command kotlinc -ErrorAction SilentlyContinue
-    if ($found) {
-        $kotlinc = $found.Source
-    } else {
-        Write-Error "[test-kotlin-module] 未在默认路径找到 Android Studio 内置 kotlinc，请确认已安装 Android Studio。"
-        exit 1
-    }
+# 1. 定位 kotlinc（顺序：显式参数 → 仓库便携 → PATH → Android Studio 内置）
+#    旧版把「Android Studio 内置」当默认、PATH 当兜底，本机没装 Studio 就直接红灯，
+#    逼得各代理手搓包装脚本（不可复现）。现在以仓库便携工具链为首选。
+$kotlinc = $null
+$probed = @()
+
+if ($KotlincPath) {
+    $probed += "显式 -KotlincPath: $KotlincPath"
+    if (Test-Path $KotlincPath) { $kotlinc = (Resolve-Path $KotlincPath).Path }
 }
+
+if (-not $kotlinc) {
+    $portable = Join-Path (Split-Path -Parent $repoRoot) ".tools\kotlinc\bin\kotlinc.bat"
+    $probed += "仓库便携: $portable"
+    if (Test-Path $portable) { $kotlinc = $portable }
+}
+
+if (-not $kotlinc) {
+    $found = Get-Command kotlinc -ErrorAction SilentlyContinue
+    $probed += "PATH: $(if ($found) { $found.Source } else { '<未找到>' })"
+    if ($found) { $kotlinc = $found.Source }
+}
+
+if (-not $kotlinc) {
+    $studio = "C:\Program Files\Android\Android Studio\plugins\Kotlin\kotlinc\bin\kotlinc.bat"
+    $probed += "Android Studio 内置: $studio"
+    if (Test-Path $studio) { $kotlinc = $studio }
+}
+
+if (-not $kotlinc) {
+    Write-Error ("[test-kotlin-module] 未找到 kotlinc。探测顺序：-KotlincPath → 仓库便携 → PATH → Android Studio。`n已尝试：`n  - " + ($probed -join "`n  - ") + "`n修法：用 -KotlincPath 显式指定，或把便携 kotlinc 放到 <repo 的上一级>/.tools/kotlinc/bin/kotlinc.bat。")
+    exit 1
+}
+
+Write-Host ">>> [test-kotlin-module] 使用 kotlinc: $kotlinc" -ForegroundColor DarkCyan
 
 # 2. 定位依赖 JAR
 $gradleCache = Join-Path $env:USERPROFILE ".gradle\caches\modules-2\files-2.1"
 $junitJar = (Get-ChildItem -Path (Join-Path $gradleCache "junit\junit\4.13.2") -Filter "junit-4.13.2.jar" -Recurse)[0].FullName
 $hamcrestJar = (Get-ChildItem -Path (Join-Path $gradleCache "org.hamcrest\hamcrest-core\1.3") -Filter "hamcrest-core-1.3.jar" -Recurse)[0].FullName
 
-$asPluginDir = "C:\Program Files\Android\Android Studio\plugins\Kotlin\kotlinc\lib"
-$stdlibJar = Join-Path $asPluginDir "kotlin-stdlib.jar"
+# stdlib 优先取 kotlinc 自带的 lib/kotlin-stdlib.jar（与编译器版本一致），
+# 落空才退回 Gradle 缓存（旧版写死 Android Studio 的 lib 路径）。
+$stdlibJar = Join-Path (Split-Path -Parent (Split-Path -Parent $kotlinc)) "lib\kotlin-stdlib.jar"
 if (-not (Test-Path $stdlibJar)) {
     $stdlibJar = (Get-ChildItem -Path (Join-Path $gradleCache "org.jetbrains.kotlin\kotlin-stdlib") -Filter "kotlin-stdlib-2.*.jar" -Recurse)[0].FullName
 }
@@ -187,6 +225,39 @@ foreach ($sharedFile in $sharedModelFiles) {
     if ($sources -notcontains $absSharedFile) { $sources += $absSharedFile }
 }
 
+# 模块专属补充源（2026-11-04 新增）。
+#
+# 模块目录内的生产代码/用例会引用模块目录之外的**纯 Kotlin**文件，只收本模块
+# 目录会报 unresolved。这里按模块列**具体文件**，不整目录收：
+# - `pages/sync` 的 `CloudSyncController.kt` 引用 `pages/transfer/` 的快照差异与
+#   导入预览逻辑（两个文件，均零 Android import）；
+# - `pages/sync` 的 `CouplePartnerUnlinkTest` / `LocaleHashAsciiTest` 直接构造
+#   `platform.CouplePartnerPortImpl`（纯 Kotlin 端口实现）。
+# `platform/` 整目录不能收——里面还有 Context / AndroidKeyStore 适配层；
+# `pages/transfer/` 也不整目录收，避免以后某个页面文件引入 Compose 后把本模块带红。
+# 收录条件与上面的根包白名单一致：① 文件零 `android.*` / `androidx.compose` / miuix 导入；
+# ② 被本模块真实引用。
+$moduleSourceFiles = @{
+    "sync" = @(
+        "pages/transfer/DataTransferApplyLogic.kt",
+        "pages/transfer/DataTransferDiffLogic.kt",
+        "pages/transfer/DataTransferImportLogic.kt",
+        "pages/transfer/DataTransferModel.kt",
+        "pages/transfer/TransferStrings.kt",
+        "platform/CouplePartnerPortImpl.kt"
+    )
+}
+if ($moduleSourceFiles.ContainsKey($cleanModule)) {
+    foreach ($moduleFile in $moduleSourceFiles[$cleanModule]) {
+        $absModuleFile = Join-Path $repoRoot "android/app/src/main/kotlin/com/mutx163/qingyu/$moduleFile"
+        if (-not (Test-Path $absModuleFile)) {
+            Write-Host ">>> [test-kotlin-module] 模块白名单文件不存在，已跳过：$moduleFile" -ForegroundColor DarkYellow
+            continue
+        }
+        if ($sources -notcontains $absModuleFile) { $sources += $absModuleFile }
+    }
+}
+
 if ($sources.Count -eq 0) {
     Write-Error "[test-kotlin-module] 模块 $cleanModule 下未找到任何 .kt 文件。"
     exit 1
@@ -271,7 +342,7 @@ try {
     $toSlash = { param($p) $p -replace '\\', '/' }
     $argLines = @("-cp", "`"$(& $toSlash $classpath)`"", "-d", "`"$(& $toSlash $outDir)`"")
     foreach ($src in $sources) { $argLines += "`"$(& $toSlash $src)`"" }
-    Set-Content -Path $argFile -Value $argLines -Encoding UTF8
+    Set-Content -Path $argFile -Value $argLines -Encoding utf8NoBOM
     & $kotlinc "@$argFile"
     if ($LASTEXITCODE -ne 0) {
         Write-Error "[test-kotlin-module] kotlinc 编译失败 (exit code: $LASTEXITCODE)"

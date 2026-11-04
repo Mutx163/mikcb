@@ -7,9 +7,5 @@
 timetable/CourseGridCard.kt|R5|课程色数据链——解析兜底 0xFF2196F3 与 Dart course_card.dart:121 同值；0xFF1E293B/白墨按用户课程色亮度对比选取（Dart card_surface_ink 同构），不跟主题
 timetable/day/DayViewCommon.kt|R5|课程色解析兜底 0xFF2196F3（Dart 同值）与亮底墨 0xFF1E293B——都挂在用户课程色上做对比，主题令牌无法保证对比度
 timetable/day/DayViewCourseCard.kt|R5|课程卡数据色——非本周置灰 0xFF94A3B8 = Dart kNonCurrentWeekCourseColorHex；情侣徽标 0xFFE91E63 = partnerColorHexDefault；停课徽标 0xFFD32F2F = Dart Colors.red.shade700；另有解析兜底
-timetable/day/DayViewScheduleCard.kt|R5|日程卡兜底 0xFF5B9CF6 = Dart schedule_item.dart 默认色（用户数据色，不跟主题）
-timetable/day/DayViewTaskBandCard.kt|R5|待办带圆点取所属课程色，兜底 0xFF2196F3 = Dart 课程色兜底（数据色）
-timetable/month/MonthDayCell.kt|R5|假期/调休/考试/日程固定语义色，与 Dart month_day_cell.dart 逐字同源（含深浅两套）；源码 KDoc 明示不跟主题（避免与红主题撞色）
-timetable/month/MonthPanelOverview.kt|R5|月历语义色与 MonthDayCell 同源（考试红/日程蓝/假期暖红，Dart 同值，不跟主题）
 timetable/month/MonthViewPage.kt|R2|议程列表 userScrollEnabled=false，只作容器、位移由 MonthPanelDragArea 驱动，非用户直滚，无滚动条语义
 timetable/TimetableWeekPage.kt|R2|周视图是整周 Canvas 网格 + 单一纵向滚动（Dart 同构），不是卡片列表，QingyuPageList 不适用

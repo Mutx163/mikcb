@@ -41,7 +41,7 @@ class FakeLiveHost(
     private val holidayKeySet: Set<String> = holidayDates
 
     override fun isHoliday(date: LocalDateTime): Boolean {
-        val key = "%04d-%02d-%02d".format(date.year, date.monthValue, date.dayOfMonth)
+        val key = String.format(java.util.Locale.ROOT, "%04d-%02d-%02d", date.year, date.monthValue, date.dayOfMonth)
         return holidayKeySet.contains(key)
     }
 

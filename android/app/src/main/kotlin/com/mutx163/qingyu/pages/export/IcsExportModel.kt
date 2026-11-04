@@ -274,7 +274,13 @@ object IcsExportLogic {
         return "$year$month$day"
     }
 
-    /** Dart `_sanitizeFileNameSegment`：ics_export_service.dart:726-740。 */
+    /**
+     * Dart `_sanitizeFileNameSegment`：ics_export_service.dart:726-740。
+     *
+     * `:751-754` 还有一段**按 rune（codePoint）**的 80 上限截断：Dart 走
+     * `safe.runes.take(80)`，避免把 emoji 这类代理对从中间截开留下孤立代理项。
+     * 这里用 `codePoints()` 同口径；ASCII/BMP 与 `String.length` 结果一致。
+     */
     private fun sanitizeFileNameSegment(value: String): String {
         val normalized = value.trim().replace(Regex("""\s+"""), "_")
         val buffer = StringBuilder()
@@ -288,6 +294,12 @@ object IcsExportLogic {
         safe = safe.replace(Regex("""^[ ._]+"""), "")
         safe = safe.replace(Regex("""[ ._]+$"""), "")
         if (safe.isEmpty()) return "timetable"
+        val codePoints = safe.codePoints().toArray()
+        if (codePoints.size > 80) {
+            val truncated = StringBuilder(80)
+            for (index in 0 until 80) truncated.appendCodePoint(codePoints[index])
+            return truncated.toString()
+        }
         return safe
     }
 }

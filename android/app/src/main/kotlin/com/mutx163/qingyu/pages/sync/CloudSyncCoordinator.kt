@@ -134,15 +134,6 @@ sealed interface BackupIndexLoad {
 }
 
 /**
- * 本机快照读写接缝（生产用存储层实现，单测用内存假实现）。
- * 只读写「当前快照」这一份字节；多档案/任务写回归仓储（不在本层）。
- */
-interface LocalSnapshotStore {
-    fun readSnapshot(): ByteArray?
-    fun writeSnapshot(bytes: ByteArray)
-}
-
-/**
  * 云同步收发协调器。
  *
  * @param transport 真实收发通道（生产由 [createWebdavRemoteTransport] 构造）。
@@ -151,7 +142,9 @@ interface LocalSnapshotStore {
  *   生产缺省用系统时钟（Dart `DateTime.now()` 同位）。
  */
 class WebdavSyncCoordinator(
-    private val transport: WebdavRemoteTransport,
+    // 公开：恢复前差异预览只拿字节不落盘（`CloudSyncController.previewBackupRestore`），
+    // 必须绕开 downloadSnapshot 的写本地副作用（2026-11-03）。
+    val transport: WebdavRemoteTransport,
     private val localStore: LocalSnapshotStore,
     private val nowMillis: () -> Long = { System.currentTimeMillis() },
 ) {
@@ -553,6 +546,9 @@ class WebdavSyncCoordinator(
      * @param expectedRemoteHash meta 声明的内容哈希；非空且与正文重算值不符 →
      *   `sync_snapshot_meta_mismatch`（Dart `downloadAndApply` 的配对校验）
      * @param hasLocalUserData 本机快照是否含用户亲手沉淀的数据（冲突自动决策要用）
+     * @param readLocalSnapshot 读「本机现在这份课表」的字节；默认读本机快照文件。
+     *   控制器有仓储时应传入**实时快照**：进程在两次同步之间被杀时，快照文件可能是空的
+     *   （上传从不写它），只按文件判会把「远端==本机」误判成首次分歧、弹出假冲突框。
      * @param resolver 冲突裁决（默认 LWW + 字典序平局判云端；后台拉取传 background 版）
      */
     fun downloadSnapshot(
@@ -560,6 +556,7 @@ class WebdavSyncCoordinator(
         remotePath: String = config.snapshotRemotePath,
         expectedRemoteHash: String? = null,
         hasLocalUserData: Boolean = false,
+        readLocalSnapshot: () -> ByteArray? = localStore::readSnapshot,
         resolver: (SyncConflictInfo) -> SyncConflictChoice = ::resolveSyncConflictAutomatically,
     ): DownloadSnapshotOutcome {
         cancelled = false
@@ -607,7 +604,7 @@ class WebdavSyncCoordinator(
         }
 
         val remoteHash = envelope.actualHash
-        val localBytes = localStore.readSnapshot()
+        val localBytes = readLocalSnapshot()
         val localHash = localBytes?.let { snapshotContentHash(it) }.orEmpty()
 
         val conflict = webdavPullHasSyncConflict(

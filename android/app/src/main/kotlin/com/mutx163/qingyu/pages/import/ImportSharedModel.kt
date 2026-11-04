@@ -5,6 +5,7 @@ import com.mutx163.qingyu.core.CourseColorPalette
 import com.mutx163.qingyu.core.SectionTime
 import com.mutx163.qingyu.core.WeekCalculator
 import java.time.LocalDateTime
+import java.util.Locale
 import kotlin.random.Random
 
 /**
@@ -36,9 +37,14 @@ object ImportSharedModel {
     // 格式化
     // ------------------------------------------------------------------
 
-    /** `yyyy-MM-dd`（补零），用于学期开始日期等展示。 */
+    /**
+     * `yyyy-MM-dd`（补零），用于学期开始日期等展示，**同时是导入落盘的日期键**。
+     *
+     * 必须显式 [Locale.ROOT]：默认 Locale 在 ar-EG/fa-IR 下会把 `%02d` 排成
+     * `٢٠٢٦` 这类本地数字，落盘字节与 Dart `padLeft` 不一致（见 `LocaleFormatGuardTest`）。
+     */
     fun importFormatDate(date: LocalDateTime): String =
-        "%04d-%02d-%02d".format(date.year, date.monthValue, date.dayOfMonth)
+        String.format(Locale.ROOT, "%04d-%02d-%02d", date.year, date.monthValue, date.dayOfMonth)
 
     /** 星期短名（一~日）；越界回数字（Dart switch default 语义）。 */
     fun importWeekdayLabel(dayOfWeek: Int): String = when (dayOfWeek) {

@@ -2,6 +2,7 @@ package com.mutx163.qingyu.core
 
 import java.time.LocalDate
 import java.time.LocalDateTime
+import java.util.Locale
 
 /**
  * 一条写入**系统时钟**的闹钟计划（`AlarmClock.ACTION_SET_ALARM` 的 payload）。
@@ -50,7 +51,7 @@ object ClassAlarmPlanLogic {
     fun formatClock(minutes: Int): String {
         var normalized = minutes % 1440
         if (normalized < 0) normalized += 1440
-        return "%02d:%02d".format(normalized / 60, normalized % 60)
+        return String.format(Locale.ROOT, "%02d:%02d", normalized / 60, normalized % 60)
     }
 
     /** ISO 1=周一..7=周日 → Calendar 周日=1..周六=7（Dart `calendarWeekday`）。 */

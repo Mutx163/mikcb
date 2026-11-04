@@ -135,6 +135,18 @@ class SyncResultToastsTest {
     }
 
     @Test
+    fun `恢复提交失败与回滚失败给出区分文案`() {
+        // 三件套提交失败不再落进泛化的「同步失败」；ARB 键为 camelCase 新名。
+        val commit = SyncResultToasts.forRestore(applied = false, errorCode = "backup_restore_commit_failed")
+        assertEquals("恢复失败：恢复提交失败，已回滚", commit.message)
+        assertTrue(commit.isError)
+
+        val rollback = SyncResultToasts.forRestore(applied = false, errorCode = "backup_restore_rollback_failed")
+        assertEquals("恢复失败：恢复失败且回滚失败，请检查存储", rollback.message)
+        assertTrue(rollback.isError)
+    }
+
+    @Test
     fun `撤销恢复成功与失败`() {
         val ok = SyncResultToasts.forUndoRestore(success = true)
         // 成功文案不能再复用「已恢复到此备份」——那会把撤销说成恢复。

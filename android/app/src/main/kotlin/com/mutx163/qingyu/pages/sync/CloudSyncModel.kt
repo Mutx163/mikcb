@@ -174,6 +174,60 @@ object CloudSyncLogic {
     fun isAccountConnected(username: String, hasStoredPassword: Boolean): Boolean =
         username.trim().isNotEmpty() && hasStoredPassword
 
+    // ── 升级后一次性提示：请重输网盘密码 ──
+
+    /** 云同步一次性标记（`KeyValueStore` 契约键，落盘自动带 `flutter.` 前缀）。 */
+    const val LEGACY_REPROMPT_MARK_CLOUD = "webdav_password_legacy_reprompt_v1"
+
+    /** 情侣 WebDAV 一次性标记（与云同步分开，两条线互不影响）。 */
+    const val LEGACY_REPROMPT_MARK_COUPLE = "couple_webdav_password_legacy_reprompt_v1"
+
+    /** 旧插件 prefs 键名后缀（只做后缀匹配，不拼插件私有前缀）。 */
+    const val LEGACY_KEY_SUFFIX_CLOUD = "webdav_sync_password"
+    const val LEGACY_KEY_SUFFIX_COUPLE = "couple_webdav_password"
+
+    /**
+     * 是否应弹「升级后请重输网盘密码」：三条**同时**成立才提示。
+     *
+     * 1. 新版密文键里没有密码（`hasStoredPassword == false`）；
+     * 2. 旧 Dart 插件 prefs 里确有对应旧键（`hasLegacyDartCredential == true`）；
+     * 3. 一次性标记没写过（`alreadyPrompted == false`）。
+     *
+     * 纯函数：探测/读标记都在调用方，便于 JVM 真值表对拍。
+     */
+    fun shouldPromptLegacyPasswordReentry(
+        hasStoredPassword: Boolean,
+        hasLegacyDartCredential: Boolean,
+        alreadyPrompted: Boolean,
+    ): Boolean = !hasStoredPassword && hasLegacyDartCredential && !alreadyPrompted
+
+    /**
+     * 页面入口的一次性取数：探测旧键 + 读标记，判定为「该提示」时**立刻写标记**，
+     * 返回本次是否应显示。写标记失败（`IOException` 等）仍返回 true——宁可下次重复，
+     * 不能本次漏掉用户真正需要的提示。
+     *
+     * 探测/读/写都以函数注入，避免页面层把 Android 的
+     * [com.mutx163.qingyu.platform.AndroidLegacyCredentialProbe] 类型带进 L0 classpath；
+     * 也方便单测注入计数假实现，验证「有密码时不探测」「只探测一次」。
+     */
+    fun takeLegacyPasswordReentryPrompt(
+        hasStoredPassword: Boolean,
+        legacyKeySuffix: String,
+        alreadyPrompted: () -> Boolean,
+        hasLegacyDartCredential: (String) -> Boolean,
+        markPrompted: () -> Unit,
+    ): Boolean {
+        // 新版已有密码：正常升级路径，不探测、不提示。
+        if (hasStoredPassword) return false
+        // 已提示过：先读标记再探测，第二次进入同一条线不再碰 prefs 键集合。
+        val prompted = runCatching { alreadyPrompted() }.getOrDefault(false)
+        if (!shouldPromptLegacyPasswordReentry(false, true, prompted)) return false
+        val legacy = runCatching { hasLegacyDartCredential(legacyKeySuffix) }.getOrDefault(false)
+        if (!shouldPromptLegacyPasswordReentry(false, legacy, false)) return false
+        runCatching { markPrompted() }
+        return true
+    }
+
     fun providerLabel(provider: WebdavSyncProvider): String = when (provider) {
         WebdavSyncProvider.JIANGUOYUN -> SyncStrings.cloudSyncProviderJianguoyun.zh
         WebdavSyncProvider.CUSTOM -> SyncStrings.cloudSyncProviderCustom.zh

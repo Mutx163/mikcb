@@ -27,9 +27,8 @@ import com.mutx163.qingyu.transfer.syncImportedCourses
  * 1. 时间模板（`_mergeTimeSchemes` 的数序：同 id 更新 / 同签名复用 / 新签名创建）；
  * 2. `scheduleItems` 先写内存，再随 `replaceActiveProfileContent` 一次落盘
  *    （课 / 作业 / 考试 / 日程四块一次写、一次通知 —— 见仓储该方法的说明）；
- * 3. 设置（只有 `scope.carriesSettings` 才写）：整份设置文档合并写回，
- *    未知键原样保留、设备级信任锚保留本机值（见 [LanTransferLogic.settingsApplyPatch]）；
- * 4. 当前周；5. 日期规则；6. 地点分组（`resync = true`，按新分组重算课程钟点）。
+ * 3. 设置（只有 `scope.carriesSettings` 才写，且只写已移植的时间/周次子集）；
+ * 4. 当前周；5. 日期规则；6. 地点分组。
  *
  * ## 回滚为什么是「尽力补偿」而不是「事务」
  *
@@ -46,6 +45,11 @@ class LanTransferApplier(
     /** 撤销点索引；局域网服务传 [LanTransferUndoStore.shared]，测试各自建独立实例。 */
     private val undoStore: LanTransferUndoStore = LanTransferUndoStore(),
     private val clock: () -> Long = System::currentTimeMillis,
+    /**
+     * 整份设置的读写缝。为 null 时退化为旧的「只写核心四键」路径
+     * （JVM 单测与未接线的调用方不受影响）。
+     */
+    private val settingsStore: LanTransferSettingsStore? = null,
 ) {
 
     /** 本地当前状态（差异的 current 侧）。 */
@@ -60,8 +64,7 @@ class LanTransferApplier(
             scheduleDateRules = snapshot.scheduleDateRules,
             locationTimeGroups = snapshot.locationTimeGroups,
             settings = snapshot.settings,
-            // 设置的差异按原始文档整份比（模型层只有五键，见 LanTransferLogic 的偏差 3）。
-            settingsJson = LanTransferLogic.normalizeSettingsDocument(repository.settingsJson()),
+            settingsJson = settingsStore?.readSettingsJson(),
         )
     }
 
@@ -72,11 +75,7 @@ class LanTransferApplier(
      */
     fun preview(content: String): Map<String, Any?> {
         val incoming = LanTransferLogic.parseIncoming(content)
-        return LanTransferLogic.previewJson(
-            incoming,
-            currentSource(),
-            currentProfiles = repository.snapshot.profiles,
-        )
+        return LanTransferLogic.previewJson(incoming, currentSource())
     }
 
     /**
@@ -84,12 +83,10 @@ class LanTransferApplier(
      *
      * - 结构门 / 整设备写入 → 抛 [com.mutx163.qingyu.core.FormatException]（路由层 400）；
      * - 结构诊断（空包一类）或本地引用对不上 → 回 `applied: false` + 错误码，**一个字节不写**；
-     * - 整份恢复包（`backupType: full` + profiles）→ 走 [applyWholeRestore]；
      * - 正常路径 → 真写仓储；写失败 → 尽力补偿后回 `applied: false` + `transfer_import_failed`。
      */
     fun apply(content: String, mode: TransferApplyMode): Map<String, Any?> {
         val incoming = LanTransferLogic.parseIncoming(content)
-        if (incoming.isWholeRestore) return applyWholeRestore(incoming, mode)
         val current = currentSource()
         val diff = LanTransferLogic.compare(current, incoming.source, incoming.scope, mode)
 
@@ -122,78 +119,11 @@ class LanTransferApplier(
     }
 
     /**
-     * 整份快照恢复（`backupType: full` + 非空 profiles；Dart 手机端
-     * `importFullAppDataBackup` 的同款语义，2026-11-03 起局域网放行）。
-     *
-     * - **只有覆盖一种语义**：档案表无法按 id 跨设备合并（同 id 在两端是两张不同的
-     *   课表），merge 请求明确拒，不给「看起来成功、档案却没进去」的假象；
-     * - **先校验后落盘**：包内引用对不上 → `applied: false` + 错误码，一个字节不写；
-     * - **一次落盘**：档案表 + 激活档案 + 设置 + 当前周 + 三张设备级表走仓储的
-     *   整份恢复入口（先全部落盘、成功才改内存并只通知一次），全局设置与当前周
-     *   取自包里激活档案的内嵌值；`activeProfileId` 指不到包内档案时回落第一份
-     *   （与 Dart 同口径）；
-     * - **撤销点**：before / after 各抓一份**含档案表**的现场；导入后数据被动过
-     *   就拒绝撤销（见 [undo]），不会静默覆盖用户之后的操作。
-     */
-    private fun applyWholeRestore(incoming: LanTransferIncoming, mode: TransferApplyMode): Map<String, Any?> {
-        val diff = LanTransferLogic.wholeRestoreDiff(
-            currentProfiles = repository.snapshot.profiles,
-            incomingProfiles = incoming.profiles,
-            current = currentSource(),
-            incoming = incoming.source,
-        )
-        if (mode != TransferApplyMode.OVERWRITE) {
-            return LanTransferLogic.applyResultJson(
-                false,
-                mode,
-                diff,
-                "transfer_full_backup_requires_overwrite",
-                null,
-            )
-        }
-        val errors = ArrayList<String>(incoming.diagnostics)
-        errors += LanTransferLogic.collectWholeRestoreReferenceErrors(incoming)
-        if (errors.isNotEmpty()) {
-            return LanTransferLogic.applyResultJson(false, mode, diff, errors.first(), null)
-        }
-
-        val before = captureState(includeProfiles = true)
-        return try {
-            repository.restoreFromCloudSnapshot(
-                profiles = incoming.profiles,
-                activeProfileId = incoming.activeProfileId,
-                timeSchemes = incoming.source.timeSchemes,
-                scheduleDateRules = incoming.source.scheduleDateRules,
-                locationTimeGroups = incoming.source.locationTimeGroups,
-            )
-            val token = LanTransferUndoToken(
-                id = TransferEnvelope.newPackageId(nowMicros = clock() * 1000L),
-                // 整份恢复可能合法地切换激活档案，「导入时档案 ≠ 当前档案」不构成拒绝
-                // 撤销的理由；档案表比对（wholeRestoreStateEquals）已覆盖这层安全。
-                profileId = null,
-                mode = mode,
-                scope = incoming.scope,
-                before = before,
-                after = captureState(includeProfiles = true),
-                createdAtMillis = clock(),
-            )
-            undoStore.create(token)
-            LanTransferLogic.applyResultJson(true, mode, diff, null, token.id)
-        } catch (_: Exception) {
-            restoreState(before)
-            LanTransferLogic.applyResultJson(false, mode, diff, "transfer_import_failed", null)
-        }
-    }
-
-    /**
      * 按撤销点 id 回退这次导入写入的内容（`POST /api/v1/import/undo` 的执行层）。
      *
      * - **只回退这一批**：每类实体按 id 比「导入前 / 导入后 / 现在」，只还原仍是
      *   「导入后」值的条目；用户导入之后改过的一律保留。判据只有
      *   [LanTransferUndoLogic.plan] 一处。
-     * - **整份恢复的撤销是全有或全无**：导入后任何档案 / 设备表被动过 →
-     *   `transfer_undo_state_changed`，不消费撤销点（把现场改回去还能再撤）；
-     *   现场没动过 → 整份写回「导入前」（判据 [LanTransferLogic.wholeRestoreStateEquals]）。
      * - **取走即消费**：同一个撤销点不会被应用两次；第二次调用回
      *   `transfer_undo_already_undone` 且一个字节都不写。
      * - **缺失安全跳过**：不认识的 id 回 `transfer_undo_token_missing`，不写盘。
@@ -211,35 +141,6 @@ class LanTransferApplier(
                 "transfer_undo_token_missing"
             }
             return LanTransferUndoLogic.resultJson(false, id, error = reason)
-        }
-        val isWholeRestore = token.before.profiles.isNotEmpty()
-        if (isWholeRestore) {
-            val current = captureState(includeProfiles = true)
-            if (!LanTransferLogic.wholeRestoreStateEquals(current, token.after)) {
-                // 导入之后用户（或下一次导入）动过数据：撤销点放回，用户把现场改回去
-                // 后还能再撤——「拒绝」不该烧掉撤销机会。
-                undoStore.restore(token)
-                return LanTransferUndoLogic.resultJson(false, id, error = "transfer_undo_state_changed")
-            }
-            return try {
-                repository.restoreFromCloudSnapshot(
-                    profiles = token.before.profiles,
-                    activeProfileId = token.before.activeProfileId,
-                    timeSchemes = token.before.timeSchemes,
-                    scheduleDateRules = token.before.scheduleDateRules,
-                    locationTimeGroups = token.before.locationTimeGroups,
-                    settings = token.before.settings,
-                )
-                LanTransferUndoLogic.resultJson(
-                    undone = true,
-                    transferId = id,
-                    restoredCounts = mapOf("profiles" to token.before.profiles.size),
-                )
-            } catch (_: Exception) {
-                // 撤销途中写盘失败：把令牌放回索引，用户还能再试一次。
-                undoStore.restore(token)
-                LanTransferUndoLogic.resultJson(false, id, error = "transfer_undo_failed")
-            }
         }
         // 撤销点记的是导入时那个档案；换了档案再撤销等于拿 A 课表的快照写 B 课表。
         val activeProfileId = repository.snapshot.activeProfileId
@@ -279,10 +180,8 @@ class LanTransferApplier(
                 plan.exams ?: repository.exams,
             )
         }
-        // 设置按整份文档还原（撤销点连「只改了未移植字段」那类也要退）。
-        plan.settingsJson?.let { repository.replaceSettingsJson(it) }
-            ?: plan.settings?.let { repository.updateSettings(it) }
-        plan.activeProfileSettingsJson?.let { repository.replaceActiveProfileSettingsJson(it) }
+        plan.settings?.let { repository.updateSettings(it) }
+        plan.settingsJson?.let { settingsStore?.writeSettingsPatch(it) }
         plan.currentWeek?.let { repository.setCurrentWeek(it) }
         plan.scheduleDateRules?.let { repository.updateScheduleDateRules(it) }
         plan.locationTimeGroups?.let { repository.updateLocationTimeGroups(it) }
@@ -361,14 +260,12 @@ class LanTransferApplier(
         repository.replaceActiveProfileContent(nextCourses, nextTasks, nextExams)
 
         if (incomingSettings != null && incoming.scope.carriesSettings) {
-            val rawSettings = packageSource.settingsJson
-            if (rawSettings != null) {
-                // 整份设置文档写回（Dart `updateSettings(TimetableSettings)` 的同口径）：
-                // 只写时间/周次五键会把包里其余 200+ 个设置静默丢掉。
-                val patch = LanTransferLogic.settingsApplyPatch(rawSettings, incomingSettings)
-                if (patch.isNotEmpty()) repository.updateSettingsPatch(patch)
-            } else {
-                repository.updateSettings(incomingSettings)
+            repository.updateSettings(incomingSettings)
+            // Dart 的 settings 是整份替换；核心四键已由上面写入，这里补齐其余键。
+            val raw = packageSource.settingsJson
+            val sink = settingsStore
+            if (raw != null && sink != null) {
+                sink.writeSettingsPatch(LanTransferLogic.settingsReplacePatch(raw, sink.readSettingsJson()))
             }
         }
         val week = incoming.currentWeek
@@ -381,23 +278,17 @@ class LanTransferApplier(
         // Dart `_mergeRulesAndLocations` / `_replaceRulesAndLocations`：外来为空时不动本地。
         if (mergeSemantics) {
             if (incomingGroups.isNotEmpty()) {
-                // resync = Dart `replaceLocationTimeGroups(resync: true)`：分组变了，
-                // 课程钟点必须按新分组重算，否则盘上分组是新的、时间还是旧口径。
                 repository.updateLocationTimeGroups(
                     LanTransferLogic.mergeById(current.locationTimeGroups, incomingGroups) { it.id },
-                    resync = true,
                 )
             }
             if (incomingRules.isNotEmpty()) {
-                // 日期规则与 Dart 一样 **不** resync（规则重算看日期，另有自动套用路径）。
                 repository.updateScheduleDateRules(
                     LanTransferLogic.mergeById(current.scheduleDateRules, incomingRules) { it.id },
                 )
             }
         } else {
-            if (incomingGroups.isNotEmpty()) {
-                repository.updateLocationTimeGroups(incomingGroups, resync = true)
-            }
+            if (incomingGroups.isNotEmpty()) repository.updateLocationTimeGroups(incomingGroups)
             if (incomingRules.isNotEmpty()) repository.updateScheduleDateRules(incomingRules)
         }
     }
@@ -444,13 +335,8 @@ class LanTransferApplier(
     // 快照 / 补偿
     // -----------------------------------------------------------------------
 
-    /**
-     * 当前仓储现场（导入前 / 导入后 / 撤销前都抓这一份）。
-     *
-     * [includeProfiles] 只在整份恢复路径传 true：普通导入只动激活档案，
-     * 抓全设备档案表只是白占撤销槽的内存。
-     */
-    private fun captureState(includeProfiles: Boolean = false): LanTransferState {
+    /** 当前仓储现场（导入前 / 导入后 / 撤销前都抓这一份）。 */
+    private fun captureState(): LanTransferState {
         val snapshot = repository.snapshot
         return LanTransferState(
             courses = snapshot.courses,
@@ -461,43 +347,22 @@ class LanTransferApplier(
             scheduleDateRules = snapshot.scheduleDateRules,
             locationTimeGroups = snapshot.locationTimeGroups,
             settings = snapshot.settings,
-            // 设置文档原文：撤销 / 失败补偿要整份还原，只存五键会把包里
-            // 其余设置留在盘上（撤销后「设置自己变了」）。null 键按缺键对待，
-            // 与 Dart toJson 的「null 即省略」同口径。
-            settingsJson = LanTransferLogic.normalizeSettingsDocument(repository.settingsJson()),
-            activeProfileSettingsJson = repository.activeProfileSettingsJson()
-                ?.let(LanTransferLogic::normalizeSettingsDocument),
+            settingsJson = settingsStore?.readSettingsJson(),
             currentWeek = snapshot.currentWeek,
-            profiles = if (includeProfiles) snapshot.profiles else emptyList(),
-            activeProfileId = snapshot.activeProfileId,
         )
     }
 
     /** 尽力补偿：任何一步失败都不上抛（见类注释）。 */
     private fun restoreState(before: LanTransferState) {
         runCatching {
-            // 整份恢复的补偿走同一个整份入口：档案表 / 激活档案 / 设置 / 当前周 /
-            // 三张设备级表一次写回（先落盘、成功才改内存）。
-            if (before.profiles.isNotEmpty()) {
-                repository.restoreFromCloudSnapshot(
-                    profiles = before.profiles,
-                    activeProfileId = before.activeProfileId,
-                    timeSchemes = before.timeSchemes,
-                    scheduleDateRules = before.scheduleDateRules,
-                    locationTimeGroups = before.locationTimeGroups,
-                    settings = before.settings,
-                )
-                return
-            }
-            // 档案镜像先还原（只动内存 + 档案 JSON），再写课：`replaceActiveProfileContent`
-            // 会按内存里的活动档案整份落盘，顺序反了会把刚还原的设置又冲掉。
-            // 顶层设置留在写课之后：它与原实现的失败位置一致，补偿自身失败时
-            // 也不会把「课已还原」这一步挡在前面。
-            before.activeProfileSettingsJson?.let { repository.replaceActiveProfileSettingsJson(it) }
             repository.scheduleItems = before.scheduleItems
             repository.replaceActiveProfileContent(before.courses, before.tasks, before.exams)
-            before.settingsJson?.let { repository.replaceSettingsJson(it) }
-                ?: repository.updateSettings(before.settings)
+            repository.updateSettings(before.settings)
+            val sink = settingsStore
+            val beforeJson = before.settingsJson
+            if (sink != null && beforeJson != null) {
+                sink.writeSettingsPatch(LanTransferLogic.settingsReplacePatch(beforeJson, sink.readSettingsJson()))
+            }
             repository.setCurrentWeek(before.currentWeek)
             repository.updateScheduleDateRules(before.scheduleDateRules)
             repository.updateLocationTimeGroups(before.locationTimeGroups)

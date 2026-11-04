@@ -1,6 +1,7 @@
 package com.mutx163.qingyu.core
 
 import java.time.LocalDateTime
+import java.util.Locale
 
 /**
  * TimetableSettings 的时间/周次核心子集（移植自 lib/models/timetable_settings.dart）。
@@ -111,7 +112,7 @@ data class TimetableSettings(
          */
         fun formatSemesterStartDateText(date: LocalDateTime?): String? {
             if (date == null) return null
-            return "%04d-%02d-%02d".format(date.year, date.monthValue, date.dayOfMonth)
+            return String.format(Locale.ROOT, "%04d-%02d-%02d", date.year, date.monthValue, date.dayOfMonth)
         }
 
         /**

@@ -6,7 +6,10 @@ import com.mutx163.qingyu.app.TimetableRepository
 import com.mutx163.qingyu.app.TimetableStore
 import com.mutx163.qingyu.core.Course
 import com.mutx163.qingyu.core.MiniJson
+import com.mutx163.qingyu.core.SectionTime
 import com.mutx163.qingyu.core.TimetableProfile
+import com.mutx163.qingyu.core.TimetableSettings
+import com.mutx163.qingyu.core.WeekCalculator
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -42,10 +45,14 @@ class WarehouseCourseWriteBackTest {
         customWeeks = weeks,
     )
 
-    private fun profileWith(courses: List<Course>): TimetableProfile = TimetableProfile(
+    private fun profileWith(
+        courses: List<Course>,
+        settings: TimetableSettings = TimetableSettings.defaults(),
+    ): TimetableProfile = TimetableProfile(
         id = "p1",
         name = "默认课表",
         courses = courses,
+        settings = settings,
         currentWeek = 1,
         createdAt = LocalDateTime.of(2026, 9, 1, 0, 0),
         lastUsedAt = LocalDateTime.of(2026, 9, 1, 0, 0),
@@ -62,15 +69,58 @@ class WarehouseCourseWriteBackTest {
         return TimetableRepository(TimetableStore(raw))
     }
 
-    /** 写 `timetable_profiles` 一律抛错的存储替身（模拟磁盘写满）。 */
+    /**
+     * 指定 key 的写入失败。
+     *
+     * [failOnMatch] = -1：每次命中都失败；正数 N：**第 N 次**命中才失败。
+     * 设置单一真源后 settings 与 courses 都写在 `timetable_profiles` 里，
+     * 「设置已落盘、课程落盘失败、回滚」只能靠计数区分第几次写。
+     */
     private class FailingWriteStore(
         private val delegate: InMemoryKeyValueStore,
         private val failKey: String,
+        private val failOnMatch: Int = -1,
     ) : KeyValueStore by delegate {
+        private var matchCount = 0
+
         override fun putString(key: String, value: String) {
-            if (key == failKey) throw IllegalStateException("disk_full")
+            if (key == failKey) {
+                matchCount += 1
+                if (failOnMatch < 0 || matchCount == failOnMatch) {
+                    throw IllegalStateException("disk_full")
+                }
+            }
             delegate.putString(key, value)
         }
+    }
+
+    /** 只有两节课的作息：用来钉「节次不够时补齐」。 */
+    private fun twoSections() = listOf(
+        SectionTime(startTime = "08:00", endTime = "08:45"),
+        SectionTime(startTime = "08:55", endTime = "09:40"),
+    )
+
+    /** 指定节次表的仓储（设置里没有主模板，补节应直接写设置）。 */
+    private fun repositoryWithSections(
+        sections: List<SectionTime>,
+        courses: List<Course> = emptyList(),
+        store: (InMemoryKeyValueStore) -> KeyValueStore = { it },
+    ): TimetableRepository {
+        // 设置单一真源在档案内嵌 `settings`（`TimetableStore.loadSettings`）；顶层
+        // `timetable_settings` 在有档案时只是旧世界镜像，读侧不再走它。
+        val raw = InMemoryKeyValueStore(
+            mapOf(
+                "timetable_profiles" to MiniJson.encode(
+                    listOf(
+                        profileWith(
+                            courses,
+                            TimetableSettings.defaults().copy(sections = sections),
+                        ).toJson(),
+                    ),
+                ),
+            ),
+        )
+        return TimetableRepository(TimetableStore(store(raw)))
     }
 
     // ── 策略 ──────────────────────────────────────────────────────────
@@ -144,9 +194,11 @@ class WarehouseCourseWriteBackTest {
     }
 
     @Test
-    fun `合并匹配到已有课程时按更新计数 不重复新增`() {
+    fun `合并后课程一字不差时按0条上报且不写盘`() {
         val existing = course("c1", name = "数学", day = 2, weeks = listOf(1, 2))
         val repository = repositoryWith(listOf(existing))
+        val seen = mutableListOf<Any>()
+        repository.observe { seen.add(it) }
 
         val result = WarehouseCourseWriteBack.apply(
             repository = repository,
@@ -157,7 +209,86 @@ class WarehouseCourseWriteBackTest {
         val outcome = (result as WarehouseCourseWriteBack.Result.Done).outcome
         assertEquals(WarehouseCourseWriteBack.Mode.MERGE, outcome.mode)
         assertEquals("只更新不新增", 1, repository.snapshot.courses.size)
-        assertTrue("匹配到的记录计入更新数", outcome.importedCount >= 1)
+        // Dart `effectiveImportedCount`：合并没有实际变化就是 0，不能谎报「更新了 1 门」。
+        assertEquals("没有实际变化", 0, outcome.importedCount)
+        assertTrue("没有实际变化就不该写盘通知", seen.isEmpty())
+    }
+
+    @Test
+    fun `导入周次超过学期总周数时抬高学期周数`() {
+        val repository = repositoryWith()
+        val result = WarehouseCourseWriteBack.apply(
+            repository = repository,
+            courses = listOf(course("c1", weeks = (1..25).toList())),
+        )
+
+        assertTrue(result is WarehouseCourseWriteBack.Result.Done)
+        // Dart `importParsedCourses`：按合并后最大周次抬高 semesterWeekCount，否则第 21-25 周点不出来。
+        assertEquals(25, repository.snapshot.settings.semesterWeekCount)
+        assertEquals(listOf(1, 2), repository.snapshot.courses.single().customWeeks?.take(2))
+    }
+
+    @Test
+    fun `导入只会抬高学期周数 不会把用户设的周数压回去`() {
+        val raw = InMemoryKeyValueStore(
+            mapOf(
+                "timetable_profiles" to MiniJson.encode(
+                    listOf(
+                        profileWith(
+                            emptyList(),
+                            TimetableSettings.defaults().copy(semesterWeekCount = 30),
+                        ).toJson(),
+                    ),
+                ),
+            ),
+        )
+        val repository = TimetableRepository(TimetableStore(raw))
+
+        WarehouseCourseWriteBack.apply(repository, listOf(course("c1", weeks = listOf(1, 2, 3))))
+
+        assertEquals("只升不降", 30, repository.snapshot.settings.semesterWeekCount)
+    }
+
+    @Test
+    fun `学期总周数封顶 30 周 第 31 周不再抬高`() {
+        val repository = repositoryWith()
+        WarehouseCourseWriteBack.apply(repository, listOf(course("c1", weeks = (1..31).toList()))
+        )
+        // Dart `maxAllowedSemesterWeekCount = 30`（import_export_logic.dart:39），
+        // 归一化时 31 已被剔除，最后一周 = 30（不是 42）。
+        assertEquals(30, repository.snapshot.settings.semesterWeekCount)
+    }
+
+    @Test
+    fun `自定义周次乱序也按归一化最大值抬升`() {
+        val repository = repositoryWith()
+        WarehouseCourseWriteBack.apply(repository, listOf(course("c1", weeks = listOf(21, 1, 3)))
+        )
+        // Dart `maxCourseWeek` 取 `normalizedCustomWeeks.last`（升序去重后的末项），
+        // 不是原始 `customWeeks.lastOrNull()`——乱序时旧实现会误抬到 3。
+        assertEquals(21, repository.snapshot.settings.semesterWeekCount)
+    }
+
+    @Test
+    fun `确认开学日后按今天重算当前周`() {
+        val start = LocalDateTime.now().minusDays(14)
+        val repository = repositoryWith(listOf(course("c1", weeks = (1..20).toList())))
+
+        val result = WarehouseCourseWriteBack.apply(
+            repository = repository,
+            courses = listOf(course("c1", weeks = (1..20).toList())),
+            semesterStartDate = start,
+        )
+
+        assertTrue(result is WarehouseCourseWriteBack.Result.Done)
+        val expected = WeekCalculator.weekForDate(
+            date = LocalDateTime.now(),
+            semesterStart = start,
+            semesterWeekCount = repository.snapshot.settings.semesterWeekCount,
+            fallback = 1,
+        )
+        // Dart 换了开学日会 `calculateWeekForDate(now)` 重算当前周，不能留旧周次。
+        assertEquals(expected, repository.snapshot.currentWeek)
     }
 
     @Test
@@ -188,6 +319,59 @@ class WarehouseCourseWriteBackTest {
 
         val reloaded = TimetableRepository(TimetableStore(raw))
         assertEquals(listOf("持久化课"), reloaded.snapshot.courses.map { it.name })
+    }
+
+    // ── 节次容量（Dart `ensureImportSectionCapacity`） ──────────────────
+
+    @Test
+    fun `节次不够时补齐到最终课表所需节次`() {
+        val repository = repositoryWithSections(twoSections())
+
+        val result = WarehouseCourseWriteBack.apply(
+            repository = repository,
+            courses = listOf(course("c1", startSection = 1, endSection = 5, weeks = listOf(1, 2, 3))),
+        )
+
+        assertTrue(result is WarehouseCourseWriteBack.Result.Done)
+        // Dart：容量确认后先补节次表再写课程，否则第 5 节的课落盘了却读不到时间。
+        assertEquals(5, repository.snapshot.settings.sections.size)
+        assertEquals(5, repository.snapshot.courses.single().endSection)
+    }
+
+    @Test
+    fun `节次够用时不做任何补节`() {
+        val eight = (1..8).map { index ->
+            SectionTime(
+                startTime = String.format(java.util.Locale.ROOT, "%02d:00", 7 + index),
+                endTime = String.format(java.util.Locale.ROOT, "%02d:45", 7 + index),
+            )
+        }
+        val repository = repositoryWithSections(eight)
+
+        val result = WarehouseCourseWriteBack.apply(
+            repository = repository,
+            courses = listOf(course("c1", startSection = 1, endSection = 3)),
+        )
+
+        assertTrue(result is WarehouseCourseWriteBack.Result.Done)
+        assertEquals("够用就不该动用户的作息", eight, repository.snapshot.settings.sections)
+    }
+
+    @Test
+    fun `课程落盘失败时回滚已补齐的节次`() {
+        val repository = repositoryWithSections(
+            twoSections(),
+            store = { raw -> FailingWriteStore(raw, "timetable_profiles") },
+        )
+
+        val result = WarehouseCourseWriteBack.apply(
+            repository = repository,
+            courses = listOf(course("c1", startSection = 1, endSection = 5)),
+        )
+
+        assertTrue(result is WarehouseCourseWriteBack.Result.Failed)
+        // 「课没进、作息却变了」是最难解释的状态：补节必须随课程落盘失败一起退回去。
+        assertEquals(twoSections(), repository.snapshot.settings.sections)
     }
 
     // ── 载荷整链 ──────────────────────────────────────────────────────
@@ -236,6 +420,70 @@ class WarehouseCourseWriteBackTest {
         assertEquals(1, done.outcome.droppedCount)
         assertEquals(2, done.receivedCount)
         assertEquals(listOf("高数"), repository.snapshot.courses.map { it.name })
+    }
+
+    // ── 与 Dart `importParsedCourses` 对拍 ──────────────────────────────
+
+    @Test
+    fun `导入确认的开学日即使课程没有变化也会落盘`() {
+        val start = LocalDateTime.of(2026, 9, 7, 0, 0)
+        val existing = course("c1", name = "数学", day = 2, weeks = listOf(1, 2))
+        val repository = repositoryWith(listOf(existing))
+
+        val result = WarehouseCourseWriteBack.apply(
+            repository = repository,
+            courses = listOf(existing.copy(id = "imported-id")),
+            semesterStartDate = start,
+        )
+
+        assertTrue(result is WarehouseCourseWriteBack.Result.Done)
+        // Dart：`importParsedCourses` 在合并结果没变化时也不会提前 return，
+        // 因为开学日是这次导入要落盘的产物。
+        assertEquals(start, repository.snapshot.settings.semesterStartDate)
+    }
+
+    @Test
+    fun `覆盖导入先去重 计数按去重后的条数`() {
+        val repository = repositoryWith(listOf(course("old", name = "旧课")))
+        val duplicate = course("new", name = "新课", day = 3)
+
+        val result = WarehouseCourseWriteBack.apply(
+            repository = repository,
+            courses = listOf(duplicate, duplicate.copy()),
+            requestedMode = WarehouseCourseWriteBack.Mode.REPLACE,
+        )
+
+        assertTrue(result is WarehouseCourseWriteBack.Result.Done)
+        assertEquals(1, (result as WarehouseCourseWriteBack.Result.Done).outcome.importedCount)
+        assertEquals(listOf("新课"), repository.snapshot.courses.map { it.name })
+    }
+
+    @Test
+    fun `课程落盘失败时回滚已写入的开学日`() {
+        val oldStart = LocalDateTime.of(2026, 2, 23, 0, 0)
+        val newStart = LocalDateTime.of(2026, 9, 7, 0, 0)
+        val profile = profileWith(
+            listOf(course("old", name = "旧课")),
+            TimetableSettings.defaults().copy(semesterStartDate = oldStart),
+        )
+        val raw = InMemoryKeyValueStore(
+            mapOf(
+                "timetable_profiles" to MiniJson.encode(listOf(profile.toJson())),
+            ),
+        )
+        // 第 1 次写 = 开学日设置落盘（成功）；第 2 次写 = 课程落盘（失败）；第 3 次 = 回滚。
+        val repository = TimetableRepository(
+            TimetableStore(FailingWriteStore(raw, "timetable_profiles", failOnMatch = 2)),
+        )
+
+        val result = WarehouseCourseWriteBack.apply(
+            repository = repository,
+            courses = listOf(course("new", name = "新课", day = 5)),
+            semesterStartDate = newStart,
+        )
+
+        assertTrue(result is WarehouseCourseWriteBack.Result.Failed)
+        assertEquals("课没进就不许只改开学日", oldStart, repository.snapshot.settings.semesterStartDate)
     }
 
     @Test

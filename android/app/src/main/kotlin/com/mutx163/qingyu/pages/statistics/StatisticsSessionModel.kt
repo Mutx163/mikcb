@@ -3,6 +3,7 @@ package com.mutx163.qingyu.pages.statistics
 import com.mutx163.qingyu.core.CourseSession
 import com.mutx163.qingyu.core.CourseSessionPhase
 import com.mutx163.qingyu.core.CourseSessionStats
+import com.mutx163.qingyu.pages.statistics.charts.ChartsStrings
 
 /**
  * 单节课明细页（`lib/screens/statistics_session_screen.dart`，147 行）模型层。
@@ -134,7 +135,9 @@ object StatisticsSessionModel {
             count = count,
             total = total,
             ratio = ratio,
-            valueText = "$count/$total",
+            // Dart `session_coverage_card.dart:100` 是 `'$count / $total'`（斜杠两侧有空格）。
+            // 上一版漏了空格，屏上是 `3/4` 而 Dart 是 `3 / 4`；两版逐字对照时会当成文案错。
+            valueText = "$count / $total",
         )
     }
 
@@ -154,24 +157,46 @@ object StatisticsSessionModel {
     /**
      * 课次列表的一行视图模型。
      *
-     * `subtitle` 的拼法照抄 Dart `_subtitle`：日期（有日期轴才有）+ 节次 + 教室，
-     * 缺项跳过，不留多余分隔符。
+     * 照抄 Dart `session_list_card.dart` 的 `_SessionRow`：
+     * - `title`：哪一次——`dateText`（调用方已拼好「9月16日 · 周X」），没有日期轴时
+     *   回落「第 N 周 · 周X」；
+     * - `subtitle`：节次区间 + 钟点 + 教室（Dart `_subtitle`，缺项跳过）；
+     * - `examBadge`：当天有考试时的角标（Dart `if (session.examCount > 0)`）。
+     *
+     * 之前这里把日期塞进 `subtitle`、用 ASCII 连字符写「第3-5节」、并丢掉钟点与
+     * 考试角标，与 Dart 行信息不一致（用户看不出是哪一天/哪一节）。
      */
     data class SessionRow(
+        val title: String,
         val phaseLabel: String,
         val subtitle: String,
         val noteText: String?,
+        val examBadge: String?,
     )
 
     fun sessionRow(session: CourseSession, dateText: String?): SessionRow {
-        val parts = mutableListOf<String>()
-        if (dateText != null && dateText.isNotEmpty()) parts += dateText
-        parts += "第${session.startSection}-${session.endSection}节"
-        if (session.location.isNotEmpty()) parts += session.location
+        val resolvedDateText = dateText?.takeIf { it.isNotEmpty() }
+            ?: "${StatisticsStrings.statisticsWeekSelector.filled("week" to session.week.toString())} · " +
+            StatisticsStrings.weekdayFull(session.dayOfWeek)
+
+        val parts = mutableListOf(
+            ChartsStrings.sectionRangeLabel.filled(
+                "startSection" to session.startSection.toString(),
+                "endSection" to session.endSection.toString(),
+            ),
+        )
+        val start = session.startTime
+        val end = session.endTime
+        if (start != null && end != null) parts += "$start–$end"
+        val location = session.location.trim()
+        if (location.isNotEmpty()) parts += location
+
         return SessionRow(
+            title = resolvedDateText,
             phaseLabel = phaseLabel(session.phase),
             subtitle = parts.joinToString(" · "),
             noteText = session.noteText?.takeIf { it.trim().isNotEmpty() },
+            examBadge = if (session.examCount > 0) ChartsStrings.examBadgeLabel.zh else null,
         )
     }
 

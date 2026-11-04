@@ -62,6 +62,8 @@ object TimetableStrings {
     val moreActionsTooltip = ArbText("moreActionsTooltip", "更多操作")
     val coupleTimetablePartnerReadOnlyBadge = ArbText("coupleTimetablePartnerReadOnlyBadge", "对方课表 只读")
     val coupleTimetableTitle = ArbText("coupleTimetableTitle", "情侣课表")
+    /** 课表管理页当前生效课表的徽章无障碍描述（`TimetableProfilesPage` 激活态图标）。 */
+    val timetableProfileActiveBadge = ArbText("timetableProfileActiveBadge", "已激活")
     val clearCurrentTimetableMessage =
         ArbText("clearCurrentTimetableMessage", "确定清空 {name} 的全部课程？课表设置将保留")
     val deleteTimetableMessage = ArbText("deleteTimetableMessage", "确定删除课表 {name}？")
@@ -364,6 +366,7 @@ object TimetableStrings {
             moreActionsTooltip,
             coupleTimetablePartnerReadOnlyBadge,
             coupleTimetableTitle,
+            timetableProfileActiveBadge,
             clearCurrentTimetableMessage,
             deleteTimetableMessage,
             backToCurrentWeekAction,

@@ -113,6 +113,18 @@ class QingyuTextStylesTest {
     }
 
     @Test
+    fun `用户改过字重时不再抵扣系统粗体增量`() {
+        // Dart `AppFontScope.resolveShiftedWeight`（`lib/ui/app_fonts.dart:105-116`）是两分支：
+        //   用户设非默认字重 → design + (user - 400)     —— 不减系统增量
+        //   用户未改         → design - systemDelta      —— 减（见上一条用例）
+        // 旧实现无条件减 delta，会让「系统粗体 + 应用字重 w600」的正文落到 w500，
+        // 比 Dart 细一档；subtitle 还会从 900 掉到 800，课卡主次差被抹掉。
+        val ours = buildQingyuTextStyles(userFontWeight = 600, systemWeightDelta = 100)
+        assertEquals(FontWeight.W600, ours.main.fontWeight)
+        assertEquals(FontWeight.W900, ours.subtitle.fontWeight)
+    }
+
+    @Test
     fun `字族为空时不覆写，有值时全槽位生效`() {
         // null = 跟随系统默认，不能塞一个空 FontFamily 进去（那会与主题的字族脱钩）。
         val withoutFamily = buildQingyuTextStyles(fontFamily = null)

@@ -5870,5 +5870,11 @@
         "type": "String"
       }
     }
-  }
+  },
+  "backupRestoreCommitFailed": "復元に失敗し、ロールバック済み",
+  "backupRestoreRollbackFailed": "復元・ロールバック失敗、要確認",
+  "stopRecordingWithCount": "録画停止 ({count})",
+  "@stopRecordingWithCount": {"placeholders":{"count":{"type":"int"}}},
+  "timetableProfileActiveBadge": "有効",
+  "webdavPasswordReentryBody": "今回の更新でパスワードの保存方法が変更されたため、アプリ専用パスワードをもう一度入力してください。サーバーアドレス、アカウント、同期設定は保持されています。"
 }

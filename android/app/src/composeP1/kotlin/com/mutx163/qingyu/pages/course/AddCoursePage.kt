@@ -519,121 +519,121 @@ fun AddCoursePage(
     }
 
     // ── 周选择弹层（草稿状态机在 AddCourseWeekDraftLogic）──
-    val openDraft = weekDraft
-    if (openDraft != null && weekDraftEntryId != null) {
-        val entryIndex = entries.indexOfFirst { it.id == weekDraftEntryId }
-        if (entryIndex >= 0) {
-            AddCourseWeekPickerDialog(
-                draft = openDraft,
-                availableWeeks = availableWeeks,
-                dark = dark,
-                onDraftChange = { weekDraft = it },
-                onDismiss = {
-                    weekDraft = null
-                    weekDraftEntryId = null
-                },
-                onConfirm = { confirmed ->
-                    updateEntry(entryIndex) { AddCourseWeekDraftLogic.applyToEntry(it, confirmed) }
-                    weekDraft = null
-                    weekDraftEntryId = null
-                },
-            )
-        }
-    }
+    // 常驻组合：显隐只由 `show` 驱动，不靠 `weekDraft` 是否为空来挂载；
+    // 退场动画期间的草稿内容由弹层内部的 `rememberLastNonNull` 钉住。
+    AddCourseWeekPickerDialog(
+        draftOrNull = weekDraft,
+        show = weekDraft != null && weekDraftEntryId != null,
+        availableWeeks = availableWeeks,
+        dark = dark,
+        onDraftChange = { weekDraft = it },
+        onDismiss = {
+            weekDraft = null
+            weekDraftEntryId = null
+        },
+        onConfirm = { confirmed ->
+            val entryIndex = weekDraftEntryId?.let { id -> entries.indexOfFirst { it.id == id } } ?: -1
+            if (entryIndex >= 0) {
+                updateEntry(entryIndex) { AddCourseWeekDraftLogic.applyToEntry(it, confirmed) }
+            }
+            weekDraft = null
+            weekDraftEntryId = null
+        },
+    )
 
-    if (confirmDiscard) {
-        OverlayDialog(
-            insideMargin = DpSize(16.dp, 16.dp),
-            show = true,
-            title = AddCourseStrings.courseFormDiscardTitle.zh,
-            summary = AddCourseStrings.courseFormDiscardMessage.zh,
-            onDismissRequest = { confirmDiscard = false },
+    // 常驻组合（2026-11-04 弹层债收口）：显隐只由 `show` 驱动。原先 `if (confirmDiscard)`
+    // 在状态置 false 的同一帧把整棵 OverlayDialog 摘出组合，官方退场动画
+    // （miuix 0.9.4 `DialogLayout` 的 fadeOut + scaleOut + slideOut）一次都播不出来。
+    // 标题/正文均为常量文案，退场期间没有会被清空的数据，无需 `rememberLastNonNull`。
+    OverlayDialog(
+        insideMargin = DpSize(16.dp, 16.dp),
+        show = confirmDiscard,
+        title = AddCourseStrings.courseFormDiscardTitle.zh,
+        summary = AddCourseStrings.courseFormDiscardMessage.zh,
+        onDismissRequest = { confirmDiscard = false },
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(10.dp),
         ) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(10.dp),
+            top.yukonga.miuix.kmp.basic.Button(
+                onClick = { confirmDiscard = false },
+                modifier = Modifier.weight(1f),
             ) {
-                top.yukonga.miuix.kmp.basic.Button(
-                    onClick = { confirmDiscard = false },
-                    modifier = Modifier.weight(1f),
-                ) {
-                    Text(text = AddCourseStrings.cancelAction.zh)
-                }
-                top.yukonga.miuix.kmp.basic.Button(
-                    onClick = {
-                        confirmDiscard = false
-                        dirty = false
-                        onBack()
-                    },
-                    modifier = Modifier.weight(1f),
-                    colors = top.yukonga.miuix.kmp.basic.ButtonDefaults.buttonColors(
-                        color = Color(QingyuTheme.error(dark)),
-                        contentColor = Color(QingyuTheme.onError(dark)),
-                    ),
-                ) {
-                    Text(text = AddCourseStrings.courseFormDiscardAction.zh)
-                }
+                Text(text = AddCourseStrings.cancelAction.zh)
+            }
+            top.yukonga.miuix.kmp.basic.Button(
+                onClick = {
+                    confirmDiscard = false
+                    dirty = false
+                    onBack()
+                },
+                modifier = Modifier.weight(1f),
+                colors = top.yukonga.miuix.kmp.basic.ButtonDefaults.buttonColors(
+                    color = Color(QingyuTheme.error(dark)),
+                    contentColor = Color(QingyuTheme.onError(dark)),
+                ),
+            ) {
+                Text(text = AddCourseStrings.courseFormDiscardAction.zh)
             }
         }
     }
 
-    if (confirmDelete && isEditing) {
-        val deleteTargetName = courseGroup?.name ?: initialCourse?.name.orEmpty()
-        // 弹窗玻璃试点（2026-11-03，用户批准「改库」）：全仓唯一走本地 fork 玻璃的调用点。
-        // 玻璃画在官方容器的同一节点里（third_party/miuix-ui 的 OverlayDialog(glass = …)），
-        // 取值只在 core/DialogGlassSpec（纯 Kotlin，JVM 可测）；把 DialogGlassSpec.enabled
-        // 置 false 即一键回退官方实心板。本试点由 QingyuGlassDialogGuardTest 钉住，不许铺开。
-        val schemeBackground = MiuixTheme.colorScheme.background
-        val glassDark = DialogGlassSpec.isDarkBackground(schemeBackground.toArgb())
-        val glassOn = DialogGlassSpec.enabled
-        OverlayDialog(
-            insideMargin = DpSize(16.dp, 16.dp),
-            show = true,
-            title = AddCourseStrings.deleteCourseTitle.zh,
-            summary = AddCourseStrings.confirmDeleteCourseMessage.filled("name", deleteTargetName),
-            // 圆角钉 32dp：官方贴底档下限，玻璃面与面板同值（容器内两者共用推导值）。
-            cornerRadius = DialogGlassSpec.CORNER_RADIUS_DP.dp,
-            // 要玻璃时底色必须半透明（压色落在模糊层上）；关玻璃就退回实心，观感与官方一致。
-            backgroundColor = if (glassOn) {
-                schemeBackground.copy(alpha = DialogGlassSpec.tintAlpha(glassDark))
-            } else {
-                schemeBackground
-            },
-            glass = if (glassOn) {
-                DialogGlass(
-                    backdrop = LocalQingyuPageBackdrop.current,
-                    blurRadius = DialogGlassSpec.BLUR_RADIUS_DP.dp,
-                    saturation = DialogGlassSpec.SATURATION,
-                    dark = glassDark,
-                )
-            } else {
-                null
-            },
-            onDismissRequest = { confirmDelete = false },
+    // 删除确认弹层常驻组合（`show` 由实时状态驱动，关闭不再整棵摘出组合），并保留
+    // 本仓玻璃试点（2026-11-03，用户批准「改库」）：玻璃画在官方容器同一节点，取值在
+    // core/DialogGlassSpec；DialogGlassSpec.enabled=false 一键回退官方实心板。本试点由
+    // QingyuGlassDialogGuardTest 钉住，不许铺开。
+    val deleteTargetName = courseGroup?.name ?: initialCourse?.name.orEmpty()
+    val schemeBackground = MiuixTheme.colorScheme.background
+    val glassDark = DialogGlassSpec.isDarkBackground(schemeBackground.toArgb())
+    val glassOn = DialogGlassSpec.enabled
+    OverlayDialog(
+        insideMargin = DpSize(16.dp, 16.dp),
+        show = confirmDelete && isEditing,
+        title = AddCourseStrings.deleteCourseTitle.zh,
+        summary = AddCourseStrings.confirmDeleteCourseMessage.filled("name", deleteTargetName),
+        // 圆角钉 32dp：官方贴底档下限，玻璃面与面板同值（容器内两者共用推导值）。
+        cornerRadius = DialogGlassSpec.CORNER_RADIUS_DP.dp,
+        // 要玻璃时底色必须半透明（压色落在模糊层上）；关玻璃就退回实心，观感与官方一致。
+        backgroundColor = if (glassOn) {
+            schemeBackground.copy(alpha = DialogGlassSpec.tintAlpha(glassDark))
+        } else {
+            schemeBackground
+        },
+        glass = if (glassOn) {
+            DialogGlass(
+                backdrop = LocalQingyuPageBackdrop.current,
+                blurRadius = DialogGlassSpec.BLUR_RADIUS_DP.dp,
+                saturation = DialogGlassSpec.SATURATION,
+                dark = glassDark,
+            )
+        } else {
+            null
+        },
+        onDismissRequest = { confirmDelete = false },
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(10.dp),
         ) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(10.dp),
+            top.yukonga.miuix.kmp.basic.Button(
+                onClick = { confirmDelete = false },
+                modifier = Modifier.weight(1f),
             ) {
-                top.yukonga.miuix.kmp.basic.Button(
-                    onClick = { confirmDelete = false },
-                    modifier = Modifier.weight(1f),
-                ) {
-                    Text(text = AddCourseStrings.cancelAction.zh)
-                }
-                top.yukonga.miuix.kmp.basic.Button(
-                    onClick = {
-                        confirmDelete = false
-                        onDelete()
-                    },
-                    modifier = Modifier.weight(1f),
-                    colors = top.yukonga.miuix.kmp.basic.ButtonDefaults.buttonColors(
-                        color = Color(QingyuTheme.error(dark)),
-                        contentColor = Color(QingyuTheme.onError(dark)),
-                    ),
-                ) {
-                    Text(text = AddCourseStrings.deleteAction.zh)
-                }
+                Text(text = AddCourseStrings.cancelAction.zh)
+            }
+            top.yukonga.miuix.kmp.basic.Button(
+                onClick = {
+                    confirmDelete = false
+                    onDelete()
+                },
+                modifier = Modifier.weight(1f),
+                colors = top.yukonga.miuix.kmp.basic.ButtonDefaults.buttonColors(
+                    color = Color(QingyuTheme.error(dark)),
+                    contentColor = Color(QingyuTheme.onError(dark)),
+                ),
+            ) {
+                Text(text = AddCourseStrings.deleteAction.zh)
             }
         }
     }
@@ -781,22 +781,26 @@ private fun AddCourseEntryFields(
  */
 @Composable
 private fun AddCourseWeekPickerDialog(
-    draft: AddCourseWeekDraft,
+    draftOrNull: AddCourseWeekDraft?,
+    show: Boolean,
     availableWeeks: List<Int>,
     dark: Boolean,
     onDraftChange: (AddCourseWeekDraft) -> Unit,
     onDismiss: () -> Unit,
     onConfirm: (AddCourseWeekDraft) -> Unit,
 ) {
+    // 退场期快照：`show` 转 false 后宿主把 weekDraft 置空，正文仍要按最后一份草稿渲染。
+    val currentDraft = rememberLastNonNull(draftOrNull)
     // Dart 原版是全屏子页 + 可滚 ListView；这里收成对话框，正文限高 + 可滚，
     // 避免自定义周网格（53 周 / 大字号）撑破矮屏。确认/取消跟随正文滚动（与 Dart 底部动作一致）。
     val maxBodyHeight = (LocalConfiguration.current.screenHeightDp * 0.72f).dp
     OverlayDialog(
         insideMargin = DpSize(16.dp, 16.dp),
-        show = true,
+        show = show,
         title = AddCourseStrings.weekPickerTitle.zh,
         onDismissRequest = onDismiss,
     ) {
+        val draft = currentDraft ?: return@OverlayDialog
         LazyColumn(
             modifier = Modifier
                 .fillMaxWidth()
@@ -937,4 +941,19 @@ private fun AddCourseWeekPickerDialog(
             }
         }
     }
+}
+
+/**
+ * 退场期保留最后一份非空状态（常驻组合配方的一半，与 `TimeSchemeManagementDialogs.kt` 同口径）。
+ *
+ * 弹层 `show` 转 false 后宿主通常立刻把数据置空；退场动画期间内容 lambda 仍会被组合，
+ * 直接读可空入参会闪成空板，所以用 remember 钉住最后一份非空值。
+ */
+@Composable
+private fun <T : Any> rememberLastNonNull(current: T?): T? {
+    var shown by remember { mutableStateOf(current) }
+    if (current != null) {
+        shown = current
+    }
+    return shown
 }

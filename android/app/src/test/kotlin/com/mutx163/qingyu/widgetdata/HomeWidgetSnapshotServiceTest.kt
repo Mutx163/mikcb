@@ -8,6 +8,7 @@ import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import java.time.LocalDateTime
+import java.util.Locale
 
 /**
  * 快照组装纯逻辑的端口测试（移植 lib/services/home_widget_snapshot_service.dart）。
@@ -43,8 +44,8 @@ class HomeWidgetSnapshotServiceTest {
     fun hideCompletedCoursesKeepsDailyState() { // [Dart抄录] hide completed 用例
         val settings = WidgetSettingsFace().copy(
             widgetHideCompletedCourses = true,
-            widgetHeightAdjustment = 8,
-            widgetCornerRadius = 16,
+            widgetHeightAdjustment = 8.0,
+            widgetCornerRadius = 16.0,
         )
         val snapshot = service.build(
             profileId = "profile-1",
@@ -56,8 +57,13 @@ class HomeWidgetSnapshotServiceTest {
         )
         assertEquals(HomeWidgetSnapshotState.ONGOING, snapshot.state)
         assertEquals(3, snapshot.totalTodayCourseCount)
-        assertEquals(8, snapshot.heightAdjustment)
-        assertEquals(16, snapshot.cornerRadius)
+        assertEquals(8.0, snapshot.heightAdjustment, 0.0)
+        assertEquals(16.0, snapshot.cornerRadius, 0.0)
+        // Dart `HomeWidgetSnapshot.heightAdjustment/cornerRadius` 是 double，
+        // `jsonEncode` 输出 `8.0`/`16.0`；Kotlin 若用 Int 会落成 `8`/`16`，跨端字节与哈希都对不上。
+        val json = MiniJson.encode(snapshot.toJson())
+        assertTrue(json, json.contains("\"heightAdjustment\":8.0"))
+        assertTrue(json, json.contains("\"cornerRadius\":16.0"))
         assertEquals(3, snapshot.todayCourses.size)
         assertEquals(listOf("ongoing", "upcoming"), snapshot.visibleTodayCourses.map { it.id })
         assertEquals("ongoing", snapshot.highlightedCourse?.id)
@@ -425,5 +431,44 @@ class HomeWidgetSnapshotServiceTest {
         )
         // 只剩午夜触发点
         assertEquals(listOf(WidgetDataClock.toEpochMillis(LocalDateTime.of(2026, 3, 28, 0, 0))), triggers)
+    }
+
+    @Test
+    fun nextExamDaysUntilUsesSnapshotNow() { // [Dart抄录] daysUntil 按 build 传入的 now 计，不读蛇形时钟
+        val exam = ExamFace(
+            id = "e1", name = "期末考试",
+            dateTime = LocalDateTime.of(2026, 4, 2, 0, 0),
+            startTime = "09:00", endTime = "11:00", location = "S101",
+        )
+        val snapshot = service.build(
+            profileId = "p", profileName = "n", currentWeek = 6,
+            settings = WidgetSettingsFace(), todayCourses = emptyList(),
+            now = LocalDateTime.of(2026, 3, 27, 14, 30),
+            nextExam = exam,
+        )
+        // 2026-03-27 → 2026-04-02 = 6 天；若误用 LocalDateTime.now()（2026-11-04）会得到负数。
+        assertEquals(6, snapshot.toJson()["nextExamDaysUntil"])
+    }
+
+    @Test
+    fun examTextStableUnderArabicLocale() { // [Dart抄录] padLeft 无 Locale，Kotlin 必须钉 Locale.ROOT
+        val previous = Locale.getDefault()
+        Locale.setDefault(Locale.forLanguageTag("ar-EG"))
+        try {
+            val exam = ExamFace(
+                id = "e1", name = "期末考试",
+                dateTime = LocalDateTime.of(2026, 4, 2, 0, 0),
+                startTime = "09:00", endTime = "11:00", location = "S101",
+            )
+            val snapshot = service.build(
+                profileId = "p", profileName = "n", currentWeek = 6,
+                settings = WidgetSettingsFace(), todayCourses = emptyList(),
+                now = now, nextExam = exam,
+            )
+            assertEquals("2026-04-02", snapshot.toJson()["nextExamDate"])
+            assertEquals("09:05", WidgetDataClock.formatClock(LocalDateTime.of(2026, 4, 2, 9, 5)))
+        } finally {
+            Locale.setDefault(previous)
+        }
     }
 }

@@ -4,6 +4,7 @@ import com.mutx163.qingyu.core.DartFormatException
 import com.mutx163.qingyu.core.DartTime
 import com.mutx163.qingyu.core.MiniJson
 import java.time.LocalDateTime
+import java.util.Locale
 
 /**
  * 年度节假日数据集合（移植自 lib/models/holiday_entry.dart:87-255）。
@@ -127,7 +128,13 @@ data class HolidayData(
 
         /** Dart `HolidayData._dateKey`：年份不补零、月日补零（逐字对齐）。 */
         internal fun dateKey(dateOnly: LocalDateTime): String =
-            "%d-%02d-%02d".format(dateOnly.year, dateOnly.monthValue, dateOnly.dayOfMonth)
+            String.format(
+                Locale.ROOT,
+                "%d-%02d-%02d",
+                dateOnly.year,
+                dateOnly.monthValue,
+                dateOnly.dayOfMonth,
+            )
 
         /**
          * Dart `HolidayData.fromJson`：year 接受整数 / 小数（截断）/ 数字字符串；

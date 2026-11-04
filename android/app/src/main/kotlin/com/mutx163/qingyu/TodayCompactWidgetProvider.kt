@@ -38,7 +38,7 @@ class TodayCompactWidgetProvider : BaseQingyuWidgetProvider() {
             "setBackgroundResource",
             TodayWidgetSupport.backgroundRes(
                 backgroundStyle,
-                snapshot?.cornerRadius ?: TodayWidgetSupport.DEFAULT_CORNER_RADIUS_DP
+                snapshot?.cornerRadius?.toInt() ?: TodayWidgetSupport.DEFAULT_CORNER_RADIUS_DP
             )
         )
         TodayWidgetSupport.applyAdaptiveVerticalPadding(
@@ -47,7 +47,7 @@ class TodayCompactWidgetProvider : BaseQingyuWidgetProvider() {
             profile,
             baseVerticalDp = 14,
             heightAdjustmentDp =
-                snapshot?.heightAdjustment ?: TodayWidgetSupport.DEFAULT_HEIGHT_ADJUSTMENT_DP,
+                snapshot?.heightAdjustment?.toInt() ?: TodayWidgetSupport.DEFAULT_HEIGHT_ADJUSTMENT_DP,
             targetAspect = 1f,
         )
         val isExamOngoing = snapshot != null && TodayWidgetSupport.isExamOngoing(snapshot)

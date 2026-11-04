@@ -2,6 +2,7 @@ package com.mutx163.qingyu.app
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -30,6 +31,8 @@ import com.mutx163.qingyu.pages.timetable.WeekViewStyle
 import com.mutx163.qingyu.pages.timetable.shareTimetableImage
 import com.mutx163.qingyu.pages.weather.WeatherStrings
 import com.mutx163.qingyu.weather.WeatherProvider
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.isActive
 import java.time.LocalDate
 import java.time.LocalDateTime
 
@@ -171,8 +174,35 @@ fun TimetableHost(
     // 考试不在 `TimetableSnapshot` 里（各自仓储），从 `repository.exams` 现取。
     val exams = repository.exams
     val scheduleItems = snapshot.scheduleItems
-    // 只在数据变化时取一次「此刻」：考试过期判定随它走，但不该每帧变。
-    val now = remember(snapshot) { LocalDateTime.now() }
+    // 「此刻」按分钟粒度前移：只 `remember(snapshot)` 取一次的话，首页常驻跨零点后
+    // 「今天」高亮 / 「回本周」入口 / 考试过期判定会一直停在昨天。Dart 侧周视图每次
+    // 构建都重读 `DateTime.now()`（`timetable_screen.dart:1404`/`:1429`/`:1438`），
+    // 日视图心跳按日内分钟数节流（同文件 `:559-574`）；节流判据收敛在
+    // [TimetableDateLogic.homeClockShouldAdvance]（模型层，可单测）。
+    var now by remember(snapshot) { mutableStateOf(LocalDateTime.now()) }
+    LaunchedEffect(snapshot) {
+        while (isActive) {
+            delay(1000L)
+            val fresh = LocalDateTime.now()
+            if (!TimetableDateLogic.homeClockShouldAdvance(now, fresh)) continue
+            val previousDate = now.toLocalDate()
+            now = fresh
+            // 跨日把「当前周」写回仓储，补齐 Dart 时间上下文刷新的日历部分
+            //（`timetable_provider.dart:3271-3287`：`didChangeWeek` 时才夹到学期内写回）。
+            // 幂等：只在与本帧快照不同才调；写失败由壳回调吞掉并每分钟重试一次，
+            // 不影响渲染 —— 不新增仓储 API，也不碰 `TimetableStore`。
+            if (fresh.toLocalDate() != previousDate) {
+                val commitWeek = TimetableDateLogic.weekToCommitOnDayChange(
+                    semesterStart = settings.semesterStartDate?.toLocalDate(),
+                    totalWeeks = settings.semesterWeekCount,
+                    today = fresh.toLocalDate(),
+                    currentWeek = snapshot.currentWeek,
+                    clamp = repository::clampWeekToSettings,
+                )
+                if (commitWeek != null) runCatching { onWeekChanged(commitWeek) }
+            }
+        }
+    }
 
     // ── 假期判定（P1-7）──
     // Dart 周网格每列都问 `provider.isHoliday(date)`（`timetable_day_column.dart:76`）。
@@ -230,6 +260,10 @@ fun TimetableHost(
                 val date = TimetableDateLogic.dateForWeekDay(start, week, dayOfWeek)
                 val occurrence = repository.dateForCourseOccurrence(course, week)
                 when {
+                    // Dart `timetable_home_page_assembly.dart:456`：停课周（及单双周错位、
+                    // 尚未开课的周）这节并不上，挂那天的天气会让人误以为要带伞——是
+                    // 整行不挂，不是挂空值。
+                    !course.isActiveInWeek(week) -> null
                     date == null || occurrence == null -> null
                     else -> provider.summaryForCourse(occurrence, course.startTime, course.endTime)?.let { summary ->
                         TimetableStrings.formatWeatherLine(

@@ -92,6 +92,8 @@ class CloudBackupDetailWiringTest {
         val kind = controller.deleteBackup("2026-01-01.mikcb")
 
         assertEquals(SyncResultKind.FAILED, kind)
+        // Dart `deleteBackup` 查不到条目抛 `backup_not_found`，不能落成泛化「同步失败」。
+        assertEquals("backup_not_found", controller.lastErrorCode)
     }
 
     @Test
@@ -99,6 +101,8 @@ class CloudBackupDetailWiringTest {
         val controller = controller()
 
         assertEquals(SyncResultKind.FAILED, controller.deleteBackup("2026-03-06.mikcb"))
+        // Dart `buildConnectionParams == null` → `missing_credentials`。
+        assertEquals("missing_credentials", controller.lastErrorCode)
     }
 
     @Test

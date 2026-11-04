@@ -28,6 +28,7 @@ import com.mutx163.qingyu.transfer.lan.LanEditHttpServer
 import com.mutx163.qingyu.transfer.lan.LanEditRepositoryHost
 import com.mutx163.qingyu.transfer.lan.LanEditStaticAssets
 import com.mutx163.qingyu.transfer.lan.LanTransferUndoStore
+import com.mutx163.qingyu.transfer.lan.TimetableStoreLanSettings
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -248,9 +249,17 @@ object LanEditServiceRuntime {
             appContext = context.applicationContext
             return try {
                 val newSession = LanEditSession.create()
+                // 设置要按 Dart 的 250+ 键整份读写：走仓储的带锁通道（readRawSettings /
+                // writeRawSettingsPatch），与时间/周次核心四键共用同一把对象锁，
+                // 消除「读→算→写」跨调用窗口。
+                val settingsStore = TimetableStoreLanSettings(repository)
                 val router = LanEditApiRouter(
                     // 撤销点按进程存活：停服再开仍能撤销上一个导入（杀进程才失效）。
-                    host = LanEditRepositoryHost(repository, undoStore = LanTransferUndoStore.shared),
+                    host = LanEditRepositoryHost(
+                        repository,
+                        undoStore = LanTransferUndoStore.shared,
+                        settingsStore = settingsStore,
+                    ),
                     session = newSession,
                 )
                 val newServer = LanEditHttpServer(

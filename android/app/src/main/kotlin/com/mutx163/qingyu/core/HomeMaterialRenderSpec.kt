@@ -73,7 +73,7 @@ enum class SurfaceMaterialState(val value: String) {
 data class HomeMaterialRenderSpec(
     val band: SurfaceMaterialState = SurfaceMaterialState.OFF,
     val dock: SurfaceMaterialState = SurfaceMaterialState.FROST,
-    val courseCard: SurfaceMaterialState = SurfaceMaterialState.SOLID,
+    override val courseCard: SurfaceMaterialState = SurfaceMaterialState.SOLID,
     val liquidTintAlpha: Float = 0.70f,
     val liquidBlurSigma: Float = 15.0f,
     val liquidRefraction: Float = 8.0f,
@@ -86,7 +86,7 @@ data class HomeMaterialRenderSpec(
      * 0 = 走更便宜的无色散着色器。
      */
     val liquidDispersion: Float = 0.35f,
-    val courseCardTintAlpha: Float = 0.70f,
+    override val courseCardTintAlpha: Float = 0.70f,
     val courseCardBlurSigma: Float = 15.0f,
     /** 课卡边缘折射位移（逻辑 px），取**卡片自己那套**的 `refraction`。 */
     val courseCardRefraction: Float = 8.0f,
@@ -94,4 +94,15 @@ data class HomeMaterialRenderSpec(
     val courseCardRefractionBand: Float = 11.0f,
     /** 课卡色散强度（0–1），取卡片那套的 `dispersion` 并套深色配方。 */
     val courseCardDispersion: Float = 0.35f,
-)
+) : CourseCardSurface
+
+/**
+ * 卡面渲染读到的材质快照接口（只暴露渲染层真正用到的两项：档位 + 染色透明系数）。
+ *
+ * [HomeMaterialRenderSpec] 实现本接口，timetable 主源集（日视图议程卡 alpha 等）
+ * 因此只依赖 `core`，不必反向引用设置页模型。
+ */
+interface CourseCardSurface {
+    val courseCard: SurfaceMaterialState
+    val courseCardTintAlpha: Float
+}

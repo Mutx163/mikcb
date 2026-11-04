@@ -6029,5 +6029,11 @@
         "type": "String"
       }
     }
-  }
+  },
+  "backupRestoreCommitFailed": "恢復提交失敗，已回滾",
+  "backupRestoreRollbackFailed": "恢復失敗且回滾失敗，請檢查儲存空間",
+  "stopRecordingWithCount": "停止錄製 ({count})",
+  "@stopRecordingWithCount": {"placeholders":{"count":{"type":"int"}}},
+  "timetableProfileActiveBadge": "已啟用",
+  "webdavPasswordReentryBody": "本次更新更改了密碼的本機儲存方式，需要重新輸入一次應用程式專用密碼；伺服器位址、帳號與同步設定均已保留。"
 }

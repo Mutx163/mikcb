@@ -61,6 +61,24 @@ class CourseRankingModelTest {
     }
 
     @Test
+    fun `课时并列也按顺序编号 1 2 3 不是竞赛式 1 1 3`() {
+        // Dart `lib/widgets/statistics/course_ranking.dart:43-46`：
+        //   for (var index = 0; index < courseRanking.length; index++)
+        //     _CourseRankingTile(..., rank: index + 1, ...)
+        // 名次 = 下标 + 1，Dart **不处理并列**：两门课时相同的课各占一个名次，
+        // 所以是 1、2、3；既不是竞赛式跳号 1、1、3，也不是并列同号 1、1、2。
+        // Kotlin `ChartMath.rankOf` 同口径（Lead 2026-10-27 拍板保 1:1 对照基线）。
+        val rows = CourseRankingModel.build(
+            listOf(
+                semesterCourse("高数", 40),
+                semesterCourse("英语", 40),
+                semesterCourse("体育", 20),
+            ),
+        )
+        assertEquals(listOf(1, 2, 3), rows.map { it.rank })
+    }
+
+    @Test
     fun `课时全为零时不除零`() {
         val rows = CourseRankingModel.build(listOf(semesterCourse("空", 0), semesterCourse("空2", 0)))
         // 榜首也是 0：归一化分母 <= 0 时比例取 0，不产生 NaN
@@ -314,7 +332,8 @@ class StatsInfoModelsTest {
 
     @Test
     fun `进度比例钳在零到一之间`() {
-        // 已上节数超过计划（换课/加课导致）：钳到 100%，不出现 156%
+        // 已上节数超过计划（换课/加课导致）：与 CourseStatisticsModel 共用
+        // semesterProgressRatio，钳到 100%，不出现 156%
         val spec = SemesterProgressModel.build(
             SemesterProgress(
                 semesterStartDate = LocalDate.of(2026, 9, 1),

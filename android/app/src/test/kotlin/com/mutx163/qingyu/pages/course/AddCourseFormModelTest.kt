@@ -3,6 +3,7 @@ package com.mutx163.qingyu.pages.course
 import com.mutx163.qingyu.core.Course
 import com.mutx163.qingyu.core.CourseNature
 import com.mutx163.qingyu.core.CourseSessionNote
+import com.mutx163.qingyu.course.CourseDomain
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
@@ -39,6 +40,7 @@ class AddCourseFormModelTest {
         sessionNotes: Map<Int, CourseSessionNote>? = null,
         timeSchemeIdOverride: String? = null,
         shortName: String? = null,
+        hasCustomTime: Boolean = false,
     ): Course = Course(
         id = id,
         name = name,
@@ -59,12 +61,37 @@ class AddCourseFormModelTest {
         note = note,
         sessionNotes = sessionNotes,
         timeSchemeIdOverride = timeSchemeIdOverride,
+        hasCustomTime = hasCustomTime,
     )
+
+    /** 模拟渲染层 clockResolver：按 `CourseDomain.editCourseClock` 回传 hasCustomTime。 */
+    private fun savePayload(original: Course): AddCourseSavePayload {
+        val entry = AddCourseScheduleEntryData.fromCourse(original)
+        return AddCourseFormLogic.buildSavePayload(
+            initialCourse = original,
+            courseGroup = null,
+            name = original.name,
+            shortName = "",
+            description = "",
+            color = original.color,
+            courseNature = original.courseNature,
+            entries = listOf(entry),
+            clockResolver = { e ->
+                val clock = CourseDomain.editCourseClock(
+                    original = e.originalCourse,
+                    startSection = e.startSection,
+                    endSection = e.endSection,
+                    templateStartTime = "08:00",
+                    templateEndTime = "09:40",
+                )
+                AddCourseEntryClock(clock.startTime, clock.endTime, clock.hasCustomTime)
+            },
+        )
+    }
 
     // ==========================================
     // 1. weeksFromRangeSelection（Dart 源 :39-56）
     // ==========================================
-
     @Test
     fun `范围全选不带单双周得到闭区间`() {
         assertEquals((1..16).toList(), AddCourseFormLogic.weeksFromRangeSelection(1, 16, false, false))
@@ -138,6 +165,16 @@ class AddCourseFormModelTest {
         assertEquals((1..12).toList(), AddCourseFormLogic.editableSectionNumbers(12, null, 6, 8))
     }
 
+    @Test
+    fun `模板外只并入现存起止两个端点`() {
+        // Dart add_course_screen.dart:92-93 只 add(currentStart)/add(currentEnd)，
+        // 不把中间的 15..19 铺进候选。
+        assertEquals(
+            (1..12).toList() + listOf(14, 20),
+            AddCourseFormLogic.editableSectionNumbers(12, 12, 14, 20),
+        )
+    }
+
     // ==========================================
     // 3. 条目 <-> Course 互转（_ScheduleEntryData.fromCourse / toCourse）
     // ==========================================
@@ -159,6 +196,45 @@ class AddCourseFormModelTest {
         assertTrue(entry.selectedCustomWeeks.isEmpty())
         assertTrue(entry.isOddWeek)
         assertFalse(entry.isEvenWeek)
+    }
+
+    @Test
+    fun `越界自定义周按 Dart 归一后再进编辑器`() {
+        // Dart course.dart:169 用的是 normalizedCustomWeeks（丢越界/去重/升序），
+        // 不是裸 customWeeks；否则表单会把 0/31/555 这类周次也画进勾选格。
+        val mixed = testCourse(customWeeks = listOf(0, 2, 31, 40, 2))
+        val entry = AddCourseScheduleEntryData.fromCourse(mixed)
+        assertEquals(AddCourseWeekSelectionMode.CUSTOM, entry.weekSelectionMode)
+        assertEquals(setOf(2), entry.selectedCustomWeeks)
+
+        val allInvalid = testCourse(customWeeks = listOf(-3, 0, 31, 555))
+        val fallback = AddCourseScheduleEntryData.fromCourse(allInvalid)
+        assertEquals(AddCourseWeekSelectionMode.RANGE, fallback.weekSelectionMode)
+        assertTrue(fallback.selectedCustomWeeks.isEmpty())
+    }
+
+    @Test
+    fun `编辑自定义时间课保存后仍标记自定义时间`() {
+        // 节次没动 → 保留适配脚本钉住的权威钟点（Dart :2022-2039 / course_domain.dart:137-148）。
+        val original = testCourse(hasCustomTime = true)
+        assertTrue(savePayload(original).courses.single().hasCustomTime)
+    }
+
+    @Test
+    fun `编辑非自定义时间课保存后不标记自定义时间`() {
+        val original = testCourse(hasCustomTime = false)
+        assertFalse(savePayload(original).courses.single().hasCustomTime)
+    }
+
+    @Test
+    fun `越界停课周按 Dart 归一后再进编辑器`() {
+        // Dart add_course_screen.dart:185 用 normalizedSuspendedWeeks（丢越界/去重/升序）。
+        val mixed = testCourse(suspendedWeeks = listOf(0, 3, 31, 3))
+        val entry = AddCourseScheduleEntryData.fromCourse(mixed)
+        assertEquals(listOf(3), entry.suspendedWeeks)
+
+        val allInvalid = testCourse(suspendedWeeks = listOf(-1, 0, 31, 555))
+        assertNull(AddCourseScheduleEntryData.fromCourse(allInvalid).suspendedWeeks)
     }
 
     @Test
@@ -584,6 +660,25 @@ class AddCourseFormModelTest {
                 startWeek = 2,
                 endWeek = 8,
                 isOddWeek = false,
+                isEvenWeek = true,
+                mode = AddCourseWeekSelectionMode.RANGE,
+            ),
+        )
+    }
+
+    @Test
+    fun `范围模式单双周同时为真时单周先命中`() {
+        // Dart `add_course_screen.dart:1599-1600` 是两个独立 `if`：两者都为 true 时
+        // 先返回单周后缀（不是把后缀整个吞掉，也不是拼两段）。
+        // 这种状态能从既有数据/导入回填进来（该文件 :27-30 明说「单双周可以都为 true」）。
+        assertEquals(
+            "第 1 周 – 第 16 周 · 单周",
+            AddCourseFormLogic.selectedWeeksSummaryText(
+                selectedWeeks = emptyList(),
+                availableWeeks = availableWeeks20,
+                startWeek = 1,
+                endWeek = 16,
+                isOddWeek = true,
                 isEvenWeek = true,
                 mode = AddCourseWeekSelectionMode.RANGE,
             ),

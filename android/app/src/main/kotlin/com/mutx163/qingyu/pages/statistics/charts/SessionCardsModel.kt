@@ -12,15 +12,6 @@ data class SessionMetric(
     val highlight: Boolean,
 )
 
-/** 记录覆盖卡的一行。 */
-data class SessionCoverageRow(
-    val label: String,
-    /** `3 / 12` */
-    val countLabel: String,
-    val fraction: Double,
-    val tone: SessionTone,
-)
-
 /** 课次状态对应的语义色。 */
 enum class SessionTone { GREEN, PRIMARY, BLUE, ORANGE, PURPLE, SECONDARY }
 
@@ -39,17 +30,16 @@ data class SessionRowModel(
 )
 
 /**
- * 单节课明细三张卡（汇总 / 覆盖 / 列表）的模型层。
+ * 单节课明细的模型层（汇总卡 / 列表卡）。
  *
- * 对应 Dart `session_summary_card.dart`（106 行）、`session_coverage_card.dart`（121 行）、
- * `session_list_card.dart`（199 行）。数据本身来自领域层
- * `core/CourseSessionStats`（已移植，纯 Kotlin），这里只做**展示口径**：
- * 计数、分母、状态文案、日期/节次/时间的拼接。
+ * 对应 Dart `session_summary_card.dart`（106 行）、`session_list_card.dart`（199 行）。
+ * 数据本身来自领域层 `core/CourseSessionStats`（已移植，纯 Kotlin），这里只做
+ * **展示口径**：计数、状态文案、日期/节次/时间的拼接。
  *
- * 关键口径（Dart 注释里写死了理由，别改）：
- * 覆盖卡的**分母是全部课次**（含停课与假期），不是 `plannedSessions`——
- * 停课周不清备注，"停课周有备注"是真实存在的记录；分母用计划课次会算出
- * `3 / 1` 这种超过 100% 的数。
+ * 覆盖卡（`session_coverage_card.dart`）不在这里：屏上走的是
+ * `StatisticsSessionModel.coverageRows`（带「提醒数据是否可用」的真实分支），
+ * 本对象曾有的 `coverage` / `SessionCoverageRow` 是无人引用的恒三行假实现，
+ * 2026-11-03 按 Lead 裁决删除。
  */
 object SessionCardsModel {
 
@@ -78,31 +68,6 @@ object SessionCardsModel {
             highlight = false,
         ),
     )
-
-    // ────────── 覆盖卡 ──────────
-
-    /**
-     * 三行：有备注 / 有作业 / 设过提醒。
-     *
-     * @param total 分母 = `sessions.size`（含停课与假期，见类型 KDoc）
-     */
-    fun coverage(stats: CourseSessionStats): List<SessionCoverageRow> {
-        val total = stats.sessions.size
-        return listOf(
-            coverageRow(ChartsStrings.statisticsSessionCoverageNote.zh, stats.notedSessions, total, SessionTone.BLUE),
-            coverageRow(ChartsStrings.statisticsSessionCoverageHomework.zh, stats.homeworkSessions, total, SessionTone.ORANGE),
-            coverageRow(ChartsStrings.statisticsSessionCoverageReminder.zh, stats.reminderSessions, total, SessionTone.PURPLE),
-        )
-    }
-
-    /** 单行的比例与文案；[total] ≤ 0 时比例为 0（不抛）。 */
-    fun coverageRow(label: String, count: Int, total: Int, tone: SessionTone): SessionCoverageRow =
-        SessionCoverageRow(
-            label = label,
-            countLabel = "$count / $total",
-            fraction = ChartMath.ratio(count, total).coerceIn(0.0, 1.0),
-            tone = tone,
-        )
 
     // ────────── 列表卡 ──────────
 

@@ -156,10 +156,13 @@ class TimetableHostLogicTest {
     }
 
     @Test
-    fun `生效模板 id 缺失或指向不存在的档时退到第一份`() {
+    fun `生效模板 id 缺失或 stale 时返回 null 由页面回落 settings 节次表`() {
         val schemes = listOf(scheme("s1", "模板一"), scheme("s2", "模板二"))
-        assertEquals("模板一", TimetableHostLogic.resolveActiveTimeScheme(schemes, null)?.name)
-        assertEquals("模板一", TimetableHostLogic.resolveActiveTimeScheme(schemes, "zzz")?.name)
+        // Dart timetable_provider.dart:611-613：`_getTimeSchemeById(id)` 找不到即 null；
+        // 周视图在 timetable_day_view_part.dart:553-557 用 `?.sections ?? settings.sections`
+        // 兜底。回退第一份会让 stale id 显示成「模板一」的节次时间，与 Dart 不同。
+        assertNull(TimetableHostLogic.resolveActiveTimeScheme(schemes, null))
+        assertNull(TimetableHostLogic.resolveActiveTimeScheme(schemes, "zzz"))
     }
 
     @Test

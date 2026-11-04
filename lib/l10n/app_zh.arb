@@ -6211,5 +6211,11 @@
         "type": "String"
       }
     }
-  }
+  },
+  "backupRestoreCommitFailed": "恢复提交失败，已回滚",
+  "backupRestoreRollbackFailed": "恢复失败且回滚失败，请检查存储",
+  "stopRecordingWithCount": "停止录制 ({count})",
+  "@stopRecordingWithCount": {"placeholders":{"count":{"type":"int"}}},
+  "timetableProfileActiveBadge": "已激活",
+  "webdavPasswordReentryBody": "本次更新更改了密码的本地保存方式，需要重新输入一次应用专用密码；服务器地址、账号与同步设置均已保留。"
 }

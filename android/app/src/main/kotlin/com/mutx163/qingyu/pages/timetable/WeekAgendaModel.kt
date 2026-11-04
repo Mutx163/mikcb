@@ -116,9 +116,12 @@ object WeekAgendaLogic {
         scheduleInstancesOnDate(scheduleItems, date).isNotEmpty()
 
     /**
-     * [date] 的日程实例（去重口径同 Dart `ScheduleItemExpander.instancesForDate`）。
+     * [date] 的日程实例（去重口径同 Dart `ScheduleItemExpander.instancesForDate`，
+     * `lib/domain/schedule_item_expander.dart:47-64` 的 `putByDisplayDate`）。
      *
-     * 同一 `seriesRootId` 只留一份，**系列例外优先**；不过滤 `enabled`。
+     * 去重键是「系列 + 显示日」，**系列例外优先**；但例外与例外之间不互相覆盖：
+     * 两条不同的例外被移到同一天是两条真实条目，各占一张卡（兄弟键用 `occurrenceId`）。
+     * 不过滤 `enabled`。
      */
     fun scheduleInstancesOnDate(
         scheduleItems: List<ScheduleItem>,
@@ -142,9 +145,15 @@ object WeekAgendaLogic {
                 occurrenceId = occurrenceId,
                 isSeriesOverride = isOverride,
             )
-            val existing = kept[sourceItemId]
-            if (existing == null || (isOverride && !existing.isSeriesOverride)) {
-                kept[sourceItemId] = instance
+            val displayKey = "$sourceItemId@${ScheduleItem.formatCalendarDate(day)}"
+            val existing = kept[displayKey]
+            when {
+                existing == null || (isOverride && !existing.isSeriesOverride) ->
+                    kept[displayKey] = instance
+                // 例外 vs 例外：用 occurrenceId 做兄弟键，两条不同的例外不会撞（Dart :59-62）。
+                existing.isSeriesOverride && isOverride ->
+                    kept["$displayKey#$occurrenceId"] = instance
+                // 同系列同显示日的非例外重复展开 = 同一个自然实例，丢弃即正确。
             }
         }
         return kept.values.toList()

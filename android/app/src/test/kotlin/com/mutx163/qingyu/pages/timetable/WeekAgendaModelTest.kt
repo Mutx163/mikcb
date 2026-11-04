@@ -538,6 +538,50 @@ class WeekAgendaModelTest {
     }
 
     @Test
+    fun `两条不同的例外被移到同一天 各留一张卡`() {
+        // Dart `schedule_item_expander.dart:43-46/59-62`：两条例外被分别改到同一天
+        // （10-08 那次挪到 10-29、10-15 那次也挪到 10-29）是两条真实条目，
+        // 持久层各占一条；原先后一条被丢弃——界面少一张卡，且它再也点不到、删不掉。
+        val series = schedule(
+            id = "series",
+            startDate = "2026-10-01",
+            endDate = "2026-10-31",
+            recurrence = ScheduleRecurrence.WEEKLY,
+        )
+        val movedFromOct08 = schedule(
+            id = "moved-1008",
+            startDate = "2026-10-29",
+            endDate = "2026-10-29",
+            seriesId = "series",
+            occurrenceDate = "2026-10-08",
+        )
+        val movedFromOct15 = schedule(
+            id = "moved-1015",
+            startDate = "2026-10-29",
+            endDate = "2026-10-29",
+            seriesId = "series",
+            occurrenceDate = "2026-10-15",
+        )
+
+        val instances = WeekAgendaLogic.scheduleInstancesOnDate(
+            listOf(series, movedFromOct08, movedFromOct15),
+            dateOf("2026-10-29"),
+        )
+
+        assertEquals("两张例外卡都要保留", 2, instances.size)
+        assertEquals(
+            setOf("moved-1008", "moved-1015"),
+            instances.map { it.item.id }.toSet(),
+        )
+        assertEquals(
+            "occurrenceId 仍指向各自的原始日期（供持久化与撤销）",
+            setOf("series@2026-10-08", "series@2026-10-15"),
+            instances.map { it.occurrenceId }.toSet(),
+        )
+        assertTrue(instances.all { it.isSeriesOverride })
+    }
+
+    @Test
     fun `实例日期落在日期区间外则不出现`() {
         val item = schedule(id = "s1", startDate = "2026-10-29", endDate = "2026-10-29")
         assertNotNull(item)

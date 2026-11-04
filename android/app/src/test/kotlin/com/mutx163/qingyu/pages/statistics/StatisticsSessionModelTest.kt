@@ -16,7 +16,8 @@ import org.junit.Test
  * - 四格汇总：`widgets/statistics/session_summary_card.dart`（课次 / 已过 / 课时 / 有备注）；
  * - 覆盖三行：`widgets/statistics/session_coverage_card.dart`，**分母是全部课次**；
  * - 阶段标签：`widgets/statistics/session_list_card.dart:167-172`；
- * - 列表副标题：同文件 `_subtitle`（日期 · 节次 · 教室，缺项跳过）。
+ * - 列表行：同文件 `_SessionRow`（标题「哪一次」+ 考试/阶段角标 + 副标题
+ *   （节次 · 钟点 · 教室，缺项跳过））。
  */
 class StatisticsSessionModelTest {
 
@@ -168,7 +169,7 @@ class StatisticsSessionModelTest {
         val rows = StatisticsSessionModel.coverageRows(stats)
         assertEquals("有备注 3 次", 3, rows[0].count)
         assertEquals("分母是全部 4 个课次", 4, rows[0].total)
-        assertEquals("3/4", rows[0].valueText)
+        assertEquals("3 / 4", rows[0].valueText)
         // 比例必须落在 0~1，不会超过 100%
         assertTrue("比例不该超过 1：${rows[0].ratio}", rows[0].ratio <= 1f)
         assertEquals(0.75f, rows[0].ratio, 0.0001f)
@@ -178,7 +179,7 @@ class StatisticsSessionModelTest {
     fun `分母为零时比例为 0 不抛除零`() {
         val rows = StatisticsSessionModel.coverageRows(statsOf())
         assertEquals(0, rows[0].total)
-        assertEquals("0/0", rows[0].valueText)
+        assertEquals("0 / 0", rows[0].valueText)
         assertEquals(0f, rows[0].ratio, 0.0001f)
     }
 
@@ -210,35 +211,70 @@ class StatisticsSessionModelTest {
         )
     }
 
-    // ── 6. 列表行副标题拼法（Dart _subtitle） ──
+    // ── 6. 列表行拼法（Dart session_list_card.dart `_SessionRow`） ──
+    //
+    // Dart 行结构：标题「哪一次」（日期 · 周X / 第N周 · 周X）+ 考试角标 + 阶段角标，
+    // 第二行副标题是「节次区间 · 钟点 · 教室」。此前 Kotlin 把日期塞进副标题、
+    // 用 ASCII 连字符，还漏了钟点与考试角标——用户看不出是哪一天哪一节。
 
     @Test
-    fun `副标题按日期 节次 教室顺序拼接`() {
+    fun `标题写哪一次 副标题写节次钟点教室`() {
         val row = StatisticsSessionModel.sessionRow(
             session(phase = CourseSessionPhase.DONE, start = 1, end = 2, location = "教三 201"),
-            dateText = "10月27日",
+            dateText = "10月27日 · 周二",
         )
         assertEquals("已过", row.phaseLabel)
-        assertEquals("10月27日 · 第1-2节 · 教三 201", row.subtitle)
+        assertEquals("10月27日 · 周二", row.title)
+        assertEquals("第 1～2 节 · 08:00–09:40 · 教三 201", row.subtitle)
     }
 
     @Test
-    fun `没有日期轴时副标题跳过日期`() {
+    fun `没有日期轴时标题回落第N周 副标题不夹日期`() {
         val row = StatisticsSessionModel.sessionRow(
             session(phase = CourseSessionPhase.UNDATED, start = 3, end = 4, location = "教一 101"),
             dateText = null,
         )
         assertEquals("日期未定", row.phaseLabel)
-        assertEquals("第3-4节 · 教一 101", row.subtitle)
+        assertEquals("第 8 周 · 周二", row.title)
+        assertEquals("第 3～4 节 · 08:00–09:40 · 教一 101", row.subtitle)
     }
 
     @Test
     fun `没有教室时不留多余分隔符`() {
         val row = StatisticsSessionModel.sessionRow(
             session(phase = CourseSessionPhase.DONE, start = 1, end = 1, location = ""),
-            dateText = "10月27日",
+            dateText = "10月27日 · 周二",
         )
-        assertEquals("10月27日 · 第1-1节", row.subtitle)
+        assertEquals("第 1～1 节 · 08:00–09:40", row.subtitle)
+    }
+
+    @Test
+    fun `没有钟点时副标题只留节次与教室`() {
+        val row = StatisticsSessionModel.sessionRow(
+            session(
+                phase = CourseSessionPhase.DONE,
+                location = "教三 201",
+                startTime = null,
+                endTime = null,
+            ),
+            dateText = "10月27日 · 周二",
+        )
+        assertEquals("第 1～2 节 · 教三 201", row.subtitle)
+    }
+
+    @Test
+    fun `当天有考试才挂考试角标`() {
+        val withExam = StatisticsSessionModel.sessionRow(
+            session(phase = CourseSessionPhase.DONE, examCount = 1),
+            dateText = "10月27日 · 周二",
+        )
+        assertEquals("考试", withExam.examBadge)
+
+        val withoutExam = StatisticsSessionModel.sessionRow(
+            session(phase = CourseSessionPhase.DONE),
+            dateText = "10月27日 · 周二",
+        )
+        assertNull("没有考试不该出现角标", withoutExam.examBadge)
     }
 
     @Test
@@ -278,6 +314,9 @@ class StatisticsSessionModelTest {
         note: String? = null,
         homework: Boolean = false,
         reminder: Boolean = false,
+        startTime: String? = "08:00",
+        endTime: String? = "09:40",
+        examCount: Int = 0,
     ) = CourseSession(
         courseId = "c1",
         week = 8,
@@ -285,14 +324,14 @@ class StatisticsSessionModelTest {
         dayOfWeek = 2,
         startSection = start,
         endSection = end,
-        startTime = "08:00",
-        endTime = "09:40",
+        startTime = startTime,
+        endTime = endTime,
         location = location,
         phase = phase,
         noteText = note,
         hasHomework = homework,
         taskCount = if (homework) 1 else 0,
-        examCount = 0,
+        examCount = examCount,
         hasReminder = reminder,
     )
 

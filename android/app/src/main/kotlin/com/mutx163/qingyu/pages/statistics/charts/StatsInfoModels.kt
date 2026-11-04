@@ -1,5 +1,6 @@
 package com.mutx163.qingyu.pages.statistics.charts
 
+import com.mutx163.qingyu.pages.statistics.semesterProgressRatio
 import com.mutx163.qingyu.statistics.SemesterProgress
 import com.mutx163.qingyu.statistics.SemesterProgressPhase
 import com.mutx163.qingyu.statistics.TeacherStat
@@ -208,11 +209,14 @@ object SemesterProgressModel {
             )
         }
 
+        // 钳位只在 semesterProgressRatio 里做一次（与 CourseStatisticsModel 共用）。
+        val ratio = semesterProgressRatio(progress)
+
         return SemesterProgressSpec(
             weekRatioLabel = "${progress.weeksElapsed}/${progress.totalWeeks}",
             dateRangeLabel = dateRange,
-            percent = progress.percent.coerceIn(0.0, 1.0),
-            percentLabel = "${(progress.percent.coerceIn(0.0, 1.0) * 100).roundToInt()}%",
+            percent = ratio,
+            percentLabel = "${(ratio * 100).roundToInt()}%",
             detailLabel = detail,
             sideLabel = side,
             remainingLabel = remaining,

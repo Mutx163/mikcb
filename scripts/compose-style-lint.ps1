@@ -11,6 +11,8 @@
       · 内容块（卡片 / 分组标题） → R3 / R6
       · 字体（字号 / 字重）      → R4 / R7
       · 颜色                     → R5
+    以及共享套件层 .../qingyu/components/*.kt（`-Domain components`，2026-11-04 补域；
+    基线键前缀 `components/`），同样按 R1..R7 七条规则列违规。
 
     规则：**待修违规必须为 0**。真正需要保留的写法登记在
     tool/compose_style_exceptions/<域>.txt，一行 `<相对路径>|<规则>|<原因>`；
@@ -40,18 +42,27 @@ $ErrorActionPreference = "Stop"
 $repoRoot = Split-Path -Parent $PSScriptRoot
 $pagesRoot = Join-Path $repoRoot "android/app/src/composeP1/kotlin/com/mutx163/qingyu/pages"
 $exceptionsRoot = Join-Path $repoRoot "tool/compose_style_exceptions"
+$componentsRoot = Join-Path $repoRoot "android/app/src/composeP1/kotlin/com/mutx163/qingyu/components"
+$baselineRoot = Join-Path $repoRoot "tool/compose_style_baseline"
 
 if (-not (Test-Path $pagesRoot)) {
     Write-Error "找不到页面源码目录：$pagesRoot"
     exit 2
 }
 
+# 域 → 源码根。pages 下按目录分域；components 是共享套件层（2026-11-04 补域），
+# 它不是 pages/<域>，但同样要过 R1..R7，且基线键前缀固定为 `components/`。
+$domainRoots = @{}
+foreach ($d in @(Get-ChildItem -Path $pagesRoot -Directory | Select-Object -ExpandProperty Name)) {
+    $domainRoots[$d] = Join-Path $pagesRoot $d
+}
+if (Test-Path $componentsRoot) { $domainRoots["components"] = $componentsRoot }
+
 if ($Domain -eq "all") {
-    $domains = @(Get-ChildItem -Path $pagesRoot -Directory | Select-Object -ExpandProperty Name | Sort-Object)
+    $domains = @($domainRoots.Keys | Sort-Object)
 } else {
-    $one = Join-Path $pagesRoot $Domain
-    if (-not (Test-Path $one)) {
-        $avail = (Get-ChildItem -Path $pagesRoot -Directory | Select-Object -ExpandProperty Name | Sort-Object) -join ', '
+    if (-not $domainRoots.ContainsKey($Domain)) {
+        $avail = ($domainRoots.Keys | Sort-Object) -join ', '
         Write-Error "没有这个域：$Domain（可选：$avail）"
         exit 2
     }
@@ -169,6 +180,12 @@ function Remove-KotlinCommentsAndStrings {
         $i++
     }
     return $out.ToString()
+}
+
+# 文件级豁免：套件本体就是「被用来绕开裸组件」的那一层，规则文档 §二 R3 明文豁免
+# `components/QingyuCard.kt` 自身（其它组件文件不豁免，仍按 R1..R7 逐条查）。
+$fileExempt = @{
+    "components/QingyuCard.kt" = @("R3")
 }
 
 function Get-CodeLines {
@@ -300,17 +317,24 @@ function Get-ColorViolations {
 function Get-Violations {
     param([string]$DomainName)
 
-    $dir = Join-Path $pagesRoot $DomainName
+    $dir = $domainRoots[$DomainName]
     $files = @(Get-ChildItem -Path $dir -Recurse -File -Filter *.kt | Sort-Object FullName)
     $ex = $exempt[$DomainName]
     if ($null -eq $ex) { $ex = @() }
     $out = [System.Collections.Generic.List[object]]::new()
 
     foreach ($f in $files) {
-        $rel = $f.FullName.Substring($pagesRoot.Length + 1).Replace('\', '/')
+        $relBody = $f.FullName.Substring($dir.Length + 1).Replace('\', '/')
+        # 页面域沿用 `pages/<域>/文件` 的相对路径；components 域补上 `components/` 前缀，
+        # 保证基线键与守卫（File 相对 pagesRoot）的读取口径一致。
+        $rel = if ($DomainName -eq "components") { "components/$relBody" } else { "$DomainName/$relBody" }
+        $fx = $fileExempt[$rel]
         $lines = @(Get-CodeLines -Path $f.FullName)
+        # 文件级豁免（如 components/QingyuCard.kt 的 R3）并进域级豁免一起下发给扫描器。
+        $effectiveExempt = @($ex)
+        if ($fx) { $effectiveExempt += $fx }
         foreach ($scanner in $scanners) {
-            $hits = @(& $scanner -Rel $rel -Lines $lines -Exempt $ex)
+            $hits = @(& $scanner -Rel $rel -Lines $lines -Exempt $effectiveExempt)
             foreach ($hit in $hits) { $out.Add($hit) }
         }
     }

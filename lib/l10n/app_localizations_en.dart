@@ -10529,4 +10529,22 @@ class AppLocalizationsEn extends AppLocalizations {
   String colorOptionLabel(String name) {
     return '$name';
   }
+
+  @override
+  String get backupRestoreCommitFailed => 'Restore failed; rolled back';
+
+  @override
+  String get backupRestoreRollbackFailed => 'Both failed; check storage';
+
+  @override
+  String stopRecordingWithCount(int count) {
+    return 'Stop recording ($count)';
+  }
+
+  @override
+  String get timetableProfileActiveBadge => 'Active';
+
+  @override
+  String get webdavPasswordReentryBody =>
+      'This update changed how the password is stored on this device. Please re-enter your app-specific password once; your server address, account and sync settings have been kept.';
 }

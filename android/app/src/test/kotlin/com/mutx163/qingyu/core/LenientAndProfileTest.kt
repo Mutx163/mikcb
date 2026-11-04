@@ -177,7 +177,9 @@ class LenientAndProfileTest {
             title = "交作业",
             courseId = "c-1",
             sourceWeek = 3,
-            dueDate = DartTime.dateTime(2026, 11, 8, 18),
+            // Dart 构造函数把 dueDate 归一到本地零点（course_task.dart:62），
+            // 带时分秒的值在 Dart 侧根本构造不出来，这里同样只给日历日。
+            dueDate = DartTime.dateTime(2026, 11, 8),
             note = "记得带",
             isCompleted = true,
             source = CourseTaskSource.HOMEWORK_MARK,

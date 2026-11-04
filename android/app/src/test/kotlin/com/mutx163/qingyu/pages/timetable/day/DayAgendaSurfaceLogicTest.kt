@@ -1,5 +1,6 @@
 package com.mutx163.qingyu.pages.timetable.day
 
+import com.mutx163.qingyu.core.CourseCardSurface
 import com.mutx163.qingyu.core.HomeMaterialRenderSpec
 import com.mutx163.qingyu.core.SurfaceMaterialState
 import org.junit.Assert.assertEquals
@@ -11,16 +12,20 @@ import org.junit.Test
  * 为什么单独测：这张表决定「卡色压多少在壁纸上」。写错时编译不报错、界面也只是
  * 「好像有点透」，只有真机上盯着看才发现 —— 而这一档是**跟周网格课卡对齐**用的，
  * 两边漂了就是同一天在两个视图里材质不一样。这里把四个分支逐一钉住。
+ *
+ * 输入用最小实现 [CourseCardSurface]（而不是 `pages/settings` 的
+ * `HomeMaterialRenderSpec`）：本表只吃「档位 + 染色系数」，不该为了造一个测试输入
+ * 把设置页模型拖进 timetable 的 L0 编译闭包。
  */
 class DayAgendaSurfaceLogicTest {
 
     private fun spec(
         state: SurfaceMaterialState,
         tintAlpha: Float = 0.70f,
-    ) = HomeMaterialRenderSpec(
-        courseCard = state,
-        courseCardTintAlpha = tintAlpha,
-    )
+    ): CourseCardSurface = object : CourseCardSurface {
+        override val courseCard: SurfaceMaterialState = state
+        override val courseCardTintAlpha: Float = tintAlpha
+    }
 
     @Test
     fun `没有材质快照时保持原来的实体透明度`() {

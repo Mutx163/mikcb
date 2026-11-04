@@ -168,38 +168,38 @@ fun ExamListPage(
     }
 
     // 删除确认（Dart 用 showHyperosConfirmDialog，文案逐字一致）
-    val target = pendingDelete
-    if (target != null) {
-        OverlayDialog(
-            insideMargin = DpSize(16.dp, 16.dp),
-            show = true,
-            title = ExamStrings.deleteExam.zh,
-            summary = ExamStrings.deleteExamConfirm.filled("name", target.name),
-            onDismissRequest = { pendingDelete = null },
+    // 常驻组合（2026-11-04 弹层债收口）：显隐只由 show 驱动，关闭不再整棵摘出组合，
+    // 官方退场动画才能播完；正文用 rememberLastNonNull 钉住最后一份快照。
+    val deleteTarget = rememberLastNonNull(pendingDelete)
+    OverlayDialog(
+        insideMargin = DpSize(16.dp, 16.dp),
+        show = pendingDelete != null,
+        title = ExamStrings.deleteExam.zh,
+        summary = ExamStrings.deleteExamConfirm.filled("name", deleteTarget?.name.orEmpty()),
+        onDismissRequest = { pendingDelete = null },
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(10.dp),
         ) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(10.dp),
+            Button(
+                onClick = { pendingDelete = null },
+                modifier = Modifier.weight(1f),
             ) {
-                Button(
-                    onClick = { pendingDelete = null },
-                    modifier = Modifier.weight(1f),
-                ) {
-                    Text(text = ExamStrings.cancelAction.zh)
-                }
-                Button(
-                    onClick = {
-                        pendingDelete = null
-                        onDeleteExam(target)
-                    },
-                    modifier = Modifier.weight(1f),
-                    colors = top.yukonga.miuix.kmp.basic.ButtonDefaults.buttonColors(
-                        color = Color(QingyuTheme.error(dark)),
-                        contentColor = Color(QingyuTheme.onError(dark)),
-                    ),
-                ) {
-                    Text(text = ExamStrings.deleteAction.zh)
-                }
+                Text(text = ExamStrings.cancelAction.zh)
+            }
+            Button(
+                onClick = {
+                    pendingDelete = null
+                    deleteTarget?.let { onDeleteExam(it) }
+                },
+                modifier = Modifier.weight(1f),
+                colors = top.yukonga.miuix.kmp.basic.ButtonDefaults.buttonColors(
+                    color = Color(QingyuTheme.error(dark)),
+                    contentColor = Color(QingyuTheme.onError(dark)),
+                ),
+            ) {
+                Text(text = ExamStrings.deleteAction.zh)
             }
         }
     }
@@ -548,4 +548,14 @@ private fun parseHexColor(hex: String?, fallback: Color = kDefaultAccent): Color
         green = (parsed shr 8) and 0xFF,
         blue = parsed and 0xFF,
     )
+}
+
+/**
+ * 钉住最后一份非空入参（弹层常驻组合：关闭时宿主置空，退场动画期间仍要原对象渲染）。
+ */
+@Composable
+private fun <T : Any> rememberLastNonNull(current: T?): T? {
+    var shown by remember { mutableStateOf(current) }
+    if (current != null) shown = current
+    return shown
 }

@@ -137,6 +137,46 @@ class LanTransferApplyTest {
     }
 
     @Test
+    fun `旧 5 键包覆盖应用 本地独有课真的被删掉`() {
+        val store = InMemoryKeyValueStore()
+        val repository = repositoryOn(store)
+        repository.addCourse(course("c1", "高等数学"))
+        repository.addCourse(course("c2", "大学物理"))
+        val host = LanEditRepositoryHost(repository)
+
+        val applied = host.applyTransferJson(
+            legacyBackupJson(courses = listOf(course("c1", "高等数学"))),
+            TransferApplyMode.OVERWRITE,
+        )
+        assertEquals(true, applied["applied"])
+        assertEquals("overwrite", applied["mode"])
+        assertEquals(listOf("c1"), repository.courses.map { it.id })
+
+        @Suppress("UNCHECKED_CAST")
+        val diff = applied["diff"] as Map<String, Any?>
+        assertEquals(1, diff["removed"])
+        assertFalse(store.rawSnapshot().values.joinToString("\n").contains("大学物理"))
+    }
+
+    @Test
+    fun `旧 5 键包合并应用 本地课保留`() {
+        val store = InMemoryKeyValueStore()
+        val repository = repositoryOn(store)
+        repository.addCourse(course("c1", "高等数学"))
+        repository.addCourse(course("c2", "大学物理"))
+        val host = LanEditRepositoryHost(repository)
+
+        val applied = host.applyTransferJson(
+            legacyBackupJson(courses = listOf(course("c9", "外来课程"))),
+            TransferApplyMode.MERGE,
+        )
+        assertEquals(true, applied["applied"])
+        assertEquals("merge", applied["mode"])
+        assertEquals(setOf("c1", "c2", "c9"), repository.courses.map { it.id }.toSet())
+        assertTrue(store.rawSnapshot().values.joinToString("\n").contains("大学物理"))
+    }
+
+    @Test
     fun `局部作用域的覆盖走合并语义 本地课不丢`() {
         val store = InMemoryKeyValueStore()
         val repository = repositoryOn(store)
@@ -410,6 +450,19 @@ class LanTransferApplyTest {
         sections = sections,
         createdAt = stamp,
         updatedAt = stamp,
+    )
+
+    /** 老 `.mikcb` 单档备份（无信封）：LAN 走 `parseCompatible` 的旧通道。 */
+    private fun legacyBackupJson(courses: List<Course>): String = MiniJson.encode(
+        linkedMapOf(
+            "app" to "mikcb",
+            "schemaVersion" to 1,
+            "packageId" to "legacy-1",
+            "profileName" to "旧课表",
+            "currentWeek" to 3,
+            "courses" to courses.map { it.toJson() },
+            "settings" to TimetableSettings.defaults().toJson(),
+        ),
     )
 
     private companion object {

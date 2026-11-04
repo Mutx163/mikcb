@@ -24,8 +24,12 @@ import javax.crypto.spec.GCMParameterSpec
  *
  * 本类**不复刻那套私有格式**，只对齐「机制类别」：同样是平台密钥库 + AES-GCM。
  * 理由（也写在 [WebdavConfigStoreImpl.PASSWORD_BLOB_KEY] 的 KDoc 里）：复刻插件的私有
- * 密钥包装格式会随插件升级静默失效；而且 `composeUi` 壳是独立包名，本来就读不到正式版的
- * 密钥库命名空间与私有目录。代价是**用户要重新输一次密码**，不是静默丢数据。
+ * 密钥包装格式会随插件升级静默失效。**不是读不到**：`applicationId` 已于 2026-10-29
+ * 统一为 `com.mutx163.qingyu`（`android/app/build.gradle:7`、`:146` 记录 flavor 合并），
+ * 旧版 `FlutterSecureStorage.xml` 与旧 KeyStore 条目仍在同一 UID 下、技术上可读；
+ * 不做一次性自动迁移是**成本取舍**（Phase 5 已裁决不做，见
+ * `docs/plans/2026-11-03-night-autopilot-log.md` §10.35）。代价是**用户要重新输一次密码**，
+ * 不是静默丢数据。
  *
  * ## 密钥失效怎么办
  *

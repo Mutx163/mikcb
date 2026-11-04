@@ -1,5 +1,7 @@
 package com.mutx163.qingyu.pages.timetable
 
+import java.util.Locale
+
 /**
  * 节次时间槽模型（对应时间轴的一格）。
  */
@@ -54,7 +56,10 @@ object TimetableGridMetrics {
             } else {
                 // 超出预设范围时兜底生成递增时间
                 val startHour = (8 + (section - 1)).coerceAtMost(23)
-                String.format("%02d:00", startHour) to String.format("%02d:45", startHour)
+                // 显式 Locale.ROOT：默认 Locale（ar-EG 等）会把 %02d 输出成 ٢٢ 这类
+                // 非 ASCII 数字，与 Dart 的 `padLeft` 不兼容，也污染时刻文本的哈希。
+                String.format(Locale.ROOT, "%02d:00", startHour) to
+                    String.format(Locale.ROOT, "%02d:45", startHour)
             }
             SectionTimeSlot(
                 section = section,

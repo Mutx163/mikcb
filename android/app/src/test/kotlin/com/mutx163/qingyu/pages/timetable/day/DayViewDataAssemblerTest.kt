@@ -6,6 +6,7 @@ import com.mutx163.qingyu.core.Exam
 import com.mutx163.qingyu.core.ScheduleItem
 import com.mutx163.qingyu.core.ScheduleRecurrence
 import com.mutx163.qingyu.core.TimetableSettings
+import com.mutx163.qingyu.pages.timetable.TimetableDateLogic
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
@@ -260,6 +261,107 @@ class DayViewDataAssemblerTest {
         assertEquals("08:00 开始 · 14:45 结束", day.summaryState.agendaRangeLabel)
         assertNull("没有考试时不应有考试胶囊", day.summaryState.statusChips
             .firstOrNull { it.kind == SummaryChipKind.EXAM })
+    }
+
+    @Test
+    fun `考试结束钟点缺失时按 23-59 过期 与 Dart Exam-isExpired 同口径`() {
+        // Dart `lib/models/exam.dart:309-324`：`endTime` 解析不出时回落到 23:59，
+        // 即「当天 23:59 之前都算未过期」。此前这里回落到「跨日才算过期」，
+        // 23:59:30 仍把考试列在首页，与 Dart 差一分钟。
+        val exam = Exam(
+            id = "e-empty-end",
+            courseId = "c-none",
+            name = "晚课小测",
+            dateTime = LocalDateTime.of(2026, 10, 28, 0, 0),
+            startTime = "20:00",
+            endTime = "",
+            createdAt = now,
+            updatedAt = now,
+        )
+        assertFalse(
+            "23:58:59 还没过 23:59 的边界，不该判过期",
+            DayViewDataAssembler.isExamExpired(exam, LocalDateTime.of(2026, 10, 28, 23, 58, 59)),
+        )
+        assertTrue(
+            "23:59 之后即过期（Dart 回落 23:59，不是跨日才过期）",
+            DayViewDataAssembler.isExamExpired(exam, LocalDateTime.of(2026, 10, 28, 23, 59, 30)),
+        )
+        assertTrue(
+            "次日 00:00:30 已过 23:59，应判过期",
+            DayViewDataAssembler.isExamExpired(exam, LocalDateTime.of(2026, 10, 29, 0, 0, 30)),
+        )
+
+        // 装配层同判据：过期当天考试不进议程。
+        val day = DayViewDataAssembler.build(
+            week = 3,
+            dayOfWeek = 3,
+            courses = emptyList(),
+            settings = TimetableSettings(semesterWeekCount = 20, semesterStartDate = null),
+            currentWeek = 3,
+            exams = listOf(exam),
+            now = LocalDateTime.of(2026, 10, 28, 23, 59, 30),
+        )
+        assertEquals(0, day.agendaEntries.count { it is DayAgendaEntry.ExamEntry })
+    }
+
+    @Test
+    fun `考试结束钟点写 24-00 时同样按 Dart 口径处理`() {
+        val exam = Exam(
+            id = "e-midnight-end",
+            courseId = "c-none",
+            name = "跨零点考试",
+            dateTime = LocalDateTime.of(2026, 10, 28, 0, 0),
+            startTime = "23:00",
+            endTime = "24:00",
+            createdAt = now,
+            updatedAt = now,
+        )
+        assertFalse(
+            "24:00 应解析成当天 23:59 前后仍在进行，不该在 23:30 判过期",
+            DayViewDataAssembler.isExamExpired(exam, LocalDateTime.of(2026, 10, 28, 23, 30)),
+        )
+        assertTrue(
+            DayViewDataAssembler.isExamExpired(exam, LocalDateTime.of(2026, 10, 29, 0, 0, 1)),
+        )
+    }
+
+    @Test
+    fun `同一次取钟 跨零点一瞬周次与今天判定不错位`() {
+        val semesterStart = LocalDate.of(2026, 9, 1)
+        val settings = TimetableSettings(
+            semesterWeekCount = 20,
+            semesterStartDate = semesterStart.atStartOfDay(),
+        )
+        // 23:59:59 这一瞬取钟：壳里 `realCurrentWeek` 与装配器必须共用同一个 now。
+        val now = LocalDateTime.of(2026, 10, 28, 23, 59, 59)
+        val week = requireNotNull(
+            TimetableDateLogic.currentSemesterWeek(
+                semesterStart = semesterStart,
+                totalWeeks = 20,
+                today = now.toLocalDate(),
+            ),
+        )
+        val sameClock = DayViewDataAssembler.build(
+            week = week,
+            dayOfWeek = now.dayOfWeek.value,
+            courses = emptyList(),
+            settings = settings,
+            currentWeek = week,
+            now = now,
+        )
+        assertTrue("同一次取钟：这一页仍是今天", sameClock.isToday)
+
+        // 壳里旧写法（周次用 LocalDate.now()、装配器再取一次 now）在跨零点一瞬会拆成两半：
+        // 周次还是昨天所在周，装配器已按次日判「今天」——同一页被判成昨天。
+        val splitClock = DayViewDataAssembler.build(
+            week = week,
+            dayOfWeek = now.dayOfWeek.value,
+            courses = emptyList(),
+            settings = settings,
+            currentWeek = week,
+            now = now.plusSeconds(1),
+        )
+        assertFalse("拆钟后同一页被判成昨天，这正是单次取钟要消除的错位", splitClock.isToday)
     }
 
     // ------------------------------------------------------------------ 夹具

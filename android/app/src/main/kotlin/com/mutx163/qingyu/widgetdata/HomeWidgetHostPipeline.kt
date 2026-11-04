@@ -3,6 +3,7 @@ package com.mutx163.qingyu.widgetdata
 import com.mutx163.qingyu.core.Course
 import com.mutx163.qingyu.core.WeekCalculator
 import java.time.LocalDateTime
+import java.util.Locale
 
 /**
  * 快照宿主管线（移植 timetable_live_activity_service.dart:556-708
@@ -367,7 +368,7 @@ fun resolveHoliday(
     overrideEnabled: Boolean,
     markingEnabled: Boolean,
 ): Boolean {
-    val key = "%04d-%02d-%02d".format(date.year, date.monthValue, date.dayOfMonth)
+    val key = String.format(Locale.ROOT, "%04d-%02d-%02d", date.year, date.monthValue, date.dayOfMonth)
     if (adjustedWorkdayDateKeys.contains(key)) return false
     if (overrideEnabled) return true
     if (!markingEnabled) return false
@@ -376,6 +377,6 @@ fun resolveHoliday(
 
 /** 调休上班日判定（HolidayResolver.isAdjustedWorkday）。 */
 fun resolveAdjustedWorkday(date: LocalDateTime, adjustedWorkdayDateKeys: Set<String>): Boolean {
-    val key = "%04d-%02d-%02d".format(date.year, date.monthValue, date.dayOfMonth)
+    val key = String.format(Locale.ROOT, "%04d-%02d-%02d", date.year, date.monthValue, date.dayOfMonth)
     return adjustedWorkdayDateKeys.contains(key)
 }

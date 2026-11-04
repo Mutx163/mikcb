@@ -18296,6 +18296,36 @@ abstract class AppLocalizations {
   /// In zh, this message translates to:
   /// **'{name}'**
   String colorOptionLabel(String name);
+
+  /// No description provided for @backupRestoreCommitFailed.
+  ///
+  /// In zh, this message translates to:
+  /// **'恢复提交失败，已回滚'**
+  String get backupRestoreCommitFailed;
+
+  /// No description provided for @backupRestoreRollbackFailed.
+  ///
+  /// In zh, this message translates to:
+  /// **'恢复失败且回滚失败，请检查存储'**
+  String get backupRestoreRollbackFailed;
+
+  /// No description provided for @stopRecordingWithCount.
+  ///
+  /// In zh, this message translates to:
+  /// **'停止录制 ({count})'**
+  String stopRecordingWithCount(int count);
+
+  /// No description provided for @timetableProfileActiveBadge.
+  ///
+  /// In zh, this message translates to:
+  /// **'已激活'**
+  String get timetableProfileActiveBadge;
+
+  /// No description provided for @webdavPasswordReentryBody.
+  ///
+  /// In zh, this message translates to:
+  /// **'本次更新更改了密码的本地保存方式，需要重新输入一次应用专用密码；服务器地址、账号与同步设置均已保留。'**
+  String get webdavPasswordReentryBody;
 }
 
 class _AppLocalizationsDelegate

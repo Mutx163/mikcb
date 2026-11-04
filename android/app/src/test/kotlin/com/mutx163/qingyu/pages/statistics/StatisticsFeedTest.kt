@@ -157,9 +157,10 @@ class StatisticsFeedTest {
                 java.time.temporal.ChronoUnit.DAYS.between(previous, current),
             )
         }
+        assertEquals("首行标题是 9月9日 · 周三", "9月9日 · 周三", session.sessionRows.first().title)
         assertEquals(
-            "首行是 9月9日 · 周三 · 第1-2节 · 教三 201",
-            "9月9日 · 周三 · 第1-2节 · 教三 201",
+            "首行副标题是 第 1～2 节 · 08:00–09:40 · 教三 201",
+            "第 1～2 节 · 08:00–09:40 · 教三 201",
             session.sessionRows.first().subtitle,
         )
     }
@@ -240,8 +241,9 @@ class StatisticsFeedTest {
         )
         assertEquals("无日期 → 没有已过的课", 0, stats.doneSessions)
         assertEquals("无日期 → 课时为 0", 0, stats.doneSections)
-        // 课次行没有日期时退回「第 N 周 · 周三」。
-        assertEquals("第 1 周 · 周三 · 第1-2节 · 教三 201", session.sessionRows.first().subtitle)
+        // 课次行没有日期时标题退回「第 N 周 · 周三」，副标题只写节次/钟点/教室。
+        assertEquals("第 1 周 · 周三", session.sessionRows.first().title)
+        assertEquals("第 1～2 节 · 08:00–09:40 · 教三 201", session.sessionRows.first().subtitle)
 
         // 统计主页走「按周估算」分支，且不印学期起止日。
         val progress = feed.home.semester!!.progress
@@ -262,10 +264,8 @@ class StatisticsFeedTest {
             ),
         ).session
 
-        assertEquals(
-            "9月16日 · 周三 · 第1-2节 · 教三 201",
-            session.sessionRows.first().subtitle,
-        )
+        assertEquals("9月16日 · 周三", session.sessionRows.first().title)
+        assertEquals("第 1～2 节 · 08:00–09:40 · 教三 201", session.sessionRows.first().subtitle)
     }
 
     // ── 5. currentWeek 越界 ──
@@ -456,7 +456,7 @@ class StatisticsFeedTest {
         val withHomework = session.stats!!.sessions.filter { it.hasHomework }
         assertEquals("只有挂了作业的那一周算有作业", 1, withHomework.size)
         assertEquals("作业挂在第 2 周", 2, withHomework.first().week)
-        assertEquals("1/16", session.coverageRows[1].valueText)
+        assertEquals("1 / 16", session.coverageRows[1].valueText)
     }
 
     // ── 8. 时钟注入：今天/已过/未到跟着入参走 ──

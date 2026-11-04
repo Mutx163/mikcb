@@ -1,6 +1,7 @@
 package com.mutx163.qingyu.pages.timetable
 
 import java.time.LocalDate
+import java.time.LocalDateTime
 import java.time.temporal.ChronoUnit
 
 /**
@@ -59,6 +60,26 @@ object TimetableDateLogic {
     }
 
     /**
+     * 日视图「回今日」浮钮能否出现（Dart `_canNavigateDayViewToToday`，`timetable_screen.dart:1428-1435`）。
+     *
+     * 三条同时成立才给入口：
+     * 1. 当前页不是今天；
+     * 2. 今天那个星期没有被用户隐藏（否则点一下会落到「看不见的那天」）；
+     * 3. 今天落在学期内、能解析出周次（假期 / 学期末不给，避免跳成「上周同一个星期几」）。
+     */
+    fun canNavigateToToday(
+        isCurrentPageToday: Boolean,
+        visibleDays: List<Int>,
+        semesterStart: LocalDate?,
+        totalWeeks: Int,
+        today: LocalDate,
+    ): Boolean {
+        if (isCurrentPageToday) return false
+        if (!visibleDays.contains(today.dayOfWeek.value)) return false
+        return currentSemesterWeek(semesterStart, totalWeeks, today) != null
+    }
+
+    /**
      * 没有开学日时的**兜底日期**：按「当前查看的周」把星期几映射到今天所在的那一周。
      *
      * Dart `_resolveDisplayDateForWeekDay`（`timetable_day_view_part.dart:340-355`）：
@@ -83,4 +104,52 @@ object TimetableDateLogic {
     /** 该日期所在周的周一（Dart `start.subtract(Duration(days: start.weekday - 1))`）。 */
     fun mondayOf(date: LocalDate): LocalDate =
         date.minusDays((date.dayOfWeek.value - 1).toLong())
+
+    /**
+     * 首页「此刻」是否需要前移。
+     *
+     * Dart 日视图的进度心跳按**日内分钟数**节流：分钟没变就跳过，避免每秒脏化缓存页
+     * （`timetable_screen.dart:559-574`）；周视图每次构建都重读 `DateTime.now()`
+     * （同文件 `:1404`/`:1429`/`:1438`）。两条合起来的口径就是本函数：跨日一定前移，
+     * 否则同一小时内分钟变化才前移。
+     */
+    fun homeClockShouldAdvance(previous: LocalDateTime, current: LocalDateTime): Boolean =
+        previous.toLocalDate() != current.toLocalDate() ||
+            previous.hour != current.hour ||
+            previous.minute != current.minute
+
+    /**
+     * 跨零点后把注入的「今天」跟着真实日期平移。
+     *
+     * 渲染层允许测试注入固定时钟（`DayViewPage(todayDate = ...)`）：运行期以注入值为种子，
+     * 按「种子当天的真实日期 → 当前真实日期」的日差平移，既保留测试偏移，又不会在
+     * 首页常驻跨零点后停在昨天（Dart 侧无注入点，每次构建直接重读 `DateTime.now()`）。
+     */
+    fun rollTodayDate(seedToday: LocalDate, seedRealToday: LocalDate, realToday: LocalDate): LocalDate =
+        seedToday.plusDays(ChronoUnit.DAYS.between(seedRealToday, realToday))
+
+    /**
+     * 跨日把「当前周」写回仓储的判据（Dart `_syncTemporalContextImpl`：
+     * 只有 `didChangeWeek` 命中且夹到学期内才写，`timetable_provider.dart:3271-3287`）。
+     *
+     * 返回 `null` = 这一跳不用写：没配开学日（算不出日历周）、周数坏值（`<= 0`）、
+     * 开学前（日历周 0）、或夹取后仓储已经就是这个周。
+     * **夹取发生在比对之前**：[clamp] 由调用方注入
+     * （`TimetableRepository::clampWeekToSettings`，只算不写）：学期结束后先算**不设上限**的
+     * 日历周、夹回 `1..semesterWeekCount` 再比对，因此「快照已是第 21 周」仍会写出 18。
+     * 幂等：写成功后下一跳快照已是夹取结果，再次调用返回 null；写失败等下一跳重试。
+     */
+    fun weekToCommitOnDayChange(
+        semesterStart: LocalDate?,
+        totalWeeks: Int,
+        today: LocalDate,
+        currentWeek: Int,
+        clamp: (Int) -> Int,
+    ): Int? {
+        val start = semesterStart ?: return null
+        if (totalWeeks <= 0) return null
+        val rawWeek = (ChronoUnit.DAYS.between(mondayOf(start), today) / 7).toInt() + 1
+        if (rawWeek < 1) return null
+        return clamp(rawWeek).takeIf { it != currentWeek }
+    }
 }

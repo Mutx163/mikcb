@@ -3,6 +3,7 @@ package com.mutx163.qingyu.calendar
 import com.mutx163.qingyu.core.DartTime
 import com.mutx163.qingyu.core.WeekCalculator
 import java.time.LocalDateTime
+import java.util.Locale
 
 /** Dart `ScheduleDateRuleApplyOutcome`（schedule_date_rule_logic.dart:8-20）。 */
 enum class ScheduleDateRuleApplyOutcome {
@@ -72,6 +73,11 @@ object ScheduleDateRuleLogic {
         if (month < 1 || month > 12 || day < 1 || day > 31) {
             return null
         }
+        // Dart `DateTime(y, m, d)` 对 0..99 的年份按 1900+y 解释，回读比对 `parsed.year != y`
+        // 必然失败 → 该区间一律 null；LocalDate 会老实造出 0028 年，需显式对齐。
+        if (year in 0..99) {
+            return null
+        }
         // Dart DateTime(y, m, d) 会把越界日滚进下个月；LocalDate 直接拒绝。
         // 两种实现都保证「解析结果就是输入的 y/m/d」这一契约。
         return try {
@@ -87,7 +93,7 @@ object ScheduleDateRuleLogic {
     }
 
     fun formatIsoDate(date: LocalDateTime): String =
-        "%04d-%02d-%02d".format(date.year, date.monthValue, date.dayOfMonth)
+        String.format(Locale.ROOT, "%04d-%02d-%02d", date.year, date.monthValue, date.dayOfMonth)
 
     fun dateOnly(date: LocalDateTime): LocalDateTime =
         DartTime.dateTime(date.year, date.monthValue, date.dayOfMonth)

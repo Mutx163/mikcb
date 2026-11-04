@@ -119,15 +119,19 @@ class CloudSyncControllerTest {
         val failure = AtomicReference<Throwable?>(null)
         val notifyRuns = java.util.concurrent.atomic.AtomicLong()
         val subscriberRuns = java.util.concurrent.atomic.AtomicLong()
-        val deadline = System.currentTimeMillis() + 2_000
-
+        // 固定迭代次数，不用「跑满 2 秒」作为结束条件：
+        // 机器负载高时 2 秒窗口内的迭代数不可控（可能 <1000 恒红、也可能空转恒绿）；
+        // 固定次数 + 宽松 join 只把「线程是否被调度」留作时间依赖，次数本身是确定的。
+        val iterations = 2_000
         val subscriber = Thread {
             try {
-                while (System.currentTimeMillis() < deadline && failure.get() == null) {
-                    val listener: () -> Unit = {}
-                    controller.addListener(listener)
-                    controller.removeListener(listener)
-                    subscriberRuns.incrementAndGet()
+                repeat(iterations) {
+                    if (failure.get() == null) {
+                        val listener: () -> Unit = {}
+                        controller.addListener(listener)
+                        controller.removeListener(listener)
+                        subscriberRuns.incrementAndGet()
+                    }
                 }
             } catch (t: Throwable) {
                 failure.set(t)
@@ -135,10 +139,12 @@ class CloudSyncControllerTest {
         }
         val notifier = Thread {
             try {
-                while (System.currentTimeMillis() < deadline && failure.get() == null) {
-                    // 公开的纯通知入口：改草稿 + notifyChanged，不碰网络与落盘。
-                    controller.onBaseUrlChanged("http://example.com/dav/")
-                    notifyRuns.incrementAndGet()
+                repeat(iterations) {
+                    if (failure.get() == null) {
+                        // 公开的纯通知入口：改草稿 + notifyChanged，不碰网络与落盘。
+                        controller.onBaseUrlChanged("http://example.com/dav/")
+                        notifyRuns.incrementAndGet()
+                    }
                 }
             } catch (t: Throwable) {
                 failure.set(t)
@@ -146,13 +152,15 @@ class CloudSyncControllerTest {
         }
         subscriber.start()
         notifier.start()
-        subscriber.join(5_000)
-        notifier.join(5_000)
+        subscriber.join(10_000)
+        notifier.join(10_000)
 
-        // 两条循环都必须真的跑起来，否则测试空转恒绿。
-        assertTrue("并发压力没跑起来（通知 ${notifyRuns.get()} 次）", notifyRuns.get() > 1_000)
-        assertTrue("并发压力没跑起来（增删 ${subscriberRuns.get()} 次）", subscriberRuns.get() > 1_000)
+        // 先报异常：异常会让循环提前跳过计数，误报成「没跑满」会掩盖真正原因。
         assertNull("并发增删/通知抛了异常：${failure.get()}", failure.get())
+        // 两条循环都必须真的跑满，否则测试空转恒绿。
+        assertFalse("并发压力线程未在 10s 内完成", subscriber.isAlive || notifier.isAlive)
+        assertEquals("并发增删没跑满", iterations.toLong(), subscriberRuns.get())
+        assertEquals("并发通知没跑满", iterations.toLong(), notifyRuns.get())
     }
 
     @Test
@@ -301,6 +309,129 @@ class CloudSyncControllerTest {
         assertTrue(
             transport.files.containsKey("${WebdavSyncConfig().historyRemoteFolder}$currentId"),
         )
+    }
+
+    // ---------- 进程被杀在中途（第四轮：删除 3 个中断点） ----------
+
+    /**
+     * 造一个「远端已有一条旧备份 + 本机刚上传一条新备份」的现场：
+     * index.json 已落盘（含两条），旧那条可删，新那条是当前版本。
+     */
+    private fun seededBackups(
+        transport: FakeRemoteTransport,
+        store: FakeConfigStore,
+    ): CloudSyncController {
+        transport.files["${WebdavSyncConfig().historyRemoteFolder}old.mikcb"] =
+            buildSyncSnapshotBytes(profileId = "pOld")
+        val controller = controller(
+            transport = transport,
+            store = store,
+            snapshotStore = FakeLocalSnapshotStore(initial = buildSyncSnapshotBytes(profileId = "pNew")),
+        )
+        controller.connect("me@example.com", "pw")
+        assertEquals(SyncResultKind.UPLOADED, controller.createBackup())
+        controller.refreshBackups()
+        assertEquals(2, controller.backupListViewState().rows.size)
+        return controller
+    }
+
+    @Test
+    fun `删除中断_删之前断线_重启重试仍可删且只删这一条`() {
+        val transport = FakeRemoteTransport()
+        val store = FakeConfigStore()
+        val first = seededBackups(transport, store)
+        transport.deleteFailureCode = "connection_failed"
+
+        assertEquals(SyncResultKind.FAILED, first.deleteBackup("old.mikcb"))
+        assertEquals("connection_failed", first.lastErrorCode)
+        assertTrue(
+            "被杀在删之前：旧文件必须还在",
+            transport.files.containsKey("${WebdavSyncConfig().historyRemoteFolder}old.mikcb"),
+        )
+
+        transport.deleteFailureCode = null
+        val second = controller(
+            transport = transport,
+            store = store,
+            snapshotStore = FakeLocalSnapshotStore(initial = buildSyncSnapshotBytes(profileId = "pNew")),
+        )
+        second.connect("me@example.com", "pw")
+        second.refreshBackups()
+        assertEquals(SyncResultKind.BACKUP_DELETED, second.deleteBackup("old.mikcb"))
+
+        val folder = WebdavSyncConfig().historyRemoteFolder
+        assertFalse(transport.files.containsKey("${folder}old.mikcb"))
+        assertEquals("重试只删这一条", 1, second.backupListViewState().rows.size)
+        assertTrue("当前版本不得被误删", transport.files.keys.any { it.startsWith(folder) })
+    }
+
+    @Test
+    fun `删除中断_文件已删索引没存上_重启后重删可清掉幽灵行`() {
+        // 被杀点：远端文件已删，index.json 还没保存。重启后索引里那条是幽灵，
+        // 再点一次删除必须成功把索引摘干净，且不得动到别的备份。
+        val transport = FakeRemoteTransport()
+        val store = FakeConfigStore()
+        val first = seededBackups(transport, store)
+        transport.putFailureCode = "connection_failed"
+
+        assertEquals(SyncResultKind.FAILED, first.deleteBackup("old.mikcb"))
+        assertEquals("connection_failed", first.lastErrorCode)
+        val folder = WebdavSyncConfig().historyRemoteFolder
+        assertFalse("文件已经删了", transport.files.containsKey("${folder}old.mikcb"))
+
+        transport.putFailureCode = null
+        val second = controller(
+            transport = transport,
+            store = store,
+            snapshotStore = FakeLocalSnapshotStore(initial = buildSyncSnapshotBytes(profileId = "pNew")),
+        )
+        second.connect("me@example.com", "pw")
+        second.refreshBackups()
+        assertEquals("索引没更新，重启后仍会看到幽灵行", 2, second.backupListViewState().rows.size)
+
+        assertEquals("重删应把索引摘干净", SyncResultKind.BACKUP_DELETED, second.deleteBackup("old.mikcb"))
+        assertEquals(1, second.backupListViewState().rows.size)
+        assertArrayEquals(
+            "另一条备份必须原封不动",
+            buildSyncSnapshotBytes(profileId = "pNew"),
+            transport.files["${folder}${second.backupListViewState().rows.single().entryId}"],
+        )
+    }
+
+    @Test
+    fun `删除中断_索引已存列表刷新被杀_重启状态干净`() {
+        // 被杀点：文件已删、index.json 已保存，列表刷新（listing）时进程死掉。
+        // 磁盘状态已是最终态，重启后不得残留条目，重复删除按 backup_not_found 处理。
+        val transport = FakeRemoteTransport()
+        val store = FakeConfigStore()
+        val first = seededBackups(transport, store)
+        val indexRemotePath = first.config.historyIndexRemotePath
+        transport.afterPut = { path ->
+            if (path == indexRemotePath) throw KilledMidway() // 索引刚写完，列表刷新前被杀
+        }
+
+        try {
+            first.deleteBackup("old.mikcb")
+            throw AssertionError("应在索引写完后被杀")
+        } catch (_: KilledMidway) {
+        }
+        transport.afterPut = {}
+
+        val folder = WebdavSyncConfig().historyRemoteFolder
+        assertFalse("文件已删", transport.files.containsKey("${folder}old.mikcb"))
+
+        val second = controller(
+            transport = transport,
+            store = store,
+            snapshotStore = FakeLocalSnapshotStore(initial = buildSyncSnapshotBytes(profileId = "pNew")),
+        )
+        second.connect("me@example.com", "pw")
+        second.refreshBackups()
+        assertEquals("索引已保存，重启后只剩一条", 1, second.backupListViewState().rows.size)
+
+        assertEquals(SyncResultKind.FAILED, second.deleteBackup("old.mikcb"))
+        assertEquals("已删干净的条目再删应是 not found", "backup_not_found", second.lastErrorCode)
+        assertEquals(1, transport.files.keys.count { it.startsWith(folder) && it.endsWith(".mikcb") })
     }
 
     // ---------- 立即同步：先拉后推（2026-11-02 修「不比对远端就 PUT 覆盖」） ----------
@@ -618,4 +749,5 @@ class CloudSyncControllerTest {
         assertFalse("断开后撤销点必须失效", controller.canUndoLastRestore)
         assertNull(sharedStore.peek())
     }
+
 }

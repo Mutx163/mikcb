@@ -60,10 +60,12 @@ data class AddCourseScheduleEntryData(
         /**
          * 从既有课程建条目（Dart `_ScheduleEntryData.fromCourse`）。
          *
-         * `customWeeks != null` → 自定义模式并勾选这些周；否则范围模式。
+         * `normalizedCustomWeeks != null` → 自定义模式并勾选这些周；否则范围模式。
          */
         fun fromCourse(course: Course): AddCourseScheduleEntryData {
-            val custom = course.customWeeks
+            // Dart `_ScheduleEntryData.fromCourse` 用的是 `course.normalizedCustomWeeks`
+            // （course.dart:169），不是裸 `customWeeks`：越界/畸形周在编辑器里就该消失。
+            val custom = course.normalizedCustomWeeks
             return AddCourseScheduleEntryData(
                 id = course.id,
                 dayOfWeek = course.dayOfWeek,
@@ -83,7 +85,9 @@ data class AddCourseScheduleEntryData(
                 selectedCustomWeeks = custom?.toSet() ?: emptySet(),
                 note = course.note,
                 sessionNotes = course.sessionNotes,
-                suspendedWeeks = course.suspendedWeeks,
+                // Dart add_course_screen.dart:185 同样用 normalizedSuspendedWeeks，
+                // 裸列表会把 0/31 这类畸形停课周带进编辑器。
+                suspendedWeeks = course.normalizedSuspendedWeeks,
                 timeSchemeIdOverride = course.timeSchemeIdOverride,
                 originalCourse = course,
             )
@@ -158,8 +162,12 @@ enum class AddCourseEntryIssue {
     WEEKS_EMPTY,
 }
 
-/** 条目时刻解析结果（由渲染层按作息模板注入，模型层不做时间计算）。 */
-data class AddCourseEntryClock(val startTime: String, val endTime: String)
+/** 条目时刻解析结果（渲染层注入；`hasCustomTime` 由 `CourseDomain.editCourseClock` 回传，Dart `:2022-2039`）。 */
+data class AddCourseEntryClock(
+    val startTime: String,
+    val endTime: String,
+    val hasCustomTime: Boolean = false,
+)
 
 /** 保存载荷。 */
 data class AddCourseSavePayload(
@@ -259,12 +267,10 @@ object AddCourseFormLogic {
         }
         val base = if (count <= 0) emptyList() else (1..count).toList()
         val merged = LinkedHashSet(base)
-        // 现存节次越界时并入：起止都可能越界，逐节加。
-        if (currentEndSection >= currentStartSection) {
-            for (section in currentStartSection..currentEndSection) {
-                if (section > 0) merged.add(section)
-            }
-        }
+        // Dart :92-93 只并入「现存起止」两个端点，不铺开中间节次：
+        // 中间节次若超出模板，本来就不该出现在候选里。
+        if (currentStartSection >= 1) merged.add(currentStartSection)
+        if (currentEndSection >= 1) merged.add(currentEndSection)
         return merged.sorted()
     }
 
@@ -410,6 +416,7 @@ object AddCourseFormLogic {
                 courseNature = courseNature,
                 startTime = clock.startTime,
                 endTime = clock.endTime,
+                hasCustomTime = clock.hasCustomTime,
                 shortName = shortName.ifEmpty { null },
                 description = description.ifEmpty { null },
             )
@@ -518,9 +525,10 @@ object AddCourseFormLogic {
                 " – " +
                 AddCourseStrings.weekLabel.filled("week", endWeek.toString())
         }
+        // Dart `:1599-1600` 是两个独立 `if`：单双周同时为真时**单周先命中**。
         val suffix = when {
-            isOddWeek && !isEvenWeek -> " · " + AddCourseStrings.oddWeeksFilter.zh
-            isEvenWeek && !isOddWeek -> " · " + AddCourseStrings.evenWeeksFilter.zh
+            isOddWeek -> " · " + AddCourseStrings.oddWeeksFilter.zh
+            isEvenWeek -> " · " + AddCourseStrings.evenWeeksFilter.zh
             else -> ""
         }
         return label + suffix

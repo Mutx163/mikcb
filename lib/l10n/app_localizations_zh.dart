@@ -10036,6 +10036,24 @@ class AppLocalizationsZh extends AppLocalizations {
   String colorOptionLabel(String name) {
     return '$name';
   }
+
+  @override
+  String get backupRestoreCommitFailed => '恢复提交失败，已回滚';
+
+  @override
+  String get backupRestoreRollbackFailed => '恢复失败且回滚失败，请检查存储';
+
+  @override
+  String stopRecordingWithCount(int count) {
+    return '停止录制 ($count)';
+  }
+
+  @override
+  String get timetableProfileActiveBadge => '已激活';
+
+  @override
+  String get webdavPasswordReentryBody =>
+      '本次更新更改了密码的本地保存方式，需要重新输入一次应用专用密码；服务器地址、账号与同步设置均已保留。';
 }
 
 /// The translations for Chinese, as used in Hong Kong (`zh_HK`).
@@ -20110,6 +20128,24 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String colorOptionLabel(String name) {
     return '$name';
   }
+
+  @override
+  String get backupRestoreCommitFailed => '恢復提交失敗，已回滾';
+
+  @override
+  String get backupRestoreRollbackFailed => '恢復失敗且回滾失敗，請檢查儲存空間';
+
+  @override
+  String stopRecordingWithCount(int count) {
+    return '停止錄製 ($count)';
+  }
+
+  @override
+  String get timetableProfileActiveBadge => '已啟用';
+
+  @override
+  String get webdavPasswordReentryBody =>
+      '本次更新更改了密碼的本機儲存方式，需要重新輸入一次應用程式專用密碼；伺服器位址、帳號與同步設定均已保留。';
 }
 
 /// The translations for Chinese, as used in Taiwan (`zh_TW`).
@@ -30184,4 +30220,22 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String colorOptionLabel(String name) {
     return '$name';
   }
+
+  @override
+  String get backupRestoreCommitFailed => '恢復提交失敗，已回滾';
+
+  @override
+  String get backupRestoreRollbackFailed => '恢復失敗且回滾失敗，請檢查儲存空間';
+
+  @override
+  String stopRecordingWithCount(int count) {
+    return '停止錄製 ($count)';
+  }
+
+  @override
+  String get timetableProfileActiveBadge => '已啟用';
+
+  @override
+  String get webdavPasswordReentryBody =>
+      '本次更新更改了密碼的本機儲存方式，需要重新輸入一次應用程式專用密碼；伺服器位址、帳號與同步設定均已保留。';
 }

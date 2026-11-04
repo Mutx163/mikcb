@@ -296,6 +296,19 @@ fun TimetableWeekPage(
     val startPage = (initialWeek - 1).coerceIn(0, pageCount - 1)
     val pagerState = rememberPagerState(initialPage = startPage, pageCount = { pageCount })
 
+    // 外部周次同步（换课表档 / 改学期起点与总周数 / 跨零点）：`initialWeek` 只是初值，
+    // 不跟着走 pager 会停在旧周（Dart `syncWeekPageWithProvider` 在 build 里每帧收敛）。
+    // 手势进行中绝不抢页，判据见 [WeekPagerSync.targetPage]。
+    LaunchedEffect(initialWeek, pageCount) {
+        val target = WeekPagerSync.targetPage(
+            externalWeek = initialWeek,
+            pageCount = pageCount,
+            currentPage = pagerState.currentPage,
+            isScrollInProgress = pagerState.isScrollInProgress,
+        ) ?: return@LaunchedEffect
+        pagerState.scrollToPage(target)
+    }
+
     // 翻页 → 通知宿主（Dart `commitPendingWeek`：停稳后写回 provider.currentWeek）。
     LaunchedEffect(pagerState) {
         snapshotFlow { pagerState.currentPage }.collect { page ->

@@ -185,7 +185,8 @@ object CourseActionDispatcher {
      * 2. 从 `activeWeeks` 里去掉这一周，写成 `customWeeks` + 首尾周，并清掉单双周标志
      *    （`:2795-2802`）；
      * 3. 去掉这一周的 `sessionNotes`（`:2801`）；
-     * 4. 一周不剩 ⇒ 整门课删掉（`:2790-2791`）。
+     * 4. 一周不剩 ⇒ 只把该课从 `_courses` 里移除（`:2790-2791`），
+     *    **不调用整课删除**——Dart 这一步不碰 `_exams`，手写作业也随用户数据保留。
      */
     fun deleteOccurrence(
         port: TimetableCoursePort,
@@ -199,21 +200,51 @@ object CourseActionDispatcher {
         }
 
         val remainingWeeks = course.activeWeeks.filter { it != sourceWeek }.sorted()
-        if (remainingWeeks.isEmpty()) {
-            TimetableCourseService.delete(port, courseId)
-            return CourseActionOutcome.DeletedOccurrence(courseId, sourceWeek, removedWholeCourse = true)
+        val updated = if (remainingWeeks.isEmpty()) {
+            null
+        } else {
+            port.syncCourseWithEffectiveTimeScheme(
+                TimetableCourseService.normalize(
+                    course.copy(
+                        startWeek = remainingWeeks.first(),
+                        endWeek = remainingWeeks.last(),
+                        isOddWeek = false,
+                        isEvenWeek = false,
+                        customWeeks = remainingWeeks,
+                        sessionNotes = course.sessionNotesExcludingWeek(sourceWeek),
+                    ),
+                    port.semesterWeekCount,
+                ),
+            )
         }
 
-        val updated = course.copy(
-            startWeek = remainingWeeks.first(),
-            endWeek = remainingWeeks.last(),
-            isOddWeek = false,
-            isEvenWeek = false,
-            customWeeks = remainingWeeks,
-            sessionNotes = course.sessionNotesExcludingWeek(sourceWeek),
+        // Dart `:2786-2812` 的快照/回滚范围只有 courses/tasks/profiles，不含 exams。
+        val snapshotCourses = port.courses
+        val snapshotTasks = port.tasks
+        val snapshotProfiles = port.profiles
+        port.courses = if (updated == null) {
+            port.courses.filterNot { it.id == courseId }
+        } else {
+            port.courses.map { if (it.id == courseId) updated else it }
+        }
+        try {
+            TimetableCourseService.syncHomeworkTasksWithCourses(port)
+            port.persistActiveProfileState()
+        } catch (e: Exception) {
+            port.courses = snapshotCourses
+            port.tasks = snapshotTasks
+            port.profiles = snapshotProfiles
+            throw e
+        }
+        port.clearCurrentLiveCourseId()
+        port.notifyStateChanged()
+        port.logEvent("course_occurrence_deleted", mapOf("source_week" to sourceWeek))
+        port.updateLiveActivity()
+        return CourseActionOutcome.DeletedOccurrence(
+            courseId,
+            sourceWeek,
+            removedWholeCourse = updated == null,
         )
-        TimetableCourseService.update(port, updated, previousSharedName = null)
-        return CourseActionOutcome.DeletedOccurrence(courseId, sourceWeek, removedWholeCourse = false)
     }
 
     /**
@@ -255,14 +286,25 @@ object CourseActionDispatcher {
         }
 
         val remainingWeeks = course.activeWeeks.filter { it != sourceWeek }.sorted()
+        // 目标位置的新条目：单周、目标星期/节次；共享字段由服务侧广播。
+        // 两个分支都**必须**写目标周字段与迁移备注（Dart `:2933-2953` 的 movedOccurrence
+        // 在分支之前构造）：只挪星期/节次而不改 customWeeks，单周课会留在原周不出现；
+        // 备注不迁走则「这一节的备注」在调课后凭空丢失。
+        val moved = course.copy(
+            id = if (remainingWeeks.isEmpty()) course.id else UUID.randomUUID().toString(),
+            dayOfWeek = targetDayOfWeek,
+            startSection = targetStartSection,
+            endSection = targetEndSection,
+            location = location,
+            startWeek = targetWeek,
+            endWeek = targetWeek,
+            isOddWeek = false,
+            isEvenWeek = false,
+            customWeeks = listOf(targetWeek),
+            sessionNotes = course.sessionNotesForSingleWeek(sourceWeek, targetWeek),
+        )
         if (remainingWeeks.isEmpty()) {
-            // 只剩这一周：原地改位置即可（Dart 同分支的等价写法）。
-            val moved = course.copy(
-                dayOfWeek = targetDayOfWeek,
-                startSection = targetStartSection,
-                endSection = targetEndSection,
-                location = location,
-            )
+            // 只剩这一周：就地改（不新增条目）。
             TimetableCourseService.update(port, moved, previousSharedName = null)
             return CourseActionOutcome.Rescheduled(courseId, sourceWeek, targetWeek, changed = true)
         }
@@ -276,21 +318,6 @@ object CourseActionDispatcher {
             sessionNotes = course.sessionNotesExcludingWeek(sourceWeek),
         )
         TimetableCourseService.update(port, shrunk, previousSharedName = null)
-
-        // 目标位置的新条目：新 id、单周、目标星期/节次；共享字段由服务侧广播。
-        val moved = course.copy(
-            id = UUID.randomUUID().toString(),
-            dayOfWeek = targetDayOfWeek,
-            startSection = targetStartSection,
-            endSection = targetEndSection,
-            location = location,
-            startWeek = targetWeek,
-            endWeek = targetWeek,
-            isOddWeek = false,
-            isEvenWeek = false,
-            customWeeks = listOf(targetWeek),
-            sessionNotes = null,
-        )
         TimetableCourseService.add(port, moved)
         return CourseActionOutcome.Rescheduled(courseId, sourceWeek, targetWeek, changed = true)
     }

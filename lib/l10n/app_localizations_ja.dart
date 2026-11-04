@@ -10308,4 +10308,22 @@ class AppLocalizationsJa extends AppLocalizations {
   String colorOptionLabel(String name) {
     return '$name';
   }
+
+  @override
+  String get backupRestoreCommitFailed => '復元に失敗し、ロールバック済み';
+
+  @override
+  String get backupRestoreRollbackFailed => '復元・ロールバック失敗、要確認';
+
+  @override
+  String stopRecordingWithCount(int count) {
+    return '録画停止 ($count)';
+  }
+
+  @override
+  String get timetableProfileActiveBadge => '有効';
+
+  @override
+  String get webdavPasswordReentryBody =>
+      '今回の更新でパスワードの保存方法が変更されたため、アプリ専用パスワードをもう一度入力してください。サーバーアドレス、アカウント、同期設定は保持されています。';
 }

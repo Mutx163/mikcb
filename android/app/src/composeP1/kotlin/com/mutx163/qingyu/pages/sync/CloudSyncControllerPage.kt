@@ -19,6 +19,8 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
+import com.mutx163.qingyu.platform.AndroidLegacyCredentialProbe
+import com.mutx163.qingyu.platform.PrefsKeyValueStore
 import com.mutx163.qingyu.sync.SyncConflictChoice
 import com.mutx163.qingyu.sync.SyncConflictInfo
 import com.mutx163.qingyu.theme.QingyuTheme
@@ -84,6 +86,26 @@ fun CloudSyncPage(
     val viewState = remember(controller, revision) { controller.cloudSyncViewState() }
     val scope = rememberCoroutineScope()
     val context = LocalContext.current
+
+    // 升级后一次性提示：新版密文键为空、旧 Dart 插件 prefs 里仍有密码、且标记没写过。
+    // 只在本页入口算一次（`remember(controller)`），不随重组反复探测；判为「该提示」时
+    // 立即写一次性标记（写失败也照常显示，见 CloudSyncLogic.takeLegacyPasswordReentryPrompt）。
+    val promptStore = remember(context) { PrefsKeyValueStore(context.applicationContext) }
+    val legacyProbe = remember(context) { AndroidLegacyCredentialProbe(context) }
+    val shouldPromptReentry = remember(controller, promptStore, legacyProbe) {
+        CloudSyncLogic.takeLegacyPasswordReentryPrompt(
+            hasStoredPassword = controller.hasStoredPassword(),
+            legacyKeySuffix = CloudSyncLogic.LEGACY_KEY_SUFFIX_CLOUD,
+            alreadyPrompted = {
+                promptStore.getBool(CloudSyncLogic.LEGACY_REPROMPT_MARK_CLOUD, false)
+            },
+            hasLegacyDartCredential = { suffix -> legacyProbe.hasLegacyPassword(suffix) },
+            markPrompted = {
+                promptStore.putBool(CloudSyncLogic.LEGACY_REPROMPT_MARK_CLOUD, true)
+            },
+        )
+    }
+    var showReentry by remember { mutableStateOf(shouldPromptReentry) }
 
     // 立即同步发现两边都改过时，控制器会挂起 pendingSyncConflict；这里弹「选边」框。
     var conflictInfo by remember { mutableStateOf<SyncConflictInfo?>(null) }
@@ -174,6 +196,20 @@ fun CloudSyncPage(
             conflictInfo = null
         },
     )
+
+    // 与选边框同口径：常驻组合、只翻 `show`，退场动画能播完。
+    LegacyPasswordReentryDialog(
+        show = showReentry,
+        title = SyncStrings.cloudSyncTitle.zh,
+        body = SyncStrings.webdavPasswordReentryBody.zh,
+        connectLabel = SyncStrings.cloudSyncConnectAccount.zh,
+        cancelLabel = SyncStrings.cancelAction.zh,
+        onConnect = {
+            showReentry = false
+            onConnect()
+        },
+        onDismiss = { showReentry = false },
+    )
 }
 
 /**
@@ -217,6 +253,10 @@ fun CloudBackupListPage(
 /**
  * 同步冲突「选边」三键框（Dart `_resolveConflict`，标题/正文/三动作走
  * [CloudSyncLogic.conflictDialog]，首次同步分歧自动换解释性文案）。
+ *
+ * 三动作竖排整宽、间距 12dp（Dart `showAppTripleActionDialog` 口径：三动作不挤同一行；
+ * 本仓先例 pages/import/ImportCommon.kt 的三动作分支）。弹层常驻组合、只翻 [show]，
+ * [info] 传 remember 保留的最后一份非空冲突，供退场期间继续渲染。
  *
  * 两个「选边」动作都会发起网络（保留本机 = PUT、使用云端 = GET+应用），经
  * [onChoice] 交给宿主协程在 IO 线程执行；「取消」与点遮罩等价，纯本地状态清理。

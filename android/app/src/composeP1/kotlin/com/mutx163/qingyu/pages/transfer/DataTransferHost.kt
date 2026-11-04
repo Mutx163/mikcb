@@ -117,7 +117,9 @@ fun DataTransferHost(
 
     /** 导入一份包文本（文件与二维码两条入口共用）。 */
     fun openImportPreview(text: String, channel: TransferChannel) {
-        when (val parsed = DataTransferImportLogic.parse(text)) {
+        // 2026-11-03：旧格式（无信封的单课表备份 / backupType=full 的全量备份）走
+        // 兼容解析；信封坏了一律整份拒收，不回退（Dart `parseCompatible`）。
+        when (val parsed = DataTransferLegacyBackupLogic.parseCompatible(text, channel)) {
             is TransferImportParseResult.Invalid ->
                 showToast(TransferServiceMessages.localize(parsed.code))
 
@@ -219,16 +221,17 @@ fun DataTransferHost(
                         TransferStrings.importFileTooLarge.filled("size", "20 MB"),
                     )
 
-                    is AndroidTransferDocumentAdapter.ReadResult.ReadFailed ->
-                        showToast(TransferStrings.importFileReadFailed.zh)
+                    is AndroidTransferDocumentAdapter.ReadResult.ReadFailed,
+                    is AndroidTransferDocumentAdapter.ReadResult.EmptyContent -> showToast(
+                        TransferStrings.importFileReadFailed.zh,
+                    )
+
+                    is AndroidTransferDocumentAdapter.ReadResult.InvalidEncoding ->
+                        // 畸形 UTF-8：复用「导入失败，请确认文件有效」（Lead 裁决，不新增键）。
+                        showToast(TransferStrings.importFailedInvalidFile.zh)
 
                     is AndroidTransferDocumentAdapter.ReadResult.Success ->
-                        if (result.text.isEmpty()) {
-                            // 空内容：Dart 明确落到「无法读取所选文件」（`:419-421`）。
-                            showToast(TransferStrings.importFileReadFailed.zh)
-                        } else {
-                            openImportPreview(result.text, TransferChannel.FILE)
-                        }
+                        openImportPreview(result.text, TransferChannel.FILE)
                 }
             }
         }
@@ -239,7 +242,8 @@ fun DataTransferHost(
         val bytes = bridge.inboundBytes ?: return@LaunchedEffect
         bridge.inboundBytes = null
         isImporting = true
-        val text = withContext(Dispatchers.IO) { runCatching { String(bytes, Charsets.UTF_8) }.getOrNull() }
+        // 严格 UTF-8：畸形字节不落成 U+FFFD 文本，直接走下面的「导入失败」分支。
+        val text = withContext(Dispatchers.IO) { DataTransferInboundDecoding.decodeTransferText(bytes) }
         isImporting = false
         if (text == null) {
             // Dart：UTF-8 解码失败统一落到「导入失败，请确认文件有效」（`:551-563`）。
@@ -314,9 +318,9 @@ fun DataTransferHost(
                                             sectionCount = sectionCount,
                                         ),
                                         sectionCount = sectionCount,
-                                        // 跳过条目恒 0：Kotlin 解析层「坏一条就整份拒收」，
-                                        // 没有 Dart 那条「部分损坏仍导入」的通道（`lastImportDroppedTotal`）。
-                                        droppedCount = 0,
+                                        // 旧格式文件逐条跳过的坏条目数（Dart
+                                        // `lastImportDroppedCounts`）；当前信封恒 0。
+                                        droppedCount = pending.info.droppedTotal,
                                     )
                                     undoToken = outcome.token
                                     if (outcome.token == null) {
@@ -440,6 +444,22 @@ private fun applyImport(
     val plan = pending.plan
     val scope = pending.info.scope
     val before = repository.snapshot
+    // 2026-11-03：落盘前补齐 Dart `validate` 的引用门（课/作息表指向必须存在）。
+    // 旧实现只做结构校验就写；包内一条考试指向不存在的课会被静默写进档案，
+    // Dart 则整份拒收（`exam_course_missing:<id>`）——这里返回同一族错误码。
+    val referenceErrors = DataTransferApplyLogic.referenceErrors(
+        plan = plan,
+        baseline = DataTransferApplyLogic.TransferReferenceBaseline(
+            courseIds = buildSet {
+                before.courses.mapTo(this) { it.id }
+                before.profiles.forEach { profile -> profile.courses.mapTo(this) { it.id } }
+            },
+            timeSchemeIds = before.timeSchemes.mapTo(HashSet()) { it.id },
+        ),
+    )
+    if (referenceErrors.isNotEmpty()) {
+        return ApplyOutcome.Failed(code = referenceErrors.first())
+    }
     val undoSnapshot = when (DataTransferApplyLogic.undoKindFor(plan)) {
         TransferUndoScope.FULL_PROFILES -> TransferUndoSnapshot(
             kind = TransferUndoScope.FULL_PROFILES,
@@ -540,31 +560,40 @@ private fun applyImport(
 /**
  * 把包里带的时间模板补进本机模板表，返回「包 id → 本机 id」映射。
  *
- * 三条判据（对齐 Dart `_mergeTimeSchemes` 的口径）：
- * 1. **id 已存在**：名称 / 节次表有差异才更新，id 不变 ⇒ 引用不用改；
- * 2. **id 不存在**：新建一套，拿到新 id ⇒ 引用要按映射改写；
- * 3. 更新被仓储拒（节次表非法、或收窄到低于已用节次）：保留本机那套、不动映射
- *    ——宁可变回默认作息，也不要往模板表里塞一套坏数据。
+ * 判据全部下沉到 [DataTransferApplyLogic.planTimeSchemeSteps]（同 id 更新 /
+ * 节次签名相同的双胞胎**复用本机 id** / 其余新建）——旧版只做了 1 与 3，
+ * 每次跨设备导入都会给表里多堆一套节次完全相同的模板（Dart 有双胞胎复用）。
  *
  * 只调用仓储既有方法（`updateTimeScheme` / `createTimeScheme`），不碰落盘细节；
- * 单套失败不抛（模板是配角，不该让整次导入失败）。
+ * 更新被拒（节次非法 / 收窄到低于已用节次）时保留本机那套、不动映射：宁可
+ * 变回默认作息，也不要往模板表里塞一套坏数据（这条是刻意保留的差异）。
  */
 private fun reconcileTimeSchemes(
     repository: TimetableRepository,
     incoming: List<TimeScheme>,
 ): Map<String, String> {
     if (incoming.isEmpty()) return emptyMap()
-    val existingById = repository.snapshot.timeSchemes.associateBy { it.id }
     val mapping = LinkedHashMap<String, String>(incoming.size)
-    for (scheme in incoming) {
-        val local = existingById[scheme.id]
-        if (local == null) {
-            val created = runCatching {
-                repository.createTimeScheme(scheme.name, scheme.sections)
-            }.getOrNull()
-            if (created != null) mapping[scheme.id] = created.id
-        } else if (local.name != scheme.name || local.sections != scheme.sections) {
-            runCatching { repository.updateTimeScheme(scheme.id, scheme.name, scheme.sections) }
+    val steps = DataTransferApplyLogic.planTimeSchemeSteps(
+        current = repository.snapshot.timeSchemes,
+        incoming = incoming,
+    )
+    for (step in steps) {
+        when (step) {
+            is DataTransferApplyLogic.TimeSchemeStep.Update ->
+                runCatching {
+                    repository.updateTimeScheme(step.localId, step.name, step.sections)
+                }
+
+            is DataTransferApplyLogic.TimeSchemeStep.Reuse ->
+                mapping[step.incomingId] = step.localId
+
+            is DataTransferApplyLogic.TimeSchemeStep.Create -> {
+                val created = runCatching {
+                    repository.createTimeScheme(step.name, step.sections)
+                }.getOrNull()
+                if (created != null) mapping[step.incomingId] = created.id
+            }
         }
     }
     return mapping

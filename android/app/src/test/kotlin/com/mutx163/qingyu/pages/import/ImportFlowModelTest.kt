@@ -2,6 +2,8 @@ package com.mutx163.qingyu.pages.import
 
 import com.mutx163.qingyu.core.Course
 import com.mutx163.qingyu.core.TimetableSettings
+import com.mutx163.qingyu.pages.import.warehouse.SemesterWeekUplift
+import com.mutx163.qingyu.transfer.MAX_ALLOWED_SEMESTER_WEEK_COUNT
 import kotlin.random.Random
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -27,6 +29,7 @@ class ImportFlowModelTest {
         dayOfWeek: Int = 1,
         startSection: Int = 1,
         endSection: Int = 2,
+        endWeek: Int = 16,
         color: String = "#2196F3",
     ): Course = Course(
         id = id,
@@ -38,6 +41,7 @@ class ImportFlowModelTest {
         endSection = endSection,
         startTime = "08:00",
         endTime = "08:45",
+        endWeek = endWeek,
         color = color,
     )
 
@@ -267,5 +271,57 @@ class ImportFlowModelTest {
     fun `体积上限文案与 Dart 同口径`() {
         assertEquals("20 MB", ImportFlowModel.formatSizeLimit(20 * 1024 * 1024))
         assertEquals("512 B", ImportFlowModel.formatSizeLimit(512))
+    }
+
+    // ------------------------------------------------------------------
+    // 导入后置：学期总周数（Dart `importParsedCourses`）
+    // ------------------------------------------------------------------
+
+    @Test
+    fun `学期总周数按导入课程抬升`() {
+        // Dart：nextSemesterWeekCount = max(当前, maxCourseWeek(合并后课程))
+        assertEquals(20, ImportFlowModel.nextSemesterWeekCount(20, emptyList()))
+        assertEquals(25, ImportFlowModel.nextSemesterWeekCount(20, listOf(course("a", endWeek = 25))))
+        assertEquals(16, ImportFlowModel.nextSemesterWeekCount(16, listOf(course("a", endWeek = 8))))
+        assertEquals(30, ImportFlowModel.nextSemesterWeekCount(20, listOf(course("a", endWeek = 40))))
+    }
+
+    @Test
+    fun `学期总周数只升不降 自定义周次也参与抬升`() {
+        assertEquals(18, ImportFlowModel.nextSemesterWeekCount(18, listOf(course("a", endWeek = 16))))
+        val custom = course("a", endWeek = 16).copy(customWeeks = listOf(1, 3, 21))
+        assertEquals(21, ImportFlowModel.nextSemesterWeekCount(16, listOf(custom)))
+        // 空课表保持当前值（不能落成 0）
+        assertEquals(30, ImportFlowModel.nextSemesterWeekCount(30, emptyList()))
+    }
+
+    @Test
+    fun `周次抬升边界 0 1 30 31 与归一化周次顺序`() {
+        // Dart `maxCourseWeek`（import_export_logic.dart:57-69）：raw 先 clamp(1, 30)；
+        // `importParsedCourses` 再与当前值取 max（当前值本身不再夹取）。
+        assertEquals(1, ImportFlowModel.nextSemesterWeekCount(0, listOf(course("a", endWeek = 0))))
+        assertEquals(1, ImportFlowModel.nextSemesterWeekCount(0, listOf(course("a", endWeek = 1))))
+        assertEquals(30, ImportFlowModel.nextSemesterWeekCount(0, listOf(course("a", endWeek = 30))))
+        assertEquals(30, ImportFlowModel.nextSemesterWeekCount(0, listOf(course("a", endWeek = 31))))
+        assertEquals(31, ImportFlowModel.nextSemesterWeekCount(31, listOf(course("a", endWeek = 30))))
+        // 归一化周次升序去重：乱序 [21,1,3] 末项是 21，不是 3。
+        val unordered = course("a", endWeek = 16).copy(customWeeks = listOf(21, 1, 3))
+        assertEquals(21, ImportFlowModel.nextSemesterWeekCount(16, listOf(unordered)))
+    }
+
+    @Test
+    fun `学期总周数上限是 30 周 与 Dart maxAllowedSemesterWeekCount 一致`() {
+        // Dart `lib/domain/import_export_logic.dart:39`：
+        //   static const int maxAllowedSemesterWeekCount = 30;
+        // 抬升点 `lib/services/timetable_import_export_service.dart:588-601`：clamp(1, 30) 后只升不降。
+        // 不是 42——42 是月视图固定格数，与学期周数无关（早前 warehouse 交付说明写错）。
+        assertEquals(30, MAX_ALLOWED_SEMESTER_WEEK_COUNT)
+        assertEquals(30, ImportFlowModel.nextSemesterWeekCount(1, listOf(course("a", endWeek = 42))))
+        assertEquals(29, ImportFlowModel.nextSemesterWeekCount(1, listOf(course("a", endWeek = 29))))
+        // 单一实现：表格导入与教务回传（WarehouseCourseWriteBack）都走 SemesterWeekUplift。
+        assertEquals(
+            SemesterWeekUplift.nextSemesterWeekCount(20, listOf(course("a", endWeek = 40))),
+            ImportFlowModel.nextSemesterWeekCount(20, listOf(course("a", endWeek = 40))),
+        )
     }
 }

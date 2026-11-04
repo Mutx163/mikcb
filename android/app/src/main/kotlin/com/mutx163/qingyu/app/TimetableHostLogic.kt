@@ -142,16 +142,20 @@ object TimetableHostLogic {
     }
 
     /**
-     * 生效的作息模板（Dart 侧 `settings.activeTimeSchemeId` 的路由口径）：
-     * 命中 [activeTimeSchemeId] 用它；id 为 null 或指向不存在的档 → 退到第一份；
-     * 一份都没有 → `null`（此时页面自己回落到 `settings.sections`，
-     * 见 `TimetableWeekPage.kt:126-127`，宿主不要自己造节次表）。
+     * 生效的作息模板（Dart `TimetableProvider.activeTimeScheme` 的路由口径）：
+     * 命中 [activeTimeSchemeId] 用它；id 为 null 或指向不存在的档（stale id）→ `null`。
+     * 此时页面自己回落到 `settings.sections`
+     * （见 `TimetableWeekPage.kt:126-127`，宿主不要自己造节次表）。
+     *
+     * 对齐 timetable_provider.dart:611-613（`_getTimeSchemeById(id)` 找不到即 null）与
+     * 周视图兜底 timetable_day_view_part.dart:553-557（`?.sections ?? settings.sections`）。
+     * **不要**回退第一份方案：stale id 时会让用户看到与 Dart 不同的节次时间列。
      */
     fun resolveActiveTimeScheme(
         schemes: List<TimeScheme>,
         activeTimeSchemeId: String?,
     ): TimeScheme? =
-        schemes.firstOrNull { it.id == activeTimeSchemeId } ?: schemes.firstOrNull()
+        schemes.firstOrNull { it.id == activeTimeSchemeId }
 
     // ── 顶栏菜单「分享课表图片」（Dart home_menu_catalog.dart:111-128）─────────
 

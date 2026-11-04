@@ -1,5 +1,6 @@
 package com.mutx163.qingyu.pages.timetable.day
 
+import com.mutx163.qingyu.core.CourseCardSurface
 import com.mutx163.qingyu.core.HomeMaterialRenderSpec
 import com.mutx163.qingyu.core.SurfaceMaterialState
 
@@ -24,7 +25,7 @@ import com.mutx163.qingyu.core.SurfaceMaterialState
  * @param solidAlpha 该卡在实体档下的原透明度（课程卡按停课/非本周压淡，日程卡 0.95…）。
  */
 fun dayAgendaSurfaceAlpha(
-    material: HomeMaterialRenderSpec?,
+    material: CourseCardSurface?,
     solidAlpha: Float,
 ): Float = when (material?.courseCard) {
     SurfaceMaterialState.FROST,

@@ -55,6 +55,14 @@ import com.mutx163.qingyu.sync.validateTransferPackageJson
  *    里把模型 parse 异常包成 `transfer_${kind}_invalid`，本实现按校验器已过的前提
  *    直接调模型 `fromJson`，异常消息是形状码就原样透出，否则落到
  *    `transfer_package_parse_failed`（本仓新增码，界面上会落到「发生未知错误」）。
+ * 2. **多缺陷包的首个错误码可能指向另一实体**：Dart 是逐实体「先查字段 → 建模型 → 下一条」，
+ *    前面实体的模型错误先抛；本实现是整包结构门全过（含全部实体的字段/唯一 id 检查）
+ *    后才统一建模型，因此后面实体的缺字段码会先返回。
+ *    包例：`courses[0]` 的 `sessionNotes.text` 是数字（Dart 抛 TypeError →
+ *    `transfer_course_invalid`；本仓模型也拒绝，但映射成 `transfer_package_parse_failed`）
+ *    且 `exams[0]` 缺 `name` ⇒ Dart 报 `transfer_course_invalid`，本仓报
+ *    `transfer_exam_name_required`。
+ *    用例钉在 `DataTransferImportLogicTest.多缺陷包的首个错误码与 Dart 不一致`。
  */
 
 /**
@@ -70,7 +78,17 @@ data class TransferImportPackageInfo(
     /** 顶层课程数 + 各档案课程数（全量包只有后者非零）。 */
     val courseCount: Int,
     val profileCount: Int,
-)
+    /**
+     * 旧格式兼容解析时逐条跳过的坏条目（键 → 条数）。
+     *
+     * 当前信封解析恒为空；只有 [DataTransferLegacyBackupLogic] 会产出非空。
+     * Dart 用 `AppDataBackup.droppedCounts` 让导入完成提示如实报「跳过了 N 条」，
+     * 这里同样交给 [TransferRestoredNotice.droppedCount]（旧宿主把它硬编码成 0）。
+     */
+    val droppedCounts: Map<String, Int> = emptyMap(),
+) {
+    val droppedTotal: Int get() = droppedCounts.values.sum()
+}
 
 /**
  * 解析出来、**尚未落盘**的导入计划。

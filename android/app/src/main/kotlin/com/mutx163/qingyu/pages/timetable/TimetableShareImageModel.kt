@@ -5,6 +5,7 @@ import com.mutx163.qingyu.core.SectionTime
 import com.mutx163.qingyu.statistics.ExportBrandModel
 import java.io.File
 import java.time.LocalDate
+import java.util.Locale
 
 /**
  * 「干净课表图」导出与分享的**纯逻辑**（2026-11-03 新增，Dart
@@ -471,7 +472,7 @@ object TimetableShareImageModel {
 
     /** 表头日期「MM/dd」（Dart `'${date.month.padLeft(2)}/${date.day.padLeft(2)}'` 同式）。 */
     fun weekdayDateText(date: LocalDate): String =
-        "%02d/%02d".format(date.monthValue, date.dayOfMonth)
+        "%02d/%02d".format(Locale.ROOT, date.monthValue, date.dayOfMonth)
 
     /** 日图副标题「M月d日」（Dart `DateFormat.MMMd(zh)` 在中文 locale 的输出同形）。 */
     fun daySubtitleText(date: LocalDate): String = "${date.monthValue}月${date.dayOfMonth}日"

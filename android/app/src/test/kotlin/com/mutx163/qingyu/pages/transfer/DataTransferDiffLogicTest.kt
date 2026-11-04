@@ -3,6 +3,7 @@ package com.mutx163.qingyu.pages.transfer
 import com.mutx163.qingyu.core.Course
 import com.mutx163.qingyu.core.CourseTask
 import com.mutx163.qingyu.core.Exam
+import com.mutx163.qingyu.core.LocationTimeGroup
 import com.mutx163.qingyu.core.ScheduleItem
 import com.mutx163.qingyu.core.TimeScheme
 import com.mutx163.qingyu.core.TimetableProfile
@@ -62,7 +63,7 @@ class DataTransferDiffLogicTest {
                 Triple(1, 1, 1), // courses：c3 新增 / c1 改名 / c2 删除
                 Triple(0, 0, 0), // exams
                 Triple(0, 0, 0), // time_rules
-                Triple(0, 0, 0), // locations（Kotlin 链路不解析也不落盘，恒零）
+                Triple(0, 0, 0), // locations：夹具两侧都没有分组
                 Triple(1, 0, 0), // tasks：t2 新增
                 Triple(0, 0, 0), // schedule_items
                 Triple(0, 0, 0), // time_schemes
@@ -292,14 +293,42 @@ class DataTransferDiffLogicTest {
     }
 
     @Test
-    fun `地点作息分组恒零`() {
+    fun `地点分组按 id 配对并在覆盖模式报删除`() {
+        // 2026-11-03：旧实现把 locations 恒置零，理由是「导入链路不解析也不落盘」。
+        // 实际 `TransferImportPlan.locationTimeGroups` 与 `applyImport` 都已接通，
+        // 预览因此长期少报一块真实写入。与 Dart `_entitiesForKind` 同口径后：
+        // g1 新增 / g2 改名 / g3 删除。
+        val current = TransferDiffCurrent(
+            locationTimeGroups = listOf(
+                group("g2", "旧名", "ts1"),
+                group("g3", "待删", "ts1"),
+            ),
+        )
+        val incoming = plan(
+            locationTimeGroups = listOf(
+                group("g1", "新增", "ts1"),
+                group("g2", "新名", "ts1"),
+            ),
+        )
         val diff = DataTransferDiffLogic.compare(
-            current = TransferDiffCurrent(courses = listOf(course("c1", "高数"))),
-            plan = plan(courses = listOf(course("c1", "高数"))),
+            current = current,
+            plan = incoming,
             scope = TransferScope.ALL_DATA,
             mode = TransferApplyMode.OVERWRITE,
         )
-        assertTrue(diff.forKind(TransferDiffKind.LOCATIONS).isEmpty)
+        val locations = diff.forKind(TransferDiffKind.LOCATIONS)
+        assertEquals(1, locations.addedCount)
+        assertEquals(1, locations.updatedCount)
+        assertEquals(1, locations.removedCount)
+
+        // 合并语义不报删除（与其它实体同一条 `reportRemovals` 判据）。
+        val merged = DataTransferDiffLogic.compare(
+            current = current,
+            plan = incoming,
+            scope = TransferScope.WEEK_TIMETABLE,
+            mode = TransferApplyMode.MERGE,
+        )
+        assertEquals(0, merged.forKind(TransferDiffKind.LOCATIONS).removedCount)
     }
 
     // ── 夹具 ────────────────────────────────────────────────────────
@@ -315,6 +344,7 @@ class DataTransferDiffLogicTest {
         exams: List<Exam> = emptyList(),
         scheduleItems: List<ScheduleItem> = emptyList(),
         timeSchemes: List<TimeScheme> = emptyList(),
+        locationTimeGroups: List<LocationTimeGroup> = emptyList(),
         settings: TimetableSettings? = null,
         currentWeek: Int? = null,
     ) = TransferImportPlan(
@@ -328,6 +358,7 @@ class DataTransferDiffLogicTest {
         exams = exams,
         scheduleItems = scheduleItems,
         scheduleDateRules = emptyList(),
+        locationTimeGroups = locationTimeGroups,
     )
 
     private fun profile(
@@ -362,6 +393,9 @@ class DataTransferDiffLogicTest {
         startTime = "08:00",
         endTime = "09:40",
     )
+
+    private fun group(id: String, name: String, timeSchemeId: String) =
+        LocationTimeGroup(id = id, name = name, timeSchemeId = timeSchemeId)
 
     private fun task(id: String, title: String) = CourseTask(
         id = id,

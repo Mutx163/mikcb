@@ -553,28 +553,23 @@ internal fun mixToward(ink: Color, cardFill: Color, amount: Double = 0.62): Colo
 }
 
 /**
- * 月视图的三枚**固定**语义色（不跟主题走）。
+ * 月视图的三枚类别语义色，全部取 `MiuixTheme.colorScheme` 槽（R5，不再写字面量）。
  *
- * 与 `MonthDayCell.kt` 里 `private fun monthExamDotColor / monthScheduleDotColor /
- * monthHolidayInk` **同值同口径**：那边是格子色带用的（`private`，跨文件不可引用）。
- *
- * ⚠️ 改这里必须同时改那边，否则「格子里的考试红」与「议程行的考试红」会分家。
- * 取值出处是 `lib/widgets/timetable/month_view/month_day_cell.dart:275-289`。
+ * 与 `MonthDayCell.kt` 里的格子色带**同槽同源**（error / primary），
+ * 「格子里的考试红」与「议程行的考试红」天然同值；深浅色由主题桥接管。
+ * error 不被种子色派生（`QingyuPageTheme` 只触碰 primary 族），考试红不随主题撞色。
  */
 internal object MonthPanelAccents {
 
-    /** 考试红：主题本身可能就是红的，所以固定色相。 */
+    /** 考试红：主题 error 槽。 */
     @Composable
-    fun examInk(): Color = if (isDarkTheme()) Color(0xFFFF6B6B) else Color(0xFFE5484D)
+    fun examInk(): Color = MiuixTheme.colorScheme.error
 
-    /** 日程蓝：与考试红、课程自身色三者互相可辨。 */
+    /** 日程蓝：主题 primary，与课程统计图标（同文件 StatCell）同一槽。 */
     @Composable
-    fun scheduleInk(): Color = if (isDarkTheme()) Color(0xFF6AA8FF) else Color(0xFF3B82F6)
+    fun scheduleInk(): Color = MiuixTheme.colorScheme.primary
 
-    /** 假期红（预览行筹码里的「周五」用）。 */
+    /** 假期红（预览行筹码里的「周五」用）：主题 error 槽。 */
     @Composable
-    fun holidayInk(): Color = if (isDarkTheme()) Color(0xFFFF7A72) else Color(0xFFD93025)
-
-    @Composable
-    private fun isDarkTheme(): Boolean = androidx.compose.foundation.isSystemInDarkTheme()
+    fun holidayInk(): Color = MiuixTheme.colorScheme.error
 }

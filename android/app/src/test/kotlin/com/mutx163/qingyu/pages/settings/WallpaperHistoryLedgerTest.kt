@@ -2,6 +2,7 @@ package com.mutx163.qingyu.pages.settings
 
 import com.mutx163.qingyu.app.TimetableSettingsModel
 import com.mutx163.qingyu.app.WallpaperHistoryRowModel
+import com.mutx163.qingyu.weather.WallpaperEvictionRules
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
@@ -217,7 +218,7 @@ class WallpaperHistoryLedgerTest {
 
     @Test
     fun `淘汰白名单是三路并集`() {
-        val whitelist = WallpaperHistoryLedger.evictionWhitelist(
+        val whitelist = WallpaperEvictionRules.evictionWhitelist(
             allProfilesCurrentPaths = listOf("/profile1.png", null, "", "/shared.png"),
             profilesReadable = true,
             draftPath = "/draft.png",
@@ -234,7 +235,7 @@ class WallpaperHistoryLedgerTest {
     fun `所有档案都没壁纸且当前为空时 淘汰文件仍可删`() {
         // P2-18：空路径列表是「所有档案都没设壁纸」的合法快照，不是「读取失败」。
         // 可读性由 profilesReadable 显式交代，不能拿「路径非空」推断。
-        val whitelist = WallpaperHistoryLedger.evictionWhitelist(
+        val whitelist = WallpaperEvictionRules.evictionWhitelist(
             allProfilesCurrentPaths = emptyList(),
             profilesReadable = true,
         )
@@ -242,7 +243,7 @@ class WallpaperHistoryLedgerTest {
         assertTrue(whitelist.paths.isEmpty())
         assertEquals(
             listOf("/garbage.png"),
-            WallpaperHistoryLedger.deletable(listOf("/garbage.png"), whitelist),
+            WallpaperEvictionRules.deletable(listOf("/garbage.png"), whitelist),
         )
     }
 
@@ -251,20 +252,20 @@ class WallpaperHistoryLedgerTest {
         // 读失败（null / 空表 / 只含空白项）必须由调用方显式说 profilesReadable = false；
         // 不能因为「列表是空的」就推断读取失败，也不能反过来推断读取成功。
         for (profiles in listOf<Iterable<String?>?>(null, emptyList(), listOf(null, "", "  "))) {
-            val whitelist = WallpaperHistoryLedger.evictionWhitelist(
+            val whitelist = WallpaperEvictionRules.evictionWhitelist(
                 allProfilesCurrentPaths = profiles,
                 profilesReadable = false,
                 draftPath = "/draft.png",
                 galleryLedgerPaths = listOf("/gallery.png"),
             )
             assertFalse(whitelist.profileReferencesKnown)
-            assertEquals(emptyList<String>(), WallpaperHistoryLedger.deletable(listOf("/garbage.png"), whitelist))
+            assertEquals(emptyList<String>(), WallpaperEvictionRules.deletable(listOf("/garbage.png"), whitelist))
         }
     }
 
     @Test
     fun `删除清单豁免空串 内置壁纸键 与白名单里的图`() {
-        val deletable = WallpaperHistoryLedger.deletable(
+        val deletable = WallpaperEvictionRules.deletable(
             evictedPaths = listOf("", "builtin:og", "/in-use.png", "/garbage.png"),
             whitelist = EvictionWhitelist(setOf("/in-use.png"), profileReferencesKnown = true),
         )

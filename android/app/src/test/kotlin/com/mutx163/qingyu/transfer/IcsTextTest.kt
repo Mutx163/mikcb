@@ -47,7 +47,7 @@ class IcsTextTest {
     fun unescape_restores_comma_semicolon_colon_newline() {
         // [Dart抄录] ics_text_unescape_test.dart:32-45（该期望值是走完整解析链
         // 含 cleanSummary 后的课程名；裸 unescape 不剥 [16][必修] 尾巴，
-        // 那是 cleanSummary 的职责，见 IcsImportParserTest.cleanSummary_*）
+        // 那是 cleanSummary 的职责（由 IcsImportModel 负责，见 pages/import 的用例）
         assertEquals("高等数学, 实验[16][必修]", unescapeIcsText("高等数学\\, 实验[16][必修]"))
         assertEquals("教一, 202", unescapeIcsText("教一\\, 202"))
         assertEquals("王;老师", unescapeIcsText("王\\;老师"))

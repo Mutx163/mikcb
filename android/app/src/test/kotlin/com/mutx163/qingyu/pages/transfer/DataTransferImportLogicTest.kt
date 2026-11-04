@@ -150,6 +150,81 @@ class DataTransferImportLogicTest {
         assertEquals("transfer_course_location_required", invalidCode(DataTransferImportLogic.parse(broken)))
     }
 
+    @Test
+    fun `BOM 开头的包与 Dart 一样判文件无效`() {
+        // Dart 文件通道：`utf8.decode` 把 BOM 解成 U+FEFF，紧随其后的 `jsonDecode`
+        // 直接抛 FormatException → `transfer_package_json_invalid`。
+        // 这里必须同样拒绝，不能「顺手兼容」成合法包。
+        assertEquals(
+            "transfer_package_json_invalid",
+            invalidCode(DataTransferImportLogic.parse("\uFEFF" + singleProfilePackage)),
+        )
+    }
+
+    @Test
+    fun `多余顶级键与未知实体键按 Dart 口径忽略`() {
+        // `.mikcb` 是纯 JSON 文本，没有 zip 容器，所以不存在「zip 内多余文件」这一形态；
+        // 对应的边界是「包内多余内容」：Dart `fromJson` 只读已知键，未知键一律忽略，
+        // 这里也不能因为多一个键就把整包判非法。
+        val withExtras = singleProfilePackage
+            .replace(
+                """"profiles":[]}""",
+                """"profiles":[],"unexpectedFile":{"name":"readme.txt"},"futureVersion":2}""",
+            )
+            .replace(""""teacher":"张老师"""", """"teacher":"张老师","legacyColor":"#FF0000"""")
+        val parsed = valid(DataTransferImportLogic.parse(withExtras))
+        assertEquals(listOf("c1"), parsed.plan.courses.map { it.id })
+        assertEquals("高等数学", parsed.plan.courses[0].name)
+        assertEquals("张老师", parsed.plan.courses[0].teacher)
+    }
+
+    // ---------- 多缺陷包：首个错误码优先级（已知差异，未修） ----------
+
+    @Test
+    fun `多缺陷包的首个错误码与 Dart 不一致`() {
+        // Dart `TransferPackage._parseList` 是「逐条：先查必填字段 → model parse →
+        // 下一条」，所以**前面实体**的模型错误会先抛出；Kotlin 的
+        // `validateTransferPackageJson` 第 12 步只做字段/类型/id 检查，模型 parse
+        // 统一留到本文件 `parse` 里最后跑 ⇒ 后面实体的缺字段码会先返回。
+        //
+        // 要对齐必须把模型 parse 前移（happy path 双解析）或改成单趟构建，
+        // 改动面过大（还会牵动 core 模型的严格度），故此处只钉当前行为。
+        //
+        // 缺陷 A：第 1 门课的 `sessionNotes.text` 是数字。Dart
+        // `CourseSessionNote.fromJson` 用裸 `as String?` → TypeError →
+        // `_parseList` 包成 `transfer_course_invalid`；Kotlin 同样拒绝（`core/Course.kt`
+        // 已按裸转换口径抛 DartFormatException），但消息是形状说明，映射成
+        // 本仓新增的 `transfer_package_parse_failed`（已知差异 1）。
+        val nestedModelDefect = singleProfilePackage.replace(
+            """"endTime":"09:40"}],"""",
+            """"endTime":"09:40","sessionNotes":{"1":{"text":123}}}],"""",
+        )
+        assertEquals(
+            "transfer_package_parse_failed",
+            invalidCode(DataTransferImportLogic.parse(nestedModelDefect)),
+        )
+
+        // 再加缺陷 B：exams 少了 `name`。Kotlin 的门先把整包字段查完
+        // → `transfer_exam_name_required`；Dart 在 courses 阶段就已经抛
+        // `transfer_course_invalid`，根本走不到 exams。两端都拒绝，但首个码指向不同实体。
+        val twoDefects = nestedModelDefect.replace(""""name":"期中",""", "")
+        assertEquals(
+            "transfer_exam_name_required",
+            invalidCode(DataTransferImportLogic.parse(twoDefects)),
+        )
+    }
+
+    @Test
+    fun `超长字段按原样保留不截断`() {
+        // 两端都没有字段长度硬上限：20 万字符的课名仍是合法字符串，
+        // 不能被「防御式截断」改写成用户没写过的东西。
+        val longName = "长".repeat(200_000)
+        val content = singleProfilePackage.replace(""""name":"高等数学"""", """"name":"$longName"""")
+        val parsed = valid(DataTransferImportLogic.parse(content))
+        assertEquals(longName.length, parsed.plan.courses[0].name.length)
+        assertEquals(longName, parsed.plan.courses[0].name)
+    }
+
     // ---------- 预览正文 ----------
 
     private val eightRows = listOf(

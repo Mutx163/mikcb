@@ -1,5 +1,6 @@
 package com.mutx163.qingyu.pages.statistics.charts
 
+import java.util.Locale
 import kotlin.math.abs
 import kotlin.math.max
 import kotlin.math.min
@@ -500,7 +501,7 @@ object ChartMath {
     /**
      * 名次：**序号即名次**，`[a,b,c,d]` → `[1,2,3,4]`。
      *
-     * 严格对齐 Dart 原实现 `course_ranking.dart:52` `rank: index + 1`。
+     * 严格对齐 Dart 原实现 `course_ranking.dart:46` `rank: index + 1`。
      *
      * ## 已知缺陷（**本批有意不修**）
      *
@@ -520,13 +521,15 @@ object ChartMath {
 
     // ══════════════════════ 文案数字格式 ══════════════════════
 
-    /** 保留一位小数（Dart `toStringAsFixed(1)`）。 */
-    fun oneDecimal(value: Double): String {
-        val rounded = (value * 10.0).roundToInt()
-        val whole = rounded / 10
-        val frac = abs(rounded % 10)
-        return "$whole.$frac"
-    }
+    /**
+     * 保留一位小数（Dart `toStringAsFixed(1)`）。
+     *
+     * 必须是**十进制四舍五入（.5 远离零）**，所以走 `Formatter` 的 HALF_UP；
+     * 早先用 `(value * 10).roundToInt()`，而 Kotlin 的 `roundToInt` 是「.5 朝正无穷」：
+     * `-2.25` 会得到 `-2.2`，Dart 是 `-2.3`。正值看不出差别，负数差值一格字。
+     * `-0.04` 仍输出 `-0.0`（Dart 也保留负号），与历史断言一致。
+     */
+    fun oneDecimal(value: Double): String = String.format(Locale.ROOT, "%.1f", value)
 
     /**
      * 差值文案：正数带 `+`，负数带 `-`，零是 `0`

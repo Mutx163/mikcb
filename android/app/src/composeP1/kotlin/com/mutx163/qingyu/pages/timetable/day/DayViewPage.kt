@@ -365,6 +365,12 @@ fun DayViewPage(
     val scope = rememberCoroutineScope()
     var showWeekSelector by remember { mutableStateOf(false) }
 
+    // 跨零点：`todayDate` 只是注入种子（测试可给固定日期），运行期按真实日历平移。
+    // 只读参数的话，首页常驻不复位时「今天」高亮 / 回今日入口会停在昨天
+    //（Dart 每次构建都重读 `DateTime.now()`，`timetable_screen.dart:1404`/`:1429`/`:1438`）。
+    val seedRealToday = remember { LocalDate.now() }
+    var viewToday by remember { mutableStateOf(todayDate) }
+
     // ── 外部选日（首页星期栏）→ pager ──
     // 作为首页展开层时，星期栏一直由首页画：点另一天不会重建本页（`initial*` 不会重跑），
     // 所以必须在这里把「想看的那天」滚进 pager。日视图自己翻页后经 `onPageChanged`
@@ -387,7 +393,7 @@ fun DayViewPage(
         ?: TimetableDateLogic.currentSemesterWeek(
             semesterStart = semesterStartDate,
             totalWeeks = totalWeeks.coerceAtLeast(1),
-            today = todayDate,
+            today = viewToday,
         )
         ?: initialWeek
 
@@ -395,17 +401,17 @@ fun DayViewPage(
     val currentTarget = DayViewPaging.targetForGlobalPage(visibleDays, pagerState.currentPage)
     val currentTargetWeek = currentTarget?.week ?: initialWeek
     val currentTargetDayOfWeek = currentTarget?.dayOfWeek
-        ?: DayViewPaging.normalizeDayOfWeek(visibleDays, todayDate.dayOfWeek.value)
+        ?: DayViewPaging.normalizeDayOfWeek(visibleDays, viewToday.dayOfWeek.value)
     val isCurrentPageToday = currentTarget != null &&
         if (semesterStartDate != null) {
             TimetableDateLogic.dateForWeekDay(
                 semesterStart = semesterStartDate,
                 week = currentTarget.week,
                 dayOfWeek = currentTarget.dayOfWeek,
-            ) == todayDate
+            ) == viewToday
         } else {
             // 没设开学日：与装配器同口径——同一周内、星期相同才算今天。
-            currentTarget.dayOfWeek == todayDate.dayOfWeek.value && currentTarget.week == todayWeek
+            currentTarget.dayOfWeek == viewToday.dayOfWeek.value && currentTarget.week == todayWeek
         }
 
     // ── 1 Hz 局部进度心跳驱动 ──
@@ -421,6 +427,7 @@ fun DayViewPage(
             delay(1000L)
             val now = LocalDateTime.now()
             currentMinuteOfDay = now.hour * 60.0 + now.minute + now.second / 60.0
+            viewToday = TimetableDateLogic.rollTodayDate(todayDate, seedRealToday, now.toLocalDate())
         }
     }
 
@@ -493,7 +500,16 @@ fun DayViewPage(
     // σ = 0 是**有效的清档**（Dart 清澈档）：背景原样透出、不跑高斯，连预糊也省掉。
     val cardPreblurActive = cardGlassActive && cardBlurSigmaPx > 0f
     // 浮钮只在「当前看的不是今天」时出现；不可见就不为它录整屏。
-    val showsBackToToday = !isCurrentPageToday
+    // 今天还必须是可见星期、且落在学期内（Dart `_canNavigateDayViewToToday`，
+    // `timetable_screen.dart:1428-1435`：假期/学期末、或今天那个星期被隐藏时不给入口，
+    // 免得点一下跳到「上周同一个星期几」；判据收敛在 [TimetableDateLogic.canNavigateToToday]）。
+    val showsBackToToday = TimetableDateLogic.canNavigateToToday(
+        isCurrentPageToday = isCurrentPageToday,
+        visibleDays = visibleDays,
+        semesterStart = semesterStartDate,
+        totalWeeks = totalWeeks.coerceAtLeast(1),
+        today = viewToday,
+    )
     // 浮钮与玻璃坞同一档：真有壁纸 + 设备支持 runtime shader + 坞本身是玻璃材质。
     // 只是「要不要录整屏」的判据；真正的档位判断在共用件里再做一次。
     val floatingGlassActive = showsBackToToday &&
@@ -680,7 +696,7 @@ fun DayViewPage(
                         TimetableWeekdayHeader(
                             week = currentTarget.week,
                             currentWeek = todayWeek,
-                            todayDate = todayDate,
+                            todayDate = viewToday,
                             semesterStartDate = semesterStartDate,
                             visibleDays = visibleDays,
                             style = weekdayStyle,
