@@ -150,13 +150,20 @@ fun BackToTodayFab(
         modifier = modifier,
     ) {
         Box(
-            modifier = Modifier.graphicsLayer {
-                // 阴影与玻璃一起跟手；画到布局边界之外也不裁。
-                clip = false
-                val side = size.minDimension.toFloat().coerceAtLeast(1f)
-                translationX = side * tanh(FAB_DRAG_FOLLOW * interactiveHighlight.offset.x / side)
-                translationY = side * tanh(FAB_DRAG_FOLLOW * interactiveHighlight.offset.y / side)
-            },
+            // 给阴影留出外扩空间：`dropShadow` 的位图是「胶囊 + 2×(radius+spread)」、在胶囊布局
+            // 矩形**之外**绘制。出场动画（`AnimatedVisibility` 的 fadeIn + scaleIn）那一瞬是
+            // 分数倍缩放 + α 合成，越界阴影位图的矩形边界会被露出来 → 读作「矩形框把阴影套住」，
+            // 落定后（scale=1、瞬时层撤掉）又恢复正常。这里把阴影兜进动画节点自己的 bounds 内，
+            // 任何瞬时 α/scale 层都框不到它。调用点再把底部边距减回同一值，胶囊屏上位置不变。
+            modifier = Modifier
+                .graphicsLayer {
+                    // 阴影与玻璃一起跟手；画到布局边界之外也不裁。
+                    clip = false
+                    val side = size.minDimension.toFloat().coerceAtLeast(1f)
+                    translationX = side * tanh(FAB_DRAG_FOLLOW * interactiveHighlight.offset.x / side)
+                    translationY = side * tanh(FAB_DRAG_FOLLOW * interactiveHighlight.offset.y / side)
+                }
+                .padding(FAB_SHADOW_REACH_DP.dp),
         ) {
             Row(
                 modifier = Modifier
@@ -268,6 +275,16 @@ fun BackToTodayFab(
 
 /** 视觉高度下限（dp）；胶囊会随字号撑高，但不会低于 48dp 的命中下限。 */
 const val BACK_TO_TODAY_FAB_MIN_HEIGHT_DP = 48f
+
+/**
+ * 阴影外扩留白（dp）：= 投影 radius(10) + 下移 offsetY(4)。
+ *
+ * `dropShadow` 画在胶囊布局矩形之外；出场动画的 α/scale 瞬时层会把它的矩形边界露出来。
+ * 用这笔留白把阴影兜进动画节点自己的 bounds，任何瞬时层都框不到它。四边取同一个值：
+ * 侧向需要 radius(10)、上沿 radius−offsetY(6)、下沿 radius+offsetY(14)，14 一次盖住。
+ * 调用点须把底部边距减回同一值，胶囊屏上位置才不动。
+ */
+const val FAB_SHADOW_REACH_DP = 14f
 
 /** 文字左右呼吸（dp）：单字居中后胶囊仍有足够的横向体量。 */
 const val BACK_TO_TODAY_FAB_HORIZONTAL_PADDING_DP = 30f

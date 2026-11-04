@@ -45,6 +45,7 @@ import androidx.compose.foundation.clickable
 import com.mutx163.qingyu.app.HomeMenuStyle
 import com.mutx163.qingyu.app.HomeTitleStyle
 import com.mutx163.qingyu.components.BackToTodayFab
+import com.mutx163.qingyu.components.FAB_SHADOW_REACH_DP
 import com.mutx163.qingyu.components.liquid.lens
 import com.mutx163.qingyu.components.liquid.vibrancy
 import com.mutx163.qingyu.core.Course
@@ -87,6 +88,18 @@ import java.time.LocalDateTime
  * 非展开层（独立日页 `c3.day` / 设置页预览）为 null，行为不变。
  */
 val LocalEmbeddedDayGlassBackdrop = compositionLocalOf<Backdrop?> { null }
+
+/**
+ * 首页「周↔日」展开层里，日视图「回今日」浮钮**是否已等展开过渡落定**。
+ *
+ * 由 `TimetableWeekPage` 在渲染 `dayContent` 时用 `dayExpand` 的落定态提供：展开/收起
+ * （dayExpand 动画）期间为 false，到终值后翻转 true。日视图用它门控浮钮 `visible`——
+ * 过渡期间钮不显示、不随转场位移；落定后再交给共用件 [BackToTodayFab] 自带的
+ * fadeIn+scaleIn 淡入，与周视图「回本周」浮钮的出场动效同一份实现。
+ *
+ * 非展开层（独立日页 `c3.day` / 设置页预览）默认 true，行为与旧版一致。
+ */
+val LocalEmbeddedDayTransitionSettled = compositionLocalOf { true }
 
 /**
  * 单日页面全量数据载体。
@@ -479,6 +492,8 @@ fun DayViewPage(
     // 判据：c3.day 展开层由宿主传 0.dp（contentTopInset 非空）；独立日页 / 设置页预览为 null。
     val embeddedInHomePanel = contentTopInset != null
     val embeddedGlass = LocalEmbeddedDayGlassBackdrop.current
+    // 展开过渡是否已落定（见 [LocalEmbeddedDayTransitionSettled]）：独立页/预览恒 true。
+    val embeddedTransitionSettled = LocalEmbeddedDayTransitionSettled.current
 
     val pageBackdropActive = bandBlurActive || cardGlassActive || floatingGlassActive
     val cardGlassSource: Backdrop? = when {
@@ -749,7 +764,8 @@ fun DayViewPage(
                     },
                     label = DayViewStrings.backToTodayShort.zh,
                     contentDescription = DayViewStrings.backToTodayAction.zh,
-                    visible = showsBackToToday,
+                    visible = showsBackToToday &&
+                        (!embeddedInHomePanel || embeddedTransitionSettled),
                     backdrop = if (embeddedInHomePanel) embeddedGlass else pageBackdrop,
                     material = material,
                     hasBackdrop = hasBackdrop,
@@ -758,8 +774,11 @@ fun DayViewPage(
                         // 底边距由宿主按玻璃坞药丸的真实占用算好（见 `HomeFloatingMetrics`）；
                         // 宿主没接时退回旧口径（系统内边距 + 20dp）。
                         .padding(
-                            bottom = floatingButtonBottomInset
-                                ?: (innerPadding.calculateBottomPadding() + 20.dp),
+                            // 共用件为阴影加了 FAB_SHADOW_REACH_DP 的透明留白；这里减回同一值，
+                            // 胶囊屏上位置不变（留白只兜阴影、不挪钮）。
+                            bottom = (floatingButtonBottomInset
+                                ?: (innerPadding.calculateBottomPadding() + 20.dp)) -
+                                FAB_SHADOW_REACH_DP.dp,
                         ),
                 )
             }

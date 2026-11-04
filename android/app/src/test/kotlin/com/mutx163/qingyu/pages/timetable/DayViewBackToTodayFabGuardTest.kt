@@ -251,6 +251,83 @@ class DayViewBackToTodayFabGuardTest {
     }
 
     // ------------------------------------------------------------------
+    // 2026-11-04：两颗「今」钮的两处行为收口（日↔周过渡落定后再淡入 + 阴影不露框）
+    // ------------------------------------------------------------------
+
+    @Test
+    fun `日钮等展开过渡落定后再淡入_对齐周钮出场动效`() {
+        // Part1：日钮 visible 以「嵌入过渡是否落定」为门（独立页/预览恒 true，旧行为不变）。
+        assertTrue(
+            "DayViewPage 没有声明 LocalEmbeddedDayTransitionSettled——展开过渡落定态没处传。",
+            dayPageSource.contains("LocalEmbeddedDayTransitionSettled"),
+        )
+        assertTrue(
+            "日钮 visible 没有接 embeddedTransitionSettled 门控——过渡期间钮会跟着转场一起出现。",
+            dayPageSource.contains("!embeddedInHomePanel || embeddedTransitionSettled"),
+        )
+        // Part1：周页用 dayExpand 的落定态（derivedStateOf，≥0.999 翻一次）provide 下去。
+        assertTrue(
+            "TimetableWeekPage 缺 dayExpandSettled 的 derivedStateOf 落定判据（≥0.999f）。",
+            weekPageSource.contains("dayExpandSettled") && weekPageSource.contains("0.999f"),
+        )
+        assertTrue(
+            "TimetableWeekPage 没在 CompositionLocalProvider 里 provide 落定态——日钮永远等不到 true。",
+            weekPageSource.contains(
+                "LocalEmbeddedDayTransitionSettled provides dayExpandSettled",
+            ),
+        )
+    }
+
+    @Test
+    fun `阴影留白兜进动画节点_不露矩形框`() {
+        // Part2：共用件给动画内容加 FAB_SHADOW_REACH_DP 的透明留白，把越界阴影兜进 bounds。
+        assertTrue(
+            "共用件缺 FAB_SHADOW_REACH_DP 常量——没有阴影外扩留白的口径。",
+            fabSource.contains("FAB_SHADOW_REACH_DP"),
+        )
+        assertTrue(
+            "共用件动画内容没有 .padding(FAB_SHADOW_REACH_DP.dp)——越界阴影在出场首帧会被瞬时层框住。",
+            fabSource.contains("padding(FAB_SHADOW_REACH_DP.dp)"),
+        )
+    }
+
+    // 咬合探针（负例自测）：证明上面两条判据有牙齿。
+    @Test
+    fun `负例自测_去掉settle门或阴影留白应判红`() {
+        fun okPart1(day: String, week: String): Boolean =
+            day.contains("!embeddedInHomePanel || embeddedTransitionSettled") &&
+                week.contains("LocalEmbeddedDayTransitionSettled provides dayExpandSettled")
+        assertTrue("真实源码应通过 Part1", okPart1(dayPageSource, weekPageSource))
+        assertFalse(
+            "去掉日钮 settle 门（visible 退回 showsBackToToday）应判红",
+            okPart1(
+                dayPageSource.replace(
+                    "!embeddedInHomePanel || embeddedTransitionSettled",
+                    "true",
+                ),
+                weekPageSource,
+            ),
+        )
+        assertFalse(
+            "去掉周页 provide 落定态应判红",
+            okPart1(
+                dayPageSource,
+                weekPageSource.replace(
+                    "LocalEmbeddedDayTransitionSettled provides dayExpandSettled",
+                    "",
+                ),
+            ),
+        )
+
+        fun okPart2(fab: String): Boolean = fab.contains("padding(FAB_SHADOW_REACH_DP.dp)")
+        assertTrue("真实共用件应通过 Part2", okPart2(fabSource))
+        assertFalse(
+            "去掉阴影留白 padding 应判红",
+            okPart2(fabSource.replace("padding(FAB_SHADOW_REACH_DP.dp)", "")),
+        )
+    }
+
+    // ------------------------------------------------------------------
     // 判据工具（与 CourseOverviewSortPopupGuardTest 同一套路）
     // ------------------------------------------------------------------
 

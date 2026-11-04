@@ -71,6 +71,7 @@ import androidx.core.view.WindowCompat
 import com.mutx163.qingyu.app.HomeMenuStyle
 import com.mutx163.qingyu.app.HomeTitleStyle
 import com.mutx163.qingyu.components.BackToTodayFab
+import com.mutx163.qingyu.components.FAB_SHADOW_REACH_DP
 import com.mutx163.qingyu.components.liquid.lens
 import com.mutx163.qingyu.components.liquid.vibrancy
 import com.mutx163.qingyu.core.Course
@@ -81,6 +82,7 @@ import com.mutx163.qingyu.pages.shell.HomeBackgroundModel
 import com.mutx163.qingyu.pages.timetable.day.DayViewDataAssembler
 import com.mutx163.qingyu.pages.timetable.day.DayViewStrings
 import com.mutx163.qingyu.pages.timetable.day.LocalEmbeddedDayGlassBackdrop
+import com.mutx163.qingyu.pages.timetable.day.LocalEmbeddedDayTransitionSettled
 import com.mutx163.qingyu.pages.shell.HomeInkPolarity
 import com.mutx163.qingyu.core.Exam
 import com.mutx163.qingyu.core.ScheduleItem
@@ -350,6 +352,12 @@ fun TimetableWeekPage(
     val currentDayMode by rememberUpdatedState(dayMode)
     val dayVisible by remember {
         derivedStateOf { currentDayMode || dayExpand.value > 0f }
+    }
+    // 展开/收起过渡是否**已落定**（dayExpand 到终值）：布尔只在跨过 0.999 时翻一次，
+    // 动画期间不逐帧重组。日视图拿它门控「回今日」浮钮——过渡期间不显示、不随转场位移，
+    // 落定后再按共用件自带的 fadeIn+scaleIn 淡入（与周视图「回本周」同一份出场动效）。
+    val dayExpandSettled by remember {
+        derivedStateOf { currentDayMode && dayExpand.value >= 0.999f }
     }
     // 展开层是否**已经挂载过**：打开过一次就跨开合保活，收起后不再卸载整棵树。
     // 只有「从没打开过」才完全不组合（不占内存、不跑日视图的任何 effect）。
@@ -786,8 +794,11 @@ fun TimetableWeekPage(
                         // 底边距由宿主按玻璃坞药丸的真实占用算好（见 `HomeFloatingMetrics`）；
                         // 宿主没接时退回旧口径（系统内边距 + 72dp），不再自己猜坞的高度。
                         .padding(
-                            bottom = floatingButtonBottomInset
-                                ?: (innerPadding.calculateBottomPadding() + 72.dp),
+                            // 共用件为阴影加了 FAB_SHADOW_REACH_DP 的透明留白；这里减回同一值，
+                            // 胶囊屏上位置不变（留白只兜阴影、不挪钮）。
+                            bottom = (floatingButtonBottomInset
+                                ?: (innerPadding.calculateBottomPadding() + 72.dp)) -
+                                FAB_SHADOW_REACH_DP.dp,
                         ),
                 )
 
@@ -840,6 +851,7 @@ fun TimetableWeekPage(
                                 // 嵌入的日视图做卡片玻璃采样——它自己不再画壁纸，壁纸因此不随展开层移动。
                                 CompositionLocalProvider(
                                     LocalEmbeddedDayGlassBackdrop provides cardGlassSource,
+                                    LocalEmbeddedDayTransitionSettled provides dayExpandSettled,
                                 ) {
                                     dayContent(0.dp, Modifier)
                                 }
