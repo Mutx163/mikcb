@@ -21,10 +21,12 @@ class ImportTemplateModelTest {
     @Test
     fun `模板正文与仓库资产逐字节一致`() {
         val asset = loadAsset()
+        // 行尾归一后再比：asset 在 `git text=auto` / `core.autocrlf=true` 下按工作区可能是 LF，
+        // 而 CONTENT 硬编码了 `\r\n`；除 CRLF/LF 这一处行尾差异外，内容必须逐字相同。
         assertEquals(
             "assets/templates/mikcb_course_import_template.csv 与 ImportTemplateModel.CONTENT 不一致",
-            asset,
-            ImportTemplateModel.CONTENT,
+            normalizeEol(asset),
+            normalizeEol(ImportTemplateModel.CONTENT),
         )
     }
 
@@ -69,6 +71,9 @@ class ImportTemplateModelTest {
         assertEquals("15:40", programming.endTime)
         assertEquals("default", programming.timeSchemeIdOverride)
     }
+
+    private fun normalizeEol(text: String): String =
+        text.replace("\r\n", "\n").replace('\r', '\n')
 
     private fun loadAsset(): String {
         var dir: File? = File("").absoluteFile
