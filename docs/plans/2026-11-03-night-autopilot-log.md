@@ -2312,7 +2312,8 @@ C:\dev\pwsh\pwsh.exe -NoProfile -Command "& 'scripts/test-kotlin-module.ps1' -Mo
 `scripts/test-kotlin-module.ps1 -Module pages/settings -ExtraSources <UpgradeScenarioTest.kt +
 platform/WebdavConfigStoreImpl.kt + platform/SecretCipher.kt + pages/sync/{CloudSyncModel,SyncStrings,
 BackupFileStrings,CloudBackupListModel,CloudSyncPorts}.kt + pages/import/{IcsImportModel,IcsHeaderKeywords}.kt>`
-（pwsh 7）→ **OK (984 tests)**，exit 0（基线 976 + 本文件 8）。
+（pwsh 7）→ **OK (984 tests)**，exit 0。该 `984` 绑定提交 **`5474e692`**：
+**976 基线 + 本文件 8 新增**（格 4 拆 4a/4b）；后续核对数字时请认 `5474e692`，别与其它批次的 `982`/`1005` 混淆。
 
 **7 格 ↔ 对应修复提交**
 
@@ -2343,6 +2344,18 @@ BackupFileStrings,CloudBackupListModel,CloudSyncPorts}.kt + pages/import/{IcsImp
 
 **生产 bug**：无。**未验证项**：真机升级链（旧 Dart 安全存储实际文件 → 同包名覆盖安装 →
 首次进云端页只弹一次）仍只能真机验；本矩阵钉住的是 JVM 可复现的盘上契约与纯判据。
+
+**需真机验收（本矩阵无法覆盖，必须进升级验收清单）**：
+1. 装旧版（Dart 版）并连接 WebDAV、存下应用专用密码 → 记 `FlutterSecureStorage.xml` 存在；
+2. **同包名 `com.mutx163.qingyu`、同签名**覆盖安装新版 → 首次进云端页（`f.cloudSync`），
+   只弹一次「重输密码」提示（`takeLegacyPasswordReentryPrompt` 标记写后不再弹）；
+3. 重输应用专用密码 → 立即恢复「已连接」，能实际同步/拉取备份（不只 UI 变绿）；
+4. 杀进程再进页面 → 不再弹第二次；换档 / 重启后仍不弹。
+
+**死键判据盲区（提醒，勿删）**：`copy_style_lint` 的「代码引用」不把 `test/**` 算作使用，
+而 `cloudSyncBaseUrlSecurityNote` 被 Dart `test/l10n/localization_completeness_test.dart:12-32`
+逐语言断言存在。删该键会同时造成 getter 消失与测试编译/断言失败，属**判据盲区**，
+不是死键——后续任何人不要以 lint「存量 1」为由去删。与 §10.43 的口径一致。
 
 
 
