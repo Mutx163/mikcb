@@ -59,7 +59,7 @@ import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TopAppBar
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.Add
-import top.yukonga.miuix.kmp.icon.extended.Back
+import top.yukonga.miuix.kmp.icon.extended.ChevronBackward
 import top.yukonga.miuix.kmp.icon.extended.ChevronForward
 import top.yukonga.miuix.kmp.icon.extended.ContactsBook
 import top.yukonga.miuix.kmp.icon.extended.Info
@@ -160,7 +160,7 @@ fun CourseOverviewPage(
                             if (rememberShellShouldShowBackButton()) {
                                 IconButton(onClick = onBack) {
                                     Icon(
-                                        imageVector = MiuixIcons.Back,
+                                        imageVector = MiuixIcons.ChevronBackward,
                                         contentDescription = CourseOverviewStrings.cancelAction.zh,
                                         tint = Color(QingyuTheme.actionIcon(dark)),
                                     )

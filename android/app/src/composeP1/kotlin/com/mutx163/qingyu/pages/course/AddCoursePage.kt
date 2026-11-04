@@ -54,7 +54,7 @@ import top.yukonga.miuix.kmp.basic.TextField
 import top.yukonga.miuix.kmp.basic.TopAppBar
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.Add
-import top.yukonga.miuix.kmp.icon.extended.Back
+import top.yukonga.miuix.kmp.icon.extended.ChevronBackward
 import top.yukonga.miuix.kmp.icon.extended.Delete
 import top.yukonga.miuix.kmp.icon.extended.Ok
 import top.yukonga.miuix.kmp.icon.extended.Remove
@@ -223,7 +223,7 @@ fun AddCoursePage(
                     navigationIcon = {
                         IconButton(onClick = ::requestBack) {
                             Icon(
-                                imageVector = MiuixIcons.Back,
+                                imageVector = MiuixIcons.ChevronBackward,
                                 contentDescription = AddCourseStrings.cancelAction.zh,
                                 tint = Color(QingyuTheme.actionIcon(dark)),
                             )

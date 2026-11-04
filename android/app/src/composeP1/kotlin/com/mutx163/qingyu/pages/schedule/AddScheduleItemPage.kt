@@ -52,7 +52,7 @@ import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TextField
 import top.yukonga.miuix.kmp.basic.TextButton
 import top.yukonga.miuix.kmp.icon.MiuixIcons
-import top.yukonga.miuix.kmp.icon.extended.Back
+import top.yukonga.miuix.kmp.icon.extended.ChevronBackward
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import androidx.compose.foundation.layout.imePadding
 import com.mutx163.qingyu.components.QingyuPageTheme
@@ -197,7 +197,7 @@ fun AddScheduleItemPage(
                     navigationIcon = {
                         IconButton(onClick = onBack) {
                             Icon(
-                                imageVector = MiuixIcons.Back,
+                                imageVector = MiuixIcons.ChevronBackward,
                                 contentDescription = ScheduleStrings.cancelAction.zh,
                                 tint = Color(QingyuTheme.actionIcon(dark)),
                             )

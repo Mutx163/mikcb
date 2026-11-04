@@ -51,7 +51,7 @@ import top.yukonga.miuix.kmp.basic.TextButton
 import top.yukonga.miuix.kmp.basic.TopAppBar
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.Add
-import top.yukonga.miuix.kmp.icon.extended.Back
+import top.yukonga.miuix.kmp.icon.extended.ChevronBackward
 import top.yukonga.miuix.kmp.icon.extended.ContactsBook
 import top.yukonga.miuix.kmp.icon.extended.Delete
 import top.yukonga.miuix.kmp.icon.extended.Months
@@ -145,7 +145,7 @@ fun TaskListPage(
                         if (rememberShellShouldShowBackButton()) {
                             IconButton(onClick = onBack) {
                                 Icon(
-                                    imageVector = MiuixIcons.Back,
+                                    imageVector = MiuixIcons.ChevronBackward,
                                     // A8：读屏念「返回」，不是「取消」。
                                     contentDescription = CommonUiStrings.back,
                                     tint = Color(QingyuTheme.actionIcon(dark)),

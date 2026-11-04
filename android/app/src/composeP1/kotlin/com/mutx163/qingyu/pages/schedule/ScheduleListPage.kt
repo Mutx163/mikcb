@@ -44,7 +44,7 @@ import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TextButton
 import top.yukonga.miuix.kmp.overlay.OverlayDialog
 import top.yukonga.miuix.kmp.icon.MiuixIcons
-import top.yukonga.miuix.kmp.icon.extended.Back
+import top.yukonga.miuix.kmp.icon.extended.ChevronBackward
 import top.yukonga.miuix.kmp.icon.extended.ChevronForward
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import com.mutx163.qingyu.components.QingyuPageTheme
@@ -89,7 +89,7 @@ fun ScheduleListPage(
                         if (rememberShellShouldShowBackButton()) {
                             IconButton(onClick = onBack) {
                                 Icon(
-                                    imageVector = MiuixIcons.Back,
+                                    imageVector = MiuixIcons.ChevronBackward,
                                     contentDescription = ScheduleStrings.cancelAction.zh,
                                     tint = Color(QingyuTheme.actionIcon(dark)),
                                 )

@@ -33,7 +33,6 @@ import top.yukonga.miuix.kmp.basic.IconButton
 import top.yukonga.miuix.kmp.basic.Scaffold
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.icon.MiuixIcons
-import top.yukonga.miuix.kmp.icon.extended.Back
 import top.yukonga.miuix.kmp.icon.extended.Copy
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
@@ -51,7 +50,7 @@ import top.yukonga.miuix.kmp.theme.MiuixTheme
  * ## 组件与已知差异
  *
  * - Scaffold / Card / Text / Icon / IconButton 全部官方 Miuix；
- * - 返回与复制用官方图标 `MiuixIcons.Back` / `MiuixIcons.Copy`
+ * - 返回键由共享骨架 `QingyuPageScaffold` 提供；复制用官方图标 `MiuixIcons.Copy`
  *   （依赖 `miuix-icons-android:0.8.8`，用户 2026-10-26 批准）；
  * - **品牌徽标暂用占位**：原图是 Flutter 资产（github/xiaohongshu/qq 是 SVG），
  *   Compose 侧没有 SVG 渲染器、也不应读 `assets/flutter_assets`（Phase 5 会删），

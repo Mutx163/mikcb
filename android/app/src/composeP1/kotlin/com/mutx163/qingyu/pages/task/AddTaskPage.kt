@@ -39,7 +39,7 @@ import top.yukonga.miuix.kmp.basic.TextButton
 import top.yukonga.miuix.kmp.basic.TextField
 import top.yukonga.miuix.kmp.basic.TopAppBar
 import top.yukonga.miuix.kmp.icon.MiuixIcons
-import top.yukonga.miuix.kmp.icon.extended.Back
+import top.yukonga.miuix.kmp.icon.extended.ChevronBackward
 import top.yukonga.miuix.kmp.icon.extended.Delete
 import top.yukonga.miuix.kmp.icon.extended.Ok
 import top.yukonga.miuix.kmp.overlay.OverlayDialog
@@ -171,7 +171,7 @@ fun AddTaskPage(
                     navigationIcon = {
                         IconButton(onClick = onBack) {
                             Icon(
-                                imageVector = MiuixIcons.Back,
+                                imageVector = MiuixIcons.ChevronBackward,
                                 contentDescription = TaskStrings.cancelAction,
                                 tint = Color(QingyuTheme.actionIcon(dark)),
                             )
