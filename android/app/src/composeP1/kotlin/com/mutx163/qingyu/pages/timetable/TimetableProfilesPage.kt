@@ -29,12 +29,9 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.focus.FocusRequester
-import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.nestedscroll.nestedScroll
@@ -528,13 +525,7 @@ private fun CreateProfileDialog(
     onConfirm: (String) -> Unit,
 ) {
     var nameInput by remember { mutableStateOf("") }
-    // Dart `autofocus: true`：打开即弹键盘。要等首帧布局完成再请求焦点，
-    // 节点还没挂上树时 requestFocus 会抛 IllegalStateException。
-    val focusRequester = remember { FocusRequester() }
-    LaunchedEffect(Unit) {
-        withFrameNanos { }
-        runCatching { focusRequester.requestFocus() }
-    }
+    // 拍板 #1：全仓统一「不加自动聚焦」，打开不主动抢焦点（与其余输入弹层同口径）。
 
     OverlayDialog(
         show = true,
@@ -550,9 +541,7 @@ private fun CreateProfileDialog(
                 value = nameInput,
                 onValueChange = { nameInput = it },
                 label = TimetableStrings.timetableNameHint.zh,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .focusRequester(focusRequester),
+                modifier = Modifier.fillMaxWidth(),
             )
 
             Row(
@@ -593,12 +582,7 @@ private fun RenameProfileDialog(
     onConfirm: (String) -> Unit,
 ) {
     var nameInput by remember(profile) { mutableStateOf(profile.name) }
-    // 与新建框同口径：打开即聚焦名称输入框。
-    val focusRequester = remember { FocusRequester() }
-    LaunchedEffect(Unit) {
-        withFrameNanos { }
-        runCatching { focusRequester.requestFocus() }
-    }
+    // 拍板 #1：全仓统一「不加自动聚焦」，打开不主动抢焦点（与其余输入弹层同口径）。
 
     OverlayDialog(
         show = true,
@@ -614,9 +598,7 @@ private fun RenameProfileDialog(
                 value = nameInput,
                 onValueChange = { nameInput = it },
                 label = TimetableStrings.timetableNameHint.zh,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .focusRequester(focusRequester),
+                modifier = Modifier.fillMaxWidth(),
             )
 
             Row(

@@ -69,18 +69,19 @@ class TimetableProfilesDialogGuardTest {
     }
 
     @Test
-    fun `新建与重命名使用主色按钮并自动聚焦`() {
+    fun `新建与重命名使用主色按钮且不加自动聚焦`() {
         listOf(CREATE, RENAME).forEach { marker ->
             val block = functionBlock(pageSource(), marker)
             assertTrue(
                 "$marker 的确认按钮缺 `buttonColorsPrimary()`（主操作不能是默认灰底）",
                 "ButtonDefaults.buttonColorsPrimary()" in block,
             )
-            assertTrue("$marker 缺 FocusRequester", "FocusRequester()" in block)
-            assertTrue("$marker 缺 requestFocus()，打开不会自动弹键盘", "requestFocus()" in block)
-            assertTrue(
-                "$marker 的输入框没挂 focusRequester",
-                "focusRequester(focusRequester)" in block,
+            // 拍板 #1：全仓统一「不加自动聚焦」，打开不主动抢焦点。
+            assertFalse("$marker 不应再加 FocusRequester（拍板 #1 统一不加自动聚焦）", "FocusRequester" in block)
+            assertFalse("$marker 不应再 requestFocus（打开不主动弹键盘）", "requestFocus()" in block)
+            assertFalse(
+                "$marker 的输入框不应再挂 focusRequester",
+                "focusRequester(" in block,
             )
             assertTrue(
                 "$marker 的取消键应为 TextButton",

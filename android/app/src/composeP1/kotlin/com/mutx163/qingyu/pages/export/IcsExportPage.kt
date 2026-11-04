@@ -25,6 +25,7 @@ import com.mutx163.qingyu.components.QingyuPageCardMargin
 import com.mutx163.qingyu.components.QingyuPageList
 import com.mutx163.qingyu.components.QingyuPageScaffold
 import com.mutx163.qingyu.components.QingyuSectionTitle
+import com.mutx163.qingyu.components.QingyuSheet
 import com.mutx163.qingyu.components.QingyuWeightDelta
 import com.mutx163.qingyu.components.shiftWeight
 import com.mutx163.qingyu.theme.QingyuTheme
@@ -259,21 +260,24 @@ fun IcsExportPage(
     }
 
     // ── 导出成功后的二选一（Dart `_buildExportActionMenu`） ──
-    OverlayDialog(
-        // 两行 `ArrowPreference` 自带 16dp；框架侧横向归零 ⇒ 文字单边仍是 16。
-        // 分割线自己补 start = 16，与行文字左缘对齐（否则从 0 起、比文字长一截）。
-        insideMargin = DpSize(0.dp, 16.dp),
+    // 拍板 #8：改底部 `QingyuSheet`，去标题、去右箭头（Dart 是按钮锚点菜单，
+    // 本仓统一收成底部动作弹层，两个动作铺满整宽）。#7 的 42dp 顶部空档按拍板保留。
+    QingyuSheet(
         show = viewState.exportActionMenuVisible,
-        title = ExportStrings.icsExportButton.zh,
         onDismissRequest = onDismissExportMenu,
     ) {
-        Column(modifier = Modifier.fillMaxWidth()) {
-            ArrowPreference(
-                title = ExportStrings.icsExportActionShare.zh,
+        Column(
+            modifier = Modifier.fillMaxWidth(),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            TextButton(
+                modifier = Modifier.fillMaxWidth(),
+                text = ExportStrings.icsExportActionShare.zh,
                 onClick = onShareExported,
             )
-            ArrowPreference(
-                title = ExportStrings.icsExportActionSave.zh,
+            TextButton(
+                modifier = Modifier.fillMaxWidth(),
+                text = ExportStrings.icsExportActionSave.zh,
                 onClick = onSaveExported,
             )
         }
