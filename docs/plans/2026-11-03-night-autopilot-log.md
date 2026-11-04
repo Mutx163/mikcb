@@ -320,6 +320,15 @@ copy_style 超宽债 203 → **191 条**。已清 4 键 × 三语（en/ja/ko）�
 
 > 门 1 前后各核一次 HEAD，均 = `7fee77b5`，**「三块同 HEAD」成立**。
 
+> **取证补充（2026-11-04，回应「门 1 4m56s / 门 2 5m13s 是否 UP-TO-DATE」质疑）**
+>
+> - 门 1 构建日志原文：`> Task :app:compileDevDebugKotlin`（**无 `UP-TO-DATE` / `FROM-CACHE` 后缀 = EXECUTED**）；收尾 `13 actionable tasks: 8 executed, 5 up-to-date`。
+> - 门 2 构建日志原文：`> Task :app:testDevDebugUnitTest`（同样无后缀 = **EXECUTED**）；收尾 `35 actionable tasks: 24 executed, 11 up-to-date`。同日志里的 `> Task :app:compileDevDebugKotlin UP-TO-DATE` 只是**依赖复用**（门 1 刚编过），不代表被测任务未跑。
+> - **强制重跑复核**（同 HEAD `7fee77b5` 的全新只读 worktree + `--rerun-tasks`，仍走 `scripts/safe-gradle.ps1` 互斥锁）：09:37:26→09:47:05，`BUILD SUCCESSFUL in 9m 27s`，`35 actionable tasks: 34 executed, 1 up-to-date`。
+> - `TEST-*.xml` 取回：**543 个**，mtime 全部落在 **09:46:54–09:46:55**（本轮重跑区间内）；聚合 **6697 tests / 543 suites / 0 failed / 0 error / 0 skipped**，与首跑数字逐项一致。
+> - 结论：**首跑与重跑均为真跑**；4m56s/5m13s 与早期 18m48s/19m22s 的差异来自 daemon 冷热与增量缓存（早期为冷构建），不是复用旧产物。
+> - 证据文件（workspace 根，不在仓内）：`final-gate1.log` / `final-gate2.log` / `final-rerun-gate12.log` / `final-rerun-gate12-xml-manifest.txt`。
+
 **② 白名单三元组（FINAL HEAD）**
 
 `TOTAL 47 / COVERED 47 / UNCOVERED 0 / ENTRIES 16 @ 7fee77b5 @ 2026-11-04 09:13`
