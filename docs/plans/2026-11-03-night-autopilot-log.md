@@ -297,6 +297,7 @@ copy_style 超宽债 203 → **191 条**。已清 4 键 × 三语（en/ja/ko）�
 | `58693492` | **48** | **48** | **0** ✅ | 16 | 2026-11-04 00:05 |
 | `a7eef5be` | **48** | **48** | **0** ✅ | 16 | 2026-11-04 00:19 |
 | `d53b8ae6` | **48** | **48** | **0** ✅ | 16 | 2026-11-04 00:35 |
+| `f52fa36f` | **47** | **47** | **0** ✅ | 16 | 2026-11-04 08:05 |
 
 - **`c4587694` 收口**：课表线把 `TimetableGridMetrics.kt:57` 两处兜底时刻改 `Locale.ROOT` 后，UNCOVERED 归零。**`pages/timetable` 条目已消失**（不再需要），**`time_scheme` 条目仍在**（其站点未修，属作用域外）；条目数仍 16（删 timetable 的同时此前拆分为精确到包的登记形态不变）。
 
@@ -450,6 +451,7 @@ _（空，各线按「键名建议 / 所在文件:行号 / 中文原文 / 占位
 3. **（L3→L4 跨线移交）`LanTransferSettingsStore` 读改写非原子**：设置落盘加锁缺口，转 L4 在 `services/**` 侧统一处理（见「九」L3 裁决 3、10.8 L3 条）。
 4. **（L2 报）天气线接线需改壳**：本轮不做，待 Lead 决定壳文件改动排期（见「九」L2 裁决 2）。
 5. **（L2 报）情侣冲突预览半边需 partner 数据源**：本轮不做，待 Lead 决定数据源方案（见「九」L2 裁决 2）。
+6. **（10.44 移交·待接线）`clampWeekToSettings` 已就绪（`f52fa36f`）**：API 只算不写，**接线点 = `TimetableHost` 分钟心跳的跨日分支**（现调 `weekToCommitOnDayChange` → `onWeekChanged`）；接线时先用 `repository.clampWeekToSettings(week)` 夹取再写，解决学期结束后 `currentSemesterWeek` 返回 null ⇒ 停在旧周。归属 **timetable / 首页线**。
 
 ### 10.6 冲突记录
 
@@ -847,7 +849,9 @@ _（空，各线按「键名建议 / 所在文件:行号 / 中文原文 / 占位
 | **`0d38f686`** | 门 1 `:app:compileDevDebugKotlin` | ✅ **绿（exit=0，BUILD SUCCESSFUL）** | **06:46:42→07:05:50** | **18m48s（Gradle）/ 19m08s 墙钟** | 同一 worktree 切 HEAD 后重跑，`compileDevDebugKotlin` 3 executed / 10 up-to-date，无 error，仅存量 warning |
 | **`0d38f686`** | 门 2 `:app:testDevDebugUnitTest` | ✅ **绿（exit=0，BUILD SUCCESSFUL）** | **07:09:45→07:29:40** | **19m22s（Gradle）/ 19m55s 墙钟** | **6626 tests / 532 suites / 0 failed / 0 error / 0 skipped**（按 worktree 根 `build/app/test-results/testDevDebugUnitTest/TEST-*.xml` 汇总）。`f40f998c` 那 1 例（`TimetableSettingsModelTest.corruptSettingsJsonIsArchivedAndDefaultsAreReturned:813`）**已由 `d00b284e` 修好并归零**；`WebdavHttpTransportTest.getBytesGivesUpAfterMaxRedirects` **未复现**，不计 flaky |
 
-> **结论代言 `0d38f686`（门1 ✅ + 门2 ✅，6626/0）**；主工作树当时 30 个未提交文件（他线在途），未混入。跑完 HEAD 又前移到 `13ba097a`（新增 6 条：`8821ced7`/`010c2e21`/`16717a2e`/`b3ffa81f`/`77974526`/`13ba097a`），**这 6 条不在本结论内，须再重跑**。
+> **最新完整绿 = `0d38f686`（门 1 + 门 2，6626 tests / 0 failed）；其后的 HEAD 全部未覆盖。** 主工作树当时 30 个未提交文件（他线在途），未混入。其后到 `a5634e51` 又落 11 条、到 `f52fa36f` 再落 4 条（`b7732ff1`/`e8e27ce8`/`72d42643`/`3bac8338`），均**不在本结论内**。
+
+> **检查点策略改（2026-11-04 07:50 起，Lead 定）**：A 线**不再自行追 HEAD**。等 Lead 的「冻结」信号，届时取最终 HEAD 跑门 1 → 门 2 →（门 3/门 4 直接用同步线 lint 结果，不重复跑）一次成型。冻结前 A 线只做两件：`git fetch` + 补推保远端不缺账；维护日志与门禁表措辞。
 
 **自上次门禁以来的变更清单（`f40f998c..0d38f686`，共 19 条）**
 1. `60b4bc91` 对齐桌面快照 `nextExamDaysUntil` 到生成时刻并补 Locale 回归测试
@@ -874,7 +878,7 @@ _（空，各线按「键名建议 / 所在文件:行号 / 中文原文 / 占位
 
 **最新批次（`13ba097a..66287833`，5 条，已推，同样未含在本结论内）**：`2e735b9d` fix(transfer): LAN HTTP 体超限/超时错误码对齐 Dart；`6a00dd98` test(l0): pages/sync 模块补纯 Kotlin 依赖；`d39c4a49` l10n: 新增 `webdavPasswordReentryBody`；`46280a4b` feat(sync): 升级后一次性 WebDAV 密码重填提示；`66287833` docs: pages/sync L0 自包含记录。
 
-- **越界提交（记录，不回滚）**：`d39c4a49` 由他线直接改 `lib/l10n/app_en/ja/ko/zh/zh_HK/zh_TW.arb` 六份 + `app_localizations*.dart` 生成文件（共 11 文件）。按 §六「六份 ARB 只归 A」及 C 线约束「不动 ARB，需要的键报给 A」，该键应由 A 线落。本轮只记录，不回滚；A 线待复核 6 语言文案一致性、`l10n_untranslated.json` 与生成产物是否需重跑 `gen-l10n`。
+- **ARB 归属临时授权（仅此一个键，归属同步线）**：`d39c4a49` 改六份 `lib/l10n/*.arb` + `app_localizations*.dart`（共 11 文件）。**Lead 追认：同步线按此前授权做的（重输提示文案只允许一个键 `webdavPasswordReentryBody`），归属临时归同步线，ARB 归 A 的规则并未失效。** **A 线复核（HEAD `a5634e51`，2026-11-04 07:45）**：①六份 ARB 键集完全一致、各 **3009** 键，本键六份各 1 处；②`dart run tool/copy_style_lint.dart` **exit=0**——超宽 130（存量冻结 130，新增 **0**）、死键 1（存量 1，新增 **0**）、复述 0，**本键不在任何超宽/死键清单**；③`flutter gen-l10n` **exit=0** 且 `git status lib/l10n` **无差异**（生成物与 ARB 一致）；④Kotlin 侧 `SyncStrings.kt:87/262` 已用 `ArbText` + 进 `allTexts`，非死键。**边界收紧：不再允许其它线新增 ARB 键，任何新键一律先报 Lead。**
 
 - `5289c6da` 门 1 ✅ 绿（02:13:05→02:27:44，Gradle 14m00s / 墙钟 14m39s，exit=0）——A+B 迁移后的首次全量主源集编译。
 - `df1a9873` 门 1 ✅ 绿 / 门 2 ❌ 红（数字同上）。
@@ -2236,12 +2240,34 @@ KDoc 要点（均写进方法注释）：
 C:\dev\pwsh\pwsh.exe -NoProfile -Command "& 'scripts/test-kotlin-module.ps1' -Module 'pages/settings' -ExtraSources 'android/app/src/test/kotlin/com/mutx163/qingyu/app/TimetableRepositoryWeekClampTest.kt'"
 ```
 
-- **OK (982 tests)** = `pages/settings` 既有 976 例 + 本批 6 例（共享目录含 `app/` 与 `transfer/`，他线新增文件已计入）。
+- **OK (982 tests)（定型，绑定提交 `f52fa36f`）** = `pages/settings` 既有 976 例 + 本批 6 例（共享目录含 `app/` 与 `transfer/`，他线新增文件已计入）。**接手提示：`976` 是本批之前 `pages/settings` 的旧基线，`982` 是含本批 6 例后的定型数字，两者不是冲突。**
 - 探针期：`Tests run: 982, Failures: 2`（仅上述两条）。
 - 中途一次编译因他线 `transfer/LegacyBackupPackage.kt` 未落盘 unresolved（非本批），其修复后全量复跑绿；曾用 `-ExcludeShared transfer` 单独验证探针红。
 - 未裸跑 gradlew、未跑整包。
 
 **边界**：未碰禁碰清单（`app/AppGlobalSettingsStore.kt`、`app/TimetableSettingsModel.kt`、`pages/sync/**`（含 `TimetableSnapshotBridge.kt`）、`pages/ShellPageIndex.kt`、`pages/ShellWiring.kt`、`pages/import/**`、`pages/timetable/**`、`components/**`、`theme/`、两个壳 Activity、`lib/ui/`、路由表）。`pages/sync` 的 C3 未跑（同步线在修）。
+
+---
+
+### 10.45 门 4 死键核查：`cloudSyncBaseUrlSecurityNote` **保留不删** + 课卡墨色 parity backlog（2026-11-04，只读核查，HEAD `3bac8338`）
+
+**结论：不删，未改任何 ARB / 生成物。** 全仓 `Grep cloudSyncBaseUrlSecurityNote` 共 37 行命中；除六份 ARB 与 `gen-l10n` 产物（`app_localizations.dart` / `_en/_ja/_ko/_zh` 的 getter）外，**唯一代码引用是 `test/l10n/localization_completeness_test.dart`**：
+
+- `:12` / `:46` / `:74` 三个用例直接以该键命名（exists / not-Chinese / ARB containsKey）；
+- `:16/:24/:32/:40` 四语言 getter `isNotEmpty` 断言；
+- `:54/:61/:68` 非中文语言不得出现中文/须含日韩文断言；
+- `:90/:95` 直接 `jsonDecode` 六份 ARB 后 `containsKey` + 非空断言。
+
+删键（ARB + `gen-l10n`）会立刻造成：①生成物 getter 消失 ⇒ 该 Dart 测试**编译失败**；②ARB `containsKey` 用例**断言失败**。`copy_style_lint` 的死键口径不把 test 引用算「代码使用」（基线 `tool/copy_style_dead_keys_baseline.txt:17` 就是它），故长期显示「存量 1」。按指令「有引用就不要删」，本轮维持原状；若 Lead 要清，须一并授权改该 Dart 测试（本轮未授权，且不原文改写 Dart）。
+
+**门 4 复跑（未改任何文件）**：行内超宽 **130 存量 / 0 新增**；死键 **1 存量 / 0 新增**；说明句复述 **0 / 0**；开发者页 11 条不计入。与 10.43 完全一致。
+
+**backlog（观感级 parity，本轮不改代码）**：周/日卡片存在两套墨色判据，视图层未走模型层：
+
+- **Kotlin 视图层（偏差方）**：`composeP1: pages/timetable/CourseGridCard.kt:96-99` `calculateInk`、`composeP1: pages/timetable/day/DayViewCommon.kt:59-62` `calculateCardInk` —— 亮度用 BT.601 `0.299R+0.587G+0.114B`（原始分量，非相对亮度），**魔法阈值 `0.55`**，深墨 `0xFF1E293B`；调用点 `DayViewCourseCard.kt:98`、`DayViewScheduleCard.kt:72`。
+- **Kotlin 模型层（已对齐）**：`main: pages/timetable/CourseCardInk.kt:30-31` `LIGHT_INK 0xFFFFFFFF` / `DARK_INK 0xFF1A1A1A`，判据 `bestContrastInk`（`:47-53`）比 WCAG 相对对比度。
+- **Dart 基准**：`lib/utils/course_color_palette.dart:331-339` `_bestContrastInk` = `0xFFFFFFFF` / `0xFF1A1A1A` + `courseCardContrastRatio`（`:267-274`）；`lib/utils/card_surface_ink.dart:40-43` `cardInkDark 0xFF1A1A1A` / `cardInkLight 0xFFFFFFFF`，`bestCardInkForLuminance`（`:49-57`）同样比对比度（黑白相等点落在相对亮度 ≈0.20，不是 0.55）。
+- **偏差**：色值 `#1E293B` vs `#1A1A1A`；判据 `0.55`（原始分量加权）vs WCAG 对比度。后果：边界色卡片可能黑/白判反、或深墨肉眼深一档。**属像素级观感**，等 Lead 裁决是否对齐。若对齐，最小改法是两处 helper 直接委托 `CourseCardInk`（不新增令牌、不就散改色值）。
 
 ---
 
