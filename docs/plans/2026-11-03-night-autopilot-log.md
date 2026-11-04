@@ -2429,6 +2429,7 @@ store·壳授权 / C1 与门禁）。
 **视觉增量（披露）**：6 处换完后唯一可见增量是 **R2 要求的滚动条 + 末端轻震/过度回弹**
 （`QingyuPageList` 既定行为，也是这轮收口的合规目标）；间距、内边距、间距（spacedBy）、
 Toast 偏移逐项对照后与换前一致，未做「差不多就行」的近似。
+**唯一可见增量 = 滚动条 + 末端轻震（R2 合规项，已由 Lead 批准保留，不回退）**。
 
 **组件改动**：`components/QingyuPageList.kt` 新增 `extraTopPadding: Dp = 0.dp`（默认 0，现有调用零变化），
 只用于承接各页原先「顶栏下再垫 4/8dp」的本地留白，避免为对齐 8dp 去动 `contentPadding` 语义。
@@ -2458,11 +2459,14 @@ Toast 偏移逐项对照后与换前一致，未做「差不多就行」的近�
 
 `-Module guide` 需要 `-ExtraSources android/app/src/main/.../pages/shell/ShellPageCatalog.kt`：
 guide 域既有测试（`MoreFeaturesNavigationGuardTest`）引用 `ShellPageCatalog`，而该文件不在 guide
-模块目录 —— 这是**既有模块缺口**，与本批无关；使用 escaping door 已在此明示。
+模块目录 —— **既有模块缺口，非本批引入**；使用 escaping door 已在此明示。
 `pages/exam|guide` 的 composeP1 页面本身不进 L0 编译，**不声明 UI 编译通过**，由门 2 覆盖。
 
 **样式脚本回归**：`-Domain all` 仍 **5 处**（全部 timetable，明细 10），本批未新增命中；
 `-Domain components` 仍 0 处。
+
+**本域收口汇总**：收口 **6 处** / 结构性例外 **3 处**（含 2 处基线例外）/ 跳过 **0**；
+`-Domain all` 仍 **5 处**、明细 **10**、基线 **5 行**。
 
 **边界声明**：只动 `components/QingyuPageList.kt`、6 个页面文件与 3 个守卫测试；
 `pages/ShellPageIndex.kt`、`pages/ShellWiring.kt`、`app/TimetableStore.kt`、
