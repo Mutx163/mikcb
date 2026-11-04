@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
@@ -2281,12 +2282,14 @@ private fun SettingsScreen(
  * 课程卡片 / 课表页面两页顶部那块预览：**真组件预览**（2026-11-03 用户口径「真组件挖洞」，
  * 2026-11-04 用户口径「完整显示星期栏 + 上/下不要圆角」）。
  *
- * 旧的自绘缩略图（星期栏 + Canvas 网格 + 色块）已被用户否掉，必须露出真实组件。2026-11-04
- * 起不再用「整屏 1:1 缩放进圆角窗口」（那样只露出顶部 app 标题行、星期栏被裁、四角全圆）：
- * 改用 [QingyuPreviewCutout] 的**按框自适应**模式（`fitToBox = true`、`cornerRadius = 0.dp`
- * ⇒ 不缩放、不裁、方角对齐 Flutter），[TimetableHost] 以 `previewMode = true` 组合——
- * 不画状态栏留白与顶栏「轻屿课表」，[TimetableWeekdayHeader] 当首行，网格按预览框高自适应
- * 铺满。点击 / 长按 / 内部滚动在组件里整体关掉，读屏也聚焦不到内部控件（见该组件 KDoc）。
+ * 旧的自绘缩略图（星期栏 + Canvas 网格 + 色块）已被用户否掉，必须露出真实组件。
+ * 2026-11-04（第二轮）用户口径：预览要**和首页同比例**（不被 40% 高预览框逐节压扁）+ **框内上下滑**。
+ * 对齐发布版（v2.1.4.1 `settings_course_card.dart` 的 `SingleChildScrollView` 套真
+ * `TimetableWeekPreview`）：走 [QingyuPreviewCutout] 的**静态 1:1 裁窗 + 框内滚动**分支
+ * （`fitToBox = false`、`contentWidth = 窗口宽` ⇒ scale=1 整像素不缩放、`contentHeight = 整屏高`
+ * ⇒ 按首页节高自然排版、`cornerRadius = 0.dp` 方角），[TimetableHost] 以 `previewMode = true`
+ * 组合（不画状态栏留白与顶栏、[TimetableWeekdayHeader] 当首行）。点击 / 长按 / 内部滚动在组件里
+ * 整体关掉、读屏聚焦不到内部控件；玻璃恒开、不做逐帧 graphicsLayer 缩放。
  *
  * 数据：课程随仓储快照订阅实时变；显示偏好取**宿主当前草稿**——两页宿主把 `model`
  * 顺着 `preview(model)` 传进来（唯一取用口径 `settingsPreviewDraft`），改开关 / 拖滑杆
@@ -2296,26 +2299,36 @@ private fun SettingsScreen(
 @Composable
 private fun SettingsTimetablePreviewSlot(wiring: ShellWiring, settingsModel: TimetableSettingsModel) {
     val configuration = LocalConfiguration.current
-    QingyuPreviewCutout(
-        contentWidth = configuration.screenWidthDp.dp,
-        contentHeight = configuration.screenHeightDp.dp,
-        // 2026-11-04：方角（对齐 Flutter 已发布版预览无圆角）+ 按框自适应（不缩放不裁）。
-        cornerRadius = 0.dp,
-        fitToBox = true,
-    ) {
-        TimetableHost(
-            repository = wiring.timetable,
-            // 点击在挖洞件的手势层就被关掉，这些回调永远不会被调用；给空实现让
-            // 「预览不可操作」这件事只有一处真源（外观编辑页同一口径）。
-            onOpenAddCourse = { _, _ -> },
-            onOpenCourse = {},
-            settingsModel = settingsModel,
-            // 预览不接截屏监听：真首页那一份已经接上了，再来一份等于截一次屏
-            // 弹两次提示（Dart `_isPreview` 守卫，timetable_screen.dart:913-917）。
-            screenshotSharePromptEnabled = false,
-            // 2026-11-04：预览模式——不画状态栏留白与顶栏，星期栏当首行、网格按框高自适应。
-            previewMode = true,
-        )
+    // 2026-11-04 用户口径：预览要**和首页同比例**（不被 40% 高的预览框压扁）+ **框内上下滑**。
+    // 对齐发布版（v2.1.4.1 `settings_course_card.dart` 的 `SingleChildScrollView` 套真
+    // `TimetableWeekPreview`）：静态挖洞「按窗口宽 1:1 排版（scale = 窗口宽 / 内容宽 = 1，
+    // 整像素、不缩放）+ 内容高给整屏高 + 框内纵向滚动」，玻璃恒开、不做逐帧 graphicsLayer 缩放。
+    BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
+        QingyuPreviewCutout(
+            // 内容宽 = 窗口宽 ⇒ scale 恒为 1（1:1、整像素、不缩放）。
+            contentWidth = maxWidth,
+            // 内容高 = 整屏高 ⇒ week 网格按首页节高自然排版（不是按 40% 框高逐节压扁），
+            // 超高部分在预览框内纵向滚动查看。
+            contentHeight = configuration.screenHeightDp.dp,
+            // 方角（对齐 Flutter 已发布版预览无圆角）。
+            cornerRadius = 0.dp,
+            // 走「静态裁窗 + 框内滚动」分支（不再按框自适应压扁）。
+            fitToBox = false,
+        ) {
+            TimetableHost(
+                repository = wiring.timetable,
+                // 点击在挖洞件的手势层就被关掉，这些回调永远不会被调用；给空实现让
+                // 「预览不可操作」这件事只有一处真源（外观编辑页同一口径）。
+                onOpenAddCourse = { _, _ -> },
+                onOpenCourse = {},
+                settingsModel = settingsModel,
+                // 预览不接截屏监听：真首页那一份已经接上了，再来一份等于截一次屏
+                // 弹两次提示（Dart `_isPreview` 守卫，timetable_screen.dart:913-917）。
+                screenshotSharePromptEnabled = false,
+                // 预览模式：不画状态栏留白与顶栏，星期栏当首行。
+                previewMode = true,
+            )
+        }
     }
 }
 

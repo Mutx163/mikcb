@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
@@ -18,6 +19,7 @@ import androidx.compose.ui.layout.layout
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import com.mutx163.qingyu.core.PreviewCutoutGeometry
 import com.mutx163.qingyu.pages.settings.consumeAllPointerEvents
@@ -99,6 +101,8 @@ fun QingyuPreviewCutout(
         val scrollState = rememberScrollState()
 
         // ── 底层：真实内容，1:1 排版 + 绘制层缩放，交互与语义全关 ──
+        // 关键：内容随滚动状态**真实位移**（`offset{-scroll}`）——旧实现只滚了顶层空白
+        // Spacer、内容本身没动，等于滚不动；这里补上位移，框内拖动能真的滚起来。
         Box(
             modifier = Modifier
                 .previewContentScaled(
@@ -106,6 +110,7 @@ fun QingyuPreviewCutout(
                     contentWidth = contentWidth,
                     contentHeight = contentHeight,
                 )
+                .offset { IntOffset(0, -scrollState.value) }
                 .consumeAllPointerEvents()
                 .clearAndSetSemantics { },
         ) {

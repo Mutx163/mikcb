@@ -129,26 +129,38 @@ class SettingsPreviewCutoutGuardTest {
     }
 
     /**
-     * 2026-11-04 用户口径：两块设置页预览「完整显示星期栏 + 上/下不要圆角」。
-     * 钉住壳里的预览槽必须走**按框自适应**（fitToBox=true，不再整屏 1:1 缩放裁剪）、
-     * **方角**（cornerRadius=0.dp，对齐 Flutter 已发布版）、并传 previewMode=true
-     * （不画状态栏留白与顶栏、星期栏当首行、网格按框高自适应）。改回缩放裁剪或圆角都会红。
+     * 2026-11-04 用户口径：两块设置页预览「和首页同比例 + 框内上下滑 + 完整显示星期栏 + 无圆角」。
+     * 钉住预览槽走**静态 1:1 裁窗 + 框内纵向滚动**：`contentWidth = 窗口宽`（scale 恒 1、整像素、
+     * 不缩放）、`contentHeight = 整屏高`（按首页节高自然排版、不被 40% 高预览框逐节压扁）、
+     * `fitToBox = false`（走滚动分支而非按框自适应）、`cornerRadius = 0.dp`（方角）、
+     * `previewMode = true`（不画状态栏/顶栏、星期栏当首行）。
+     * 改回 `fitToBox = true`（按框压扁）、圆角、或内容不再取整屏高都会红。
      */
     @Test
-    fun `两页预览槽走按框自适应且无圆角`() {
+    fun `两页预览槽走1比1静态裁窗加框内滚动且无圆角`() {
         val shell = codeOf(sourceOf("main/kotlin/com/mutx163/qingyu/pages/ShellPageIndex.kt"))
         assertEquals(
-            "设置页预览槽必须 fitToBox = true（按框自适应；整屏 1:1 缩放会只露顶部、裁掉星期栏）",
+            "预览槽必须 fitToBox = false（走静态裁窗 + 框内滚动分支，不再按框自适应压扁）",
             1,
-            Regex("fitToBox = true").findAll(shell).count(),
+            Regex("fitToBox = false").findAll(shell).count(),
         )
         assertEquals(
-            "设置页预览槽必须 cornerRadius = 0.dp（方角，对齐 Flutter 已发布版无圆角）",
+            "预览槽 contentWidth 必须取窗口宽（=maxWidth，scale 恒 1、整像素不缩放）",
+            1,
+            Regex("contentWidth = maxWidth").findAll(shell).count(),
+        )
+        assertEquals(
+            "预览槽 contentHeight 必须取整屏高（按首页节高自然排版、不被 40% 框压扁）",
+            1,
+            Regex("contentHeight = configuration\\.screenHeightDp\\.dp").findAll(shell).count(),
+        )
+        assertEquals(
+            "预览槽必须 cornerRadius = 0.dp（方角，对齐 Flutter 已发布版无圆角）",
             1,
             Regex("cornerRadius = 0\\.dp").findAll(shell).count(),
         )
         assertEquals(
-            "设置页预览槽必须传 previewMode = true（不画状态栏/顶栏、星期栏当首行）",
+            "预览槽必须传 previewMode = true（不画状态栏/顶栏、星期栏当首行）",
             1,
             Regex("previewMode = true").findAll(shell).count(),
         )
