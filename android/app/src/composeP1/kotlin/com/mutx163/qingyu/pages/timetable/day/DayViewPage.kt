@@ -570,14 +570,14 @@ fun DayViewPage(
         containerColor = if (backdrop == null && !embeddedInHomePanel) scaffoldBg else Color.Transparent,
         modifier = modifier.fillMaxSize(),
     ) { innerPadding ->
-        // 列表底部避让的账（Dart `_glassDockContentScrollInset` + `_backToTodayButtonScrollInset`）：
-        // 坞占用（或系统手势条）打底；「回今日」浮钮可见时再补「钮高 + 间隙」那一段，
-        // 让最后一张卡能滚到钮的上方。浮钮不可见时不为一颗看不见的按钮白留空白。
+        // 底部避让：坞避让取「共享 relief / Scaffold 内边距 / 宿主给的 contentBottomInset」三者较大值
+        //（去重，系统栏不双计；不用 innerPadding+64 魔法值）；「今」浮钮可见（非今天）时再叠一段
+        // 让最后一张卡能滚到钮上方——今天无钮 ⇒ 这段=0，不为看不见的按钮留空白。
         val listBottomInset = maxOf(
-            innerPadding.calculateBottomPadding() + 64.dp,
-            (contentBottomInset ?: 0.dp) +
-                if (showsBackToToday) HomeFloatingMetrics.BACK_TO_TODAY_SCROLL_EXTRA_DP.dp else 0.dp,
-        )
+            innerPadding.calculateBottomPadding(),
+            com.mutx163.qingyu.components.LocalGlassDockScrollRelief.current,
+            contentBottomInset ?: 0.dp,
+        ) + if (showsBackToToday) HomeFloatingMetrics.BACK_TO_TODAY_SCROLL_EXTRA_DP.dp else 0.dp
         Box(modifier = Modifier.fillMaxSize()) {
         // ── 真实内容录制层（B1）：录 [壁纸 + 预糊层 + 内容 Column]，浮钮在本层之外 ──
         // 只有「回今日」浮钮真要采玻璃时才挂录像（录制 = 整屏离屏重画一帧，门控同 dock）。

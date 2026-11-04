@@ -923,7 +923,7 @@ private fun PagesShell(
                         // 玻璃坞满屏悬浮时，把「坞占用+系统安全区」作为底部滚动余量注入首页根页；
                         // QingyuPageList 自动消费（复刻 Flutter GlassDockScrollReliefScope）。
                         com.mutx163.qingyu.components.LocalGlassDockScrollRelief provides
-                            com.mutx163.qingyu.pages.shell.rememberHomeFloatingInsets(settingsModel).contentBottom,
+                            com.mutx163.qingyu.pages.shell.rememberHomeFloatingInsets(settingsModel).scrollRelief,
                     ) {
                         Box(modifier = Modifier.fillMaxSize()) {
                             Box(

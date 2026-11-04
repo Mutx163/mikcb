@@ -803,15 +803,16 @@ fun TimetableWeekPage(
                         exams = exams,
                         scheduleItems = scheduleItems,
                         now = now,
-                        bottomInset = innerPadding.calculateBottomPadding() +
-                            // 玻璃坞满屏悬浮的底部避让（共享注入，药丸占用+安全区）；
-                            // + 非本周时「回本周」浮钮可见，再叠一段让最后一行能滑到钮上方。
-                            com.mutx163.qingyu.components.LocalGlassDockScrollRelief.current +
-                            if (showBackToCurrentWeek && !dayVisible) {
-                                com.mutx163.qingyu.pages.shell.HomeFloatingMetrics.BACK_TO_TODAY_SCROLL_EXTRA_DP.dp
-                            } else {
-                                0.dp
-                            },
+                        bottomInset = maxOf(
+                            innerPadding.calculateBottomPadding(),
+                            // 玻璃坞满屏悬浮的底部避让（共享注入=药丸总占用，含系统栏）；用 max 去重。
+                            com.mutx163.qingyu.components.LocalGlassDockScrollRelief.current,
+                        ) + if (showBackToCurrentWeek && !dayVisible) {
+                            // 非本周「回本周」浮钮可见：叠一段让最后一行能滑到钮上方；本周无钮=0。
+                            com.mutx163.qingyu.pages.shell.HomeFloatingMetrics.BACK_TO_TODAY_SCROLL_EXTRA_DP.dp
+                        } else {
+                            0.dp
+                        },
                         holidayOf = holidayOf,
                         weatherOf = weatherOf,
                         onCourseClick = onCourseClick,

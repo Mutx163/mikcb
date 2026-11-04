@@ -77,6 +77,24 @@ object HomeFloatingMetrics {
     }
 
     /**
+     * 首页根页**可滚动内容底部避让**的注入值（给 `LocalGlassDockScrollRelief`）。
+     *
+     * 玻璃坞形态 = 药丸总占用（[dockPillOccupancyDp]，**含**系统底安全区）；经典形态 = **0**。
+     *
+     * ⚠️ 消费方必须用 `maxOf(innerPadding.bottom, 本值)` 去重，**不要相加**：
+     * Scaffold 的 `innerPadding.bottom` 通常已含一次系统底安全区，本值（坞档）也含它，
+     * 相加会把系统导航条算两遍。取 max 后：坞档 = 药丸总占用、无坞 = 系统内边距，均只算一次。
+     */
+    fun dockScrollReliefDp(
+        glassDock: Boolean,
+        navigationBarBottomInsetDp: Float,
+    ): Float = if (glassDock) {
+        dockPillOccupancyDp(navigationBarBottomInsetDp)
+    } else {
+        0f
+    }
+
+    /**
      * 日视图列表给「回今日」浮钮额外让出的高度：钮高 + 一个视觉间隙。
      *
      * Dart `_backToTodayButtonScrollInset` 把「浮钮顶边 + 间隙」减去坞避让，

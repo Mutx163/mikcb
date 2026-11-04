@@ -98,18 +98,33 @@ fun QingyuPageList(
     val end = horizontalPadding + contentPadding.calculateEndPadding(layoutDirection)
 
     BoxWithConstraints(modifier = modifier.fillMaxSize()) {
-        // 首页根页（Dock 栈底）底部**动态留白**：视口高 − 末项高，等效让最后一项能顶到
-        // 屏幕最上沿；再叠加坞避让（内容从半透明坞下方穿过）。推入页 / 无坞 = 0，与改动前一致。
-        val rootBottomPadding = if (isDockRootPage) {
-            val lastItemHeight = rememberReachTopLastItemHeight(state, density)
-            (maxHeight - lastItemHeight).coerceAtLeast(0.dp) + dockScrollRelief
+        // 坞避让与 Scaffold 底部内边距去重：两者都可能含系统栏，用 max 取较大，绝不叠加。
+        val dockBottom = maxOf(innerPadding.calculateBottomPadding(), dockScrollRelief)
+        val contentExtraBottom = contentPadding.calculateBottomPadding()
+        // 只有内容**超过视口**时才加「末项到顶」那笔；短列表不加（否则两行也能滚出整屏空）。
+        val contentOverflows by remember(state) {
+            derivedStateOf { state.canScrollForward || state.canScrollBackward }
+        }
+        val reachTop = if (isDockRootPage && contentOverflows) {
+            (maxHeight - rememberReachTopLastItemHeight(state, density)).coerceAtLeast(0.dp)
         } else {
             0.dp
         }
-        val bottom = innerPadding.calculateBottomPadding() +
-            contentPadding.calculateBottomPadding() +
-            rootBottomPadding
-        val padding = PaddingValues(start = start, top = top, end = end, bottom = bottom)
+        // 到顶留白通常大于坞避让，取较大者拼进底部 padding（不再与坞相加，避免双计/超留）。
+        val dynamicBottom = maxOf(dockBottom, reachTop)
+        val padding = PaddingValues(
+            start = start,
+            top = top,
+            end = end,
+            bottom = dynamicBottom + contentExtraBottom,
+        )
+        // 滚动条轨道只含坞/内边距，**不含**「到顶」动态留白，避免滑块比例失真。
+        val trackPadding = PaddingValues(
+            start = start,
+            top = top,
+            end = end,
+            bottom = dockBottom + contentExtraBottom,
+        )
 
         Box(modifier = Modifier.fillMaxSize()) {
             LazyColumn(
@@ -137,7 +152,7 @@ fun QingyuPageList(
                     modifier = Modifier
                         .align(Alignment.CenterEnd)
                         .fillMaxHeight(),
-                    trackPadding = padding,
+                    trackPadding = trackPadding,
                 )
             }
         }
@@ -160,7 +175,9 @@ private fun rememberReachTopLastItemHeight(state: LazyListState, density: Densit
             val info = state.layoutInfo
             val last = info.visibleItemsInfo.lastOrNull()
             if (last != null && last.index == info.totalItemsCount - 1) {
-                with(density) { last.size.toDp() }
+                val measured = with(density) { last.size.toDp() }
+                // 兜底与实测取较大者：末项较矮时用兜底，避免「滚到底瞬间实测变小 → padding 跳一下」。
+                if (measured > ReachTopLastItemFallback) measured else ReachTopLastItemFallback
             } else {
                 ReachTopLastItemFallback
             }

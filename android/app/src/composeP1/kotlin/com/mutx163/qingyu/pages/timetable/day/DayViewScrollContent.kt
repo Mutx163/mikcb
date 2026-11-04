@@ -120,11 +120,13 @@ fun DayViewScrollContent(
     val density = LocalDensity.current
     val isDockRootPage = LocalQingyuPageIsRootEntry.current == true
     BoxWithConstraints(modifier = modifier.fillMaxSize()) {
-        // 首页根页（Dock 栈底）：底部动态留白 = max(原坞/今按钮避让, 视口高 − 末项高)，
-        // 让最后一张卡能顶到屏幕最上沿（因此能滚过底部居中的「今」浮钮）；非根页保持原样。
-        val lastItemHeight = rememberDayReachTopLastItemHeight(lazyListState, density)
-        val reachTop = if (isDockRootPage) {
-            (maxHeight - lastItemHeight).coerceAtLeast(0.dp)
+        // 首页根页（Dock 栈底）且内容**超过视口**时：底部 = max(原坞/今钮避让, 视口高 − 末项高)，
+        // 让最后一张卡能顶到屏幕最上沿（因此滚过底部居中的「今」浮钮）；短列表/非根页保持原避让。
+        val contentOverflows by remember(lazyListState) {
+            derivedStateOf { lazyListState.canScrollForward || lazyListState.canScrollBackward }
+        }
+        val reachTop = if (isDockRootPage && contentOverflows) {
+            (maxHeight - rememberDayReachTopLastItemHeight(lazyListState, density)).coerceAtLeast(0.dp)
         } else {
             0.dp
         }
@@ -256,7 +258,8 @@ private fun rememberDayReachTopLastItemHeight(state: LazyListState, density: Den
             val info = state.layoutInfo
             val last = info.visibleItemsInfo.lastOrNull()
             if (last != null && last.index == info.totalItemsCount - 1) {
-                with(density) { last.size.toDp() }
+                val measured = with(density) { last.size.toDp() }
+                if (measured > DayReachTopLastItemFallback) measured else DayReachTopLastItemFallback
             } else {
                 DayReachTopLastItemFallback
             }

@@ -245,6 +245,8 @@ data class HomeFloatingInsets(
     val buttonBottom: Dp,
     /** 可滚动内容底部避让（从屏幕底端起，已含系统内边距）。 */
     val contentBottom: Dp,
+    /** 注入给首页根页 `LocalGlassDockScrollRelief` 的坞避让：坞档=药丸总占用(含系统栏)，无坞=0。 */
+    val scrollRelief: Dp,
 )
 
 @Composable
@@ -261,6 +263,9 @@ fun rememberHomeFloatingInsets(settingsModel: TimetableSettingsModel?): HomeFloa
                 .dp,
             contentBottom = HomeFloatingMetrics
                 .contentBottomDp(glassDock, navBarBottomInset.value)
+                .dp,
+            scrollRelief = HomeFloatingMetrics
+                .dockScrollReliefDp(glassDock, navBarBottomInset.value)
                 .dp,
         )
     }
