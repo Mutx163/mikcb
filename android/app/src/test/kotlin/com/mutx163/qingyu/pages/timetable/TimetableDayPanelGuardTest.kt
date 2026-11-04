@@ -6,14 +6,11 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 /**
- * 首页「日 ↔ 周」切换对齐**已发布 2141（tag v2.1.4.1）简单面板**的源码守卫。
+ * 首页「日 ↔ 周」切换对齐已发布 2141 实机观感（tag v2.1.4.1）的源码守卫。
  *
- * 2141 的形态：周网格 `alpha=1-value` 淡出；日面板一整块按
- * `progress=easeInOutCubicEmphasized`、`widthFactor=0.18+0.82*progress`、
- * `heightFactor=max(0.04,progress)`、`translateY=(1-progress)*(-24)`、`opacity=easeOutCubic`、
- * 从当天列顶部锚点裁剪窗口长大。**无逐卡飞行、无窗口裁切、无缩放**。
- *
- * 防守的是「又退回被否掉的复杂做法」：逐卡飞行层 / 窗口裁切 / graphicsLayer 缩放 / 自研转场 API。
+ * 实机观感：壁纸是页面级共享静态底、不动；日视图内容/课程卡**全宽、从顶部往下展开**
+ * （heightFactor 0.04→1 的高度 reveal + 淡入 + 圆角收束；**不做垂直位移**，否则会带动壁纸）。
+ * **无逐卡飞行、无窗口裁切、无横向列锚点/宽度收缩、无垂直位移、无 graphicsLayer 缩放。**
  */
 class TimetableDayPanelGuardTest {
 
@@ -23,20 +20,23 @@ class TimetableDayPanelGuardTest {
     @Test
     fun `面板公式在场`() {
         val s = weekPage
-        assertTrue("缺 widthFactor = 0.18 + 0.82*progress", s.contains("0.18f + 0.82f * progress"))
         assertTrue("缺 heightFactor = max(0.04, progress)", s.contains("max(0.04f, progress)"))
-        assertTrue("缺 translateY = (1-progress)*(-24)", s.contains("(1f - progress) * (-24f)"))
         assertTrue("缺 opacity = easeOutCubic(progress)", s.contains("homeViewEaseOutCubic(progress)"))
         assertTrue("缺面板曲线 easeInOutCubicEmphasized", s.contains("homeViewEaseInOutCubicEmphasized"))
         assertTrue("周网格缺 alpha = 1 - value", s.contains("1f - dayExpand.value"))
         assertTrue(
-            "缺圆角收束 28f * homeViewExpandCornerRadiusFactor（线性 28*(1-progress) 是被否做法）",
+            "缺圆角收束 homeViewExpandCornerRadiusFactor",
             s.contains("homeViewExpandCornerRadiusFactor(progress)"),
         )
+        assertTrue(
+            "缺全宽（.width(maxW) 或 fillMaxWidth）",
+            s.contains(".width(maxW)") || s.contains("fillMaxWidth()"),
+        )
+        assertTrue("缺顶部对齐 Alignment.TopCenter（从上往下展开）", s.contains("Alignment.TopCenter"))
     }
 
     @Test
-    fun `无飞行层无裁切窗无缩放`() {
+    fun `全宽从上往下_无列锚点无缩放无飞行无裁切窗`() {
         val s = weekPage
         listOf(
             "TimetableCourseFlightLayer",
@@ -45,6 +45,9 @@ class TimetableDayPanelGuardTest {
             "clipPath(",
             "scaleX",
             "scaleY",
+            "BiasAlignment(",
+            "widthFactor",
+            "translateY",
         ).forEach { forbidden ->
             assertFalse("又出现被否掉的旧做法：`$forbidden`", s.contains(forbidden))
         }
@@ -61,20 +64,26 @@ class TimetableDayPanelGuardTest {
 
     // 咬合探针（负例自测）：证明上面的判据有牙齿。
     @Test
-    fun `负例自测_改回缩放或旧飞行或裁切会被判红`() {
+    fun `负例自测_改回列锚点或缩放或旧飞行或裁切会被判红`() {
         fun ok(s: String): Boolean =
-            s.contains("0.18f + 0.82f * progress") &&
-                s.contains("max(0.04f, progress)") &&
+            s.contains("max(0.04f, progress)") &&
+                s.contains("Alignment.TopCenter") &&
                 !s.contains("scaleX") &&
                 !s.contains("scaleY") &&
                 !s.contains("TimetableCourseFlightLayer") &&
                 !s.contains("clipPath(") &&
-                !s.contains("homeViewExpandWindow")
+                !s.contains("homeViewExpandWindow") &&
+                !s.contains("BiasAlignment(") &&
+                !s.contains("widthFactor") &&
+                !s.contains("translateY")
         assertTrue("真实源码应通过", ok(weekPage))
         assertFalse("改成 graphicsLayer 缩放应判红", ok(weekPage + "\n val scaleX = 1f"))
         assertFalse("恢复逐卡飞行层应判红", ok(weekPage + "\n TimetableCourseFlightLayer("))
         assertFalse("恢复窗口裁切 clipPath 应判红", ok(weekPage + "\n clipPath(x)"))
         assertFalse("恢复 homeViewExpandWindow 应判红", ok(weekPage + "\n homeViewExpandWindow(p)"))
+        assertFalse("退回当天列锚点 BiasAlignment 应判红", ok(weekPage + "\n BiasAlignment(a, -1f)"))
+        assertFalse("退回宽度收缩 widthFactor 应判红", ok(weekPage + "\n val widthFactor = 1f"))
+        assertFalse("日面板垂直位移（会带动壁纸上下动）应判红", ok(weekPage + "\n val translateY = 5f"))
         assertFalse(
             "heightFactor 退化应判红",
             ok(weekPage.replace("max(0.04f, progress)", "progress")),

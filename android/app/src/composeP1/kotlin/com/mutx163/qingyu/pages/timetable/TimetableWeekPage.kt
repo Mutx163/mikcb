@@ -22,7 +22,6 @@ import androidx.compose.foundation.layout.calculateStartPadding
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.requiredSize
 import androidx.compose.foundation.layout.width
@@ -45,7 +44,6 @@ import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
-import androidx.compose.ui.BiasAlignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
@@ -267,6 +265,13 @@ fun TimetableWeekPage(
      * 历史零参调用保持旧行为）。
      */
     onShareScreenshot: ((week: Int, dayOfWeek: Int?) -> Unit)? = null,
+    /**
+     * 设置页顶部预览模式（2026-11-04「课程卡片设置页预览」改造，见 R06）：
+     * 预览里**不画**状态栏留白与顶栏「轻屿课表」，让 [TimetableWeekdayHeader] 当首行；
+     * 网格按预览框高自适应节高、铺满不裁（对齐 Flutter `TimetableWeekPreview` 的
+     * `includeAppHeader=false` + `heightBudget` 分支）。只给两个设置页预览用，正常页面恒 false。
+     */
+    previewMode: Boolean = false,
     modifier: Modifier = Modifier,
 ) {
     val dark = isSystemInDarkTheme()
@@ -306,10 +311,11 @@ fun TimetableWeekPage(
             }
     }
 
-    // ── 周 ↔ 日展开态（对齐已发布 2141 / tag v2.1.4.1）──
+    // ── 周 ↔ 日展开态（对齐 2026-11-04 用户口径：全宽 / 从上往下展开 / 壁纸页面级静态底）──
     //
-    // 2141：日视图是一整块面板——从「当天列顶部锚点」按 widthFactor/heightFactor 逐渐露出
-    // （裁剪窗口长大，非缩放、非逐卡飞行），同时淡入 + 上移 + 圆角收平；周网格按原始进度淡出。
+    // 日视图是一整块面板：**全宽、从顶部往下长高露出**（heightFactor 裁剪窗口长大，非缩放、
+    // 非逐卡飞行、非按当天列的水平锚点/宽度收缩）；同时淡入 + 圆角收平，周网格按原始进度淡出。
+    // **不做垂直位移**：面板内容与壁纸都钉在顶部，避免带动壁纸上下动（见下方日视图展开层）。
     // 时长 360ms、面板进度曲线 easeInOutCubicEmphasized（三点贝塞尔，见 HomeViewExpandMotion）。
     val dayExpand = remember { Animatable(dayProgressSeed.coerceIn(0f, 1f)) }
     val dayExpandEasing = remember { homeViewEaseInOutCubicEmphasized }
@@ -437,7 +443,8 @@ fun TimetableWeekPage(
         HomeInkPolarity.Dark -> true
         null -> !dark
     }
-    ApplyStatusBarInk(lightIcons = lightStatusBarIcons, themeDark = dark)
+    // 预览模式不改真实系统状态栏（预览只是缩略窗口，不该改设备状态栏图标极性）。
+    if (!previewMode) ApplyStatusBarInk(lightIcons = lightStatusBarIcons, themeDark = dark)
 
     // 星期栏的两枚圆点判据：提到共享带之后只算一次（以前每页各算一份）。
     val hasExamOnDate: (LocalDate) -> Boolean = remember(exams, now) {
@@ -581,19 +588,23 @@ fun TimetableWeekPage(
             ) {
 
                 Column(modifier = Modifier.fillMaxWidth()) {
-                    // 状态栏区域留白：带子画到屏幕最顶，内容仍停在状态栏下面。
-                    Spacer(modifier = Modifier.height(innerPadding.calculateTopPadding()))
+                    // 预览模式（2026-11-04）：不画状态栏留白与顶栏「轻屿课表」，
+                    // 让星期栏当首行（对齐 Flutter `TimetableWeekPreview` 的 includeAppHeader=false）。
+                    if (!previewMode) {
+                        // 状态栏区域留白：带子画到屏幕最顶，内容仍停在状态栏下面。
+                        Spacer(modifier = Modifier.height(innerPadding.calculateTopPadding()))
 
-                    // ── 顶栏「轻屿课表」+ 右上角「更多」菜单（三视图共用一份）──
-                    TimetableTopBar(
-                        brand = homeTitleStyle == HomeTitleStyle.BRAND,
-                        inkPolarity = chromeInk,
-                        profileName = profileName,
-                        onTitleClick = onSwitchProfileClick,
-                        homeMenuStyle = homeMenuStyle,
-                        menuItems = homeMenuItems,
-                        onMenuSelect = onHomeMenuSelect,
-                    )
+                        // ── 顶栏「轻屿课表」+ 右上角「更多」菜单（三视图共用一份）──
+                        TimetableTopBar(
+                            brand = homeTitleStyle == HomeTitleStyle.BRAND,
+                            inkPolarity = chromeInk,
+                            profileName = profileName,
+                            onTitleClick = onSwitchProfileClick,
+                            homeMenuStyle = homeMenuStyle,
+                            menuItems = homeMenuItems,
+                            onMenuSelect = onHomeMenuSelect,
+                        )
+                    }
 
                     // ── 星期栏：从 pager 里提出来，不跟横向翻页滑动 ──
                     // 显示「落定后的那一页」；滑动过程中保持上一页（见 displayedPage）。
@@ -642,7 +653,43 @@ fun TimetableWeekPage(
                     .weight(1f)
                     .fillMaxWidth(),
             ) {
-                HorizontalPager(
+                if (previewMode) {
+                    // 预览：单周、按框高自适应节高（对齐 Flutter `_TimetableWeekPreviewBody`
+                    // 的 heightBudget 分支：sectionHeight = 可用高 / 可见节数）。
+                    // 不接 pager（预览不可横滑；禁交互由外层挖洞件的 pointer 拦截负责），也不淡出。
+                    BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
+                        val previewSectionHeight = if (sectionCount > 0) {
+                            (maxHeight / sectionCount.toFloat()).coerceAtLeast(0.dp)
+                        } else {
+                            0.dp
+                        }
+                        WeekPageContent(
+                            pageWeek = initialWeek,
+                            semesterStart = semesterStart,
+                            reminderKeys = reminderKeys,
+                            visibleDays = visibleDays,
+                            courses = courses,
+                            style = style,
+                            sectionTimes = sectionTimes,
+                            sectionCount = sectionCount,
+                            exams = exams,
+                            scheduleItems = scheduleItems,
+                            now = now,
+                            bottomInset = 0.dp,
+                            holidayOf = holidayOf,
+                            weatherOf = weatherOf,
+                            onCourseClick = {},
+                            onAgendaClick = {},
+                            onLongPressEmptySlot = { _, _ -> },
+                            material = material,
+                            cardGlassBackdrop = cardGlassSource,
+                            wallpaperLuminance = wallpaperBands?.body,
+                            modifier = Modifier.fillMaxSize(),
+                            sectionHeightOverride = previewSectionHeight,
+                            bottomClearanceDp = 0.dp,
+                        )
+                    }
+                } else HorizontalPager(
                     state = pagerState,
                     modifier = Modifier
                         .fillMaxSize()
@@ -711,7 +758,7 @@ fun TimetableWeekPage(
                     },
                     label = DayViewStrings.backToTodayShort.zh,
                     contentDescription = TimetableStrings.backToCurrentWeekAction.zh,
-                    visible = showBackToCurrentWeek && !dayVisible,
+                    visible = !previewMode && showBackToCurrentWeek && !dayVisible,
                     backdrop = pageBackdrop,
                     material = materialSpec,
                     hasBackdrop = hasBackdrop,
@@ -726,24 +773,16 @@ fun TimetableWeekPage(
                         ),
                 )
 
-                // ── 日视图展开层（2141：整块面板按宽高因子从当天列顶部锚点长大露出）──────
-                // 面板按整屏排版（requiredSize 满屏、正常布局/测量），外层套一个不断变大的
-                // 裁剪窗口（内容不缩放、只逐渐露出）——等价 2141 的 Align(widthFactor,heightFactor)+Clip；
-                // 同期按 easeOutCubic 淡入、(1-progress)*(-24) 上移、圆角收平（anchorExpandRadius）。
+                // ── 日视图展开层（2026-11-04 用户口径：全宽 + 从上往下展开 + 壁纸页面级静态不动）──
+                // 只做「高度从顶部往下长大露出」：全宽面板、Alignment.TopCenter、heightFactor 裁剪窗口。
+                // 不做按当天列的水平锚点 / 宽度收缩，也**不做垂直位移**——内容与壁纸都钉在顶部，
+                // 避免带动壁纸上下动；壁纸由页面级最底层那层静态画（见上方 `backdrop`）。
                 if (dayMounted && dayContent != null) {
                     val rawValue = dayExpand.value
                     val progress = dayExpandEasing.transform(rawValue)
-                    val widthFactor = 0.18f + 0.82f * progress
                     val heightFactor = max(0.04f, progress)
-                    val translateYDp = (1f - progress) * (-24f)
                     val panelAlpha = homeViewEaseOutCubic(progress)
                     val cornerDp = 28f * homeViewExpandCornerRadiusFactor(progress)
-                    val anchorIndex = visibleDays.indexOf(selectedDayOfWeek).let { if (it < 0) 0 else it }
-                    val anchorX = if (visibleDays.size <= 1) {
-                        0f
-                    } else {
-                        ((anchorIndex + 0.5f) / visibleDays.size) * 2f - 1f
-                    }
                     BoxWithConstraints(
                         modifier = Modifier
                             .matchParentSize()
@@ -765,21 +804,17 @@ fun TimetableWeekPage(
                     ) {
                         val maxW = maxWidth
                         val maxH = maxHeight
-                        val panelW = maxW * widthFactor
                         val panelH = maxH * heightFactor
-                        // 整屏面板相对较小裁剪窗口的水平对齐偏移（按 anchorX 侧对齐）。
-                        val childOffsetX = -(maxW - panelW) * ((anchorX + 1f) / 2f)
                         Box(
                             modifier = Modifier
-                                .align(BiasAlignment(anchorX, -1f))
-                                .width(panelW)
+                                .align(Alignment.TopCenter)
+                                .width(maxW)
                                 .height(panelH)
                                 .clip(RoundedCornerShape(cornerDp.dp)),
                         ) {
                             Box(
                                 modifier = Modifier
                                     .requiredSize(maxW, maxH)
-                                    .offset(x = childOffsetX, y = translateYDp.dp)
                                     .graphicsLayer { alpha = panelAlpha },
                             ) {
                                 // contentTopInset = 0：面板铺满内容区，页面自己只加正文顶缝 14dp。
@@ -880,6 +915,13 @@ private fun WeekPageContent(
     cardGlassBackdrop: Backdrop? = null,
     /** 时间列那档壁纸亮度；null = 没壁纸（保持设置里的字色）。 */
     wallpaperLuminance: Double? = null,
+    /**
+     * 预览模式：显式节高覆盖（按预览框高自适应算好传进来，见 [TimetableWeekPage] 的 previewMode）。
+     * null = 走原有 `weekSectionHeight`（自动充满或固定节高）。
+     */
+    sectionHeightOverride: Dp? = null,
+    /** 底部避让余量；预览里传 0，避免 64dp 坞避让把网格撑出框。 */
+    bottomClearanceDp: Dp = WEEK_GRID_BOTTOM_CLEARANCE_DP.dp,
     /** 内容层外壳（缓存图层挂在这里，见 pager 调用处的说明）。 */
     modifier: Modifier = Modifier,
 ) {
@@ -911,7 +953,7 @@ private fun WeekPageContent(
     // `weekdayHeaderHeightDp = 0`：本 Box 的 maxHeight 已经不含星期栏，
     // 再减一次 40 会把节高压扁（旧结构里栏在页内、却又减了一遍栏高）。
     BoxWithConstraints(modifier = modifier.fillMaxSize()) {
-        val sectionHeight = weekSectionHeight(
+        val sectionHeight = sectionHeightOverride ?: weekSectionHeight(
             style = style,
             availableHeightDp = maxHeight.value,
             weekdayHeaderHeightDp = 0f,
@@ -927,7 +969,8 @@ private fun WeekPageContent(
                 modifier = Modifier
                     .fillMaxWidth()
                     // 底部留白 = 手势条高度 + 底坞避让余量（最后一行能滑到坞上方）。
-                    .padding(bottom = bottomInset + WEEK_GRID_BOTTOM_CLEARANCE_DP.dp),
+                    // 预览里 bottomClearanceDp = 0，不预留坞避让（否则会把网格撑出预览框）。
+                    .padding(bottom = bottomInset + bottomClearanceDp),
             ) {
                 TimetableTimeColumn(
                     sectionCount = sectionCount,
