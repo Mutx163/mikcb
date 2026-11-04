@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
@@ -18,7 +19,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -27,7 +28,6 @@ import com.mutx163.qingyu.components.QingyuCard
 import com.mutx163.qingyu.components.QingyuCardDefaults
 import com.mutx163.qingyu.components.QingyuPageCardMargin
 import com.mutx163.qingyu.components.QingyuPageList
-import com.mutx163.qingyu.components.QingyuSectionTitle
 import com.mutx163.qingyu.components.QingyuWeightDelta
 import com.mutx163.qingyu.components.shiftWeight
 import com.mutx163.qingyu.infra.AppReleaseInfo
@@ -51,17 +51,20 @@ import top.yukonga.miuix.kmp.theme.MiuixTheme
 import java.util.Locale
 
 /**
- * 版本更新页 · Compose 渲染层（1:1 复刻 `lib/screens/about_screen.dart` 的 `AboutUpdateScreen`，
- * `:605-1720`）。判据与本页结构逐段对应：
+ * 版本更新页 · Compose 渲染层。
  *
- * - 顶栏：标题「版本更新」+ 右上角「高级选项」入口（Dart `suffixes: FHeaderAction(tune)`）；
- * - 三态（[AboutUpdatePagePhase]）：检查中 / 检查失败 / 就绪；
- * - 就绪：状态卡（图标 / 标题 / 版本迁移或当前版本 / 主按钮 / 查看 Release）+
- *   「更新说明」头 + 摘要（更新重点 + 分类计数 + 分组条目；解析不出条目时退回原文分块）；
- * - 底部：下载进行时的进度条（Dart `_buildDownloadProgressBar`）。
+ * 2026-11-04 按已发布 Flutter（`lib/screens/about_screen.dart` 的 `AboutUpdateScreen`，
+ * v2.1.4.1）重做观感，修正此前几处"丑点"：
+ * - 主操作按钮用**主色**（原为 `buttonColors()` 灰底，看着像禁用/次要）；
+ * - "更新说明"只在**一张卡**里出现一次（原先是 `QingyuSectionTitle` + 头部卡 + 正文卡
+ *   三处重复"更新说明"、两张相邻卡片，层级散）；
+ * - 卡片内边距/间距按 Flutter 的 16 / 8 / 20 分层，不再一律 10dp；
+ * - "查看 Release" 改为**居中的文字动作**，不再与主按钮一样做成通栏按钮；
+ * - 版本号用正文字阶（13sp）而非 11sp 等宽；检查中文案字号加大。
  *
- * 本文件只画；数据与副作用（检查 / 下载 / 打开链接 / 进高级选项）由宿主经回调注入。
- * 全部屏上文案取自 [AboutUpdatePageStrings] / [AboutUpdateStrings]（ARB 逐字），本文件无中文字面量。
+ * 判据与结构逐段对应 Dart `:605-1720`：顶栏标题 +「高级选项」入口 / 三态（检查中 /
+ * 检查失败 / 就绪）/ 就绪=状态卡 + 更新说明卡 / 底部下载进度条。
+ * 文案全部取自 [AboutUpdatePageStrings] / [AboutUpdateStrings]（ARB 逐字），本文件无中文字面量。
  */
 
 /** 下载进行时的 UI 快照（宿主每帧喂入）。 */
@@ -147,27 +150,30 @@ private fun AboutUpdateCheckingView(appName: String, innerPadding: PaddingValues
         modifier = Modifier.fillMaxSize().padding(innerPadding),
         contentAlignment = Alignment.Center,
     ) {
-        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+        Column(
+            modifier = Modifier.padding(horizontal = 32.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+        ) {
             AppIconBadge(size = 96.dp)
             if (appName.isNotEmpty()) {
                 Spacer(Modifier.height(16.dp))
                 Text(
                     text = appName,
-                    style = MiuixTheme.textStyles.main.shiftWeight(QingyuWeightDelta.SEMIBOLD),
+                    style = MiuixTheme.textStyles.title2.shiftWeight(QingyuWeightDelta.SEMIBOLD),
                     color = colors.onSurface,
+                    textAlign = TextAlign.Center,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                 )
             }
             Spacer(Modifier.height(16.dp))
-            // 进行中反馈（2026-11-03 补）：原先只有一行灰字、连转圈都没有，
-            // 「点了重新检查没反应」的观感就来自这里。官方指示器 + 文案同屏。
             CircularProgressIndicator()
-            Spacer(Modifier.height(12.dp))
+            Spacer(Modifier.height(10.dp))
             Text(
                 text = AboutUpdatePageStrings.checkingForUpdate,
                 style = MiuixTheme.textStyles.footnote1,
                 color = colors.onSurfaceVariantSummary,
+                textAlign = TextAlign.Center,
             )
         }
     }
@@ -195,18 +201,20 @@ private fun AboutUpdateCheckFailedView(
                 Column(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.spacedBy(16.dp),
                 ) {
                     AppIconBadge()
+                    Spacer(Modifier.height(16.dp))
                     Text(
                         text = AboutUpdateStrings.checkFailedTitle,
                         style = MiuixTheme.textStyles.main,
                         color = colors.onSurface,
+                        textAlign = TextAlign.Center,
                     )
+                    Spacer(Modifier.height(20.dp))
                     Button(
                         onClick = onRefresh,
                         modifier = Modifier.fillMaxWidth(),
-                        colors = ButtonDefaults.buttonColors(),
+                        colors = ButtonDefaults.buttonColorsPrimary(),
                     ) {
                         Text(AboutUpdateStrings.retryAction)
                     }
@@ -247,9 +255,9 @@ private fun AboutUpdateReadyView(
                 onSystemDownloadUnavailable = onSystemDownloadUnavailable,
             )
         }
-        item(key = "notes-title") { QingyuSectionTitle(AboutUpdatePageStrings.releaseNotesTitle) }
-        item(key = "notes-header") { NotesHeaderCard(release) }
-        item(key = "notes-body") { NotesBodyCard(release?.body.orEmpty()) }
+        if (!release?.body.isNullOrBlank()) {
+            item(key = "notes") { NotesSection(release) }
+        }
     }
 }
 
@@ -302,9 +310,9 @@ private fun AboutUpdateStatusCardFull(
         Column(
             modifier = Modifier.fillMaxWidth(),
             horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(10.dp),
         ) {
             AppIconBadge()
+            Spacer(Modifier.height(16.dp))
             Text(
                 text = if (hasUpdate) {
                     AboutUpdateStrings.updateAvailableHeadline
@@ -314,7 +322,9 @@ private fun AboutUpdateStatusCardFull(
                 style = MiuixTheme.textStyles.main
                     .shiftWeight(if (hasUpdate) QingyuWeightDelta.SEMIBOLD else 0),
                 color = if (hasUpdate) colors.primary else colors.onSurface,
+                textAlign = TextAlign.Center,
             )
+            Spacer(Modifier.height(8.dp))
             if (hasUpdate) {
                 VersionTransition(
                     currentVersion = result.currentVersion,
@@ -323,36 +333,47 @@ private fun AboutUpdateStatusCardFull(
             } else {
                 Text(
                     text = "${AboutUpdateStrings.currentVersionLabel} ${result.currentVersion}",
-                    style = MiuixTheme.textStyles.footnote1.copy(fontFamily = FontFamily.Monospace),
+                    style = MiuixTheme.textStyles.footnote1,
                     color = colors.onSurfaceVariantSummary,
+                    textAlign = TextAlign.Center,
                 )
             }
+            Spacer(Modifier.height(20.dp))
             if (hasUpdate) {
                 Button(
                     onClick = onPrimary,
                     modifier = Modifier.fillMaxWidth(),
-                    colors = ButtonDefaults.buttonColors(),
+                    colors = ButtonDefaults.buttonColorsPrimary(),
                 ) {
                     Text(primaryLabel)
                 }
             } else {
-                TextButton(
-                    text = AboutUpdateStrings.retryAction,
+                Button(
                     onClick = onRefresh,
                     modifier = Modifier.fillMaxWidth(),
-                )
+                    colors = ButtonDefaults.buttonColors(),
+                ) {
+                    Text(AboutUpdateStrings.retryAction)
+                }
             }
+            // 「查看 Release」是次级出口：用居中的文字动作，不做第二个通栏按钮（形状别和主按钮抢）。
             if (!hasUpdate || primaryAction != AboutUpdatePrimaryAction.OPEN_RELEASE_PAGE) {
-                TextButton(
-                    text = AboutUpdateStrings.viewReleaseAction,
-                    onClick = { onOpenUrl(releaseListUrlFor(channel)) },
-                )
+                Spacer(Modifier.height(8.dp))
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.Center,
+                ) {
+                    TextButton(
+                        text = AboutUpdateStrings.viewReleaseAction,
+                        onClick = { onOpenUrl(releaseListUrlFor(channel)) },
+                    )
+                }
             }
         }
     }
 }
 
-/** Dart `_buildVersionTransition`：旧版本弱化 → 箭头 → 新版本强调。版本号用等宽字体，数字对齐干净。 */
+/** Dart `_buildVersionTransition`：旧版本弱化 → 箭头 → 新版本强调（版本号走正文字阶，不用等宽）。 */
 @Composable
 private fun VersionTransition(currentVersion: String, latestVersion: String) {
     val colors = MiuixTheme.colorScheme
@@ -363,7 +384,7 @@ private fun VersionTransition(currentVersion: String, latestVersion: String) {
     ) {
         Text(
             text = currentVersion,
-            style = MiuixTheme.textStyles.footnote1.copy(fontFamily = FontFamily.Monospace),
+            style = MiuixTheme.textStyles.footnote1,
             color = colors.onSurfaceVariantSummary,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
@@ -374,9 +395,7 @@ private fun VersionTransition(currentVersion: String, latestVersion: String) {
         Spacer(Modifier.width(6.dp))
         Text(
             text = latestVersion,
-            style = MiuixTheme.textStyles.footnote1
-                .copy(fontFamily = FontFamily.Monospace)
-                .shiftWeight(QingyuWeightDelta.SEMIBOLD),
+            style = MiuixTheme.textStyles.footnote1.shiftWeight(QingyuWeightDelta.SEMIBOLD),
             color = colors.primary,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
@@ -385,63 +404,91 @@ private fun VersionTransition(currentVersion: String, latestVersion: String) {
     }
 }
 
-/** Dart `_buildNotesHeader`：更新图标 + 「更新说明」+「更新于 …」。 */
+/**
+ * 「更新说明」卡：一张卡里做「头部（更新图标 + 标题 + 更新时间）→ 分隔线 → 正文」，
+ * 与 Flutter `_buildNotesHeader` / `_buildNotesDigest` + `_buildNotesSurface` 同构。
+ *
+ * 以前这里是 `QingyuSectionTitle` + 独立头部卡 + 独立正文卡：一屏出现三次「更新说明」、
+ * 两张相邻卡片，层级又散又重复——这是"丑"的主因之一。
+ */
 @Composable
-private fun NotesHeaderCard(release: AppReleaseInfo?) {
+private fun NotesSection(release: AppReleaseInfo?) {
     val colors = MiuixTheme.colorScheme
+    val body = release?.body.orEmpty()
     QingyuCard(
         modifier = Modifier.fillMaxWidth(),
-        insideMargin = QingyuCardDefaults.ContentInsideMargin,
+        insideMargin = PaddingValues(0.dp),
     ) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Icon(imageVector = MiuixIcons.Update, contentDescription = null, tint = colors.primary)
-            Spacer(Modifier.width(8.dp))
-            Text(
-                text = AboutUpdatePageStrings.releaseNotesTitle,
-                style = MiuixTheme.textStyles.main.shiftWeight(QingyuWeightDelta.SEMIBOLD),
-                color = colors.onSurface,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
+        Column(modifier = Modifier.fillMaxWidth()) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(start = 16.dp, top = 14.dp, end = 16.dp, bottom = 10.dp),
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(
+                        imageVector = MiuixIcons.Update,
+                        contentDescription = null,
+                        tint = colors.primary,
+                        modifier = Modifier.size(18.dp),
+                    )
+                    Spacer(Modifier.width(8.dp))
+                    Text(
+                        text = AboutUpdatePageStrings.releaseNotesTitle,
+                        style = MiuixTheme.textStyles.main,
+                        color = colors.onSurface,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                }
+                release?.updatedAtMillis?.let { millis ->
+                    Spacer(Modifier.height(4.dp))
+                    Text(
+                        text = AboutUpdatePageStrings.updatedAt(formatUpdateDateTime(millis)),
+                        style = MiuixTheme.textStyles.footnote1,
+                        color = colors.onSurfaceVariantSummary,
+                    )
+                }
+            }
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(1.dp)
+                    .background(colors.secondaryContainer),
             )
-        }
-        release?.updatedAtMillis?.let { millis ->
-            Spacer(Modifier.height(4.dp))
-            Text(
-                text = AboutUpdatePageStrings.updatedAt(formatUpdateDateTime(millis)),
-                style = MiuixTheme.textStyles.footnote1,
-                color = colors.onSurfaceVariantSummary,
-            )
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(start = 16.dp, top = 12.dp, end = 16.dp, bottom = 16.dp),
+            ) {
+                NotesBodyContent(body)
+            }
         }
     }
 }
 
 /** Dart `_buildNotesDigest` / `_buildNotesBlock`：有可解析条目画摘要，否则退回原文分块纯文本。 */
 @Composable
-private fun NotesBodyCard(body: String) {
+private fun NotesBodyContent(body: String) {
     val colors = MiuixTheme.colorScheme
     val digest = remember(body) { buildReleaseNotesDigest(body) }
     val markdownBlocks = remember(body) {
         if (digest.isEmpty) buildReleaseNotesMarkdownBlocks(body, stripVersionHeading = true) else emptyList()
     }
 
-    QingyuCard(
-        modifier = Modifier.fillMaxWidth(),
-        insideMargin = QingyuCardDefaults.ContentInsideMargin,
-    ) {
-        if (digest.isEmpty) {
-            if (markdownBlocks.isEmpty()) {
-                Text(
-                    text = AboutUpdatePageStrings.noUpdateHint,
-                    style = MiuixTheme.textStyles.footnote1,
-                    color = colors.onSurfaceVariantSummary,
-                    lineHeight = 20.sp,
-                )
-            } else {
-                ReleaseNotesMarkdownView(markdownBlocks)
-            }
+    if (digest.isEmpty) {
+        if (markdownBlocks.isEmpty()) {
+            Text(
+                text = AboutUpdatePageStrings.noUpdateHint,
+                style = MiuixTheme.textStyles.footnote1,
+                color = colors.onSurfaceVariantSummary,
+                lineHeight = 20.sp,
+            )
         } else {
-            ExpandedDigest(digest)
+            ReleaseNotesMarkdownView(markdownBlocks)
         }
+    } else {
+        ExpandedDigest(digest)
     }
 }
 
