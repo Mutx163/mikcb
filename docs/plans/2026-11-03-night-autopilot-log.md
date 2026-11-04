@@ -2074,6 +2074,100 @@ C:\dev\pwsh\pwsh.exe -NoProfile -File scripts/test-kotlin-module.ps1 -Module tim
   （该提交同时含 `transfer/lan` 改动与另一节日志）。内容完整（守卫 37 行、脚本 39 行、基线 4 行表头），**未丢失**，
   仅归属混线；按纪律不用 `--amend`/`reset --hard` 改写历史。未推送。
 
+### 10.43 ✅ Phase 1：单节提醒 `core/ClassReminderPlan.kt`（条目 → fire 纯计算；2026-11-04）
+
+**范围**：新增 `core/ClassReminderPlan.kt` + `core/ClassReminderPlanTest.kt`（两条）。
+禁碰清单全部未动：未新增设置键、未动 manifest、未碰 `app/TimetableSettingsModel.kt`、
+`pages/sync/**`、`pages/import/**`、`pages/ShellPageIndex.kt`、`pages/ShellWiring.kt`、
+`app/TimetableStore.kt`、`app/AppGlobalSettingsStore.kt`、`theme/`、两个壳 Activity、`lib/ui/`、路由表。
+
+**1. Dart 对齐（逐项带行号）**
+
+| Kotlin | Dart 真源 |
+|---|---|
+| `Entry.id` / `Entry.isValid` | `lib/models/class_reminder.dart:25`、`:33-37`（严格 `yyyy-MM-dd` + 真实日期，`:84-100`） |
+| `occurrenceDateTime` | `lib/services/class_reminder_service.dart:43-55` |
+| `requestCode`（FNV-1a，键 `"$id#$minuteOfDay"`） | 同文件 `:59-60` → `lib/services/exam_reminder_service.dart:74-83` |
+| `buildFires` 过滤/正文/offset/排序 | 同文件 `:64-116`（正文兜底 `:83-92`，`offsetMinutes=0` 的成因 `:105-107`，排序 `:114`） |
+| `DEFAULT_LEAD_MINUTES = 30` | `:12` |
+| `occurrenceDate`（开学日归到周一 + `(week-1)*7 + dayOfWeek-1`） | `lib/widgets/class_reminder_sheet.dart:37-48` |
+| `formatDate` | `lib/models/class_reminder.dart:28-31` |
+
+三处**显式差异**（已在文件头写明，均为确定性/边界收紧）：
+1. `now` 必填（Dart `now ?? DateTime.now()` 会读钟，纯层不可测）；
+2. 排序主键 `fireAt` + **次级键 `entryId`**（Dart 只按 `fireAtMillis`，`List.sort` 不稳定）；
+3. `occurrenceDate` 先查 `Course.isActiveInWeek`（Dart 的 sheet 只从已过滤网格进入，无网格上下文的纯层必须自己兜周规则）。
+
+**2. `buildFires` 签名**
+
+```kotlin
+fun buildFires(
+    entries: List<Entry>,
+    resolveCourse: (String) -> Course?,
+    now: LocalDateTime,
+): List<Fire>
+```
+
+其余对外面：`parseClockMinutes` / `formatClock`（**委托** `ClassAlarmPlanLogic`，不复制第二份实现，防漂移）、
+`occurrenceDateTime(entry)`、`requestCode(entry)`、`occurrenceDate(course, week, semesterStart)`、
+`entryFor(courseId, occurrence, startMinuteOfDay, leadMinutes = 30)`。
+`Fire` 带 `entryId / fireAt / title / body / requestCode / offsetMinutes(=0)`，`fireAtMillis` 为派生 getter。
+
+**3. 用例（15 例，`core/ClassReminderPlanTest.kt`）**
+
+- requestCode 稳定性（Lead 指定单独一条）：同条/等价重建多次不变、命名空间位一致、**不同分钟必不同**；
+- 周规则：单双周错位、停课周跳过、自定义周（`[2,5]` 第 3 周不上）、无开学日、
+  开学日归到所在周周一再推算（09-09 → 09-16；第 5 周为 10-07）；
+- 过滤：已过期（含 `fireAt == now`）、坏条目（2026-02-31 / `minuteOfDay=1440` / 空白 courseId）、课程已删；
+- 内容：标题 `trim()`、正文 = 地点 `trim()` / 空地点回落 `HH:mm`、`offsetMinutes == 0`；
+- 跨零点：`00:10 - 30min` → **前一天 23:40**（date 回退 + minute 1420）；`23:50` 开课、`00:30` 结束不挪响点；
+- 排序：同刻三课按 `entryId` 稳定，输入换序结果不变；升序用例同时验证过期条目不影响其余条目；
+- 时钟：`parseClockMinutes` 越界/多段返回 null，`formatClock(-20)=23:40`、`formatClock(1440)=00:00`。
+
+**4. 咬合探针（改坏 → 红 → 还原，各自单独跑）**
+
+| 探针 | 改法 | 结果 | 还原 |
+|---|---|---|---|
+| A 过期过滤 | 删 `if (!fireAt.isAfter(now)) continue` | **2 红**：`buildFires_已过期的条目不出fire` + `buildFires_按响点升序_过期条目不影响其余条目`（314 例中 Failures: 2） | 已还原 |
+| B requestCode 含 `minuteOfDay` | 键从 `"$id#$minuteOfDay"` 改成 `id` | **1 红**：`requestCode_不同分钟必不同`（314 例中 Failures: 1） | 已还原 |
+
+还原后复跑 **OK (314 tests)**。
+
+**5. L0**
+
+```
+C:\dev\pwsh\pwsh.exe -Command "& './scripts/test-kotlin-module.ps1' -Module 'timetable' -ExtraSources 'android/app/src/test/kotlin/com/mutx163/qingyu/core/ClassReminderPlanTest.kt'"
+```
+
+- **OK (314 tests)**：timetable 既有 299 例 + 本批 15 例。
+- 未跑 `-Module course`：新文件只落 `core/`（`core` 是每个 L0 模块都收的共享目录），无新增页面域依赖；
+  但 `core` 的单测**不在**任何 `-Module pages/*` 的默认收源里（脚本只收共享目录的 `main`），
+  所以必须用 `-ExtraSources` 点名，否则新用例不会进测试类列表（首跑 299 例即此原因）。
+- 未裸跑 gradlew、未跑整包。
+
+**6. 顺带发现（不在本批范围，仅记录）**
+
+`app/TimetableStore.kt:49` 注释称 `core/TimetableSettings` 已含「单节提醒 `classReminders`」键，
+但 `core/TimetableSettings.kt` 实际只有 4 个键（sections / activeTimeSchemeId / semesterWeekCount / semesterStartDate）。
+注释与实现不一致，Phase 2 加键时要一并核对（否则按注释判断会以为已就绪）。
+
+**7. Phase 2 / Phase 3：待排期与依赖（谁授权、卡在哪）**
+
+- **Phase 2（设置键 + 读写 + 入口）——卡在 ARB 与设置族，需 Lead 重新排期**
+  1. `app/TimetableSettingsModel.kt` 的 `OWNED_KEYS`、`core/TimetableSettings` 的 `classReminders` 键与合并写：
+     需**设置族 + 同步线双授权**（`OWNED_KEYS` 属设置族认领文件 `.agents/compose-phase3/claims/P35-settings-model.md`；
+     写路径与 `pages/sync` 的备份快照同源）。**当前卡点**：ARB 六份正被同步线占用。
+  2. 六份 ARB（入口文案：单节提醒标题/开关/提前量等）：由**同步线**释放，Lead 指定时段。
+  3. 设置页入口与提前量可编辑（`liveClassReminderStartMinutes` 目前只在 live/widget 旁路，设置页不可改）：
+     需 `pages/settings` 域授权 + 上述 ARB 落地。
+- **Phase 3（调度接线）——等 C1 与门禁稳定后再排**
+  1. 把 `buildFires` 的产出合进 `ExamReminderService` 的 `additionalFires` 通道
+     （Dart `timetable_provider.dart:2666-2671`）：需 **store/壳授权**（`app/TimetableStore` / 壳 Activity 侧读设置）。
+  2. 通道名/快照键/取消路径复用考试管线（`ExamReminderScheduler.kt`）：需**通知族负责人**确认不再新增 manifest 权限。
+  3. 门禁：C1（云备份快照）与 compose 门 1/门 2 稳定后由 Lead 放行，避免与同步线同批改 `pages/sync`。
+
+**结论**：Phase 1 完成（纯计算层 + 15 例 + 两条探针 + L0 314 绿）；Phase 2/3 未启动，依赖如上。
+
 ---
 
 
