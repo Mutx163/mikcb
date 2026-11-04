@@ -308,10 +308,16 @@ fun AddExamPage(
             item(key = "reminders") {
                 QingyuCard(
                     modifier = Modifier.fillMaxWidth(),
-                    insideMargin = PaddingValues(vertical = 2.dp),
+                    // 包 `*Preference` 行时不传 insideMargin（见 QingyuCard KDoc）：原先给 2dp，
+                    // 下拉偏好自带的按压指示只画在组件自身 bounds，上下各差 2dp 盖不满卡片。
+                    insideMargin = PaddingValues(0.dp),
                 ) {
                     val presetOptions = AddExamLogic.reminderPresetOptions()
                     WindowDropdownPreference(
+                        // 偏好行的按压 ripple 是矩形；裁到与卡片一致的圆角，按压态才完整
+                        // 贴合这个圆角框，不露直角/露边（miuix BasicComponent 的 clickable 在
+                        // insideMargin 之外，尺寸铺满整卡，仅需按卡片圆角裁剪）。
+                        modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(16.dp)),
                         items = presetOptions.map { it.second },
                         selectedIndex = presetOptions.indexOfFirst { it.first == viewState.reminderPreset }
                             .coerceAtLeast(0),

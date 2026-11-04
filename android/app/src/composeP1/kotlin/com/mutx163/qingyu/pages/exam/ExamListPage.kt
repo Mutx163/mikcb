@@ -1,6 +1,7 @@
 package com.mutx163.qingyu.pages.exam
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -386,6 +387,10 @@ private fun ExamRow(
     Row(
         modifier = Modifier
             .fillMaxWidth()
+            // 整行可点：点已有考试进编辑（对齐发布版 `exam_list_screen.dart` 的
+            // `HyperosPressableRow(onTap = _navigateToEditExam)`）。原先 onClick 参数没接到
+            // Row 上，导致点行体无反应；行尾删除按钮在内部自行消费点击，不受影响。
+            .clickable(onClick = onClick)
             .padding(start = 14.dp, end = 6.dp, top = 12.dp, bottom = 12.dp),
         verticalAlignment = Alignment.Top,
     ) {
