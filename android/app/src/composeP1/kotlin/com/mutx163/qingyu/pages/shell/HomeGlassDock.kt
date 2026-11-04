@@ -11,6 +11,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.mutx163.qingyu.app.HomeNavigationForm
@@ -74,6 +76,11 @@ fun HomeGlassDock(
      * 默认 true = 预览卡（外观编辑页）预览的就是课表首页，底下一定有壁纸。
      */
     overWallpaper: Boolean = true,
+    /**
+     * 坞压住的壁纸亮度（0~1）。由调用方（壳）把**页面同一份** `bands.dock` 传进来时优先用它；
+     * 不传（默认 null）则内部按缓存版本响应式回读 `cachedWallpaperInkBands` 兜底。
+     */
+    wallpaperLuminance: Double? = null,
 ) {
     if (!homeDockVisible(settingsModel) || replacedByRail) return
 
@@ -96,11 +103,37 @@ fun HomeGlassDock(
         )
     }
     val roundActionId = HomeDockNavModel.roundButtonAction(settingsModel.glassDockButtonEntryId)
-    // 坞压住的那条壁纸带亮度（墨色判据的唯一输入）。壁纸解码 / 取景 / 四条亮度带
-    // 的推导只在 `rememberHomeBackdropChrome` 一处；这里只取 dock 那条，避免壳与页面
-    // 各算一份亮度。首帧同步读进程缓存，切视图不会先按主题墨色画一帧再翻面。
+    // 坞压住的那条壁纸带亮度（墨色判据的唯一输入）。
+    // ⚠️ 不能只靠 `chrome.bands`：它内部是 remember 一次性冷读，坞不渲染 chrome.backdrop、
+    // 拿不到 onInkBands 回调，页面异步量出 bands 后这里不会更新 ⇒ 深/黑壁纸时
+    // wallpaperLuminance 常为 null，退回纯白主题面判成深墨 → 黑字压黑药丸看不见（2026-11-04）。
+    // 修法：读缓存版本作可观察信号，量完即回读 cachedWallpaperInkBands；调用方显式传入的
+    // `wallpaperLuminance` 优先（壳后续可把页面同一份 bands 传进来）。
     val chrome = rememberHomeBackdropChrome(settingsModel)
-    val wallpaperLuminance = if (overWallpaper) chrome.bands?.dock else null
+    val snap = chrome.snapshot
+    val density = LocalDensity.current
+    val viewportWidthPx = with(density) { LocalConfiguration.current.screenWidthDp.dp.roundToPx() }
+    val viewportHeightPx = with(density) { LocalConfiguration.current.screenHeightDp.dp.roundToPx() }
+    val cacheVersion = wallpaperInkBandsCacheVersion()
+    val cachedDockLuminance = remember(
+        snap?.wallpaperPath, snap?.decodeWidthPx, snap?.scale, snap?.alignX, snap?.alignY,
+        viewportWidthPx, viewportHeightPx, cacheVersion, overWallpaper,
+    ) {
+        if (!overWallpaper || snap == null || snap.wallpaperPath.isNullOrEmpty()) {
+            null
+        } else {
+            cachedWallpaperInkBands(
+                path = snap.wallpaperPath,
+                decodeWidthPx = snap.decodeWidthPx,
+                viewportWidthPx = viewportWidthPx,
+                viewportHeightPx = viewportHeightPx,
+                scale = snap.scale,
+                alignX = snap.alignX,
+                alignY = snap.alignY,
+            )?.dock
+        }
+    }
+    val resolvedWallpaperLuminance = wallpaperLuminance ?: cachedDockLuminance
 
     GlassDockNavigationBar(
         items = dockIds.map { HomeNavIcons.dockItem(it) },
@@ -110,7 +143,8 @@ fun HomeGlassDock(
         // 反而会多录一层、白费一次采样（与壳层同一条纪律）。
         backdrop = backdrop,
         material = material,
-        wallpaperLuminance = wallpaperLuminance,
+        wallpaperLuminance = resolvedWallpaperLuminance,
+        overWallpaper = overWallpaper,
         modifier = modifier,
         // 只有「点开换主屏内容」的条目（视图动作 / 内嵌页）才挪选中指示器；
         // 点开是推一层页面的条目（外观编辑器、表单页）主屏没换，指示器必须留在原格，

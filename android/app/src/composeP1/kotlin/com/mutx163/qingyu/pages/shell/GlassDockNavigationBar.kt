@@ -201,6 +201,11 @@ fun GlassDockNavigationBar(
      * 判据本身在 [DockInkRule]：标签与图标共用同一份结果，不在这里各算一套。
      */
     wallpaperLuminance: Double? = null,
+    /**
+     * 这一页底下是否是**壁纸**（周 / 日 / 月视图为 true；任务、设置等内嵌实色页为 false）。
+     * 仅用于「壁纸页但亮度未知」时保守取浅墨兜底，见下方 `unknownWallpaperBackdrop`。
+     */
+    overWallpaper: Boolean = false,
     modifier: Modifier = Modifier,
     maxWidthDp: Int = 380,
     trailingContent: (@Composable () -> Unit)? = null,
@@ -256,7 +261,15 @@ fun GlassDockNavigationBar(
         wallpaperLuminance = if (isBlurActive) wallpaperLuminance else null,
         tintAlpha = containerColor.alpha.toDouble(),
     )
-    val inkState = DockInkRule.resolve(dockLuminance, isDarkTheme = isDark)
+    // 兜底：壁纸页 + 玻璃在采样 + 壁纸亮度**未知**（缓存冷 / 异步未到）时，别拿纯白
+    // `surfaceContainer` 判深墨——那会把近黑字压在半透明深/黑药丸上，看不见（2026-11-04）。
+    // 保守取浅墨（`DockInkRule.resolve(0.0)` ⇒ useLightInk=true），真值到位后自动精确翻面。
+    val unknownWallpaperBackdrop = overWallpaper && isBlurActive && wallpaperLuminance == null
+    val inkState = if (unknownWallpaperBackdrop) {
+        DockInkRule.resolve(0.0, isDarkTheme = isDark)
+    } else {
+        DockInkRule.resolve(dockLuminance, isDarkTheme = isDark)
+    }
     // 墨色本体仍是主题令牌（与课表顶栏同一套近白 / 近黑），不在这里写死色值。
     val baseInk = Color(QingyuTheme.primaryText(dark = inkState.useLightInk))
     val selectedInk = if (inkState.selectedUsesAccent) {

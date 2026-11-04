@@ -63,7 +63,7 @@ class DockInkGuardTest {
         )
         assertFalse(
             "咬合探针失效：把 dock 带换成 body 带后判据仍为真",
-            dockUsesDockBand(dock.replace("bands?.dock", "bands?.body")),
+            dockUsesDockBand(dock.replace("?.dock", "?.body")),
         )
     }
 
@@ -103,8 +103,12 @@ class DockInkGuardTest {
     private fun shellFlagsOverWallpaper(text: String): Boolean =
         text.contains("overWallpaper = DockPagerMotion.showsWallpaper(currentRootId)")
 
+    // 2026-11-04：坞改为「响应式回读 cachedWallpaperInkBands(...)?.dock」+ 可传入参，
+    // 不再直接读一次性的 chrome.bands.dock。判据改成「取 dock 带 + 响应式合并」。
     private fun dockUsesDockBand(text: String): Boolean =
-        text.contains("bands?.dock") && text.contains("wallpaperLuminance = wallpaperLuminance")
+        text.contains("cachedWallpaperInkBands(") &&
+            text.contains("?.dock") &&
+            text.contains("wallpaperLuminance ?: cachedDockLuminance")
 
     // ------------------------------------------------------------------ 定位
 

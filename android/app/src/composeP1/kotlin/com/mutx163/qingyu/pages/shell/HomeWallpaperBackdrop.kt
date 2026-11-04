@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
@@ -233,6 +234,8 @@ fun HomeWallpaperBackdrop(
                 ),
                 bands,
             )
+            // 通知只读缓存的地方（玻璃坞）重组回读，别再停在首帧冷读的 null。
+            wallpaperInkBandsCacheVersionState.value++
         }
         callback(bands)
     }
@@ -358,6 +361,19 @@ private fun wallpaperFromCache(path: String?, decodeWidthPx: Int): ImageBitmap? 
  * 于是每次都能看到那一翻。有了这份缓存，新组合首帧就同步拿到同一张壁纸的三档亮度。
  */
 private val wallpaperInkBandsCache = LruCache<String, HomeBackgroundModel.InkBands>(64)
+
+/**
+ * 亮度带缓存的**写入版本**（Compose 可观察）。
+ *
+ * 坞（`HomeGlassDock`）只读进程缓存、不渲染 `chrome.backdrop`，拿不到 `onInkBands` 回调。
+ * 若只在首帧冷读一次，页面异步量完写缓存后坞不会重组，`wallpaperLuminance` 会一直是 null
+ * （深/黑壁纸 → 退回纯白主题面 → 判成深墨 → 黑字压黑看不见）。每次写入 `++` 这里，
+ * 坞读它作订阅信号，量完就会重组回读到真值。
+ */
+private val wallpaperInkBandsCacheVersionState = mutableStateOf(0)
+
+/** 读当前亮度带缓存版本；在 @Composable 里读它即可订阅后续写入。 */
+fun wallpaperInkBandsCacheVersion(): Int = wallpaperInkBandsCacheVersionState.value
 
 /**
  * 墨色带的缓存键：**路径 + 解码宽 + 视口 + 取景**。
