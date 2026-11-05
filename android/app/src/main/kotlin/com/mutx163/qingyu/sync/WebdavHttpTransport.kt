@@ -40,12 +40,24 @@ import javax.net.ssl.SSLSocketFactory
  * 1. **重定向自己走**：`instanceFollowRedirects = false`，手动跟随 301/302/303/307/308
  *    最多 [maxRedirects] 跳，**方法不降级**（WebDAV 上 302 常见于集合路径规范化，
  *    把 PUT/PROPFIND 降成 GET 会把写变成读）。跳数用尽后把最后一个 3xx 当失败返回。
+ *    2026-11-05 成员八复核①加**凭据安全门**：跨 host / https→http 降级的跳转一律
+ *    不跟随（每跳都重发 Basic 凭据，跟着 302 走 = 口令外泄），3xx 原样返回，见
+ *    [isCredentialSafeRedirect]。
  * 2. **响应体上限**：[maxResponseBytes] 超出即判 `invalid_response`，绝不返回半截快照。
- * 3. **超时是硬上限**：`connectTimeout` 与 `readTimeout` 都设为同一个值。
+ * 3. **超时分档**（2026-11-05 审核修复，原先是 connect/read 同值 30s）：
+ *    connect = [DEFAULT_CONNECT_TIMEOUT_MILLIS]（10s，握手 10s 足够、死主机早失败）、
+ *    read = `timeoutMillis`（默认 [DEFAULT_OPERATION_TIMEOUT_MILLIS] 30s，弱网拉快照不动）。
+ *    调用方显式传小超时时 connect 跟随变小（取小，不放大）。
  * 4. **DELETE 404 不算失败**：按幂等语义返回 `notFound = true`（Dart 那边会抛）。
+ * 5. **幂等读失败自动重试一次**（2026-11-05 审核修复）：GET / HEAD / PROPFIND 在
+ *    传输层瞬时失败（[TransportKind.TIMEOUT] / [TransportKind.SOCKET] /
+ *    [TransportKind.HANDSHAKE]——弱网抖动的三种表现）时，退避 [READ_RETRY_BACKOFF_MILLIS]
+ *    后重发一次；写操作（PUT / MKCOL / DELETE）与锁（LOCK / UNLOCK）**绝不重试**
+ *    （PUT 超时可能是「已落盘但响应丢失」，重发=重复提交）；HTTP 状态错误与
+ *    [TransportKind.FORMAT]（确定性失败）也不重试。详见 [execute]。
  *
  * 不做的事（诚实清单，别当成已实现）：摘要认证（Digest）、TLS 自签证书信任、
- * 断点续传 / Range、gzip 压缩、代理配置、cookie 会话、并发写冲突的重试。
+ * 断点续传 / Range、gzip 压缩、代理配置、cookie 会话。
  */
 class WebdavHttpTransport(
     val endpoint: WebdavEndpoint,
@@ -315,7 +327,46 @@ class WebdavHttpTransport(
 
     // ---------- 内部：一次往返（含手动重定向） ----------
 
+    /**
+     * 幂等读的传输层重试入口（2026-11-05 审核修复）。
+     *
+     * 幂等性判定（哪些方法允许重发）：
+     * - **GET / HEAD**：RFC 7231 §4.2.1，safe + idempotent——重发不改变服务器状态；
+     * - **PROPFIND**：RFC 4918 §9.1，纯读、safe——列目录/取 ETag 重发无副作用；
+     * - **PUT 不重试**（虽然 RFC 里幂等）：超时可能是「写已落盘、响应丢失」，重发等于
+     *   重复提交一次上传，条件头（If-Match）只在部分服务器兑现，兜不住这个窗口；
+     * - **DELETE / MKCOL 不重试**：写操作，按本仓口径排除（DELETE 的 404 幂等兜底
+     *   是「没删到不算错」，不是重发的理由）；
+     * - **LOCK / UNLOCK 不重试**：状态转换（加锁/放锁），重发可能双重加锁或放掉别人的锁。
+     *
+     * 重试条件（什么样的失败值得重发）：
+     * - [TransportKind.TIMEOUT] / [TransportKind.SOCKET] / [TransportKind.HANDSHAKE]——
+     *   弱网抖动（WiFi/蜂窝切换、DNS 瞬断、连接被重置、TLS 握手被打断）的三种表现，
+     *   第二次通常就过；
+     * - [TransportKind.FORMAT] 不重试：URL/协议格式错是确定性失败，重发还是错；
+     * - HTTP 状态错误（401/404/5xx…）不重试：服务器已给出确定答复，重试策略归调用方。
+     *
+     * 老化路径：`testConnection` / `listHistoryBackupFiles` / `getRemoteEtag` 都走
+     * PROPFIND，自动被覆盖；云同步下载（GET 快照）与情侣拉取同样受益。
+     */
     private fun execute(
+        method: WebdavMethod,
+        url: String,
+        body: ByteArray?,
+        headers: Map<String, String>,
+        timeoutMillis: Long,
+    ): RawResponse {
+        val first = executeOnce(method, url, body, headers, timeoutMillis)
+        val kind = first.failureKind ?: return first
+        if (!method.isIdempotentRead || !kind.isTransientNetworkFailure) return first
+        // 退避后重发一次；无论第二次成败都返回第二次的观测（最新状态），
+        // 分类器对两种瞬时段落给出的是同一档用户可读码。
+        Thread.sleep(READ_RETRY_BACKOFF_MILLIS)
+        return executeOnce(method, url, body, headers, timeoutMillis)
+    }
+
+    /** 单次往返（含手动重定向跟随）；重试包装见 [execute]。 */
+    private fun executeOnce(
         method: WebdavMethod,
         url: String,
         body: ByteArray?,
@@ -331,6 +382,11 @@ class WebdavHttpTransport(
             if (isRedirectStatus(status) && hops < maxRedirects) {
                 val target = resolveRedirectUrl(currentUrl, attempt.headers.first("Location"))
                 if (target != null) {
+                    // 凭据安全门（2026-11-05 成员八复核①）：跨 host / https→http 降级的
+                    // 重定向**一律不跟随**——每次跳转都会重发 Basic 凭据，跟着 302 走等于
+                    // 把 WebDAV 口令送到别的域、甚至明文通道。被拦时 3xx 原样返回（与
+                    // 跳数耗尽同一条出口），目标主机一个字节都收不到。
+                    if (!isCredentialSafeRedirect(currentUrl, target)) return attempt
                     currentUrl = target
                     hops++
                     continue
@@ -367,7 +423,9 @@ class WebdavHttpTransport(
             opened.requestMethod = method.wire
             opened.instanceFollowRedirects = false
             val bounded = timeoutMillis.coerceIn(1L, Int.MAX_VALUE.toLong()).toInt()
-            opened.connectTimeout = bounded
+            // 超时分档（2026-11-05）：连接建立走独立的短预算（死主机 10s 内报错），
+            // 读保持整个操作预算（弱网拉快照不动）。
+            opened.connectTimeout = connectBudget(bounded)
             opened.readTimeout = bounded
             opened.useCaches = false
             opened.setRequestProperty("User-Agent", WEBDAV_USER_AGENT)
@@ -461,7 +519,8 @@ class WebdavHttpTransport(
             val plain = Socket()
             socket = plain
             plain.tcpNoDelay = true
-            plain.connect(InetSocketAddress(host, port), bounded)
+            // 超时分档与 HttpURLConnection 路径同口径：connect 短预算、read 全预算。
+            plain.connect(InetSocketAddress(host, port), connectBudget(bounded))
             plain.soTimeout = bounded
             val active: Socket = if (scheme == "https") {
                 // SSLSocketFactory.getDefault() 的静态签名返回 SocketFactory，需转回 SSL 工厂。
@@ -531,6 +590,14 @@ class WebdavHttpTransport(
 
     private fun defaultPort(scheme: String?): Int = if (scheme == "https") 443 else 80
 
+    /**
+     * 连接建立预算：操作预算与 [DEFAULT_CONNECT_TIMEOUT_MILLIS] 取小——
+     * 调用方显式传小超时时跟随变小（测试用 400ms 不会被动放大到 10s），
+     * 默认 30s 时连接收在 10s、读保持 30s。
+     */
+    private fun connectBudget(boundedOperationTimeout: Int): Int =
+        boundedOperationTimeout.coerceAtMost(DEFAULT_CONNECT_TIMEOUT_MILLIS.toInt())
+
     private fun parseStatusLine(line: String): Int? {
         val parts = line.trim().split(' ')
         if (parts.size < 2 || !parts[0].startsWith("HTTP/")) return null
@@ -596,7 +663,12 @@ class WebdavHttpTransport(
             out.write(buffer, 0, read)
             remaining -= read
         }
-        return ReadResult(out.toByteArray(), false)
+        // 2026-11-05 成员八复核③：服务端提前断开（声明的 Content-Length 没读满）=
+        // 半截快照，标记 truncated——**与 chunked 分支的判定对齐**（那边 EOF 打断分块
+        // 同样标 truncated，fixed-length 分支此前漏了这档，属判定不一致，不是引用
+        // 类头 KDoc——那句「绝不返回半截快照」的射程是「响应体超上限」）。调用方
+        // （propfind）据此判 invalid_response，而不是把可解析的半截响应当完整数据。
+        return ReadResult(out.toByteArray(), truncated = remaining > 0)
     }
 
     private fun readUntilEnd(input: InputStream): ReadResult {
@@ -692,6 +764,56 @@ class WebdavHttpTransport(
  */
 private val URL_CONNECTION_METHODS: Set<String> =
     setOf("GET", "POST", "HEAD", "OPTIONS", "PUT", "DELETE", "TRACE")
+
+/**
+ * 重定向的**凭据安全门**（2026-11-05 成员八复核①，口径 2026-11-05 调整）：只有
+ * 「同 host 且不降级、同 scheme 不换端口」的跳转才允许跟随——每一跳都会重发
+ * `Authorization: Basic <WebDAV 口令>`，跨站 / 换端口的 302 等于把口令送到别的服务，
+ * https→http 降级等于口令上明文线。
+ *
+ * 规则（口径以本条为准）：
+ * - **host 变化（大小写不敏感）→ false**：不跟随跨站重定向（连「丢凭据再确认」都
+ *   不做——同步流程里没有插二次确认的位置，宁可失败让用户改端点地址）；
+ * - **https → http（哪怕同 host）→ false**：降级 = 凭据上明文线；
+ * - **同 scheme 换端口（如 :5005 → :9090）→ false**：可能是同机另一个服务，凭据不送；
+ * - **http → https 同 host → true**（口径调整 2026-11-05）：升级放行——首次请求本来
+ *   就走 http、凭据已经暴露过，升级到 TLS 只会更好；80→443 是升级的伴随结果，
+ *   按「scheme 变了」处理，不按「换端口」处理（真实 force-TLS 服务端的 302 不被打断）。
+ *
+ * `false` 时调用方**原样返回 3xx 响应**（与「跳数耗尽」同一条出口）：目标主机一个
+ * 字节都收不到，调用方按失败分类。纯函数、零 Android 依赖，L0 可测。
+ */
+internal fun isCredentialSafeRedirect(fromUrl: String, toUrl: String): Boolean {
+    val from = runCatching { URI(fromUrl) }.getOrNull() ?: return false
+    val to = runCatching { URI(toUrl) }.getOrNull() ?: return false
+    val fromScheme = from.scheme?.lowercase() ?: return false
+    val toScheme = to.scheme?.lowercase() ?: return false
+    if (toScheme != "http" && toScheme != "https") return false
+    // https 只升不降：https → http（无论 host 是否一致）都按明文外泄拦下。
+    if (fromScheme == "https" && toScheme != "https") return false
+    val fromHost = from.host?.lowercase() ?: return false
+    val toHost = to.host?.lowercase() ?: return false
+    if (fromHost != toHost) return false
+    if (fromScheme == toScheme) {
+        // 同 scheme：端口必须一致——换端口可能是同机另一个服务，凭据不送。
+        val fromPort = from.port.takeIf { it != -1 } ?: if (fromScheme == "https") 443 else 80
+        val toPort = to.port.takeIf { it != -1 } ?: if (toScheme == "https") 443 else 80
+        return fromPort == toPort
+    }
+    // http → https 同 host：升级放行（见 KDoc 口径）。
+    return true
+}
+
+/** 幂等读方法（GET / HEAD / PROPFIND）：传输层瞬时失败时允许自动重发一次，判定见 [WebdavHttpTransport.execute]。 */
+private val WebdavMethod.isIdempotentRead: Boolean
+    get() = this == WebdavMethod.GET || this == WebdavMethod.HEAD || this == WebdavMethod.PROPFIND
+
+/** 弱网抖动的三种传输层表现：值得重发一次；FORMAT（确定性格式错）不在此列。 */
+private val TransportKind.isTransientNetworkFailure: Boolean
+    get() = this == TransportKind.TIMEOUT || this == TransportKind.SOCKET || this == TransportKind.HANDSHAKE
+
+/** 幂等读重试的退避间隔：亚秒级，给对端一个喘息窗口又不拖慢整体节奏。 */
+private const val READ_RETRY_BACKOFF_MILLIS = 800L
 
 /**
  * 端点（baseUrl + 凭据）。**scheme 门禁在这里**：传输层本身信任已经过门的端点。

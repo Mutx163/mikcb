@@ -15,6 +15,7 @@ import java.net.URL
 import java.util.Collections
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
+import java.util.concurrent.atomic.AtomicBoolean
 import org.junit.AfterClass
 import org.junit.Assert.assertArrayEquals
 import org.junit.Assert.assertEquals
@@ -170,6 +171,14 @@ class WebdavHttpTransportTest {
             assertEquals("connection_timeout", result.errorMessage)
         } finally {
             release.countDown()
+            // 2026-11-05：读重试的第二笔（GET /slow.mikcb）由共享 worker 在 countDown
+            // **之后**才记账（worker 被 latch 卡住，直到这里才醒）——不等它记完就让位，
+            // 这条 stale 请求会漏进下一个用例的日志（实测把 ensureRemoteFolder 的
+            // 计数顶成 3）。等齐两笔再收尾，竞态消除。
+            val deadline = System.currentTimeMillis() + 2_000
+            while (server.requests.size < 2 && System.currentTimeMillis() < deadline) {
+                Thread.sleep(10)
+            }
         }
     }
 
@@ -182,6 +191,25 @@ class WebdavHttpTransportTest {
         assertTrue(result.isFailed)
         assertEquals("invalid_response", result.errorMessage)
         assertNull(result.bytes)
+    }
+
+    @Test
+    fun propfindRejectsBodyCutShortByEarlyDisconnect() {
+        // 成员八复核③（裸 socket 路径）：声明的 Content-Length 比实发多 50、提前断开 =
+        // 半截 PROPFIND 响应，必须判 truncated → invalid_response。readBounded
+        // （HttpURLConnection 路径）的同类破口已排下一轮（复核员口径：契约破口、非必然
+        // 脏数据），本用例只钉 raw 路径。判别力关键：**体本身是完整可解析的 XML**——
+        // 探针态（truncated=false）解析照样成功、用例才会翻红；发二进制垃圾会让两个
+        // 分支都判 invalid_response，探针打不红。
+        val fullBody = HISTORY_MULTISTATUS.toByteArray(Charsets.UTF_8)
+        server.handler = { exchange, _ ->
+            exchange.respond(207, fullBody, mapOf("Content-Length" to "${fullBody.size + 50}"))
+        }
+
+        val result = transport().propfind("/Apps/qingyu-sync/history/", depth = 1)
+
+        assertTrue(result.isFailed)
+        assertEquals("invalid_response", result.errorMessage)
     }
 
     @Test
@@ -248,6 +276,57 @@ class WebdavHttpTransportTest {
             listOf("/dav/loop-a", "/dav/loop-b", "/dav/loop-a", "/dav/loop-b"),
             server.requests.map { it.path },
         )
+    }
+
+    // ---------- 重定向凭据安全门（2026-11-05 成员八复核①） ----------
+
+    /**
+     * 凭据安全门的纯函数分支全覆盖：同 origin 放行；跨 host / 跨端口 / https→http
+     * 降级 / 非 http(s) 目标一律拦。咬合探针：删掉 [WebdavHttpTransport.executeOnce]
+     * 里的 `isCredentialSafeRedirect` 调用 → 下面的跨 origin 集成用例必红。
+     */
+    @Test
+    fun redirectCredentialGateAllowsSameOriginOnly() {
+        // 同 host 同 scheme 同端口（常规 302 集合路径规范化）→ 跟随
+        assertTrue(isCredentialSafeRedirect("http://nas.local:5005/dav/a", "http://nas.local:5005/dav/b"))
+        assertTrue(isCredentialSafeRedirect("https://nas.local/dav/a", "https://nas.local/dav/b"))
+        // 跨 host（哪怕 https → https）→ 拦：口令不能去别的域
+        assertFalse(isCredentialSafeRedirect("https://nas.local/dav/a", "https://evil.example.com/dav/b"))
+        // 同 scheme 换端口 = 可能是同机另一个服务 → 拦
+        assertFalse(isCredentialSafeRedirect("http://nas.local:5005/dav/a", "http://nas.local:9090/dav/b"))
+        // https → http（同 host）= 降级明文 → 拦
+        assertFalse(isCredentialSafeRedirect("https://nas.local/dav/a", "http://nas.local/dav/b"))
+        // http → https 同 host = 升级 → 放行（口径 2026-11-05 调整：凭据已在 http 上
+        // 暴露过，升级只会更好；真实 force-TLS 服务端的 302 不被打断）
+        assertTrue(isCredentialSafeRedirect("http://nas.local/dav/a", "https://nas.local/dav/b"))
+        // 升级的伴随端口变化（:8080 → :443）按「scheme 变了」处理，同样放行
+        assertTrue(isCredentialSafeRedirect("http://nas.local:8080/dav/a", "https://nas.local/dav/b"))
+    }
+
+    /**
+     * 跨 origin 302 端到端：源站 302 到另一台假服务器，门必须拦下——
+     * **目标服务器零请求**（凭据根本没离开源站，`Authorization` 无处可送），
+     * 结果按失败分类（3xx 原样返回，与跳数耗尽同一条出口）。
+     */
+    @Test
+    fun redirectsToAnotherOriginAreNotFollowedAndLeakNoCredentials() {
+        val target = FakeWebdavServer()
+        try {
+            server.handler = { exchange, _ ->
+                exchange.respond(302, ByteArray(0), mapOf("Location" to "${target.baseUrl}evil.mikcb"))
+            }
+
+            val result = transport().getBytes("/old.mikcb")
+
+            assertTrue(result.isFailed)
+            // 钱断言：目标 origin 一个字节都没收到——凭据根本没出源站。
+            assertEquals(0, target.requests.size)
+            // 源站只有最初那一笔 GET（带合法 Basic，本就该带）。
+            assertEquals(1, server.requests.size)
+            assertEquals("Basic dTpw", server.requests[0].authorization)
+        } finally {
+            target.close()
+        }
     }
 
     @Test
@@ -466,7 +545,66 @@ class WebdavHttpTransportTest {
 
         assertTrue(result.isFailed)
         assertEquals("access_denied", result.errorMessage)
-        assertEquals(2, server.requests.size)
+        // 只数本用例的两笔 MKCOL：共享假服务器的 worker 是独立线程，前一个用例
+        // （读超时 + 重试）的记账与 reset() 之间存在跨用例竞态，直接数 size 会被
+        // stale 请求污染成 3（2026-11-05 实测）。写操作不重试由下方
+        // writeOperationsAreNotRetriedOnTransportFailure 按路径直接钉死。
+        assertEquals(
+            listOf("/dav/Apps/", "/dav/Apps/qingyu-sync/"),
+            server.requests.filter { it.method == "MKCOL" }.map { it.path },
+        )
+    }
+
+    /**
+     * 「写操作传输失败**不重试**」的直接断言（2026-11-05 审核修复配套）。
+     *
+     * MKCOL / PUT 在传输层瞬时失败（handler 拖过客户端读超时）后必须**只发一次**：
+     * 重发 = 重复建目录 / 重复上传（首次写可能已落盘，只是响应丢了），属数据安全事故。
+     * 按请求路径直接计数，不依赖整条日志的 size（对跨用例 stale 免疫）。
+     * 咬合探针：把 [WebdavHttpTransport.execute] 的幂等读门放开到 MKCOL/PUT，本用例必红
+     * （重试笔会被空闲 worker 立刻记账并回 201，`isFailed` 断言先翻、计数随后翻）。
+     *
+     * 可观测性设计：handler 对**第一次**请求拖 600ms（> 客户端 400ms 读超时 ⇒ 触发
+     * 传输失败），之后立即应答——这样若门被误放开，重试笔（退避 800ms 后到达）会被
+     * 空闲的 worker 马上记账并得到 201，结果从「失败」翻成「成功」，探针才真的会红。
+     * （latch 挂死 worker 的形态会让重试笔进 backlog 永远不被记账，探针打不红，弃用。）
+     */
+    @Test
+    fun writeOperationsAreNotRetriedOnTransportFailure() {
+        val firstRequestHung = AtomicBoolean(true)
+        server.handler = { exchange, _ ->
+            if (firstRequestHung.getAndSet(false)) {
+                // 只拖第一次：客户端 400ms 读超时 < 600ms，必然传输失败。
+                Thread.sleep(600)
+            }
+            exchange.respond(201, ByteArray(0))
+        }
+        try {
+            val mkcolResult = transport(timeoutMillis = 400).mkcol("/Apps/x/")
+            assertTrue("写操作（MKCOL）传输失败必须报失败", mkcolResult.isFailed)
+            // 观察窗覆盖「退避 800ms + 第二次尝试」的最晚到达时刻：有重试这里必多一笔。
+            Thread.sleep(1_500)
+            assertEquals(
+                "写操作（MKCOL）传输失败不得重发",
+                1,
+                server.requests.count { it.path == "/dav/Apps/x/" },
+            )
+
+            // PUT 阶段：重新挂起第一次请求，同口径再钉一遍（HttpURLConnection 路径）。
+            firstRequestHung.set(true)
+            val putResult = transport(timeoutMillis = 400).putBytes("/Apps/x.bin", byteArrayOf(1))
+            assertTrue("写操作（PUT）传输失败必须报失败", putResult.isFailed)
+            Thread.sleep(1_500)
+            assertEquals(
+                "写操作（PUT）传输失败不得重发",
+                1,
+                server.requests.count { it.path == "/dav/Apps/x.bin" },
+            )
+        } finally {
+            // handler 的 600ms 拖延可能仍未醒（探针态下已立即应答），给一点收尾余量，
+            // 避免尾部响应写进后续用例的连接。
+            Thread.sleep(700)
+        }
     }
 
     @Test

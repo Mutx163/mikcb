@@ -100,6 +100,9 @@ class WebdavRequestsTest {
             "https://host/dav/new.mikcb",
             resolveRedirectUrl("https://host/dav/old.mikcb", "/dav/new.mikcb"),
         )
+        // 解析器仍解析出跨站目标（它的职责是纯 URL 解析）；**跟不跟随**由
+        // `isCredentialSafeRedirect` 凭据安全门裁决（2026-11-05 成员八复核②）：
+        // 跨站 302 会把 Basic 凭据送到别的域，安全门按新语义拦下，见下方专用用例。
         assertEquals(
             "https://other/x.mikcb",
             resolveRedirectUrl("https://host/dav/old.mikcb", "https://other/x.mikcb"),
@@ -110,6 +113,26 @@ class WebdavRequestsTest {
             "https://host/dav/Apps/history/index.json",
             resolveRedirectUrl("https://host/dav/Apps/index.json", "history/index.json"),
         )
+    }
+
+    /**
+     * 凭据安全门（`isCredentialSafeRedirect`，成员八复核①/②）：只有 **同 origin**
+     * （scheme + host + 有效端口）且不降级的跳转才放行——跨站 / 换端口 / 降级的 302
+     * 会把 Basic 凭据送到别的服务或明文线，一律拦（拦下时 3xx 原样返回，不跟随）。
+     */
+    @Test
+    fun redirectCredentialGateAllowsSameOriginOnly() {
+        // 同 host 同端口（origin 相同）→ 放行（常规 302 集合路径规范化）
+        assertTrue(isCredentialSafeRedirect("https://host/dav/a", "https://host/dav/b"))
+        // 同 host 换端口（https://host → https://host:8443）= 不同 origin → 拦
+        assertFalse(isCredentialSafeRedirect("https://host/dav/a", "https://host:8443/dav/b"))
+        // 默认口 vs 显式口（https://host = :443）同理 → 拦
+        assertFalse(isCredentialSafeRedirect("https://dav.example.com/dav/a", "https://dav.example.com:8443/dav/b"))
+        // https → http 降级（同 host）→ 拦
+        assertFalse(isCredentialSafeRedirect("https://host/dav/a", "http://host/dav/b"))
+        // 跨站 302（resolver 解析出的目标）+ 门 = 拦
+        val crossHost = resolveRedirectUrl("https://host/dav/old.mikcb", "https://other/x.mikcb")
+        assertFalse("跨站重定向按新语义必须被凭据安全门拦下", isCredentialSafeRedirect("https://host/dav/old.mikcb", crossHost ?: ""))
     }
 
     @Test

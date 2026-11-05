@@ -12,7 +12,24 @@ package com.mutx163.qingyu.sync
  * 不做网络收发：只做传给客户端之前的字符串/字节判定。
  */
 
+/**
+ * 读/写单次操作的**读超时**预算（Dart `webdav_client_service.dart` 默认 30s 同值）。
+ *
+ * 2026-11-05 审核修复：原先这一个值同时当 connect 与 read 超时（弱网下死主机要等满
+ * 30s 才报错）。现在拆开——连接建立走 [DEFAULT_CONNECT_TIMEOUT_MILLIS]，
+ * 本值只管「连上之后」的读写。
+ */
 const val DEFAULT_OPERATION_TIMEOUT_MILLIS = 30_000L
+
+/**
+ * 连接建立（TCP + TLS 握手）预算：**2026-11-05 审核修复，从 30s 拆出 10s**。
+ *
+ * 依据：握手只含一个 RTT 级别的往返 + TLS 握手，正常服务 10s 绰绰有余；
+ * 连不上的主机（DNS 污染 / 端口被封 / 服务下线）不值得等满整个 30s 操作预算——
+ * 10s 见分晓，配合读操作的一次重试，最坏路径（10s + 0.8s 退避 + 10s）也比
+ * 旧版单次 30s 更快给出结论。读超时（快照体在弱网下慢速到达）保持 30s 不动。
+ */
+const val DEFAULT_CONNECT_TIMEOUT_MILLIS = 10_000L
 
 /**
  * 是否 HTTPS（Dart `WebdavConnectionParams.isSecureUrl` 原样）。
