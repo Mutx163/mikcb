@@ -24,6 +24,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.mutx163.qingyu.components.QingyuCard
 import com.mutx163.qingyu.components.QingyuCardDefaults
+import com.mutx163.qingyu.components.QingyuGlassIconButton
 import com.mutx163.qingyu.components.QingyuPageCardMargin
 import com.mutx163.qingyu.components.QingyuPageList
 import com.mutx163.qingyu.components.QingyuPageScaffold
@@ -32,8 +33,6 @@ import com.mutx163.qingyu.components.QingyuWeightDelta
 import com.mutx163.qingyu.components.shiftWeight
 import com.mutx163.qingyu.theme.QingyuTheme
 import top.yukonga.miuix.kmp.theme.MiuixTheme
-import top.yukonga.miuix.kmp.basic.Icon
-import top.yukonga.miuix.kmp.basic.IconButton
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TextField
 import top.yukonga.miuix.kmp.icon.MiuixIcons
@@ -92,14 +91,14 @@ fun LocationTimeMatchPage(
     QingyuPageScaffold(
         title = model.title,
         onBack = onBack,
+        // 右上动作键与左上返回键同一套外观：共享玻璃圆底 + 细边 + 小外浮影。
         actions = {
-            IconButton(onClick = onCreateGroup) {
-                Icon(
-                    imageVector = MiuixIcons.Add,
-                    contentDescription = model.createGroupLabel,
-                    tint = Color(QingyuTheme.actionIcon(dark)),
-                )
-            }
+            QingyuGlassIconButton(
+                onClick = onCreateGroup,
+                contentDescription = model.createGroupLabel,
+                icon = MiuixIcons.Add,
+                tint = Color(QingyuTheme.actionIcon(dark)),
+            )
         },
     ) {
         // 官方页面骨架：LazyColumn + 滚动条 + 末端触感（见 QingyuPageList 注释）

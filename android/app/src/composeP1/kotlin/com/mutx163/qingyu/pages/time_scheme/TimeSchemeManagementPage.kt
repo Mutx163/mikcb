@@ -27,6 +27,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.mutx163.qingyu.components.QingyuCard
 import com.mutx163.qingyu.components.QingyuCardDefaults
+import com.mutx163.qingyu.components.QingyuGlassIconButton
 import com.mutx163.qingyu.components.QingyuPageCardMargin
 import com.mutx163.qingyu.components.QingyuPageList
 import com.mutx163.qingyu.components.QingyuPageScaffold
@@ -124,15 +125,15 @@ fun TimeSchemeManagementPage(
     QingyuPageScaffold(
         title = model.title,
         onBack = onBack,
+        // 右上动作键与左上返回键同一套外观：共享玻璃圆底 + 细边 + 小外浮影。
         actions = {
             // Dart `FHeaderAction(icon: Icons.add_rounded, semanticsLabel: newSchemeTooltip)`
-            IconButton(onClick = onCreate) {
-                Icon(
-                    imageVector = MiuixIcons.Add,
-                    contentDescription = model.newSchemeTooltip,
-                    tint = Color(QingyuTheme.actionIcon(dark)),
-                )
-            }
+            QingyuGlassIconButton(
+                onClick = onCreate,
+                contentDescription = model.newSchemeTooltip,
+                icon = MiuixIcons.Add,
+                tint = Color(QingyuTheme.actionIcon(dark)),
+            )
         },
     ) {
         // 加载态 → 内容用 180ms 交叉淡入：不再「空页停几秒、内容猛一下弹出来」。
