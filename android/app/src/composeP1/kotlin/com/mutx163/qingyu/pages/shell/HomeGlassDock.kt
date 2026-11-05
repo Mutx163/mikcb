@@ -8,20 +8,32 @@ import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.size
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import com.mutx163.qingyu.app.HomeNavigationForm
 import com.mutx163.qingyu.app.TimetableSettingsModel
 import com.mutx163.qingyu.app.rememberHomeBackdropChrome
 import com.mutx163.qingyu.pages.settings.HomeMaterialRenderSpec
 import com.mutx163.qingyu.pages.settings.SettingsMaterialModel
 import com.mutx163.qingyu.pages.settings.SurfaceMaterialState
+import java.time.Duration
 import java.time.LocalDate
+import java.time.LocalDateTime
+import java.time.ZoneId
+import kotlinx.coroutines.delay
 import top.yukonga.miuix.kmp.basic.FloatingActionButton
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.blur.Backdrop
@@ -94,11 +106,11 @@ fun HomeGlassDock(
 
     // 底栏「日」「周」两格的图标（用户 2026-11-04 报「日课表图标永远显示 1」）：
     //  · 日视图 → 按**今天几号**选 miuix Th{d}（原写死 Th1，日历中间永远是 1）；
-    //  · 周视图 → 学期内叠「开学第几周」徽标，学期外（没开学 / 已过 / 无数据）保留原图标。
-    // 日期取**本机本地日期**（LocalDate.now()），随系统日期走；每次重组时重算。
-    val today = LocalDate.now()
-    val dayIcon = HomeNavIcons.dayIconOf(today.dayOfMonth)
-    val weekNumber = HomeDockNavModel.dockWeekNumber(today, semesterStartDate, semesterWeekCount)
+    //  · 周视图 → 学期内换成「开学第几周」日历图标，学期外（没开学 / 已过 / 无数据）保留原图标。
+    // 日期由 [rememberDockToday] 提供：跨零点自动翻页、回前台校正（不再停在进页那一天）。
+    // 「id → 图标」的解析在 `HomeNavIcons.dockItems`：宽屏档的侧边导航栏调的是同一个函数
+    // （2026-11-05 修：那两条渲染路径原本各算一次，平板那份漏了日号 / 周数）。
+    val today = rememberDockToday()
 
     // 底栏条目：**由用户存档决定**（Dart `resolveGlassDockActionIds`）。空表回退默认三格；
     // 用户没自定义过时，开发壳的「页面索引」追加到末尾（与拆壳前的壳层口径一致）。
@@ -152,17 +164,9 @@ fun HomeGlassDock(
     val resolvedWallpaperLuminance = wallpaperLuminance ?: cachedDockLuminance
 
     GlassDockNavigationBar(
-        items = dockIds.map { id ->
-            when {
-                // 日视图：换成「今天几号」的日历图标（Th{d}）。
-                id == HomeDockNavModel.ACTION_DAY ->
-                    HomeNavIcons.dockItem(id).copy(icon = dayIcon)
-                // 周视图：学期内换成与日图标同族的「周数」日历图标（数字进主体，不用角标）；
-                // weekNumber 为 null（越界 / 未开学 / 无数据）时保持原 Weeks 图标。
-                id == HomeDockNavModel.ACTION_WEEK && weekNumber != null ->
-                    HomeNavIcons.dockItem(id).copy(icon = HomeNavIcons.weekIconOf(weekNumber))
-                else -> HomeNavIcons.dockItem(id)
-            }
+        // 图标 + 文案来自共享解析（与宽屏档 Rail 同一份，见 HomeNavIcons.dockItems）。
+        items = remember(dockIds, today, semesterStartDate, semesterWeekCount) {
+            HomeNavIcons.dockItems(dockIds, today, semesterStartDate, semesterWeekCount)
         },
         selectedIndex = HomeDockNavModel.selectedIndex(dockIds, selectedId),
         onSelect = { index -> onSelect(dockIds[index]) },
@@ -232,6 +236,56 @@ fun rememberHomeDockUsesBackdrop(settingsModel: TimetableSettingsModel): Boolean
  */
 fun homeDockVisible(settingsModel: TimetableSettingsModel): Boolean =
     settingsModel.homeNavigationForm == HomeNavigationForm.GLASS_DOCK
+
+/**
+ * 「今天」的唯一取法：**会跨零点 / 回前台自己刷新**的本机本地日期。
+ *
+ * ## 为什么要单独一层（2026-11-05 修）
+ *
+ * 底栏「日」格画今天几号、周格画「开学第几周」，原来在组合期直接 `LocalDate.now()`。
+ * 那是一次性读取：进程常驻跨过零点、或从后台回前台却没有任何状态变化触发重组时，
+ * 底栏会一直停在**进入那天**的日号 / 周数。
+ *
+ * ## 两条刷新路径
+ *
+ * 1. **定时**：睡到「本机下一个零点 + 1s」再重读；key 带当天日期，翻页后自动排下一觉。
+ * 2. **生命周期**：`ON_RESUME` 校正一次。设备深睡时 `delay` 会被系统压后，醒来未必立刻到点，
+ *    回前台就把日期对齐 —— 这是「隔夜再用 App」最常见的路径。
+ *
+ * 读本机本地日期（跟系统日期 / 时区走），与学期周数口径（`HomeDockNavModel.dockWeekNumber`）
+ * 同源；纯展示值，不写盘、不触发 IO。底栏与侧边导航栏都调这一个。
+ */
+@Composable
+fun rememberDockToday(): LocalDate {
+    var today by remember { mutableStateOf(LocalDate.now()) }
+    // ① 跨零点：睡到下一个零点之后一点，醒来重读（key 变了 ⇒ 自动排下一次）。
+    LaunchedEffect(today) {
+        val now = LocalDateTime.now(ZoneId.systemDefault())
+        val nextMidnight = now.toLocalDate().plusDays(1).atStartOfDay()
+        val untilMidnightMs = Duration.between(now, nextMidnight).toMillis()
+        delay(untilMidnightMs.coerceAtLeast(0L) + MIDNIGHT_WAKE_SLACK_MS)
+        today = LocalDate.now()
+    }
+    // ② 回前台：定时器被系统压后时在这里对齐。
+    val lifecycleOwner = LocalLifecycleOwner.current
+    DisposableEffect(lifecycleOwner) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_RESUME) {
+                val current = LocalDate.now()
+                if (current != today) today = current
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
+    }
+    return today
+}
+
+/**
+ * 跨零点唤醒的富余量：宁可晚 1 秒，不要早 1 毫秒
+ * （早醒会读到「还没到零点」的旧日期，白醒一次）。
+ */
+private const val MIDNIGHT_WAKE_SLACK_MS = 1_000L
 
 /**
  * 首页里「贴着屏幕底」的两样东西该让到哪里：浮钮（回本周 / 回今日）与可滚动内容。

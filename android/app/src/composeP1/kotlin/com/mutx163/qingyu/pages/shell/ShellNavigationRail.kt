@@ -5,6 +5,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import com.mutx163.qingyu.app.TimetableSettingsModel
+import java.time.LocalDate
 import top.yukonga.miuix.kmp.basic.NavigationRail
 import top.yukonga.miuix.kmp.basic.NavigationRailItem
 import top.yukonga.miuix.kmp.basic.NavigationRailState
@@ -19,7 +20,8 @@ import top.yukonga.miuix.kmp.basic.rememberNavigationRailState
  *
  * - 条目排列：同一张解析表 [HomeDockNavModel.resolveIds]（用户存档驱动、空表回退默认三格、
  *   开发壳索引追加），**不另抄一份清单**；
- * - 图标与文案：同一套 [HomeNavIcons.iconOf] / [HomeNavIcons.labelOf]（ARB 逐字，无中文字面量）；
+ * - 图标与文案：同一套 `HomeNavIcons.dockItems`（与玻璃坞逐项同源，日格带今天日号、
+ *   周格带开学周数）/ `HomeNavIcons.labelOf`（ARB 逐字，无中文字面量）；
  * - 选中高亮：同一个 [HomeDockNavModel.selectedIndex]（排列里没有的 id 整栏不亮）；
  * - 圆钮（加课）：同一套 `glassDockRoundButtonIcon` 解析（守卫
  *   `GlassDockRoundButtonIconWiringGuardTest` 盯的是「设置里的图标名必须被消费」，
@@ -35,6 +37,8 @@ import top.yukonga.miuix.kmp.basic.rememberNavigationRailState
  *
  * @param expanded 是否展开态（≥1200dp 窗口带文字标签）：跨过阈值时经 [LaunchedEffect]
  *   调 `expand()/collapse()`，与 demo `AppContent.kt:350-363` 同一套写法。
+ * @param semesterStartDate 学期开学日（与玻璃坞同一份）：周格画「开学第几周」用。
+ * @param semesterWeekCount 学期总周数：越界 / 未开学 / 无数据时周格保持 `Weeks`。
  */
 @Composable
 fun ShellNavigationRail(
@@ -44,6 +48,8 @@ fun ShellNavigationRail(
     onSelect: (String) -> Unit,
     onRoundButton: () -> Unit,
     expanded: Boolean,
+    semesterStartDate: LocalDate? = null,
+    semesterWeekCount: Int = 0,
     modifier: Modifier = Modifier,
 ) {
     // 条目解析与 HomeGlassDock 完全同源（含「用户没自定义过底栏时追加开发壳索引」），
@@ -52,6 +58,14 @@ fun ShellNavigationRail(
         HomeDockNavModel.resolveDockIds(settingsModel.glassDockActions) { id ->
             isNavigable(id)
         }
+    }
+    // 「今天」与「id → 图标」必须和玻璃坞走**同一个入口**（2026-11-05 修）：
+    // 宽屏档坞整块不组合，这条路径是日 / 周两格唯一的渲染者。原先这里直接调
+    // `HomeNavIcons.iconOf(id)`，而它对 ACTION_DAY 恒返回 `Th1`、对 ACTION_WEEK 恒返回
+    // `Weeks` —— 于是「日课表图标永远显示 1」在平板上原样复现。现在两处都调 [dockItems]。
+    val today = rememberDockToday()
+    val items = remember(dockIds, today, semesterStartDate, semesterWeekCount) {
+        HomeNavIcons.dockItems(dockIds, today, semesterStartDate, semesterWeekCount)
     }
     val railState: NavigationRailState = rememberNavigationRailState(
         initialValue = if (expanded) NavigationRailValue.Expanded else NavigationRailValue.Collapsed,
@@ -82,11 +96,15 @@ fun ShellNavigationRail(
     ) {
         val selected = HomeDockNavModel.selectedIndex(dockIds, selectedId)
         dockIds.forEachIndexed { index, id ->
+            // 图标 / 文案取自共享解析表（与玻璃坞同一份），日格跟着今天几号、周格带周数。
+            val item = items.getOrNull(index)
             NavigationRailItem(
                 selected = index == selected,
                 onClick = { onSelect(id) },
-                icon = HomeNavIcons.iconOf(id),
-                label = HomeNavIcons.labelOf(id),
+                icon = item?.icon ?: HomeNavIcons.iconOf(id),
+                // Rail 是「图标 + 文字」常显；label 理论上恒非空（dockItems 一律给 labelOf），
+                // 兜底回 labelOf 保证永远不出现空标签。
+                label = item?.label ?: HomeNavIcons.labelOf(id),
             )
         }
     }

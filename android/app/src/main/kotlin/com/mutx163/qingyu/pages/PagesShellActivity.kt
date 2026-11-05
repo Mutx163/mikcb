@@ -577,17 +577,60 @@ private fun PagesShell(
     val pagerAnimScope = rememberCoroutineScope()
     // 在飞滑动协程的引用：连点时取消上一个。不进快照状态（job 变化不需要重组）。
     val pagerAnimJobRef = remember { java.util.concurrent.atomic.AtomicReference<kotlinx.coroutines.Job?>(null) }
+    // 「最新一次点击」的序号：只有它那条协程落定（或被打断）后才允许回写 currentRootId，
+    // 避免旧协程追上新的点击结果。与 pushSeq 同一手法，只是这里比的是「谁最新」。
+    val pagerAnimSeq = remember { java.util.concurrent.atomic.AtomicLong(0L) }
+
+    /**
+     * 把 [currentRootId] 对齐到 Pager **真正停着的那一页**（高亮 / 坞墨色的事实源）。
+     *
+     * 官方 demo 同口径：`MainPagerState.animateToPage` 的 `finally` 里用
+     * `pagerState.currentPage` 回写 `selectedPage`（`AppContent.kt:837-848`）——动画被
+     * 连点取消、或被系统压成零时长时，高亮仍落在眼前实际那一页上。
+     */
+    fun reconcileRootWithPager() {
+        val actual = dockPageIds.getOrNull(pagerState.currentPage) ?: return
+        if (actual != currentRootId) currentRootId = actual
+    }
+
+    /**
+     * 取消在飞的底栏滑动，并让它的对账**失效**：seq 前进 ⇒ 被取消那条协程的 `finally`
+     * 看到序号已不是最新，不再回写 `currentRootId`。
+     *
+     * 所有「换掉当前滑动」的路径都必须走它（不要各自 `cancel()`）：漏掉 bump 时，老协程会在
+     * `finally` 里把 `currentRootId` 按「取消那一刻 Pager 所在的页」回写，覆盖掉调用方刚写的新值
+     * （2026-11-05 复核：`openZoomFromWeek` 曾漏掉这一句，从外观编辑页返回后底栏高亮会指错格）。
+     *
+     * @return 本次取消之后的「最新序号」；需要自己回写的调用方拿它当自己的 seq。
+     */
+    fun cancelPagerAnim(): Long {
+        val seq = pagerAnimSeq.incrementAndGet()
+        pagerAnimJobRef.getAndSet(null)?.cancel()
+        return seq
+    }
 
     /** 点击作用域内直接滑到 [itemId] 对应的主屏页（起步不隔帧，见上方注释）。 */
     fun animateDockPagerTo(itemId: String) {
-        val target = DockPagerMotion.indexOfPage(dockPageIds, itemId) ?: return
-        pagerAnimJobRef.getAndSet(null)?.cancel()
+        val target = DockPagerMotion.indexOfPage(dockPageIds, itemId)
+        if (target == null) {
+            // 目标页不在 Pager 里（条目被移出底栏 / 页列表缩了）：不滑，也**不让
+            // currentRootId 悬空**——调用方通常已经先写了它，这里立刻按眼前那一页回写。
+            // 所有调用方共用这一个出口，所以这条对账只写一遍。
+            reconcileRootWithPager()
+            return
+        }
+        val seq = cancelPagerAnim()
         pagerAnimJobRef.set(
             pagerAnimScope.launch {
-                if (pagerReducedMotion) {
-                    pagerState.scrollToPage(target)
-                } else {
-                    pagerState.springAnimateToPage(target)
+                try {
+                    if (pagerReducedMotion) {
+                        pagerState.scrollToPage(target)
+                    } else {
+                        pagerState.springAnimateToPage(target)
+                    }
+                } finally {
+                    // 只有「仍是最新一次点击」的那条才回写（旧协程被取消后也会走 finally）。
+                    if (pagerAnimSeq.get() == seq) reconcileRootWithPager()
                 }
             },
         )
@@ -658,8 +701,11 @@ private fun PagesShell(
             pushZoomPage(id)
             return
         }
-        // 与点底栏同一套：取消在飞的滑动协程，避免连点 / 横滑动画叠加。
-        pagerAnimJobRef.getAndSet(null)?.cancel()
+        // 与点底栏同一套：**先 bump seq 再取消**在飞的滑动（2026-11-05 复核）。
+        // 只 cancel 不 bump 的话，被取消那条老协程的 `finally` 仍认为自己是「最新」，
+        // 会执行 reconcileRootWithPager()，把下面刚设的 ROOT_WEEK 覆盖成「取消那一刻所在的页」
+        // ⇒ 从外观编辑页返回后，画面是周视图、底栏高亮（与坞墨色）却指在别的格。
+        cancelPagerAnim()
         pagerAnimJobRef.set(
             pagerAnimScope.launch {
                 currentRootId = ROOT_WEEK
@@ -737,6 +783,9 @@ private fun PagesShell(
             // 只有 Pager 的左右滑；「点星期栏某天进日视图」的 top-down 仍由
             // `switchHomeViewMode` → `dayExpand` 页内动画负责，与本路径无关。
             // 跨页来源：animate=false（页面 snapTo，不播 dayExpand），只让 Pager 横滑。
+            // 目标页不在 Pager 里（用户把课表两格都从底栏删了）时**什么都不改**：
+            // 改 homeViewMode / currentRootId 而 Pager 滑不过去，正是「高亮和画面分叉」的来源。
+            if (DockPagerMotion.indexOfPage(dockPageIds, ROOT_WEEK) == null) return
             wiring.switchHomeViewMode(mode, animate = false)
             currentRootId = ROOT_WEEK
             animateDockPagerTo(ROOT_WEEK)
@@ -789,9 +838,14 @@ private fun PagesShell(
     // 对应的页。瞬时落定即可（低频、非观感路径）。
     LaunchedEffect(dockPageIds) {
         val target = DockPagerMotion.indexOfPage(dockPageIds, currentRootId)
-            ?: return@LaunchedEffect
-        if (target != pagerState.targetPage) {
-            pagerState.scrollToPage(target)
+        if (target != null) {
+            if (target != pagerState.targetPage) {
+                pagerState.scrollToPage(target)
+            }
+        } else {
+            // 当前条目被移出底栏（或页列表缩了）：跟 Pager 实际停留的那一页对齐，
+            // 别让高亮 / 坞墨色悬在一个已经不在排列里的 id 上（页面本身没换）。
+            reconcileRootWithPager()
         }
     }
 
@@ -830,7 +884,10 @@ private fun PagesShell(
     // 已停在首页根（周视图 / 日视图 / 月视图本身）时不拦，交系统退 App（与发布版一致）；
     // 日视图不再「收起成周视图」——那正是要修掉的「返回周视图」。
     val homeRootId = rootItemIdForView(wiring.homeViewMode)
-    BackHandler(enabled = atRoot && currentRootId != homeRootId) {
+    // 首页根**必须真的在 Pager 里**才拦返回：底栏既没排课表 / 月视图格、冷启动也没落在那里时
+    // 根本没有可回的目标，交系统退 App —— 否则这会变成「按了没反应」的死键。
+    val homeRootPageIndex = DockPagerMotion.indexOfPage(dockPageIds, homeRootId)
+    BackHandler(enabled = atRoot && currentRootId != homeRootId && homeRootPageIndex != null) {
         // 只切栈底条目 + Pager 滑回首页根；不调 switchHomeViewMode，避免把日/月档写成 WEEK。
         // animateDockPagerTo 走 indexOfPage 命中才滑（与底栏切换同一套对齐逻辑，不猜）：
         // 月档页在 homeViewMode=MONTH 时必在 dockPageIds（底栏格或冷启动 ensure 补入）。
@@ -854,6 +911,11 @@ private fun PagesShell(
     // 宽屏档坞整块不组合（`replacedByRail`），采样源也随之停掉。
     val recordBackdrop = glassAvailable && !shellRail.railVisible &&
         rememberHomeDockUsesBackdrop(settingsModel)
+
+    // 学期开学日 / 总周数：玻璃坞与宽屏档侧边导航栏**共用这一份**（「周」格画「开学第几周」
+    // 的唯一输入）。读一次、两处传参 —— 两条渲染路径各拼一遍时口径迟早分叉。
+    val semesterStartDate = wiring.timetable.snapshot.settings.semesterStartDate?.toLocalDate()
+    val semesterWeekCount = wiring.timetable.snapshot.settings.semesterWeekCount
 
     // 根 Scaffold：只为一件事——把弹层（`OverlayBottomSheet` / `OverlayListPopup`）的宿主
     // 抬到玻璃底栏之上。miuix 的弹层走「root scaffold」这条通道；没有这层根 Scaffold 时，
@@ -887,6 +949,9 @@ private fun PagesShell(
                         onSelect = { id -> railSelectRoot(id) },
                         onRoundButton = { handleRoundButton() },
                         expanded = shellRail.railExpanded,
+                        // 与坞同一份学期数据：宽屏档坞不组合，周格「第几周」只能靠这里画。
+                        semesterStartDate = semesterStartDate,
+                        semesterWeekCount = semesterWeekCount,
                     )
                 }
                 Box(
@@ -986,8 +1051,9 @@ private fun PagesShell(
                                 // 墨色判据要知道「坞底下是不是照片」：周 / 日 / 月视图是，
                                 // 任务、设置这些内嵌页是不透明主题面（Dart `isInlinePage` 同口径）。
                                 overWallpaper = DockPagerMotion.showsWallpaper(currentRootId),
-                                semesterStartDate = wiring.timetable.snapshot.settings.semesterStartDate?.toLocalDate(),
-                                semesterWeekCount = wiring.timetable.snapshot.settings.semesterWeekCount,
+                                // 与宽屏档 Rail 同一份学期数据（见上层 `semesterStartDate` 注释）。
+                                semesterStartDate = semesterStartDate,
+                                semesterWeekCount = semesterWeekCount,
                                 modifier = Modifier.align(Alignment.BottomCenter),
                             )
                         }

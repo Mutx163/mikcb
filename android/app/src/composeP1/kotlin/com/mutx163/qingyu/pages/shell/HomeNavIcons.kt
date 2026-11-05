@@ -5,6 +5,7 @@ import com.mutx163.qingyu.pages.SHELL_PAGE_INDEX_TITLE
 import com.mutx163.qingyu.pages.settings.SettingsGlassDockEditorPage
 import com.mutx163.qingyu.pages.timetable.TimetableMenuDefaults
 import com.mutx163.qingyu.pages.timetable.TimetableMenuItem
+import java.time.LocalDate
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.Add
 import top.yukonga.miuix.kmp.icon.extended.AddCircle
@@ -104,6 +105,49 @@ object HomeNavIcons {
         icon = iconOf(id),
         label = labelOf(id),
     )
+
+    /**
+     * 一串条目 id → **屏上真正要画的**条目表（图标 + 文案），底栏与侧边导航栏共用这一份。
+     *
+     * ## 为什么要收成一处（2026-11-05 修）
+     *
+     * 「日」格按今天几号选 `Th{d}`、「周」格把「开学第几周」写进日历主体的口径原本只落在
+     * `HomeGlassDock` 的调用点里（`HomeGlassDock.kt` 那段 `dockIds.map { when { … } }`）；
+     * 侧边导航栏（宽屏档）走的是 `iconOf(id)`，而 [iconOf] 对 `ACTION_DAY` 恒返回
+     * [MiuixIcons.Th1]、对 `ACTION_WEEK` 恒返回 `Weeks` —— 于是**同一个 bug 在平板上复现**：
+     * 日课表图标中间永远是「1」，周格也没有周数。现在两条渲染路径都调本函数，
+     * 「id → 图标」只在这里算一次。
+     *
+     * ## 输入
+     *
+     * [today] 由调用方按「会跨天刷新」的口径提供（`rememberDockToday()`），本函数是纯函数，
+     * 不自己读时钟 —— 这样它可被单测钉住，也不会出现「同一次重组里坞和栏算出两个日期」。
+     *
+     * @param dockIds 底栏排列（`HomeDockNavModel.resolveDockIds` 的产物）
+     * @param today 本机本地日期（决定「日」格图标）
+     * @param semesterStartDate 学期开学日；null = 无学期数据（周格保持 `Weeks`）
+     * @param semesterWeekCount 学期总周数；越界 / 未开学时周格保持 `Weeks`
+     */
+    fun dockItems(
+        dockIds: List<String>,
+        today: LocalDate,
+        semesterStartDate: LocalDate?,
+        semesterWeekCount: Int,
+    ): List<GlassDockItem> {
+        val dayIcon = dayIconOf(today.dayOfMonth)
+        val weekNumber = HomeDockNavModel.dockWeekNumber(today, semesterStartDate, semesterWeekCount)
+        return dockIds.map { id ->
+            when {
+                // 日视图：换成「今天几号」的日历图标（Th{d}）。
+                id == HomeDockNavModel.ACTION_DAY -> dockItem(id).copy(icon = dayIcon)
+                // 周视图：学期内换成与日图标同族的「周数」日历图标（数字进主体，不用角标）；
+                // weekNumber 为 null（越界 / 未开学 / 无数据）时保持原 Weeks 图标。
+                id == HomeDockNavModel.ACTION_WEEK && weekNumber != null ->
+                    dockItem(id).copy(icon = weekIconOf(weekNumber))
+                else -> dockItem(id)
+            }
+        }
+    }
 
     /**
      * **日视图**底栏图标：按「今天几号」选 miuix 带日号的日历图标（[MiuixIcons.Th1]…[MiuixIcons.Th31]）。
