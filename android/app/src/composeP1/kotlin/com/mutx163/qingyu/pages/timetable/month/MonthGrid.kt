@@ -23,7 +23,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.layout.layout
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -67,9 +67,15 @@ fun MonthGrid(
     onDayTap: (LocalDateTime) -> Unit,
     rowHeight: Dp,
     modifier: Modifier = Modifier,
-    /** 窗口露几行（**含小数**：拖拽时直线插值，收起态≈1）。 */
-    visibleRows: Float = grid.rowsInMonth.toFloat(),
-    rowOffset: Dp = 0.dp,
+    /** 窗口露几行（**含小数**：拖拽时直线插值，收起态≈1）。**在测量阶段才读**（见 [heightDeferred]）。 */
+    visibleRows: () -> Float = { grid.rowsInMonth.toFloat() },
+    /**
+     * 内容上移量（收起时把保留行顶到窗口顶端）。**在绘制阶段才读**（`graphicsLayer` lambda）。
+     *
+     * 这两个量都是拖拽进度的函数；写成普通参数会让页面每帧重组（并把版面账重算一遍），
+     * 改成 lambda 后进度变化只让测量的那几层重新测量 / 重放绘图层，数值不变。
+     */
+    rowOffset: () -> Dp = { 0.dp },
     showWeekNumbers: Boolean = true,
 ) {
     val dark = isSystemInDarkThemeSafe()
@@ -125,12 +131,12 @@ fun MonthGrid(
         // 收起时 `offset(-rowOffset)` 把整块内容推出窗口 ⇒ **一行都不剩**——这就是
         // 「上滑收起后日期表格消失」的根因（keptRow>0 时必现）。用 requiredHeight 兜住，
         // 与 Dart 的 OverflowBox 同义。
-        val windowRows = visibleRows.coerceIn(1f, grid.rowsInMonth.toFloat())
-        val rowOffsetPx = with(LocalDensity.current) { rowOffset.toPx() }
+        val windowRows = { visibleRows().coerceIn(1f, grid.rowsInMonth.toFloat()) }
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(rowHeight * windowRows)
+                // 高度在**测量阶段**才读进度（见 [heightDeferred]）：拖拽时只重测这一层。
+                .heightDeferred { rowHeight * windowRows() }
                 .clipToBounds(),
         ) {
             Column(
@@ -138,8 +144,8 @@ fun MonthGrid(
                     .fillMaxWidth()
                     .requiredHeight(rowHeight * grid.rowsInMonth)
                     // 平移用 graphicsLayer（绘制期变换，不触发子项重新测量/布局）：
-                    // 每帧只改这一个平移量，42 格不必逐帧重排。
-                    .graphicsLayer { translationY = -rowOffsetPx },
+                    // 每帧只改这一个平移量，42 格不必逐帧重排；位移量同样在**绘制阶段**才读。
+                    .graphicsLayer { translationY = -rowOffset().toPx() },
             ) {
                 for (row in 0 until grid.rowsInMonth) {
                     MonthWeekRow(
@@ -299,3 +305,30 @@ private fun isSystemInDarkThemeSafe(): Boolean = androidx.compose.foundation.isS
 /** 归一到当天 00:00（日历日口径）。 */
 private fun dayOnly(value: LocalDateTime): LocalDateTime =
     LocalDateTime.of(value.year, value.monthValue, value.dayOfMonth, 0, 0)
+
+/**
+ * 与 `Modifier.height(...)` 在**测量与摆放上等价**、但高度在**测量阶段才读**的高度修饰器。
+ *
+ * 月视图的卡高 / 表格窗口高都是拖拽进度的函数。写成 `Modifier.height(dp)`（组合期读值）
+ * 会让每个指针事件都重组整页；换成这里的 measure lambda 之后，进度变化只让这几处
+ * 重新测量 / 布局，不再牵连组合。测量/摆放语义与 `height(...)` 对齐：同样按父约束
+ * 夹在 minHeight/maxHeight 之间，同样把子项钉成这个固定高，摆放尺寸同样取子项实测值。
+ *
+ * ## 限制：不参与 intrinsic 测量
+ *
+ * `Modifier.height` 是 `SizeElement`，它的布局节点会如实回答 intrinsic 查询；这里是
+ * `Modifier.layout {}`，**不提供 intrinsic 查询能力**——上层若有 intrinsics 需求
+ *（`IntrinsicSize.Min/Max`、`Modifier.height(IntrinsicSize.*)`、`Row`/`Column` 的
+ * intrinsic 布局等），拿到的答案不可依赖。当前调用链（卡片与表格窗口的直接高度）
+ * 没有任何 intrinsic 查询，所以安全；**新增用法时必须确认所在位置不做 intrinsic 查询**。
+ *
+ * 只用于「值由 lambda 给出」的场景；普通固定高度继续用 `Modifier.height`。
+ */
+internal fun Modifier.heightDeferred(height: () -> Dp): Modifier = layout { measurable, constraints ->
+    // 按父约束夹一下（等价 `Modifier.height(...)` 的 constrain 行为）。这里用内联
+    // `coerceIn` 而不是 `Constraints.constrainHeight`：本仓这个 Compose 版本的
+    // `Constraints` 没有那个成员。
+    val h = height().roundToPx().coerceIn(constraints.minHeight, constraints.maxHeight)
+    val placeable = measurable.measure(constraints.copy(minHeight = h, maxHeight = h))
+    layout(placeable.width, placeable.height) { placeable.place(0, 0) }
+}

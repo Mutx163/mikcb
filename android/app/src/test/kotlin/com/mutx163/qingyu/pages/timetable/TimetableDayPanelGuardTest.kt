@@ -148,6 +148,50 @@ class TimetableDayPanelGuardTest {
         )
     }
 
+    // ── ③ 展开层读数时机：几何/透明度必须在测量期、绘制期读，不能回到组合期 ──
+    //
+    // 2026-11-05：原先组合期就把 `dayExpand.value` 换算成 heightFactor / cornerDp / panelAlpha，
+    // 360ms 转场里整棵子树逐帧重组重测。改成「高度在 layout 块、圆角在 graphicsLayer 的 shape、
+    // alpha 走 derivedStateOf 委托且只在 graphicsLayer 里取值」。
+    // 上面 `面板公式在场` 只钉公式字面量，分不清读数时机 —— 这条专门钉形态，
+    // 免得将来又被人写回组合期而守卫无感。
+    @Test
+    fun `展开层读数时机后移到测量与绘制期`() {
+        fun ok(s: String): Boolean =
+            s.contains("private fun Modifier.expandPanelGeometry(") &&
+                // 高度：在 layout 的 measure 块里读进度
+                s.contains("val heightPx = (maxHeight * max(0.04f, progress)).roundToPx()") &&
+                // 圆角：在 graphicsLayer 的 shape 里读进度
+                s.contains("shape = RoundedCornerShape((28f * homeViewExpandCornerRadiusFactor(progress)).dp)") &&
+                // alpha：derivedStateOf 委托 + 只在绘制层取值
+                s.contains("val panelAlpha by") &&
+                s.contains("derivedStateOf {") &&
+                s.contains("graphicsLayer { alpha = panelAlpha }") &&
+                // 反向：不得出现组合期直接求值的老形态
+                !s.contains("val panelAlpha = homeViewEaseOutCubic(") &&
+                !s.contains("val cornerDp = 28f * homeViewExpandCornerRadiusFactor(")
+
+        assertTrue("真实源码应通过（读数已后移到测量/绘制期）", ok(weekPage))
+
+        // 咬合探针：四种回退各判红一次，证明判据有牙齿而不是空判
+        assertFalse(
+            "alpha 回到组合期求值应判红",
+            ok(weekPage + "\n val panelAlpha = homeViewEaseOutCubic(progress)"),
+        )
+        assertFalse(
+            "圆角回到组合期求值应判红",
+            ok(weekPage + "\n val cornerDp = 28f * homeViewExpandCornerRadiusFactor(progress)"),
+        )
+        assertFalse(
+            "高度不再在测量期读进度应判红",
+            ok(weekPage.replace("(maxHeight * max(0.04f, progress)).roundToPx()", "maxHeight.roundToPx()")),
+        )
+        assertFalse(
+            "alpha 脱离绘制层应判红",
+            ok(weekPage.replace("graphicsLayer { alpha = panelAlpha }", ".then(Modifier)")),
+        )
+    }
+
     private fun read(rel: String): String {
         var dir: File? = File("").absoluteFile
         while (dir != null) {

@@ -8,4 +8,3 @@ timetable/CourseGridCard.kt|R5|课程色数据链——解析兜底 0xFF2196F3 �
 timetable/day/DayViewCommon.kt|R5|课程色解析兜底 0xFF2196F3（Dart 同值）与亮底墨 0xFF1E293B——都挂在用户课程色上做对比，主题令牌无法保证对比度
 timetable/day/DayViewCourseCard.kt|R5|课程卡数据色——非本周置灰 0xFF94A3B8 = Dart kNonCurrentWeekCourseColorHex；情侣徽标 0xFFE91E63 = partnerColorHexDefault；停课徽标 0xFFD32F2F = Dart Colors.red.shade700；另有解析兜底
 timetable/month/MonthViewPage.kt|R2|议程列表 userScrollEnabled=false，只作容器、位移由 MonthPanelDragArea 驱动，非用户直滚，无滚动条语义
-timetable/TimetableWeekPage.kt|R2|周视图是整周 Canvas 网格 + 单一纵向滚动（Dart 同构），不是卡片列表，QingyuPageList 不适用

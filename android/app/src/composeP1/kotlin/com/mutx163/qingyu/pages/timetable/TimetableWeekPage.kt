@@ -28,6 +28,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
+import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
@@ -41,12 +42,13 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.runtime.saveable.Saver
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.geometry.Offset
@@ -63,7 +65,6 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.platform.LocalView
-import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -104,6 +105,8 @@ import top.yukonga.miuix.kmp.blur.layerBackdrop
 import top.yukonga.miuix.kmp.blur.rememberLayerBackdrop
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.theme.MiuixTheme
+import top.yukonga.miuix.kmp.utils.overScrollVertical
+import top.yukonga.miuix.kmp.utils.scrollEndHaptic
 import java.time.LocalDate
 import java.time.LocalDateTime
 import kotlin.math.roundToInt
@@ -332,7 +335,6 @@ fun TimetableWeekPage(
             }
     }
 
-    val browsingWeek = pagerState.currentPage + 1
     var showWeekSelectorDialog by remember { mutableStateOf(false) }
 
     // ── 共享玻璃带上的星期栏跟哪一页（2026-11-01）──
@@ -353,6 +355,21 @@ fun TimetableWeekPage(
                 )
                 if (next != displayedPage) displayedPage = next
             }
+    }
+
+    // 「当前在看的周」= 星期栏同一个**落定页**（`chromeDisplayedPage`），不是 pager 的 `currentPage`。
+    // `currentPage` 在拖动过半就翻：拿它算「回本周」浮钮可见性与底部余量，会让浮钮出入场、
+    // 每页内距在拖动中途突变一帧；星期栏早就改用 displayedPage，这里统一过来。
+    val browsingWeek = displayedPage + 1
+
+    // ── 每周一个纵向滚动控制器（对齐发布版 `_weekGridScrollKey` / `PageStorageKey` 口径）──
+    // pager 离屏后会销毁页内容，`rememberScrollState()` 建在页内 ⇒ 划到相邻周再看回来就弹回顶部
+    // （发布版是「下周看一眼再回来仍停在第 8 节」）。控制器因此活在 pager 外层、按周次取。
+    // 只存 ScrollState（每页几十字节），页数上限就是总周数，不会无界增长。
+    // 走 [WeekScrollStatesSaver]：切深色模式这类 Activity 重建后位置也能恢复（只存偏移量，
+    // ScrollState 实例重建——它不是 Bundle 可存类型，身上的动画/手势状态本来也不该跨重建）。
+    val weekScrollStates = rememberSaveable(saver = WeekScrollStatesSaver) {
+        mutableMapOf<Int, ScrollState>()
     }
 
     // ── 周 ↔ 日展开态（对齐 2026-11-04 用户口径：全宽 / 从上往下展开 / 壁纸页面级静态底）──
@@ -750,6 +767,8 @@ fun TimetableWeekPage(
                     // 预览：单周、按框高自适应节高（对齐 Flutter `_TimetableWeekPreviewBody`
                     // 的 heightBudget 分支：sectionHeight = 可用高 / 可见节数）。
                     // 不接 pager（预览不可横滑；禁交互由外层挖洞件的 pointer 拦截负责），也不淡出。
+                    // 预览自己的滚动状态（就地 remember，不进真页的按周池子）。
+                    val previewScrollState = rememberScrollState()
                     BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
                         val previewSectionHeight = if (sectionCount > 0) {
                             (maxHeight / sectionCount.toFloat()).coerceAtLeast(0.dp)
@@ -758,6 +777,11 @@ fun TimetableWeekPage(
                         }
                         WeekPageContent(
                             pageWeek = initialWeek,
+                            // 预览用**独立**的滚动状态，不进 `weekScrollStates`：
+                            // ① 那是首页真页按周保留位置的池子，预览滚一下不该改写首页那一周的位置；
+                            // ② 两边内容高不同（预览节高按框高折算、首页按设置节高），
+                            //    「像素相同 ≠ 同一行」，共用一个控制器只会互相 clamp 出跳位。
+                            scrollState = previewScrollState,
                             semesterStart = semesterStart,
                             reminderKeys = reminderKeys,
                             visibleDays = visibleDays,
@@ -809,6 +833,9 @@ fun TimetableWeekPage(
                 ) { page ->
                     WeekPageContent(
                         pageWeek = page + 1,
+                        // 按周次取控制器：pager 销毁页内容后，翻回来仍停在原来那一节
+                        // （发布版 `_weekGridScrollKey` / `PageStorageKey` 同口径）。
+                        scrollState = weekScrollStates.getOrPut(page + 1) { ScrollState(0) },
                         semesterStart = semesterStart,
                         reminderKeys = reminderKeys,
                         visibleDays = visibleDays,
@@ -897,11 +924,21 @@ fun TimetableWeekPage(
                         }
                     } else {
                         // 上下翻（点星期栏某天 / 页内关闭）：原 heightFactor 顶部往下展开，几何不动。
-                        val rawValue = dayExpand.value
-                        val progress = dayExpandEasing.transform(rawValue)
-                        val heightFactor = max(0.04f, progress)
-                        val panelAlpha = homeViewEaseOutCubic(progress)
-                        val cornerDp = 28f * homeViewExpandCornerRadiusFactor(progress)
+                        //
+                        // ⚠️ 读值时机（2026-11-05）：高度 / 圆角 / 面板 alpha 原先都在**组合期**
+                        // 从 `dayExpand.value` 换算，于是 360ms 转场里本页组合体逐帧重组、
+                        // 连带日视图整棵子树每帧重新测量。现在按「谁用谁读、读在该读的阶段」分开：
+                        //  · 高度 → 测量期（[expandPanelGeometry] 的 layout 块）；
+                        //  · 圆角 → 绘制期（同一个 graphicsLayer 的 shape / clip）；
+                        //  · 面板 alpha → 绘制期（[panelAlpha] 是 derivedStateOf 委托，
+                        //    只在下面那个 `graphicsLayer{}` 块里取值，组合期不订阅）。
+                        // 数值 / 曲线 / 时长一律没变，逐帧观感与改前一致。
+                        val panelAlpha by remember {
+                            derivedStateOf {
+                                val progress = dayExpandEasing.transform(dayExpand.value)
+                                homeViewEaseOutCubic(progress)
+                            }
+                        }
                         BoxWithConstraints(
                             modifier = Modifier
                                 .matchParentSize()
@@ -910,13 +947,14 @@ fun TimetableWeekPage(
                         ) {
                             val maxW = maxWidth
                             val maxH = maxHeight
-                            val panelH = maxH * heightFactor
                             Box(
                                 modifier = Modifier
                                     .align(Alignment.TopCenter)
                                     .width(maxW)
-                                    .height(panelH)
-                                    .clip(RoundedCornerShape(cornerDp.dp)),
+                                    .expandPanelGeometry(
+                                        easedProgress = { dayExpandEasing.transform(dayExpand.value) },
+                                        maxHeight = maxH,
+                                    ),
                             ) {
                                 Box(
                                     modifier = Modifier
@@ -1037,6 +1075,11 @@ fun TimetableWeekPage(
 @Composable
 private fun WeekPageContent(
     pageWeek: Int,
+    /**
+     * 这一周的纵向滚动控制器，由 [TimetableWeekPage] 按周次持有（见 `weekScrollStates`）。
+     * pager 离屏后会销毁页内容，控制器必须活在页外，翻走再翻回来才停在同一节。
+     */
+    scrollState: ScrollState,
     semesterStart: LocalDate?,
     /** 已设单节课提醒键（`courseId|yyyy-MM-dd`），空集 = 真的没设过。 */
     reminderKeys: Set<String> = emptySet(),
@@ -1111,7 +1154,11 @@ private fun WeekPageContent(
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .verticalScroll(rememberScrollState()),
+                // 滚动反馈对齐日视图（`DayViewScrollContent.kt:117` 同款顺序）：
+                // 滑到顶/底有一档 miuix 拉伸回弹 + 滚动结束触感，周网格与日议程列表手感一致。
+                .scrollEndHaptic()
+                .overScrollVertical()
+                .verticalScroll(scrollState),
         ) {
             Row(
                 modifier = Modifier
@@ -1153,26 +1200,67 @@ private fun WeekPageContent(
 // 不再无条件留固定的 64dp（那会在本周/无浮钮时也顶出空隙）。
 
 /**
- * **保活但不参与绘制 / 命中 / 无障碍焦点**的修饰器（日视图展开层专用）。
+ * 周视图「每周一个滚动控制器」的保存器：**只存「周次 → 停在第几像素」**。
  *
- * 为什么需要它：展开层收起后如果直接不组合，下一次展开又要在动画起步帧重建整棵树
- *（pager、滚动位置、两层录像带全丢）。反过来，若只把子树的绘制关掉、仍让它参与命中，
- * 隐藏的日视图会把周视图的点击全部吞掉。这里用 `layout(0, 0) { }`：
- * 子树**照常测量**（组合与布局状态都保留），只是不 place —— 不绘制、不进命中测试；
- * `clearAndSetSemantics {}` 再把语义清掉，读屏也不会聚焦到一块看不见的页面上。
+ * 为什么不直接存 [ScrollState]：它不是 Bundle 可存类型，而且它身上的动画/手势状态
+ * 本来也不该跨 Activity 重建带走。这里存扁平的 IntArray（`周次, 偏移, 周次, 偏移…`），
+ * 是 Bundle 一定吃得下的形状；重建后按偏移量重建 ScrollState，位置就回来了。
  *
- * [active] 为真时是 no-op（直接返回 this），所以真展开时的布局与未加修饰器逐像素一致。
+ * 用它的是 [TimetableWeekPage] 里的 `weekScrollStates`：pager 销毁页内容不会丢位置（内存级），
+ * 切深色模式这类 Activity 重建也不会丢（靠这个 Saver）。
  */
-private fun Modifier.inertUnless(active: Boolean): Modifier =
-    if (active) {
-        this
-    } else {
-        this
-            .clearAndSetSemantics { }
-            .layout { measurable, constraints ->
-                measurable.measure(constraints)
-                layout(0, 0) { }
+private val WeekScrollStatesSaver: Saver<MutableMap<Int, ScrollState>, IntArray> = Saver(
+    save = { states ->
+        val flat = IntArray(states.size * 2)
+        var index = 0
+        states.forEach { (week, state) ->
+            flat[index++] = week
+            flat[index++] = state.value
+        }
+        flat
+    },
+    restore = { flat ->
+        mutableMapOf<Int, ScrollState>().apply {
+            var index = 0
+            while (index + 1 < flat.size) {
+                put(flat[index], ScrollState(flat[index + 1]))
+                index += 2
             }
+        }
+    },
+)
+
+/**
+ * 日视图展开面板的几何（高度 + 圆角裁剪），**读数后移到测量期 / 绘制期**。
+ *
+ * 改前这两项都在组合期算：`heightFactor` / `cornerDp` 直接由 `dayExpand.value` 换算，
+ * 于是 360ms 转场里外层组合体逐帧重组、日视图整棵子树每帧重新测量。
+ * 这里把「高度」放进 measure 块、「圆角」放进 graphicsLayer 块：
+ * 每帧只重新测量一层、重绘一层，不再牵动组合。
+ *
+ * 几何与 `Modifier.height(maxHeight * max(0.04f, p))` + `Modifier.clip(RoundedCornerShape(corner.dp))`
+ * 逐项等价：高度同样夹到 `max(0.04f, p)`，圆角同样是 `28f * homeViewExpandCornerRadiusFactor(p)`，
+ * 且两者都用**缓动后**的进度 `p`（与改前一致，不是夹过的 heightFactor）。
+ *
+ * [easedProgress] 必须在 measure / draw 阶段调用（本函数就是这么用的）——若在组合期先求值再传进来，
+ * 就退化成改前的每帧重组，等于没改。
+ */
+private fun Modifier.expandPanelGeometry(
+    easedProgress: () -> Float,
+    maxHeight: Dp,
+): Modifier = this
+    .layout { measurable, constraints ->
+        val progress = easedProgress()
+        val heightPx = (maxHeight * max(0.04f, progress)).roundToPx()
+        val placeable = measurable.measure(
+            constraints.copy(minHeight = heightPx, maxHeight = heightPx),
+        )
+        layout(placeable.width, heightPx) { placeable.place(0, 0) }
+    }
+    .graphicsLayer {
+        val progress = easedProgress()
+        shape = RoundedCornerShape((28f * homeViewExpandCornerRadiusFactor(progress)).dp)
+        clip = true
     }
 
 /** 某周某天的真实日期（Dart `timetable_weekday_header.dart:_dateForWeekDay`）。 */

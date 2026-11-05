@@ -24,6 +24,7 @@ import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.SideEffect
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableIntStateOf
@@ -447,12 +448,13 @@ private fun MonthViewBody(
         val availableWidthDp = maxWidth.value.toDouble()
         val availableHeightDp = maxHeight.value.toDouble()
         val density = LocalDensity.current
-        val progress = expandProgress().toDouble()
         // 小数页号：`currentPage` 在滑过半页时跳，加上连续偏移才是「翻到几成」。
         // 读它会让本层在滑动中逐帧重组 —— 卡高必须跟着跨着的两页走（Dart 的
         // AnimatedBuilder 同一条账）。
         val pageValue = pagerState.currentPage.toDouble() +
             pagerState.currentPageOffsetFraction.toDouble()
+        // 学期没配置时周次列整列不画：判据与 MonthGrid 内部同源（全 null = 不占位）。
+        val weekNumberColumnVisible = showWeekNumbers && grid.days.any { it.weekIndex != null }
         val keptRow = MonthPanelModel.rowToKeep(
             dates = grid.days.map { it.date },
             year = focusedYear,
@@ -460,48 +462,56 @@ private fun MonthViewBody(
             selectedDate = selectedInMonth,
             today = today,
         )
-        val layout = MonthPanelModel.layout(
-            progress = progress,
-            availableHeightDp = availableHeightDp,
-            availableWidthDp = availableWidthDp,
-            headerHeightDp = MonthGridMetrics.HEADER_HEIGHT,
-            weekLabelWidthDp = MonthGridMetrics.WEEK_LABEL_WIDTH,
-            minRowHeightDp = MonthGridMetrics.MIN_ROW_HEIGHT,
-            maxRowHeightDp = MonthGridMetrics.MAX_ROW_HEIGHT,
-            keptRow = keptRow,
-            // 学期没配置时周次列整列不画：判据与 MonthGrid 内部同源（全 null = 不占位）。
-            weekNumberColumnVisible = showWeekNumbers && grid.days.any { it.weekIndex != null },
-            // 卡内非表格开销（导航 + 分隔线 + 拉杆）：与卡自己同一个常量，少扣就溢出。
-            handleHeightDp = MonthCalendarChrome.CARD_CHROME,
-            // 网格外面那层上内边距也算进窗口高度。
-            topPaddingDp = MonthMetrics.CARD_PADDING,
-            rowCount = grid.rowsInMonth,
-        )
         // 卡高按**跨着的两页**里较多的行数算（判据在 `MonthPagerModel.cardRowCount`）：
         // 5 行月挨着 6 行月时只按聚焦月算会把高那页最后一行裁掉。
         val cardRowCount = MonthPagerModel.cardRowCount(pageValue) { page ->
             gridForPage(page).rowsInMonth
         }
-        val cardLayout = MonthPanelModel.layout(
-            progress = progress,
-            availableHeightDp = availableHeightDp,
-            availableWidthDp = availableWidthDp,
-            headerHeightDp = MonthGridMetrics.HEADER_HEIGHT,
-            weekLabelWidthDp = MonthGridMetrics.WEEK_LABEL_WIDTH,
-            minRowHeightDp = MonthGridMetrics.MIN_ROW_HEIGHT,
-            maxRowHeightDp = MonthGridMetrics.MAX_ROW_HEIGHT,
-            keptRow = keptRow,
-            weekNumberColumnVisible = showWeekNumbers && grid.days.any { it.weekIndex != null },
-            handleHeightDp = MonthCalendarChrome.CARD_CHROME,
-            topPaddingDp = MonthMetrics.CARD_PADDING,
-            rowCount = cardRowCount,
-        )
 
-        val rowHeightDp = layout.rowHeight
-        // 网格窗口高度 = 版面账里的 gridHeight 减掉上内边距（卡片自己加那段 padding）。
-        val gridWindowHeightDp =
-            (cardLayout.gridHeight - MonthMetrics.CARD_PADDING).coerceAtLeast(0.0)
-        val cardHeightDp = cardLayout.gridHeight + MonthCalendarChrome.CARD_CHROME
+        // ── 版面账：只读同一个函数，只有「读进度的时机」变了（2026-11-05）──
+        //
+        // 以前组合期直接把 `expandProgress()` 读出来算 3 次 `MonthPanelModel.layout`，
+        // 于是每个指针事件都重组整个 `MonthViewBody` + 两页内容；拖动时真正在变的
+        // 只有「卡高 / 表格窗口高 / 窗口行数 / 内容位移」这四个量。
+        //
+        // 现在组合期**一个进度都不读**：几何在 `heightDeferred` 的 measure lambda、
+        // `graphicsLayer` 的绘图层里现取；`derivedStateOf` 让同一帧内多次读取只算一遍。
+        // 公式、参数、返回的数值与改前**逐位相同**（同一个 `layout(...)`、同一组入参），
+        // 变的只有「什么时候读」，所以观感、动画时长、缓动一律未动。
+        fun layoutAt(progress: Double, rowCount: Int, weekNumberVisible: Boolean): MonthPanelLayout =
+            MonthPanelModel.layout(
+                progress = progress,
+                availableHeightDp = availableHeightDp,
+                availableWidthDp = availableWidthDp,
+                headerHeightDp = MonthGridMetrics.HEADER_HEIGHT,
+                weekLabelWidthDp = MonthGridMetrics.WEEK_LABEL_WIDTH,
+                minRowHeightDp = MonthGridMetrics.MIN_ROW_HEIGHT,
+                maxRowHeightDp = MonthGridMetrics.MAX_ROW_HEIGHT,
+                keptRow = keptRow,
+                weekNumberColumnVisible = weekNumberVisible,
+                // 卡内非表格开销（导航 + 分隔线 + 拉杆）：与卡自己同一个常量，少扣就溢出。
+                handleHeightDp = MonthCalendarChrome.CARD_CHROME,
+                // 网格外面那层上内边距也算进窗口高度。
+                topPaddingDp = MonthMetrics.CARD_PADDING,
+                rowCount = rowCount,
+            )
+
+        // 卡的那份版面账：**读它才取进度**（测量阶段读 → 只失效布局，不重组）。
+        val cardLayout by remember(
+            availableHeightDp, availableWidthDp, keptRow, cardRowCount, weekNumberColumnVisible,
+        ) {
+            derivedStateOf {
+                layoutAt(expandProgress().toDouble(), cardRowCount, weekNumberColumnVisible)
+            }
+        }
+        // 行高与进度**无关**（模型里只由可用高、宽度、行数决定）：组合期取一次，
+        // 给拖拽判据与每页网格当固定值。这里传 progress = 1.0 只是为了复用同一个
+        // `layout(...)`，不参与任何观感。
+        val rowHeightDp = remember(
+            availableHeightDp, availableWidthDp, cardRowCount, weekNumberColumnVisible,
+        ) {
+            layoutAt(1.0, cardRowCount, weekNumberColumnVisible).rowHeight
+        }
 
         Column(modifier = Modifier.fillMaxSize()) {
             Box(
@@ -510,7 +520,11 @@ private fun MonthViewBody(
                     .padding(horizontal = MonthMetrics.CARD_INSET.dp),
             ) {
                 MonthCalendarCard(
-                    modifier = Modifier.height(cardHeightDp.dp),
+                    // 卡高 = 表格窗口高 + 卡内非表格开销。两个量都在**测量阶段**才读进度
+                    //（`heightDeferred`，等价 `Modifier.height` 的约束语义），拖拽时只重测这一层。
+                    modifier = Modifier.heightDeferred {
+                        (cardLayout.gridHeight + MonthCalendarChrome.CARD_CHROME).dp
+                    },
                     navigator = {
                         // 标题跟手指连续滑动（Dart `month_view_toolbar.dart:235-266`
                         // 读 `PageController.page` 的 floor + frac）。
@@ -527,7 +541,9 @@ private fun MonthViewBody(
                         )
                     },
                     onDragStart = onDragStart,
-                    onDragUpdate = { dy -> onDragUpdate(dy, rowHeightDp, grid.rowsInMonth) },
+                    // 行程按**跨页口径**：卡高本身就是按 `cardRowCount` 算的，行程若用
+                    // 聚焦月的行数，5 行月贴 6 行月时就走不满 / 走过头（差一整行）。
+                    onDragUpdate = { dy -> onDragUpdate(dy, rowHeightDp, cardRowCount) },
                     onDragEnd = onDragEnd,
                 ) {
                     // 窗口裁剪在我们这层：MonthGrid 画全部 4~6 行，窗口只露 visible 行，
@@ -535,13 +551,17 @@ private fun MonthViewBody(
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .height(gridWindowHeightDp.dp)
+                            // 窗口高度 = 版面账里的 gridHeight 减掉上内边距（卡片自己加那段 padding）。
+                            .heightDeferred {
+                                (cardLayout.gridHeight - MonthMetrics.CARD_PADDING)
+                                    .coerceAtLeast(0.0).dp
+                            }
                             .clipToBounds()
                             // Dart 把纵向拖拽挂在整个日历 PageView 上（`month_view_screen.dart:439-443`），
                             // 不是只挂 26dp 拉杆：在格子上上下滑同样能收放。用触摸斜率判据
                             // （`detectVerticalDragGestures`），点格选日期不会被拖拽抢走；
                             // 与 pager 的横向手势正交，同一手势不会互相抢。
-                            .pointerInput(rowHeightDp, grid.rowsInMonth) {
+                            .pointerInput(rowHeightDp, cardRowCount) {
                                 val tracker = VelocityTracker()
                                 detectVerticalDragGestures(
                                     onDragStart = {
@@ -554,7 +574,7 @@ private fun MonthViewBody(
                                         onDragUpdate(
                                             with(density) { dragAmount.toDp().value },
                                             rowHeightDp,
-                                            grid.rowsInMonth,
+                                            cardRowCount,
                                         )
                                     },
                                     onDragEnd = {
@@ -585,28 +605,39 @@ private fun MonthViewBody(
                                 selectedDate = pageSelected,
                                 today = today,
                             )
-                            val pageLayout = MonthPanelModel.layout(
-                                progress = progress,
-                                availableHeightDp = availableHeightDp,
-                                availableWidthDp = availableWidthDp,
-                                headerHeightDp = MonthGridMetrics.HEADER_HEIGHT,
-                                weekLabelWidthDp = MonthGridMetrics.WEEK_LABEL_WIDTH,
-                                minRowHeightDp = MonthGridMetrics.MIN_ROW_HEIGHT,
-                                maxRowHeightDp = MonthGridMetrics.MAX_ROW_HEIGHT,
-                                keptRow = pageKeptRow,
-                                weekNumberColumnVisible = showWeekNumbers &&
-                                    pageGrid.days.any { it.weekIndex != null },
-                                handleHeightDp = MonthCalendarChrome.CARD_CHROME,
-                                topPaddingDp = MonthMetrics.CARD_PADDING,
-                                rowCount = pageGrid.rowsInMonth,
-                            )
+                            val pageRows = pageGrid.rowsInMonth
+                            val pageWeekNumberVisible = showWeekNumbers &&
+                                pageGrid.days.any { it.weekIndex != null }
+                            // 这一页的版面账：同样「读它才取进度」（测量 / 绘制阶段），
+                            // 几何仍是同一个 `layoutAt`，参数与改前逐项一致。
+                            val pageLayout by remember(
+                                availableHeightDp,
+                                availableWidthDp,
+                                pageKeptRow,
+                                pageRows,
+                                pageWeekNumberVisible,
+                            ) {
+                                derivedStateOf {
+                                    layoutAt(
+                                        progress = expandProgress().toDouble(),
+                                        rowCount = pageRows,
+                                        weekNumberVisible = pageWeekNumberVisible,
+                                    )
+                                }
+                            }
+                            // 该页行高与进度无关（见上方 `rowHeightDp` 的说明），组合期取一次。
+                            val pageRowHeightDp = remember(
+                                availableHeightDp, availableWidthDp, pageRows, pageWeekNumberVisible,
+                            ) {
+                                layoutAt(1.0, pageRows, pageWeekNumberVisible).rowHeight
+                            }.dp
                             Box(
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .height(
+                                    .heightDeferred {
                                         (pageLayout.gridHeight - MonthMetrics.CARD_PADDING)
-                                            .coerceAtLeast(0.0).dp,
-                                    )
+                                            .coerceAtLeast(0.0).dp
+                                    }
                                     .clipToBounds(),
                             ) {
                                 MonthGrid(
@@ -614,11 +645,12 @@ private fun MonthViewBody(
                                     today = today,
                                     selectedDate = pageSelected,
                                     onDayTap = onDayTap,
-                                    rowHeight = pageLayout.rowHeight.dp,
+                                    rowHeight = pageRowHeightDp,
                                     // 窗口行数（含小数）跟着展开进度走：收起只露 1 行，
                                     // 拖拽时连续变化；MonthGrid 内部据此裁剪、内容整体上移。
-                                    visibleRows = pageLayout.visibleRows.toFloat(),
-                                    rowOffset = pageLayout.scrollOffset.dp,
+                                    // 两个都是 lambda：值在测量 / 绘制阶段才读（组合期不读进度）。
+                                    visibleRows = { pageLayout.visibleRows.toFloat() },
+                                    rowOffset = { pageLayout.scrollOffset.dp },
                                     showWeekNumbers = showWeekNumbers,
                                 )
                             }
@@ -647,18 +679,23 @@ private fun MonthViewBody(
         }
 
         // 接线在重组时刷新：拖拽回调闭包捕获的是**这一帧**的行高与状态读取器。
-        dragState.gridCanAbsorb = { dy ->
-            if (dy < 0) {
-                expandProgress() > 0f
-            } else if (dy > 0) {
-                expandProgress() < 1f
-            } else {
-                false
+        // 走 `SideEffect`（与同文件 `MonthPanelContent` 里 `dragState.listState = …` 同一写法）：
+        // 组合期只描述 UI、不写外部状态，真正的赋值放到这一帧提交之后。
+        SideEffect {
+            dragState.gridCanAbsorb = { dy ->
+                if (dy < 0) {
+                    expandProgress() > 0f
+                } else if (dy > 0) {
+                    expandProgress() < 1f
+                } else {
+                    false
+                }
             }
+            dragState.onCollapseStart = onDragStart
+            // 行程同样按跨页口径（与卡高、拉杆两处一致）。
+            dragState.onCollapseUpdate = { dy -> onDragUpdate(dy, rowHeightDp, cardRowCount) }
+            dragState.onCollapseEnd = onDragEnd
         }
-        dragState.onCollapseStart = onDragStart
-        dragState.onCollapseUpdate = { dy -> onDragUpdate(dy, rowHeightDp, grid.rowsInMonth) }
-        dragState.onCollapseEnd = onDragEnd
     }
 }
 
