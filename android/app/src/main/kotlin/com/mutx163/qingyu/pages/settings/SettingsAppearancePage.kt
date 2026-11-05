@@ -165,6 +165,12 @@ object SettingsAppearancePage {
                     note = "字号/字重/字族的所见即所得样例句（:297-318）：在分组卡内，" +
                         "官方没有样例句控件",
                     texts = listOf(inlineText(SettingsStrings.fontPreviewSample)),
+                    // 样张按**当前草稿字号 / 字重**就地缩放（发布版 `:297-318` 的
+                    // `fontSize: 16 * _draft.appTextScale` + `FontWeight(_draft.appFontWeight)`）：
+                    // 拖这两根滑杆时这句话当场变，而整页的字号 / 字重只在松手后换
+                    //（拖动中换全局字阶会重排整棵树、打断滑杆的拖动会话）。
+                    textScaleFactor = state.appTextScale,
+                    textWeight = state.appFontWeight,
                 ),
             ),
         )

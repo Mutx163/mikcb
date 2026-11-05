@@ -261,12 +261,30 @@ fun SettingsHost(
             .map { it.id }
             .toSet()
     }
+
+    /**
+     * 滑杆拖动中：**全局换肤（字号 / 字重 / 种子色）先压着，松手才广播**。
+     *
+     * 为什么非压不可（2026-11-05 用户报「外观页拖字号，拉到一半就断、得松手重按」）：
+     * 本页的 [onModelChanged] 是壳的 `onSettingsChanged`（`ShellPageIndex.kt:454-460`），
+     * 它把 `appTextScale` 交给 `QingyuPageTheme`，而那里是**一层新的 `LocalDensity`**
+     * （`QingyuPageTheme.kt:147-170`，只缩放 `fontScale`）。滑杆每 tick 都广播一次 =
+     * 整棵页面树每帧换一次 density、重新测量布局；滑杆的拖动会话（miuix `Slider` 的
+     * `Modifier.draggable`）就挂在被重排的这棵树上，于是手势在拖动途中就断了。
+     *
+     * 发布版同一条口径（用户口径以 v2.1.4.1 为准）：拖字号只改页面草稿 `_draft`
+     * （`lib/screens/settings/settings_appearance.dart:267-304`），全局 `textScaler` 来自
+     * provider（`main.dart:561-564`），拖动中只有那句样张按 `16 * _draft.appTextScale` 变。
+     */
+    var sliderDragActive by remember { mutableStateOf(false) }
+
     val writer = remember(store) {
         DebouncedSettingsWriter(store, scope) {
             // 滑杆那一档没落盘：内存拉回盘上真值 + 提示（Dart `resetDraft` + `saveFailed`）。
             model = runCatching { store.load() }.getOrNull() ?: model
             // 主题桥可能已经按拖动中的草稿换过肤，这里必须把它拉回真值，
             // 否则用户会看到「提示保存失败，但界面还停在没存下的档位」。
+            sliderDragActive = false
             latestOnModelChanged(model)
             Log.e(LOG_TAG, "debounced settings save did not land")
             toast(SettingsStringsExt2.saveFailed.zh)
@@ -494,9 +512,12 @@ fun SettingsHost(
                 if (rowId in sliderRowIds) {
                     // 拖动中只改内存，250ms 后一次落盘（落盘失败由 writer 回读后纠正）。
                     model = result.model
-                    // 预览必须跟手：字重 / 字号 / 材质滑杆拖动时主题桥当场换档，
-                    // 不等 250ms 落盘（Dart `_updateDraft` 也是先 setState、后防抖写盘）。
-                    onModelChanged(result.model)
+                    // 全局换肤**不在这里广播**（见 [sliderDragActive]）：拖动中每 tick 换一次
+                    // `LocalDensity` 会把滑杆自己的拖动会话打断——用户报的「拉到一半就断」。
+                    // 「预览跟手」改由页面自己的草稿给：外观页那句样张按草稿字号就地缩放
+                    // （`SettingsInline.textScaleFactor`），一次拖动结束再由 [finishSliderEdit]
+                    // 补广播一次全局换肤。
+                    sliderDragActive = true
                     writer.schedule(result.model)
                 } else {
                     // 先补写防抖里欠着的那一档，避免旧值后落地把新值盖回去。
@@ -516,6 +537,22 @@ fun SettingsHost(
                 deliverIntent(result)
             }
         }
+    }
+
+    /**
+     * 滑杆**一次改动结束**（松手 / 点轨道 / 数值弹窗确认；由 `SettingsPageScreen` 的
+     * `onSliderEditFinished` 传进来）：把拖动期间压着的全局换肤补广播一次，并补写
+     * 防抖里欠着的那一档。
+     *
+     * 只在这一轮真的拖动过（[sliderDragActive]）时广播：非滑杆行本来就走
+     * `commitModel` 自己的那一次广播，重复广播等于让主题桥白换一次肤。
+     */
+    fun finishSliderEdit(rowId: String) {
+        if (rowId !in sliderRowIds) return
+        writer.flush()
+        if (!sliderDragActive) return
+        sliderDragActive = false
+        latestOnModelChanged(model)
     }
 
     /**
@@ -622,6 +659,8 @@ fun SettingsHost(
             onBack = onBack,
             // 行动作的落点全部在 [onRowAction]（自动更新那五行走独立存储，见其 KDoc）。
             onAction = ::onRowAction,
+            // 滑杆松手才补广播全局换肤，见 [finishSliderEdit] / [sliderDragActive]。
+            onSliderEditFinished = { rowId -> finishSliderEdit(rowId) },
         )
 
         // ---- 以下弹窗全部常驻组合：pending 状态只切 `show`，官方退场动画才播得出来

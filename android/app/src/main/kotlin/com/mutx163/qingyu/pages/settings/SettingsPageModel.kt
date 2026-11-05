@@ -430,6 +430,24 @@ data class SettingsInline(
      * 「检查更新」，只换 spinner），所以这里只给一个布尔，不给另一套文案。
      */
     val busy: Boolean = false,
+    /**
+     * 内联文字块的**就地字号倍率**（`1.0` = 与页面其余文字同一档）。
+     *
+     * 只给 [InlineKind.FONT_PREVIEW] 用：外观页把这句样张的字号交给它（`appTextScale`），
+     * 于是拖字号滑杆时**这句样张**当场变大 / 变小，与发布版
+     * `lib/screens/settings/settings_appearance.dart:297-318`（`fontSize: 16 * _draft.appTextScale`）
+     * 同一口径。整页的全局字号不跟着逐帧重排（理由见 `SettingsHost.commitWrite` 里
+     * 拖动闸门那段：拖动中换 `LocalDensity` 会把滑杆自己的拖动会话打断）。
+     */
+    val textScaleFactor: Double = 1.0,
+    /**
+     * 内联文字块的**草稿字重**（`null` = 跟随已生效的应用字重）。
+     *
+     * 与 [textScaleFactor] 同一件事的两半：外观页把 `appFontWeight` 交进来，于是拖字重滑杆时
+     * 这句样张当场变粗 / 变细。整页文字的字重仍只在松手后换（同一条拖动闸门，见
+     * `SettingsHost.commitWrite`）：拖动中换全局字阶会重排整棵树、打断滑杆的拖动会话。
+     */
+    val textWeight: Int? = null,
 ) : SettingsNode
 
 /**

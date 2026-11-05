@@ -25,7 +25,9 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -42,6 +44,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.DpSize
+import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import com.mutx163.qingyu.app.SettingsActionDispatcher
 import com.mutx163.qingyu.R
@@ -151,12 +154,48 @@ const val TOP_ACTION_ROW_ID = "topAction"
  * 2. **课卡页顶部周预览**：官方无对应物（自绘白名单第 ② 项），由 [preview] 槽位注入；
  * 3. **设置写回与失败回滚**：模型只标 [SettingsAction]，行为在仓库既有 provider 层。
  */
+/**
+ * 滑杆「一次改动结束」的信号（松手 / 点轨道 / 数值弹窗确认），由宿主决定拿它做什么。
+ *
+ * 为什么要单独一条通道、而不是复用 [SettingsAction]：滑杆拖动中与拖动**结束**在模型层
+ * 是同一件事（`WRITE_SETTING` + 同一个 rowId），但宿主对两者的处理必须不同——拖动中只改
+ * 内存 + 防抖落盘，结束才把「全局换肤」（字号 / 字重 / 种子色）广播出去。给 [SettingsAction]
+ * 加一个枚举值会让所有 `when (action)` 的消费点都要跟着改；这里只走一条渲染层内部的
+ * CompositionLocal，宿主在 `SettingsPageScreen(...)` 上挂一个默认空实现即可（见 `SettingsHost`）。
+ *
+ * 2026-11-05（用户报「拖字号拉到一半就断，得松手重按」）：外观页的 `onModelChanged` 是壳的
+ * `onSettingsChanged`，它把 `appTextScale` 变成 `QingyuPageTheme` 里的一层新 `LocalDensity`；
+ * 逐帧换 density = 整棵页面树逐帧重排，滑杆的拖动会话就挂在被重排的那棵树上。发布版同一条
+ * 口径：拖字号只改页面草稿（`settings_appearance.dart:267-304`），全局 `textScaler` 走
+ * 防抖落盘后的 provider（`main.dart:561-564`）。
+ */
+internal val LocalSettingsSliderEditFinished = compositionLocalOf<(rowId: String) -> Unit> { {} }
+
+/** 把 [LocalSettingsSliderEditFinished] 下发到列表里的 [SliderRow]（见该 local 的 KDoc）。 */
+@Composable
+private fun SliderEditFinishedScope(
+    onSliderEditFinished: (rowId: String) -> Unit,
+    content: @Composable () -> Unit,
+) {
+    CompositionLocalProvider(
+        LocalSettingsSliderEditFinished provides onSliderEditFinished,
+        content = content,
+    )
+}
+
 @Composable
 fun SettingsPageScreen(
     spec: SettingsPageSpec,
     preview: (@Composable () -> Unit)? = null,
     onBack: (() -> Unit)? = null,
     onAction: (action: SettingsAction, target: String?, rowId: String) -> Unit = { _, _, _ -> },
+    /**
+     * 滑杆**一次改动结束**（松手 / 点轨道 / 数值弹窗确认）的回调，参数是那一行的 rowId。
+     *
+     * 默认空实现：宿主不关心（或本来就没有逐帧的全局副作用）时什么都不用做。关心的是
+     * `SettingsHost`——它把拖动期间压着的全局换肤在这里补广播一次。
+     */
+    onSliderEditFinished: (rowId: String) -> Unit = {},
 ) {
     // 顶栏 + 折叠行为 + 返回键统一交给共享骨架（规则 R1）：
     // 骨架内部自己持有一个 ScrollBehavior，并通过 content 槽把它交给下面的 QingyuPageList，
@@ -231,7 +270,9 @@ fun SettingsPageScreen(
                     contentPadding = PaddingValues(bottom = 24.dp),
                 ) {
                     items(items = spec.nodes, key = { it.id }) { node ->
-                        SettingsNodeView(node = node, onAction = onAction)
+                        SliderEditFinishedScope(onSliderEditFinished) {
+                            SettingsNodeView(node = node, onAction = onAction)
+                        }
                     }
                 }
             }
@@ -250,7 +291,9 @@ fun SettingsPageScreen(
                 contentPadding = PaddingValues(bottom = 24.dp),
             ) {
                 items(items = spec.nodes, key = { it.id }) { node ->
-                    SettingsNodeView(node = node, onAction = onAction)
+                    SliderEditFinishedScope(onSliderEditFinished) {
+                        SettingsNodeView(node = node, onAction = onAction)
+                    }
                 }
             }
         }
@@ -788,6 +831,10 @@ private fun SliderRow(
     // 只有模型给了 `dialogHelper` 的行才开这个入口：没给的（全站其它滑杆）保持
     // `onClick = null`，该组件因此既不画行尾箭头、点行也没反应——与改动前完全一致。
     var editing by remember(row.id) { mutableStateOf(false) }
+    // 一次改动的**终点**（松手 / 点轨道 / 数值确认）单独报一次：模型层分不出「拖动中」
+    // 与「松手」，而宿主对两者的处理必须不同（拖动中不广播全局换肤）。见
+    // [LocalSettingsSliderEditFinished] 的 KDoc。
+    val onEditFinished = LocalSettingsSliderEditFinished.current
     QingyuSliderPreference(
         value = value.toFloat(),
         onValueChange = { changed ->
@@ -797,6 +844,9 @@ private fun SliderRow(
                 row.id,
             )
         },
+        // miuix `Slider` 的两条收尾都落到这里：`draggable` 的 `onDragStopped`，以及
+        // `QingyuSlider` 补的「点轨道跳值」在抬手时补的那一次。
+        onValueChangeFinished = { onEditFinished(row.id) },
         title = row.title,
         summary = row.subtitle,
         valueText = row.value,
@@ -829,6 +879,9 @@ private fun SliderRow(
                 editing = false
                 // 与拖动滑杆**同一条**写入口：同一个值串格式、同一个 rowId。
                 onAction(SettingsAction.WRITE_SETTING, changed.toString(), row.id)
+                // 弹窗确认也是一次「改完」：宿主据此把压着的全局换肤补上（否则字号改了、
+                // 整页字号要等离开页面才生效）。
+                onEditFinished(row.id)
             },
         )
     }
@@ -1123,10 +1176,41 @@ private fun PreviewTile(
     }
 }
 
-/** 字号实时预览（`settings_appearance.dart:297-318`）。 */
+/**
+ * 字阶里的 `TextUnit` 按倍率缩放；`Unspecified` 原样返回。
+ *
+ * `TextUnit` 的 `times` 内部会 `checkArithmetic`，对 `Unspecified` 直接抛异常，所以先判再用
+ * （行高 / 字距在官方字阶里可能是未指定，字号则可能是 Em —— 三种都要能安全过一遍）。
+ */
+private fun TextUnit.scaledOrSame(scale: Float): TextUnit =
+    if (this == TextUnit.Unspecified) this else this * scale
+
+/** 字号 / 字重实时预览（`settings_appearance.dart:297-318`）。 */
 @Composable
 private fun FontPreview(node: SettingsInline) {
     val colors = MiuixTheme.colorScheme
+    // 样例句按**当前草稿字号**就地缩放（发布版同一处：`fontSize: 16 * _draft.appTextScale`）：
+    // 拖字号滑杆时这句话当场变大 / 变小，而整页的全局字号只在松手后换——拖动中换
+    // `LocalDensity` 会把滑杆自己的拖动会话打断（见 [LocalSettingsSliderEditFinished]）。
+    // 只在官方字阶已有的值上乘倍率，不写死字号（R4）；未指定（`Unspecified`）的字段原样保留
+    //——`TextUnit` 的算术在 `Unspecified` 上会抛，必须先判。
+    val baseStyle = MiuixTheme.textStyles.body1
+    val scale = node.textScaleFactor.toFloat()
+    val scaledStyle = if (scale == 1f) {
+        baseStyle
+    } else {
+        baseStyle.copy(
+            fontSize = baseStyle.fontSize.scaledOrSame(scale),
+            lineHeight = baseStyle.lineHeight.scaledOrSame(scale),
+            letterSpacing = baseStyle.letterSpacing.scaledOrSame(scale),
+        )
+    }
+    // 字重同理按**草稿档位**跟手（发布版 `fontWeight: FontWeight(_draft.appFontWeight)`）：
+    // 用 [shiftWeight] 的**相对增量**（草稿字重 − 当前已生效字重），不写死 `fontWeight`
+    // ——规则 R7 要求走它，且它的平移语义与全局字阶一致（不会把设计层级压平）。
+    val appliedWeight = baseStyle.fontWeight?.weight ?: QingyuTypography.WEIGHT_DEFAULT
+    val weightDelta = node.textWeight?.let { it - appliedWeight } ?: 0
+    val sampleStyle = scaledStyle.shiftWeight(weightDelta)
     QingyuCard(
         modifier = Modifier
             .fillMaxWidth()
@@ -1142,7 +1226,7 @@ private fun FontPreview(node: SettingsInline) {
         Text(
             text = node.texts.firstOrNull()?.text.orEmpty(),
             color = colors.onBackground,
-            style = MiuixTheme.textStyles.body1,
+            style = sampleStyle,
         )
     }
 }
