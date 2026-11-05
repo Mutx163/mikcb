@@ -9,6 +9,8 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -49,11 +51,18 @@ import top.yukonga.miuix.kmp.theme.MiuixTheme
  *
  * ## 弹层纪律（不许退）
  *
- * 常驻组合（弹层不许条件挂载）：三个弹层体**始终组合**，`show` 由 [request] 实时
- * 驱动；正文用 remember 保留的**最后一份非空请求**渲染（`shown`），点取消后退场
- * 动画期间不会塌成空板。输入/选中/开关状态都以 requestId 为 remember 键：脚本的
+ * 常驻组合（弹层不许条件挂载）：三个弹层体**始终组合**；`show` 一律判**当前挂起请求**
+ * （`request is WarehouseBridgeDialogRequest.XXX`）——宿主回答/取消后把 `pendingDialog`
+ * 置 null，本层 `show` 随之变 false、弹层正常收起（2026-11-05 审核阻断项：旧实现
+ * `show` 判 `shown` 保留值，request 归 null 后弹层永远关不掉）。
+ * 正文（`current`）在 request 非空时用它，归 null 后退场动画期间仍用 remember
+ * 保留的最后一份非空请求渲染（`shown`），不塌成空板；`shown` 由 LaunchedEffect 在
+ * request 持续为 null 约 500ms 后清空（与壳侧 miuix 退场时长同口径），新请求到达会
+ * 顶掉旧值并重开计时。输入/选中/开关状态都以 requestId 为 remember 键：脚本的
  * requestId 带时间戳与随机段，每次调用必然不同，天然做到「新请求 = 全新表单」。
  * [OverlayDialog] 的 `insideMargin` 显式给 16dp（本仓口径，不吃组件默认）。
+ * 守卫：`WarehouseBridgeDialogShowGuardTest`（源码级，钉 show 判 request、
+ * `current = request ?: shown` 与延迟清空三处，改回旧写法即红）。
  *
  * 诚实边界：`savePresetTimeSlots` 载荷是数组，解析不出字段表（模型层回 null），
  * 宿主对它走降级回答——本层没有画一个「确认保存」却什么都不存的假界面。
@@ -89,9 +98,23 @@ fun WarehouseBridgeDialogHost(
     onAction: (WarehouseBridgeDialogUserAction) -> Unit,
 ) {
     // 退场动画期间保留最后一份非空请求（常驻组合配方，见文件头「弹层纪律」）。
+    // shown **只做内容兜底、不驱动 show**：show 一律判当前挂起请求（request is …），
+    // 否则 request 归 null 后弹层再也关不掉（审核阻断项 2026-11-05）。
     var shown by remember { mutableStateOf<WarehouseBridgeDialogRequest?>(null) }
-    if (request != null) shown = request
-    val current = shown
+    // 同步新请求走 SideEffect（合规：不在组合期写快照状态）。行为不变：
+    // current 在 request 非空时根本不读 shown（elvis 短路），SideEffect 里写入
+    // 只落到无读者的状态上，不再多触发一次重组。
+    SideEffect { if (request != null) shown = request }
+    val current = request ?: shown
+
+    // request 归 null → 退场动画播完后清掉兜底内容（约 500ms，与壳侧 miuix 转场
+    // 时长同口径）；期间新请求到达会顶掉 shown 并重开计时，不受影响。
+    LaunchedEffect(request) {
+        if (request == null && shown != null) {
+            kotlinx.coroutines.delay(500)
+            shown = null
+        }
+    }
 
     // ------------------------------------------------------------------
     // confirm：居中确认框（Dart showHyperosConfirmDialog 的对应物）
@@ -99,7 +122,9 @@ fun WarehouseBridgeDialogHost(
     val confirm = current as? WarehouseBridgeDialogRequest.Confirm
     OverlayDialog(
         insideMargin = DpSize(16.dp, 16.dp),
-        show = confirm != null,
+        // show 判**当前挂起请求**（request 非空且是这一类），不判 shown 保留值：
+        // 否则宿主把 pendingDialog 置 null 后弹层仍收不起来（永远关不掉）。
+        show = request is WarehouseBridgeDialogRequest.Confirm,
         title = confirm?.title?.ifBlank { WarehouseStrings.confirmImportAction.zh },
         summary = confirm?.message?.takeIf { it.isNotBlank() },
         onDismissRequest = { confirm?.let { onAction(WarehouseBridgeDialogUserAction.Dismiss(it.requestId)) } },
@@ -134,7 +159,7 @@ fun WarehouseBridgeDialogHost(
     }
     var promptInvalid by remember(current?.requestId) { mutableStateOf(false) }
     QingyuSheet(
-        show = prompt != null,
+        show = request is WarehouseBridgeDialogRequest.Prompt,
         onDismissRequest = { prompt?.let { onAction(WarehouseBridgeDialogUserAction.Dismiss(it.requestId)) } },
         title = prompt?.title?.ifBlank { WarehouseStrings.inputRequiredTitle.zh },
         maxHeightFraction = 0.6f,
@@ -192,7 +217,7 @@ fun WarehouseBridgeDialogHost(
         mutableStateOf((current as? WarehouseBridgeDialogRequest.SingleSelection)?.selectedIndex ?: 0)
     }
     QingyuSheet(
-        show = selection != null,
+        show = request is WarehouseBridgeDialogRequest.SingleSelection,
         onDismissRequest = { selection?.let { onAction(WarehouseBridgeDialogUserAction.Dismiss(it.requestId)) } },
         title = selection?.title?.ifBlank { WarehouseStrings.pleaseChooseTitle.zh },
         maxHeightFraction = 0.6f,
@@ -229,7 +254,8 @@ fun WarehouseBridgeDialogHost(
 
     OverlayDialog(
         insideMargin = DpSize(16.dp, 16.dp),
-        show = form != null,
+        // 同上：show 判当前挂起请求，不判 shown 保留值。
+        show = request is WarehouseBridgeDialogRequest.SaveConfig,
         // 无标题：旧版本无此界面， payload 键即信息本体，不再造一句没出处的文案。
         onDismissRequest = { form?.let { onAction(WarehouseBridgeDialogUserAction.Dismiss(it.requestId)) } },
     ) {
