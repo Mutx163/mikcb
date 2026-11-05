@@ -306,8 +306,9 @@ fun mergeWarehouseCookieHeaders(vararg raws: String?): String {
     val order = LinkedHashMap<String, WarehouseCookie>()
     for (raw in raws) {
         for (cookie in parseWarehouseCookieHeader(raw)) {
-            val existing = order[cookie.name]
-            order[cookie.name] = if (existing == null) cookie else cookie
+            // 后面的赢 = 直接 put：LinkedHashMap 对同名 key 只覆盖值、不挪位
+            // （位置沿用第一次出现），不需要先读旧值比较。
+            order[cookie.name] = cookie
         }
     }
     return buildWarehouseCookieHeader(order.values.toList())

@@ -19,6 +19,7 @@ import java.io.File
 class WarehouseWebLoginHostWiringGuardTest {
 
     private val hostSource: String by lazy { stripKotlinComments(readHostSource()) }
+    private val adapterSource: String by lazy { stripKotlinComments(readAdapterSource()) }
 
     @Test
     fun `判据必须剥掉注释 注释掉的接线不算接线`() {
@@ -125,16 +126,202 @@ class WarehouseWebLoginHostWiringGuardTest {
         )
     }
 
-    private fun readHostSource(): String {
-        val relative =
-            "android/app/src/composeP1/kotlin/com/mutx163/qingyu/pages/import/warehouse/WarehouseWebLoginHost.kt"
+    @Test
+    fun `脚本执行窗口必须四个出口都复位 stage 且都走同一个收尾函数`() {
+        // 用户实报：一次导入完成后（页面没跳转）再点「执行导入脚本」恒被拒。
+        // 根因是 complete/error 只清 scriptActive、没把 stage 从 EXECUTING 放回 LOADED，
+        // 而重执行闸门 planWarehouseScriptExecution 硬要求 stage == LOADED。
+        val endWindow = blockAfter(hostSource, "fun endScriptWindow(")
+        assertTrue("必须有统一的执行窗口收尾函数 endScriptWindow()", endWindow.isNotEmpty())
+        assertTrue(
+            "endScriptWindow 必须把 stage 放回 LOADED（否则重试会被闸门拒掉）",
+            endWindow.contains("WarehouseWebLoginStage.LOADED"),
+        )
+        assertTrue("endScriptWindow 必须清掉执行期标志 scriptActive", endWindow.contains("scriptActive = false"))
+        assertTrue("endScriptWindow 必须停掉 30 秒计时", endWindow.contains("cancelImportTimeout()"))
+
+        // 出口：complete→FINALIZE、error、落盘完成、用户取消、取消回放、重试回放。
+        val exits = listOf(
+            "complete→FINALIZE" to blockAfter(hostSource, "WarehouseImportCompletionAction.FINALIZE ->"),
+            "error 分支" to blockAfter(hostSource, "\"error\" ->"),
+            "落盘完成" to blockAfter(hostSource, "fun finalizeCoursesImport("),
+            "用户取消" to blockAfter(hostSource, "fun cancelCoursesImport("),
+            // 2026-11-05 成员六复核：取消/重试回放不清脚本窗口 → 30 秒后仍会弹超时、
+            // 且 stage 卡在 EXECUTING 让重试被拒。
+            "取消回放" to blockAfter(hostSource, "fun cancelMacroPlayback("),
+            "重试回放" to blockAfter(hostSource, "fun retryMacroPlayback("),
+        )
+        for ((label, block) in exits) {
+            assertTrue("取不到 $label 的代码块（守卫自身失效，先修守卫）", block.isNotEmpty())
+            assertTrue(
+                "$label 必须调 endScriptWindow()（否则 stage 留在 EXECUTING，重试必败）",
+                block.contains("endScriptWindow("),
+            )
+        }
+    }
+
+    @Test
+    fun `执行导入必须有 30 秒超时并按 Dart 两分支给文案`() {
+        assertTrue(
+            "必须定义 30 秒预算常量（Dart _importTimeout = Duration(seconds: 30)）",
+            hostSource.contains("SCRIPT_EXECUTION_TIMEOUT_MS"),
+        )
+        // 判据必须落在**调用点**：只查 "armImportTimeout()" 会被函数定义行
+        // `fun armImportTimeout() {` 自己满足，等于没钉住（2026-11-05 咬合探针实测发现）。
+        val ready = blockAfter(hostSource, "is WarehouseScriptExecutionPlan.Ready ->")
+        assertTrue("取不到 Ready 分支（守卫自身失效，先修守卫）", ready.isNotEmpty())
+        assertTrue(
+            "注入成功后必须起计时：Ready 分支里要有 armImportTimeout() 调用",
+            ready.contains("armImportTimeout()"),
+        )
+        val arming = blockAfter(hostSource, "fun armImportTimeout(")
+        assertTrue("计时器必须真的 delay 到预算再收尾", arming.contains("delay(SCRIPT_EXECUTION_TIMEOUT_MS)"))
+
+        val timeout = blockAfter(hostSource, "fun onScriptExecutionTimeout(")
+        assertTrue("超时必须走统一收尾 endScriptWindow", timeout.contains("endScriptWindow("))
+        assertTrue(
+            "回放等课程期间的超时文案必须是 courseImportScriptNoCourses（Dart 同分支）",
+            timeout.contains("courseImportScriptNoCourses"),
+        )
+        assertTrue(
+            "其余超时文案必须是 executeFailedWithError('timeout')（Dart 同分支）",
+            timeout.contains("executeFailedWithError"),
+        )
+        assertFalse(
+            "超时文案不许写死中文（ARB 逐字对拍）",
+            timeout.contains("脚本执行失败"),
+        )
+        // 2026-11-05 DeepSeek成员1 复核发现：超时落在「回放等课程」那段时，覆盖层会停在
+        // EXECUTING_IMPORT 永不结束，用户只能点覆盖层的取消才逃得出来。
+        assertTrue(
+            "超时收尾必须把回放覆盖层切成 ERROR（否则「正在执行导入脚本」永不结束）",
+            timeout.contains("WarehousePlaybackUiState.ERROR"),
+        )
+    }
+
+    /**
+     * 注入闸门的两个时刻（2026-11-05 DeepSeek成员1 推演成立，复核员提出）。
+     *
+     * 时刻 A：回放中途取消时页面可能正被 `loadUrl` 带向新文档。收尾若直接落 `LOADED`，
+     * 「执行导入脚本」闸门就是开着的 → 脚本注入到**即将被销毁的旧文档**，什么都不回，
+     * 用户白等 30 秒才见一条 timeout；抢跑成功时还会在「用户已取消」之后弹一次导入确认。
+     * → 收尾必须看导航标志，导航中只落 `LOADING`。
+     *
+     * 时刻 B：取消只停宿主侧计时与 stage，**网页里没有取消原语**，旧脚本可能还活着。
+     * 直接再注入就是同页面两个实例并发：各回一条 courses；各弹一次 confirm，
+     * 第二条被「同刻已有挂起」的兜底**自动答 true**——用户没见过的确认被替他点了。
+     * → 注入前先问网页里的运行哨兵，为真就跳过本轮（不新开状态分支）。
+     */
+    @Test
+    fun `注入闸门必须在导航中关闭 且网页脚本仍在跑时拒绝注入`() {
+        // ---- 时刻 A ----
+        val endWindow = blockAfter(hostSource, "fun endScriptWindow(")
+        assertTrue("取不到 endScriptWindow（守卫自身失效，先修守卫）", endWindow.isNotEmpty())
+        assertTrue(
+            "endScriptWindow 必须看导航标志：导航中只落 LOADING（闸门据此保持关闭）",
+            endWindow.contains("pageNavigating") && endWindow.contains("WarehouseWebLoginStage.LOADING"),
+        )
+        listOf(
+            "导航开始" to "onWebPageStarted = {",
+            "加载完成" to "onWebPageFinished = {",
+            "加载失败" to "onWebError = {",
+        ).forEach { (label, marker) ->
+            val block = blockAfter(hostSource, marker)
+            assertTrue("取不到 $label 回调（守卫自身失效，先修守卫）", block.isNotEmpty())
+            assertTrue(
+                "$label 必须写导航标志 pageNavigating（否则该关闸门的时候是开的）",
+                block.contains("pageNavigating ="),
+            )
+        }
+        assertTrue(
+            "导航开始必须置真",
+            blockAfter(hostSource, "onWebPageStarted = {").contains("pageNavigating = true"),
+        )
+        listOf("onWebPageFinished = {", "onWebError = {").forEach { marker ->
+            assertTrue(
+                "导航结束（$marker）必须置假，否则标志永远挂着把闸门锁死",
+                blockAfter(hostSource, marker).contains("pageNavigating = false"),
+            )
+        }
+
+        // ---- 时刻 B ----
+        val ready = blockAfter(hostSource, "is WarehouseScriptExecutionPlan.Ready ->")
+        assertTrue("取不到 Ready 分支（守卫自身失效，先修守卫）", ready.isNotEmpty())
+        assertTrue(
+            "注入前必须先探网页里的运行哨兵（WAREHOUSE_IMPORT_RUNNING_PROBE_JS）",
+            ready.contains("WAREHOUSE_IMPORT_RUNNING_PROBE_JS"),
+        )
+        assertTrue(
+            "哨兵为真时必须走统一收尾并给可行动文案（不许静默返回、不许新开状态分支）",
+            ready.contains("endScriptWindow(") && ready.contains("courseImportScriptStillRunning"),
+        )
+        assertTrue(
+            "哨兵常量必须集中定义（宿主探针与 wrapper 置位同名同源，不能各写一份字符串）",
+            adapterSource.contains("const val WAREHOUSE_IMPORT_RUNNING_FLAG"),
+        )
+        assertTrue(
+            "wrapper 必须在 IIFE 开头用哨兵挡掉第二个实例",
+            adapterSource.contains("if (window.\$WAREHOUSE_IMPORT_RUNNING_FLAG) { return; }"),
+        )
+        assertTrue(
+            "wrapper 必须置位哨兵",
+            adapterSource.contains("window.\$WAREHOUSE_IMPORT_RUNNING_FLAG = true"),
+        )
+        // 注：这里刻意不用正则、也不写 raw string —— `$` 在两种写法里含义不同
+        // （raw string 里的 `\$` 会被当字面 `$` 注入正则变成行尾锚点，2026-11-05 实测计数恒 0）。
+        val resetMarker = "window." + '$' + "WAREHOUSE_IMPORT_RUNNING_FLAG = false"
+        var resets = 0
+        var from = adapterSource.indexOf(resetMarker)
+        while (from >= 0) {
+            resets++
+            from = adapterSource.indexOf(resetMarker, from + resetMarker.length)
+        }
+        assertTrue(
+            "wrapper 必须复位哨兵（complete 的 notifyTaskCompletion 与外层 catch 各一处），当前 $resets 处",
+            resets >= 2,
+        )
+    }
+
+    /**
+     * 取 `marker` 之后**第一对配平的 `{}`**（含两端）。
+     *
+     * 用配平而不是「往后截 N 个字符」：截长度会因为格式化差异假红/假绿，
+     * 而这些 lambda 里还有嵌套的花括号（与 `WarehouseWebLoginPageWiringGuardTest` 同款）。
+     */
+    private fun blockAfter(source: String, marker: String): String {
+        val markerAt = source.indexOf(marker)
+        if (markerAt < 0) return ""
+        val begin = source.indexOf('{', markerAt)
+        if (begin < 0) return ""
+        var depth = 0
+        var i = begin
+        while (i < source.length) {
+            when (source[i]) {
+                '{' -> depth++
+                '}' -> {
+                    depth--
+                    if (depth == 0) return source.substring(begin, i + 1)
+                }
+            }
+            i++
+        }
+        return source.substring(begin)
+    }
+
+    private fun readHostSource(): String =
+        readSource("android/app/src/composeP1/kotlin/com/mutx163/qingyu/pages/import/warehouse/WarehouseWebLoginHost.kt")
+
+    private fun readAdapterSource(): String =
+        readSource("android/app/src/main/kotlin/com/mutx163/qingyu/pages/import/warehouse/WarehouseAdapterScript.kt")
+
+    private fun readSource(relative: String): String {
         var dir: File? = File("").absoluteFile
         repeat(8) {
             val candidate = File(dir, relative)
             if (candidate.isFile) return candidate.readText(Charsets.UTF_8)
             dir = dir?.parentFile
         }
-        error("找不到宿主源码 $relative（当前目录 ${File("").absolutePath}）")
+        error("找不到源码 $relative（当前目录 ${File("").absolutePath}）")
     }
 
     /**

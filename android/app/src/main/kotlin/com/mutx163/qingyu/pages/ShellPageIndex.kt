@@ -136,6 +136,7 @@ import com.mutx163.qingyu.pages.import.SpreadsheetImportHost
 import com.mutx163.qingyu.pages.import.warehouse.AiImageCourseImportHost
 import com.mutx163.qingyu.pages.import.warehouse.WarehouseAdapterDetailHost
 import com.mutx163.qingyu.pages.import.warehouse.WarehouseCustomDebugHost
+import com.mutx163.qingyu.pages.import.warehouse.WarehouseImportHandoff
 import com.mutx163.qingyu.pages.import.warehouse.WarehouseImportPickerHost
 import com.mutx163.qingyu.pages.import.warehouse.WarehouseImportPrefs
 import com.mutx163.qingyu.pages.import.warehouse.WarehouseSchoolAdaptersHost
@@ -2599,7 +2600,16 @@ private fun WarehouseImportBranch(
     onBack: () -> Unit,
     onOpenPage: (String) -> Unit,
 ) {
-    if (state.school == null) {
+    // 先看**交接件**、再判本条目的 `state`：
+    // 上面两个 id 共用本函数，而壳给**每个路由条目独立**的 WarehouseShellState。
+    // 从选校页推过来时新条目 state.school 必为 null，只看 state 就会把选校页再画一遍
+    // ——用户得把同一所学校点两遍（2026-11-05 用户实报）。
+    // 判断锁在条目首次组合：交接件是一次性的，里面的适配器宿主 take() 之后 peek 就空了，
+    // 而那之后 state.school 才由宿主补写；按实时值判会闪回一次选校页。
+    val selectedSchool = remember(state) {
+        state.school ?: WarehouseImportHandoff.peek()?.school
+    }
+    if (selectedSchool == null) {
         WarehouseImportPickerHost(
             state = state,
             prefs = prefs,

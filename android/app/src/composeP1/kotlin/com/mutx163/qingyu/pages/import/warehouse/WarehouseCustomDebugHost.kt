@@ -45,7 +45,7 @@ private const val CUSTOM_DEBUG_LOG_TAG = "WarehouseCustomDebugHost"
  * |---|---|
  * | 保存调试记录 | [WarehouseCustomDebugStore.save] → 盘上 `warehouse_custom_debug_records`（键与 JSON 形状和 Dart 逐字一致） |
  * | 删除 | 官方 [OverlayDialog] 先确认 → [WarehouseCustomDebugStore.delete] → Toast「已删除调试记录：…」 |
- * | 开始调试 | **诚实失败**：脚本引擎（F08-8c）未移植，Toast「执行失败：不可用」，原因进 Log |
+ * | 开始调试 | **诚实失败**：脚本引擎（F08-8c）未移植，Toast「执行失败：不可用」，原因进 Log。⚠️ 按钮本体渲染在 [WarehouseCustomDebugPage]（另一泳道文件），宿主侧隐藏不了——2026-11-05 死控件收口时已把「隐藏入口」的诉求记录在此：引擎移植前这个按钮点了必失败，正确做法是在页面里给 [WarehouseCustomDebugPage.onRunDebug] 加 `showRunButton` 一类开关（默认 false）由宿主关掉；接引擎时删开关、接真执行 |
  * | 列表读取 | 进页读一次盘；保存/删除后就地刷新 |
  *
  * ## 诚实边界
@@ -82,6 +82,8 @@ fun WarehouseCustomDebugHost(onBack: () -> Unit) {
             onBack = onBack,
             onRunDebug = { record ->
                 // 脚本引擎未移植（F08-8c）：不假装执行成功，给一句明确的失败原因。
+                // ⚠️ 按钮本体在 WarehouseCustomDebugPage（非本泳道文件），无法从宿主侧隐藏；
+                // 隐藏方案见本文件头 KDoc「开始调试」行——引擎移植前它就是一颗点了必失败的按钮。
                 Log.w(
                     CUSTOM_DEBUG_LOG_TAG,
                     "script execution unavailable record=${record.id} (engine not ported, F08-8c)",

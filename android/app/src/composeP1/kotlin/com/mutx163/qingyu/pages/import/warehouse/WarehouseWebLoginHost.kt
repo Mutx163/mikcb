@@ -29,10 +29,12 @@ import com.mutx163.qingyu.app.TimetableHostLogic
 import com.mutx163.qingyu.pages.import.ImportFlowModel
 import com.mutx163.qingyu.pages.import.ImportRandomColorStore
 import com.mutx163.qingyu.pages.time_scheme.TimeSchemeServiceMessages
+import com.mutx163.qingyu.platform.KeystoreSecretCipher
 import com.mutx163.qingyu.platform.PrefsKeyValueStore
 import com.mutx163.qingyu.transfer.MAX_ALLOWED_SEMESTER_WEEK_COUNT
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import top.yukonga.miuix.kmp.basic.Text
@@ -97,6 +99,15 @@ private class WarehouseMacroSavePrompt(
 )
 
 private const val LOG_TAG = "WarehouseWebLogin"
+
+/**
+ * 一次「执行导入脚本」的预算（毫秒）。**逐字对齐 Dart**：
+ * `warehouse_adapter_web_login_screen.dart` 的 `_importTimeout = Duration(seconds: 30)`。
+ *
+ * 为什么要它：脚本在网页里挂死时没有任何回调会回来；没有这道计时，界面就永久停在
+ * 「执行中」，而 stage 卡在 EXECUTING 之后连重试都会被闸门拒掉（用户唯一出路是刷新）。
+ */
+private const val SCRIPT_EXECUTION_TIMEOUT_MS = 30_000L
 
 /**
  * 一次待用户确认的脚本课程包（courses 写回前的两步确认期间持有）。
@@ -200,6 +211,41 @@ fun WarehouseWebLoginHost(
     // 本次脚本会话里已落盘生效的节次签名（对齐 Dart `_appliedImportedSectionsSignature`）：
     // 同一份载荷不重复落盘，新脚本窗口（重新执行 / 页面跳转）清零。
     var appliedSectionsSignature by remember { mutableStateOf<String?>(null) }
+
+    // ---- 记住账号 / 密码（F28 收尾）----
+    // 凭据**只以密文落盘**：AndroidKeyStore 里的 AES-256-GCM（`KeystoreSecretCipher`），
+    // 键名与 Dart 逐字一致（`warehouse_secure_remembered_login_<adapterId>`）；
+    // 旧版本写在普通 prefs 里的**明文**键在首次读取时迁移进密钥库并删除，见存储类 KDoc。
+    // 存储层只收「加密 / 解密」两个函数引用（模型层不能依赖 platform/，见其 KDoc）。
+    val rememberedStore = remember(context) {
+        val cipher = KeystoreSecretCipher(WarehouseRememberedLoginStore.KEY_ALIAS)
+        WarehouseRememberedLoginStore(
+            store = PrefsKeyValueStore(context),
+            encrypt = cipher::encrypt,
+            decrypt = cipher::decrypt,
+        )
+    }
+    // 已记住的凭据（内存镜像）：站点门禁、保存后回填、提示卡都要它。
+    // 与 session.rememberedAccount 分开存是因为「门禁挡住自动填充」时仍要知道
+    // 「这个适配器已经记过账号」——那决定保存提示问不问。
+    var storedLogin by remember { mutableStateOf<WarehouseRememberedLogin?>(null) }
+    // 受信 host（适配器登记地址 + 自定义覆盖地址）：凭据**没绑 host**（老数据）时只认这几个站。
+    val trustedLoginHosts = remember(adapter.importUrl, customUrl) {
+        warehouseTrustedLoginHosts(adapter.importUrl, customUrl)
+    }
+    // 自动填充门禁：URL 一变就重算（跨站导航后立刻收回权限）。
+    fun autofillAllowedOn(url: String?, login: WarehouseRememberedLogin?): Boolean =
+        rememberedLoginAllowsUrl(login, url, trustedLoginHosts)
+
+    // 读已记凭据：解密与磁盘 IO 都放 IO 线程（密钥库首次取密钥在部分机型上不便宜）。
+    LaunchedEffect(adapter.id) {
+        val loaded = withContext(Dispatchers.IO) { rememberedStore.rememberedLogin(adapter.id) }
+        storedLogin = loaded
+        session = session.copy(
+            rememberedAccount = loaded,
+            autofillHostAllowed = autofillAllowedOn(controller.liveUrl() ?: session.currentUrl, loaded),
+        )
+    }
 
     // ---- 宏录制（P1）：录制态 / 事件缓冲 / 弹窗应答存入 ----
     // 存储与适配器列表宿主同一套键（Dart SharedPreferences 同键共读，D1）。
@@ -434,6 +480,56 @@ fun WarehouseWebLoginHost(
             }
         }
 
+    // ---- 执行窗口：一个收尾出口 + 30 秒超时（放在这里的原因见下）----
+    // 「执行导入脚本」进来之后的所有收尾（complete / error / 落盘完成 / 用户取消 /
+    // 取消回放 / 重试回放 / 超时）都必须复位执行态，否则 stage 停在 EXECUTING，而重执行
+    // 闸门 `planWarehouseScriptExecution` 硬要求 `stage == LOADED` ⇒ 一次导入完成后
+    // （页面没跳转）再点「执行导入脚本」恒被拒，用户唯一出路是自己想到刷新。
+    // 之所以收成一个函数而不是多处各写一遍：这些出口本来就该只有一种收尾语义，
+    // 分散写必然会漏掉某处的某一行（2026-11-05 用户实报的正是这种漏）。
+    //
+    // ⚠️ 声明顺序：局部函数**先声明后使用**。本块必须排在 `cancelMacroPlayback` /
+    // `retryMacroPlayback` 之前（它们也要走这条收尾）；而 `onScriptExecutionTimeout`
+    // 依赖后面的 `cancelPendingDialog`，所以那两个函数留在 `executeImportScript` 之前。
+
+    /** 当前这一轮脚本执行的 30 秒超时计时；null = 没有在执行。 */
+    var importTimeoutJob by remember { mutableStateOf<Job?>(null) }
+
+    /** 停掉 30 秒计时（不动 stage / scriptActive：换页等场景各自还要走自己的收尾）。 */
+    fun cancelImportTimeout() {
+        importTimeoutJob?.cancel()
+        importTimeoutJob = null
+    }
+
+    /**
+     * 网页是否正在导航（`onPageStarted` 置真，`onPageFinished` / `onWebError` 置假）。
+     *
+     * 为什么收尾要看它：回放中途被取消时，页面很可能正被 `loadUrl` 带向新文档。
+     * 此时若把 stage 直接放回 `LOADED`，「执行导入脚本」闸门就是开着的——脚本会注入到
+     * **即将被销毁的旧文档**里，什么都不回，用户白等 30 秒才看到一条 timeout；
+     * 更糟的是脚本抢跑成功时，courses 赶在导航前回来，用户明明取消了回放却又收到一次
+     * 导入确认。所以导航中只落到 `LOADING`（闸门关闭），加载完成/失败时由
+     * `onWebPageFinished` / `onWebError` 自然推进到 `LOADED` / `ERROR`。
+     */
+    var pageNavigating by remember { mutableStateOf(false) }
+
+    /**
+     * 结束本轮脚本执行窗口：停超时、清执行期、**按页面实际状态**放回 `LOADED` 或 `LOADING`。
+     *
+     * @param errorMessage 本轮结束时的错误文案（失败路径传；成功/取消传 null 清掉旧错误）。
+     */
+    fun endScriptWindow(errorMessage: String? = null) {
+        cancelImportTimeout()
+        scriptActive = false
+        // 导航进行中 → 只落 LOADING：闸门据此关着，等新文档加载完再开（见 [pageNavigating]）。
+        val stage = if (pageNavigating) {
+            WarehouseWebLoginStage.LOADING
+        } else {
+            WarehouseWebLoginStage.LOADED
+        }
+        session = session.withStage(stage, errorMessage)
+    }
+
     fun resetPlaybackUi() {
         playbackUiState = null
         playbackProgress = null
@@ -442,6 +538,10 @@ fun WarehouseWebLoginHost(
     fun cancelMacroPlayback() {
         playbackJob?.cancel()
         playbackJob = null
+        // 取消回放也要收掉**脚本执行窗口**：回放完成后 `executeImportScript` 可能已经起了
+        // 30 秒预算，不并入同一条收尾的话，用户取消之后超时仍会跑——屏上冒一条
+        // 「导入失败：timeout」，而 stage 还挂在 EXECUTING 让重试被拒。
+        endScriptWindow()
         // 取消路径必须续跑闸也释放（协程已取消，resume(false) 会被 cont.isActive 拦下，
         // 但闸要清空，避免泄漏旧闭包）。
         pauseGate?.invoke(false)
@@ -533,6 +633,9 @@ fun WarehouseWebLoginHost(
         val record = playbackMacroRecord ?: return
         playbackJob?.cancel()
         playbackJob = null
+        // 重试 = 上一轮作废：同样的收尾语义（停 30 秒预算、stage 回 LOADED），
+        // 否则旧一轮的计时会在新一轮中途误报超时。
+        endScriptWindow()
         // Dart _retryPlayback：重载入口地址后从头回放（从干净页面起步）。
         controller.loadUrl(target.loginUrl)
         startMacroPlayback(record)
@@ -564,14 +667,73 @@ fun WarehouseWebLoginHost(
         Log.i(LOG_TAG, "bridge dialog ${pending.kind.messageType} cancelled at script window end ($reason)")
     }
 
+    /** 超时收尾：文案按 Dart 的两个分叉，然后统一走 [endScriptWindow]。 */
+    fun onScriptExecutionTimeout() {
+        if (!scriptActive) return
+        // 回放完成后在等课程：Dart 用 `courseImportScriptNoCourses`（脚本没回课程数据），
+        // 其余（脚本卡死）用 `executeFailedWithError('timeout')`。
+        val waitingForCourses = playbackWaitingForCourses
+        val message = if (waitingForCourses) {
+            WarehouseStrings.courseImportScriptNoCourses.zh
+        } else {
+            WarehouseStrings.executeFailedWithError.filled("error", "timeout")
+        }
+        Log.w(
+            LOG_TAG,
+            "import script timeout after ${SCRIPT_EXECUTION_TIMEOUT_MS / 1000}s " +
+                "waitingForCourses=$waitingForCourses",
+        )
+        cancelPendingDialog("timeout")
+        endScriptWindow(errorMessage = message)
+        // 回放覆盖层也要收干净：超时落在「回放等课程」那段时，覆盖层会停在
+        // EXECUTING_IMPORT（「正在执行导入脚本」）永远不结束，用户只能去点覆盖层的
+        // 取消才逃得出来——成功路径有 FINISHED sheet 兜底，超时没有。
+        // 与回放失败的其它出口同形（切 ERROR + 把原因写进进度行），不新造状态。
+        if (playbackUiState != null) {
+            playbackUiState = WarehousePlaybackUiState.ERROR
+            playbackProgress = playbackProgress?.copy(
+                status = ReplayStepStatus.FAILED,
+                errorMessage = message,
+            )
+        }
+        playbackWaitingForCourses = false
+        // 回放完成后的「自动执行导入」请求可能还在排队：本轮已超时收尾，别让它再起一次。
+        autoExecuteRequested = false
+        Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
+    }
+
+    // ⚠️ 顺序要求：局部函数**先声明后使用**，所以 onScriptExecutionTimeout 必须排在
+    // armImportTimeout 之前。
+    /**
+     * 起 30 秒导入超时（对齐 Dart `_importTimeout = Duration(seconds: 30)`）。
+     *
+     * Dart 的 30 秒从脚本开始执行算起，超时给明确文案并复位执行态；不移植的话脚本
+     * 一挂死就永久无反馈，叠加「stage 卡在 EXECUTING」连重试都被拒。
+     */
+    fun armImportTimeout() {
+        importTimeoutJob?.cancel()
+        importTimeoutJob = scope.launch {
+            delay(SCRIPT_EXECUTION_TIMEOUT_MS)
+            onScriptExecutionTimeout()
+        }
+    }
+
     fun executeImportScript() {
         if (isExecuting) return
         when (val plan = planWarehouseScriptExecution(session.stage, school, adapter)) {
             is WarehouseScriptExecutionPlan.Blocked -> {
                 Log.w(LOG_TAG, "execute import blocked: ${plan.reason}")
+                // **具体原因必须上屏**：以前这里一律弹「脚本执行失败」，用户读作
+                // 「点了没反应」（审核 G1 的根因之一）。两类原因分开说，各自可行动：
+                // - 没有脚本 = 这所学校确实导不了，去反馈/换学校；
+                // - 页面没加载完 = 稍等一下再点。
                 Toast.makeText(
                     context,
-                    WarehouseStrings.courseImportScriptFailed.zh,
+                    when (plan.reason) {
+                        WarehouseScriptBlockReason.NO_SCRIPT_PATH -> WarehouseStrings.scriptEmpty.zh
+                        WarehouseScriptBlockReason.PAGE_NOT_LOADED ->
+                            WarehouseStrings.macroReplayWaitPageLoad.zh
+                    },
                     Toast.LENGTH_SHORT,
                 ).show()
             }
@@ -583,6 +745,21 @@ fun WarehouseWebLoginHost(
                 cancelPendingDialog("re-execute")
                 appliedSectionsSignature = null
                 scope.launch {
+                    // 时刻 B：网页里的上一轮脚本可能还活着。取消回放只停宿主侧的计时与 stage，
+                    // **网页里没有取消原语** —— 旧脚本仍在抓数据、仍可能自己弹原生对话框。
+                    // 此时直接注入 = 同一页面两个脚本实例并发跑：
+                    //   ① 各回一条 courses，`coursesSession` 在解析窗口内挡不住第二条；
+                    //   ② 两个实例各弹一次 confirm，第二条会被「同刻已有挂起」的兜底**自动答 true**
+                    //      —— 用户从没见过的那句确认被原生替他点了。
+                    // 所以注入前先问网页里的运行哨兵（wrapper 置位、脚本收尾时复位），为真就跳过本轮。
+                    if (evalJsNormalized(WAREHOUSE_IMPORT_RUNNING_PROBE_JS) == "true") {
+                        Log.w(LOG_TAG, "execute import skipped: previous script instance still running")
+                        val message = WarehouseStrings.courseImportScriptStillRunning.zh
+                        endScriptWindow(message)
+                        Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
+                        isExecuting = false
+                        return@launch
+                    }
                     val loaded = withContext(Dispatchers.IO) {
                         service.loadAdapterScript(school, adapter)
                     }
@@ -598,18 +775,19 @@ fun WarehouseWebLoginHost(
                             )
                             session = session.withStage(WarehouseWebLoginStage.EXECUTING)
                             scriptActive = true
+                            // 30 秒执行预算：脚本挂死时必须有反馈，且要能把 stage 放回
+                            // LOADED（否则用户连重试都被闸门拒掉）。
+                            armImportTimeout()
                         }
 
                         is WarehouseLoad.Failed -> {
-                            scriptActive = false
                             Log.w(
                                 LOG_TAG,
                                 "adapter script load failed code=${loaded.code} attempts=${loaded.attempts}",
                             )
-                            session = session.withStage(
-                                WarehouseWebLoginStage.ERROR,
-                                WarehouseStrings.courseImportScriptFailed.zh,
-                            )
+                            // 拉脚本失败也走统一收尾：stage 回到 LOADED（页面本身是好的），
+                            // 网络恢复后用户可以直接再点一次，不用先刷新页面。
+                            endScriptWindow(WarehouseStrings.courseImportScriptFailed.zh)
                             Toast.makeText(
                                 context,
                                 WarehouseStrings.courseImportScriptFailed.zh,
@@ -627,6 +805,91 @@ fun WarehouseWebLoginHost(
         for (message in messages) {
             Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
         }
+    }
+
+    // ---- 登录态观察（「记住账号 / 密码」的数据源，对齐 Dart `_handleLoginStateMessage`）----
+
+    /**
+     * `loginState`：页面里的观察脚本回传「用户正在敲的账号密码 + 有没有密码框」。
+     *
+     * 只更新**候选账号**（内存），不落盘、不进日志（里面有口令）；同时按当前页 host
+     * 重算自动填充权限——跨站页面永远拿不到填充资格（钓鱼页防护）。
+     */
+    fun handleLoginState(raw: String) {
+        val snapshot = warehouseLoginStateSnapshot(raw) ?: return
+        val liveUrl = controller.liveUrl() ?: session.currentUrl
+        session = session.copy(
+            candidateAccount = WarehouseRememberedLogin(
+                username = snapshot.username,
+                password = snapshot.password,
+            ),
+            hasPasswordField = snapshot.hasPasswordField,
+            autofillHostAllowed = autofillAllowedOn(liveUrl, storedLogin),
+        )
+    }
+
+    /** `loginAttempt`：用户真的点了登录 / 提交表单——从现在起才问「要不要记住密码」。 */
+    fun handleLoginAttempt() {
+        if (session.hasLoginAttempt) return
+        session = session.copy(hasLoginAttempt = true)
+    }
+
+    /** 「自动填充」：把记住的凭据填进页面；**先过站点门禁**，跨站一律拒绝。 */
+    fun fillRememberedLogin() {
+        val login = storedLogin
+        if (login == null) {
+            session = session.copy(hasPromptedAutofill = true)
+            return
+        }
+        val liveUrl = controller.liveUrl() ?: session.currentUrl
+        if (!autofillAllowedOn(liveUrl, login)) {
+            // 钓鱼页 / 换站：宁可什么都不填，也不把口令送出去。
+            Log.w(LOG_TAG, "autofill refused: current host is not the credential's bound host")
+            session = session.copy(hasPromptedAutofill = true)
+            return
+        }
+        controller.injectJavaScript(warehouseAutofillLoginScript(login))
+        session = session.copy(hasPromptedAutofill = true)
+    }
+
+    /** 「暂不填充」：只记下问过，别一直追着问。 */
+    fun dismissAutofillPrompt() {
+        session = session.copy(hasPromptedAutofill = true)
+    }
+
+    /** 「记住并自动填充」：候选凭据**绑当前站 host**后加密落盘，再填进页面。 */
+    fun saveRememberedLogin() {
+        val candidate = session.candidateAccount
+        val liveUrl = controller.liveUrl() ?: session.currentUrl
+        if (candidate.username.isEmpty() || candidate.password.isEmpty()) {
+            session = session.copy(hasPromptedSave = true)
+            return
+        }
+        // 已绑定的 host 保持不变（同一份凭据不因为换了子域就悄悄改绑）；新凭据绑当前页 host。
+        val bound = if (candidate.host.isNotEmpty()) {
+            candidate
+        } else {
+            candidate.copy(host = warehouseUrlHost(liveUrl))
+        }
+        session = session.copy(hasPromptedSave = true)
+        scope.launch {
+            withContext(Dispatchers.IO) { rememberedStore.saveRememberedLogin(adapter.id, bound) }
+            storedLogin = bound
+            session = session.copy(rememberedAccount = bound)
+            if (autofillAllowedOn(liveUrl, bound)) {
+                controller.injectJavaScript(warehouseAutofillLoginScript(bound))
+            }
+            Toast.makeText(
+                context,
+                WarehouseStrings.rememberedCurrentLoginSuccess.zh,
+                Toast.LENGTH_SHORT,
+            ).show()
+        }
+    }
+
+    /** 「不记住」：这次不问而已；盘上已有的凭据保持原样（清除是另一条明确动作）。 */
+    fun dismissSavePrompt() {
+        session = session.copy(hasPromptedSave = true)
     }
 
     /** 一次待确认的脚本课程包：解析结果 + 上屏要用的计数（F32 前缺的两步确认挂这里）。 */
@@ -653,7 +916,8 @@ fun WarehouseWebLoginHost(
         coursesAskReplace = false
         coursesFinalizePlan = null
         coursesAskExpansion = false
-        scriptActive = false
+        // 取消也是「执行窗口结束」：走统一收尾，stage 回 LOADED，用户可以直接重试。
+        endScriptWindow()
         // 回放等课程期间被用户取消：等待标志复位——其后到达的 complete 走 IGNORE，
         // 不把取消翻成成功（N10 的定局口径）。
         playbackWaitingForCourses = false
@@ -698,7 +962,8 @@ fun WarehouseWebLoginHost(
         val repo = repository ?: return
         coursesFinalizePlan = null
         coursesAskExpansion = false
-        scriptActive = false
+        // 课程已收齐、开始落盘：本轮脚本窗口到此结束（stage 回 LOADED，可再次导入）。
+        endScriptWindow()
         scope.launch {
             val result = withContext(Dispatchers.IO) {
                 WarehouseCoursesImportApply.apply(
@@ -1238,7 +1503,9 @@ fun WarehouseWebLoginHost(
                 )
                 when (action) {
                     WarehouseImportCompletionAction.FINALIZE -> {
-                        scriptActive = false
+                        // 脚本报完成 = 本轮执行窗口结束。**必须复位 stage**，
+                        // 否则 page 没跳转时 stage 停在 EXECUTING，重执行闸门会一直拒。
+                        endScriptWindow()
                         Log.i(LOG_TAG, "bridge complete: finalize")
                     }
 
@@ -1255,16 +1522,20 @@ fun WarehouseWebLoginHost(
 
             "error" -> {
                 cancelPendingDialog("error")
-                scriptActive = false
                 // 对齐旧版：轻提示显示脚本上报的具体原因，缺省才落到固定文案。
+                // 收尾走统一出口：脚本报错也要能把 stage 放回 LOADED 再重试。
+                val errorText = warehouseBridgeMessageText(raw)
+                    ?: WarehouseStrings.courseImportScriptFailed.zh
                 Log.w(LOG_TAG, "bridge error reported by adapter script")
-                showToasts(
-                    listOf(
-                        warehouseBridgeMessageText(raw)
-                            ?: WarehouseStrings.courseImportScriptFailed.zh,
-                    ),
-                )
+                endScriptWindow(errorMessage = errorText)
+                showToasts(listOf(errorText))
             }
+
+            // 登录态观察（记住账号 / 密码）：账号口令只进内存做判定，不落盘、不进日志。
+            "loginState" -> handleLoginState(raw)
+
+            // 用户点了登录 / 提交表单：从这里起才允许问「要不要记住密码」。
+            "loginAttempt" -> handleLoginAttempt()
 
             else -> Log.i(LOG_TAG, "bridge message type=$type")
         }
@@ -1288,15 +1559,31 @@ fun WarehouseWebLoginHost(
                 // 新导航会重建 JS 上下文：上一轮的脚本窗口随之结束。
                 // 挂着的对话框先按「取消」回话（旧 JS 上下文若还活着能收到，收不到也无害）。
                 cancelPendingDialog("page navigation")
-                scriptActive = false
+                // 导航一开始就置真：`endScriptWindow` 据此只落 LOADING（闸门关着），
+                // 不让脚本注入到即将被销毁的旧文档（否则用户白等 30 秒才见一条 timeout）。
+                pageNavigating = true
+                // 旧脚本窗口的 30 秒预算必须一起停：否则计时在下一拍还会替新页面误报超时。
+                // 走统一收尾（导航中 → 只落 LOADING），加载完/失败由下面两个回调推进。
+                endScriptWindow()
                 appliedSectionsSignature = null
                 session = session.copy(
                     currentUrl = url,
                     stage = WarehouseWebLoginStage.LOADING,
                     errorMessage = null,
+                    // 换页 = 换了一组输入框：候选账号与「问过没有」全部作废，
+                    // 自动填充权限在页面加载完/收到 loginState 时按新 host 重算
+                    //（Dart 在 `_onPageStarted` 里同样重置 `_hasPromptedAutofill`）。
+                    candidateAccount = WarehouseRememberedLogin(),
+                    hasPasswordField = false,
+                    hasLoginAttempt = false,
+                    hasPromptedAutofill = false,
+                    hasPromptedSave = false,
+                    autofillHostAllowed = false,
                 )
             },
             onWebPageFinished = { url ->
+                // 导航结束：闸门恢复由 stage 决定（正常推进到 LOADED，报过错则保留 ERROR）。
+                pageNavigating = false
                 // 主框架报过错之后平台仍会回调 finished；不要把 ERROR 覆盖回 LOADED，
                 // 否则用户看到的错误一闪就没（真正的新导航会先经过 onPageStarted 重置为 LOADING）。
                 session = if (session.stage == WarehouseWebLoginStage.ERROR) {
@@ -1313,8 +1600,18 @@ fun WarehouseWebLoginHost(
                 if (macroState == WarehouseMacroActionState.RECORDING) {
                     controller.injectJavaScript(WarehouseMacroRecorderJs.INJECT_SCRIPT)
                 }
+                // 登录态观察脚本（**记住账号/密码的数据源**）：每页加载完注入一次，
+                // 脚本自带 `__qingyuLoginWatcherInstalled` 哨兵，重复注入是 no-op。
+                // 不注入就没有候选账号 ⇒ 保存提示永远不会问（这正是「记住密码」以前整条失效的原因）。
+                controller.injectJavaScript(WarehouseLoginWatcherJs.INSTALL_SCRIPT)
+                // 页面换站后立刻重算自动填充权限：跨站必须收回（钓鱼页防护）。
+                session = session.copy(
+                    autofillHostAllowed = autofillAllowedOn(url, storedLogin),
+                )
             },
             onWebError = { error ->
+                // 加载失败也算导航结束：别让「导航中」的标志永远挂着把闸门锁死。
+                pageNavigating = false
                 val message = WarehouseWebLoginWebState.errorText(error) { key ->
                     when (key) {
                         WarehouseStrings.importCleartextBlockedHint.key ->
@@ -1346,6 +1643,11 @@ fun WarehouseWebLoginHost(
                     ).show()
                 }
             },
+            // ---- 记住账号 / 密码的四条回调（以前全是页面默认空实现 ⇒ 两张卡永远不出现）----
+            onAutofillLogin = { fillRememberedLogin() },
+            onDismissAutofill = { dismissAutofillPrompt() },
+            onSaveRememberedLogin = { saveRememberedLogin() },
+            onDismissSaveLogin = { dismissSavePrompt() },
             onToggleMacroRecording = {
                 if (macroState == WarehouseMacroActionState.RECORDING) {
                     stopMacroRecording()

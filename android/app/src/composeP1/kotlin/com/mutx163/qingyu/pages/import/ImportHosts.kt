@@ -757,7 +757,22 @@ private fun applyImport(
             importedCount = plan.importedCount,
         )
     } catch (error: Exception) {
-        // 回滚：设置（含开学日与节次表）与主模板节次都恢复成导入前的样子。
+        // 回滚：课程、设置（含开学日与节次表）、主模板节次都恢复成导入前的样子。
+        // 2026-11-05 数据安全修复：replaceActiveProfileContent 是两笔写（profiles + active id），
+        // saveProfiles 成功、saveActiveProfileId 抛时**课程已经落盘**——此前只回滚设置，
+        // 盘上留下「新课表 + 旧设置」的半套状态，还报成失败（用户重导又来一遍）。
+        // 顺序：先恢复课程本体（saveProfiles 会按当前盘上内嵌 settings 合并，随后
+        // settings 回滚把 core 键也修正），再恢复设置与节次表；逐条 runCatching，
+        // 不让回滚失败遮原始错误。
+        runCatching {
+            val beforeActive = before.profiles.firstOrNull { it.id == before.activeProfileId }
+                ?: before.profiles.firstOrNull()
+            repository.replaceActiveProfileContent(
+                courses = before.courses,
+                tasks = beforeActive?.tasks.orEmpty(),
+                exams = beforeActive?.exams.orEmpty(),
+            )
+        }
         runCatching { repository.updateSettings(before.settings) }
         if (needsExpansion && scheme != null) {
             runCatching { repository.updateTimeScheme(scheme.id, scheme.name, scheme.sections) }

@@ -204,6 +204,46 @@ class WarehouseImportHandoffGuardTest {
         )
     }
 
+    @Test
+    fun `选校页点学校后必须先发布交接件再进适配器列表`() {
+        val host = stripKotlinComments(source("WarehouseImportHosts.kt").readText(Charsets.UTF_8))
+        val body = functionBody(host, "fun WarehouseImportPickerHost(")
+        val selectStart = body.indexOf("onSelectSchool = {")
+        assertTrue("选校页里找不到 onSelectSchool 回调（判据本身失效了）", selectStart >= 0)
+        val jump = body.indexOf("onOpenPage(WarehouseRoutes.ADAPTERS)", selectStart)
+        assertTrue("onSelectSchool 里没有进适配器列表的跳转（判据本身失效了）", jump > selectStart)
+
+        val window = body.substring(selectStart, jump)
+        assertTrue(
+            "onSelectSchool 在 onOpenPage(ADAPTERS) 之前必须 publish 交接件：壳给每个路由条目" +
+                "独立的 WarehouseShellState，新条目读不到学校就会把选校页再画一遍（同一所学校要点两遍，" +
+                "「最近使用」还记两次）",
+            window.contains("WarehouseImportHandoff.publish(school)"),
+        )
+    }
+
+    @Test
+    fun `壳的导入分流必须先看交接件再判 state 且不许只读 state school`() {
+        val shell = stripKotlinComments(
+            relativeSource("android/app/src/main/kotlin/com/mutx163/qingyu/pages/ShellPageIndex.kt")
+                .readText(Charsets.UTF_8),
+        )
+        val body = functionBody(shell, "private fun WarehouseImportBranch(")
+
+        assertTrue(
+            "分流必须用只读 peek 看交接件，不能 take——拿走了里面的适配器宿主就取不到学校",
+            body.contains("WarehouseImportHandoff.peek()"),
+        )
+        assertFalse(
+            "分流不许再只看 state.school == null：新条目拿到的是全新 state，会再画一遍选校页",
+            Regex("""if\s*\(\s*state\.school\s*==\s*null\s*\)""").containsMatchIn(body),
+        )
+        assertTrue(
+            "判断要锁在条目首次组合（remember(state)）：peek 被 take 之后会闪回一次选校页",
+            body.contains("remember(state)"),
+        )
+    }
+
     // -------------------------------------------------------------------
     // 工具
     // -------------------------------------------------------------------

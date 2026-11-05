@@ -68,11 +68,31 @@ data class WarehouseWebLoginSessionState(
     val hasPromptedSave: Boolean = false,
     val isSavePromptShowing: Boolean = false,
     val sessionActive: Boolean = false,
+    /**
+     * 页面当前**真有**密码框（观察脚本 `loginState` 上报）。
+     *
+     * 以前这里是写死的 `true`：任何页面都会被问「要不要帮你填密码」，
+     * 连没有登录框的课表页也问。默认 `false` = 没确认过就不打扰。
+     */
+    val hasPasswordField: Boolean = false,
+    /**
+     * 当前页**允许**自动填充（凭据绑定站点门禁的结果，由宿主算好传进来）。
+     *
+     * 门禁见 [rememberedLoginAllowsUrl]：跨站页面不提示、更不回填——否则钓鱼页
+     * 只要长得像登录页就能把真口令骗走。默认 `false` = 宿主确认之前不放行。
+     */
+    val autofillHostAllowed: Boolean = false,
+    /**
+     * 页面发生过一次登录尝试（`submit` / 点「登录」）。
+     *
+     * 「记住密码」只在用户**真的试过登录**之后问，否则一边敲一边弹「记住密码」很烦。
+     */
+    val hasLoginAttempt: Boolean = false,
 ) {
     /** 是否应该触发自动填入提示 */
     val shouldPromptAutofill: Boolean
-        get() = shouldPromptRememberedLoginAutofill(
-            hasPasswordField = true,
+        get() = autofillHostAllowed && shouldPromptRememberedLoginAutofill(
+            hasPasswordField = hasPasswordField,
             rememberedLogin = rememberedAccount,
             candidate = candidateAccount,
             hasPromptedAutofill = hasPromptedAutofill,
@@ -82,7 +102,7 @@ data class WarehouseWebLoginSessionState(
 
     /** 是否应该触发保存凭据提示 */
     val shouldPromptSave: Boolean
-        get() = shouldPromptRememberedLoginSave(
+        get() = hasLoginAttempt && shouldPromptRememberedLoginSave(
             rememberedLogin = rememberedAccount,
             hasPromptedSave = hasPromptedSave,
             isPromptShowing = isSavePromptShowing,

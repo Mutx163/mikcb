@@ -91,6 +91,11 @@ object WarehouseStrings {
     val courseImportTitle = WarehouseArbText("courseImportTitle", "导入课程")
     val courseImportUpdateRecommendedAction = WarehouseArbText("courseImportUpdateRecommendedAction", "更新课表 推荐")
     val courseImportScriptFailed = WarehouseArbText("courseImportScriptFailed", "脚本执行失败")
+    val courseImportScriptNoCourses = WarehouseArbText("courseImportScriptNoCourses", "导入脚本未返回课程数据")
+    val courseImportScriptStillRunning = WarehouseArbText(
+        "courseImportScriptStillRunning",
+        "上一轮导入脚本还在执行，请等它结束后再试；长时间无反应请刷新页面",
+    )
     val courseImportWeekNotProvided = WarehouseArbText("courseImportWeekNotProvided", "未提供周次")
     val customDebugIntroSubtitle = WarehouseArbText("customDebugIntroSubtitle", "保存每所学校的网址与脚本，下次一键复用")
     val customDebugIntroTitle = WarehouseArbText("customDebugIntroTitle", "这里放你自己的教务调试记录")
@@ -332,6 +337,8 @@ object WarehouseStrings {
         courseImportSaveRecordingMessage,
         courseImportSaveRecordingTitle,
         courseImportScriptFailed,
+        courseImportScriptNoCourses,
+        courseImportScriptStillRunning,
         courseImportOverwriteAction,
         courseImportSectionCountInsufficientTitle,
         courseImportSectionCountInsufficientMessage,

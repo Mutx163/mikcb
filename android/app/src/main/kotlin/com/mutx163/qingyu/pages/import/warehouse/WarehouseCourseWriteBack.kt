@@ -212,8 +212,11 @@ object WarehouseCourseWriteBack {
         )
         // 与 Dart 一致：有课程变化、或用户确认了新开学日，才动设置；
         // 「合并无变化 + 没传开学日」保持完全不动盘。
-        val shouldWriteSettings = semesterStartDate != null ||
-            (importedCount > 0 && nextWeekCount > before.settings.semesterWeekCount)
+        // 再加一道「值真的变了」防线：上游（[WarehouseCoursesImportApply]）可能已经
+        // 写过一次设置，这里 nextSettings 与现值全等时跳过，避免重复落盘+通知。
+        val shouldWriteSettings = (semesterStartDate != null ||
+            (importedCount > 0 && nextWeekCount > before.settings.semesterWeekCount)) &&
+            nextSettings != before.settings
         var settingsWritten = false
         // Dart 换了开学日就按今天重算当前周（`calculateWeekForDate`），不能留着旧开学日的周次。
         val nextCurrentWeek = if (semesterStartDate != null) {

@@ -6,8 +6,10 @@ import com.mutx163.qingyu.core.Course
 import com.mutx163.qingyu.core.SectionTime
 import com.mutx163.qingyu.core.ServiceMessage
 import com.mutx163.qingyu.core.TimetableSettings
+import com.mutx163.qingyu.core.WeekCalculator
 import com.mutx163.qingyu.transfer.buildExpandedSections
 import java.time.LocalDate
+import java.time.LocalDateTime
 
 /**
  * courses 导入的**收尾落盘层**：节次扩容 + 学期设置 + 课程写回（F32 第二批）。
@@ -107,13 +109,20 @@ object WarehouseCoursesImportApply {
             val settingsNow = repository.snapshot.settings
             // 对齐旧版 importParsedCourses：用户确认的开学日写进设置；周数不够自动扩。
             val requiredWeeks = warehouseMaxCourseWeek(request.courses, settingsNow.semesterWeekCount)
-            repository.updateSettings(
-                settingsNow.copy(
-                    semesterStartDate = request.semesterStartDate.atStartOfDay(),
-                    semesterWeekCount = maxOf(settingsNow.semesterWeekCount, requiredWeeks),
-                ),
+            val nextSettings = settingsNow.copy(
+                semesterStartDate = request.semesterStartDate.atStartOfDay(),
+                semesterWeekCount = maxOf(settingsNow.semesterWeekCount, requiredWeeks),
             )
-            when (val result = WarehouseCourseWriteBack.apply(
+            // 无变化的设置写跳过：开学日没动、周数没抬时，落盘+通知纯属全档案级噪音。
+            // （合并结果若还需更多周——现有课比导入课更长——下游写回层会补写，见下。）
+            if (nextSettings != settingsNow) {
+                repository.updateSettings(nextSettings)
+            }
+            // 开学日确认变更（用户在弹层里改了学期起点）时，课程落盘后按今天重算当前周
+            // ——与写回层 refreshCurrentWeek 同一口径。不重算的话首页停在旧的第几周，
+            // 持久化值不自愈（读侧只做 clamp）；开学日没变时不碰，保留手动同步的当前周。
+            val startDateChanged = nextSettings.semesterStartDate != settingsNow.semesterStartDate
+            val importedCount = when (val result = WarehouseCourseWriteBack.apply(
                 repository = repository,
                 courses = request.courses,
                 requestedMode = if (request.replaceExisting) {
@@ -122,14 +131,33 @@ object WarehouseCoursesImportApply {
                     WarehouseCourseWriteBack.Mode.MERGE
                 },
                 preserveLocalColors = request.preserveLocalColors,
+                // 开学日/周数已由本层按导入课写入：显式传 null，写回层不再动开学日；
+                // 合并结果（含现有课）的周数若仍需抬升，写回层的「有变化才写」会补上。
+                semesterStartDate = null,
                 // 用户拒绝扩节时，写回层不得再补节（本层上面已按同一 flag 判断过一次）。
                 allowSectionExpansion = request.expandSections,
             )) {
-                is WarehouseCourseWriteBack.Result.Done -> Result.Done(result.outcome.importedCount)
+                is WarehouseCourseWriteBack.Result.Done -> result.outcome.importedCount
                 // 到不了：宿主在进确认流程前已挡掉空课表；防御性按「无事发生」收尾。
-                is WarehouseCourseWriteBack.Result.NoImportableCourses -> Result.Done(0)
-                is WarehouseCourseWriteBack.Result.Failed -> Result.Failed(null)
+                is WarehouseCourseWriteBack.Result.NoImportableCourses -> 0
+                is WarehouseCourseWriteBack.Result.Failed -> return Result.Failed(null)
             }
+            if (startDateChanged) {
+                // 当前周要等设置落盘后再重算；失败也不抛（尽力而为，同写回层口径）。
+                // 周数取「写回层抬升后」的最终值（MERGE 下现有课可能比导入课更长）。
+                val settingsAfter = repository.snapshot.settings
+                runCatching {
+                    repository.setCurrentWeek(
+                        WeekCalculator.weekForDate(
+                            date = LocalDateTime.now(),
+                            semesterStart = settingsAfter.semesterStartDate,
+                            semesterWeekCount = settingsAfter.semesterWeekCount,
+                            fallback = before.currentWeek,
+                        ),
+                    )
+                }
+            }
+            Result.Done(importedCount)
         } catch (_: Exception) {
             // 回滚：设置（开学日/周数/节次表）与主模板节次恢复成导入前的样子。
             runCatching { repository.updateSettings(before.settings) }

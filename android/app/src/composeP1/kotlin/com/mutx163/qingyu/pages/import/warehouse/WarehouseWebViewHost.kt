@@ -3,6 +3,8 @@ package com.mutx163.qingyu.pages.import.warehouse
 import android.annotation.SuppressLint
 import android.content.Context
 import android.graphics.Bitmap
+import android.os.Handler
+import android.os.Looper
 import android.webkit.ConsoleMessage
 import android.webkit.CookieManager
 import android.webkit.JavascriptInterface
@@ -78,6 +80,25 @@ class WarehouseWebViewController {
     /** 最近一次**主框架**加载失败。 */
     var lastError: WarehouseWebViewError? by mutableStateOf(null)
         private set
+
+    /**
+     * 当前挂载视图的桥代理（null = 未挂载 / 已销毁）。
+     *
+     * [release] 借它把 [WarehouseBridgeProxy.released] 置位——JavaBridge 线程上的
+     * 在途消息据此丢弃（销毁竞态防线）。字段本身只在主线程读写（bind / release 都
+     * 由 AndroidView factory / onRelease 保证在主线程），无需同步。
+     */
+    internal var bridgeProxy: WarehouseBridgeProxy? = null
+        private set
+
+    /**
+     * 当前挂载视图的桥消息出口（null = 未挂载 / 已销毁）。
+     *
+     * [WarehouseBridgeProxy.postMessage] 在 JavaBridge 线程上读它后投回主线程；
+     * `@Volatile` 保证 release 置 null 后其它线程可见。
+     */
+    @Volatile
+    internal var onBridgeMessage: ((String) -> Unit)? = null
 
     // --- 导航 ---
 
@@ -212,8 +233,10 @@ class WarehouseWebViewController {
 
     // --- 生命周期（由宿主调用）---
 
-    internal fun bind(view: WebView) {
+    internal fun bind(view: WebView, proxy: WarehouseBridgeProxy, onMessage: (String) -> Unit) {
         webView = view
+        bridgeProxy = proxy
+        onBridgeMessage = onMessage
         view.settings.userAgentString = WarehouseWebViewUserAgents.forDesktopMode(isDesktopMode)
     }
 
@@ -255,6 +278,11 @@ class WarehouseWebViewController {
      */
     internal fun release(view: WebView) {
         if (webView === view) webView = null
+        // 先置「已销毁」再 destroy：JavaBridge 线程上在途的 postMessage 从这里开始
+        // 被丢弃，不再向已收尾的页面层投递（桥代理销毁竞态防线，见 WarehouseBridgeProxy）。
+        bridgeProxy?.released = true
+        bridgeProxy = null
+        onBridgeMessage = null
         view.stopLoading()
         view.destroy()
     }
@@ -275,13 +303,23 @@ fun rememberWarehouseWebViewController(): WarehouseWebViewController =
  * 平台 JS 通道的接收端。JS 里的调用形如 `QingyuBridge.postMessage(JSON.stringify({...}))`。
  *
  * ⚠️ `@JavascriptInterface` 方法运行在 WebView 的 JavaBridge 线程上，**不是主线程**；
- * 宿主里已经 `post` 回主线程再交给调用方，所以 `onBridgeMessage` 的回调里可以安全碰 UI。
+ * 宿主里已经投回主线程再交给调用方，所以 `onBridgeMessage` 的回调里可以安全碰 UI。
+ *
+ * **销毁竞态防线**（2026-11-05 审核 G2）：[released] 由 [WarehouseWebViewController.release]
+ * 在主线程销毁视图**前置位**；此后 JavaBridge 线程再到的消息直接丢弃——宿主已离开组合，
+ * 页面级管道（门禁 / 分发）跟着死，投过去只会改乱已收尾的会话状态，还可能对已销毁
+ * 视图调方法抛在 JavaBridge 线程上。投递与判空详见 createWarehouseWebView 的接线注释。
  */
-private class WarehouseBridgeProxy {
+internal class WarehouseBridgeProxy {
+    /** true = 底层 WebView 已销毁；在途消息一律丢弃（JavaBridge 写、主线程写/读，必须 `@Volatile`）。 */
+    @Volatile
+    var released = false
+
     var onMessage: ((String) -> Unit)? = null
 
     @JavascriptInterface
     fun postMessage(message: String) {
+        if (released) return
         onMessage?.invoke(message)
     }
 }
@@ -409,19 +447,28 @@ private fun createWarehouseWebView(
         useWideViewPort = true
         userAgentString = WarehouseWebViewUserAgents.forDesktopMode(desktopMode)
     }
-    controller.bind(webView)
+    // Dart: addJavaScriptChannel(<与 WAREHOUSE_WEBVIEW_BRIDGE_NAME 同名的通道>, …)
+    // （通道名字面量与 Dart 登录页逐字对齐，一致性由 WarehouseBridgeNameGuardTest 对拍钉住。）
+    // 桥消息投递用**独立的主线程 Handler**，不借 `webView.post`：
+    // JavaBridge 线程与主线程销毁（release → destroy）之间存在窄竞态——消息恰好在
+    // destroy() 之后才排到的话，对已销毁视图调 post 会抛在 JavaBridge 线程上。
+    // 独立 Handler 不挂在 WebView 生命周期上；配合 WarehouseBridgeProxy.released
+    // （release 先置位）与 controller.onBridgeMessage 置 null，三道防线让在途消息
+    // 安静丢弃，而不是炸线程或改乱已收尾的会话状态。
+    val mainHandler = Handler(Looper.getMainLooper())
+    val bridgeProxy = WarehouseBridgeProxy()
+    bridgeProxy.onMessage = { message ->
+        mainHandler.post {
+            controller.onBridgeMessage?.invoke(message)
+        }
+    }
+    webView.addJavascriptInterface(bridgeProxy, WAREHOUSE_WEBVIEW_BRIDGE_NAME)
+
+    controller.bind(webView, bridgeProxy, onBridgeMessage)
     controller.syncDesktopMode(desktopMode)
 
     // 明文 http 的教务站要能存 Cookie（NSC 白名单由仓库的网络安全配置负责，不在这里放开）
     CookieManager.getInstance().setAcceptCookie(true)
-
-    // Dart: addJavaScriptChannel('QingyuBridge', …)
-    val bridgeProxy = WarehouseBridgeProxy()
-    bridgeProxy.onMessage = { message ->
-        // @JavascriptInterface 回调在 JavaBridge 线程上，post 回主线程再交给页面层
-        webView.post { onBridgeMessage(message) }
-    }
-    webView.addJavascriptInterface(bridgeProxy, WAREHOUSE_WEBVIEW_BRIDGE_NAME)
 
     webView.webViewClient = object : WebViewClient() {
         /**

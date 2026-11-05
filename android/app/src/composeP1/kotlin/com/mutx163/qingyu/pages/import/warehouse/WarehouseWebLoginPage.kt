@@ -229,6 +229,19 @@ fun WarehouseWebLoginPage(
                 }
 
                 // 底部操作主按钮（Dart 底栏只有「执行导入脚本」一个按钮；宏录制开关在顶栏）
+                //
+                // 只有 LOADED 才允许执行：页面没加载完就点，脚本注入进去没有 `document`
+                // 可操作，宿主只会挡掉。之前按钮恒可点、点了回一句泛泛的「脚本执行失败」，
+                // 用户读作「点导入没反应」（审核 G1）。禁用态旁边给一句实话，别让按钮
+                // 灰着却不说为什么。
+                val scriptReady = sessionState.stage == WarehouseWebLoginStage.LOADED
+                if (!scriptReady && sessionState.stage != WarehouseWebLoginStage.ERROR) {
+                    Text(
+                        text = WarehouseStrings.macroReplayWaitPageLoad.zh,
+                        style = MiuixTheme.textStyles.footnote2,
+                        color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                    )
+                }
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(10.dp)
@@ -236,6 +249,7 @@ fun WarehouseWebLoginPage(
                     Button(
                         onClick = onExecuteImport,
                         modifier = Modifier.fillMaxWidth(),
+                        enabled = scriptReady,
                         content = { Text(text = WarehouseStrings.executeImportScriptAction.zh) }
                     )
                 }

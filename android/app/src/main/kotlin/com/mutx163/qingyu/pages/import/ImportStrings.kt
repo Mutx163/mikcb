@@ -156,6 +156,14 @@ object ImportStrings {
     val quickImportTitle = ImportArbText("quickImportTitle", "快捷导入 - {name}")
     val courseImportQuickImportDescription = ImportArbText("courseImportQuickImportDescription", "快捷导入 {schoolName} {adapterName}")
 
+    /**
+     * 首页下拉快捷导入「更新中」那一拍的文字（Dart `homePullQuickImportFetchingCourses`）。
+     *
+     * 只在**转起来之后**才显示：拖动中与到阈值两拍故意不带字，免得收拢时闪一行字。
+     */
+    val homePullQuickImportFetchingCourses =
+        ImportArbText("homePullQuickImportFetchingCourses", "正在获取新课程……")
+
     // ── 课表自动更新（course_auto_refresh_runner.dart）──
     val courseAutoRefreshUpdatedTip = ImportArbText("courseAutoRefreshUpdatedTip", "已自动更新课表")
     val courseAutoRefreshFailedTip = ImportArbText("courseAutoRefreshFailedTip", "自动更新没成功，可下拉重试")
@@ -263,6 +271,7 @@ object ImportStrings {
             quickImportUnknownError,
             quickImportTitle,
             courseImportQuickImportDescription,
+            homePullQuickImportFetchingCourses,
             courseAutoRefreshUpdatedTip,
             courseAutoRefreshFailedTip,
             importOverwriteCount,

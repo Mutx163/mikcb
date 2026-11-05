@@ -187,6 +187,10 @@ fun WarehouseImportPickerHost(
         onRetry = { reloadToken += 1 },
         onSelectSchool = { school ->
             state.school = school
+            // 跨条目必须带过去：壳给**每个路由条目独立**的 WarehouseShellState，只写本条目的话
+            // 新条目读到的 school 是 null → 又渲染一遍选校页（用户得把同一所学校点两遍，
+            // 「最近使用」还记两次）。这一跳 2026-11-03 修前两跳时漏了。
+            WarehouseImportHandoff.publish(school)
             onOpenPage(WarehouseRoutes.ADAPTERS)
             scope.launch {
                 withContext(Dispatchers.IO) { prefs.recordRecentSchool(school.id) }
@@ -205,7 +209,12 @@ fun WarehouseImportPickerHost(
         },
         onFeedbackClick = { onOpenPage(WarehouseRoutes.FEEDBACK) },
         onCustomDebugClick = { onOpenPage(WarehouseRoutes.CUSTOM_DEBUG) },
-        onExecutionLogClick = { toastUnavailable(context, "execution log: import pipeline not ported (F08-8c)") },
+        // 「执行日志」入口不接（2026-11-05 死控件收口）：WarehouseCourseImportPage 的
+        // onExecutionLogClick 参数在页面正文里**没有任何 UI 消费**（无按钮/菜单项渲染），
+        // 之前这里传的 toastUnavailable lambda 是永远走不到的死代码。导入执行日志
+        // 的生产端（WarehouseImportSessionLog，F08-8c）未移植，等移植时再把页面里的
+        // 入口 UI 画出来、这里接真路由（诊断页 LogViewerEntryModel 的
+        // AppLogSource.WAREHOUSE_IMPORT 配置已就位，接的就是它）。
     )
 
     WarehouseQuickImportPickerDialog(

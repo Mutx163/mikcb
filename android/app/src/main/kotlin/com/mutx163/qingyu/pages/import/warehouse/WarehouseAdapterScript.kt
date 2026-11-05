@@ -113,6 +113,21 @@ fun verifyWarehouseScriptSha256(bytes: ByteArray, declaredHex: String?): Boolean
 private const val HEX = "0123456789abcdef"
 
 /**
+ * 网页里「本轮导入脚本仍在执行」的哨兵变量名（[warehouseImportScriptWrapper] 置位、脚本收尾时复位）。
+ *
+ * 为什么需要它在网页里：用户取消回放 / 重试时，宿主侧只是停掉计时与 stage，
+ * **网页里没有取消原语** —— 上一轮脚本可能还在抓数据、还可能自己弹原生对话框。
+ * 宿主注入前用 [WAREHOUSE_IMPORT_RUNNING_PROBE_JS] 探它，为真就跳过本轮：
+ * 同页面两个脚本实例并发会 ① 各回一条 courses；② 各弹一次 confirm，第二条被
+ * 「同刻已有挂起」的兜底**自动答 true**——用户没见过的确认被原生替他点了。
+ * 页面导航会重建 JS 上下文，哨兵随之自然清空，不会永久锁死。
+ */
+const val WAREHOUSE_IMPORT_RUNNING_FLAG = "__qingyuImportRunning"
+
+/** 宿主侧探针脚本（`evaluateJavaScript` 的结果为 `"true"` = 上一轮脚本还在跑）。 */
+const val WAREHOUSE_IMPORT_RUNNING_PROBE_JS = "!!window.$WAREHOUSE_IMPORT_RUNNING_FLAG"
+
+/**
  * 适配脚本注入前的**桥接垫片**，逐字移植 Dart
  * `warehouse_adapter_web_login_screen.dart` 的 `wrappedScript`（含 v2 协议别名）。
  *
@@ -133,10 +148,20 @@ fun warehouseImportScriptWrapper(script: String, confirmText: String): String {
     val escapedConfirm = confirmText.replace("\\", "\\\\").replace("'", "\\'")
     return listOf(
         "(() => {",
+        // ---- 运行哨兵（对齐宏录制脚本的 `__qingyuLoginWatcherInstalled` 做法）----
+        // 挡住「同一页面里第二个脚本实例并发跑」：用户取消后重执行时，上一轮脚本可能
+        // 还活着（网页里没有取消原语）。两个实例并存会：① 各回一条 courses；② 各弹原生
+        // 对话框，第二条被「同刻已有挂起」的兜底自动答 true——等于替用户点了他没见过的确认。
+        // 结构上挡住比在宿主里加一堆防重入判断可靠：这一条在 JS 侧就断了。
+        "  if (window.$WAREHOUSE_IMPORT_RUNNING_FLAG) { return; }",
+        "  window.$WAREHOUSE_IMPORT_RUNNING_FLAG = true;",
         "  window.__qingyuResolvers = window.__qingyuResolvers || {};",
         "  window.AndroidBridge = {",
         "    showToast: (msg) => QingyuBridge.postMessage(JSON.stringify({type: 'toast', message: String(msg ?? '')})),",
-        "    notifyTaskCompletion: () => QingyuBridge.postMessage(JSON.stringify({type: 'complete'}))",
+        "    notifyTaskCompletion: () => {",
+        "      window.$WAREHOUSE_IMPORT_RUNNING_FLAG = false;",
+        "      QingyuBridge.postMessage(JSON.stringify({type: 'complete'}));",
+        "    }",
         "  };",
         "  window.AndroidBridgePromise = {",
         "    showAlert: async (title, message, confirmText) => {",
@@ -214,6 +239,7 @@ fun warehouseImportScriptWrapper(script: String, confirmText: String): String {
         "  try {",
         script,
         "  } catch (error) {",
+        "    window.$WAREHOUSE_IMPORT_RUNNING_FLAG = false;",
         "    QingyuBridge.postMessage(JSON.stringify({type: 'error', message: String(error)}));",
         "  }",
         "})();",

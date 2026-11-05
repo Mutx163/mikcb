@@ -47,18 +47,30 @@ class WarehouseWebLoginFlowStateTest {
         assertEquals(2, recorded.recordedStepsCount)
         assertEquals(WarehouseMacroActionState.RECORDING, recorded.macroState)
 
-        // 凭据自动填充联动：有密码记录且候选为空时触发
+        // 凭据自动填充联动：页面确有密码框 + 站点门禁放行 + 有密码记录 + 候选为空时触发
+        // （2026-11-05：`hasPasswordField` / `autofillHostAllowed` 不再是常量 true，
+        //   改由宿主按观察脚本上报与凭据绑定站点算出来，这里必须显式给）
         val withCreds = recorded.copy(
             rememberedAccount = WarehouseRememberedLogin("stu100", "p@ssword"),
             candidateAccount = WarehouseRememberedLogin("stu100", ""),
+            hasPasswordField = true,
+            autofillHostAllowed = true,
         )
         assertTrue(withCreds.shouldPromptAutofill)
 
-        // 登录完成后候选密码不为空且未保存时触发保存
+        // 站点门禁不放行（钓鱼页 / 换站）时不许提示，避免把口令填给别的站
+        assertFalse(withCreds.copy(autofillHostAllowed = false).shouldPromptAutofill)
+
+        // 页面没有任何密码框时不打扰
+        assertFalse(withCreds.copy(hasPasswordField = false).shouldPromptAutofill)
+
+        // 登录完成后候选密码不为空且未保存时触发；**必须是登录尝试之后**
         val afterLogin = recorded.copy(
             rememberedAccount = null,
             candidateAccount = WarehouseRememberedLogin("stu100", "p@ssword"),
+            hasLoginAttempt = true,
         )
         assertTrue(afterLogin.shouldPromptSave)
+        assertFalse("用户还没点过登录，不该问「记住密码」", afterLogin.copy(hasLoginAttempt = false).shouldPromptSave)
     }
 }

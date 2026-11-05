@@ -52,6 +52,17 @@ fun WarehouseCustomDebugPage(
     onRunDebug: (WarehouseCustomDebugRecord) -> Unit = {},
     onSaveRecord: (WarehouseCustomDebugRecord) -> Boolean = { false },
     onDeleteRecord: (String) -> Unit = {},
+    /**
+     * 「开始调试」按钮显隐开关（2026-11-05 死控件收口，默认 `false` = 隐藏）。
+     *
+     * 为什么默认隐藏：Kotlin 侧脚本引擎（F08-8c）未移植，宿主 [WarehouseCustomDebugHost]
+     * 对 `onRunDebug` 只能给「诚实失败」Toast——按钮留着就是一颗**点了必失败**的按钮。
+     * 等价于 Dart 侧「无引擎时隐藏入口」的口径，宿主无法从外部隐藏（按钮在本页）。
+     *
+     * 将来接了脚本引擎怎么恢复：宿主把 `onRunDebug` 接到真执行链路后，调用处传
+     * `showRunButton = true` 即可重新渲染按钮；本页无需再改（排版按三钮 weight 自动回满）。
+     */
+    showRunButton: Boolean = false,
 ) {
     var editingRecord by remember { mutableStateOf<WarehouseCustomDebugRecord?>(null) }
     var isAddingNew by remember { mutableStateOf(false) }
@@ -258,11 +269,16 @@ fun WarehouseCustomDebugPage(
                                 modifier = Modifier.fillMaxWidth(),
                                 horizontalArrangement = Arrangement.spacedBy(8.dp),
                             ) {
-                                Button(
-                                    onClick = { onRunDebug(record) },
-                                    modifier = Modifier.weight(1.2f),
-                                    content = { Text(text = WarehouseStrings.startDebugAction.zh) },
-                                )
+                                // 「开始调试」默认不渲染（脚本引擎 F08-8c 未移植，点了必失败）；
+                                // 恢复方式见本页 [showRunButton] 参数的 KDoc。隐藏时其余两钮
+                                // 借三钮布局的 weight 自动铺满整行，无需另调排版。
+                                if (showRunButton) {
+                                    Button(
+                                        onClick = { onRunDebug(record) },
+                                        modifier = Modifier.weight(1.2f),
+                                        content = { Text(text = WarehouseStrings.startDebugAction.zh) },
+                                    )
+                                }
                                 Button(
                                     onClick = { openEditor(record) },
                                     modifier = Modifier.weight(1f),

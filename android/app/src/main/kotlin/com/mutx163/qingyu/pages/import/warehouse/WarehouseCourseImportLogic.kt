@@ -39,12 +39,17 @@ object WarehouseCourseImportLogic {
     /**
      * 把脚本给的整数收成 [Int]，容忍 JS 实际会产出的形状（`1` / `"1"` / `1.0`）。
      * 一条记录坏掉不许连坐整批（Dart 同名函数的理由）。
+     *
+     * 超出 [Int] 范围的 Long/Double/Float **不静默截断**（截断会产出荒谬节次/周次，
+     * 如 `1e20.toInt()` 得 `Int.MAX_VALUE`）：回 null，让该记录走既有的
+     * 「字段不可用」丢弃链路——与同包 bridge 弹层的 `warehouseCourseConfigCoerceInt`
+     * 范围检查口径一致。
      */
     fun coerceInt(raw: Any?): Int? = when (raw) {
         is Int -> raw
-        is Long -> raw.toInt()
-        is Double -> raw.toInt()
-        is Float -> raw.toInt()
+        is Long -> if (raw in Int.MIN_VALUE..Int.MAX_VALUE) raw.toInt() else null
+        is Double -> if (raw.isFinite() && raw >= Int.MIN_VALUE && raw <= Int.MAX_VALUE) raw.toInt() else null
+        is Float -> if (raw.isFinite() && raw >= Int.MIN_VALUE && raw <= Int.MAX_VALUE) raw.toInt() else null
         is Number -> raw.toInt()
         is String -> raw.trim().toIntOrNull()
         else -> null
