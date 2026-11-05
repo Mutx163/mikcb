@@ -506,6 +506,38 @@ data class ArbText(val key: String, val zh: String) {
     fun filled(name: String, value: String): String = zh.replace("{$name}", value)
 }
 
+/**
+ * 摊平节点树，只收**行控件**（分组内的行按屏上顺序）。
+ *
+ * 分派器/宿主关心「哪些行是拖动类」时用它，不要按 id 手写名单。
+ */
+fun List<SettingsNode>.flattenedSettingsRows(): List<SettingsRow> {
+    val out = ArrayList<SettingsRow>()
+    fun visit(node: SettingsNode) {
+        when (node) {
+            is SettingsRow -> out.add(node)
+            is SettingsGroup -> node.children.forEach { visit(it) }
+            else -> Unit
+        }
+    }
+    forEach { visit(it) }
+    return out
+}
+
+/**
+ * 拖动类（滑杆）行的 id 集合：**落盘防抖的唯一判据**（设置主宿主与外观编辑宿主共用）。
+ *
+ * 判据是「这一行的组件是 [MiuixRowComponent.SLIDER]」，不是手写 id 名单：
+ * 2026-11-05 的手写名单（`material.*` + `.tuning.` / `.darkTuning.` + `backdrop.blur`）漏了
+ * `material.general.preset` / `material.courseCard.preset` 两根档位滑杆，于是它们拖动时
+ * 每帧走一次 `persistNow()`（同步 `commit()` 写盘 + 整份读回校验），全压在主线程上。
+ */
+fun debouncedSliderRowIds(nodes: List<SettingsNode>): Set<String> =
+    nodes.flattenedSettingsRows()
+        .filter { it.component == MiuixRowComponent.SLIDER }
+        .map { it.id }
+        .toSet()
+
 fun option(id: String, label: ArbText, seedHex: String? = null): SettingsOption =
     SettingsOption(id = id, labelKey = label.key, label = label.zh, seedHex = seedHex)
 

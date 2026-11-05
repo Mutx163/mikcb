@@ -61,6 +61,7 @@ import com.mutx163.qingyu.pages.settings.SettingsStringsExt1
 import com.mutx163.qingyu.pages.settings.SettingsStringsExt2
 import com.mutx163.qingyu.pages.settings.SettingsStringsExt4
 import com.mutx163.qingyu.pages.settings.SettingsTimetablePageSettingsPage
+import com.mutx163.qingyu.pages.settings.debouncedSliderRowIds
 import com.mutx163.qingyu.pages.settings.settingsPreviewDraft
 import com.mutx163.qingyu.theme.QingyuTheme
 import com.mutx163.qingyu.core.MiniJson
@@ -256,10 +257,7 @@ fun SettingsHost(
      * 在主线程上同步调一次（读-合并-序列化-落盘整套），既卡又放大写盘。
      */
     val sliderRowIds = remember(spec) {
-        spec.rowsOnScreen()
-            .filter { it.component == MiuixRowComponent.SLIDER }
-            .map { it.id }
-            .toSet()
+        debouncedSliderRowIds(spec.nodes)
     }
 
     /**
@@ -772,25 +770,6 @@ fun SettingsHost(
             onDismiss = { notice = null },
         )
     }
-}
-
-/**
- * 摊平页面节点树，只收**行控件**（分组内的行按屏上顺序）。
- *
- * 为什么不复用测试里那个 `flatten()`：它在 `src/test` 下，生产代码引用不到。
- * 这里也不需要「所有节点」——宿主只关心哪些行是滑杆（拖动类，要防抖）。
- */
-private fun SettingsPageSpec.rowsOnScreen(): List<SettingsRow> {
-    val out = ArrayList<SettingsRow>()
-    fun visit(node: SettingsNode) {
-        when (node) {
-            is SettingsRow -> out.add(node)
-            is SettingsGroup -> node.children.forEach { visit(it) }
-            else -> Unit
-        }
-    }
-    nodes.forEach { visit(it) }
-    return out
 }
 
 /** 通用页「课表自动更新」那五行的 rowId（与 `SettingsGeneralPage.autoRefreshRows` 一致）。 */private val AUTO_REFRESH_ROWS = setOf(
@@ -1320,10 +1299,7 @@ fun TimetablePageSettingsHost(
      * 每个拖动 tick 都会同步 `store.save()`（`commit()` 落盘）＋读回校验一次。
      */
     val sliderRowIds = remember(spec) {
-        spec.rowsOnScreen()
-            .filter { it.component == MiuixRowComponent.SLIDER }
-            .map { it.id }
-            .toSet()
+        debouncedSliderRowIds(spec.nodes)
     }
     val writer = remember(store) {
         DebouncedSettingsWriter(store, scope) {

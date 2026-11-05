@@ -35,13 +35,18 @@ import com.mutx163.qingyu.pages.settings.BingGalleryDataSource
 import com.mutx163.qingyu.pages.settings.BingGalleryDownloadResult
 import com.mutx163.qingyu.pages.settings.BingGalleryDownloader
 import com.mutx163.qingyu.pages.settings.BingWallpaperStore
+import com.mutx163.qingyu.pages.settings.BackdropFlowState
 import com.mutx163.qingyu.pages.settings.MaterialSheetBody
 import com.mutx163.qingyu.pages.settings.MaterialSheetPages
 import com.mutx163.qingyu.pages.settings.RECENT_WALLPAPER_UNDO_WINDOW_MS
 import com.mutx163.qingyu.pages.settings.SelectionPageState
 import com.mutx163.qingyu.pages.settings.SettingsAction
+import com.mutx163.qingyu.pages.settings.SettingsBackdropFlowPage
 import com.mutx163.qingyu.pages.settings.SettingsBingWallpaperGalleryPage
+import com.mutx163.qingyu.pages.settings.SettingsMaterialCourseCardPage
+import com.mutx163.qingyu.pages.settings.SettingsMaterialGeneralPage
 import com.mutx163.qingyu.pages.settings.SettingsPageBridge
+import com.mutx163.qingyu.pages.settings.SettingsPageState
 import com.mutx163.qingyu.pages.settings.SettingsStringsExt2
 import com.mutx163.qingyu.pages.settings.WallpaperAutoApplyLogic
 import com.mutx163.qingyu.pages.settings.WallpaperEvictionSources
@@ -51,6 +56,7 @@ import com.mutx163.qingyu.pages.settings.WallpaperSheetIntent
 import com.mutx163.qingyu.pages.settings.WallpaperSheetPages
 import com.mutx163.qingyu.pages.settings.appearanceEditorResyncOnResume
 import com.mutx163.qingyu.pages.settings.backdropFlowState
+import com.mutx163.qingyu.pages.settings.debouncedSliderRowIds
 import com.mutx163.qingyu.pages.settings.parseWallpaperSheetTarget
 import com.mutx163.qingyu.pages.settings.wallpaperSheetBottomGap
 import com.mutx163.qingyu.pages.shell.HomeDockNavModel
@@ -219,6 +225,38 @@ fun AppearanceEditorHost(
     // 面板要读的值全部从设置模型推出来（逐键同源在 AppearanceEditorBridge，单测在那边）。
     val appearance = remember(model) { AppearanceEditorBridge.toState(model) }
 
+    /**
+     * 拖动类（滑杆）行 id：判据 = **这一行的组件是 SLIDER**，与设置主宿主共用
+     * [debouncedSliderRowIds]。
+     *
+     * 2026-11-05 之前这里是手写的 id 名单（`material.*` + `.tuning.` / `.darkTuning.` +
+     * `backdrop.blur`），漏了 `material.general.preset` / `material.courseCard.preset` 两根
+     * **档位滑杆**：它们每拖一格都走 `commit(debounce = false)` → `persistNow()` →
+     * `save` + 整份 `load` 读回校验，全在主线程上（与用户报的「拖动卡/断」同一类）。
+     * 现在从真正渲染的那几张 spec 里推——加滑杆不用再回来改名单。
+     */
+    val sliderRowIds = remember(appearance) {
+        // ⚠️ 这里故意**只读 `main` 源集的 spec 构造器**（材质两页 + 壁纸设置页），
+        // 不调用 `MaterialSheetBody.kt` / `WallpaperSheetBody.kt` 里的 internal 助手：
+        // 那两个文件归「外观壁纸」那条泳道，调用它们的内部函数会变成跨泳道的隐藏耦合
+        // （它们一改签名，这里连累整包编译）。
+        val pageState = SettingsPageState(
+            courseCardSurfaceStyle = appearance.material.courseCardSurfaceStyle,
+        )
+        debouncedSliderRowIds(
+            SettingsMaterialGeneralPage.spec(pageState, appearance.material).nodes +
+                SettingsMaterialCourseCardPage.spec(pageState, appearance.material).nodes +
+                SettingsBackdropFlowPage.settingsPage(
+                    BackdropFlowState(
+                        imagePath = appearance.wallpaper.path,
+                        history = appearance.wallpaper.history.map { it.key },
+                        followsWeekPager = appearance.wallpaper.followsWeekPager,
+                        blurSigma = appearance.wallpaper.blurSigma,
+                    ),
+                ).nodes,
+        )
+    }
+
     val context = LocalContext.current
 
     // ------------------------------------------------ 壁纸：设备级台账 + 执行体
@@ -330,6 +368,10 @@ fun AppearanceEditorHost(
     }
 
     fun commit(next: TimetableSettingsModel, debounce: Boolean) {
+        // 空写短路：模型没变就既不重组也不落盘（滑杆在同一格内抖动、重复点同一档、
+        // 空档上的吸附回调都会走到这里）。`TimetableSettingsModel` 是 data class，
+        // 结构相等即可判「真没变」。
+        if (next == model) return
         // ✱ 先更新内存草稿：预览与控件必须当场跟着变，不等写盘。
         model = next
         pendingSave = next
@@ -647,7 +689,7 @@ fun AppearanceEditorHost(
                     // `SettingsActionDispatcher.wallpaperIntentTarget`），这里消费原始 target。
                     handleWallpaperTarget(wallpaperTarget)
                 } else {
-                    commit(dispatch.model, debounce = isDebouncedSliderRow(rowId))
+                    commit(dispatch.model, debounce = rowId in sliderRowIds)
                 }
             }
 
@@ -1052,19 +1094,6 @@ private data class PendingWallpaperRemoval(
     val path: String,
     val previousHistory: List<WallpaperHistoryRowModel>,
 )
-
-/**
- * 滑杆行的落盘防抖判据（Dart `_updateDraft(..., debounce: true)` 的调用点，`:622-631`）。
- *
- * 名单来自行 id 的字面前缀：
- * * 材质面板三组八根旋钮：`material.general.tuning.*` / `material.general.darkTuning.*` /
- *   `material.courseCard.tuning.*`（`SettingsMaterialPanels.kt` 的 `idPrefix`）；
- * * 壁纸模糊：`backdrop.blur`（`SettingsBackdropFlowPage.kt`）。
- */
-private fun isDebouncedSliderRow(rowId: String): Boolean =
-    (rowId.startsWith("material.") &&
-        (rowId.contains(".tuning.") || rowId.contains(".darkTuning."))) ||
-        rowId == SettingsActionDispatcher.ROW_BACKDROP_BLUR
 
 /** Dart 滑杆防抖 250ms（`:624-627`）。 */
 private const val APPEARANCE_EDITOR_SAVE_DEBOUNCE_MS = 250L
