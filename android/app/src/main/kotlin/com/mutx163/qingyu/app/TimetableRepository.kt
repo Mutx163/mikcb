@@ -273,6 +273,21 @@ class TimetableRepository(
     private fun updateSettingsLocked(settings: TimetableSettings) {
         loadedSettings = settings
         store.saveSettings(settings)
+        // 同步活动档案的内嵌投影（2026-11-05 数据安全修复）：此前只更新 loadedSettings
+        // 与顶层镜像，内存档案的内嵌 core 投影留在旧值——下一次 saveProfiles（课程导入
+        // replace 路径必然发生）会用内存模型的旧 core 值**覆盖刚写进磁盘内嵌的新值**
+        // （磁盘证据：内嵌 20 / 顶层镜像 22 并存），成功路径上学期设置重启后回退。
+        // 与 updateSettingsPatchLocked 的内存同步口径一致（mergeSettings 补投影），
+        // 只补投影、不改写盘行为；放 store.saveSettings 之后 = 落盘失败时内存不动。
+        val activeId = activeProfile.id
+        val patch = settings.toJson()
+        loadedProfiles = loadedProfiles.map { profile ->
+            if (profile.id == activeId) {
+                profile.copy(settings = mergeSettings(profile.settings, patch))
+            } else {
+                profile
+            }
+        }
         pendingNotify = true
     }
 
@@ -687,13 +702,18 @@ class TimetableRepository(
         val restoredWeek = clampCurrentWeekToSettings(active.currentWeek, restoredSettings).toInt()
 
         // 先落盘：全部成功后才改内存，失败时界面保持旧状态。
-        store.saveProfiles(profiles, preferredEmbeddedSettings)
-        store.saveActiveProfileId(resolvedActiveId)
-        store.saveSettings(restoredSettings)
-        store.saveCurrentWeek(restoredWeek)
-        store.saveTimeSchemes(timeSchemes)
-        store.saveScheduleDateRules(scheduleDateRules)
-        store.saveLocationTimeGroups(locationTimeGroups)
+        // 多 key 一次提交（2026-11-05 数据安全修复）：这七笔此前是逐 key 直写，中途
+        // 一笔抛错会把磁盘留在半新半旧（如 profiles 新、settings 旧），内存却保持旧值
+        // ——盘上状态从此对不上任何一致性口径。现在按快照回滚已写键再上抛。
+        store.runRestoreTransaction {
+            store.saveProfiles(profiles, preferredEmbeddedSettings)
+            store.saveActiveProfileId(resolvedActiveId)
+            store.saveSettings(restoredSettings)
+            store.saveCurrentWeek(restoredWeek)
+            store.saveTimeSchemes(timeSchemes)
+            store.saveScheduleDateRules(scheduleDateRules)
+            store.saveLocationTimeGroups(locationTimeGroups)
+        }
 
         loadedProfiles = profiles
         loadedActiveProfileId = resolvedActiveId

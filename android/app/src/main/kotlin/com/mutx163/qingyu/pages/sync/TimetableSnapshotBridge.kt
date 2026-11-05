@@ -134,7 +134,9 @@ object TimetableSnapshotBridge {
      * 恢复侧：快照字节 → 仓储（整份覆盖，写回成功后仓储只通知一次）。
      *
      * [applyWarehouseMacros] 非空时同一趟把快照里的宏列表（原始 `List<*>`，可能为 null）
-     * 交给调用方落库；抛错会按恢复失败上报（课表写入已生效，不静默吞）。为空则不动宏。
+     * 交给调用方落库；**宏导入失败只记录、不翻转结果**（2026-11-05 数据安全修复：
+     * 课表已在仓储层落盘成功，宏抛错曾把整次恢复报成 Failed——部分成功报成失败）。
+     * 为空则不动宏。课表写入本身抛错仍按恢复失败上报。
      */
     fun applySnapshot(
         repository: TimetableRepository,
@@ -188,7 +190,18 @@ object TimetableSnapshotBridge {
             )
             // 宏走 Dart 的整库覆盖语义：快照里没有宏（null/空表）也导入空表，
             // 即清空本地宏——云端没带宏就是「这份备份没有宏」，不能留下旧条目。
-            applyWarehouseMacros?.invoke(warehouseMacros)
+            // 宏导入失败**不翻转恢复结果**（2026-11-05 数据安全修复）：课表已在仓储层
+            // 落盘成功，宏只是顺路的附加导入；此前宏抛错会把整次恢复报成 Failed，
+            // 调用方走「恢复失败」分支（提示/重试/回滚决策全部错位——重试会把一份
+            // 已恢复的课表再恢复一遍）。失败在此记录、不上抛、不静默吞。
+            try {
+                applyWarehouseMacros?.invoke(warehouseMacros)
+            } catch (macroError: Exception) {
+                println(
+                    "[SnapshotBridge] snapshot restore succeeded but warehouse macro import failed: " +
+                        macroError,
+                )
+            }
             SnapshotApplyResult.Applied
         } catch (error: Exception) {
             SnapshotApplyResult.Failed("sync_snapshot_apply_failed")

@@ -836,6 +836,130 @@ class TimetableStore(
         store.putString(KEY_LOCATION_TIME_GROUPS, MiniJson.encode(groups.map { it.toJsonMap() }))
     }
 
+    // ---------- 多 key 原子写（云恢复等整块替换的失败回滚） ----------
+
+    /**
+     * 云恢复整块替换所涉键组的**落盘前快照**（原始字节级，供失败回滚）。
+     *
+     * `null` 值统一表示「盘上没有这个键」：回滚时对应键会被**移除**（而不是写成空串），
+     * 与「恢复前没有这份数据」的原状严格一致。settings 是读侧视图（含全局 44 键覆盖），
+     * 回滚时按差量 patch 还原（快照里没有的键显式写 null = 删除）。
+     */
+    data class RestoreKeysSnapshot(
+        val profilesRaw: String?,
+        val profilesSchemaVersion: Int?,
+        val activeProfileId: String?,
+        val settingsJson: Map<String, Any?>,
+        val currentWeek: Int?,
+        val timeSchemesRaw: String?,
+        val scheduleDateRulesRaw: String?,
+        val locationTimeGroupsRaw: String?,
+    )
+
+    /** 逐键抓快照（整段持锁：与各写入路径共用同一把对象锁，避免抓到写一半的状态）。 */
+    @Synchronized
+    fun captureRestoreKeysSnapshot(): RestoreKeysSnapshot = RestoreKeysSnapshot(
+        profilesRaw = store.getString(KEY_PROFILES),
+        profilesSchemaVersion =
+            if (store.contains(KEY_PROFILES_SCHEMA_VERSION)) store.getInt(KEY_PROFILES_SCHEMA_VERSION, 0) else null,
+        activeProfileId =
+            if (store.contains(KEY_ACTIVE_PROFILE_ID)) store.getString(KEY_ACTIVE_PROFILE_ID) else null,
+        settingsJson = loadSettingsJson(),
+        currentWeek = if (store.contains(KEY_CURRENT_WEEK)) store.getInt(KEY_CURRENT_WEEK, 0) else null,
+        timeSchemesRaw = store.getString(KEY_TIME_SCHEMES),
+        scheduleDateRulesRaw = store.getString(KEY_SCHEDULE_DATE_RULES),
+        locationTimeGroupsRaw = store.getString(KEY_LOCATION_TIME_GROUPS),
+    )
+
+    /**
+     * 按快照**逐键写回原值**（键不存在 = 移除）。
+     *
+     * 顺序刻意是「profiles 原始串在前、settings 差量在后」：settings 回滚走
+     * [saveSettingsPatch]，会把 core 键**合并进当前档案内嵌**——先恢复 profiles 原始串、
+     * 再打 settings 补丁，最终 = 旧 profiles + 旧 core 键，两层都不多不少。
+     * 单键失败不中断其余键（回滚原则是能救多少救多少），最后把首个失败原样上抛，
+     * 由调用方决定怎么上报（不静默吞）。
+     */
+    @Synchronized
+    fun restoreToSnapshot(snapshot: RestoreKeysSnapshot) {
+        var firstError: Exception? = null
+        fun step(write: () -> Unit) {
+            try {
+                write()
+            } catch (error: Exception) {
+                // 记首错、**继续执行其余键**：回滚原则是能救多少救多少（KDoc 口径），
+                // 首错在全部步骤跑完后原样上抛——不许因单键失败跳过后面的键。
+                if (firstError == null) firstError = error
+            }
+        }
+        step { snapshot.profilesRaw?.let { store.putString(KEY_PROFILES, it) } ?: store.remove(KEY_PROFILES) }
+        step {
+            snapshot.profilesSchemaVersion
+                ?.let { store.putInt(KEY_PROFILES_SCHEMA_VERSION, it) }
+                ?: store.remove(KEY_PROFILES_SCHEMA_VERSION)
+        }
+        step {
+            snapshot.activeProfileId
+                ?.let { store.putString(KEY_ACTIVE_PROFILE_ID, it) }
+                ?: store.remove(KEY_ACTIVE_PROFILE_ID)
+        }
+        step {
+            val patch = LinkedHashMap<String, Any?>()
+            val current = loadSettingsJson()
+            for (key in current.keys) {
+                if (!snapshot.settingsJson.containsKey(key)) patch[key] = null
+            }
+            for ((key, value) in snapshot.settingsJson) {
+                if (current[key] != value) patch[key] = value
+            }
+            if (patch.isNotEmpty()) saveSettingsPatch(patch)
+        }
+        step { snapshot.currentWeek?.let { store.putInt(KEY_CURRENT_WEEK, it) } ?: store.remove(KEY_CURRENT_WEEK) }
+        step { snapshot.timeSchemesRaw?.let { store.putString(KEY_TIME_SCHEMES, it) } ?: store.remove(KEY_TIME_SCHEMES) }
+        step {
+            snapshot.scheduleDateRulesRaw
+                ?.let { store.putString(KEY_SCHEDULE_DATE_RULES, it) }
+                ?: store.remove(KEY_SCHEDULE_DATE_RULES)
+        }
+        step {
+            snapshot.locationTimeGroupsRaw
+                ?.let { store.putString(KEY_LOCATION_TIME_GROUPS, it) }
+                ?: store.remove(KEY_LOCATION_TIME_GROUPS)
+        }
+        firstError?.let { throw it }
+    }
+
+    /**
+     * **多 key 一次提交**（云恢复等整块替换的原子入口）：先抓 [RestoreKeysSnapshot]，
+     * 再执行 [writes]；任一笔抛错时按快照把**已写的键**逐个回滚，然后原样上抛——
+     * 「失败时内存/界面保持旧状态」的语义从此在磁盘上同样成立（磁盘不再留半新半旧）。
+     *
+     * 快照只覆盖云恢复七键组（profiles + schema 章 + active id + settings + current_week
+     * + time_schemes + schedule_date_rules + location_time_groups）；[writes] 写这组之外
+     * 的键不在保护范围。回滚本身失败时不遮原始错误（原始错误优先上抛，与
+     * [updateSettingsPatchLocked] 的补偿口径一致）。
+     *
+     * 整段持本实例锁（2026-11-05 复核补 @Synchronized）：「抓快照 → 写 → 回滚」三段
+     * 之间不插入其它写线程，否则并发写会被回滚一起还原。内部各步与本方法是同一把
+     * 实例锁、可重入，无死锁风险。
+     */
+    @Synchronized
+    fun <T> runRestoreTransaction(writes: () -> T): T {
+        val snapshot = captureRestoreKeysSnapshot()
+        return try {
+            writes()
+        } catch (error: Throwable) {
+            try {
+                restoreToSnapshot(snapshot)
+            } catch (rollbackError: Exception) {
+                // 回滚失败不遮原始错误：留痕供排障（磁盘停在半新半旧是排障关键信息），
+                // 原始 error 在下面原样上抛，不受这条日志影响。
+                System.err.println("TimetableStore: restore rollback failed: $rollbackError")
+            }
+            throw error
+        }
+    }
+
     // ---------- teacher_records / location_records（List<String>） ----------
 
     /**
