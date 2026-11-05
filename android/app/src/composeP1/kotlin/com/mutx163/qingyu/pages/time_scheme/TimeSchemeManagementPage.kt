@@ -1,5 +1,7 @@
 package com.mutx163.qingyu.pages.time_scheme
 
+import androidx.compose.animation.Crossfade
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
@@ -36,6 +38,7 @@ import com.mutx163.qingyu.theme.QingyuIconColors
 import com.mutx163.qingyu.theme.QingyuTheme
 import top.yukonga.miuix.kmp.basic.Button
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
+import top.yukonga.miuix.kmp.basic.CircularProgressIndicator
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.IconButton
 import top.yukonga.miuix.kmp.basic.Text
@@ -109,6 +112,12 @@ fun TimeSchemeManagementPage(
     onEditSections: (schemeId: String) -> Unit,
     onOpenLocationEntry: () -> Unit,
     onOpenDateRules: () -> Unit,
+    /**
+     * 数据首装载中（宿主在后台线程读仓储快照 + 算引用索引）。
+     * 为 true 时页面先画一帧**转圈**，别让用户对着空页等（旧实现同步算在主线程上，
+     * 首帧被阻塞数秒、数据回来才一次性渲染）。
+     */
+    isLoading: Boolean = false,
 ) {
     val dark = isSystemInDarkTheme()
 
@@ -126,48 +135,74 @@ fun TimeSchemeManagementPage(
             }
         },
     ) {
-        QingyuPageList(
-            innerPadding = innerPadding,
-            scrollBehavior = scrollBehavior,
-            horizontalPadding = QingyuPageCardMargin,
-            verticalArrangement = Arrangement.spacedBy(QingyuSectionGap),
-        ) {
-            // ── index 0：两个入口行（同一张卡） ──
-            item(key = "timeSchemeEntries") {
-                EntryCard(
-                    model = model,
-                    onOpenLocationEntry = onOpenLocationEntry,
-                    onOpenDateRules = onOpenDateRules,
-                )
-            }
+        // 加载态 → 内容用 180ms 交叉淡入：不再「空页停几秒、内容猛一下弹出来」。
+        Crossfade(
+            targetState = isLoading,
+            animationSpec = tween(durationMillis = 180),
+            label = "timeSchemeLoading",
+        ) { loading ->
+            QingyuPageList(
+                innerPadding = innerPadding,
+                scrollBehavior = scrollBehavior,
+                horizontalPadding = QingyuPageCardMargin,
+                verticalArrangement = Arrangement.spacedBy(QingyuSectionGap),
+            ) {
+                if (loading) {
+                    item(key = "timeSchemeLoading") {
+                        TimeSchemeLoadingState()
+                    }
+                } else {
+                    // ── index 0：两个入口行（同一张卡） ──
+                    item(key = "timeSchemeEntries") {
+                        EntryCard(
+                            model = model,
+                            onOpenLocationEntry = onOpenLocationEntry,
+                            onOpenDateRules = onOpenDateRules,
+                        )
+                    }
 
-            // ── index 1 + 2：分段间距（由 spacedBy 承担）+ 分区标题 ──
-            item(key = "timeSchemeSectionTitle") {
-                // 「时间模板」小灰字：与 Flutter v2.1.4.1 `HyperosSectionLabel` 同口径——
-                // 左右 16dp 对齐 28dp 文字轴，纵向不再叠 SmallTitle 默认的 8dp（列表 spacedBy 已给 12dp），
-                // 否则上下各 ~20dp 一大片空白。
-                QingyuSectionTitle(
-                    text = TimeSchemeManagementStrings.timeSchemeEntryTitle.zh,
-                    insideMargin = PaddingValues(start = 16.dp, end = 16.dp, top = 0.dp, bottom = 0.dp),
-                )
-            }
+                    // ── index 1 + 2：分段间距（由 spacedBy 承担）+ 分区标题 ──
+                    item(key = "timeSchemeSectionTitle") {
+                        // 「时间模板」小灰字：与 Flutter v2.1.4.1 `HyperosSectionLabel` 同口径——
+                        // 左右 16dp 对齐 28dp 文字轴，纵向不再叠 SmallTitle 默认的 8dp（列表 spacedBy 已给 12dp），
+                        // 否则上下各 ~20dp 一大片空白。
+                        QingyuSectionTitle(
+                            text = TimeSchemeManagementStrings.timeSchemeEntryTitle.zh,
+                            insideMargin = PaddingValues(start = 16.dp, end = 16.dp, top = 0.dp, bottom = 0.dp),
+                        )
+                    }
 
-            // ── index 3+：空态一行 / 模板卡 ──
-            if (model.isEmpty) {
-                item(key = "timeSchemeEmptyState") {
-                    EmptyStateRow()
-                }
-            } else {
-                items(items = model.rows, key = { row -> row.scheme.id }) { row ->
-                    SchemeCard(
-                        row = row,
-                        onOpenMenu = { onOpenMenu(row.scheme.id) },
-                        onApply = { onApply(row.scheme.id) },
-                        onEditSections = { onEditSections(row.scheme.id) },
-                    )
+                    // ── index 3+：空态一行 / 模板卡 ──
+                    if (model.isEmpty) {
+                        item(key = "timeSchemeEmptyState") {
+                            EmptyStateRow()
+                        }
+                    } else {
+                        items(items = model.rows, key = { row -> row.scheme.id }) { row ->
+                            SchemeCard(
+                                row = row,
+                                onOpenMenu = { onOpenMenu(row.scheme.id) },
+                                onApply = { onApply(row.scheme.id) },
+                                onEditSections = { onEditSections(row.scheme.id) },
+                            )
+                        }
+                    }
                 }
             }
         }
+    }
+}
+
+/** 首装载转圈：与 App 其它异步列表页同形态（居中官方 `CircularProgressIndicator`）。 */
+@Composable
+private fun TimeSchemeLoadingState() {
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 120.dp),
+        contentAlignment = Alignment.Center,
+    ) {
+        CircularProgressIndicator()
     }
 }
 

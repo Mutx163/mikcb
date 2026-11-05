@@ -51,6 +51,8 @@ import top.yukonga.miuix.kmp.basic.TextButton
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 
 /**
  * 「时间模板」族（`d3.timeSchemes` 列表页 + `d3.timeSchemeEditor` 编辑节次页）的**真宿主**。
@@ -105,37 +107,50 @@ fun TimeSchemeManagementHost(
     onOpenLocationEntry: () -> Unit,
     onOpenDateRules: () -> Unit,
 ) {
-    var snapshot by remember(repository) { mutableStateOf(repository.snapshot) }
+    var snapshot by remember(repository) { mutableStateOf<TimetableSnapshot?>(null) }
+    var model by remember(repository) { mutableStateOf<TimeSchemeManagementModel?>(null) }
     DisposableEffect(repository) {
         val subscription = repository.observe { updated -> snapshot = updated }
         onDispose { subscription.close() }
     }
 
-    val context = LocalContext.current
-    val usage = remember(snapshot) {
-        TimeSchemeUsageIndexFactory.build(
-            schemes = snapshot.timeSchemes,
-            profiles = snapshot.profiles,
-            locationGroups = snapshot.locationTimeGroups,
-            dateRules = snapshot.scheduleDateRules,
-        )
+    // 首装载全部挪到后台线程：旧实现把 `repository.snapshot` 读、引用索引
+    // (`TimeSchemeUsageIndexFactory.build`) 与模型构造全塞在**组合期**同步执行——
+    // 课程/档案一多就把主线程按住数秒，首帧画不出来，用户看到的是「空页干等，数据回来猛一下弹出」。
+    LaunchedEffect(repository) {
+        // 后台读一次；读回来的途中若仓储已经推了新快照（`observe` 回调先到），
+        // 不要把新的盖成这次读到的旧值 —— 只在仍然为空时落盘。
+        val loaded = withContext(Dispatchers.IO) { repository.snapshot }
+        if (snapshot == null) snapshot = loaded
+    }
+    LaunchedEffect(snapshot) {
+        val current = snapshot ?: return@LaunchedEffect
+        val next = withContext(Dispatchers.Default) {
+            val usage = TimeSchemeUsageIndexFactory.build(
+                schemes = current.timeSchemes,
+                profiles = current.profiles,
+                locationGroups = current.locationTimeGroups,
+                dateRules = current.scheduleDateRules,
+            )
+            // Dart 每次 build 都拿 `DateTime.now()` 去 match（`:127-128`），这里也现算，
+            // 「今天在区间内」那句话本来就该随日期变。
+            TimeSchemeManagementModel(
+                schemes = current.timeSchemes,
+                usage = usage,
+                activeSchemeId = current.activeTimeSchemeId,
+                locationGroupCount = current.locationTimeGroups.size,
+                dateRuleCount = current.scheduleDateRules.size,
+                hasActiveDateRule = ScheduleDateRuleLogic.match(
+                    LocalDateTime.now(),
+                    current.scheduleDateRules.map { it.toCalendarRule() },
+                ) != null,
+            )
+        }
+        model = next
     }
 
-    // Dart 每次 build 都拿 `DateTime.now()` 去 match（`:127-128`），所以这里也每次重组现算：
-    // 页面上「今天在区间内」这句话本来就该随日期变，缓存一天反而会骗人。
-    val hasActiveDateRule = ScheduleDateRuleLogic.match(
-        LocalDateTime.now(),
-        snapshot.scheduleDateRules.map { it.toCalendarRule() },
-    ) != null
-
-    val model = TimeSchemeManagementModel(
-        schemes = snapshot.timeSchemes,
-        usage = usage,
-        activeSchemeId = snapshot.activeTimeSchemeId,
-        locationGroupCount = snapshot.locationTimeGroups.size,
-        dateRuleCount = snapshot.scheduleDateRules.size,
-        hasActiveDateRule = hasActiveDateRule,
-    )
+    val context = LocalContext.current
+    val currentModel = model ?: TimeSchemeManagementModel()
 
     var dialog by remember { mutableStateOf<TimeSchemeDialog>(TimeSchemeDialog.None) }
     // 新建成功后要直接进编辑器（Dart `_createScheme` 末尾 `_openEditor(scheme.id)`），
@@ -145,9 +160,9 @@ fun TimeSchemeManagementHost(
     }
 
     fun openMenu(schemeId: String) {
-        val items = model.menu(schemeId).filter { it.action != TimeSchemeAction.SHARE }
+        val items = currentModel.menu(schemeId).filter { it.action != TimeSchemeAction.SHARE }
         if (items.isEmpty()) return
-        val name = model.row(schemeId)?.title.orEmpty()
+        val name = currentModel.row(schemeId)?.title.orEmpty()
         dialog = TimeSchemeDialog.Menu(TimeSchemeMenuState(schemeId = schemeId, schemeName = name, items = items))
     }
 
@@ -155,13 +170,13 @@ fun TimeSchemeManagementHost(
         dialog = TimeSchemeDialog.None
         when (action) {
             TimeSchemeAction.VIEW_USAGE -> {
-                model.usageView(schemeId)?.let { dialog = TimeSchemeDialog.Usage(it) }
+                currentModel.usageView(schemeId)?.let { dialog = TimeSchemeDialog.Usage(it) }
             }
 
             TimeSchemeAction.EDIT_SECTIONS -> onOpenEditor(schemeId)
 
             TimeSchemeAction.RENAME ->
-                model.renameSheet(schemeId)?.let {
+                currentModel.renameSheet(schemeId)?.let {
                     dialog = TimeSchemeDialog.Name(
                         sheet = it,
                         mode = TimeSchemeNameMode.RENAME,
@@ -170,7 +185,7 @@ fun TimeSchemeManagementHost(
                 }
 
             TimeSchemeAction.DUPLICATE -> {
-                val name = model.copyName(model.row(schemeId)?.title.orEmpty())
+                val name = currentModel.copyName(currentModel.row(schemeId)?.title.orEmpty())
                 val result = runCatching { repository.duplicateTimeScheme(schemeId, name) }
                 result.onSuccess { copied ->
                     if (copied == null) {
@@ -185,7 +200,7 @@ fun TimeSchemeManagementHost(
                 val result = runCatching { repository.applyTimeScheme(schemeId) }
                 result.onSuccess { error ->
                     if (error == null) {
-                        toast(model.appliedMessage(schemeId))
+                        toast(currentModel.appliedMessage(schemeId))
                     } else {
                         toast(TimeSchemeServiceMessages.localize(error))
                     }
@@ -193,7 +208,7 @@ fun TimeSchemeManagementHost(
             }
 
             TimeSchemeAction.DELETE -> {
-                val check = model.deleteCheck(schemeId) ?: return
+                val check = currentModel.deleteCheck(schemeId) ?: return
                 dialog = if (check.canDelete) {
                     TimeSchemeDialog.Delete(check)
                 } else {
@@ -208,11 +223,12 @@ fun TimeSchemeManagementHost(
     }
 
     TimeSchemeManagementPageHost(
-        model = model,
+        model = currentModel,
+        isLoading = model == null,
         onBack = onBack,
         onCreate = {
             dialog = TimeSchemeDialog.Name(
-                sheet = model.createSheet,
+                sheet = currentModel.createSheet,
                 mode = TimeSchemeNameMode.CREATE,
                 schemeId = null,
             )
@@ -245,7 +261,7 @@ fun TimeSchemeManagementHost(
             val state = nameDialog ?: return@TimeSchemeNameSheet
             dialog = TimeSchemeDialog.None
             val name = raw.trim()
-            val error = model.validateName(name)
+            val error = currentModel.validateName(name)
             if (error != null) {
                 toast(error)
                 return@TimeSchemeNameSheet
@@ -282,7 +298,7 @@ fun TimeSchemeManagementHost(
             dialog = TimeSchemeDialog.None
             val result = runCatching { repository.deleteTimeScheme(check.schemeId) }
             result.onSuccess { deleted ->
-                val name = model.row(check.schemeId)?.title.orEmpty()
+                val name = currentModel.row(check.schemeId)?.title.orEmpty()
                 toast(
                     if (deleted) {
                         TimeSchemeManagementStrings.deletedTimeSchemeMessage.filled("name", name)
@@ -294,7 +310,7 @@ fun TimeSchemeManagementHost(
         },
         onViewUsage = {
             deleteDialog?.check?.let { chk ->
-                model.usageView(chk.schemeId)?.let { dialog = TimeSchemeDialog.Usage(it) }
+                currentModel.usageView(chk.schemeId)?.let { dialog = TimeSchemeDialog.Usage(it) }
             }
         },
     )
@@ -305,7 +321,7 @@ fun TimeSchemeManagementHost(
         onCancel = { dialog = TimeSchemeDialog.None },
         onViewUsage = {
             blockedDialog?.check?.let { chk ->
-                model.usageView(chk.schemeId)?.let { dialog = TimeSchemeDialog.Usage(it) }
+                currentModel.usageView(chk.schemeId)?.let { dialog = TimeSchemeDialog.Usage(it) }
             }
         },
     )
@@ -321,6 +337,7 @@ fun TimeSchemeManagementHost(
 @Composable
 private fun TimeSchemeManagementPageHost(
     model: TimeSchemeManagementModel,
+    isLoading: Boolean,
     onBack: () -> Unit,
     onCreate: () -> Unit,
     onOpenMenu: (String) -> Unit,
@@ -331,6 +348,7 @@ private fun TimeSchemeManagementPageHost(
 ) {
     com.mutx163.qingyu.pages.time_scheme.TimeSchemeManagementPage(
         model = model,
+        isLoading = isLoading,
         onBack = onBack,
         onCreate = onCreate,
         onOpenMenu = onOpenMenu,
