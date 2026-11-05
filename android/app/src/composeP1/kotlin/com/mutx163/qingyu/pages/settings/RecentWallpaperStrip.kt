@@ -46,7 +46,6 @@ import com.mutx163.qingyu.app.imagecache.ImageSizeSelector
 import com.mutx163.qingyu.components.QingyuCard
 import com.mutx163.qingyu.components.QingyuWeightDelta
 import com.mutx163.qingyu.components.shiftWeight
-import com.mutx163.qingyu.theme.QingyuShapes
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import top.yukonga.miuix.kmp.basic.Button
@@ -481,8 +480,10 @@ private fun RecentWallpaperRemoveBadge(onPressed: () -> Unit) {
 /**
  * 移除确认条的一句说明（Dart `:169-176`）：与段说明同一版式，但要**警示色**。
  *
- * 官方 `SectionDescription` 没有「警示色说明」这一档，所以这里只换颜色不换版式
- * （字号 / 左缘 / 上间距都照 `SettingsPageRenderers` 的 `SectionDescription`）。
+ * 版式按发布版落在**段内**：与缩略图条同左缘（段自己已经给了 0 内缩，弹层再给 16），
+ * 上方只留段块的 14 —— 以前这里借了设置列表的 `SECTION_LABEL_INSET`（16）+ `top 8`，
+ * 在弹层里就变成距边 32、离条 22，比发布版各多一截（2026-11-05 修）。
+ * 字号取 `body2`（= Dart `HyperosTypography.listDetail` 的 13sp）。
  */
 @Composable
 fun RecentWallpaperConfirmHint(
@@ -491,15 +492,9 @@ fun RecentWallpaperConfirmHint(
 ) {
     Text(
         text = text,
-        modifier = modifier
-            .fillMaxWidth()
-            .padding(
-                start = QingyuShapes.SECTION_LABEL_INSET.dp,
-                end = QingyuShapes.SECTION_LABEL_INSET.dp,
-                top = 8.dp,
-            ),
+        modifier = modifier.fillMaxWidth(),
         color = MiuixTheme.colorScheme.error,
-        style = MiuixTheme.textStyles.footnote1,
+        style = MiuixTheme.textStyles.body2,
     )
 }
 
@@ -520,7 +515,9 @@ fun RecentWallpaperConfirmBar(
     Row(
         modifier = modifier
             .fillMaxWidth()
-            .padding(vertical = 10.dp),
+            // 发布版两颗按钮的上下间距（`:169-203`）：提示 → 按钮 10、按钮 → 段底 14。
+            // 段块自己带 14 底距，所以这里只补那 10；下 14 是「按钮之后到下一块」的那一截。
+            .padding(top = 10.dp, bottom = 14.dp),
         horizontalArrangement = Arrangement.spacedBy(12.dp),
     ) {
         Button(

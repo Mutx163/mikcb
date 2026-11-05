@@ -209,7 +209,12 @@ fun MaterialSheetBody(
             // 官方 demo 的页签行内距（`component/TabRowSection.kt:37-47` 的 `padding(horizontal)`）；
             // 页面容器的左右 16 来自弹层 `insideMargin`，这里只给页签自己那圈呼吸。
             // ⚠️ 必须用 start/top/end/bottom 那个重载：Compose 没有「horizontal + bottom」组合。
-            modifier = Modifier.padding(start = 16.dp, end = 16.dp, bottom = 8.dp),
+            //
+            // 2026-11-05：**左右那 16 去掉**。弹层的 `insideMargin`（`QingyuSheetDefaults.InsideMargin`）
+            // 已经给了 Dart 那个 16，再垫一层页签就距边 32、比下面的卡片各窄 16（并排看像一条
+            // 悬在中间的窄轨）。发布版胶囊与正文同宽：`settings_appearance_editor.dart:2161-2179`
+            // 的 `bleed` 只有那 16。壁纸面板同一处口径（`WallpaperSheetBody`）。
+            modifier = Modifier.padding(bottom = 8.dp),
         )
         HorizontalPager(
             state = pagerState,

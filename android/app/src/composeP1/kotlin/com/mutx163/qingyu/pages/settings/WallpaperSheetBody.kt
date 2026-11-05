@@ -7,7 +7,8 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.asPaddingValues
-import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.ime
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
@@ -22,6 +23,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -36,6 +38,21 @@ object WallpaperSheetPages {
     const val SETTINGS = 1
     const val COUNT = 2
 }
+
+/**
+ * 外观编辑页两块弹层**整体**最多占屏高的比例（Dart `_materialSheetMaxHeightFactor`，
+ * `settings_appearance_editor.dart:116-120`；壁纸面板同口径，`:831-841`）。
+ */
+private const val APPEARANCE_SHEET_MAX_HEIGHT_FACTOR = 0.5f
+
+/**
+ * 官方弹层载体在**内容之外**占掉的高度：把手条 24 + 无标题时的空标题行 18
+ * （`third_party/miuix-ui/.../layout/BottomSheetContentLayout.kt:643-657` 与 `:798-830`）。
+ *
+ * 与 [MaterialSheetBody] 的 `MATERIAL_SHEET_CARRIER_CHROME` 是同一个数：两块面板必须扣同一份，
+ * 否则并排看一高一矮（壁纸面板一度就是高的那一块）。
+ */
+private const val SHEET_CARRIER_CHROME_DP = 42f
 
 /**
  * 壁纸面板往外发动作时用的 target 串（宿主 / 分派器按这些串认）。
@@ -334,7 +351,21 @@ fun WallpaperSheetBody(
         armedKey = armed,
     )
 
-    Column(modifier = modifier.fillMaxSize()) {
+    // 面板整体最多半屏（Dart `_materialSheetMaxHeightFactor = 0.5`，`:839-841`）。载体把
+    // 把手条 24 + 无标题时的空标题行 18 排在**内容之外**（`BottomSheetContentLayout.kt:643-657`
+    // / `:798-830`），所以正文上限要扣掉这 42 —— 不扣的话壁纸面板 = 屏高×50% + 42，
+    // 比隔壁材质面板高出一截，内容不满时底下还会多一块永远空的玻璃板
+    // （材质面板同一处口径：`MaterialSheetBody.kt:51,164-165`）。
+    val sheetMaxHeight = (
+        LocalConfiguration.current.screenHeightDp * APPEARANCE_SHEET_MAX_HEIGHT_FACTOR -
+            SHEET_CARRIER_CHROME_DP
+        ).coerceAtLeast(0f).dp
+
+    Column(
+        modifier = modifier
+            .fillMaxWidth()
+            .heightIn(max = sheetMaxHeight),
+    ) {
         TabRowWithContour(
             tabs = SettingsWallpaperSheetPage.TAB_LABELS.map { it.zh },
             selectedTabIndex = pagerState.currentPage,
@@ -344,7 +375,14 @@ fun WallpaperSheetBody(
             // 两格铺满整行：官方默认 minWidth 会让每格只有自身文字宽、行尾留一截空轨。
             minWidth = 0.dp,
             maxWidth = Dp.Infinity,
-            modifier = Modifier.padding(start = 16.dp, end = 16.dp, bottom = 8.dp),
+            // 左右**不能**再垫 16：弹层的 `insideMargin` 已经给了 Dart 那个 16
+            // （`QingyuSheetDefaults.InsideMargin`），再垫一层页签就距边 32、比下面的
+            // 卡片各窄 16（发布版胶囊与内容同宽：`settings_appearance_editor.dart:2161-2179`
+            // 的 `bleed` 只有那 16）。
+            //
+            // 下 20 = 发布版胶囊带底到正文的距离（`topInsetFor` = 带高 64 + 渐隐 20，
+            // `hyperos_sheet_blur_top.dart:204-209`）。
+            modifier = Modifier.padding(bottom = 20.dp),
         )
         HorizontalPager(
             state = pagerState,
@@ -383,6 +421,26 @@ private const val RECENT_CONFIRM_CANCEL_ROW_ID = "backdrop.recent.cancelDelete"
 
 /** 「每天自动更换」那一行的 id（`SettingsBackdropFlowPage` 的 `backdrop.bing.autoApply`）。 */
 private const val BING_AUTO_APPLY_ROW_ID = WallpaperSheetActionTargets.AUTO_APPLY_TOGGLE
+
+/** 第一页「选图」那一组，以及组里那条「背景图片 + 文件名」标题行（`SettingsBackdropFlowPage.imageRows`）。 */
+private const val IMAGE_GROUP_ID = "backdrop.image"
+private const val IMAGE_TITLE_ROW_ID = "backdrop.image"
+
+/** 第一页「每日壁纸」那一组与图库入口行（`SettingsBackdropFlowPage.selectionPage` 的 `backdrop.bing`）。 */
+private const val BING_GROUP_ID = "backdrop.bing"
+private const val BING_ENTRY_ROW_ID = "backdrop.bing.entry"
+
+/** 第二页「设置」那一组（`SettingsBackdropFlowPage.settingsPage` 的 `backdrop.settings`）。 */
+private const val SETTINGS_GROUP_ID = "backdrop.settings"
+
+/**
+ * 模型插在「最近使用」与每日壁纸之间的空档节点。
+ *
+ * 新 Bing 块自带 4dp 顶距，「最近使用」段自带 14 底距 ⇒ 两块之间天然是 18，
+ * 与发布版 `fromLTRB(inset, 4, inset, 14)`（`settings_home_backdrop_flow.dart:488`）一致；
+ * 再让这个 12 的空档占位就是两段留白算两遍。
+ */
+private const val BING_GAP_ID = "backdrop.gap.bing"
 
 /**
  * 一页的节点树。
@@ -480,16 +538,23 @@ private fun applyAutoApplySource(
 /**
  * 一页的列表渲染。
  *
- * 与 [SettingsNodeList] 的两处差异（都只为「最近使用」那一段）：
+ * 与 [SettingsNodeList] 的四处差异（都是「弹层按发布版版式画」这件事）：
  *
- * 1. 那段在模型里是 `SettingsInline(CONTROL_CARD)`——官方没有横向缩略图条控件
+ * 1. 选图那组 → [WallpaperImageBlock]：标题 + 文件名 + 满宽主按钮 + 两颗次按钮，
+ *    **不套白卡**（发布版的弹层宿主刻意无容器，`settings_home_backdrop_flow.dart:79-103`）；
+ * 2. 「最近使用」那段在模型里是 `SettingsInline(CONTROL_CARD)`——官方没有横向缩略图条控件
  *    （`SettingsBackdropFlowPage` 里那条 `note` 写明了），所以按 id 换成真条
  *    [RecentWallpaperBlock]；
- * 2. 确认态的两颗按钮按 Dart 版式改成**并排满宽按钮**（`:178-202`），而不是两条行：
- *    模型把它写成两行是为了「有哪些动作」可断言，版式仍应由渲染层按 Dart 定。
+ * 3. 确认态的两颗按钮按 Dart 版式改成**并排满宽按钮**（`:178-202`），而不是两条行：
+ *    模型把它写成两行是为了「有哪些动作」可断言，版式仍应由渲染层按 Dart 定；
+ * 4. 每日壁纸那组 → [BingWallpaperBlock]（满宽次按钮 + 裸开关行）；第二页那组 → 两根**裸行**
+ *    （发布版这一页没有容器，`appearance_editor_test.dart:1166-1175` 钉住了「行顶 = 页面让位」）。
  *
  * 其余节点一律走 [SettingsNodeView]（分组也交给它，白卡的内缩由 [rowInset] 控），
  * 不另写第二套行部件。
+ *
+ * ⚠️ 文案与动作**全部取自模型节点**（title / subtitle / actionTarget / action），本函数只决定版式；
+ * 所以「点了会去哪」仍只有模型一处真源。
  *
  * @param rowInset 分组白卡的左右内缩：**面板里传 0**。官方弹层的 `insideMargin`
  *   已经是 Dart 那个 16，白卡再垫 12 会让行左缘比 Dart 多 12（2026-10-29 Lead 冻结）。
@@ -503,13 +568,42 @@ internal fun WallpaperPageList(
     modifier: Modifier = Modifier,
     rowInset: Dp = SettingsBackdropFlowPage.HOST_SHEET_ROW_INSET.dp,
 ) {
+    // 每日壁纸的空档节点不再单独占位（理由见 [BING_GAP_ID]）。
+    val visibleNodes = nodes.filterNot { it is SettingsGap && it.id == BING_GAP_ID }
+    // 行 → 动作：与 `SettingsRowView` 的点击闭包**逐字同义**（`row.action` 为 null 的行不可点）。
+    val dispatch: (SettingsRow) -> Unit = { row ->
+        row.action?.let { action -> onAction(action, row.actionTarget, row.id) }
+    }
+
     QingyuPageList(
         innerPadding = PaddingValues(0.dp),
         modifier = modifier,
         contentPadding = contentPadding,
     ) {
-        items(items = nodes, key = { it.id }) { node ->
+        items(items = visibleNodes, key = { it.id }) { node ->
             when {
+                // 第一页「选图」块（发布版 `:857-940`）。
+                node is SettingsGroup && node.id == IMAGE_GROUP_ID -> {
+                    val rows = node.children.filterIsInstance<SettingsRow>()
+                    val titleRow = rows.firstOrNull { it.id == IMAGE_TITLE_ROW_ID }
+                    val missingRow = rows.firstOrNull { it.id == WallpaperSheetTargets.ROW_MISSING }
+                    val pickRow = rows.firstOrNull { it.id == WallpaperSheetTargets.ROW_PICK }
+                    val adjustRow = rows.firstOrNull { it.id == WallpaperSheetTargets.ROW_ADJUST }
+                    val clearRow = rows.firstOrNull { it.id == WallpaperSheetTargets.ROW_CLEAR }
+                    WallpaperImageBlock(
+                        title = titleRow?.title.orEmpty(),
+                        subtitle = titleRow?.subtitle.orEmpty(),
+                        missingTitle = missingRow?.title,
+                        missingSubtitle = missingRow?.subtitle,
+                        pickLabel = pickRow?.title ?: SettingsStringsExt1.homePagePickImageAction.zh,
+                        adjustLabel = adjustRow?.title,
+                        clearLabel = clearRow?.title,
+                        onPick = { pickRow?.let(dispatch) },
+                        onAdjust = { adjustRow?.let(dispatch) },
+                        onClear = { clearRow?.let(dispatch) },
+                    )
+                }
+
                 // 「最近使用」整段：标题 / 说明 / 缩略图条 / 反悔条（`settings_recent_wallpaper.dart:100-205`）。
                 node is SettingsInline && node.id == RECENT_STRIP_ID && recent != null ->
                     RecentWallpaperBlock(
@@ -550,6 +644,29 @@ internal fun WallpaperPageList(
                         onCancel = recent.onCancelRemove,
                     )
                 }
+
+                // 第一页「每日壁纸」块：满宽次按钮 + 「每天自动更换」开关（发布版 `:482-530`）。
+                node is SettingsGroup && node.id == BING_GROUP_ID -> {
+                    val rows = node.children.filterIsInstance<SettingsRow>()
+                    val entryRow = rows.firstOrNull { it.id == BING_ENTRY_ROW_ID }
+                    val switchRow = rows.firstOrNull { it.id == BING_AUTO_APPLY_ROW_ID }
+                    BingWallpaperBlock(
+                        entryLabel = entryRow?.title ?: SettingsStringsExt1.bingWallpaperGalleryTitle.zh,
+                        onEntry = { entryRow?.let(dispatch) },
+                        onAction = onAction,
+                        switchNode = switchRow,
+                    )
+                }
+
+                // 第二页「设置」：两根裸行（开关 + 模糊滑杆），**不套白卡**
+                // —— 发布版这一页直挂两块控件，测试 `appearance_editor_test.dart:1166-1175`
+                // 钉住「行顶 = 页面让位、外面不许再垫一层」。
+                node is SettingsGroup && node.id == SETTINGS_GROUP_ID ->
+                    Column(modifier = Modifier.fillMaxWidth()) {
+                        node.children.forEach { child ->
+                            SettingsNodeView(node = child, onAction = onAction, rowInset = rowInset)
+                        }
+                    }
 
                 else -> SettingsNodeView(node = node, onAction = onAction, rowInset = rowInset)
             }

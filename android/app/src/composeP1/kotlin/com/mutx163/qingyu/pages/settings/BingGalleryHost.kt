@@ -25,6 +25,7 @@ import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
@@ -46,8 +47,11 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import top.yukonga.miuix.kmp.basic.CircularProgressIndicator
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.IconButton
+import top.yukonga.miuix.kmp.basic.ProgressIndicatorColors
+import top.yukonga.miuix.kmp.basic.ProgressIndicatorDefaults
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.Refresh
@@ -93,6 +97,12 @@ private const val LOG_TAG = "BingGalleryHost"
 
 /** 受管壁纸目录（App 私有，卸载即清；不进相册）。 */
 private const val WALLPAPER_DIR_NAME = "wallpapers"
+
+/**
+ * 下载中 / 排队中那层遮罩的不透明度：与发布版同一个 45% 纯黑
+ * （`bing_wallpaper_gallery_page.dart:556-574` 的 `Colors.black.withValues(alpha: 0.45)`）。
+ */
+private const val DOWNLOADING_SCRIM_ALPHA = 0.45f
 
 @Composable
 fun BingGalleryHost(
@@ -261,9 +271,20 @@ fun BingGalleryHost(
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             when {
-                // 加载中且一条都没有：只给一句「加载中」，不留空白页。
+                // 加载中且一条都没有：**居中官方转圈**，不留空白页。
+                //
+                // 发布版是同一形态：`SliverFillRemaining` + `Center(CircularProgressIndicator)`
+                // （`bing_wallpaper_gallery_page.dart:397-404`）。以前这里画的是一行「加载中」
+                // 小灰字，首载时整页只剩一行字、分不清是在跑还是失败了。
                 state.loading && state.items.isEmpty() -> item(key = "loading") {
-                    GalleryHint(SettingsStringsExt1.commonLoadingLabel.zh)
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 120.dp),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        CircularProgressIndicator()
+                    }
                 }
 
                 // 一次都没成功过：失败说明 + 重试入口（断网时的空白页最像「功能坏了」）。
@@ -346,6 +367,20 @@ private fun GalleryHint(text: String) {
 }
 
 /**
+ * 压在壁纸上的转圈配色：前景白、底环半透明白。
+ *
+ * 官方 `CircularProgressIndicator` 默认取主题色（浅色主题下压在照片上看不清），
+ * 而发布版这里用的就是白色一圈（`HyperosInfiniteProgress(color: Colors.white)`，
+ * `bing_wallpaper_gallery_page.dart:556-574`）。
+ */
+@Composable
+private fun onImageIndicatorColors(): ProgressIndicatorColors =
+    ProgressIndicatorDefaults.progressIndicatorColors(
+        foregroundColor = Color.White,
+        backgroundColor = Color.White.copy(alpha = 0.24f),
+    )
+
+/**
  * 一张壁纸卡：缩略图 + 日期 + 版权说明。
  *
  * 状态叠加按模型层给的 [BingGalleryWallpaperCard.state] 走，本函数**不自己判断**
@@ -367,46 +402,75 @@ private fun BingWallpaperCard(
                 .background(MiuixTheme.colorScheme.surfaceVariant),
         ) {
             val bitmap = rememberThumbnail(card.thumbnailUrl, onThumbFailed)
-            if (bitmap != null) {
-                Image(
+            when {
+                bitmap != null -> Image(
                     bitmap = bitmap,
                     contentDescription = card.dateLabel,
                     contentScale = ContentScale.Crop,
                     modifier = Modifier.fillMaxSize(),
                 )
-            } else {
-                Text(
-                    text = if (card.state == BingWallpaperCardState.THUMB_FAILED) {
-                        SettingsStringsExt1.wallpaperThumbRetryHint.zh
-                    } else {
-                        SettingsStringsExt1.commonLoadingLabel.zh
-                    },
+                // 缩略图**失败**：保留「轻点重试」的说明（点卡片只重试这一张，判据在模型层）。
+                card.state == BingWallpaperCardState.THUMB_FAILED -> Text(
+                    text = SettingsStringsExt1.wallpaperThumbRetryHint.zh,
                     style = MiuixTheme.textStyles.footnote2,
                     color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
                     modifier = Modifier.align(Alignment.Center),
                 )
+                // 还在路上：**官方转圈**。发布版给的是同一档小转圈（`HyperosInfiniteProgress(size: 18)`，
+                // `bing_wallpaper_gallery_page.dart:526-534`）—— 8 张图到达顺序天然不同，
+                // 只有底色会读成「坏了」。
+                else -> CircularProgressIndicator(
+                    size = 18.dp,
+                    strokeWidth = 2.dp,
+                    modifier = Modifier.align(Alignment.Center),
+                )
             }
-            // 下载中 / 排队中的角标
-            val overlay = when (card.state) {
-                BingWallpaperCardState.DOWNLOADING -> card.progressLabel
-                BingWallpaperCardState.QUEUED -> SettingsStringsExt1.bingWallpaperDownloadQueued.zh
-                else -> null
-            }
-            if (!overlay.isNullOrEmpty()) {
-                Box(
+            // 下载中 / 排队中：整块压暗 + 居中转圈（发布版 `:556-574` 的同一形态；
+            // 下载中再带一行百分比）。以前是卡片底部一条 86% 白底小条写一句字，
+            // 既没有「在动」的感觉、也看不出整张图正被占用。
+            when (card.state) {
+                BingWallpaperCardState.DOWNLOADING -> Box(
                     modifier = Modifier
-                        .align(Alignment.BottomCenter)
-                        .fillMaxWidth()
-                        .background(MiuixTheme.colorScheme.surface.copy(alpha = 0.86f))
-                        .padding(horizontal = 8.dp, vertical = 6.dp),
+                        .fillMaxSize()
+                        .background(Color.Black.copy(alpha = DOWNLOADING_SCRIM_ALPHA)),
+                    contentAlignment = Alignment.Center,
                 ) {
-                    Text(
-                        text = overlay,
-                        style = MiuixTheme.textStyles.footnote2,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.spacedBy(8.dp),
+                    ) {
+                        CircularProgressIndicator(
+                            size = 28.dp,
+                            strokeWidth = 3.dp,
+                            colors = onImageIndicatorColors(),
+                        )
+                        card.progressLabel?.let { label ->
+                            Text(
+                                text = label,
+                                style = MiuixTheme.textStyles.footnote2,
+                                color = Color.White,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
+                            )
+                        }
+                    }
+                }
+
+                BingWallpaperCardState.QUEUED -> Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(Color.Black.copy(alpha = DOWNLOADING_SCRIM_ALPHA)),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    // 排队那张的缩略图多半已经加载完，所以只压暗 + 转圈、不再压文字（`:564-574`）。
+                    CircularProgressIndicator(
+                        size = 24.dp,
+                        strokeWidth = 3.dp,
+                        colors = onImageIndicatorColors(),
                     )
                 }
+
+                else -> Unit
             }
         }
         Column(modifier = Modifier.padding(horizontal = 10.dp, vertical = 8.dp)) {

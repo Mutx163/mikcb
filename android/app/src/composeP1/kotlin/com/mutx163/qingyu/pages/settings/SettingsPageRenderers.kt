@@ -22,6 +22,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.runtime.Composable
@@ -489,13 +490,31 @@ private fun SettingsRowView(
         MiuixRowComponent.RADIO -> if (row.options.size > 1) {
             SegmentedRow(row = row, onAction = onAction)
         } else {
+            // 行首色点（发布版 `HyperosChoiceTile(prefix: HyperosColorDot(...))`）：
+            // 主题预设 11 档取 `options[0].seedHex`；已存主题没有 seedHex，取
+            // `previewColors.first()`（发布版 `savedThemeSeedHex` 的兜底就是它，
+            // `theme_manage_sheets.dart:320-325`）。
+            val dotHex = row.options.firstOrNull()?.seedHex ?: row.previewColors.firstOrNull()
             RadioButtonPreference(
                 title = row.title,
                 selected = row.selectedOptionId != null,
                 onClick = click ?: {},
                 summary = row.subtitle,
                 enabled = row.enabled,
+                startAction = if (dotHex != null) {
+                    { ColorDot(hex = dotHex) }
+                } else {
+                    null
+                },
                 endActions = { row.trailingAction?.let { TrailingActionHint(it) } },
+                // 已存主题的四枚预览色点（发布版 `subtitle: ThemePreviewDots(previewColors)`）。
+                // 官方行的 `summary` 只收文本，所以走同一个组件的 `bottomAction` —— 它就是
+                // 标题/摘要下方那一行（`BasicComponent` 里 8dp 间隔后渲染），位置与摘要一致。
+                bottomAction = if (row.previewColors.isNotEmpty()) {
+                    { ThemePreviewDots(colors = row.previewColors) }
+                } else {
+                    null
+                },
             )
         }
 
@@ -1073,6 +1092,36 @@ private fun RowScope.ColorSwatch(hex: String?) {
                 shape = RoundedCornerShape(10.dp),
             ),
     )
+}
+
+/** 行首色点（`ui/hyperos/widgets/indicators.dart:8-26` 的 `HyperosColorDot`：16dp 实心圆、无描边）。 */
+@Composable
+private fun ColorDot(hex: String) {
+    Box(
+        modifier = Modifier
+            .size(16.dp)
+            .clip(CircleShape)
+            .background(Color(SettingsRowRenderTable.colorFromHex(hex))),
+    )
+}
+
+/**
+ * 已存主题的预览色点（`widgets/theme_manage_sheets.dart:238-260` 的 `ThemePreviewDots`）：
+ * 最多 4 枚、14dp 圆点、间距 4dp、0.5dp 描边（描边色取 `ThemeColorDot` 同款的界面边框色）。
+ */
+@Composable
+private fun ThemePreviewDots(colors: List<String>) {
+    Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+        colors.take(4).forEach { hex ->
+            Box(
+                modifier = Modifier
+                    .size(14.dp)
+                    .clip(CircleShape)
+                    .background(Color(SettingsRowRenderTable.colorFromHex(hex)))
+                    .border(0.5.dp, MiuixTheme.colorScheme.outline, CircleShape),
+            )
+        }
+    }
 }
 
 /** 危险操作行的标题色：官方没有 destructive 槽，取 theme/ 桥的固定 token。 */
