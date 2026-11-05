@@ -35,6 +35,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import com.mutx163.qingyu.components.QingyuCard
+import com.mutx163.qingyu.components.QingyuGlassIconButton
 import com.mutx163.qingyu.components.QingyuPageCardMargin
 import com.mutx163.qingyu.components.QingyuPageList
 import com.mutx163.qingyu.components.QingyuPageTheme
@@ -229,23 +230,22 @@ fun AddCoursePage(
                             )
                         }
                     },
+                    // 右上动作键与左上返回键同一套外观：共享玻璃圆底 + 细边 + 小外浮影。
                     actions = {
                         if (isEditing) {
-                            IconButton(onClick = { confirmDelete = true }) {
-                                Icon(
-                                    imageVector = MiuixIcons.Delete,
-                                    contentDescription = AddCourseStrings.deleteAction.zh,
-                                    tint = Color(QingyuTheme.actionIcon(dark)),
-                                )
-                            }
-                        }
-                        IconButton(onClick = ::save) {
-                            Icon(
-                                imageVector = MiuixIcons.Ok,
-                                contentDescription = AddCourseStrings.saveAction.zh,
+                            QingyuGlassIconButton(
+                                onClick = { confirmDelete = true },
+                                contentDescription = AddCourseStrings.deleteAction.zh,
+                                icon = MiuixIcons.Delete,
                                 tint = Color(QingyuTheme.actionIcon(dark)),
                             )
                         }
+                        QingyuGlassIconButton(
+                            onClick = ::save,
+                            contentDescription = AddCourseStrings.saveAction.zh,
+                            icon = MiuixIcons.Ok,
+                            tint = Color(QingyuTheme.actionIcon(dark)),
+                        )
                     },
                 )
             },

@@ -30,6 +30,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import com.mutx163.qingyu.components.QingyuCard
+import com.mutx163.qingyu.components.QingyuGlassIconButton
 import com.mutx163.qingyu.components.QingyuPageList
 import com.mutx163.qingyu.components.QingyuPageScaffold
 import com.mutx163.qingyu.components.QingyuWeightDelta
@@ -108,23 +109,23 @@ fun AddExamPage(
     QingyuPageScaffold(
         title = pageTitle,
         onBack = onBack,
+        // 右上动作键与左上返回键同一套外观：共享玻璃圆底 + 细边 + 小外浮影
+        //（`QingyuGlassIconButton`；本页走共享骨架 ⇒ 有实时 backdrop，是真玻璃）。
         actions = {
             if (viewState.isEditing) {
-                IconButton(onClick = { confirmDelete = true }) {
-                    Icon(
-                        imageVector = MiuixIcons.Delete,
-                        contentDescription = ExamStrings.deleteExam.zh,
-                        tint = Color(QingyuTheme.actionIcon(dark)),
-                    )
-                }
-            }
-            IconButton(onClick = onSave) {
-                Icon(
-                    imageVector = MiuixIcons.Ok,
-                    contentDescription = ExamStrings.saveExam.zh,
+                QingyuGlassIconButton(
+                    onClick = { confirmDelete = true },
+                    contentDescription = ExamStrings.deleteExam.zh,
+                    icon = MiuixIcons.Delete,
                     tint = Color(QingyuTheme.actionIcon(dark)),
                 )
             }
+            QingyuGlassIconButton(
+                onClick = onSave,
+                contentDescription = ExamStrings.saveExam.zh,
+                icon = MiuixIcons.Ok,
+                tint = Color(QingyuTheme.actionIcon(dark)),
+            )
         },
     ) {
         // 页面主滚动走共享套件：末端轻震 + 过度滚动 + 顶栏联动 + 滚动条。

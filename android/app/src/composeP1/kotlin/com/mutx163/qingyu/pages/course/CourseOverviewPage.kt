@@ -37,6 +37,7 @@ import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import com.mutx163.qingyu.components.QingyuCard
+import com.mutx163.qingyu.components.QingyuGlassIconButton
 import com.mutx163.qingyu.components.QingyuPageCardMargin
 import com.mutx163.qingyu.components.QingyuPageList
 import com.mutx163.qingyu.components.QingyuPageTheme
@@ -168,27 +169,25 @@ fun CourseOverviewPage(
                             }
                         },
                         // Dart 侧两个后缀都是 FHeaderAction 图标按钮：排序 + 添加。
+                        // 右上动作键与左上返回键同一套外观：共享玻璃圆底 + 细边 + 小外浮影。
                         actions = {
-                            IconButton(
+                            QingyuGlassIconButton(
                                 onClick = { sortPopupOpen = true },
+                                contentDescription = CourseOverviewStrings.sortAction.zh,
+                                icon = MiuixIcons.Sort,
+                                tint = Color(QingyuTheme.actionIcon(dark)),
                                 // 记下排序图标的屏幕矩形，弹层据此右对齐、贴其下方。
+                                // 圆底外径 44dp（比原 IconButton 大 4dp），弹层跟着走 2dp，属预期。
                                 modifier = Modifier.onGloballyPositioned { coords ->
                                     sortAnchorBounds = coords.boundsInWindow()
                                 },
-                            ) {
-                                Icon(
-                                    imageVector = MiuixIcons.Sort,
-                                    contentDescription = CourseOverviewStrings.sortAction.zh,
-                                    tint = Color(QingyuTheme.actionIcon(dark)),
-                                )
-                            }
-                            IconButton(onClick = onAddCourse) {
-                                Icon(
-                                    imageVector = MiuixIcons.Add,
-                                    contentDescription = CourseOverviewStrings.addNewCourseTooltip.zh,
-                                    tint = Color(QingyuTheme.actionIcon(dark)),
-                                )
-                            }
+                            )
+                            QingyuGlassIconButton(
+                                onClick = onAddCourse,
+                                contentDescription = CourseOverviewStrings.addNewCourseTooltip.zh,
+                                icon = MiuixIcons.Add,
+                                tint = Color(QingyuTheme.actionIcon(dark)),
+                            )
                         },
                     )
                 },

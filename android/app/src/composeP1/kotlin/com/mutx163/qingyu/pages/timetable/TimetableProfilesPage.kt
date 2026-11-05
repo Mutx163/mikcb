@@ -36,6 +36,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import com.mutx163.qingyu.components.QingyuCard
+import com.mutx163.qingyu.components.QingyuGlassIconButton
 import com.mutx163.qingyu.components.QingyuPageList
 import com.mutx163.qingyu.components.QingyuSheet
 import com.mutx163.qingyu.components.QingyuWeightDelta
@@ -187,14 +188,14 @@ fun TimetableProfilesPage(
                         }
                     }
                 },
+                // 右上动作键与左上返回键同一套外观：共享玻璃圆底 + 细边 + 小外浮影。
                 actions = {
-                    IconButton(onClick = { showCreateDialog = true }) {
-                        Icon(
-                            imageVector = MiuixIcons.Add,
-                            contentDescription = TimetableStrings.createTimetableTooltip.zh,
-                            tint = Color(QingyuTheme.actionIcon(dark)),
-                        )
-                    }
+                    QingyuGlassIconButton(
+                        onClick = { showCreateDialog = true },
+                        contentDescription = TimetableStrings.createTimetableTooltip.zh,
+                        icon = MiuixIcons.Add,
+                        tint = Color(QingyuTheme.actionIcon(dark)),
+                    )
                 },
             )
         },

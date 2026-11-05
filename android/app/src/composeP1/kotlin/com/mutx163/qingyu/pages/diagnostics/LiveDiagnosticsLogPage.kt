@@ -36,6 +36,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import com.mutx163.qingyu.components.QingyuCard
+import com.mutx163.qingyu.components.QingyuGlassIconButton
 import com.mutx163.qingyu.components.QingyuPageCardMargin
 import com.mutx163.qingyu.components.QingyuPageList
 import com.mutx163.qingyu.components.QingyuPageScaffold
@@ -48,7 +49,6 @@ import top.yukonga.miuix.kmp.basic.Button
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
 import top.yukonga.miuix.kmp.basic.CircularProgressIndicator
 import top.yukonga.miuix.kmp.basic.Icon
-import top.yukonga.miuix.kmp.basic.IconButton
 import top.yukonga.miuix.kmp.basic.ScrollBehavior
 import top.yukonga.miuix.kmp.basic.TabRow
 import top.yukonga.miuix.kmp.basic.Text
@@ -123,23 +123,30 @@ fun LiveDiagnosticsLogPage(
         title = viewState.title,
         onBack = onBack,
         smallTopBar = true,
+        // 右上动作键与左上返回键同一套外观：共享玻璃圆底 + 细边 + 小外浮影
+        //（门控：内容压到顶栏带下面才出圆底，静止是裸图标——与返回键同一个信号）。
         actions = {
             if (viewState.loadError == null) {
-                IconButton(onClick = { showOptions = true }) {
-                    Icon(
-                        imageVector = MiuixIcons.Tune,
-                        contentDescription = DiagnosticsStrings.diagnosticsDisplayOptionsTitle.zh,
-                        tint = Color(QingyuTheme.actionIcon(dark)),
-                    )
-                }
-                IconButton(onClick = onCopy, enabled = viewState.canCopy) {
-                    Icon(
-                        imageVector = MiuixIcons.Copy,
-                        contentDescription = DiagnosticsStrings.appLogsCopyAction.zh,
-                        tint = Color(QingyuTheme.actionIcon(dark)),
-                    )
-                }
-                IconButton(onClick = onExport, enabled = viewState.canExport) {
+                QingyuGlassIconButton(
+                    onClick = { showOptions = true },
+                    contentDescription = DiagnosticsStrings.diagnosticsDisplayOptionsTitle.zh,
+                    icon = MiuixIcons.Tune,
+                    tint = Color(QingyuTheme.actionIcon(dark)),
+                )
+                QingyuGlassIconButton(
+                    onClick = onCopy,
+                    contentDescription = DiagnosticsStrings.appLogsCopyAction.zh,
+                    icon = MiuixIcons.Copy,
+                    tint = Color(QingyuTheme.actionIcon(dark)),
+                    enabled = viewState.canCopy,
+                )
+                QingyuGlassIconButton(
+                    onClick = onExport,
+                    contentDescription = DiagnosticsStrings.appLogsExportAction.zh,
+                    icon = MiuixIcons.Share,
+                    tint = Color(QingyuTheme.actionIcon(dark)),
+                    enabled = viewState.canExport,
+                ) {
                     // 导出中换成进度圈（Dart `_buildHeaderActions` 516-525 行：
                     // `_exporting ? HyperosCircularProgress(18) : Icon(ios_share)`）。
                     if (viewState.isExporting) {
@@ -150,13 +157,16 @@ fun LiveDiagnosticsLogPage(
                     } else {
                         Icon(
                             imageVector = MiuixIcons.Share,
-                            contentDescription = DiagnosticsStrings.appLogsExportAction.zh,
+                            contentDescription = null,
                             tint = Color(QingyuTheme.actionIcon(dark)),
                         )
                     }
                 }
-                IconButton(
+                QingyuGlassIconButton(
                     onClick = { showClearConfirm = true },
+                    contentDescription = DiagnosticsStrings.appLogsClearAction.zh,
+                    icon = MiuixIcons.Delete,
+                    tint = Color(QingyuTheme.actionIcon(dark)),
                     enabled = viewState.canClear,
                 ) {
                     // 清空中同样换进度圈（Dart 526-532 行）。
@@ -168,7 +178,7 @@ fun LiveDiagnosticsLogPage(
                     } else {
                         Icon(
                             imageVector = MiuixIcons.Delete,
-                            contentDescription = DiagnosticsStrings.appLogsClearAction.zh,
+                            contentDescription = null,
                             tint = Color(QingyuTheme.actionIcon(dark)),
                         )
                     }

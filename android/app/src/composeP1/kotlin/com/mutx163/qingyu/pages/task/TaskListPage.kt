@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -529,6 +530,8 @@ private fun TaskRowItem(
                         modifier = Modifier.size(18.dp),
                     )
                 }
+                // 两颗 36dp 图标按钮紧贴时「看课程 / 删任务」只差一两个像素，容易误删。
+                Spacer(modifier = Modifier.width(4.dp))
             }
             // 刻意保留：Dart 没有这颗常驻删除按钮（它靠侧滑 + 长按），
             // 但它比长按易发现，本轮不删以免功能回退。见收口报告的诚实清单。

@@ -29,6 +29,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import com.mutx163.qingyu.components.QingyuCard
+import com.mutx163.qingyu.components.QingyuGlassIconButton
 import com.mutx163.qingyu.components.QingyuPageCardMargin
 import com.mutx163.qingyu.components.QingyuPageList
 import com.mutx163.qingyu.components.QingyuWeightDelta
@@ -99,16 +100,17 @@ fun ScheduleDateRulePage(
                         }
                     },
                     // Dart 侧右侧是 FHeaderAction(Icons.add_rounded)。
+                    // 右上动作键与左上返回键同一套外观：共享玻璃圆底 + 细边 + 小外浮影。
                     actions = {
-                        IconButton(
+                        QingyuGlassIconButton(
                             onClick = {
                                 if (availableSchemes.isEmpty()) {
                                     bannerMessage = ScheduleStrings.scheduleDateRuleNeedScheme.zh
-                                    return@IconButton
+                                    return@QingyuGlassIconButton
                                 }
                                 if (rules.size >= ScheduleDateRuleDomain.MAX_RULES_PER_DEVICE) {
                                     bannerMessage = ScheduleStrings.scheduleDateRuleMaxReached.zh
-                                    return@IconButton
+                                    return@QingyuGlassIconButton
                                 }
                                 bannerMessage = null
                                 isAddingNew = true
@@ -122,13 +124,10 @@ fun ScheduleDateRulePage(
                                 )
                                 editorSession++
                             },
-                        ) {
-                            Icon(
-                                imageVector = MiuixIcons.Add,
-                                contentDescription = ScheduleStrings.scheduleDateRuleAdd.zh,
-                                tint = Color(QingyuTheme.actionIcon(dark)),
-                            )
-                        }
+                            contentDescription = ScheduleStrings.scheduleDateRuleAdd.zh,
+                            icon = MiuixIcons.Add,
+                            tint = Color(QingyuTheme.actionIcon(dark)),
+                        )
                     },
                 )
             },

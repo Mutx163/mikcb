@@ -57,6 +57,7 @@ import com.mutx163.qingyu.components.shiftWeight
 import com.mutx163.qingyu.pages.timetable.day.parseHexColorOrFallback
 import com.mutx163.qingyu.theme.QingyuTheme
 import kotlinx.coroutines.launch
+import top.yukonga.miuix.kmp.basic.BasicComponent
 import top.yukonga.miuix.kmp.basic.Button
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
 import top.yukonga.miuix.kmp.basic.Checkbox
@@ -548,48 +549,50 @@ private fun GuidePermissionRow(
         false -> Color(QingyuTheme.secondaryText(dark))
         null -> Color(QingyuTheme.secondaryText(dark))
     }
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable(onClick = onClick)
-            .heightIn(min = 56.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Column(modifier = Modifier.weight(1f)) {
-            Text(
-                text = item.title,
-                style = MiuixTheme.textStyles.body1,
-                color = Color(QingyuTheme.primaryText(dark)),
-            )
-            if (item.subtitle != null) {
+    // 官方 BasicComponent：行内布局、56dp 最小行高、整行点击与**按压反馈**都由它给
+    // （`Modifier.clickable` + `MiuixTheme` 提供的 `LocalIndication`）。
+    // 以前这里是自己拼 `Row` + 裸 `.clickable`，视觉上按下去没有反馈。
+    // 卡片外层已给 16dp 横向内边距，这里 `insideMargin` 传 0 免得叠成 32dp。
+    BasicComponent(
+        modifier = Modifier.fillMaxWidth(),
+        insideMargin = PaddingValues(0.dp),
+        endActions = {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Box(
+                    modifier = Modifier
+                        .size(7.dp)
+                        .clip(CircleShape)
+                        .background(statusColor),
+                )
+                Spacer(Modifier.width(6.dp))
                 Text(
-                    text = item.subtitle,
-                    style = MiuixTheme.textStyles.footnote2,
-                    color = Color(QingyuTheme.secondaryText(dark)),
+                    text = if (item.enabled == true) item.enabledLabel else item.disabledLabel,
+                    style = MiuixTheme.textStyles.footnote1,
+                    color = statusColor,
                 )
             }
-        }
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Box(
-                modifier = Modifier
-                    .size(7.dp)
-                    .clip(CircleShape)
-                    .background(statusColor),
+            Spacer(Modifier.width(4.dp))
+            Icon(
+                imageVector = MiuixIcons.ChevronForward,
+                contentDescription = null,
+                tint = Color(QingyuTheme.secondaryText(dark)).copy(alpha = 0.5f),
+                modifier = Modifier.size(15.dp),
             )
-            Spacer(Modifier.width(6.dp))
-            Text(
-                text = if (item.enabled == true) item.enabledLabel else item.disabledLabel,
-                style = MiuixTheme.textStyles.footnote1,
-                color = statusColor,
-            )
-        }
-        Spacer(Modifier.width(4.dp))
-        Icon(
-            imageVector = MiuixIcons.ChevronForward,
-            contentDescription = null,
-            tint = Color(QingyuTheme.secondaryText(dark)).copy(alpha = 0.5f),
-            modifier = Modifier.size(15.dp),
+        },
+        onClick = onClick,
+    ) {
+        Text(
+            text = item.title,
+            style = MiuixTheme.textStyles.body1,
+            color = Color(QingyuTheme.primaryText(dark)),
         )
+        if (item.subtitle != null) {
+            Text(
+                text = item.subtitle,
+                style = MiuixTheme.textStyles.footnote2,
+                color = Color(QingyuTheme.secondaryText(dark)),
+            )
+        }
     }
 }
 

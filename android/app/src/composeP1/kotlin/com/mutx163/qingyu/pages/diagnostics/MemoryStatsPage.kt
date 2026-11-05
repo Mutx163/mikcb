@@ -35,6 +35,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.mutx163.qingyu.components.QingyuCard
 import com.mutx163.qingyu.components.QingyuCardDefaults
+import com.mutx163.qingyu.components.QingyuGlassIconButton
 import com.mutx163.qingyu.components.QingyuPageCardMargin
 import com.mutx163.qingyu.components.QingyuPageList
 import com.mutx163.qingyu.components.QingyuPageScaffold
@@ -48,7 +49,6 @@ import com.mutx163.qingyu.theme.QingyuTheme
 import top.yukonga.miuix.kmp.basic.BasicComponent
 import top.yukonga.miuix.kmp.basic.CircularProgressIndicator
 import top.yukonga.miuix.kmp.basic.Icon
-import top.yukonga.miuix.kmp.basic.IconButton
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.basic.ArrowRight
@@ -127,27 +127,35 @@ fun MemoryStatsPage(
     QingyuPageScaffold(
         title = MemoryStatsStrings.pageTitle,
         onBack = onBack,
+        // 右上动作键与左上返回键同一套外观：共享玻璃圆底 + 细边 + 小外浮影
+        //（门控：内容压到顶栏带下面才出圆底，静止是裸图标——与返回键同一个信号）。
         actions = {
             // Dart `:181-185`：加载中图标换成沙漏且**禁用**（`onPressed: _loading ? null : …`）。
             // miuix 没有沙漏图标，这里用同一处旋转进度替代「正在读」的语义，禁用条件照抄。
-            IconButton(onClick = onRefresh, enabled = !viewState.isLoading) {
+            QingyuGlassIconButton(
+                onClick = onRefresh,
+                contentDescription = MemoryStatsStrings.refreshTooltip,
+                icon = MiuixIcons.Refresh,
+                tint = Color(QingyuTheme.actionIcon(dark)),
+                enabled = !viewState.isLoading,
+            ) {
                 if (viewState.isLoading) {
                     CircularProgressIndicator(modifier = Modifier.size(18.dp), strokeWidth = 2.dp)
                 } else {
                     Icon(
                         imageVector = MiuixIcons.Refresh,
-                        contentDescription = MemoryStatsStrings.refreshTooltip,
+                        contentDescription = null,
                         tint = Color(QingyuTheme.actionIcon(dark)),
                     )
                 }
             }
-            IconButton(onClick = onCopyJson, enabled = viewState.hasSnapshot) {
-                Icon(
-                    imageVector = MiuixIcons.Copy,
-                    contentDescription = MemoryStatsStrings.copyJsonTooltip,
-                    tint = Color(QingyuTheme.actionIcon(dark)),
-                )
-            }
+            QingyuGlassIconButton(
+                onClick = onCopyJson,
+                contentDescription = MemoryStatsStrings.copyJsonTooltip,
+                icon = MiuixIcons.Copy,
+                tint = Color(QingyuTheme.actionIcon(dark)),
+                enabled = viewState.hasSnapshot,
+            )
         },
     ) {
         QingyuPageList(

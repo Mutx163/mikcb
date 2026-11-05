@@ -26,6 +26,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.mutx163.qingyu.components.QingyuCard
 import com.mutx163.qingyu.components.QingyuCardDefaults
+import com.mutx163.qingyu.components.QingyuGlassIconButton
 import com.mutx163.qingyu.components.QingyuPageCardMargin
 import com.mutx163.qingyu.components.QingyuPageList
 import com.mutx163.qingyu.components.QingyuWeightDelta
@@ -39,8 +40,6 @@ import com.mutx163.qingyu.infra.releaseListUrlFor
 import top.yukonga.miuix.kmp.basic.Button
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
 import top.yukonga.miuix.kmp.basic.CircularProgressIndicator
-import top.yukonga.miuix.kmp.basic.Icon
-import top.yukonga.miuix.kmp.basic.IconButton
 import top.yukonga.miuix.kmp.basic.ScrollBehavior
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TextButton
@@ -95,13 +94,13 @@ fun AboutUpdatePage(
     QingyuPageScaffold(
         title = AboutUpdatePageStrings.screenTitle,
         onBack = onBack,
+        // 右上动作键与左上返回键同一套外观：共享玻璃圆底 + 细边 + 小外浮影。
         actions = {
-            IconButton(onClick = onOpenAdvancedOptions) {
-                Icon(
-                    imageVector = MiuixIcons.Tune,
-                    contentDescription = AboutUpdatePageStrings.advancedOptionsTitle,
-                )
-            }
+            QingyuGlassIconButton(
+                onClick = onOpenAdvancedOptions,
+                contentDescription = AboutUpdatePageStrings.advancedOptionsTitle,
+                icon = MiuixIcons.Tune,
+            )
         },
         bottomBar = {
             if (download != null) {

@@ -33,6 +33,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import com.mutx163.qingyu.components.QingyuCard
+import com.mutx163.qingyu.components.QingyuGlassIconButton
 import com.mutx163.qingyu.components.QingyuPageCardMargin
 import com.mutx163.qingyu.components.QingyuPageList
 import com.mutx163.qingyu.components.QingyuSheet
@@ -204,23 +205,22 @@ fun AddScheduleItemPage(
                         }
                     },
                     // Dart 侧右侧是图标：编辑态 delete_outline_rounded + check_rounded。
+                    // 右上动作键与左上返回键同一套外观：共享玻璃圆底 + 细边 + 小外浮影。
                     actions = {
                         if (isEditing) {
-                            IconButton(onClick = { validateAndProceed(isDeleting = true) }) {
-                                Icon(
-                                    imageVector = MiuixIcons.Delete,
-                                    contentDescription = ScheduleStrings.deleteAction.zh,
-                                    tint = Color(QingyuTheme.actionIcon(dark)),
-                                )
-                            }
-                        }
-                        IconButton(onClick = { validateAndProceed(isDeleting = false) }) {
-                            Icon(
-                                imageVector = MiuixIcons.Ok,
-                                contentDescription = ScheduleStrings.saveAction.zh,
+                            QingyuGlassIconButton(
+                                onClick = { validateAndProceed(isDeleting = true) },
+                                contentDescription = ScheduleStrings.deleteAction.zh,
+                                icon = MiuixIcons.Delete,
                                 tint = Color(QingyuTheme.actionIcon(dark)),
                             )
                         }
+                        QingyuGlassIconButton(
+                            onClick = { validateAndProceed(isDeleting = false) },
+                            contentDescription = ScheduleStrings.saveAction.zh,
+                            icon = MiuixIcons.Ok,
+                            tint = Color(QingyuTheme.actionIcon(dark)),
+                        )
                     },
                 )
             },

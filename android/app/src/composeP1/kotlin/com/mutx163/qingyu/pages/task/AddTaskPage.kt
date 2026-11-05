@@ -26,6 +26,7 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import com.mutx163.qingyu.components.QingyuCard
+import com.mutx163.qingyu.components.QingyuGlassIconButton
 import com.mutx163.qingyu.components.QingyuPageCardMargin
 import com.mutx163.qingyu.components.QingyuPageList
 import com.mutx163.qingyu.components.QingyuPageTheme
@@ -177,19 +178,19 @@ fun AddTaskPage(
                             )
                         }
                     },
+                    // 右上动作键与左上返回键同一套外观：共享玻璃圆底 + 细边 + 小外浮影。
                     actions = {
                         if (viewState.isEditing && onDelete != null) {
                             // B11：Dart 是线框 `Icons.delete_outline_rounded`（`:171`）。
                             // 解包核对：0.9.4 的 `MiuixIcons.Delete` 本身就是线框——
                             // 路径是 5 条闭合轮廓（.kt 里 5×MoveTo/Close）+ EvenOdd 填充，
                             // 不是什么实心色块；没有比它更接近的线框变体，故保留。
-                            IconButton(onClick = { showDeleteConfirm = true }) {
-                                Icon(
-                                    imageVector = MiuixIcons.Delete,
-                                    contentDescription = TaskStrings.taskDelete,
-                                    tint = Color(QingyuTheme.actionIcon(dark)),
-                                )
-                            }
+                            QingyuGlassIconButton(
+                                onClick = { showDeleteConfirm = true },
+                                contentDescription = TaskStrings.taskDelete,
+                                icon = MiuixIcons.Delete,
+                                tint = Color(QingyuTheme.actionIcon(dark)),
+                            )
                         }
                         // 2026-10-29 复核更正（V1）：这里原先 `enabled = viewState.canSave`，
                         // 把 Dart 的**报错路径整条封死**了。Dart `add_task_screen.dart:175-179`
@@ -199,20 +200,19 @@ fun AddTaskPage(
                         // 禁用键只能让用户看到「点不动」，永远等不到那句话，也看不出缺了什么。
                         // 现在恒可点：空标题点它 ⇒ 壳里的 `AddTaskFormReducer.validate` 落
                         // `titleError`，框下红字出现。
-                        IconButton(onClick = onSave) {
-                            // B10：Dart 是 `Icons.check_rounded`（`:176`）。
-                            // `MiuixIcons.SelectAll`（勾 + 两条横线）语义是「全选」，不对。
-                            // 改 `MiuixIcons.Ok`（`icon/extended/Ok.kt:15`，= Regular 权重）：
-                            // 与课程表单保存键 `AddCoursePage.kt:233` 同形，同族「保存」只有一种长相。
-                            // 附：`miuix-icons` 里对勾类确实只有 `Ok`；更粗的圆头勾在 `miuix-ui` 的
-                            // `icon/basic/Check.kt`（仓库先例 `SettingsPageRenderers.kt:531` 用过
-                            // `MiuixIcons.Basic.*`），形状更贴 check_rounded，但为了族内一致不采用。
-                            Icon(
-                                imageVector = MiuixIcons.Ok,
-                                contentDescription = TaskStrings.saveTask,
-                                tint = Color(QingyuTheme.actionIcon(dark)),
-                            )
-                        }
+                        // B10：Dart 是 `Icons.check_rounded`（`:176`）。
+                        // `MiuixIcons.SelectAll`（勾 + 两条横线）语义是「全选」，不对。
+                        // 改 `MiuixIcons.Ok`（`icon/extended/Ok.kt:15`，= Regular 权重）：
+                        // 与课程表单保存键 `AddCoursePage.kt:233` 同形，同族「保存」只有一种长相。
+                        // 附：`miuix-icons` 里对勾类确实只有 `Ok`；更粗的圆头勾在 `miuix-ui` 的
+                        // `icon/basic/Check.kt`（仓库先例 `SettingsPageRenderers.kt:531` 用过
+                        // `MiuixIcons.Basic.*`），形状更贴 check_rounded，但为了族内一致不采用。
+                        QingyuGlassIconButton(
+                            onClick = onSave,
+                            contentDescription = TaskStrings.saveTask,
+                            icon = MiuixIcons.Ok,
+                            tint = Color(QingyuTheme.actionIcon(dark)),
+                        )
                     },
                 )
             },

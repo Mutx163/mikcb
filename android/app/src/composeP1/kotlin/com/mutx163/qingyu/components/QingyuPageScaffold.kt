@@ -35,6 +35,8 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.Layout
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -99,28 +101,86 @@ private val QingyuChromeGlassSpec: GlassSpec = GlassSpecResolver.resolve(
 )
 
 /**
- * 共享玻璃图标按钮（顶栏返回/动作键的统一外观）：
- * **44×44 圆底 + 磨砂玻璃 + 1dp 细边 + 小外浮影**，深浅色都用亮白纱低 alpha。
+ * 顶栏图标按钮（**左上返回键 + 右上动作键**）的唯一实现：门控玻璃圆底。
  *
- * 发布版口径：`HyperosBackButton` 的液态玻璃标准档圆底 + `HyperosGlassShadow.compactShadow`
- * （blur≈4 / offset≈1.5 的外浮影）。这里用共享玻璃件 + Compose 小阴影等价实现，没有自研动画。
+ * ## 门控：只在「内容压到顶栏带下面」时出现（与发布版返回键同一条口径）
+ *
+ * 圆底的显隐由 [LocalQingyuBackButtonGlass] 一处决定——[QingyuPageScaffold] 用
+ * [isContentUnderTopBar] 算一次后注入顶栏子树。**静止停在页顶时是裸图标**，内容压到
+ * 顶栏带下面才长出圆底；这正是发布版 `HyperosBackButton` 的行为（光箭头 → 压带 → 圆底）。
+ * 未注入的场合（手拼 `TopAppBar` 的页、独立预览）默认 `false`，同样画裸图标 —— 那些页本来
+ * 也没有实时采样源，左边返回键与右边动作键形态一致，不会出现「一边有圆底一边没有」。
+ *
+ * ## 圆底长相（出现时）
+ *
+ * 44×44 圆底 + 磨砂玻璃 + 0.75dp 细边 + 小外浮影，深浅色都用亮白纱低 alpha：
+ * 发布版 `HyperosBackButton` 的液态玻璃标准档圆底 + `HyperosGlassShadow.compactShadow`
+ * （blur≈4 / offset≈1.5 的外浮影）。用共享玻璃件 + Compose 小阴影等价实现，没有自研动画。
  * 无实时玻璃能力（`backdrop == null` / 关模糊）时退化成同色半透明实底圆，观感一致。
  *
- * 本轮只供 [QingyuBackIconButton] 使用；右上动作键仍由各页自绘，后续批次再统一替换为它。
+ * 2026-11-05 全站收口：返回键 [QingyuBackIconButton] 与各页 `actions` 槽里的右上动作键
+ * **都走这一个实现**，槽里不许再裸写 `IconButton`（守卫 `TopBarActionGlassGuardTest`）。
+ *
+ * ## 无障碍：文案只念一次，且必须写进 `IconButton` 调用块
+ *
+ * 标签落在**按钮节点**上——`IconButton` 自己的 modifier 里 `.semantics { this.contentDescription = … }`，
+ * 里面的 `Icon` 传 `null`，所以读屏只念一遍。因此 [contentDescription] 是必填参数、没有默认值。
+ * `AccessibilitySemanticsGuardTest` 只读 `IconButton(...) { … }` 的调用块原文，那句语义**不能挪到
+ * 外部 `val` 再传进来**，否则守卫看不到、判成「无标签纯图标按钮」。
  */
 @Composable
 fun QingyuGlassIconButton(
     onClick: () -> Unit,
-    contentDescription: String?,
+    /** 读屏念的那句话。**必填、没有默认值**：纯图标按钮的标签只能由调用方给。 */
+    contentDescription: String,
     icon: ImageVector,
     tint: Color? = null,
     modifier: Modifier = Modifier,
+    /** 禁用态（例如「没有数据时不可导出」）：透传给官方 [IconButton]，只掐点击、不改配色。 */
+    enabled: Boolean = true,
+    /**
+     * 自定义内容槽：加载中 / 导出中要在按钮里换成转圈时用。给了它就替代 [icon] 的绘制，
+     * 无障碍文案仍取 [contentDescription]。
+     */
+    content: (@Composable () -> Unit)? = null,
 ) {
     val dark = isSystemInDarkTheme()
+    val iconTint = tint ?: Color(QingyuTheme.actionIcon(dark))
+    // 取成局部 val：下面在 lambda 里用，避免依赖「参数跨 lambda 智能转型」这种细节。
+    val slot = content
+    // 无障碍文案**落在按钮节点上**：两个分支的 `IconButton(...)` 都把
+    // `.semantics { this.contentDescription = label }` 写在它自己的 modifier 里，图标则传 `null`
+    // ——读屏只念一次（写在按钮上、图标不再重复一份），`AccessibilitySemanticsGuardTest`
+    // 也能在 `IconButton` 调用块原文里直接看到这句标签（守卫只读调用块，不接受外部 `val` 传参）。
+    val label = contentDescription
+    // 按钮内容（图标或加载转圈）：圆底分支与裸图标分支共用同一份，形态不会分叉。
+    val inner: @Composable () -> Unit = {
+        if (slot != null) {
+            slot()
+        } else {
+            Icon(
+                imageVector = icon,
+                // 文案已在按钮节点上，图标这里必须是 null，否则读屏念两遍。
+                contentDescription = null,
+                tint = iconTint,
+            )
+        }
+    }
+    // 门控：与返回键读同一个信号。静止在页顶 / 未注入 ⇒ 裸图标（就是收口前各页原样）。
+    if (!LocalQingyuBackButtonGlass.current) {
+        IconButton(
+            onClick = onClick,
+            enabled = enabled,
+            // 调用方的 `modifier` 必须透传：裸图标分支是**默认态**（未注入门控 / 静止在页顶），
+            // 丢掉它会让「靠 modifier 测量/占位」的调用方（如课程总览排序键的
+            // `onGloballyPositioned`）静默失效——弹层锚点测不到，只能退到窗口右上角。
+            modifier = modifier.semantics { this.contentDescription = label },
+        ) { inner() }
+        return
+    }
     val backdrop = LocalQingyuPageBackdrop.current
     val veil = Color.White.copy(alpha = if (dark) 0.16f else 0.42f)
     val borderColor = Color.White.copy(alpha = if (dark) 0.18f else 0.55f)
-    val iconTint = tint ?: Color(QingyuTheme.actionIcon(dark))
     Box(
         modifier = modifier
             .size(44.dp)
@@ -129,13 +189,14 @@ fun QingyuGlassIconButton(
             .border(width = 0.75.dp, color = borderColor, shape = CircleShape),
     ) {
         val button: @Composable () -> Unit = {
-            IconButton(onClick = onClick, modifier = Modifier.fillMaxSize()) {
-                Icon(
-                    imageVector = icon,
-                    contentDescription = contentDescription,
-                    tint = iconTint,
-                )
-            }
+            IconButton(
+                onClick = onClick,
+                enabled = enabled,
+                modifier = Modifier
+                    .fillMaxSize()
+                    // 与裸图标分支同一句标签：文案在按钮节点上（读屏只念一次）。
+                    .semantics { this.contentDescription = label },
+            ) { inner() }
         }
         if (backdrop != null) {
             QingyuGlassSurface(
@@ -153,34 +214,35 @@ fun QingyuGlassIconButton(
 }
 
 /**
- * 返回键是否已处于「内容压到顶栏带下面」——发布版的圆底只在此时出现。
- * 骨架在顶栏子树注入；不注入（手拼顶栏的页 / 独立预览）默认 false = 保持光箭头。
+ * 顶栏图标按钮「圆底该不该出现」的**唯一门控**：内容是否已压到顶栏带下面。
+ *
+ * 发布版只有压带后才给圆底（静止是裸图标），左上返回键与右上动作键**共用这一个信号**：
+ * 骨架在顶栏子树注入；不注入（手拼 `TopAppBar` 的页 / 独立预览）默认 `false` = 裸图标。
+ *
+ * 名字里的 `BackButton` 是历史名（守卫与既有调用点依赖字符串，未改名），语义已扩到
+ * 整个顶栏 chrome。
  */
 internal val LocalQingyuBackButtonGlass = staticCompositionLocalOf { false }
 
+/**
+ * 全站统一的「子页返回键」——就是 [QingyuGlassIconButton] 的一层薄封装（图标写死为
+ * [MiuixIcons.ChevronBackward]、文案默认「返回」）。
+ *
+ * 门控在 [QingyuGlassIconButton] 里，所以这里不再自己判显隐：静止是裸箭头、压带后长出圆底，
+ * 与右上动作键逐帧同步。
+ */
 @Composable
 fun QingyuBackIconButton(
     onBack: () -> Unit,
     contentDescription: String = CommonUiStrings.back,
     tint: Color? = null,
 ) {
-    if (LocalQingyuBackButtonGlass.current) {
-        QingyuGlassIconButton(
-            onClick = onBack,
-            contentDescription = contentDescription,
-            icon = MiuixIcons.ChevronBackward,
-            tint = tint,
-        )
-    } else {
-        val dark = isSystemInDarkTheme()
-        IconButton(onClick = onBack) {
-            Icon(
-                imageVector = MiuixIcons.ChevronBackward,
-                contentDescription = contentDescription,
-                tint = tint ?: Color(QingyuTheme.actionIcon(dark)),
-            )
-        }
-    }
+    QingyuGlassIconButton(
+        onClick = onBack,
+        contentDescription = contentDescription,
+        icon = MiuixIcons.ChevronBackward,
+        tint = tint,
+    )
 }
 
 /**
@@ -306,10 +368,15 @@ fun QingyuPageScaffold(
     val adaptive = rememberQingyuWindowAdaptive()
     val cap = maxContentWidth ?: adaptive.maxContentWidth
     // 发布版口径：返回键的玻璃圆底只在「内容已压到顶栏带下面」时出现，停在页顶是光箭头。
-    // MiuixScrollBehavior.state.contentOffset 在 pinned 小标题栏下也会累计，故大小标题共用同一判据。
+    // 判据按栏型取量（见 [isContentUnderTopBar]）：可折叠大标题看 heightOffset（位置量），
+    // 钉住的单行栏恒为 true（保留统一前的静止观感，别改成看滚动量）。
     val collapsibleTopBar = !smallTopBar && !adaptive.isWideScreen
-    val contentUnderHeader by remember(scrollBehavior) {
-        derivedStateOf { scrollBehavior.state.contentOffset < -UnderHeaderScrollEpsilonPx }
+    // 「内容已压到顶栏带下」**只算这一次**：顶栏的「实底 ↔ 玻璃纱」切换与返回键的玻璃圆底
+    // 共用同一个信号（2026-11-05 修）。此前骨架看 `contentOffset`、顶栏内部看 `heightOffset`，
+    // 两套信号会在同一帧给出相反答案 —— 用户看到的是「顶栏已经变实底了，返回键还挂着一圈
+    // 玻璃圆底」。现在两边都读它；判据本体在 [isContentUnderTopBar]。
+    val contentUnderHeader by remember(scrollBehavior, collapsibleTopBar) {
+        derivedStateOf { isContentUnderTopBar(scrollBehavior, collapsibleTopBar) }
     }
     Scaffold(
         containerColor = pageBackground,
@@ -323,9 +390,10 @@ fun QingyuPageScaffold(
                     backdrop = backdrop,
                     dark = dark,
                     pageBackground = pageBackground,
-                    scrollBehavior = scrollBehavior,
                     // 只有走大标题 TopAppBar 的分支可折叠（小标题 / 宽屏档不可折叠）。
                     collapsible = collapsibleTopBar,
+                    // 同一个「压带」信号（见上方 contentUnderHeader）：顶栏据此切实底 / 玻璃纱。
+                    underHeader = contentUnderHeader,
                 ) {
                     // 宽屏/中宽档把顶栏内容限制到与正文同一根内容列（毛玻璃面仍然通栏）：
                     // 限宽只包内容、不包模糊面，标题/返回键/动作键与正文左缘保持对齐。
@@ -517,6 +585,41 @@ private val TopBarContentGapSmall: Dp = 4.dp
 private const val UnderHeaderScrollEpsilonPx = 0.5f
 
 /**
+ * 「内容已压到顶栏带下」的**唯一判据**（2026-11-05 统一；顶栏实底/玻璃纱与返回键玻璃共用）。
+ *
+ * ## 判据按栏型取量
+ *
+ * - **钉住的单行栏**（`smallTopBar` / 宽屏档）：**恒为玻璃纱**（返回 `true`）。这是统一前的
+ *   顶栏内部判据（`if (!collapsible || state == null) true`）逐字保留——钉住栏的 `heightOffset`
+ *   永远被 `SmallTopAppBar` 钉成 0，位置量给不出「压没压带」，而 `contentOffset` 只在滚动里
+ *   才为负，拿它判会让静止态从「常白纱磨砂」掉成「平页底色」（2026-11-05 复核：这正是
+ *   小标题页 / 宽屏档的观感回归，改法 = 保留旧语义，只统一「谁读这个值」）。
+ * - **可折叠大标题栏**（`collapsible = true`）：看 `state.heightOffset`——它是**位置量**
+ *   （0 = 完全展开 = 停在页顶），滚动收起时由 miuix 逐帧写入，回到顶部时被同一状态机夹回 0。
+ *   于是「已到顶 ⇒ 自动关玻璃」是结构性成立的，不依赖任何额外判断。
+ *   `heightOffsetLimit == 0` 表示大标题还没量出高度（首帧 / 标题为空），此时位置量恒 0 不可用，
+ *   退回累积滚动量 `state.contentOffset`（≈ 列表滚动位移）——静止时它同样是 0，不会误开玻璃。
+ *
+ * ## 与返回键玻璃的关系
+ *
+ * 骨架算一次、经 `LocalQingyuBackButtonGlass` 下发给返回键，同时作为 `underHeader` 传给
+ * [QingyuBlurredTopBar]。两处读**同一个值**，不会再出现「顶栏已经实底、返回键还挂着玻璃圆底」。
+ */
+private fun isContentUnderTopBar(
+    scrollBehavior: ScrollBehavior,
+    collapsible: Boolean,
+): Boolean {
+    // 钉住栏恒常驻玻璃纱（见上方注释：保留统一前的口径，不改静止观感）。
+    if (!collapsible) return true
+    val state = scrollBehavior.state
+    if (state.heightOffsetLimit == 0f) {
+        // 大标题还没量出高度：位置量不可用，退回累积滚动量。
+        return state.contentOffset < -UnderHeaderScrollEpsilonPx
+    }
+    return state.heightOffset < -UnderHeaderScrollEpsilonPx
+}
+
+/**
  * 顶栏渐进模糊：官方 `BlurredBar` 的等价物（`PageUtils.kt:126-168`），接官方**渐进档**，
  * 渲染走全站唯一实现 [QingyuGlassSurface]。
  *
@@ -538,12 +641,14 @@ private const val UnderHeaderScrollEpsilonPx = 0.5f
  * 尾巴画进正文顶部空隙，交界处不留硬边。**只向下画、不改布局高**：Layout 仍报真实栏高、
  * 不挤正文，只把外层裁剪矩形下边界放宽 `overhang`，多出的尾巴落在正文顶部设计留白里。
  *
- * ## opaqueAtRest（2026-11-04 P1）
+ * ## opaqueAtRest（2026-11-04 P1 / 2026-11-05 判据统一）
  *
- * Flutter 在「没有内容压到带下」时用**不透明页底色**衬底，内容滚上来才切玻璃纱。这里用
- * `state.heightOffset < 0`（可折叠栏一旦滚动）作压带信号：静止时 `onDrawSurface` 直接铺
- * 不透明 `pageBackground`，压带后切 [qingyuTopBarScrim]。**不可折叠栏**（骨架传入
- * `collapsible=false`，即小标题 / 宽屏档）永远保持常驻玻璃纱，避免回归。
+ * Flutter 在「没有内容压到带下」时用**不透明页底色**衬底，内容滚上来才切玻璃纱。压带信号由
+ * 骨架算一次（[isContentUnderTopBar]）后传进来：静止时 `onDrawSurface` 直接铺不透明
+ * `pageBackground`，压带后切 [qingyuTopBarScrim]。**返回键的玻璃圆底读的是同一个值**——
+ * 两处原先各用一套信号（骨架看 `contentOffset`、本栏看 `heightOffset`），会短暂出现
+ * 「顶栏已实底、返回键还挂着玻璃圆底」。
+ * **不可折叠栏**（骨架传入 `collapsible=false`，即小标题 / 宽屏档）永远保持常驻玻璃纱，避免回归。
  *
  * [backdrop] 为 null 时退化成普通 `Box`，与改动前的布局完全一致。
  */
@@ -552,11 +657,11 @@ private fun QingyuBlurredTopBar(
     backdrop: LayerBackdrop?,
     dark: Boolean,
     pageBackground: Color,
-    scrollBehavior: ScrollBehavior?,
     collapsible: Boolean,
+    /** 「内容已压到顶栏带下」：骨架算一次（[isContentUnderTopBar]），返回键玻璃读同一份。 */
+    underHeader: Boolean,
     content: @Composable () -> Unit,
 ) {
-    val state = scrollBehavior?.state
     // 展开高度只在「变大」时写一次（单调取大）：滚动收起不再写状态 → 不逐帧重组、尺寸恒定。
     var expandedHeightPx by remember { mutableIntStateOf(0) }
     // 模糊带高度只随 expandedHeightPx 变（几乎只算一次），remember 成稳定 Int：
@@ -570,18 +675,6 @@ private fun QingyuBlurredTopBar(
                 heightOffsetPx = 0f,
                 heightOffsetLimitPx = 0f,
             )
-        }
-    }
-    // 是否「内容已压到带下」：可折叠大标题栏滚动后 heightOffset<0 即视为压带。
-    // 骨架已通过 [collapsible] 告知本栏是否可折叠（走大标题 TopAppBar）；不可折叠的小标题 /
-    // 宽屏分支永远保持玻璃纱，避免回归。`heightOffset` 是 snapshot 状态，派生状态只在翻转时通知。
-    val underHeader by remember(state, collapsible) {
-        derivedStateOf {
-            if (!collapsible || state == null) {
-                true
-            } else {
-                state.heightOffset < -UnderHeaderScrollEpsilonPx
-            }
         }
     }
     val overhangPx = with(LocalDensity.current) { TopBarBlurOverhang.toPx() }

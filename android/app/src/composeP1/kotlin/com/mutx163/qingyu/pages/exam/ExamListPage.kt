@@ -501,6 +501,8 @@ private fun ExamRow(
                 modifier = Modifier.size(17.dp),
             )
         }
+        // 删除键与右箭头之间留 8dp：两颗 36/16dp 的触控目标贴着会让「想进详情」误删。
+        Spacer(modifier = Modifier.width(8.dp))
         Icon(
             imageVector = MiuixIcons.ChevronForward,
             contentDescription = null,

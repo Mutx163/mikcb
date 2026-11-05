@@ -24,6 +24,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.mutx163.qingyu.components.QingyuCard
+import com.mutx163.qingyu.components.QingyuGlassIconButton
 import com.mutx163.qingyu.components.QingyuPageCardMargin
 import com.mutx163.qingyu.components.QingyuPageList
 import com.mutx163.qingyu.components.QingyuPageScaffold
@@ -33,7 +34,6 @@ import com.mutx163.qingyu.components.shiftWeight
 import com.mutx163.qingyu.theme.QingyuIconColors
 import com.mutx163.qingyu.theme.QingyuTheme
 import top.yukonga.miuix.kmp.basic.Icon
-import top.yukonga.miuix.kmp.basic.IconButton
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.Copy
 import top.yukonga.miuix.kmp.icon.extended.Delete
@@ -91,24 +91,25 @@ fun PerfReportPage(
     QingyuPageScaffold(
         title = PerfReportStrings.pageTitle,
         onBack = onBack,
+        // 右上动作键与左上返回键同一套外观：共享玻璃圆底 + 细边 + 小外浮影
+        //（门控：内容压到顶栏带下面才出圆底，静止是裸图标——与返回键同一个信号）。
         actions = {
-            IconButton(onClick = onRefresh) {
-                Icon(
-                    imageVector = MiuixIcons.Refresh,
-                    contentDescription = PerfReportStrings.refreshTooltip,
-                    tint = Color(QingyuTheme.actionIcon(dark)),
-                )
-            }
+            QingyuGlassIconButton(
+                onClick = onRefresh,
+                contentDescription = PerfReportStrings.refreshTooltip,
+                icon = MiuixIcons.Refresh,
+                tint = Color(QingyuTheme.actionIcon(dark)),
+            )
             // Dart `:110-114`：`onPressed: snapshot == null ? null : _exportFiles`
             // ⇒ 没有快照时导出是禁用态，不是隐藏。
-            IconButton(onClick = onExport, enabled = viewState.isAvailable) {
-                Icon(
-                    // Dart 是 `Icons.save_alt_rounded`（存盘），不是上传。
-                    imageVector = MiuixIcons.Download,
-                    contentDescription = PerfReportStrings.exportTooltip,
-                    tint = Color(QingyuTheme.actionIcon(dark)),
-                )
-            }
+            QingyuGlassIconButton(
+                onClick = onExport,
+                contentDescription = PerfReportStrings.exportTooltip,
+                // Dart 是 `Icons.save_alt_rounded`（存盘），不是上传。
+                icon = MiuixIcons.Download,
+                tint = Color(QingyuTheme.actionIcon(dark)),
+                enabled = viewState.isAvailable,
+            )
         },
     ) {
         QingyuPageList(

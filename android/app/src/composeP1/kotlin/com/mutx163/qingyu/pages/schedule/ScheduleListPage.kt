@@ -29,6 +29,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import com.mutx163.qingyu.components.QingyuCard
+import com.mutx163.qingyu.components.QingyuGlassIconButton
 import com.mutx163.qingyu.components.QingyuPageCardMargin
 import com.mutx163.qingyu.components.QingyuPageList
 import com.mutx163.qingyu.components.QingyuSectionTitle
@@ -98,14 +99,14 @@ fun ScheduleListPage(
                     },
                     // Dart 侧顶栏右侧是 FHeaderAction(Icons.add_rounded) 图标按钮，
                     // 第一版用了文字按钮「添加」，与现版本形态不一致。
+                    // 右上动作键与左上返回键同一套外观：共享玻璃圆底 + 细边 + 小外浮影。
                     actions = {
-                        IconButton(onClick = onAddSchedule) {
-                            Icon(
-                                imageVector = MiuixIcons.Add,
-                                contentDescription = ScheduleStrings.addScheduleAction.zh,
-                                tint = Color(QingyuTheme.actionIcon(dark)),
-                            )
-                        }
+                        QingyuGlassIconButton(
+                            onClick = onAddSchedule,
+                            contentDescription = ScheduleStrings.addScheduleAction.zh,
+                            icon = MiuixIcons.Add,
+                            tint = Color(QingyuTheme.actionIcon(dark)),
+                        )
                     },
                 )
             },
