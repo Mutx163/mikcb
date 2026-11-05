@@ -309,11 +309,27 @@ fun TimetableWeekPage(
         pagerState.scrollToPage(target)
     }
 
-    // 翻页 → 通知宿主（Dart `commitPendingWeek`：停稳后写回 provider.currentWeek）。
+    // 翻页 → 通知宿主（Dart `commitPendingWeek`：**停稳后**写回 provider.currentWeek）。
+    //
+    // ⚠️ 2026-11-05 修「左右滑不跟手 / 滑了半天没反应」：原来收的是裸
+    // `snapshotFlow { currentPage }`，而 pager 的 `currentPage` 在**拖动过半就翻**，
+    // 于是回调落在「手指还按在屏上」的那一帧。回调链是
+    // `onWeekChanged` → `ShellWiring` 的 `repository.setCurrentWeek()` →
+    // `TimetableRepository.persistActiveProfileState()`：**同步**把整份档案
+    // （全部课表 + 设置）序列化后写盘 4 次，同时改 Compose 状态让首页宿主整棵重组。
+    // 一次滑动里每跨一页就来一遍 ⇒ 拖到临界点整页冻住、松手或再滑才"跟上来"。
+    // 现在与日视图那条 `if (scrolling) return` 同款：停稳才提交；
+    // `committedPage` 去重，免得「拖出去又拖回原页」用同一个周次再写一次盘，
+    // 也免得进页首帧就把刚读到的周次原样写回去（旧写法每次开页都多一次整档落盘）。
     LaunchedEffect(pagerState) {
-        snapshotFlow { pagerState.currentPage }.collect { page ->
-            onWeekChanged(page + 1)
-        }
+        var committedPage = pagerState.currentPage
+        snapshotFlow { pagerState.currentPage to pagerState.isScrollInProgress }
+            .collect { (page, scrolling) ->
+                if (scrolling) return@collect
+                if (page == committedPage) return@collect
+                committedPage = page
+                onWeekChanged(page + 1)
+            }
     }
 
     val browsingWeek = pagerState.currentPage + 1
