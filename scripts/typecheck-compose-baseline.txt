@@ -1,0 +1,239 @@
+# composeP1 早筛基线（scripts/typecheck-compose.ps1 用；一行一条 相对路径|error 消息，不含行列）
+# 这是**棘轮**不是豁免清单：清掉的要删行（跑 -Write 收敛），不许为了让提交变绿往里加行。
+# 它 != L1：没有 Compose 编译器插件/资源/变体，只能压整包门禁失败率，不能替门禁。
+android/app/src/composeP1/kotlin/com/mutx163/qingyu/app/DiagnosticsSettingsHost.kt|cannot infer type for type parameter 'T'. Specify it explicitly.
+android/app/src/composeP1/kotlin/com/mutx163/qingyu/app/DiagnosticsSettingsHost.kt|unresolved reference 'MemoryStatsCollector'.
+android/app/src/composeP1/kotlin/com/mutx163/qingyu/app/DiagnosticsSettingsHost.kt|unresolved reference 'MemoryStatsCollector'.
+android/app/src/composeP1/kotlin/com/mutx163/qingyu/app/HomeWidgetHost.kt|cannot infer type for type parameter 'R'. Specify it explicitly.
+android/app/src/composeP1/kotlin/com/mutx163/qingyu/app/HomeWidgetHost.kt|cannot infer type for type parameter 'R'. Specify it explicitly.
+android/app/src/composeP1/kotlin/com/mutx163/qingyu/app/HomeWidgetHost.kt|cannot infer type for type parameter 'R'. Specify it explicitly.
+android/app/src/composeP1/kotlin/com/mutx163/qingyu/app/HomeWidgetHost.kt|cannot infer type for type parameter 'R'. Specify it explicitly.
+android/app/src/composeP1/kotlin/com/mutx163/qingyu/app/HomeWidgetHost.kt|cannot infer type for type parameter 'R'. Specify it explicitly.
+android/app/src/composeP1/kotlin/com/mutx163/qingyu/app/HomeWidgetHost.kt|cannot infer type for type parameter 'T'. Specify it explicitly.
+android/app/src/composeP1/kotlin/com/mutx163/qingyu/app/HomeWidgetHost.kt|cannot infer type for type parameter 'T'. Specify it explicitly.
+android/app/src/composeP1/kotlin/com/mutx163/qingyu/app/HomeWidgetHost.kt|cannot infer type for type parameter 'T'. Specify it explicitly.
+android/app/src/composeP1/kotlin/com/mutx163/qingyu/app/HomeWidgetHost.kt|inapplicable candidate(s): fun <T> mutableStateOf(value: T, policy: SnapshotMutationPolicy<T> = ...): MutableState<T>
+android/app/src/composeP1/kotlin/com/mutx163/qingyu/app/HomeWidgetHost.kt|unresolved reference 'HomeWidgetInstanceInfo'.
+android/app/src/composeP1/kotlin/com/mutx163/qingyu/app/HomeWidgetHost.kt|unresolved reference 'HomeWidgetInstanceInfo'.
+android/app/src/composeP1/kotlin/com/mutx163/qingyu/app/HomeWidgetHost.kt|unresolved reference 'it'.
+android/app/src/composeP1/kotlin/com/mutx163/qingyu/app/HomeWidgetHost.kt|unresolved reference 'it'.
+android/app/src/composeP1/kotlin/com/mutx163/qingyu/app/HomeWidgetHost.kt|unresolved reference 'it'.
+android/app/src/composeP1/kotlin/com/mutx163/qingyu/app/HomeWidgetHost.kt|unresolved reference 'TodayWidgetSupport'.
+android/app/src/composeP1/kotlin/com/mutx163/qingyu/app/HomeWidgetHost.kt|unresolved reference 'TodayWidgetSupport'.
+android/app/src/composeP1/kotlin/com/mutx163/qingyu/app/HomeWidgetHost.kt|unresolved reference 'WidgetSystemActions'.
+android/app/src/composeP1/kotlin/com/mutx163/qingyu/app/HomeWidgetHost.kt|unresolved reference 'WidgetSystemActions'.
+android/app/src/composeP1/kotlin/com/mutx163/qingyu/app/HomeWidgetHost.kt|unresolved reference 'WidgetSystemActions'.
+android/app/src/composeP1/kotlin/com/mutx163/qingyu/app/HomeWidgetHost.kt|unresolved reference 'WidgetSystemActions'.
+android/app/src/composeP1/kotlin/com/mutx163/qingyu/app/HomeWidgetHost.kt|unresolved reference 'WidgetSystemActions'.
+android/app/src/composeP1/kotlin/com/mutx163/qingyu/app/HomeWidgetHost.kt|unresolved reference 'WidgetSystemActions'.
+android/app/src/composeP1/kotlin/com/mutx163/qingyu/app/HomeWidgetHost.kt|unresolved reference 'WidgetSystemActions'.
+android/app/src/composeP1/kotlin/com/mutx163/qingyu/app/HomeWidgetHost.kt|unresolved reference 'WidgetSystemActions'.
+android/app/src/composeP1/kotlin/com/mutx163/qingyu/app/HomeWidgetHost.kt|unresolved reference 'WidgetSystemActions'.
+android/app/src/composeP1/kotlin/com/mutx163/qingyu/app/IcsExportHost.kt|unresolved reference 'CalendarSync'.
+android/app/src/composeP1/kotlin/com/mutx163/qingyu/app/IcsExportHost.kt|unresolved reference 'CalendarSync'.
+android/app/src/composeP1/kotlin/com/mutx163/qingyu/app/IcsExportHost.kt|unresolved reference 'CalendarSync'.
+android/app/src/composeP1/kotlin/com/mutx163/qingyu/app/IcsExportHost.kt|unresolved reference 'CalendarSync'.
+android/app/src/composeP1/kotlin/com/mutx163/qingyu/app/IcsExportHost.kt|unresolved reference 'io'.
+android/app/src/composeP1/kotlin/com/mutx163/qingyu/app/IcsExportHost.kt|unresolved reference 'io'.
+android/app/src/composeP1/kotlin/com/mutx163/qingyu/app/IcsExportHost.kt|unresolved reference 'MethodCall'.
+android/app/src/composeP1/kotlin/com/mutx163/qingyu/app/IcsExportHost.kt|unresolved reference 'MethodChannel'.
+android/app/src/composeP1/kotlin/com/mutx163/qingyu/app/LiveDisplayHost.kt|cannot infer type for type parameter 'R'. Specify it explicitly.
+android/app/src/composeP1/kotlin/com/mutx163/qingyu/app/LiveDisplayHost.kt|unresolved reference 'ExternalImportReader'.
+android/app/src/composeP1/kotlin/com/mutx163/qingyu/app/LiveDisplayHost.kt|unresolved reference 'ExternalImportReader'.
+android/app/src/composeP1/kotlin/com/mutx163/qingyu/app/LiveDisplayHost.kt|unresolved reference 'R'.
+android/app/src/composeP1/kotlin/com/mutx163/qingyu/app/LiveDisplayHost.kt|unresolved reference 'R'.
+android/app/src/composeP1/kotlin/com/mutx163/qingyu/app/LiveDisplayHost.kt|unresolved reference 'R'.
+android/app/src/composeP1/kotlin/com/mutx163/qingyu/app/LiveSelfCheckHost.kt|argument type mismatch: actual type is 'Any', but 'String' was expected.
+android/app/src/composeP1/kotlin/com/mutx163/qingyu/app/LiveSelfCheckHost.kt|cannot infer type for type parameter 'K'. Specify it explicitly.
+android/app/src/composeP1/kotlin/com/mutx163/qingyu/app/LiveSelfCheckHost.kt|cannot infer type for type parameter 'K'. Specify it explicitly.
+android/app/src/composeP1/kotlin/com/mutx163/qingyu/app/LiveSelfCheckHost.kt|cannot infer type for type parameter 'R'. Specify it explicitly.
+android/app/src/composeP1/kotlin/com/mutx163/qingyu/app/LiveSelfCheckHost.kt|cannot infer type for type parameter 'R'. Specify it explicitly.
+android/app/src/composeP1/kotlin/com/mutx163/qingyu/app/LiveSelfCheckHost.kt|cannot infer type for type parameter 'R'. Specify it explicitly.
+android/app/src/composeP1/kotlin/com/mutx163/qingyu/app/LiveSelfCheckHost.kt|cannot infer type for type parameter 'T'. Specify it explicitly.
+android/app/src/composeP1/kotlin/com/mutx163/qingyu/app/LiveSelfCheckHost.kt|cannot infer type for type parameter 'T'. Specify it explicitly.
+android/app/src/composeP1/kotlin/com/mutx163/qingyu/app/LiveSelfCheckHost.kt|cannot infer type for type parameter 'T'. Specify it explicitly.
+android/app/src/composeP1/kotlin/com/mutx163/qingyu/app/LiveSelfCheckHost.kt|cannot infer type for type parameter 'T'. Specify it explicitly.
+android/app/src/composeP1/kotlin/com/mutx163/qingyu/app/LiveSelfCheckHost.kt|cannot infer type for type parameter 'V'. Specify it explicitly.
+android/app/src/composeP1/kotlin/com/mutx163/qingyu/app/LiveSelfCheckHost.kt|unresolved reference 'BuildConfig'.
+android/app/src/composeP1/kotlin/com/mutx163/qingyu/app/LiveSelfCheckHost.kt|unresolved reference 'BuildConfig'.
+android/app/src/composeP1/kotlin/com/mutx163/qingyu/app/LiveSelfCheckHost.kt|unresolved reference 'BuildConfig'.
+android/app/src/composeP1/kotlin/com/mutx163/qingyu/app/LiveSelfCheckHost.kt|unresolved reference 'BuildConfig'.
+android/app/src/composeP1/kotlin/com/mutx163/qingyu/app/LiveSelfCheckHost.kt|unresolved reference 'LiveUpdateService'.
+android/app/src/composeP1/kotlin/com/mutx163/qingyu/app/LiveSelfCheckHost.kt|unresolved reference 'LiveUpdateService'.
+android/app/src/composeP1/kotlin/com/mutx163/qingyu/app/LiveSelfCheckHost.kt|unresolved reference 'LiveUpdateService'.
+android/app/src/composeP1/kotlin/com/mutx163/qingyu/app/LiveSelfCheckHost.kt|unresolved reference 'R'.
+android/app/src/composeP1/kotlin/com/mutx163/qingyu/app/LiveSelfCheckHost.kt|unresolved reference 'R'.
+android/app/src/composeP1/kotlin/com/mutx163/qingyu/app/LiveSelfCheckHost.kt|unresolved reference 'R'.
+android/app/src/composeP1/kotlin/com/mutx163/qingyu/app/LiveSelfCheckHost.kt|unresolved reference 'UmengApplication'.
+android/app/src/composeP1/kotlin/com/mutx163/qingyu/app/LiveSelfCheckHost.kt|unresolved reference 'UmengApplication'.
+android/app/src/composeP1/kotlin/com/mutx163/qingyu/app/LiveSelfCheckHost.kt|unresolved reference 'UmengApplication'.
+android/app/src/composeP1/kotlin/com/mutx163/qingyu/app/LiveSelfCheckHost.kt|unresolved reference 'UmengDiagnosticReporter'.
+android/app/src/composeP1/kotlin/com/mutx163/qingyu/app/LiveSelfCheckHost.kt|unresolved reference 'UmengDiagnosticReporter'.
+android/app/src/composeP1/kotlin/com/mutx163/qingyu/app/LiveTestingFixtureHost.kt|unresolved reference 'R'.
+android/app/src/composeP1/kotlin/com/mutx163/qingyu/app/LiveTestingFixtureHost.kt|unresolved reference 'R'.
+android/app/src/composeP1/kotlin/com/mutx163/qingyu/app/LiveTestingFixtureHost.kt|unresolved reference 'R'.
+android/app/src/composeP1/kotlin/com/mutx163/qingyu/app/LiveTestTriggerNative.kt|unresolved reference 'LiveUpdateScheduler'.
+android/app/src/composeP1/kotlin/com/mutx163/qingyu/app/LiveTestTriggerNative.kt|unresolved reference 'LiveUpdateScheduler'.
+android/app/src/composeP1/kotlin/com/mutx163/qingyu/app/LiveTestTriggerNative.kt|unresolved reference 'LiveUpdateScheduler'.
+android/app/src/composeP1/kotlin/com/mutx163/qingyu/app/LiveTestTriggerNative.kt|unresolved reference 'LiveUpdateScheduler'.
+android/app/src/composeP1/kotlin/com/mutx163/qingyu/app/LiveTestTriggerNative.kt|unresolved reference 'LiveUpdateScheduler'.
+android/app/src/composeP1/kotlin/com/mutx163/qingyu/app/LiveTestTriggerNative.kt|unresolved reference 'LiveUpdateScheduler'.
+android/app/src/composeP1/kotlin/com/mutx163/qingyu/app/LiveTestTriggerNative.kt|unresolved reference 'LiveUpdateScheduler'.
+android/app/src/composeP1/kotlin/com/mutx163/qingyu/app/LiveTestTriggerNative.kt|unresolved reference 'LiveUpdateScheduler'.
+android/app/src/composeP1/kotlin/com/mutx163/qingyu/app/LiveTestTriggerNative.kt|unresolved reference 'LiveUpdateScheduler'.
+android/app/src/composeP1/kotlin/com/mutx163/qingyu/app/LiveTestTriggerNative.kt|unresolved reference 'LiveUpdateScheduler'.
+android/app/src/composeP1/kotlin/com/mutx163/qingyu/app/LiveTestTriggerNative.kt|unresolved reference 'LiveUpdateScheduler'.
+android/app/src/composeP1/kotlin/com/mutx163/qingyu/app/LiveTestTriggerNative.kt|unresolved reference 'LiveUpdateScheduler'.
+android/app/src/composeP1/kotlin/com/mutx163/qingyu/app/LiveTestTriggerNative.kt|unresolved reference 'LiveUpdateScheduler'.
+android/app/src/composeP1/kotlin/com/mutx163/qingyu/app/LiveTestTriggerNative.kt|unresolved reference 'LiveUpdateService'.
+android/app/src/composeP1/kotlin/com/mutx163/qingyu/app/LiveTestTriggerNative.kt|unresolved reference 'LiveUpdateService'.
+android/app/src/composeP1/kotlin/com/mutx163/qingyu/app/LiveTestTriggerNative.kt|unresolved reference 'LiveUpdateService'.
+android/app/src/composeP1/kotlin/com/mutx163/qingyu/app/MemoryStatsHost.kt|cannot infer type for type parameter 'T'. Specify it explicitly.
+android/app/src/composeP1/kotlin/com/mutx163/qingyu/app/MemoryStatsHost.kt|unresolved reference 'MemoryStatsCollector'.
+android/app/src/composeP1/kotlin/com/mutx163/qingyu/app/MemoryStatsHost.kt|unresolved reference 'MemoryStatsCollector'.
+android/app/src/composeP1/kotlin/com/mutx163/qingyu/app/SettingsSemesterHost.kt|unresolved reference 'BuildConfig'.
+android/app/src/composeP1/kotlin/com/mutx163/qingyu/app/SettingsSemesterHost.kt|unresolved reference 'BuildConfig'.
+android/app/src/composeP1/kotlin/com/mutx163/qingyu/app/SettingsSemesterHost.kt|unresolved reference 'MemoryStatsCollector'.
+android/app/src/composeP1/kotlin/com/mutx163/qingyu/app/SettingsSemesterHost.kt|unresolved reference 'MemoryStatsCollector'.
+android/app/src/composeP1/kotlin/com/mutx163/qingyu/pages/about/AboutUpdateHost.kt|unresolved reference 'DiagnosticLogMessages'.
+android/app/src/composeP1/kotlin/com/mutx163/qingyu/pages/about/AboutUpdateHost.kt|unresolved reference 'DiagnosticLogMessages'.
+android/app/src/composeP1/kotlin/com/mutx163/qingyu/pages/about/AboutUpdateHost.kt|unresolved reference 'DiagnosticLogMessages'.
+android/app/src/composeP1/kotlin/com/mutx163/qingyu/pages/about/AboutUpdateHost.kt|unresolved reference 'DiagnosticLogMessages'.
+android/app/src/composeP1/kotlin/com/mutx163/qingyu/pages/about/AboutUpdateHost.kt|unresolved reference 'DiagnosticLogMessages'.
+android/app/src/composeP1/kotlin/com/mutx163/qingyu/pages/about/AboutUpdateHost.kt|unresolved reference 'DiagnosticLogMessages'.
+android/app/src/composeP1/kotlin/com/mutx163/qingyu/pages/about/AboutUpdateHost.kt|unresolved reference 'DiagnosticLogMessages'.
+android/app/src/composeP1/kotlin/com/mutx163/qingyu/pages/about/AboutUpdateHost.kt|unresolved reference 'isTrustedSystemDownloadUrl'.
+android/app/src/composeP1/kotlin/com/mutx163/qingyu/pages/about/AboutUpdateHost.kt|unresolved reference 'isTrustedSystemDownloadUrl'.
+android/app/src/composeP1/kotlin/com/mutx163/qingyu/pages/about/PagesCommon.kt|unresolved reference 'R'.
+android/app/src/composeP1/kotlin/com/mutx163/qingyu/pages/about/PagesCommon.kt|unresolved reference 'R'.
+android/app/src/composeP1/kotlin/com/mutx163/qingyu/pages/course/AddCoursePage.kt|no parameter with name 'glass' found.
+android/app/src/composeP1/kotlin/com/mutx163/qingyu/pages/course/AddCoursePage.kt|unresolved reference 'DialogGlass'.
+android/app/src/composeP1/kotlin/com/mutx163/qingyu/pages/course/AddCoursePage.kt|unresolved reference 'DialogGlass'.
+android/app/src/composeP1/kotlin/com/mutx163/qingyu/pages/settings/HomeWidgetPreviewCarousel.kt|unresolved reference 'WidgetPreviewRenderer'.
+android/app/src/composeP1/kotlin/com/mutx163/qingyu/pages/settings/HomeWidgetPreviewCarousel.kt|unresolved reference 'WidgetPreviewRenderer'.
+android/app/src/composeP1/kotlin/com/mutx163/qingyu/pages/settings/SettingsPageRenderers.kt|unresolved reference 'R'.
+android/app/src/composeP1/kotlin/com/mutx163/qingyu/pages/settings/SettingsPageRenderers.kt|unresolved reference 'R'.
+android/app/src/composeP1/kotlin/com/mutx163/qingyu/pages/settings/SettingsPageRenderers.kt|unresolved reference 'R'.
+android/app/src/composeP1/kotlin/com/mutx163/qingyu/pages/statistics/charts/StatisticsExportCards.kt|unresolved reference 'R'.
+android/app/src/composeP1/kotlin/com/mutx163/qingyu/pages/statistics/charts/StatisticsExportCards.kt|unresolved reference 'R'.
+android/app/src/composeP1/kotlin/com/mutx163/qingyu/pages/statistics/charts/StatisticsExportCards.kt|unresolved reference 'R'.
+android/app/src/composeP1/kotlin/com/mutx163/qingyu/pages/timetable/TimetableWeekPage.kt|no parameter with name 'saver' found.
+android/app/src/composeP1/kotlin/com/mutx163/qingyu/pages/timetable/TimetableWeekPage.kt|no value passed for parameter 'calculation'.
+android/app/src/composeP1/kotlin/com/mutx163/qingyu/pages/timetable/TimetableWeekPage.kt|none of the following candidates is applicable:
+android/app/src/composeP1/kotlin/com/mutx163/qingyu/pages/timetable/TimetableWeekPage.kt|none of the following candidates is applicable:
+android/app/src/composeP1/kotlin/com/mutx163/qingyu/pages/transfer/LanEditHost.kt|cannot infer type for type parameter 'T'. Specify it explicitly.
+android/app/src/composeP1/kotlin/com/mutx163/qingyu/pages/transfer/LanEditHost.kt|cannot infer type for type parameter 'T'. Specify it explicitly.
+android/app/src/composeP1/kotlin/com/mutx163/qingyu/pages/transfer/LanEditHost.kt|cannot infer type for type parameter 'T'. Specify it explicitly.
+android/app/src/composeP1/kotlin/com/mutx163/qingyu/pages/transfer/LanEditHost.kt|inapplicable candidate(s): fun stopService(p0: Intent!): Boolean
+android/app/src/composeP1/kotlin/com/mutx163/qingyu/pages/transfer/LanEditHost.kt|unresolved reference 'action'.
+android/app/src/composeP1/kotlin/com/mutx163/qingyu/pages/transfer/LanEditHost.kt|unresolved reference 'LanEditForegroundService'.
+android/app/src/composeP1/kotlin/com/mutx163/qingyu/pages/transfer/LanEditHost.kt|unresolved reference 'LanEditForegroundService'.
+android/app/src/composeP1/kotlin/com/mutx163/qingyu/pages/transfer/LanEditHost.kt|unresolved reference 'LanEditForegroundService'.
+android/app/src/composeP1/kotlin/com/mutx163/qingyu/pages/transfer/LanEditHost.kt|unresolved reference 'LanEditForegroundService'.
+android/app/src/composeP1/kotlin/com/mutx163/qingyu/pages/transfer/LanEditHost.kt|unresolved reference. None of the following candidates is applicable because of a receiver type mismatch:
+android/app/src/composeP1/kotlin/com/mutx163/qingyu/pages/transfer/LanEditHost.kt|unresolved reference. None of the following candidates is applicable because of a receiver type mismatch:
+android/app/src/composeP1/kotlin/com/mutx163/qingyu/pages/transfer/PickupCodesHost.kt|argument type mismatch: actual type is 'Job', but 'Map<String, Any?>' was expected.
+android/app/src/composeP1/kotlin/com/mutx163/qingyu/pages/transfer/PickupCodesHost.kt|cannot infer type for type parameter 'K'. Specify it explicitly.
+android/app/src/composeP1/kotlin/com/mutx163/qingyu/pages/transfer/PickupCodesHost.kt|cannot infer type for type parameter 'V'. Specify it explicitly.
+android/app/src/composeP1/kotlin/com/mutx163/qingyu/pages/transfer/PickupCodesHost.kt|cannot infer type for type parameter 'V'. Specify it explicitly.
+android/app/src/composeP1/kotlin/com/mutx163/qingyu/pages/transfer/PickupCodesHost.kt|unresolved reference 'PickupCodeLauncher'.
+android/app/src/composeP1/kotlin/com/mutx163/qingyu/pages/transfer/PickupCodesHost.kt|unresolved reference 'PickupCodeLauncher'.
+android/app/src/composeP1/kotlin/com/mutx163/qingyu/pages/transfer/PickupCodesHost.kt|unresolved reference 'PickupCodeLauncher'.
+android/app/src/composeP1/kotlin/com/mutx163/qingyu/pages/transfer/PickupCodesHost.kt|unresolved reference 'PickupCodeLauncher'.
+android/app/src/composeP1/kotlin/com/mutx163/qingyu/pages/transfer/QrCameraHost.kt|argument type mismatch: actual type is 'Any', but 'BarcodeScanResult?' was expected.
+android/app/src/composeP1/kotlin/com/mutx163/qingyu/pages/transfer/QrCameraHost.kt|cannot infer type for type parameter 'T'. Specify it explicitly.
+android/app/src/composeP1/kotlin/com/mutx163/qingyu/pages/transfer/QrCameraHost.kt|cannot infer type for type parameter 'T'. Specify it explicitly.
+android/app/src/composeP1/kotlin/com/mutx163/qingyu/pages/transfer/QrCameraHost.kt|cannot infer type for type parameter 'T'. Specify it explicitly.
+android/app/src/composeP1/kotlin/com/mutx163/qingyu/pages/transfer/QrCameraHost.kt|cannot infer type for type parameter 'T'. Specify it explicitly.
+android/app/src/composeP1/kotlin/com/mutx163/qingyu/pages/transfer/QrCameraHost.kt|cannot infer type for type parameter 'T'. Specify it explicitly.
+android/app/src/composeP1/kotlin/com/mutx163/qingyu/pages/transfer/QrCameraHost.kt|cannot infer type for type parameter 'T'. Specify it explicitly.
+android/app/src/composeP1/kotlin/com/mutx163/qingyu/pages/transfer/QrCameraHost.kt|cannot infer type for value parameter 'barcodes'. Specify it explicitly.
+android/app/src/composeP1/kotlin/com/mutx163/qingyu/pages/transfer/QrCameraHost.kt|function invocation 'format(...)' expected.
+android/app/src/composeP1/kotlin/com/mutx163/qingyu/pages/transfer/QrCameraHost.kt|unresolved reference 'Barcode'.
+android/app/src/composeP1/kotlin/com/mutx163/qingyu/pages/transfer/QrCameraHost.kt|unresolved reference 'Barcode'.
+android/app/src/composeP1/kotlin/com/mutx163/qingyu/pages/transfer/QrCameraHost.kt|unresolved reference 'Barcode'.
+android/app/src/composeP1/kotlin/com/mutx163/qingyu/pages/transfer/QrCameraHost.kt|unresolved reference 'Barcode'.
+android/app/src/composeP1/kotlin/com/mutx163/qingyu/pages/transfer/QrCameraHost.kt|unresolved reference 'Barcode'.
+android/app/src/composeP1/kotlin/com/mutx163/qingyu/pages/transfer/QrCameraHost.kt|unresolved reference 'Barcode'.
+android/app/src/composeP1/kotlin/com/mutx163/qingyu/pages/transfer/QrCameraHost.kt|unresolved reference 'Barcode'.
+android/app/src/composeP1/kotlin/com/mutx163/qingyu/pages/transfer/QrCameraHost.kt|unresolved reference 'Barcode'.
+android/app/src/composeP1/kotlin/com/mutx163/qingyu/pages/transfer/QrCameraHost.kt|unresolved reference 'Barcode'.
+android/app/src/composeP1/kotlin/com/mutx163/qingyu/pages/transfer/QrCameraHost.kt|unresolved reference 'BarcodeScanner'.
+android/app/src/composeP1/kotlin/com/mutx163/qingyu/pages/transfer/QrCameraHost.kt|unresolved reference 'BarcodeScannerOptions'.
+android/app/src/composeP1/kotlin/com/mutx163/qingyu/pages/transfer/QrCameraHost.kt|unresolved reference 'BarcodeScanning'.
+android/app/src/composeP1/kotlin/com/mutx163/qingyu/pages/transfer/QrCameraHost.kt|unresolved reference 'bindToLifecycle'.
+android/app/src/composeP1/kotlin/com/mutx163/qingyu/pages/transfer/QrCameraHost.kt|unresolved reference 'camera'.
+android/app/src/composeP1/kotlin/com/mutx163/qingyu/pages/transfer/QrCameraHost.kt|unresolved reference 'camera'.
+android/app/src/composeP1/kotlin/com/mutx163/qingyu/pages/transfer/QrCameraHost.kt|unresolved reference 'camera'.
+android/app/src/composeP1/kotlin/com/mutx163/qingyu/pages/transfer/QrCameraHost.kt|unresolved reference 'camera'.
+android/app/src/composeP1/kotlin/com/mutx163/qingyu/pages/transfer/QrCameraHost.kt|unresolved reference 'camera'.
+android/app/src/composeP1/kotlin/com/mutx163/qingyu/pages/transfer/QrCameraHost.kt|unresolved reference 'camera'.
+android/app/src/composeP1/kotlin/com/mutx163/qingyu/pages/transfer/QrCameraHost.kt|unresolved reference 'camera'.
+android/app/src/composeP1/kotlin/com/mutx163/qingyu/pages/transfer/QrCameraHost.kt|unresolved reference 'CameraSelector'.
+android/app/src/composeP1/kotlin/com/mutx163/qingyu/pages/transfer/QrCameraHost.kt|unresolved reference 'close'.
+android/app/src/composeP1/kotlin/com/mutx163/qingyu/pages/transfer/QrCameraHost.kt|unresolved reference 'close'.
+android/app/src/composeP1/kotlin/com/mutx163/qingyu/pages/transfer/QrCameraHost.kt|unresolved reference 'close'.
+android/app/src/composeP1/kotlin/com/mutx163/qingyu/pages/transfer/QrCameraHost.kt|unresolved reference 'close'.
+android/app/src/composeP1/kotlin/com/mutx163/qingyu/pages/transfer/QrCameraHost.kt|unresolved reference 'cornerPoints'.
+android/app/src/composeP1/kotlin/com/mutx163/qingyu/pages/transfer/QrCameraHost.kt|unresolved reference 'displayValue'.
+android/app/src/composeP1/kotlin/com/mutx163/qingyu/pages/transfer/QrCameraHost.kt|unresolved reference 'google'.
+android/app/src/composeP1/kotlin/com/mutx163/qingyu/pages/transfer/QrCameraHost.kt|unresolved reference 'google'.
+android/app/src/composeP1/kotlin/com/mutx163/qingyu/pages/transfer/QrCameraHost.kt|unresolved reference 'google'.
+android/app/src/composeP1/kotlin/com/mutx163/qingyu/pages/transfer/QrCameraHost.kt|unresolved reference 'google'.
+android/app/src/composeP1/kotlin/com/mutx163/qingyu/pages/transfer/QrCameraHost.kt|unresolved reference 'google'.
+android/app/src/composeP1/kotlin/com/mutx163/qingyu/pages/transfer/QrCameraHost.kt|unresolved reference 'image'.
+android/app/src/composeP1/kotlin/com/mutx163/qingyu/pages/transfer/QrCameraHost.kt|unresolved reference 'ImageAnalysis'.
+android/app/src/composeP1/kotlin/com/mutx163/qingyu/pages/transfer/QrCameraHost.kt|unresolved reference 'ImageAnalysis'.
+android/app/src/composeP1/kotlin/com/mutx163/qingyu/pages/transfer/QrCameraHost.kt|unresolved reference 'ImageAnalysis'.
+android/app/src/composeP1/kotlin/com/mutx163/qingyu/pages/transfer/QrCameraHost.kt|unresolved reference 'imageInfo'.
+android/app/src/composeP1/kotlin/com/mutx163/qingyu/pages/transfer/QrCameraHost.kt|unresolved reference 'ImageProxy'.
+android/app/src/composeP1/kotlin/com/mutx163/qingyu/pages/transfer/QrCameraHost.kt|unresolved reference 'implementationMode'.
+android/app/src/composeP1/kotlin/com/mutx163/qingyu/pages/transfer/QrCameraHost.kt|unresolved reference 'InputImage'.
+android/app/src/composeP1/kotlin/com/mutx163/qingyu/pages/transfer/QrCameraHost.kt|unresolved reference 'it'.
+android/app/src/composeP1/kotlin/com/mutx163/qingyu/pages/transfer/QrCameraHost.kt|unresolved reference 'it'.
+android/app/src/composeP1/kotlin/com/mutx163/qingyu/pages/transfer/QrCameraHost.kt|unresolved reference 'it'.
+android/app/src/composeP1/kotlin/com/mutx163/qingyu/pages/transfer/QrCameraHost.kt|unresolved reference 'Preview'.
+android/app/src/composeP1/kotlin/com/mutx163/qingyu/pages/transfer/QrCameraHost.kt|unresolved reference 'PreviewView'.
+android/app/src/composeP1/kotlin/com/mutx163/qingyu/pages/transfer/QrCameraHost.kt|unresolved reference 'PreviewView'.
+android/app/src/composeP1/kotlin/com/mutx163/qingyu/pages/transfer/QrCameraHost.kt|unresolved reference 'process'.
+android/app/src/composeP1/kotlin/com/mutx163/qingyu/pages/transfer/QrCameraHost.kt|unresolved reference 'ProcessCameraProvider'.
+android/app/src/composeP1/kotlin/com/mutx163/qingyu/pages/transfer/QrCameraHost.kt|unresolved reference 'ProcessCameraProvider'.
+android/app/src/composeP1/kotlin/com/mutx163/qingyu/pages/transfer/QrCameraHost.kt|unresolved reference 'rawBytes'.
+android/app/src/composeP1/kotlin/com/mutx163/qingyu/pages/transfer/QrCameraHost.kt|unresolved reference 'rawValue'.
+android/app/src/composeP1/kotlin/com/mutx163/qingyu/pages/transfer/QrCameraHost.kt|unresolved reference 'setSurfaceProvider'.
+android/app/src/composeP1/kotlin/com/mutx163/qingyu/pages/transfer/QrCameraHost.kt|unresolved reference 'surfaceProvider'.
+android/app/src/composeP1/kotlin/com/mutx163/qingyu/pages/transfer/QrCameraHost.kt|unresolved reference 'unbindAll'.
+android/app/src/composeP1/kotlin/com/mutx163/qingyu/pages/transfer/QrCameraHost.kt|unresolved reference 'unbindAll'.
+android/app/src/main/kotlin/com/mutx163/qingyu/pages/ShellPageIndex.kt|unresolved reference 'KeepAliveAccessibilityStatus'.
+android/app/src/main/kotlin/com/mutx163/qingyu/pages/ShellPageIndex.kt|unresolved reference 'KeepAliveAccessibilityStatus'.
+android/app/src/main/kotlin/com/mutx163/qingyu/pages/ShellPageIndex.kt|unresolved reference 'WeeklyReportScheduler'.
+android/app/src/main/kotlin/com/mutx163/qingyu/pages/ShellPageIndex.kt|unresolved reference 'WeeklyReportScheduler'.
+android/app/src/main/kotlin/com/mutx163/qingyu/pages/ShellPageIndex.kt|unresolved reference 'WeeklyReportScheduler'.
+android/app/src/main/kotlin/com/mutx163/qingyu/pages/ShellPageIndex.kt|unresolved reference 'WeeklyReportScheduler'.
+android/app/src/main/kotlin/com/mutx163/qingyu/pages/ShellWiring.kt|cannot infer type for type parameter 'R'. Specify it explicitly.
+android/app/src/main/kotlin/com/mutx163/qingyu/pages/ShellWiring.kt|unresolved reference 'launched'.
+android/app/src/main/kotlin/com/mutx163/qingyu/pages/ShellWiring.kt|unresolved reference 'SystemAlarmHelper'.
+android/app/src/main/kotlin/com/mutx163/qingyu/pages/ShellWiring.kt|unresolved reference 'SystemAlarmHelper'.
+android/app/src/main/kotlin/com/mutx163/qingyu/pages/ShellWiring.kt|unresolved reference 'SystemAlarmHelper'.
+android/app/src/main/kotlin/com/mutx163/qingyu/pages/ShellWiring.kt|unresolved reference 'WeeklyReportScheduler'.
+android/app/src/main/kotlin/com/mutx163/qingyu/pages/ShellWiring.kt|unresolved reference 'WeeklyReportScheduler'.
+android/app/src/main/kotlin/com/mutx163/qingyu/pages/ShellWiring.kt|unresolved reference 'WeeklyReportScheduler'.
+android/app/src/main/kotlin/com/mutx163/qingyu/pages/ShellWiring.kt|unresolved reference 'WeeklyReportScheduler'.
+android/app/src/main/kotlin/com/mutx163/qingyu/platform/AndroidImportFileGateway.kt|unresolved reference 'ExternalImportReader'.
+android/app/src/main/kotlin/com/mutx163/qingyu/platform/AndroidImportFileGateway.kt|unresolved reference 'ExternalImportReader'.
+android/app/src/main/kotlin/com/mutx163/qingyu/platform/guide/GuidePermissionProbe.kt|cannot infer type for type parameter 'T'. Specify it explicitly.
+android/app/src/main/kotlin/com/mutx163/qingyu/platform/guide/GuidePermissionProbe.kt|unresolved reference 'flattenToString'.
+android/app/src/main/kotlin/com/mutx163/qingyu/platform/guide/GuidePermissionProbe.kt|unresolved reference 'KeepAliveAccessibilityService'.
+android/app/src/main/kotlin/com/mutx163/qingyu/platform/guide/GuidePermissionProbe.kt|unresolved reference 'KeepAliveAccessibilityService'.
+android/app/src/main/kotlin/com/mutx163/qingyu/platform/guide/GuidePermissionProbe.kt|unresolved reference 'KeepAliveAccessibilityStatus'.
+android/app/src/main/kotlin/com/mutx163/qingyu/platform/guide/GuidePermissionProbe.kt|unresolved reference 'KeepAliveAccessibilityStatus'.
+android/app/src/main/kotlin/com/mutx163/qingyu/platform/guide/GuidePermissionProbe.kt|unresolved reference 'UmengDiagnosticReporter'.
+android/app/src/main/kotlin/com/mutx163/qingyu/platform/guide/GuidePermissionProbe.kt|unresolved reference 'UmengDiagnosticReporter'.
+android/app/src/main/kotlin/com/mutx163/qingyu/platform/guide/GuidePermissionProbe.kt|unresolved reference. None of the following candidates is applicable because of a receiver type mismatch:
+android/app/src/main/kotlin/com/mutx163/qingyu/platform/PerfProbe.kt|unresolved reference 'BuildConfig'.
+android/app/src/main/kotlin/com/mutx163/qingyu/platform/PerfProbe.kt|unresolved reference 'BuildConfig'.
+android/app/src/main/kotlin/com/mutx163/qingyu/platform/PerfProbe.kt|unresolved reference 'BuildConfig'.
+android/app/src/main/kotlin/com/mutx163/qingyu/platform/PerfProbe.kt|unresolved reference 'BuildConfig'.
+android/app/src/main/kotlin/com/mutx163/qingyu/platform/PerfProbe.kt|unresolved reference 'BuildConfig'.
+android/app/src/main/kotlin/com/mutx163/qingyu/platform/PerfProbe.kt|unresolved reference 'BuildConfig'.
+android/app/src/main/kotlin/com/mutx163/qingyu/platform/PerfProbe.kt|unresolved reference 'BuildConfig'.

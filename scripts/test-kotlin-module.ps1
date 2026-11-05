@@ -258,6 +258,38 @@ if ($moduleSourceFiles.ContainsKey($cleanModule)) {
     }
 }
 
+# 纯接口 JVM 桩（2026-11-05 新增，**按需加载**）。
+#
+# 背景：模块目录里的源码是**整目录收、不做 Android 判定**的（第 3 步），所以只要目录里有一个
+# 文件随手实现了 Compose 的纯接口，整个模块的 L0 就编不过。活例：
+# `pages/timetable/HomeViewExpandMotion.kt` 是「时长 + 三次贝塞尔求值」的纯数学文件
+# （自述「本文件只放纯函数/纯常量」），只为交给渲染层而 `: Easing` 一下，结果
+# `import androidx.compose.animation.core.Easing` 在纯 JVM classpath 下解析不了，
+# 同模块所有人都失去「交活前自测」的通道。
+#
+# 做法：**只在本次收集到的源码真的 import 了某个纯接口时**才把它对应的桩文件加进去。
+# `Easing` 在 Compose 里就是 `fun interface Easing { fun transform(fraction: Float): Float }`，
+# 无状态、无 Android 依赖，桩与真实签名逐字一致；被 `override` 的实现照常编译、照常被测。
+#
+# 安全性（为什么不会影响别的模块）：
+# 1. 不 import 就不加 —— 其它模块的编译面**一字不变**；
+# 2. 只加桩，不改任何收集/过滤规则，`-ExtraSources` / `-ExcludeShared` 语义不变；
+# 3. 桩目录只放**纯接口**：模块若真用了 `Modifier` / `Color` / 组合函数，仍然照旧报红
+#    （那种文件本来就该待在渲染层，不该靠桩糊过去）。
+$jvmStubs = @(
+    @{ Path = "scripts/jvm-stubs/ComposeAnimationEasingStub.kt"; Pattern = "^\s*import\s+androidx\.compose\.animation\.core\.Easing\s*$" }
+)
+foreach ($stub in $jvmStubs) {
+    $absStub = Join-Path $repoRoot $stub.Path
+    if (-not (Test-Path $absStub)) { continue }
+    if ($sources -contains $absStub) { continue }
+    $needsStub = @(Select-String -Path $sources -Pattern $stub.Pattern -List)
+    if ($needsStub.Count -gt 0) {
+        Write-Host ">>> [test-kotlin-module] 源码引用了纯接口 Easing，补 JVM 桩：$($stub.Path)" -ForegroundColor DarkYellow
+        $sources += $absStub
+    }
+}
+
 if ($sources.Count -eq 0) {
     Write-Error "[test-kotlin-module] 模块 $cleanModule 下未找到任何 .kt 文件。"
     exit 1
