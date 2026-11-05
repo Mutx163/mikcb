@@ -7266,6 +7266,10 @@ class AppLocalizationsZh extends AppLocalizations {
   String get courseImportScriptNoCourses => '导入脚本未返回课程数据';
 
   @override
+  String get courseImportScriptStillRunning =>
+      '上一轮导入脚本还在执行，请等它结束后再试；长时间无反应请刷新页面';
+
+  @override
   String get courseImportScriptFailed => '脚本执行失败';
 
   @override
@@ -17361,6 +17365,10 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get courseImportScriptNoCourses => '匯入腳本未返回課程資料';
 
   @override
+  String get courseImportScriptStillRunning =>
+      '上一輪匯入腳本仍在執行，請等它結束後再試；長時間無反應請重新整理頁面';
+
+  @override
   String get courseImportScriptFailed => '腳本執行失敗';
 
   @override
@@ -27454,6 +27462,10 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get courseImportScriptNoCourses => '匯入腳本未傳回課程資料';
+
+  @override
+  String get courseImportScriptStillRunning =>
+      '上一輪匯入腳本仍在執行，請等它結束後再試；長時間沒有反應請重新整理頁面';
 
   @override
   String get courseImportScriptFailed => '腳本執行失敗';

@@ -4699,6 +4699,7 @@
     }
   },
   "courseImportScriptNoCourses": "导入脚本未返回课程数据",
+  "courseImportScriptStillRunning": "上一轮导入脚本还在执行，请等它结束后再试；长时间无反应请刷新页面",
   "courseImportScriptFailed": "脚本执行失败",
   "courseImportRecordingStatus": "录制中……点击停止完成录制",
   "courseImportRecordingStartedTip": "录制已开始，请按正常流程操作教务网站",

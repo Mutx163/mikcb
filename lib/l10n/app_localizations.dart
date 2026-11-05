@@ -13133,6 +13133,12 @@ abstract class AppLocalizations {
   /// **'导入脚本未返回课程数据'**
   String get courseImportScriptNoCourses;
 
+  /// No description provided for @courseImportScriptStillRunning.
+  ///
+  /// In zh, this message translates to:
+  /// **'上一轮导入脚本还在执行，请等它结束后再试；长时间无反应请刷新页面'**
+  String get courseImportScriptStillRunning;
+
   /// No description provided for @courseImportScriptFailed.
   ///
   /// In zh, this message translates to:

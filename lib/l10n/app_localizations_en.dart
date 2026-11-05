@@ -7597,6 +7597,10 @@ class AppLocalizationsEn extends AppLocalizations {
       'Import script returned no course data';
 
   @override
+  String get courseImportScriptStillRunning =>
+      'The previous import script is still running. Wait for it to finish, or refresh the page if it stays stuck.';
+
+  @override
   String get courseImportScriptFailed => 'Script execution failed';
 
   @override

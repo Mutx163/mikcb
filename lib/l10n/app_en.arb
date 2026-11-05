@@ -4644,6 +4644,7 @@
     }
   },
   "courseImportScriptNoCourses": "Import script returned no course data",
+  "courseImportScriptStillRunning": "The previous import script is still running. Wait for it to finish, or refresh the page if it stays stuck.",
   "courseImportScriptFailed": "Script execution failed",
   "courseImportRecordingStatus": "Recording… tap Stop to finish",
   "courseImportRecordingStartedTip": "Recording started. Continue through the academic portal as usual",

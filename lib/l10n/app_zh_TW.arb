@@ -4387,6 +4387,7 @@
     }
   },
   "courseImportScriptNoCourses": "匯入腳本未傳回課程資料",
+  "courseImportScriptStillRunning": "上一輪匯入腳本仍在執行，請等它結束後再試；長時間沒有反應請重新整理頁面",
   "courseImportScriptFailed": "腳本執行失敗",
   "courseImportRecordingStatus": "錄製中…點擊停止完成錄製",
   "courseImportRecordingStartedTip": "錄製已開始，請按正常流程操作教務網站",
