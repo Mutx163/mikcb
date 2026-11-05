@@ -1,10 +1,10 @@
 {
-  "updatedAt": "2026-11-04T07:54:02+00:00",
+  "updatedAt": "2026-11-05T08:20:15+00:00",
   "source": "https://github.com/Mutx163/qingyu_warehouse",
   "sourceRef": "main",
   "counts": {
-    "total": 273,
-    "schools": 268,
+    "total": 274,
+    "schools": 269,
     "generic": 5
   },
   "schools": [
@@ -944,6 +944,13 @@
       "name": "江苏科技大学",
       "initial": "J",
       "resourceFolder": "JUST",
+      "category": "school"
+    },
+    {
+      "id": "JXUTCM",
+      "name": "江西中医药大学",
+      "initial": "J",
+      "resourceFolder": "JXUTCM",
       "category": "school"
     },
     {
