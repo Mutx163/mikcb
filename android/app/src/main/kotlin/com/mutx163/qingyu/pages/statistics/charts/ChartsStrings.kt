@@ -180,6 +180,19 @@ object ChartsStrings {
     val statisticsShareTitle = ChartText("statisticsShareTitle", "我的学期统计")
 
     /**
+     * 成果图发不出去时的提示（ARB `serviceMsgStatisticsShareFailed`：`分享失败：{detail}`）。
+     *
+     * 2026-11-05 审核修复：Compose 分享「图发不出 → 降级纯文本」此前是无声的，用户
+     * 点的是分享图、收到的是文字面板。发布版三种失败都弹
+     * `showAppToast(localizeServiceMessage('statistics_share_failed', detail))`
+     * （`statistics_share_service.dart:78-117`），这里补齐同一条提示；`{detail}` 填
+     * 降级原因的机器短码（`rasterize_failed` 等，与 Dart 的 `capture_empty` 同性质的
+     * 自由文本位，不参与对拍）。降级本身保留：有产物（文本）比没有强。
+     */
+    val serviceMsgStatisticsShareFailed =
+        ChartText("serviceMsgStatisticsShareFailed", "分享失败：{detail}")
+
+    /**
      * 分享正文（ARB `statisticsShareText`：`来自轻屿课表的学期统计`）。
      *
      * Dart 分享的是「图片 + 这段正文」（`statistics_share_service.dart:104-108`）。
@@ -335,7 +348,7 @@ object ChartsStrings {
         statisticsExportTitle, statisticsExportAction, statisticsExportSelectModuleHint,
         statisticsExportModulesSection, statisticsExportModuleOverview,
         statisticsExportRankingMore, statisticsExportBrandTagline,
-        statisticsShareTitle, statisticsShareText, timetableAppName,
+        statisticsShareTitle, statisticsShareText, serviceMsgStatisticsShareFailed, timetableAppName,
         weekdayMon, weekdayTue, weekdayWed, weekdayThu, weekdayFri, weekdaySat, weekdaySun,
         weekdayShortMonday, weekdayShortTuesday, weekdayShortWednesday,
         weekdayShortThursday, weekdayShortFriday, weekdayShortSaturday, weekdayShortSunday,

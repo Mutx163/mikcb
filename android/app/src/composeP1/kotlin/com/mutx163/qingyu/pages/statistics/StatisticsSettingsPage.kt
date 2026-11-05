@@ -1,5 +1,6 @@
 package com.mutx163.qingyu.pages.statistics
 
+import android.widget.Toast
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -12,6 +13,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import com.mutx163.qingyu.components.QingyuCard
 import com.mutx163.qingyu.components.QingyuPageCardMargin
@@ -63,6 +65,13 @@ fun StatisticsSettingsPage(
     val subtitle = remember(enabled, viewState.nextFireAt) {
         StatisticsSettingsLogic.subtitle(enabled, viewState.nextFireAt)
     }
+    // 结果提示走本页（2026-11-05 审核修复）：对齐 Dart `_setWeeklyReportEnabled` 的
+    // 两条反馈——成功 `weeklyReportEnabledHint` / `weeklyReportDisabledHint`、失败
+    // `saveFailed`（statistics_settings_screen.dart:88-111）。此前 Compose 版
+    // 成败都无提示。宿主回调同步执行，落盘/调度抛错时**回滚开关**再提示，
+    // 不让「界面开着、实际没排上」。文案取模型层现成的
+    // [StatisticsSettingsLogic.toggleResultMessage] / `SAVE_FAILED_MESSAGE`。
+    val context = LocalContext.current
 
     // 大标题折叠行为由骨架统一持有（Dart lib/screens/statistics_settings_screen.dart:23
     // 走 HyperosSubpage，collapsibleLargeTitle 默认 true ⇒ 用骨架默认的可折叠大标题变体）。
@@ -85,9 +94,26 @@ fun StatisticsSettingsPage(
                 ) {
                     SwitchPreference(
                         checked = enabled,
-                        onCheckedChange = {
-                            enabled = it
-                            onWeeklyReportToggle(it)
+                        onCheckedChange = { want ->
+                            val previous = enabled
+                            enabled = want
+                            try {
+                                onWeeklyReportToggle(want)
+                                Toast.makeText(
+                                    context,
+                                    StatisticsSettingsLogic.toggleResultMessage(want),
+                                    Toast.LENGTH_SHORT,
+                                ).show()
+                            } catch (error: Throwable) {
+                                // 落盘/调度失败：开关回滚 + 诚实提示（Dart 同语义，
+                                // `_setWeeklyReportEnabled` 的 catch 分支）。
+                                enabled = previous
+                                Toast.makeText(
+                                    context,
+                                    StatisticsSettingsLogic.SAVE_FAILED_MESSAGE,
+                                    Toast.LENGTH_SHORT,
+                                ).show()
+                            }
                         },
                         title = viewState.tileTitle,
                         summary = subtitle,

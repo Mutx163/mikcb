@@ -31,6 +31,10 @@ import com.mutx163.qingyu.pages.statistics.StatisticsAnalysisModel.StatisticsAna
 import com.mutx163.qingyu.components.QingyuPageCardMargin
 import com.mutx163.qingyu.components.QingyuPageList
 import com.mutx163.qingyu.components.QingyuPageScaffold
+import com.mutx163.qingyu.pages.statistics.charts.HeatmapModel
+import com.mutx163.qingyu.pages.statistics.charts.SemesterHeatmapCard
+import com.mutx163.qingyu.pages.statistics.charts.TrendChartCard
+import com.mutx163.qingyu.pages.statistics.charts.TrendChartModel
 import com.mutx163.qingyu.theme.QingyuTheme
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import top.yukonga.miuix.kmp.basic.Icon
@@ -147,8 +151,8 @@ private fun AnalysisCard(
             }
 
             when (cell.role) {
-                AnalysisCardRole.TREND_CHART -> TrendRows(viewState, cell.standalone)
-                AnalysisCardRole.HEATMAP -> HeatmapRows(viewState)
+                AnalysisCardRole.TREND_CHART -> TrendChart(viewState)
+                AnalysisCardRole.HEATMAP -> HeatmapCard(viewState)
                 AnalysisCardRole.TIME_UTILIZATION -> TimeUtilRows(viewState, cell.standalone)
                 AnalysisCardRole.VENUE -> VenueRows(viewState, cell.standalone)
                 AnalysisCardRole.TEACHER -> TeacherRows(viewState)
@@ -159,47 +163,56 @@ private fun AnalysisCard(
     }
 }
 
+/**
+ * 每周课时趋势 —— 真折线图（2026-11-05 审核修复，替换原「第 N 周 | 数字」文字行）。
+ *
+ * 复用 [TrendChartCard]（面积 + 曲线 + 圆点 + 未来周浅色虚线预告），规格由
+ * [TrendChartModel.build] 按 **当前教学周** 划分实线/虚线段（viewState 现在直接带
+ * `currentWeek`，与 Dart `TrendChart(currentWeek:)` 同口径，`trend_chart.dart:17`）。
+ *
+ * 图卡自带标题行（`ChartCardHeader`），因此这里不再叠卡片小标题——与
+ * Dart `TrendChart` 是 `HyperosControlCard` 自带头部一致；standalone 差异
+ * （独立页放大读数）对真图无意义，忽略。
+ */
 @Composable
-private fun TrendRows(viewState: StatisticsAnalysisViewState, standalone: Boolean) {
+private fun TrendChart(viewState: StatisticsAnalysisViewState) {
     val dark = isSystemInDarkTheme()
-    if (viewState.trend.isEmpty()) {
+    val spec = androidx.compose.runtime.remember(viewState.trend, viewState.currentWeek) {
+        TrendChartModel.build(viewState.trend, currentWeek = viewState.currentWeek)
+    }
+    if (spec == null) {
         MutedLine(viewState.emptyTitle)
         return
     }
-    // 折线本身不在这里画（Dart TrendChart 属 widget 大件，本批不迁），
-    // 这里给出每周课时读数行，保证信息不丢。
-    for (point in viewState.trend.take(6)) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-        ) {
-            Text(
-                text = StatisticsExtStrings.weekLabel.filled("week", point.weekNumber.toString()),
-                style = if (standalone) MiuixTheme.textStyles.main else MiuixTheme.textStyles.body2,
-                color = Color(QingyuTheme.secondaryText(dark)),
-            )
-            Text(
-                text = "${point.sections}",
-                style = (if (standalone) MiuixTheme.textStyles.title4 else MiuixTheme.textStyles.main)
-                    .shiftWeight(QingyuWeightDelta.SEMIBOLD),
-                color = Color(QingyuTheme.primaryText(dark)),
+    TrendChartCard(spec = spec, dark = dark)
+}
+
+/**
+ * 学期热力图 —— 真格子（2026-11-05 审核修复，替换原一句话总结行）。
+ *
+ * 复用 [SemesterHeatmapCard]（7 行 × N 列方格、四档主色透明度、周次标签、
+ * 周数多时横向滚动），规格由
+ * [com.mutx163.qingyu.pages.statistics.charts.HeatmapModel.build] 按 **当前教学周**
+ * 裁剪（未来周置 0 再算标度，与 Dart `heatmap_card.dart` 同口径）。viewState 现在
+ * 直接带模型层算好的原始矩阵 `heatmap`（`StatisticsService.calculateHeatmap` 的
+ * 真返回值，此前只留了峰值把矩阵扔了）。
+ */
+@Composable
+private fun HeatmapCard(viewState: StatisticsAnalysisViewState) {
+    val dark = isSystemInDarkTheme()
+    val spec = androidx.compose.runtime.remember(viewState.heatmap, viewState.currentWeek) {
+        viewState.heatmap?.let { heatmap ->
+            HeatmapModel.build(
+                heatmap = heatmap,
+                currentWeek = viewState.currentWeek,
             )
         }
     }
-}
-
-@Composable
-private fun HeatmapRows(viewState: StatisticsAnalysisViewState) {
-    val dark = isSystemInDarkTheme()
-    if (viewState.heatmapMax <= 0) {
+    if (spec == null) {
         MutedLine(viewState.emptyTitle)
         return
     }
-    Text(
-        text = viewState.heatmapSummary,
-        style = MiuixTheme.textStyles.body2,
-        color = Color(QingyuTheme.primaryText(dark)),
-    )
+    SemesterHeatmapCard(spec = spec, dark = dark)
 }
 
 @Composable

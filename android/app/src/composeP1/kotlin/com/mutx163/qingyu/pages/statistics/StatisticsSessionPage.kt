@@ -16,6 +16,10 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -34,20 +38,21 @@ import com.mutx163.qingyu.pages.statistics.StatisticsSessionModel.CoverageRow
 import com.mutx163.qingyu.pages.statistics.StatisticsSessionModel.SessionRow
 import com.mutx163.qingyu.pages.statistics.StatisticsSessionModel.StatisticsSessionViewState
 import com.mutx163.qingyu.pages.statistics.StatisticsSessionModel.SummaryMetric
+import com.mutx163.qingyu.pages.timetable.day.DayViewStrings
 import com.mutx163.qingyu.theme.QingyuTheme
+import top.yukonga.miuix.kmp.preference.WindowDropdownPreference
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.TopDownloads
-import top.yukonga.miuix.kmp.preference.ArrowPreference
 
 /**
  * 单节课明细页 · Compose 渲染层（Phase 3）。
  *
  * 对应 Flutter `lib/screens/statistics_session_screen.dart`（147 行）：
  * - 顶栏：返回 + "单节课明细"；
- * - 课程选择行（`ArrowPreference`，对应 `HyperosSelectTile<String>`）；
+ * - 课程选择行（`WindowDropdownPreference`，对应 `HyperosSelectTile<String>`，任意一门直达）；
  * - 没设开学日期时一行提示（`statisticsSessionNoCalendarHint`）；
  * - 四格汇总（课次 / 已过 / 课时 / 有备注，首格强调）；
  * - 「记录覆盖」块：三行进度（有备注 / 有作业 / 设过提醒）；
@@ -117,27 +122,31 @@ fun StatisticsSessionPage(
                     modifier = Modifier.fillMaxWidth(),
                     verticalArrangement = Arrangement.spacedBy(12.dp),
                 ) {
-                    // ── 课程选择行 ──
-                    QingyuCard(modifier = Modifier.fillMaxWidth(), insideMargin = PaddingValues(vertical = 2.dp)) {
-                        val current = viewState.selectedCourse ?: ""
-                        ArrowPreference(
-                            title = viewState.courseLabel,
-                            summary = current,
-                            onClick = {
-                                // 选中项由宿主决定（模型层 resolveSelection 收敛），
-                                // 这里只把「用户点了哪一门」上报。没有下拉是因为官方
-                                // ArrowPreference 不带选项集；宿主侧弹选择器。
-                                val next = viewState.courseNames.let { names ->
-                                    if (names.isEmpty()) {
-                                        current
-                                    } else {
-                                        val index = names.indexOf(current)
-                                        names[(index + 1) % names.size]
-                                    }
-                                }
-                                onSelectCourse(next)
-                            },
-                        )
+                    // ── 课程选择行（2026-11-05 审核修复：真下拉选择，替换「点一下换下一门」轮换）──
+                    // 官方 [WindowDropdownPreference]：点行弹窗内列表，任意一门直达，
+                    // 选中项高亮 + 行尾箭头；课多时不再要连点 N 次。
+                    // 「共 N 门」副标题复用 timetable/day 域的既有 ARB 键
+                    // `courseCountSummary`（"{count} 门课"，逐字一致）——统计域没有
+                    // 现成的门数文案，而新增 ARB 键会触发死键扫描（Dart 侧无人用），
+                    // 跨包复用既有键是仓内先例（warehouse 宿主复用 `aboutUnavailable` 同款）。
+                    // 显式 isNotEmpty 兜底（2026-11-05 成员八复核④）：不依赖「空态先行
+                    // return」的隐式契约——上游契约一变，这里宁可不画，不画空下拉。
+                    if (viewState.courseNames.isNotEmpty()) {
+                        QingyuCard(modifier = Modifier.fillMaxWidth(), insideMargin = PaddingValues(0.dp)) {
+                            val names = viewState.courseNames
+                            WindowDropdownPreference(
+                                // 偏好行按压 ripple 是矩形；裁到卡片圆角（16dp），按压态才
+                                // 完整贴合圆角框（同 AddExamPage 提醒行 2026-11-04 的修法）。
+                                modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(16.dp)),
+                                items = names,
+                                selectedIndex = names.indexOf(viewState.selectedCourse).coerceAtLeast(0),
+                                title = viewState.courseLabel,
+                                summary = DayViewStrings.courseCountSummary(names.size),
+                                onSelectedIndexChange = { index ->
+                                    names.getOrNull(index)?.let(onSelectCourse)
+                                },
+                            )
+                        }
                     }
 
                     // ── 没设开学日期的提示 ──

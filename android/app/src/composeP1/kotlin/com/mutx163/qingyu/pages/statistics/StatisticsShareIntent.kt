@@ -5,7 +5,9 @@ import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import android.util.Log
+import android.widget.Toast
 import androidx.core.content.FileProvider
+import com.mutx163.qingyu.pages.statistics.charts.ChartsStrings
 import java.io.File
 
 /**
@@ -97,6 +99,18 @@ internal fun shareStatisticsImage(context: Context, text: String, subject: Strin
     ) {
         is StatisticsShareImageDecision.Decision.FallbackToText -> {
             Log.w(LOG_TAG, "这次不发图，降级成纯文本分享：${decision.reason}")
+            // 2026-11-05 审核修复：降级不再无声。用户点的是「分享图」，收到的却是
+            // 文字面板——发布版三种失败都弹「分享失败：{detail}」
+            // （statistics_share_service.dart:78-117 的 showAppToast），这里补齐同一条。
+            // EMPTY_CONTENT 不提示：那不是失败，是没有内容（payload 为 null 的诚实出口）。
+            if (decision.reason != StatisticsShareImageDecision.FallbackReason.EMPTY_CONTENT) {
+                Toast.makeText(
+                    context,
+                    ChartsStrings.serviceMsgStatisticsShareFailed
+                        .filled("detail", decision.reason.toDetailCode()),
+                    Toast.LENGTH_SHORT,
+                ).show()
+            }
             false
         }
 
@@ -106,6 +120,21 @@ internal fun shareStatisticsImage(context: Context, text: String, subject: Strin
 }
 
 // ---------------------------------------------------------------------- 搬砖
+
+/**
+ * 降级原因 → toast `{detail}` 位的机器短码。
+ *
+ * 对齐 Dart `statistics_share_service.dart` 的 detail 取值风格（`capture_empty` /
+ * `overlay_missing` 一类小写下划线码）：这不是用户文案，是排障锚点——真因要查日志
+ * （[LOG_TAG] 里有完整 reason）。与发布版同口径：detail 原样进模板，不做二次转义。
+ */
+private fun StatisticsShareImageDecision.FallbackReason.toDetailCode(): String = when (this) {
+    StatisticsShareImageDecision.FallbackReason.EMPTY_CONTENT -> "empty_content"
+    StatisticsShareImageDecision.FallbackReason.RASTERIZE_FAILED -> "rasterize_failed"
+    StatisticsShareImageDecision.FallbackReason.WRITE_FAILED -> "write_failed"
+    StatisticsShareImageDecision.FallbackReason.PROVIDER_UNAVAILABLE -> "provider_unavailable"
+    StatisticsShareImageDecision.FallbackReason.NO_TARGET -> "no_target"
+}
 
 /** 把 PNG 写进 `cacheDir` 的**已登记**子目录；失败回 null（不抛、不吞原因）。 */
 private fun writeSharePng(context: Context, relativePath: String, png: ByteArray): File? = runCatching {
@@ -152,7 +181,19 @@ private fun launchImageShare(
         context.startActivity(chooser)
         true
     }.getOrElse {
+        // 2026-11-05 成员八复核②：这里此前无声降级——用户点的是分享图、收到的是
+        // 文字面板，没有任何解释（FallbackToText 分支的提示只覆盖判决期失败，
+        // NO_TARGET 发生在判决之后、永远走不到）。补齐同一条提示，
+        // 文案复用 ARB 既有键 `serviceMsgStatisticsShareFailed`。
         Log.w(LOG_TAG, "没有能接收图片分享的应用，降级成纯文本分享", it)
+        Toast.makeText(
+            context,
+            ChartsStrings.serviceMsgStatisticsShareFailed.filled(
+                "detail",
+                StatisticsShareImageDecision.FallbackReason.NO_TARGET.toDetailCode(),
+            ),
+            Toast.LENGTH_SHORT,
+        ).show()
         false
     }
 }

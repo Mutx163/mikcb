@@ -28,6 +28,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import com.mutx163.qingyu.pages.statistics.charts.WeekStatsView
+import com.mutx163.qingyu.pages.timetable.WeekSelectorSheet
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
@@ -133,6 +134,10 @@ fun CourseStatisticsPage(
 ) {
     val dark = isSystemInDarkTheme()
     var activeAchievementDetail by remember { mutableStateOf<AchievementView?>(null) }
+    // 周次选择弹层（2026-11-05 审核修复：复用 timetable 域现成的 [WeekSelectorSheet]，
+    // 替换「点一下 +1、到头回 1」的循环——卡片右侧箭头本来就是「展开选周」的语义，
+    // 与 Dart `_showPicker`（`week_selector_picker_sheet.dart`）同口径）。
+    var showWeekPicker by remember { mutableStateOf(false) }
     // 分段切换时列表会保留滚动位置：学期视图滚到深处再切到周视图，
     // 周视图只剩 1 个 item，会停在中段而不是从头看。切分段就回到顶部。
     val listState = rememberLazyListState()
@@ -290,10 +295,7 @@ fun CourseStatisticsPage(
                                     comparison = comparison,
                                     dark = dark,
                                     timeUtilization = week.timeUtilization,
-                                    onWeekSelectorClick = {
-                                        val nextWeek = if (week.weekNumber >= week.maxWeek) 1 else week.weekNumber + 1
-                                        onWeekChanged(nextWeek)
-                                    },
+                                    onWeekSelectorClick = { showWeekPicker = true },
                                 )
                             } else {
                                 WeekOverviewCard(
@@ -313,6 +315,20 @@ fun CourseStatisticsPage(
             achievement = activeAchievementDetail,
             dark = dark,
             onDismiss = { activeAchievementDetail = null },
+        )
+
+        // 周次选择弹层：可选周 = 1..学期总周数（Dart `settings.availableWeeks` 同口径），
+        // 「回本周」由弹层内部按 currentSemesterWeek 自行显隐（TimetableWeekPage 同款接线）。
+        WeekSelectorSheet(
+            show = showWeekPicker,
+            availableWeeks = (1..viewState.semesterWeekCount).toList(),
+            visibleWeek = viewState.selectedWeek,
+            currentSemesterWeek = viewState.currentWeek,
+            onDismiss = { showWeekPicker = false },
+            onSelect = { week ->
+                showWeekPicker = false
+                if (week != viewState.selectedWeek) onWeekChanged(week)
+            },
         )
     }
 }

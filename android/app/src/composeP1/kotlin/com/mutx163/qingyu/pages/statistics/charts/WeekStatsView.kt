@@ -45,8 +45,10 @@ import top.yukonga.miuix.kmp.theme.MiuixTheme
  *    （`StatisticsService.calculateWeeklyComparison` / `calculateTimeUtilization`）。
  *    这里改成由调用方传入——统计服务是纯 Kotlin、已在模型层，视图再算一遍会让
  *    "同一屏两次计算可能不一致"重新出现（Dart 那边其实就有这个隐患）。
- * 2. 周选择器点击后的**周次选择弹窗**（`week_selector_picker_sheet.dart`）
- *    不在本批 22 件里，因此这里只暴露 [onWeekSelectorClick] 回调；不传就不可点。
+ * 2. 周选择器点击后的**周次选择弹窗**：复用 timetable 域的 [WeekSelectorSheet]
+ *    （由调用方 `CourseStatisticsPage` 挂载），本组件只上抛
+ *    [onWeekSelectorClick]——2026-11-05 起点击打开弹层选任意周 + 「回本周」，
+ *    与 Dart `_showPicker`（`week_selector_picker_sheet.dart`）同口径。
  *
  * 每日分布柱图用的是周口径（[DailyChartModel.weekSpec]，高 150、刻度占位 26），
  * 与学期口径的学期平均课时图（高 168、占位 28）**不是同一张图**，别混用。

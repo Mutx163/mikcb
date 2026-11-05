@@ -159,10 +159,20 @@ object StatisticsAnalysisModel {
         val hasData: Boolean,
         val cells: List<AnalysisCell>,
 
+        /** 当前教学周（趋势折线/热力图的实线-虚线分界与「未来周置 0」裁剪口径）。 */
+        val currentWeek: Int = 1,
+
         // ── 趋势页 ──
         val trend: List<com.mutx163.qingyu.statistics.WeeklyTrendPoint> = emptyList(),
 
         // ── 热力图 ──
+        /**
+         * 原始矩阵（`StatisticsService.calculateHeatmap` 的真返回值，周 × 天课时密度）。
+         * 2026-11-05 审核修复：渲染层换真格子卡（`SemesterHeatmapCard`），需要完整矩阵
+         * 而不只是峰值——此前这里只留 `heatmapMax`、把矩阵扔了，热力图卡因此一直是
+         * 一句话总结。`null` = 无课 / 模型层没算（保持「整卡不渲染」口径）。
+         */
+        val heatmap: com.mutx163.qingyu.statistics.SemesterHeatmap? = null,
         val heatmapMax: Int = 0,
         val heatmapSummary: String = "",
 
@@ -204,7 +214,9 @@ object StatisticsAnalysisModel {
         module: StatisticsAnalysisModule,
         courseCount: Int,
         hasOtherProfiles: Boolean = true,
+        currentWeek: Int = 1,
         trend: List<com.mutx163.qingyu.statistics.WeeklyTrendPoint> = emptyList(),
+        heatmap: com.mutx163.qingyu.statistics.SemesterHeatmap? = null,
         heatmapMax: Int = 0,
         heatmapSummary: String = "",
         timeUtilRows: List<Pair<String, String>> = emptyList(),
@@ -217,7 +229,9 @@ object StatisticsAnalysisModel {
         title = title(module),
         hasData = hasData(courseCount),
         cells = cells(module, hasOtherProfiles),
+        currentWeek = currentWeek,
         trend = trend,
+        heatmap = heatmap,
         heatmapMax = heatmapMax,
         heatmapSummary = heatmapSummary,
         timeUtilRows = timeUtilRows,
@@ -281,7 +295,9 @@ object StatisticsAnalysisModel {
                     module = module,
                     courseCount = courses.size,
                     hasOtherProfiles = hasOtherProfiles,
+                    currentWeek = week,
                     trend = trend,
+                    heatmap = heatmap,
                     heatmapMax = heatmap.maxSections,
                     heatmapSummary = if (heatmap.maxSections > 0) {
                         ChartsStrings.statisticsHeatmapHint.zh
