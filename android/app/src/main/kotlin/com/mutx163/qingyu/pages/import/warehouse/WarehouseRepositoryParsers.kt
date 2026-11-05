@@ -29,6 +29,16 @@ object WarehouseFeedCodes {
     /** 全部候选都失败，且没走镜像。 */
     const val FETCH_FAILED_GITHUB = "warehouse_fetch_failed_github"
 
+    /**
+     * 网整体不通（挂 VPN/代理时断网、飞行模式、DNS 全灭）。
+     *
+     * 与上面两条的区别是**判据**：一个候选都没拿到 HTTP 状态码、至少一次失败能分清原因、
+     * 且试过 ≥2 台不同主机（见 `WarehouseRepositoryService.fetchFailedCode`）。
+     * 给独立码是为了让日志/后续 UI 能说「网不通」而不是「镜像挂了」——用户看着
+     * 「加载失败」去换镜像，实际上是 VPN 断了，那是最难自查的一类。
+     */
+    const val NETWORK_UNREACHABLE = "warehouse_network_unreachable"
+
     /** 脚本声明的 SHA-256 与下载内容不一致（与 Dart `warehouse_script_checksum_failed` 同名）。 */
     const val SCRIPT_CHECKSUM_FAILED = "warehouse_script_checksum_failed"
 

@@ -60,21 +60,57 @@ object WarehouseRepositoryUrls {
         source: WarehouseRepositorySource,
         relativePath: String,
         mirrorUrlPrefix: String? = defaultMirrorUrlPrefix,
-    ): List<String> {
+    ): List<String> = candidatePlan(source, relativePath, mirrorUrlPrefix).map { it.url }
+
+    /**
+     * 带**族**的候选链（顺序与 [candidateUrls] 完全一致）。
+     *
+     * 「族」是给快速收敛用的：四个镜像前缀其实是同一类设施（第三方代理），
+     * 其中一个连不上时，余下三个通常也一样——把它们逐个各等一个超时，
+     * 就是把「白等」乘上 4。拉取层据此在首个镜像传输失败后跳过同族其余候选。
+     *
+     * 主地址与 GitHub raw 回退**各算一族**、不参与跳过：它们是两台不同的真实服务，
+     * 国内网络里「raw 被丢包、镜像反而通」是常态，不能因为主地址失败就不再试镜像。
+     */
+    fun candidatePlan(
+        source: WarehouseRepositorySource,
+        relativePath: String,
+        mirrorUrlPrefix: String? = defaultMirrorUrlPrefix,
+    ): List<WarehouseCandidate> {
         val primary = primaryUrl(source, relativePath)
         val githubRaw = rawGitHubUrl(source, relativePath)
-        val candidates = mutableListOf(primary)
-        fun add(url: String) {
-            if (url != primary && url !in candidates) {
-                candidates.add(url)
+        val candidates = mutableListOf(WarehouseCandidate(primary, WarehouseCandidateFamily.PRIMARY))
+        fun add(url: String, family: WarehouseCandidateFamily) {
+            if (candidates.none { it.url == url }) {
+                candidates.add(WarehouseCandidate(url, family))
             }
         }
         if (source.host == WarehouseRepositoryHost.GITCODE) {
-            add(githubRaw)
+            add(githubRaw, WarehouseCandidateFamily.GITHUB_RAW_FALLBACK)
         }
         if (!mirrorUrlPrefix.isNullOrEmpty()) {
-            buildMirrorCandidateUrls(githubRaw, mirrorUrlPrefix).forEach(::add)
+            buildMirrorCandidateUrls(githubRaw, mirrorUrlPrefix).forEach { url ->
+                add(url, WarehouseCandidateFamily.MIRROR)
+            }
         }
         return candidates
     }
 }
+
+/** 候选属于哪一族（决定超时额度与「失败后是否跳过同族其余候选」）。 */
+enum class WarehouseCandidateFamily {
+    /** 主地址：GitCode v5 contents API 或 GitHub raw，取决于宿主。 */
+    PRIMARY,
+
+    /** GitCode 主地址失败后的 GitHub raw 回退（真实服务，不参与同族跳过）。 */
+    GITHUB_RAW_FALLBACK,
+
+    /** 第三方镜像代理（同族，一个失败就跳过其余）。 */
+    MIRROR,
+}
+
+/** 一条候选 = 地址 + 它属于哪一族。 */
+data class WarehouseCandidate(
+    val url: String,
+    val family: WarehouseCandidateFamily,
+)
