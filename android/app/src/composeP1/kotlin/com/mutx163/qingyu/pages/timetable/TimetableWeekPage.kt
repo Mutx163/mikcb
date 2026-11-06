@@ -44,6 +44,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.saveable.Saver
 import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
@@ -427,18 +428,31 @@ fun TimetableWeekPage(
     val dayExpandSettled by remember {
         derivedStateOf { currentDayMode && dayExpand.value >= 0.999f }
     }
-    // 展开层是否**已经挂载过**：打开过一次就跨开合保活，收起后不再卸载整棵树。
-    // 只有「从没打开过」才完全不组合（不占内存、不跑日视图的任何 effect）。
+    // 展开层是否**本次开合期间挂在树上**：打开时置真，收起动画播完就置假 ——
+    // 即**不跨开合保活**。周浏览时没有日视图的布局 / effect 成本（R07，`417db2569` 的口径），
+    // 代价是每次打开都要重新组合一次日视图整棵树，所以打开方向必须「先挂树、再播下推」
+    // （见下方 `LaunchedEffect(dayMode, dayContentComposed)` 的第一步）。
+    // 只有「从没打开过」或「已收起」才完全不组合（不占内存、不跑日视图的任何 effect）。
+    //
+    // ⚠️ 历史（2026-11-05 复核）：`ffb858ffd` 原本是「收起后保活、不再卸载整棵树」，
+    // `417db2569` 为了让周视图左右滑不卡改成了收起即卸载，但那段「保活」注释和
+    // `DayViewOverlayPerfWiringGuardTest` 的「保活」断言都没跟着改 —— 守卫因此咬不住真正
+    // 被改掉的行为，永远是绿的。现在注释按实话写，守卫要咬的是「先挂载后启动」的时序。
     var dayLayerReady by remember { mutableStateOf(dayMode) }
+    // 日视图子树是否**已完成至少一次组合**：由面板里的 [DayContentMountSignal] 在组合落地后
+    // 置真，收起卸载时清回假 —— 下一次打开要重新等这一下。
+    var dayContentComposed by remember { mutableStateOf(false) }
     LaunchedEffect(dayMode) {
         if (dayMode) dayLayerReady = true
     }
-    // 展开层**是否留在树上**：可见时当然留；不可见但已预热/挂载过也留（保活）。
+    // 展开层**是否留在树上**：可见时留；已挂载、但收起动画还在播的也留（动画得在原树上播完）。
     // 注意与 `dayVisible` 的分工：dayMounted 决定「组合/测量」，dayVisible 决定
-    // 「绘制与命中」——隐藏时树还在，但不画、不接事件（见下方展开层的 inert 门控）。
+    // 「绘制与命中」——隐藏时不画、不接事件（见下方展开层的 inert 门控）。
     val dayMounted = dayVisible || dayLayerReady
 
-    LaunchedEffect(dayMode) {
+    // ⚠️ 键里必须带 `dayContentComposed`：打开方向要靠它分两步走。
+    // 键只写 `dayMode` 就等于「首组合和动画第一帧挤同一帧」，正是本次要修的那一帧顿。
+    LaunchedEffect(dayMode, dayContentComposed) {
         val expandTarget = if (dayMode) 1f else 0f
         if (dayExpandReducedMotion || !currentDaySwitchAnimate) {
             // 两条都直接落定、不播逐帧形变：
@@ -447,8 +461,22 @@ fun TimetableWeekPage(
             //   「底栏/导航栏就是左右滑」，绝不能再播从上往下的展开/收起；横向由外层 Pager
             //   负责，这里瞬时落定。
             // snap 后 value 恰为 1.0/0.0，下方落定判据当帧即成立，不存在中间帧。
+            // ⚠️ 这一支必须留在下面的 gate **之前**：底栏切日要当帧落定，不能被「先挂树」拖一帧。
             dayExpand.snapTo(expandTarget)
-        } else {
+        } else if (dayMode && !dayContentComposed && dayContent != null) {
+            // ── 打开方向 · 第一步：先只挂树，不启动下推（2026-11-05 方案 1）──
+            // 收起即卸载（见上面 `dayLayerReady` 的口径）⇒ 每次打开的那一刻，整棵日视图
+            // （pager + 卡片 + 数据装配）都还一次没组合过。若这里直接 `animateTo`，
+            // 首组合 / 首测量就和动画第一帧挤在同一帧里，表现为「从上往下」一开头顿一下。
+            // 本帧面板刚组好，什么都不做；面板里的 [DayContentMountSignal] 会在本帧组合落地后
+            // 把 `dayContentComposed` 置真，键里带着它 ⇒ 本 effect 重进一次才走到下面的
+            // `animateTo`。中间这一帧用于测量 / 放置 / 绘制，动画因此从**已经画好的树**上起步。
+            // 等待期间 `dayExpand` 仍是 0（面板高 4%、alpha 0），屏幕上什么都看不见。
+            // 兜底：`dayContent == null` 时不进这一支（见上面的 gate 条件）——没有内容可挂就
+            // 照旧直接播，否则 `dayVisible` 会一直是真、命中层一直吃事件，页面就点不动了。
+        } else if (dayExpand.value != expandTarget) {
+            // 已经在终点就不白跑一趟协程：收尾清假会让本 effect 因第二个键再进一次，
+            // 那次 value 已等于目标（0→0），这里直接跳过，不重播一遍 animateTo。
             dayExpand.animateTo(
                 targetValue = expandTarget,
                 animationSpec = tween(durationMillis = dayExpandDuration, easing = dayExpandEasing),
@@ -457,9 +485,19 @@ fun TimetableWeekPage(
         // 收起**动画播完**后把展开层卸载：日视图关闭后隐藏的 DayViewPage 不再常驻组合树，
         // 周浏览时省掉它的布局/effect 成本（R07 减负）。只在落定（value==0）且已非日模式时卸，
         // 不在收起动画中途卸，避免重组打断收起动画。
+        // 「已组合过」的清假**不这里做**，见下面独立的 `LaunchedEffect(dayMounted)`：
+        // 它是本 effect 的键，在本 effect 体内写它会把自己取消重启。
         if (!dayMode && dayExpand.value <= 0f) {
             dayLayerReady = false
         }
+    }
+
+    // 展开层被卸载（dayMounted 真 → 假）后把「已组合过」清回假：下次打开必须重新挂树、
+    // 重新等一次首组合信号，否则会拿着上一次的旧值直接开播，又变回首组合与首帧抢同一帧。
+    // 单独立一个 effect：`dayContentComposed` 是上面那个计时 effect 的键，在那边体内写它
+    // 会把正在跑的 animateTo 取消掉。这里只在「树真的卸了」之后清。
+    LaunchedEffect(dayMounted) {
+        if (!dayMounted) dayContentComposed = false
     }
 
     // 收起落定后把周 pager 对到「日视图刚才看的那一周」：否则收起会跳回进日视图前的旧周。
@@ -919,6 +957,9 @@ fun TimetableWeekPage(
                                 LocalEmbeddedDayWallpaperBackdrop provides pageBackdrop,
                                 LocalDaySelectionBridge provides daySelectionBridge,
                             ) {
+                                // 首组合打点（两支都要有）：组合落地后置真 ⇒ 外面那个 effect
+                                // 重进一次才开播。写重复值不进快照（结构化相等），不会多一轮重组。
+                                DayContentMountSignal { dayContentComposed = true }
                                 dayContent(0.dp, Modifier)
                             }
                         }
@@ -970,6 +1011,9 @@ fun TimetableWeekPage(
                                         LocalEmbeddedDayWallpaperBackdrop provides pageBackdrop,
                                         LocalDaySelectionBridge provides daySelectionBridge,
                                     ) {
+                                        // 首组合打点（两支都要有）：组合落地后置真 ⇒
+                                        // 外面那个 effect 重进一次才开播。
+                                        DayContentMountSignal { dayContentComposed = true }
                                         dayContent(0.dp, Modifier)
                                     }
                                 }
@@ -1229,6 +1273,23 @@ private val WeekScrollStatesSaver: Saver<MutableMap<Int, ScrollState>, IntArray>
         }
     },
 )
+
+/**
+ * 日视图展开面板的「首组合」打点（2026-11-05 方案 1：打开拆两步）。
+ *
+ * 必须放在面板的挂载块（`dayMounted && dayContent != null` 那个 `if` 体内）**内部**、
+ * 紧挨 `dayContent(...)` 调用，且**横滑支与上下翻支各放一个**：两条都是进日视图的路
+ * （底栏「周/日」互点走横滑支、点星期栏某天走上下翻支），少一条那条路上就永远等不到信号、
+ * `dayExpand` 停在 0 但 `dayVisible` 已为真 ⇒ 命中层一直吃事件，页面点不动。
+ *
+ * 用 [SideEffect] 而不是在组合体里直接给状态赋值：SideEffect 在**本帧组合落地之后、测量之前**
+ * 执行，因此置真时子树已经组好、下一帧即可绘制；直接写会触发「组合期写状态」再补一轮重组。
+ * 重复置真不进快照（`mutableStateOf` 结构化相等），不会白白多跑一轮。
+ */
+@Composable
+private fun DayContentMountSignal(onMounted: () -> Unit) {
+    SideEffect(onMounted)
+}
 
 /**
  * 日视图展开面板的几何（高度 + 圆角裁剪），**读数后移到测量期 / 绘制期**。
