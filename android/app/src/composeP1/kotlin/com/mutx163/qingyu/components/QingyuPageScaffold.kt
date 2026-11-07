@@ -331,9 +331,50 @@ private fun backIconOrNull(
  * 未注入时骨架按窗口自算，平板 / 折叠屏竖屏宽窗立即生效，不依赖壳层改造。
  *
  * @param maxContentWidth 页面显式限宽；null（默认）时中宽/宽档自动用 640dp，紧凑档不限宽。
+ * @param enableTopBarBlur 是否给页面内容挂顶栏实时模糊采样层；含 WebView / 视频 / 相机等
+ *   自绘控件的页面传 `false`（否则会持续闪烁/重绘）。逐条说明见 [QingyuPageScaffoldBody]。
  */
 @Composable
 fun QingyuPageScaffold(
+    title: String,
+    onBack: () -> Unit,
+    actions: @Composable RowScope.() -> Unit = {},
+    bottomBar: (@Composable () -> Unit)? = null,
+    smallTopBar: Boolean = false,
+    maxContentWidth: Dp? = null,
+    enableTopBarBlur: Boolean = true,
+    content: @Composable QingyuPageContentScope.() -> Unit,
+) {
+    // ⚠️ 主题桥必须罩在**最外层**，把整个 `Scaffold`（顶栏、底栏、内容）都包进来。
+    // 两个壳用的是无参 `MiuixTheme { }`（配色恒亮）；只包内容槽的话，miuix 的
+    // `TopAppBar` / `SmallTopAppBar` 仍取亮色板 ⇒ 深色下全站约 50 页的顶栏发白。
+    //
+    // 嵌套安全（本项目既有的前提，仍然成立）：`QingyuPageTheme` 以**外层
+    // `LocalQingyuBaseDensity`** 为基准缩放字号，桥套桥不会把倍率乘两次；四个外观形参
+    // 的默认值取自 `LocalQingyuPageAppearance`，嵌套时读到的就是外层同一档 ⇒ 幂等。
+    // 见 `QingyuPageTheme.kt:147-159`（字号）与 `:58-63`（默认继承外层）。
+    QingyuPageTheme {
+        QingyuPageScaffoldBody(
+            title = title,
+            onBack = onBack,
+            actions = actions,
+            bottomBar = bottomBar,
+            smallTopBar = smallTopBar,
+            maxContentWidth = maxContentWidth,
+            enableTopBarBlur = enableTopBarBlur,
+            content = content,
+        )
+    }
+}
+
+/**
+ * 骨架主体（[QingyuPageScaffold] 的实现），**只由外面那层主题桥调用**。
+ *
+ * 单独抽出来，是为了让 [QingyuPageTheme] 能罩住 `Scaffold` 整体（含顶栏 / 底栏），
+ * 同时保持参数列表与公开签名一一对应——51 处调用点零改动。
+ */
+@Composable
+private fun QingyuPageScaffoldBody(
     title: String,
     onBack: () -> Unit,
     actions: @Composable RowScope.() -> Unit = {},
@@ -470,14 +511,12 @@ fun QingyuPageScaffold(
                 Modifier.fillMaxSize()
             }
             Box(modifier = contentModifier) {
-                // 页面主题桥兜住深色：壳用的是无参 MiuixTheme{ }（配色恒亮），
-                // 不在这里兜一层，深色下卡片仍是白底而正文取白字 → 内容不可读。
-                QingyuPageTheme {
-                    // 弹窗材质（本地 fork 的 DialogContentLayout 玻璃分支）与顶栏共用这条录像带
-                    // 采样页面内容，不另录第二份图层；backdrop 为 null 时消费方自动降级实心。
-                    CompositionLocalProvider(LocalQingyuPageBackdrop provides backdrop) {
-                        QingyuPageContentScope(innerPadding, scrollBehavior).content()
-                    }
+                // 主题桥已在最外层（罩住顶栏 / 底栏 / 内容），这里不再重复包一层；
+                // 只补「弹窗材质」的采样源：本地 fork 的 DialogContentLayout 玻璃分支与
+                // 顶栏共用这条录像带采样页面内容，不另录第二份图层；backdrop 为 null 时
+                // 消费方自动降级实心。
+                CompositionLocalProvider(LocalQingyuPageBackdrop provides backdrop) {
+                    QingyuPageContentScope(innerPadding, scrollBehavior).content()
                 }
             }
         }

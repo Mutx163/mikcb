@@ -42,6 +42,11 @@ import java.io.File
  * 范围外文件里的写法不归本守卫管，免得「一次提交变成一次重构」。
  * （`statusBarsPadding()` 这批债 2026-10-28 已被另一条泳道清完，`pages/` 下真调用 0 处。）
  *
+ * 2026-11-05 起范围多了一代形态：B 组把页面顶栏搬进了共用骨架 `QingyuPageScaffold`，
+ * 这批页面文件里**不再出现** `TopAppBar(`。它们由 [collapsibleSkeletonCallers] 纳入覆盖自检
+ * （`QingyuPageScaffold(` 且未传 `smallTopBar = true`），否则守卫的扫描面会随迁移一路缩小、
+ * 退化成空跑。接线判据那组（`用共用骨架的页面必须自己把滚动手势接上`）本来就管这些页。
+ *
  * ## 它是源码文本守卫，不是行为测试
  *
  * 和 `SettingsRowComponentGuardTest` 同一套路：真机截图要用户配合、CI 里跑不了，
@@ -227,6 +232,18 @@ class PageScaffoldGuardTest {
             .filter { (_, text) -> collapsibleTopAppBarRegex.containsMatchIn(text) }
 
     /**
+     * 范围 S2：用共用骨架渲染**可折叠大标题**的调用页（顶栏在骨架内部，页面里不再出现 `TopAppBar(`）。
+     *
+     * 与 [collapsibleBarPages] 是同一件事的两代形态：2026-11-05 B 组迁移之前顶栏写在页面里，
+     * 之后由 `QingyuPageScaffold` 提供。判据与 [hasCollapsibleSkeletonCall] 同一口径
+     * （`smallTopBar = true` 渲染单行小标题、没有大标题可收，不算），避免两处漂移。
+     */
+    private fun collapsibleSkeletonCallers(): List<Pair<String, String>> =
+        allPageFiles()
+            .map { relOf(it) to it.readText() }
+            .filter { (rel, text) -> rel !in sharedScaffolds && hasCollapsibleSkeletonCall(text) }
+
+    /**
      * 该文件有没有把滚动手势接上：挂 `nestedScroll(`，或把行为交给 `QingyuPageList`
      * （调用参数窗口里出现 `scrollBehavior`；窗口取 600 字符，够跨多行实参）。
      */
@@ -234,6 +251,23 @@ class PageScaffoldGuardTest {
         "nestedScroll(" in text || Regex("QingyuPageList\\([\\s\\S]{0,600}?scrollBehavior").containsMatchIn(text)
 
     private fun hasScrollable(text: String): Boolean = scrollableTokens.any { it in text }
+
+    /**
+     * 只留代码行：剥掉行尾注释与整行注释（双斜杠、星号开头、块注释开头三种），
+     * 以及 `import` 行。
+     *
+     * 用于「代码里有没有用某个组件」这类判据——KDoc 里的说明文字（如
+     * `settings/WallpaperPositionPickerPage.kt:73` 的「为什么是整屏、而不是
+     * `QingyuPageScaffold` + 列表」）不能算成真实调用，否则会造出假红。
+     */
+    private fun codeOnlyText(text: String): String =
+        text.lineSequence()
+            .map { it.substringBefore("//") }
+            .filterNot {
+                val t = it.trimStart()
+                t.startsWith("*") || t.startsWith("/*") || t.startsWith("import ")
+            }
+            .joinToString("\n")
 
     // ───────────────────────── 0. 守卫自己不能空跑 ─────────────────────────
 
@@ -243,18 +277,39 @@ class PageScaffoldGuardTest {
         // 下面每一条都会「零违规」地静静变绿——那比没有守卫更糟。
         val all = allPageFiles()
         val barPages = collapsibleBarPages()
+        val skeletonCallers = collapsibleSkeletonCallers()
         assertTrue(
             "只扫到 ${all.size} 个页面文件，明显不对——路径或源码集可能变了，守卫在空跑。",
             all.size >= 30,
         )
-        // 下限只防「判据失效后静默空跑」，不是覆盖率指标。
-        // 2026-11-03：共用骨架 `QingyuPageScaffold` 铺开后，直接在页面里组合
-        // `TopAppBar(` 的页面从 15+ 降到 12（其余页面的顶栏在骨架内部，由下面
-        // 「用共用骨架的页面必须自己把滚动手势接上」那组覆盖）。留 2 个余量给仍在
-        // 迁移中的页面；判据真坏了会掉到 0，不会停在 10。
         assertTrue(
-            "只扫到 ${barPages.size} 个有可折叠顶栏的页面，明显不对——判据可能写坏了，守卫在空跑。",
-            barPages.size >= 10,
+            "手拼 `TopAppBar(` 的页面一个都没扫到——判据可能写坏了" +
+                "（现应至少含 about/PagesCommon.kt 与 4 个仍在手拼的待迁页）。",
+            barPages.isNotEmpty(),
+        )
+        // 2026-11-05 B 组迁移后，顶栏从页面搬进 `QingyuPageScaffold`：这批页面不再出现
+        // `TopAppBar(`。若覆盖自检只看手拼顶栏，扫描面会从 15+ 掉到 5、看起来像判据坏了。
+        // 因此把「骨架调用页」并入同一条自检：手拼 + 骨架 = 全站可折叠顶栏页面的真实数量。
+        val collapsible = (barPages + skeletonCallers).distinctBy { it.first }
+        assertTrue(
+            "只扫到 ${collapsible.size} 个有可折叠大标题的页面（手拼顶栏 ${barPages.size} + " +
+                "共用骨架 ${skeletonCallers.size}），明显不对——判据可能写坏了，守卫在空跑。",
+            collapsible.size >= 10,
+        )
+        // 单页可翻转的覆盖自检：**代码里出现但解析不出骨架调用**的页面，说明
+        // 「组件名与左括号之间留空白 / 换行」这类合法排版把整页从骨架判据里漏掉了
+        // （与 `barMentionLines` 防的 `TopAppBar (` 是同一个坑）。
+        // 只看代码：KDoc 里解释「为什么不用骨架」的说明不该被判违规
+        // （`settings/WallpaperPositionPickerPage.kt` 就有一处这种注释）。
+        val unparsed = allPageFiles()
+            .map { relOf(it) to it.readText() }
+            .filter { (_, text) -> "QingyuPageScaffold" in codeOnlyText(text) && skeletonCallTexts(text).isEmpty() }
+            .map { it.first }
+        assertTrue(
+            "以下页面出现了 `QingyuPageScaffold` 却解析不出任何骨架调用" +
+                "（组件名与左括号之间可能有空白/换行，会让整页从守卫里消失）：\n" +
+                unparsed.joinToString("\n") { "  $it" },
+            unparsed.isEmpty(),
         )
     }
 
@@ -440,9 +495,7 @@ class PageScaffoldGuardTest {
      */
     @Test
     fun `用共用骨架的页面必须自己把滚动手势接上`() {
-        val callers = allPageFiles()
-            .map { relOf(it) to it.readText() }
-            .filter { (rel, text) -> rel !in sharedScaffolds && hasCollapsibleSkeletonCall(text) }
+        val callers = collapsibleSkeletonCallers()
         assertTrue(
             "只找到 ${callers.size} 个用骨架渲染可折叠大标题的调用页，明显不对——判据可能写坏了，守卫在空跑。",
             callers.size >= 6,
@@ -529,31 +582,99 @@ class PageScaffoldGuardTest {
         )
     }
 
+    /**
+     * 页面主题桥的**唯一真相**：必须在共用骨架内部，且罩住整个 `Scaffold`（含顶栏 / 底栏）。
+     *
+     * 背景：两个壳用的是无参 `MiuixTheme { }`（配色恒亮，`MiuixTheme.kt` 的 colors 默认值是
+     * 静态亮色板）。2026-11-06 之前桥只包**内容槽**，于是 miuix 的 `TopAppBar` /
+     * `SmallTopAppBar` 仍取亮色板 ⇒ 深色下全站约 50 页顶栏发白、标题按暗色墨取色后不可读。
+     * 修法是把桥提到公开壳里，罩住 `QingyuPageScaffoldBody`（= 整个 Scaffold）。
+     *
+     * 判据不认「文件里出现过 `QingyuPageTheme`」——`about/PagesCommon.kt` 就只 import 不包，
+     * 靠那种子串判据骗过了旧版守卫（假绿）。这里直接断公开壳的结构：桥 → Body(`Scaffold`）。
+     */
     @Test
-    fun `受管页面必须走页面主题桥`() {
-        // 两个壳用的是无参 MiuixTheme{ }（配色恒亮），页面侧必须自己兜住深色，
-        // 否则深色下卡片是白的、正文也取白 → 内容不可读。
-        // about 三页共用骨架，所以只要求 PagesCommon 里有；
-        // 其余 5 页各自包一层。
-        //
-        // 判据只认组件名出现，不钉调用写法（`QingyuPageTheme { … }` 与
-        // `QingyuPageTheme(content = …)` 都算），避免守卫变成格式警察。
+    fun `骨架内部必须自己罩住整页的主题桥`() {
+        val root = File(androidSrc(), "composeP1/kotlin/com/mutx163/qingyu/components")
+        val scaffoldFile = File(root, "QingyuPageScaffold.kt")
+        assertTrue("找不到共用骨架源码：${scaffoldFile.path}", scaffoldFile.isFile)
+        val code = codeOnlyText(scaffoldFile.readText())
+
         assertTrue(
-            "about/PagesCommon.kt 没有包 QingyuPageTheme，关于域三页在深色下会白字白底",
-            "QingyuPageTheme" in read("about/PagesCommon.kt"),
+            "公开壳 `fun QingyuPageScaffold(` 不见了——守卫无法验证，按失败处理。",
+            "fun QingyuPageScaffold(" in code,
         )
-        val standalone = listOf(
-            "schedule/AddScheduleItemPage.kt",
+        assertTrue(
+            "骨架公开壳没有把主题桥罩在 `QingyuPageScaffoldBody(` 外面：" +
+                "必须写成 `QingyuPageTheme { QingyuPageScaffoldBody(...) }`。" +
+                "若只是把桥放回内容槽，miuix 顶栏仍取亮色板 ⇒ 深色下顶栏发白（全站回归）。",
+            Regex("""QingyuPageTheme\s*\{\s*QingyuPageScaffoldBody\(""").containsMatchIn(code),
+        )
+        assertTrue(
+            "`QingyuPageScaffoldBody` 必须是 private：公开了就能被页面绕过主题桥直接调。",
+            "private fun QingyuPageScaffoldBody(" in code,
+        )
+        // 反回归：Body（Scaffold 本体）内部不许再出现第二层只包内容槽的主题桥。
+        val bodySection = code.substringAfter("private fun QingyuPageScaffoldBody(")
+        assertTrue(
+            "`QingyuPageScaffoldBody` 里又出现了 `QingyuPageTheme {`——桥只能有公开壳那一处，",
+            !Regex("""QingyuPageTheme\s*\{""").containsMatchIn(bodySection),
+        )
+    }
+
+    /**
+     * 页面侧：**必须走共用骨架**，且用骨架的页面不许自己再包主题桥（桥在骨架里，再包是重复，
+     * 也让「桥在哪」出现两份真相）。
+     *
+     * 例外：仍在手拼 `Scaffold(` + 顶栏、没走骨架的页面，桥还得自己包（它们不在本批里，
+     * 属二阶段真迁移，如 `schedule/AddScheduleItemPage.kt`）。
+     */
+    @Test
+    fun `用骨架的页面不许自己再包主题桥`() {
+        val offenders = allPageFiles()
+            .map { relOf(it) to it.readText() }
+            .filter { (_, text) ->
+                val code = codeOnlyText(text)
+                val usesSkeleton = "QingyuPageScaffold(" in code || "ImportPageScaffold(" in code
+                usesSkeleton && Regex("""QingyuPageTheme\s*\{""").containsMatchIn(code)
+            }
+            .map { it.first }
+        assertTrue(
+            "以下页面已经用共用骨架，却又在调用层包了一层 QingyuPageTheme" +
+                "（桥已在骨架内部，重复包装是噪声）：\n" +
+                offenders.joinToString("\n") { "  $it" },
+            offenders.isEmpty(),
+        )
+    }
+
+    /**
+     * 已完成迁移的受管页必须真的用骨架（不许回退成手拼 `Scaffold` + `TopAppBar`）。
+     *
+     * 名单只许缩小：二阶段把 `schedule/AddScheduleItemPage.kt` 也迁过来之后，从这份名单外的
+     * 待迁移集合里剔除（它现在仍手拼，故不在此列出）。
+     */
+    @Test
+    fun `已迁移的受管页面必须用共用骨架`() {
+        val migrated = listOf(
             "schedule/ScheduleDateRulePage.kt",
             "schedule/ScheduleListPage.kt",
             "task/AddTaskPage.kt",
             "task/TaskListPage.kt",
         )
-        val offenders = standalone.filter { "QingyuPageTheme" !in read(it) }
+        val offenders = migrated.filter { rel ->
+            val code = codeOnlyText(read(rel))
+            "QingyuPageScaffold(" !in code ||
+                Regex("""(?<![A-Za-z])TopAppBar\(""").containsMatchIn(code)
+        }
         assertTrue(
-            "以下页面没有包 QingyuPageTheme（深色下白字白底）：\n" +
+            "以下已迁移页面没有走共用骨架（或又出现了手拼 `TopAppBar(`）：\n" +
                 offenders.joinToString("\n") { "  $it" },
             offenders.isEmpty(),
+        )
+        // 反向探针口径：这四页若被改回手拼顶栏，上面的 `TopAppBar(` 判据必须抓到。
+        assertTrue(
+            "已迁移名单不能为空——空名单等于这条判据不存在。",
+            migrated.isNotEmpty(),
         )
     }
 }
