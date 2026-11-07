@@ -100,7 +100,7 @@ object SettingsAppearanceEditorPage {
         return SettingsPageSpec(
             id = ID,
             titleKey = TITLE.key,
-            title = TITLE.zh,
+            title = TITLE.text,
             nodes = nodes,
             // 预览不在顶栏下、整页也不滚动（:1581-1720 是 Positioned 叠层），
             // 折叠大标题这件事在本页没有意义。

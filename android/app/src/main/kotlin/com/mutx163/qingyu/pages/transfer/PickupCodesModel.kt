@@ -59,10 +59,10 @@ object PickupCodesModel {
          * 不能回落成键名（`pickupCodePresetFoo`）：键名非空，`entryTitle` 的
          * `takeIf { it.isNotBlank() }` 就永远走不到兜底，内部标识符会直接上屏。
          */
-        val title: String get() = TransferExtStrings.valueOf(titleKey)?.zh.orEmpty()
+        val title: String get() = TransferExtStrings.valueOf(titleKey)?.text.orEmpty()
 
         /** 屏上行说明；缺键时为空串，渲染层据此不画说明行。 */
-        val hint: String get() = TransferExtStrings.valueOf(hintKey)?.zh.orEmpty()
+        val hint: String get() = TransferExtStrings.valueOf(hintKey)?.text.orEmpty()
     }
 
     enum class Group { IDENTITY, PARCELS }
@@ -283,11 +283,11 @@ object PickupCodesModel {
         return title.substring(0, title.offsetByCodePoints(0, 1))
     }
 
-    val title: String get() = TransferExtStrings.pickupCodeTitle.zh
+    val title: String get() = TransferExtStrings.pickupCodeTitle.text
 
     fun groupTitle(group: Group): String = when (group) {
-        Group.IDENTITY -> TransferExtStrings.pickupCodeIdentitySectionTitle.zh
-        Group.PARCELS -> TransferExtStrings.pickupCodeParcelsSectionTitle.zh
+        Group.IDENTITY -> TransferExtStrings.pickupCodeIdentitySectionTitle.text
+        Group.PARCELS -> TransferExtStrings.pickupCodeParcelsSectionTitle.text
     }
 
     /** 某一组里的入口（保持表内顺序）。 */
@@ -321,20 +321,20 @@ object PickupCodesModel {
      * 少了兜底用户会看到「打不开「京东」：」后面空着。
      */
     fun reasonText(code: String): String = when (code) {
-        REASON_NO_ACTIVITY -> TransferExtStrings.pickupCodeReasonNoActivity.zh
-        REASON_APP_NOT_FOUND -> TransferExtStrings.pickupCodeReasonAppNotFound.zh
-        REASON_INVALID_URI -> TransferExtStrings.pickupCodeReasonInvalidUri.zh
-        REASON_INVALID_PACKAGE -> TransferExtStrings.pickupCodeReasonInvalidPackage.zh
-        REASON_TIMEOUT -> TransferExtStrings.pickupCodeReasonTimeout.zh
-        REASON_UNSUPPORTED -> TransferExtStrings.pickupCodeReasonUnsupported.zh
-        else -> TransferExtStrings.pickupCodeReasonUnknown.zh
+        REASON_NO_ACTIVITY -> TransferExtStrings.pickupCodeReasonNoActivity.text
+        REASON_APP_NOT_FOUND -> TransferExtStrings.pickupCodeReasonAppNotFound.text
+        REASON_INVALID_URI -> TransferExtStrings.pickupCodeReasonInvalidUri.text
+        REASON_INVALID_PACKAGE -> TransferExtStrings.pickupCodeReasonInvalidPackage.text
+        REASON_TIMEOUT -> TransferExtStrings.pickupCodeReasonTimeout.text
+        REASON_UNSUPPORTED -> TransferExtStrings.pickupCodeReasonUnsupported.text
+        else -> TransferExtStrings.pickupCodeReasonUnknown.text
     }
 
     // ── 跳转结果的三种话术 ──
 
     /** 一条入口的标题（找不到就是「未命名入口」，不显示空串）。 */
     fun entryTitle(preset: Preset?): String = preset?.title?.takeIf { it.isNotBlank() }
-        ?: TransferExtStrings.pickupCodeUntitledEntry.zh
+        ?: TransferExtStrings.pickupCodeUntitledEntry.text
 
     /** 该入口所在的组名（语义标签里要念出来，用户才知道这是身份码还是查件）。 */
     fun entryGroupTitle(preset: Preset): String = groupTitle(preset.group)
@@ -351,10 +351,10 @@ object PickupCodesModel {
         )
 
     /** 失败提示下面的建议行。 */
-    val launchFailedHint: String get() = TransferExtStrings.pickupCodeLaunchFailedHint.zh
+    val launchFailedHint: String get() = TransferExtStrings.pickupCodeLaunchFailedHint.text
 
     /** 平台完全不支持时的提示（桌面 / Web）。 */
-    val unsupportedMessage: String get() = TransferExtStrings.pickupCodeUnsupported.zh
+    val unsupportedMessage: String get() = TransferExtStrings.pickupCodeUnsupported.text
 
     /**
      * 无障碍标签（Dart `pickupCodeSemanticsEntry` + 未安装提示）。
@@ -369,7 +369,7 @@ object PickupCodesModel {
         return if (installed) {
             base
         } else {
-            base + "，" + TransferExtStrings.pickupCodeSemanticsNotInstalled.zh
+            base + "，" + TransferExtStrings.pickupCodeSemanticsNotInstalled.text
         }
     }
 }

@@ -303,8 +303,8 @@ fun CourseGridCard(
 
             // ── 左上角小字（非本周 / 冲突），Dart `compactOverlineText` ──
             val overline = when (model.overline) {
-                WeekCardOverline.NON_CURRENT_WEEK -> TimetableStrings.nonCurrentWeekLabel.zh
-                WeekCardOverline.CONFLICT -> TimetableStrings.conflictLabel.zh
+                WeekCardOverline.NON_CURRENT_WEEK -> TimetableStrings.nonCurrentWeekLabel.text
+                WeekCardOverline.CONFLICT -> TimetableStrings.conflictLabel.text
                 null -> null
             }
             if (overline != null) {
@@ -507,10 +507,10 @@ fun CourseGridCard(
         val badges = buildList {
             // 情侣课的「TA的课」角标（B1 第二阶段）：与日视图同一枚文案
             //（`DayViewStrings.coupleTimetableLegendPartner`），不新增 ARB 键。
-            if (model.isPartnerCourse) add(DayViewStrings.coupleTimetableLegendPartner.zh)
-            if (isHoliday) add(TimetableStrings.holidayBadgeLabel.zh)
-            if (model.isSuspended && !isHoliday) add(TimetableStrings.suspendedBadgeLabel.zh)
-            if (model.badge == WeekCardBadge.CONFLICT) add(TimetableStrings.conflictLabel.zh)
+            if (model.isPartnerCourse) add(DayViewStrings.coupleTimetableLegendPartner.text)
+            if (isHoliday) add(TimetableStrings.holidayBadgeLabel.text)
+            if (model.isSuspended && !isHoliday) add(TimetableStrings.suspendedBadgeLabel.text)
+            if (model.badge == WeekCardBadge.CONFLICT) add(TimetableStrings.conflictLabel.text)
         }
         if (model.hasReminder || badges.isNotEmpty()) {
             Row(
@@ -571,7 +571,7 @@ fun CourseGridCard(
             ) {
                 Icon(
                     imageVector = MiuixIcons.Tasks,
-                    contentDescription = TimetableStrings.courseTaskAction.zh,
+                    contentDescription = TimetableStrings.courseTaskAction.text,
                     modifier = Modifier.size(9.dp),
                     tint = Color(QingyuTheme.destructive()),
                 )

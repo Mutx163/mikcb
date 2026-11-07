@@ -85,7 +85,7 @@ object SettingsCourseCardPage {
         nodes += SettingsLabel(
             id = "courseCard.fields.label",
             textKey = SettingsStrings.courseCardSectionFields.key,
-            text = SettingsStrings.courseCardSectionFields.zh,
+            text = SettingsStrings.courseCardSectionFields.text,
         )
         nodes += SettingsGroup(
             id = "courseCard.fields",
@@ -111,7 +111,7 @@ object SettingsCourseCardPage {
         nodes += SettingsLabel(
             id = "courseCard.layout.label",
             textKey = SettingsStrings.courseCardSectionLayout.key,
-            text = SettingsStrings.courseCardSectionLayout.zh,
+            text = SettingsStrings.courseCardSectionLayout.text,
         )
         nodes += SettingsGroup(
             id = "courseCard.layout",
@@ -170,7 +170,7 @@ object SettingsCourseCardPage {
         nodes += SettingsLabel(
             id = "courseCard.color.label",
             textKey = SettingsStrings.courseCardSectionColor.key,
-            text = SettingsStrings.courseCardSectionColor.zh,
+            text = SettingsStrings.courseCardSectionColor.text,
         )
         nodes += SettingsGroup(
             id = "courseCard.color",
@@ -239,7 +239,7 @@ object SettingsCourseCardPage {
         nodes += SettingsLabel(
             id = "courseCard.textColors.label",
             textKey = SettingsStrings.appearanceTextColorsSectionTitle.key,
-            text = SettingsStrings.appearanceTextColorsSectionTitle.zh,
+            text = SettingsStrings.appearanceTextColorsSectionTitle.text,
         )
         nodes += SettingsGroup(
             id = "courseCard.textColors",
@@ -259,7 +259,7 @@ object SettingsCourseCardPage {
         nodes += SettingsLabel(
             id = "courseCard.textColors.light.label",
             textKey = SettingsStrings.themeModeLight.key,
-            text = SettingsStrings.themeModeLight.zh,
+            text = SettingsStrings.themeModeLight.text,
         )
         nodes += SettingsGroup(
             id = "courseCard.textColors.light",
@@ -270,7 +270,7 @@ object SettingsCourseCardPage {
         nodes += SettingsLabel(
             id = "courseCard.textColors.dark.label",
             textKey = SettingsStrings.themeModeDark.key,
-            text = SettingsStrings.themeModeDark.zh,
+            text = SettingsStrings.themeModeDark.text,
         )
         nodes += SettingsGroup(
             id = "courseCard.textColors.dark",
@@ -297,7 +297,7 @@ object SettingsCourseCardPage {
         return SettingsPageSpec(
             id = ID,
             titleKey = SettingsStrings.courseCardSettingsTitle.key,
-            title = SettingsStrings.courseCardSettingsTitle.zh,
+            title = SettingsStrings.courseCardSettingsTitle.text,
             nodes = nodes,
             collapsibleLargeTitle = false,
             previewFlex = 4,

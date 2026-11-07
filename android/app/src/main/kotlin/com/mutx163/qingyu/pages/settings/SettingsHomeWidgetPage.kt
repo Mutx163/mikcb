@@ -113,7 +113,7 @@ object SettingsHomeWidgetPage {
         nodes += SettingsLabel(
             id = "homeWidget.todayCourse.label",
             textKey = SettingsStringsExt2.homeWidgetTodayCourseTitle.key,
-            text = SettingsStringsExt2.homeWidgetTodayCourseTitle.zh,
+            text = SettingsStringsExt2.homeWidgetTodayCourseTitle.text,
         )
         nodes += SettingsGroup(
             id = "homeWidget.todayCourse",
@@ -176,7 +176,7 @@ object SettingsHomeWidgetPage {
             nodes += SettingsLabel(
                 id = "homeWidget.countdown.label",
                 textKey = SettingsStringsExt2.homeWidgetCountdownLeadTitle.key,
-                text = SettingsStringsExt2.homeWidgetCountdownLeadTitle.zh,
+                text = SettingsStringsExt2.homeWidgetCountdownLeadTitle.text,
             )
             nodes += SettingsGroup(
                 id = "homeWidget.countdown",
@@ -207,7 +207,7 @@ object SettingsHomeWidgetPage {
         nodes += SettingsLabel(
             id = "homeWidget.appearance.label",
             textKey = SettingsStringsExt2.homeWidgetAppearanceTitle.key,
-            text = SettingsStringsExt2.homeWidgetAppearanceTitle.zh,
+            text = SettingsStringsExt2.homeWidgetAppearanceTitle.text,
         )
         nodes += SettingsGroup(
             id = "homeWidget.appearance",
@@ -227,7 +227,7 @@ object SettingsHomeWidgetPage {
                         // `dialogHelper: l10n.homeWidgetHeightAdjustHint`）；圆角那根
                         // 原版没给 helper，也就没有弹框，保持不填。
                         dialogHelperKey = SettingsStringsExt2.homeWidgetHeightAdjustHint.key,
-                        dialogHelper = SettingsStringsExt2.homeWidgetHeightAdjustHint.zh,
+                        dialogHelper = SettingsStringsExt2.homeWidgetHeightAdjustHint.text,
                     ),
                     sliderValue = heightOffset(state.heightAdjustment),
                     action = SettingsAction.WRITE_SETTING,
@@ -254,7 +254,7 @@ object SettingsHomeWidgetPage {
         nodes += SettingsLabel(
             id = "homeWidget.binding.label",
             textKey = SettingsStringsExt2.homeWidgetBindingSectionTitle.key,
-            text = SettingsStringsExt2.homeWidgetBindingSectionTitle.zh,
+            text = SettingsStringsExt2.homeWidgetBindingSectionTitle.text,
         )
         nodes += bindingBlock(state)
 
@@ -280,7 +280,7 @@ object SettingsHomeWidgetPage {
         return SettingsPageSpec(
             id = ID,
             titleKey = SettingsStringsExt2.homeWidgetSettingsTitle.key,
-            title = SettingsStringsExt2.homeWidgetSettingsTitle.zh,
+            title = SettingsStringsExt2.homeWidgetSettingsTitle.text,
             nodes = nodes,
         )
     }
@@ -305,11 +305,11 @@ object SettingsHomeWidgetPage {
                 "十张卡片按 ${PREVIEW_TARGETS.size} 个格位由原生渲染后回传 PNG，" +
                 "渲染层见 HomeWidgetPreviewCarousel.kt",
             labelKey = SettingsStringsExt2.homeWidgetPreviewTitle.key,
-            label = SettingsStringsExt2.homeWidgetPreviewTitle.zh,
+            label = SettingsStringsExt2.homeWidgetPreviewTitle.text,
             texts = listOf(
                 SettingsInlineText(
                     SettingsStringsExt2.homeWidgetPreviewAddAction.key,
-                    SettingsStringsExt2.homeWidgetPreviewAddAction.zh,
+                    SettingsStringsExt2.homeWidgetPreviewAddAction.text,
                 ),
             ),
         )
@@ -321,13 +321,13 @@ object SettingsHomeWidgetPage {
             note = "精确闹钟权限引导（:1036-1065）：官方没有「图标 + 标题 + 正文 + 按钮」的提示条，" +
                 "用 Card 组出来（HyperosHintBanner 的对应物）",
             labelKey = SettingsStringsExt2.homeWidgetExactAlarmBannerTitle.key,
-            label = SettingsStringsExt2.homeWidgetExactAlarmBannerTitle.zh,
+            label = SettingsStringsExt2.homeWidgetExactAlarmBannerTitle.text,
             valueKey = SettingsStringsExt2.homeWidgetExactAlarmBannerText.key,
-            value = SettingsStringsExt2.homeWidgetExactAlarmBannerText.zh,
+            value = SettingsStringsExt2.homeWidgetExactAlarmBannerText.text,
             texts = listOf(
                 SettingsInlineText(
                     SettingsStringsExt2.homeWidgetExactAlarmGrantAction.key,
-                    SettingsStringsExt2.homeWidgetExactAlarmGrantAction.zh,
+                    SettingsStringsExt2.homeWidgetExactAlarmGrantAction.text,
                 ),
             ),
         )
@@ -347,7 +347,7 @@ object SettingsHomeWidgetPage {
             return SettingsDescription(
                 id = "homeWidget.binding.empty",
                 textKey = SettingsStringsExt2.homeWidgetBindingEmpty.key,
-                text = SettingsStringsExt2.homeWidgetBindingEmpty.zh,
+                text = SettingsStringsExt2.homeWidgetBindingEmpty.text,
             )
         }
         return SettingsGroup(
@@ -414,9 +414,9 @@ object SettingsHomeWidgetPage {
             add(
                 option(
                     minutes.toString(),
-                    ArbText(
-                        SettingsStringsExt2.beforeClassMinutesOption.key,
-                        SettingsStringsExt2.beforeClassMinutesOption.zh.replace("{minutes}", minutes.toString()),
+                    SettingsStringsExt2.beforeClassMinutesOption.withArguments(
+                        "minutes",
+                        minutes.toString(),
                     ),
                 ),
             )
@@ -458,7 +458,7 @@ object SettingsHomeWidgetPage {
      */
     fun heightAdjustmentLabel(stored: Double): String {
         val offset = heightOffset(stored)
-        if (offset == 0.0) return SettingsStringsExt2.defaultLabel.zh
+        if (offset == 0.0) return SettingsStringsExt2.defaultLabel.text
         val dpText = "${fixed0(kotlin.math.abs(offset))}dp"
         return if (offset > 0) {
             SettingsStringsExt2.higherByValue.filled("value", dpText)

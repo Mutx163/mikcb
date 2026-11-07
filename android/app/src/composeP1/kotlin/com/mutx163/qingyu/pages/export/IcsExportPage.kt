@@ -89,7 +89,7 @@ fun IcsExportPage(
 
     // 共享骨架：官方 TopAppBar + 标准返回键 + 顶栏毛玻璃；大标题可折叠
     // （Dart ics_export_screen.dart 的 HyperosSubpage 标题是纯 Text）。
-    QingyuPageScaffold(title = ExportStrings.icsExportTitle.zh, onBack = onBack) {
+    QingyuPageScaffold(title = ExportStrings.icsExportTitle.text, onBack = onBack) {
         // 不手写 statusBarsPadding()：官方 TopAppBar 自带系统栏顶部内边距，
         // 再写一次是叠加，标题会下移一个多状态栏高（2026-10-27）。
         QingyuPageList(
@@ -104,13 +104,13 @@ fun IcsExportPage(
         ) {
                 // ── 1. 课表选择 ──
                 item {
-                    QingyuSectionTitle(ExportStrings.icsExportProfileLabel.zh)
+                    QingyuSectionTitle(ExportStrings.icsExportProfileLabel.text)
                     // 卡里要么是 *Preference 行（自带 16dp），要么是自带 16dp 内边距的提示行，
                     // 所以**不传** insideMargin，避免叠成 32dp。
                     QingyuCard(modifier = Modifier.fillMaxWidth()) {
                         if (viewState.profiles.isEmpty()) {
                             Text(
-                                text = ExportStrings.icsExportNoProfiles.zh,
+                                text = ExportStrings.icsExportNoProfiles.text,
                                 style = MiuixTheme.textStyles.body2,
                                 color = Color(QingyuTheme.secondaryText(dark)),
                                 modifier = Modifier.padding(horizontal = 16.dp, vertical = 14.dp),
@@ -123,7 +123,7 @@ fun IcsExportPage(
                             OverlayDropdownPreference(
                                 items = labels,
                                 selectedIndex = selectedIndex,
-                                title = ExportStrings.icsExportProfileLabel.zh,
+                                title = ExportStrings.icsExportProfileLabel.text,
                                 onSelectedIndexChange = { index ->
                                     values.getOrNull(index)?.let(onSelectProfile)
                                 },
@@ -134,17 +134,17 @@ fun IcsExportPage(
 
                 // ── 2. 日期范围 ──
                 item {
-                    SectionLabel(ExportStrings.icsExportDateRangeTitle.zh, dark)
+                    SectionLabel(ExportStrings.icsExportDateRangeTitle.text, dark)
                     QingyuCard(modifier = Modifier.fillMaxWidth()) {
                         ArrowPreference(
-                            title = ExportStrings.icsExportStartDate.zh,
+                            title = ExportStrings.icsExportStartDate.text,
                             summary = IcsExportLogic.formatDate(options.fromDate),
                             onClick = {
                                 showDatePicker(context, options.fromDate, onFromDateChange)
                             },
                         )
                         ArrowPreference(
-                            title = ExportStrings.icsExportEndDate.zh,
+                            title = ExportStrings.icsExportEndDate.text,
                             summary = IcsExportLogic.formatDate(options.toDate),
                             onClick = {
                                 showDatePicker(context, options.toDate, onToDateChange)
@@ -155,20 +155,20 @@ fun IcsExportPage(
 
                 // ── 3. 日历内容 ──
                 item {
-                    SectionLabel(ExportStrings.icsExportTypesTitle.zh, dark)
+                    SectionLabel(ExportStrings.icsExportTypesTitle.text, dark)
                     QingyuCard(modifier = Modifier.fillMaxWidth()) {
                         CheckboxPreference(
-                            title = ExportStrings.icsExportCourses.zh,
+                            title = ExportStrings.icsExportCourses.text,
                             checked = options.eventKinds.contains(IcsExportEventKind.COURSE),
                             onCheckedChange = { onToggleEventKind(IcsExportEventKind.COURSE, it) },
                         )
                         CheckboxPreference(
-                            title = ExportStrings.icsExportExams.zh,
+                            title = ExportStrings.icsExportExams.text,
                             checked = options.eventKinds.contains(IcsExportEventKind.EXAM),
                             onCheckedChange = { onToggleEventKind(IcsExportEventKind.EXAM, it) },
                         )
                         CheckboxPreference(
-                            title = ExportStrings.icsExportSchedules.zh,
+                            title = ExportStrings.icsExportSchedules.text,
                             checked = options.eventKinds.contains(IcsExportEventKind.SCHEDULE_ITEM),
                             onCheckedChange = {
                                 onToggleEventKind(IcsExportEventKind.SCHEDULE_ITEM, it)
@@ -177,8 +177,8 @@ fun IcsExportPage(
                         // 节假日过滤只对课程有意义：没勾课程时不展示（Dart 219-221）。
                         if (viewState.showSkipHolidayCourses) {
                             SwitchPreference(
-                                title = ExportStrings.icsExportSkipHolidayCourses.zh,
-                                summary = ExportStrings.icsExportSkipHolidayCoursesSubtitle.zh,
+                                title = ExportStrings.icsExportSkipHolidayCourses.text,
+                                summary = ExportStrings.icsExportSkipHolidayCoursesSubtitle.text,
                                 checked = options.skipHolidayCourses,
                                 onCheckedChange = onSkipHolidayCoursesChange,
                             )
@@ -226,7 +226,7 @@ fun IcsExportPage(
                                     CircularProgressIndicator(size = 18.dp)
                                     Spacer(modifier = Modifier.width(8.dp))
                                 }
-                                Text(ExportStrings.icsExportSyncCalendarButton.zh)
+                                Text(ExportStrings.icsExportSyncCalendarButton.text)
                             }
                             Spacer(modifier = Modifier.height(8.dp))
                             Button(
@@ -234,7 +234,7 @@ fun IcsExportPage(
                                 enabled = !viewState.isRemoving,
                                 modifier = Modifier.fillMaxWidth(),
                             ) {
-                                Text(ExportStrings.icsExportRemoveCalendarButton.zh)
+                                Text(ExportStrings.icsExportRemoveCalendarButton.text)
                             }
                         }
                     }
@@ -252,7 +252,7 @@ fun IcsExportPage(
                                 CircularProgressIndicator(size = 18.dp)
                                 Spacer(modifier = Modifier.width(8.dp))
                             }
-                            Text(ExportStrings.icsExportButton.zh)
+                            Text(ExportStrings.icsExportButton.text)
                         }
                     }
                 }
@@ -272,12 +272,12 @@ fun IcsExportPage(
         ) {
             TextButton(
                 modifier = Modifier.fillMaxWidth(),
-                text = ExportStrings.icsExportActionShare.zh,
+                text = ExportStrings.icsExportActionShare.text,
                 onClick = onShareExported,
             )
             TextButton(
                 modifier = Modifier.fillMaxWidth(),
-                text = ExportStrings.icsExportActionSave.zh,
+                text = ExportStrings.icsExportActionSave.text,
                 onClick = onSaveExported,
             )
         }
@@ -287,7 +287,7 @@ fun IcsExportPage(
     OverlayDialog(
         insideMargin = DpSize(16.dp, 16.dp),
         show = syncNoticeVisible,
-        title = ExportStrings.icsExportSyncCalendarTitle.zh,
+        title = ExportStrings.icsExportSyncCalendarTitle.text,
         onDismissRequest = onDismissSyncNotice,
     ) {
         Text(
@@ -303,8 +303,8 @@ fun IcsExportPage(
         )
         Spacer(modifier = Modifier.height(16.dp))
         ConfirmRow(
-            cancelLabel = ExportStrings.cancelAction.zh,
-            confirmLabel = ExportStrings.icsExportSyncCalendarConfirm.zh,
+            cancelLabel = ExportStrings.cancelAction.text,
+            confirmLabel = ExportStrings.icsExportSyncCalendarConfirm.text,
             onCancel = onDismissSyncNotice,
             onConfirm = onConfirmSyncNotice,
         )
@@ -314,11 +314,11 @@ fun IcsExportPage(
     OverlayDialog(
         insideMargin = DpSize(16.dp, 16.dp),
         show = removeConfirmVisible,
-        title = ExportStrings.icsExportRemoveCalendarTitle.zh,
+        title = ExportStrings.icsExportRemoveCalendarTitle.text,
         onDismissRequest = onDismissRemoveConfirm,
     ) {
         Text(
-            text = ExportStrings.icsExportRemoveCalendarBody.zh,
+            text = ExportStrings.icsExportRemoveCalendarBody.text,
             modifier = Modifier.fillMaxWidth(),
             textAlign = TextAlign.Center,
             style = MiuixTheme.textStyles.body2,
@@ -326,8 +326,8 @@ fun IcsExportPage(
         )
         Spacer(modifier = Modifier.height(16.dp))
         ConfirmRow(
-            cancelLabel = ExportStrings.cancelAction.zh,
-            confirmLabel = ExportStrings.icsExportRemoveCalendarConfirm.zh,
+            cancelLabel = ExportStrings.cancelAction.text,
+            confirmLabel = ExportStrings.icsExportRemoveCalendarConfirm.text,
             onCancel = onDismissRemoveConfirm,
             onConfirm = onConfirmRemove,
             // 移除系统日程页是破坏性操作：确认按钮用实心危险色。

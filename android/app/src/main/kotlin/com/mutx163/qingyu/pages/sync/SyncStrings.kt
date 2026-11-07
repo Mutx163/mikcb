@@ -12,18 +12,7 @@ package com.mutx163.qingyu.pages.sync
  * 覆盖源：`lib/screens/cloud_sync_screen.dart`、`cloud_backup_list_screen.dart`、
  * `cloud_backup_ui_helpers.dart`、`lib/l10n/sync_error_localizer.dart`。
  */
-data class ArbText(val key: String, val zh: String) {
-    /** 替换模板里的占位符（`{name}` → [value]）。 */
-    fun filled(name: String, value: String): String = zh.replace("{$name}", value)
-
-    fun filled(vararg pairs: Pair<String, String>): String {
-        var result = zh
-        for ((name, value) in pairs) {
-            result = result.replace("{$name}", value)
-        }
-        return result
-    }
-}
+typealias ArbText = com.mutx163.qingyu.app.ArbText
 
 fun String.filled(name: String, value: String): String = replace("{$name}", value)
 
@@ -210,26 +199,26 @@ object SyncStrings {
      * 未知码与 `null`/空串/`sync_failed` 一律落到「同步失败」，不透出原始文本。
      */
     fun localizeSyncError(code: String?): String = when (code) {
-        "auth_failed" -> syncErrorAuthFailed.zh
-        "access_denied" -> syncErrorAccessDenied.zh
-        "certificate_error" -> syncErrorCertificateError.zh
-        "connection_timeout" -> syncErrorConnectionTimeout.zh
-        "connection_failed" -> syncErrorConnectionFailed.zh
-        "network_error" -> syncErrorNetworkError.zh
-        "invalid_response" -> syncErrorInvalidResponse.zh
-        "local_changes_pending_sync" -> syncErrorLocalChangesPendingSync.zh
-        "missing_credentials" -> syncErrorMissingCredentials.zh
-        "backup_not_found" -> syncErrorBackupNotFound.zh
-        "missing_backup_snapshot" -> syncErrorMissingBackupSnapshot.zh
-        "cannot_delete_current_backup" -> syncErrorCannotDeleteCurrentBackup.zh
-        "provider_not_ready" -> syncErrorProviderNotReady.zh
-        "no_local_user_data" -> syncErrorNoLocalData.zh
-        "insecure_url_blocked" -> syncErrorInsecureUrl.zh
+        "auth_failed" -> syncErrorAuthFailed.text
+        "access_denied" -> syncErrorAccessDenied.text
+        "certificate_error" -> syncErrorCertificateError.text
+        "connection_timeout" -> syncErrorConnectionTimeout.text
+        "connection_failed" -> syncErrorConnectionFailed.text
+        "network_error" -> syncErrorNetworkError.text
+        "invalid_response" -> syncErrorInvalidResponse.text
+        "local_changes_pending_sync" -> syncErrorLocalChangesPendingSync.text
+        "missing_credentials" -> syncErrorMissingCredentials.text
+        "backup_not_found" -> syncErrorBackupNotFound.text
+        "missing_backup_snapshot" -> syncErrorMissingBackupSnapshot.text
+        "cannot_delete_current_backup" -> syncErrorCannotDeleteCurrentBackup.text
+        "provider_not_ready" -> syncErrorProviderNotReady.text
+        "no_local_user_data" -> syncErrorNoLocalData.text
+        "insecure_url_blocked" -> syncErrorInsecureUrl.text
         // 恢复三件套提交失败（ARB 键为 camelCase：backupRestoreCommitFailed /
         // backupRestoreRollbackFailed，见 BackupFileStrings）。
-        "backup_restore_commit_failed" -> BackupFileStrings.backupRestoreCommitFailed.zh
-        "backup_restore_rollback_failed" -> BackupFileStrings.backupRestoreRollbackFailed.zh
-        else -> syncErrorSyncFailed.zh
+        "backup_restore_commit_failed" -> BackupFileStrings.backupRestoreCommitFailed.text
+        "backup_restore_rollback_failed" -> BackupFileStrings.backupRestoreRollbackFailed.text
+        else -> syncErrorSyncFailed.text
     }
 
     /** 所有 ARB 文案清单，用于机械化单测逐字对拍。 */

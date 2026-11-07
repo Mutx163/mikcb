@@ -166,7 +166,7 @@ fun warehouseLoadIssueText(
     showingCachedList: Boolean = false,
 ): String? {
     if (showingCachedList && failed.issue != WarehouseLoadIssue.INVALID_FORMAT) {
-        return WarehouseStrings.warehouseLoadIssueShowingCached.zh
+        return WarehouseStrings.warehouseLoadIssueShowingCached.text
     }
     return when (failed.issue) {
         // 「已尝试 0 条线路」是句病句——真出现 0 候选（脚本地址拼不出来）就不显示这句。
@@ -178,9 +178,9 @@ fun warehouseLoadIssueText(
                 null
             }
 
-        WarehouseLoadIssue.NETWORK_UNREACHABLE -> WarehouseStrings.warehouseLoadIssueNetworkUnreachable.zh
-        WarehouseLoadIssue.TIMEOUT -> WarehouseStrings.warehouseLoadIssueTimeout.zh
-        WarehouseLoadIssue.INVALID_FORMAT -> WarehouseStrings.warehouseLoadIssueInvalidFormat.zh
+        WarehouseLoadIssue.NETWORK_UNREACHABLE -> WarehouseStrings.warehouseLoadIssueNetworkUnreachable.text
+        WarehouseLoadIssue.TIMEOUT -> WarehouseStrings.warehouseLoadIssueTimeout.text
+        WarehouseLoadIssue.INVALID_FORMAT -> WarehouseStrings.warehouseLoadIssueInvalidFormat.text
         null -> null
     }
 }

@@ -177,7 +177,7 @@ fun GlassDockEditorScreen(
     onReset: () -> Unit,
 ) {
     val enabled = state.enabledIds
-    val labelOf: (String) -> String = { SettingsGlassDockEditorPage.labelOf(it).zh }
+    val labelOf: (String) -> String = { SettingsGlassDockEditorPage.labelOf(it).text }
     val glyphOf: (String) -> ImageVector = { dockGlyph(it) }
 
     val sections = buildList {
@@ -187,9 +187,9 @@ fun GlassDockEditorScreen(
         if (viewSwitch.isNotEmpty()) {
             add(
                 EditorSection(
-                    label = SettingsStringsExt4.homeDockEditorViewCategory.zh,
+                    label = SettingsStringsExt4.homeDockEditorViewCategory.text,
                     candidates = viewSwitch.map {
-                        EditorCandidate(it.id, it.title.zh, dockGlyph(it.id))
+                        EditorCandidate(it.id, it.title.text, dockGlyph(it.id))
                     },
                 ),
             )
@@ -199,9 +199,9 @@ fun GlassDockEditorScreen(
             val candidates = SettingsGlassDockEditorPage.candidates(category, enabled, state.debugBuild)
             add(
                 EditorSection(
-                    label = category.label.zh,
+                    label = category.label.text,
                     candidates = candidates.map {
-                        EditorCandidate(it.id, it.title.zh, dockGlyph(it.id))
+                        EditorCandidate(it.id, it.title.text, dockGlyph(it.id))
                     },
                 ),
             )
@@ -209,21 +209,21 @@ fun GlassDockEditorScreen(
     }
 
     EditorPage(
-        title = SettingsStringsExt4.glassDockCustomizeTitle.zh,
+        title = SettingsStringsExt4.glassDockCustomizeTitle.text,
         enabledIds = enabled,
         labelOf = labelOf,
         glyphOf = glyphOf,
         canAdd = enabled.size < SettingsGlassDockEditorPage.MAX_SLOTS,
         canRemove = enabled.size > 1,
         pinnedId = null,
-        enabledTitle = SettingsStringsExt4.homeGridEditorEnabledTitle.zh,
+        enabledTitle = SettingsStringsExt4.homeGridEditorEnabledTitle.text,
         hintText = SettingsStringsExt4.homeGridEditorHintBody
             .filled("max", SettingsGlassDockEditorPage.MAX_SLOTS.toString()),
-        allAddedText = SettingsStringsExt4.homeGridEditorAllAdded.zh,
-        maxReachedText = SettingsStringsExt4.homeGridEditorMaxReached.zh,
-        removeTooltip = SettingsStringsExt4.homeGridEditorRemoveTooltip.zh,
-        pinnedTooltip = SettingsStringsExt4.homeGridEditorRemoveTooltip.zh,
-        resetLabel = SettingsStringsExt4.homeGridEditorResetAction.zh,
+        allAddedText = SettingsStringsExt4.homeGridEditorAllAdded.text,
+        maxReachedText = SettingsStringsExt4.homeGridEditorMaxReached.text,
+        removeTooltip = SettingsStringsExt4.homeGridEditorRemoveTooltip.text,
+        pinnedTooltip = SettingsStringsExt4.homeGridEditorRemoveTooltip.text,
+        resetLabel = SettingsStringsExt4.homeGridEditorResetAction.text,
         sections = sections,
         onBack = onBack,
         onAdd = onAdd,
@@ -257,7 +257,7 @@ fun HomeMenuEditorScreen(
     val enabled = state.enabledIds
     val build = state.diagnosticsBuild
     val labelOf: (String) -> String = { id ->
-        SettingsHomeNavigationPage.catalog(build).firstOrNull { it.id == id }?.label?.zh ?: id
+        SettingsHomeNavigationPage.catalog(build).firstOrNull { it.id == id }?.label?.text ?: id
     }
     val glyphOf: (String) -> ImageVector = { dockGlyph(it) }
 
@@ -266,27 +266,27 @@ fun HomeMenuEditorScreen(
         EditorSection(
             label = homeMenuCategoryLabelZh(category),
             candidates = candidates.map {
-                EditorCandidate(it.id, it.label.zh, dockGlyph(it.id))
+                EditorCandidate(it.id, it.label.text, dockGlyph(it.id))
             },
         )
     }
 
     EditorPage(
-        title = SettingsStringsExt2.homeMenuCustomizeTitle.zh,
+        title = SettingsStringsExt2.homeMenuCustomizeTitle.text,
         enabledIds = enabled,
         labelOf = labelOf,
         glyphOf = glyphOf,
         canAdd = enabled.size < SettingsHomeMenuEditorPage.MAX_SLOTS,
         canRemove = enabled.size > 1,
         pinnedId = SettingsHomeMenuEditorPage.PINNED_ACTION_ID,
-        enabledTitle = SettingsStringsExt2.homeGridEditorEnabledTitle.zh,
+        enabledTitle = SettingsStringsExt2.homeGridEditorEnabledTitle.text,
         hintText = SettingsStringsExt2.homeGridEditorHintBody
             .filled("max", SettingsHomeMenuEditorPage.MAX_SLOTS.toString()),
-        allAddedText = SettingsStringsExt2.homeGridEditorAllAdded.zh,
-        maxReachedText = SettingsStringsExt2.homeGridEditorMaxReached.zh,
-        removeTooltip = SettingsStringsExt2.homeGridEditorRemoveTooltip.zh,
-        pinnedTooltip = SettingsStringsExt2.homeGridEditorPinnedTooltip.zh,
-        resetLabel = SettingsStringsExt2.homeGridEditorResetAction.zh,
+        allAddedText = SettingsStringsExt2.homeGridEditorAllAdded.text,
+        maxReachedText = SettingsStringsExt2.homeGridEditorMaxReached.text,
+        removeTooltip = SettingsStringsExt2.homeGridEditorRemoveTooltip.text,
+        pinnedTooltip = SettingsStringsExt2.homeGridEditorPinnedTooltip.text,
+        resetLabel = SettingsStringsExt2.homeGridEditorResetAction.text,
         sections = sections,
         onBack = onBack,
         onAdd = onAdd,
@@ -712,10 +712,10 @@ private fun DockIconBadge(glyph: ImageVector) {
 
 /** 分类小标题（`homeMenuEntryCategoryLabel`，`home_top_menu.dart:12-20`）的 ARB 值。 */
 private fun homeMenuCategoryLabelZh(category: String): String = when (category) {
-    "features" -> SettingsStringsExt2.homeMenuCategoryFeatures.zh
-    "data" -> SettingsStringsExt2.homeMenuCategoryData.zh
-    "preferences" -> SettingsStringsExt2.homeMenuCategoryPreferences.zh
-    else -> SettingsStringsExt2.homeMenuCategoryAbout.zh
+    "features" -> SettingsStringsExt2.homeMenuCategoryFeatures.text
+    "data" -> SettingsStringsExt2.homeMenuCategoryData.text
+    "preferences" -> SettingsStringsExt2.homeMenuCategoryPreferences.text
+    else -> SettingsStringsExt2.homeMenuCategoryAbout.text
 }
 
 /**

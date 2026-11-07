@@ -24,8 +24,8 @@ object LocationTimeGroupEditorValidation {
         editingGroupId: String?,
     ): String? {
         model.validateName(name)?.let { return it }
-        if (timeSchemeId.trim().isEmpty()) return LocationTimeMatchStrings.needTimeScheme.zh
-        if (keywords.isEmpty()) return LocationTimeMatchStrings.keywordRequired.zh
+        if (timeSchemeId.trim().isEmpty()) return LocationTimeMatchStrings.needTimeScheme.text
+        if (keywords.isEmpty()) return LocationTimeMatchStrings.keywordRequired.text
         for (keyword in keywords) {
             model.keywordOwnerHint(keyword.pattern, editingGroupId)?.let { return it }
         }

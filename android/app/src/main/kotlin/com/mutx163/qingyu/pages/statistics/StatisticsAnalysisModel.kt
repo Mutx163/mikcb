@@ -38,12 +38,12 @@ object StatisticsAnalysisModel {
      * 本文件**复用**它，绝不重新声明（那会立刻变成同名同包重复声明，见台账 §7.2.1）。
      */
     fun title(module: StatisticsAnalysisModule): String = when (module) {
-        StatisticsAnalysisModule.TREND -> StatisticsExtStrings.statisticsTrendTitle.zh
-        StatisticsAnalysisModule.TIME_UTIL -> StatisticsExtStrings.statisticsTimeUtilTitle.zh
-        StatisticsAnalysisModule.VENUE -> StatisticsExtStrings.statisticsVenueTitle.zh
-        StatisticsAnalysisModule.TEACHER -> StatisticsExtStrings.statisticsTeacherTitle.zh
-        StatisticsAnalysisModule.RANKING -> StatisticsExtStrings.statisticsRankingTitle.zh
-        StatisticsAnalysisModule.COMPARE -> StatisticsExtStrings.statisticsCompareTitle.zh
+        StatisticsAnalysisModule.TREND -> StatisticsExtStrings.statisticsTrendTitle.text
+        StatisticsAnalysisModule.TIME_UTIL -> StatisticsExtStrings.statisticsTimeUtilTitle.text
+        StatisticsAnalysisModule.VENUE -> StatisticsExtStrings.statisticsVenueTitle.text
+        StatisticsAnalysisModule.TEACHER -> StatisticsExtStrings.statisticsTeacherTitle.text
+        StatisticsAnalysisModule.RANKING -> StatisticsExtStrings.statisticsRankingTitle.text
+        StatisticsAnalysisModule.COMPARE -> StatisticsExtStrings.statisticsCompareTitle.text
     }
 
     /** Dart `hasData = courses.isNotEmpty`：无课走空态，有课走列表。 */
@@ -57,13 +57,13 @@ object StatisticsAnalysisModel {
      * 映射放进模型层后，七个角色都能被单测逐个钉住。
      */
     fun cardTitle(role: AnalysisCardRole): String = when (role) {
-        AnalysisCardRole.TREND_CHART -> ChartsStrings.statisticsTrendTitle.zh
-        AnalysisCardRole.HEATMAP -> ChartsStrings.statisticsHeatmapTitle.zh
-        AnalysisCardRole.TIME_UTILIZATION -> StatisticsExtStrings.statisticsTimeUtilTitle.zh
-        AnalysisCardRole.VENUE -> StatisticsExtStrings.statisticsVenueTitle.zh
-        AnalysisCardRole.TEACHER -> StatisticsExtStrings.statisticsTeacherTitle.zh
-        AnalysisCardRole.RANKING -> StatisticsExtStrings.statisticsRankingTitle.zh
-        AnalysisCardRole.PROFILE_COMPARE -> StatisticsExtStrings.statisticsCompareTitle.zh
+        AnalysisCardRole.TREND_CHART -> ChartsStrings.statisticsTrendTitle.text
+        AnalysisCardRole.HEATMAP -> ChartsStrings.statisticsHeatmapTitle.text
+        AnalysisCardRole.TIME_UTILIZATION -> StatisticsExtStrings.statisticsTimeUtilTitle.text
+        AnalysisCardRole.VENUE -> StatisticsExtStrings.statisticsVenueTitle.text
+        AnalysisCardRole.TEACHER -> StatisticsExtStrings.statisticsTeacherTitle.text
+        AnalysisCardRole.RANKING -> StatisticsExtStrings.statisticsRankingTitle.text
+        AnalysisCardRole.PROFILE_COMPARE -> StatisticsExtStrings.statisticsCompareTitle.text
     }
 
     /** 整页列表里的一格（卡片或分段间距）。 */
@@ -142,8 +142,8 @@ object StatisticsAnalysisModel {
     }
 
     /** 空态两行文案（Dart `HyperosEmptyState(title: statisticsNoData, subtitle: statisticsNoDataHint)`）。 */
-    val emptyTitle: String get() = StatisticsExtStrings.statisticsNoData.zh
-    val emptySubtitle: String get() = StatisticsExtStrings.statisticsNoDataHint.zh
+    val emptyTitle: String get() = StatisticsExtStrings.statisticsNoData.text
+    val emptySubtitle: String get() = StatisticsExtStrings.statisticsNoDataHint.text
 
     /**
      * 整页视图状态：渲染层入参（BRIEF §2 要求「入参是 viewState + 回调」）。
@@ -300,7 +300,7 @@ object StatisticsAnalysisModel {
                     heatmap = heatmap,
                     heatmapMax = heatmap.maxSections,
                     heatmapSummary = if (heatmap.maxSections > 0) {
-                        ChartsStrings.statisticsHeatmapHint.zh
+                        ChartsStrings.statisticsHeatmapHint.text
                     } else {
                         ""
                     },
@@ -341,7 +341,7 @@ object StatisticsAnalysisModel {
 
             StatisticsAnalysisModule.RANKING -> {
                 val semester = StatisticsService.calculateSemester(stubs, week, weekCount)
-                val unit = ChartsStrings.statisticsSectionsUnit.zh
+                val unit = ChartsStrings.statisticsSectionsUnit.text
                 val rows = CourseRankingModel.build(semester.courseRanking)
                 viewState(
                     module = module,
@@ -383,11 +383,11 @@ object StatisticsAnalysisModel {
         val bars = VenueStatsModel.bars(stats)
         val rows = mutableListOf<Pair<String, String>>()
         if (bars.rooms.isNotEmpty()) {
-            rows.add(ChartsStrings.statisticsVenueTopRooms.zh to "")
+            rows.add(ChartsStrings.statisticsVenueTopRooms.text to "")
             for (row in bars.rooms) rows.add(row.label to row.value)
         }
         if (bars.buildings.isNotEmpty()) {
-            rows.add(ChartsStrings.statisticsVenueBuildings.zh to "")
+            rows.add(ChartsStrings.statisticsVenueBuildings.text to "")
             for (row in bars.buildings) rows.add(row.label to row.value)
         }
         return rows
@@ -402,10 +402,10 @@ object StatisticsAnalysisModel {
         activeName: String,
         others: List<ProfileAnalysisInput>,
     ): List<Pair<String, String>> {
-        val unit = ChartsStrings.statisticsSectionsUnit.zh
+        val unit = ChartsStrings.statisticsSectionsUnit.text
         val rows = mutableListOf<Pair<String, String>>()
         rows.add(
-            (activeName.ifBlank { ChartsStrings.statisticsCompareActive.zh }) to "$activeTotal $unit",
+            (activeName.ifBlank { ChartsStrings.statisticsCompareActive.text }) to "$activeTotal $unit",
         )
         for (profile in others) {
             val total = StatisticsService.calculateSemester(

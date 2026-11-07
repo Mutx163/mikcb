@@ -77,7 +77,7 @@ fun GlassDockIconPickerScreen(
     var query by remember { mutableStateOf("") }
 
     QingyuPageScaffold(
-        title = SettingsStringsExt4.glassDockButtonIconTitle.zh,
+        title = SettingsStringsExt4.glassDockButtonIconTitle.text,
         onBack = onBack,
     ) {
         BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
@@ -151,7 +151,7 @@ private fun IconSearchCard(
                 value = query,
                 onValueChange = onQueryChange,
                 modifier = Modifier.weight(1f),
-                label = SettingsStringsExt4.glassDockButtonIconSearchHint.zh,
+                label = SettingsStringsExt4.glassDockButtonIconSearchHint.text,
                 useLabelAsPlaceholder = true,
                 singleLine = true,
             )
@@ -159,7 +159,7 @@ private fun IconSearchCard(
                 IconButton(onClick = { onQueryChange("") }) {
                     Icon(
                         imageVector = MiuixIcons.Close,
-                        contentDescription = SettingsStringsExt4.clearSearchAction.zh,
+                        contentDescription = SettingsStringsExt4.clearSearchAction.text,
                         modifier = Modifier.size(18.dp),
                     )
                 }

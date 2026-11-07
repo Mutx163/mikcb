@@ -192,7 +192,7 @@ fun IcsImportHost(
         // Dart 用 `utf8.decode(allowMalformed: true)`：坏字节变 U+FFFD，不整份失败。
         val parsed = runCatching { IcsImportModel.parseWakeUpSchedule(payload.text) }.getOrNull()
         if (parsed == null || parsed.courses.isEmpty()) {
-            Toast.makeText(context, ImportStrings.importNoCoursesRecognized.zh, Toast.LENGTH_SHORT).show()
+            Toast.makeText(context, ImportStrings.importNoCoursesRecognized.text, Toast.LENGTH_SHORT).show()
             return@LaunchedEffect
         }
         val snapshot = repository.snapshot
@@ -245,14 +245,14 @@ fun IcsImportHost(
                 )
 
                 is AndroidImportDocumentReader.Result.ReadFailed ->
-                    showToast(ImportStrings.importFileReadFailed.zh)
+                    showToast(ImportStrings.importFileReadFailed.text)
 
                 is AndroidImportDocumentReader.Result.Bytes -> {
                     // Dart 用 `utf8.decode(allowMalformed: true)`：坏字节变 U+FFFD，不整份失败。
                     val text = String(read.bytes, Charsets.UTF_8)
                     val parsed = runCatching { IcsImportModel.parseWakeUpSchedule(text) }.getOrNull()
                     if (parsed == null || parsed.courses.isEmpty()) {
-                        showToast(ImportStrings.importNoCoursesRecognized.zh)
+                        showToast(ImportStrings.importNoCoursesRecognized.text)
                         return@launch
                     }
                     val snapshot = repository.snapshot
@@ -283,7 +283,7 @@ fun IcsImportHost(
         val current = pending
         ImportPreviewDialog(
             show = current != null,
-            importLabel = ImportStrings.icsImportTitle.zh,
+            importLabel = ImportStrings.icsImportTitle.text,
             courseCount = current?.courses?.size ?: 0,
             semesterStartDate = current?.semesterStartDate,
             initialFirstCourseWeek = current?.firstCourseWeek ?: 1,
@@ -382,7 +382,7 @@ fun SpreadsheetImportHost(
             return@LaunchedEffect
         }
         if (parsed.courses.isEmpty()) {
-            Toast.makeText(context, ImportStrings.importNoCoursesRecognized.zh, Toast.LENGTH_SHORT).show()
+            Toast.makeText(context, ImportStrings.importNoCoursesRecognized.text, Toast.LENGTH_SHORT).show()
             return@LaunchedEffect
         }
         // 提醒先看，再确认导入（Dart `_executeSpreadsheetImport` 同顺序）。
@@ -441,11 +441,11 @@ fun SpreadsheetImportHost(
                 )
 
                 is AndroidImportDocumentReader.Result.ReadFailed ->
-                    showToast(ImportStrings.importFileReadFailed.zh)
+                    showToast(ImportStrings.importFileReadFailed.text)
 
                 is AndroidImportDocumentReader.Result.Bytes -> {
                     val settings = repository.snapshot.settings
-                    val fileName = read.fileName ?: ImportStrings.spreadsheetImportTitle.zh
+                    val fileName = read.fileName ?: ImportStrings.spreadsheetImportTitle.text
                     val parsed = runCatching {
                         withContext(Dispatchers.IO) { parseSpreadsheet(read.bytes, fileName, settings) }
                     }.getOrElse { error ->
@@ -456,7 +456,7 @@ fun SpreadsheetImportHost(
                         return@launch
                     }
                     if (parsed.courses.isEmpty()) {
-                        showToast(ImportStrings.importNoCoursesRecognized.zh)
+                        showToast(ImportStrings.importNoCoursesRecognized.text)
                         return@launch
                     }
                     // 提醒先看，再确认导入（Dart `_executeSpreadsheetImport` 同顺序）。
@@ -493,12 +493,12 @@ fun SpreadsheetImportHost(
                     isSharingTemplate = true
                     scope.launch {
                         val outcome = withContext(Dispatchers.IO) {
-                            sharer.shareTemplate(ImportStrings.downloadSpreadsheetTemplateAction.zh)
+                            sharer.shareTemplate(ImportStrings.downloadSpreadsheetTemplateAction.text)
                         }
                         isSharingTemplate = false
                         // 分享面板拉起后不再提示（成功由面板本身体现）；只有写盘/拉起失败才说话。
                         if (outcome is AndroidImportTemplateSharer.Outcome.Failed) {
-                            showToast(ImportStrings.saveFailed.zh)
+                            showToast(ImportStrings.saveFailed.text)
                         }
                     }
                 }
@@ -525,7 +525,7 @@ fun SpreadsheetImportHost(
         val current = pending
         ImportPreviewDialog(
             show = current != null && !showWarnings,
-            importLabel = ImportStrings.spreadsheetImportTitle.zh,
+            importLabel = ImportStrings.spreadsheetImportTitle.text,
             courseCount = current?.courses?.size ?: 0,
             // 表格导入没有学期映射环节（周次直接来自表里的周次列），Dart 同口径。
             semesterStartDate = null,
@@ -699,7 +699,7 @@ private fun applyImport(
                 // 有主模板时页面读的是模板节次，写设置里的节次表不会生效。
                 val error = repository.updateTimeScheme(scheme.id, scheme.name, nextSections)
                 if (error != null) {
-                    return ApplyResult.Failed(ImportStrings.saveFailed.zh)
+                    return ApplyResult.Failed(ImportStrings.saveFailed.text)
                 }
             } else {
                 repository.updateSettings(before.settings.copy(sections = nextSections))
@@ -777,6 +777,6 @@ private fun applyImport(
         if (needsExpansion && scheme != null) {
             runCatching { repository.updateTimeScheme(scheme.id, scheme.name, scheme.sections) }
         }
-        ApplyResult.Failed(ImportStrings.saveFailed.zh)
+        ApplyResult.Failed(ImportStrings.saveFailed.text)
     }
 }

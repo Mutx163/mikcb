@@ -76,7 +76,7 @@ object SettingsHomeMenuEditorPage {
                 "瓷贴底色取主题 seed 的强调色、由应用自绘",
             texts = enabledIds.map { id ->
                 val label = entryLabel(id)
-                SettingsInlineText(label.key, label.zh)
+                SettingsInlineText(label.key, label.text)
             },
         )
 
@@ -85,7 +85,7 @@ object SettingsHomeMenuEditorPage {
         nodes += SettingsLabel(
             id = "homeMenuEditor.enabled.label",
             textKey = SettingsStringsExt2.homeGridEditorEnabledTitle.key,
-            text = SettingsStringsExt2.homeGridEditorEnabledTitle.zh,
+            text = SettingsStringsExt2.homeGridEditorEnabledTitle.text,
         )
         nodes += SettingsGroup(
             id = "homeMenuEditor.enabled",
@@ -105,7 +105,7 @@ object SettingsHomeMenuEditorPage {
             nodes += SettingsLabel(
                 id = "homeMenuEditor.category.$category.label",
                 textKey = categoryLabel(category).key,
-                text = categoryLabel(category).zh,
+                text = categoryLabel(category).text,
             )
             val candidates = candidatesFor(category, enabledIds, state.diagnosticsBuild)
             if (candidates.isEmpty()) {
@@ -113,7 +113,7 @@ object SettingsHomeMenuEditorPage {
                 nodes += SettingsDescription(
                     id = "homeMenuEditor.category.$category.empty",
                     textKey = SettingsStringsExt2.homeGridEditorAllAdded.key,
-                    text = SettingsStringsExt2.homeGridEditorAllAdded.zh,
+                    text = SettingsStringsExt2.homeGridEditorAllAdded.text,
                 )
             } else {
                 val canAdd = enabledIds.size < MAX_SLOTS
@@ -153,7 +153,7 @@ object SettingsHomeMenuEditorPage {
         return SettingsPageSpec(
             id = ID,
             titleKey = SettingsStringsExt2.homeMenuCustomizeTitle.key,
-            title = SettingsStringsExt2.homeMenuCustomizeTitle.zh,
+            title = SettingsStringsExt2.homeMenuCustomizeTitle.text,
             nodes = nodes,
         )
     }
@@ -184,9 +184,9 @@ object SettingsHomeMenuEditorPage {
                 SettingsStringsExt2.homeGridEditorRemoveTooltip.key
             },
             trailingAction = if (pinned) {
-                SettingsStringsExt2.homeGridEditorPinnedTooltip.zh
+                SettingsStringsExt2.homeGridEditorPinnedTooltip.text
             } else {
-                SettingsStringsExt2.homeGridEditorRemoveTooltip.zh
+                SettingsStringsExt2.homeGridEditorRemoveTooltip.text
             },
             trailingActionKind = SettingsAction.DIALOG,
             actionTarget = id,

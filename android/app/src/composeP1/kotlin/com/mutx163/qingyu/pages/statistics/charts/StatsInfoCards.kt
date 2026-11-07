@@ -69,7 +69,7 @@ fun TimeUtilizationCard(
         Column {
             if (!standalone) {
                 ChartCardHeader(
-                    title = ChartsStrings.statisticsTimeUtilTitle.zh,
+                    title = ChartsStrings.statisticsTimeUtilTitle.text,
                     icon = MiuixIcons.Timer,
                     accent = ChartPalette.Cyan,
                     dark = dark,
@@ -150,7 +150,7 @@ fun VenueStatsCard(
         Column {
             if (!standalone) {
                 ChartCardHeader(
-                    title = ChartsStrings.statisticsVenueTitle.zh,
+                    title = ChartsStrings.statisticsVenueTitle.text,
                     icon = MiuixIcons.Location,
                     accent = ChartPalette.Purple,
                     dark = dark,
@@ -159,7 +159,7 @@ fun VenueStatsCard(
             if (bars.rooms.isNotEmpty()) {
                 Spacer(Modifier.height(14.dp))
                 Text(
-                    text = ChartsStrings.statisticsVenueTopRooms.zh,
+                    text = ChartsStrings.statisticsVenueTopRooms.text,
                     style = MiuixTheme.textStyles.footnote1,
                     color = Color(QingyuTheme.secondaryText(dark)),
                 )
@@ -172,7 +172,7 @@ fun VenueStatsCard(
             if (bars.buildings.isNotEmpty()) {
                 Spacer(Modifier.height(14.dp))
                 Text(
-                    text = ChartsStrings.statisticsVenueBuildings.zh,
+                    text = ChartsStrings.statisticsVenueBuildings.text,
                     style = MiuixTheme.textStyles.footnote1,
                     color = Color(QingyuTheme.secondaryText(dark)),
                 )
@@ -289,7 +289,7 @@ fun TeacherStatsCard(
         Column {
             Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 14.dp)) {
                 ChartCardHeader(
-                    title = ChartsStrings.statisticsTeacherTitle.zh,
+                    title = ChartsStrings.statisticsTeacherTitle.text,
                     icon = MiuixIcons.Community,
                     accent = ChartPalette.Green,
                     dark = dark,
@@ -368,7 +368,7 @@ fun SemesterProgressCard(
                 )
                 Spacer(Modifier.width(10.dp))
                 Text(
-                    text = ChartsStrings.statisticsSemesterProgressTitle.zh,
+                    text = ChartsStrings.statisticsSemesterProgressTitle.text,
                     style = MiuixTheme.textStyles.body1,
                     color = Color(QingyuTheme.primaryText(dark)),
                     modifier = Modifier.weight(1f),

@@ -202,7 +202,7 @@ object HomePullQuickImportModel {
     fun explainPrepareFailure(
         failure: HomePullQuickImportPrepareFailure,
         silent: Boolean,
-    ): String? = if (silent) null else failure.tip.zh
+    ): String? = if (silent) null else failure.tip.text
 
     // ------------------------------------------------------------------
     // 喂给网页登录页的派生参数

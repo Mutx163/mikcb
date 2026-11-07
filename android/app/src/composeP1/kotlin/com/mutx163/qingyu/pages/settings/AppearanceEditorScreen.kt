@@ -462,7 +462,7 @@ fun AppearanceEditorScreen(
             if (coverMounted) {
                 AppearanceEditorLoadingCover(
                     visible = !previewReady,
-                    label = SettingsStringsExt1.commonLoadingLabel.zh,
+                    label = SettingsStringsExt1.commonLoadingLabel.text,
                     modifier = Modifier
                         .fillMaxSize()
                         // 卡片恒有 `zIndex(1f)`，罩子必须更高才能真的盖住它。

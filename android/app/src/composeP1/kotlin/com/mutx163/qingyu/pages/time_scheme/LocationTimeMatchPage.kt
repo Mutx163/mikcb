@@ -116,7 +116,7 @@ fun LocationTimeMatchPage(
                         verticalArrangement = Arrangement.spacedBy(12.dp),
                     ) {
                         // ── 分区标题 ──
-                        QingyuSectionTitle(text = LocationTimeMatchStrings.entryTitle.zh)
+                        QingyuSectionTitle(text = LocationTimeMatchStrings.entryTitle.text)
 
                         if (model.isEmpty) {
                             // Dart：空态是一行「新建地点组」ActionTile，不是自造空态文案
@@ -222,7 +222,7 @@ private fun GroupCardView(
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Text(
-                    text = LocationTimeMatchStrings.editAction.zh,
+                    text = LocationTimeMatchStrings.editAction.text,
                     style = MiuixTheme.textStyles.body2.shiftWeight(QingyuWeightDelta.MEDIUM),
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
@@ -233,7 +233,7 @@ private fun GroupCardView(
                         .padding(vertical = 2.dp),
                 )
                 Text(
-                    text = LocationTimeMatchStrings.deleteAction.zh,
+                    text = LocationTimeMatchStrings.deleteAction.text,
                     style = MiuixTheme.textStyles.body2,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,

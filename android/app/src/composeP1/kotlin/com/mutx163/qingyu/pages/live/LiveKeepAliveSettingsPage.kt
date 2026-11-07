@@ -87,7 +87,7 @@ fun LiveKeepAliveSettingsPage(
     // SingleChildScrollView + Column，官方 demo 侧一律是 LazyColumn + 滚动三件套，
     // 「样式从 demo」⇒ 这里换成惰性列表（末端轻震 + 过度滚动 + 右侧滚动条）。
     QingyuPageScaffold(
-        title = LiveKeepAliveStrings.liveKeepAliveTitle.zh,
+        title = LiveKeepAliveStrings.liveKeepAliveTitle.text,
         onBack = onBack,
     ) {
         QingyuPageList(
@@ -111,7 +111,7 @@ fun LiveKeepAliveSettingsPage(
                     SwitchPreference(
                         checked = state.hideFromRecents,
                         onCheckedChange = onHideFromRecentsChange,
-                        title = LiveKeepAliveStrings.hideFromRecentsTitle.zh,
+                        title = LiveKeepAliveStrings.hideFromRecentsTitle.text,
                     )
 
                     LiveKeepAliveServiceRow(
@@ -243,7 +243,7 @@ private fun LiveKeepAliveServiceRow(
         )
         Spacer(modifier = Modifier.width(12.dp))
         Text(
-            text = LiveKeepAliveStrings.keepAliveServiceTitle.zh,
+            text = LiveKeepAliveStrings.keepAliveServiceTitle.text,
             modifier = Modifier.weight(1f),
             style = MiuixTheme.textStyles.body2.shiftWeight(QingyuWeightDelta.MEDIUM),
             color = Color(QingyuTheme.primaryText(dark)),
@@ -252,7 +252,7 @@ private fun LiveKeepAliveServiceRow(
         if (LiveKeepAliveModel.shouldShowEnableButton(enabled)) {
             Spacer(modifier = Modifier.width(8.dp))
             TextButton(
-                text = LiveKeepAliveStrings.goEnableAction.zh,
+                text = LiveKeepAliveStrings.goEnableAction.text,
                 onClick = onOpenSettings,
             )
         }
@@ -293,12 +293,12 @@ private fun LiveDoNotDisturbAccessRow(
         Spacer(modifier = Modifier.width(12.dp))
         Column(modifier = Modifier.weight(1f)) {
             Text(
-                text = LiveKeepAliveStrings.guideStatusDoNotDisturbAccess.zh,
+                text = LiveKeepAliveStrings.guideStatusDoNotDisturbAccess.text,
                 style = MiuixTheme.textStyles.body2.shiftWeight(QingyuWeightDelta.MEDIUM),
                 color = Color(QingyuTheme.primaryText(dark)),
             )
             Text(
-                text = LiveKeepAliveStrings.guideStatusDoNotDisturbAccessHint.zh,
+                text = LiveKeepAliveStrings.guideStatusDoNotDisturbAccessHint.text,
                 style = MiuixTheme.textStyles.footnote1,
                 color = Color(QingyuTheme.secondaryText(dark)),
                 modifier = Modifier.padding(top = 2.dp),
@@ -329,8 +329,8 @@ private fun LiveKeepAliveConfirmDialog(
     OverlayDialog(
         insideMargin = DpSize(16.dp, 16.dp),
         show = show,
-        title = LiveKeepAliveStrings.keepAliveConfirmTitle.zh,
-        summary = LiveKeepAliveStrings.keepAliveConfirmBody.zh,
+        title = LiveKeepAliveStrings.keepAliveConfirmTitle.text,
+        summary = LiveKeepAliveStrings.keepAliveConfirmBody.text,
         onDismissRequest = onDismiss,
     ) {
         Row(
@@ -339,7 +339,7 @@ private fun LiveKeepAliveConfirmDialog(
         ) {
             TextButton(
                 modifier = Modifier.weight(1f),
-                text = LiveKeepAliveStrings.cancelAction.zh,
+                text = LiveKeepAliveStrings.cancelAction.text,
                 onClick = onDismiss,
             )
             Button(
@@ -347,7 +347,7 @@ private fun LiveKeepAliveConfirmDialog(
                 onClick = onConfirm,
                 colors = ButtonDefaults.buttonColorsPrimary(),
             ) {
-                Text(LiveKeepAliveStrings.keepAliveConfirmGoAction.zh)
+                Text(LiveKeepAliveStrings.keepAliveConfirmGoAction.text)
             }
         }
     }

@@ -33,16 +33,13 @@ import java.util.Locale
  * 按「不许留点了必无效的入口」口径先隐藏；模型字段与写盘逻辑保留，引擎接上后这一行原样回来。
  * `SettingsGeneralPageTest` 里有一条 `下拉快捷导入开关暂时隐藏` 钉住这条，别在接引擎之前悄悄加回。
  *
- * ## 暂时隐藏的一行：`general.language`
+ * ## `general.language`（2026-11-07 恢复渲染）
  *
- * 「语言选择」下拉**已从渲染里去掉**（2026-11-05）：它写 `appLocaleTag`，但 composeP1 的界面文字
- * 没有外语版（`.zh` 引用上千处、`.en` 零处），生效点自己也注明「不会把界面文字换成外语」——
- * 副标题「可跟随系统，或手动切换到已适配语言」在页面上写了一句不成立的话，而且它给出 6 个选项、
- * 没有一个真的换掉界面文字。按「不许留点了必无效的入口」口径先隐藏（比下拉导入那个开关更该藏：
- * 那个是「还没实现」，这个是「给了选项但每个都没效果」）。
- * 模型字段 `appLocaleTag`、写盘分支 `SettingsActionDispatcher.ROW_LOCALE`、`SettingsStrings` 键
- * 全部保留，用户旧值不丢；等 locale 真切换落地（界面文字有外语版）后这一行原样回来。
- * `SettingsGeneralPageTest` 里有一条 `语言行暂时隐藏` 钉住这条。
+ * 「语言选择」下拉 2026-11-05 曾因「composeP1 只有中文文案」被隐藏。2026-11-07 文案层接通：
+ * 界面统一读 `ArbText.text`，由 `AppLocaleRuntime` 按 `appLocaleTag` 从 `ArbCatalog`
+ * （`lib/l10n/app_*.arb` 生成）取当前语言，切语言后正在显示的界面自动重组，
+ * 因此这一行恢复渲染，选项表与写盘分支保持原样。
+ * `SettingsGeneralPageTest` 用 `语言行恢复渲染并带六个语言选项` 钉住它别再被悄悄藏回。
  *
  * ## 两条「不写进模型」的行为，接线层必须照做
  *
@@ -66,14 +63,17 @@ object SettingsGeneralPage {
         nodes += SettingsGroup(
             id = "general.main",
             children = listOf(
-                // 2026-11-05 起**暂时隐藏**「语言选择」这一行（`general.language`）。
-                // 它写 `appLocaleTag`，但 composeP1 的界面文字没有外语版（`.zh` 引用上千处、`.en` 零处），
-                // 生效点自己也注明「不会把界面文字换成外语」——副标题写着「可跟随系统，或手动切换到
-                // 已适配语言」，等于在页面上写一句不成立的话；而且它提供 6 个选项、没有一个真的换掉界面语言。
-                // 按「不许留点了必无效的入口」口径先藏起来；**模型字段 `appLocaleTag`、写盘分支
-                // `SettingsActionDispatcher.ROW_LOCALE`、`SettingsStrings` 键全部保留**，
-                // 用户旧值不丢。等 locale 真切换落地（界面文字有外语版）后，把这段
-                // `settingsRow(id = "general.language", …)` 原样加回来。
+                // 语言行：写 `appLocaleTag`，壳在 `PagesShellActivity` 里灌进
+                // `AppLocaleRuntime`，所有 `ArbText.text` 立刻换语言（见文件头 KDoc）。
+                settingsRow(
+                    id = "general.language",
+                    component = MiuixRowComponent.DROPDOWN,
+                    title = SettingsStrings.languageModeLabel,
+                    subtitle = SettingsStrings.languageSectionSubtitle,
+                    options = localeOptions(),
+                    selectedOptionId = state.appLocaleTag,
+                    action = SettingsAction.WRITE_SETTING,
+                ),
                 settingsRow(
                     id = "general.transitionSpeed",
                     component = MiuixRowComponent.SLIDER,
@@ -113,7 +113,7 @@ object SettingsGeneralPage {
             nodes += SettingsLabel(
                 id = "general.autoRefresh.label",
                 textKey = SettingsStrings.courseAutoRefreshSectionTitle.key,
-                text = SettingsStrings.courseAutoRefreshSectionTitle.zh,
+                text = SettingsStrings.courseAutoRefreshSectionTitle.text,
             )
             nodes += SettingsGroup(
                 id = "general.autoRefresh",
@@ -130,7 +130,7 @@ object SettingsGeneralPage {
         return SettingsPageSpec(
             id = ID,
             titleKey = SettingsStrings.generalSettingsTitle.key,
-            title = SettingsStrings.generalSettingsTitle.zh,
+            title = SettingsStrings.generalSettingsTitle.text,
             nodes = nodes,
         )
     }
@@ -203,9 +203,9 @@ object SettingsGeneralPage {
      * 有下次计划再拼 ` · 下次约 Y`。
      */
     fun autoRefreshSummary(auto: AutoRefreshState): String {
-        if (!auto.enabled) return SettingsStrings.courseAutoRefreshSubtitle.zh
+        if (!auto.enabled) return SettingsStrings.courseAutoRefreshSubtitle.text
         val last = auto.lastSuccessLabel
-            ?: return SettingsStrings.courseAutoRefreshSummaryNever.zh
+            ?: return SettingsStrings.courseAutoRefreshSummaryNever.text
         val lastLine = SettingsStrings.courseAutoRefreshSummaryLast.filled("time", last)
         val next = auto.nextRunLabel ?: return lastLine
         return "$lastLine · ${SettingsStrings.courseAutoRefreshSummaryNext.filled("time", next)}"

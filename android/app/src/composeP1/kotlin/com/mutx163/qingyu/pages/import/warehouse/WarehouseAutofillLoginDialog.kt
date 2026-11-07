@@ -31,7 +31,7 @@ fun WarehouseAutofillLoginDialog(
     OverlayDialog(
         insideMargin = DpSize(16.dp, 16.dp),
         show = show,
-        title = WarehouseStrings.autofillLoginTitle.zh,
+        title = WarehouseStrings.autofillLoginTitle.text,
         summary = WarehouseStrings.autofillLoginMessage.filled("username", username),
         onDismissRequest = onDismiss,
     ) {
@@ -41,7 +41,7 @@ fun WarehouseAutofillLoginDialog(
         ) {
             TextButton(
                 modifier = Modifier.weight(1f),
-                text = WarehouseStrings.notNowAction.zh,
+                text = WarehouseStrings.notNowAction.text,
                 onClick = onDismiss,
             )
             Button(
@@ -50,7 +50,7 @@ fun WarehouseAutofillLoginDialog(
                 colors = ButtonDefaults.buttonColorsPrimary(),
             ) {
                 Text(
-                    text = WarehouseStrings.autofillAction.zh,
+                    text = WarehouseStrings.autofillAction.text,
                     textAlign = TextAlign.Center,
                 )
             }

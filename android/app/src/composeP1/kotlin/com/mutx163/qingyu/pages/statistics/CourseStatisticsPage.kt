@@ -154,7 +154,7 @@ fun CourseStatisticsPage(
                 IconButton(onClick = onOpenSettings) {
                     Icon(
                         imageVector = MiuixIcons.Settings,
-                        contentDescription = StatisticsStrings.statisticsSettingsTitle.zh,
+                        contentDescription = StatisticsStrings.statisticsSettingsTitle.text,
                         tint = Color(QingyuTheme.actionIcon(dark)),
                     )
                 }
@@ -162,7 +162,7 @@ fun CourseStatisticsPage(
                     IconButton(onClick = { if (!isExporting) onOpenShare.invoke() }) {
                         Icon(
                             imageVector = MiuixIcons.Share,
-                            contentDescription = StatisticsStrings.statisticsShareLabel.zh,
+                            contentDescription = StatisticsStrings.statisticsShareLabel.text,
                             tint = Color(QingyuTheme.actionIcon(dark)),
                         )
                     }
@@ -215,7 +215,7 @@ fun CourseStatisticsPage(
                         WeeklyComparisonCard(view = semester.comparison, dark = dark)
                     }
                     item(key = "achievements") {
-                        SectionBlock(StatisticsStrings.statisticsAchievementsTitle.zh) {
+                        SectionBlock(StatisticsStrings.statisticsAchievementsTitle.text) {
                             AchievementGrid(
                                 achievements = semester.achievements,
                                 dark = dark,
@@ -225,13 +225,13 @@ fun CourseStatisticsPage(
                     }
                     if (semester.showStoriesSection) {
                         item(key = "stories") {
-                            SectionBlock(StatisticsStrings.statisticsStoriesTitle.zh) {
+                            SectionBlock(StatisticsStrings.statisticsStoriesTitle.text) {
                                 StoryList(stories = semester.stories, dark = dark)
                             }
                         }
                     }
                     item(key = "dailyDistribution") {
-                        SectionBlock(StatisticsStrings.statisticsDailyDistribution.zh) {
+                        SectionBlock(StatisticsStrings.statisticsDailyDistribution.text) {
                             // 与周视图、导出图共用同一套柱图内核：网格按整数节、
                             // 纵轴上限 = 最大均值 + 1、柱宽/圆角/强调档全部同源。
                             val spec = semester.dailyChart
@@ -263,7 +263,7 @@ fun CourseStatisticsPage(
                         }
                     }
                     item(key = "natureRatio") {
-                        SectionBlock(StatisticsStrings.statisticsNatureRatio.zh) {
+                        SectionBlock(StatisticsStrings.statisticsNatureRatio.text) {
                             NatureRatioBlock(view = semester.nature, dark = dark)
                         }
                     }
@@ -271,7 +271,7 @@ fun CourseStatisticsPage(
                         // 行内是官方 ArrowPreference（自带 16dp 内边距与按压反馈），
                         // 卡片只留 2dp 呼吸位，避免叠成 32dp。
                         SectionBlock(
-                            title = StatisticsStrings.statisticsMoreTitle.zh,
+                            title = StatisticsStrings.statisticsMoreTitle.text,
                             insideMargin = PaddingValues(vertical = 2.dp),
                         ) {
                             AnalysisEntryList(
@@ -803,7 +803,7 @@ private fun boldSegments(content: String): AnnotatedString = buildAnnotatedStrin
 private fun NatureRatioBlock(view: NatureRatioView, dark: Boolean) {
     if (!view.hasData) {
         Text(
-            text = StatisticsStrings.statisticsNoData.zh,
+            text = StatisticsStrings.statisticsNoData.text,
             style = MiuixTheme.textStyles.footnote1,
             color = Color(QingyuTheme.secondaryText(dark)),
             modifier = Modifier
@@ -985,7 +985,7 @@ private fun WeekOverviewCard(
         ) {
             ComparisonCell(
                 value = week.courseCount.toString(),
-                label = StatisticsStrings.statisticsCourseCount.zh,
+                label = StatisticsStrings.statisticsCourseCount.text,
                 accent = Color(QingyuTheme.primaryText(dark)),
                 labelColor = Color(QingyuTheme.secondaryText(dark)),
                 alignEnd = false,
@@ -993,7 +993,7 @@ private fun WeekOverviewCard(
             )
             ComparisonCell(
                 value = week.sectionCount.toString(),
-                label = StatisticsStrings.statisticsSectionCount.zh,
+                label = StatisticsStrings.statisticsSectionCount.text,
                 accent = Color(QingyuTheme.primary(dark = dark)),
                 labelColor = Color(QingyuTheme.secondaryText(dark)),
                 alignEnd = false,

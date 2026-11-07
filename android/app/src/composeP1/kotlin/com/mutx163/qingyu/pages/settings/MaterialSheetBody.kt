@@ -16,11 +16,11 @@ import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import com.mutx163.qingyu.components.rememberSheetMaxHeight
 import kotlinx.coroutines.launch
 import top.yukonga.miuix.kmp.basic.TabRowWithContour
 
@@ -160,8 +160,7 @@ fun MaterialSheetBody(
 
     // Dart :120 / :162-166：面板整体最多半屏（顶部那圈 chrome 现在是 0）。载体把把手条与空标题行
     // 排在内容之外，正文上限要扣掉这两段，面板整体才等于「屏高 × 0.5」；否则面板会比原版高 42。
-    val screenHeightDp = LocalConfiguration.current.screenHeightDp
-    val maxHeight = ((screenHeightDp * MATERIAL_SHEET_MAX_HEIGHT_FACTOR).dp -
+    val maxHeight = (rememberSheetMaxHeight(MATERIAL_SHEET_MAX_HEIGHT_FACTOR) -
         MATERIAL_SHEET_CARRIER_CHROME).coerceAtLeast(0.dp)
 
     // Dart `bottomGapInsetOf`（`miuix_bottom_sheet.dart:459-461`）= 系统手势区 + 16。官方弹层只按
@@ -194,7 +193,7 @@ fun MaterialSheetBody(
             .heightIn(max = maxHeight),
     ) {
         TabRowWithContour(
-            tabs = SettingsMaterialSheetPage.TAB_LABELS.map { it.zh },
+            tabs = SettingsMaterialSheetPage.TAB_LABELS.map { it.text },
             // 选中态跟 pager 的真实页走：用户自己滑出来的那一页也由 `currentPage` 回收索引
             // （Dart :2342-2346 的 `onPageChanged` 是同一件事），不会出现「滑过去一格、页签还亮着
             // 原来那格」。

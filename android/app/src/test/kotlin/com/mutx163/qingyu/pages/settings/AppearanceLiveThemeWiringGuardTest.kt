@@ -189,9 +189,9 @@ class AppearanceLiveThemeWiringGuardTest {
         )
         val wired = Regex("""onModelChanged = onSettingsChanged""").findAll(index).count()
         assertEquals(
-            "外观 / 主题管理 / 恢复默认三页里接上即时回推的只有 $wired 处，应当恰好 3 处" +
-                "（少哪页，哪页改完设置就不换肤）。",
-            3,
+            "外观 / 主题管理 / 恢复默认 / 通用四页里接上即时回推的只有 $wired 处，应当恰好 4 处" +
+                "（少哪页，哪页改完设置就不生效；通用页漏接会让语言只写盘、界面不换）。",
+            4,
             wired,
         )
 

@@ -433,14 +433,14 @@ data class CourseActionSheetDetails(
             title = title,
             subtitle = previewLine
                 ?: if (coupleOnly) {
-                    CourseActionSheetStrings.courseActionCoupleExpandHint.zh
+                    CourseActionSheetStrings.courseActionCoupleExpandHint.text
                 } else {
-                    CourseActionSheetStrings.courseActionConflictExpandHint.zh
+                    CourseActionSheetStrings.courseActionConflictExpandHint.text
                 },
             expandedSubtitle = if (coupleOnly) {
-                CourseActionSheetStrings.courseActionCoupleCollapseHint.zh
+                CourseActionSheetStrings.courseActionCoupleCollapseHint.text
             } else {
-                CourseActionSheetStrings.courseActionConflictCollapseHint.zh
+                CourseActionSheetStrings.courseActionConflictCollapseHint.text
             },
             icon = if (coupleOnly) CourseActionIcon.COUPLE_HEART else CourseActionIcon.CONFLICT_BADGE,
             accent = if (coupleOnly) CourseActionEntryColor.COUPLE else CourseActionEntryColor.CONFLICT,
@@ -449,13 +449,13 @@ data class CourseActionSheetDetails(
                     previewIndex = index,
                     courseName = section.header.courseName,
                     badgeText = if (section.isConflict) {
-                        CourseActionSheetStrings.conflictLabel.zh
+                        CourseActionSheetStrings.conflictLabel.text
                     } else {
                         CourseActionSheetModel.coupleLabel(section.coupleKind)
                     },
                     scheduleLine = section.scheduleLine,
                     location = section.location.takeIf { it.isNotEmpty() },
-                    switchLabel = CourseActionSheetStrings.courseActionConflictSwitchAction.zh,
+                    switchLabel = CourseActionSheetStrings.courseActionConflictSwitchAction.text,
                     color = when {
                         section.coupleKind != null -> CourseActionEntryColor.COUPLE
                         section.isConflict -> CourseActionEntryColor.CONFLICT
@@ -645,8 +645,8 @@ object CourseActionSheetModel {
         val natureText = when {
             // Dart `:732`：对方课不显示性质。
             item.isPartnerCourse -> null
-            course.courseNature == CourseNature.ELECTIVE -> CourseActionSheetStrings.courseNatureElective.zh
-            else -> CourseActionSheetStrings.courseNatureRequired.zh
+            course.courseNature == CourseNature.ELECTIVE -> CourseActionSheetStrings.courseNatureElective.text
+            else -> CourseActionSheetStrings.courseNatureRequired.text
         }
         val headerIcon = when {
             item.coupleKind == CourseCoupleKind.TOGETHER -> CourseActionIcon.COUPLE_HEART
@@ -657,7 +657,7 @@ object CourseActionSheetModel {
             icon = headerIcon,
             courseName = course.name,
             natureText = natureText,
-            conflictText = if (item.isConflict) CourseActionSheetStrings.conflictLabel.zh else null,
+            conflictText = if (item.isConflict) CourseActionSheetStrings.conflictLabel.text else null,
             // Dart 这里复用 `_previewItemBadgeLabel`，对冲突课会把「冲突」再画一遍
             // （一次红字、一次课程色）。那是重复，不是设计：这里只留情侣角标。
             coupleText = coupleLabel(item.coupleKind),
@@ -677,7 +677,7 @@ object CourseActionSheetModel {
         rows += CourseActionDetailRow(
             kind = CourseActionRowKind.TEACHER,
             icon = CourseActionIcon.TEACHER,
-            title = teacher.ifEmpty { com.mutx163.qingyu.app.CourseActionStrings.unknownTeacher.zh },
+            title = teacher.ifEmpty { com.mutx163.qingyu.app.CourseActionStrings.unknownTeacher.text },
             subtitle = when {
                 introText != null -> weekDescription
                 shortName.isNotEmpty() -> CourseActionSheetStrings.shortName(shortName)
@@ -688,7 +688,7 @@ object CourseActionSheetModel {
         rows += CourseActionDetailRow(
             kind = CourseActionRowKind.LOCATION,
             icon = CourseActionIcon.LOCATION,
-            title = location.ifEmpty { com.mutx163.qingyu.app.CourseActionStrings.unknownLocation.zh },
+            title = location.ifEmpty { com.mutx163.qingyu.app.CourseActionStrings.unknownLocation.text },
             subtitle = if (shortName.isNotEmpty() && introText != null) {
                 CourseActionSheetStrings.shortName(shortName)
             } else {
@@ -719,14 +719,14 @@ object CourseActionSheetModel {
                 it.courseId == course.id && (it.sourceWeek == null || it.sourceWeek == week.toLong())
             }
             val taskTitle = when {
-                linkedTask == null -> CourseActionSheetStrings.taskAddFromCourse.zh
-                linkedTask.title.trim().isEmpty() -> CourseActionSheetStrings.taskHomeworkDefaultTitle.zh
+                linkedTask == null -> CourseActionSheetStrings.taskAddFromCourse.text
+                linkedTask.title.trim().isEmpty() -> CourseActionSheetStrings.taskHomeworkDefaultTitle.text
                 else -> linkedTask.title.trim()
             }
             val taskSubtitle = when {
-                linkedTask == null -> CourseActionSheetStrings.taskListTitle.zh
-                linkedTask.isCompleted -> CourseActionSheetStrings.taskCompletedSection.zh
-                else -> CourseActionSheetStrings.taskListTitle.zh
+                linkedTask == null -> CourseActionSheetStrings.taskListTitle.text
+                linkedTask.isCompleted -> CourseActionSheetStrings.taskCompletedSection.text
+                else -> CourseActionSheetStrings.taskListTitle.text
             }
             rows += CourseActionDetailRow(
                 kind = CourseActionRowKind.TASK,
@@ -744,7 +744,7 @@ object CourseActionSheetModel {
                 rows += CourseActionDetailRow(
                     kind = CourseActionRowKind.ALARM,
                     icon = CourseActionIcon.ALARM,
-                    title = com.mutx163.qingyu.app.CourseActionStrings.classAlarmActionLabel.zh,
+                    title = com.mutx163.qingyu.app.CourseActionStrings.classAlarmActionLabel.text,
                     showsChevron = true,
                     tap = CourseActionRowTap.OPEN_ALARM,
                 )
@@ -756,7 +756,7 @@ object CourseActionSheetModel {
             CourseActionDetailRow(
                 kind = CourseActionRowKind.NOTICE,
                 icon = CourseActionIcon.INFO,
-                title = com.mutx163.qingyu.app.CourseActionStrings.courseActionPartnerReadOnlyNotice.zh,
+                title = com.mutx163.qingyu.app.CourseActionStrings.courseActionPartnerReadOnlyNotice.text,
             )
         } else {
             CourseActionDetailRow(
@@ -804,8 +804,8 @@ object CourseActionSheetModel {
         if (date != null) parts += CourseActionSheetStrings.dateLabel(date.monthValue, date.dayOfMonth)
         parts += CourseActionSheetStrings.weekLabel(week)
         when {
-            course.isOddWeek -> parts += CourseActionSheetStrings.courseActionOddWeekShort.zh
-            course.isEvenWeek -> parts += CourseActionSheetStrings.courseActionEvenWeekShort.zh
+            course.isOddWeek -> parts += CourseActionSheetStrings.courseActionOddWeekShort.text
+            course.isEvenWeek -> parts += CourseActionSheetStrings.courseActionEvenWeekShort.text
         }
         return parts.joinToString(" ")
     }
@@ -816,7 +816,7 @@ object CourseActionSheetModel {
     fun resolveNoteTitle(introText: String?, sessionNoteText: String?): String = when {
         !sessionNoteText.isNullOrEmpty() -> sessionNoteText
         !introText.isNullOrEmpty() -> introText
-        else -> CourseActionSheetStrings.courseNoteAction.zh
+        else -> CourseActionSheetStrings.courseNoteAction.text
     }
 
     /**
@@ -827,10 +827,10 @@ object CourseActionSheetModel {
         val hasSession = !sessionNoteText.isNullOrEmpty()
         val hasWhole = !introText.isNullOrEmpty()
         return when {
-            hasSession && hasWhole -> CourseActionSheetStrings.courseNoteTileSubtitleBoth.zh
-            hasSession -> CourseActionSheetStrings.courseNoteTileSubtitleSession.zh
-            hasWhole -> CourseActionSheetStrings.courseNoteTileSubtitleWhole.zh
-            else -> CourseActionSheetStrings.courseNoteTileSubtitleEmpty.zh
+            hasSession && hasWhole -> CourseActionSheetStrings.courseNoteTileSubtitleBoth.text
+            hasSession -> CourseActionSheetStrings.courseNoteTileSubtitleSession.text
+            hasWhole -> CourseActionSheetStrings.courseNoteTileSubtitleWhole.text
+            else -> CourseActionSheetStrings.courseNoteTileSubtitleEmpty.text
         }
     }
 
@@ -861,15 +861,15 @@ object CourseActionSheetModel {
                 kind = CourseActionRowKind.WEATHER,
                 icon = CourseActionIcon.WEATHER,
                 title = CourseActionSheetStrings.weatherLineText(plan),
-                subtitle = CourseActionSheetStrings.weatherCourseTileSubtitle.zh,
+                subtitle = CourseActionSheetStrings.weatherCourseTileSubtitle.text,
             )
         }
         if (!weather.awaiting) return null
         return CourseActionDetailRow(
             kind = CourseActionRowKind.WEATHER,
             icon = CourseActionIcon.WEATHER,
-            title = CourseActionSheetStrings.weatherLoadingPlaceholder.zh,
-            subtitle = CourseActionSheetStrings.weatherCourseTileSubtitle.zh,
+            title = CourseActionSheetStrings.weatherLoadingPlaceholder.text,
+            subtitle = CourseActionSheetStrings.weatherCourseTileSubtitle.text,
             mutedTitle = true,
         )
     }
@@ -877,7 +877,7 @@ object CourseActionSheetModel {
     // ── 删除确认文案（`CourseDeleteConfirmSheet` 的 title / message 由本泳道组装）──
 
     /** 「删除整门课」确认的标题（Dart `l10n.deleteScheduleTitle`）。 */
-    fun deleteWholeCourseTitle(): String = CourseActionSheetStrings.deleteScheduleTitle.zh
+    fun deleteWholeCourseTitle(): String = CourseActionSheetStrings.deleteScheduleTitle.text
 
     /** 「删除整门课」确认的正文（Dart `_confirmDeleteCourse` 的 `deleteScheduleConfirmMessage`）。 */
     fun deleteWholeCourseMessage(section: CourseActionSection): String =
@@ -892,7 +892,7 @@ object CourseActionSheetModel {
         )
 
     /** 「删除本周这节课」确认的标题（Dart `l10n.deleteLessonTitle`）。 */
-    fun deleteOccurrenceTitle(): String = CourseActionSheetStrings.deleteLessonTitle.zh
+    fun deleteOccurrenceTitle(): String = CourseActionSheetStrings.deleteLessonTitle.text
 
     /** 「删除本周这节课」确认的正文（Dart `_confirmDeleteOccurrence` 的 `deleteOccurrenceConfirmMessage`）。 */
     fun deleteOccurrenceMessage(section: CourseActionSection, week: Int): String =
@@ -914,9 +914,9 @@ object CourseActionSheetModel {
 
     /** 情侣课角标文字（Dart `_previewItemBadgeLabel` 去掉冲突那一支）。 */
     fun coupleLabel(kind: CourseCoupleKind?): String? = when (kind) {
-        CourseCoupleKind.TOGETHER -> CourseActionSheetStrings.coupleTimetableLegendTogether.zh
-        CourseCoupleKind.PARTNER -> CourseActionSheetStrings.coupleTimetableLegendPartner.zh
-        CourseCoupleKind.MINE -> CourseActionSheetStrings.coupleTimetableLegendMine.zh
+        CourseCoupleKind.TOGETHER -> CourseActionSheetStrings.coupleTimetableLegendTogether.text
+        CourseCoupleKind.PARTNER -> CourseActionSheetStrings.coupleTimetableLegendPartner.text
+        CourseCoupleKind.MINE -> CourseActionSheetStrings.coupleTimetableLegendMine.text
         null -> null
     }
 

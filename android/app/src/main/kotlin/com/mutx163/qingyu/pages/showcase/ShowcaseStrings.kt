@@ -3,17 +3,7 @@ package com.mutx163.qingyu.pages.showcase
 /**
  * 文本占位符替换封装。
  */
-data class ShowcaseText(val key: String, val zh: String) {
-    fun filled(name: String, value: String): String = zh.replace("{$name}", value)
-
-    fun filled(vararg pairs: Pair<String, String>): String {
-        var result = zh
-        for ((name, value) in pairs) {
-            result = result.replace("{$name}", value)
-        }
-        return result
-    }
-}
+typealias ShowcaseText = com.mutx163.qingyu.app.ArbText
 
 /**
  * Miuix 展示册文案定义（对齐 Dart `lib/screens/miuix_showcase_screen.dart` 与 14 份子展示代码）。

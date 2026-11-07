@@ -12,18 +12,7 @@ package com.mutx163.qingyu.pages.import
  * `spreadsheet_course_import_screen.dart` / `course_auto_refresh_runner.dart` /
  * `home_pull_quick_import.dart` 里出现的 l10n 键抄全）。
  */
-data class ImportArbText(val key: String, val zh: String) {
-    /** 替换模板里的占位符（`{name}` → [value]）。 */
-    fun filled(name: String, value: String): String = zh.replace("{$name}", value)
-
-    fun filled(vararg pairs: Pair<String, String>): String {
-        var result = zh
-        for ((name, value) in pairs) {
-            result = result.replace("{$name}", value)
-        }
-        return result
-    }
-}
+typealias ImportArbText = com.mutx163.qingyu.app.ArbText
 
 fun String.filledImport(name: String, value: String): String = replace("{$name}", value)
 object ImportStrings {

@@ -136,12 +136,12 @@ object CourseFollowupStrings {
 
     /** 默认的 7 条星期文案（周一到周日）；壳里另有注入来源时以注入为准。 */
     fun weekdayLabels(): List<String> = listOf(
-        weekdayMon.zh,
-        weekdayTue.zh,
-        weekdayWed.zh,
-        weekdayThu.zh,
-        weekdayFri.zh,
-        weekdaySat.zh,
-        weekdaySun.zh,
+        weekdayMon.text,
+        weekdayTue.text,
+        weekdayWed.text,
+        weekdayThu.text,
+        weekdayFri.text,
+        weekdaySat.text,
+        weekdaySun.text,
     )
 }

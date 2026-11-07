@@ -85,7 +85,7 @@ object DataTransferApplyLogic {
      * （`CjkLiteralGateTest`），所以文案走 [TransferStrings.transferImportedProfileName]，值与发布版逐字相同。
      */
     val defaultImportedProfileName: String
-        get() = TransferStrings.transferImportedProfileName.zh
+        get() = TransferStrings.transferImportedProfileName.text
 
     /** 计划是否代表「全量备份」（档案表非空）。 */
     fun isFullBackupPlan(plan: TransferImportPlan): Boolean = plan.profiles.isNotEmpty()

@@ -139,14 +139,14 @@ fun CourseOverviewPage(
     // 官方 Overlay 系弹层的宿主由 Scaffold 注入，这里只维持原来的根容器层级。
     Box(modifier = Modifier.fillMaxSize()) {
         QingyuPageScaffold(
-            title = CourseOverviewStrings.courseOverviewTitle.zh,
+            title = CourseOverviewStrings.courseOverviewTitle.text,
             onBack = onBack,
             // Dart 侧两个后缀都是 FHeaderAction 图标按钮：排序 + 添加。
             // 右上动作键与左上返回键同一套外观：共享玻璃圆底 + 细边 + 小外浮影。
             actions = {
                 QingyuGlassIconButton(
                     onClick = { sortPopupOpen = true },
-                    contentDescription = CourseOverviewStrings.sortAction.zh,
+                    contentDescription = CourseOverviewStrings.sortAction.text,
                     icon = MiuixIcons.Sort,
                     tint = Color(QingyuTheme.actionIcon(dark)),
                     // 记下排序图标的屏幕矩形，弹层据此右对齐、贴其下方。
@@ -157,7 +157,7 @@ fun CourseOverviewPage(
                 )
                 QingyuGlassIconButton(
                     onClick = onAddCourse,
-                    contentDescription = CourseOverviewStrings.addNewCourseTooltip.zh,
+                    contentDescription = CourseOverviewStrings.addNewCourseTooltip.text,
                     icon = MiuixIcons.Add,
                     tint = Color(QingyuTheme.actionIcon(dark)),
                 )
@@ -403,7 +403,7 @@ private fun CourseGroupRow(
                     Spacer(modifier = Modifier.width(6.dp))
                     // Dart HyperosTag：destructive 12% 底色 + 11sp w500。
                     Text(
-                        text = CourseOverviewStrings.conflictLabel.zh,
+                        text = CourseOverviewStrings.conflictLabel.text,
                         style = MiuixTheme.textStyles.footnote2.shiftWeight(QingyuWeightDelta.MEDIUM),
                         color = Color(QingyuTheme.destructive()),
                         modifier = Modifier

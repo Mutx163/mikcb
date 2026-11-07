@@ -149,7 +149,7 @@ object ImportServiceMessages {
      */
     fun localize(raw: String?): String {
         if (raw.isNullOrBlank()) {
-            return unknownError.zh
+            return unknownError.text
         }
         val text = raw.trim()
         val parsed = parse(text)
@@ -187,20 +187,20 @@ object ImportServiceMessages {
             val rowNumber = args["rowNumber"] ?: "0"
             val innerCode = args["inner"].orEmpty()
             val message = render(innerCode, args)
-                ?: if (innerCode.isBlank()) unknownError.zh else fallback(innerCode, innerCode)
+                ?: if (innerCode.isBlank()) unknownError.text else fallback(innerCode, innerCode)
             return rowWarning.filled("rowNumber" to rowNumber, "message" to message)
         }
         val template = templates[code] ?: return null
         return when (code) {
-            "spreadsheet_format_unrecognized" -> template.zh
-            "spreadsheet_format_or_encoding_unrecognized" -> template.zh
-            "course_name_required" -> template.zh
-            "weekday_must_be_1_to_7" -> template.zh
-            "custom_weeks_required" -> template.zh
-            "class_weeks_required" -> template.zh
-            "start_week_must_be_at_least_1" -> template.zh
-            "end_week_before_start_week" -> template.zh
-            "weeks_range_required" -> template.zh
+            "spreadsheet_format_unrecognized" -> template.text
+            "spreadsheet_format_or_encoding_unrecognized" -> template.text
+            "course_name_required" -> template.text
+            "weekday_must_be_1_to_7" -> template.text
+            "custom_weeks_required" -> template.text
+            "class_weeks_required" -> template.text
+            "start_week_must_be_at_least_1" -> template.text
+            "end_week_before_start_week" -> template.text
+            "weeks_range_required" -> template.text
             "spreadsheet_xlsx_parse_failed" -> template.filled("error", args["error"].orEmpty())
             "spreadsheet_wakeup_insufficient_columns" -> template.filled(
                 "rowNumber" to (args["rowNumber"] ?: "0"),
@@ -239,12 +239,12 @@ object ImportServiceMessages {
                 "semesterWeekCount" to (args["semesterWeekCount"] ?: "0"),
                 "weeks" to args["weeks"].orEmpty(),
             )
-            else -> template.zh
+            else -> template.text
         }
     }
 
     /** 字段码 → 字段名；未登记原样透传（Dart `default: return fieldCode ?? ''`）。 */
-    fun fieldName(code: String?): String = fieldNames[code]?.zh ?: code.orEmpty()
+    fun fieldName(code: String?): String = fieldNames[code]?.text ?: code.orEmpty()
 
     /**
      * 未登记的码：像内部机器码就兜底，像人话就原样（Dart 的正则逐字照抄）。
@@ -253,7 +253,7 @@ object ImportServiceMessages {
      * `settings_mirror_snapshot_invalid:key1` ⇒ 命中 ⇒ 兜底。
      */
     private fun fallback(code: String, original: String): String =
-        if (INTERNAL_CODE_PATTERN.matches(code)) unknownError.zh else original
+        if (INTERNAL_CODE_PATTERN.matches(code)) unknownError.text else original
 
     /** Dart `_internalCodePattern`。 */
     private val INTERNAL_CODE_PATTERN = Regex("""^[a-z][a-z0-9_]*(:[A-Za-z0-9._-]+)?$""")

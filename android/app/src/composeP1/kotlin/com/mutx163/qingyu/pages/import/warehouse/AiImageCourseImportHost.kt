@@ -163,13 +163,13 @@ fun AiImageCourseImportHost(
         isImporting = isImporting,
         onCopyPrompt = {
             copyToClipboard(context, PROMPT_CLIP_LABEL, AI_IMPORT_SYSTEM_PROMPT)
-            toast(WarehouseStrings.promptCopiedHint.zh)
+            toast(WarehouseStrings.promptCopiedHint.text)
         },
         onShowPromptSheet = { showPromptSheet = true },
         onPasteFromClipboard = {
             val text = readClipboardText(context)?.trim().orEmpty()
             if (text.isEmpty()) {
-                toast(WarehouseStrings.clipboardNoText.zh)
+                toast(WarehouseStrings.clipboardNoText.text)
             }
             text
         },
@@ -184,7 +184,7 @@ fun AiImageCourseImportHost(
     val snapshot = repository.snapshot
     ImportPreviewDialog(
         show = previewResult != null && capacity == null,
-        importLabel = WarehouseStrings.importAiResultTitle.zh,
+        importLabel = WarehouseStrings.importAiResultTitle.text,
         courseCount = previewResult?.courses?.size ?: 0,
         // AI 解析拿不到文件里的最早上课日期：预填「设置里的开学日」，没有就取本周周一。
         semesterStartDate = snapshot.settings.semesterStartDate
@@ -232,7 +232,7 @@ fun AiImageCourseImportHost(
     // 走共享弹层套件（统一 16dp 侧边距 + 底部手势区让位），不直接调官方 Overlay。
     QingyuSheet(
         show = showPromptSheet,
-        title = WarehouseStrings.aiPromptSheetTitle.zh,
+        title = WarehouseStrings.aiPromptSheetTitle.text,
         onDismissRequest = { showPromptSheet = false },
         // 内容根自己带 16dp；框架侧横向归零 ⇒ 单边仍是 16，不再叠成 32。
         // 标题行没有 start/end action，归零不影响标题。
@@ -248,7 +248,7 @@ fun AiImageCourseImportHost(
                 .padding(16.dp),
         ) {
             Text(
-                text = WarehouseStrings.aiPromptSheetSubtitle.zh,
+                text = WarehouseStrings.aiPromptSheetSubtitle.text,
                 style = MiuixTheme.textStyles.body2,
                 color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
                 lineHeight = 20.sp,
@@ -297,7 +297,7 @@ private fun buildOutcomeMessage(
     droppedCount: Int,
 ): String {
     if (applied !is AiImageImportApply.Result.Done) {
-        return WarehouseStrings.saveFailed.zh
+        return WarehouseStrings.saveFailed.text
     }
     val base = ImportSharedModel.buildImportResultMessage(
         importedCount = applied.importedCount,

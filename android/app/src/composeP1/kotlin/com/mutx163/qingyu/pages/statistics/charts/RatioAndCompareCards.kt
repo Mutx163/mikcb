@@ -62,7 +62,7 @@ fun NatureRatioCard(
                 contentAlignment = Alignment.Center,
             ) {
                 Text(
-                    text = ChartsStrings.statisticsNoData.zh,
+                    text = ChartsStrings.statisticsNoData.text,
                     style = MiuixTheme.textStyles.body2,
                     color = Color(QingyuTheme.secondaryText(dark)),
                 )
@@ -96,7 +96,7 @@ fun NatureRatioCard(
             Column(modifier = Modifier.weight(1f)) {
                 NatureLegendItem(
                     color = ChartPalette.Blue,
-                    label = ChartsStrings.courseNatureRequired.zh,
+                    label = ChartsStrings.courseNatureRequired.text,
                     count = stats.requiredCount,
                     sections = stats.requiredSections,
                     ratio = stats.requiredRatio,
@@ -105,7 +105,7 @@ fun NatureRatioCard(
                 Spacer(Modifier.height(12.dp))
                 NatureLegendItem(
                     color = ChartPalette.Purple,
-                    label = ChartsStrings.courseNatureElective.zh,
+                    label = ChartsStrings.courseNatureElective.text,
                     count = stats.electiveCount,
                     sections = stats.electiveSections,
                     ratio = stats.electiveRatio,
@@ -193,7 +193,7 @@ fun WeeklyComparisonCard(
     ) {
         Column {
             ChartCardHeader(
-                title = ChartsStrings.statisticsComparisonTitle.zh,
+                title = ChartsStrings.statisticsComparisonTitle.text,
                 icon = MiuixIcons.Notes,
                 accent = ChartPalette.Orange,
                 dark = dark,
@@ -203,7 +203,7 @@ fun WeeklyComparisonCard(
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                 ComparisonCell(
                     value = comparison.weekSections.toString(),
-                    label = ChartsStrings.statisticsSectionCount.zh,
+                    label = ChartsStrings.statisticsSectionCount.text,
                     accent = primary,
                     dark = dark,
                     highlight = true,
@@ -223,7 +223,7 @@ fun WeeklyComparisonCard(
                 )
                 ComparisonCell(
                     value = ChartMath.oneDecimal(comparison.semesterAverageSections),
-                    label = ChartsStrings.statisticsComparisonAverage.zh,
+                    label = ChartsStrings.statisticsComparisonAverage.text,
                     accent = ChartPalette.Teal,
                     dark = dark,
                     alignEnd = true,
@@ -233,7 +233,7 @@ fun WeeklyComparisonCard(
             if (isFirstWeek) {
                 Spacer(Modifier.height(8.dp))
                 Text(
-                    text = ChartsStrings.statisticsComparisonNew.zh,
+                    text = ChartsStrings.statisticsComparisonNew.text,
                     style = MiuixTheme.textStyles.footnote2,
                     color = Color(QingyuTheme.secondaryText(dark)),
                 )

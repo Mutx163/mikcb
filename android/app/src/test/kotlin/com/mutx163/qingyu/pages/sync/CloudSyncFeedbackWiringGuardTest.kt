@@ -31,7 +31,7 @@ class CloudSyncFeedbackWiringGuardTest {
         assertTrue(
             "CloudSyncLogic.advancedSaveFeedback 不再消费 cloudSyncSaved：保存成功回到静默，" +
                 "2026-11-06 ARB 批补的键成了死键（copy_style 死键守卫也会拦）。",
-            "SyncStrings.cloudSyncSaved.zh" in model,
+            "SyncStrings.cloudSyncSaved.text" in model,
         )
         val page = readSource(
             "android/app/src/composeP1/kotlin/com/mutx163/qingyu/pages/sync/CloudSyncControllerPage.kt",
@@ -53,7 +53,7 @@ class CloudSyncFeedbackWiringGuardTest {
         )
         assertTrue(
             "advancedSaveFailureFeedback 不再引用 saveFailed：落盘失败提示丢失了 ARB 出处。",
-            "SyncStrings.saveFailed.zh" in model,
+            "SyncStrings.saveFailed.text" in model,
         )
         val page = readSource(
             "android/app/src/composeP1/kotlin/com/mutx163/qingyu/pages/sync/CloudSyncControllerPage.kt",
@@ -112,7 +112,7 @@ class CloudSyncFeedbackWiringGuardTest {
         // `item(key = "refresh_error_bar")` 与 `item(key = "create_backup")` 的
         // **错误条窗口**内——挪出窗口（挂到别处当死文案）→ 窗口内无键 → 红；
         // 掏空 clickable → 窗口内无 onClick → 红。
-        val emptyRetryIndex = emptyBranch.indexOf("SyncStrings.cloudBackupRetryAction.zh")
+        val emptyRetryIndex = emptyBranch.indexOf("SyncStrings.cloudBackupRetryAction.text")
         assertTrue(
             "空态分支里没有重试出口（cloudBackupRetryAction 无渲染点）：刷新失败在该状态下" +
                 "没有任何可点的东西，变成死提示（第三轮返工①两状态都要可见出口）。",
@@ -137,7 +137,7 @@ class CloudSyncFeedbackWiringGuardTest {
         assertTrue(
             "错误条窗口里没有键引用（cloudBackupRetryAction 被挪出错误条窗口）：重试动作词" +
                 "与错误条脱钩，绑不住真调用。",
-            "SyncStrings.cloudBackupRetryAction.zh" in barWindow,
+            "SyncStrings.cloudBackupRetryAction.text" in barWindow,
         )
         // 绑定同窗的精确形态：键引用必须落在**错误条 Row 的组合体内**（Row(参数) { … }
         // 的 trailing lambda——Text/键引用在 lambda 里，onClick 在圆括号参数里），且与该
@@ -145,7 +145,7 @@ class CloudSyncFeedbackWiringGuardTest {
         // 比较分不清「Row 体内」与「Row 之后的窗口内其他 item」）——挪到窗口内别的 item
         // （Row 体外）照样红。
         val rowIndex = barWindow.indexOf("Row(")
-        val barKeyIndex = barWindow.indexOf("SyncStrings.cloudBackupRetryAction.zh")
+        val barKeyIndex = barWindow.indexOf("SyncStrings.cloudBackupRetryAction.text")
         val barClickIndex = barWindow.indexOf("onClick = onRetryRefresh")
         assertTrue(
             "错误条窗口里找不到 Row（页面结构变了守卫跟着改）。",

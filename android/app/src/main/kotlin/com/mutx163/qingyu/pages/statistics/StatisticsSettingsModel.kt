@@ -81,7 +81,7 @@ class WeeklyReportNotificationUnavailableException(
 object StatisticsSettingsLogic {
 
     /** 落盘失败提示（ARB `saveFailed`）。 */
-    val SAVE_FAILED_MESSAGE: String = StatisticsStrings.saveFailed.zh
+    val SAVE_FAILED_MESSAGE: String = StatisticsStrings.saveFailed.text
 
     /**
      * 开关操作失败时给用户的那一句：
@@ -90,7 +90,7 @@ object StatisticsSettingsLogic {
      */
     fun failureMessage(error: Throwable): String =
         if (error is WeeklyReportNotificationUnavailableException) {
-            StatisticsStrings.weeklyReportPermissionMissing.zh
+            StatisticsStrings.weeklyReportPermissionMissing.text
         } else {
             SAVE_FAILED_MESSAGE
         }
@@ -107,15 +107,15 @@ object StatisticsSettingsLogic {
                 "time" to StatisticsDateLabels.clockTime(nextFireAt),
             )
         } else {
-            StatisticsStrings.weeklyReportDisabledHint.zh
+            StatisticsStrings.weeklyReportDisabledHint.text
         }
 
     /** 切换成功后的提示：开 → `weeklyReportEnabledHint`，关 → `weeklyReportDisabledHint`。 */
     fun toggleResultMessage(enabled: Boolean): String =
         if (enabled) {
-            StatisticsStrings.weeklyReportEnabledHint.zh
+            StatisticsStrings.weeklyReportEnabledHint.text
         } else {
-            StatisticsStrings.weeklyReportDisabledHint.zh
+            StatisticsStrings.weeklyReportDisabledHint.text
         }
 
     /**
@@ -130,9 +130,9 @@ object StatisticsSettingsLogic {
     ): StatisticsSettingsViewState {
         val nextFireAt = WeeklyReportSchedule.nextFireAt(now)
         return StatisticsSettingsViewState(
-            title = StatisticsStrings.statisticsSettingsTitle.zh,
-            sectionTitle = StatisticsStrings.weeklyReportTitle.zh,
-            tileTitle = StatisticsStrings.weeklyReportTitle.zh,
+            title = StatisticsStrings.statisticsSettingsTitle.text,
+            sectionTitle = StatisticsStrings.weeklyReportTitle.text,
+            tileTitle = StatisticsStrings.weeklyReportTitle.text,
             subtitle = subtitle(weeklyReportEnabled, nextFireAt),
             isEnabled = weeklyReportEnabled,
             nextFireAt = nextFireAt,

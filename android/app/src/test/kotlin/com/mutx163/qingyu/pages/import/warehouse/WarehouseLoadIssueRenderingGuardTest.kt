@@ -97,10 +97,10 @@ class WarehouseLoadIssueRenderingGuardTest {
     @Test
     fun `详情页脚本状态用的是现成 ARB 文案`() {
         listOf(
-            "WarehouseStrings.scriptStatusTitle.zh",
+            "WarehouseStrings.scriptStatusTitle.text",
             "WarehouseStrings.scriptLoadedLength.filled(",
-            "WarehouseStrings.scriptEmpty.zh",
-            "WarehouseStrings.warehouseScriptLoadFailed.zh",
+            "WarehouseStrings.scriptEmpty.text",
+            "WarehouseStrings.warehouseScriptLoadFailed.text",
         ).forEach { key ->
             assertTrue("脚本状态卡必须用 ARB 键 `$key`，不许自拟中文", detailPageSource.contains(key))
         }

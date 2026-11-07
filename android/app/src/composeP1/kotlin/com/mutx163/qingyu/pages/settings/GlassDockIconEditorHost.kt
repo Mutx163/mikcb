@@ -56,7 +56,7 @@ fun GlassDockIconEditorHost(
                 Log.e(LOG_TAG, "glass dock icon did not land: $name")
                 Toast.makeText(
                     context,
-                    SettingsStringsExt4.saveFailed.zh,
+                    SettingsStringsExt4.saveFailed.text,
                     Toast.LENGTH_SHORT,
                 ).show()
             }

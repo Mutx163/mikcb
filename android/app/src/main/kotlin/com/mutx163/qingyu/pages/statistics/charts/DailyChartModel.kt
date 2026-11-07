@@ -143,8 +143,8 @@ object DailyChartModel {
 
     /** 触摸提示文案：学期口径保留一位小数（`rod.toY.toStringAsFixed(1)`）。 */
     fun averageTooltip(value: Double): String =
-        "${ChartMath.oneDecimal(value)} ${ChartsStrings.statisticsSectionsUnit.zh}"
+        "${ChartMath.oneDecimal(value)} ${ChartsStrings.statisticsSectionsUnit.text}"
 
     /** 触摸提示文案：周口径取整（`rod.toY.toInt()`）。 */
-    fun weekTooltip(value: Int): String = "$value ${ChartsStrings.statisticsSectionsUnit.zh}"
+    fun weekTooltip(value: Int): String = "$value ${ChartsStrings.statisticsSectionsUnit.text}"
 }

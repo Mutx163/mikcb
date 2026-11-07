@@ -155,7 +155,7 @@ fun LocationTimeMatchHost(
                     }
                     if (base == null) {
                         // 组在打开表单后消失：别报「已保存」。
-                        toast(LocationTimeMatchStrings.saveFailed.zh)
+                        toast(LocationTimeMatchStrings.saveFailed.text)
                     } else {
                         val result = controller.save(
                             base.copy(
@@ -167,15 +167,15 @@ fun LocationTimeMatchHost(
                         )
                         when (result) {
                             is LocationTimeGroupChange.Applied -> {
-                                if (persist(result.groups, LocationTimeMatchStrings.saveFailed.zh)) {
+                                if (persist(result.groups, LocationTimeMatchStrings.saveFailed.text)) {
                                     editorTarget = null
-                                    toast(LocationTimeMatchStrings.saved.zh)
+                                    toast(LocationTimeMatchStrings.saved.text)
                                 }
                             }
 
                             is LocationTimeGroupChange.Rejected -> toast(result.message)
                             LocationTimeGroupChange.Missing ->
-                                toast(LocationTimeMatchStrings.saveFailed.zh)
+                                toast(LocationTimeMatchStrings.saveFailed.text)
                         }
                     }
                 },
@@ -199,7 +199,7 @@ fun LocationTimeMatchHost(
             when (val result = controller.setEnabled(groupId, enabled)) {
                 is LocationTimeGroupChange.Applied -> {
                     if (result.groups != workingGroups) {
-                        persist(result.groups, LocationTimeMatchStrings.saveFailed.zh)
+                        persist(result.groups, LocationTimeMatchStrings.saveFailed.text)
                     }
                 }
 
@@ -210,7 +210,7 @@ fun LocationTimeMatchHost(
         onApplyActive = {
             if (onApplyActive == null) {
                 // 能力没接就实话实说，不假装「已重新匹配」（守卫也拦着 `{}` 假成功）。
-                toast(LocationTimeMatchStrings.applyUnavailable.zh)
+                toast(LocationTimeMatchStrings.applyUnavailable.text)
             } else {
                 val count = matchedCourseCount(workingGroups)
                 if (count <= 0) {
@@ -234,7 +234,7 @@ fun LocationTimeMatchHost(
     OverlayDialog(
         insideMargin = DpSize(16.dp, 16.dp),
         show = pendingDelete != null,
-        title = deleting?.let { LocationTimeMatchStrings.deleteTitle.zh },
+        title = deleting?.let { LocationTimeMatchStrings.deleteTitle.text },
         summary = deleting?.let {
             LocationTimeMatchStrings.deleteMessage.filled("name", it.name)
         },
@@ -249,12 +249,12 @@ fun LocationTimeMatchHost(
             ) {
                 TextButton(
                     modifier = Modifier.weight(1f),
-                    text = LocationTimeMatchStrings.cancelAction.zh,
+                    text = LocationTimeMatchStrings.cancelAction.text,
                     onClick = { pendingDelete = null },
                 )
                 TextButton(
                     modifier = Modifier.weight(1f),
-                    text = LocationTimeMatchStrings.deleteAction.zh,
+                    text = LocationTimeMatchStrings.deleteAction.text,
                     // 危险色只染**字**（`color` 是底色，传错就是「红底 + 默认灰字」）。
                     colors = ButtonDefaults.textButtonColors(textColor = Color(QingyuTheme.error(dark))),
                     onClick = {
@@ -264,8 +264,8 @@ fun LocationTimeMatchHost(
                         if (target != null) {
                             when (val result = controller.delete(target.id)) {
                                 is LocationTimeGroupChange.Applied -> {
-                                    if (persist(result.groups, LocationTimeMatchStrings.deleteFailed.zh)) {
-                                        toast(LocationTimeMatchStrings.deleted.zh)
+                                    if (persist(result.groups, LocationTimeMatchStrings.deleteFailed.text)) {
+                                        toast(LocationTimeMatchStrings.deleted.text)
                                     }
                                 }
 
@@ -301,7 +301,7 @@ fun LocationTimeMatchHost(
             ) {
                 TextButton(
                     modifier = Modifier.weight(1f),
-                    text = LocationTimeMatchStrings.cancelAction.zh,
+                    text = LocationTimeMatchStrings.cancelAction.text,
                     onClick = { pendingApplyCount = null },
                 )
                 TextButton(
@@ -319,7 +319,7 @@ fun LocationTimeMatchHost(
                             null
                         }
                         if (stats == null) {
-                            toast(LocationTimeMatchStrings.saveFailed.zh)
+                            toast(LocationTimeMatchStrings.saveFailed.text)
                         } else {
                             toast(applyResultText(listModel, stats))
                         }

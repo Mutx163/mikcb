@@ -160,7 +160,7 @@ fun BingGalleryHost(
             if (queued?.dateKey != item.dateKey) {
                 queued = item
                 state = BingGalleryApplyPlanner.stateQueued(state, item.dateKey)
-                toast(SettingsStringsExt1.bingWallpaperDownloadQueued.zh)
+                toast(SettingsStringsExt1.bingWallpaperDownloadQueued.text)
             }
             return
         }
@@ -193,7 +193,7 @@ fun BingGalleryHost(
                 is BingGalleryDownloadResult.Failure -> {
                     toast(
                         if (result.statusCode < 0) {
-                            SettingsStringsExt1.bingWallpaperDownloadFailed.zh
+                            SettingsStringsExt1.bingWallpaperDownloadFailed.text
                         } else {
                             SettingsStringsExt1.bingWallpaperDownloadStatus
                                 .filled("status", result.statusCode.toString())
@@ -222,7 +222,7 @@ fun BingGalleryHost(
                     val saved = runCatching { store.save(outcome.settings) }
                     if (saved.isFailure) {
                         Log.e(LOG_TAG, "保存壁纸设置失败，文件已在 $path", saved.exceptionOrNull())
-                        toast(SettingsStringsExt2.saveFailed.zh)
+                        toast(SettingsStringsExt2.saveFailed.text)
                         return@launch
                     }
                     // 溢出回收：删文件不阻塞交互，删不掉只记日志（不静默失败，但不至于弹错）。
@@ -251,13 +251,13 @@ fun BingGalleryHost(
     LaunchedEffect(Unit) { load() }
 
     QingyuPageScaffold(
-        title = SettingsBingWallpaperGalleryPage.TITLE.zh,
+        title = SettingsBingWallpaperGalleryPage.TITLE.text,
         onBack = onBack,
         actions = {
             IconButton(onClick = { if (!state.loading) load() }) {
                 Icon(
                     imageVector = MiuixIcons.Refresh,
-                    contentDescription = SettingsStringsExt1.bingWallpaperGalleryRetry.zh,
+                    contentDescription = SettingsStringsExt1.bingWallpaperGalleryRetry.text,
                     modifier = Modifier.size(24.dp),
                 )
             }
@@ -290,12 +290,12 @@ fun BingGalleryHost(
                 // 一次都没成功过：失败说明 + 重试入口（断网时的空白页最像「功能坏了」）。
                 state.failed -> {
                     item(key = "failed") {
-                        GalleryHint(SettingsStringsExt1.bingWallpaperGalleryFailed.zh)
+                        GalleryHint(SettingsStringsExt1.bingWallpaperGalleryFailed.text)
                     }
                     item(key = "retry") {
                         QingyuCard(onClick = { load() }) {
                             Text(
-                                text = SettingsStringsExt1.bingWallpaperGalleryRetry.zh,
+                                text = SettingsStringsExt1.bingWallpaperGalleryRetry.text,
                                 style = MiuixTheme.textStyles.body1,
                                 modifier = Modifier.padding(16.dp),
                             )
@@ -307,7 +307,7 @@ fun BingGalleryHost(
                     // 显示的是上次那份：网格照常，顶部一条来路说明。
                     if (state.showingCached) {
                         item(key = "cached") {
-                            GalleryHint(SettingsStringsExt1.wallpaperGalleryShowingCached.zh)
+                            GalleryHint(SettingsStringsExt1.wallpaperGalleryShowingCached.text)
                         }
                     }
                     // 两列网格：一行两个卡片（官方列表承载滚动，滚动手感与别的设置页一致）。
@@ -411,7 +411,7 @@ private fun BingWallpaperCard(
                 )
                 // 缩略图**失败**：保留「轻点重试」的说明（点卡片只重试这一张，判据在模型层）。
                 card.state == BingWallpaperCardState.THUMB_FAILED -> Text(
-                    text = SettingsStringsExt1.wallpaperThumbRetryHint.zh,
+                    text = SettingsStringsExt1.wallpaperThumbRetryHint.text,
                     style = MiuixTheme.textStyles.footnote2,
                     color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
                     modifier = Modifier.align(Alignment.Center),

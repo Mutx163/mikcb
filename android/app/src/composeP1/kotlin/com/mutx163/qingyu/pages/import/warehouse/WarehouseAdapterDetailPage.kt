@@ -85,7 +85,7 @@ fun WarehouseAdapterDetailPage(
     // 标题取适配器名（与 Flutter 发布版 `title: Text(adapter.adapterName)` 一致），
     // 避免与下方「适配器信息」分组标题重复。骨架、顶栏、返回键走共享套件（R1）；滚动走 QingyuPageList（R2）。
     QingyuPageScaffold(
-        title = adapter.adapterName.ifEmpty { WarehouseStrings.adapterInfoTitle.zh },
+        title = adapter.adapterName.ifEmpty { WarehouseStrings.adapterInfoTitle.text },
         onBack = onBack,
         bottomBar = {
             Box(
@@ -97,7 +97,7 @@ fun WarehouseAdapterDetailPage(
                 Button(
                     onClick = onOpenWebLogin,
                     modifier = Modifier.fillMaxWidth(),
-                    content = { Text(text = WarehouseStrings.openLoginInAppAction.zh) },
+                    content = { Text(text = WarehouseStrings.openLoginInAppAction.text) },
                 )
             }
         },
@@ -111,7 +111,7 @@ fun WarehouseAdapterDetailPage(
         ) {
             // ── 分组：适配器信息（名称 / 学校 / 类别 / 适配者 / 学校代码）──
             item(key = "meta") {
-                QingyuSectionTitle(WarehouseStrings.adapterInfoTitle.zh)
+                QingyuSectionTitle(WarehouseStrings.adapterInfoTitle.text)
                 QingyuCard(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -135,9 +135,9 @@ fun WarehouseAdapterDetailPage(
                         HorizontalDivider()
                         Spacer(modifier = Modifier.height(12.dp))
 
-                        DetailMetaRow(WarehouseStrings.categoryLabel.zh, adapter.category)
+                        DetailMetaRow(WarehouseStrings.categoryLabel.text, adapter.category)
                         Spacer(modifier = Modifier.height(8.dp))
-                        DetailMetaRow(WarehouseStrings.maintainerLabel.zh, adapter.maintainer.ifEmpty { "社区成员" })
+                        DetailMetaRow(WarehouseStrings.maintainerLabel.text, adapter.maintainer.ifEmpty { "社区成员" })
                         if (adapter.schoolCode.isNotEmpty()) {
                             Spacer(modifier = Modifier.height(8.dp))
                             DetailMetaRow("学校代码", adapter.schoolCode)
@@ -150,7 +150,7 @@ fun WarehouseAdapterDetailPage(
             // 发布版（`warehouse_adapter_detail_screen.dart:124-159`）把这一组紧跟「适配器信息」：
             // 用户点进详情最想先确认的就是「这个适配器的脚本到底能不能用」。
             item(key = "script_status") {
-                QingyuSectionTitle(WarehouseStrings.scriptStatusTitle.zh)
+                QingyuSectionTitle(WarehouseStrings.scriptStatusTitle.text)
                 QingyuCard(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -185,7 +185,7 @@ fun WarehouseAdapterDetailPage(
 
             // ── 分组：自定义登录地址 ──
             item(key = "custom_url") {
-                QingyuSectionTitle(WarehouseStrings.customLoginAddressAction.zh)
+                QingyuSectionTitle(WarehouseStrings.customLoginAddressAction.text)
                 QingyuCard(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -196,7 +196,7 @@ fun WarehouseAdapterDetailPage(
                     Column(modifier = Modifier.fillMaxWidth()) {
                         Text(
                             text = if (isCustomized) {
-                                WarehouseStrings.adapterOverrideImportUrlHint.zh
+                                WarehouseStrings.adapterOverrideImportUrlHint.text
                             } else {
                                 "可覆盖默认登录地址（如学校内网或 VPN 登录页）"
                             },
@@ -224,7 +224,7 @@ fun WarehouseAdapterDetailPage(
                             Button(
                                 onClick = { onSaveCustomUrl(editUrl) },
                                 modifier = Modifier.weight(1f),
-                                content = { Text(text = WarehouseStrings.saveAction.zh) },
+                                content = { Text(text = WarehouseStrings.saveAction.text) },
                             )
                             if (isCustomized) {
                                 Button(
@@ -233,7 +233,7 @@ fun WarehouseAdapterDetailPage(
                                         onClearCustomUrl()
                                     },
                                     modifier = Modifier.weight(1f),
-                                    content = { Text(text = WarehouseStrings.clearCustomLoginAddressAction.zh) },
+                                    content = { Text(text = WarehouseStrings.clearCustomLoginAddressAction.text) },
                                     colors = ButtonDefaults.buttonColors(
                                         color = MiuixTheme.colorScheme.surfaceVariant,
                                         contentColor = MiuixTheme.colorScheme.error,
@@ -247,7 +247,7 @@ fun WarehouseAdapterDetailPage(
 
             // ── 分组：更多操作（复制登录地址 / 复制脚本地址）──
             item(key = "links") {
-                QingyuSectionTitle(WarehouseStrings.moreActionsTooltip.zh)
+                QingyuSectionTitle(WarehouseStrings.moreActionsTooltip.text)
                 QingyuCard(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -262,7 +262,7 @@ fun WarehouseAdapterDetailPage(
                         Button(
                             onClick = onCopyLoginUrl,
                             modifier = Modifier.weight(1f),
-                            content = { Text(text = WarehouseStrings.copyLoginAddressAction.zh) },
+                            content = { Text(text = WarehouseStrings.copyLoginAddressAction.text) },
                             colors = ButtonDefaults.buttonColors(
                                 color = MiuixTheme.colorScheme.surfaceVariant,
                                 contentColor = MiuixTheme.colorScheme.primary,
@@ -271,7 +271,7 @@ fun WarehouseAdapterDetailPage(
                         Button(
                             onClick = onCopyScriptUrl,
                             modifier = Modifier.weight(1f),
-                            content = { Text(text = WarehouseStrings.copyScriptAddressAction.zh) },
+                            content = { Text(text = WarehouseStrings.copyScriptAddressAction.text) },
                             colors = ButtonDefaults.buttonColors(
                                 color = MiuixTheme.colorScheme.surfaceVariant,
                                 contentColor = MiuixTheme.colorScheme.primary,
@@ -306,7 +306,7 @@ private fun ScriptStatusBody(status: WarehouseScriptStatus) {
         )
 
         is WarehouseScriptStatus.Empty -> Text(
-            text = WarehouseStrings.scriptEmpty.zh,
+            text = WarehouseStrings.scriptEmpty.text,
             style = MiuixTheme.textStyles.footnote1,
             color = MiuixTheme.colorScheme.error,
         )
@@ -314,7 +314,7 @@ private fun ScriptStatusBody(status: WarehouseScriptStatus) {
         is WarehouseScriptStatus.Failed -> Text(
             // 「无法读取适配器脚本」：比「无法读取脚本文件」更贴这一屏（用户在看的是适配器详情）。
             // `Failed.issue` 仍不上屏——四档原因那句都在列表页那台机器上，这里只说清「脚本没读到」。
-            text = WarehouseStrings.warehouseScriptLoadFailed.zh,
+            text = WarehouseStrings.warehouseScriptLoadFailed.text,
             style = MiuixTheme.textStyles.footnote1,
             color = MiuixTheme.colorScheme.error,
         )

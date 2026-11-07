@@ -188,7 +188,7 @@ fun WallpaperPositionPickerHost(
                 // 无读权限 / 空文件 / 写盘失败：不把不存在的路径写进设置。
                 Toast.makeText(
                     context,
-                    SettingsStringsExt2.saveFailed.zh,
+                    SettingsStringsExt2.saveFailed.text,
                     Toast.LENGTH_SHORT,
                 ).show()
                 return@launch
@@ -311,7 +311,7 @@ fun WallpaperPositionPickerHost(
             Log.e(LOG_TAG, "save wallpaper framing failed", saved.exceptionOrNull())
             Toast.makeText(
                 context,
-                SettingsStringsExt2.saveFailed.zh,
+                SettingsStringsExt2.saveFailed.text,
                 Toast.LENGTH_SHORT,
             ).show()
             return
@@ -356,16 +356,16 @@ fun WallpaperPositionPickerHost(
                     Column {
                         Text(
                             text = if (!hasWallpaper) {
-                                SettingsStringsExt1.homePageImageNotSelected.zh
+                                SettingsStringsExt1.homePageImageNotSelected.text
                             } else {
-                                SettingsStringsExt1.homePageWallpaperFileMissingTitle.zh
+                                SettingsStringsExt1.homePageWallpaperFileMissingTitle.text
                             },
                             style = MiuixTheme.textStyles.body1,
                             color = MiuixTheme.colorScheme.onBackground,
                         )
                         if (imageUnavailable) {
                             Text(
-                                text = SettingsStringsExt1.homePageWallpaperFileMissingSubtitle.zh,
+                                text = SettingsStringsExt1.homePageWallpaperFileMissingSubtitle.text,
                                 style = MiuixTheme.textStyles.body2,
                                 color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
                                 modifier = Modifier.padding(top = 4.dp),
@@ -389,11 +389,11 @@ fun WallpaperPositionPickerHost(
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     TextButton(
-                        text = SettingsWallpaperPositionPage.EXIT.zh,
+                        text = SettingsWallpaperPositionPage.EXIT.text,
                         onClick = { exit() },
                     )
                     Text(
-                        text = SettingsWallpaperPositionPage.TITLE.zh,
+                        text = SettingsWallpaperPositionPage.TITLE.text,
                         modifier = Modifier.weight(1f),
                         style = MiuixTheme.textStyles.body1,
                         color = MiuixTheme.colorScheme.onBackground,
@@ -402,7 +402,7 @@ fun WallpaperPositionPickerHost(
                         textAlign = TextAlign.Center,
                     )
                     TextButton(
-                        text = SettingsWallpaperPositionPage.DONE.zh,
+                        text = SettingsWallpaperPositionPage.DONE.text,
                         onClick = { confirm() },
                         enabled = hasWallpaper && !imageUnavailable,
                         colors = ButtonDefaults.textButtonColorsPrimary(),
@@ -429,7 +429,7 @@ fun WallpaperPositionPickerHost(
                 ) {
                     if (hasWallpaper && !imageUnavailable) {
                         TextButton(
-                            text = SettingsWallpaperPositionPage.RESET.zh,
+                            text = SettingsWallpaperPositionPage.RESET.text,
                             onClick = {
                                 alignX = WallpaperFraming.DEFAULT.alignX
                                 alignY = WallpaperFraming.DEFAULT.alignY
@@ -439,7 +439,7 @@ fun WallpaperPositionPickerHost(
                         )
                     }
                     TextButton(
-                        text = SettingsWallpaperPositionPage.SWITCH.zh,
+                        text = SettingsWallpaperPositionPage.SWITCH.text,
                         onClick = {
                             picker.launch(
                                 PickVisualMediaRequest(

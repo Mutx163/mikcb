@@ -92,7 +92,7 @@ object SettingsHolidayPage {
         return SettingsPageSpec(
             id = ID,
             titleKey = s.holidaySettingsTitle.key,
-            title = s.holidaySettingsTitle.zh,
+            title = s.holidaySettingsTitle.text,
             nodes = listOf(
                 // ── 区块 1：总开关（:503-519）
                 SettingsGroup(
@@ -114,7 +114,7 @@ object SettingsHolidayPage {
                 SettingsLabel(
                     id = "holiday.section.custom",
                     textKey = s.customHolidayTitle.key,
-                    text = s.customHolidayTitle.zh,
+                    text = s.customHolidayTitle.text,
                 ),
                 SettingsGroup(
                     id = "holiday.group.custom",
@@ -129,8 +129,8 @@ object SettingsHolidayPage {
                     note = "添加假期按钮（:576-592）：整宽官方 Button 装在控制卡里，" +
                         "与数据迁移页的空态按钮同一写法",
                     labelKey = s.customHolidayAdd.key,
-                    label = s.customHolidayAdd.zh,
-                    texts = listOf(SettingsInlineText(s.customHolidayAdd.key, s.customHolidayAdd.zh)),
+                    label = s.customHolidayAdd.text,
+                    texts = listOf(SettingsInlineText(s.customHolidayAdd.key, s.customHolidayAdd.text)),
                 ),
                 SettingsGap("holiday.gap.custom"),
 
@@ -141,7 +141,7 @@ object SettingsHolidayPage {
                     // :601 `holidayDataYearLabel(holidayData?.year ?? '')`——年份缺失时
                     // Dart 会渲染成「 年法定节假日」（前导空格 + 空年份）。加载中 / 没数据
                     // 的时候直接退回不带年份的那句「法定节假日」，别把半个模板摆上屏。
-                    text = officialSectionLabel(data).zh,
+                    text = officialSectionLabel(data).text,
                 ),
                 SettingsGroup(
                     id = "holiday.group.official",
@@ -152,7 +152,7 @@ object SettingsHolidayPage {
             // 这里表达成渲染层的 action 槽（点击等价一次 NAVIGATE 到 ROUTE_ADVANCED）。
             topBarAction = SettingsTopAction(
                 route = ROUTE_ADVANCED,
-                semanticsLabel = s.holidayAdvancedTitle.zh,
+                semanticsLabel = s.holidayAdvancedTitle.text,
             ),
         )
     }
@@ -247,7 +247,7 @@ object SettingsHolidayPage {
         return if (data.year.isEmpty() && data.isLoading) {
             s.holidayStatutoryLabel
         } else {
-            ArbText(s.holidayDataYearLabel.key, s.holidayDataYearLabel.filled("year", data.year))
+            s.holidayDataYearLabel.withArguments("year", data.year)
         }
     }
 
@@ -390,7 +390,7 @@ object SettingsHolidayPage {
                     if (vacationEntries.isNotEmpty()) vacationEntries else groupEntries
                 val name = localizeHolidayName(representative.first().name, s.holidayStatutoryLabel)
                 items += HolidayItem(
-                    name = name.zh,
+                    name = name.text,
                     startDate = isoDate(representative.first().date),
                     endDate = isoDate(representative.last().date),
                     // 类型照实给（:442）；三值 HolidayType → 两档 HolidayKind 的映射见 [displayKind]
@@ -402,7 +402,7 @@ object SettingsHolidayPage {
             } else if (entry.type == HolidayType.AdjustedWorkday) {
                 // :446-457 无组的补班日单独成项：名称固定「补班」、起止同日
                 items += HolidayItem(
-                    name = s.holidayMakeupWorkday.zh,
+                    name = s.holidayMakeupWorkday.text,
                     startDate = isoDate(entry.date),
                     endDate = isoDate(entry.date),
                     type = HolidayKind.ADJUSTED_WORKDAY,
@@ -453,14 +453,14 @@ object SettingsHolidayPage {
         return when {
             startDate == endDate -> RangeText(
                 s.holidayDateSameDay.key,
-                s.holidayDateSameDay.zh
+                s.holidayDateSameDay.text
                     .replace("{month}", startDate.month.toString())
                     .replace("{day}", startDate.day.toString()),
             )
 
             startDate.month == endDate.month -> RangeText(
                 s.holidayDateSameMonth.key,
-                s.holidayDateSameMonth.zh
+                s.holidayDateSameMonth.text
                     .replace("{month}", startDate.month.toString())
                     .replace("{start}", startDate.day.toString())
                     .replace("{end}", endDate.day.toString()),
@@ -468,7 +468,7 @@ object SettingsHolidayPage {
 
             else -> RangeText(
                 s.holidayDateDiffMonth.key,
-                s.holidayDateDiffMonth.zh
+                s.holidayDateDiffMonth.text
                     .replace("{startMonth}", startDate.month.toString())
                     .replace("{startDay}", startDate.day.toString())
                     .replace("{endMonth}", endDate.month.toString())

@@ -148,7 +148,7 @@ fun DayAgendaHomeworkDot(
         Icon(
             imageVector = MiuixIcons.Tasks,
             // ARB `courseTaskAction` =「作业」，不再写死字面量（CJK 门禁账）
-            contentDescription = DayViewStrings.courseTaskAction.zh,
+            contentDescription = DayViewStrings.courseTaskAction.text,
             modifier = Modifier.size(11.dp),
             tint = iconColor,
         )
@@ -187,7 +187,7 @@ fun DayAgendaNoteAction(
             )
             Spacer(modifier = Modifier.width(4.dp))
             Text(
-                text = DayViewStrings.courseNoteAction.zh,
+                text = DayViewStrings.courseNoteAction.text,
                 style = MiuixTheme.textStyles.footnote2,
                 color = ink,
             )
@@ -228,7 +228,7 @@ fun DayAgendaTaskAction(
             )
             Spacer(modifier = Modifier.width(4.dp))
             Text(
-                text = DayViewStrings.courseTaskAction.zh,
+                text = DayViewStrings.courseTaskAction.text,
                 style = MiuixTheme.textStyles.footnote2.shiftWeight(if (hasTask) QingyuWeightDelta.SEMIBOLD else 0),
                 color = ink,
             )

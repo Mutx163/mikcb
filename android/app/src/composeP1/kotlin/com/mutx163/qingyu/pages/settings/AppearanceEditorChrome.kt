@@ -184,7 +184,7 @@ internal fun AppearanceEditorTopChrome(
             verticalAlignment = Alignment.CenterVertically,
         ) {
             CapsuleButton(
-                label = SettingsStringsExt1.cancelAction.zh,
+                label = SettingsStringsExt1.cancelAction.text,
                 emphasized = false,
                 onClick = onCancel,
             )
@@ -195,7 +195,7 @@ internal fun AppearanceEditorTopChrome(
                 DayWeekSegmented(dayView = dayView, onDayViewChange = onDayViewChange)
             }
             CapsuleButton(
-                label = SettingsStringsExt1.appearanceEditorDoneAction.zh,
+                label = SettingsStringsExt1.appearanceEditorDoneAction.text,
                 emphasized = true,
                 onClick = onDone,
             )
@@ -260,12 +260,12 @@ private fun DayWeekSegmented(dayView: Boolean, onDayViewChange: (Boolean) -> Uni
     ) {
         Row(modifier = Modifier.padding(3.dp)) {
             SegmentItem(
-                label = SettingsStringsExt1.glassDockTabDay.zh,
+                label = SettingsStringsExt1.glassDockTabDay.text,
                 selected = dayView,
                 onClick = { onDayViewChange(true) },
             )
             SegmentItem(
-                label = SettingsStringsExt1.glassDockTabWeek.zh,
+                label = SettingsStringsExt1.glassDockTabWeek.text,
                 selected = !dayView,
                 onClick = { onDayViewChange(false) },
             )
@@ -331,13 +331,13 @@ internal fun AppearanceEditorBottomChrome(
         ) {
             CircleAction(
                 icon = MiuixIcons.Image,
-                label = SettingsStringsExt1.appearanceEditorWallpaperAction.zh,
+                label = SettingsStringsExt1.appearanceEditorWallpaperAction.text,
                 onClick = onAdjustWallpaper,
             )
             Spacer(modifier = Modifier.width(40.dp))
             CircleAction(
                 icon = MiuixIcons.Theme,
-                label = SettingsStringsExt1.appearanceEditorMaterialAction.zh,
+                label = SettingsStringsExt1.appearanceEditorMaterialAction.text,
                 onClick = onMaterial,
             )
         }

@@ -109,10 +109,10 @@ object TransferServiceMessages {
      *   `encodeServiceMessage` 的产物，按 `|` 切、取第一段当码），也可能是一句人话。
      */
     fun localize(message: String?): String {
-        if (message == null) return unknownError.zh
+        if (message == null) return unknownError.text
         val code = codeOfPayload(message)
-        registeredMessages[code]?.let { return it.zh }
-        return if (looksLikeInternalCode(code)) unknownError.zh else code
+        registeredMessages[code]?.let { return it.text }
+        return if (looksLikeInternalCode(code)) unknownError.text else code
     }
 
     /** Dart `parseServiceMessage` 的「取码」半边：按 `|` 切，第一段就是码。 */

@@ -30,11 +30,11 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.mutx163.qingyu.components.QingyuSheet
 import com.mutx163.qingyu.components.QingyuWeightDelta
+import com.mutx163.qingyu.components.rememberSheetMaxHeight
 import com.mutx163.qingyu.components.shiftWeight
 import com.mutx163.qingyu.pages.timetable.day.parseHexColorOrFallback
 import com.mutx163.qingyu.theme.QingyuTheme
@@ -119,12 +119,12 @@ fun ExamDatePickerSheet(
         if (target > 0) listState.scrollToItem(target)
     }
 
-    val weekLabel = ExamStrings.weekLabel.zh
-    val thisWeek = ExamStrings.thisWeekLabel.zh
+    val weekLabel = ExamStrings.weekLabel.text
+    val thisWeek = ExamStrings.thisWeekLabel.text
 
     QingyuSheet(
         show = show,
-        title = ExamStrings.examDateWeekPickerTitle.zh,
+        title = ExamStrings.examDateWeekPickerTitle.text,
         onDismissRequest = onDismiss,
         // 内容每一块（说明字、周次行、星期按钮行、取消/确认行）都自己垫了左右 16，
         // 没有通栏元素 ⇒ 框架侧横向归零，单边仍是 Dart 那个 16
@@ -152,7 +152,7 @@ fun ExamDatePickerSheet(
                     // 但本弹层列表之下还有星期按钮行与取消/确认行等固定件，0.64 在矮屏/大字号
                     // 时会把底部按钮挤出面板（2026-11-02 弹窗审核 P2 已知债）——收到 0.55 给
                     // 固定件留出高度。矮屏表现仍需真机复核。
-                    .heightIn(max = (LocalScreenHeight() * 0.55f).dp)
+                    .heightIn(max = rememberSheetMaxHeight(0.55f))
                     .scrollEndHaptic()
                     .overScrollVertical(),
             ) {
@@ -254,7 +254,7 @@ fun ExamDatePickerSheet(
             ) {
                 TextButton(
                     modifier = Modifier.weight(1f),
-                    text = ExamStrings.cancelAction.zh,
+                    text = ExamStrings.cancelAction.text,
                     onClick = onDismiss,
                 )
                 Button(
@@ -272,7 +272,7 @@ fun ExamDatePickerSheet(
                     // 默认 `buttonColors()` 是灰的 secondary 口径。
                     colors = ButtonDefaults.buttonColorsPrimary(),
                 ) {
-                    Text(text = ExamStrings.confirmAction.zh)
+                    Text(text = ExamStrings.confirmAction.text)
                 }
             }
             // 底部让位（系统手势区 + 16）垫在**最后一块固定件之后**：本弹层滚动的是中间的
@@ -288,7 +288,7 @@ private fun selectedDateLabelText(
     dayOfWeek: Int?,
     semesterStart: LocalDateTime,
 ): String {
-    val weekText = ExamStrings.weekLabel.zh.replace("{week}", week.toString())
+    val weekText = ExamStrings.weekLabel.text.replace("{week}", week.toString())
     if (dayOfWeek == null) return weekText
     val date = AddExamLogic.dateForWeekAndDay(semesterStart, week, dayOfWeek)
     return "$weekText · %d-%02d-%02d".format(date.year, date.monthValue, date.dayOfMonth)
@@ -327,7 +327,7 @@ private fun ExamCalendarWheelSheet(
 
     QingyuSheet(
         show = show,
-        title = ExamStrings.examDateWeekPickerTitle.zh,
+        title = ExamStrings.examDateWeekPickerTitle.text,
         onDismissRequest = onDismiss,
         // 内容根 `Column` 自己给了左右 16（三列滚轮与按钮行都不通栏）⇒ 框架侧横向归零，
         // 单边就是 Dart 那个 16，不再叠成 32。
@@ -355,7 +355,7 @@ private fun ExamCalendarWheelSheet(
                         )
                     },
                     range = minYear..maxYear,
-                    label = { "$it ${ExamStrings.datePickerYear.zh}" },
+                    label = { "$it ${ExamStrings.datePickerYear.text}" },
                     textStyle = MiuixTheme.textStyles.title3,
                     modifier = Modifier.weight(1.2f),
                 )
@@ -369,7 +369,7 @@ private fun ExamCalendarWheelSheet(
                     },
                     range = 1..12,
                     wrapAround = true,
-                    label = { "$it ${ExamStrings.datePickerMonth.zh}" },
+                    label = { "$it ${ExamStrings.datePickerMonth.text}" },
                     textStyle = MiuixTheme.textStyles.title3,
                     modifier = Modifier.weight(1f),
                 )
@@ -378,7 +378,7 @@ private fun ExamCalendarWheelSheet(
                     onValueChange = { day = it },
                     range = 1..maxDay,
                     wrapAround = true,
-                    label = { "$it ${ExamStrings.datePickerDay.zh}" },
+                    label = { "$it ${ExamStrings.datePickerDay.text}" },
                     textStyle = MiuixTheme.textStyles.title3,
                     modifier = Modifier.weight(1f),
                 )
@@ -390,7 +390,7 @@ private fun ExamCalendarWheelSheet(
             ) {
                 TextButton(
                     modifier = Modifier.weight(1f),
-                    text = ExamStrings.cancelAction.zh,
+                    text = ExamStrings.cancelAction.text,
                     onClick = onDismiss,
                 )
                 Button(
@@ -399,7 +399,7 @@ private fun ExamCalendarWheelSheet(
                     // 出口按钮走强调色（Dart 主按钮是 primary 变体，默认 `buttonColors()` 是灰的）。
                     colors = ButtonDefaults.buttonColorsPrimary(),
                 ) {
-                    Text(text = ExamStrings.confirmAction.zh)
+                    Text(text = ExamStrings.confirmAction.text)
                 }
             }
         }
@@ -478,7 +478,7 @@ fun ExamTimePickerSheet(
             ) {
                 TextButton(
                     modifier = Modifier.weight(1f),
-                    text = ExamStrings.cancelAction.zh,
+                    text = ExamStrings.cancelAction.text,
                     onClick = onDismiss,
                 )
                 Button(
@@ -487,7 +487,7 @@ fun ExamTimePickerSheet(
                     // 出口按钮走强调色（Dart 主按钮是 primary 变体，默认 `buttonColors()` 是灰的）。
                     colors = ButtonDefaults.buttonColorsPrimary(),
                 ) {
-                    Text(text = ExamStrings.confirmAction.zh)
+                    Text(text = ExamStrings.confirmAction.text)
                 }
             }
         }
@@ -505,7 +505,7 @@ fun ExamCoursePickerSheet(
     val dark = isSystemInDarkTheme()
     QingyuSheet(
         show = show,
-        title = ExamStrings.linkCourse.zh,
+        title = ExamStrings.linkCourse.text,
         onDismissRequest = onDismiss,
         // 正文根是 LazyColumn、自己没有横向内边距：行的 16 是**列表行的内缩**
         // （触摸区通栏、文字缩进 16），不是内容根的主边距 ⇒ 框架侧照旧给 16dp。
@@ -523,7 +523,7 @@ fun ExamCoursePickerSheet(
                 // 与 Dart 选项区同口径的限高；列表之下还有固定的取消按钮
                 //（2026-11-02 弹窗审核 P2 补的），上限收到 0.55 给固定件留出高度，
                 // 矮屏/大字号时按钮不再被挤出面板（同 `ExamDatePickerSheet` 的 0.55）。
-                .heightIn(max = (LocalScreenHeight() * 0.55f).dp)
+                .heightIn(max = rememberSheetMaxHeight(0.55f))
                 .scrollEndHaptic()
                 .overScrollVertical(),
         ) {
@@ -582,7 +582,7 @@ fun ExamCoursePickerSheet(
         // 2026-11-02 弹窗审核 P2：Dart 弹层底部有全宽「取消」，Compose 此前只能靠点空白/返回关闭。
         TextButton(
             modifier = Modifier.fillMaxWidth(),
-            text = ExamStrings.cancelAction.zh,
+            text = ExamStrings.cancelAction.text,
             onClick = onDismiss,
         )
         // 列表之下有固定件 ⇒ 底部让位（手势区 + 16）垫在固定件之后，
@@ -611,7 +611,7 @@ fun ExamReminderPickerSheet(
 
     QingyuSheet(
         show = show,
-        title = ExamStrings.examReminderAddCustomTitle.zh,
+        title = ExamStrings.examReminderAddCustomTitle.text,
         onDismissRequest = onDismiss,
         // 内容根 `Column` 自己给了左右 16（说明句、三列滚轮、按钮行都不通栏）⇒ 框架侧横向归零。
         contentPadsHorizontally = true,
@@ -624,7 +624,7 @@ fun ExamReminderPickerSheet(
                 .padding(horizontal = 16.dp),
         ) {
             Text(
-                text = ExamStrings.examReminderAddCustomHint.zh,
+                text = ExamStrings.examReminderAddCustomHint.text,
                 style = MiuixTheme.textStyles.footnote1,
                 color = Color(QingyuTheme.secondaryText(isSystemInDarkTheme())),
                 modifier = Modifier.padding(bottom = 8.dp),
@@ -639,7 +639,7 @@ fun ExamReminderPickerSheet(
                     value = days,
                     onValueChange = { days = it },
                     range = 0..30,
-                    label = { "$it${ExamStrings.examReminderPickerDays.zh}" },
+                    label = { "$it${ExamStrings.examReminderPickerDays.text}" },
                     textStyle = MiuixTheme.textStyles.title3,
                     modifier = Modifier.weight(1f),
                 )
@@ -648,7 +648,7 @@ fun ExamReminderPickerSheet(
                     onValueChange = { hours = it },
                     range = 0..23,
                     wrapAround = true,
-                    label = { "$it${ExamStrings.examReminderPickerHours.zh}" },
+                    label = { "$it${ExamStrings.examReminderPickerHours.text}" },
                     textStyle = MiuixTheme.textStyles.title3,
                     modifier = Modifier.weight(1f),
                 )
@@ -657,7 +657,7 @@ fun ExamReminderPickerSheet(
                     onValueChange = { minutes = it },
                     range = 0..59,
                     wrapAround = true,
-                    label = { "$it${ExamStrings.examReminderPickerMinutes.zh}" },
+                    label = { "$it${ExamStrings.examReminderPickerMinutes.text}" },
                     textStyle = MiuixTheme.textStyles.title3,
                     modifier = Modifier.weight(1f),
                 )
@@ -669,7 +669,7 @@ fun ExamReminderPickerSheet(
             ) {
                 TextButton(
                     modifier = Modifier.weight(1f),
-                    text = ExamStrings.cancelAction.zh,
+                    text = ExamStrings.cancelAction.text,
                     onClick = onDismiss,
                 )
                 Button(
@@ -684,7 +684,7 @@ fun ExamReminderPickerSheet(
                     // 出口按钮走强调色（Dart 主按钮是 primary 变体，默认 `buttonColors()` 是灰的）。
                     colors = ButtonDefaults.buttonColorsPrimary(),
                 ) {
-                    Text(text = ExamStrings.confirmAction.zh)
+                    Text(text = ExamStrings.confirmAction.text)
                 }
             }
         }
@@ -721,13 +721,6 @@ private fun WeekBadge(
             color = fg,
         )
     }
-}
-
-/** 当前屏高（dp），给弹层选项区算上限用。 */
-@Composable
-private fun LocalScreenHeight(): Float {
-    val configuration = LocalConfiguration.current
-    return configuration.screenHeightDp.toFloat()
 }
 
 /**

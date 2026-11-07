@@ -367,13 +367,13 @@ private fun CameraBindFailedHint(
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         Text(
-            text = TransferStrings.qrTransferCameraUnavailable.zh,
+            text = TransferStrings.qrTransferCameraUnavailable.text,
             style = MiuixTheme.textStyles.body2,
             textAlign = TextAlign.Center,
         )
         Spacer(Modifier.height(16.dp))
         Button(onClick = onRetry) {
-            Text(text = TransferStrings.qrTransferCameraRetry.zh)
+            Text(text = TransferStrings.qrTransferCameraRetry.text)
         }
     }
 }

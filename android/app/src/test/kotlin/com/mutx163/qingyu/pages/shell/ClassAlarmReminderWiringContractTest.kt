@@ -81,7 +81,7 @@ class ClassAlarmReminderWiringContractTest {
         assertTrue("弹层收起出现在成功提示之前——失败路径也会把弹层关掉（静默失败）。", closeIdx > toastIdx)
         assertTrue(
             "失败路径没有 toast（找不到 `saveFailed`）——写盘失败会变成点了没反应。",
-            "TimetableStrings.saveFailed.zh" in body,
+            "TimetableStrings.saveFailed.text" in body,
         )
     }
 

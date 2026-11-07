@@ -36,11 +36,11 @@ class QrTransferSendModel(
     val overResourceLimit: Boolean = false,
 ) {
 
-    val title: String get() = TransferStrings.qrTransferSectionTitle.zh
-    val sendHint: String get() = TransferStrings.qrTransferSendHint.zh
-    val stopLabel: String get() = TransferStrings.qrTransferStop.zh
-    val limitMessage: String get() = TransferStrings.qrTransferResourceLimit.zh
-    val expiredMessage: String get() = TransferStrings.qrTransferSessionExpired.zh
+    val title: String get() = TransferStrings.qrTransferSectionTitle.text
+    val sendHint: String get() = TransferStrings.qrTransferSendHint.text
+    val stopLabel: String get() = TransferStrings.qrTransferStop.text
+    val limitMessage: String get() = TransferStrings.qrTransferResourceLimit.text
+    val expiredMessage: String get() = TransferStrings.qrTransferSessionExpired.text
 
     /** 是否还能继续发（超时或超限都不能）。 */
     val canSend: Boolean get() = !expired && !overResourceLimit

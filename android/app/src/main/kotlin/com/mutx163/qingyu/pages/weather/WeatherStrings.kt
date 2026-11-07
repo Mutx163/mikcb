@@ -11,18 +11,7 @@ import com.mutx163.qingyu.weather.WeatherCategory
  * 2. 属于纯界面组织结构（如热门城市分区标题）的常量，明确标注为界面辅助词；
  * 3. 包含地区标签与定位错误转换等格式化纯函数。
  */
-data class ArbText(val key: String, val zh: String) {
-    /** 替换模板里的占位符（`{name}` → [value]）。 */
-    fun filled(name: String, value: String): String = zh.replace("{$name}", value)
-
-    fun filled(vararg pairs: Pair<String, String>): String {
-        var result = zh
-        for ((name, value) in pairs) {
-            result = result.replace("{$name}", value)
-        }
-        return result
-    }
-}
+typealias ArbText = com.mutx163.qingyu.app.ArbText
 
 /** 定位失败原因枚举（对齐 Flutter `DeviceLocationFailure`）。 */
 enum class WeatherLocationFailure {
@@ -106,9 +95,9 @@ object WeatherStrings {
     const val relocateAction: String = "重新定位"
 
     // 快捷别名
-    val searchCityHint: String get() = weatherCitySearchHint.zh
-    val locationPermissionDenied: String get() = weatherLocationPermissionDenied.zh
-    val locateFailed: String get() = weatherLocationFailed.zh
+    val searchCityHint: String get() = weatherCitySearchHint.text
+    val locationPermissionDenied: String get() = weatherLocationPermissionDenied.text
+    val locateFailed: String get() = weatherLocationFailed.text
 
     /** 所有需在 app_zh.arb 中严格存在的词条清单。 */
     val allArbTexts: List<ArbText> = listOf(
@@ -159,12 +148,12 @@ object WeatherStrings {
      * 将定位错误枚举转换为用户提示语（对齐 Flutter `WeatherLocationFailureLocalizer`）。
      */
     fun locationFailureMessage(failure: WeatherLocationFailure): String = when (failure) {
-        WeatherLocationFailure.SERVICE_DISABLED -> weatherLocationServiceDisabled.zh
-        WeatherLocationFailure.PERMISSION_DENIED -> weatherLocationPermissionDenied.zh
-        WeatherLocationFailure.PERMISSION_DENIED_FOREVER -> weatherLocationPermissionDeniedForever.zh
-        WeatherLocationFailure.TIMEOUT -> weatherLocationTimeout.zh
-        WeatherLocationFailure.FAILED -> weatherLocationFailed.zh
-        WeatherLocationFailure.ADDRESS_UNAVAILABLE -> weatherLocationAddressUnavailable.zh
+        WeatherLocationFailure.SERVICE_DISABLED -> weatherLocationServiceDisabled.text
+        WeatherLocationFailure.PERMISSION_DENIED -> weatherLocationPermissionDenied.text
+        WeatherLocationFailure.PERMISSION_DENIED_FOREVER -> weatherLocationPermissionDeniedForever.text
+        WeatherLocationFailure.TIMEOUT -> weatherLocationTimeout.text
+        WeatherLocationFailure.FAILED -> weatherLocationFailed.text
+        WeatherLocationFailure.ADDRESS_UNAVAILABLE -> weatherLocationAddressUnavailable.text
     }
 
     /**

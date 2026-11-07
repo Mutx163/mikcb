@@ -115,7 +115,7 @@ fun WidgetPreviewSection(node: SettingsInline) {
     if (host == null) {
         SectionLabel(text = node.label.orEmpty())
         Text(
-            text = SettingsStringsExt2.homeWidgetPreviewUnavailable.zh,
+            text = SettingsStringsExt2.homeWidgetPreviewUnavailable.text,
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(
@@ -232,7 +232,7 @@ fun WidgetPreviewSection(node: SettingsInline) {
                             contentAlignment = Alignment.Center,
                         ) {
                             Text(
-                                text = SettingsStringsExt2.homeWidgetPreviewUnavailable.zh,
+                                text = SettingsStringsExt2.homeWidgetPreviewUnavailable.text,
                                 textAlign = TextAlign.Center,
                                 // Dart 是 fontSize 12 + 次要色；这里取最近的一档字阶
                                 // （footnote1 = 13），不写死字号以跟随用户字重。
@@ -259,7 +259,7 @@ fun WidgetPreviewSection(node: SettingsInline) {
         Spacer(modifier = Modifier.height(12.dp))
 
         Text(
-            text = SettingsHomeWidgetPage.targetLabelFor(currentSpec.targetId).zh,
+            text = SettingsHomeWidgetPage.targetLabelFor(currentSpec.targetId).text,
             modifier = Modifier.fillMaxWidth(),
             textAlign = TextAlign.Center,
             color = MiuixTheme.colorScheme.onBackground,

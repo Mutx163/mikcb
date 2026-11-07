@@ -54,7 +54,7 @@ object SettingsMaterialGeneralPage {
         nodes += SettingsLabel(
             id = "material.general.glassMode.label",
             textKey = SettingsStringsExt1.frostedGlassModeLabel.key,
-            text = SettingsStringsExt1.frostedGlassModeLabel.zh,
+            text = SettingsStringsExt1.frostedGlassModeLabel.text,
         )
         nodes += SettingsGroup(
             id = "material.general.glassMode",
@@ -74,7 +74,7 @@ object SettingsMaterialGeneralPage {
             nodes += SettingsDescription(
                 id = "material.general.glassMode.notice",
                 textKey = SettingsStringsExt1.frostedGlassModeSolidNotice.key,
-                text = SettingsStringsExt1.frostedGlassModeSolidNotice.zh,
+                text = SettingsStringsExt1.frostedGlassModeSolidNotice.text,
             )
         }
 
@@ -83,7 +83,7 @@ object SettingsMaterialGeneralPage {
         nodes += SettingsLabel(
             id = "material.general.homeBand.label",
             textKey = SettingsStringsExt1.homeBandGlassMaterialLabel.key,
-            text = SettingsStringsExt1.homeBandGlassMaterialLabel.zh,
+            text = SettingsStringsExt1.homeBandGlassMaterialLabel.text,
         )
         nodes += SettingsGroup(
             id = "material.general.homeBand",
@@ -111,7 +111,7 @@ object SettingsMaterialGeneralPage {
         nodes += SettingsLabel(
             id = "material.general.surfaces.label",
             textKey = SettingsStringsExt1.surfaceMaterialSectionTitle.key,
-            text = SettingsStringsExt1.surfaceMaterialSectionTitle.zh,
+            text = SettingsStringsExt1.surfaceMaterialSectionTitle.text,
         )
         nodes += SettingsGroup(
             id = "material.general.surfaces",
@@ -121,7 +121,7 @@ object SettingsMaterialGeneralPage {
         return SettingsPageSpec(
             id = ID,
             titleKey = TITLE.key,
-            title = TITLE.zh,
+            title = TITLE.text,
             nodes = nodes,
         )
     }
@@ -136,7 +136,7 @@ object SettingsMaterialGeneralPage {
         nodes += SettingsLabel(
             id = "material.general.advanced.label",
             textKey = SettingsStringsExt1.advancedMaterialTitle.key,
-            text = SettingsStringsExt1.advancedMaterialTitle.zh,
+            text = SettingsStringsExt1.advancedMaterialTitle.text,
         )
 
         // 档位：一根 10 格节点滑杆，读数只给数字（:1410-1449）
@@ -195,7 +195,7 @@ object SettingsMaterialGeneralPage {
         nodes += SettingsDescription(
             id = "material.general.reset.notice",
             textKey = SettingsStringsExt1.liquidGlassResetScopeNotice.key,
-            text = SettingsStringsExt1.liquidGlassResetScopeNotice.zh,
+            text = SettingsStringsExt1.liquidGlassResetScopeNotice.text,
         )
 
         // 浅 / 深成对的两个开关（:1088-1125）：都在**恒常**区，不进自定义门内
@@ -509,7 +509,7 @@ object SettingsMaterialCourseCardPage {
         nodes += SettingsLabel(
             id = "material.courseCard.surfaceStyle.label",
             textKey = SettingsStrings.courseCardSurfaceStyleLabel.key,
-            text = SettingsStrings.courseCardSurfaceStyleLabel.zh,
+            text = SettingsStrings.courseCardSurfaceStyleLabel.text,
         )
         nodes += SettingsGroup(
             id = "material.courseCard.surfaceStyle",
@@ -529,7 +529,7 @@ object SettingsMaterialCourseCardPage {
             nodes += SettingsDescription(
                 id = "material.courseCard.masterOffHint",
                 textKey = SettingsStringsExt1.courseCardMaterialMasterOffHint.key,
-                text = SettingsStringsExt1.courseCardMaterialMasterOffHint.zh,
+                text = SettingsStringsExt1.courseCardMaterialMasterOffHint.text,
             )
         }
 
@@ -539,7 +539,7 @@ object SettingsMaterialCourseCardPage {
             nodes += SettingsLabel(
                 id = "material.courseCard.advanced.label",
                 textKey = SettingsStringsExt1.advancedMaterialTitle.key,
-                text = SettingsStringsExt1.advancedMaterialTitle.zh,
+                text = SettingsStringsExt1.advancedMaterialTitle.text,
             )
             // 档位滑杆：与通用页同一枚部件、同一份枚举、同一套分格（:1263-1266）
             nodes += SettingsGroup(
@@ -590,7 +590,7 @@ object SettingsMaterialCourseCardPage {
         return SettingsPageSpec(
             id = ID,
             titleKey = TITLE.key,
-            title = TITLE.zh,
+            title = TITLE.text,
             nodes = nodes,
         )
     }

@@ -166,7 +166,7 @@ fun StatisticsSessionPage(
                     }
 
                     // ── 记录覆盖 ──
-                    SectionBlock(title = StatisticsExtStrings.statisticsSessionCoverageTitle.zh) {
+                    SectionBlock(title = StatisticsExtStrings.statisticsSessionCoverageTitle.text) {
                         if (viewState.stats == null || viewState.stats.sessions.isEmpty()) {
                             Text(
                                 text = viewState.coverageEmptyText,
@@ -184,7 +184,7 @@ fun StatisticsSessionPage(
                     }
 
                     // ── 课次列表 ──
-                    SectionBlock(title = StatisticsExtStrings.statisticsSessionListTitle.zh) {
+                    SectionBlock(title = StatisticsExtStrings.statisticsSessionListTitle.text) {
                         if (viewState.sessionRows.isEmpty()) {
                             Text(
                                 text = viewState.coverageEmptyText,

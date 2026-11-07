@@ -88,20 +88,20 @@ fun DiagnosticsSettingsHost(
                 model = model.copy(liveEnableLocalDiagnostics = outcome.enabled)
                 toast(
                     if (outcome.enabled) {
-                        SettingsStringsExt3.aboutLiveDiagnosticsEnabled.zh
+                        SettingsStringsExt3.aboutLiveDiagnosticsEnabled.text
                     } else {
-                        SettingsStringsExt3.aboutLiveDiagnosticsDisabled.zh
+                        SettingsStringsExt3.aboutLiveDiagnosticsDisabled.text
                     },
                 )
             }
             is RecordingToggleOutcome.PersistRejected -> {
                 // 真源：盘上是多少就显示多少（Dart provider 已回滚 + watch 重建）。
                 model = store.load()
-                toast(SettingsStringsExt3.saveFailed.zh)
+                toast(SettingsStringsExt3.saveFailed.text)
             }
             is RecordingToggleOutcome.PersistFailed -> {
                 model = store.load()
-                toast(SettingsStringsExt3.saveFailed.zh)
+                toast(SettingsStringsExt3.saveFailed.text)
             }
         }
     }
@@ -125,7 +125,7 @@ fun DiagnosticsSettingsHost(
         }
         // logcat 那条不可省：刚装上的包往往一条都没开记录，且性能版 kDebugMode==false。
         Log.i(PerformanceSnapshot.TAG, MiniJson.encode(extras))
-        toast(SettingsStringsExt3.performanceSnapshotEntryDone.zh)
+        toast(SettingsStringsExt3.performanceSnapshotEntryDone.text)
     }
 
     val data = DiagnosticsPageData(

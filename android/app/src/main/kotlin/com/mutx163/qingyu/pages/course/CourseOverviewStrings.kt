@@ -12,18 +12,7 @@ package com.mutx163.qingyu.pages.course
  * `weekdaySectionSummary` 与星期短名来自 `lib/utils/course_group.dart` 的
  * `scheduleChipLabels`。
  */
-data class ArbText(val key: String, val zh: String) {
-    /** 替换模板里的占位符（`{name}` → [value]）。 */
-    fun filled(name: String, value: String): String = zh.replace("{$name}", value)
-
-    fun filled(vararg pairs: Pair<String, String>): String {
-        var result = zh
-        for ((name, value) in pairs) {
-            result = result.replace("{$name}", value)
-        }
-        return result
-    }
-}
+typealias ArbText = com.mutx163.qingyu.app.ArbText
 
 object CourseOverviewStrings {
 
@@ -87,13 +76,13 @@ object CourseOverviewStrings {
 
     /** 星期短名（对齐 course_group.dart:_weekdayShortLabel，越界回落数字）。 */
     fun weekdayShortLabel(dayOfWeek: Int): String = when (dayOfWeek) {
-        1 -> weekdayShortMonday.zh
-        2 -> weekdayShortTuesday.zh
-        3 -> weekdayShortWednesday.zh
-        4 -> weekdayShortThursday.zh
-        5 -> weekdayShortFriday.zh
-        6 -> weekdayShortSaturday.zh
-        7 -> weekdayShortSunday.zh
+        1 -> weekdayShortMonday.text
+        2 -> weekdayShortTuesday.text
+        3 -> weekdayShortWednesday.text
+        4 -> weekdayShortThursday.text
+        5 -> weekdayShortFriday.text
+        6 -> weekdayShortSaturday.text
+        7 -> weekdayShortSunday.text
         else -> dayOfWeek.toString()
     }
 }

@@ -136,43 +136,43 @@ fun homePullQuickImportFailureStatus(
     detail: String? = null,
 ): HomePullQuickImportStatus.Failed = when (kind) {
     HomePullQuickImportFailureKind.NO_SAVED_RECORD -> HomePullQuickImportStatus.Failed(
-        headline = ImportStrings.noSavedQuickImportRecords.zh,
+        headline = ImportStrings.noSavedQuickImportRecords.text,
         detail = detail,
-        actionLabel = WarehouseStrings.webLoginImport.zh,
+        actionLabel = WarehouseStrings.webLoginImport.text,
         action = HomePullQuickImportAction.OPEN_WAREHOUSE_IMPORT,
     )
 
     HomePullQuickImportFailureKind.NO_VALID_LOGIN_URL -> HomePullQuickImportStatus.Failed(
-        headline = ImportStrings.noValidWarehouseLoginUrl.zh,
+        headline = ImportStrings.noValidWarehouseLoginUrl.text,
         detail = detail,
-        actionLabel = WarehouseStrings.webLoginImport.zh,
+        actionLabel = WarehouseStrings.webLoginImport.text,
         action = HomePullQuickImportAction.OPEN_WAREHOUSE_IMPORT,
     )
 
     // 「需要手动操作」+ 去登录：引擎能自动补密码时根本不会走到这里；
     // 走到这里就是验证码/账号密码得本人来。这是唯一允许跳页的失败出口。
     HomePullQuickImportFailureKind.LOGIN_REQUIRED -> HomePullQuickImportStatus.Failed(
-        headline = WarehouseStrings.quickImportManualInputTitle.zh,
+        headline = WarehouseStrings.quickImportManualInputTitle.text,
         detail = detail,
-        actionLabel = WarehouseStrings.webLoginImport.zh,
+        actionLabel = WarehouseStrings.webLoginImport.text,
         action = HomePullQuickImportAction.OPEN_WAREHOUSE_IMPORT,
     )
 
     // 没设开学日：**不硬凑周次**，直接把用户送到设置页。
     HomePullQuickImportFailureKind.SEMESTER_UNCONFIGURED -> HomePullQuickImportStatus.Failed(
-        headline = SettingsStringsExt3.pleaseSetSemesterStartDate.zh,
+        headline = SettingsStringsExt3.pleaseSetSemesterStartDate.text,
         detail = detail,
-        actionLabel = GuideStrings.setSemesterStartDateAction.zh,
+        actionLabel = GuideStrings.setSemesterStartDateAction.text,
         action = HomePullQuickImportAction.OPEN_SEMESTER_SETTINGS,
     )
 
     HomePullQuickImportFailureKind.ALREADY_RUNNING -> HomePullQuickImportStatus.Failed(
-        headline = ImportStrings.homePullQuickImportFetchingCourses.zh,
+        headline = ImportStrings.homePullQuickImportFetchingCourses.text,
         detail = detail,
     )
 
     HomePullQuickImportFailureKind.CANCELLED -> HomePullQuickImportStatus.Failed(
-        headline = WarehouseStrings.importCancelledStatus.zh,
+        headline = WarehouseStrings.importCancelledStatus.text,
         detail = detail,
     )
 
@@ -182,7 +182,7 @@ fun homePullQuickImportFailureStatus(
     HomePullQuickImportFailureKind.WRITE_FAILED,
     HomePullQuickImportFailureKind.TIMEOUT,
     -> HomePullQuickImportStatus.Failed(
-        headline = WarehouseStrings.importFailedStatus.zh,
+        headline = WarehouseStrings.importFailedStatus.text,
         detail = detail,
     )
 }
@@ -261,7 +261,7 @@ fun HomePullQuickImportStatusPill(
 /** 药丸第一行：一句结论。 */
 private fun statusHeadline(status: HomePullQuickImportStatus): String = when (status) {
     HomePullQuickImportStatus.Idle -> ""
-    HomePullQuickImportStatus.Starting -> WarehouseStrings.importingAction.zh
+    HomePullQuickImportStatus.Starting -> WarehouseStrings.importingAction.text
     is HomePullQuickImportStatus.Step -> WarehouseStrings.quickImportPlaybackStepProgress.filled(
         "current" to status.index.toString(),
         "total" to status.total.toString(),
@@ -285,4 +285,4 @@ private fun statusDetail(status: HomePullQuickImportStatus): String? = when (sta
  * 「数据接收完成，正在导入……」（`qrTransferReceiveComplete`，导入/传输同一套用词）。
  * 要精确到「正在写入课表」得先有一条新 ARB 键，届时应换掉这一行。
  */
-private fun applyingHeadline(): String = TransferStrings.qrTransferReceiveComplete.zh
+private fun applyingHeadline(): String = TransferStrings.qrTransferReceiveComplete.text

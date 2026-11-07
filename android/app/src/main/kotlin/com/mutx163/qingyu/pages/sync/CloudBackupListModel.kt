@@ -152,12 +152,12 @@ object CloudBackupListLogic {
     /** 设备名空白回落「本机」（Dart `resolveBackupDeviceLabel`）。 */
     fun resolveBackupDeviceLabel(rawDeviceLabel: String): String {
         val trimmed = rawDeviceLabel.trim()
-        return trimmed.ifEmpty { SyncStrings.cloudBackupDefaultDeviceLabel.zh }
+        return trimmed.ifEmpty { SyncStrings.cloudBackupDefaultDeviceLabel.text }
     }
 
     fun resolveBackupSourceLabel(source: CloudBackupSource): String = when (source) {
-        CloudBackupSource.AUTO -> SyncStrings.cloudBackupSourceAuto.zh
-        CloudBackupSource.MANUAL -> SyncStrings.cloudBackupSourceManual.zh
+        CloudBackupSource.AUTO -> SyncStrings.cloudBackupSourceAuto.text
+        CloudBackupSource.MANUAL -> SyncStrings.cloudBackupSourceManual.text
     }
 
     /** 内容摘要；两项计数缺一即为 null（Dart 同口径）。 */
@@ -181,12 +181,12 @@ object CloudBackupListLogic {
         CloudBackupRowView(
             entryId = entry.id,
             title = if (entry.isCurrent) {
-                SyncStrings.cloudBackupCurrentLabel.zh
+                SyncStrings.cloudBackupCurrentLabel.text
             } else {
                 formatEntryTime(entry, zone)
             },
             subtitle = buildSubtitle(entry),
-            details = if (entry.isCurrent) SyncStrings.cloudBackupCurrentBadge.zh else null,
+            details = if (entry.isCurrent) SyncStrings.cloudBackupCurrentBadge.text else null,
             isCurrent = entry.isCurrent,
         )
 
@@ -213,13 +213,13 @@ object CloudBackupListLogic {
         return CloudBackupDetailView(
             entryId = entry.id,
             title = if (entry.isCurrent) {
-                SyncStrings.cloudBackupCurrentLabel.zh
+                SyncStrings.cloudBackupCurrentLabel.text
             } else {
                 formatEntryTime(entry, zone)
             },
-            deviceLine = "${SyncStrings.cloudBackupDetailDevice.zh}：${resolveBackupDeviceLabel(entry.deviceLabel)}",
-            sourceLine = "${SyncStrings.cloudBackupDetailSource.zh}：${resolveBackupSourceLabel(entry.source)}",
-            summaryLine = summary?.let { "${SyncStrings.cloudBackupDetailSummary.zh}：$it" },
+            deviceLine = "${SyncStrings.cloudBackupDetailDevice.text}：${resolveBackupDeviceLabel(entry.deviceLabel)}",
+            sourceLine = "${SyncStrings.cloudBackupDetailSource.text}：${resolveBackupSourceLabel(entry.source)}",
+            summaryLine = summary?.let { "${SyncStrings.cloudBackupDetailSummary.text}：$it" },
             actions = actions,
         )
     }
@@ -230,7 +230,7 @@ object CloudBackupListLogic {
     ): String = SyncStrings.cloudBackupDeleteBody.filled("time", formatEntryTime(entry, zone))
 
     /** 恢复流程里预览弹框的标题（Dart `showTransferPreviewDialog(title: cloudBackupRestoreTitle)`）。 */
-    fun restorePreviewTitle(): String = SyncStrings.cloudBackupRestoreTitle.zh
+    fun restorePreviewTitle(): String = SyncStrings.cloudBackupRestoreTitle.text
 
     /**
      * 恢复完的「是否设为当前云端版本」确认弹框（Dart `showAppConfirmDialog`）。
@@ -238,10 +238,10 @@ object CloudBackupListLogic {
      * 默认动作是「设为当前版本」：不设的话其他设备下次同步会撞冲突。
      */
     fun uploadAsCurrentDialog(): SyncConfirmDialogView = SyncConfirmDialogView(
-        title = SyncStrings.cloudBackupUploadAsCurrentTitle.zh,
-        message = SyncStrings.cloudBackupUploadAsCurrentBody.zh,
-        confirmLabel = SyncStrings.cloudBackupUploadAsCurrentYes.zh,
-        cancelLabel = SyncStrings.cloudBackupUploadAsCurrentNo.zh,
+        title = SyncStrings.cloudBackupUploadAsCurrentTitle.text,
+        message = SyncStrings.cloudBackupUploadAsCurrentBody.text,
+        confirmLabel = SyncStrings.cloudBackupUploadAsCurrentYes.text,
+        cancelLabel = SyncStrings.cloudBackupUploadAsCurrentNo.text,
     )
 
     /** 整页 viewState：排序在这里做，渲染层只遍历 [CloudBackupListViewState.rows]。 */
@@ -256,9 +256,9 @@ object CloudBackupListLogic {
         isLoading = isLoading,
         isCreatingBackup = isCreatingBackup,
         rows = sortByExportedAtDesc(entries, zone).map { buildRow(it, zone) },
-        title = SyncStrings.cloudBackupSectionTitle.zh,
-        createLabel = SyncStrings.cloudBackupCreateNow.zh,
-        emptyText = SyncStrings.cloudBackupEmpty.zh,
+        title = SyncStrings.cloudBackupSectionTitle.text,
+        createLabel = SyncStrings.cloudBackupCreateNow.text,
+        emptyText = SyncStrings.cloudBackupEmpty.text,
         // 2026-11-06 第三轮返工①（hy1 推翻「有缓存静默用缓存」）：errorCode **有值即透出**，
         // 不再按「列表是否为空」过滤——两个状态都要有可见出口：空态用 errorText 替代
         // emptyText（失败原因 + 重试），非空列表顶部出轻量错误条 + 重试（列表照常展示，
@@ -266,9 +266,9 @@ object CloudBackupListLogic {
         // （刷新失败完全静默），且曾被两条测试钉死＝把 bug 宣布成语义，已改。
         errorText = errorCode?.let { SyncStrings.localizeSyncError(it) },
         canUndoRestore = canUndoRestore,
-        undoRestoreTitle = SyncStrings.cloudBackupUndoRestoreTitle.zh,
-        undoRestoreSummary = SyncStrings.cloudBackupUndoRestoreSummary.zh,
-        undoRestoreActionLabel = SyncStrings.themeUndo.zh,
+        undoRestoreTitle = SyncStrings.cloudBackupUndoRestoreTitle.text,
+        undoRestoreSummary = SyncStrings.cloudBackupUndoRestoreSummary.text,
+        undoRestoreActionLabel = SyncStrings.themeUndo.text,
     )
 
     private fun pad2(value: Int): String = value.toString().padStart(2, '0')

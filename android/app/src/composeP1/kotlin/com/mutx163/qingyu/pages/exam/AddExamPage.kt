@@ -102,7 +102,7 @@ fun AddExamPage(
 ) {
     val dark = isSystemInDarkTheme()
     var confirmDelete by remember { mutableStateOf(false) }
-    val pageTitle = if (viewState.isEditing) ExamStrings.editExam.zh else ExamStrings.addExam.zh
+    val pageTitle = if (viewState.isEditing) ExamStrings.editExam.text else ExamStrings.addExam.text
 
     // 共享骨架：官方 TopAppBar + 标准返回键 + 顶栏毛玻璃 + actions 槽；大标题可折叠
     // （Dart `add_exam_screen.dart:83-86` 走 HyperosSubpage 默认参数）。
@@ -115,14 +115,14 @@ fun AddExamPage(
             if (viewState.isEditing) {
                 QingyuGlassIconButton(
                     onClick = { confirmDelete = true },
-                    contentDescription = ExamStrings.deleteExam.zh,
+                    contentDescription = ExamStrings.deleteExam.text,
                     icon = MiuixIcons.Delete,
                     tint = Color(QingyuTheme.actionIcon(dark)),
                 )
             }
             QingyuGlassIconButton(
                 onClick = onSave,
-                contentDescription = ExamStrings.saveExam.zh,
+                contentDescription = ExamStrings.saveExam.text,
                 icon = MiuixIcons.Ok,
                 tint = Color(QingyuTheme.actionIcon(dark)),
             )
@@ -187,7 +187,7 @@ fun AddExamPage(
                             Spacer(modifier = Modifier.width(12.dp))
                             Column(modifier = Modifier.weight(1f)) {
                                 Text(
-                                    text = ExamStrings.linkCourse.zh,
+                                    text = ExamStrings.linkCourse.text,
                                     style = MiuixTheme.textStyles.body1.shiftWeight(QingyuWeightDelta.MEDIUM),
                                     color = Color(QingyuTheme.primaryText(dark)),
                                 )
@@ -211,7 +211,7 @@ fun AddExamPage(
                         }
                         if (viewState.selectedCourseId.isNullOrBlank()) {
                             Text(
-                                text = ExamStrings.linkCourseRequired.zh,
+                                text = ExamStrings.linkCourseRequired.text,
                                 style = MiuixTheme.textStyles.footnote1,
                                 color = Color(QingyuTheme.error(dark)),
                                 modifier = Modifier.padding(start = 14.dp, end = 14.dp, bottom = 12.dp),
@@ -231,7 +231,7 @@ fun AddExamPage(
                         TextField(
                             value = viewState.name,
                             onValueChange = onNameChange,
-                            label = ExamStrings.examNameLabel.zh,
+                            label = ExamStrings.examNameLabel.text,
                             useLabelAsPlaceholder = true,
                             singleLine = true,
                             modifier = Modifier.fillMaxWidth(),
@@ -250,21 +250,21 @@ fun AddExamPage(
                         ExamCardDivider(dark)
                         ExamSettingRow(
                             icon = MiuixIcons.Months,
-                            title = ExamStrings.examDateLabel.zh,
+                            title = ExamStrings.examDateLabel.text,
                             value = dateDisplayText,
                             dark = dark,
                             onClick = onPickDate,
                         )
                         ExamSettingRow(
                             icon = MiuixIcons.Timer,
-                            title = ExamStrings.examStartTimeLabel.zh,
+                            title = ExamStrings.examStartTimeLabel.text,
                             value = viewState.startTime,
                             dark = dark,
                             onClick = onPickStartTime,
                         )
                         ExamSettingRow(
                             icon = MiuixIcons.Timer,
-                            title = ExamStrings.examEndTimeLabel.zh,
+                            title = ExamStrings.examEndTimeLabel.text,
                             value = viewState.endTime,
                             dark = dark,
                             onClick = onPickEndTime,
@@ -283,7 +283,7 @@ fun AddExamPage(
                         TextField(
                             value = viewState.location,
                             onValueChange = onLocationChange,
-                            label = ExamStrings.examLocationLabel.zh,
+                            label = ExamStrings.examLocationLabel.text,
                             useLabelAsPlaceholder = true,
                             singleLine = true,
                             modifier = Modifier.fillMaxWidth(),
@@ -296,7 +296,7 @@ fun AddExamPage(
                         TextField(
                             value = viewState.seatNumber,
                             onValueChange = onSeatChange,
-                            label = ExamStrings.examSeatLabel.zh,
+                            label = ExamStrings.examSeatLabel.text,
                             useLabelAsPlaceholder = true,
                             singleLine = true,
                             modifier = Modifier.fillMaxWidth(),
@@ -322,7 +322,7 @@ fun AddExamPage(
                         items = presetOptions.map { it.second },
                         selectedIndex = presetOptions.indexOfFirst { it.first == viewState.reminderPreset }
                             .coerceAtLeast(0),
-                        title = ExamStrings.examReminderLabel.zh,
+                        title = ExamStrings.examReminderLabel.text,
                         onSelectedIndexChange = { index ->
                             presetOptions.getOrNull(index)?.let { onReminderPresetChange(it.first) }
                         },
@@ -332,7 +332,7 @@ fun AddExamPage(
                         val offsets = AddExamLogic.sortedOffsets(viewState.customReminderMinutes)
                         if (offsets.isEmpty()) {
                             Text(
-                                text = ExamStrings.examReminderCustomEmptyHint.zh,
+                                text = ExamStrings.examReminderCustomEmptyHint.text,
                                 style = MiuixTheme.textStyles.footnote1,
                                 color = Color(QingyuTheme.secondaryText(dark)),
                                 modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp),
@@ -358,7 +358,7 @@ fun AddExamPage(
                                 ) {
                                     Icon(
                                         imageVector = MiuixIcons.Remove,
-                                        contentDescription = ExamStrings.deleteAction.zh,
+                                        contentDescription = ExamStrings.deleteAction.text,
                                         tint = Color(QingyuTheme.error(dark)),
                                         modifier = Modifier.size(17.dp),
                                     )
@@ -381,7 +381,7 @@ fun AddExamPage(
                             )
                             Spacer(modifier = Modifier.width(8.dp))
                             Text(
-                                text = ExamStrings.examReminderAddCustom.zh,
+                                text = ExamStrings.examReminderAddCustom.text,
                                 style = MiuixTheme.textStyles.body1,
                                 color = Color(QingyuTheme.primary(dark = dark)),
                             )
@@ -399,7 +399,7 @@ fun AddExamPage(
                     TextField(
                         value = viewState.note,
                         onValueChange = onNoteChange,
-                        label = ExamStrings.examNoteLabel.zh,
+                        label = ExamStrings.examNoteLabel.text,
                         useLabelAsPlaceholder = true,
                         minLines = 3,
                         maxLines = 5,
@@ -416,7 +416,7 @@ fun AddExamPage(
     OverlayDialog(
         insideMargin = DpSize(16.dp, 16.dp),
         show = confirmDelete,
-        title = ExamStrings.deleteExam.zh,
+        title = ExamStrings.deleteExam.text,
         summary = ExamStrings.deleteExamConfirm.filled("name", viewState.name),
         onDismissRequest = { confirmDelete = false },
     ) {
@@ -428,7 +428,7 @@ fun AddExamPage(
                 onClick = { confirmDelete = false },
                 modifier = Modifier.weight(1f),
             ) {
-                Text(text = ExamStrings.cancelAction.zh)
+                Text(text = ExamStrings.cancelAction.text)
             }
             top.yukonga.miuix.kmp.basic.Button(
                 onClick = {
@@ -441,7 +441,7 @@ fun AddExamPage(
                     contentColor = Color(QingyuTheme.onError(dark)),
                 ),
             ) {
-                Text(text = ExamStrings.deleteAction.zh)
+                Text(text = ExamStrings.deleteAction.text)
             }
         }
     }

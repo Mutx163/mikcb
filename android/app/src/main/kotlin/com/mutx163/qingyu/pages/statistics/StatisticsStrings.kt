@@ -9,18 +9,7 @@ package com.mutx163.qingyu.pages.statistics
  *
  * 命名与 ARB 键逐字一致（`statisticsTitle` 等），便于 `grep` 双向核对。
  */
-data class ArbText(val key: String, val zh: String) {
-    /** 替换模板里的占位符（`{name}` → [value]）。 */
-    fun filled(name: String, value: String): String = zh.replace("{$name}", value)
-
-    fun filled(vararg pairs: Pair<String, String>): String {
-        var result = zh
-        for ((name, value) in pairs) {
-            result = result.replace("{$name}", value)
-        }
-        return result
-    }
-}
+typealias ArbText = com.mutx163.qingyu.app.ArbText
 
 object StatisticsStrings {
 
@@ -214,76 +203,76 @@ object StatisticsStrings {
 
     /** 星期全名（周一~周日，越界回退到数字字符串，对齐 Dart `_weekdayFullLabel`）。 */
     fun weekdayFull(dayOfWeek: Int): String = when (dayOfWeek) {
-        1 -> weekdayMon.zh
-        2 -> weekdayTue.zh
-        3 -> weekdayWed.zh
-        4 -> weekdayThu.zh
-        5 -> weekdayFri.zh
-        6 -> weekdaySat.zh
-        7 -> weekdaySun.zh
+        1 -> weekdayMon.text
+        2 -> weekdayTue.text
+        3 -> weekdayWed.text
+        4 -> weekdayThu.text
+        5 -> weekdayFri.text
+        6 -> weekdaySat.text
+        7 -> weekdaySun.text
         else -> dayOfWeek.toString()
     }
 
     /** 星期短名（一~日，图表横轴，越界返回空串）。 */
     fun weekdayShort(dayOfWeek: Int): String = when (dayOfWeek) {
-        1 -> weekdayShortMonday.zh
-        2 -> weekdayShortTuesday.zh
-        3 -> weekdayShortWednesday.zh
-        4 -> weekdayShortThursday.zh
-        5 -> weekdayShortFriday.zh
-        6 -> weekdayShortSaturday.zh
-        7 -> weekdayShortSunday.zh
+        1 -> weekdayShortMonday.text
+        2 -> weekdayShortTuesday.text
+        3 -> weekdayShortWednesday.text
+        4 -> weekdayShortThursday.text
+        5 -> weekdayShortFriday.text
+        6 -> weekdayShortSaturday.text
+        7 -> weekdayShortSunday.text
         else -> ""
     }
 
     /** 成就名称（对齐 Dart `achievement_badge.dart:_achievementName`，未知 id 原样返回）。 */
     fun achievementName(id: String): String = when (id) {
-        "early_bird" -> achievementEarlyBirdName.zh
-        "perfect_attendance" -> achievementPerfectAttendanceName.zh
-        "weekend_warrior" -> achievementWeekendWarriorName.zh
-        "class_king" -> achievementClassKingName.zh
-        "scholar" -> achievementScholarName.zh
-        "balanced" -> achievementBalancedName.zh
-        "night_owl" -> achievementNightOwlName.zh
-        "explorer" -> achievementExplorerName.zh
-        "full_day_king" -> achievementFullDayKingName.zh
-        "building_hopper" -> achievementBuildingHopperName.zh
-        "morning_person" -> achievementMorningPersonName.zh
-        "gap_master" -> achievementGapMasterName.zh
+        "early_bird" -> achievementEarlyBirdName.text
+        "perfect_attendance" -> achievementPerfectAttendanceName.text
+        "weekend_warrior" -> achievementWeekendWarriorName.text
+        "class_king" -> achievementClassKingName.text
+        "scholar" -> achievementScholarName.text
+        "balanced" -> achievementBalancedName.text
+        "night_owl" -> achievementNightOwlName.text
+        "explorer" -> achievementExplorerName.text
+        "full_day_king" -> achievementFullDayKingName.text
+        "building_hopper" -> achievementBuildingHopperName.text
+        "morning_person" -> achievementMorningPersonName.text
+        "gap_master" -> achievementGapMasterName.text
         else -> id
     }
 
     /** 成就说明（对齐 Dart `achievement_badge.dart` 详情弹窗口径）。 */
     fun achievementDescription(id: String): String = when (id) {
-        "early_bird" -> achievementEarlyBirdDescription.zh
-        "perfect_attendance" -> achievementPerfectAttendanceDescription.zh
-        "weekend_warrior" -> achievementWeekendWarriorDescription.zh
-        "class_king" -> achievementClassKingDescription.zh
-        "scholar" -> achievementScholarDescription.zh
-        "balanced" -> achievementBalancedDescription.zh
-        "night_owl" -> achievementNightOwlDescription.zh
-        "explorer" -> achievementExplorerDescription.zh
-        "full_day_king" -> achievementFullDayKingDescription.zh
-        "building_hopper" -> achievementBuildingHopperDescription.zh
-        "morning_person" -> achievementMorningPersonDescription.zh
-        "gap_master" -> achievementGapMasterDescription.zh
+        "early_bird" -> achievementEarlyBirdDescription.text
+        "perfect_attendance" -> achievementPerfectAttendanceDescription.text
+        "weekend_warrior" -> achievementWeekendWarriorDescription.text
+        "class_king" -> achievementClassKingDescription.text
+        "scholar" -> achievementScholarDescription.text
+        "balanced" -> achievementBalancedDescription.text
+        "night_owl" -> achievementNightOwlDescription.text
+        "explorer" -> achievementExplorerDescription.text
+        "full_day_king" -> achievementFullDayKingDescription.text
+        "building_hopper" -> achievementBuildingHopperDescription.text
+        "morning_person" -> achievementMorningPersonDescription.text
+        "gap_master" -> achievementGapMasterDescription.text
         else -> id
     }
 
     /** 成就详细说明（对齐 Dart `achievement_badge.dart` 详情弹窗正文）。 */
     fun achievementDetail(id: String): String = when (id) {
-        "early_bird" -> statisticsAchievementEarlyBirdDetail.zh
-        "perfect_attendance" -> statisticsAchievementPerfectAttendanceDetail.zh
-        "weekend_warrior" -> statisticsAchievementWeekendWarriorDetail.zh
-        "class_king" -> statisticsAchievementClassKingDetail.zh
-        "scholar" -> statisticsAchievementScholarDetail.zh
-        "balanced" -> statisticsAchievementBalancedDetail.zh
-        "night_owl" -> statisticsAchievementNightOwlDetail.zh
-        "explorer" -> statisticsAchievementExplorerDetail.zh
-        "full_day_king" -> statisticsAchievementFullDayKingDetail.zh
-        "building_hopper" -> statisticsAchievementBuildingHopperDetail.zh
-        "morning_person" -> statisticsAchievementMorningPersonDetail.zh
-        "gap_master" -> statisticsAchievementGapMasterDetail.zh
+        "early_bird" -> statisticsAchievementEarlyBirdDetail.text
+        "perfect_attendance" -> statisticsAchievementPerfectAttendanceDetail.text
+        "weekend_warrior" -> statisticsAchievementWeekendWarriorDetail.text
+        "class_king" -> statisticsAchievementClassKingDetail.text
+        "scholar" -> statisticsAchievementScholarDetail.text
+        "balanced" -> statisticsAchievementBalancedDetail.text
+        "night_owl" -> statisticsAchievementNightOwlDetail.text
+        "explorer" -> statisticsAchievementExplorerDetail.text
+        "full_day_king" -> statisticsAchievementFullDayKingDetail.text
+        "building_hopper" -> statisticsAchievementBuildingHopperDetail.text
+        "morning_person" -> statisticsAchievementMorningPersonDetail.text
+        "gap_master" -> statisticsAchievementGapMasterDetail.text
         else -> ""
     }
 

@@ -49,7 +49,7 @@ fun ImportEntryPage(
     onOpenDestination: (ImportEntryDestination) -> Unit,
 ) {
     ImportPageScaffold(
-        title = ImportStrings.courseImportTitle.zh,
+        title = ImportStrings.courseImportTitle.text,
         onBack = onBack,
     ) { innerPadding, scrollBehavior ->
         // 页面级滚动走共享套件（官方三件套 + 右侧滚动条 + 顶栏折叠联动）。
@@ -62,8 +62,8 @@ fun ImportEntryPage(
             // ── 随机配色开关（Dart widgets/import_random_color_toggle.dart）──
             item(key = "random_color_switch") {
                 ImportSwitchRow(
-                    title = ImportStrings.importRandomCourseColorTitle.zh,
-                    subtitle = ImportStrings.importRandomCourseColorSubtitle.zh,
+                    title = ImportStrings.importRandomCourseColorTitle.text,
+                    subtitle = ImportStrings.importRandomCourseColorSubtitle.text,
                     icon = ImportEntryIcons.randomColor, // Dart Icons.palette_outlined 的最接近官方图标
                     accentHex = "purple",
                     checked = viewState.randomColorsEnabled,
@@ -74,7 +74,7 @@ fun ImportEntryPage(
             }
             item(key = "random_color_group") {
                 ImportValueRow(
-                    title = ImportStrings.importRandomColorGroupTitle.zh,
+                    title = ImportStrings.importRandomColorGroupTitle.text,
                     value = ImportSharedModel.colorGroupDisplayName(viewState.randomColorGroupId),
                     enabled = viewState.preferencesLoaded && viewState.randomColorsEnabled,
                     onClick = onPickColorGroup,
@@ -85,7 +85,7 @@ fun ImportEntryPage(
             item(key = "method_label") {
                 // 分组标题走官方 SmallTitle（自带 28dp 左缘），与「Card 12 + 行内 16」对齐。
                 QingyuSectionTitle(
-                    text = ImportStrings.chooseImportMethodTitle.zh,
+                    text = ImportStrings.chooseImportMethodTitle.text,
                     modifier = Modifier.padding(top = 12.dp),
                 )
             }

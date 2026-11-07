@@ -169,11 +169,11 @@ object AddExamLogic {
 
     /** 阻断原因对应的提示文案（逐字对齐 ARB）。 */
     fun blockerMessage(blocker: AddExamBlocker): String = when (blocker) {
-        AddExamBlocker.NAME_REQUIRED -> ExamStrings.examNameRequired.zh
-        AddExamBlocker.COURSE_REQUIRED -> ExamStrings.linkCourseRequired.zh
-        AddExamBlocker.DATE_REQUIRED -> ExamStrings.examDateRequired.zh
-        AddExamBlocker.END_BEFORE_START -> ExamStrings.examEndTimeBeforeStart.zh
-        AddExamBlocker.CUSTOM_REMINDER_EMPTY -> ExamStrings.examReminderCustomEmpty.zh
+        AddExamBlocker.NAME_REQUIRED -> ExamStrings.examNameRequired.text
+        AddExamBlocker.COURSE_REQUIRED -> ExamStrings.linkCourseRequired.text
+        AddExamBlocker.DATE_REQUIRED -> ExamStrings.examDateRequired.text
+        AddExamBlocker.END_BEFORE_START -> ExamStrings.examEndTimeBeforeStart.text
+        AddExamBlocker.CUSTOM_REMINDER_EMPTY -> ExamStrings.examReminderCustomEmpty.text
     }
 
     /** 组装考试实体（`add_exam_screen.dart:1043-1071`）。调用前须已通过阻断检查。 */
@@ -241,7 +241,7 @@ object AddExamLogic {
         semesterWeekCount: Int,
     ): String {
         val date = state.selectedDate
-        if (!state.hasSelectedDate || date == null) return ExamStrings.examDateHint.zh
+        if (!state.hasSelectedDate || date == null) return ExamStrings.examDateHint.text
 
         val datePart = "%04d-%02d-%02d".format(date.year, date.monthValue, date.dayOfMonth)
         if (semesterStart == null) return datePart
@@ -315,23 +315,23 @@ object AddExamLogic {
             return "${selectedCourse.name} · ${selectedCourse.teacher}"
         }
         return if (courseGroupsEmpty) {
-            ExamStrings.noCoursesInCurrentProfile.zh
+            ExamStrings.noCoursesInCurrentProfile.text
         } else {
-            ExamStrings.linkCourse.zh
+            ExamStrings.linkCourse.text
         }
     }
 
     /** 考场输入框的提示（`add_exam_screen.dart:443-454`）。 */
     fun locationHint(selectedCourse: Course?): String {
         if (selectedCourse != null) {
-            return "${ExamStrings.sameAsClassroom.zh}: ${selectedCourse.location}"
+            return "${ExamStrings.sameAsClassroom.text}: ${selectedCourse.location}"
         }
-        return ExamStrings.examLocationHint.zh
+        return ExamStrings.examLocationHint.text
     }
 
     /** 选完课程后若名称还空着，填入默认考试名（`add_exam_screen.dart:300-302`）。 */
     fun nameAfterCoursePicked(currentName: String): String =
-        if (currentName.trim().isEmpty()) ExamStrings.examDefaultName.zh else currentName
+        if (currentName.trim().isEmpty()) ExamStrings.examDefaultName.text else currentName
 
     /** 提醒设置下拉的选项（枚举顺序 + 预设名）。 */
     fun reminderPresetOptions(): List<Pair<ExamReminderPreset, String>> =

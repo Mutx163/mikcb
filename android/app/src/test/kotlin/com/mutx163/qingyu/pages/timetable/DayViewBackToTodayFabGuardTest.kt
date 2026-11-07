@@ -48,7 +48,7 @@ class DayViewBackToTodayFabGuardTest {
             )
             assertTrue(
                 "$name 的可见字没有用 DayViewStrings.backToTodayShort——两处必须是同一个单字「今」。",
-                source.contains("DayViewStrings.backToTodayShort.zh"),
+                source.contains("DayViewStrings.backToTodayShort.text"),
             )
             assertFalse(
                 "$name 又出现 monthViewBackToCurrentMonthShort——那是月视图的键，不得借用。",
@@ -189,12 +189,12 @@ class DayViewBackToTodayFabGuardTest {
         assertTrue(
             "DayViewPage 的胶囊没有 contentDescription——可见字只是单字「今」，" +
                 "读屏必须听到完整动作（backToTodayAction）。",
-            dayPageSource.contains("DayViewStrings.backToTodayAction.zh"),
+            dayPageSource.contains("DayViewStrings.backToTodayAction.text"),
         )
         assertTrue(
             "TimetableWeekPage 的胶囊没有 contentDescription——读屏必须听到完整动作" +
                 "（backToCurrentWeekAction = 「回本周」）。",
-            weekPageSource.contains("TimetableStrings.backToCurrentWeekAction.zh"),
+            weekPageSource.contains("TimetableStrings.backToCurrentWeekAction.text"),
         )
     }
 

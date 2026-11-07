@@ -1,5 +1,7 @@
 package com.mutx163.qingyu.pages.task
 
+import com.mutx163.qingyu.app.AppLocaleRuntime
+
 /**
  * 任务模块文案常量（逐字对齐 `lib/l10n/app_zh.arb`）。
  *
@@ -9,56 +11,56 @@ package com.mutx163.qingyu.pages.task
  * 新增文案时**同时**把它加进那张对照表，否则新的字没有任何测试钉住。
  */
 object TaskStrings {
-    const val taskListTitle = "任务清单"
-    const val addTask = "添加任务"
-    const val editTask = "编辑任务"
-    const val saveTask = "保存任务"
+    val taskListTitle: String get() = AppLocaleRuntime.text("taskListTitle", "任务清单")
+    val addTask: String get() = AppLocaleRuntime.text("taskAddFromCourse", "添加任务")
+    val editTask: String get() = AppLocaleRuntime.text("editTask", "编辑任务")
+    val saveTask: String get() = AppLocaleRuntime.text("saveTask", "保存任务")
 
-    const val taskTitleLabel = "任务标题"
-    const val taskTitleHint = "例如：完成第三章习题"
-    const val taskTitleRequired = "请输入任务标题"
+    val taskTitleLabel: String get() = AppLocaleRuntime.text("taskTitleLabel", "任务标题")
+    val taskTitleHint: String get() = AppLocaleRuntime.text("taskTitleHint", "例如：完成第三章习题")
+    val taskTitleRequired: String get() = AppLocaleRuntime.text("taskTitleRequired", "请输入任务标题")
 
-    const val taskNoteLabel = "备注"
-    const val taskNoteHint = "补充说明 可选"
+    val taskNoteLabel: String get() = AppLocaleRuntime.text("taskNoteLabel", "备注")
+    val taskNoteHint: String get() = AppLocaleRuntime.text("taskNoteHint", "补充说明 可选")
 
-    const val taskDueDateLabel = "截止日期"
-    const val taskNoDueDate = "无截止日期"
-    const val taskDueDateHint = "日视图不显示，只在「全部」里看得到"
+    val taskDueDateLabel: String get() = AppLocaleRuntime.text("taskDueDateLabel", "截止日期")
+    val taskNoDueDate: String get() = AppLocaleRuntime.text("taskNoDueDate", "无截止日期")
+    val taskDueDateHint: String get() = AppLocaleRuntime.text("taskDueDateHint", "日视图不显示，只在「全部」里看得到")
 
-    const val taskUndatedHintSubtitle = "它们在「今日」「本周」里看不到"
+    val taskUndatedHintSubtitle: String get() = AppLocaleRuntime.text("taskUndatedHintSubtitle", "它们在「今日」「本周」里看不到")
     fun taskUndatedHint(count: Int): String = "$count 条作业没设日期"
 
-    const val taskCourseLabel = "来源课程"
-    const val taskCourseFilter = "课程筛选"
-    const val taskAllCourses = "全部课程"
-    const val taskNoCourse = "无关联课程"
+    val taskCourseLabel: String get() = AppLocaleRuntime.text("taskCourseLabel", "来源课程")
+    val taskCourseFilter: String get() = AppLocaleRuntime.text("taskCourseFilter", "课程筛选")
+    val taskAllCourses: String get() = AppLocaleRuntime.text("taskAllCourses", "全部课程")
+    val taskNoCourse: String get() = AppLocaleRuntime.text("taskNoCourse", "无关联课程")
 
-    const val taskAllFilter = "全部"
-    const val taskTodayFilter = "今日"
-    const val taskWeekFilter = "本周"
+    val taskAllFilter: String get() = AppLocaleRuntime.text("taskAllFilter", "全部")
+    val taskTodayFilter: String get() = AppLocaleRuntime.text("taskTodayFilter", "今日")
+    val taskWeekFilter: String get() = AppLocaleRuntime.text("taskWeekFilter", "本周")
 
-    const val taskOverdueSection = "已逾期"
-    const val taskCompletedSection = "已完成"
+    val taskOverdueSection: String get() = AppLocaleRuntime.text("taskOverdueSection", "已逾期")
+    val taskCompletedSection: String get() = AppLocaleRuntime.text("taskCompletedSection", "已完成")
 
-    const val taskNoTasks = "还没有任务"
-    const val taskNoTasksForToday = "今日没有待办任务"
-    const val taskNoTasksForWeek = "本周没有待办任务"
-    const val taskNoTasksForCourse = "这个课程暂无任务"
+    val taskNoTasks: String get() = AppLocaleRuntime.text("taskNoTasks", "还没有任务")
+    val taskNoTasksForToday: String get() = AppLocaleRuntime.text("taskNoTasksForToday", "今日没有待办任务")
+    val taskNoTasksForWeek: String get() = AppLocaleRuntime.text("taskNoTasksForWeek", "本周没有待办任务")
+    val taskNoTasksForCourse: String get() = AppLocaleRuntime.text("taskNoTasksForCourse", "这个课程暂无任务")
 
-    const val taskDelete = "删除任务"
-    const val taskDeleteConfirm = "确定删除这个任务吗？"
+    val taskDelete: String get() = AppLocaleRuntime.text("taskDelete", "删除任务")
+    val taskDeleteConfirm: String get() = AppLocaleRuntime.text("taskDeleteConfirm", "确定删除这个任务吗？")
 
-    const val taskHomeworkDefaultTitle = "课程作业"
-    const val taskAddFromCourse = "添加任务"
-    const val taskViewCourse = "查看课程"
+    val taskHomeworkDefaultTitle: String get() = AppLocaleRuntime.text("taskHomeworkDefaultTitle", "课程作业")
+    val taskAddFromCourse: String get() = AppLocaleRuntime.text("taskAddFromCourse", "添加任务")
+    val taskViewCourse: String get() = AppLocaleRuntime.text("taskViewCourse", "查看课程")
 
-    const val taskSaved = "任务已保存"
-    const val taskUpdated = "任务已更新"
-    const val taskDeleted = "任务已删除"
+    val taskSaved: String get() = AppLocaleRuntime.text("taskSaved", "任务已保存")
+    val taskUpdated: String get() = AppLocaleRuntime.text("taskUpdated", "任务已更新")
+    val taskDeleted: String get() = AppLocaleRuntime.text("taskDeleted", "任务已删除")
 
-    const val saveFailed = "保存失败"
-    const val cancelAction = "取消"
-    const val deleteAction = "删除"
+    val saveFailed: String get() = AppLocaleRuntime.text("saveFailed", "保存失败")
+    val cancelAction: String get() = AppLocaleRuntime.text("cancelAction", "取消")
+    val deleteAction: String get() = AppLocaleRuntime.text("deleteAction", "删除")
 
     // ── 日期选择器（`TaskPickerSheets` 用）──
     // 「取消」沿用上面的 [cancelAction]（与 ARB `cancelAction` 同值）。
@@ -68,13 +70,13 @@ object TaskStrings {
     // （六份 ARB 同步），因此不再是「ARB 里没有的野生字符串」——
     // `TaskStringsParityTest.日期量纲标签与 ARB 逐字一致` 会拿这里的值跟 ARB 逐字比对。
     // 本文件是纯常量对象（任务域各处把 `TaskStrings.xxx` 当 String 直接拼），
-    // 所以保持 `const val` 形态，不改成 ArbText（那会强迫 12 处调用点都加 `.zh`）。
+    // 所以保持 `const val` 形态，不改成 ArbText（那会强迫 12 处调用点都加 `.text`）。
     // 考试页的日期滚轮（`ExamPickerSheets`）用同一组 ARB 键，两处同源。
-    const val datePickerYear = "年"
-    const val datePickerMonth = "月"
-    const val datePickerDay = "日"
+    val datePickerYear: String get() = AppLocaleRuntime.text("datePickerYear", "年")
+    val datePickerMonth: String get() = AppLocaleRuntime.text("datePickerMonth", "月")
+    val datePickerDay: String get() = AppLocaleRuntime.text("datePickerDay", "日")
 
-    const val serviceMsgLinkedCourseNotFound = "关联的课程不存在"
+    val serviceMsgLinkedCourseNotFound: String get() = AppLocaleRuntime.text("serviceMsgLinkedCourseNotFound", "关联的课程不存在")
 
     fun weekLabel(week: Long): String = "第 $week 周"
     fun dayTaskBandCountSummary(count: Int): String = "作业 $count 项"

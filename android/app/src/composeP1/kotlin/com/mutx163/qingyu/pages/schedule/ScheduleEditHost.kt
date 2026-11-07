@@ -145,22 +145,22 @@ fun ScheduleEditHost(
                 onFinish()
                 toastOnSuccess(
                     if (scheduleItem == null) {
-                        ScheduleStrings.scheduleSavedHint.zh
+                        ScheduleStrings.scheduleSavedHint.text
                     } else {
-                        ScheduleStrings.scheduleUpdatedHint.zh
+                        ScheduleStrings.scheduleUpdatedHint.text
                     },
                 )
             } else {
                 // 失败**不关页**：用户填的内容还在，改完可以再点保存。
-                toast(context, ScheduleStrings.saveFailed.zh)
+                toast(context, ScheduleStrings.saveFailed.text)
             }
         },
         onDelete = { item, applyToAll ->
             if (onDelete(item, applyToAll)) {
                 onFinish()
-                toastOnSuccess(ScheduleStrings.scheduleDeletedHint.zh)
+                toastOnSuccess(ScheduleStrings.scheduleDeletedHint.text)
             } else {
-                toast(context, ScheduleStrings.deleteFailed.zh)
+                toast(context, ScheduleStrings.deleteFailed.text)
             }
         },
     )

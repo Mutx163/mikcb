@@ -9,18 +9,7 @@ package com.mutx163.qingyu.pages.schedule
  *
  * 命名与 ARB 键逐字一致（`scheduleListTitle` 等），便于 `grep` 双向核对。
  */
-data class ArbText(val key: String, val zh: String) {
-    /** 替换模板里的占位符（`{name}` → [value]）。 */
-    fun filled(name: String, value: String): String = zh.replace("{$name}", value)
-
-    fun filled(vararg pairs: Pair<String, String>): String {
-        var result = zh
-        for ((name, value) in pairs) {
-            result = result.replace("{$name}", value)
-        }
-        return result
-    }
-}
+typealias ArbText = com.mutx163.qingyu.app.ArbText
 
 fun String.filled(name: String, value: String): String = replace("{$name}", value)
 
@@ -286,13 +275,13 @@ object ScheduleStrings {
     }
 
     fun weekdayLabel(weekday: Int): String = when (weekday) {
-        1 -> weekdayMon.zh
-        2 -> weekdayTue.zh
-        3 -> weekdayWed.zh
-        4 -> weekdayThu.zh
-        5 -> weekdayFri.zh
-        6 -> weekdaySat.zh
-        7 -> weekdaySun.zh
+        1 -> weekdayMon.text
+        2 -> weekdayTue.text
+        3 -> weekdayWed.text
+        4 -> weekdayThu.text
+        5 -> weekdayFri.text
+        6 -> weekdaySat.text
+        7 -> weekdaySun.text
         else -> ""
     }
 }

@@ -133,10 +133,10 @@ object AddExamFormReducer {
             )
             CustomReminderStatus.UNCHANGED -> state.copy(toastMessage = null)
             CustomReminderStatus.INVALID -> state.copy(
-                toastMessage = ExamStrings.examReminderCustomInvalid.zh,
+                toastMessage = ExamStrings.examReminderCustomInvalid.text,
             )
             CustomReminderStatus.DUPLICATE -> state.copy(
-                toastMessage = ExamStrings.examReminderCustomAlreadyAdded.zh,
+                toastMessage = ExamStrings.examReminderCustomAlreadyAdded.text,
             )
         }
     }
@@ -171,7 +171,7 @@ object AddExamFormReducer {
             )
             AddExamBlocker.NAME_REQUIRED -> AddExamValidateResult(
                 state = state.copy(
-                    nameError = ExamStrings.examNameRequired.zh,
+                    nameError = ExamStrings.examNameRequired.text,
                     toastMessage = null,
                 ),
                 blocker = blocker,

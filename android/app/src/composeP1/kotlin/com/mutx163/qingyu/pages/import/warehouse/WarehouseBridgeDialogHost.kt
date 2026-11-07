@@ -127,7 +127,7 @@ fun WarehouseBridgeDialogHost(
         // show 判**当前挂起请求**（request 非空且是这一类），不判 shown 保留值：
         // 否则宿主把 pendingDialog 置 null 后弹层仍收不起来（永远关不掉）。
         show = request is WarehouseBridgeDialogRequest.Confirm,
-        title = confirm?.title?.ifBlank { WarehouseStrings.confirmImportAction.zh },
+        title = confirm?.title?.ifBlank { WarehouseStrings.confirmImportAction.text },
         summary = confirm?.message?.takeIf { it.isNotBlank() },
         onDismissRequest = { confirm?.let { onAction(WarehouseBridgeDialogUserAction.Dismiss(it.requestId)) } },
     ) {
@@ -136,7 +136,7 @@ fun WarehouseBridgeDialogHost(
             // message 为空时给旧版同款兜底文案（`?? l10n.defaultContinuePrompt`）。
             if (c.message.isBlank()) {
                 Text(
-                    text = WarehouseStrings.defaultContinuePrompt.zh,
+                    text = WarehouseStrings.defaultContinuePrompt.text,
                     style = MiuixTheme.textStyles.body2,
                     color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
                     lineHeight = 20.sp,
@@ -144,8 +144,8 @@ fun WarehouseBridgeDialogHost(
             }
             Spacer(modifier = Modifier.height(16.dp))
             DialogActionRow(
-                cancelText = WarehouseStrings.cancelAction.zh,
-                confirmText = c.confirmText.ifBlank { WarehouseStrings.confirmImportAction.zh },
+                cancelText = WarehouseStrings.cancelAction.text,
+                confirmText = c.confirmText.ifBlank { WarehouseStrings.confirmImportAction.text },
                 onCancel = { onAction(WarehouseBridgeDialogUserAction.Confirm(c.requestId, confirmed = false)) },
                 onConfirm = { onAction(WarehouseBridgeDialogUserAction.Confirm(c.requestId, confirmed = true)) },
             )
@@ -163,7 +163,7 @@ fun WarehouseBridgeDialogHost(
     QingyuSheet(
         show = request is WarehouseBridgeDialogRequest.Prompt,
         onDismissRequest = { prompt?.let { onAction(WarehouseBridgeDialogUserAction.Dismiss(it.requestId)) } },
-        title = prompt?.title?.ifBlank { WarehouseStrings.inputRequiredTitle.zh },
+        title = prompt?.title?.ifBlank { WarehouseStrings.inputRequiredTitle.text },
         maxHeightFraction = 0.6f,
     ) {
         val p = prompt
@@ -188,7 +188,7 @@ fun WarehouseBridgeDialogHost(
             )
             if (promptInvalid) {
                 Text(
-                    text = WarehouseStrings.pleaseEnterFourDigitYear.zh,
+                    text = WarehouseStrings.pleaseEnterFourDigitYear.text,
                     style = MiuixTheme.textStyles.footnote1,
                     color = Color(QingyuTheme.error(isSystemInDarkTheme())),
                     modifier = Modifier.padding(top = 4.dp),
@@ -196,8 +196,8 @@ fun WarehouseBridgeDialogHost(
             }
             Spacer(modifier = Modifier.height(16.dp))
             DialogActionRow(
-                cancelText = WarehouseStrings.cancelAction.zh,
-                confirmText = WarehouseStrings.saveAction.zh,
+                cancelText = WarehouseStrings.cancelAction.text,
+                confirmText = WarehouseStrings.saveAction.text,
                 onCancel = { onAction(WarehouseBridgeDialogUserAction.Dismiss(p.requestId)) },
                 onConfirm = {
                     // 校验不过不关层（对齐 Dart validate 分支：提示 + 留在原地）。
@@ -221,7 +221,7 @@ fun WarehouseBridgeDialogHost(
     QingyuSheet(
         show = request is WarehouseBridgeDialogRequest.SingleSelection,
         onDismissRequest = { selection?.let { onAction(WarehouseBridgeDialogUserAction.Dismiss(it.requestId)) } },
-        title = selection?.title?.ifBlank { WarehouseStrings.pleaseChooseTitle.zh },
+        title = selection?.title?.ifBlank { WarehouseStrings.pleaseChooseTitle.text },
         maxHeightFraction = 0.6f,
         contentScrolls = true,
     ) {
@@ -246,8 +246,8 @@ fun WarehouseBridgeDialogHost(
                 }
                 Spacer(modifier = Modifier.height(16.dp))
                 DialogActionRow(
-                    cancelText = WarehouseStrings.cancelAction.zh,
-                    confirmText = WarehouseStrings.saveAction.zh,
+                    cancelText = WarehouseStrings.cancelAction.text,
+                    confirmText = WarehouseStrings.saveAction.text,
                     onCancel = { onAction(WarehouseBridgeDialogUserAction.Dismiss(s.requestId)) },
                     onConfirm = { onAction(WarehouseBridgeDialogUserAction.Selection(s.requestId, selectedIndex)) },
                 )
@@ -318,8 +318,8 @@ fun WarehouseBridgeDialogHost(
             }
             Spacer(modifier = Modifier.height(16.dp))
             DialogActionRow(
-                cancelText = WarehouseStrings.cancelAction.zh,
-                confirmText = WarehouseStrings.saveAction.zh,
+                cancelText = WarehouseStrings.cancelAction.text,
+                confirmText = WarehouseStrings.saveAction.text,
                 onCancel = { onAction(WarehouseBridgeDialogUserAction.Dismiss(f.requestId)) },
                 onConfirm = {
                     onAction(WarehouseBridgeDialogUserAction.SaveConfig(f.requestId, warehouseBridgeFormValues(edits)))

@@ -151,19 +151,19 @@ fun AddScheduleItemPage(
 
         val trimmedTitle = title.trim()
         if (trimmedTitle.isEmpty()) {
-            revealValidationError(ScheduleStrings.scheduleTitleRequired.zh)
+            revealValidationError(ScheduleStrings.scheduleTitleRequired.text)
             return
         }
         if (startDate == endDate) {
             val startMin = ScheduleDateUtils.parseMinutes(startTime)
             val endMin = ScheduleDateUtils.parseMinutes(endTime)
             if (endMin <= startMin) {
-                revealValidationError(ScheduleStrings.scheduleTimeRangeInvalid.zh)
+                revealValidationError(ScheduleStrings.scheduleTimeRangeInvalid.text)
                 return
             }
         }
         if (endDate < startDate) {
-            revealValidationError(ScheduleStrings.scheduleDateRangeInvalid.zh)
+            revealValidationError(ScheduleStrings.scheduleDateRangeInvalid.text)
             return
         }
 
@@ -202,9 +202,9 @@ fun AddScheduleItemPage(
     //（overlayHeader / collapsibleLargeTitle 均 true）。
     val scrollBehavior = MiuixScrollBehavior()
     val pageTitle = if (isEditing) {
-        ScheduleStrings.editScheduleTitle.zh
+        ScheduleStrings.editScheduleTitle.text
     } else {
-        ScheduleStrings.addScheduleTitle.zh
+        ScheduleStrings.addScheduleTitle.text
     }
 
     QingyuPageTheme {
@@ -221,7 +221,7 @@ fun AddScheduleItemPage(
                         IconButton(onClick = onBack) {
                             Icon(
                                 imageVector = MiuixIcons.ChevronBackward,
-                                contentDescription = ScheduleStrings.cancelAction.zh,
+                                contentDescription = ScheduleStrings.cancelAction.text,
                                 tint = Color(QingyuTheme.actionIcon(dark)),
                             )
                         }
@@ -232,14 +232,14 @@ fun AddScheduleItemPage(
                         if (isEditing) {
                             QingyuGlassIconButton(
                                 onClick = { validateAndProceed(isDeleting = true) },
-                                contentDescription = ScheduleStrings.deleteAction.zh,
+                                contentDescription = ScheduleStrings.deleteAction.text,
                                 icon = MiuixIcons.Delete,
                                 tint = Color(QingyuTheme.actionIcon(dark)),
                             )
                         }
                         QingyuGlassIconButton(
                             onClick = { validateAndProceed(isDeleting = false) },
-                            contentDescription = ScheduleStrings.saveAction.zh,
+                            contentDescription = ScheduleStrings.saveAction.text,
                             icon = MiuixIcons.Ok,
                             tint = Color(QingyuTheme.actionIcon(dark)),
                         )
@@ -302,7 +302,7 @@ fun AddScheduleItemPage(
                         ) {
                             Column {
                                 Text(
-                                    text = ScheduleStrings.scheduleQuickPresetSectionTitle.zh,
+                                    text = ScheduleStrings.scheduleQuickPresetSectionTitle.text,
                                     style = MiuixTheme.textStyles.body2.shiftWeight(QingyuWeightDelta.MEDIUM),
                                     // 与 QingyuTheme.sectionLabel(dark) 在主题桥里同值，走语义槽取色（R5/R6）。
                                 color = MiuixTheme.colorScheme.onSurfaceVariantActions,
@@ -380,8 +380,8 @@ fun AddScheduleItemPage(
                         // 现改回官方 `SwitchPreference`，文案全部来自
                         // `ScheduleStrings.scheduleEnabledTitle` / `scheduleDisabledSubtitle`。
                         SwitchPreference(
-                            title = ScheduleStrings.scheduleEnabledTitle.zh,
-                            summary = if (enabled) null else ScheduleStrings.scheduleDisabledSubtitle.zh,
+                            title = ScheduleStrings.scheduleEnabledTitle.text,
+                            summary = if (enabled) null else ScheduleStrings.scheduleDisabledSubtitle.text,
                             checked = enabled,
                             onCheckedChange = { enabled = it },
                         )
@@ -396,7 +396,7 @@ fun AddScheduleItemPage(
                     ) {
                         Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                             Text(
-                                text = ScheduleStrings.scheduleInfoSectionTitle.zh,
+                                text = ScheduleStrings.scheduleInfoSectionTitle.text,
                                 style = MiuixTheme.textStyles.body2.shiftWeight(QingyuWeightDelta.MEDIUM),
                                 // 与 QingyuTheme.sectionLabel(dark) 在主题桥里同值，走语义槽取色（R5/R6）。
                                 color = MiuixTheme.colorScheme.onSurfaceVariantActions,
@@ -404,19 +404,19 @@ fun AddScheduleItemPage(
                             TextField(
                                 value = title,
                                 onValueChange = { title = it },
-                                label = ScheduleStrings.scheduleTitleLabel.zh,
+                                label = ScheduleStrings.scheduleTitleLabel.text,
                                 modifier = Modifier.fillMaxWidth(),
                             )
                             TextField(
                                 value = location,
                                 onValueChange = { location = it },
-                                label = ScheduleStrings.scheduleLocationLabel.zh,
+                                label = ScheduleStrings.scheduleLocationLabel.text,
                                 modifier = Modifier.fillMaxWidth(),
                             )
                             TextField(
                                 value = note,
                                 onValueChange = { note = it },
-                                label = ScheduleStrings.scheduleNoteLabel.zh,
+                                label = ScheduleStrings.scheduleNoteLabel.text,
                                 modifier = Modifier.fillMaxWidth(),
                             )
                         }
@@ -431,7 +431,7 @@ fun AddScheduleItemPage(
                     ) {
                         Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                             Text(
-                                text = ScheduleStrings.scheduleTimeSectionTitle.zh,
+                                text = ScheduleStrings.scheduleTimeSectionTitle.text,
                                 style = MiuixTheme.textStyles.body2.shiftWeight(QingyuWeightDelta.MEDIUM),
                                 // 与 QingyuTheme.sectionLabel(dark) 在主题桥里同值，走语义槽取色（R5/R6）。
                                 color = MiuixTheme.colorScheme.onSurfaceVariantActions,
@@ -443,7 +443,7 @@ fun AddScheduleItemPage(
                             // 原来是四个自由文本框：用户得手输 `2026-10-01` 这种格式，
                             // 还可能输进解析不出来的值。滚轮弹层见本文件底部。
                             SchedulePickerField(
-                                label = ScheduleStrings.scheduleStartDateLabel.zh,
+                                label = ScheduleStrings.scheduleStartDateLabel.text,
                                 value = formatScheduleDateDisplay(startDate),
                                 onClick = {
                                     focusManager.clearFocus()
@@ -451,7 +451,7 @@ fun AddScheduleItemPage(
                                 },
                             )
                             SchedulePickerField(
-                                label = ScheduleStrings.scheduleStartTimeLabel.zh,
+                                label = ScheduleStrings.scheduleStartTimeLabel.text,
                                 value = startTime,
                                 onClick = {
                                     focusManager.clearFocus()
@@ -459,7 +459,7 @@ fun AddScheduleItemPage(
                                 },
                             )
                             SchedulePickerField(
-                                label = ScheduleStrings.scheduleEndDateLabel.zh,
+                                label = ScheduleStrings.scheduleEndDateLabel.text,
                                 value = formatScheduleDateDisplay(endDate),
                                 onClick = {
                                     focusManager.clearFocus()
@@ -467,7 +467,7 @@ fun AddScheduleItemPage(
                                 },
                             )
                             SchedulePickerField(
-                                label = ScheduleStrings.scheduleEndTimeLabel.zh,
+                                label = ScheduleStrings.scheduleEndTimeLabel.text,
                                 value = endTime,
                                 onClick = {
                                     focusManager.clearFocus()
@@ -478,13 +478,13 @@ fun AddScheduleItemPage(
                             // 跨天或重复提示
                             if (recurrence == ScheduleRecurrence.WEEKLY) {
                                 Text(
-                                    text = ScheduleStrings.scheduleRepeatWeeklyHint.zh,
+                                    text = ScheduleStrings.scheduleRepeatWeeklyHint.text,
                                     style = MiuixTheme.textStyles.footnote1,
                                     color = Color(QingyuTheme.secondaryText(dark)),
                                 )
                             } else if (recurrence == ScheduleRecurrence.DAILY) {
                                 Text(
-                                    text = ScheduleStrings.scheduleRepeatEndDateHint.zh,
+                                    text = ScheduleStrings.scheduleRepeatEndDateHint.text,
                                     style = MiuixTheme.textStyles.footnote1,
                                     color = Color(QingyuTheme.secondaryText(dark)),
                                 )
@@ -501,7 +501,7 @@ fun AddScheduleItemPage(
 
                             // 颜色挑选横条
                             Text(
-                                text = ScheduleStrings.scheduleAppearanceSectionTitle.zh,
+                                text = ScheduleStrings.scheduleAppearanceSectionTitle.text,
                                 style = MiuixTheme.textStyles.footnote1.shiftWeight(QingyuWeightDelta.MEDIUM),
                                 // 与 QingyuTheme.sectionLabel(dark) 在主题桥里同值，走语义槽取色（R5/R6）。
                                 color = MiuixTheme.colorScheme.onSurfaceVariantActions,
@@ -550,7 +550,7 @@ fun AddScheduleItemPage(
                     ) {
                         Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                             Text(
-                                text = ScheduleStrings.scheduleRepeatSectionTitle.zh,
+                                text = ScheduleStrings.scheduleRepeatSectionTitle.text,
                                 style = MiuixTheme.textStyles.body2.shiftWeight(QingyuWeightDelta.MEDIUM),
                                 // 与 QingyuTheme.sectionLabel(dark) 在主题桥里同值，走语义槽取色（R5/R6）。
                                 color = MiuixTheme.colorScheme.onSurfaceVariantActions,
@@ -560,9 +560,9 @@ fun AddScheduleItemPage(
                                 horizontalArrangement = Arrangement.spacedBy(8.dp),
                             ) {
                                 val options = listOf(
-                                    ScheduleRecurrence.NONE to ScheduleStrings.scheduleRepeatNone.zh,
-                                    ScheduleRecurrence.DAILY to ScheduleStrings.scheduleRepeatDaily.zh,
-                                    ScheduleRecurrence.WEEKLY to ScheduleStrings.scheduleRepeatWeekly.zh,
+                                    ScheduleRecurrence.NONE to ScheduleStrings.scheduleRepeatNone.text,
+                                    ScheduleRecurrence.DAILY to ScheduleStrings.scheduleRepeatDaily.text,
+                                    ScheduleRecurrence.WEEKLY to ScheduleStrings.scheduleRepeatWeekly.text,
                                 )
                                 for ((rec, label) in options) {
                                     val isSelected = recurrence == rec
@@ -611,13 +611,13 @@ fun AddScheduleItemPage(
                     ) {
                         Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                             Text(
-                                text = ScheduleStrings.scheduleReminderSectionTitle.zh,
+                                text = ScheduleStrings.scheduleReminderSectionTitle.text,
                                 style = MiuixTheme.textStyles.body2.shiftWeight(QingyuWeightDelta.MEDIUM),
                                 // 与 QingyuTheme.sectionLabel(dark) 在主题桥里同值，走语义槽取色（R5/R6）。
                                 color = MiuixTheme.colorScheme.onSurfaceVariantActions,
                             )
                             val reminderChoices = listOf(
-                                null to ScheduleStrings.scheduleReminderOff.zh,
+                                null to ScheduleStrings.scheduleReminderOff.text,
                                 5 to ScheduleStrings.scheduleReminderMinutes.filled("minutes", "5"),
                                 10 to ScheduleStrings.scheduleReminderMinutes.filled("minutes", "10"),
                                 15 to ScheduleStrings.scheduleReminderMinutes.filled("minutes", "15"),
@@ -676,7 +676,7 @@ fun AddScheduleItemPage(
                                     verticalAlignment = Alignment.CenterVertically,
                                 ) {
                                     Text(
-                                        text = ScheduleStrings.scheduleReminderPermissionAction.zh,
+                                        text = ScheduleStrings.scheduleReminderPermissionAction.text,
                                         style = MiuixTheme.textStyles.body2
                                             .shiftWeight(QingyuWeightDelta.MEDIUM),
                                         color = MiuixTheme.colorScheme.primary,
@@ -684,7 +684,7 @@ fun AddScheduleItemPage(
                                 }
                                 Spacer(modifier = Modifier.height(2.dp))
                                 Text(
-                                    text = ScheduleStrings.scheduleReminderPermissionMissing.zh,
+                                    text = ScheduleStrings.scheduleReminderPermissionMissing.text,
                                     style = MiuixTheme.textStyles.footnote1,
                                     color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
                                 )
@@ -702,19 +702,19 @@ fun AddScheduleItemPage(
     //（未保存内容一起丢）。现改官方 OverlayDialog 并交给 `show` 驱动：
     // 返回键 / 点外部只关弹窗，不再退页。
     val scopeTitleText = if (pendingActionIsDelete) {
-        ScheduleStrings.scheduleDeleteScopeTitle.zh
+        ScheduleStrings.scheduleDeleteScopeTitle.text
     } else {
-        ScheduleStrings.scheduleEditScopeTitle.zh
+        ScheduleStrings.scheduleEditScopeTitle.text
     }
     val thisActionText = if (pendingActionIsDelete) {
-        ScheduleStrings.scheduleDeleteScopeThis.zh
+        ScheduleStrings.scheduleDeleteScopeThis.text
     } else {
-        ScheduleStrings.scheduleEditScopeThis.zh
+        ScheduleStrings.scheduleEditScopeThis.text
     }
     val allActionText = if (pendingActionIsDelete) {
-        ScheduleStrings.scheduleDeleteScopeAll.zh
+        ScheduleStrings.scheduleDeleteScopeAll.text
     } else {
-        ScheduleStrings.scheduleEditScopeAll.zh
+        ScheduleStrings.scheduleEditScopeAll.text
     }
 
     OverlayDialog(
@@ -725,7 +725,7 @@ fun AddScheduleItemPage(
     ) {
         Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
             Text(
-                text = ScheduleStrings.scheduleOccurrenceEditHint.zh,
+                text = ScheduleStrings.scheduleOccurrenceEditHint.text,
                 style = MiuixTheme.textStyles.body2,
                 color = Color(QingyuTheme.secondaryText(dark)),
             )
@@ -803,7 +803,7 @@ fun AddScheduleItemPage(
     val deleteConfirmTarget = scheduleItem
     OverlayDialog(
         show = showDeleteConfirmDialog,
-        title = ScheduleStrings.deleteScheduleTitle.zh,
+        title = ScheduleStrings.deleteScheduleTitle.text,
         summary = deleteConfirmTarget?.let {
             ScheduleStrings.deleteScheduleMessage.filled("title", it.title)
         },
@@ -817,11 +817,11 @@ fun AddScheduleItemPage(
             ) {
                 TextButton(
                     modifier = Modifier.weight(1f),
-                    text = ScheduleStrings.cancelAction.zh,
+                    text = ScheduleStrings.cancelAction.text,
                     onClick = { showDeleteConfirmDialog = false },
                 )
                 ScheduleActionButton(
-                    text = ScheduleStrings.deleteAction.zh,
+                    text = ScheduleStrings.deleteAction.text,
                     onClick = {
                         showDeleteConfirmDialog = false
                         onDelete(deleteConfirmTarget, null)
@@ -838,9 +838,9 @@ fun AddScheduleItemPage(
     ScheduleDatePickerSheet(
         show = pickingDate != null,
         title = if (pickingDate == ScheduleEndpoint.End) {
-            ScheduleStrings.scheduleEndDateLabel.zh
+            ScheduleStrings.scheduleEndDateLabel.text
         } else {
-            ScheduleStrings.scheduleStartDateLabel.zh
+            ScheduleStrings.scheduleStartDateLabel.text
         },
         initialIso = if (pickingDate == ScheduleEndpoint.End) endDate else startDate,
         onConfirm = { iso ->
@@ -864,9 +864,9 @@ fun AddScheduleItemPage(
     ScheduleTimePickerSheet(
         show = pickingTime != null,
         title = if (pickingTime == ScheduleEndpoint.End) {
-            ScheduleStrings.selectEndTimeTitle.zh
+            ScheduleStrings.selectEndTimeTitle.text
         } else {
-            ScheduleStrings.selectStartTimeTitle.zh
+            ScheduleStrings.selectStartTimeTitle.text
         },
         initial = if (pickingTime == ScheduleEndpoint.End) endTime else startTime,
         onConfirm = { clock ->
@@ -997,7 +997,7 @@ private fun ScheduleDatePickerSheet(
             ) {
                 TextButton(
                     modifier = Modifier.weight(1f),
-                    text = ScheduleStrings.cancelAction.zh,
+                    text = ScheduleStrings.cancelAction.text,
                     onClick = onDismiss,
                 )
                 Button(
@@ -1079,7 +1079,7 @@ private fun ScheduleTimePickerSheet(
             ) {
                 TextButton(
                     modifier = Modifier.weight(1f),
-                    text = ScheduleStrings.cancelAction.zh,
+                    text = ScheduleStrings.cancelAction.text,
                     onClick = onDismiss,
                 )
                 Button(

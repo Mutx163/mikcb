@@ -177,11 +177,11 @@ fun SemesterHeatmapCard(
     ) {
         Column {
             ChartCardHeader(
-                title = ChartsStrings.statisticsHeatmapTitle.zh,
+                title = ChartsStrings.statisticsHeatmapTitle.text,
                 icon = MiuixIcons.GridView,
                 accent = ChartPalette.Indigo,
                 dark = dark,
-                trailing = ChartsStrings.statisticsHeatmapHint.zh,
+                trailing = ChartsStrings.statisticsHeatmapHint.text,
             )
             Spacer(Modifier.height(HeatmapSpec.HEADER_TO_GRID_DP.dp))
             Row(modifier = Modifier.horizontalScroll(rememberScrollState())) {

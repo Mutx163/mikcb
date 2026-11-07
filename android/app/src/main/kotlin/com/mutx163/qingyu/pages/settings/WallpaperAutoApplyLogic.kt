@@ -163,9 +163,7 @@ object WallpaperAutoApplyLogic {
             val label = dateLabel?.takeIf { it.isNotBlank() }
                 ?: dateKey?.let { SettingsBingWallpaperGalleryPage.dateLabel(it, today) }
                 ?: ""
-            WallpaperAutoApplyNotice(
-                ArbText(template.key, template.filled("date", label)),
-            )
+            WallpaperAutoApplyNotice(template.withArguments("date", label))
         }
 
         DailyApplyOutcome.Failed -> WallpaperAutoApplyNotice(

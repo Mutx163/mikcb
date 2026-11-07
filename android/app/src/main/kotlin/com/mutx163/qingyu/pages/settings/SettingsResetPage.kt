@@ -78,27 +78,27 @@ object SettingsResetPage {
             note = "二次确认弹窗（:249-296 showHyperosConfirmDialog，destructive: true）：" +
                 "官方 OverlayDialog 由宿主接，标题/正文/按钮文案在这里登记，供对拍",
             labelKey = SettingsStringsExt4.settingsResetDefaultsConfirmTitle.key,
-            label = SettingsStringsExt4.settingsResetDefaultsConfirmTitle.zh,
+            label = SettingsStringsExt4.settingsResetDefaultsConfirmTitle.text,
             // 确认按钮复用「恢复默认设置」这句（:256 confirmLabel）
             valueKey = SettingsStringsExt4.settingsResetDefaultsTitle.key,
-            value = SettingsStringsExt4.settingsResetDefaultsTitle.zh,
+            value = SettingsStringsExt4.settingsResetDefaultsTitle.text,
             texts = listOf(
                 // 取消（:255 cancelLabel）
                 SettingsInlineText(
                     SettingsStringsExt4.cancelAction.key,
-                    SettingsStringsExt4.cancelAction.zh,
+                    SettingsStringsExt4.cancelAction.text,
                 ),
                 // 确认（:256 confirmLabel）
                 SettingsInlineText(
                     SettingsStringsExt4.settingsResetDefaultsTitle.key,
-                    SettingsStringsExt4.settingsResetDefaultsTitle.zh,
+                    SettingsStringsExt4.settingsResetDefaultsTitle.text,
                 ),
             ),
         )
         return SettingsPageSpec(
             id = ID,
             titleKey = SettingsStringsExt4.settingsResetDefaultsTitle.key,
-            title = SettingsStringsExt4.settingsResetDefaultsTitle.zh,
+            title = SettingsStringsExt4.settingsResetDefaultsTitle.text,
             nodes = nodes,
         )
     }

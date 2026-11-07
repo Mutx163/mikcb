@@ -29,7 +29,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -37,6 +36,8 @@ import androidx.compose.ui.unit.dp
 import com.mutx163.qingyu.components.QingyuCard
 import com.mutx163.qingyu.components.QingyuSheet
 import com.mutx163.qingyu.components.QingyuWeightDelta
+import com.mutx163.qingyu.components.rememberCappedSheetHeight
+import com.mutx163.qingyu.components.rememberSheetMaxHeight
 import com.mutx163.qingyu.components.shiftWeight
 import com.mutx163.qingyu.core.Course
 import com.mutx163.qingyu.core.SectionTime
@@ -239,7 +240,7 @@ private fun FollowupOptionRow(
 @Composable
 private fun FollowupCancelButton(onPress: () -> Unit) {
     TextButton(
-        text = CourseFollowupStrings.cancelAction.zh,
+        text = CourseFollowupStrings.cancelAction.text,
         onClick = onPress,
         modifier = Modifier.fillMaxWidth(),
     )
@@ -389,7 +390,7 @@ private fun FollowupPickerSheet(
         LazyColumn(
             modifier = Modifier
                 .fillMaxWidth()
-                .heightIn(max = 380.dp)
+                .heightIn(max = rememberCappedSheetHeight(380.dp))
                 .scrollEndHaptic()
                 .overScrollVertical(),
             contentPadding = PaddingValues(bottom = bottomInset),
@@ -451,7 +452,7 @@ private fun FollowupLocationSheet(
             TextField(
                 value = text,
                 onValueChange = { text = it },
-                label = CourseFollowupStrings.locationLabel.zh,
+                label = CourseFollowupStrings.locationLabel.text,
                 singleLine = true,
                 modifier = Modifier.fillMaxWidth(),
                 trailingIcon = {
@@ -459,7 +460,7 @@ private fun FollowupLocationSheet(
                         IconButton(onClick = { text = TextFieldValue("") }) {
                             Icon(
                                 imageVector = MiuixIcons.Clear,
-                                contentDescription = CourseFollowupStrings.clearAction.zh,
+                                contentDescription = CourseFollowupStrings.clearAction.text,
                                 tint = secondaryText,
                                 modifier = Modifier.size(18.dp),
                             )
@@ -470,7 +471,7 @@ private fun FollowupLocationSheet(
             Spacer(modifier = Modifier.height(14.dp))
             Row(modifier = Modifier.fillMaxWidth()) {
                 TextButton(
-                    text = CourseFollowupStrings.cancelAction.zh,
+                    text = CourseFollowupStrings.cancelAction.text,
                     onClick = onDismiss,
                     modifier = Modifier.weight(1f),
                 )
@@ -480,7 +481,7 @@ private fun FollowupLocationSheet(
                     modifier = Modifier.weight(1f),
                     colors = ButtonDefaults.buttonColorsPrimary(),
                 ) {
-                    Text(text = CourseFollowupStrings.confirmAction.zh)
+                    Text(text = CourseFollowupStrings.confirmAction.text)
                 }
             }
         }
@@ -519,7 +520,7 @@ fun CourseDeleteScopeSheet(
         FollowupHeader(
             icon = MiuixIcons.Delete,
             iconTint = destructive,
-            title = CourseFollowupStrings.deleteModeTitle.zh,
+            title = CourseFollowupStrings.deleteModeTitle.text,
             subtitle = null,
         )
         Spacer(modifier = Modifier.height(14.dp))
@@ -569,8 +570,8 @@ fun CourseSuspendScopeSheet(
         FollowupHeader(
             icon = if (suspendedThisWeek) MiuixIcons.Play else MiuixIcons.Pause,
             iconTint = foreground,
-            title = CourseFollowupStrings.suspendSheetTitle.zh,
-            subtitle = CourseFollowupStrings.suspendSheetSubtitle.zh,
+            title = CourseFollowupStrings.suspendSheetTitle.text,
+            subtitle = CourseFollowupStrings.suspendSheetSubtitle.text,
         )
         Spacer(modifier = Modifier.height(14.dp))
         options.forEachIndexed { index, option ->
@@ -631,13 +632,13 @@ fun CourseDeleteConfirmSheet(
         Spacer(modifier = Modifier.height(14.dp))
         Row(modifier = Modifier.fillMaxWidth()) {
             TextButton(
-                text = CourseFollowupStrings.cancelAction.zh,
+                text = CourseFollowupStrings.cancelAction.text,
                 onClick = onDismiss,
                 modifier = Modifier.weight(1f),
             )
             Spacer(modifier = Modifier.width(12.dp))
             TextButton(
-                text = CourseFollowupStrings.deleteAction.zh,
+                text = CourseFollowupStrings.deleteAction.text,
                 onClick = onConfirm,
                 modifier = Modifier.weight(1f),
                 // 危险色只染**字**（Dart `HyperosFrostedSheetButtonVariant.destructive`：
@@ -701,7 +702,7 @@ fun CourseRescheduleSheet(
 
     // 正文列表限高：屏高 × 0.72（写死 dp 值在矮屏会把底部按钮挤出弹层；
     // 比例依据见本文件 KDoc「与 Dart 的已知差异」第 3 条）。
-    val maxListHeight = (LocalConfiguration.current.screenHeightDp * RESCHEDULE_LIST_HEIGHT_FRACTION).dp
+    val maxListHeight = rememberSheetMaxHeight(RESCHEDULE_LIST_HEIGHT_FRACTION)
 
     QingyuSheet(
         show = show,
@@ -762,7 +763,7 @@ fun CourseRescheduleSheet(
                     ) {
                         FollowupStepButton(
                             icon = MiuixIcons.Remove,
-                            contentDescription = CourseFollowupStrings.reschedulePreviousWeekAction.zh,
+                            contentDescription = CourseFollowupStrings.reschedulePreviousWeekAction.text,
                             enabled = view.canDecrementWeek,
                             onClick = { draft = draft.previousWeek(weekCount) },
                         )
@@ -775,7 +776,7 @@ fun CourseRescheduleSheet(
                         Spacer(modifier = Modifier.width(12.dp))
                         FollowupStepButton(
                             icon = MiuixIcons.Add,
-                            contentDescription = CourseFollowupStrings.rescheduleNextWeekAction.zh,
+                            contentDescription = CourseFollowupStrings.rescheduleNextWeekAction.text,
                             enabled = view.canIncrementWeek,
                             onClick = { draft = draft.nextWeek(weekCount) },
                         )
@@ -889,7 +890,7 @@ fun CourseRescheduleSheet(
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
             ) {
                 TextButton(
-                    text = CourseFollowupStrings.cancelAction.zh,
+                    text = CourseFollowupStrings.cancelAction.text,
                     onClick = onDismiss,
                     modifier = Modifier.weight(1f),
                 )
@@ -899,7 +900,7 @@ fun CourseRescheduleSheet(
                     modifier = Modifier.weight(1f),
                     colors = ButtonDefaults.buttonColorsPrimary(),
                 ) {
-                    Text(text = CourseFollowupStrings.confirmRescheduleAction.zh)
+                    Text(text = CourseFollowupStrings.confirmRescheduleAction.text)
                 }
             }
         }

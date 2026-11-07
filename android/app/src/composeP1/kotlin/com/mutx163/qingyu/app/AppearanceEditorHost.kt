@@ -349,7 +349,7 @@ fun AppearanceEditorHost(
         landed = actual
         model = actual
         Log.e(LOG_TAG, "appearance editor save did not land", result.exceptionOrNull())
-        toast(SettingsStringsExt2.saveFailed.zh)
+        toast(SettingsStringsExt2.saveFailed.text)
         return false
     }
 
@@ -437,7 +437,7 @@ fun AppearanceEditorHost(
         scope.launch {
             val path = withContext(Dispatchers.IO) { importPickedWallpaper(uri) }
             if (path == null) {
-                toast(SettingsStringsExt2.saveFailed.zh)
+                toast(SettingsStringsExt2.saveFailed.text)
                 return@launch
             }
             val picked = WallpaperHistoryLedger.applyPicked(model, path) ?: return@launch
@@ -510,12 +510,12 @@ fun AppearanceEditorHost(
             val newest = items.firstOrNull()
             if (newest == null) {
                 WallpaperAutoApplyLogic.outcomeNotice(DailyApplyOutcome.Failed)
-                    ?.let { toast(it.text.zh) }
+                    ?.let { toast(it.text.text) }
                 return@launch
             }
             if (WallpaperAutoApplyLogic.decide(snapshot, newest) is BingAutoApplyDecision.AlreadyApplied) {
                 WallpaperAutoApplyLogic.outcomeNotice(DailyApplyOutcome.AlreadyApplied)
-                    ?.let { toast(it.text.zh) }
+                    ?.let { toast(it.text.text) }
                 return@launch
             }
             val downloaded = withContext(Dispatchers.IO) {
@@ -549,7 +549,7 @@ fun AppearanceEditorHost(
                 )
             }
             WallpaperAutoApplyLogic.outcomeNotice(applied.outcome, dateKey = applied.itemId)
-                ?.let { toast(it.text.zh) }
+                ?.let { toast(it.text.text) }
             val next = WallpaperAutoApplyLogic.settingsAfterApply(model, applied.path)
             if (next != null) {
                 // 先更新草稿 / 落盘，再走与手动删除**同一条**入口：
@@ -573,7 +573,7 @@ fun AppearanceEditorHost(
         val newValue = !snapshot.enabled
         val plan = WallpaperAutoApplyLogic.togglePlan(snapshot.enabled, newValue)
         if (plan.persistEnabled) bingStore.setAutoApplyEnabled(newValue)
-        if (plan.showApplying) toast(WallpaperAutoApplyLogic.toggleNotice().text.zh)
+        if (plan.showApplying) toast(WallpaperAutoApplyLogic.toggleNotice().text.text)
         if (plan.runApplyOnce) runAutoApplyOnce()
     }
 
@@ -1052,6 +1052,8 @@ private fun DayViewPreview(
         // 星期栏 / 空态压在壁纸上的字色（2026-11-01）。
         wallpaperBands = homeChrome.bands,
         material = if (glassSurfacesEnabled) homeChrome.material else null,
+        hasWallpaper = homeChrome.hasBackdrop,
+        // 玻璃能不能用还要乘用户开关；墨色回退只认纯壁纸存在信号（上一行）。
         hasBackdrop = glassSurfacesEnabled && homeChrome.hasBackdrop,
         pageColorArgb = homeChrome.pageColorArgb,
         floatingButtonBottomInset = floatingInsets.buttonBottom,

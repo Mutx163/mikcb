@@ -108,16 +108,16 @@ fun resolveSchedulePresetWindow(startMinutes: Int, durationMinutes: Int): Preset
  * 模板 ID 到其中文标题映射（对齐 ARB 原文）。
  */
 fun scheduleQuickPresetTitle(presetId: String): String = when (presetId) {
-    "groupMeeting" -> ScheduleStrings.scheduleQuickPresetGroupMeeting.zh
-    "lecture" -> ScheduleStrings.scheduleQuickPresetLecture.zh
-    "meeting" -> ScheduleStrings.scheduleQuickPresetMeeting.zh
-    "defense" -> ScheduleStrings.scheduleQuickPresetDefense.zh
-    "interview" -> ScheduleStrings.scheduleQuickPresetInterview.zh
-    "dining" -> ScheduleStrings.scheduleQuickPresetDining.zh
-    "workout" -> ScheduleStrings.scheduleQuickPresetWorkout.zh
-    "study" -> ScheduleStrings.scheduleQuickPresetStudy.zh
-    "clinic" -> ScheduleStrings.scheduleQuickPresetClinic.zh
-    "commute" -> ScheduleStrings.scheduleQuickPresetCommute.zh
+    "groupMeeting" -> ScheduleStrings.scheduleQuickPresetGroupMeeting.text
+    "lecture" -> ScheduleStrings.scheduleQuickPresetLecture.text
+    "meeting" -> ScheduleStrings.scheduleQuickPresetMeeting.text
+    "defense" -> ScheduleStrings.scheduleQuickPresetDefense.text
+    "interview" -> ScheduleStrings.scheduleQuickPresetInterview.text
+    "dining" -> ScheduleStrings.scheduleQuickPresetDining.text
+    "workout" -> ScheduleStrings.scheduleQuickPresetWorkout.text
+    "study" -> ScheduleStrings.scheduleQuickPresetStudy.text
+    "clinic" -> ScheduleStrings.scheduleQuickPresetClinic.text
+    "commute" -> ScheduleStrings.scheduleQuickPresetCommute.text
     else -> ""
 }
 

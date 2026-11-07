@@ -27,20 +27,7 @@ package com.mutx163.qingyu.pages.time_scheme
  * - `timeSchemeBlockerListSeparator` 是分隔符而不是句子，但它在 ARB 里就是一个
  *   独立的键，所以照样落成一个 [TimeSchemeManagementText]，让对拍把它一起覆盖。
  */
-data class TimeSchemeManagementText(val key: String, val zh: String) {
-
-    /** 替换模板里的单个占位符（`{name}` → [value]）。 */
-    fun filled(name: String, value: String): String = zh.replace("{$name}", value)
-
-    /** 一次性替换多个占位符；顺序无关，未出现的占位符原样保留。 */
-    fun filled(vararg pairs: Pair<String, String>): String {
-        var result = zh
-        for ((name, value) in pairs) {
-            result = result.replace("{$name}", value)
-        }
-        return result
-    }
-}
+typealias TimeSchemeManagementText = com.mutx163.qingyu.app.ArbText
 
 object TimeSchemeManagementStrings {
 
@@ -365,13 +352,13 @@ object TimeSchemeManagementStrings {
 
     /** 周一至周日的单字短名；非 1..7 返回空串（调用方据此跳过渲染）。 */
     fun weekdayShort(weekday: Int): String = when (weekday) {
-        1 -> weekdayShortMonday.zh
-        2 -> weekdayShortTuesday.zh
-        3 -> weekdayShortWednesday.zh
-        4 -> weekdayShortThursday.zh
-        5 -> weekdayShortFriday.zh
-        6 -> weekdayShortSaturday.zh
-        7 -> weekdayShortSunday.zh
+        1 -> weekdayShortMonday.text
+        2 -> weekdayShortTuesday.text
+        3 -> weekdayShortWednesday.text
+        4 -> weekdayShortThursday.text
+        5 -> weekdayShortFriday.text
+        6 -> weekdayShortSaturday.text
+        7 -> weekdayShortSunday.text
         else -> ""
     }
 }

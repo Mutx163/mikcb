@@ -45,7 +45,7 @@ class TimetableProfilesLogic {
         timeSchemeId: String? = null,
     ): TimetableProfilesState {
         val trimmed = name.trim()
-        val finalName = if (trimmed.isEmpty()) TimetableStrings.unnamedTimetableProfile.zh else trimmed
+        val finalName = if (trimmed.isEmpty()) TimetableStrings.unnamedTimetableProfile.text else trimmed
         val newId = id ?: "profile_${System.currentTimeMillis()}"
 
         val newItem = TimetableProfileItem(
@@ -160,7 +160,7 @@ class TimetableProfilesLogic {
      */
     fun deleteProfile(state: TimetableProfilesState, id: String): TimetableProfilesState {
         if (state.profiles.size <= 1) {
-            return state.copy(errorMessage = TimetableStrings.keepAtLeastOneProfile.zh)
+            return state.copy(errorMessage = TimetableStrings.keepAtLeastOneProfile.text)
         }
 
         val target = state.profiles.firstOrNull { it.id == id }

@@ -160,13 +160,13 @@ fun DataTransferHost(
                 }
                 pendingImport = PendingImport(info = parsed.info, plan = parsed.plan, entry = entry)
                 previewContent = TransferPreviewContent(
-                    title = TransferStrings.selectImportModeTitle.zh,
+                    title = TransferStrings.selectImportModeTitle.text,
                     message = if (entry == ImportEntry.EXTERNAL_OPEN) {
                         // 发布版「外部打开备份」那条弹框（`_runBackupImportFlow`）正文**只有一句**
                         // `selectImportModeMessage`；channel/scope/transferId/差异摘要都是
                         // 文件选择那套预览弹框（`transfer_preview_dialog.dart`）的正文，这里不带
                         //（2026-11-06 三轮返工：正文与按钮同口径）。
-                        TransferStrings.selectImportModeMessage.zh
+                        TransferStrings.selectImportModeMessage.text
                     } else {
                         DataTransferImportLogic.previewMessage(
                             channel = channel,
@@ -216,7 +216,7 @@ fun DataTransferHost(
             isExporting = false
             when (result) {
                 is QrPayloadResult.Failure -> showSendFailure(result.code)
-                is QrPayloadResult.OverLimit -> showToast(TransferStrings.qrTransferResourceLimit.zh)
+                is QrPayloadResult.OverLimit -> showToast(TransferStrings.qrTransferResourceLimit.text)
                 is QrPayloadResult.Ready -> {
                     bridge.outboundPayload = result.bytes
                     bridge.outboundTitle = result.title
@@ -242,12 +242,12 @@ fun DataTransferHost(
 
                     is AndroidTransferDocumentAdapter.ReadResult.ReadFailed,
                     is AndroidTransferDocumentAdapter.ReadResult.EmptyContent -> showToast(
-                        TransferStrings.importFileReadFailed.zh,
+                        TransferStrings.importFileReadFailed.text,
                     )
 
                     is AndroidTransferDocumentAdapter.ReadResult.InvalidEncoding ->
                         // 畸形 UTF-8：复用「导入失败，请确认文件有效」（Lead 裁决，不新增键）。
-                        showToast(TransferStrings.importFailedInvalidFile.zh)
+                        showToast(TransferStrings.importFailedInvalidFile.text)
 
                     is AndroidTransferDocumentAdapter.ReadResult.Success ->
                         // 显式传 FILE_PICK：这条入口与「外部打开备份」共用同一个弹窗，
@@ -268,7 +268,7 @@ fun DataTransferHost(
         isImporting = false
         if (text == null) {
             // Dart：UTF-8 解码失败统一落到「导入失败，请确认文件有效」（`:551-563`）。
-            showToast(TransferStrings.importFailedInvalidFile.zh)
+            showToast(TransferStrings.importFailedInvalidFile.text)
         } else {
             openImportPreview(text, TransferChannel.QR)
         }
@@ -302,10 +302,10 @@ fun DataTransferHost(
                 }
             },
             onQrSend = { scope, courseIds ->
-                runQrSend(scope, courseIds, TransferStrings.qrTransferSendCurrent.zh)
+                runQrSend(scope, courseIds, TransferStrings.qrTransferSendCurrent.text)
             },
             onQrSendAll = {
-                runQrSend(TransferScope.ALL_DATA, emptySet(), TransferStrings.qrTransferSendAll.zh)
+                runQrSend(TransferScope.ALL_DATA, emptySet(), TransferStrings.qrTransferSendAll.text)
             },
             onQrScan = { if (!isImporting) onRequestQrScan() },
         )
@@ -382,7 +382,7 @@ fun DataTransferHost(
                                     } else {
                                         showToast(
                                             message = notice.message,
-                                            actionLabel = TransferStrings.themeUndo.zh,
+                                            actionLabel = TransferStrings.themeUndo.text,
                                             onAction = {
                                                 val token = undoToken
                                                 if (token != null) {
@@ -393,9 +393,9 @@ fun DataTransferHost(
                                                         }
                                                         showToast(
                                                             if (ok) {
-                                                                TransferStrings.dataTransferUndoSuccess.zh
+                                                                TransferStrings.dataTransferUndoSuccess.text
                                                             } else {
-                                                                TransferStrings.dataTransferUndoFailed.zh
+                                                                TransferStrings.dataTransferUndoFailed.text
                                                             },
                                                         )
                                                     }

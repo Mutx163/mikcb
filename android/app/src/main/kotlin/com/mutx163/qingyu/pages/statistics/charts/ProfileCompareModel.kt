@@ -67,10 +67,10 @@ object ProfileCompareModel {
 
     /** 表头文案（顺序与 [ProfileCompareRow.columns] 一一对应）。 */
     fun headers(): List<String> = listOf(
-        ChartsStrings.statisticsCourseCount.zh,
-        ChartsStrings.statisticsSemesterLabelSections.zh,
-        ChartsStrings.statisticsNatureRatio.zh,
-        ChartsStrings.statisticsSemesterLabelDayStreak.zh,
+        ChartsStrings.statisticsCourseCount.text,
+        ChartsStrings.statisticsSemesterLabelSections.text,
+        ChartsStrings.statisticsNatureRatio.text,
+        ChartsStrings.statisticsSemesterLabelDayStreak.text,
     )
 
     /** 表头对应的列宽（与 [headers] 同序）。 */
@@ -94,7 +94,7 @@ object ProfileCompareModel {
                     entry.longestStreak.toString(),
                 ),
                 weekLabel = WeekStatsModel.weekSelectorLabel(entry.currentWeek),
-                activeLabel = if (entry.isActive) ChartsStrings.statisticsCompareActive.zh else null,
+                activeLabel = if (entry.isActive) ChartsStrings.statisticsCompareActive.text else null,
                 deltaLabel = if (!entry.isActive && delta != null) {
                     ChartsStrings.statisticsCompareDelta.filled("delta", ChartMath.deltaText(delta))
                 } else {

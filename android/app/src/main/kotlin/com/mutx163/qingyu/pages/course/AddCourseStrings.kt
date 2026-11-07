@@ -227,43 +227,43 @@ object AddCourseStrings {
 
     /** 星期整名（对齐 `add_course_screen.dart:_weekdayLabels`，越界回落空串）。 */
     fun weekdayName(dayOfWeek: Int): String = when (dayOfWeek) {
-        1 -> weekdayMon.zh
-        2 -> weekdayTue.zh
-        3 -> weekdayWed.zh
-        4 -> weekdayThu.zh
-        5 -> weekdayFri.zh
-        6 -> weekdaySat.zh
-        7 -> weekdaySun.zh
+        1 -> weekdayMon.text
+        2 -> weekdayTue.text
+        3 -> weekdayWed.text
+        4 -> weekdayThu.text
+        5 -> weekdayFri.text
+        6 -> weekdaySat.text
+        7 -> weekdaySun.text
         else -> ""
     }
 
     /** 星期短名（对齐 `course_group.dart:_weekdayShortLabel` 的中文部分，越界回落空串）。 */
     fun weekdayShortName(dayOfWeek: Int): String = when (dayOfWeek) {
-        1 -> weekdayShortMonday.zh
-        2 -> weekdayShortTuesday.zh
-        3 -> weekdayShortWednesday.zh
-        4 -> weekdayShortThursday.zh
-        5 -> weekdayShortFriday.zh
-        6 -> weekdayShortSaturday.zh
-        7 -> weekdayShortSunday.zh
+        1 -> weekdayShortMonday.text
+        2 -> weekdayShortTuesday.text
+        3 -> weekdayShortWednesday.text
+        4 -> weekdayShortThursday.text
+        5 -> weekdayShortFriday.text
+        6 -> weekdayShortSaturday.text
+        7 -> weekdayShortSunday.text
         else -> ""
     }
 
     /** 课程性质（对齐 `lib/l10n/enum_localizations.dart:courseNatureLabel`）。 */
     fun courseNatureName(nature: CourseNature): String = when (nature) {
-        CourseNature.REQUIRED -> courseNatureRequired.zh
-        CourseNature.ELECTIVE -> courseNatureElective.zh
+        CourseNature.REQUIRED -> courseNatureRequired.text
+        CourseNature.ELECTIVE -> courseNatureElective.text
     }
 
     /** 星期整名列表（周一到周日，顺序与 `_weekdayLabels` 一致）。 */
     fun weekdayNames(): List<String> = listOf(
-        weekdayMon.zh,
-        weekdayTue.zh,
-        weekdayWed.zh,
-        weekdayThu.zh,
-        weekdayFri.zh,
-        weekdaySat.zh,
-        weekdaySun.zh,
+        weekdayMon.text,
+        weekdayTue.text,
+        weekdayWed.text,
+        weekdayThu.text,
+        weekdayFri.text,
+        weekdaySat.text,
+        weekdaySun.text,
     )
 
     /** 「排课记录 N」标题（N 为 1-based 序号）。 */

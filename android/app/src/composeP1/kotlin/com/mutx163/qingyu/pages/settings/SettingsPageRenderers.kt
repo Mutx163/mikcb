@@ -15,6 +15,9 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.asPaddingValues
+import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -214,6 +217,10 @@ fun SettingsPageScreen(
     // 顶栏 action 槽由 [QingyuPageScaffold] 的 `actions` 承载，底栏由它的 `bottomBar` 承载。
     // 见 `settings_holiday.dart:466-478`（齿轮进高级页）与 `:792-812`（固定的检查更新按钮）。
     val dark = isSystemInDarkTheme()
+    // 底部系统栏留白：设置页是边到边（壳开了 edge-to-edge），Scaffold 的 innerPadding
+    // 只含顶栏，不含导航栏。不补这一段，滚到底时最后一行（「恢复默认设置」）会被
+    // 白色导航栏盖住半行，看起来像被一条灰线切开（用户 2026-11-07 截图就是这个）。
+    val navBottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
     val topAction = spec.topBarAction
     val footer = spec.footerNode
     val footerSlot: (@Composable () -> Unit)? = if (footer == null) {
@@ -268,7 +275,7 @@ fun SettingsPageScreen(
                     scrollBehavior = scrollBehavior.takeIf {
                         settingsListAttachesTopBarSync(spec.collapsibleLargeTitle)
                     },
-                    contentPadding = PaddingValues(bottom = 24.dp),
+                    contentPadding = PaddingValues(bottom = 24.dp + navBottom),
                 ) {
                     items(items = spec.nodes, key = { it.id }) { node ->
                         SliderEditFinishedScope(onSliderEditFinished) {
@@ -289,7 +296,7 @@ fun SettingsPageScreen(
                 scrollBehavior = scrollBehavior.takeIf {
                     settingsListAttachesTopBarSync(spec.collapsibleLargeTitle)
                 },
-                contentPadding = PaddingValues(bottom = 24.dp),
+                contentPadding = PaddingValues(bottom = 24.dp + navBottom),
             ) {
                 items(items = spec.nodes, key = { it.id }) { node ->
                     SliderEditFinishedScope(onSliderEditFinished) {
@@ -984,7 +991,7 @@ private fun SliderValueDialog(
                 // 原来两颗都是灰实心，主次读不出来。
                 TextButton(
                     modifier = Modifier.weight(1f),
-                    text = SettingsStringsExt4.cancelAction.zh,
+                    text = SettingsStringsExt4.cancelAction.text,
                     onClick = onDismiss,
                 )
                 Button(
@@ -1002,7 +1009,7 @@ private fun SliderValueDialog(
                     modifier = Modifier.weight(1f),
                     colors = ButtonDefaults.buttonColorsPrimary(),
                 ) {
-                    Text(text = SettingsStrings.confirmAction.zh)
+                    Text(text = SettingsStrings.confirmAction.text)
                 }
             }
         }
@@ -1163,32 +1170,52 @@ private fun PreviewCard(node: SettingsInline) {
         cornerRadius = QingyuShapes.CARD_CORNER.dp,
         insideMargin = PaddingValues(QingyuShapes.SHEET_INSET.dp),
     ) {
-        Text(
-            text = node.label.orEmpty(),
-            color = colors.onBackground,
-            style = MiuixTheme.textStyles.headline1
-                .shiftWeight(QingyuWeightDelta.MEDIUM),
-        )
-        Spacer(modifier = Modifier.height(12.dp))
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
-        ) {
+        // 预览标题为空时不要留一行空 headline + 12dp 空白（首页标题预览就是这种：
+        // `titleStylePreview` 不给 label）。那会表现成卡片顶部一大块空白。
+        if (!node.label.isNullOrBlank()) {
+            Text(
+                text = node.label,
+                color = colors.onBackground,
+                style = MiuixTheme.textStyles.headline1
+                    .shiftWeight(QingyuWeightDelta.MEDIUM),
+            )
+            Spacer(modifier = Modifier.height(12.dp))
+        }
+        // 样张数量按 texts 决定：只有 1~2 条（首页标题 classic / brand）时画**一整张**。
+        // 旧写法恒画两张半宽：第二张取 texts[2]，首页标题页永远没有，于是右半边白底白字，
+        // 屏上看起来就是「一张半宽蓝块 + 一大片空白」。
+        if (node.texts.isEmpty()) {
+            // 宿主注入型预览（外观编辑页的真首页烤图）：模型里没有样张文字，
+            // 这里不画空块，真正的预览由宿主槽位注入。
+        } else if (node.texts.size >= 3) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+            ) {
+                PreviewTile(
+                    modifier = Modifier.weight(1f),
+                    container = colors.primary,
+                    contentColor = colors.onPrimary,
+                    label = node.texts.getOrNull(0)?.text.orEmpty(),
+                    sublabel = node.texts.getOrNull(1)?.text.orEmpty(),
+                )
+                PreviewTile(
+                    modifier = Modifier.weight(1f),
+                    container = colors.surfaceContainer,
+                    // 第二块是「卡片色 + 正文色」的样张（Dart 用默认 listDetail 字色）。
+                    // 以前两块的文字都取 `onPrimary`，亮色下第二块是白底白字、整块看不见。
+                    contentColor = colors.onSurfaceContainer,
+                    label = node.texts.getOrNull(2)?.text.orEmpty(),
+                    sublabel = null,
+                )
+            }
+        } else {
             PreviewTile(
-                modifier = Modifier.weight(1f),
+                modifier = Modifier.fillMaxWidth(),
                 container = colors.primary,
                 contentColor = colors.onPrimary,
                 label = node.texts.getOrNull(0)?.text.orEmpty(),
                 sublabel = node.texts.getOrNull(1)?.text.orEmpty(),
-            )
-            PreviewTile(
-                modifier = Modifier.weight(1f),
-                container = colors.surfaceContainer,
-                // 第二块是「卡片色 + 正文色」的样张（Dart 用默认 listDetail 字色）。
-                // 以前两块的文字都取 `onPrimary`，亮色下第二块是白底白字、整块看不见。
-                contentColor = colors.onSurfaceContainer,
-                label = node.texts.getOrNull(2)?.text.orEmpty(),
-                sublabel = null,
             )
         }
     }

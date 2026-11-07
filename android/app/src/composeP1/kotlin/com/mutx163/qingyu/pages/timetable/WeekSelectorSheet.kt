@@ -85,7 +85,7 @@ fun WeekSelectorSheet(
         Column(modifier = Modifier.fillMaxWidth()) {
             // ── 标题（Dart `:52-55`：`HyperosTypography.sheetTitle` = 17sp / w400 / height 1.2）──
             Text(
-                text = TimetableStrings.selectWeekTitle.zh,
+                text = TimetableStrings.selectWeekTitle.text,
                 style = MiuixTheme.textStyles.headline1,
                 color = primaryText,
             )
@@ -137,7 +137,7 @@ fun WeekSelectorSheet(
                 Spacer(modifier = Modifier.height(14.dp))
                 TextButton(
                     modifier = Modifier.fillMaxWidth(),
-                    text = TimetableStrings.backToCurrentWeekAction.zh,
+                    text = TimetableStrings.backToCurrentWeekAction.text,
                     onClick = { onSelect(currentSemesterWeek) },
                 )
             }

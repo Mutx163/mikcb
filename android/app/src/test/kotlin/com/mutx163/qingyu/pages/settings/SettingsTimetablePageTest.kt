@@ -514,8 +514,8 @@ class SettingsTimetablePageTest {
     @Test
     fun `周数读数按模板拼`() {
         // semesterWeekCountAction = `{count} 周`（ARB 模板，返回 ArbText）
-        assertEquals("20 周", SettingsTimetablePage.weekCountLabel(20).zh)
+        assertEquals("20 周", SettingsTimetablePage.weekCountLabel(20).text)
         assertEquals("semesterWeekCountAction", SettingsTimetablePage.weekCountLabel(20).key)
-        assertEquals("1 周", SettingsTimetablePage.weekCountLabel(1).zh)
+        assertEquals("1 周", SettingsTimetablePage.weekCountLabel(1).text)
     }
 }

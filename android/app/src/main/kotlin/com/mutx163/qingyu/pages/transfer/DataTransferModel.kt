@@ -121,10 +121,10 @@ object DataTransferLogic {
      * 文案顺序沿用 Dart：课程数量 / 当前课表 / 全部课表 / 时间模板 / 当前周 / 开学日期 / 文件后缀。
      */
     fun overviewRows(input: TransferOverviewInput): List<TransferOverviewRow> {
-        val activeProfileName = input.activeProfileName ?: TransferStrings.timetableAppName.zh
+        val activeProfileName = input.activeProfileName ?: TransferStrings.timetableAppName.text
         val semesterLine = input.semesterStartDate?.let {
             TransferStrings.semesterStartBullet.filled("date", formatDate(it))
-        } ?: TransferStrings.semesterStartUnsetBullet.zh
+        } ?: TransferStrings.semesterStartUnsetBullet.text
 
         val texts = listOf(
             TransferStrings.courseCountBullet.filled("count", input.courseCount.toString()),
@@ -176,22 +176,22 @@ object DataTransferLogic {
     fun qrScopeOptions(): List<QrScopeOption> = listOf(
         QrScopeOption(
             scope = TransferScope.WEEK_TIMETABLE,
-            label = TransferStrings.qrTransferShareWeek.zh,
+            label = TransferStrings.qrTransferShareWeek.text,
             requiresCourseSelection = false,
         ),
         QrScopeOption(
             scope = TransferScope.SELECTED_COURSES,
-            label = TransferStrings.qrTransferShareSelectedCourses.zh,
+            label = TransferStrings.qrTransferShareSelectedCourses.text,
             requiresCourseSelection = true,
         ),
         QrScopeOption(
             scope = TransferScope.TIME_TEMPLATE,
-            label = TransferStrings.qrTransferShareTimeTemplate.zh,
+            label = TransferStrings.qrTransferShareTimeTemplate.text,
             requiresCourseSelection = false,
         ),
         QrScopeOption(
             scope = TransferScope.CURRENT_TIMETABLE,
-            label = TransferStrings.qrTransferSendCurrent.zh,
+            label = TransferStrings.qrTransferSendCurrent.text,
             requiresCourseSelection = false,
         ),
     )
@@ -205,7 +205,7 @@ object DataTransferLogic {
      */
     fun qrScopeDialogActions(): List<QrScopeDialogAction> =
         buildList {
-            add(QrScopeDialogAction(label = TransferStrings.cancelAction.zh, scope = null))
+            add(QrScopeDialogAction(label = TransferStrings.cancelAction.text, scope = null))
             for (option in qrScopeOptions()) {
                 add(
                     QrScopeDialogAction(
@@ -281,7 +281,7 @@ object DataTransferLogic {
         sectionCount: Int,
         droppedCount: Int,
     ): TransferRestoredNotice {
-        var message = TransferStrings.backupRestoredSuccess.zh
+        var message = TransferStrings.backupRestoredSuccess.text
         if (beyondSchemeCount > 0) {
             message += TransferStrings.coursesBeyondSchemeExtraSuffix.filled(
                 "count" to beyondSchemeCount.toString(),
@@ -320,7 +320,7 @@ object DataTransferLogic {
      * **不带**「超出当前作息范围」后缀：发布版 as-new 不算这一段（新档的节次表来自包本身）。
      */
     fun createdNotice(droppedCount: Int): TransferRestoredNotice {
-        var message = TransferStrings.createdNewTimetableAfterImport.zh
+        var message = TransferStrings.createdNewTimetableAfterImport.text
         if (droppedCount > 0) {
             message += TransferStrings.importPartialSkippedSuffix
                 .filled("count", droppedCount.toString())
@@ -344,20 +344,20 @@ object DataTransferLogic {
         canMerge: Boolean = true,
         canImportAsNew: Boolean = false,
     ): List<TransferPreviewAction> = buildList {
-        add(TransferPreviewAction(TransferStrings.cancelAction.zh, null))
+        add(TransferPreviewAction(TransferStrings.cancelAction.text, null))
         if (canMerge) {
-            add(TransferPreviewAction(TransferStrings.selectImportModeMerge.zh, TransferApplyMode.MERGE))
+            add(TransferPreviewAction(TransferStrings.selectImportModeMerge.text, TransferApplyMode.MERGE))
         }
         add(
             TransferPreviewAction(
-                TransferStrings.replaceCurrentTimetable.zh,
+                TransferStrings.replaceCurrentTimetable.text,
                 TransferApplyMode.OVERWRITE,
             ),
         )
         if (canImportAsNew) {
             add(
                 TransferPreviewAction(
-                    label = TransferStrings.importAsNewTimetable.zh,
+                    label = TransferStrings.importAsNewTimetable.text,
                     mode = null,
                     importAsNew = true,
                 ),

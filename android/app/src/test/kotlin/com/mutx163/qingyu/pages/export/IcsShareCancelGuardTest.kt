@@ -73,7 +73,7 @@ class IcsShareCancelGuardTest {
         assertTrue(
             "取消分支没有用现成文案 `ExportStrings.icsExportCancelled`（ARB 键 `icsExportCancelled`，" +
                 "发布版就是这一句）。",
-            "ExportStrings.icsExportCancelled.zh" in block,
+            "ExportStrings.icsExportCancelled.text" in block,
         )
         assertTrue(
             "取消分支后面必须还有成功 / 说不清 / 失败三条分支，否则几态又会被合并。",

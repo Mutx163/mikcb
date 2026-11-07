@@ -39,24 +39,24 @@ class LanEditModel(
     val startFailedReason: String? = null,
 ) {
 
-    val title: String get() = TransferExtStrings.lanEditTitle.zh
-    val intro: String get() = TransferExtStrings.lanEditIntro.zh
-    val runningLabel: String get() = TransferExtStrings.lanEditStatusRunning.zh
-    val addressLabel: String get() = TransferExtStrings.lanEditAddressLabel.zh
-    val pinLabel: String get() = TransferExtStrings.lanEditPinLabel.zh
-    val portLabel: String get() = TransferExtStrings.lanEditPortLabel.zh
-    val copyAddressLabel: String get() = TransferExtStrings.lanEditCopyAddress.zh
-    val copiedMessage: String get() = TransferExtStrings.lanEditCopied.zh
-    val hotspotHint: String get() = TransferExtStrings.lanEditHotspotHint.zh
-    val qrHint: String get() = TransferExtStrings.lanEditQrHint.zh
-    val keepAliveTitle: String get() = TransferExtStrings.lanEditKeepAliveWhenLeavingTitle.zh
-    val keepAliveSubtitle: String get() = TransferExtStrings.lanEditKeepAliveWhenLeavingSubtitle.zh
-    val clientsLabel: String get() = TransferExtStrings.lanEditConnectedClientsLabel.zh
-    val lastActivityLabel: String get() = TransferExtStrings.lanEditLastActivityLabel.zh
+    val title: String get() = TransferExtStrings.lanEditTitle.text
+    val intro: String get() = TransferExtStrings.lanEditIntro.text
+    val runningLabel: String get() = TransferExtStrings.lanEditStatusRunning.text
+    val addressLabel: String get() = TransferExtStrings.lanEditAddressLabel.text
+    val pinLabel: String get() = TransferExtStrings.lanEditPinLabel.text
+    val portLabel: String get() = TransferExtStrings.lanEditPortLabel.text
+    val copyAddressLabel: String get() = TransferExtStrings.lanEditCopyAddress.text
+    val copiedMessage: String get() = TransferExtStrings.lanEditCopied.text
+    val hotspotHint: String get() = TransferExtStrings.lanEditHotspotHint.text
+    val qrHint: String get() = TransferExtStrings.lanEditQrHint.text
+    val keepAliveTitle: String get() = TransferExtStrings.lanEditKeepAliveWhenLeavingTitle.text
+    val keepAliveSubtitle: String get() = TransferExtStrings.lanEditKeepAliveWhenLeavingSubtitle.text
+    val clientsLabel: String get() = TransferExtStrings.lanEditConnectedClientsLabel.text
+    val lastActivityLabel: String get() = TransferExtStrings.lanEditLastActivityLabel.text
 
     /** 主按钮文字：运行中显示「停止」，否则显示「开启局域网编辑」（Dart 三态里的两态）。 */
     val primaryActionLabel: String
-        get() = if (running) TransferExtStrings.lanEditStop.zh else TransferExtStrings.lanEditStart.zh
+        get() = if (running) TransferExtStrings.lanEditStop.text else TransferExtStrings.lanEditStart.text
 
     /**
      * 访问地址。
@@ -69,7 +69,7 @@ class LanEditModel(
             val ip = ipAddress?.trim().orEmpty()
             val p = port ?: 0
             if (ip.isEmpty() || p <= 0) {
-                return TransferExtStrings.lanEditAddressUnavailable.zh
+                return TransferExtStrings.lanEditAddressUnavailable.text
             }
             return "http://$ip:$p"
         }
@@ -93,7 +93,7 @@ class LanEditModel(
      */
     val clientsText: String
         get() = if (connectedClients <= 0) {
-            TransferExtStrings.lanEditConnectedClientsNone.zh
+            TransferExtStrings.lanEditConnectedClientsNone.text
         } else {
             TransferExtStrings.lanEditConnectedClientsValue.filled(
                 "count" to connectedClients.toString(),
@@ -107,7 +107,7 @@ class LanEditModel(
     /** 启动失败提示；成功时 null。 */
     val startFailedText: String?
         get() = startFailedReason?.takeIf { it.isNotBlank() }?.let {
-            TransferExtStrings.lanEditStartFailed.zh + "：" + it
+            TransferExtStrings.lanEditStartFailed.text + "：" + it
         }
 
     /** 页面该不该显示「会话信息块」（地址 / PIN / 端口 / 客户端）：只有跑起来才有意义。 */

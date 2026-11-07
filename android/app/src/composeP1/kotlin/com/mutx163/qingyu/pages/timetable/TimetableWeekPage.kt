@@ -1048,8 +1048,8 @@ fun TimetableWeekPage(
                     }
                 }
             },
-            label = DayViewStrings.backToTodayShort.zh,
-            contentDescription = TimetableStrings.backToCurrentWeekAction.zh,
+            label = DayViewStrings.backToTodayShort.text,
+            contentDescription = TimetableStrings.backToCurrentWeekAction.text,
             visible = !previewMode && showBackToCurrentWeek && !dayVisible,
             backdrop = if (floatingGlassActive) contentBackdrop else pageBackdrop,
             material = materialSpec,

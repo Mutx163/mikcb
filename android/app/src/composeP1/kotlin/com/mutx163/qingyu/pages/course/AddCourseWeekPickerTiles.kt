@@ -76,14 +76,14 @@ internal fun AddCourseWeekModeTileGroup(
         horizontalArrangement = Arrangement.spacedBy(8.dp),
     ) {
         AddCourseChoiceChip(
-            label = AddCourseStrings.rangeWeeksLabel.zh,
+            label = AddCourseStrings.rangeWeeksLabel.text,
             isSelected = tempMode == AddCourseWeekSelectionMode.RANGE,
             dark = dark,
             modifier = Modifier.weight(1f),
             onClick = { onSelect(AddCourseWeekSelectionMode.RANGE) },
         )
         AddCourseChoiceChip(
-            label = AddCourseStrings.customWeeksLabel.zh,
+            label = AddCourseStrings.customWeeksLabel.text,
             isSelected = tempMode == AddCourseWeekSelectionMode.CUSTOM,
             dark = dark,
             modifier = Modifier.weight(1f),
@@ -111,21 +111,21 @@ internal fun AddCourseWeekParityTileGroup(
         horizontalArrangement = Arrangement.spacedBy(8.dp),
     ) {
         AddCourseChoiceChip(
-            label = AddCourseStrings.allWeeksFilter.zh,
+            label = AddCourseStrings.allWeeksFilter.text,
             isSelected = isAllWeeks,
             dark = dark,
             modifier = Modifier.weight(1f),
             onClick = onSelectAll,
         )
         AddCourseChoiceChip(
-            label = AddCourseStrings.oddWeeksFilter.zh,
+            label = AddCourseStrings.oddWeeksFilter.text,
             isSelected = isOddWeek,
             dark = dark,
             modifier = Modifier.weight(1f),
             onClick = onSelectOdd,
         )
         AddCourseChoiceChip(
-            label = AddCourseStrings.evenWeeksFilter.zh,
+            label = AddCourseStrings.evenWeeksFilter.text,
             isSelected = isEvenWeek,
             dark = dark,
             modifier = Modifier.weight(1f),

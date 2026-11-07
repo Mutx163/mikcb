@@ -28,26 +28,26 @@ object ImportEntryModel {
     val entries: List<ImportEntryItem> = listOf(
         ImportEntryItem(
             destination = ImportEntryDestination.ICS,
-            title = ImportStrings.importMethodIcsTitle.zh,
-            subtitle = ImportStrings.importMethodIcsSubtitle.zh,
+            title = ImportStrings.importMethodIcsTitle.text,
+            subtitle = ImportStrings.importMethodIcsSubtitle.text,
             accentSlot = "blue",
         ),
         ImportEntryItem(
             destination = ImportEntryDestination.AI,
-            title = ImportStrings.importMethodAiTitle.zh,
-            subtitle = ImportStrings.importMethodAiSubtitle.zh,
+            title = ImportStrings.importMethodAiTitle.text,
+            subtitle = ImportStrings.importMethodAiSubtitle.text,
             accentSlot = "purple",
         ),
         ImportEntryItem(
             destination = ImportEntryDestination.WAREHOUSE,
-            title = ImportStrings.importMethodWarehouseTitle.zh,
-            subtitle = ImportStrings.importMethodWarehouseSubtitle.zh,
+            title = ImportStrings.importMethodWarehouseTitle.text,
+            subtitle = ImportStrings.importMethodWarehouseSubtitle.text,
             accentSlot = "green",
         ),
         ImportEntryItem(
             destination = ImportEntryDestination.SPREADSHEET,
-            title = ImportStrings.importMethodSpreadsheetTitle.zh,
-            subtitle = ImportStrings.importMethodSpreadsheetSubtitle.zh,
+            title = ImportStrings.importMethodSpreadsheetTitle.text,
+            subtitle = ImportStrings.importMethodSpreadsheetSubtitle.text,
             accentSlot = "orange",
         ),
     )

@@ -150,7 +150,7 @@ private fun NameCard(
     val header = model.header
 
     Column(modifier = Modifier.fillMaxWidth()) {
-        QingyuSectionTitle(text = TimeSchemeManagementStrings.timeSchemeNameLabel.zh)
+        QingyuSectionTitle(text = TimeSchemeManagementStrings.timeSchemeNameLabel.text)
         Spacer(Modifier.height(8.dp))
         QingyuCard(
             modifier = Modifier.fillMaxWidth(),
@@ -162,7 +162,7 @@ private fun NameCard(
                     onValueChange = onNameChange,
                     // Dart 传的是 `hint: l10n.timeSchemeNameHint`（占位符，不是浮动标签）：
                     // 「模板名称」这四个字已经由上面的分组标题承担，卡里再飘一遍就是同屏念两遍。
-                    label = TimeSchemeManagementStrings.timeSchemeNameHint.zh,
+                    label = TimeSchemeManagementStrings.timeSchemeNameHint.text,
                     useLabelAsPlaceholder = true,
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth(),

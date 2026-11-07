@@ -111,30 +111,30 @@ object ReminderTimingStrings {
      */
     fun leadOptionText(minutes: Int): String =
         if (minutes == 0) {
-            liveClassReminderLeadOptionImmediate.zh
+            liveClassReminderLeadOptionImmediate.text
         } else {
             liveClassReminderLeadOptionMinutes.filled("minutes", minutes.toString())
         }
 
     /** 切入时机摘要四种口径 -> 屏上文案（未知态按 FOCUSED 兜底，不崩）。 */
     fun leadSummaryText(summary: ReminderLeadSummary): String = when (summary) {
-        ReminderLeadSummary.IMMEDIATE -> liveClassReminderLeadSummaryImmediate.zh
-        ReminderLeadSummary.KEEP_NORMAL -> liveClassReminderLeadSummaryKeepNormal.zh
-        ReminderLeadSummary.ISLAND -> liveClassReminderLeadSummaryIsland.zh
-        ReminderLeadSummary.FOCUSED -> liveClassReminderLeadSummaryFocused.zh
+        ReminderLeadSummary.IMMEDIATE -> liveClassReminderLeadSummaryImmediate.text
+        ReminderLeadSummary.KEEP_NORMAL -> liveClassReminderLeadSummaryKeepNormal.text
+        ReminderLeadSummary.ISLAND -> liveClassReminderLeadSummaryIsland.text
+        ReminderLeadSummary.FOCUSED -> liveClassReminderLeadSummaryFocused.text
     }
 
     /** 「课中状态栏通知」行副标题三种口径 -> 屏上文案。 */
     fun duringClassStatusHintText(hint: DuringClassStatusHint): String = when (hint) {
-        DuringClassStatusHint.KEEP_STATUS_NOTIFICATION -> duringClassStatusNotificationImmediate.zh
-        DuringClassStatusHint.NORMAL_THEN_LEAD -> duringClassStatusNotificationBeforeEnd.zh
-        DuringClassStatusHint.PERSISTENT -> duringClassStatusNotificationPersistent.zh
+        DuringClassStatusHint.KEEP_STATUS_NOTIFICATION -> duringClassStatusNotificationImmediate.text
+        DuringClassStatusHint.NORMAL_THEN_LEAD -> duringClassStatusNotificationBeforeEnd.text
+        DuringClassStatusHint.PERSISTENT -> duringClassStatusNotificationPersistent.text
     }
 
     /** 「课中时间样式」枚举 -> 屏上文案（Dart `liveDuringClassTimeDisplayModeLabel`）。 */
     fun displayModeText(mode: LiveDuringClassTimeDisplayMode): String = when (mode) {
-        LiveDuringClassTimeDisplayMode.NEAREST -> liveDuringClassTimeNearest.zh
-        LiveDuringClassTimeDisplayMode.TOTAL -> liveDuringClassTimeTotal.zh
+        LiveDuringClassTimeDisplayMode.NEAREST -> liveDuringClassTimeNearest.text
+        LiveDuringClassTimeDisplayMode.TOTAL -> liveDuringClassTimeTotal.text
     }
 
     /** 「上课前弹出时间」单个选项：「{minutes} 分钟」。 */

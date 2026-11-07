@@ -149,7 +149,7 @@ private fun EmptyDayBody(
 ) {
     Column(modifier = Modifier.fillMaxWidth()) {
         Text(
-            text = MonthText.agendaEmpty.zh,
+            text = MonthText.agendaEmpty.text,
             style = MiuixTheme.textStyles.footnote1,
             color = MonthPanelSurface.muted(ink),
         )
@@ -192,7 +192,7 @@ private fun AddCourseAction(
             )
             Spacer(Modifier.width(MonthAgendaMetrics.ACTION_ICON_GAP.dp))
             Text(
-                text = MonthViewStrings.monthViewAgendaAddCourse.zh,
+                text = MonthViewStrings.monthViewAgendaAddCourse.text,
                 style = MiuixTheme.textStyles.footnote1.shiftWeight(QingyuWeightDelta.SEMIBOLD),
                 color = secondary,
                 maxLines = 1,

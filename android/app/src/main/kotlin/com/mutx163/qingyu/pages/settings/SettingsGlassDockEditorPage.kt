@@ -136,7 +136,7 @@ object SettingsGlassDockEditorPage {
                 "没有「图标坞预览」这种一排图标格，属于自绘白名单；模型只保证格子顺序与文案",
             texts = enabled.map { id ->
                 val label = labelOf(id)
-                SettingsInlineText(label.key, label.zh)
+                SettingsInlineText(label.key, label.text)
             },
         )
 
@@ -145,7 +145,7 @@ object SettingsGlassDockEditorPage {
         nodes += SettingsLabel(
             id = "dock.enabled.label",
             textKey = SettingsStringsExt4.homeGridEditorEnabledTitle.key,
-            text = SettingsStringsExt4.homeGridEditorEnabledTitle.zh,
+            text = SettingsStringsExt4.homeGridEditorEnabledTitle.text,
         )
         nodes += SettingsGroup(
             id = "dock.enabled",
@@ -154,13 +154,13 @@ object SettingsGlassDockEditorPage {
                 settingsRow(
                     id = "dock.slot.$id",
                     component = MiuixRowComponent.ARROW,
-                    title = ArbText(label.key, label.zh),
+                    title = label,
                     // 每行右侧的移除按钮（:330-341）；只剩一个时禁用（:48）
                     enabled = canRemove,
                     action = SettingsAction.WRITE_SETTING,
                     actionTarget = REMOVE_TARGET_PREFIX + id,
                     trailingActionKey = SettingsStringsExt4.homeGridEditorRemoveTooltip.key,
-                    trailingAction = SettingsStringsExt4.homeGridEditorRemoveTooltip.zh,
+                    trailingAction = SettingsStringsExt4.homeGridEditorRemoveTooltip.text,
                     trailingActionKind = SettingsAction.WRITE_SETTING,
                 )
             },
@@ -178,7 +178,7 @@ object SettingsGlassDockEditorPage {
             nodes += SettingsLabel(
                 id = "dock.viewSwitch.label",
                 textKey = SettingsStringsExt4.homeDockEditorViewCategory.key,
-                text = SettingsStringsExt4.homeDockEditorViewCategory.zh,
+                text = SettingsStringsExt4.homeDockEditorViewCategory.text,
             )
             nodes += SettingsGroup(
                 id = "dock.viewSwitch",
@@ -193,14 +193,14 @@ object SettingsGlassDockEditorPage {
             nodes += SettingsLabel(
                 id = "dock.catalog.${category.arg}.label",
                 textKey = category.label.key,
-                text = category.label.zh,
+                text = category.label.text,
             )
             if (candidates.isEmpty()) {
                 // :163-165 该分类全部已启用时给一句说明，而不是留一张空卡
                 nodes += SettingsDescription(
                     id = "dock.catalog.${category.arg}.empty",
                     textKey = SettingsStringsExt4.homeGridEditorAllAdded.key,
-                    text = SettingsStringsExt4.homeGridEditorAllAdded.zh,
+                    text = SettingsStringsExt4.homeGridEditorAllAdded.text,
                 )
             } else {
                 nodes += SettingsGroup(
@@ -229,7 +229,7 @@ object SettingsGlassDockEditorPage {
         return SettingsPageSpec(
             id = ID,
             titleKey = SettingsStringsExt4.glassDockCustomizeTitle.key,
-            title = SettingsStringsExt4.glassDockCustomizeTitle.zh,
+            title = SettingsStringsExt4.glassDockCustomizeTitle.text,
             nodes = nodes,
         )
     }

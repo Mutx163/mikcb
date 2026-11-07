@@ -126,7 +126,7 @@ fun HomePullQuickImportHost(
 private val PULL_REFRESH_TEXTS: List<String> = listOf(
     "",
     "",
-    ImportStrings.homePullQuickImportFetchingCourses.zh,
+    ImportStrings.homePullQuickImportFetchingCourses.text,
     "",
 )
 

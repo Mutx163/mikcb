@@ -77,7 +77,7 @@ fun CloudBackupDetailSheet(
                 colors = ButtonDefaults.buttonColorsPrimary(),
                 modifier = Modifier.fillMaxWidth(),
             ) {
-                Text(SyncStrings.cloudBackupRestoreAction.zh)
+                Text(SyncStrings.cloudBackupRestoreAction.text)
             }
             // 「删除」只在 Dart 给的动作里有才画（当前版本备份不可删，见 buildDetail）。
             // 按钮文字用 Dart 的 `l10n.deleteAction`（通用「删除」），不是
@@ -94,7 +94,7 @@ fun CloudBackupDetailSheet(
                     ),
                     modifier = Modifier.fillMaxWidth(),
                 ) {
-                    Text(SyncStrings.deleteAction.zh)
+                    Text(SyncStrings.deleteAction.text)
                 }
             }
         }

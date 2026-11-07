@@ -500,11 +500,7 @@ const val NON_ARB_TEXT = ""
 // ------------------------------------------------------------------ 构造助手
 
 /** ARB 文案：键 + 模板语言（zh）的逐字值。 */
-data class ArbText(val key: String, val zh: String) {
-
-    /** 替换模板里的占位符（`{name}` → [value]）。 */
-    fun filled(name: String, value: String): String = zh.replace("{$name}", value)
-}
+typealias ArbText = com.mutx163.qingyu.app.ArbText
 
 /**
  * 摊平节点树，只收**行控件**（分组内的行按屏上顺序）。
@@ -539,7 +535,7 @@ fun debouncedSliderRowIds(nodes: List<SettingsNode>): Set<String> =
         .toSet()
 
 fun option(id: String, label: ArbText, seedHex: String? = null): SettingsOption =
-    SettingsOption(id = id, labelKey = label.key, label = label.zh, seedHex = seedHex)
+    SettingsOption(id = id, labelKey = label.key, label = label.text, seedHex = seedHex)
 
 /** 名字不来自 ARB 的选项（语言下拉里的语言自称）。 */
 fun nativeOption(id: String, label: String): SettingsOption =
@@ -578,11 +574,11 @@ fun settingsRow(
     id = id,
     component = component,
     titleKey = title.key,
-    title = title.zh,
+    title = title.text,
     subtitleKey = subtitle?.key,
-    subtitle = subtitle?.zh,
+    subtitle = subtitle?.text,
     detailsKey = details?.key,
-    details = details?.zh,
+    details = details?.text,
     valueKey = valueKey,
     value = value,
     switchValue = switchValue,

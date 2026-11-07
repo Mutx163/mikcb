@@ -985,7 +985,7 @@ fun TimetableWithCourseActions(
         val target = actionTarget ?: return
         val date = repository.dateForCourseOccurrence(target, week)?.toLocalDate()
         if (date == null) {
-            Toast.makeText(context, TimetableStrings.saveFailed.zh, Toast.LENGTH_SHORT).show()
+            Toast.makeText(context, TimetableStrings.saveFailed.text, Toast.LENGTH_SHORT).show()
             return
         }
         try {
@@ -1000,12 +1000,12 @@ fun TimetableWithCourseActions(
             repository.updateSettings(current.copy(classReminders = updated))
             Toast.makeText(
                 context,
-                com.mutx163.qingyu.app.CourseActionStrings.classAlarmRemovedToast.zh,
+                com.mutx163.qingyu.app.CourseActionStrings.classAlarmRemovedToast.text,
                 Toast.LENGTH_SHORT,
             ).show()
             actionTarget = null
         } catch (_: Exception) {
-            Toast.makeText(context, TimetableStrings.saveFailed.zh, Toast.LENGTH_SHORT).show()
+            Toast.makeText(context, TimetableStrings.saveFailed.text, Toast.LENGTH_SHORT).show()
         }
     }
 
@@ -1061,7 +1061,7 @@ fun TimetableWithCourseActions(
                                 CourseActionDispatcher.deleteOccurrence(repository, target.id, week)
                         }
                     } catch (_: Exception) {
-                        Toast.makeText(context, TimetableStrings.deleteFailed.zh, Toast.LENGTH_SHORT).show()
+                        Toast.makeText(context, TimetableStrings.deleteFailed.text, Toast.LENGTH_SHORT).show()
                     }
                     is CourseActionEvent.Suspend -> try {
                         when (event.scope) {
@@ -1077,7 +1077,7 @@ fun TimetableWithCourseActions(
                                 }
                         }
                     } catch (_: Exception) {
-                        Toast.makeText(context, TimetableStrings.saveFailed.zh, Toast.LENGTH_SHORT).show()
+                        Toast.makeText(context, TimetableStrings.saveFailed.text, Toast.LENGTH_SHORT).show()
                     }
                     is CourseActionEvent.Reschedule -> try {
                         CourseActionDispatcher.rescheduleOccurrence(
@@ -1091,7 +1091,7 @@ fun TimetableWithCourseActions(
                             targetLocation = event.target.targetLocation,
                         )
                     } catch (_: Exception) {
-                        Toast.makeText(context, TimetableStrings.saveFailed.zh, Toast.LENGTH_SHORT).show()
+                        Toast.makeText(context, TimetableStrings.saveFailed.text, Toast.LENGTH_SHORT).show()
                     }
                     is CourseActionEvent.SaveNotes -> try {
                         // `hasHomework` 由分派器保留原值（Dart `course_note_sheet.dart:160-175`）。
@@ -1103,7 +1103,7 @@ fun TimetableWithCourseActions(
                             sessionNoteText = event.sessionNote,
                         )
                     } catch (_: Exception) {
-                        Toast.makeText(context, TimetableStrings.saveFailed.zh, Toast.LENGTH_SHORT).show()
+                        Toast.makeText(context, TimetableStrings.saveFailed.text, Toast.LENGTH_SHORT).show()
                     }
                 }
             }
@@ -1135,7 +1135,7 @@ fun TimetableWithCourseActions(
                             com.mutx163.qingyu.app.CourseActionStrings.classAlarmAddedToast
                         } else {
                             com.mutx163.qingyu.app.CourseActionStrings.classAlarmLaunchFailedToast
-                        }).zh,
+                        }).text,
                         Toast.LENGTH_SHORT,
                     ).show()
                 }
@@ -1144,7 +1144,7 @@ fun TimetableWithCourseActions(
                     if (!ok) {
                         Toast.makeText(
                             context,
-                            com.mutx163.qingyu.app.CourseActionStrings.classAlarmLaunchFailedToast.zh,
+                            com.mutx163.qingyu.app.CourseActionStrings.classAlarmLaunchFailedToast.text,
                             Toast.LENGTH_SHORT,
                         ).show()
                     }

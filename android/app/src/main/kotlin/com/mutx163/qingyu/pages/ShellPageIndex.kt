@@ -453,6 +453,9 @@ fun ShellPageContent(
             autoRefreshStore = wiring.autoRefresh,
             onTransitionSpeedChanged = { wiring.pageTransitionSpeed = it },
             onHapticsChanged = { wiring.enableHaptics = it },
+            // 语言行在通用页：模型变更必须回推给壳，否则 `appLocaleTag` 只落盘，
+            // 壳的 `AppLocaleRuntime` 不知道，界面仍停在旧语言（2026-11-07 用户实报）。
+            onModelChanged = onSettingsChanged,
         )
         // 外观 / 主题管理：`onModelChanged` 接壳的 `onSettingsChanged`，改明暗、种子色、
         // 字重、字体、字号时**当场**换肤（不等回到主屏）。此前只写盘，用户看到的是
@@ -915,6 +918,8 @@ fun ShellPageContent(
                 // 星期栏 / 空态压在壁纸上的字色（2026-11-01）。
                 wallpaperBands = homeChrome.bands,
                 material = homeChrome.material,
+                // 纯壁纸存在信号（不与材质开关相与）：卡片墨色的页底回退只认它。
+                hasWallpaper = homeChrome.hasBackdrop,
                 hasBackdrop = homeChrome.hasBackdrop,
                 pageColorArgb = homeChrome.pageColorArgb,
                 // 浮钮与列表的底部避让（玻璃坞形态按药丸占用算，见 HomeFloatingMetrics）。
@@ -1039,7 +1044,7 @@ fun ShellPageContent(
                         .onFailure {
                             Toast.makeText(
                                 shellContext,
-                                DayViewStrings.saveFailed.zh,
+                                DayViewStrings.saveFailed.text,
                                 Toast.LENGTH_SHORT,
                             ).show()
                         }
@@ -1096,7 +1101,7 @@ fun ShellPageContent(
                         }.onFailure {
                             Toast.makeText(
                                 shellContext,
-                                DayViewStrings.saveFailed.zh,
+                                DayViewStrings.saveFailed.text,
                                 Toast.LENGTH_SHORT,
                             ).show()
                         }
@@ -1158,7 +1163,7 @@ fun ShellPageContent(
                         .onFailure {
                             Toast.makeText(
                                 shellContext,
-                                AddCourseStrings.saveFailed.zh,
+                                AddCourseStrings.saveFailed.text,
                                 Toast.LENGTH_SHORT,
                             ).show()
                         }
@@ -1517,7 +1522,7 @@ fun ShellPageContent(
                             // Dart `add_exam_screen.dart:1089-1103`：落盘失败弹「保存失败」
                             // 并且**不关页面**（填好的内容还在，用户能立刻重试）。
                             // 这里用页内错误条而不是系统 toast —— 与这一页其余校验失败同一个出口。
-                            examForm = examForm.copy(toastMessage = ExamStrings.saveFailed.zh)
+                            examForm = examForm.copy(toastMessage = ExamStrings.saveFailed.text)
                         }
                     }
                 },
@@ -1532,7 +1537,7 @@ fun ShellPageContent(
                             wiring.pendingEditExam = null
                             onBack()
                         }.onFailure {
-                            examForm = examForm.copy(toastMessage = ExamStrings.saveFailed.zh)
+                            examForm = examForm.copy(toastMessage = ExamStrings.saveFailed.text)
                         }
                     }
                 },
@@ -1589,7 +1594,7 @@ fun ShellPageContent(
             )
             ExamTimePickerSheet(
                 show = startPickerOpen,
-                title = ExamStrings.examStartTimeLabel.zh,
+                title = ExamStrings.examStartTimeLabel.text,
                 initial = examForm.startTime,
                 onPick = { value ->
                     startPickerOpen = false
@@ -1599,7 +1604,7 @@ fun ShellPageContent(
             )
             ExamTimePickerSheet(
                 show = endPickerOpen,
-                title = ExamStrings.examEndTimeLabel.zh,
+                title = ExamStrings.examEndTimeLabel.text,
                 initial = examForm.endTime,
                 onPick = { value ->
                     endPickerOpen = false
@@ -1664,7 +1669,7 @@ fun ShellPageContent(
                         .onFailure {
                             Toast.makeText(
                                 shellContext,
-                                ExamStrings.saveFailed.zh,
+                                ExamStrings.saveFailed.text,
                                 Toast.LENGTH_SHORT,
                             ).show()
                         }
@@ -2143,8 +2148,6 @@ fun ShellPageContent(
         "i.startup" -> StartupFlowHost(
             repository = wiring.timetable,
             onBack = onBack,
-            // 导入落盘成功 → 直接回首页（发布版 pop 到栈底，不留在网页页）。
-            onImported = onBackToRoot,
             onOpenPage = onOpenPage,
         )
         "i.userGuide" -> {
@@ -2263,7 +2266,7 @@ fun ShellPageContent(
                     } else {
                         Toast.makeText(
                             context,
-                            com.mutx163.qingyu.pages.live.LiveKeepAliveStrings.saveFailed.zh,
+                            com.mutx163.qingyu.pages.live.LiveKeepAliveStrings.saveFailed.text,
                             Toast.LENGTH_SHORT,
                         ).show()
                     }
@@ -2568,7 +2571,7 @@ private fun StartupFlowHost(
         onBack = onBack,
         onOpenOldApp = {
             if (!openLegacyApp(context, STARTUP_LEGACY_PACKAGE_CANDIDATES)) {
-                Toast.makeText(context, GuideStrings.openOldAppFailed.zh, Toast.LENGTH_LONG).show()
+                Toast.makeText(context, GuideStrings.openOldAppFailed.text, Toast.LENGTH_LONG).show()
             }
         },
         onGoImportBackup = { onOpenPage("f.backupList") },
@@ -2576,7 +2579,7 @@ private fun StartupFlowHost(
             val plan = planStartupSemesterWrite(date, weeks)
             if (plan == null) {
                 // 非法输入不写半截数据：页面上的确认按钮本身有校验，这里是兜底。
-                Toast.makeText(context, GuideStrings.saveFailed.zh, Toast.LENGTH_SHORT).show()
+                Toast.makeText(context, GuideStrings.saveFailed.text, Toast.LENGTH_SHORT).show()
             } else {
                 val saved = runCatching {
                     // 与学期设置页同一个写入入口（没有第二条通道）。
@@ -2594,7 +2597,7 @@ private fun StartupFlowHost(
                 if (!saved) {
                     // 写不进去就**不许**显示成功：否则用户下次启动又被拉来重填，
                     // 而且这次他还以为自己已经设好了。
-                    Toast.makeText(context, GuideStrings.saveFailed.zh, Toast.LENGTH_SHORT).show()
+                    Toast.makeText(context, GuideStrings.saveFailed.text, Toast.LENGTH_SHORT).show()
                 } else {
                     onBack()
                 }

@@ -49,22 +49,22 @@ object SessionCardsModel {
     fun summary(stats: CourseSessionStats): List<SessionMetric> = listOf(
         SessionMetric(
             value = stats.sessions.size.toString(),
-            label = ChartsStrings.statisticsSessionMetricSessions.zh,
+            label = ChartsStrings.statisticsSessionMetricSessions.text,
             highlight = true,
         ),
         SessionMetric(
             value = stats.doneSessions.toString(),
-            label = ChartsStrings.statisticsSessionMetricDone.zh,
+            label = ChartsStrings.statisticsSessionMetricDone.text,
             highlight = false,
         ),
         SessionMetric(
             value = stats.doneSections.toString(),
-            label = ChartsStrings.statisticsSessionMetricSections.zh,
+            label = ChartsStrings.statisticsSessionMetricSections.text,
             highlight = false,
         ),
         SessionMetric(
             value = stats.notedSessions.toString(),
-            label = ChartsStrings.statisticsSessionMetricNoted.zh,
+            label = ChartsStrings.statisticsSessionMetricNoted.text,
             highlight = false,
         ),
     )
@@ -81,7 +81,7 @@ object SessionCardsModel {
         subtitle = subtitle(session),
         phaseLabel = phaseLabel(session.phase),
         tone = tone(session.phase),
-        examBadge = if (session.examCount > 0) ChartsStrings.examBadgeLabel.zh else null,
+        examBadge = if (session.examCount > 0) ChartsStrings.examBadgeLabel.text else null,
         noteText = if (session.hasNote) session.noteText?.trim() else null,
     )
 
@@ -124,12 +124,12 @@ object SessionCardsModel {
 
     /** 状态文案（ARB 逐字）。 */
     fun phaseLabel(phase: CourseSessionPhase): String = when (phase) {
-        CourseSessionPhase.DONE -> ChartsStrings.statisticsSessionPhaseDone.zh
-        CourseSessionPhase.TODAY -> ChartsStrings.statisticsSessionPhaseToday.zh
-        CourseSessionPhase.UPCOMING -> ChartsStrings.statisticsSessionPhaseUpcoming.zh
-        CourseSessionPhase.SUSPENDED -> ChartsStrings.statisticsSessionPhaseSuspended.zh
-        CourseSessionPhase.HOLIDAY -> ChartsStrings.statisticsSessionPhaseHoliday.zh
-        CourseSessionPhase.UNDATED -> ChartsStrings.statisticsSessionPhaseUndated.zh
+        CourseSessionPhase.DONE -> ChartsStrings.statisticsSessionPhaseDone.text
+        CourseSessionPhase.TODAY -> ChartsStrings.statisticsSessionPhaseToday.text
+        CourseSessionPhase.UPCOMING -> ChartsStrings.statisticsSessionPhaseUpcoming.text
+        CourseSessionPhase.SUSPENDED -> ChartsStrings.statisticsSessionPhaseSuspended.text
+        CourseSessionPhase.HOLIDAY -> ChartsStrings.statisticsSessionPhaseHoliday.text
+        CourseSessionPhase.UNDATED -> ChartsStrings.statisticsSessionPhaseUndated.text
     }
 
     /** 状态角标颜色（Dart `_phaseColor`）：绿 / 主题色 / 蓝 / 橙 / 紫 / 灰。 */
@@ -143,5 +143,5 @@ object SessionCardsModel {
     }
 
     /** 空态文案。 */
-    val emptyMessage: String get() = ChartsStrings.statisticsSessionEmpty.zh
+    val emptyMessage: String get() = ChartsStrings.statisticsSessionEmpty.text
 }

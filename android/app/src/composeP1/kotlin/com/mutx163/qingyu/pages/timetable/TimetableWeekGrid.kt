@@ -210,9 +210,9 @@ private fun WeekAgendaCard(
             ) {
                 Text(
                     text = if (isExam) {
-                        TimetableStrings.examBadgeLabel.zh
+                        TimetableStrings.examBadgeLabel.text
                     } else {
-                        TimetableStrings.scheduleBadgeLabel.zh
+                        TimetableStrings.scheduleBadgeLabel.text
                     },
                     style = MiuixTheme.textStyles.footnote2.shiftWeight(QingyuWeightDelta.BOLD),
                     fontSize = detailFontSize.sp,

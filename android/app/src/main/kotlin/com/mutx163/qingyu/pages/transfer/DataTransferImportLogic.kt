@@ -229,7 +229,7 @@ object DataTransferImportLogic {
         merge: List<TransferDiffSummary>? = null,
     ): String {
         val blocks = mutableListOf(
-            TransferStrings.selectImportModeMessage.zh,
+            TransferStrings.selectImportModeMessage.text,
             "channel=${channel.value}",
             "scope=${scope.value}",
             "transferId=$packageId",

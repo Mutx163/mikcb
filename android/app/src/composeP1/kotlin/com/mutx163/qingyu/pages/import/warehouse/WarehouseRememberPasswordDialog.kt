@@ -34,7 +34,7 @@ fun WarehouseRememberPasswordDialog(
     OverlayDialog(
         insideMargin = DpSize(16.dp, 16.dp),
         show = show,
-        title = WarehouseStrings.rememberPasswordTitle.zh,
+        title = WarehouseStrings.rememberPasswordTitle.text,
         summary = WarehouseStrings.rememberPasswordMessage.filled("username", username),
         onDismissRequest = onDismiss,
     ) {
@@ -44,7 +44,7 @@ fun WarehouseRememberPasswordDialog(
         ) {
             TextButton(
                 modifier = Modifier.weight(1f),
-                text = WarehouseStrings.dontRememberAction.zh,
+                text = WarehouseStrings.dontRememberAction.text,
                 onClick = onDismiss,
             )
             Button(
@@ -53,7 +53,7 @@ fun WarehouseRememberPasswordDialog(
                 colors = ButtonDefaults.buttonColorsPrimary(),
             ) {
                 Text(
-                    text = WarehouseStrings.rememberAndAutofillAction.zh,
+                    text = WarehouseStrings.rememberAndAutofillAction.text,
                     textAlign = TextAlign.Center,
                 )
             }

@@ -105,7 +105,7 @@ private fun ShowcaseTextureBlendDemo(
     )
 
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        SmallTitle(text = ShowcaseStrings.glassBlendCardTitle.zh)
+        SmallTitle(text = ShowcaseStrings.glassBlendCardTitle.text)
         Card(insideMargin = PaddingValues(16.dp)) {
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 Box(
@@ -157,21 +157,21 @@ private fun ShowcaseTextureBlendDemo(
                 }
 
                 OverlayDropdownPreference(
-                    title = ShowcaseStrings.glassBlendLabel.zh,
+                    title = ShowcaseStrings.glassBlendLabel.text,
                     items = blendItems,
                     selectedIndex = blendIndex,
                     onSelectedIndexChange = { blendIndex = it },
                 )
 
                 OverlayDropdownPreference(
-                    title = ShowcaseStrings.glassHighlightLabel.zh,
+                    title = ShowcaseStrings.glassHighlightLabel.text,
                     items = containerItems,
                     selectedIndex = containerIndex,
                     onSelectedIndexChange = { containerIndex = it },
                 )
 
                 SwitchPreference(
-                    title = ShowcaseStrings.glassTiltLabel.zh,
+                    title = ShowcaseStrings.glassTiltLabel.text,
                     checked = tiltDriven,
                     onCheckedChange = { tiltDriven = it },
                 )
@@ -198,7 +198,7 @@ private fun ShowcaseForegroundBlurDemo(
     val backdrop = rememberLayerBackdrop()
 
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        SmallTitle(text = ShowcaseStrings.glassForegroundCardTitle.zh)
+        SmallTitle(text = ShowcaseStrings.glassForegroundCardTitle.text)
         Card(insideMargin = PaddingValues(16.dp)) {
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 Box(
@@ -237,14 +237,14 @@ private fun ShowcaseForegroundBlurDemo(
                 }
 
                 OverlayDropdownPreference(
-                    title = ShowcaseStrings.glassBlendLabel.zh,
+                    title = ShowcaseStrings.glassBlendLabel.text,
                     items = blendItems,
                     selectedIndex = blendIndex,
                     onSelectedIndexChange = { blendIndex = it },
                 )
 
                 Text(
-                    text = ShowcaseStrings.glassForegroundHint.zh,
+                    text = ShowcaseStrings.glassForegroundHint.text,
                     style = MiuixTheme.textStyles.body2,
                     color = Color(QingyuTheme.secondaryText(dark)),
                 )
@@ -271,7 +271,7 @@ private fun ShowcaseGravityTiltDemo(
     )
 
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        SmallTitle(text = ShowcaseStrings.glassGravityCardTitle.zh)
+        SmallTitle(text = ShowcaseStrings.glassGravityCardTitle.text)
         Card(insideMargin = PaddingValues(16.dp)) {
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 Box(
@@ -312,7 +312,7 @@ private fun ShowcaseGravityTiltDemo(
                 }
 
                 Text(
-                    text = ShowcaseStrings.glassGravityHint.zh,
+                    text = ShowcaseStrings.glassGravityHint.text,
                     style = MiuixTheme.textStyles.body2,
                     color = Color(QingyuTheme.secondaryText(dark)),
                 )

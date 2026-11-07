@@ -106,7 +106,7 @@ object TimeSchemeServiceMessages {
     }
 
     private fun localizeCode(code: String, args: Map<String, String>): String? = when (code) {
-        "time_scheme_not_found" -> timeSchemeNotFound.zh
+        "time_scheme_not_found" -> timeSchemeNotFound.text
         "time_scheme_sections_insufficient" -> timeSchemeSectionsInsufficient.filled(
             "startSection" to numberArg(args, "startSection"),
             "endSection" to numberArg(args, "endSection"),
@@ -134,7 +134,7 @@ object TimeSchemeServiceMessages {
                 "usageType" to usageTypeText,
             )
         }
-        "at_least_one_section_required" -> atLeastOneSectionRequired.zh
+        "at_least_one_section_required" -> atLeastOneSectionRequired.text
         "section_end_must_after_start" -> sectionEndMustAfterStart.filled(
             "sectionNumber" to numberArg(args, "sectionNumber"),
         )
@@ -144,13 +144,13 @@ object TimeSchemeServiceMessages {
         "section_crosses_midnight" -> sectionCrossesMidnight.filled(
             "sectionNumber" to numberArg(args, "sectionNumber"),
         )
-        "invalid_time_format" -> invalidTimeFormat.zh
-        "class_duration_must_positive" -> classDurationMustPositive.zh
-        "break_duration_must_non_negative" -> breakDurationMustNonNegative.zh
-        "at_least_one_period_section" -> atLeastOnePeriodSection.zh
-        "period_start_time_required" -> periodStartTimeRequired.zh
-        "usage_type_override" -> usageTypeOverride.zh
-        "usage_type_profile" -> usageTypeProfile.zh
+        "invalid_time_format" -> invalidTimeFormat.text
+        "class_duration_must_positive" -> classDurationMustPositive.text
+        "break_duration_must_non_negative" -> breakDurationMustNonNegative.text
+        "at_least_one_period_section" -> atLeastOnePeriodSection.text
+        "period_start_time_required" -> periodStartTimeRequired.text
+        "usage_type_override" -> usageTypeOverride.text
+        "usage_type_profile" -> usageTypeProfile.text
         else -> null
     }
 

@@ -339,67 +339,67 @@ object DisplaySettingsStrings {
     // ── 枚举 → 屏上文案 ───────────────────────────────────────────
 
     fun countdownTextStyleLabel(style: LiveCountdownTextStyle): String = when (style) {
-        LiveCountdownTextStyle.SMART -> countdownStyleSmart.zh
-        LiveCountdownTextStyle.SMART_MIN_S -> countdownStyleSmartMinS.zh
-        LiveCountdownTextStyle.MINUTE_SECOND_CN -> countdownStyleMinuteSecondCn.zh
-        LiveCountdownTextStyle.MINUTE_SECOND_COLON -> countdownStyleMinuteSecondColon.zh
-        LiveCountdownTextStyle.MINUTE_SECOND_MIN_S -> countdownStyleMinuteSecondMinS.zh
-        LiveCountdownTextStyle.MINUTE_SECOND_MIN_SLASH_S -> countdownStyleMinuteSecondMinSlashS.zh
-        LiveCountdownTextStyle.MINUTE_ONLY_CN -> countdownStyleMinuteOnlyCn.zh
-        LiveCountdownTextStyle.MINUTE_ONLY_MIN -> countdownStyleMinuteOnlyMin.zh
-        LiveCountdownTextStyle.MINUTE_ONLY_SLASH -> countdownStyleMinuteOnlySlash.zh
-        LiveCountdownTextStyle.SECOND_ONLY_CN -> countdownStyleSecondOnlyCn.zh
-        LiveCountdownTextStyle.SECOND_ONLY_SHORT -> countdownStyleSecondOnlyShort.zh
-        LiveCountdownTextStyle.SECOND_ONLY_SLASH -> countdownStyleSecondOnlySlash.zh
+        LiveCountdownTextStyle.SMART -> countdownStyleSmart.text
+        LiveCountdownTextStyle.SMART_MIN_S -> countdownStyleSmartMinS.text
+        LiveCountdownTextStyle.MINUTE_SECOND_CN -> countdownStyleMinuteSecondCn.text
+        LiveCountdownTextStyle.MINUTE_SECOND_COLON -> countdownStyleMinuteSecondColon.text
+        LiveCountdownTextStyle.MINUTE_SECOND_MIN_S -> countdownStyleMinuteSecondMinS.text
+        LiveCountdownTextStyle.MINUTE_SECOND_MIN_SLASH_S -> countdownStyleMinuteSecondMinSlashS.text
+        LiveCountdownTextStyle.MINUTE_ONLY_CN -> countdownStyleMinuteOnlyCn.text
+        LiveCountdownTextStyle.MINUTE_ONLY_MIN -> countdownStyleMinuteOnlyMin.text
+        LiveCountdownTextStyle.MINUTE_ONLY_SLASH -> countdownStyleMinuteOnlySlash.text
+        LiveCountdownTextStyle.SECOND_ONLY_CN -> countdownStyleSecondOnlyCn.text
+        LiveCountdownTextStyle.SECOND_ONLY_SHORT -> countdownStyleSecondOnlyShort.text
+        LiveCountdownTextStyle.SECOND_ONLY_SLASH -> countdownStyleSecondOnlySlash.text
     }
 
     fun miuiIslandLabelStyleLabel(style: MiuiIslandLabelStyle): String = when (style) {
-        MiuiIslandLabelStyle.TEXT_ONLY -> labelStyleTextOnly.zh
-        MiuiIslandLabelStyle.ICON_AND_TEXT -> labelStyleIconAndText.zh
+        MiuiIslandLabelStyle.TEXT_ONLY -> labelStyleTextOnly.text
+        MiuiIslandLabelStyle.ICON_AND_TEXT -> labelStyleIconAndText.text
     }
 
     fun miuiIslandLabelContentLabel(content: MiuiIslandLabelContent): String = when (content) {
-        MiuiIslandLabelContent.COURSE_NAME -> labelContentCourseName.zh
-        MiuiIslandLabelContent.LOCATION -> labelContentLocation.zh
-        MiuiIslandLabelContent.COURSE_NAME_AND_LOCATION -> labelContentCourseNameAndLocation.zh
+        MiuiIslandLabelContent.COURSE_NAME -> labelContentCourseName.text
+        MiuiIslandLabelContent.LOCATION -> labelContentLocation.text
+        MiuiIslandLabelContent.COURSE_NAME_AND_LOCATION -> labelContentCourseNameAndLocation.text
     }
 
     fun miuiIslandLabelFontWeightLabel(weight: MiuiIslandLabelFontWeight): String = when (weight) {
-        MiuiIslandLabelFontWeight.REGULAR -> fontWeightRegular.zh
-        MiuiIslandLabelFontWeight.MEDIUM -> fontWeightMedium.zh
-        MiuiIslandLabelFontWeight.BOLD -> fontWeightBold.zh
+        MiuiIslandLabelFontWeight.REGULAR -> fontWeightRegular.text
+        MiuiIslandLabelFontWeight.MEDIUM -> fontWeightMedium.text
+        MiuiIslandLabelFontWeight.BOLD -> fontWeightBold.text
     }
 
     fun miuiIslandLabelRenderQualityLabel(quality: MiuiIslandLabelRenderQuality): String = when (quality) {
-        MiuiIslandLabelRenderQuality.STANDARD -> renderQualityStandard.zh
-        MiuiIslandLabelRenderQuality.HIGH -> renderQualityHigh.zh
-        MiuiIslandLabelRenderQuality.ULTRA -> renderQualityUltra.zh
+        MiuiIslandLabelRenderQuality.STANDARD -> renderQualityStandard.text
+        MiuiIslandLabelRenderQuality.HIGH -> renderQualityHigh.text
+        MiuiIslandLabelRenderQuality.ULTRA -> renderQualityUltra.text
     }
 
     fun miuiIslandExpandedIconModeLabel(mode: MiuiIslandExpandedIconMode): String = when (mode) {
-        MiuiIslandExpandedIconMode.APP_ICON -> expandedIconAppIcon.zh
-        MiuiIslandExpandedIconMode.CUSTOM_IMAGE -> expandedIconCustomImage.zh
-        MiuiIslandExpandedIconMode.HIDDEN -> expandedIconHidden.zh
+        MiuiIslandExpandedIconMode.APP_ICON -> expandedIconAppIcon.text
+        MiuiIslandExpandedIconMode.CUSTOM_IMAGE -> expandedIconCustomImage.text
+        MiuiIslandExpandedIconMode.HIDDEN -> expandedIconHidden.text
     }
 
     fun liveBeforeClassQuickActionLabel(action: LiveBeforeClassQuickAction): String = when (action) {
-        LiveBeforeClassQuickAction.NONE -> quickActionNone.zh
-        LiveBeforeClassQuickAction.SILENT -> quickActionSilent.zh
-        LiveBeforeClassQuickAction.DO_NOT_DISTURB -> quickActionDoNotDisturb.zh
-        LiveBeforeClassQuickAction.PRIORITY_ONLY -> quickActionPriorityOnly.zh
-        LiveBeforeClassQuickAction.BOTH -> quickActionBoth.zh
+        LiveBeforeClassQuickAction.NONE -> quickActionNone.text
+        LiveBeforeClassQuickAction.SILENT -> quickActionSilent.text
+        LiveBeforeClassQuickAction.DO_NOT_DISTURB -> quickActionDoNotDisturb.text
+        LiveBeforeClassQuickAction.PRIORITY_ONLY -> quickActionPriorityOnly.text
+        LiveBeforeClassQuickAction.BOTH -> quickActionBoth.text
     }
 
     fun liveExpandedDetailFieldLabel(field: LiveExpandedDetailField): String = when (field) {
-        LiveExpandedDetailField.STAGE -> detailFieldStage.zh
-        LiveExpandedDetailField.SHORT_NAME -> detailFieldShortName.zh
-        LiveExpandedDetailField.PROGRESS -> detailFieldProgress.zh
-        LiveExpandedDetailField.STATUS -> detailFieldStatus.zh
-        LiveExpandedDetailField.TIME -> detailFieldTime.zh
-        LiveExpandedDetailField.LOCATION -> detailFieldLocation.zh
-        LiveExpandedDetailField.TEACHER -> detailFieldTeacher.zh
-        LiveExpandedDetailField.NEXT_COURSE -> detailFieldNext.zh
-        LiveExpandedDetailField.NOTE -> detailFieldNote.zh
+        LiveExpandedDetailField.STAGE -> detailFieldStage.text
+        LiveExpandedDetailField.SHORT_NAME -> detailFieldShortName.text
+        LiveExpandedDetailField.PROGRESS -> detailFieldProgress.text
+        LiveExpandedDetailField.STATUS -> detailFieldStatus.text
+        LiveExpandedDetailField.TIME -> detailFieldTime.text
+        LiveExpandedDetailField.LOCATION -> detailFieldLocation.text
+        LiveExpandedDetailField.TEACHER -> detailFieldTeacher.text
+        LiveExpandedDetailField.NEXT_COURSE -> detailFieldNext.text
+        LiveExpandedDetailField.NOTE -> detailFieldNote.text
     }
 
     // ── 占位符格式化 ─────────────────────────────────────────────
@@ -418,5 +418,5 @@ object DisplaySettingsStrings {
 
     /** 快捷操作「自动执行」下拉项文案：0 → 不自动执行；其余 → 上课前 N 分钟。 */
     fun quickActionAutoMinuteLabel(minutes: Int): String =
-        if (minutes <= 0) beforeClassQuickActionAutoOptionOff.zh else autoMinutesLabel(minutes)
+        if (minutes <= 0) beforeClassQuickActionAutoOptionOff.text else autoMinutesLabel(minutes)
 }

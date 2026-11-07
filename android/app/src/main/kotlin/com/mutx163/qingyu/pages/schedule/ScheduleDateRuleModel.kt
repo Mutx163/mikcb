@@ -65,31 +65,31 @@ object ScheduleDateRuleDomain {
     ): ScheduleDateRuleValidationResult {
         if (draft.name.trim().isEmpty()) {
             return ScheduleDateRuleValidationResult.Invalid(
-                ScheduleStrings.scheduleDateRuleErrorNameRequired.zh,
+                ScheduleStrings.scheduleDateRuleErrorNameRequired.text,
             )
         }
         if (draft.timeSchemeId.trim().isEmpty()) {
             return ScheduleDateRuleValidationResult.Invalid(
-                ScheduleStrings.scheduleDateRuleErrorSchemeRequired.zh,
+                ScheduleStrings.scheduleDateRuleErrorSchemeRequired.text,
             )
         }
         if (!ScheduleDateUtils.isValidIsoDate(draft.startDate) ||
             !ScheduleDateUtils.isValidIsoDate(draft.endDate)
         ) {
             return ScheduleDateRuleValidationResult.Invalid(
-                ScheduleStrings.scheduleDateRuleErrorInvalidDate.zh,
+                ScheduleStrings.scheduleDateRuleErrorInvalidDate.text,
             )
         }
         if (draft.endDate < draft.startDate) {
             return ScheduleDateRuleValidationResult.Invalid(
-                ScheduleStrings.scheduleDateRuleErrorEndBeforeStart.zh,
+                ScheduleStrings.scheduleDateRuleErrorEndBeforeStart.text,
             )
         }
 
         // 设备上限校验（只在新增时拦截，含停用的）
         if (!isEditing && existingRules.size >= MAX_RULES_PER_DEVICE) {
             return ScheduleDateRuleValidationResult.Invalid(
-                ScheduleStrings.scheduleDateRuleErrorMax.zh,
+                ScheduleStrings.scheduleDateRuleErrorMax.text,
             )
         }
 
@@ -101,7 +101,7 @@ object ScheduleDateRuleDomain {
             for (other in otherEnabledRules) {
                 if (dateRangesOverlap(draft.startDate, draft.endDate, other.startDate, other.endDate)) {
                     return ScheduleDateRuleValidationResult.Invalid(
-                        ScheduleStrings.scheduleDateRuleErrorOverlap.zh,
+                        ScheduleStrings.scheduleDateRuleErrorOverlap.text,
                     )
                 }
             }
@@ -141,10 +141,10 @@ enum class ScheduleDateRuleSavedFeedback {
     /** 该档对应的提示文案（逐字取 ARB 键，不在这里重写中文）。 */
     val message: String
         get() = when (this) {
-            APPLIED -> ScheduleStrings.scheduleDateRuleSavedAndApplied.zh
-            WILL_APPLY_LATER -> ScheduleStrings.scheduleDateRuleSavedForFuture.zh
-            FAILED_WHILE_DUE -> ScheduleStrings.scheduleDateRuleSavedButApplyFailed.zh
-            SAVED -> ScheduleStrings.scheduleDateRuleSaved.zh
+            APPLIED -> ScheduleStrings.scheduleDateRuleSavedAndApplied.text
+            WILL_APPLY_LATER -> ScheduleStrings.scheduleDateRuleSavedForFuture.text
+            FAILED_WHILE_DUE -> ScheduleStrings.scheduleDateRuleSavedButApplyFailed.text
+            SAVED -> ScheduleStrings.scheduleDateRuleSaved.text
         }
 
     /** 失败档要警示样式（发布版 `AppToastKind.warning` 的对位）。 */

@@ -157,7 +157,7 @@ fun HomeWidgetHost(
         Log.e(LOG_TAG, "home widget settings save did not land")
         Toast.makeText(
             context,
-            SettingsStringsExt2.saveFailed.zh,
+            SettingsStringsExt2.saveFailed.text,
             Toast.LENGTH_SHORT,
         ).show()
         return false
@@ -171,7 +171,7 @@ fun HomeWidgetHost(
         if (!ok) {
             Toast.makeText(
                 context,
-                SettingsStringsExt2.homeWidgetBindingSaveFailed.zh,
+                SettingsStringsExt2.homeWidgetBindingSaveFailed.text,
                 Toast.LENGTH_SHORT,
             ).show()
         }
@@ -188,11 +188,11 @@ fun HomeWidgetHost(
                 WidgetSystemActions.requestPinWidget(context, targetId)
             }.getOrDefault("failed")
             pinningTarget = null
-            val label = SettingsHomeWidgetPage.targetLabelFor(targetId).zh
+            val label = SettingsHomeWidgetPage.targetLabelFor(targetId).text
             val message = when (status) {
                 "requested" -> SettingsStringsExt2.homeWidgetPinRequested.filled("label", label)
                 "unsupported" -> SettingsStringsExt2.homeWidgetPinUnsupportedManual.filled("label", label)
-                "invalid_widget_type" -> SettingsStringsExt2.homeWidgetInvalidType.zh
+                "invalid_widget_type" -> SettingsStringsExt2.homeWidgetInvalidType.text
                 else -> SettingsStringsExt2.homeWidgetPinFailedManual.filled("label", label)
             }
             Toast.makeText(context, message, Toast.LENGTH_LONG).show()
@@ -209,13 +209,13 @@ fun HomeWidgetHost(
         when (status) {
             "fallback" -> Toast.makeText(
                 context,
-                SettingsStringsExt2.homeWidgetExactAlarmFallbackHint.zh,
+                SettingsStringsExt2.homeWidgetExactAlarmFallbackHint.text,
                 Toast.LENGTH_LONG,
             ).show()
 
             "failed" -> Toast.makeText(
                 context,
-                SettingsStringsExt2.homeWidgetExactAlarmOpenFailed.zh,
+                SettingsStringsExt2.homeWidgetExactAlarmOpenFailed.text,
                 Toast.LENGTH_LONG,
             ).show()
             // launched / not_required：回到前台时 ON_RESUME 会重查授权状态。
@@ -311,7 +311,7 @@ fun HomeWidgetHost(
                         if (applyModel(next)) {
                             Toast.makeText(
                                 context,
-                                SettingsStringsExt4.settingsResetDoneMessage.zh,
+                                SettingsStringsExt4.settingsResetDoneMessage.text,
                                 Toast.LENGTH_SHORT,
                             ).show()
                         }

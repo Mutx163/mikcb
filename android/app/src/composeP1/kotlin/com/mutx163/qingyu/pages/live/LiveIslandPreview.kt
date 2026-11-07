@@ -168,9 +168,9 @@ fun LiveIslandExpandedPreviewCard(
                 title = LiveDisplayLogic.expandedTitle(state, stage, info),
                 summary = LiveDisplayLogic.expandedSummaryLine(state, stage, info, nowMillis),
                 detailLines = LiveDisplayLogic.expandedDetailLines(state, stage, info, nowMillis),
-                emptyHint = DisplaySettingsStrings.expandedPreviewEmptyHint.zh,
-                caption = DisplaySettingsStrings.expandedPreviewCaption.zh,
-                unfilledSuffix = DisplaySettingsStrings.unfilledSuffix.zh,
+                emptyHint = DisplaySettingsStrings.expandedPreviewEmptyHint.text,
+                caption = DisplaySettingsStrings.expandedPreviewCaption.text,
+                unfilledSuffix = DisplaySettingsStrings.unfilledSuffix.text,
             )
             if (index != stages.lastIndex) Spacer(modifier = Modifier.height(10.dp))
         }
@@ -204,7 +204,7 @@ private fun FollowBadge(dark: Boolean) {
         )
         Spacer(modifier = Modifier.width(4.dp))
         Text(
-            text = DisplaySettingsStrings.islandPreviewFollowBadge.zh,
+            text = DisplaySettingsStrings.islandPreviewFollowBadge.text,
             style = MiuixTheme.textStyles.footnote1,
             color = Color(QingyuTheme.secondaryText(dark)),
         )

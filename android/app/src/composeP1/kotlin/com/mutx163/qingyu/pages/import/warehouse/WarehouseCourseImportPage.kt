@@ -108,11 +108,11 @@ fun WarehouseCourseImportPage(
     // 骨架 / 顶栏 / 返回键走共享套件（R1），页面级滚动走 QingyuPageList（R2）：
     // 搜索栏、快捷导入、分组标题与学校卡片同处一个惰性列表。
     QingyuPageScaffold(
-        title = WarehouseStrings.importMethodWarehouseTitle.zh,
+        title = WarehouseStrings.importMethodWarehouseTitle.text,
         onBack = onBack,
         actions = {
             IconButton(onClick = { showMoreMenu = !showMoreMenu }) {
-                Icon(imageVector = MiuixIcons.More, contentDescription = WarehouseStrings.moreActionsTooltip.zh)
+                Icon(imageVector = MiuixIcons.More, contentDescription = WarehouseStrings.moreActionsTooltip.text)
             }
         },
     ) {
@@ -136,7 +136,7 @@ fun WarehouseCourseImportPage(
                     onSearch = { },
                     expanded = false,
                     onExpandedChange = { },
-                    label = WarehouseStrings.searchSchoolHint.zh,
+                    label = WarehouseStrings.searchSchoolHint.text,
                     // 清空图标自己画一颗：官方默认那颗的无障碍文案是库里的英文 "Search Cleanup"，
                     // 发布版这里是「清空」（`clearSearchTooltip`）。写法照官方 demo
                     // `SuperSearchBar.kt:254-273`：44dp 触区 + start 8 / end 16 内边距、
@@ -149,7 +149,7 @@ fun WarehouseCourseImportPage(
                         ) {
                             Icon(
                                 imageVector = MiuixIcons.Basic.SearchCleanup,
-                                contentDescription = WarehouseStrings.clearSearchTooltip.zh,
+                                contentDescription = WarehouseStrings.clearSearchTooltip.text,
                                 tint = MiuixTheme.colorScheme.onSurface,
                                 modifier = Modifier
                                     .size(44.dp)
@@ -197,12 +197,12 @@ fun WarehouseCourseImportPage(
                             Spacer(modifier = Modifier.width(12.dp))
                             Column(modifier = Modifier.weight(1f)) {
                                 Text(
-                                    text = WarehouseStrings.quickImportAction.zh,
+                                    text = WarehouseStrings.quickImportAction.text,
                                     style = MiuixTheme.textStyles.body1.shiftWeight(QingyuWeightDelta.SEMIBOLD),
                                 )
                                 Spacer(modifier = Modifier.height(2.dp))
                                 Text(
-                                    text = WarehouseStrings.selectQuickImportTitle.zh,
+                                    text = WarehouseStrings.selectQuickImportTitle.text,
                                     style = MiuixTheme.textStyles.footnote1,
                                     color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
                                 )
@@ -234,10 +234,10 @@ fun WarehouseCourseImportPage(
                                 Text(
                                     text = when {
                                         phase == WarehouseListPhase.Failed ->
-                                            WarehouseStrings.warehouseRootLoadFailedTitle.zh
+                                            WarehouseStrings.warehouseRootLoadFailedTitle.text
 
-                                        isSearching -> WarehouseStrings.noMatchingSchools.zh
-                                        else -> WarehouseStrings.noAvailableSchools.zh
+                                        isSearching -> WarehouseStrings.noMatchingSchools.text
+                                        else -> WarehouseStrings.noAvailableSchools.text
                                     },
                                     style = MiuixTheme.textStyles.body1.shiftWeight(QingyuWeightDelta.MEDIUM),
                                     color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
@@ -246,7 +246,7 @@ fun WarehouseCourseImportPage(
                                     Spacer(modifier = Modifier.height(16.dp))
                                     Button(
                                         onClick = onRetry,
-                                        content = { Text(text = WarehouseStrings.reloadAction.zh) },
+                                        content = { Text(text = WarehouseStrings.reloadAction.text) },
                                         colors = ButtonDefaults.buttonColors(
                                             color = MiuixTheme.colorScheme.primary.copy(alpha = 0.12f),
                                             contentColor = MiuixTheme.colorScheme.primary,
@@ -255,14 +255,14 @@ fun WarehouseCourseImportPage(
                                 } else if (isSearching) {
                                     Spacer(modifier = Modifier.height(6.dp))
                                     Text(
-                                        text = WarehouseStrings.searchSchoolSuggestion.zh,
+                                        text = WarehouseStrings.searchSchoolSuggestion.text,
                                         style = MiuixTheme.textStyles.footnote1,
                                         color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
                                     )
                                     Spacer(modifier = Modifier.height(16.dp))
                                     Button(
                                         onClick = onFeedbackClick,
-                                        content = { Text(text = WarehouseStrings.warehouseFeedbackMissingSchoolTitle.zh) },
+                                        content = { Text(text = WarehouseStrings.warehouseFeedbackMissingSchoolTitle.text) },
                                         colors = ButtonDefaults.buttonColors(
                                             color = MiuixTheme.colorScheme.surfaceVariant,
                                             contentColor = MiuixTheme.colorScheme.primary,
@@ -279,7 +279,7 @@ fun WarehouseCourseImportPage(
                         // 分组标题走官方 SmallTitle（自带 28dp 左缘），与卡片正文同一条轴线。
                         QingyuSectionTitle(
                             text = when (section.tag) {
-                                "★" -> WarehouseStrings.recentSchoolLabel.zh
+                                "★" -> WarehouseStrings.recentSchoolLabel.text
                                 "通" -> "通用教务系统"
                                 else -> section.tag
                             },
@@ -311,9 +311,9 @@ fun WarehouseCourseImportPage(
                                     val subtitle = if (!matched.isNullOrEmpty()) {
                                         WarehouseStrings.warehouseMatchedAdaptersLabel.filled("names", matched.joinToString("、"))
                                     } else if (bean.isRecent) {
-                                        WarehouseStrings.recentSchoolLabel.zh
+                                        WarehouseStrings.recentSchoolLabel.text
                                     } else {
-                                        WarehouseStrings.warehouseSchoolTapHint.zh
+                                        WarehouseStrings.warehouseSchoolTapHint.text
                                     }
                                     Text(
                                         text = subtitle,

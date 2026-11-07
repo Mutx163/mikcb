@@ -43,10 +43,10 @@ class TimeSchemeManagementModel(
     val isEmpty: Boolean get() = schemes.isEmpty()
 
     /** 列表页标题栏文案。 */
-    val title: String get() = TimeSchemeManagementStrings.timeSchemeTitle.zh
+    val title: String get() = TimeSchemeManagementStrings.timeSchemeTitle.text
 
     /** 新建按钮的无障碍/长按提示。 */
-    val newSchemeTooltip: String get() = TimeSchemeManagementStrings.newSchemeTooltip.zh
+    val newSchemeTooltip: String get() = TimeSchemeManagementStrings.newSchemeTooltip.text
 
     /**
      * 「地点作息匹配」入口的副标题。
@@ -56,9 +56,9 @@ class TimeSchemeManagementModel(
      */
     val locationEntrySubtitle: String
         get() = if (isEmpty) {
-            TimeSchemeManagementStrings.locationTimeMatchNeedTimeScheme.zh
+            TimeSchemeManagementStrings.locationTimeMatchNeedTimeScheme.text
         } else {
-            TimeSchemeManagementStrings.timeSchemeEntryTitle.zh
+            TimeSchemeManagementStrings.timeSchemeEntryTitle.text
         }
 
     /**
@@ -78,7 +78,7 @@ class TimeSchemeManagementModel(
     val dateRuleEntryDetails: String?
         get() = when {
             dateRuleCount <= 0 -> null
-            hasActiveDateRule -> TimeSchemeManagementStrings.scheduleDateRuleActiveToday.zh
+            hasActiveDateRule -> TimeSchemeManagementStrings.scheduleDateRuleActiveToday.text
             else -> dateRuleCount.toString()
         }
 
@@ -108,7 +108,7 @@ class TimeSchemeManagementModel(
                 "courses" to courseCount.toString(),
                 "overrideCourses" to overrideCount.toString(),
             ),
-            statusLabel = if (isActive) TimeSchemeManagementStrings.usingNow.zh else "",
+            statusLabel = if (isActive) TimeSchemeManagementStrings.usingNow.text else "",
             // 首节起止与「一节都没有」是渲染层的两个不同分支：Dart 在没有任何节次时
             // 画占位 `-`，而不是画一个空的时间段。
             firstSectionText = if (firstSection == null || firstSection.displayText.isBlank()) {
@@ -158,13 +158,13 @@ class TimeSchemeManagementModel(
     private fun menuItem(action: TimeSchemeAction) = TimeSchemeMenuItem(
         action = action,
         label = when (action) {
-            TimeSchemeAction.APPLY_TO_CURRENT -> TimeSchemeManagementStrings.applyToCurrentTimetable.zh
-            TimeSchemeAction.EDIT_SECTIONS -> TimeSchemeManagementStrings.editSectionsAction.zh
-            TimeSchemeAction.VIEW_USAGE -> TimeSchemeManagementStrings.viewUsageAction.zh
-            TimeSchemeAction.RENAME -> TimeSchemeManagementStrings.renameAction.zh
-            TimeSchemeAction.DUPLICATE -> TimeSchemeManagementStrings.duplicateAction.zh
-            TimeSchemeAction.SHARE -> TimeSchemeManagementStrings.shareTimeSchemeAction.zh
-            TimeSchemeAction.DELETE -> TimeSchemeManagementStrings.deleteAction.zh
+            TimeSchemeAction.APPLY_TO_CURRENT -> TimeSchemeManagementStrings.applyToCurrentTimetable.text
+            TimeSchemeAction.EDIT_SECTIONS -> TimeSchemeManagementStrings.editSectionsAction.text
+            TimeSchemeAction.VIEW_USAGE -> TimeSchemeManagementStrings.viewUsageAction.text
+            TimeSchemeAction.RENAME -> TimeSchemeManagementStrings.renameAction.text
+            TimeSchemeAction.DUPLICATE -> TimeSchemeManagementStrings.duplicateAction.text
+            TimeSchemeAction.SHARE -> TimeSchemeManagementStrings.shareTimeSchemeAction.text
+            TimeSchemeAction.DELETE -> TimeSchemeManagementStrings.deleteAction.text
         },
     )
 
@@ -173,29 +173,29 @@ class TimeSchemeManagementModel(
     /** 新建弹层：标题、字段、占位、确认按钮一次给全。 */
     val createSheet: TimeSchemeSheet
         get() = TimeSchemeSheet(
-            title = TimeSchemeManagementStrings.createTimeSchemeTitle.zh,
-            nameLabel = TimeSchemeManagementStrings.timeSchemeNameLabel.zh,
-            nameHint = TimeSchemeManagementStrings.timeSchemeNameHint.zh,
+            title = TimeSchemeManagementStrings.createTimeSchemeTitle.text,
+            nameLabel = TimeSchemeManagementStrings.timeSchemeNameLabel.text,
+            nameHint = TimeSchemeManagementStrings.timeSchemeNameHint.text,
             initialName = "",
-            confirmLabel = TimeSchemeManagementStrings.createAction.zh,
-            nameError = TimeSchemeManagementStrings.nameRequired.zh,
+            confirmLabel = TimeSchemeManagementStrings.createAction.text,
+            nameError = TimeSchemeManagementStrings.nameRequired.text,
         )
 
     fun renameSheet(schemeId: String): TimeSchemeSheet? {
         val scheme = schemes.firstOrNull { it.id == schemeId } ?: return null
         return TimeSchemeSheet(
-            title = TimeSchemeManagementStrings.renameTimeSchemeTitle.zh,
-            nameLabel = TimeSchemeManagementStrings.timeSchemeNameLabel.zh,
-            nameHint = TimeSchemeManagementStrings.timeSchemeNameHint.zh,
+            title = TimeSchemeManagementStrings.renameTimeSchemeTitle.text,
+            nameLabel = TimeSchemeManagementStrings.timeSchemeNameLabel.text,
+            nameHint = TimeSchemeManagementStrings.timeSchemeNameHint.text,
             initialName = scheme.name,
-            confirmLabel = TimeSchemeManagementStrings.saveAction.zh,
-            nameError = TimeSchemeManagementStrings.nameRequired.zh,
+            confirmLabel = TimeSchemeManagementStrings.saveAction.text,
+            nameError = TimeSchemeManagementStrings.nameRequired.text,
         )
     }
 
     /** 名称校验：只拦「全是空白」这一种。返回 null = 可以提交。 */
     fun validateName(raw: String): String? =
-        if (raw.isBlank()) TimeSchemeManagementStrings.nameRequired.zh else null
+        if (raw.isBlank()) TimeSchemeManagementStrings.nameRequired.text else null
 
     /**
      * 复制出来的新名字（**改回 Dart 口径**：`'${source.name} 副本'`，
@@ -220,7 +220,7 @@ class TimeSchemeManagementModel(
     }
 
     /** 复制成功后的轻提示。 */
-    val copiedMessage: String get() = TimeSchemeManagementStrings.copiedTimeSchemeMessage.zh
+    val copiedMessage: String get() = TimeSchemeManagementStrings.copiedTimeSchemeMessage.text
 
     fun renamedMessage(name: String): String = TimeSchemeManagementStrings.renamedToMessage.filled("name", name)
 
@@ -246,16 +246,16 @@ class TimeSchemeManagementModel(
         val inUse = schemeId == activeSchemeId
         return TimeSchemeDeleteCheck(
             schemeId = schemeId,
-            title = TimeSchemeManagementStrings.deleteTimeSchemeTitle.zh,
+            title = TimeSchemeManagementStrings.deleteTimeSchemeTitle.text,
             message = TimeSchemeManagementStrings.deleteTimeSchemeMessage.filled("name", scheme.name),
-            inUseNote = if (inUse) TimeSchemeManagementStrings.timeSchemeInUseMessage.zh else "",
-            blockerIntro = if (blockers.isEmpty()) "" else TimeSchemeManagementStrings.timeSchemeDeleteBlockedIntro.zh,
+            inUseNote = if (inUse) TimeSchemeManagementStrings.timeSchemeInUseMessage.text else "",
+            blockerIntro = if (blockers.isEmpty()) "" else TimeSchemeManagementStrings.timeSchemeDeleteBlockedIntro.text,
             blockers = blockers,
             canDelete = blockers.isEmpty() && !inUse,
-            confirmLabel = TimeSchemeManagementStrings.deleteAction.zh,
+            confirmLabel = TimeSchemeManagementStrings.deleteAction.text,
             // 两个删除弹层的取消按钮都是「取消」（Dart :683 与 :793）；「关闭」只属于
             // 使用情况弹层（:1179）。原先这里恒给 closeAction，是把两个弹层的按钮串了。
-            cancelLabel = TimeSchemeManagementStrings.cancelAction.zh,
+            cancelLabel = TimeSchemeManagementStrings.cancelAction.text,
         )
     }
 
@@ -265,7 +265,7 @@ class TimeSchemeManagementModel(
      * 顺序固定是为了可测：对话框内容随数据抖动会让人以为删不掉的原因变了。
      */
     fun blockers(schemeId: String): List<String> {
-        val separator = TimeSchemeManagementStrings.timeSchemeBlockerListSeparator.zh
+        val separator = TimeSchemeManagementStrings.timeSchemeBlockerListSeparator.text
         val profiles = usage.directProfiles[schemeId].orEmpty()
         val overrideCourses = usage.overrideCourses[schemeId].orEmpty()
         val locationCourses = usage.locationCourses[schemeId].orEmpty()
@@ -333,15 +333,15 @@ class TimeSchemeManagementModel(
         val courseCount = followCourses.size + overrideCourses.size + locationCourses.size
 
         val followLines = followCourses.map {
-            line(it, TimeSchemeManagementStrings.mainTimeSchemeLabel.zh)
+            line(it, TimeSchemeManagementStrings.mainTimeSchemeLabel.text)
         }
         val overrideLines = overrideCourses.map {
-            line(it, TimeSchemeManagementStrings.overrideTimeSchemeShortLabel.zh)
+            line(it, TimeSchemeManagementStrings.overrideTimeSchemeShortLabel.text)
         }
         // 地点这一段是「删除前必须先改绑」的占用清单，所以课程与规则条目并在一段里：
         // 用户在这里只关心「还有谁在用」，分不分课程/规则不影响他要做的动作。
         val locationLines = locationCourses.map {
-            line(it, TimeSchemeManagementStrings.locationTimeMatchEntryTitle.zh)
+            line(it, TimeSchemeManagementStrings.locationTimeMatchEntryTitle.text)
         } + usage.locationGroups[schemeId].orEmpty().map {
             TimeSchemeLine(title = it.name, summary = "")
         }
@@ -360,33 +360,33 @@ class TimeSchemeManagementModel(
         return TimeSchemeUsageView(
             schemeId = schemeId,
             title = TimeSchemeManagementStrings.timeSchemeUsageTitle.filled("name", scheme.name),
-            intro = TimeSchemeManagementStrings.timeSchemeUsageIntro.zh,
-            profileCountLabel = TimeSchemeManagementStrings.profileCountLabel.zh,
+            intro = TimeSchemeManagementStrings.timeSchemeUsageIntro.text,
+            profileCountLabel = TimeSchemeManagementStrings.profileCountLabel.text,
             profileCountValue = TimeSchemeManagementStrings.profileCountValue.filled("count", profiles.size.toString()),
-            courseCountLabel = TimeSchemeManagementStrings.courseCountLabel.zh,
+            courseCountLabel = TimeSchemeManagementStrings.courseCountLabel.text,
             courseCountValue = TimeSchemeManagementStrings.courseSectionCountValue.filled("count", courseCount.toString()),
-            overrideCountLabel = TimeSchemeManagementStrings.overrideTimeSchemeLabel.zh,
+            overrideCountLabel = TimeSchemeManagementStrings.overrideTimeSchemeLabel.text,
             overrideCountValue = TimeSchemeManagementStrings.courseSectionCountValue.filled(
                 "count",
                 overrideCourses.size.toString(),
             ),
-            directProfilesTitle = TimeSchemeManagementStrings.directlyBoundProfilesTitle.zh,
-            directProfilesSubtitle = TimeSchemeManagementStrings.directlyBoundProfilesSubtitle.zh,
-            directProfilesEmpty = TimeSchemeManagementStrings.directlyBoundProfilesEmpty.zh,
+            directProfilesTitle = TimeSchemeManagementStrings.directlyBoundProfilesTitle.text,
+            directProfilesSubtitle = TimeSchemeManagementStrings.directlyBoundProfilesSubtitle.text,
+            directProfilesEmpty = TimeSchemeManagementStrings.directlyBoundProfilesEmpty.text,
             directProfiles = profiles.map { TimeSchemeLine(title = it.name, summary = "") },
-            followTitle = TimeSchemeManagementStrings.followMainSchemeCoursesTitle.zh,
-            followSubtitle = TimeSchemeManagementStrings.followMainSchemeCoursesSubtitle.zh,
-            followEmpty = TimeSchemeManagementStrings.followMainSchemeCoursesEmpty.zh,
+            followTitle = TimeSchemeManagementStrings.followMainSchemeCoursesTitle.text,
+            followSubtitle = TimeSchemeManagementStrings.followMainSchemeCoursesSubtitle.text,
+            followEmpty = TimeSchemeManagementStrings.followMainSchemeCoursesEmpty.text,
             followLines = followLines,
-            overrideTitle = TimeSchemeManagementStrings.overrideSchemeCoursesTitle.zh,
-            overrideSubtitle = TimeSchemeManagementStrings.overrideSchemeCoursesSubtitle.zh,
-            overrideEmpty = TimeSchemeManagementStrings.overrideSchemeCoursesEmpty.zh,
+            overrideTitle = TimeSchemeManagementStrings.overrideSchemeCoursesTitle.text,
+            overrideSubtitle = TimeSchemeManagementStrings.overrideSchemeCoursesSubtitle.text,
+            overrideEmpty = TimeSchemeManagementStrings.overrideSchemeCoursesEmpty.text,
             overrideLines = overrideLines,
-            locationTitle = TimeSchemeManagementStrings.locationTimeMatchEntryTitle.zh,
-            locationSubtitle = TimeSchemeManagementStrings.timeSchemeBlockedLocationGroupsSubtitle.zh,
+            locationTitle = TimeSchemeManagementStrings.locationTimeMatchEntryTitle.text,
+            locationSubtitle = TimeSchemeManagementStrings.timeSchemeBlockedLocationGroupsSubtitle.text,
             locationLines = locationLines,
-            dateRuleTitle = TimeSchemeManagementStrings.scheduleDateRuleSectionTitle.zh,
-            dateRuleSubtitle = TimeSchemeManagementStrings.timeSchemeBlockedDateRulesSubtitle.zh,
+            dateRuleTitle = TimeSchemeManagementStrings.scheduleDateRuleSectionTitle.text,
+            dateRuleSubtitle = TimeSchemeManagementStrings.timeSchemeBlockedDateRulesSubtitle.text,
             dateRuleLines = usage.dateRules[schemeId].orEmpty().map {
                 TimeSchemeLine(title = it.name, summary = "")
             },
@@ -416,12 +416,12 @@ class TimeSchemeManagementModel(
         return TimeSchemeShareSheet(
             schemeId = schemeId,
             schemeName = scheme.name,
-            title = TimeSchemeManagementStrings.shareTimeSchemeTitle.zh,
-            viaQrLabel = TimeSchemeManagementStrings.shareTimeSchemeViaQr.zh,
-            viaSystemLabel = TimeSchemeManagementStrings.shareTimeSchemeViaSystem.zh,
-            cancelLabel = TimeSchemeManagementStrings.cancelAction.zh,
+            title = TimeSchemeManagementStrings.shareTimeSchemeTitle.text,
+            viaQrLabel = TimeSchemeManagementStrings.shareTimeSchemeViaQr.text,
+            viaSystemLabel = TimeSchemeManagementStrings.shareTimeSchemeViaSystem.text,
+            cancelLabel = TimeSchemeManagementStrings.cancelAction.text,
             shareText = TimeSchemeManagementStrings.timeSchemeShareText.filled("name", scheme.name),
-            shareSubject = TimeSchemeManagementStrings.timeSchemeShareSubject.zh,
+            shareSubject = TimeSchemeManagementStrings.timeSchemeShareSubject.text,
         )
     }
 
@@ -430,7 +430,7 @@ class TimeSchemeManagementModel(
         TimeSchemeManagementStrings.sendFailedWithError.filled("error", error)
 
     /** 二维码中转资源上限的提示。 */
-    val qrResourceLimitMessage: String get() = TimeSchemeManagementStrings.qrTransferResourceLimit.zh
+    val qrResourceLimitMessage: String get() = TimeSchemeManagementStrings.qrTransferResourceLimit.text
 
     // ────────────────────────── 编辑器 ──────────────────────────
 
@@ -446,27 +446,27 @@ class TimeSchemeManagementModel(
         val isActive = schemeId == activeSchemeId
         val overrideCount = usage.overrideCourses[schemeId].orEmpty().size
         val hint = when {
-            isActive && overrideCount > 0 -> TimeSchemeManagementStrings.timeSchemeEditorActiveAndCoursesHint.zh
-            isActive -> TimeSchemeManagementStrings.timeSchemeEditorActiveHint.zh
-            overrideCount > 0 -> TimeSchemeManagementStrings.timeSchemeEditorOverrideHint.zh
+            isActive && overrideCount > 0 -> TimeSchemeManagementStrings.timeSchemeEditorActiveAndCoursesHint.text
+            isActive -> TimeSchemeManagementStrings.timeSchemeEditorActiveHint.text
+            overrideCount > 0 -> TimeSchemeManagementStrings.timeSchemeEditorOverrideHint.text
             else -> ""
         }
         return TimeSchemeEditorSheet(
             schemeId = schemeId,
-            title = TimeSchemeManagementStrings.editTimeSchemeTitle.zh,
+            title = TimeSchemeManagementStrings.editTimeSchemeTitle.text,
             name = scheme.name,
             impactHint = hint,
-            sectionTimesTitle = TimeSchemeManagementStrings.sectionTimesTitle.zh,
-            sectionTimesSubtitle = TimeSchemeManagementStrings.sectionTimesSubtitle.zh,
+            sectionTimesTitle = TimeSchemeManagementStrings.sectionTimesTitle.text,
+            sectionTimesSubtitle = TimeSchemeManagementStrings.sectionTimesSubtitle.text,
             rows = scheme.sections.mapIndexed { index, section -> sectionRow(index, section) },
-            quickGenerateLabel = TimeSchemeManagementStrings.quickGenerateAction.zh,
-            addSectionLabel = TimeSchemeManagementStrings.addSectionAction.zh,
-            removeLastSectionLabel = TimeSchemeManagementStrings.removeLastSectionAction.zh,
-            resetDefaultLabel = TimeSchemeManagementStrings.resetDefaultAction.zh,
-            saveLabel = TimeSchemeManagementStrings.saveAction.zh,
-            startPickerTitle = TimeSchemeManagementStrings.selectStartTimeTitle.zh,
-            endPickerTitle = TimeSchemeManagementStrings.selectEndTimeTitle.zh,
-            crossDayError = TimeSchemeManagementStrings.timeRangeValidationNoCrossDay.zh,
+            quickGenerateLabel = TimeSchemeManagementStrings.quickGenerateAction.text,
+            addSectionLabel = TimeSchemeManagementStrings.addSectionAction.text,
+            removeLastSectionLabel = TimeSchemeManagementStrings.removeLastSectionAction.text,
+            resetDefaultLabel = TimeSchemeManagementStrings.resetDefaultAction.text,
+            saveLabel = TimeSchemeManagementStrings.saveAction.text,
+            startPickerTitle = TimeSchemeManagementStrings.selectStartTimeTitle.text,
+            endPickerTitle = TimeSchemeManagementStrings.selectEndTimeTitle.text,
+            crossDayError = TimeSchemeManagementStrings.timeRangeValidationNoCrossDay.text,
         )
     }
 
@@ -529,7 +529,7 @@ data class TimeSchemeRow(
      */
     val subtitle: String
         get() = when {
-            isActive -> TimeSchemeManagementStrings.usingNow.zh
+            isActive -> TimeSchemeManagementStrings.usingNow.text
             startsAt != null -> TimeSchemeManagementStrings.timeSchemeStartsAt.filled("start", startsAt)
             else -> ""
         }

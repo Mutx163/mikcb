@@ -71,7 +71,7 @@ object SettingsAppearancePage {
             note = "主题/字体档位的微缩预览（settings_appearance.dart:116-193）：官方没有预览卡，" +
                 "两块 72dp 色块与文字由应用自绘，颜色走 theme/ 桥",
             labelKey = SettingsStrings.previewTitle.key,
-            label = SettingsStrings.previewTitle.zh,
+            label = SettingsStrings.previewTitle.text,
             texts = listOf(
                 inlineText(state.appThemeMode.label),
                 inlineText(state.appFontMode.label),
@@ -100,7 +100,7 @@ object SettingsAppearancePage {
         nodes += SettingsLabel(
             id = "appearance.themeDisplay.label",
             textKey = SettingsStrings.appearanceThemeDisplaySectionTitle.key,
-            text = SettingsStrings.appearanceThemeDisplaySectionTitle.zh,
+            text = SettingsStrings.appearanceThemeDisplaySectionTitle.text,
         )
         nodes += SettingsGroup(
             id = "appearance.themeDisplay",
@@ -146,7 +146,7 @@ object SettingsAppearancePage {
                         null
                     },
                     value = if (state.appTextScale == TEXT_SCALE_DEFAULT) {
-                        SettingsStrings.fontSizeDefault.zh
+                        SettingsStrings.fontSizeDefault.text
                     } else {
                         "%.2f".format(Locale.ROOT, state.appTextScale)
                     },
@@ -180,7 +180,7 @@ object SettingsAppearancePage {
         nodes += SettingsLabel(
             id = "appearance.themeSeed.label",
             textKey = SettingsStrings.themeSeedSectionTitle.key,
-            text = SettingsStrings.themeSeedSectionTitle.zh,
+            text = SettingsStrings.themeSeedSectionTitle.text,
         )
         nodes += SettingsGroup(
             id = "appearance.themeSeed",
@@ -226,7 +226,7 @@ object SettingsAppearancePage {
         return SettingsPageSpec(
             id = ID,
             titleKey = SettingsStrings.appearanceTitle.key,
-            title = SettingsStrings.appearanceTitle.zh,
+            title = SettingsStrings.appearanceTitle.text,
             nodes = nodes,
         )
     }
@@ -238,7 +238,7 @@ object SettingsAppearancePage {
     /** `SettingsResetScope.appearance`（`settings_reset.dart:22-23`）。 */
     const val RESET_SCOPE_APPEARANCE = "appearance"
 
-    private fun inlineText(text: ArbText) = SettingsInlineText(text.key, text.zh)
+    private fun inlineText(text: ArbText) = SettingsInlineText(text.key, text.text)
 }
 
 /**
@@ -271,7 +271,7 @@ object SettingsThemeManagePage {
                 kind = InlineKind.CONTROL_CARD,
                 note = "控制卡头（settings_appearance.dart:471-504）：有未保存改动时挂两个官方 Button",
                 labelKey = SettingsStrings.themeCurrentTheme.key,
-                label = SettingsStrings.themeCurrentTheme.zh,
+                label = SettingsStrings.themeCurrentTheme.text,
                 valueKey = if (state.themeHasModifications) {
                     SettingsStrings.themeBasedOnModified.key
                 } else {
@@ -286,11 +286,11 @@ object SettingsThemeManagePage {
                     listOf(
                         SettingsInlineText(
                             SettingsStrings.themeResetToPreset.key,
-                            SettingsStrings.themeResetToPreset.zh,
+                            SettingsStrings.themeResetToPreset.text,
                         ),
                         SettingsInlineText(
                             SettingsStrings.themeSaveCurrent.key,
-                            SettingsStrings.themeSaveCurrent.zh,
+                            SettingsStrings.themeSaveCurrent.text,
                         ),
                     )
                 } else {
@@ -304,7 +304,7 @@ object SettingsThemeManagePage {
         nodes += SettingsLabel(
             id = "theme.actions.label",
             textKey = SettingsStrings.themeManageSubtitle.key,
-            text = SettingsStrings.themeManageSubtitle.zh,
+            text = SettingsStrings.themeManageSubtitle.text,
         )
         nodes += SettingsGroup(
             id = "theme.actions",
@@ -335,7 +335,7 @@ object SettingsThemeManagePage {
         nodes += SettingsLabel(
             id = "theme.presets.label",
             textKey = SettingsStrings.themePreset.key,
-            text = SettingsStrings.themePreset.zh,
+            text = SettingsStrings.themePreset.text,
         )
         nodes += SettingsGroup(
             id = "theme.presets",
@@ -357,7 +357,7 @@ object SettingsThemeManagePage {
             nodes += SettingsLabel(
                 id = "theme.saved.label",
                 textKey = SettingsStrings.themeSaved.key,
-                text = SettingsStrings.themeSaved.zh,
+                text = SettingsStrings.themeSaved.text,
             )
             nodes += SettingsGroup(
                 id = "theme.saved",
@@ -372,7 +372,7 @@ object SettingsThemeManagePage {
                         previewColors = saved.previewColors,
                         action = SettingsAction.SHEET,
                         trailingActionKey = SettingsStrings.themeMoreActions.key,
-                        trailingAction = SettingsStrings.themeMoreActions.zh,
+                        trailingAction = SettingsStrings.themeMoreActions.text,
                         trailingActionKind = SettingsAction.SHEET,
                     )
                 },
@@ -382,7 +382,7 @@ object SettingsThemeManagePage {
         return SettingsPageSpec(
             id = ID,
             titleKey = SettingsStrings.themeManageTitle.key,
-            title = SettingsStrings.themeManageTitle.zh,
+            title = SettingsStrings.themeManageTitle.text,
             nodes = nodes,
         )
     }

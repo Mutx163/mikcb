@@ -88,9 +88,9 @@ fun DisplaySettingsPage(
     val editable = !followBeforeClass
     val sectionAlpha = if (editable) 1f else 0.5f
     val title = if (forDuringEnd) {
-        DisplaySettingsStrings.displayEntryTitleDuringEnd.zh
+        DisplaySettingsStrings.displayEntryTitleDuringEnd.text
     } else {
-        DisplaySettingsStrings.displayEntryTitleBeforeClass.zh
+        DisplaySettingsStrings.displayEntryTitleBeforeClass.text
     }
     val effectiveInfo = previewInfo?.copy(
         promoteDuringClass = state.promoteDuringClass,
@@ -110,7 +110,7 @@ fun DisplaySettingsPage(
             ) {
                 // ── 课中/下课页顶部：配置方式（跟随上课前设置）──
                 if (forDuringEnd) {
-                    item(key = "config-mode-label") { QingyuSectionTitle(DisplaySettingsStrings.displayConfigModeTitle.zh) }
+                    item(key = "config-mode-label") { QingyuSectionTitle(DisplaySettingsStrings.displayConfigModeTitle.text) }
                     item(key = "config-mode-card") {
                         QingyuCard(
                             modifier = Modifier
@@ -120,14 +120,14 @@ fun DisplaySettingsPage(
                             SwitchPreference(
                                 checked = state.duringEndFollowBeforeClass,
                                 onCheckedChange = { onStateChange(state.withDuringEndFollowBeforeClass(it)) },
-                                title = DisplaySettingsStrings.followBeforeClassDisplayTitle.zh,
+                                title = DisplaySettingsStrings.followBeforeClassDisplayTitle.text,
                             )
                         }
                     }
                 }
 
                 // ── 1. 显示内容（6 开关）──
-                item(key = "display-content-label") { QingyuSectionTitle(DisplaySettingsStrings.displayContentTitle.zh) }
+                item(key = "display-content-label") { QingyuSectionTitle(DisplaySettingsStrings.displayContentTitle.text) }
                 item(key = "display-content-card") {
                     QingyuCard(
                         modifier = Modifier
@@ -138,40 +138,40 @@ fun DisplaySettingsPage(
                         SwitchPreference(
                             checked = state.showCourseName,
                             onCheckedChange = { onStateChange(state.withShowCourseName(it)) },
-                            title = DisplaySettingsStrings.showCourseNameTitle.zh,
+                            title = DisplaySettingsStrings.showCourseNameTitle.text,
                             summary = if (LiveDisplayLogic.showCourseNameDuplicatedHint(state)) {
-                                DisplaySettingsStrings.courseNameDuplicatedHint.zh
+                                DisplaySettingsStrings.courseNameDuplicatedHint.text
                             } else null,
                             enabled = editable,
                         )
                         SwitchPreference(
                             checked = state.useShortName,
                             onCheckedChange = { onStateChange(state.withUseShortName(it)) },
-                            title = DisplaySettingsStrings.preferShortNameTitle.zh,
-                            summary = DisplaySettingsStrings.preferShortNameSubtitle.zh,
+                            title = DisplaySettingsStrings.preferShortNameTitle.text,
+                            summary = DisplaySettingsStrings.preferShortNameSubtitle.text,
                             enabled = editable,
                         )
                         SwitchPreference(
                             checked = state.showLocation,
                             onCheckedChange = { onStateChange(state.withShowLocation(it)) },
-                            title = DisplaySettingsStrings.showLocationTitle.zh,
+                            title = DisplaySettingsStrings.showLocationTitle.text,
                             summary = if (LiveDisplayLogic.showLocationDuplicatedHint(state)) {
-                                DisplaySettingsStrings.locationDuplicatedHint.zh
+                                DisplaySettingsStrings.locationDuplicatedHint.text
                             } else null,
                             enabled = editable,
                         )
                         SwitchPreference(
                             checked = state.showCountdown,
                             onCheckedChange = { onStateChange(state.withShowCountdown(it)) },
-                            title = DisplaySettingsStrings.showCountdownTitle.zh,
+                            title = DisplaySettingsStrings.showCountdownTitle.text,
                             enabled = editable,
                         )
                         Box(modifier = Modifier.alpha(if (LiveDisplayLogic.shouldDimStageText(state)) 0.55f else 1f)) {
                             SwitchPreference(
                                 checked = state.showStageText,
                                 onCheckedChange = { onStateChange(state.withShowStageText(it)) },
-                                title = DisplaySettingsStrings.showStageTextTitle.zh,
-                                summary = if (state.showCountdown) DisplaySettingsStrings.showStageTextInactiveHint.zh else null,
+                                title = DisplaySettingsStrings.showStageTextTitle.text,
+                                summary = if (state.showCountdown) DisplaySettingsStrings.showStageTextInactiveHint.text else null,
                                 enabled = editable,
                             )
                         }
@@ -179,8 +179,8 @@ fun DisplaySettingsPage(
                             SwitchPreference(
                                 checked = state.hidePrefixText,
                                 onCheckedChange = { onStateChange(state.withHidePrefixText(it)) },
-                                title = DisplaySettingsStrings.hidePrefixTextTitle.zh,
-                                summary = if (!state.showCountdown) DisplaySettingsStrings.hidePrefixTextInactiveHint.zh else null,
+                                title = DisplaySettingsStrings.hidePrefixTextTitle.text,
+                                summary = if (!state.showCountdown) DisplaySettingsStrings.hidePrefixTextInactiveHint.text else null,
                                 enabled = editable,
                             )
                         }
@@ -192,8 +192,8 @@ fun DisplaySettingsPage(
                     item {
                         QingyuCard(modifier = Modifier.fillMaxWidth().padding(horizontal = QingyuPageCardMargin).alpha(sectionAlpha)) {
                             EnumDropdown(
-                                title = DisplaySettingsStrings.countdownFormatLabel.zh,
-                                summary = DisplaySettingsStrings.countdownFormatHelp.zh,
+                                title = DisplaySettingsStrings.countdownFormatLabel.text,
+                                summary = DisplaySettingsStrings.countdownFormatHelp.text,
                                 values = LiveCountdownTextStyle.entries,
                                 selected = state.countdownTextStyle,
                                 label = { DisplaySettingsStrings.countdownTextStyleLabel(it) },
@@ -209,8 +209,8 @@ fun DisplaySettingsPage(
                     item {
                         QingyuCard(modifier = Modifier.fillMaxWidth().padding(horizontal = QingyuPageCardMargin).alpha(sectionAlpha)) {
                             EnumDropdown(
-                                title = DisplaySettingsStrings.beforeClassQuickActionTitle.zh,
-                                summary = DisplaySettingsStrings.beforeClassQuickActionSubtitle.zh,
+                                title = DisplaySettingsStrings.beforeClassQuickActionTitle.text,
+                                summary = DisplaySettingsStrings.beforeClassQuickActionSubtitle.text,
                                 values = LiveBeforeClassQuickAction.entries,
                                 selected = state.beforeClassQuickAction,
                                 label = { DisplaySettingsStrings.liveBeforeClassQuickActionLabel(it) },
@@ -222,8 +222,8 @@ fun DisplaySettingsPage(
                                 OverlayDropdownPreference(
                                     items = autoOptions.map { DisplaySettingsStrings.quickActionAutoMinuteLabel(it) },
                                     selectedIndex = autoOptions.indexOf(state.beforeClassQuickActionAutoMinutes).coerceAtLeast(0),
-                                    title = DisplaySettingsStrings.beforeClassQuickActionAutoTitle.zh,
-                                    summary = DisplaySettingsStrings.beforeClassQuickActionAutoSubtitle.zh,
+                                    title = DisplaySettingsStrings.beforeClassQuickActionAutoTitle.text,
+                                    summary = DisplaySettingsStrings.beforeClassQuickActionAutoSubtitle.text,
                                     enabled = editable,
                                     onSelectedIndexChange = { idx ->
                                         autoOptions.getOrNull(idx)?.let {
@@ -234,8 +234,8 @@ fun DisplaySettingsPage(
                             }
                             if (LiveDisplayLogic.requiresDoNotDisturbAccess(state.beforeClassQuickAction)) {
                                 ArrowPreference(
-                                    title = LiveKeepAliveStrings.guideStatusDoNotDisturbAccess.zh,
-                                    summary = LiveKeepAliveStrings.guideStatusDoNotDisturbAccessHint.zh,
+                                    title = LiveKeepAliveStrings.guideStatusDoNotDisturbAccess.text,
+                                    summary = LiveKeepAliveStrings.guideStatusDoNotDisturbAccessHint.text,
                                     onClick = onOpenDoNotDisturbAccess,
                                     enabled = editable,
                                 )
@@ -245,14 +245,14 @@ fun DisplaySettingsPage(
                 }
 
                 // ── 4. 小米岛左侧标签全套 ──
-                item(key = "island-visual-label") { QingyuSectionTitle(DisplaySettingsStrings.islandVisualTitle.zh) }
+                item(key = "island-visual-label") { QingyuSectionTitle(DisplaySettingsStrings.islandVisualTitle.text) }
                 item {
                     QingyuCard(modifier = Modifier.fillMaxWidth().padding(horizontal = QingyuPageCardMargin).alpha(sectionAlpha)) {
                         SwitchPreference(
                             checked = state.enableMiuiIslandLabelImage,
                             onCheckedChange = { onStateChange(state.withEnableMiuiIslandLabelImage(it)) },
-                            title = DisplaySettingsStrings.miuiLabelImageTitle.zh,
-                            summary = DisplaySettingsStrings.miuiLabelImageSubtitle.zh,
+                            title = DisplaySettingsStrings.miuiLabelImageTitle.text,
+                            summary = DisplaySettingsStrings.miuiLabelImageSubtitle.text,
                             enabled = editable,
                         )
                     }
@@ -261,7 +261,7 @@ fun DisplaySettingsPage(
                     item {
                         QingyuCard(modifier = Modifier.fillMaxWidth().padding(horizontal = QingyuPageCardMargin).alpha(sectionAlpha)) {
                             EnumDropdown(
-                                title = DisplaySettingsStrings.miuiLabelContentLabel.zh,
+                                title = DisplaySettingsStrings.miuiLabelContentLabel.text,
                                 values = MiuiIslandLabelContent.entries,
                                 selected = state.miuiIslandLabelContent,
                                 label = { DisplaySettingsStrings.miuiIslandLabelContentLabel(it) },
@@ -269,7 +269,7 @@ fun DisplaySettingsPage(
                                 onSelect = { onStateChange(state.withMiuiIslandLabelContent(it)) },
                             )
                             EnumDropdown(
-                                title = DisplaySettingsStrings.miuiLabelStyleLabel.zh,
+                                title = DisplaySettingsStrings.miuiLabelStyleLabel.text,
                                 values = MiuiIslandLabelStyle.entries,
                                 selected = state.miuiIslandLabelStyle,
                                 label = { DisplaySettingsStrings.miuiIslandLabelStyleLabel(it) },
@@ -279,8 +279,8 @@ fun DisplaySettingsPage(
                             // 选图块（仅「图标+文字」样式）
                             if (state.miuiIslandLabelStyle == MiuiIslandLabelStyle.ICON_AND_TEXT) {
                                 ImagePickerBlock(
-                                    title = DisplaySettingsStrings.miuiLabelLogoTitle.zh,
-                                    subtitle = DisplaySettingsStrings.miuiLabelLogoSubtitle.zh,
+                                    title = DisplaySettingsStrings.miuiLabelLogoTitle.text,
+                                    subtitle = DisplaySettingsStrings.miuiLabelLogoSubtitle.text,
                                     path = state.miuiIslandLabelLogoPath,
                                     enabled = editable,
                                     onPick = {
@@ -319,7 +319,7 @@ fun DisplaySettingsPage(
                             // 「文字排版与位置微调」：Flutter 用 HyperosAccordion，Compose 无对位件，
                             // 这里本地包一层：用一行标题 + 直接展开的滑杆/下拉（不折叠）。
                             Text(
-                                text = DisplaySettingsStrings.miuiLabelAdvancedAccordionTitle.zh,
+                                text = DisplaySettingsStrings.miuiLabelAdvancedAccordionTitle.text,
                                 style = MiuixTheme.textStyles.body2.shiftWeight(QingyuWeightDelta.MEDIUM),
                                 color = Color(QingyuTheme.primaryText(dark)),
                                 modifier = Modifier.padding(
@@ -329,7 +329,7 @@ fun DisplaySettingsPage(
                                 ),
                             )
                             Text(
-                                text = DisplaySettingsStrings.miuiLabelAdvancedAccordionSubtitle.zh,
+                                text = DisplaySettingsStrings.miuiLabelAdvancedAccordionSubtitle.text,
                                 style = MiuixTheme.textStyles.footnote1,
                                 color = Color(QingyuTheme.secondaryText(dark)),
                                 modifier = Modifier.padding(
@@ -363,7 +363,7 @@ fun DisplaySettingsPage(
                                 onChange = { onStateChange(state.withMiuiIslandLabelOffsetY(it.toDouble())) },
                             )
                             EnumDropdown(
-                                title = DisplaySettingsStrings.miuiLabelFontWeightLabel.zh,
+                                title = DisplaySettingsStrings.miuiLabelFontWeightLabel.text,
                                 values = MiuiIslandLabelFontWeight.entries,
                                 selected = state.miuiIslandLabelFontWeight,
                                 label = { DisplaySettingsStrings.miuiIslandLabelFontWeightLabel(it) },
@@ -371,7 +371,7 @@ fun DisplaySettingsPage(
                                 onSelect = { onStateChange(state.withMiuiIslandLabelFontWeight(it)) },
                             )
                             EnumDropdown(
-                                title = DisplaySettingsStrings.miuiLabelRenderQualityLabel.zh,
+                                title = DisplaySettingsStrings.miuiLabelRenderQualityLabel.text,
                                 values = MiuiIslandLabelRenderQuality.entries,
                                 selected = state.miuiIslandLabelRenderQuality,
                                 label = { DisplaySettingsStrings.miuiIslandLabelRenderQualityLabel(it) },
@@ -383,11 +383,11 @@ fun DisplaySettingsPage(
                 }
 
                 // ── 5. 展开态图标 ──
-                item(key = "expanded-icon-label") { QingyuSectionTitle(DisplaySettingsStrings.expandedIconSectionTitle.zh) }
+                item(key = "expanded-icon-label") { QingyuSectionTitle(DisplaySettingsStrings.expandedIconSectionTitle.text) }
                 item {
                     QingyuCard(modifier = Modifier.fillMaxWidth().padding(horizontal = QingyuPageCardMargin).alpha(sectionAlpha)) {
                         EnumDropdown(
-                            title = DisplaySettingsStrings.miuiExpandedIconLabel.zh,
+                            title = DisplaySettingsStrings.miuiExpandedIconLabel.text,
                             values = MiuiIslandExpandedIconMode.entries,
                             selected = state.miuiIslandExpandedIconMode,
                             label = { DisplaySettingsStrings.miuiIslandExpandedIconModeLabel(it) },
@@ -402,7 +402,7 @@ fun DisplaySettingsPage(
                         )
                         if (state.miuiIslandExpandedIconMode == MiuiIslandExpandedIconMode.CUSTOM_IMAGE) {
                             ImagePickerBlock(
-                                title = DisplaySettingsStrings.miuiExpandedIconLabel.zh,
+                                title = DisplaySettingsStrings.miuiExpandedIconLabel.text,
                                 subtitle = null,
                                 path = state.miuiIslandExpandedIconPath,
                                 enabled = editable,
@@ -421,7 +421,7 @@ fun DisplaySettingsPage(
                 }
 
                 // ── 6. 展开详情：显隐 + 排序 + 恢复默认 ──
-                item(key = "expanded-detail-label") { QingyuSectionTitle(DisplaySettingsStrings.expandedDetailGroupTitle.zh) }
+                item(key = "expanded-detail-label") { QingyuSectionTitle(DisplaySettingsStrings.expandedDetailGroupTitle.text) }
                 item {
                     QingyuCard(modifier = Modifier.fillMaxWidth().padding(horizontal = QingyuPageCardMargin).alpha(sectionAlpha)) {
                         ExpandedDetailGroup(
@@ -457,7 +457,7 @@ fun DisplaySettingsPage(
                     item {
                         QingyuCard(modifier = Modifier.fillMaxWidth().padding(horizontal = QingyuPageCardMargin).alpha(sectionAlpha)) {
                             ArrowPreference(
-                                title = DisplaySettingsStrings.resetExpandedDetailDefaultAction.zh,
+                                title = DisplaySettingsStrings.resetExpandedDetailDefaultAction.text,
                                 onClick = { onStateChange(state.withExpandedDetailFields(LiveDisplayLogic.resetDetailFields())) },
                                 enabled = editable,
                             )
@@ -466,7 +466,7 @@ fun DisplaySettingsPage(
                 }
 
                 // ── 7. 两张预览卡（没有真实课程时只画诚实空态）──
-                item(key = "island-preview-label") { QingyuSectionTitle(DisplaySettingsStrings.islandPreviewTitle.zh) }
+                item(key = "island-preview-label") { QingyuSectionTitle(DisplaySettingsStrings.islandPreviewTitle.text) }
                 if (effectiveInfo == null) {
                     item(key = "island-preview-empty") {
                         IslandPreviewEmptyCard(
@@ -486,7 +486,7 @@ fun DisplaySettingsPage(
                         )
                     }
                     item(key = "island-expanded-preview-label") {
-                        QingyuSectionTitle(DisplaySettingsStrings.islandExpandedPreviewTitle.zh)
+                        QingyuSectionTitle(DisplaySettingsStrings.islandExpandedPreviewTitle.text)
                     }
                     item(key = "island-expanded-preview-card") {
                         LiveIslandExpandedPreviewCard(
@@ -506,11 +506,11 @@ fun DisplaySettingsPage(
                     .align(Alignment.BottomCenter)
                     .padding(start = 24.dp, end = 24.dp, bottom = 16.dp),
                 label = if (stagePreviewActive) {
-                    DisplaySettingsStrings.stagePreviewStopAction.zh
+                    DisplaySettingsStrings.stagePreviewStopAction.text
                 } else if (forDuringEnd) {
-                    DisplaySettingsStrings.stagePreviewDuringClassAction.zh
+                    DisplaySettingsStrings.stagePreviewDuringClassAction.text
                 } else {
-                    DisplaySettingsStrings.stagePreviewBeforeClassAction.zh
+                    DisplaySettingsStrings.stagePreviewBeforeClassAction.text
                 },
                 active = stagePreviewActive,
                 busy = stagePreviewBusy,
@@ -686,14 +686,14 @@ private fun ImagePickerBlock(
             horizontalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             TextButton(
-                text = if (path == null) DisplaySettingsStrings.selectImageAction.zh else DisplaySettingsStrings.replaceImageAction.zh,
+                text = if (path == null) DisplaySettingsStrings.selectImageAction.text else DisplaySettingsStrings.replaceImageAction.text,
                 onClick = onPick,
                 enabled = enabled,
                 modifier = Modifier.weight(1f),
             )
             if (path != null) {
                 TextButton(
-                    text = DisplaySettingsStrings.deleteAction.zh,
+                    text = DisplaySettingsStrings.deleteAction.text,
                     onClick = onDelete,
                     enabled = enabled,
                     modifier = Modifier.weight(1f),
@@ -757,12 +757,12 @@ private fun ExpandedDetailGroup(
             // 拖动手柄位（Compose 无内置 ReorderableListView，改用上/下移按钮替代拖拽）
             Row(verticalAlignment = Alignment.CenterVertically) {
                 TextButton(
-                    text = DisplaySettingsStrings.detailMoveUpAction.zh,
+                    text = DisplaySettingsStrings.detailMoveUpAction.text,
                     onClick = { onMoveUp(field) },
                     enabled = enabled && index > 0,
                 )
                 TextButton(
-                    text = DisplaySettingsStrings.detailMoveDownAction.zh,
+                    text = DisplaySettingsStrings.detailMoveDownAction.text,
                     onClick = { onMoveDown(field) },
                     enabled = enabled && index < enabledFields.lastIndex,
                 )
@@ -783,7 +783,7 @@ private fun ExpandedDetailGroup(
     }
     if (hiddenFields.isNotEmpty()) {
         Text(
-            text = DisplaySettingsStrings.detailHiddenCaption.zh,
+            text = DisplaySettingsStrings.detailHiddenCaption.text,
             style = MiuixTheme.textStyles.footnote1,
             color = Color(QingyuTheme.secondaryText(dark)),
             modifier = Modifier.padding(
@@ -819,7 +819,7 @@ private fun IslandPreviewEmptyCard(
                 ),
         ) {
             Text(
-                text = DisplaySettingsStrings.islandPreviewEmpty.zh,
+                text = DisplaySettingsStrings.islandPreviewEmpty.text,
                 style = MiuixTheme.textStyles.body2,
                 color = Color(QingyuTheme.primaryText(dark)),
             )

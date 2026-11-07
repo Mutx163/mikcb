@@ -28,18 +28,18 @@ object TimeUtilizationModel {
 
     /** 读数项数与顺序与 Dart 完全一致（早→晚→早间→午间→晚间→周末→最长空档）。 */
     fun facts(stats: TimeUtilizationStats): List<TimeFact> {
-        val empty = ChartsStrings.statisticsNoData.zh
-        val unit = ChartsStrings.statisticsSectionsUnit.zh
+        val empty = ChartsStrings.statisticsNoData.text
+        val unit = ChartsStrings.statisticsSectionsUnit.text
         fun orEmpty(value: String) = value.ifEmpty { empty }
         return listOf(
-            TimeFact(ChartsStrings.statisticsTimeEarliest.zh, orEmpty(stats.earliestStart), TimeAccent.ORANGE),
-            TimeFact(ChartsStrings.statisticsTimeLatest.zh, orEmpty(stats.latestEnd), TimeAccent.INDIGO),
-            TimeFact(ChartsStrings.statisticsTimeMorning.zh, "${stats.morningSections} $unit", TimeAccent.YELLOW),
-            TimeFact(ChartsStrings.statisticsTimeNoon.zh, "${stats.noonSections} $unit", TimeAccent.TEAL),
-            TimeFact(ChartsStrings.statisticsTimeEvening.zh, "${stats.eveningSections} $unit", TimeAccent.PURPLE),
-            TimeFact(ChartsStrings.statisticsTimeWeekend.zh, "${stats.weekendSections} $unit", TimeAccent.BLUE),
+            TimeFact(ChartsStrings.statisticsTimeEarliest.text, orEmpty(stats.earliestStart), TimeAccent.ORANGE),
+            TimeFact(ChartsStrings.statisticsTimeLatest.text, orEmpty(stats.latestEnd), TimeAccent.INDIGO),
+            TimeFact(ChartsStrings.statisticsTimeMorning.text, "${stats.morningSections} $unit", TimeAccent.YELLOW),
+            TimeFact(ChartsStrings.statisticsTimeNoon.text, "${stats.noonSections} $unit", TimeAccent.TEAL),
+            TimeFact(ChartsStrings.statisticsTimeEvening.text, "${stats.eveningSections} $unit", TimeAccent.PURPLE),
+            TimeFact(ChartsStrings.statisticsTimeWeekend.text, "${stats.weekendSections} $unit", TimeAccent.BLUE),
             TimeFact(
-                ChartsStrings.statisticsTimeGap.zh,
+                ChartsStrings.statisticsTimeGap.text,
                 ChartsStrings.statisticsTimeGapValue.filled(
                     "sections",
                     stats.maxDailyGapSections.toString(),
@@ -79,7 +79,7 @@ object VenueStatsModel {
     fun bars(stats: VenueStats): VenueBars {
         val maxRoom = stats.topRooms.firstOrNull()?.visits ?: 0
         val maxBuilding = stats.buildings.firstOrNull()?.sections ?: 0
-        val unit = ChartsStrings.statisticsSectionsUnit.zh
+        val unit = ChartsStrings.statisticsSectionsUnit.text
         return VenueBars(
             rooms = stats.topRooms.map { room ->
                 BarRowModel(
@@ -121,7 +121,7 @@ data class TeacherRow(
 object TeacherStatsModel {
 
     fun rows(stats: List<TeacherStat>): List<TeacherRow> {
-        val unit = ChartsStrings.statisticsSectionsUnit.zh
+        val unit = ChartsStrings.statisticsSectionsUnit.text
         return stats.mapIndexed { index, stat ->
             TeacherRow(
                 rank = ChartMath.rankOf(index),
@@ -184,7 +184,7 @@ object SemesterProgressModel {
         }
 
         val detail = if (beforeStart) {
-            ChartsStrings.statisticsSemesterProgressNotStarted.zh
+            ChartsStrings.statisticsSemesterProgressNotStarted.text
         } else {
             ChartsStrings.statisticsSemesterProgressDetail.filled(
                 "week" to progress.weeksElapsed.toString(),
@@ -197,7 +197,7 @@ object SemesterProgressModel {
             beforeStart -> null
             hasDates && progress.currentDate != null ->
                 ChartsStrings.statisticsSemesterProgressAsOf.filled("date" to formatMd(progress.currentDate))
-            else -> ChartsStrings.statisticsSemesterProgressEstimated.zh
+            else -> ChartsStrings.statisticsSemesterProgressEstimated.text
         }
 
         val remaining = if (beforeStart) {

@@ -53,7 +53,7 @@ object ExportDocumentModel {
             out.add(
                 ExportSection(
                     ExportSectionKind.ACHIEVEMENTS,
-                    ChartsStrings.statisticsAchievementsTitle.zh,
+                    ChartsStrings.statisticsAchievementsTitle.text,
                 ),
             )
         }
@@ -61,7 +61,7 @@ object ExportDocumentModel {
             out.add(
                 ExportSection(
                     ExportSectionKind.STORIES,
-                    ChartsStrings.statisticsStoriesTitle.zh,
+                    ChartsStrings.statisticsStoriesTitle.text,
                 ),
             )
         }
@@ -69,7 +69,7 @@ object ExportDocumentModel {
             out.add(
                 ExportSection(
                     ExportSectionKind.DAILY_DISTRIBUTION,
-                    ChartsStrings.statisticsDailyDistribution.zh,
+                    ChartsStrings.statisticsDailyDistribution.text,
                 ),
             )
         }
@@ -77,7 +77,7 @@ object ExportDocumentModel {
             out.add(
                 ExportSection(
                     ExportSectionKind.NATURE_RATIO,
-                    ChartsStrings.statisticsNatureRatio.zh,
+                    ChartsStrings.statisticsNatureRatio.text,
                 ),
             )
         }
@@ -85,7 +85,7 @@ object ExportDocumentModel {
             out.add(
                 ExportSection(
                     ExportSectionKind.RANKING,
-                    ChartsStrings.statisticsRankingTitle.zh,
+                    ChartsStrings.statisticsRankingTitle.text,
                 ),
             )
         }
@@ -93,7 +93,7 @@ object ExportDocumentModel {
     }
 
     /** 文档标题（`l10n.statisticsShareTitle`）。 */
-    val title: String get() = ChartsStrings.statisticsShareTitle.zh
+    val title: String get() = ChartsStrings.statisticsShareTitle.text
 
     /** 段落之间的竖距：Dart 用 `HyperosSectionGap`，取值 12（= `QingyuSectionGap`）。 */
     const val SECTION_GAP_DP = 12
@@ -156,26 +156,26 @@ object ExportSheetModel {
 
     /** 每个模块在弹层里显示的名字（sheet:84-94）。 */
     fun moduleTitle(module: StatisticsExportModule): String = when (module) {
-        StatisticsExportModule.OVERVIEW -> ChartsStrings.statisticsExportModuleOverview.zh
-        StatisticsExportModule.ACHIEVEMENTS -> ChartsStrings.statisticsAchievementsTitle.zh
-        StatisticsExportModule.STORIES -> ChartsStrings.statisticsStoriesTitle.zh
-        StatisticsExportModule.DAILY_DISTRIBUTION -> ChartsStrings.statisticsDailyDistribution.zh
-        StatisticsExportModule.NATURE_RATIO -> ChartsStrings.statisticsNatureRatio.zh
-        StatisticsExportModule.RANKING -> ChartsStrings.statisticsRankingTitle.zh
+        StatisticsExportModule.OVERVIEW -> ChartsStrings.statisticsExportModuleOverview.text
+        StatisticsExportModule.ACHIEVEMENTS -> ChartsStrings.statisticsAchievementsTitle.text
+        StatisticsExportModule.STORIES -> ChartsStrings.statisticsStoriesTitle.text
+        StatisticsExportModule.DAILY_DISTRIBUTION -> ChartsStrings.statisticsDailyDistribution.text
+        StatisticsExportModule.NATURE_RATIO -> ChartsStrings.statisticsNatureRatio.text
+        StatisticsExportModule.RANKING -> ChartsStrings.statisticsRankingTitle.text
     }
 
     /** 一个都没勾时的提示（sheet:68-74），返回 null 表示可以导出。 */
     fun submitHintOrNull(selection: Set<StatisticsExportModule>): String? =
-        if (selection.isEmpty()) ChartsStrings.statisticsExportSelectModuleHint.zh else null
+        if (selection.isEmpty()) ChartsStrings.statisticsExportSelectModuleHint.text else null
 
     /** 点「开始导出」得到的选项；空选择返回 null（弹层此时只弹提示、不关闭）。 */
     fun submit(selection: Set<StatisticsExportModule>): StatisticsExportOptions? =
         if (selection.isEmpty()) null else StatisticsExportOptions(selection.toSet())
 
     /** 模块区间小标题（`l10n.statisticsExportModulesSection`）与按钮文案。 */
-    val modulesSectionLabel: String get() = ChartsStrings.statisticsExportModulesSection.zh
-    val actionLabel: String get() = ChartsStrings.statisticsExportAction.zh
-    val sheetTitle: String get() = ChartsStrings.statisticsExportTitle.zh
+    val modulesSectionLabel: String get() = ChartsStrings.statisticsExportModulesSection.text
+    val actionLabel: String get() = ChartsStrings.statisticsExportAction.text
+    val sheetTitle: String get() = ChartsStrings.statisticsExportTitle.text
 
     /** 小标题到列表 `SizedBox(height: 8)`；列表到按钮 `SizedBox(height: 20)`。 */
     const val LABEL_TO_LIST_GAP_DP = 8
@@ -257,10 +257,10 @@ object ExportRankingModel {
     }
 
     /** 空态文案（course_ranking:36）。 */
-    val emptyMessage: String get() = ChartsStrings.statisticsNoData.zh
+    val emptyMessage: String get() = ChartsStrings.statisticsNoData.text
 
     /** 节数单位（`l10n.statisticsSectionUnit`，排行里是单数「节」）。 */
-    val sectionUnit: String get() = ChartsStrings.statisticsSectionUnit.zh
+    val sectionUnit: String get() = ChartsStrings.statisticsSectionUnit.text
 
     /**
      * 节次区间（course_ranking:185-187）：起止相同只写一个数字，否则 `起-止`。
@@ -272,13 +272,13 @@ object ExportRankingModel {
 
     /** 星期的短名（course_ranking:197-208）：1~7 取 ARB，越界直接显示数字。 */
     fun weekdayShortLabel(dayOfWeek: Int): String = when (dayOfWeek) {
-        1 -> ChartsStrings.weekdayShortMonday.zh
-        2 -> ChartsStrings.weekdayShortTuesday.zh
-        3 -> ChartsStrings.weekdayShortWednesday.zh
-        4 -> ChartsStrings.weekdayShortThursday.zh
-        5 -> ChartsStrings.weekdayShortFriday.zh
-        6 -> ChartsStrings.weekdayShortSaturday.zh
-        7 -> ChartsStrings.weekdayShortSunday.zh
+        1 -> ChartsStrings.weekdayShortMonday.text
+        2 -> ChartsStrings.weekdayShortTuesday.text
+        3 -> ChartsStrings.weekdayShortWednesday.text
+        4 -> ChartsStrings.weekdayShortThursday.text
+        5 -> ChartsStrings.weekdayShortFriday.text
+        6 -> ChartsStrings.weekdayShortSaturday.text
+        7 -> ChartsStrings.weekdayShortSunday.text
         else -> dayOfWeek.toString()
     }
 
@@ -322,8 +322,8 @@ object ExportRankingModel {
 
     /** 必修 / 选修小标签文案（course_ranking:117-119）。 */
     fun natureLabel(isRequired: Boolean): String = if (isRequired) {
-        ChartsStrings.courseNatureRequired.zh
+        ChartsStrings.courseNatureRequired.text
     } else {
-        ChartsStrings.courseNatureElective.zh
+        ChartsStrings.courseNatureElective.text
     }
 }

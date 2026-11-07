@@ -1,5 +1,7 @@
 package com.mutx163.qingyu.pages.about
 
+import com.mutx163.qingyu.app.AppLocaleRuntime
+
 import com.mutx163.qingyu.infra.AppUpdateDownloadChannel
 
 /**
@@ -14,117 +16,117 @@ object AboutUpdatePageStrings {
     // ---------- 主页面 ----------
 
     /** aboutUpdateScreenTitle */
-    const val screenTitle = "版本更新"
+    val screenTitle: String get() = AppLocaleRuntime.text("aboutUpdateScreenTitle", "版本更新")
 
     /** aboutCheckingForUpdate */
-    const val checkingForUpdate = "正在检查更新……"
+    val checkingForUpdate: String get() = AppLocaleRuntime.text("aboutCheckingForUpdate", "正在检查更新……")
 
     /** aboutUnreleasedLabel */
-    const val unreleasedLabel = "未发布"
+    val unreleasedLabel: String get() = AppLocaleRuntime.text("aboutUnreleasedLabel", "未发布")
 
     /** aboutReleaseNotesTitle */
-    const val releaseNotesTitle = "更新说明"
+    val releaseNotesTitle: String get() = AppLocaleRuntime.text("aboutReleaseNotesTitle", "更新说明")
 
     /** aboutAdvancedOptionsTitle */
-    const val advancedOptionsTitle = "高级选项"
+    val advancedOptionsTitle: String get() = AppLocaleRuntime.text("aboutAdvancedOptionsTitle", "高级选项")
 
     /** aboutUpdateNoUpdateHint */
-    const val noUpdateHint = "当前版本已经可正常使用；如果你要体验测试版，可以在后面的高级选项里打开测试版检测"
+    val noUpdateHint: String get() = AppLocaleRuntime.text("aboutUpdateNoUpdateHint", "当前版本已经可正常使用；如果你要体验测试版，可以在后面的高级选项里打开测试版检测")
 
     /** aboutUpdatedAt = `更新于 {time}` */
-    const val updatedAtTemplate = "更新于 {time}"
+    val updatedAtTemplate: String get() = AppLocaleRuntime.text("aboutUpdatedAt", "更新于 {time}")
     fun updatedAt(time: String): String = updatedAtTemplate.replace("{time}", time)
 
     // ---------- 高级选项 ----------
 
     /** aboutUpdatePromptTitle */
-    const val updatePromptTitle = "弹窗提醒"
+    val updatePromptTitle: String get() = AppLocaleRuntime.text("aboutUpdatePromptTitle", "弹窗提醒")
 
     /** aboutUpdatePromptSubtitle */
-    const val updatePromptSubtitle = "关闭后只在更多按钮留红点"
+    val updatePromptSubtitle: String get() = AppLocaleRuntime.text("aboutUpdatePromptSubtitle", "关闭后只在更多按钮留红点")
 
     /** aboutDownloadChannelSectionTitle */
-    const val downloadChannelSectionTitle = "下载渠道"
+    val downloadChannelSectionTitle: String get() = AppLocaleRuntime.text("aboutDownloadChannelSectionTitle", "下载渠道")
 
     /** aboutDownloadPackageMethodTitle */
-    const val downloadPackageMethodTitle = "下载安装包方式"
+    val downloadPackageMethodTitle: String get() = AppLocaleRuntime.text("aboutDownloadPackageMethodTitle", "下载安装包方式")
 
     /** aboutInAppDownloadTitle */
-    const val inAppDownloadTitle = "应用内下载"
+    val inAppDownloadTitle: String get() = AppLocaleRuntime.text("aboutInAppDownloadTitle", "应用内下载")
 
     /** aboutInAppDownloadSubtitle */
-    const val inAppDownloadSubtitle = "下载完成后直接在应用内安装"
+    val inAppDownloadSubtitle: String get() = AppLocaleRuntime.text("aboutInAppDownloadSubtitle", "下载完成后直接在应用内安装")
 
     /** aboutSystemDownloaderTitle */
-    const val systemDownloaderTitle = "系统下载管理器"
+    val systemDownloaderTitle: String get() = AppLocaleRuntime.text("aboutSystemDownloaderTitle", "系统下载管理器")
 
     /** aboutSystemDownloaderChoiceSubtitle */
-    const val systemDownloaderChoiceSubtitle = "交给系统下载管理器处理"
+    val systemDownloaderChoiceSubtitle: String get() = AppLocaleRuntime.text("aboutSystemDownloaderChoiceSubtitle", "交给系统下载管理器处理")
 
     /** aboutCheckPrereleaseTitle */
-    const val checkPrereleaseTitle = "检测测试版本"
+    val checkPrereleaseTitle: String get() = AppLocaleRuntime.text("aboutCheckPrereleaseTitle", "检测测试版本")
 
     /** aboutCheckPrereleaseSubtitle */
-    const val checkPrereleaseSubtitle = "会收到可能不稳定的测试版"
+    val checkPrereleaseSubtitle: String get() = AppLocaleRuntime.text("aboutCheckPrereleaseSubtitle", "会收到可能不稳定的测试版")
 
     /** aboutMirrorSectionTitle */
-    const val mirrorSectionTitle = "下载线路与镜像"
+    val mirrorSectionTitle: String get() = AppLocaleRuntime.text("aboutMirrorSectionTitle", "下载线路与镜像")
 
     /** aboutRecommended */
-    const val recommended = "推荐"
+    val recommended: String get() = AppLocaleRuntime.text("aboutRecommended", "推荐")
 
     /** aboutProbingMirrors */
-    const val probingMirrors = "测速中……"
+    val probingMirrors: String get() = AppLocaleRuntime.text("aboutProbingMirrors", "测速中……")
 
     /** aboutProbeMirrorsAction */
-    const val probeMirrorsAction = "测速并推荐"
+    val probeMirrorsAction: String get() = AppLocaleRuntime.text("aboutProbeMirrorsAction", "测速并推荐")
 
     /** aboutEditCustomMirrorAction */
-    const val editCustomMirrorAction = "修改自定义地址"
+    val editCustomMirrorAction: String get() = AppLocaleRuntime.text("aboutEditCustomMirrorAction", "修改自定义地址")
 
     /** aboutSetCustomMirrorAction */
-    const val setCustomMirrorAction = "填写自定义地址"
+    val setCustomMirrorAction: String get() = AppLocaleRuntime.text("aboutSetCustomMirrorAction", "填写自定义地址")
 
     /** aboutFillCustomMirrorFirst */
-    const val fillCustomMirrorFirst = "先填写自定义下载地址"
+    val fillCustomMirrorFirst: String get() = AppLocaleRuntime.text("aboutFillCustomMirrorFirst", "先填写自定义下载地址")
 
     /** aboutMirrorProbeFailedLabel */
-    const val mirrorProbeFailedLabel = "失败"
+    val mirrorProbeFailedLabel: String get() = AppLocaleRuntime.text("aboutMirrorProbeFailedLabel", "失败")
 
     /** aboutDiagnosticsTitle */
-    const val diagnosticsTitle = "测试与诊断"
+    val diagnosticsTitle: String get() = AppLocaleRuntime.text("aboutDiagnosticsTitle", "测试与诊断")
 
     /** aboutViewPhoneLogsAction */
-    const val viewPhoneLogsAction = "打开日志页"
+    val viewPhoneLogsAction: String get() = AppLocaleRuntime.text("aboutViewPhoneLogsAction", "打开日志页")
 
     /** aboutSetMirrorSourceTitle */
-    const val setMirrorSourceTitle = "设置镜像源"
+    val setMirrorSourceTitle: String get() = AppLocaleRuntime.text("aboutSetMirrorSourceTitle", "设置镜像源")
 
     /** aboutMirrorPrefixLabel */
-    const val mirrorPrefixLabel = "镜像前缀"
+    val mirrorPrefixLabel: String get() = AppLocaleRuntime.text("aboutMirrorPrefixLabel", "镜像前缀")
 
     /** appUpdateMirrorPresetCustomDescription */
-    const val mirrorPresetCustomDescription = "填写自定义镜像地址前缀"
+    val mirrorPresetCustomDescription: String get() = AppLocaleRuntime.text("appUpdateMirrorPresetCustomDescription", "填写自定义镜像地址前缀")
 
     // ---------- 下载渠道 label / description（enum_localizations.dart:246-266） ----------
 
     /** appUpdateDownloadChannelPgyer */
-    const val channelPgyer = "蒲公英下载"
+    val channelPgyer: String get() = AppLocaleRuntime.text("appUpdateDownloadChannelPgyer", "蒲公英下载")
 
     /** appUpdateDownloadChannelGithub */
-    const val channelGithub = "GitHub 下载"
+    val channelGithub: String get() = AppLocaleRuntime.text("appUpdateDownloadChannelGithub", "GitHub 下载")
 
     /** appUpdateDownloadChannelGitcode */
-    const val channelGitcode = "GitCode 直连"
+    val channelGitcode: String get() = AppLocaleRuntime.text("appUpdateDownloadChannelGitcode", "GitCode 直连")
 
     /** appUpdateDownloadChannelPgyerDescription */
-    const val channelPgyerDescription = "国内高速下载，推荐使用"
+    val channelPgyerDescription: String get() = AppLocaleRuntime.text("appUpdateDownloadChannelPgyerDescription", "国内高速下载，推荐使用")
 
     /** appUpdateDownloadChannelGithubDescription */
-    const val channelGithubDescription = "GitHub 原生 + 国内镜像"
+    val channelGithubDescription: String get() = AppLocaleRuntime.text("appUpdateDownloadChannelGithubDescription", "GitHub 原生 + 国内镜像")
 
     /** appUpdateDownloadChannelGitcodeDescription */
-    const val channelGitcodeDescription = "GitCode 发行版直连下载，国内速度快"
+    val channelGitcodeDescription: String get() = AppLocaleRuntime.text("appUpdateDownloadChannelGitcodeDescription", "GitCode 发行版直连下载，国内速度快")
 
     fun channelLabel(channel: AppUpdateDownloadChannel): String = when (channel) {
         AppUpdateDownloadChannel.PGYER -> channelPgyer
@@ -141,19 +143,19 @@ object AboutUpdatePageStrings {
     // ---------- 镜像预设 label（enum_localizations.dart:267-289） ----------
 
     /** appUpdateMirrorPresetGhfast */
-    const val presetGhfast = "默认镜像"
+    val presetGhfast: String get() = AppLocaleRuntime.text("appUpdateMirrorPresetGhfast", "默认镜像")
 
     /** appUpdateMirrorPresetGhLlkk */
-    const val presetGhLlkk = "备用镜像 2"
+    val presetGhLlkk: String get() = AppLocaleRuntime.text("appUpdateMirrorPresetGhLlkk", "备用镜像 2")
 
     /** appUpdateMirrorPresetGhProxyCom */
-    const val presetGhProxyCom = "备用镜像 3"
+    val presetGhProxyCom: String get() = AppLocaleRuntime.text("appUpdateMirrorPresetGhProxyCom", "备用镜像 3")
 
     /** appUpdateMirrorPresetGhproxyNet */
-    const val presetGhproxyNet = "备用镜像 4"
+    val presetGhproxyNet: String get() = AppLocaleRuntime.text("appUpdateMirrorPresetGhproxyNet", "备用镜像 4")
 
     /** appUpdateMirrorPresetCustom */
-    const val presetCustom = "自定义"
+    val presetCustom: String get() = AppLocaleRuntime.text("appUpdateMirrorPresetCustom", "自定义")
 
     fun presetLabel(preset: MirrorPreset): String = when (preset) {
         MirrorPreset.GHFAST -> presetGhfast
@@ -166,45 +168,45 @@ object AboutUpdatePageStrings {
     // ---------- 下载进度 / 提示 ----------
 
     /** aboutDownloadCancelling */
-    const val downloadCancelling = "正在取消下载……"
+    val downloadCancelling: String get() = AppLocaleRuntime.text("aboutDownloadCancelling", "正在取消下载……")
 
     /** aboutDownloadingBytes = `正在下载更新 {value}` */
-    const val downloadingBytesTemplate = "正在下载更新 {value}"
+    val downloadingBytesTemplate: String get() = AppLocaleRuntime.text("aboutDownloadingBytes", "正在下载更新 {value}")
     fun downloadingBytes(value: String): String = downloadingBytesTemplate.replace("{value}", value)
 
     /** aboutDownloadingPercent = `正在下载更新 {value}%` */
-    const val downloadingPercentTemplate = "正在下载更新 {value}%"
+    val downloadingPercentTemplate: String get() = AppLocaleRuntime.text("aboutDownloadingPercent", "正在下载更新 {value}%")
     fun downloadingPercent(value: String): String = downloadingPercentTemplate.replace("{value}", value)
 
     /** aboutMirrorUnknownSizeHint */
-    const val mirrorUnknownSizeHint = "镜像源未返回文件总大小，先显示已下载体积"
+    val mirrorUnknownSizeHint: String get() = AppLocaleRuntime.text("aboutMirrorUnknownSizeHint", "镜像源未返回文件总大小，先显示已下载体积")
 
     /** aboutCancelDownloadAction */
-    const val cancelDownloadAction = "取消下载"
+    val cancelDownloadAction: String get() = AppLocaleRuntime.text("aboutCancelDownloadAction", "取消下载")
 
     /** aboutInstallReady */
-    const val installReady = "安装包已准备好，已尝试打开安装界面；如果系统没有弹出，请稍后从通知或文件管理器手动安装"
+    val installReady: String get() = AppLocaleRuntime.text("aboutInstallReady", "安装包已准备好，已尝试打开安装界面；如果系统没有弹出，请稍后从通知或文件管理器手动安装")
 
     /** aboutSystemDownloaderQueued */
-    const val systemDownloaderQueued = "已交给系统下载管理器，请在系统通知或下载列表里查看进度"
+    val systemDownloaderQueued: String get() = AppLocaleRuntime.text("aboutSystemDownloaderQueued", "已交给系统下载管理器，请在系统通知或下载列表里查看进度")
 
     /** aboutSystemDownloaderFailed */
-    const val systemDownloaderFailed = "调用系统下载管理器失败"
+    val systemDownloaderFailed: String get() = AppLocaleRuntime.text("aboutSystemDownloaderFailed", "调用系统下载管理器失败")
 
     /** aboutMirrorSaved */
-    const val mirrorSaved = "镜像源已保存"
+    val mirrorSaved: String get() = AppLocaleRuntime.text("aboutMirrorSaved", "镜像源已保存")
 
     /** aboutMirrorPrefixInvalid */
-    const val mirrorPrefixInvalid = "镜像源格式不正确，请输入完整的 http 或 https 地址"
+    val mirrorPrefixInvalid: String get() = AppLocaleRuntime.text("aboutMirrorPrefixInvalid", "镜像源格式不正确，请输入完整的 http 或 https 地址")
 
     /**
      * `cancelAction`（`app_zh.arb:492`）：镜像地址编辑弹窗的「取消」。
      * 与全站同一个键，不新造文案。
      */
-    const val cancelAction = "取消"
+    val cancelAction: String get() = AppLocaleRuntime.text("cancelAction", "取消")
 
     /** `confirmAction`（`app_zh.arb:493`）：镜像地址编辑弹窗的「确认」。 */
-    const val confirmAction = "确认"
+    val confirmAction: String get() = AppLocaleRuntime.text("confirmAction", "确认")
 
     /**
      * `serviceMsgUpdateDownloadHashMismatch`（`app_zh.arb:4920`）。
@@ -213,7 +215,7 @@ object AboutUpdatePageStrings {
      * 这条属于 Dart 的 service message 表，Kotlin 侧还没有那张表，所以先按原键名
      * 抄进本族 strings；等 `ServiceMessageStrings` 移植过来后改成查表。
      */
-    const val hashMismatch = "安装包校验失败，为防止安装被篡改的文件已取消本次更新"
+    val hashMismatch: String get() = AppLocaleRuntime.text("serviceMsgUpdateDownloadHashMismatch", "安装包校验失败，为防止安装被篡改的文件已取消本次更新")
 
     /**
      * `serviceMsgUpdateSha256UnverifiedRefused`（`app_zh.arb:4921`）。
@@ -221,14 +223,14 @@ object AboutUpdatePageStrings {
      * 元数据声明了摘要、本地却算不出来（读不到文件）时的提示：同样拒绝安装，
      * **不**降级成「没摘要就当没要求」。
      */
-    const val sha256Unverified = "安装包完整性校验失败，已取消更新，请前往发布页下载"
+    val sha256Unverified: String get() = AppLocaleRuntime.text("serviceMsgUpdateSha256UnverifiedRefused", "安装包完整性校验失败，已取消更新，请前往发布页下载")
 
     /**
      * `serviceMsgUpdateOpenInstallerFailed`（`app_zh.arb:4931`），占位符 `{detail}`。
      *
      * 安装器拉不起来时告诉用户为什么（Dart 错误码 `update_open_installer_failed`）。
      */
-    const val openInstallerFailedTemplate = "打开安装包失败：{detail}"
+    val openInstallerFailedTemplate: String get() = AppLocaleRuntime.text("serviceMsgUpdateOpenInstallerFailed", "打开安装包失败：{detail}")
 
     /** 填充 [openInstallerFailedTemplate] 的 `{detail}`。 */
     fun openInstallerFailed(detail: String): String =

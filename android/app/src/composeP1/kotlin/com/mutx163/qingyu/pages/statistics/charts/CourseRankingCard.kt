@@ -147,7 +147,7 @@ private fun CourseRankingTile(
                     color = Color(QingyuTheme.primary(dark = dark)),
                 )
                 Text(
-                    text = ChartsStrings.statisticsSectionsUnit.zh,
+                    text = ChartsStrings.statisticsSectionsUnit.text,
                     style = MiuixTheme.textStyles.footnote2,
                     color = Color(QingyuTheme.secondaryText(dark)),
                 )
@@ -190,7 +190,7 @@ private fun CourseRankingTile(
                         )
                         Spacer(Modifier.width(8.dp))
                         Text(
-                            text = ChartsStrings.editCourseTitle.zh,
+                            text = ChartsStrings.editCourseTitle.text,
                             style = MiuixTheme.textStyles.body2,
                             color = Color(QingyuTheme.primaryText(dark)),
                         )

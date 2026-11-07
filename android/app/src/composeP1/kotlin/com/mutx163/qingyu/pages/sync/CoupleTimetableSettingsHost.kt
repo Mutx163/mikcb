@@ -122,7 +122,7 @@ fun CoupleTimetableSettingsHost(
         notify(
             // 存成功就把「发给对方后怎么用」直接说出来（ARB 里现成那句分享文案）；
             // 存失败绝不假装成功。
-            if (ok) CoupleStrings.coupleTimetableShareText.zh else CoupleStrings.saveFailed.zh,
+            if (ok) CoupleStrings.coupleTimetableShareText.text else CoupleStrings.saveFailed.text,
         )
     }
 
@@ -135,8 +135,8 @@ fun CoupleTimetableSettingsHost(
                 val outcome = shareAdapter.share(
                     fileName = fileName,
                     content = content,
-                    shareText = CoupleStrings.coupleTimetableShareText.zh,
-                    shareSubject = CoupleStrings.coupleTimetableShareSubject.zh,
+                    shareText = CoupleStrings.coupleTimetableShareText.text,
+                    shareSubject = CoupleStrings.coupleTimetableShareSubject.text,
                 )
                 if (outcome is AndroidTransferShareAdapter.Outcome.Launched) {
                     true
@@ -176,7 +176,7 @@ fun CoupleTimetableSettingsHost(
         scope.launch {
             val text = withContext(Dispatchers.IO) { transfer.readUtf8(uri) }
             if (text == null) {
-                notify(CoupleStrings.importFileReadFailed.zh)
+                notify(CoupleStrings.importFileReadFailed.text)
                 return@launch
             }
             val result = withContext(Dispatchers.IO) { controller.importFromContent(text) }
@@ -291,10 +291,10 @@ fun CoupleTimetableSettingsHost(
     // 与连接弹层同口径：常驻组合、只翻 `show`。主按钮直接打开既有连接弹层。
     LegacyPasswordReentryDialog(
         show = showLegacyReentry,
-        title = CoupleStrings.coupleWebdavLoginSheetTitle.zh,
-        body = SyncStrings.webdavPasswordReentryBody.zh,
-        connectLabel = CoupleStrings.coupleWebdavConnect.zh,
-        cancelLabel = CoupleStrings.cancelAction.zh,
+        title = CoupleStrings.coupleWebdavLoginSheetTitle.text,
+        body = SyncStrings.webdavPasswordReentryBody.text,
+        connectLabel = CoupleStrings.coupleWebdavConnect.text,
+        cancelLabel = CoupleStrings.cancelAction.text,
         onConnect = {
             showLegacyReentry = false
             showConnectSheet = true

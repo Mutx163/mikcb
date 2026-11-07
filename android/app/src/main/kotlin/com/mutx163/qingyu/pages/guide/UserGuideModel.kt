@@ -101,32 +101,32 @@ object UserGuideModel {
      * 渲染层可直接 `GuidePermissionAction.valueOf(item.id)` 拿到点击要发的动作。
      */
     fun permissionItems(state: GuidePermissionState): List<PermissionItemData> {
-        val enabledLabel = GuideStrings.guideStatusEnabled.zh
-        val disabledLabel = GuideStrings.guideStatusDisabled.zh
+        val enabledLabel = GuideStrings.guideStatusEnabled.text
+        val disabledLabel = GuideStrings.guideStatusDisabled.text
         return listOf(
             PermissionItemData(
                 id = GuidePermissionAction.Notification.name,
-                title = GuideStrings.guideStatusNotificationPermission.zh,
+                title = GuideStrings.guideStatusNotificationPermission.text,
                 subtitle = null,
                 enabled = state.notification,
-                enabledLabel = GuideStrings.guideStatusEnabled.zh,
-                disabledLabel = GuideStrings.guideStatusDisabled.zh,
+                enabledLabel = GuideStrings.guideStatusEnabled.text,
+                disabledLabel = GuideStrings.guideStatusDisabled.text,
             ),
             PermissionItemData(
                 id = GuidePermissionAction.PromotedIsland.name,
-                title = GuideStrings.guideStatusIslandSupport.zh,
+                title = GuideStrings.guideStatusIslandSupport.text,
                 subtitle = null,
                 enabled = state.promotedIsland,
-                enabledLabel = GuideStrings.guideStatusSystemAllowed.zh,
+                enabledLabel = GuideStrings.guideStatusSystemAllowed.text,
                 disabledLabel = if (state.promotedDeclared) {
-                    GuideStrings.guideStatusEnabledPending.zh
+                    GuideStrings.guideStatusEnabledPending.text
                 } else {
-                    GuideStrings.guideStatusSuggestedCheck.zh
+                    GuideStrings.guideStatusSuggestedCheck.text
                 },
             ),
             PermissionItemData(
                 id = GuidePermissionAction.AutoStart.name,
-                title = GuideStrings.quickActionAutoStartTitle.zh,
+                title = GuideStrings.quickActionAutoStartTitle.text,
                 subtitle = null,
                 enabled = state.autoStart,
                 enabledLabel = enabledLabel,
@@ -134,15 +134,15 @@ object UserGuideModel {
             ),
             PermissionItemData(
                 id = GuidePermissionAction.Battery.name,
-                title = GuideStrings.guideStatusBatteryOptimization.zh,
+                title = GuideStrings.guideStatusBatteryOptimization.text,
                 subtitle = null,
                 enabled = state.batteryUnrestricted,
-                enabledLabel = GuideStrings.guideStatusBatteryUnrestricted.zh,
-                disabledLabel = GuideStrings.guideStatusBatteryRestricted.zh,
+                enabledLabel = GuideStrings.guideStatusBatteryUnrestricted.text,
+                disabledLabel = GuideStrings.guideStatusBatteryRestricted.text,
             ),
             PermissionItemData(
                 id = GuidePermissionAction.KeepAliveAccessibility.name,
-                title = GuideStrings.guideStatusKeepAlive.zh,
+                title = GuideStrings.guideStatusKeepAlive.text,
                 subtitle = null,
                 enabled = state.keepAliveAccessibility,
                 enabledLabel = enabledLabel,
@@ -150,8 +150,8 @@ object UserGuideModel {
             ),
             PermissionItemData(
                 id = GuidePermissionAction.DoNotDisturbAccess.name,
-                title = GuideStrings.guideStatusDoNotDisturbAccess.zh,
-                subtitle = GuideStrings.guideStatusDoNotDisturbAccessHint.zh,
+                title = GuideStrings.guideStatusDoNotDisturbAccess.text,
+                subtitle = GuideStrings.guideStatusDoNotDisturbAccessHint.text,
                 enabled = state.doNotDisturbAccess,
                 enabledLabel = enabledLabel,
                 disabledLabel = disabledLabel,

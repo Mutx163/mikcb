@@ -11,19 +11,7 @@ package com.mutx163.qingyu.pages.location_time
  * 对应页面：`lib/screens/location_time_match_screen.dart`（列表页 + 编辑页 + 两个对话框）。
  * 占位符用 [ArbText.filled] 替换，顺序与 ARB 一致。
  */
-data class ArbText(val key: String, val zh: String) {
-    /** 替换模板里的单个占位符（`{name}` → [value]）。 */
-    fun filled(name: String, value: String): String = zh.replace("{$name}", value)
-
-    /** 替换多个占位符，按传入顺序逐个替换。 */
-    fun filled(vararg pairs: Pair<String, String>): String {
-        var result = zh
-        for ((name, value) in pairs) {
-            result = result.replace("{$name}", value)
-        }
-        return result
-    }
-}
+typealias ArbText = com.mutx163.qingyu.app.ArbText
 
 object LocationTimeMatchStrings {
 

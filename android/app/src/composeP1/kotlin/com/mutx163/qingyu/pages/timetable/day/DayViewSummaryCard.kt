@@ -151,7 +151,7 @@ fun DayViewSummaryCard(
                 ) {
                     if (state.isToday) {
                         Text(
-                            text = DayViewStrings.todayTimetableTitle.zh,
+                            text = DayViewStrings.todayTimetableTitle.text,
                             style = MiuixTheme.textStyles.footnote1.shiftWeight(QingyuWeightDelta.MEDIUM),
                             color = summaryMutedInk,
                         )
@@ -174,7 +174,7 @@ fun DayViewSummaryCard(
                 ) {
                     Icon(
                         imageVector = MiuixIcons.Close,
-                        contentDescription = DayViewStrings.backToWeekViewAction.zh,
+                        contentDescription = DayViewStrings.backToWeekViewAction.text,
                         tint = summaryInk,
                         modifier = Modifier.size(16.dp),
                     )

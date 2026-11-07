@@ -52,18 +52,18 @@ object SyncResultToasts {
      */
     fun forSyncNow(kind: SyncResultKind, errorCode: String?): SyncToast = when (kind) {
         SyncResultKind.CANCELLED -> SyncToast(
-            message = SyncStrings.cloudSyncResultCancelled.zh,
+            message = SyncStrings.cloudSyncResultCancelled.text,
             isError = false,
         )
 
         SyncResultKind.UPLOADED -> SyncToast(
-            message = SyncStrings.cloudSyncResultUploaded.zh,
+            message = SyncStrings.cloudSyncResultUploaded.text,
             isError = false,
             reloadBackups = true,
         )
 
         SyncResultKind.DOWNLOADED -> SyncToast(
-            message = SyncStrings.cloudSyncResultDownloaded.zh,
+            message = SyncStrings.cloudSyncResultDownloaded.text,
             isError = false,
             reloadBackups = true,
         )
@@ -77,7 +77,7 @@ object SyncResultToasts {
         )
 
         // 其余（含 UP_TO_DATE）都落到 Dart 的 `_ => l10n.cloudSyncResultUpToDate`。
-        else -> SyncToast(message = SyncStrings.cloudSyncResultUpToDate.zh, isError = false)
+        else -> SyncToast(message = SyncStrings.cloudSyncResultUpToDate.text, isError = false)
     }
 
     /** 立即备份（Dart：`backupCreated` 与 `uploaded` 都算成功）。 */
@@ -85,7 +85,7 @@ object SyncResultToasts {
         val succeeded = kind == SyncResultKind.BACKUP_CREATED || kind == SyncResultKind.UPLOADED
         return if (succeeded) {
             SyncToast(
-                message = SyncStrings.cloudBackupCreateSuccess.zh,
+                message = SyncStrings.cloudBackupCreateSuccess.text,
                 isError = false,
                 reloadBackups = true,
             )
@@ -104,7 +104,7 @@ object SyncResultToasts {
     fun forDeleteBackup(kind: SyncResultKind, errorCode: String?): SyncToast =
         if (kind == SyncResultKind.BACKUP_DELETED) {
             SyncToast(
-                message = SyncStrings.cloudBackupDeleteSuccess.zh,
+                message = SyncStrings.cloudBackupDeleteSuccess.text,
                 isError = false,
                 reloadBackups = true,
             )
@@ -122,9 +122,9 @@ object SyncResultToasts {
     fun forRestore(applied: Boolean, errorCode: String?): SyncToast =
         if (applied) {
             SyncToast(
-                message = SyncStrings.cloudBackupRestoreSuccess.zh,
+                message = SyncStrings.cloudBackupRestoreSuccess.text,
                 isError = false,
-                actionLabel = SyncStrings.themeUndo.zh,
+                actionLabel = SyncStrings.themeUndo.text,
                 reloadBackups = true,
             )
         } else {
@@ -149,7 +149,7 @@ object SyncResultToasts {
     fun forUndoRestore(success: Boolean, errorCode: String? = null): SyncToast =
         if (success) {
             SyncToast(
-                message = SyncStrings.cloudBackupUndoRestoreSuccess.zh,
+                message = SyncStrings.cloudBackupUndoRestoreSuccess.text,
                 isError = false,
                 reloadBackups = true,
             )
@@ -165,15 +165,15 @@ object SyncResultToasts {
 
     /** 配置读取失败（Dart `_loadConfig` 的 catch 分支）。 */
     fun forConfigLoadFailed(): SyncToast =
-        SyncToast(message = SyncStrings.cloudSyncConfigLoadFailed.zh, isError = true)
+        SyncToast(message = SyncStrings.cloudSyncConfigLoadFailed.text, isError = true)
 
     /** baseUrl 非法（Dart `_confirmBaseUrl` 的 invalid 分支）。 */
     fun forBaseUrlInvalid(): SyncToast =
-        SyncToast(message = SyncStrings.cloudSyncBaseUrlInvalid.zh, isError = true)
+        SyncToast(message = SyncStrings.cloudSyncBaseUrlInvalid.text, isError = true)
 
     /** 测试连接（Dart `_WebdavConnectSheetState._testConnection`）。 */
     fun forTestConnection(success: Boolean): SyncToast = SyncToast(
-        message = if (success) SyncStrings.cloudSyncTestSuccess.zh else SyncStrings.cloudSyncTestFailed.zh,
+        message = if (success) SyncStrings.cloudSyncTestSuccess.text else SyncStrings.cloudSyncTestFailed.text,
         isError = !success,
     )
 }

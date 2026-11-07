@@ -11,18 +11,7 @@ import com.mutx163.qingyu.core.ExamReminderPreset
  *
  * 命名与 ARB 键逐字一致（`examListTitle` 等），便于 `grep` 双向核对。
  */
-data class ArbText(val key: String, val zh: String) {
-    /** 替换模板里的占位符（`{name}` → [value]）。 */
-    fun filled(name: String, value: String): String = zh.replace("{$name}", value)
-
-    fun filled(vararg pairs: Pair<String, String>): String {
-        var result = zh
-        for ((name, value) in pairs) {
-            result = result.replace("{$name}", value)
-        }
-        return result
-    }
-}
+typealias ArbText = com.mutx163.qingyu.app.ArbText
 
 object ExamStrings {
 
@@ -226,36 +215,36 @@ object ExamStrings {
 
     /** 星期名（1=周一 … 7=周日，越界返回空串，对齐 `enum_localizations` 的分支）。 */
     fun weekdayLabel(weekday: Int): String = when (weekday) {
-        1 -> weekdayMon.zh
-        2 -> weekdayTue.zh
-        3 -> weekdayWed.zh
-        4 -> weekdayThu.zh
-        5 -> weekdayFri.zh
-        6 -> weekdaySat.zh
-        7 -> weekdaySun.zh
+        1 -> weekdayMon.text
+        2 -> weekdayTue.text
+        3 -> weekdayWed.text
+        4 -> weekdayThu.text
+        5 -> weekdayFri.text
+        6 -> weekdaySat.text
+        7 -> weekdaySun.text
         else -> ""
     }
 
     /** 星期短名（1=周一 … 7=周日，越界返回空串）。取 ARB `weekdayShortMonday..Sunday`。 */
     fun weekdayShortLabel(weekday: Int): String = when (weekday) {
-        1 -> weekdayShortMon.zh
-        2 -> weekdayShortTue.zh
-        3 -> weekdayShortWed.zh
-        4 -> weekdayShortThu.zh
-        5 -> weekdayShortFri.zh
-        6 -> weekdayShortSat.zh
-        7 -> weekdayShortSun.zh
+        1 -> weekdayShortMon.text
+        2 -> weekdayShortTue.text
+        3 -> weekdayShortWed.text
+        4 -> weekdayShortThu.text
+        5 -> weekdayShortFri.text
+        6 -> weekdayShortSat.text
+        7 -> weekdayShortSun.text
         else -> ""
     }
 
     /** 提醒预设名（对齐 `lib/l10n/enum_localizations.dart:examReminderPresetLabel`）。 */
     fun presetLabel(preset: ExamReminderPreset): String = when (preset) {
-        ExamReminderPreset.NONE -> examReminderNone.zh
-        ExamReminderPreset.MIN_30 -> examReminderMin30.zh
-        ExamReminderPreset.HOUR_1 -> examReminderHour1.zh
-        ExamReminderPreset.HOUR_1_AND_MIN_30 -> examReminderHour1AndMin30.zh
-        ExamReminderPreset.DAY_1 -> examReminderDay1.zh
-        ExamReminderPreset.DAY_1_AND_HOUR_1 -> examReminderDay1AndHour1.zh
-        ExamReminderPreset.CUSTOM -> examReminderCustom.zh
+        ExamReminderPreset.NONE -> examReminderNone.text
+        ExamReminderPreset.MIN_30 -> examReminderMin30.text
+        ExamReminderPreset.HOUR_1 -> examReminderHour1.text
+        ExamReminderPreset.HOUR_1_AND_MIN_30 -> examReminderHour1AndMin30.text
+        ExamReminderPreset.DAY_1 -> examReminderDay1.text
+        ExamReminderPreset.DAY_1_AND_HOUR_1 -> examReminderDay1AndHour1.text
+        ExamReminderPreset.CUSTOM -> examReminderCustom.text
     }
 }

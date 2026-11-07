@@ -60,7 +60,7 @@ fun MoreFeaturesPage(
 
     // 共享骨架：官方 TopAppBar + 标准返回键 + 顶栏毛玻璃；大标题可折叠
     // （Dart 原件 lib/screens/more_features_screen.dart:196 走 HyperosSubpage 默认）。
-    QingyuPageScaffold(title = GuideStrings.homeMenuMoreTitle.zh, onBack = onBack) {
+    QingyuPageScaffold(title = GuideStrings.homeMenuMoreTitle.text, onBack = onBack) {
         QingyuPageList(
             innerPadding = innerPadding,
             scrollBehavior = scrollBehavior,
@@ -87,7 +87,7 @@ fun MoreFeaturesPage(
                             )
                             Spacer(modifier = Modifier.width(10.dp))
                             Text(
-                                text = GuideStrings.homeMenuMoreSearchHint.zh,
+                                text = GuideStrings.homeMenuMoreSearchHint.text,
                                 style = MiuixTheme.textStyles.body2,
                                 color = Color(QingyuTheme.secondaryText(dark))
                             )

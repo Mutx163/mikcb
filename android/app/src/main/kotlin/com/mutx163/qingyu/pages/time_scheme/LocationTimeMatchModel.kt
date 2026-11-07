@@ -35,11 +35,11 @@ class LocationTimeMatchModel(
 
     val isEmpty: Boolean get() = groups.isEmpty()
 
-    val title: String get() = LocationTimeMatchStrings.title.zh
-    val createGroupLabel: String get() = LocationTimeMatchStrings.createGroup.zh
-    val applyActiveLabel: String get() = LocationTimeMatchStrings.applyActive.zh
-    val subtitle: String get() = LocationTimeMatchStrings.subtitle.zh
-    val weekAxisNote: String get() = LocationTimeMatchStrings.weekAxisNote.zh
+    val title: String get() = LocationTimeMatchStrings.title.text
+    val createGroupLabel: String get() = LocationTimeMatchStrings.createGroup.text
+    val applyActiveLabel: String get() = LocationTimeMatchStrings.applyActive.text
+    val subtitle: String get() = LocationTimeMatchStrings.subtitle.text
+    val weekAxisNote: String get() = LocationTimeMatchStrings.weekAxisNote.text
 
     /**
      * 列表页尾部说明的完整文本。
@@ -69,11 +69,11 @@ class LocationTimeMatchModel(
     private fun cardOf(group: LocationTimeGroup): GroupCard {
         // 模板被删 → 兜底「未知时间模板」（Dart: firstOrNull ?? l10n.locationTimeMatchUnknownScheme）
         val schemeName = schemeNames[group.timeSchemeId]
-            ?: LocationTimeMatchStrings.unknownScheme.zh
+            ?: LocationTimeMatchStrings.unknownScheme.text
         // 关键词为空 → 「未设置关键词」（Dart: keywordSummary.isEmpty ? … : keywordSummary）
         val keywordsEmpty = group.keywordSummary.isEmpty()
         val keywordText = if (keywordsEmpty) {
-            LocationTimeMatchStrings.noKeywords.zh
+            LocationTimeMatchStrings.noKeywords.text
         } else {
             group.keywordSummary
         }
@@ -103,11 +103,11 @@ class LocationTimeMatchModel(
         val trimmed = input.trim()
         if (trimmed.isEmpty()) return null
         val hit = LocationTimeMatchLogic.match(trimmed, groups)
-            ?: return LocationTimeMatchStrings.previewNoMatch.zh
+            ?: return LocationTimeMatchStrings.previewNoMatch.text
         // 命中的组可能已经绑了不存在的模板，仍然按「未知时间模板」显示，
         // 不在这里静默跳过（否则用户看到一条「将匹配：X · 」，后半截空着）。
         val schemeName = schemeNames[hit.timeSchemeId]
-            ?: LocationTimeMatchStrings.unknownScheme.zh
+            ?: LocationTimeMatchStrings.unknownScheme.text
         return LocationTimeMatchStrings.previewResult.filled(
             "group" to hit.groupName,
             "scheme" to schemeName,
@@ -116,8 +116,8 @@ class LocationTimeMatchModel(
     }
 
     /** 输入框提示语（Dart `locationTimeMatchPreviewHint`）。 */
-    val previewHint: String get() = LocationTimeMatchStrings.previewHint.zh
-    val previewLabel: String get() = LocationTimeMatchStrings.previewLabel.zh
+    val previewHint: String get() = LocationTimeMatchStrings.previewHint.text
+    val previewLabel: String get() = LocationTimeMatchStrings.previewLabel.text
 
     // ── 「重新匹配当前课表」的结果文案 ──
 
@@ -125,8 +125,8 @@ class LocationTimeMatchModel(
     fun applyMessage(matchedCourseCount: Int): String =
         LocationTimeMatchStrings.applyMessage.filled("count", matchedCourseCount.toString())
 
-    val applyTitle: String get() = LocationTimeMatchStrings.applyTitle.zh
-    val applyConfirmLabel: String get() = LocationTimeMatchStrings.applyConfirm.zh
+    val applyTitle: String get() = LocationTimeMatchStrings.applyTitle.text
+    val applyConfirmLabel: String get() = LocationTimeMatchStrings.applyConfirm.text
 
     /**
      * 重新匹配完成后的结果文案（Dart 三种形态）。
@@ -138,7 +138,7 @@ class LocationTimeMatchModel(
      * 判据顺序照 Dart：先判 matched == 0，再判 updated == 0。
      */
     fun applyResultMessage(matched: Int, updated: Int): String = when {
-        matched <= 0 -> LocationTimeMatchStrings.applyNoneMatched.zh
+        matched <= 0 -> LocationTimeMatchStrings.applyNoneMatched.text
         updated <= 0 -> LocationTimeMatchStrings.applyAlreadyAligned.filled(
             "matched" to matched.toString(),
         )
@@ -162,23 +162,23 @@ class LocationTimeMatchModel(
 
     // ── 删除确认 ──
 
-    fun deleteTitle(): String = LocationTimeMatchStrings.deleteTitle.zh
+    fun deleteTitle(): String = LocationTimeMatchStrings.deleteTitle.text
 
     fun deleteMessage(name: String): String =
         LocationTimeMatchStrings.deleteMessage.filled("name", name)
 
-    val deletedMessage: String get() = LocationTimeMatchStrings.deleted.zh
+    val deletedMessage: String get() = LocationTimeMatchStrings.deleted.text
 
     // ── 编辑页（Dart `_LocationTimeGroupEditorScreen`）的关键校验 ──
 
     /** 组名不能空（Dart `locationTimeMatchNameRequired`）。 */
     fun validateName(raw: String): String? =
-        if (raw.trim().isEmpty()) LocationTimeMatchStrings.nameRequired.zh else null
+        if (raw.trim().isEmpty()) LocationTimeMatchStrings.nameRequired.text else null
 
     /** 至少要一个关键词（Dart `locationTimeMatchKeywordRequired`）。 */
     fun validateKeywords(keywords: List<String>): String? =
         if (keywords.none { it.trim().isNotEmpty() }) {
-            LocationTimeMatchStrings.keywordRequired.zh
+            LocationTimeMatchStrings.keywordRequired.text
         } else {
             null
         }
@@ -190,7 +190,7 @@ class LocationTimeMatchModel(
      */
     fun keywordTooShortHint(pattern: String): String? {
         val normalized = LocationTimeMatchLogic.normalizePattern(pattern)
-        return if (normalized.length < 2) LocationTimeMatchStrings.keywordTooShort.zh else null
+        return if (normalized.length < 2) LocationTimeMatchStrings.keywordTooShort.text else null
     }
 
     /** 关键词已被别的组占用（Dart `locationTimeMatchKeywordUsedByGroup`）。 */
@@ -205,14 +205,14 @@ class LocationTimeMatchModel(
 
     /** 三种匹配方式的显示名（Dart `matchModeLabel` 三选一）。 */
     fun modeLabel(mode: LocationKeywordMatchMode): String = when (mode) {
-        LocationKeywordMatchMode.PREFIX -> LocationTimeMatchStrings.modePrefix.zh
-        LocationKeywordMatchMode.CONTAINS -> LocationTimeMatchStrings.modeContains.zh
-        LocationKeywordMatchMode.EXACT -> LocationTimeMatchStrings.modeExact.zh
+        LocationKeywordMatchMode.PREFIX -> LocationTimeMatchStrings.modePrefix.text
+        LocationKeywordMatchMode.CONTAINS -> LocationTimeMatchStrings.modeContains.text
+        LocationKeywordMatchMode.EXACT -> LocationTimeMatchStrings.modeExact.text
     }
 
-    val modeLabelTitle: String get() = LocationTimeMatchStrings.modeLabel.zh
-    val savedMessage: String get() = LocationTimeMatchStrings.saved.zh
-    val saveFailedMessage: String get() = LocationTimeMatchStrings.saveFailed.zh
+    val modeLabelTitle: String get() = LocationTimeMatchStrings.modeLabel.text
+    val savedMessage: String get() = LocationTimeMatchStrings.saved.text
+    val saveFailedMessage: String get() = LocationTimeMatchStrings.saveFailed.text
 
     companion object {
 

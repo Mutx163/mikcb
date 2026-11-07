@@ -439,8 +439,8 @@ object ChartMath {
         val hasData = requiredCount + electiveCount > 0
         val missing = when {
             !hasData -> null
-            requiredCount == 0 -> ChartsStrings.statisticsNatureNoneRequired.zh
-            electiveCount == 0 -> ChartsStrings.statisticsNatureNoneElective.zh
+            requiredCount == 0 -> ChartsStrings.statisticsNatureNoneRequired.text
+            electiveCount == 0 -> ChartsStrings.statisticsNatureNoneElective.text
             else -> null
         }
         val labelled = missing != null

@@ -104,7 +104,7 @@ class TimetableProfilesController(
     /** 新建课表：空课程、立即激活、落盘（一条通知）。 */
     fun createProfile(name: String): TimetableProfileActionResult {
         val snap = snapshot
-        val finalName = name.trim().ifEmpty { TimetableStrings.unnamedTimetableProfile.zh }
+        val finalName = name.trim().ifEmpty { TimetableStrings.unnamedTimetableProfile.text }
         val now = clock()
         // 新档不继承源档的档案级外观（Dart `_buildDefaultSettingsForNewProfile:1787-1798` 只带
         // 作息 sections），但全局偏好是整机级、必须跟着走（`app_global_settings_service.dart:59-114`）。
@@ -122,7 +122,7 @@ class TimetableProfilesController(
         val result = write(
             profiles = snap.profiles + newProfile,
             activeProfileId = newProfile.id,
-            failureMessage = TimetableStrings.saveFailed.zh,
+            failureMessage = TimetableStrings.saveFailed.text,
             settings = newProfile.settings,
             currentWeek = currentWeekFor(newProfile),
         ) { TimetableStrings.formatCreatedProfile(finalName) }
@@ -158,7 +158,7 @@ class TimetableProfilesController(
             )
             TimetableProfileActionResult.Success(TimetableStrings.formatSwitchedToProfile(target.name))
         } catch (_: Exception) {
-            TimetableProfileActionResult.Failed(TimetableStrings.saveFailed.zh)
+            TimetableProfileActionResult.Failed(TimetableStrings.saveFailed.text)
         }
     }
 
@@ -178,7 +178,7 @@ class TimetableProfilesController(
         return write(
             profiles = newProfiles,
             activeProfileId = snap.activeProfileId,
-            failureMessage = TimetableStrings.saveFailed.zh,
+            failureMessage = TimetableStrings.saveFailed.text,
         ) { TimetableStrings.formatRenamedProfile(trimmed) }
     }
 
@@ -204,10 +204,10 @@ class TimetableProfilesController(
         val result = write(
             profiles = snap.profiles + copy,
             activeProfileId = copy.id,
-            failureMessage = TimetableStrings.saveFailed.zh,
+            failureMessage = TimetableStrings.saveFailed.text,
             settings = copy.settings,
             currentWeek = currentWeekFor(copy),
-        ) { TimetableStrings.copiedCurrentTimetable.zh }
+        ) { TimetableStrings.copiedCurrentTimetable.text }
         return seedActiveSettings(result, sourceSettings, snap)
     }
 
@@ -220,7 +220,7 @@ class TimetableProfilesController(
             return TimetableProfileActionResult.Rejected()
         }
         if (target.courses.isEmpty()) {
-            return TimetableProfileActionResult.Rejected(TimetableStrings.noCoursesInCurrentProfile.zh)
+            return TimetableProfileActionResult.Rejected(TimetableStrings.noCoursesInCurrentProfile.text)
         }
         val remainingTasks = target.tasks.filter { it.courseId == null }
         return try {
@@ -231,7 +231,7 @@ class TimetableProfilesController(
             )
             TimetableProfileActionResult.Success(TimetableStrings.formatClearedProfile(target.name))
         } catch (_: Exception) {
-            TimetableProfileActionResult.Failed(TimetableStrings.clearFailed.zh)
+            TimetableProfileActionResult.Failed(TimetableStrings.clearFailed.text)
         }
     }
 
@@ -246,7 +246,7 @@ class TimetableProfilesController(
     fun deleteProfile(id: String): TimetableProfileActionResult {
         val snap = snapshot
         if (snap.profiles.size <= 1) {
-            return TimetableProfileActionResult.Rejected(TimetableStrings.keepAtLeastOneProfile.zh)
+            return TimetableProfileActionResult.Rejected(TimetableStrings.keepAtLeastOneProfile.text)
         }
         val target = snap.profiles.firstOrNull { it.id == id }
             ?: return TimetableProfileActionResult.Rejected()
@@ -258,7 +258,7 @@ class TimetableProfilesController(
         // 回退档必须是非情侣导入档（Dart :2099-2108）：否则删完没有可工作的课表。
         val fallbacks = snap.profiles.filter { it.id != id && !it.isPartnerImported }
         if (isActive && fallbacks.isEmpty()) {
-            return TimetableProfileActionResult.Rejected(TimetableStrings.keepAtLeastOneProfile.zh)
+            return TimetableProfileActionResult.Rejected(TimetableStrings.keepAtLeastOneProfile.text)
         }
         val remaining = snap.profiles.filter { it.id != id }
         val newActiveId = if (isActive) fallbacks.first().id else snap.activeProfileId
@@ -269,7 +269,7 @@ class TimetableProfilesController(
         val result = write(
             profiles = remaining,
             activeProfileId = newActiveId,
-            failureMessage = TimetableStrings.deleteFailed.zh,
+            failureMessage = TimetableStrings.deleteFailed.text,
             settings = nextActive?.settings,
             currentWeek = nextActive?.let { currentWeekFor(it) },
         ) { TimetableStrings.formatDeletedProfile(target.name) }
@@ -404,7 +404,7 @@ class TimetableProfilesController(
                 currentWeek = before.currentWeek,
             )
         }
-        return TimetableProfileActionResult.Failed(TimetableStrings.saveFailed.zh)
+        return TimetableProfileActionResult.Failed(TimetableStrings.saveFailed.text)
     }
 
     /** 当前活动档的完整内嵌 settings（等价 `store.loadSettingsJson()`，走只读公开入口）。 */

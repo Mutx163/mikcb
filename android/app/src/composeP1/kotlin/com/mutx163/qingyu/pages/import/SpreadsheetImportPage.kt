@@ -34,11 +34,11 @@ fun SpreadsheetImportPage(
     onChooseFile: () -> Unit,
 ) {
     ImportPageScaffold(
-        title = ImportStrings.spreadsheetImportTitle.zh,
+        title = ImportStrings.spreadsheetImportTitle.text,
         onBack = onBack,
         bottomBar = {
             ImportActionButton(
-                label = ImportStrings.downloadSpreadsheetTemplateAction.zh,
+                label = ImportStrings.downloadSpreadsheetTemplateAction.text,
                 onClick = onDownloadTemplate,
                 secondary = true,
                 loading = viewState.isSharingTemplate,
@@ -48,9 +48,9 @@ fun SpreadsheetImportPage(
             ImportActionButton(
                 // Dart: _isImporting ? '${l10n.spreadsheetImportTitle}...' : l10n.chooseSpreadsheetFileAction
                 label = if (viewState.isImporting) {
-                    "${ImportStrings.spreadsheetImportTitle.zh}..."
+                    "${ImportStrings.spreadsheetImportTitle.text}..."
                 } else {
-                    ImportStrings.chooseSpreadsheetFileAction.zh
+                    ImportStrings.chooseSpreadsheetFileAction.text
                 },
                 onClick = onChooseFile,
                 loading = viewState.isImporting,
@@ -67,11 +67,11 @@ fun SpreadsheetImportPage(
         ) {
             item(key = "guide") {
                 ImportGuidePanel(
-                    scenarioIntro = ImportStrings.spreadsheetScenarioIntro.zh,
-                    step1Subtitle = ImportStrings.spreadsheetStep1Subtitle.zh,
-                    step2Subtitle = ImportStrings.spreadsheetStep2Subtitle.zh,
-                    step3Subtitle = ImportStrings.spreadsheetStep3Subtitle.zh,
-                    supportedFilesSuffix = ImportStrings.spreadsheetSupportedFilesSuffix.zh,
+                    scenarioIntro = ImportStrings.spreadsheetScenarioIntro.text,
+                    step1Subtitle = ImportStrings.spreadsheetStep1Subtitle.text,
+                    step2Subtitle = ImportStrings.spreadsheetStep2Subtitle.text,
+                    step3Subtitle = ImportStrings.spreadsheetStep3Subtitle.text,
+                    supportedFilesSuffix = ImportStrings.spreadsheetSupportedFilesSuffix.text,
                     modifier = Modifier.padding(horizontal = QingyuPageCardMargin),
                 )
             }

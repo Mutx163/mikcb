@@ -30,6 +30,7 @@ import com.mutx163.qingyu.core.Course
 import com.mutx163.qingyu.LiveUpdateService
 import com.mutx163.qingyu.UmengApplication
 import com.mutx163.qingyu.UmengDiagnosticReporter
+import com.mutx163.qingyu.components.rememberCappedSheetHeight
 import com.mutx163.qingyu.core.LenientJson
 import com.mutx163.qingyu.core.MiniJson
 import com.mutx163.qingyu.core.TimetableSettings
@@ -209,9 +210,9 @@ fun LiveSelfCheckHost(
                         when (testTrigger.startProductionSession()) {
                             LiveTestTrigger.ProductionOutcome.STARTED,
                             LiveTestTrigger.ProductionOutcome.STARTED_WITH_PRESET,
-                            -> SettingsStringsExt3.liveTestingSessionRunning.zh
+                            -> SettingsStringsExt3.liveTestingSessionRunning.text
                             LiveTestTrigger.ProductionOutcome.NO_COURSE ->
-                                SettingsStringsExt3.liveTestingNoCourseAvailable.zh
+                                SettingsStringsExt3.liveTestingNoCourseAvailable.text
                         },
                     )
                     sessionActive = testTrigger.presetSessionActive
@@ -222,7 +223,7 @@ fun LiveSelfCheckHost(
                 scope.launch {
                     testTrigger.cancelProductionSession()
                     sessionActive = false
-                    showToast(context, SettingsStringsExt3.liveTestingSessionCanceled.zh)
+                    showToast(context, SettingsStringsExt3.liveTestingSessionCanceled.text)
                 }
             }
 
@@ -231,7 +232,7 @@ fun LiveSelfCheckHost(
                     val course = timetableRepository.snapshot.courses
                         .firstOrNull { it.id == courseId }
                     if (course == null) {
-                        showToast(context, SettingsStringsExt3.liveTestingNoCourseAvailable.zh)
+                        showToast(context, SettingsStringsExt3.liveTestingNoCourseAvailable.text)
                         return@launch
                     }
                     val display = displayStore.loadDisplay(
@@ -242,9 +243,9 @@ fun LiveSelfCheckHost(
                         when (testTrigger.startCourseTest(course, stage, display)) {
                             is LiveTestTrigger.Outcome.Started,
                             LiveTestTrigger.Outcome.InFlight,
-                            -> SettingsStringsExt3.liveTestingSessionRunning.zh
+                            -> SettingsStringsExt3.liveTestingSessionRunning.text
                             is LiveTestTrigger.Outcome.DispatchFailed ->
-                                SettingsStrings.aboutUnavailable.zh
+                                SettingsStrings.aboutUnavailable.text
                         },
                     )
                     courseTestLabel = testTrigger.courseTestLabel
@@ -257,7 +258,7 @@ fun LiveSelfCheckHost(
                     courseTestLabel = null
                     showToast(
                         context,
-                        SettingsStringsExt3.liveTestingCourseTestStoppedToast.zh,
+                        SettingsStringsExt3.liveTestingCourseTestStoppedToast.text,
                     )
                 }
             }
@@ -345,9 +346,9 @@ fun LiveSelfCheckHost(
             showToast(
                 context,
                 if (cleared) {
-                    DiagnosticsStrings.appLogsCleared.zh
+                    DiagnosticsStrings.appLogsCleared.text
                 } else {
-                    DiagnosticsStrings.appLogsClearFailed.zh
+                    DiagnosticsStrings.appLogsClearFailed.text
                 },
             )
         }
@@ -369,7 +370,7 @@ fun LiveSelfCheckHost(
             when (outcome) {
                 DiagnosticsExportOutcome.SHARED -> Unit
                 DiagnosticsExportOutcome.NOTHING_TO_EXPORT ->
-                    showToast(context, DiagnosticsStrings.liveDiagnosticsNothingToExport.zh)
+                    showToast(context, DiagnosticsStrings.liveDiagnosticsNothingToExport.text)
                 // 没有「分享面板拉不起来」的 ARB 键（与日志查看器同一处缺口），
                 // 宁可只留 logcat，也不弹一句假的「已导出」。
                 DiagnosticsExportOutcome.SHARE_NOT_LAUNCHED ->
@@ -398,7 +399,7 @@ fun LiveSelfCheckHost(
             // 只有「这次点击仍是最新一次」时才回滚，避免慢写的旧请求盖掉新点击。
             if (!landed && holidayOverrideEnabled == enabled) {
                 holidayOverrideEnabled = previous
-                showToast(context, SettingsStringsExt2.saveFailed.zh)
+                showToast(context, SettingsStringsExt2.saveFailed.text)
             }
         }
     }
@@ -413,10 +414,10 @@ fun LiveSelfCheckHost(
     fun triggerTestCrash() {
         if (!BuildConfig.DEBUG) {
             // 页面本来就只在 debug 渲染这两颗按钮；通道层也有一道同样的门。
-            showToast(context, SettingsStrings.aboutUnavailable.zh)
+            showToast(context, SettingsStrings.aboutUnavailable.text)
             return
         }
-        showToast(context, SettingsStringsExt3.liveTestingCrashSoon.zh)
+        showToast(context, SettingsStringsExt3.liveTestingCrashSoon.text)
         scope.launch {
             delay(TEST_TRIGGER_DELAY_MILLIS)
             UmengApplication.initializeAnalyticsIfNeeded(context.applicationContext)
@@ -429,10 +430,10 @@ fun LiveSelfCheckHost(
     /** 异常卡顿测试：同上（`MainActivity.triggerTestAnr`：主线程睡 30 秒）。 */
     fun triggerTestAnr() {
         if (!BuildConfig.DEBUG) {
-            showToast(context, SettingsStrings.aboutUnavailable.zh)
+            showToast(context, SettingsStrings.aboutUnavailable.text)
             return
         }
-        showToast(context, SettingsStringsExt3.liveTestingAnrSoon.zh)
+        showToast(context, SettingsStringsExt3.liveTestingAnrSoon.text)
         scope.launch {
             delay(TEST_TRIGGER_DELAY_MILLIS)
             UmengApplication.initializeAnalyticsIfNeeded(context.applicationContext)
@@ -472,7 +473,7 @@ fun LiveSelfCheckHost(
             when (rowId) {
                 ROW_LOCAL_LOGS_CLEAR -> clearLogs()
                 ROW_LOCAL_LOGS_VIEW -> onOpenPage(LOG_VIEWER_PAGE_ID)
-                ROW_LOCAL_LOGS_MORE -> showToast(context, SettingsStrings.aboutUnavailable.zh)
+                ROW_LOCAL_LOGS_MORE -> showToast(context, SettingsStrings.aboutUnavailable.text)
                 ROW_ISLAND_REFRESH -> reloadTick += 1
                 ROW_ISLAND_AUTO_REFRESH -> autoRefreshEnabled = !autoRefreshEnabled
                 ROW_ISLAND_EXPORT -> exportDiagnostics()
@@ -531,19 +532,19 @@ private fun CourseTestPickerDialog(
 ) {
     OverlayDialog(
         show = true,
-        title = SettingsStringsExt3.liveTestingCourseTestPickerTitle.zh,
+        title = SettingsStringsExt3.liveTestingCourseTestPickerTitle.text,
         onDismissRequest = onDismiss,
         insideMargin = DpSize(16.dp, 16.dp),
     ) {
         Column(
             modifier = Modifier
-                .heightIn(max = 420.dp)
+                .heightIn(max = rememberCappedSheetHeight(420.dp))
                 .verticalScroll(rememberScrollState()),
             verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
             if (courses.isEmpty()) {
                 Text(
-                    text = SettingsStringsExt3.liveTestingNoCourseAvailable.zh,
+                    text = SettingsStringsExt3.liveTestingNoCourseAvailable.text,
                     style = MiuixTheme.textStyles.body2,
                     color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
                 )
@@ -559,7 +560,7 @@ private fun CourseTestPickerDialog(
                 }
             }
             Button(onClick = onDismiss, modifier = Modifier.fillMaxWidth()) {
-                Text(text = SettingsStringsExt3.cancelAction.zh)
+                Text(text = SettingsStringsExt3.cancelAction.text)
             }
         }
     }
@@ -574,7 +575,7 @@ private fun CourseTestStageDialog(
 ) {
     OverlayDialog(
         show = true,
-        title = SettingsStringsExt3.liveTestingCourseTestStageTitle.zh,
+        title = SettingsStringsExt3.liveTestingCourseTestStageTitle.text,
         onDismissRequest = onDismiss,
         insideMargin = DpSize(16.dp, 16.dp),
     ) {
@@ -590,16 +591,16 @@ private fun CourseTestStageDialog(
                 modifier = Modifier.fillMaxWidth(),
                 colors = ButtonDefaults.buttonColorsPrimary(),
             ) {
-                Text(text = SettingsStringsExt3.liveTestingCourseTestStageBeforeClass.zh)
+                Text(text = SettingsStringsExt3.liveTestingCourseTestStageBeforeClass.text)
             }
             Button(
                 onClick = { onPick(LiveCourseTestStage.DURING_CLASS) },
                 modifier = Modifier.fillMaxWidth(),
             ) {
-                Text(text = SettingsStringsExt3.liveTestingCourseTestStageDuringClass.zh)
+                Text(text = SettingsStringsExt3.liveTestingCourseTestStageDuringClass.text)
             }
             Button(onClick = onDismiss, modifier = Modifier.fillMaxWidth()) {
-                Text(text = SettingsStringsExt3.cancelAction.zh)
+                Text(text = SettingsStringsExt3.cancelAction.text)
             }
         }
     }
@@ -676,8 +677,8 @@ private fun shareLiveDiagnostics(context: Context): DiagnosticsExportOutcome {
         context = context,
         text = perfSnapshotJsonText(payload),
         fileName = "mikcb-live-debug-snapshot-${System.currentTimeMillis()}.json",
-        shareText = SettingsStringsExt3.liveDiagnosticsSnapshotShareText.zh,
-        shareSubject = SettingsStringsExt3.liveDiagnosticsSnapshotShareSubject.zh,
+        shareText = SettingsStringsExt3.liveDiagnosticsSnapshotShareText.text,
+        shareSubject = SettingsStringsExt3.liveDiagnosticsSnapshotShareSubject.text,
     )
 }
 

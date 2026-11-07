@@ -30,15 +30,15 @@ fun IcsImportPage(
     onChooseFile: () -> Unit,
 ) {
     ImportPageScaffold(
-        title = ImportStrings.icsImportTitle.zh,
+        title = ImportStrings.icsImportTitle.text,
         onBack = onBack,
         bottomBar = {
             ImportActionButton(
                 // Dart: _isImporting ? '${l10n.icsImportTitle}...' : l10n.chooseIcsFileAction
                 label = if (viewState.isImporting) {
-                    "${ImportStrings.icsImportTitle.zh}..."
+                    "${ImportStrings.icsImportTitle.text}..."
                 } else {
-                    ImportStrings.chooseIcsFileAction.zh
+                    ImportStrings.chooseIcsFileAction.text
                 },
                 onClick = onChooseFile,
                 loading = viewState.isImporting,
@@ -56,12 +56,12 @@ fun IcsImportPage(
         ) {
             item(key = "guide") {
                 ImportGuidePanel(
-                    scenarioIntro = ImportStrings.icsScenarioIntro.zh,
-                    step1Subtitle = ImportStrings.icsStep1Subtitle.zh,
-                    step2Subtitle = ImportStrings.icsStep2Subtitle.zh,
-                    step3Subtitle = ImportStrings.icsStep3Subtitle.zh,
-                    supportedFilesSuffix = ImportStrings.supportedFilesSuffix.zh,
-                    supportedFilesExtra = ImportStrings.supportedFilesImageHint.zh,
+                    scenarioIntro = ImportStrings.icsScenarioIntro.text,
+                    step1Subtitle = ImportStrings.icsStep1Subtitle.text,
+                    step2Subtitle = ImportStrings.icsStep2Subtitle.text,
+                    step3Subtitle = ImportStrings.icsStep3Subtitle.text,
+                    supportedFilesSuffix = ImportStrings.supportedFilesSuffix.text,
+                    supportedFilesExtra = ImportStrings.supportedFilesImageHint.text,
                     modifier = Modifier.padding(horizontal = QingyuPageCardMargin),
                 )
             }

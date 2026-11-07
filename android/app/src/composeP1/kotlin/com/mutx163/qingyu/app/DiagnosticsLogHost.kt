@@ -303,7 +303,7 @@ fun DiagnosticsLogHost(
             clipboard.setPrimaryClip(ClipData.newPlainText(CLIP_LABEL, text))
         }.isSuccess
         if (copied) {
-            toast(context, DiagnosticsStrings.appLogsCopied.zh)
+            toast(context, DiagnosticsStrings.appLogsCopied.text)
         } else {
             // 失败路径的专用文案还没有 ARB 键（已记「ARB 新增请求」）；
             // 宁可「只留 logcat」也不假装复制成功。
@@ -367,9 +367,9 @@ fun DiagnosticsLogHost(
             toast(
                 context,
                 if (cleared) {
-                    DiagnosticsStrings.appLogsCleared.zh
+                    DiagnosticsStrings.appLogsCleared.text
                 } else {
-                    DiagnosticsStrings.appLogsClearFailed.zh
+                    DiagnosticsStrings.appLogsClearFailed.text
                 },
             )
         }

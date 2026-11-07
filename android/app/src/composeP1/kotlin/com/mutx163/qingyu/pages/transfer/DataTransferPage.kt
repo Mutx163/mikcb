@@ -24,13 +24,13 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import com.mutx163.qingyu.components.QingyuCard
 import com.mutx163.qingyu.components.QingyuSheet
 import com.mutx163.qingyu.components.QingyuPageCardMargin
+import com.mutx163.qingyu.components.rememberSheetMaxHeight
 import com.mutx163.qingyu.components.QingyuPageList
 import com.mutx163.qingyu.components.QingyuPageScaffold
 import com.mutx163.qingyu.components.QingyuSectionGap
@@ -99,7 +99,7 @@ fun DataTransferPage(
     var selectedCourseIds by remember { mutableStateOf(emptySet<String>()) }
 
     QingyuPageScaffold(
-        title = TransferStrings.dataTransferTitle.zh,
+        title = TransferStrings.dataTransferTitle.text,
         onBack = onBack,
     ) {
         QingyuPageList(
@@ -113,7 +113,7 @@ fun DataTransferPage(
         ) {
             // ── 1. 完整导出 ────────────────────────────────────────────
             item(key = "full-export") {
-                QingyuSectionTitle(TransferStrings.fullExportTitle.zh)
+                QingyuSectionTitle(TransferStrings.fullExportTitle.text)
                 QingyuCard(modifier = Modifier.fillMaxWidth(), insideMargin = TransferCardInsideMargin) {
                     // Dart `Wrap(spacing: 8, runSpacing: 8)`：放不下就换行，不是固定两行。
                     FlowRow(
@@ -121,20 +121,20 @@ fun DataTransferPage(
                         verticalArrangement = Arrangement.spacedBy(8.dp),
                     ) {
                         TransferButton(
-                            label = TransferStrings.exportCurrentTimetable.zh,
+                            label = TransferStrings.exportCurrentTimetable.text,
                             onClick = onExportCurrent,
                             primary = true,
                             loading = viewState.isExporting,
                             enabled = !viewState.isExporting,
                         )
                         TransferButton(
-                            label = TransferStrings.exportAllData.zh,
+                            label = TransferStrings.exportAllData.text,
                             onClick = onExportAllData,
                             enabled = !viewState.isExporting,
                         )
                         // 没有时间模板时按钮**仍在**，只是禁用（Dart `:76-78` 的 enabled 判据）。
                         TransferButton(
-                            label = TransferStrings.exportTimeTemplate.zh,
+                            label = TransferStrings.exportTimeTemplate.text,
                             onClick = onExportTimeTemplate,
                             enabled = !viewState.isExporting && viewState.canExportTimeTemplate,
                         )
@@ -146,7 +146,7 @@ fun DataTransferPage(
             item(key = "ics-export") {
                 QingyuCard(modifier = Modifier.fillMaxWidth()) {
                     ArrowPreference(
-                        title = ExportStrings.icsExportSectionTitle.zh,
+                        title = ExportStrings.icsExportSectionTitle.text,
                         onClick = onOpenIcsExport,
                     )
                 }
@@ -154,11 +154,11 @@ fun DataTransferPage(
 
             // ── 3. 完整导入 ────────────────────────────────────────────
             item(key = "full-import") {
-                QingyuSectionTitle(TransferStrings.fullImportTitle.zh)
+                QingyuSectionTitle(TransferStrings.fullImportTitle.text)
                 QingyuCard(modifier = Modifier.fillMaxWidth(), insideMargin = TransferCardInsideMargin) {
                     // Dart 参数上没写 `expand: true`，但父级是 stretch ⇒ 视觉上就是通栏。
                     TransferButton(
-                        label = TransferStrings.chooseFileAndImport.zh,
+                        label = TransferStrings.chooseFileAndImport.text,
                         onClick = onChooseFileAndImport,
                         loading = viewState.isImporting,
                         enabled = !viewState.isImporting,
@@ -169,17 +169,17 @@ fun DataTransferPage(
 
             // ── 4. 二维码面对面传输 ─────────────────────────────────────
             item(key = "qr-transfer") {
-                QingyuSectionTitle(TransferStrings.qrTransferSectionTitle.zh)
+                QingyuSectionTitle(TransferStrings.qrTransferSectionTitle.text)
                 QingyuCard(modifier = Modifier.fillMaxWidth(), insideMargin = TransferCardInsideMargin) {
                     Text(
-                        text = TransferStrings.qrTransferSectionSubtitle.zh,
+                        text = TransferStrings.qrTransferSectionSubtitle.text,
                         style = MiuixTheme.textStyles.body2,
                         color = Color(QingyuTheme.secondaryText(dark)),
                     )
                     Spacer(modifier = Modifier.height(8.dp))
                     // 明文警告：Dart 用 error 色（`data_transfer_screen.dart:120-125`）。
                     Text(
-                        text = TransferStrings.qrTransferPlaintextWarning.zh,
+                        text = TransferStrings.qrTransferPlaintextWarning.text,
                         style = MiuixTheme.textStyles.body2,
                         color = Color(QingyuTheme.error(dark)),
                     )
@@ -189,19 +189,19 @@ fun DataTransferPage(
                         verticalArrangement = Arrangement.spacedBy(8.dp),
                     ) {
                         TransferButton(
-                            label = TransferStrings.qrTransferSendCurrent.zh,
+                            label = TransferStrings.qrTransferSendCurrent.text,
                             onClick = { qrScopeDialogVisible = true },
                             primary = true,
                             enabled = !viewState.isExporting,
                         )
                         TransferButton(
-                            label = TransferStrings.qrTransferSendAll.zh,
+                            label = TransferStrings.qrTransferSendAll.text,
                             onClick = onQrSendAll,
                             enabled = !viewState.isExporting,
                         )
                         // 扫码只看 `_isImporting`，不看 `_isExporting`（Dart `:143`）。
                         TransferButton(
-                            label = TransferStrings.qrTransferScanReceive.zh,
+                            label = TransferStrings.qrTransferScanReceive.text,
                             onClick = onQrScan,
                             enabled = !viewState.isImporting,
                         )
@@ -211,7 +211,7 @@ fun DataTransferPage(
 
             // ── 5. 当前可迁移内容（7 行，无分割线） ─────────────────────
             item(key = "overview") {
-                QingyuSectionTitle(TransferStrings.transferOverviewTitle.zh)
+                QingyuSectionTitle(TransferStrings.transferOverviewTitle.text)
                 QingyuCard(modifier = Modifier.fillMaxWidth(), insideMargin = TransferCardInsideMargin) {
                     val rows = viewState.overviewRows
                     rows.forEachIndexed { index, row ->
@@ -307,7 +307,7 @@ private fun QrScopeDialog(
         show = show,
         // 本仓/Dart 的对话框横向口径是 16dp（官方默认 24 偏大，审核报告 P2 旧 :303）。
         insideMargin = DpSize(16.dp, 16.dp),
-        title = TransferStrings.qrTransferSendCurrent.zh,
+        title = TransferStrings.qrTransferSendCurrent.text,
         onDismissRequest = onDismiss,
     ) {
         Column(
@@ -315,7 +315,7 @@ private fun QrScopeDialog(
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             Text(
-                text = TransferStrings.qrTransferSectionSubtitle.zh,
+                text = TransferStrings.qrTransferSectionSubtitle.text,
                 style = MiuixTheme.textStyles.body2,
                 color = Color(QingyuTheme.primaryText(dark)),
                 textAlign = TextAlign.Center,
@@ -355,13 +355,13 @@ private fun CoursePickerSheet(
     onDismiss: () -> Unit,
     onConfirm: () -> Unit,
 ) {
-    val maxListHeight = (LocalConfiguration.current.screenHeightDp * 0.52f).dp
+    val maxListHeight = rememberSheetMaxHeight(0.52f)
     // 底部是通栏 `TransferButton(fillMaxWidth)` ⇒ 走套件的 16dp 框架内边距；
     // 列表自己有 LazyColumn ⇒ `contentScrolls = true`，底部让位补在按钮**之后**
     //（塞进列表会在按钮上方造一截空白）。
     QingyuSheet(
         show = show,
-        title = TransferStrings.qrTransferShareSelectedCourses.zh,
+        title = TransferStrings.qrTransferShareSelectedCourses.text,
         contentScrolls = true,
         onDismissRequest = onDismiss,
     ) {
@@ -373,7 +373,7 @@ private fun CoursePickerSheet(
                         .padding(vertical = 32.dp),
                 ) {
                     Text(
-                        text = TransferStrings.noCoursesInCurrentProfile.zh,
+                        text = TransferStrings.noCoursesInCurrentProfile.text,
                         style = MiuixTheme.textStyles.footnote1,
                         color = Color(QingyuTheme.secondaryText(dark)),
                         textAlign = TextAlign.Center,
@@ -395,7 +395,7 @@ private fun CoursePickerSheet(
             }
             Spacer(modifier = Modifier.height(12.dp))
             TransferButton(
-                label = TransferStrings.qrTransferSelectCoursesDone.zh,
+                label = TransferStrings.qrTransferSelectCoursesDone.text,
                 onClick = onConfirm,
                 primary = true,
                 modifier = Modifier.fillMaxWidth(),
@@ -490,12 +490,12 @@ fun TransferPreviewDialog(
     if (content != null) shown = content
     val current = shown
     // 4 行头信息 + merge/overwrite 两段差异摘要可能很长：正文限高 + 可滚，动作按钮留在滚动区外。
-    val maxBodyHeight = (LocalConfiguration.current.screenHeightDp * 0.45f).dp
+    val maxBodyHeight = rememberSheetMaxHeight(0.45f)
     OverlayDialog(
         show = content != null,
         // 与 QrScopeDialog 同一口径：对话框内缩收到 16dp（官方默认 24 偏大）。
         insideMargin = DpSize(16.dp, 16.dp),
-        title = current?.title ?: TransferStrings.selectImportModeTitle.zh,
+        title = current?.title ?: TransferStrings.selectImportModeTitle.text,
         onDismissRequest = { onChoose(null) },
     ) {
         Column(

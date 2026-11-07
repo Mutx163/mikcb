@@ -455,9 +455,9 @@ fun AchievementDetailContent(
         ) {
             Text(
                 text = if (model.unlocked) {
-                    ChartsStrings.statisticsAchievementDone.zh
+                    ChartsStrings.statisticsAchievementDone.text
                 } else {
-                    ChartsStrings.statisticsAchievementLocked.zh
+                    ChartsStrings.statisticsAchievementLocked.text
                 },
                 style = MiuixTheme.textStyles.footnote2,
                 color = if (model.unlocked) accent else Color(QingyuTheme.secondaryText(dark)),

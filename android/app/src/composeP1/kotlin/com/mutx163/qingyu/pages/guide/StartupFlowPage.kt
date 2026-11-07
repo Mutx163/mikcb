@@ -66,10 +66,10 @@ fun StartupFlowPage(
 
     // 顶栏标题随状态机步骤变化：抽成同一个局部变量喂给 title 与 largeTitle，避免两处各写一遍分叉。
     val pageTitle = when (currentState.currentStep) {
-        StartupStep.MIGRATION_CHECK -> GuideStrings.migrationTitle.zh
-        StartupStep.DATE_SETUP -> GuideStrings.setSemesterStartDateAction.zh
-        StartupStep.GUIDE_TOUR -> GuideStrings.welcomeTitle.zh
-        StartupStep.COMPLETED -> GuideStrings.welcomeAppName.zh
+        StartupStep.MIGRATION_CHECK -> GuideStrings.migrationTitle.text
+        StartupStep.DATE_SETUP -> GuideStrings.setSemesterStartDateAction.text
+        StartupStep.GUIDE_TOUR -> GuideStrings.welcomeTitle.text
+        StartupStep.COMPLETED -> GuideStrings.welcomeAppName.text
     }
 
     // 共享骨架：官方 TopAppBar + 标准返回键 + 顶栏毛玻璃（QingyuPageScaffold 内部三步接线）。
@@ -167,13 +167,13 @@ private fun MigrationGuideContent(
             ) {
                 Column {
                     Text(
-                        text = GuideStrings.migrationSafeTitle.zh,
+                        text = GuideStrings.migrationSafeTitle.text,
                         style = MiuixTheme.textStyles.main.shiftWeight(QingyuWeightDelta.BOLD),
                         color = primaryColor
                     )
                     Spacer(modifier = Modifier.height(8.dp))
                     Text(
-                        text = GuideStrings.migrationSafeSubtitle.zh,
+                        text = GuideStrings.migrationSafeSubtitle.text,
                         style = MiuixTheme.textStyles.body2,
                         color = Color(QingyuTheme.secondaryText(dark)),
                         lineHeight = 20.sp
@@ -191,18 +191,18 @@ private fun MigrationGuideContent(
                 Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
                     MigrationStepRow(
                         step = 1,
-                        title = GuideStrings.migrationStep1Title.zh,
-                        subtitle = GuideStrings.migrationStep1Subtitle.zh
+                        title = GuideStrings.migrationStep1Title.text,
+                        subtitle = GuideStrings.migrationStep1Subtitle.text
                     )
                     MigrationStepRow(
                         step = 2,
-                        title = GuideStrings.migrationStep2Title.zh,
-                        subtitle = GuideStrings.migrationStep2Subtitle.zh
+                        title = GuideStrings.migrationStep2Title.text,
+                        subtitle = GuideStrings.migrationStep2Subtitle.text
                     )
                     MigrationStepRow(
                         step = 3,
-                        title = GuideStrings.migrationStep3Title.zh,
-                        subtitle = GuideStrings.migrationStep3Subtitle.zh
+                        title = GuideStrings.migrationStep3Title.text,
+                        subtitle = GuideStrings.migrationStep3Subtitle.text
                     )
                 }
             }
@@ -224,13 +224,13 @@ private fun MigrationGuideContent(
                     Spacer(modifier = Modifier.width(10.dp))
                     Column {
                         Text(
-                            text = GuideStrings.migrationNoSaveToFilesTitle.zh,
+                            text = GuideStrings.migrationNoSaveToFilesTitle.text,
                             style = MiuixTheme.textStyles.body2.shiftWeight(QingyuWeightDelta.SEMIBOLD),
                             color = Color(QingyuTheme.primaryText(dark))
                         )
                         Spacer(modifier = Modifier.height(4.dp))
                         Text(
-                            text = GuideStrings.migrationNoSaveToFilesSubtitle.zh,
+                            text = GuideStrings.migrationNoSaveToFilesSubtitle.text,
                             style = MiuixTheme.textStyles.footnote1,
                             color = Color(QingyuTheme.secondaryText(dark)),
                             lineHeight = 18.sp
@@ -250,7 +250,7 @@ private fun MigrationGuideContent(
                     colors = ButtonDefaults.buttonColors(primaryColor)
                 ) {
                     Text(
-                        text = if (isOpeningOldApp) GuideStrings.openingOldApp.zh else GuideStrings.openOldAppForBackup.zh,
+                        text = if (isOpeningOldApp) GuideStrings.openingOldApp.text else GuideStrings.openOldAppForBackup.text,
                         color = Color.White,
                         style = MiuixTheme.textStyles.main.shiftWeight(QingyuWeightDelta.MEDIUM)
                     )
@@ -262,7 +262,7 @@ private fun MigrationGuideContent(
                     colors = ButtonDefaults.buttonColors(Color(QingyuTheme.card(dark)))
                 ) {
                     Text(
-                        text = GuideStrings.backupDoneGoImport.zh,
+                        text = GuideStrings.backupDoneGoImport.text,
                         color = primaryColor,
                         style = MiuixTheme.textStyles.main.shiftWeight(QingyuWeightDelta.MEDIUM)
                     )
@@ -274,7 +274,7 @@ private fun MigrationGuideContent(
                     colors = ButtonDefaults.buttonColors(Color.Transparent)
                 ) {
                     Text(
-                        text = GuideStrings.startFreshWithoutMigration.zh,
+                        text = GuideStrings.startFreshWithoutMigration.text,
                         color = Color(QingyuTheme.secondaryText(dark)),
                         style = MiuixTheme.textStyles.body2
                     )
@@ -365,7 +365,7 @@ private fun DateSetupContent(
             ) {
                 Column {
                     Text(
-                        text = GuideStrings.semesterStartDateLabel.zh,
+                        text = GuideStrings.semesterStartDateLabel.text,
                         style = MiuixTheme.textStyles.body1.shiftWeight(QingyuWeightDelta.BOLD),
                         color = Color(QingyuTheme.primaryText(dark))
                     )
@@ -502,7 +502,7 @@ private fun DateSetupContent(
                 colors = ButtonDefaults.buttonColors(primaryColor)
             ) {
                 Text(
-                    text = GuideStrings.guideNextButton.zh,
+                    text = GuideStrings.guideNextButton.text,
                     color = Color.White,
                     style = MiuixTheme.textStyles.body1.shiftWeight(QingyuWeightDelta.SEMIBOLD)
                 )

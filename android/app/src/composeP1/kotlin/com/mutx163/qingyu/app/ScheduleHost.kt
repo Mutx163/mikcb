@@ -166,7 +166,7 @@ fun ScheduleDateRuleHost(
         if (landed.isFailure) {
             // 文案复用 `SettingsStringsExt2.saveFailed`（「保存失败」，零 ARB 改动）。
             // 四态那三句复合键的前提都是「已保存」，这里一句都不能用。
-            toast = RuleToast(SettingsStringsExt2.saveFailed.zh, isError = true)
+            toast = RuleToast(SettingsStringsExt2.saveFailed.text, isError = true)
         } else {
             onLanded()
         }

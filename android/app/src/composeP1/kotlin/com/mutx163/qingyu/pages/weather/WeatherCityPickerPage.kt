@@ -86,7 +86,7 @@ fun WeatherCityPickerPage(
     val colors = MiuixTheme.colorScheme
 
     QingyuPageScaffold(
-        title = WeatherStrings.weatherCityPickerTitle.zh,
+        title = WeatherStrings.weatherCityPickerTitle.text,
         onBack = onBack,
         smallTopBar = true,
     ) {
@@ -98,7 +98,7 @@ fun WeatherCityPickerPage(
         ) {
             // ── 1. 当前位置 ──
             item(key = "location-title") {
-                QingyuSectionTitle(WeatherStrings.weatherSectionCurrentLocation.zh)
+                QingyuSectionTitle(WeatherStrings.weatherSectionCurrentLocation.text)
             }
             item(key = "location-card") {
                 QingyuCard(
@@ -129,17 +129,17 @@ fun WeatherCityPickerPage(
                         Spacer(modifier = Modifier.width(12.dp))
                         Column(modifier = Modifier.weight(1f)) {
                             Text(
-                                text = WeatherStrings.weatherUseCurrentLocation.zh,
+                                text = WeatherStrings.weatherUseCurrentLocation.text,
                                 style = MiuixTheme.textStyles.body1
                                     .shiftWeight(QingyuWeightDelta.MEDIUM),
                                 color = colors.onSurface,
                             )
                             Spacer(modifier = Modifier.height(2.dp))
                             val subtitle = when {
-                                state.locating -> WeatherStrings.weatherLocating.zh
+                                state.locating -> WeatherStrings.weatherLocating.text
                                 state.error != null -> state.error
                                 state.currentCity != null -> state.currentCity.displayName
-                                else -> WeatherStrings.weatherCityNotSet.zh
+                                else -> WeatherStrings.weatherCityNotSet.text
                             }
                             Text(
                                 text = subtitle,
@@ -167,7 +167,7 @@ fun WeatherCityPickerPage(
 
             // ── 2. 搜索城市 ──
             item(key = "search-title") {
-                QingyuSectionTitle(WeatherStrings.weatherSectionSearchCity.zh)
+                QingyuSectionTitle(WeatherStrings.weatherSectionSearchCity.text)
             }
             item(key = "search") {
                 QingyuCard(
@@ -191,7 +191,7 @@ fun WeatherCityPickerPage(
                             value = state.query,
                             onValueChange = onQueryChange,
                             modifier = Modifier.fillMaxWidth(),
-                            label = WeatherStrings.weatherCitySearchHint.zh,
+                            label = WeatherStrings.weatherCitySearchHint.text,
                             singleLine = true,
                         )
                     }
@@ -223,13 +223,13 @@ fun WeatherCityPickerPage(
                             verticalAlignment = Alignment.CenterVertically,
                         ) {
                             Text(
-                                text = WeatherStrings.weatherCitySearchFailed.zh,
+                                text = WeatherStrings.weatherCitySearchFailed.text,
                                 modifier = Modifier.weight(1f),
                                 style = MiuixTheme.textStyles.body2,
                                 color = colors.error,
                             )
                             TextButton(
-                                text = WeatherStrings.weatherRetryAction.zh,
+                                text = WeatherStrings.weatherRetryAction.text,
                                 onClick = onRetrySearch,
                             )
                         }
@@ -243,7 +243,7 @@ fun WeatherCityPickerPage(
                             .padding(horizontal = QingyuPageCardMargin, vertical = 16.dp),
                     ) {
                         Text(
-                            text = WeatherStrings.weatherCitySearchEmpty.zh,
+                            text = WeatherStrings.weatherCitySearchEmpty.text,
                             style = MiuixTheme.textStyles.body2,
                             color = colors.onSurfaceVariantSummary,
                         )

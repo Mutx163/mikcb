@@ -102,7 +102,7 @@ fun AboutUpdateHostPage(
         if (!saved) {
             // 写盘失败必须让用户知道，并把界面退回旧值：不能停在「看着改了、其实没存」的假成功态。
             settings = previous
-            Toast.makeText(context, SettingsStringsExt2.saveFailed.zh, Toast.LENGTH_SHORT).show()
+            Toast.makeText(context, SettingsStringsExt2.saveFailed.text, Toast.LENGTH_SHORT).show()
         }
     }
 

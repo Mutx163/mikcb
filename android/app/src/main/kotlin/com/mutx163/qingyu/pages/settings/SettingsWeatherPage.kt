@@ -56,14 +56,14 @@ object SettingsWeatherPage {
         return SettingsPageSpec(
             id = ID,
             titleKey = s.weatherSettingsTitle.key,
-            title = s.weatherSettingsTitle.zh,
+            title = s.weatherSettingsTitle.text,
             nodes = listOf(
                 // ── 区块 1：数据来源（:70-141）
                 SettingsGap("weather.gap.source"),
                 SettingsLabel(
                     id = "weather.section.source",
                     textKey = s.weatherSectionSourceTitle.key,
-                    text = s.weatherSectionSourceTitle.zh,
+                    text = s.weatherSectionSourceTitle.text,
                 ),
                 SettingsGroup(
                     id = "weather.group.source",
@@ -72,7 +72,7 @@ object SettingsWeatherPage {
                 SettingsDescription(
                     id = "weather.desc.attribution",
                     textKey = s.weatherAttribution.key,
-                    text = s.weatherAttribution.zh,
+                    text = s.weatherAttribution.text,
                 ),
 
                 // ── 区块 2：显示（:143-192）
@@ -80,7 +80,7 @@ object SettingsWeatherPage {
                 SettingsLabel(
                     id = "weather.section.display",
                     textKey = s.weatherSectionDisplayTitle.key,
-                    text = s.weatherSectionDisplayTitle.zh,
+                    text = s.weatherSectionDisplayTitle.text,
                 ),
                 SettingsGroup(
                     id = "weather.group.display",
@@ -89,7 +89,7 @@ object SettingsWeatherPage {
                 SettingsDescription(
                     id = "weather.desc.coverage",
                     textKey = s.weatherCoverageNote.key,
-                    text = s.weatherCoverageNote.zh,
+                    text = s.weatherCoverageNote.text,
                 ),
 
                 // ── 区块 3：显示内容（:194-228）
@@ -97,7 +97,7 @@ object SettingsWeatherPage {
                 SettingsLabel(
                     id = "weather.section.content",
                     textKey = s.weatherSectionContentTitle.key,
-                    text = s.weatherSectionContentTitle.zh,
+                    text = s.weatherSectionContentTitle.text,
                 ),
                 SettingsGroup(
                     id = "weather.group.content",
@@ -138,7 +138,7 @@ object SettingsWeatherPage {
             // 这里必须是 null 而不是空串——空串会被当成「有个键但键名是空的」，
             // 语义与 `null`（没有键）不是一回事，测试按 null 钉住了它。
             valueKey = if (city == null) s.weatherCityNotSet.key else null,
-            value = city ?: s.weatherCityNotSet.zh,
+            value = city ?: s.weatherCityNotSet.text,
             // :111 `onClick: weather == null ? null : …`
             enabled = data.providerAvailable,
             action = SettingsAction.NAVIGATE,
@@ -152,7 +152,7 @@ object SettingsWeatherPage {
                 title = s.weatherStatusFailed,
                 icon = SettingsRowIcon("refresh", "#F5A623"),
                 valueKey = s.weatherRetryAction.key,
-                value = s.weatherRetryAction.zh,
+                value = s.weatherRetryAction.text,
                 action = SettingsAction.RUN_NOW,
             )
         }

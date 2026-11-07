@@ -68,13 +68,13 @@ import java.time.LocalDateTime
 internal object MonthPanelLabels {
 
     /** `课程`（ARB `courseCountLabel` —— Dart 原件用的就是这个键）。 */
-    val course: String get() = TimeSchemeManagementStrings.courseCountLabel.zh
+    val course: String get() = TimeSchemeManagementStrings.courseCountLabel.text
 
     /** `考试`（ARB `examBadgeLabel`）。 */
-    val exam: String get() = DayViewStrings.examBadgeLabel.zh
+    val exam: String get() = DayViewStrings.examBadgeLabel.text
 
     /** `日程`（ARB `scheduleBadgeLabel`）。 */
-    val schedule: String get() = DayViewStrings.scheduleBadgeLabel.zh
+    val schedule: String get() = DayViewStrings.scheduleBadgeLabel.text
 }
 
 /**
@@ -196,7 +196,7 @@ fun MonthPanelOverview(
     val counts = MonthPanelModel.overviewCounts(grid)
 
     Column(modifier = modifier.fillMaxWidth()) {
-        MonthPanelCard(title = MonthViewStrings.monthOverviewTitle.zh) {
+        MonthPanelCard(title = MonthViewStrings.monthOverviewTitle.text) {
             if (counts.isEmpty) {
                 // 整月没有任何安排：只留一块空态，不摆三个 0 ——
                 // 「0 节课 / 0 场考试 / 0 个日程」读起来像加载失败。
@@ -250,7 +250,7 @@ private fun UpcomingCard(
 ) {
     val ink = MonthPanelSurface.ink()
     MonthPanelCard(
-        title = MonthViewStrings.monthOverviewDaysTitle.zh,
+        title = MonthViewStrings.monthOverviewDaysTitle.text,
         modifier = modifier,
         // 「还有 N 天」放在标题右端：语义从「这是哪一节」变成「这一节还有多少没列」，
         // 信息量增加、高度不增。
@@ -526,14 +526,14 @@ private fun MonthEmptyMonthBody() {
         )
         Spacer(Modifier.height(MonthOverviewMetrics.EMPTY_ICON_GAP.dp))
         Text(
-            text = MonthText.emptyMonthTitle.zh,
+            text = MonthText.emptyMonthTitle.text,
             style = MiuixTheme.textStyles.body2.shiftWeight(QingyuWeightDelta.SEMIBOLD),
             color = MonthPanelSurface.muted(ink),
             textAlign = TextAlign.Center,
         )
         Spacer(Modifier.height(MonthOverviewMetrics.EMPTY_HINT_GAP.dp))
         Text(
-            text = MonthText.emptyMonthHint.zh,
+            text = MonthText.emptyMonthHint.text,
             style = MiuixTheme.textStyles.footnote1,
             color = MonthPanelSurface.muted(ink),
             textAlign = TextAlign.Center,

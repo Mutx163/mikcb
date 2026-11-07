@@ -52,7 +52,7 @@ fun LiveReminderTimingPage(
     // Dart 侧是 HyperosSubpage（`collapsibleLargeTitle` 默认 true）+ HyperosListView，
     // 大标题可折叠；官方 demo 侧滚动一律是 LazyColumn + 滚动三件套 ⇒ 样式从 demo。
     QingyuPageScaffold(
-        title = ReminderTimingStrings.liveReminderTimingTitle.zh,
+        title = ReminderTimingStrings.liveReminderTimingTitle.text,
         onBack = onBack,
     ) {
         QingyuPageList(
@@ -64,14 +64,14 @@ fun LiveReminderTimingPage(
             // ── 组 1：提醒开关 ──
             item(key = "reminder-switches") {
                 ReminderGroup(
-                    label = ReminderTimingStrings.liveReminderSwitchesTitle.zh,
+                    label = ReminderTimingStrings.liveReminderSwitchesTitle.text,
                 ) {
                     SwitchPreference(
                         checked = state.liveEnableBeforeClass,
                         onCheckedChange = {
                             onStateChange(state.copy(liveEnableBeforeClass = it))
                         },
-                        title = ReminderTimingStrings.beforeClassReminderTitle.zh,
+                        title = ReminderTimingStrings.beforeClassReminderTitle.text,
                         summary = ReminderTimingStrings.formatBeforeClassReminderSubtitle(
                             state.liveShowBeforeClassMinutes,
                         ),
@@ -85,7 +85,7 @@ fun LiveReminderTimingPage(
                                 ReminderTimingLogic.withDuringClassReminderEnabled(state, it),
                             )
                         },
-                        title = ReminderTimingStrings.duringClassReminderTitle.zh,
+                        title = ReminderTimingStrings.duringClassReminderTitle.text,
                     )
 
                     if (duringClassEnabled) {
@@ -99,7 +99,7 @@ fun LiveReminderTimingPage(
                         OverlayDropdownPreference(
                             items = leadLabels,
                             selectedIndex = leadIndex,
-                            title = ReminderTimingStrings.liveClassReminderLeadTitle.zh,
+                            title = ReminderTimingStrings.liveClassReminderLeadTitle.text,
                             summary = ReminderTimingStrings.leadSummaryText(leadSummary),
                             onSelectedIndexChange = { index ->
                                 leadOptions.getOrNull(index)?.let { minutes ->
@@ -116,14 +116,14 @@ fun LiveReminderTimingPage(
             // ── 组 2：展示方式 ──
             item(key = "display-mode") {
                 ReminderGroup(
-                    label = ReminderTimingStrings.liveDisplayModeTitle.zh,
+                    label = ReminderTimingStrings.liveDisplayModeTitle.text,
                 ) {
                     SwitchPreference(
                         checked = state.liveShowDuringClassNotification,
                         onCheckedChange = {
                             onStateChange(state.copy(liveShowDuringClassNotification = it))
                         },
-                        title = ReminderTimingStrings.duringClassStatusNotificationTitle.zh,
+                        title = ReminderTimingStrings.duringClassStatusNotificationTitle.text,
                         summary = ReminderTimingStrings.duringClassStatusHintText(statusHint),
                     )
 
@@ -132,7 +132,7 @@ fun LiveReminderTimingPage(
                         onCheckedChange = {
                             onStateChange(state.copy(livePromoteDuringClass = it))
                         },
-                        title = ReminderTimingStrings.enableIslandDisplayTitle.zh,
+                        title = ReminderTimingStrings.enableIslandDisplayTitle.text,
                     )
                 }
             }
@@ -140,7 +140,7 @@ fun LiveReminderTimingPage(
             // ── 组 3：时间阈值 ──
             item(key = "time-threshold") {
                 ReminderGroup(
-                    label = ReminderTimingStrings.liveTimeThresholdTitle.zh,
+                    label = ReminderTimingStrings.liveTimeThresholdTitle.text,
                 ) {
                     val beforeClassOptions = ReminderTimingLogic.BEFORE_CLASS_MINUTES_OPTIONS
                     val beforeClassIndex = beforeClassOptions
@@ -151,7 +151,7 @@ fun LiveReminderTimingPage(
                             ReminderTimingStrings.formatBeforeClassMinutesOption(minutes)
                         },
                         selectedIndex = beforeClassIndex,
-                        title = ReminderTimingStrings.beforeClassPopupLabel.zh,
+                        title = ReminderTimingStrings.beforeClassPopupLabel.text,
                         onSelectedIndexChange = { index ->
                             beforeClassOptions.getOrNull(index)?.let { minutes ->
                                 onStateChange(
@@ -170,7 +170,7 @@ fun LiveReminderTimingPage(
                             ReminderTimingStrings.formatBeforeEndSecondsOption(seconds)
                         },
                         selectedIndex = endSecondsIndex,
-                        title = ReminderTimingStrings.beforeEndSecondsLabel.zh,
+                        title = ReminderTimingStrings.beforeEndSecondsLabel.text,
                         onSelectedIndexChange = { index ->
                             endSecondsOptions.getOrNull(index)?.let { seconds ->
                                 onStateChange(
@@ -189,7 +189,7 @@ fun LiveReminderTimingPage(
                             ReminderTimingStrings.displayModeText(mode)
                         },
                         selectedIndex = displayModeIndex,
-                        title = ReminderTimingStrings.duringEndTimeDisplayLabel.zh,
+                        title = ReminderTimingStrings.duringEndTimeDisplayLabel.text,
                         onSelectedIndexChange = { index ->
                             displayModes.getOrNull(index)?.let { mode ->
                                 onStateChange(

@@ -178,9 +178,9 @@ object CoupleTimetableSettingsLogic {
         username.trim().isNotEmpty() && hasStoredPassword
 
     fun sectionTitle(bound: Boolean): String = if (bound) {
-        CoupleStrings.coupleTimetableBoundTitle.zh
+        CoupleStrings.coupleTimetableBoundTitle.text
     } else {
-        CoupleStrings.coupleTimetableUnboundTitle.zh
+        CoupleStrings.coupleTimetableUnboundTitle.text
     }
 
     /** `yyyy-MM-dd HH:mm`；null / 解析失败 → "-"（Dart `_formatDateTime` 的调用形态）。 */
@@ -201,7 +201,7 @@ object CoupleTimetableSettingsLogic {
         if (isWebdavConnected(username, hasStoredPassword)) {
             CoupleStrings.coupleWebdavConnectedAs.filled("username", username.trim())
         } else {
-            CoupleStrings.coupleWebdavNotConnected.zh
+            CoupleStrings.coupleWebdavNotConnected.text
         }
 
     fun remotePathText(remotePath: String): String =
@@ -215,7 +215,7 @@ object CoupleTimetableSettingsLogic {
 
     /** 0 → 「无偏移」；其余带符号（Dart `'${offset > 0 ? '+$offset' : '$offset'}'`）。 */
     fun weekOffsetLabel(offset: Int): String {
-        if (offset == 0) return CoupleStrings.coupleTimetableWeekOffsetZero.zh
+        if (offset == 0) return CoupleStrings.coupleTimetableWeekOffsetZero.text
         val signed = if (offset > 0) "+$offset" else offset.toString()
         return CoupleStrings.coupleTimetableWeekOffsetSigned.filled("offset", signed)
     }
@@ -248,17 +248,17 @@ object CoupleTimetableSettingsLogic {
 
     fun colorRows(binding: PartnerTimetableBindingModel): List<CoupleColorRowView> = listOf(
         CoupleColorRowView(
-            label = CoupleStrings.coupleTimetableLegendMine.zh,
+            label = CoupleStrings.coupleTimetableLegendMine.text,
             paletteHexes = paletteIncluding(binding.mineColorHex),
             selectedHex = binding.mineColorHex,
         ),
         CoupleColorRowView(
-            label = CoupleStrings.coupleTimetableLegendPartner.zh,
+            label = CoupleStrings.coupleTimetableLegendPartner.text,
             paletteHexes = paletteIncluding(binding.partnerColorHex),
             selectedHex = binding.partnerColorHex,
         ),
         CoupleColorRowView(
-            label = CoupleStrings.coupleTimetableLegendTogether.zh,
+            label = CoupleStrings.coupleTimetableLegendTogether.text,
             paletteHexes = paletteIncluding(binding.togetherColorHex),
             selectedHex = binding.togetherColorHex,
         ),
@@ -268,28 +268,28 @@ object CoupleTimetableSettingsLogic {
     fun busyLabel(base: String, busy: Boolean): String = if (busy) "$base..." else base
 
     fun unlinkDialog(): CoupleConfirmDialogView = CoupleConfirmDialogView(
-        title = CoupleStrings.coupleTimetableUnlinkConfirmTitle.zh,
-        message = CoupleStrings.coupleTimetableUnlinkConfirmMessage.zh,
-        cancelLabel = CoupleStrings.cancelAction.zh,
-        confirmLabel = CoupleStrings.coupleTimetableUnlink.zh,
+        title = CoupleStrings.coupleTimetableUnlinkConfirmTitle.text,
+        message = CoupleStrings.coupleTimetableUnlinkConfirmMessage.text,
+        cancelLabel = CoupleStrings.cancelAction.text,
+        confirmLabel = CoupleStrings.coupleTimetableUnlink.text,
     )
 
     /** 连接弹层文案（Dart `couple_webdav_connect_sheet.dart` 逐条对位）。 */
     fun sheetTexts(): CoupleWebdavSheetTexts = CoupleWebdavSheetTexts(
-        title = CoupleStrings.coupleWebdavLoginSheetTitle.zh,
-        subtitle = CoupleStrings.coupleWebdavLoginSheetSubtitle.zh,
-        usernameLabel = CoupleStrings.cloudSyncUsernameLabel.zh,
-        usernameHint = CoupleStrings.cloudSyncUsernameHint.zh,
-        passwordLabel = CoupleStrings.cloudSyncPasswordLabel.zh,
-        passwordHint = CoupleStrings.cloudSyncPasswordHint.zh,
-        slotLabel = CoupleStrings.coupleWebdavMySlotLabel.zh,
-        slotHint = CoupleStrings.coupleWebdavMySlotHint.zh,
-        slotOne = CoupleStrings.coupleWebdavSlotOne.zh,
-        slotTwo = CoupleStrings.coupleWebdavSlotTwo.zh,
-        testLabel = CoupleStrings.cloudSyncTestConnection.zh,
-        confirmLabel = CoupleStrings.coupleWebdavConfirmConnect.zh,
-        testSuccess = CoupleStrings.coupleWebdavTestSuccess.zh,
-        testFailed = CoupleStrings.coupleWebdavTestFailed.zh,
+        title = CoupleStrings.coupleWebdavLoginSheetTitle.text,
+        subtitle = CoupleStrings.coupleWebdavLoginSheetSubtitle.text,
+        usernameLabel = CoupleStrings.cloudSyncUsernameLabel.text,
+        usernameHint = CoupleStrings.cloudSyncUsernameHint.text,
+        passwordLabel = CoupleStrings.cloudSyncPasswordLabel.text,
+        passwordHint = CoupleStrings.cloudSyncPasswordHint.text,
+        slotLabel = CoupleStrings.coupleWebdavMySlotLabel.text,
+        slotHint = CoupleStrings.coupleWebdavMySlotHint.text,
+        slotOne = CoupleStrings.coupleWebdavSlotOne.text,
+        slotTwo = CoupleStrings.coupleWebdavSlotTwo.text,
+        testLabel = CoupleStrings.cloudSyncTestConnection.text,
+        confirmLabel = CoupleStrings.coupleWebdavConfirmConnect.text,
+        testSuccess = CoupleStrings.coupleWebdavTestSuccess.text,
+        testFailed = CoupleStrings.coupleWebdavTestFailed.text,
     )
 
     /**
@@ -318,7 +318,7 @@ object CoupleTimetableSettingsLogic {
             listOf(
                 CoupleActionButton(
                     id = WEBDAV_CONNECT,
-                    label = CoupleStrings.coupleWebdavConnect.zh,
+                    label = CoupleStrings.coupleWebdavConnect.text,
                     loading = false,
                     enabled = true,
                     variant = CoupleButtonVariant.PRIMARY,
@@ -328,7 +328,7 @@ object CoupleTimetableSettingsLogic {
             listOf(
                 CoupleActionButton(
                     id = WEBDAV_PULL,
-                    label = busyLabel(CoupleStrings.coupleWebdavPullNow.zh, busy.isPullingWebdav),
+                    label = busyLabel(CoupleStrings.coupleWebdavPullNow.text, busy.isPullingWebdav),
                     loading = busy.isPullingWebdav,
                     enabled = !busy.isPullingWebdav,
                     variant = CoupleButtonVariant.PRIMARY,
@@ -336,7 +336,7 @@ object CoupleTimetableSettingsLogic {
                 CoupleActionButton(
                     id = WEBDAV_UPLOAD,
                     label = busyLabel(
-                        CoupleStrings.coupleWebdavUploadForPartner.zh,
+                        CoupleStrings.coupleWebdavUploadForPartner.text,
                         busy.isUploadingWebdav,
                     ),
                     loading = busy.isUploadingWebdav,
@@ -345,7 +345,7 @@ object CoupleTimetableSettingsLogic {
                 ),
                 CoupleActionButton(
                     id = WEBDAV_DISCONNECT,
-                    label = CoupleStrings.coupleWebdavDisconnect.zh,
+                    label = CoupleStrings.coupleWebdavDisconnect.text,
                     loading = false,
                     enabled = true,
                     variant = CoupleButtonVariant.SECONDARY,
@@ -357,7 +357,7 @@ object CoupleTimetableSettingsLogic {
             add(
                 CoupleActionButton(
                     id = COUPLE_EXPORT,
-                    label = busyLabel(CoupleStrings.coupleTimetableExportForPartner.zh, busy.isExporting),
+                    label = busyLabel(CoupleStrings.coupleTimetableExportForPartner.text, busy.isExporting),
                     loading = busy.isExporting,
                     enabled = !busy.isExporting,
                     variant = CoupleButtonVariant.PRIMARY,
@@ -366,7 +366,7 @@ object CoupleTimetableSettingsLogic {
             add(
                 CoupleActionButton(
                     id = COUPLE_IMPORT,
-                    label = busyLabel(CoupleStrings.coupleTimetableImportPartner.zh, busy.isImporting),
+                    label = busyLabel(CoupleStrings.coupleTimetableImportPartner.text, busy.isImporting),
                     loading = busy.isImporting,
                     enabled = !busy.isImporting,
                     variant = CoupleButtonVariant.SECONDARY,
@@ -376,7 +376,7 @@ object CoupleTimetableSettingsLogic {
                 add(
                     CoupleActionButton(
                         id = COUPLE_UNLINK,
-                        label = busyLabel(CoupleStrings.coupleTimetableUnlink.zh, busy.isUnlinking),
+                        label = busyLabel(CoupleStrings.coupleTimetableUnlink.text, busy.isUnlinking),
                         loading = busy.isUnlinking,
                         enabled = !busy.isUnlinking,
                         variant = CoupleButtonVariant.SECONDARY,
@@ -388,33 +388,33 @@ object CoupleTimetableSettingsLogic {
         val weekOffset = binding?.weekOffset ?: 0
 
         return CoupleTimetableSettingsViewState(
-            title = CoupleStrings.coupleTimetableTitle.zh,
+            title = CoupleStrings.coupleTimetableTitle.text,
             sectionTitle = sectionTitle(bound),
             bound = bound,
-            partnerNameLabel = CoupleStrings.coupleTimetablePartnerNameLabel.zh,
+            partnerNameLabel = CoupleStrings.coupleTimetablePartnerNameLabel.text,
             partnerName = partnerProfileName ?: binding?.partnerName.orEmpty(),
             courseCountLabel = courseCountLabel(partnerCourseCount),
             lastImportedText = formatDateTimeOrDash(binding?.lastImportedAtIso, zone),
-            webdavTitle = CoupleStrings.coupleWebdavTitle.zh,
+            webdavTitle = CoupleStrings.coupleWebdavTitle.text,
             webdavStatusText = webdavStatusText(webdavConfig.username, hasStoredPassword),
             webdavRemotePathText = remotePathText(webdavConfig.partnerTimetableRemotePath),
             webdavLastPulledText = lastPulledText(webdavConfig.lastPulledAtIso, zone),
             webdavButtons = webdavButtons,
-            coupleSectionTitle = CoupleStrings.coupleTimetableTitle.zh,
+            coupleSectionTitle = CoupleStrings.coupleTimetableTitle.text,
             coupleButtons = coupleButtons,
             showWeekOffset = bound,
-            weekOffsetTitle = CoupleStrings.coupleTimetableWeekOffsetTitle.zh,
+            weekOffsetTitle = CoupleStrings.coupleTimetableWeekOffsetTitle.text,
             weekOffsetLabel = weekOffsetLabel(weekOffset),
             weekOffsetPreview = weekOffsetPreview(myWeek, partnerWeek),
             canDecrementOffset = canDecrement(weekOffset),
             canIncrementOffset = canIncrement(weekOffset),
             showColors = bound,
-            colorsTitle = CoupleStrings.coupleTimetableColorsTitle.zh,
+            colorsTitle = CoupleStrings.coupleTimetableColorsTitle.text,
             colorRows = binding?.let { colorRows(it) }.orEmpty(),
-            unlinkConfirmTitle = CoupleStrings.coupleTimetableUnlinkConfirmTitle.zh,
-            unlinkConfirmMessage = CoupleStrings.coupleTimetableUnlinkConfirmMessage.zh,
-            unlinkConfirmCancelLabel = CoupleStrings.cancelAction.zh,
-            unlinkConfirmActionLabel = CoupleStrings.coupleTimetableUnlink.zh,
+            unlinkConfirmTitle = CoupleStrings.coupleTimetableUnlinkConfirmTitle.text,
+            unlinkConfirmMessage = CoupleStrings.coupleTimetableUnlinkConfirmMessage.text,
+            unlinkConfirmCancelLabel = CoupleStrings.cancelAction.text,
+            unlinkConfirmActionLabel = CoupleStrings.coupleTimetableUnlink.text,
             webdavSheetTexts = sheetTexts(),
         )
     }
@@ -424,9 +424,9 @@ object CoupleTimetableSettingsLogic {
     /** 导入对方课表：成功/更新 + 「其中 N 条格式损坏已跳过」后缀（Dart 原样拼接）。 */
     fun importToast(updated: Boolean, droppedTotal: Int): SyncToast {
         val base = if (updated) {
-            CoupleStrings.coupleTimetableImportUpdated.zh
+            CoupleStrings.coupleTimetableImportUpdated.text
         } else {
-            CoupleStrings.coupleTimetableImportSuccess.zh
+            CoupleStrings.coupleTimetableImportSuccess.text
         }
         val suffix = if (droppedTotal > 0) {
             CoupleStrings.importPartialSkippedSuffix.filled("count", droppedTotal.toString())
@@ -438,9 +438,9 @@ object CoupleTimetableSettingsLogic {
 
     /** 坚果云拉取：四态（失败时错误码走本地化表，缺省为「拉取失败」）。 */
     fun pullToast(status: CoupleWebdavPullStatus, errorCode: String?): SyncToast = when (status) {
-        CoupleWebdavPullStatus.IMPORTED -> SyncToast(CoupleStrings.coupleWebdavPullImported.zh, isError = false)
-        CoupleWebdavPullStatus.UPDATED -> SyncToast(CoupleStrings.coupleWebdavPullUpdated.zh, isError = false)
-        CoupleWebdavPullStatus.UNCHANGED -> SyncToast(CoupleStrings.coupleWebdavPullUnchanged.zh, isError = false)
+        CoupleWebdavPullStatus.IMPORTED -> SyncToast(CoupleStrings.coupleWebdavPullImported.text, isError = false)
+        CoupleWebdavPullStatus.UPDATED -> SyncToast(CoupleStrings.coupleWebdavPullUpdated.text, isError = false)
+        CoupleWebdavPullStatus.UNCHANGED -> SyncToast(CoupleStrings.coupleWebdavPullUnchanged.text, isError = false)
         CoupleWebdavPullStatus.FAILED -> SyncToast(
             message = CoupleStrings.localizeServiceMessage(errorCode ?: "couple_webdav_pull_failed"),
             isError = true,
@@ -449,19 +449,19 @@ object CoupleTimetableSettingsLogic {
 
     /** 上传我的课表：返回错误码即失败（Dart `errorCode != null` 分支）。 */
     fun uploadToast(errorCode: String?): SyncToast = if (errorCode == null) {
-        SyncToast(CoupleStrings.coupleWebdavUploadSuccess.zh, isError = false)
+        SyncToast(CoupleStrings.coupleWebdavUploadSuccess.text, isError = false)
     } else {
         SyncToast(CoupleStrings.localizeServiceMessage(errorCode), isError = true)
     }
 
     fun webdavConnectFailedToast(): SyncToast =
-        SyncToast(CoupleStrings.coupleWebdavTestFailed.zh, isError = true)
+        SyncToast(CoupleStrings.coupleWebdavTestFailed.text, isError = true)
 
     fun disconnectFailedToast(): SyncToast =
-        SyncToast(CoupleStrings.saveFailed.zh, isError = true)
+        SyncToast(CoupleStrings.saveFailed.text, isError = true)
 
     fun unlinkSuccessToast(): SyncToast =
-        SyncToast(CoupleStrings.coupleTimetableUnlinkSuccess.zh, isError = false)
+        SyncToast(CoupleStrings.coupleTimetableUnlinkSuccess.text, isError = false)
 
     // 按钮 id（渲染层回调里判身份用，避免按文案匹配）。
     const val WEBDAV_CONNECT = "webdav_connect"

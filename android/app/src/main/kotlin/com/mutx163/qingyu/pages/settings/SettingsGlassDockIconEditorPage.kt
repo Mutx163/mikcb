@@ -92,7 +92,7 @@ object SettingsGlassDockIconEditorPage {
             note = "搜索卡（settings_glass_dock_icon_editor.dart:171-189）：Dart 侧垫一张白卡" +
                 "再放 HyperosSearchBar，官方没有「卡片内搜索框」这种组合件，由渲染层用 basic.TextField 拼",
             labelKey = SettingsStringsExt4.glassDockButtonIconSearchHint.key,
-            label = SettingsStringsExt4.glassDockButtonIconSearchHint.zh,
+            label = SettingsStringsExt4.glassDockButtonIconSearchHint.text,
             // 当前过滤词（动态取值，不是 ARB 文案）
             value = picker.query,
         )
@@ -111,7 +111,7 @@ object SettingsGlassDockIconEditorPage {
                 add(
                     SettingsInlineText(
                         SettingsStringsExt4.glassDockButtonIconDefault.key,
-                        SettingsStringsExt4.glassDockButtonIconDefault.zh,
+                        SettingsStringsExt4.glassDockButtonIconDefault.text,
                     ),
                 )
                 filtered.forEach { add(SettingsInlineText(NON_ARB_TEXT, it)) }
@@ -121,7 +121,7 @@ object SettingsGlassDockIconEditorPage {
         return SettingsPageSpec(
             id = ID,
             titleKey = SettingsStringsExt4.glassDockButtonIconTitle.key,
-            title = SettingsStringsExt4.glassDockButtonIconTitle.zh,
+            title = SettingsStringsExt4.glassDockButtonIconTitle.text,
             nodes = nodes,
         )
     }
@@ -176,7 +176,7 @@ object SettingsGlassDockIconEditorPage {
                 IconCell(
                     name = null,
                     labelKey = SettingsStringsExt4.glassDockButtonIconDefault.key,
-                    label = SettingsStringsExt4.glassDockButtonIconDefault.zh,
+                    label = SettingsStringsExt4.glassDockButtonIconDefault.text,
                     selected = picker.selectedName == null,
                 ),
             )

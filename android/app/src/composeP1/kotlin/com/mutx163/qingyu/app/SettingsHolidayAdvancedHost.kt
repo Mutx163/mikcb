@@ -101,9 +101,9 @@ fun SettingsHolidayAdvancedHost(
                 onFailure = { false },
             )
             val message = if (outcome == false) {
-                SettingsStringsExt3.holidayDataUpdateFailed.zh
+                SettingsStringsExt3.holidayDataUpdateFailed.text
             } else {
-                SettingsStringsExt3.holidayDataUpdated.zh
+                SettingsStringsExt3.holidayDataUpdated.text
             }
             Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
         }

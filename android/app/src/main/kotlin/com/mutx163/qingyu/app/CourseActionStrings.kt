@@ -11,10 +11,7 @@ package com.mutx163.qingyu.app
  * 本包同时有多条泳道在写（设置族、课表族），在这里新增一个通用名 `ArbText` 有与别人撞名
  * 的风险（同包同名 = 编译不过），所以取一个本文件专属的名字。
  */
-data class CourseArbText(val key: String, val zh: String) {
-    /** 把 `{name}` 占位符换成 [value]（与 ARB 模板同口径）。 */
-    fun filled(name: String, value: String): String = zh.replace("{$name}", value)
-}
+typealias CourseArbText = com.mutx163.qingyu.app.ArbText
 
 object CourseActionStrings {
 
@@ -72,13 +69,8 @@ object CourseActionStrings {
     val cancelAction = CourseArbText("cancelAction", "取消")
     val confirmAction = CourseArbText("confirmAction", "确认")
 
-    /**
-     * ⚠️ ARB **没有**「目标周」这个键（已 grep 确认；只有 `serviceMsgTargetWeekOutOfRange` 那种长句）。
-     * 按「文案不许自拟」原则本应等 ARB 补键；但这是调课面板的一个量纲标签，先在此登记。
-     * **不进 [allTexts]**（parity 测试要求每个键都在 ARB 里，缺键会让它红）。
-     * ARB 补 `targetWeekLabel` 后应移入 `allTexts` 改为对拍。
-     */
-    const val targetWeekLabel = "目标周"
+    /** 调课面板的量纲标签（ARB `targetWeekLabel`，2026-11-07 已补键）。 */
+    val targetWeekLabel = CourseArbText("targetWeekLabel", "目标周")
 
     /** 节次摘要：`第 {start}-{end} 节`（复用 ARB `sectionLabel` 模板，把区间塞进 `{section}`）。 */
     fun sectionRange(start: Int, end: Int): String =
@@ -113,6 +105,7 @@ object CourseActionStrings {
         endSectionLabel,
         cancelAction,
         confirmAction,
+        targetWeekLabel,
     )
 
     /** `courseActionSheetNotice` 的周次填充。 */
@@ -136,13 +129,13 @@ object CourseActionStrings {
 
     /** 教师 / 地点的空值兜底（Dart `course_action_sheet.dart:768-775`）。 */
     fun teacherOrUnknown(teacher: String): String =
-        teacher.ifBlank { unknownTeacher.zh }
+        teacher.ifBlank { unknownTeacher.text }
 
     fun locationOrUnknown(location: String): String =
-        location.ifBlank { unknownLocation.zh }
+        location.ifBlank { unknownLocation.text }
 
     /** 停课按钮的当前文案：已停课显示「恢复」（Dart `:898-900`）。 */
     fun suspendButtonLabel(suspendedThisWeek: Boolean): String =
-        if (suspendedThisWeek) courseActionUnsuspend.zh else courseActionSuspendSecondary.zh
+        if (suspendedThisWeek) courseActionUnsuspend.text else courseActionSuspendSecondary.text
 }
 

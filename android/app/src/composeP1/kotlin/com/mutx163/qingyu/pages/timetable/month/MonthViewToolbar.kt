@@ -82,7 +82,7 @@ fun MonthViewToolbar(
     ) {
         MonthNavArrow(
             forward = false,
-            contentDescription = MonthText.previousMonth.zh,
+            contentDescription = MonthText.previousMonth.text,
             tint = muted,
             onTap = onPreviousMonth,
         )
@@ -102,7 +102,7 @@ fun MonthViewToolbar(
         }
         MonthNavArrow(
             forward = true,
-            contentDescription = MonthText.nextMonth.zh,
+            contentDescription = MonthText.nextMonth.text,
             tint = muted,
             onTap = onNextMonth,
         )
@@ -116,7 +116,7 @@ fun MonthViewToolbar(
         ) {
             if (!isCurrentMonth) {
                 MonthTodayPill(
-                    label = MonthText.backToCurrentMonthShort.zh,
+                    label = MonthText.backToCurrentMonthShort.text,
                     ink = ink,
                     onTap = onBackToCurrentMonth,
                 )

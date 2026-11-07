@@ -32,13 +32,13 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.mutx163.qingyu.components.QingyuCard
 import com.mutx163.qingyu.components.QingyuCardDefaults
+import com.mutx163.qingyu.components.rememberSheetMaxHeight
 import com.mutx163.qingyu.components.QingyuPageScaffold as SharedPageScaffold
 import com.mutx163.qingyu.components.QingyuPageTheme
 import com.mutx163.qingyu.components.QingyuSheet
@@ -251,7 +251,7 @@ fun ImportGuidePanel(
         ) {
             Column(modifier = Modifier.fillMaxWidth()) {
                 Text(
-                    text = ImportStrings.applicableScenarioTitle.zh,
+                    text = ImportStrings.applicableScenarioTitle.text,
                     style = MiuixTheme.textStyles.body1.shiftWeight(QingyuWeightDelta.MEDIUM),
                     color = Color(QingyuTheme.primaryText(dark)),
                 )
@@ -277,7 +277,7 @@ fun ImportGuidePanel(
         ) {
             Column(modifier = Modifier.fillMaxWidth()) {
                 Text(
-                    text = ImportStrings.supportedFilesTitle.zh,
+                    text = ImportStrings.supportedFilesTitle.text,
                     style = MiuixTheme.textStyles.body1.shiftWeight(QingyuWeightDelta.MEDIUM),
                     color = Color(QingyuTheme.primaryText(dark)),
                 )
@@ -404,11 +404,11 @@ fun ImportSpreadsheetWarningsDialog(
 ) {
     val dark = isSystemInDarkTheme()
     // 提醒条数无上界：正文限高 + 可滚，动作按钮留在滚动区外（小屏/大字号仍能点到「继续」）。
-    val maxBodyHeight = (LocalConfiguration.current.screenHeightDp * 0.5f).dp
+    val maxBodyHeight = rememberSheetMaxHeight(0.5f)
     OverlayDialog(
         insideMargin = DpSize(16.dp, 16.dp),
         show = show,
-        title = ImportStrings.spreadsheetImportWarningsTitle.zh,
+        title = ImportStrings.spreadsheetImportWarningsTitle.text,
         onDismissRequest = onDismiss,
     ) {
         Column(modifier = Modifier.fillMaxWidth()) {
@@ -421,7 +421,7 @@ fun ImportSpreadsheetWarningsDialog(
             ) {
                 item(key = "message") {
                     Text(
-                        text = ImportStrings.spreadsheetImportWarningsMessage.zh,
+                        text = ImportStrings.spreadsheetImportWarningsMessage.text,
                         style = MiuixTheme.textStyles.body2,
                         lineHeight = 20.sp,
                         color = Color(QingyuTheme.secondaryText(dark)),
@@ -445,13 +445,13 @@ fun ImportSpreadsheetWarningsDialog(
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
             ) {
                 ImportActionButton(
-                    label = ImportStrings.cancelAction.zh,
+                    label = ImportStrings.cancelAction.text,
                     onClick = onDismiss,
                     secondary = true,
                     modifier = Modifier.weight(1f),
                 )
                 ImportActionButton(
-                    label = ImportStrings.spreadsheetImportWarningsContinue.zh,
+                    label = ImportStrings.spreadsheetImportWarningsContinue.text,
                     onClick = onContinue,
                     modifier = Modifier.weight(1f),
                 )
@@ -533,13 +533,13 @@ fun ImportPreviewDialog(
     OverlayDialog(
         insideMargin = DpSize(16.dp, 16.dp),
         show = show,
-        title = ImportStrings.importReplaceExistingTitle.zh,
+        title = ImportStrings.importReplaceExistingTitle.text,
         onDismissRequest = onCancel,
     ) {
         Column(modifier = Modifier.fillMaxWidth()) {
             // 正文限高可滚：学期映射两行 + 替换说明在小屏/大字号下可能撑出弹窗
             //（审核报告 P1 旧 :520 三个对话框里最后没改到的这条），动作按钮留在滚动区外。
-            val maxBodyHeight = (LocalConfiguration.current.screenHeightDp * 0.5f).dp
+            val maxBodyHeight = rememberSheetMaxHeight(0.5f)
             LazyColumn(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -561,16 +561,16 @@ fun ImportPreviewDialog(
                             Spacer(modifier = Modifier.height(12.dp))
                             // 开学日只能按周挪：学期起点本来就归一到周一，按天调只会造出半周。
                             ImportStepperRow(
-                                title = ImportStrings.importSemesterStartDateTitle.zh,
-                                subtitle = ImportStrings.importSemesterStartDateSubtitle.zh,
+                                title = ImportStrings.importSemesterStartDateTitle.text,
+                                subtitle = ImportStrings.importSemesterStartDateSubtitle.text,
                                 value = ImportSharedModel.importFormatDate(start),
                                 onDecrease = { startDate = start.minusDays(7) },
                                 onIncrease = { startDate = start.plusDays(7) },
                             )
                             Spacer(modifier = Modifier.height(8.dp))
                             ImportStepperRow(
-                                title = ImportStrings.importFirstCourseWeekMappingLabel.zh,
-                                subtitle = ImportStrings.importFirstCourseWeekMappingSubtitle.zh,
+                                title = ImportStrings.importFirstCourseWeekMappingLabel.text,
+                                subtitle = ImportStrings.importFirstCourseWeekMappingSubtitle.text,
                                 value = firstWeek.toString(),
                                 onDecrease = { if (firstWeek > 1) firstWeek -= 1 },
                                 onIncrease = { if (firstWeek < maxWeek) firstWeek += 1 },
@@ -583,7 +583,7 @@ fun ImportPreviewDialog(
                                         "calendarWeek" to firstWeek.toString(),
                                     )
                                 } else {
-                                    ImportStrings.importSemesterMappingNoShiftHint.zh
+                                    ImportStrings.importSemesterMappingNoShiftHint.text
                                 },
                                 style = MiuixTheme.textStyles.footnote1,
                                 lineHeight = 18.sp,
@@ -600,7 +600,7 @@ fun ImportPreviewDialog(
                             )
                             Spacer(modifier = Modifier.height(8.dp))
                             Text(
-                                text = ImportStrings.importReplaceExistingGuidance.zh,
+                                text = ImportStrings.importReplaceExistingGuidance.text,
                                 style = MiuixTheme.textStyles.body2,
                                 lineHeight = 20.sp,
                                 color = Color(QingyuTheme.secondaryText(dark)),
@@ -615,13 +615,13 @@ fun ImportPreviewDialog(
                 // 顺序对齐 Dart `showAppTripleActionDialog`：取消 → 更新（推荐） → 覆盖（主），
                 // 三个动作竖排、间距 12dp。
                 ImportActionButton(
-                    label = ImportStrings.cancelAction.zh,
+                    label = ImportStrings.cancelAction.text,
                     onClick = onCancel,
                     secondary = true,
                 )
                 Spacer(modifier = Modifier.height(12.dp))
                 ImportActionButton(
-                    label = ImportStrings.courseImportUpdateRecommendedAction.zh,
+                    label = ImportStrings.courseImportUpdateRecommendedAction.text,
                     onClick = {
                         onConfirm(ImportPreviewChoice(choiceStart, firstWeek, replaceExisting = false))
                     },
@@ -629,7 +629,7 @@ fun ImportPreviewDialog(
                 )
                 Spacer(modifier = Modifier.height(12.dp))
                 ImportActionButton(
-                    label = ImportStrings.courseImportOverwriteAction.zh,
+                    label = ImportStrings.courseImportOverwriteAction.text,
                     onClick = {
                         onConfirm(ImportPreviewChoice(choiceStart, firstWeek, replaceExisting = true))
                     },
@@ -643,13 +643,13 @@ fun ImportPreviewDialog(
                     horizontalArrangement = Arrangement.spacedBy(12.dp),
                 ) {
                     ImportActionButton(
-                        label = ImportStrings.cancelAction.zh,
+                        label = ImportStrings.cancelAction.text,
                         onClick = onCancel,
                         secondary = true,
                         modifier = Modifier.weight(1f),
                     )
                     ImportActionButton(
-                        label = ImportStrings.spreadsheetImportWarningsContinue.zh,
+                        label = ImportStrings.spreadsheetImportWarningsContinue.text,
                         onClick = {
                             onConfirm(ImportPreviewChoice(choiceStart, firstWeek, replaceExisting = true))
                         },
@@ -722,7 +722,7 @@ fun ImportCapacityDialog(
     OverlayDialog(
         insideMargin = DpSize(16.dp, 16.dp),
         show = show,
-        title = ImportStrings.courseImportSectionCountInsufficientTitle.zh,
+        title = ImportStrings.courseImportSectionCountInsufficientTitle.text,
         onDismissRequest = onCancel,
     ) {
         Column(modifier = Modifier.fillMaxWidth()) {
@@ -742,13 +742,13 @@ fun ImportCapacityDialog(
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
             ) {
                 ImportActionButton(
-                    label = ImportStrings.cancelAction.zh,
+                    label = ImportStrings.cancelAction.text,
                     onClick = onCancel,
                     secondary = true,
                     modifier = Modifier.weight(1f),
                 )
                 ImportActionButton(
-                    label = ImportStrings.courseImportAutoFillAndImportAction.zh,
+                    label = ImportStrings.courseImportAutoFillAndImportAction.text,
                     onClick = onAutoFill,
                     modifier = Modifier.weight(1f),
                 )
@@ -778,10 +778,10 @@ fun ImportColorGroupSheet(
     val dark = isSystemInDarkTheme()
     val colors = MiuixTheme.colorScheme
     // 7 行配色组在小屏/大字号下会撑出面板：清单限高可滚（弹层内短列表，不承载页面级滚动）。
-    val maxListHeight = (LocalConfiguration.current.screenHeightDp * 0.5f).dp
+    val maxListHeight = rememberSheetMaxHeight(0.5f)
     QingyuSheet(
         show = show,
-        title = ImportStrings.importRandomColorGroupTitle.zh,
+        title = ImportStrings.importRandomColorGroupTitle.text,
         // 内容自己有 LazyColumn ⇒ 不再套外层 verticalScroll，底部让位落进列表 contentPadding。
         contentScrolls = true,
         onDismissRequest = onDismiss,

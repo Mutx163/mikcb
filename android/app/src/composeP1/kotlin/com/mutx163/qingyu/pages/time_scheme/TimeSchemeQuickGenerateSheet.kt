@@ -22,6 +22,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import com.mutx163.qingyu.components.QingyuSheet
 import com.mutx163.qingyu.components.QingyuWeightDelta
+import com.mutx163.qingyu.components.rememberCappedSheetHeight
 import com.mutx163.qingyu.components.shiftWeight
 import com.mutx163.qingyu.core.BreakOverrideRule
 import top.yukonga.miuix.kmp.basic.BasicComponent
@@ -181,7 +182,7 @@ fun TimeSchemeQuickGenerateSheet(
         if (morning == null || afternoon == null || evening == null ||
             duration == null || breakMinutes == null
         ) {
-            validationError = TimeSchemeManagementStrings.fillNumbersValidationMessage.zh
+            validationError = TimeSchemeManagementStrings.fillNumbersValidationMessage.text
             return
         }
 
@@ -192,7 +193,7 @@ fun TimeSchemeQuickGenerateSheet(
             // Dart 同口径：解析失败（空/非数字）与越界（节次 < 1、时长 < 0）一并阻断，
             // 不再像 2026-10-20 之前那样 `.where(...)` 把填错的规则一声不吭滤掉。
             if (afterSection == null || afterSection < 1 || minutes == null || minutes < 0) {
-                validationError = TimeSchemeManagementStrings.breakOverrideInvalidMessage.zh
+                validationError = TimeSchemeManagementStrings.breakOverrideInvalidMessage.text
                 return
             }
             rules += BreakOverrideRule(afterSection = afterSection, breakDurationMinutes = minutes)
@@ -214,7 +215,7 @@ fun TimeSchemeQuickGenerateSheet(
     }
 
     val title = timeField?.let { timeFieldLabel(it) }
-        ?: TimeSchemeManagementStrings.quickGenerateTimeSchemeTitle.zh
+        ?: TimeSchemeManagementStrings.quickGenerateTimeSchemeTitle.text
 
     QingyuSheet(
         show = visible,
@@ -321,7 +322,7 @@ private fun QuickGenerateForm(
             modifier = Modifier
                 .weight(1f, fill = false)
                 .fillMaxWidth()
-                .heightIn(max = 380.dp)
+                .heightIn(max = rememberCappedSheetHeight(380.dp))
                 .scrollEndHaptic()
                 .overScrollVertical(),
         ) {
@@ -331,11 +332,11 @@ private fun QuickGenerateForm(
                     NumberField(
                         value = morningCount,
                         onValueChange = onMorningCountChange,
-                        label = TimeSchemeManagementStrings.morningSectionCountLabel.zh,
+                        label = TimeSchemeManagementStrings.morningSectionCountLabel.text,
                     )
                     Spacer(Modifier.height(12.dp))
                     TimeField(
-                        label = TimeSchemeManagementStrings.morningFirstSectionTimeLabel.zh,
+                        label = TimeSchemeManagementStrings.morningFirstSectionTimeLabel.text,
                         value = morningStart,
                         onClick = onPickMorningStart,
                     )
@@ -344,11 +345,11 @@ private fun QuickGenerateForm(
                     NumberField(
                         value = afternoonCount,
                         onValueChange = onAfternoonCountChange,
-                        label = TimeSchemeManagementStrings.afternoonSectionCountLabel.zh,
+                        label = TimeSchemeManagementStrings.afternoonSectionCountLabel.text,
                     )
                     Spacer(Modifier.height(12.dp))
                     TimeField(
-                        label = TimeSchemeManagementStrings.afternoonFirstSectionTimeLabel.zh,
+                        label = TimeSchemeManagementStrings.afternoonFirstSectionTimeLabel.text,
                         value = afternoonStart,
                         onClick = onPickAfternoonStart,
                     )
@@ -357,11 +358,11 @@ private fun QuickGenerateForm(
                     NumberField(
                         value = eveningCount,
                         onValueChange = onEveningCountChange,
-                        label = TimeSchemeManagementStrings.eveningSectionCountLabel.zh,
+                        label = TimeSchemeManagementStrings.eveningSectionCountLabel.text,
                     )
                     Spacer(Modifier.height(12.dp))
                     TimeField(
-                        label = TimeSchemeManagementStrings.eveningFirstSectionTimeLabel.zh,
+                        label = TimeSchemeManagementStrings.eveningFirstSectionTimeLabel.text,
                         value = eveningStart,
                         onClick = onPickEveningStart,
                     )
@@ -370,19 +371,19 @@ private fun QuickGenerateForm(
                     NumberField(
                         value = classDuration,
                         onValueChange = onClassDurationChange,
-                        label = TimeSchemeManagementStrings.classDurationMinutesLabel.zh,
+                        label = TimeSchemeManagementStrings.classDurationMinutesLabel.text,
                     )
                     Spacer(Modifier.height(12.dp))
                     NumberField(
                         value = breakDuration,
                         onValueChange = onBreakDurationChange,
-                        label = TimeSchemeManagementStrings.smallBreakDurationMinutesLabel.zh,
+                        label = TimeSchemeManagementStrings.smallBreakDurationMinutesLabel.text,
                     )
                     Spacer(Modifier.height(12.dp))
 
                     // ── 大课间规则（Dart `:231-247`）──
                     Text(
-                        text = TimeSchemeManagementStrings.largeBreakRulesTitle.zh,
+                        text = TimeSchemeManagementStrings.largeBreakRulesTitle.text,
                         style = MiuixTheme.textStyles.main,
                         modifier = Modifier.padding(horizontal = 16.dp),
                     )
@@ -390,7 +391,7 @@ private fun QuickGenerateForm(
                     if (breakRules.isEmpty()) {
                         // Dart `:303-309`：一条规则都没有时给这句，不是自造空态。
                         Text(
-                            text = TimeSchemeManagementStrings.noLargeBreakRulesHint.zh,
+                            text = TimeSchemeManagementStrings.noLargeBreakRulesHint.text,
                             style = MiuixTheme.textStyles.footnote1,
                             color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
                             modifier = Modifier.padding(horizontal = 16.dp),
@@ -413,7 +414,7 @@ private fun QuickGenerateForm(
                             onClick = onAddBreakRule,
                             colors = ButtonDefaults.buttonColors(),
                         ) {
-                            Text(text = TimeSchemeManagementStrings.addBreakRuleAction.zh)
+                            Text(text = TimeSchemeManagementStrings.addBreakRuleAction.text)
                         }
                     }
                     Spacer(Modifier.height(8.dp))
@@ -442,7 +443,7 @@ private fun QuickGenerateForm(
         ) {
             TextButton(
                 modifier = Modifier.weight(1f),
-                text = TimeSchemeManagementStrings.cancelAction.zh,
+                text = TimeSchemeManagementStrings.cancelAction.text,
                 onClick = onCancel,
             )
             Button(
@@ -450,7 +451,7 @@ private fun QuickGenerateForm(
                 onClick = onConfirm,
                 colors = ButtonDefaults.buttonColorsPrimary(),
             ) {
-                Text(text = TimeSchemeManagementStrings.generateAction.zh)
+                Text(text = TimeSchemeManagementStrings.generateAction.text)
             }
         }
     }
@@ -514,7 +515,7 @@ private fun QuickGenerateTimePickerPage(
             // 取消 = 只退回表单页，**不关整个弹层**（用户填了一半不该被清掉）。
             TextButton(
                 modifier = Modifier.weight(1f),
-                text = TimeSchemeManagementStrings.cancelAction.zh,
+                text = TimeSchemeManagementStrings.cancelAction.text,
                 onClick = onCancel,
             )
             Button(
@@ -524,7 +525,7 @@ private fun QuickGenerateTimePickerPage(
             ) {
                 // Dart 的时间选择器两个按钮是 `cancelAction` / `confirmAction`
                 //（`lib/widgets/miuix_time_picker_sheet.dart:114`、`:124`），这里同口径。
-                Text(text = TimeSchemeManagementStrings.confirmAction.zh)
+                Text(text = TimeSchemeManagementStrings.confirmAction.text)
             }
         }
     }
@@ -597,7 +598,7 @@ private fun BreakRuleRow(
         TextField(
             value = draft.afterSection,
             onValueChange = { raw -> onChange(draft.copy(afterSection = raw.filter { it.isDigit() }.take(2))) },
-            label = TimeSchemeManagementStrings.afterSectionLabel.zh,
+            label = TimeSchemeManagementStrings.afterSectionLabel.text,
             singleLine = true,
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
             modifier = Modifier.weight(1f),
@@ -605,7 +606,7 @@ private fun BreakRuleRow(
         TextField(
             value = draft.duration,
             onValueChange = { raw -> onChange(draft.copy(duration = raw.filter { it.isDigit() }.take(3))) },
-            label = TimeSchemeManagementStrings.breakDurationMinutesLabel.zh,
+            label = TimeSchemeManagementStrings.breakDurationMinutesLabel.text,
             singleLine = true,
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
             modifier = Modifier.weight(1f),
@@ -613,7 +614,7 @@ private fun BreakRuleRow(
         IconButton(onClick = onRemove) {
             Icon(
                 imageVector = MiuixIcons.Delete,
-                contentDescription = TimeSchemeManagementStrings.deleteRuleTooltip.zh,
+                contentDescription = TimeSchemeManagementStrings.deleteRuleTooltip.text,
                 tint = MiuixTheme.colorScheme.onSurfaceVariantActions,
             )
         }
@@ -658,7 +659,7 @@ private enum class QuickTimeField {
 
 /** 滚轮页标题 = 该字段的标签（与 Dart 传给时间选择器的 `title` 同一句文案）。 */
 private fun timeFieldLabel(field: QuickTimeField): String = when (field) {
-    QuickTimeField.MORNING -> TimeSchemeManagementStrings.morningFirstSectionTimeLabel.zh
-    QuickTimeField.AFTERNOON -> TimeSchemeManagementStrings.afternoonFirstSectionTimeLabel.zh
-    QuickTimeField.EVENING -> TimeSchemeManagementStrings.eveningFirstSectionTimeLabel.zh
+    QuickTimeField.MORNING -> TimeSchemeManagementStrings.morningFirstSectionTimeLabel.text
+    QuickTimeField.AFTERNOON -> TimeSchemeManagementStrings.afternoonFirstSectionTimeLabel.text
+    QuickTimeField.EVENING -> TimeSchemeManagementStrings.eveningFirstSectionTimeLabel.text
 }

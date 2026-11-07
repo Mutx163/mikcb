@@ -168,7 +168,7 @@ fun TimeSchemeManagementPage(
                         // 左右 16dp 对齐 28dp 文字轴，纵向不再叠 SmallTitle 默认的 8dp（列表 spacedBy 已给 12dp），
                         // 否则上下各 ~20dp 一大片空白。
                         QingyuSectionTitle(
-                            text = TimeSchemeManagementStrings.timeSchemeEntryTitle.zh,
+                            text = TimeSchemeManagementStrings.timeSchemeEntryTitle.text,
                             insideMargin = PaddingValues(start = 16.dp, end = 16.dp, top = 0.dp, bottom = 0.dp),
                         )
                     }
@@ -224,7 +224,7 @@ private fun EntryCard(
         cornerRadius = QingyuCardDefaults.SettingsGroupCorner,
     ) {
         ArrowPreference(
-            title = TimeSchemeManagementStrings.locationTimeMatchEntryTitle.zh,
+            title = TimeSchemeManagementStrings.locationTimeMatchEntryTitle.text,
             startAction = {
                 Box(modifier = Modifier.padding(end = 4.dp)) {
                     LeadingIconBadge(icon = MiuixIcons.Location, accent = Color(QingyuIconColors.ORANGE))
@@ -239,7 +239,7 @@ private fun EntryCard(
         )
         // 官方 ArrowSection.kt:44-95：多个 Preference 同卡、中间不加分割线。
         ArrowPreference(
-            title = TimeSchemeManagementStrings.scheduleDateRuleSectionTitle.zh,
+            title = TimeSchemeManagementStrings.scheduleDateRuleSectionTitle.text,
             startAction = {
                 Box(modifier = Modifier.padding(end = 4.dp)) {
                     LeadingIconBadge(icon = MiuixIcons.Months, accent = Color(QingyuIconColors.TEAL))
@@ -268,7 +268,7 @@ private fun EmptyStateRow() {
         insideMargin = QingyuCardDefaults.ContentInsideMargin,
     ) {
         Text(
-            text = TimeSchemeManagementStrings.locationTimeMatchNeedTimeScheme.zh,
+            text = TimeSchemeManagementStrings.locationTimeMatchNeedTimeScheme.text,
             style = MiuixTheme.textStyles.body1,
             color = Color(QingyuTheme.secondaryText(dark)),
         )
@@ -336,7 +336,7 @@ private fun SchemeCard(
             IconButton(onClick = onOpenMenu) {
                 Icon(
                     imageVector = MiuixIcons.More,
-                    contentDescription = TimeSchemeManagementStrings.moreActionsTooltip.zh,
+                    contentDescription = TimeSchemeManagementStrings.moreActionsTooltip.text,
                     tint = Color(QingyuTheme.actionIcon(dark)),
                     modifier = Modifier.size(20.dp),
                 )
@@ -353,7 +353,7 @@ private fun SchemeCard(
         if (row.isActive) {
             Spacer(modifier = Modifier.height(8.dp))
             Text(
-                text = TimeSchemeManagementStrings.usingNow.zh,
+                text = TimeSchemeManagementStrings.usingNow.text,
                 style = MiuixTheme.textStyles.footnote1,
                 color = Color(QingyuTheme.primary(dark = dark)),
             )
@@ -364,9 +364,9 @@ private fun SchemeCard(
             // 左：使用中显示「正在使用」且禁用；否则「应用到当前课表」可点。
             SecondaryButton(
                 label = if (row.isActive) {
-                    TimeSchemeManagementStrings.usingNow.zh
+                    TimeSchemeManagementStrings.usingNow.text
                 } else {
-                    TimeSchemeManagementStrings.applyToCurrentTimetable.zh
+                    TimeSchemeManagementStrings.applyToCurrentTimetable.text
                 },
                 enabled = !row.isActive,
                 onClick = onApply,
@@ -374,7 +374,7 @@ private fun SchemeCard(
             )
             Spacer(modifier = Modifier.width(8.dp))
             SecondaryButton(
-                label = TimeSchemeManagementStrings.editSectionsAction.zh,
+                label = TimeSchemeManagementStrings.editSectionsAction.text,
                 onClick = onEditSections,
             )
         }

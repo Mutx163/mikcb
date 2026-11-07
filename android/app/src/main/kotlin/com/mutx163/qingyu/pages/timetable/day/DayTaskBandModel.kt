@@ -207,7 +207,7 @@ object DayTaskBandLogic {
      * 解析任务在带上的展示标题（空标题兜底为 "课程作业"）。
      */
     fun resolveDisplayTitle(task: CourseTask): String =
-        if (needsDefaultTitle(task)) DayViewStrings.taskHomeworkDefaultTitle.zh else task.title.trim()
+        if (needsDefaultTitle(task)) DayViewStrings.taskHomeworkDefaultTitle.text else task.title.trim()
 
     /**
      * 清单页与待办带共用的「今日相关」口径：今天到期（含已完成）+ 逾期未完成。

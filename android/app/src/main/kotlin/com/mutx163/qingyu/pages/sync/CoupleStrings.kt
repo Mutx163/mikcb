@@ -149,15 +149,15 @@ object CoupleStrings {
     fun localizeServiceMessage(code: String?): String {
         val raw = code?.trim().orEmpty()
         return when (raw) {
-            "couple_webdav_not_connected" -> coupleWebdavNotConnectedError.zh
-            "couple_webdav_partner_file_missing" -> coupleWebdavPartnerFileMissing.zh
-            "couple_webdav_pull_failed" -> coupleWebdavPullFailed.zh
-            "partner_import_requires_single_profile" -> partnerImportRequiresSingleProfile.zh
-            "unrecognized_mikcb_data_file" -> serviceMsgUnrecognizedMikcbDataFile.zh
-            "missing_settings_data" -> serviceMsgMissingSettingsData.zh
-            "couple_webdav_invalid_base_url" -> SyncStrings.syncErrorInsecureUrl.zh
+            "couple_webdav_not_connected" -> coupleWebdavNotConnectedError.text
+            "couple_webdav_partner_file_missing" -> coupleWebdavPartnerFileMissing.text
+            "couple_webdav_pull_failed" -> coupleWebdavPullFailed.text
+            "partner_import_requires_single_profile" -> partnerImportRequiresSingleProfile.text
+            "unrecognized_mikcb_data_file" -> serviceMsgUnrecognizedMikcbDataFile.text
+            "missing_settings_data" -> serviceMsgMissingSettingsData.text
+            "couple_webdav_invalid_base_url" -> SyncStrings.syncErrorInsecureUrl.text
             "couple_webdav_partner_file_not_utf8",
-            "couple_webdav_partner_file_not_json" -> importFailedInvalidFile.zh
+            "couple_webdav_partner_file_not_json" -> importFailedInvalidFile.text
             "auth_failed",
             "access_denied",
             "certificate_error",
@@ -165,7 +165,7 @@ object CoupleStrings {
             "connection_failed",
             "network_error",
             "invalid_response" -> SyncStrings.localizeSyncError(raw)
-            else -> if (internalCodePattern.matches(raw)) quickImportUnknownError.zh else raw
+            else -> if (internalCodePattern.matches(raw)) quickImportUnknownError.text else raw
         }
     }
 

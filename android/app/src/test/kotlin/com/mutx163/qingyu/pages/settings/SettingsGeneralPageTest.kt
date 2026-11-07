@@ -29,11 +29,12 @@ class SettingsGeneralPageTest {
     }
 
     @Test
-    fun `首组两行按 Dart 顺序排列`() {
+    fun `首组三行按 Dart 顺序排列`() {
         // settings_general.dart:56-101：语言 → 转场速度 → 震动反馈 → 下拉快捷导入。
-        // 2026-11-05：语言行与下拉导入行都先隐藏（见各自 `暂时隐藏` 用例），只剩这两行。
+        // 2026-11-05：下拉导入行隐藏（见对应用例）；语言行 2026-11-07 已恢复。
         assertEquals(
             listOf(
+                "general.language",
                 "general.transitionSpeed",
                 "general.haptics",
             ),
@@ -42,8 +43,9 @@ class SettingsGeneralPageTest {
     }
 
     @Test
-    fun `两行各自用的官方组件`() {
+    fun `三行各自用的官方组件`() {
         val page = spec()
+        assertEquals(MiuixRowComponent.DROPDOWN, page.row("general.language").component)
         assertEquals(MiuixRowComponent.SLIDER, page.row("general.transitionSpeed").component)
         assertEquals(MiuixRowComponent.SWITCH, page.row("general.haptics").component)
     }
@@ -51,22 +53,19 @@ class SettingsGeneralPageTest {
     // -------------------------------------------------------------- 语言行
 
     @Test
-    fun `语言行暂时隐藏`() {
-        // 2026-11-05：composeP1 的界面文字没有外语版（`.zh` 上千处、`.en` 零处），这个下拉给 6 个
-        // 选项却一个都换不掉界面语言，副标题还写着「可跟随系统，或手动切换到已适配语言」——
-        // 等于在页面上写一句不成立的话。按「不许留点了必无效的入口」口径先隐藏。
-        // 模型字段 appLocaleTag / ROW_LOCALE 写盘分支 / 文案键全部保留，locale 真切换落地后原样回来。
-        // 本条断言是防止「悄悄加回」的闸：恢复渲染时必须同时改这里。
-        val ids = spec().group("general.main").childRowIds()
-        assertFalse("界面文字没有外语版之前，语言选择行不许渲染", ids.contains("general.language"))
-        // 文案与选项表仍留在模型层：接回来后不用重新翻译、不用重排选项
-        assertEquals("languageModeLabel", SettingsStrings.languageModeLabel.key)
-        assertEquals("语言选择", SettingsStrings.languageModeLabel.zh)
-        assertEquals("languageSectionSubtitle", SettingsStrings.languageSectionSubtitle.key)
+    fun `语言行恢复渲染并带六个语言选项`() {
+        // 2026-11-07：文案层接通（`ArbText.text` + `AppLocaleRuntime`），下拉不再是无效控件，
+        // 因此恢复渲染。选项顺序与 `AppLocalizations.supportedLocales` 一致，首项是「跟随系统」。
+        val row = spec(SettingsPageState(appLocaleTag = "ja")).row("general.language")
+        assertEquals("languageModeLabel", row.titleKey)
+        assertEquals("语言选择", row.title)
+        assertEquals("languageSectionSubtitle", row.subtitleKey)
+        assertEquals("ja", row.selectedOptionId)
         assertEquals(
             listOf("", "en", "ja", "ko", "zh", "zh_HK", "zh_TW"),
-            SettingsGeneralPage.localeOptions().map { it.id },
+            row.options.map { it.id },
         )
+        assertEquals(SettingsAction.WRITE_SETTING, row.action)
     }
 
     @Test

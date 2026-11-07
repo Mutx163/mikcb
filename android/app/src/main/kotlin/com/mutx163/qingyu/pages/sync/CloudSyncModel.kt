@@ -176,7 +176,7 @@ object CloudSyncLogic {
     fun advancedSaveFeedback(verdict: BaseUrlVerdict): SyncToast? = when (verdict) {
         BaseUrlVerdict.INVALID -> SyncResultToasts.forBaseUrlInvalid()
         BaseUrlVerdict.NEED_HTTP_CONFIRM -> null
-        BaseUrlVerdict.PROCEED -> SyncToast(message = SyncStrings.cloudSyncSaved.zh, isError = false)
+        BaseUrlVerdict.PROCEED -> SyncToast(message = SyncStrings.cloudSyncSaved.text, isError = false)
     }
 
     /**
@@ -187,7 +187,7 @@ object CloudSyncLogic {
      * 单测钉住键引用：把这里的 `saveFailed` 换掉（探针）→ [SyncResultToastsTest] 必红。
      */
     fun advancedSaveFailureFeedback(): SyncToast =
-        SyncToast(message = SyncStrings.saveFailed.zh, isError = true)
+        SyncToast(message = SyncStrings.saveFailed.text, isError = true)
 
     /**
      * 连接成功的页面提示（A 类第 16 条，2026-11-05）：发布版连接成功后
@@ -202,7 +202,7 @@ object CloudSyncLogic {
      * [SyncResultToastsTest] 必红。
      */
     fun connectSuccessFeedback(): SyncToast =
-        SyncToast(message = SyncStrings.cloudSyncConnectSuccess.zh, isError = false)
+        SyncToast(message = SyncStrings.cloudSyncConnectSuccess.text, isError = false)
 
 
     /** Dart `_maxBackupCountOptions` / `_maxBackupAgeOptions`。 */
@@ -271,13 +271,13 @@ object CloudSyncLogic {
     }
 
     fun providerLabel(provider: WebdavSyncProvider): String = when (provider) {
-        WebdavSyncProvider.JIANGUOYUN -> SyncStrings.cloudSyncProviderJianguoyun.zh
-        WebdavSyncProvider.CUSTOM -> SyncStrings.cloudSyncProviderCustom.zh
+        WebdavSyncProvider.JIANGUOYUN -> SyncStrings.cloudSyncProviderJianguoyun.text
+        WebdavSyncProvider.CUSTOM -> SyncStrings.cloudSyncProviderCustom.text
     }
 
     fun modeLabel(mode: WebdavSyncMode): String = when (mode) {
-        WebdavSyncMode.AUTO -> SyncStrings.cloudSyncModeAuto.zh
-        WebdavSyncMode.MANUAL -> SyncStrings.cloudSyncModeManual.zh
+        WebdavSyncMode.AUTO -> SyncStrings.cloudSyncModeAuto.text
+        WebdavSyncMode.MANUAL -> SyncStrings.cloudSyncModeManual.text
     }
 
     /**
@@ -395,18 +395,18 @@ object CloudSyncLogic {
     fun conflictDialog(isFirstSyncDivergence: Boolean): SyncConflictDialogView =
         SyncConflictDialogView(
             title = if (isFirstSyncDivergence) {
-                SyncStrings.cloudSyncConflictFirstSyncTitle.zh
+                SyncStrings.cloudSyncConflictFirstSyncTitle.text
             } else {
-                SyncStrings.cloudSyncConflictTitle.zh
+                SyncStrings.cloudSyncConflictTitle.text
             },
             message = if (isFirstSyncDivergence) {
-                SyncStrings.cloudSyncConflictFirstSyncBody.zh
+                SyncStrings.cloudSyncConflictFirstSyncBody.text
             } else {
-                SyncStrings.cloudSyncConflictBody.zh
+                SyncStrings.cloudSyncConflictBody.text
             },
-            cancelLabel = SyncStrings.cancelAction.zh,
-            useRemoteLabel = SyncStrings.cloudSyncUseRemoteAction.zh,
-            keepLocalLabel = SyncStrings.cloudSyncKeepLocalAction.zh,
+            cancelLabel = SyncStrings.cancelAction.text,
+            useRemoteLabel = SyncStrings.cloudSyncUseRemoteAction.text,
+            keepLocalLabel = SyncStrings.cloudSyncKeepLocalAction.text,
         )
 
     /** 备份区预览（前 [BACKUP_PREVIEW_LIMIT] 条，倒序由 [CloudBackupListLogic] 保证）。 */
@@ -455,59 +455,59 @@ object CloudSyncLogic {
                 title = if (connected) {
                     SyncStrings.cloudSyncConnectedAs.filled("email", config.username.trim())
                 } else {
-                    SyncStrings.cloudSyncConnectAccount.zh
+                    SyncStrings.cloudSyncConnectAccount.text
                 },
-                subtitle = if (connected) providerLabel(config.provider) else SyncStrings.cloudSyncNotConnectedHint.zh,
+                subtitle = if (connected) providerLabel(config.provider) else SyncStrings.cloudSyncNotConnectedHint.text,
                 username = config.username.trim(),
             ),
             status = statusView,
-            accountSectionTitle = SyncStrings.cloudSyncAccountSectionTitle.zh,
-            connectActionLabel = SyncStrings.cloudSyncConnectAccount.zh,
-            disconnectActionLabel = SyncStrings.cloudSyncDisconnect.zh,
-            disconnectTitle = SyncStrings.cloudSyncDisconnectTitle.zh,
-            disconnectBody = SyncStrings.cloudSyncDisconnectBody.zh,
-            title = SyncStrings.cloudSyncTitle.zh,
-            introTitle = SyncStrings.cloudSyncIntroTitle.zh,
-            introSubtitle = SyncStrings.cloudSyncIntroSubtitle.zh,
-            helpTitle = SyncStrings.cloudSyncHelpTitle.zh,
-            helpBody = SyncStrings.cloudSyncHelpBody.zh,
+            accountSectionTitle = SyncStrings.cloudSyncAccountSectionTitle.text,
+            connectActionLabel = SyncStrings.cloudSyncConnectAccount.text,
+            disconnectActionLabel = SyncStrings.cloudSyncDisconnect.text,
+            disconnectTitle = SyncStrings.cloudSyncDisconnectTitle.text,
+            disconnectBody = SyncStrings.cloudSyncDisconnectBody.text,
+            title = SyncStrings.cloudSyncTitle.text,
+            introTitle = SyncStrings.cloudSyncIntroTitle.text,
+            introSubtitle = SyncStrings.cloudSyncIntroSubtitle.text,
+            helpTitle = SyncStrings.cloudSyncHelpTitle.text,
+            helpBody = SyncStrings.cloudSyncHelpBody.text,
             showSyncSettings = connected,
-            settingsSectionTitle = SyncStrings.cloudSyncSettingsSectionTitle.zh,
-            syncEnabledTitle = SyncStrings.cloudSyncEnabledTitle.zh,
+            settingsSectionTitle = SyncStrings.cloudSyncSettingsSectionTitle.text,
+            syncEnabledTitle = SyncStrings.cloudSyncEnabledTitle.text,
             syncEnabled = config.enabled,
-            providerTitle = SyncStrings.cloudSyncProviderTitle.zh,
+            providerTitle = SyncStrings.cloudSyncProviderTitle.text,
             providerLabels = providerLabels(),
             providerIndex = providerIndexOf(config.provider),
-            modeTitle = SyncStrings.cloudSyncModeTitle.zh,
+            modeTitle = SyncStrings.cloudSyncModeTitle.text,
             modeLabels = modeLabels(),
             modeIndex = modeIndexOf(config.syncMode),
-            advancedTitle = SyncStrings.cloudSyncAdvancedTitle.zh,
-            baseUrlLabel = SyncStrings.cloudSyncBaseUrlLabel.zh,
+            advancedTitle = SyncStrings.cloudSyncAdvancedTitle.text,
+            baseUrlLabel = SyncStrings.cloudSyncBaseUrlLabel.text,
             baseUrl = config.baseUrl,
-            remoteFolderLabel = SyncStrings.cloudSyncRemoteFolderLabel.zh,
+            remoteFolderLabel = SyncStrings.cloudSyncRemoteFolderLabel.text,
             remoteFolder = config.remoteFolder,
-            deviceLabelTitle = SyncStrings.cloudBackupDeviceLabelTitle.zh,
-            deviceLabelHint = SyncStrings.cloudBackupDeviceLabelHint.zh,
+            deviceLabelTitle = SyncStrings.cloudBackupDeviceLabelTitle.text,
+            deviceLabelHint = SyncStrings.cloudBackupDeviceLabelHint.text,
             deviceLabel = deviceLabel,
-            baseUrlInvalidMessage = SyncStrings.cloudSyncBaseUrlInvalid.zh,
-            httpConfirmTitle = SyncStrings.cloudSyncHttpConfirmTitle.zh,
-            httpConfirmMessage = SyncStrings.cloudSyncHttpConfirmMessage.zh,
-            httpConfirmProceedLabel = SyncStrings.cloudSyncHttpConfirmProceed.zh,
+            baseUrlInvalidMessage = SyncStrings.cloudSyncBaseUrlInvalid.text,
+            httpConfirmTitle = SyncStrings.cloudSyncHttpConfirmTitle.text,
+            httpConfirmMessage = SyncStrings.cloudSyncHttpConfirmMessage.text,
+            httpConfirmProceedLabel = SyncStrings.cloudSyncHttpConfirmProceed.text,
             showStatus = connected,
-            statusSectionTitle = SyncStrings.cloudSyncStatusTitle.zh,
-            lastSyncedLabel = SyncStrings.cloudSyncLastSyncedLabel.zh,
-            lastErrorLabel = SyncStrings.cloudSyncLastErrorLabel.zh,
-            syncingLabel = SyncStrings.cloudSyncSyncing.zh,
+            statusSectionTitle = SyncStrings.cloudSyncStatusTitle.text,
+            lastSyncedLabel = SyncStrings.cloudSyncLastSyncedLabel.text,
+            lastErrorLabel = SyncStrings.cloudSyncLastErrorLabel.text,
+            syncingLabel = SyncStrings.cloudSyncSyncing.text,
             showSyncNow = showBusinessSections,
             syncNowButton = CloudSyncButtonView(
-                label = SyncStrings.cloudSyncSyncNow.zh,
+                label = SyncStrings.cloudSyncSyncNow.text,
                 loading = status.isSyncing,
                 enabled = !status.isSyncing && config.enabled,
             ),
             showBackups = showBusinessSections,
-            backupSectionTitle = SyncStrings.cloudBackupSectionTitle.zh,
+            backupSectionTitle = SyncStrings.cloudBackupSectionTitle.text,
             createBackupButton = CloudSyncButtonView(
-                label = SyncStrings.cloudBackupCreateNow.zh,
+                label = SyncStrings.cloudBackupCreateNow.text,
                 loading = isCreatingBackup,
                 // Dart: onPressed: _creatingBackup || _syncing ? null : _createManualBackup
                 enabled = !isCreatingBackup && !status.isSyncing,
@@ -515,25 +515,25 @@ object CloudSyncLogic {
             loadingBackups = loadingBackups,
             backupRows = previewRows,
             hasMoreBackups = sorted.size > BACKUP_PREVIEW_LIMIT,
-            viewAllLabel = SyncStrings.cloudBackupViewAll.zh,
-            emptyBackupText = SyncStrings.cloudBackupEmpty.zh,
+            viewAllLabel = SyncStrings.cloudBackupViewAll.text,
+            emptyBackupText = SyncStrings.cloudBackupEmpty.text,
             showRetention = showBusinessSections,
-            retentionSectionTitle = SyncStrings.cloudBackupRetentionTitle.zh,
-            maxCountTitle = SyncStrings.cloudBackupMaxCountTitle.zh,
-            maxCountSubtitle = SyncStrings.cloudBackupMaxCountSubtitle.zh,
+            retentionSectionTitle = SyncStrings.cloudBackupRetentionTitle.text,
+            maxCountTitle = SyncStrings.cloudBackupMaxCountTitle.text,
+            maxCountSubtitle = SyncStrings.cloudBackupMaxCountSubtitle.text,
             maxCountOptionLabels = maxCountOptionLabels(),
             maxCountSelectedIndex = optionIndexOf(MAX_BACKUP_COUNT_OPTIONS, config.maxBackupCount),
-            maxAgeTitle = SyncStrings.cloudBackupMaxAgeTitle.zh,
-            maxAgeSubtitle = SyncStrings.cloudBackupMaxAgeSubtitle.zh,
+            maxAgeTitle = SyncStrings.cloudBackupMaxAgeTitle.text,
+            maxAgeSubtitle = SyncStrings.cloudBackupMaxAgeSubtitle.text,
             maxAgeOptionLabels = maxAgeOptionLabels(),
             maxAgeSelectedIndex = optionIndexOf(MAX_BACKUP_AGE_OPTIONS, config.maxBackupAgeDays),
-            manualProtectedTitle = SyncStrings.cloudBackupManualProtectedTitle.zh,
+            manualProtectedTitle = SyncStrings.cloudBackupManualProtectedTitle.text,
             manualBackupProtected = config.manualBackupProtected,
             // 恢复入口就在备份区里：业务区整段不出现时（未连接 / 同步关闭），撤销也不该出现。
             canUndoRestore = canUndoRestore && showBusinessSections,
-            undoRestoreTitle = SyncStrings.cloudBackupUndoRestoreTitle.zh,
-            undoRestoreSummary = SyncStrings.cloudBackupUndoRestoreSummary.zh,
-            undoRestoreActionLabel = SyncStrings.themeUndo.zh,
+            undoRestoreTitle = SyncStrings.cloudBackupUndoRestoreTitle.text,
+            undoRestoreSummary = SyncStrings.cloudBackupUndoRestoreSummary.text,
+            undoRestoreActionLabel = SyncStrings.themeUndo.text,
         )
     }
 

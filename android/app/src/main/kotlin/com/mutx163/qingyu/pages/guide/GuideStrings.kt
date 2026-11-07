@@ -6,18 +6,7 @@ package com.mutx163.qingyu.pages.guide
  * **逐字抄录，不许改写**：每一条都在 [GuideStringsParityTest] 里与 ARB 机械比对，
  * 键缺失或值被改写都会红。
  */
-data class ArbText(val key: String, val zh: String) {
-    /** 替换模板里的占位符（`{name}` → [value]）。 */
-    fun filled(name: String, value: String): String = zh.replace("{$name}", value)
-
-    fun filled(vararg pairs: Pair<String, String>): String {
-        var result = zh
-        for ((name, value) in pairs) {
-            result = result.replace("{$name}", value)
-        }
-        return result
-    }
-}
+typealias ArbText = com.mutx163.qingyu.app.ArbText
 
 fun String.filled(name: String, value: String): String = replace("{$name}", value)
 

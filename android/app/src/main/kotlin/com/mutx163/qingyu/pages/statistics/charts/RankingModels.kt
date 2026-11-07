@@ -46,7 +46,7 @@ data class CourseRankingRow(
 object CourseRankingModel {
 
     /** 空列表时显示的文案（Dart `l10n.statisticsNoData`）。 */
-    val emptyMessage: String get() = ChartsStrings.statisticsNoData.zh
+    val emptyMessage: String get() = ChartsStrings.statisticsNoData.text
 
     /**
      * 构建排行行；入参必须已按课时**降序**排好（排序是上游统计服务的职责，
@@ -72,9 +72,9 @@ object CourseRankingModel {
     /** 必修 / 选修文字：Dart `isRequired ? courseNatureRequired : courseNatureElective`。 */
     fun natureLabel(nature: CourseNature): String =
         if (nature == CourseNature.REQUIRED) {
-            ChartsStrings.courseNatureRequired.zh
+            ChartsStrings.courseNatureRequired.text
         } else {
-            ChartsStrings.courseNatureElective.zh
+            ChartsStrings.courseNatureElective.text
         }
 
     /** 单个时间槽的两种写法。 */
@@ -97,7 +97,7 @@ object CourseRankingModel {
         } else {
             "$startSection-$endSection"
         }
-        return "$day $sections${ChartsStrings.statisticsSectionUnit.zh}"
+        return "$day $sections${ChartsStrings.statisticsSectionUnit.text}"
     }
 
     /** 展开详情：`周三 第 3～4 节`（ARB `statisticsRankingSlotDetail`）。 */
@@ -130,7 +130,7 @@ object WeekStatsModel {
         currentSemesterWeek != null && week == currentSemesterWeek
 
     /** 「本周」胶囊文案。 */
-    val currentWeekHint: String get() = ChartsStrings.statisticsWeekCurrentHint.zh
+    val currentWeekHint: String get() = ChartsStrings.statisticsWeekCurrentHint.text
 
     /**
      * 本周课程列表的一行。

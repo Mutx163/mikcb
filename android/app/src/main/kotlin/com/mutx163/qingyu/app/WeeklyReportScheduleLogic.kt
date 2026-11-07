@@ -67,7 +67,7 @@ object WeeklyReportScheduleLogic {
     ): Long = nextFireAt(now).atZone(zone).toInstant().toEpochMilli()
 
     /** 通知标题（Dart `:36`）。 */
-    fun buildTitle(): String = WeeklyReportStrings.weeklyReportTitle.zh
+    fun buildTitle(): String = WeeklyReportStrings.weeklyReportTitle.text
 
     /**
      * 通知正文（Dart `:38-71`）。
@@ -81,7 +81,7 @@ object WeeklyReportScheduleLogic {
         currentWeek: Int,
         semesterWeekCount: Int,
     ): String {
-        if (courses.isEmpty()) return WeeklyReportStrings.weeklyReportBodyEmpty.zh
+        if (courses.isEmpty()) return WeeklyReportStrings.weeklyReportBodyEmpty.text
 
         val stubs = courses.map { it.toStatisticsStub() }
         val weekStats = StatisticsService.calculate(stubs, currentWeek)
@@ -94,7 +94,7 @@ object WeeklyReportScheduleLogic {
         val busiestLabel = weekStats.busiestDay?.let { weekdayShortLabel(it) }.orEmpty()
         val delta = comparison.deltaVsLastWeek
         val deltaLabel = if (currentWeek <= 1) {
-            WeeklyReportStrings.statisticsComparisonNew.zh
+            WeeklyReportStrings.statisticsComparisonNew.text
         } else if (delta > 0) {
             "+$delta"
         } else {
@@ -112,13 +112,13 @@ object WeeklyReportScheduleLogic {
 
     /** 星期简写（Dart `:108-119`；越界退化成数字，与 Dart 一致）。 */
     fun weekdayShortLabel(dayOfWeek: Int): String = when (dayOfWeek) {
-        1 -> WeeklyReportStrings.weekdayShortMonday.zh
-        2 -> WeeklyReportStrings.weekdayShortTuesday.zh
-        3 -> WeeklyReportStrings.weekdayShortWednesday.zh
-        4 -> WeeklyReportStrings.weekdayShortThursday.zh
-        5 -> WeeklyReportStrings.weekdayShortFriday.zh
-        6 -> WeeklyReportStrings.weekdayShortSaturday.zh
-        7 -> WeeklyReportStrings.weekdayShortSunday.zh
+        1 -> WeeklyReportStrings.weekdayShortMonday.text
+        2 -> WeeklyReportStrings.weekdayShortTuesday.text
+        3 -> WeeklyReportStrings.weekdayShortWednesday.text
+        4 -> WeeklyReportStrings.weekdayShortThursday.text
+        5 -> WeeklyReportStrings.weekdayShortFriday.text
+        6 -> WeeklyReportStrings.weekdayShortSaturday.text
+        7 -> WeeklyReportStrings.weekdayShortSunday.text
         else -> dayOfWeek.toString()
     }
 
@@ -149,11 +149,7 @@ object WeeklyReportScheduleLogic {
 }
 
 /** 周报通知用到的 ARB 文案（`lib/l10n/app_zh.arb`，逐字抄录 + 对拍测试）。 */
-data class WeeklyReportArbText(val key: String, val zh: String) {
-    /** 把若干 `{name}` 占位符换成给定值（与 ARB 模板同口径）。 */
-    fun filled(vararg values: Pair<String, String>): String =
-        values.fold(zh) { acc, (name, value) -> acc.replace("{$name}", value) }
-}
+typealias WeeklyReportArbText = com.mutx163.qingyu.app.ArbText
 
 object WeeklyReportStrings {
 

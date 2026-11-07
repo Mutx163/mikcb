@@ -317,7 +317,7 @@ object SettingsTimetablePage {
         return SettingsPageSpec(
             id = ID,
             titleKey = SettingsStringsExt2.settingsTitle.key,
-            title = SettingsStringsExt2.settingsTitle.zh,
+            title = SettingsStringsExt2.settingsTitle.text,
             nodes = nodes,
         )
     }
@@ -375,7 +375,7 @@ object SettingsTimetablePage {
         return SettingsPageSpec(
             id = SEMESTER_ID,
             titleKey = SettingsStringsExt2.settingsSemesterScreenTitle.key,
-            title = SettingsStringsExt2.settingsSemesterScreenTitle.zh,
+            title = SettingsStringsExt2.settingsSemesterScreenTitle.text,
             nodes = nodes,
         )
     }
@@ -470,10 +470,8 @@ object SettingsTimetablePage {
         "%d-%02d-%02d".format(Locale.ROOT, year, month, day)
 
     /** 周数读数（`semesterWeekCountAction` = `{count} 周`）。 */
-    fun weekCountLabel(count: Int): ArbText = ArbText(
-        SettingsStringsExt2.semesterWeekCountAction.key,
-        SettingsStringsExt2.semesterWeekCountAction.filled("count", count.toString()),
-    )
+    fun weekCountLabel(count: Int): ArbText =
+        SettingsStringsExt2.semesterWeekCountAction.withArguments("count", count.toString())
 
     // ----------------------------------------------------------------- 私有构造
 
@@ -483,7 +481,7 @@ object SettingsTimetablePage {
         SettingsLabel(
             id = "timetable.section.$key.label",
             textKey = title.key,
-            text = title.zh,
+            text = title.text,
         ),
     )
 
@@ -494,23 +492,22 @@ object SettingsTimetablePage {
      */
     private fun summaryRow(state: SettingsTimetableState): SettingsRow {
         // 模板有两个占位符：filled 只换一个就返回 String，所以直接连做两次 replace
-        val titleText = SettingsStringsExt2.semesterOverviewCurrentWeek.zh
+        val titleText = SettingsStringsExt2.semesterOverviewCurrentWeek.text
             .replace("{current}", state.currentWeek.toString())
             .replace("{total}", state.semesterWeekCount.toString())
         val start = state.semesterStartDate
         val subtitle = if (start == null) {
             SettingsStringsExt2.semesterStartUnset
         } else {
-            ArbText(
-                SettingsStringsExt2.semesterStartSet.key,
-                SettingsStringsExt2.semesterStartSet
-                    .filled("date", formatDate(start.first, start.second, start.third)),
+            SettingsStringsExt2.semesterStartSet.withArguments(
+                "date",
+                formatDate(start.first, start.second, start.third),
             )
         }
         return settingsRow(
             id = "timetable.summary",
             component = MiuixRowComponent.ARROW,
-            title = ArbText(SettingsStringsExt2.semesterOverviewCurrentWeek.key, titleText),
+            title = SettingsStringsExt2.semesterOverviewCurrentWeek.copy(resolved = titleText),
             subtitle = subtitle,
             action = SettingsAction.NAVIGATE,
             actionTarget = ROUTE_SEMESTER,

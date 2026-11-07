@@ -22,7 +22,13 @@ import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.WindowInsetsSides
+import androidx.compose.foundation.layout.consumeWindowInsets
+import androidx.compose.foundation.layout.displayCutout
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.only
+import androidx.compose.foundation.layout.systemBars
+import androidx.compose.foundation.layout.union
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.runtime.Composable
@@ -51,9 +57,12 @@ import com.mutx163.qingyu.ExamReminderCoordinator
 import com.mutx163.qingyu.ScheduleReminderCoordinator
 import com.mutx163.qingyu.NotificationLaunchTarget
 import com.mutx163.qingyu.app.AppFontMode
+import com.mutx163.qingyu.app.AppLocaleRuntime
+import com.mutx163.qingyu.app.AppLocaleUiBridge
 import com.mutx163.qingyu.app.AppThemeMode
 import com.mutx163.qingyu.app.TimetableSettingsModel
 import com.mutx163.qingyu.app.TimetableStore
+import com.mutx163.qingyu.app.rememberHomeBackdropChrome
 import com.mutx163.qingyu.components.QingyuLocalWindowAdaptive
 import com.mutx163.qingyu.components.QingyuPageTheme
 import com.mutx163.qingyu.components.LocalQingyuPageIsRootEntry
@@ -160,7 +169,7 @@ class PagesShellActivity : ComponentActivity() {
      * 只用 Android 原生路径（`LocaleList` + `createConfigurationContext`）——本工程没有
      * appcompat，`AppCompatDelegate.setApplicationLocales` 不可用。
      *
-     * ⚠️ 效果边界：壳的页面文案来自各页 `*Strings.zh` 常量（非 Android 资源），所以
+     * ⚠️ 效果边界：壳的页面文案来自各页 `*Strings.text` 常量（非 Android 资源），所以
      * 这里只影响 `Locale.getDefault()` / 资源语言，**不会把界面文字换成外语**。
      * 要真正多语言，得先把文案资源化（ARB），不在本文件的能力范围。
      *
@@ -239,6 +248,10 @@ class PagesShellActivity : ComponentActivity() {
         // 接线方式见 platform/ScreenCaptureWatcher.kt 头注。
         ScreenCaptureWatcher.attach(this)
 
+        // 语言切换的 UI 桥：必须在首次组合前装好，后续 `set()` 才能把
+        // `AppLocaleRuntime` 的变化变成 Compose 可观察的状态（不重建壳）。
+        AppLocaleUiBridge.install()
+
         setContent {
             // ── 外观设置 → 主题桥 ──────────────────────────────────────────────
             // 设置存储没有变更通道（只有 load / save），所以这里读一次进 state；
@@ -280,6 +293,9 @@ class PagesShellActivity : ComponentActivity() {
             var settingsModel by remember(wiring) {
                 mutableStateOf(wiring.initialSettings)
             }
+            // 语言：冷启动已在 `attachBaseContext` 里按存档写过一次；这里兜住「切换后立即生效」——
+            // 回调在事件线程执行，不靠重组副作用，下一帧就是新语言。
+            SideEffect { AppLocaleRuntime.set(settingsModel.appLocaleTag) }
             val appDark = resolveAppDark(
                 mode = settingsModel.appThemeMode,
                 systemDark = isSystemInDarkTheme(),
@@ -301,10 +317,16 @@ class PagesShellActivity : ComponentActivity() {
                 fontFamily = fontFamily,
                 textScale = settingsModel.appTextScale.toFloat(),
             ) {
+                // 语言切走的是「重组」而不是「重建壳」：`ArbText.text` 每次取值都会读
+                // `AppLocaleUiBridge` 的 revision state，语言一变，正在显示的文案自动重组；
+                // 返回栈、滚动位置、表单草稿都保留（不会弹回首页）。
                 PagesShell(
                     wiring = wiring,
                     settingsModel = settingsModel,
-                    onReloadSettings = { settingsModel = it },
+                    onReloadSettings = {
+                        settingsModel = it
+                        AppLocaleRuntime.set(it.appLocaleTag)
+                    },
                 )
             }
         }
@@ -404,8 +426,12 @@ private fun withAppLocale(base: Context): Context {
             PrefsKeyValueStore(base).getString(TimetableStore.KEY_SETTINGS),
         )
     }.getOrNull().orEmpty()
-    if (tag.isBlank()) return base
+    if (tag.isBlank()) {
+        AppLocaleRuntime.set("")
+        return base
+    }
     val locale = runCatching { LocaleList.forLanguageTags(tag)[0] }.getOrNull() ?: return base
+    AppLocaleRuntime.set(tag)
     Locale.setDefault(locale)
     val config = Configuration(base.resources.configuration).apply { setLocale(locale) }
     return base.createConfigurationContext(config)
@@ -965,6 +991,21 @@ private fun PagesShell(
                     modifier = Modifier
                         .weight(1f)
                         .fillMaxSize()
+                        // 宽屏档：Rail 已经占掉左边那条边，页面再按窗口的起始侧内边距
+                        // （挖孔 / 侧边导航）缩一次，就会在容器里整体偏右、右边变窄。
+                        // 官方 miuix-nav 文档「多栏」一节的第三条就是这条口径：
+                        // pane 旁边有 chrome 时，chrome 已吃掉的边内边距不要再加一次。
+                        .then(
+                            if (shellRail.railVisible) {
+                                Modifier.consumeWindowInsets(
+                                    WindowInsets.systemBars
+                                        .union(WindowInsets.displayCutout)
+                                        .only(WindowInsetsSides.Start),
+                                )
+                            } else {
+                                Modifier
+                            },
+                        )
                         // 宽屏档转场层不许画到 Rail 上面（demo `AppContent.kt:263` 同一条）。
                         .then(if (shellRail.railVisible) Modifier.clipToBounds() else Modifier),
                 ) {
@@ -1043,6 +1084,8 @@ private fun PagesShell(
                                 }
                             }
                             HomeGlassDock(
+                                // 坞的壁纸亮度：与页面同一份亮度带（已落盘，冷启动首帧可读）。
+                                wallpaperLuminance = rememberHomeBackdropChrome(settingsModel).bands?.dock,
                                 settingsModel = settingsModel,
                                 // 高亮口径与 Rail 同源（见 [dockSelectedIdOf] 与 railSelectedId 注释）。
                                 selectedId = dockSelectedIdOf(currentRootId, wiring.homeViewMode),

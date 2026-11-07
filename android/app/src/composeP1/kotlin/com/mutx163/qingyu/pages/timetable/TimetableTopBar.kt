@@ -114,7 +114,7 @@ import top.yukonga.miuix.kmp.theme.MiuixTheme
 @Composable
 fun TimetableTopBar(
     modifier: Modifier = Modifier,
-    title: String = TimetableStrings.appTitle.zh,
+    title: String = TimetableStrings.appTitle.text,
     brand: Boolean = false,
     /**
      * 壁纸上的墨色（`HomeInkPolarity.Light` = 深色壁纸 ⇒ 浅墨）。
@@ -186,7 +186,7 @@ fun TimetableTopBar(
             if (brand) {
                 Text(
                     text = profileName?.takeIf { it.isNotBlank() }
-                        ?: TimetableStrings.switchProfileHint.zh,
+                        ?: TimetableStrings.switchProfileHint.text,
                     style = MiuixTheme.textStyles.footnote2.shiftWeight(QingyuWeightDelta.MEDIUM),
                     color = secondaryText,
                     maxLines = 1,
@@ -239,7 +239,7 @@ fun TimetableTopBar(
                     content = {
                         Icon(
                             imageVector = MiuixIcons.More,
-                            contentDescription = TimetableStrings.moreTooltip.zh,
+                            contentDescription = TimetableStrings.moreTooltip.text,
                             tint = primaryText,
                             modifier = Modifier.size(TimetableTopBarMetrics.ICON.dp),
                         )
@@ -251,7 +251,7 @@ fun TimetableTopBar(
                 IconButton(onClick = { showMenu = true }) {
                     Icon(
                         imageVector = MiuixIcons.More,
-                        contentDescription = TimetableStrings.moreTooltip.zh,
+                        contentDescription = TimetableStrings.moreTooltip.text,
                         tint = primaryText,
                         modifier = Modifier.size(TimetableTopBarMetrics.ICON.dp),
                     )
@@ -322,25 +322,25 @@ object TimetableMenuDefaults {
     fun entries(): List<TimetableMenuItem> = listOf(
         TimetableMenuItem(
             "overview",
-            TimetableStrings.homeMenuOverviewTitle.zh,
+            TimetableStrings.homeMenuOverviewTitle.text,
             MiuixIcons.GridView,
         ),
         TimetableMenuItem(
             "statistics",
-            TimetableStrings.homeMenuStatisticsTitle.zh,
+            TimetableStrings.homeMenuStatisticsTitle.text,
             MiuixIcons.Promotions,
         ),
         TimetableMenuItem(
             "addCourse",
-            TimetableStrings.homeMenuAddCourseTitle.zh,
+            TimetableStrings.homeMenuAddCourseTitle.text,
             MiuixIcons.Add,
             children = addCourseSubmenu(),
         ),
-        TimetableMenuItem("exams", TimetableStrings.examListTitle.zh, MiuixIcons.Notes),
-        TimetableMenuItem("tasks", TimetableStrings.homeMenuTasksTitle.zh, MiuixIcons.Tasks),
-        TimetableMenuItem("importCourses", TimetableStrings.homeMenuImportTitle.zh, MiuixIcons.Import),
-        TimetableMenuItem("settings", TimetableStrings.homeMenuSettingsTitle.zh, MiuixIcons.Settings),
-        TimetableMenuItem("support", TimetableStrings.homeMenuCoffeeTitle.zh, MiuixIcons.Favorites),
+        TimetableMenuItem("exams", TimetableStrings.examListTitle.text, MiuixIcons.Notes),
+        TimetableMenuItem("tasks", TimetableStrings.homeMenuTasksTitle.text, MiuixIcons.Tasks),
+        TimetableMenuItem("importCourses", TimetableStrings.homeMenuImportTitle.text, MiuixIcons.Import),
+        TimetableMenuItem("settings", TimetableStrings.homeMenuSettingsTitle.text, MiuixIcons.Settings),
+        TimetableMenuItem("support", TimetableStrings.homeMenuCoffeeTitle.text, MiuixIcons.Favorites),
     )
 
     /**
@@ -357,17 +357,17 @@ object TimetableMenuDefaults {
     fun addCourseSubmenu(): List<TimetableMenuItem> = listOf(
         TimetableMenuItem(
             "addCourse:course",
-            TimetableStrings.addCourseTitle.zh,
+            TimetableStrings.addCourseTitle.text,
             MiuixIcons.Add,
         ),
         TimetableMenuItem(
             "addCourse:schedule",
-            TimetableStrings.addScheduleAction.zh,
+            TimetableStrings.addScheduleAction.text,
             MiuixIcons.AddCircle,
         ),
         TimetableMenuItem(
             "addCourse:exam",
-            TimetableStrings.addExam.zh,
+            TimetableStrings.addExam.text,
             MiuixIcons.AddCircle,
         ),
     )

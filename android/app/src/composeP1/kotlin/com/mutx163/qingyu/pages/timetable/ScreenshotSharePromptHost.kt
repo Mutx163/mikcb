@@ -98,10 +98,10 @@ fun ScreenshotSharePromptHost(
     // 「分享」按钮只在动作有去处时画（Dart showAppToastWithAction 的 actionLabel 同位）。
     if (!promptVisible) return
     AppToastCapsule(
-        message = TimetableStrings.timetableSharePromptMessage.zh,
+        message = TimetableStrings.timetableSharePromptMessage.text,
         dark = dark,
         modifier = modifier.padding(horizontal = 16.dp),
-        actionLabel = onShare?.let { TimetableStrings.timetableSharePromptAction.zh },
+        actionLabel = onShare?.let { TimetableStrings.timetableSharePromptAction.text },
         onAction = {
             promptVisible = false
             onShare?.invoke()

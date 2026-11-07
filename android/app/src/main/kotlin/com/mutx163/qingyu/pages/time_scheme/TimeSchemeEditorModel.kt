@@ -89,20 +89,20 @@ data class TimeSchemeEditorModel(
         ).editor(schemeId)
         base?.copy(rows = rows) ?: TimeSchemeEditorSheet(
             schemeId = schemeId,
-            title = TimeSchemeManagementStrings.editTimeSchemeTitle.zh,
+            title = TimeSchemeManagementStrings.editTimeSchemeTitle.text,
             name = name,
             impactHint = "",
-            sectionTimesTitle = TimeSchemeManagementStrings.sectionTimesTitle.zh,
-            sectionTimesSubtitle = TimeSchemeManagementStrings.sectionTimesSubtitle.zh,
+            sectionTimesTitle = TimeSchemeManagementStrings.sectionTimesTitle.text,
+            sectionTimesSubtitle = TimeSchemeManagementStrings.sectionTimesSubtitle.text,
             rows = rows,
-            quickGenerateLabel = TimeSchemeManagementStrings.quickGenerateAction.zh,
-            addSectionLabel = TimeSchemeManagementStrings.addSectionAction.zh,
-            removeLastSectionLabel = TimeSchemeManagementStrings.removeLastSectionAction.zh,
-            resetDefaultLabel = TimeSchemeManagementStrings.resetDefaultAction.zh,
-            saveLabel = TimeSchemeManagementStrings.saveAction.zh,
-            startPickerTitle = TimeSchemeManagementStrings.selectStartTimeTitle.zh,
-            endPickerTitle = TimeSchemeManagementStrings.selectEndTimeTitle.zh,
-            crossDayError = TimeSchemeManagementStrings.timeRangeValidationNoCrossDay.zh,
+            quickGenerateLabel = TimeSchemeManagementStrings.quickGenerateAction.text,
+            addSectionLabel = TimeSchemeManagementStrings.addSectionAction.text,
+            removeLastSectionLabel = TimeSchemeManagementStrings.removeLastSectionAction.text,
+            resetDefaultLabel = TimeSchemeManagementStrings.resetDefaultAction.text,
+            saveLabel = TimeSchemeManagementStrings.saveAction.text,
+            startPickerTitle = TimeSchemeManagementStrings.selectStartTimeTitle.text,
+            endPickerTitle = TimeSchemeManagementStrings.selectEndTimeTitle.text,
+            crossDayError = TimeSchemeManagementStrings.timeRangeValidationNoCrossDay.text,
         )
     }
 
@@ -124,29 +124,29 @@ data class TimeSchemeEditorModel(
             val courseRefs = usage.courseReferences(schemeId)
             val courseCount = courseRefs.size
             val hint = when {
-                isActive && courseCount > 0 -> TimeSchemeManagementStrings.timeSchemeEditorActiveAndCoursesHint.zh
-                isActive -> TimeSchemeManagementStrings.timeSchemeEditorActiveHint.zh
-                courseCount > 0 -> TimeSchemeManagementStrings.timeSchemeEditorOverrideHint.zh
+                isActive && courseCount > 0 -> TimeSchemeManagementStrings.timeSchemeEditorActiveAndCoursesHint.text
+                isActive -> TimeSchemeManagementStrings.timeSchemeEditorActiveHint.text
+                courseCount > 0 -> TimeSchemeManagementStrings.timeSchemeEditorOverrideHint.text
                 else -> ""
             }
             return TimeSchemeEditorHeader(
                 showInUseBadge = isActive,
-                inUseBadgeText = if (isActive) TimeSchemeManagementStrings.currentInUse.zh else "",
+                inUseBadgeText = if (isActive) TimeSchemeManagementStrings.currentInUse.text else "",
                 chips = listOf(
                     TimeSchemeChip(
-                        label = TimeSchemeManagementStrings.profileCountLabel.zh,
+                        label = TimeSchemeManagementStrings.profileCountLabel.text,
                         value = TimeSchemeManagementStrings.profileCountValue.filled(
                             "count" to profileCount.toString(),
                         ),
                     ),
                     TimeSchemeChip(
-                        label = TimeSchemeManagementStrings.courseCountLabel.zh,
+                        label = TimeSchemeManagementStrings.courseCountLabel.text,
                         value = TimeSchemeManagementStrings.courseSectionCountValue.filled(
                             "count" to courseCount.toString(),
                         ),
                     ),
                     TimeSchemeChip(
-                        label = TimeSchemeManagementStrings.overrideTimeSchemeLabel.zh,
+                        label = TimeSchemeManagementStrings.overrideTimeSchemeLabel.text,
                         value = TimeSchemeManagementStrings.courseSectionCountValue.filled(
                             "count" to overrideCount.toString(),
                         ),
@@ -211,7 +211,7 @@ data class TimeSchemeEditorModel(
         if (!isSectionTimeSpanValid(start, editedEnd)) {
             return TimeSchemeEditOutcome(
                 model = this,
-                message = TimeSchemeManagementStrings.timeRangeValidationNoCrossDay.zh,
+                message = TimeSchemeManagementStrings.timeRangeValidationNoCrossDay.text,
             )
         }
         val next = sections.toMutableList()
@@ -263,7 +263,7 @@ data class TimeSchemeEditorModel(
      * 否则同一判据会有两份，改一处就会漂移。
      */
     fun validateForSave(): String? {
-        if (name.isBlank()) return TimeSchemeManagementStrings.nameRequired.zh
+        if (name.isBlank()) return TimeSchemeManagementStrings.nameRequired.text
         return validateSectionTimes(sections)?.let { TimeSchemeServiceMessages.localize(it) }
     }
 
@@ -294,9 +294,9 @@ data class TimeSchemeEditorModel(
         // 这正是 Dart `reference.usesOverride` 的等价信息（工厂按同一分类填的）。
         val overrideCourseIds = usage.overrideCourses[schemeId].orEmpty().map { it.courseId }.toSet()
         val usageType = if (first.courseId in overrideCourseIds) {
-            TimeSchemeManagementStrings.overrideTimeSchemeShortLabel.zh
+            TimeSchemeManagementStrings.overrideTimeSchemeShortLabel.text
         } else {
-            TimeSchemeManagementStrings.mainTimeSchemeLabel.zh
+            TimeSchemeManagementStrings.mainTimeSchemeLabel.text
         }
         val summary = formatUsageReference(first, usageType)
         return if (refs.size == 1) {

@@ -100,9 +100,9 @@ fun WarehouseWebLoginPage(
                 Icon(
                     imageVector = MiuixIcons.RecordingTape,
                     contentDescription = if (isRecording) {
-                        WarehouseStrings.stopRecordingTooltip.zh
+                        WarehouseStrings.stopRecordingTooltip.text
                     } else {
-                        WarehouseStrings.startRecordingTooltip.zh
+                        WarehouseStrings.startRecordingTooltip.text
                     },
                     tint = if (isRecording) {
                         MiuixTheme.colorScheme.error
@@ -125,9 +125,9 @@ fun WarehouseWebLoginPage(
                 Icon(
                     imageVector = if (webViewController.isDesktopMode) MiuixIcons.Phone else MiuixIcons.GridView,
                     contentDescription = if (webViewController.isDesktopMode) {
-                        WarehouseStrings.switchToMobileWebTooltip.zh
+                        WarehouseStrings.switchToMobileWebTooltip.text
                     } else {
-                        WarehouseStrings.switchToDesktopWebTooltip.zh
+                        WarehouseStrings.switchToDesktopWebTooltip.text
                     },
                 )
             }
@@ -136,10 +136,10 @@ fun WarehouseWebLoginPage(
                 webViewController.reload()
                 onReload()
             }) {
-                Icon(imageVector = MiuixIcons.Refresh, contentDescription = WarehouseStrings.reloadAction.zh)
+                Icon(imageVector = MiuixIcons.Refresh, contentDescription = WarehouseStrings.reloadAction.text)
             }
             IconButton(onClick = onMoreOptions) {
-                Icon(imageVector = MiuixIcons.More, contentDescription = WarehouseStrings.moreActionsTooltip.zh)
+                Icon(imageVector = MiuixIcons.More, contentDescription = WarehouseStrings.moreActionsTooltip.text)
             }
         },
         bottomBar = {
@@ -158,7 +158,7 @@ fun WarehouseWebLoginPage(
                 val scriptReady = sessionState.stage == WarehouseWebLoginStage.LOADED
                 if (!scriptReady && sessionState.stage != WarehouseWebLoginStage.ERROR) {
                     Text(
-                        text = WarehouseStrings.macroReplayWaitPageLoad.zh,
+                        text = WarehouseStrings.macroReplayWaitPageLoad.text,
                         style = MiuixTheme.textStyles.footnote2,
                         color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
                     )
@@ -171,7 +171,7 @@ fun WarehouseWebLoginPage(
                         onClick = onExecuteImport,
                         modifier = Modifier.fillMaxWidth(),
                         enabled = scriptReady,
-                        content = { Text(text = WarehouseStrings.executeImportScriptAction.zh) }
+                        content = { Text(text = WarehouseStrings.executeImportScriptAction.text) }
                     )
                 }
             }
@@ -191,7 +191,7 @@ fun WarehouseWebLoginPage(
                         .padding(horizontal = 16.dp, vertical = 8.dp)
                 ) {
                     Text(
-                        text = WarehouseStrings.warehouseSessionAlreadyActive.zh,
+                        text = WarehouseStrings.warehouseSessionAlreadyActive.text,
                         style = MiuixTheme.textStyles.footnote1.shiftWeight(QingyuWeightDelta.MEDIUM),
                         color = MiuixTheme.colorScheme.primary
                     )

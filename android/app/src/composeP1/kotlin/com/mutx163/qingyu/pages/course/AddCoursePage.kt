@@ -30,13 +30,13 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
-import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import com.mutx163.qingyu.components.QingyuCard
 import com.mutx163.qingyu.components.QingyuGlassIconButton
 import com.mutx163.qingyu.components.QingyuPageCardMargin
+import com.mutx163.qingyu.components.rememberSheetMaxHeight
 import com.mutx163.qingyu.components.QingyuPageList
 import com.mutx163.qingyu.components.QingyuPageTheme
 import com.mutx163.qingyu.components.QingyuWeightDelta
@@ -206,7 +206,7 @@ fun AddCoursePage(
         confirmDiscard = true
     }
 
-    val pageTitle = if (isEditing) AddCourseStrings.editCourseTitle.zh else AddCourseStrings.addCourseTitle.zh
+    val pageTitle = if (isEditing) AddCourseStrings.editCourseTitle.text else AddCourseStrings.addCourseTitle.text
     // 顶栏折叠行为：Dart 侧同一页面走 HyperosSubpage 默认参数
     // （`collapsibleLargeTitle` 默认 true，见 `hyperos_page.dart:170`），标题是纯 Text ⇒ 有大标题。
     // 一个页面实例一个：返回重新进入应从展开态开始。
@@ -225,7 +225,7 @@ fun AddCoursePage(
                         IconButton(onClick = ::requestBack) {
                             Icon(
                                 imageVector = MiuixIcons.ChevronBackward,
-                                contentDescription = AddCourseStrings.cancelAction.zh,
+                                contentDescription = AddCourseStrings.cancelAction.text,
                                 tint = Color(QingyuTheme.actionIcon(dark)),
                             )
                         }
@@ -235,14 +235,14 @@ fun AddCoursePage(
                         if (isEditing) {
                             QingyuGlassIconButton(
                                 onClick = { confirmDelete = true },
-                                contentDescription = AddCourseStrings.deleteAction.zh,
+                                contentDescription = AddCourseStrings.deleteAction.text,
                                 icon = MiuixIcons.Delete,
                                 tint = Color(QingyuTheme.actionIcon(dark)),
                             )
                         }
                         QingyuGlassIconButton(
                             onClick = ::save,
-                            contentDescription = AddCourseStrings.saveAction.zh,
+                            contentDescription = AddCourseStrings.saveAction.text,
                             icon = MiuixIcons.Ok,
                             tint = Color(QingyuTheme.actionIcon(dark)),
                         )
@@ -290,7 +290,7 @@ fun AddCoursePage(
                     ) {
                         Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                             Text(
-                                text = AddCourseStrings.sharedInfoTitle.zh,
+                                text = AddCourseStrings.sharedInfoTitle.text,
                                 style = MiuixTheme.textStyles.body2.shiftWeight(QingyuWeightDelta.MEDIUM),
                                 color = MiuixTheme.colorScheme.onSurfaceVariantActions,
                             )
@@ -301,13 +301,13 @@ fun AddCoursePage(
                                     nameError = null
                                     markDirty()
                                 },
-                                label = AddCourseStrings.courseNameLabel.zh,
+                                label = AddCourseStrings.courseNameLabel.text,
                                 useLabelAsPlaceholder = true,
                                 singleLine = true,
                                 modifier = Modifier.fillMaxWidth(),
                             )
                             Text(
-                                text = nameError ?: AddCourseStrings.courseNameHelper.zh,
+                                text = nameError ?: AddCourseStrings.courseNameHelper.text,
                                 style = MiuixTheme.textStyles.footnote1,
                                 color = Color(
                                     if (nameError != null) QingyuTheme.error(dark) else QingyuTheme.secondaryText(dark),
@@ -320,14 +320,14 @@ fun AddCoursePage(
                                         sharedShortName = it
                                         markDirty()
                                     },
-                                    label = AddCourseStrings.courseShortNameOptional.zh,
+                                    label = AddCourseStrings.courseShortNameOptional.text,
                                     useLabelAsPlaceholder = true,
                                     singleLine = true,
                                     modifier = Modifier.weight(1f),
                                 )
                                 Spacer(modifier = Modifier.width(8.dp))
                                 Text(
-                                    text = AddCourseStrings.courseShortNameAutoFillAction.zh,
+                                    text = AddCourseStrings.courseShortNameAutoFillAction.text,
                                     style = MiuixTheme.textStyles.body2,
                                     color = Color(QingyuTheme.primary(dark = dark)),
                                     modifier = Modifier
@@ -342,7 +342,7 @@ fun AddCoursePage(
                                 )
                             }
                             Text(
-                                text = AddCourseStrings.courseShortNameHelper.zh,
+                                text = AddCourseStrings.courseShortNameHelper.text,
                                 style = MiuixTheme.textStyles.footnote1,
                                 color = Color(QingyuTheme.secondaryText(dark)),
                             )
@@ -352,7 +352,7 @@ fun AddCoursePage(
                                     sharedTeacher = it
                                     markDirty()
                                 },
-                                label = AddCourseStrings.teacherLabel.zh,
+                                label = AddCourseStrings.teacherLabel.text,
                                 useLabelAsPlaceholder = true,
                                 singleLine = true,
                                 modifier = Modifier.fillMaxWidth(),
@@ -363,7 +363,7 @@ fun AddCoursePage(
                                     sharedLocation = it
                                     markDirty()
                                 },
-                                label = AddCourseStrings.locationLabel.zh,
+                                label = AddCourseStrings.locationLabel.text,
                                 useLabelAsPlaceholder = true,
                                 singleLine = true,
                                 modifier = Modifier.fillMaxWidth(),
@@ -374,20 +374,20 @@ fun AddCoursePage(
                                     sharedDescription = it
                                     markDirty()
                                 },
-                                label = AddCourseStrings.courseDescriptionOptional.zh,
+                                label = AddCourseStrings.courseDescriptionOptional.text,
                                 useLabelAsPlaceholder = true,
                                 minLines = 2,
                                 maxLines = 4,
                                 modifier = Modifier.fillMaxWidth(),
                             )
                             val natureOptions = listOf(
-                                CourseNature.REQUIRED to AddCourseStrings.courseNatureRequired.zh,
-                                CourseNature.ELECTIVE to AddCourseStrings.courseNatureElective.zh,
+                                CourseNature.REQUIRED to AddCourseStrings.courseNatureRequired.text,
+                                CourseNature.ELECTIVE to AddCourseStrings.courseNatureElective.text,
                             )
                             WindowDropdownPreference(
                                 items = natureOptions.map { it.second },
                                 selectedIndex = natureOptions.indexOfFirst { it.first == courseNature },
-                                title = AddCourseStrings.courseNatureLabel.zh,
+                                title = AddCourseStrings.courseNatureLabel.text,
                                 onSelectedIndexChange = { index ->
                                     natureOptions.getOrNull(index)?.let { (nature, _) ->
                                         courseNature = nature
@@ -396,7 +396,7 @@ fun AddCoursePage(
                                 },
                             )
                             Text(
-                                text = AddCourseStrings.courseColorTitle.zh,
+                                text = AddCourseStrings.courseColorTitle.text,
                                 style = MiuixTheme.textStyles.body2,
                                 color = Color(QingyuTheme.primaryText(dark)),
                             )
@@ -430,7 +430,7 @@ fun AddCoursePage(
                                 }
                             }
                             Text(
-                                text = AddCourseStrings.sharedInfoInlineHint.zh,
+                                text = AddCourseStrings.sharedInfoInlineHint.text,
                                 style = MiuixTheme.textStyles.footnote1,
                                 color = Color(QingyuTheme.secondaryText(dark)),
                             )
@@ -454,7 +454,7 @@ fun AddCoursePage(
                                     color = MiuixTheme.colorScheme.onSurfaceVariantActions,
                                 )
                                 Text(
-                                    text = AddCourseStrings.scheduleEntryCardSubtitle.zh,
+                                    text = AddCourseStrings.scheduleEntryCardSubtitle.text,
                                     style = MiuixTheme.textStyles.footnote1,
                                     color = Color(QingyuTheme.secondaryText(dark)),
                                 )
@@ -506,7 +506,7 @@ fun AddCoursePage(
                                 )
                                 Spacer(modifier = Modifier.width(8.dp))
                                 Text(
-                                    text = AddCourseStrings.addScheduleEntryAction.zh,
+                                    text = AddCourseStrings.addScheduleEntryAction.text,
                                     style = MiuixTheme.textStyles.body2,
                                     color = Color(QingyuTheme.primary(dark = dark)),
                                 )
@@ -548,8 +548,8 @@ fun AddCoursePage(
     OverlayDialog(
         insideMargin = DpSize(16.dp, 16.dp),
         show = confirmDiscard,
-        title = AddCourseStrings.courseFormDiscardTitle.zh,
-        summary = AddCourseStrings.courseFormDiscardMessage.zh,
+        title = AddCourseStrings.courseFormDiscardTitle.text,
+        summary = AddCourseStrings.courseFormDiscardMessage.text,
         onDismissRequest = { confirmDiscard = false },
     ) {
         Row(
@@ -560,7 +560,7 @@ fun AddCoursePage(
                 onClick = { confirmDiscard = false },
                 modifier = Modifier.weight(1f),
             ) {
-                Text(text = AddCourseStrings.cancelAction.zh)
+                Text(text = AddCourseStrings.cancelAction.text)
             }
             top.yukonga.miuix.kmp.basic.Button(
                 onClick = {
@@ -574,7 +574,7 @@ fun AddCoursePage(
                     contentColor = Color(QingyuTheme.onError(dark)),
                 ),
             ) {
-                Text(text = AddCourseStrings.courseFormDiscardAction.zh)
+                Text(text = AddCourseStrings.courseFormDiscardAction.text)
             }
         }
     }
@@ -590,7 +590,7 @@ fun AddCoursePage(
     OverlayDialog(
         insideMargin = DpSize(16.dp, 16.dp),
         show = confirmDelete && isEditing,
-        title = AddCourseStrings.deleteCourseTitle.zh,
+        title = AddCourseStrings.deleteCourseTitle.text,
         summary = AddCourseStrings.confirmDeleteCourseMessage.filled("name", deleteTargetName),
         // 圆角钉 32dp：官方贴底档下限，玻璃面与面板同值（容器内两者共用推导值）。
         cornerRadius = DialogGlassSpec.CORNER_RADIUS_DP.dp,
@@ -620,7 +620,7 @@ fun AddCoursePage(
                 onClick = { confirmDelete = false },
                 modifier = Modifier.weight(1f),
             ) {
-                Text(text = AddCourseStrings.cancelAction.zh)
+                Text(text = AddCourseStrings.cancelAction.text)
             }
             top.yukonga.miuix.kmp.basic.Button(
                 onClick = {
@@ -633,7 +633,7 @@ fun AddCoursePage(
                     contentColor = Color(QingyuTheme.onError(dark)),
                 ),
             ) {
-                Text(text = AddCourseStrings.deleteAction.zh)
+                Text(text = AddCourseStrings.deleteAction.text)
             }
         }
     }
@@ -694,7 +694,7 @@ private fun AddCourseEntryFields(
                     IconButton(onClick = onRemoveEntry, modifier = Modifier.size(36.dp)) {
                         Icon(
                             imageVector = MiuixIcons.Remove,
-                            contentDescription = AddCourseStrings.deleteAction.zh,
+                            contentDescription = AddCourseStrings.deleteAction.text,
                             tint = Color(QingyuTheme.error(dark)),
                             modifier = Modifier.size(17.dp),
                         )
@@ -704,7 +704,7 @@ private fun AddCourseEntryFields(
             WindowDropdownPreference(
                 items = weekdayNames,
                 selectedIndex = (entry.dayOfWeek - 1).coerceIn(weekdayNames.indices),
-                title = AddCourseStrings.weekdayLabel.zh,
+                title = AddCourseStrings.weekdayLabel.text,
                 onSelectedIndexChange = { position ->
                     (position + 1).takeIf { it in 1..7 }?.let(onDayOfWeekChange)
                 },
@@ -712,7 +712,7 @@ private fun AddCourseEntryFields(
             WindowDropdownPreference(
                 items = sectionNumbers.map { AddCourseStrings.sectionLabel.filled("section", it.toString()) },
                 selectedIndex = sectionNumbers.indexOf(entry.startSection).coerceAtLeast(0),
-                title = AddCourseStrings.startSectionLabel.zh,
+                title = AddCourseStrings.startSectionLabel.text,
                 onSelectedIndexChange = { position ->
                     sectionNumbers.getOrNull(position)?.let(onStartSectionChange)
                 },
@@ -720,7 +720,7 @@ private fun AddCourseEntryFields(
             WindowDropdownPreference(
                 items = sectionNumbers.map { AddCourseStrings.sectionLabel.filled("section", it.toString()) },
                 selectedIndex = sectionNumbers.indexOf(entry.endSection).coerceAtLeast(0),
-                title = AddCourseStrings.endSectionLabel.zh,
+                title = AddCourseStrings.endSectionLabel.text,
                 onSelectedIndexChange = { position ->
                     sectionNumbers.getOrNull(position)?.let(onEndSectionChange)
                 },
@@ -734,7 +734,7 @@ private fun AddCourseEntryFields(
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Text(
-                    text = AddCourseStrings.scheduleEntryWeeksSectionTitle.zh,
+                    text = AddCourseStrings.scheduleEntryWeeksSectionTitle.text,
                     style = MiuixTheme.textStyles.body1,
                     color = Color(QingyuTheme.primaryText(dark)),
                 )
@@ -751,7 +751,7 @@ private fun AddCourseEntryFields(
             TextField(
                 value = entry.teacher,
                 onValueChange = onTeacherChange,
-                label = AddCourseStrings.teacherLabel.zh,
+                label = AddCourseStrings.teacherLabel.text,
                 useLabelAsPlaceholder = true,
                 singleLine = true,
                 modifier = Modifier
@@ -762,7 +762,7 @@ private fun AddCourseEntryFields(
             TextField(
                 value = entry.location,
                 onValueChange = onLocationChange,
-                label = AddCourseStrings.locationLabel.zh,
+                label = AddCourseStrings.locationLabel.text,
                 useLabelAsPlaceholder = true,
                 singleLine = true,
                 modifier = Modifier
@@ -793,11 +793,11 @@ private fun AddCourseWeekPickerDialog(
     val currentDraft = rememberLastNonNull(draftOrNull)
     // Dart 原版是全屏子页 + 可滚 ListView；这里收成对话框，正文限高 + 可滚，
     // 避免自定义周网格（53 周 / 大字号）撑破矮屏。确认/取消跟随正文滚动（与 Dart 底部动作一致）。
-    val maxBodyHeight = (LocalConfiguration.current.screenHeightDp * 0.72f).dp
+    val maxBodyHeight = rememberSheetMaxHeight(0.72f)
     OverlayDialog(
         insideMargin = DpSize(16.dp, 16.dp),
         show = show,
-        title = AddCourseStrings.weekPickerTitle.zh,
+        title = AddCourseStrings.weekPickerTitle.text,
         onDismissRequest = onDismiss,
     ) {
         val draft = currentDraft ?: return@OverlayDialog
@@ -821,7 +821,7 @@ private fun AddCourseWeekPickerDialog(
                         WindowDropdownPreference(
                             items = availableWeeks.map { AddCourseStrings.weekLabel.filled("week", it.toString()) },
                             selectedIndex = availableWeeks.indexOf(draft.startWeek).coerceAtLeast(0),
-                            title = AddCourseStrings.startWeekLabel.zh,
+                            title = AddCourseStrings.startWeekLabel.text,
                             onSelectedIndexChange = { position ->
                                 availableWeeks.getOrNull(position)?.let { week ->
                                     onDraftChange(AddCourseWeekDraftLogic.setStartWeek(draft, week, availableWeeks))
@@ -831,7 +831,7 @@ private fun AddCourseWeekPickerDialog(
                         WindowDropdownPreference(
                             items = availableWeeks.map { AddCourseStrings.weekLabel.filled("week", it.toString()) },
                             selectedIndex = availableWeeks.indexOf(draft.endWeek).coerceAtLeast(0),
-                            title = AddCourseStrings.endWeekLabel.zh,
+                            title = AddCourseStrings.endWeekLabel.text,
                             onSelectedIndexChange = { position ->
                                 availableWeeks.getOrNull(position)?.let { week ->
                                     onDraftChange(AddCourseWeekDraftLogic.setEndWeek(draft, week, availableWeeks))
@@ -882,7 +882,7 @@ private fun AddCourseWeekPickerDialog(
                             horizontalArrangement = Arrangement.spacedBy(8.dp),
                         ) {
                             AddCourseChoiceChip(
-                                label = AddCourseStrings.selectAllAction.zh,
+                                label = AddCourseStrings.selectAllAction.text,
                                 isSelected = false,
                                 dark = dark,
                                 modifier = Modifier.weight(1f),
@@ -891,7 +891,7 @@ private fun AddCourseWeekPickerDialog(
                                 },
                             )
                             AddCourseChoiceChip(
-                                label = AddCourseStrings.selectOddWeeksAction.zh,
+                                label = AddCourseStrings.selectOddWeeksAction.text,
                                 isSelected = false,
                                 dark = dark,
                                 modifier = Modifier.weight(1f),
@@ -900,7 +900,7 @@ private fun AddCourseWeekPickerDialog(
                                 },
                             )
                             AddCourseChoiceChip(
-                                label = AddCourseStrings.selectEvenWeeksAction.zh,
+                                label = AddCourseStrings.selectEvenWeeksAction.text,
                                 isSelected = false,
                                 dark = dark,
                                 modifier = Modifier.weight(1f),
@@ -926,7 +926,7 @@ private fun AddCourseWeekPickerDialog(
                             onClick = onDismiss,
                             modifier = Modifier.weight(1f),
                         ) {
-                            Text(text = AddCourseStrings.cancelAction.zh)
+                            Text(text = AddCourseStrings.cancelAction.text)
                         }
                         top.yukonga.miuix.kmp.basic.Button(
                             onClick = { onConfirm(draft) },
@@ -934,7 +934,7 @@ private fun AddCourseWeekPickerDialog(
                             modifier = Modifier.weight(1f),
                             colors = top.yukonga.miuix.kmp.basic.ButtonDefaults.buttonColorsPrimary(),
                         ) {
-                            Text(text = AddCourseStrings.confirmAction.zh)
+                            Text(text = AddCourseStrings.confirmAction.text)
                         }
                     }
                 }

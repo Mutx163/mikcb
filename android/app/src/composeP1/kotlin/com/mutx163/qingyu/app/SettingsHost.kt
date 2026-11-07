@@ -285,7 +285,7 @@ fun SettingsHost(
             sliderDragActive = false
             latestOnModelChanged(model)
             Log.e(LOG_TAG, "debounced settings save did not land")
-            toast(SettingsStringsExt2.saveFailed.zh)
+            toast(SettingsStringsExt2.saveFailed.text)
         }
     }
     // 离开本页：把防抖里欠着的那一档补写掉（Dart `dispose()` 同口径）。
@@ -318,7 +318,7 @@ fun SettingsHost(
         onModelChanged(model)
         if (!persisted) {
             Log.e(LOG_TAG, "settings save did not land: page=$pageId")
-            toast(SettingsStringsExt2.saveFailed.zh)
+            toast(SettingsStringsExt2.saveFailed.text)
         }
         return persisted
     }
@@ -343,11 +343,11 @@ fun SettingsHost(
         val manager = clipboardManager()
         if (manager == null) {
             Log.e(LOG_TAG, "clipboard unavailable: export theme")
-            toast(SettingsStringsExt2.saveFailed.zh)
+            toast(SettingsStringsExt2.saveFailed.text)
             return
         }
         manager.setPrimaryClip(ClipData.newPlainText(CLIPBOARD_LABEL_THEME, json))
-        toast(SettingsStrings.themeExportSuccess.zh)
+        toast(SettingsStrings.themeExportSuccess.text)
     }
 
     /**
@@ -368,18 +368,18 @@ fun SettingsHost(
             ?.mapNotNull { (key, value) -> (key as? String)?.let { it to value } }
             ?.toMap()
         if (config == null || !SettingsActionDispatcher.themeConfigIsUsable(config)) {
-            toast(SettingsStrings.themeImportFailed.zh)
+            toast(SettingsStrings.themeImportFailed.text)
             return
         }
         // Dart 导入成功也把检查点换成这份配置
         // （`_applyThemeWithUndo(config, themeName: l10n.themeImport)`）。
         commitModel(
             SettingsActionDispatcher.applyThemeConfig(model, config).copy(
-                themeCheckpointName = SettingsStrings.themeImport.zh,
+                themeCheckpointName = SettingsStrings.themeImport.text,
                 themeCheckpointConfig = config,
             ),
         )
-        toast(SettingsStrings.themeImportSuccess.zh)
+        toast(SettingsStrings.themeImportSuccess.text)
     }
 
     /** 已存主题的名字（行 id → 列表里的 name）；找不到返回空串。 */
@@ -402,9 +402,9 @@ fun SettingsHost(
                 commitModel(next)
                 // Dart `_applyThemeWithUndo` 弹「已切换到 X + 撤销」；撤销在这里用同一个对话框承载。
                 notice = SettingsNotice(
-                    title = SettingsStrings.themeApply.zh,
+                    title = SettingsStrings.themeApply.text,
                     body = SettingsStrings.themeChanged.filled("themeName", name),
-                    undoLabel = SettingsStrings.themeUndo.zh,
+                    undoLabel = SettingsStrings.themeUndo.text,
                     onUndo = { commitModel(previous) },
                 )
             }
@@ -447,7 +447,7 @@ fun SettingsHost(
                 } else {
                     // 其它弹层不在本宿主范围：留痕 + 一句实话，不假装成功。
                     Log.w(LOG_TAG, "unhandled dialog: rowId=${dispatch.rowId}")
-                    toast(SettingsStrings.aboutUnavailable.zh)
+                    toast(SettingsStrings.aboutUnavailable.text)
                 }
 
             is SettingsDispatch.ShowSheet -> {
@@ -456,7 +456,7 @@ fun SettingsHost(
                     themeDialog = ThemeDialogState(ThemeDialogMode.ACTIONS, id, savedThemeName(id))
                 } else {
                     Log.w(LOG_TAG, "unhandled sheet: rowId=${dispatch.rowId}")
-                    toast(SettingsStrings.aboutUnavailable.zh)
+                    toast(SettingsStrings.aboutUnavailable.text)
                 }
             }
 
@@ -464,8 +464,8 @@ fun SettingsHost(
             // （`lib/widgets/course_recolor_sheet.dart` / `course_recolor_history_service.dart`），
             // 属独立批次。这里**不假装能跑**：给一句「不可用」，而不是点了没反应。
             is SettingsDispatch.ShowRecolorSheet -> notice = SettingsNotice(
-                title = SettingsStrings.courseRecolorTileTitle.zh,
-                body = SettingsStrings.aboutUnavailable.zh,
+                title = SettingsStrings.courseRecolorTileTitle.text,
+                body = SettingsStrings.aboutUnavailable.text,
             )
 
             is SettingsDispatch.Ignored -> Log.w(
@@ -567,7 +567,7 @@ fun SettingsHost(
         }
         writer.flush()
         if (commitModel(next)) {
-            toast(SettingsStringsExt4.settingsResetDoneMessage.zh)
+            toast(SettingsStringsExt4.settingsResetDoneMessage.text)
         }
     }
 
@@ -737,7 +737,7 @@ fun SettingsHost(
                 val next = SettingsActionDispatcher.renameSavedTheme(model, id, name)
                 if (next == null) {
                     Log.w(LOG_TAG, "rename theme failed: id=$id")
-                    toast(SettingsStringsExt2.saveFailed.zh)
+                    toast(SettingsStringsExt2.saveFailed.text)
                 } else {
                     commitModel(next)
                 }
@@ -748,7 +748,7 @@ fun SettingsHost(
                 val next = SettingsActionDispatcher.deleteSavedTheme(model, id)
                 if (next == null) {
                     Log.w(LOG_TAG, "delete theme failed: id=$id")
-                    toast(SettingsStringsExt2.saveFailed.zh)
+                    toast(SettingsStringsExt2.saveFailed.text)
                 } else {
                     // 删掉的正是「当前主题」那一份 ⇒ 检查点一起清掉，否则「当前主题」卡片
                     // 会指着一份已经不存在的存档（Dart 侧 `deleteTheme` 后也不会再选中它）。
@@ -872,7 +872,7 @@ private fun AutoRefreshDailyTimeSheet(
 
     QingyuSheet(
         show = show,
-        title = SettingsStrings.courseAutoRefreshDailyTimeTitle.zh,
+        title = SettingsStrings.courseAutoRefreshDailyTimeTitle.text,
         // 内容根是 `Column(padding(horizontal = 16.dp))` ⇒ 框架侧横向归零，单边仍是 16
         //（不然 24 + 16 = 40）。
         contentPadsHorizontally = true,
@@ -917,7 +917,7 @@ private fun AutoRefreshDailyTimeSheet(
             ) {
                 TextButton(
                     modifier = Modifier.weight(1f),
-                    text = SettingsStringsExt4.cancelAction.zh,
+                    text = SettingsStringsExt4.cancelAction.text,
                     onClick = onDismiss,
                 )
                 Button(
@@ -925,7 +925,7 @@ private fun AutoRefreshDailyTimeSheet(
                     onClick = { onConfirm(hour * 60 + minute) },
                     colors = ButtonDefaults.buttonColorsPrimary(),
                 ) {
-                    Text(text = SettingsStrings.confirmAction.zh)
+                    Text(text = SettingsStrings.confirmAction.text)
                 }
             }
             // 不加末尾 Spacer：QingyuSheet 在 contentScrolls=false 时已自动补
@@ -956,12 +956,12 @@ private fun AutoRefreshRunNowNotice(show: Boolean, onDismiss: () -> Unit) {
     OverlayDialog(
         insideMargin = DpSize(16.dp, 16.dp),
         show = show,
-        title = SettingsStrings.courseAutoRefreshTryNowTitle.zh,
+        title = SettingsStrings.courseAutoRefreshTryNowTitle.text,
         onDismissRequest = onDismiss,
     ) {
         Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
             Text(
-                text = SettingsStrings.aboutUnavailable.zh,
+                text = SettingsStrings.aboutUnavailable.text,
                 style = MiuixTheme.textStyles.body2,
                 color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
             )
@@ -973,7 +973,7 @@ private fun AutoRefreshRunNowNotice(show: Boolean, onDismiss: () -> Unit) {
                     onClick = onDismiss,
                     colors = ButtonDefaults.buttonColorsPrimary(),
                 ) {
-                    Text(text = SettingsStrings.confirmAction.zh)
+                    Text(text = SettingsStrings.confirmAction.text)
                 }
             }
         }
@@ -1014,7 +1014,7 @@ internal fun SettingsConfirmResetDialog(
     if (pendingScope != null) shown = pendingScope
     OverlayDialog(
         show = pendingScope != null,
-        title = SettingsStringsExt4.settingsResetDefaultsConfirmTitle.zh,
+        title = SettingsStringsExt4.settingsResetDefaultsConfirmTitle.text,
         onDismissRequest = onDismiss,
         insideMargin = DpSize(16.dp, 16.dp),
     ) {
@@ -1022,7 +1022,7 @@ internal fun SettingsConfirmResetDialog(
         if (scope != null) {
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 Text(
-                    text = scope.confirmBody.zh,
+                    text = scope.confirmBody.text,
                     style = MiuixTheme.textStyles.body2,
                     color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
                 )
@@ -1032,7 +1032,7 @@ internal fun SettingsConfirmResetDialog(
                 ) {
                     Button(onClick = onDismiss) {
                         Text(
-                            text = SettingsStringsExt4.cancelAction.zh,
+                            text = SettingsStringsExt4.cancelAction.text,
                             style = MiuixTheme.textStyles.button,
                         )
                     }
@@ -1047,7 +1047,7 @@ internal fun SettingsConfirmResetDialog(
                         ),
                     ) {
                         Text(
-                            text = SettingsStringsExt4.settingsResetDefaultsTitle.zh,
+                            text = SettingsStringsExt4.settingsResetDefaultsTitle.text,
                             style = MiuixTheme.textStyles.button,
                         )
                     }
@@ -1087,7 +1087,7 @@ private fun SettingsColorPickerDialog(
 
     OverlayDialog(
         show = initialHex != null,
-        title = SettingsStrings.textColorSelectColor.zh,
+        title = SettingsStrings.textColorSelectColor.text,
         onDismissRequest = onDismiss,
         insideMargin = DpSize(16.dp, 16.dp),
     ) {
@@ -1102,7 +1102,7 @@ private fun SettingsColorPickerDialog(
             ) {
                 Button(onClick = onDismiss) {
                     Text(
-                        text = SettingsStringsExt4.cancelAction.zh,
+                        text = SettingsStringsExt4.cancelAction.text,
                         style = MiuixTheme.textStyles.button,
                     )
                 }
@@ -1112,7 +1112,7 @@ private fun SettingsColorPickerDialog(
                     colors = ButtonDefaults.buttonColorsPrimary(),
                 ) {
                     Text(
-                        text = SettingsStringsExt1.appearanceEditorDoneAction.zh,
+                        text = SettingsStringsExt1.appearanceEditorDoneAction.text,
                         style = MiuixTheme.textStyles.button,
                     )
                 }
@@ -1173,7 +1173,7 @@ fun HomeNavigationHost(
             Log.e(LOG_TAG, "home navigation save did not land")
             // 首页导航保存失败以前也只写日志：用户点完看不出没生效，重进页面又回到旧值。
             // model 保持不动（没落盘就不改内存），这里补一句和设置页其它行同键的提示。
-            toast(SettingsStringsExt2.saveFailed.zh)
+            toast(SettingsStringsExt2.saveFailed.text)
         }
         return landed
     }
@@ -1222,7 +1222,7 @@ fun HomeNavigationHost(
                 scope?.let {
                     SettingsActionDispatcher.applyResetScope(model, it.arg)?.let { next ->
                         if (apply(next)) {
-                            toast(SettingsStringsExt4.settingsResetDoneMessage.zh)
+                            toast(SettingsStringsExt4.settingsResetDoneMessage.text)
                         }
                     }
                 }
@@ -1309,7 +1309,7 @@ fun TimetablePageSettingsHost(
             // 滑杆那一档没落盘：内存拉回盘上真值并提示（与主宿主 `resetDraft` 同语义）。
             model = runCatching { store.load() }.getOrNull() ?: model
             Log.e(LOG_TAG, "timetable-page debounced settings save did not land")
-            toast(SettingsStringsExt2.saveFailed.zh)
+            toast(SettingsStringsExt2.saveFailed.text)
         }
     }
     // 离开本页：把防抖里欠着的那一档补写掉（主宿主 `DisposableEffect` 同口径）。
@@ -1322,7 +1322,7 @@ fun TimetablePageSettingsHost(
         model = if (persisted) next else runCatching { store.load() }.getOrNull() ?: before
         if (!persisted) {
             Log.e(LOG_TAG, "timetable page settings save did not land")
-            toast(SettingsStringsExt2.saveFailed.zh)
+            toast(SettingsStringsExt2.saveFailed.text)
         }
         return persisted
     }
@@ -1367,12 +1367,12 @@ fun TimetablePageSettingsHost(
         if (next == null) {
             // 作用域没实现就明说，不弹一个「确认后什么都没变」的假成功。
             Log.w(LOG_TAG, "reset scope not implemented: ${scope.arg}")
-            toast(SettingsStrings.aboutUnavailable.zh)
+            toast(SettingsStrings.aboutUnavailable.text)
             return
         }
         writer.flush()
         if (commitModel(next)) {
-            toast(SettingsStringsExt4.settingsResetDoneMessage.zh)
+            toast(SettingsStringsExt4.settingsResetDoneMessage.text)
         }
     }
 
@@ -1392,7 +1392,7 @@ fun TimetablePageSettingsHost(
                         val current = SettingsPageBridge.currentColorHex(model, rowId)
                         if (current == null) {
                             Log.w(LOG_TAG, "timetable-page color row unknown: rowId=$rowId")
-                            toast(SettingsStrings.aboutUnavailable.zh)
+                            toast(SettingsStrings.aboutUnavailable.text)
                         } else {
                             pendingColor = ColorEdit(rowId, current)
                         }
@@ -1419,7 +1419,7 @@ fun TimetablePageSettingsHost(
                             onNavigate(route)
                         } else {
                             Log.w(LOG_TAG, "timetable-page sheet has no route: rowId=$rowId")
-                            toast(SettingsStrings.aboutUnavailable.zh)
+                            toast(SettingsStrings.aboutUnavailable.text)
                         }
                     }
 
@@ -1519,7 +1519,7 @@ fun GlassDockEditorHost(
             } else {
                 Log.e(LOG_TAG, "glass dock editor save did not land")
                 // 以前只有日志：用户点了「加/删/移」看不出没生效。model 保持不动（没落盘就不改界面）。
-                Toast.makeText(context, SettingsStringsExt2.saveFailed.zh, Toast.LENGTH_SHORT).show()
+                Toast.makeText(context, SettingsStringsExt2.saveFailed.text, Toast.LENGTH_SHORT).show()
             }
         }
     }
@@ -1562,7 +1562,7 @@ fun HomeMenuEditorHost(
                 model = result.model
             } else {
                 Log.e(LOG_TAG, "home menu editor save did not land")
-                Toast.makeText(context, SettingsStringsExt2.saveFailed.zh, Toast.LENGTH_SHORT).show()
+                Toast.makeText(context, SettingsStringsExt2.saveFailed.text, Toast.LENGTH_SHORT).show()
             }
         }
     }
@@ -1656,16 +1656,16 @@ internal fun SettingsThemeDialogHost(
                 insideMargin = DpSize(16.dp, 16.dp),
                 show = state != null,
                 title = if (current.mode == ThemeDialogMode.RENAME) {
-                    SettingsStrings.themeRename.zh
+                    SettingsStrings.themeRename.text
                 } else {
-                    SettingsStrings.themeSaveCurrent.zh
+                    SettingsStrings.themeSaveCurrent.text
                 },
                 onDismissRequest = onDismiss,
             ) {
                 TextField(
                     value = text,
                     onValueChange = { text = it },
-                    label = SettingsStrings.themeNameHint.zh,
+                    label = SettingsStrings.themeNameHint.text,
                     useLabelAsPlaceholder = true,
                     singleLine = true,
                     modifier = Modifier
@@ -1678,7 +1678,7 @@ internal fun SettingsThemeDialogHost(
                 ) {
                     TextButton(
                         modifier = Modifier.weight(1f),
-                        text = SettingsStringsExt4.cancelAction.zh,
+                        text = SettingsStringsExt4.cancelAction.text,
                         onClick = onDismiss,
                     )
                     Button(
@@ -1695,7 +1695,7 @@ internal fun SettingsThemeDialogHost(
                             }
                         },
                     ) {
-                        Text(text = SettingsStrings.confirmAction.zh)
+                        Text(text = SettingsStrings.confirmAction.text)
                     }
                 }
             }
@@ -1706,7 +1706,7 @@ internal fun SettingsThemeDialogHost(
             show = state != null,
             // Dart 同弹层标题是「确认删除」（confirmDeleteTitle），按钮才是「删除」；
             // 原来标题与按钮同用 themeDelete，一个「删除」说了两遍。
-            title = SettingsStrings.confirmDeleteTitle.zh,
+            title = SettingsStrings.confirmDeleteTitle.text,
             summary = SettingsStrings.themeDeleteConfirmMessage.filled("name", current.themeName),
             onDismissRequest = onDismiss,
         ) {
@@ -1716,7 +1716,7 @@ internal fun SettingsThemeDialogHost(
             ) {
                 TextButton(
                     modifier = Modifier.weight(1f),
-                    text = SettingsStringsExt4.cancelAction.zh,
+                    text = SettingsStringsExt4.cancelAction.text,
                     onClick = onDismiss,
                 )
                 Button(
@@ -1728,7 +1728,7 @@ internal fun SettingsThemeDialogHost(
                         contentColor = MiuixTheme.colorScheme.onError,
                     ),
                 ) {
-                    Text(text = SettingsStrings.themeDelete.zh)
+                    Text(text = SettingsStrings.themeDelete.text)
                 }
             }
         }
@@ -1751,16 +1751,16 @@ internal fun SettingsThemeDialogHost(
                     .fillMaxWidth()
                     .padding(horizontal = 16.dp, vertical = 8.dp),
             ) {
-                ThemeActionRow(SettingsStrings.themeApply.zh, icon = MiuixIcons.Ok) {
+                ThemeActionRow(SettingsStrings.themeApply.text, icon = MiuixIcons.Ok) {
                     current.themeId?.let { onAction(ThemeRowAction.APPLY, it) }
                 }
-                ThemeActionRow(SettingsStrings.themeRename.zh, icon = MiuixIcons.Edit) {
+                ThemeActionRow(SettingsStrings.themeRename.text, icon = MiuixIcons.Edit) {
                     current.themeId?.let { onAction(ThemeRowAction.RENAME, it) }
                 }
-                ThemeActionRow(SettingsStrings.themeDuplicate.zh, icon = MiuixIcons.Copy) {
+                ThemeActionRow(SettingsStrings.themeDuplicate.text, icon = MiuixIcons.Copy) {
                     current.themeId?.let { onAction(ThemeRowAction.DUPLICATE, it) }
                 }
-                ThemeActionRow(SettingsStrings.themeDelete.zh, icon = MiuixIcons.Delete, destructive = true) {
+                ThemeActionRow(SettingsStrings.themeDelete.text, icon = MiuixIcons.Delete, destructive = true) {
                     current.themeId?.let { onAction(ThemeRowAction.DELETE, it) }
                 }
                 // 不加末尾 Spacer(8)：套件已补「手势区 + 16dp」让位，
@@ -1858,7 +1858,7 @@ private fun SettingsNoticeDialog(notice: SettingsNotice?, onDismiss: () -> Unit)
                             colors = ButtonDefaults.buttonColorsPrimary(),
                             modifier = Modifier.weight(1f),
                         ) {
-                            Text(text = SettingsStrings.confirmAction.zh)
+                            Text(text = SettingsStrings.confirmAction.text)
                         }
                     }
                 } else {
@@ -1871,7 +1871,7 @@ private fun SettingsNoticeDialog(notice: SettingsNotice?, onDismiss: () -> Unit)
                             onClick = onDismiss,
                             colors = ButtonDefaults.buttonColorsPrimary(),
                         ) {
-                            Text(text = SettingsStrings.confirmAction.zh)
+                            Text(text = SettingsStrings.confirmAction.text)
                         }
                     }
                 }

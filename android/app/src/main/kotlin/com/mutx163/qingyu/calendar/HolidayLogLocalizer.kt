@@ -8,19 +8,7 @@ package com.mutx163.qingyu.calendar
  * **同形**的最小实现（只有 [filled] 一个方法）。两处都存在的重复是刻意的：共享模型层
  * 与页面域各自可被单独编译，跨域 import 会让 `pages/holiday` 的 L0 顺带拉进 pages/weather。
  */
-data class ArbText(val key: String, val zh: String) {
-
-    /** 替换模板里的占位符（`{name}` → [value]，按 `{}` 字面匹配）。 */
-    fun filled(name: String, value: String): String = zh.replace("{$name}", value)
-
-    fun filled(vararg pairs: Pair<String, String>): String {
-        var result = zh
-        for ((name, value) in pairs) {
-            result = result.replace("{$name}", value)
-        }
-        return result
-    }
-}
+typealias ArbText = com.mutx163.qingyu.app.ArbText
 
 /**
  * 节假日更新日志的 19 条文案（`lib/l10n/app_zh.arb`，模板语言 zh）。
@@ -170,7 +158,7 @@ object HolidayLogLocalizer {
             "holiday_log_background_no_data" -> HolidayStrings.holidayLogBackgroundNoData.filled(
                 "year" to intParam("year"),
             )
-            "holiday_log_primary_api_failed" -> HolidayStrings.holidayLogPrimaryApiFailed.zh
+            "holiday_log_primary_api_failed" -> HolidayStrings.holidayLogPrimaryApiFailed.text
             "holiday_log_requesting" -> HolidayStrings.holidayLogRequesting.filled(
                 "uri" to textParam("uri"),
             )
@@ -186,11 +174,11 @@ object HolidayLogLocalizer {
             "holiday_log_primary_api_parsing" -> HolidayStrings.holidayLogPrimaryApiParsing.filled(
                 "count" to intParam("count"),
             )
-            "holiday_log_no_valid_entries" -> HolidayStrings.holidayLogNoValidEntries.zh
+            "holiday_log_no_valid_entries" -> HolidayStrings.holidayLogNoValidEntries.text
             "holiday_log_fallback_api_status" -> HolidayStrings.holidayLogFallbackApiStatus.filled(
                 "statusCode" to intParam("statusCode"),
             )
-            "holiday_log_fallback_api_error" -> HolidayStrings.holidayLogFallbackApiError.zh
+            "holiday_log_fallback_api_error" -> HolidayStrings.holidayLogFallbackApiError.text
             "holiday_log_fallback_api_parsing" -> HolidayStrings.holidayLogFallbackApiParsing.filled(
                 "count" to intParam("count"),
             )

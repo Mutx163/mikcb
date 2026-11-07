@@ -28,6 +28,7 @@ import androidx.compose.ui.unit.dp
 import com.mutx163.qingyu.calendar.HolidayProvider
 import com.mutx163.qingyu.calendar.HolidayType
 import com.mutx163.qingyu.components.QingyuSheet
+import com.mutx163.qingyu.components.rememberCappedSheetHeight
 import com.mutx163.qingyu.pages.settings.HolidayEditorLogic
 import com.mutx163.qingyu.pages.settings.SettingsAction
 import com.mutx163.qingyu.pages.settings.SettingsHolidayPage
@@ -150,7 +151,7 @@ fun SettingsHolidayHost(
             .onSuccess { model = next }
             .onFailure {
                 // 落盘失败：不改界面（开关弹回原位），并让用户知道没存上。
-                notify(SettingsStringsExt2.saveFailed.zh)
+                notify(SettingsStringsExt2.saveFailed.text)
             }
     }
 
@@ -195,7 +196,7 @@ fun SettingsHolidayHost(
                 }
             }.isSuccess
             // Dart `:298-313`：写入失败必须让用户感知，否则「看似成功、重启即丢」。
-            if (!ok) notify(SettingsStringsExt2.saveFailed.zh)
+            if (!ok) notify(SettingsStringsExt2.saveFailed.text)
         }
     }
 
@@ -213,7 +214,7 @@ fun SettingsHolidayHost(
             val ok = runCatching {
                 withContext(Dispatchers.IO) { provider.removeCustomHoliday(groupId) }
             }.isSuccess
-            if (!ok) notify(SettingsStringsExt2.saveFailed.zh)
+            if (!ok) notify(SettingsStringsExt2.saveFailed.text)
         }
     }
 
@@ -271,7 +272,7 @@ fun SettingsHolidayHost(
                 val trimmed = HolidayEditorLogic.validateName(name)
                 if (trimmed == null) {
                     // Dart `:120-127`：名字为空 ⇒ 提示且**不关弹层**。
-                    notify(SettingsStringsExt3.customHolidayNameRequired.zh)
+                    notify(SettingsStringsExt3.customHolidayNameRequired.text)
                 } else {
                     editorVisible = false
                     saveCustomHoliday(trimmed, start, end, type)
@@ -363,9 +364,9 @@ private fun HolidayEditorSheet(
     val s = SettingsStringsExt3
     val field = picking
     val title = when (field) {
-        null -> if (initial.existing != null) s.customHolidayEdit.zh else s.customHolidayAdd.zh
-        DateField.START -> s.customHolidayStartDate.zh
-        DateField.END -> s.customHolidayEndDate.zh
+        null -> if (initial.existing != null) s.customHolidayEdit.text else s.customHolidayAdd.text
+        DateField.START -> s.customHolidayStartDate.text
+        DateField.END -> s.customHolidayEndDate.text
     }
 
     QingyuSheet(
@@ -453,7 +454,7 @@ private fun HolidayEditorForm(
         LazyColumn(
             modifier = Modifier
                 .fillMaxWidth()
-                .heightIn(max = 380.dp)
+                .heightIn(max = rememberCappedSheetHeight(380.dp))
                 .scrollEndHaptic()
                 .overScrollVertical(),
         ) {
@@ -463,7 +464,7 @@ private fun HolidayEditorForm(
                     TextField(
                         value = name,
                         onValueChange = onNameChange,
-                        label = s.customHolidayNameLabel.zh,
+                        label = s.customHolidayNameLabel.text,
                         useLabelAsPlaceholder = true,
                         singleLine = true,
                         modifier = Modifier.fillMaxWidth(),
@@ -472,13 +473,13 @@ private fun HolidayEditorForm(
                     // 起止日期：官方 BasicComponent（标题 + 行尾取值 + 整行可点 + 官方按压反馈）。
                     // Dart 是 `HyperosPickerField`（长得像输入框）；差异只在外观，点哪儿、点了弹什么一致。
                     DatePickerField(
-                        label = s.customHolidayStartDate.zh,
+                        label = s.customHolidayStartDate.text,
                         value = HolidayEditorLogic.formatDate(startDate),
                         onClick = onPickStart,
                     )
                     Spacer(modifier = Modifier.height(12.dp))
                     DatePickerField(
-                        label = s.customHolidayEndDate.zh,
+                        label = s.customHolidayEndDate.text,
                         value = HolidayEditorLogic.formatDate(endDate),
                         onClick = onPickEnd,
                     )
@@ -487,14 +488,14 @@ private fun HolidayEditorForm(
                     // 分区标题、TabRow 与按钮行都不再自带横向 16：弹层已给 16，
                     // 再叠一层就是 32（与其它同口径弹框对齐成单边 16）。
                     Text(
-                        text = s.customHolidayType.zh,
+                        text = s.customHolidayType.text,
                         style = MiuixTheme.textStyles.main,
                     )
                     Spacer(modifier = Modifier.height(8.dp))
                     TabRow(
                         tabs = listOf(
-                            s.customHolidayTypeVacation.zh,
-                            s.customHolidayTypeWorkday.zh,
+                            s.customHolidayTypeVacation.text,
+                            s.customHolidayTypeWorkday.text,
                         ),
                         selectedTabIndex = if (type == HolidayType.Vacation) 0 else 1,
                         onTabSelected = { index ->
@@ -517,7 +518,7 @@ private fun HolidayEditorForm(
                                 contentColor = errorContentColor,
                             ),
                         ) {
-                            Text(text = s.customHolidayDelete.zh)
+                            Text(text = s.customHolidayDelete.text)
                         }
                     }
                     Spacer(modifier = Modifier.height(8.dp))
@@ -533,7 +534,7 @@ private fun HolidayEditorForm(
         ) {
             TextButton(
                 modifier = Modifier.weight(1f),
-                text = s.cancelAction.zh,
+                text = s.cancelAction.text,
                 onClick = onCancel,
             )
             Button(
@@ -541,7 +542,7 @@ private fun HolidayEditorForm(
                 onClick = onSave,
                 colors = ButtonDefaults.buttonColorsPrimary(),
             ) {
-                Text(text = s.saveAction.zh)
+                Text(text = s.saveAction.text)
             }
         }
     }
@@ -658,7 +659,7 @@ private fun HolidayDeleteConfirmSheet(
     val s = SettingsStringsExt3
     QingyuSheet(
         show = visible,
-        title = s.customHolidayDelete.zh,
+        title = s.customHolidayDelete.text,
         onDismissRequest = onDismiss,
         // 内容里每一行（说明句 + 按钮行）自己都垫了左右 16，没有通栏元素 ⇒ 框架侧横向归零，
         // 单边仍是 Dart 那个 16（Dart 这层一个横向 padding 都没写，全靠 `HyperosSheetFrame`）。
@@ -666,7 +667,7 @@ private fun HolidayDeleteConfirmSheet(
     ) {
         Column(modifier = Modifier.fillMaxWidth()) {
             Text(
-                text = s.customHolidayDeleteConfirm.zh,
+                text = s.customHolidayDeleteConfirm.text,
                 style = MiuixTheme.textStyles.body2,
                 modifier = Modifier.padding(horizontal = 16.dp),
             )
@@ -679,7 +680,7 @@ private fun HolidayDeleteConfirmSheet(
             ) {
                 TextButton(
                     modifier = Modifier.weight(1f),
-                    text = s.cancelAction.zh,
+                    text = s.cancelAction.text,
                     onClick = onDismiss,
                 )
                 Button(
@@ -691,7 +692,7 @@ private fun HolidayDeleteConfirmSheet(
                         contentColor = Color(QingyuTheme.onError(dark)),
                     ),
                 ) {
-                    Text(text = s.deleteAction.zh)
+                    Text(text = s.deleteAction.text)
                 }
             }
         }

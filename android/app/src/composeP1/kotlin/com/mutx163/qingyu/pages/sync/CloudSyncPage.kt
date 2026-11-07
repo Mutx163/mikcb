@@ -231,7 +231,7 @@ fun CloudSyncPage(
                                         onClick = onSaveAdvanced,
                                         modifier = Modifier.fillMaxWidth(),
                                     ) {
-                                        Text(text = SyncStrings.saveAction.zh)
+                                        Text(text = SyncStrings.saveAction.text)
                                     }
                                 }
                             }
@@ -619,12 +619,12 @@ fun WebdavConnectSheet(
 
     QingyuSheet(
         show = show,
-        title = SyncStrings.cloudSyncLoginSheetTitle.zh,
+        title = SyncStrings.cloudSyncLoginSheetTitle.text,
         onDismissRequest = onCancel,
     ) {
         Column(modifier = Modifier.fillMaxWidth()) {
             Text(
-                text = SyncStrings.cloudSyncLoginSheetSubtitle.zh,
+                text = SyncStrings.cloudSyncLoginSheetSubtitle.text,
                 style = MiuixTheme.textStyles.footnote1,
                 color = Color(QingyuTheme.secondaryText(dark)),
             )
@@ -632,7 +632,7 @@ fun WebdavConnectSheet(
             TextField(
                 value = username,
                 onValueChange = { username = it },
-                label = SyncStrings.cloudSyncUsernameLabel.zh,
+                label = SyncStrings.cloudSyncUsernameLabel.text,
                 useLabelAsPlaceholder = true,
                 modifier = Modifier.fillMaxWidth(),
             )
@@ -640,7 +640,7 @@ fun WebdavConnectSheet(
             TextField(
                 value = password,
                 onValueChange = { password = it },
-                label = SyncStrings.cloudSyncPasswordLabel.zh,
+                label = SyncStrings.cloudSyncPasswordLabel.text,
                 useLabelAsPlaceholder = true,
                 // 对应 Dart `obscureText: true`
                 visualTransformation = PasswordVisualTransformation(),
@@ -662,7 +662,7 @@ fun WebdavConnectSheet(
                         CircularProgressIndicator(size = 16.dp, strokeWidth = 2.dp)
                         Spacer(modifier = Modifier.width(6.dp))
                     }
-                    Text(text = SyncStrings.cloudSyncTestConnection.zh)
+                    Text(text = SyncStrings.cloudSyncTestConnection.text)
                 }
                 // 主色：确认连接并落盘。
                 Button(
@@ -675,7 +675,7 @@ fun WebdavConnectSheet(
                         CircularProgressIndicator(size = 16.dp, strokeWidth = 2.dp)
                         Spacer(modifier = Modifier.width(6.dp))
                     }
-                    Text(text = SyncStrings.cloudSyncConfirmConnect.zh)
+                    Text(text = SyncStrings.cloudSyncConfirmConnect.text)
                 }
             }
         }

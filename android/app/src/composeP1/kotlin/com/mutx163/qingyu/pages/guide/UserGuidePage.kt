@@ -115,11 +115,11 @@ fun UserGuidePage(
     val currentPage = pagerState.currentPage
 
     val pageTitles = listOf(
-        GuideStrings.welcomeTitle.zh,
-        GuideStrings.guidePrivacyPageTitle.zh,
-        GuideStrings.guidePermissionsPageTitle.zh,
-        GuideStrings.guidePersonalizePageTitle.zh,
-        GuideStrings.guideTipsPageTitle.zh,
+        GuideStrings.welcomeTitle.text,
+        GuideStrings.guidePrivacyPageTitle.text,
+        GuideStrings.guidePermissionsPageTitle.text,
+        GuideStrings.guidePersonalizePageTitle.text,
+        GuideStrings.guideTipsPageTitle.text,
     )
 
     val goToPage: (Int) -> Unit = { target ->
@@ -371,11 +371,11 @@ private fun WelcomePage(
         verticalArrangement = Arrangement.spacedBy(QingyuSectionGap),
     ) {
         item(key = "header") {
-            GuideHeader(title, pageIndex, onBack, eyebrow = GuideStrings.welcomeAppName.zh)
+            GuideHeader(title, pageIndex, onBack, eyebrow = GuideStrings.welcomeAppName.text)
         }
         item(key = "subtitle") {
             Text(
-                text = GuideStrings.welcomeSubtitle.zh,
+                text = GuideStrings.welcomeSubtitle.text,
                 style = MiuixTheme.textStyles.footnote1,
                 color = Color(QingyuTheme.secondaryText(dark)),
                 modifier = Modifier.padding(horizontal = 4.dp),
@@ -387,16 +387,16 @@ private fun WelcomePage(
                 insideMargin = PaddingValues(horizontal = 16.dp, vertical = 4.dp),
             ) {
                 Column {
-                    GuideNavRow(GuideStrings.startUsingTitle.zh, onStart)
+                    GuideNavRow(GuideStrings.startUsingTitle.text, onStart)
                     GuideNavRow(
-                        title = GuideStrings.importTimetableTitle.zh,
+                        title = GuideStrings.importTimetableTitle.text,
                         onClick = onImport,
-                        subtitle = GuideStrings.importTimetableSubtitle.zh,
+                        subtitle = GuideStrings.importTimetableSubtitle.text,
                     )
                     GuideNavRow(
-                        title = GuideStrings.restoreBackupTitle.zh,
+                        title = GuideStrings.restoreBackupTitle.text,
                         onClick = onRestore,
-                        subtitle = GuideStrings.restoreBackupSubtitle.zh,
+                        subtitle = GuideStrings.restoreBackupSubtitle.text,
                     )
                 }
             }
@@ -431,10 +431,10 @@ private fun PrivacyPage(
                 insideMargin = QingyuCardDefaults.ContentInsideMargin,
             ) {
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    GuideParagraph(GuideStrings.guidePrivacyParagraph1.zh, dark)
-                    GuideParagraph(GuideStrings.guidePrivacyParagraph2.zh, dark)
-                    GuideParagraph(GuideStrings.guidePrivacyParagraph3.zh, dark)
-                    GuideParagraph(GuideStrings.guidePrivacyParagraph4.zh, dark)
+                    GuideParagraph(GuideStrings.guidePrivacyParagraph1.text, dark)
+                    GuideParagraph(GuideStrings.guidePrivacyParagraph2.text, dark)
+                    GuideParagraph(GuideStrings.guidePrivacyParagraph3.text, dark)
+                    GuideParagraph(GuideStrings.guidePrivacyParagraph4.text, dark)
                 }
             }
         }
@@ -445,10 +445,10 @@ private fun PrivacyPage(
                 insideMargin = QingyuCardDefaults.ContentInsideMargin,
             ) {
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    GuideGroupTitle(GuideStrings.guideRiskTitle.zh, dark)
-                    GuideParagraph(GuideStrings.guideRiskParagraph1.zh, dark)
-                    GuideParagraph(GuideStrings.guideRiskParagraph2.zh, dark)
-                    GuideParagraph(GuideStrings.guideRiskParagraph3.zh, dark)
+                    GuideGroupTitle(GuideStrings.guideRiskTitle.text, dark)
+                    GuideParagraph(GuideStrings.guideRiskParagraph1.text, dark)
+                    GuideParagraph(GuideStrings.guideRiskParagraph2.text, dark)
+                    GuideParagraph(GuideStrings.guideRiskParagraph3.text, dark)
                 }
             }
         }
@@ -459,7 +459,7 @@ private fun PrivacyPage(
                 insideMargin = QingyuCardDefaults.ContentInsideMargin,
             ) {
                 Text(
-                    text = GuideStrings.guideUmengPrivacyLink.zh,
+                    text = GuideStrings.guideUmengPrivacyLink.text,
                     style = MiuixTheme.textStyles.footnote1,
                     color = Color(QingyuTheme.primary(dark = dark)),
                 )
@@ -484,7 +484,7 @@ private fun PrivacyPage(
                         )
                         Spacer(Modifier.width(10.dp))
                         Text(
-                            text = GuideStrings.guidePrivacyConsentLabel.zh,
+                            text = GuideStrings.guidePrivacyConsentLabel.text,
                             style = MiuixTheme.textStyles.body2,
                             color = Color(QingyuTheme.primaryText(dark)),
                         )
@@ -522,7 +522,7 @@ private fun PermissionsPage(
                 IconButton(onClick = onRefresh) {
                     Icon(
                         imageVector = MiuixIcons.Refresh,
-                        contentDescription = GuideStrings.refreshStatusTooltip.zh,
+                        contentDescription = GuideStrings.refreshStatusTooltip.text,
                         tint = Color(QingyuTheme.actionIcon(dark)),
                     )
                 }
@@ -546,7 +546,7 @@ private fun PermissionsPage(
                 ) {
                     Column {
                         // 发布版摘要卡的第一句（`HyperosTypography.listDetail`）：为什么这套设置值得做。
-                        GuideParagraph(GuideStrings.guidePermissionsSubtitle.zh, dark)
+                        GuideParagraph(GuideStrings.guidePermissionsSubtitle.text, dark)
                         Spacer(Modifier.height(10.dp))
                         Text(
                             text = GuideStrings.guidePermissionsProgressLabel.filled(
@@ -595,7 +595,7 @@ private fun PermissionsPage(
 
             // 发布版在权限列表之后跟一条提示条（`HyperosHintBanner`：灯泡图标 + 一句话）。
             item(key = "footerHint") {
-                GuideHintBanner(GuideStrings.guidePermissionsFooterHint.zh, dark)
+                GuideHintBanner(GuideStrings.guidePermissionsFooterHint.text, dark)
             }
         }
     }
@@ -697,7 +697,7 @@ private fun PersonalizePage(
 
         item(key = "subtitle") {
             Text(
-                text = GuideStrings.guidePersonalizeSubtitle.zh,
+                text = GuideStrings.guidePersonalizeSubtitle.text,
                 style = MiuixTheme.textStyles.footnote1,
                 color = Color(QingyuTheme.secondaryText(dark)),
                 modifier = Modifier.padding(horizontal = 4.dp),
@@ -708,16 +708,16 @@ private fun PersonalizePage(
         item(key = "menuStyle") {
             QingyuCard(modifier = Modifier.fillMaxWidth()) {
                 Column {
-                    GuideCardTitle(GuideStrings.guidePersonalizeMenuStyleTitle.zh, dark)
+                    GuideCardTitle(GuideStrings.guidePersonalizeMenuStyleTitle.text, dark)
                     RadioButtonPreference(
-                        title = GuideStrings.homeMenuStyleList.zh,
-                        summary = GuideStrings.homeMenuStyleListSubtitle.zh,
+                        title = GuideStrings.homeMenuStyleList.text,
+                        summary = GuideStrings.homeMenuStyleListSubtitle.text,
                         selected = !settings.homeMenuGrid,
                         onClick = { onSettingsPatch(GuideSettingsPatch.HomeMenuGrid(false)) },
                     )
                     RadioButtonPreference(
-                        title = GuideStrings.homeMenuStyleGrid.zh,
-                        summary = GuideStrings.homeMenuStyleGridSubtitle.zh,
+                        title = GuideStrings.homeMenuStyleGrid.text,
+                        summary = GuideStrings.homeMenuStyleGridSubtitle.text,
                         selected = settings.homeMenuGrid,
                         onClick = { onSettingsPatch(GuideSettingsPatch.HomeMenuGrid(true)) },
                     )
@@ -730,22 +730,22 @@ private fun PersonalizePage(
         item(key = "material") {
             QingyuCard(modifier = Modifier.fillMaxWidth()) {
                 Column {
-                    GuideCardTitle(GuideStrings.frostedGlassModeLabel.zh, dark)
+                    GuideCardTitle(GuideStrings.frostedGlassModeLabel.text, dark)
                     RadioButtonPreference(
-                        title = GuideStrings.frostedGlassModeLiquid.zh,
-                        summary = GuideStrings.guideVisualEffectLiquidDesc.zh,
+                        title = GuideStrings.frostedGlassModeLiquid.text,
+                        summary = GuideStrings.guideVisualEffectLiquidDesc.text,
                         selected = !settings.materialSolid,
                         onClick = { onSettingsPatch(GuideSettingsPatch.MaterialSolid(false)) },
                     )
                     RadioButtonPreference(
-                        title = GuideStrings.guidePersonalizeVisualEffectSolid.zh,
-                        summary = GuideStrings.guideVisualEffectSolidDesc.zh,
+                        title = GuideStrings.guidePersonalizeVisualEffectSolid.text,
+                        summary = GuideStrings.guideVisualEffectSolidDesc.text,
                         selected = settings.materialSolid,
                         onClick = { onSettingsPatch(GuideSettingsPatch.MaterialSolid(true)) },
                     )
                     if (!settings.materialSolid) {
                         Text(
-                            text = GuideStrings.guideVisualEffectWallpaperHint.zh,
+                            text = GuideStrings.guideVisualEffectWallpaperHint.text,
                             style = MiuixTheme.textStyles.footnote2,
                             color = Color(QingyuTheme.secondaryText(dark)),
                             modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 6.dp, bottom = 12.dp),
@@ -764,13 +764,13 @@ private fun PersonalizePage(
                 insideMargin = QingyuCardDefaults.ContentInsideMargin,
             ) {
                 Column {
-                    GuideGroupTitle(GuideStrings.guidePersonalizeThemeModeTitle.zh, dark)
+                    GuideGroupTitle(GuideStrings.guidePersonalizeThemeModeTitle.text, dark)
                     Spacer(Modifier.height(10.dp))
                     TabRowWithContour(
                         tabs = listOf(
-                            GuideStrings.themeModeSystem.zh,
-                            GuideStrings.themeModeLight.zh,
-                            GuideStrings.themeModeDark.zh,
+                            GuideStrings.themeModeSystem.text,
+                            GuideStrings.themeModeLight.text,
+                            GuideStrings.themeModeDark.text,
                         ),
                         selectedTabIndex = when (settings.themeMode) {
                             GuideThemeMode.SYSTEM -> 0
@@ -800,7 +800,7 @@ private fun PersonalizePage(
                 insideMargin = QingyuCardDefaults.ContentInsideMargin,
             ) {
                 Column {
-                    GuideGroupTitle(GuideStrings.guidePersonalizeSeedColorTitle.zh, dark)
+                    GuideGroupTitle(GuideStrings.guidePersonalizeSeedColorTitle.text, dark)
                     Spacer(Modifier.height(12.dp))
                     seedOptions.chunked(6).forEachIndexed { rowIdx, rowOptions ->
                         if (rowIdx > 0) Spacer(Modifier.height(12.dp))
@@ -881,14 +881,14 @@ private fun TipsPage(
                 insideMargin = QingyuCardDefaults.ContentInsideMargin,
             ) {
                 Column {
-                    GuideGroupTitle(GuideStrings.guideShortNameAdviceTitle.zh, dark)
+                    GuideGroupTitle(GuideStrings.guideShortNameAdviceTitle.text, dark)
                     Spacer(Modifier.height(8.dp))
                     // 发布版卡片首句：先说「为什么简称值得填」，再给推荐 / 不推荐两行示例。
-                    GuideParagraph(GuideStrings.guideShortNameAdviceSubtitle.zh, dark)
+                    GuideParagraph(GuideStrings.guideShortNameAdviceSubtitle.text, dark)
                     Spacer(Modifier.height(8.dp))
-                    ExampleRow(ok = true, label = GuideStrings.guideShortNameRecommended.zh, example = GuideStrings.guideShortNameRecommendedExample.zh, dark = dark)
+                    ExampleRow(ok = true, label = GuideStrings.guideShortNameRecommended.text, example = GuideStrings.guideShortNameRecommendedExample.text, dark = dark)
                     Spacer(Modifier.height(6.dp))
-                    ExampleRow(ok = false, label = GuideStrings.guideShortNameNotRecommended.zh, example = GuideStrings.guideShortNameNotRecommendedExample.zh, dark = dark)
+                    ExampleRow(ok = false, label = GuideStrings.guideShortNameNotRecommended.text, example = GuideStrings.guideShortNameNotRecommendedExample.text, dark = dark)
                     Spacer(Modifier.height(14.dp))
                     Button(
                         onClick = onOpenCourseOverview,
@@ -896,7 +896,7 @@ private fun TipsPage(
                         modifier = Modifier.fillMaxWidth(),
                     ) {
                         Text(
-                            text = GuideStrings.guideSetCourseShortNameAction.zh,
+                            text = GuideStrings.guideSetCourseShortNameAction.text,
                             style = MiuixTheme.textStyles.body2,
                             color = Color(QingyuTheme.primaryText(dark)),
                         )
@@ -911,14 +911,14 @@ private fun TipsPage(
                 insideMargin = QingyuCardDefaults.ContentInsideMargin,
             ) {
                 Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                    GuideGroupTitle(GuideStrings.guideImportMethodsTitle.zh, dark)
+                    GuideGroupTitle(GuideStrings.guideImportMethodsTitle.text, dark)
                     // 发布版卡片首句：先说整体有什么方式，再列 3 条步骤。
-                    GuideParagraph(GuideStrings.guideImportMethodsSubtitle.zh, dark)
-                    StepRow("1", GuideStrings.guideImportMethodStep1.zh, dark)
-                    StepRow("2", GuideStrings.guideImportMethodStep2.zh, dark)
-                    StepRow("3", GuideStrings.guideImportMethodStep3.zh, dark)
+                    GuideParagraph(GuideStrings.guideImportMethodsSubtitle.text, dark)
+                    StepRow("1", GuideStrings.guideImportMethodStep1.text, dark)
+                    StepRow("2", GuideStrings.guideImportMethodStep2.text, dark)
+                    StepRow("3", GuideStrings.guideImportMethodStep3.text, dark)
                     // 发布版在 3 条步骤之后补一句「也可以参与适配」的次要说明（mutedBody）。
-                    GuideParagraph(GuideStrings.guideImportMethodExtra.zh, dark)
+                    GuideParagraph(GuideStrings.guideImportMethodExtra.text, dark)
                 }
             }
         }
@@ -929,10 +929,10 @@ private fun TipsPage(
                 insideMargin = QingyuCardDefaults.ContentInsideMargin,
             ) {
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    GuideGroupTitle(GuideStrings.guideFinalTipsTitle.zh, dark)
-                    GuideParagraph(GuideStrings.guideFinalTip1.zh, dark)
-                    GuideParagraph(GuideStrings.guideFinalTip2.zh, dark)
-                    GuideParagraph(GuideStrings.guideFinalTip3.zh, dark)
+                    GuideGroupTitle(GuideStrings.guideFinalTipsTitle.text, dark)
+                    GuideParagraph(GuideStrings.guideFinalTip1.text, dark)
+                    GuideParagraph(GuideStrings.guideFinalTip2.text, dark)
+                    GuideParagraph(GuideStrings.guideFinalTip3.text, dark)
                 }
             }
         }
@@ -1036,7 +1036,7 @@ private fun GuideBottomBar(
             val showPrev = isPrivacyPage || currentPage > 0
             if (showPrev) {
                 GuideSecondaryButton(
-                    label = if (isPrivacyPage) GuideStrings.exitAppAction.zh else GuideStrings.guidePrevButton.zh,
+                    label = if (isPrivacyPage) GuideStrings.exitAppAction.text else GuideStrings.guidePrevButton.text,
                     dark = dark,
                     onClick = if (isPrivacyPage) onExit else onPrev,
                     modifier = Modifier.weight(1f),
@@ -1050,9 +1050,9 @@ private fun GuideBottomBar(
             ) {
                 Text(
                     text = if (isLastPage) {
-                        if (requireConsent) GuideStrings.agreeAndStartAction.zh else GuideStrings.gotItAction.zh
+                        if (requireConsent) GuideStrings.agreeAndStartAction.text else GuideStrings.gotItAction.text
                     } else {
-                        GuideStrings.guideNextButton.zh
+                        GuideStrings.guideNextButton.text
                     },
                     color = onAccentInk,
                     style = MiuixTheme.textStyles.body2.shiftWeight(QingyuWeightDelta.MEDIUM),

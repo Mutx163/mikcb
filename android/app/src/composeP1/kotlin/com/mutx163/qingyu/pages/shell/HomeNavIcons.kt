@@ -226,7 +226,7 @@ object HomeNavIcons {
      */
     fun labelOf(id: String): String = when (id) {
         HomeDockNavModel.DEV_INDEX_ID -> SHELL_PAGE_INDEX_TITLE
-        else -> SettingsGlassDockEditorPage.labelOf(id).zh
+        else -> SettingsGlassDockEditorPage.labelOf(id).text
     }
 
     /** 该 id 的图标。未登记的一律 [MiuixIcons.More]。 */

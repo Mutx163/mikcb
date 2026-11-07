@@ -91,7 +91,7 @@ fun ClassAlarmSheet(
 
     QingyuSheet(
         show = show,
-        title = CourseActionStrings.classAlarmActionLabel.zh,
+        title = CourseActionStrings.classAlarmActionLabel.text,
         onDismissRequest = onDismiss,
     ) {
         if (course == null || resolvedStartTime == null) return@QingyuSheet
@@ -164,7 +164,7 @@ fun ClassAlarmSheet(
             // 自定义时间（Dart `:290-307`）：先滚轮，再走同一条确认链。
             TextButton(
                 modifier = Modifier.fillMaxWidth(),
-                text = CourseActionStrings.classAlarmCustomOption.zh,
+                text = CourseActionStrings.classAlarmCustomOption.text,
                 enabled = startMinutes != null,
                 onClick = { pickerShow = true },
             )
@@ -173,7 +173,7 @@ fun ClassAlarmSheet(
             // 打开系统时钟（Dart `:309-328`）。
             TextButton(
                 modifier = Modifier.fillMaxWidth(),
-                text = CourseActionStrings.classAlarmOpenClock.zh,
+                text = CourseActionStrings.classAlarmOpenClock.text,
                 onClick = {
                     onEvent(ClassAlarmEvent.OpenSystemClock)
                     onDismiss()
@@ -186,7 +186,7 @@ fun ClassAlarmSheet(
                 Spacer(modifier = Modifier.height(8.dp))
                 TextButton(
                     modifier = Modifier.fillMaxWidth(),
-                    text = CourseActionStrings.cancelAction.zh,
+                    text = CourseActionStrings.cancelAction.text,
                     colors = ButtonDefaults.textButtonColors(
                         textColor = Color(QingyuTheme.destructive()),
                     ),
@@ -200,7 +200,7 @@ fun ClassAlarmSheet(
     if (course != null && resolvedStartTime != null) {
         ExamTimePickerSheet(
             show = pickerShow,
-            title = CourseActionStrings.selectTimeTitle.zh,
+            title = CourseActionStrings.selectTimeTitle.text,
             initial = resolvedStartTime,
             onPick = { picked ->
                 pickerShow = false
@@ -255,7 +255,7 @@ fun ClassAlarmSheet(
     OverlayDialog(
         insideMargin = DpSize(16.dp, 16.dp),
         show = pendingConfirm != null,
-        title = CourseActionStrings.classAlarmCourseConfirmTitle.zh,
+        title = CourseActionStrings.classAlarmCourseConfirmTitle.text,
         summary = summaryText,
         onDismissRequest = { pendingConfirm = null },
     ) {
@@ -265,7 +265,7 @@ fun ClassAlarmSheet(
             val plan = current.first
             Row(modifier = Modifier.fillMaxWidth()) {
                 TextButton(
-                    text = CourseActionStrings.cancelAction.zh,
+                    text = CourseActionStrings.cancelAction.text,
                     onClick = { pendingConfirm = null },
                     modifier = Modifier.weight(1f),
                 )
@@ -287,7 +287,7 @@ fun ClassAlarmSheet(
                     modifier = Modifier.weight(1f),
                     colors = ButtonDefaults.buttonColorsPrimary(),
                 ) {
-                    Text(text = CourseActionStrings.confirmAction.zh)
+                    Text(text = CourseActionStrings.confirmAction.text)
                 }
             }
         }

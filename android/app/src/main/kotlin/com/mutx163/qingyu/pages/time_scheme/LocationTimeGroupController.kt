@@ -392,7 +392,7 @@ class LocationTimeGroupController(
             )
 
             else -> LocationTimeApplyToast(
-                message = LocationTimeMatchStrings.applyNoneMatched.zh,
+                message = LocationTimeMatchStrings.applyNoneMatched.text,
                 description = null,
                 kind = LocationTimeApplyToastKind.INFO,
             )

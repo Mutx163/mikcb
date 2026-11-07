@@ -181,7 +181,7 @@ fun CourseNoteSheet(
                 Spacer(modifier = Modifier.width(12.dp))
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
-                        text = CourseNoteStrings.courseNoteSheetTitle.zh,
+                        text = CourseNoteStrings.courseNoteSheetTitle.text,
                         style = MiuixTheme.textStyles.body2.shiftWeight(QingyuWeightDelta.MEDIUM),
                         color = primaryText,
                     )
@@ -199,8 +199,8 @@ fun CourseNoteSheet(
 
             // ── 第一段：课程简介（同名课程共享）Dart `:270-288` ──
             NoteFieldLabel(
-                label = CourseNoteStrings.courseNoteWholeCourseLabel.zh,
-                hint = CourseNoteStrings.courseNoteWholeCourseHint.zh,
+                label = CourseNoteStrings.courseNoteWholeCourseLabel.text,
+                hint = CourseNoteStrings.courseNoteWholeCourseHint.text,
                 primaryText = primaryText,
                 secondaryText = secondaryText,
             )
@@ -208,7 +208,7 @@ fun CourseNoteSheet(
             TextField(
                 value = wholeText,
                 onValueChange = { wholeText = it },
-                label = CourseNoteStrings.courseNoteWholeCoursePlaceholder.zh,
+                label = CourseNoteStrings.courseNoteWholeCoursePlaceholder.text,
                 useLabelAsPlaceholder = true,
                 enabled = editable,
                 minLines = 2,
@@ -222,7 +222,7 @@ fun CourseNoteSheet(
 
             // ── 第二段：本节课备注（只对本周年有效）Dart `:290-308` ──
             NoteFieldLabel(
-                label = CourseNoteStrings.courseNoteSessionLabel.zh,
+                label = CourseNoteStrings.courseNoteSessionLabel.text,
                 hint = CourseNoteStrings.sessionHint(week),
                 primaryText = primaryText,
                 secondaryText = secondaryText,
@@ -231,7 +231,7 @@ fun CourseNoteSheet(
             TextField(
                 value = sessionText,
                 onValueChange = { sessionText = it },
-                label = CourseNoteStrings.courseNoteSessionPlaceholder.zh,
+                label = CourseNoteStrings.courseNoteSessionPlaceholder.text,
                 useLabelAsPlaceholder = true,
                 enabled = editable,
                 minLines = 2,
@@ -246,7 +246,7 @@ fun CourseNoteSheet(
             if (readOnly) {
                 Spacer(modifier = Modifier.height(12.dp))
                 Text(
-                    text = CourseNoteStrings.courseNoteReadOnlyNotice.zh,
+                    text = CourseNoteStrings.courseNoteReadOnlyNotice.text,
                     style = MiuixTheme.textStyles.footnote2,
                     color = secondaryText,
                 )
@@ -261,7 +261,7 @@ fun CourseNoteSheet(
             ) {
                 TextButton(
                     modifier = Modifier.weight(1f),
-                    text = CourseNoteStrings.cancelAction.zh,
+                    text = CourseNoteStrings.cancelAction.text,
                     onClick = onDismiss,
                 )
                 if (editable) {
@@ -278,7 +278,7 @@ fun CourseNoteSheet(
                             onSave(payload.wholeNote, payload.sessionNote)
                         },
                     ) {
-                        Text(text = CourseNoteStrings.courseNoteSaveAction.zh)
+                        Text(text = CourseNoteStrings.courseNoteSaveAction.text)
                     }
                 }
             }

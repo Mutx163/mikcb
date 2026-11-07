@@ -77,8 +77,8 @@ fun MonthDayCell(
     val cardLuminance = scheme.surface.luminance()
 
     val badge = when {
-        entry.isAdjustedWorkday -> MonthText.adjustedWorkdayBadge.zh to scheme.primary
-        entry.isHoliday -> MonthText.holidayBadge.zh to scheme.error
+        entry.isAdjustedWorkday -> MonthText.adjustedWorkdayBadge.text to scheme.primary
+        entry.isHoliday -> MonthText.holidayBadge.text to scheme.error
         else -> null
     }
 
@@ -257,8 +257,8 @@ private fun contrastOf(a: Float, b: Float): Float {
 private fun semanticsLabel(entry: MonthDayEntry): String {
     val parts = mutableListOf(MonthText.dayLabel(entry.date.monthValue, entry.date.dayOfMonth))
     when {
-        entry.isAdjustedWorkday -> parts.add(MonthText.adjustedWorkdayBadge.zh)
-        entry.isHoliday -> parts.add(MonthText.holidayBadge.zh)
+        entry.isAdjustedWorkday -> parts.add(MonthText.adjustedWorkdayBadge.text)
+        entry.isHoliday -> parts.add(MonthText.holidayBadge.text)
     }
     if (entry.examCount > 0) parts.add(MonthText.examCount(entry.examCount))
     if (entry.scheduleCount > 0) parts.add(MonthText.scheduleCount(entry.scheduleCount))

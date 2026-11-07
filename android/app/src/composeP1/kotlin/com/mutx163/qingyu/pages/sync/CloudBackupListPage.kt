@@ -116,7 +116,7 @@ fun CloudBackupListPage(
                                 color = Color(QingyuTheme.secondaryText(dark)),
                             )
                             TextButton(
-                                text = SyncStrings.cloudBackupRetryAction.zh,
+                                text = SyncStrings.cloudBackupRetryAction.text,
                                 onClick = onRetryRefresh,
                                 modifier = Modifier.padding(top = 16.dp),
                             )
@@ -158,7 +158,7 @@ fun CloudBackupListPage(
                                     modifier = Modifier.weight(1f),
                                 )
                                 Text(
-                                    text = SyncStrings.cloudBackupRetryAction.zh,
+                                    text = SyncStrings.cloudBackupRetryAction.text,
                                     style = MiuixTheme.textStyles.footnote1
                                         .shiftWeight(QingyuWeightDelta.SEMIBOLD),
                                     color = Color(QingyuTheme.error(dark)),
@@ -318,11 +318,11 @@ fun CloudBackupDetailActions(
         verticalArrangement = Arrangement.spacedBy(10.dp),
     ) {
         Button(onClick = onRestore, modifier = Modifier.fillMaxWidth()) {
-            Text(text = SyncStrings.cloudBackupRestoreAction.zh)
+            Text(text = SyncStrings.cloudBackupRestoreAction.text)
         }
         if (detail.canDelete) {
             TextButton(
-                text = SyncStrings.deleteAction.zh,
+                text = SyncStrings.deleteAction.text,
                 onClick = onDelete,
                 modifier = Modifier.fillMaxWidth(),
             )

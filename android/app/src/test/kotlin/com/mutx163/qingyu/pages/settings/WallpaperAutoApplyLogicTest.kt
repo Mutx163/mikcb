@@ -109,7 +109,7 @@ class WallpaperAutoApplyLogicTest {
         )
         assertEquals(
             "Bing 还没放出今天的图，先用 10 月 5 日 那张顶一下",
-            notice!!.text.zh,
+            notice!!.text.text,
         )
         assertEquals("bingWallpaperAutoApplyStale", notice.text.key)
     }

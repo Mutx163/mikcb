@@ -39,7 +39,7 @@ fun WarehouseMacroSaveRecordingDialog(
     OverlayDialog(
         insideMargin = DpSize(16.dp, 16.dp),
         show = show,
-        title = WarehouseStrings.courseImportSaveRecordingTitle.zh,
+        title = WarehouseStrings.courseImportSaveRecordingTitle.text,
         summary = if (autoRecord) {
             WarehouseStrings.courseImportSaveAutoRecordingMessage.filled("count", stepCount.toString())
         } else {
@@ -50,7 +50,7 @@ fun WarehouseMacroSaveRecordingDialog(
         Column(modifier = Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(12.dp)) {
             TextButton(
                 modifier = Modifier.fillMaxWidth(),
-                text = WarehouseStrings.cancelAction.zh,
+                text = WarehouseStrings.cancelAction.text,
                 onClick = onDiscard,
             )
             Button(
@@ -58,7 +58,7 @@ fun WarehouseMacroSaveRecordingDialog(
                 modifier = Modifier.fillMaxWidth(),
                 colors = ButtonDefaults.buttonColorsPrimary(),
             ) {
-                Text(text = WarehouseStrings.saveAction.zh)
+                Text(text = WarehouseStrings.saveAction.text)
             }
         }
     }

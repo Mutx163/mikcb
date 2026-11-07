@@ -91,7 +91,7 @@ class WarehouseMacroReplayer(
             val acceleratedSucceeded = runSteps(acceleratedSteps, reportFailureToHost = false)
             if (acceleratedSucceeded) return
             // 快捷路径失败：提示 + 重载入口页后走全量（失败静默，全量才报给宿主）。
-            callbacks.onShowTip(WarehouseMacroReplayStrings.macroReplayAcceleratedFallbackTip.zh)
+            callbacks.onShowTip(WarehouseMacroReplayStrings.macroReplayAcceleratedFallbackTip.text)
             val entryUrl = sanitizeWarehouseScriptPageUrl(macro.importUrl)
             if (entryUrl != null) {
                 try {
@@ -307,7 +307,7 @@ class WarehouseMacroReplayer(
         if (importUrl.isBlank()) return
         try {
             pollCondition(
-                stepLabel = WarehouseMacroReplayStrings.macroReplayWaitPageLoad.zh,
+                stepLabel = WarehouseMacroReplayStrings.macroReplayWaitPageLoad.text,
                 timeoutMs = entryReadyTimeoutMs,
             ) {
                 val state = currentDocumentState()
@@ -326,14 +326,14 @@ class WarehouseMacroReplayer(
      */
     private suspend fun waitForPageReady(timeoutMs: Long) {
         pollCondition(
-            stepLabel = WarehouseMacroReplayStrings.macroReplayWaitPageLoad.zh,
+            stepLabel = WarehouseMacroReplayStrings.macroReplayWaitPageLoad.text,
             timeoutMs = timeoutMs,
         ) {
             !currentDocumentHref().isNullOrEmpty()
         }
         try {
             pollCondition(
-                stepLabel = WarehouseMacroReplayStrings.macroReplayWaitDomReady.zh,
+                stepLabel = WarehouseMacroReplayStrings.macroReplayWaitDomReady.text,
                 timeoutMs = 15000,
             ) {
                 currentDocumentState()?.second == "complete"
@@ -466,7 +466,7 @@ data class WarehouseReplayProgress(
     /** 「正在……」行文案（失败/暂停带本地化原因）。 */
     val statusLabel: String
         get() = when (status) {
-            ReplayStepStatus.RUNNING -> MacroReplayText.stepLabel(currentStep.type)
+            ReplayStepStatus.RUNNING -> macroReplayStepLabel(currentStep.type)
             ReplayStepStatus.FAILED ->
                 WarehouseMacroReplayStrings.macroReplayStatusFailed
                     .filled("error" to WarehouseMacroReplayStrings.localize(errorMessage))

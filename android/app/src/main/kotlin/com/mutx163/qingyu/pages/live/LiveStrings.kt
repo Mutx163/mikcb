@@ -8,23 +8,12 @@ package com.mutx163.qingyu.pages.live
  *
  * 命名与 ARB 键逐字一致（`liveSettingsTitle` 等），便于 grep 双向核对。
  */
-data class ArbText(val key: String, val zh: String) {
-    /** 替换模板里的占位符（`{name}` → [value]）。 */
-    fun filled(name: String, value: String): String = zh.replace("{$name}", value)
-
-    fun filled(vararg pairs: Pair<String, String>): String {
-        var result = zh
-        for ((name, value) in pairs) {
-            result = result.replace("{$name}", value)
-        }
-        return result
-    }
-}
+typealias ArbText = com.mutx163.qingyu.app.ArbText
 
 object LiveStrings {
 
     // ── 页面标题与分组 ──
-    const val liveActivitySettingsTitle = "实时活动设置"
+    val liveActivitySettingsTitle = ArbText("liveActivitySettingsTitle", "实时活动设置")
     val liveSettingsTitle = ArbText("liveSettingsTitle", "超级岛与通知")
     val enableIslandDisplayTitle = ArbText("enableIslandDisplayTitle", "展示超级岛")
 
@@ -75,13 +64,16 @@ object LiveStrings {
     // ── 语义别名（对齐 Prompt 提示词） ──
     val liveIslandSettingsTitle get() = liveSettingsTitle
     val liveActivityEnableTitle get() = enableIslandDisplayTitle
-    const val liveActivityEnableSubtitle = "在锁屏和状态栏胶囊中实时展示课程信息与倒计时"
-    const val liveIslandStyleTitle = "实时活动样式"
+    val liveActivityEnableSubtitle = ArbText(
+        "liveActivityEnableSubtitle",
+        "在锁屏和状态栏胶囊中实时展示课程信息与倒计时",
+    )
+    val liveIslandStyleTitle = ArbText("liveIslandStyleTitle", "实时活动样式")
     val liveReminderBeforeClass get() = beforeClassReminderTitle
     val liveReminderInProgress get() = duringClassReminderTitle
-    const val liveReminderDismissAfterClass = "下课后驻留时间"
+    val liveReminderDismissAfterClass = ArbText("liveReminderDismissAfterClass", "下课后驻留时间")
     val livePreviewDemoCourse get() = liveIslandPreviewSampleCourse
-    const val saveSuccess = "设置已保存"
+    val saveSuccess = ArbText("liveSaveSuccess", "设置已保存")
 
     // ── 所有对接 ARB 的文案集合（用于 Parity 测试机械对拍） ──
     val allTexts: List<ArbText> = listOf(
@@ -119,6 +111,11 @@ object LiveStrings {
         resetDefaultAction,
         saveFailed,
         cancelAction,
+        liveActivitySettingsTitle,
+        liveActivityEnableSubtitle,
+        liveIslandStyleTitle,
+        liveReminderDismissAfterClass,
+        saveSuccess,
     )
 
     // ── 格式化纯函数 ──

@@ -111,13 +111,13 @@ object SettingsBackdropFlowPage {
                     "78dp 缩略图卡横向排列，官方没有横向缩略图条控件；" +
                     "colors 承载条目键（壁纸绝对路径）",
                 labelKey = SettingsStringsExt1.homePageWallpaperRecentTitle.key,
-                label = SettingsStringsExt1.homePageWallpaperRecentTitle.zh,
+                label = SettingsStringsExt1.homePageWallpaperRecentTitle.text,
                 valueKey = SettingsStringsExt1.homePageWallpaperRecentSubtitle.key,
-                value = SettingsStringsExt1.homePageWallpaperRecentSubtitle.zh,
+                value = SettingsStringsExt1.homePageWallpaperRecentSubtitle.text,
                 texts = listOf(
                     SettingsInlineText(
                         SettingsStringsExt1.homePageWallpaperRecentImageLabel.key,
-                        SettingsStringsExt1.homePageWallpaperRecentImageLabel.zh,
+                        SettingsStringsExt1.homePageWallpaperRecentImageLabel.text,
                     ),
                 ),
                 colors = entries,
@@ -132,7 +132,7 @@ object SettingsBackdropFlowPage {
             nodes += SettingsDescription(
                 id = "backdrop.recent.confirmHint",
                 textKey = SettingsStringsExt1.wallpaperHistoryRemoveConfirmHint.key,
-                text = SettingsStringsExt1.wallpaperHistoryRemoveConfirmHint.zh,
+                text = SettingsStringsExt1.wallpaperHistoryRemoveConfirmHint.text,
             )
             nodes += SettingsGroup(
                 id = "backdrop.recent.confirmActions",
@@ -182,7 +182,7 @@ object SettingsBackdropFlowPage {
         return SettingsPageSpec(
             id = SettingsWallpaperSheetPage.ID,
             titleKey = SettingsWallpaperSheetPage.TAB_LABELS[0].key,
-            title = SettingsWallpaperSheetPage.TAB_LABELS[0].zh,
+            title = SettingsWallpaperSheetPage.TAB_LABELS[0].text,
             nodes = nodes,
         )
     }
@@ -259,7 +259,7 @@ object SettingsBackdropFlowPage {
     fun settingsPage(backdrop: BackdropFlowState): SettingsPageSpec = SettingsPageSpec(
         id = SettingsWallpaperSheetPage.ID,
         titleKey = SettingsWallpaperSheetPage.TAB_LABELS[1].key,
-        title = SettingsWallpaperSheetPage.TAB_LABELS[1].zh,
+        title = SettingsWallpaperSheetPage.TAB_LABELS[1].text,
         nodes = listOf(
             SettingsGroup(
                 id = "backdrop.settings",
@@ -295,7 +295,7 @@ object SettingsBackdropFlowPage {
             title = SettingsStringsExt1.homePageWallpaperBlurTitle,
             valueKey = if (off) SettingsStringsExt1.homePageWallpaperBlurOff.key else null,
             value = if (off) {
-                SettingsStringsExt1.homePageWallpaperBlurOff.zh
+                SettingsStringsExt1.homePageWallpaperBlurOff.text
             } else {
                 shown.toInt().toString()
             },

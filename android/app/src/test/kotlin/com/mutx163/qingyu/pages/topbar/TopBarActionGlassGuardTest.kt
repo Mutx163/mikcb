@@ -87,20 +87,20 @@ class TopBarActionGlassGuardTest {
             ExpectedAction("MiuixIcons.Tune", "AboutUpdatePageStrings.advancedOptionsTitle"),
         ),
         "pages/course/AddCoursePage.kt" to listOf(
-            ExpectedAction("MiuixIcons.Delete", "AddCourseStrings.deleteAction.zh"),
-            ExpectedAction("MiuixIcons.Ok", "AddCourseStrings.saveAction.zh"),
+            ExpectedAction("MiuixIcons.Delete", "AddCourseStrings.deleteAction.text"),
+            ExpectedAction("MiuixIcons.Ok", "AddCourseStrings.saveAction.text"),
         ),
         "pages/course/CourseOverviewPage.kt" to listOf(
-            ExpectedAction("MiuixIcons.Sort", "CourseOverviewStrings.sortAction.zh"),
-            ExpectedAction("MiuixIcons.Add", "CourseOverviewStrings.addNewCourseTooltip.zh"),
+            ExpectedAction("MiuixIcons.Sort", "CourseOverviewStrings.sortAction.text"),
+            ExpectedAction("MiuixIcons.Add", "CourseOverviewStrings.addNewCourseTooltip.text"),
         ),
         "pages/diagnostics/LiveDiagnosticsLogPage.kt" to listOf(
-            ExpectedAction("MiuixIcons.Tune", "DiagnosticsStrings.diagnosticsDisplayOptionsTitle.zh"),
-            ExpectedAction("MiuixIcons.Copy", "DiagnosticsStrings.appLogsCopyAction.zh"),
+            ExpectedAction("MiuixIcons.Tune", "DiagnosticsStrings.diagnosticsDisplayOptionsTitle.text"),
+            ExpectedAction("MiuixIcons.Copy", "DiagnosticsStrings.appLogsCopyAction.text"),
             // 导出中换成转圈 ⇒ 内容槽；只钉文案。
-            ExpectedAction(null, "DiagnosticsStrings.appLogsExportAction.zh"),
+            ExpectedAction(null, "DiagnosticsStrings.appLogsExportAction.text"),
             // 清空中换成转圈 ⇒ 内容槽；只钉文案。
-            ExpectedAction(null, "DiagnosticsStrings.appLogsClearAction.zh"),
+            ExpectedAction(null, "DiagnosticsStrings.appLogsClearAction.text"),
         ),
         "pages/diagnostics/MemoryStatsPage.kt" to listOf(
             // 加载中换成转圈 ⇒ 内容槽；只钉文案。
@@ -112,18 +112,18 @@ class TopBarActionGlassGuardTest {
             ExpectedAction("MiuixIcons.Download", "PerfReportStrings.exportTooltip"),
         ),
         "pages/exam/AddExamPage.kt" to listOf(
-            ExpectedAction("MiuixIcons.Delete", "ExamStrings.deleteExam.zh"),
-            ExpectedAction("MiuixIcons.Ok", "ExamStrings.saveExam.zh"),
+            ExpectedAction("MiuixIcons.Delete", "ExamStrings.deleteExam.text"),
+            ExpectedAction("MiuixIcons.Ok", "ExamStrings.saveExam.text"),
         ),
         "pages/schedule/AddScheduleItemPage.kt" to listOf(
-            ExpectedAction("MiuixIcons.Delete", "ScheduleStrings.deleteAction.zh"),
-            ExpectedAction("MiuixIcons.Ok", "ScheduleStrings.saveAction.zh"),
+            ExpectedAction("MiuixIcons.Delete", "ScheduleStrings.deleteAction.text"),
+            ExpectedAction("MiuixIcons.Ok", "ScheduleStrings.saveAction.text"),
         ),
         "pages/schedule/ScheduleDateRulePage.kt" to listOf(
-            ExpectedAction("MiuixIcons.Add", "ScheduleStrings.scheduleDateRuleAdd.zh"),
+            ExpectedAction("MiuixIcons.Add", "ScheduleStrings.scheduleDateRuleAdd.text"),
         ),
         "pages/schedule/ScheduleListPage.kt" to listOf(
-            ExpectedAction("MiuixIcons.Add", "ScheduleStrings.addScheduleAction.zh"),
+            ExpectedAction("MiuixIcons.Add", "ScheduleStrings.addScheduleAction.text"),
         ),
         "pages/task/AddTaskPage.kt" to listOf(
             ExpectedAction("MiuixIcons.Delete", "TaskStrings.taskDelete"),
@@ -133,7 +133,7 @@ class TopBarActionGlassGuardTest {
             ExpectedAction("MiuixIcons.Add", "TaskStrings.addTask"),
         ),
         "pages/timetable/TimetableProfilesPage.kt" to listOf(
-            ExpectedAction("MiuixIcons.Add", "TimetableStrings.createTimetableTooltip.zh"),
+            ExpectedAction("MiuixIcons.Add", "TimetableStrings.createTimetableTooltip.text"),
         ),
         "pages/time_scheme/LocationTimeMatchPage.kt" to listOf(
             ExpectedAction("MiuixIcons.Add", "model.createGroupLabel"),

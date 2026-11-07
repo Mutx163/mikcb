@@ -189,11 +189,11 @@ fun TimeSchemeManagementHost(
                 val result = runCatching { repository.duplicateTimeScheme(schemeId, name) }
                 result.onSuccess { copied ->
                     if (copied == null) {
-                        toast(TimeSchemeManagementStrings.saveFailed.zh)
+                        toast(TimeSchemeManagementStrings.saveFailed.text)
                     } else {
-                        toast(TimeSchemeManagementStrings.copiedTimeSchemeMessage.zh)
+                        toast(TimeSchemeManagementStrings.copiedTimeSchemeMessage.text)
                     }
-                }.onFailure { toast(TimeSchemeManagementStrings.saveFailed.zh) }
+                }.onFailure { toast(TimeSchemeManagementStrings.saveFailed.text) }
             }
 
             TimeSchemeAction.APPLY_TO_CURRENT -> {
@@ -204,7 +204,7 @@ fun TimeSchemeManagementHost(
                     } else {
                         toast(TimeSchemeServiceMessages.localize(error))
                     }
-                }.onFailure { toast(TimeSchemeManagementStrings.saveFailed.zh) }
+                }.onFailure { toast(TimeSchemeManagementStrings.saveFailed.text) }
             }
 
             TimeSchemeAction.DELETE -> {
@@ -272,7 +272,7 @@ fun TimeSchemeManagementHost(
                     // Dart：新建后立刻进编辑器，把「建完什么都没发生」变成「建完就能填节次」。
                     onOpenEditor(created.id)
                 }.onFailure {
-                    toast(TimeSchemeManagementStrings.saveFailed.zh)
+                    toast(TimeSchemeManagementStrings.saveFailed.text)
                 }
             } else {
                 val schemeId = state.schemeId ?: return@TimeSchemeNameSheet
@@ -280,11 +280,11 @@ fun TimeSchemeManagementHost(
                 val result = runCatching { repository.renameTimeScheme(schemeId, name) }
                 result.onSuccess { renamed ->
                     if (renamed == null) {
-                        toast(TimeSchemeManagementStrings.saveFailed.zh)
+                        toast(TimeSchemeManagementStrings.saveFailed.text)
                     } else {
                         toast(TimeSchemeManagementStrings.renamedToMessage.filled("name", name))
                     }
-                }.onFailure { toast(TimeSchemeManagementStrings.saveFailed.zh) }
+                }.onFailure { toast(TimeSchemeManagementStrings.saveFailed.text) }
             }
         },
     )
@@ -303,10 +303,10 @@ fun TimeSchemeManagementHost(
                     if (deleted) {
                         TimeSchemeManagementStrings.deletedTimeSchemeMessage.filled("name", name)
                     } else {
-                        TimeSchemeManagementStrings.timeSchemeInUseMessage.zh
+                        TimeSchemeManagementStrings.timeSchemeInUseMessage.text
                     },
                 )
-            }.onFailure { toast(TimeSchemeManagementStrings.deleteFailed.zh) }
+            }.onFailure { toast(TimeSchemeManagementStrings.deleteFailed.text) }
         },
         onViewUsage = {
             deleteDialog?.check?.let { chk ->
@@ -470,7 +470,7 @@ fun TimeSchemeEditorHost(
                     } else {
                         toast(TimeSchemeServiceMessages.localize(code))
                     }
-                }.onFailure { toast(TimeSchemeManagementStrings.saveFailed.zh) }
+                }.onFailure { toast(TimeSchemeManagementStrings.saveFailed.text) }
             }
         },
         onPickSectionTime = { index ->
@@ -507,7 +507,7 @@ fun TimeSchemeEditorHost(
 
     SchemeTimePickerSheet(
         show = startPick != null,
-        title = TimeSchemeManagementStrings.selectStartTimeTitle.zh,
+        title = TimeSchemeManagementStrings.selectStartTimeTitle.text,
         initial = rememberLastNonNull(startPick)?.section?.startTime.orEmpty(),
         onDismiss = { pickPhase = SectionPickPhase.None },
         onConfirm = { start ->
@@ -518,7 +518,7 @@ fun TimeSchemeEditorHost(
 
     SchemeTimePickerSheet(
         show = endPick != null,
-        title = TimeSchemeManagementStrings.selectEndTimeTitle.zh,
+        title = TimeSchemeManagementStrings.selectEndTimeTitle.text,
         initial = rememberLastNonNull(endPick)?.section?.endTime.orEmpty(),
         onDismiss = { pickPhase = SectionPickPhase.None },
         onConfirm = { pickedEnd ->
@@ -610,7 +610,7 @@ private fun SchemeTimePickerSheet(
             ) {
                 TextButton(
                     modifier = Modifier.weight(1f),
-                    text = TimeSchemeManagementStrings.cancelAction.zh,
+                    text = TimeSchemeManagementStrings.cancelAction.text,
                     onClick = onDismiss,
                 )
                 Button(
@@ -625,7 +625,7 @@ private fun SchemeTimePickerSheet(
                 ) {
                     // Dart 同位置（`miuix_time_picker_sheet.dart:124`）用的是 confirmAction
                     //（「确认」），不是 saveAction（「保存」）——弹层债 #4，这里对齐。
-                    Text(text = TimeSchemeManagementStrings.confirmAction.zh)
+                    Text(text = TimeSchemeManagementStrings.confirmAction.text)
                 }
             }
         }

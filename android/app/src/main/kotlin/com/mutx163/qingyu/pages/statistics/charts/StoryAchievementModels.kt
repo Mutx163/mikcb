@@ -27,22 +27,22 @@ object OverviewModel {
         return listOf(
             OverviewCell(
                 value = stats.totalCourses.toString(),
-                label = ChartsStrings.statisticsSemesterLabelCourses.zh,
+                label = ChartsStrings.statisticsSemesterLabelCourses.text,
                 highlight = true,
             ),
             OverviewCell(
                 value = stats.totalSections.toString(),
-                label = ChartsStrings.statisticsSemesterLabelSections.zh,
+                label = ChartsStrings.statisticsSemesterLabelSections.text,
                 highlight = false,
             ),
             OverviewCell(
                 value = stats.totalWeeks.toString(),
-                label = ChartsStrings.statisticsSemesterLabelWeeks.zh,
+                label = ChartsStrings.statisticsSemesterLabelWeeks.text,
                 highlight = false,
             ),
             OverviewCell(
                 value = stats.longestStreak.toString(),
-                label = ChartsStrings.statisticsSemesterLabelDayStreak.zh,
+                label = ChartsStrings.statisticsSemesterLabelDayStreak.text,
                 highlight = false,
             ),
         )
@@ -89,11 +89,11 @@ object DataStoryModel {
 
     /** 标题（ARB 逐字，按故事类型）。 */
     fun title(type: StoryType): String = when (type) {
-        StoryType.BUSIEST_DAY -> ChartsStrings.storyBusiestDayTitle.zh
-        StoryType.LIGHTEST_DAY -> ChartsStrings.storyLightestDayTitle.zh
-        StoryType.FAVORITE_ROOM -> ChartsStrings.storyFavoriteRoomTitle.zh
-        StoryType.BUILDING_COUNT -> ChartsStrings.storyBuildingCountTitle.zh
-        StoryType.TIME_RANGE -> ChartsStrings.storyTimeRangeTitle.zh
+        StoryType.BUSIEST_DAY -> ChartsStrings.storyBusiestDayTitle.text
+        StoryType.LIGHTEST_DAY -> ChartsStrings.storyLightestDayTitle.text
+        StoryType.FAVORITE_ROOM -> ChartsStrings.storyFavoriteRoomTitle.text
+        StoryType.BUILDING_COUNT -> ChartsStrings.storyBuildingCountTitle.text
+        StoryType.TIME_RANGE -> ChartsStrings.storyTimeRangeTitle.text
     }
 
     /**
@@ -226,7 +226,7 @@ object AchievementModel {
         // 未解锁时宁可不显示线性进度。
         achievement.isLowerBetterProgress && !achievement.isUnlocked -> null
         !achievement.hasProgress -> null
-        achievement.isUnlocked -> ChartsStrings.statisticsAchievementDone.zh
+        achievement.isUnlocked -> ChartsStrings.statisticsAchievementDone.text
         else -> ChartsStrings.statisticsAchievementProgress.filled(
             "current" to (achievement.progressCurrent ?: 0).toString(),
             "target" to (achievement.progressTarget ?: 0).toString(),

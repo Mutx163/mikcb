@@ -68,7 +68,7 @@ fun ScheduleListPage(
     // 返回键的显隐（根页不画）与玻璃圆底的出没门控都由骨架注入；大标题仍可折叠
     //（Dart `schedule_list_screen.dart:38` 走 HyperosSubpage 默认参数）。
     QingyuPageScaffold(
-        title = ScheduleStrings.scheduleListTitle.zh,
+        title = ScheduleStrings.scheduleListTitle.text,
         onBack = onBack,
         // Dart 侧顶栏右侧是 FHeaderAction(Icons.add_rounded) 图标按钮，
         // 第一版用了文字按钮「添加」，与现版本形态不一致。
@@ -76,7 +76,7 @@ fun ScheduleListPage(
         actions = {
             QingyuGlassIconButton(
                 onClick = onAddSchedule,
-                contentDescription = ScheduleStrings.addScheduleAction.zh,
+                contentDescription = ScheduleStrings.addScheduleAction.text,
                 icon = MiuixIcons.Add,
                 tint = Color(QingyuTheme.actionIcon(dark)),
             )
@@ -116,12 +116,12 @@ fun ScheduleListPage(
                                 verticalArrangement = Arrangement.spacedBy(16.dp),
                             ) {
                                 Text(
-                                    text = ScheduleStrings.scheduleListEmptyTitle.zh,
+                                    text = ScheduleStrings.scheduleListEmptyTitle.text,
                                     style = MiuixTheme.textStyles.body1,
                                     color = Color(QingyuTheme.secondaryText(dark)),
                                 )
                                 ScheduleActionButton(
-                                    text = ScheduleStrings.addScheduleAction.zh,
+                                    text = ScheduleStrings.addScheduleAction.text,
                                     onClick = onAddSchedule,
                                     primary = true,
                                 )
@@ -133,7 +133,7 @@ fun ScheduleListPage(
                 // ── 分组列表：横向留白按配方由每个块自己带 12dp ──
                 if (groups.upcoming.isNotEmpty()) {
                     item(key = "header_upcoming") {
-                        QingyuSectionTitle(ScheduleStrings.scheduleUpcomingSection.zh)
+                        QingyuSectionTitle(ScheduleStrings.scheduleUpcomingSection.text)
                     }
                     items(groups.upcoming, key = { "upcoming_${it.item.id}" }) { entry ->
                         ScheduleListCard(
@@ -149,7 +149,7 @@ fun ScheduleListPage(
 
                 if (groups.past.isNotEmpty()) {
                     item(key = "header_past") {
-                        QingyuSectionTitle(ScheduleStrings.schedulePastSection.zh)
+                        QingyuSectionTitle(ScheduleStrings.schedulePastSection.text)
                     }
                     items(groups.past, key = { "past_${it.item.id}" }) { entry ->
                         ScheduleListCard(
@@ -165,7 +165,7 @@ fun ScheduleListPage(
 
                 if (groups.paused.isNotEmpty()) {
                     item(key = "header_paused") {
-                        QingyuSectionTitle(ScheduleStrings.schedulePausedSection.zh)
+                        QingyuSectionTitle(ScheduleStrings.schedulePausedSection.text)
                     }
                     items(groups.paused, key = { "paused_${it.item.id}" }) { entry ->
                         ScheduleListCard(
@@ -187,7 +187,7 @@ fun ScheduleListPage(
     val candidate = deleteCandidate
     OverlayDialog(
         show = candidate != null,
-        title = ScheduleStrings.deleteScheduleTitle.zh,
+        title = ScheduleStrings.deleteScheduleTitle.text,
         summary = candidate?.let { ScheduleStrings.deleteScheduleMessage.filled("title", it.title) },
         onDismissRequest = { deleteCandidate = null },
         insideMargin = DpSize(16.dp, 16.dp),
@@ -199,11 +199,11 @@ fun ScheduleListPage(
             ) {
                 TextButton(
                     modifier = Modifier.weight(1f),
-                    text = ScheduleStrings.cancelAction.zh,
+                    text = ScheduleStrings.cancelAction.text,
                     onClick = { deleteCandidate = null },
                 )
                 ScheduleActionButton(
-                    text = ScheduleStrings.deleteAction.zh,
+                    text = ScheduleStrings.deleteAction.text,
                     onClick = {
                         onDeleteSchedule(candidate)
                         deleteCandidate = null
@@ -257,7 +257,7 @@ private fun ScheduleListCard(
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
                     Text(
-                        text = item.title.ifEmpty { ScheduleStrings.scheduleBadgeLabel.zh },
+                        text = item.title.ifEmpty { ScheduleStrings.scheduleBadgeLabel.text },
                         style = MiuixTheme.textStyles.body1.shiftWeight(QingyuWeightDelta.SEMIBOLD),
                         color = Color(QingyuTheme.primaryText(dark)).copy(alpha = primaryAlpha),
                         maxLines = 1,
@@ -300,7 +300,7 @@ private fun ScheduleListCard(
                             )
                             Spacer(modifier = Modifier.width(4.dp))
                             Text(
-                                text = ScheduleStrings.scheduleOngoingLabel.zh,
+                                text = ScheduleStrings.scheduleOngoingLabel.text,
                                 style = MiuixTheme.textStyles.footnote2.shiftWeight(QingyuWeightDelta.SEMIBOLD),
                                 color = Color(QingyuIconColors.GREEN),
                             )
@@ -347,7 +347,7 @@ private fun ScheduleListCard(
             // 尾部删除与编辑箭头
             Row(verticalAlignment = Alignment.CenterVertically) {
                 ScheduleActionButton(
-                    text = ScheduleStrings.deleteAction.zh,
+                    text = ScheduleStrings.deleteAction.text,
                     onClick = onDelete,
                     destructive = true,
                 )
@@ -364,7 +364,7 @@ private fun ScheduleListCard(
 
 private fun recurrenceBadgeLabel(item: ScheduleItemData): String? {
     return when (item.recurrence) {
-        ScheduleRecurrence.DAILY -> ScheduleStrings.scheduleRepeatDaily.zh
+        ScheduleRecurrence.DAILY -> ScheduleStrings.scheduleRepeatDaily.text
         ScheduleRecurrence.WEEKLY -> {
             val day = ScheduleStrings.weekdayLabel(ScheduleDateUtils.dayOfWeek(item.startDate))
             ScheduleStrings.scheduleWeeklyWithDay.filled("day", day)

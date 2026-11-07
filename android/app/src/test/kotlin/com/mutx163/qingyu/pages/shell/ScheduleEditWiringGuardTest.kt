@@ -92,11 +92,11 @@ class ScheduleEditWiringGuardTest {
         val host = File(repoRoot(), SCHEDULE_EDIT_HOST).readText()
         assertTrue(
             "宿主保存失败分支没在用 `ScheduleStrings.saveFailed`：失败会变成静默（页面不动、零提示）",
-            host.contains("ScheduleStrings.saveFailed.zh"),
+            host.contains("ScheduleStrings.saveFailed.text"),
         )
         assertTrue(
             "宿主删除失败分支没在用 `ScheduleStrings.deleteFailed`：失败会变成静默",
-            host.contains("ScheduleStrings.deleteFailed.zh"),
+            host.contains("ScheduleStrings.deleteFailed.text"),
         )
     }
 

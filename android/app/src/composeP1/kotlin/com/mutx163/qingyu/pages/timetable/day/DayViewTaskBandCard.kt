@@ -134,7 +134,7 @@ fun DayViewTaskBandCard(
             // 1. 已逾期小节
             if (data.overdue.isNotEmpty()) {
                 Text(
-                    text = DayViewStrings.taskOverdueSection.zh,
+                    text = DayViewStrings.taskOverdueSection.text,
                     style = MiuixTheme.textStyles.footnote2.shiftWeight(QingyuWeightDelta.SEMIBOLD),
                     color = destructiveColor,
                 )
@@ -212,7 +212,7 @@ fun DayViewTaskBandCard(
                 }
 
                 Text(
-                    text = DayViewStrings.taskCompletedSection.zh,
+                    text = DayViewStrings.taskCompletedSection.text,
                     style = MiuixTheme.textStyles.footnote2.shiftWeight(QingyuWeightDelta.SEMIBOLD),
                     color = secondaryTextColor,
                 )

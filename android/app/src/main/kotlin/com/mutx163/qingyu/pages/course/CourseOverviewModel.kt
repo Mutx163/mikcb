@@ -139,8 +139,8 @@ object CourseOverviewLogic {
 
     /** 课程性质标签（对齐 `lib/l10n/enum_localizations.dart:courseNatureLabel`）。 */
     fun courseNatureLabel(nature: CourseNature): String = when (nature) {
-        CourseNature.REQUIRED -> CourseOverviewStrings.courseNatureRequired.zh
-        CourseNature.ELECTIVE -> CourseOverviewStrings.courseNatureElective.zh
+        CourseNature.REQUIRED -> CourseOverviewStrings.courseNatureRequired.text
+        CourseNature.ELECTIVE -> CourseOverviewStrings.courseNatureElective.text
     }
 
     /**
@@ -171,17 +171,17 @@ object CourseOverviewLogic {
         val sortOptions = listOf(
             CourseSortOption(
                 mode = CourseOverviewSortMode.ADDED,
-                label = CourseOverviewStrings.sortByAdded.zh,
+                label = CourseOverviewStrings.sortByAdded.text,
                 isSelected = sortMode == CourseOverviewSortMode.ADDED,
             ),
             CourseSortOption(
                 mode = CourseOverviewSortMode.NAME,
-                label = CourseOverviewStrings.sortByName.zh,
+                label = CourseOverviewStrings.sortByName.text,
                 isSelected = sortMode == CourseOverviewSortMode.NAME,
             ),
             CourseSortOption(
                 mode = CourseOverviewSortMode.SCHEDULE,
-                label = CourseOverviewStrings.sortBySchedule.zh,
+                label = CourseOverviewStrings.sortBySchedule.text,
                 isSelected = sortMode == CourseOverviewSortMode.SCHEDULE,
             ),
         )
@@ -192,9 +192,9 @@ object CourseOverviewLogic {
             sortOptions = sortOptions,
             conflictCount = conflictCount,
             isEmpty = rows.isEmpty(),
-            emptyHint = CourseOverviewStrings.emptyCourseOverviewHint.zh,
-            addCourseAction = CourseOverviewStrings.addNewCourseTooltip.zh,
-            conflictEntryTitle = CourseOverviewStrings.courseConflictDetailEntryTitle.zh,
+            emptyHint = CourseOverviewStrings.emptyCourseOverviewHint.text,
+            addCourseAction = CourseOverviewStrings.addNewCourseTooltip.text,
+            conflictEntryTitle = CourseOverviewStrings.courseConflictDetailEntryTitle.text,
             conflictEntryDetail =
                 CourseOverviewStrings.conflictCountLabel.filled("count", conflictCount.toString()),
         )

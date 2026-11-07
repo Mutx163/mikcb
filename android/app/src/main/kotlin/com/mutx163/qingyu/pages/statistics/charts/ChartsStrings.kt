@@ -12,22 +12,7 @@ package com.mutx163.qingyu.pages.statistics.charts
  * 只把 `pages/<模块>` 与本模块目录放进 classpath，兄弟目录 `pages/statistics` 不在其中。
  * 自带一份让「模型层 + 文案对拍 + 咬合探针」在 0.2 秒内闭合，不被别的泳道半成品阻断。
  */
-data class ChartText(val key: String, val zh: String) {
-
-    /** 无占位符时原样返回；有占位符时按名替换（`{name}` → [value]）。 */
-    fun filled(name: String, value: String): String = zh.replace("{$name}", value)
-
-    /** [value] 为数字时的便利重载（Dart 侧 `l10n.xxx(week, sections)` 多为 int）。 */
-    fun filled(name: String, value: Int): String = filled(name, value.toString())
-
-    fun filled(vararg pairs: Pair<String, String>): String {
-        var result = zh
-        for ((name, value) in pairs) {
-            result = result.replace("{$name}", value)
-        }
-        return result
-    }
-}
+typealias ChartText = com.mutx163.qingyu.app.ArbText
 
 object ChartsStrings {
 
@@ -221,25 +206,25 @@ object ChartsStrings {
 
     /** 星期全名（周一~周日，越界回退到数字字符串，对齐 Dart `_weekdayFullLabel`）。 */
     fun weekdayFull(dayOfWeek: Int): String = when (dayOfWeek) {
-        1 -> weekdayMon.zh
-        2 -> weekdayTue.zh
-        3 -> weekdayWed.zh
-        4 -> weekdayThu.zh
-        5 -> weekdayFri.zh
-        6 -> weekdaySat.zh
-        7 -> weekdaySun.zh
+        1 -> weekdayMon.text
+        2 -> weekdayTue.text
+        3 -> weekdayWed.text
+        4 -> weekdayThu.text
+        5 -> weekdayFri.text
+        6 -> weekdaySat.text
+        7 -> weekdaySun.text
         else -> dayOfWeek.toString()
     }
 
     /** 星期短名（一~日，图表横轴，越界返回空串，对齐 Dart `_weekdayShortLabel`）。 */
     fun weekdayShort(dayOfWeek: Int): String = when (dayOfWeek) {
-        1 -> weekdayShortMonday.zh
-        2 -> weekdayShortTuesday.zh
-        3 -> weekdayShortWednesday.zh
-        4 -> weekdayShortThursday.zh
-        5 -> weekdayShortFriday.zh
-        6 -> weekdayShortSaturday.zh
-        7 -> weekdayShortSunday.zh
+        1 -> weekdayShortMonday.text
+        2 -> weekdayShortTuesday.text
+        3 -> weekdayShortWednesday.text
+        4 -> weekdayShortThursday.text
+        5 -> weekdayShortFriday.text
+        6 -> weekdayShortSaturday.text
+        7 -> weekdayShortSunday.text
         else -> ""
     }
 

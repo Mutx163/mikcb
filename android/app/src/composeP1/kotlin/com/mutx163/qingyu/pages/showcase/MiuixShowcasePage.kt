@@ -84,7 +84,7 @@ fun MiuixShowcasePage(
     // Dart miuix_showcase_screen.dart:604-622 的 MiuixTopAppBar 传了 scrollBehavior 且没关大标题，
     // largeTitle 默认等于 title ⇒ 保留可折叠大标题（由共享骨架给）。
     val pageTitle = if (activeCategory == null) {
-        ShowcaseStrings.showcaseScreenTitle.zh
+        ShowcaseStrings.showcaseScreenTitle.text
     } else {
         MiuixShowcaseCatalog.findEntryByCategory(activeCategory!!).title
     }
@@ -141,7 +141,7 @@ fun MiuixShowcasePage(
                             TextField(
                                 value = searchQuery,
                                 onValueChange = { searchQuery = it },
-                                label = ShowcaseStrings.showcaseSearchHint.zh,
+                                label = ShowcaseStrings.showcaseSearchHint.text,
                                 modifier = Modifier.weight(1f)
                             )
                             if (searchQuery.isNotEmpty()) {
@@ -169,13 +169,13 @@ fun MiuixShowcasePage(
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             Text(
-                                text = ShowcaseStrings.showcaseSearchHistoryTitle.zh,
+                                text = ShowcaseStrings.showcaseSearchHistoryTitle.text,
                                 style = MiuixTheme.textStyles.footnote1,
                                 fontWeight = FontWeight.Medium,
                                 color = Color(QingyuTheme.secondaryText(dark))
                             )
                             Text(
-                                text = ShowcaseStrings.showcaseClearHistory.zh,
+                                text = ShowcaseStrings.showcaseClearHistory.text,
                                 style = MiuixTheme.textStyles.footnote1,
                                 color = primaryColor,
                                 modifier = Modifier.clickable {
@@ -231,7 +231,7 @@ fun MiuixShowcasePage(
                             contentAlignment = Alignment.Center
                         ) {
                             Text(
-                                text = ShowcaseStrings.showcaseSearchNoResults.zh,
+                                text = ShowcaseStrings.showcaseSearchNoResults.text,
                                 style = MiuixTheme.textStyles.body2,
                                 color = Color(QingyuTheme.secondaryText(dark))
                             )

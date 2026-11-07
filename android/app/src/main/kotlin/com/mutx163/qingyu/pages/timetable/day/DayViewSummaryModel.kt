@@ -118,7 +118,7 @@ object DayViewSummaryLogic {
             chips.add(
                 SummaryChip(
                     kind = SummaryChipKind.ONGOING_COURSE,
-                    text = "${DayViewStrings.ongoingCourseBadge.zh} · $currentCourseName",
+                    text = "${DayViewStrings.ongoingCourseBadge.text} · $currentCourseName",
                 ),
             )
         }
@@ -136,14 +136,14 @@ object DayViewSummaryLogic {
             chips.add(
                 SummaryChip(
                     kind = SummaryChipKind.NON_CURRENT_WEEK,
-                    text = "${DayViewStrings.nonCurrentWeekLabel.zh} ${DayViewStrings.courseCountSummary(nonCurrentWeekCourseCount)}",
+                    text = "${DayViewStrings.nonCurrentWeekLabel.text} ${DayViewStrings.courseCountSummary(nonCurrentWeekCourseCount)}",
                 ),
             )
         }
 
         for (exam in exams) {
             val countdownText = if (exam.daysUntil == 0) {
-                DayViewStrings.examCountdownToday.zh
+                DayViewStrings.examCountdownToday.text
             } else {
                 DayViewStrings.examCountdownDays(exam.daysUntil)
             }

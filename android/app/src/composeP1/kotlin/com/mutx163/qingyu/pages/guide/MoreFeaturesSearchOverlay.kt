@@ -127,13 +127,13 @@ fun MoreFeaturesSearchOverlay(
                         }
                         Spacer(modifier = Modifier.height(16.dp))
                         Text(
-                            text = GuideStrings.homeMenuMoreSearchEmptyTitle.zh,
+                            text = GuideStrings.homeMenuMoreSearchEmptyTitle.text,
                             style = MiuixTheme.textStyles.body1.shiftWeight(QingyuWeightDelta.BOLD),
                             color = Color(QingyuTheme.primaryText(dark))
                         )
                         Spacer(modifier = Modifier.height(6.dp))
                         Text(
-                            text = GuideStrings.homeMenuMoreSearchEmptyHint.zh,
+                            text = GuideStrings.homeMenuMoreSearchEmptyHint.text,
                             style = MiuixTheme.textStyles.footnote1,
                             color = Color(QingyuTheme.secondaryText(dark))
                         )

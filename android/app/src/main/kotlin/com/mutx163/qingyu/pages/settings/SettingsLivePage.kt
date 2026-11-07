@@ -53,12 +53,12 @@ object SettingsLivePage {
         return SettingsPageSpec(
             id = ID,
             titleKey = s.liveSettingsTitle.key,
-            title = s.liveSettingsTitle.zh,
+            title = s.liveSettingsTitle.text,
             nodes = listOf(
                 SettingsLabel(
                     id = "live.section.reminders",
                     textKey = s.liveGroupReminders.key,
-                    text = s.liveGroupReminders.zh,
+                    text = s.liveGroupReminders.text,
                 ),
                 SettingsGroup(
                     id = "live.group.reminders",
@@ -76,7 +76,7 @@ object SettingsLivePage {
                 SettingsLabel(
                     id = "live.section.display",
                     textKey = s.liveGroupDisplay.key,
-                    text = s.liveGroupDisplay.zh,
+                    text = s.liveGroupDisplay.text,
                 ),
                 SettingsGroup(
                     id = "live.group.display",
@@ -92,7 +92,7 @@ object SettingsLivePage {
                             title = s.duringEndDisplaySettingsTitle,
                             // :65-67 —— 跟随上课前时摘要直接就是那句「跟随上课前提醒」
                             summary = if (data.duringEndFollowBeforeClass) {
-                                LiveSummary(s.followBeforeClassSetting.key, s.followBeforeClassSetting.zh)
+                                LiveSummary(s.followBeforeClassSetting.key, s.followBeforeClassSetting.text)
                             } else {
                                 displaySummary(data.duringEnd)
                             },
@@ -104,7 +104,7 @@ object SettingsLivePage {
                 SettingsLabel(
                     id = "live.section.maintenance",
                     textKey = s.liveGroupMaintenance.key,
-                    text = s.liveGroupMaintenance.zh,
+                    text = s.liveGroupMaintenance.text,
                 ),
                 SettingsGroup(
                     id = "live.group.maintenance",
@@ -171,22 +171,22 @@ object SettingsLivePage {
         if (input.enableMiuiIslandLabelImage) parts += s.liveDisplaySummaryLeftLabelImage
 
         if (parts.isEmpty()) {
-            return LiveSummary(s.liveDisplaySummaryMinimal.key, s.liveDisplaySummaryMinimal.zh)
+            return LiveSummary(s.liveDisplaySummaryMinimal.key, s.liveDisplaySummaryMinimal.text)
         }
         if (parts.size == 1) {
             // 只有一项时 Dart 侧 `parts.join('·')` 就是那一项本身（:157-159），
             // 屏上文字与它的 ARB 文案逐字相同 → 键**原样带出去**，
             // 这样「摘要=课程名」也能被对拍，而不是退化成「拼出来的串」。
-            return LiveSummary(parts.first().key, parts.first().zh)
+            return LiveSummary(parts.first().key, parts.first().text)
         }
         if (parts.size == 2) {
             // 两项拼出来的串不是任何单条 ARB 文案
-            return LiveSummary(null, parts.joinToString("·") { it.zh })
+            return LiveSummary(null, parts.joinToString("·") { it.text })
         }
         return LiveSummary(
             s.liveDisplaySummaryMore.key,
-            s.liveDisplaySummaryMore.zh
-                .replace("{first}", parts.first().zh)
+            s.liveDisplaySummaryMore.text
+                .replace("{first}", parts.first().text)
                 .replace("{count}", parts.size.toString()),
         )
     }

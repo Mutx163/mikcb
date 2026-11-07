@@ -96,7 +96,7 @@ object SettingsDiagnosticsPage {
         return SettingsPageSpec(
             id = ID,
             titleKey = s.diagnosticsEntryTitle.key,
-            title = s.diagnosticsEntryTitle.zh,
+            title = s.diagnosticsEntryTitle.text,
             nodes = listOf(
                 SettingsGroup(id = "diagnostics.group.main", children = rows),
             ),

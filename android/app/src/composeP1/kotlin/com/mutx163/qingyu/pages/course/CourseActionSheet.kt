@@ -741,7 +741,7 @@ private fun CourseActionButtons(
             // 用默认 `buttonColors()` 会得到 grey secondary 底 —— 主按钮读起来像禁用。
             colors = ButtonDefaults.buttonColorsPrimary(),
         ) {
-            Text(text = CourseActionStrings.courseActionEditPrimary.zh)
+            Text(text = CourseActionStrings.courseActionEditPrimary.text)
         }
         Spacer(modifier = Modifier.height(10.dp))
         Row(
@@ -750,7 +750,7 @@ private fun CourseActionButtons(
         ) {
             TextButton(
                 modifier = Modifier.weight(1f),
-                text = CourseActionStrings.courseActionRescheduleSecondary.zh,
+                text = CourseActionStrings.courseActionRescheduleSecondary.text,
                 enabled = section.canReschedule,
                 onClick = onReschedule,
             )
@@ -761,7 +761,7 @@ private fun CourseActionButtons(
             )
             TextButton(
                 modifier = Modifier.weight(1f),
-                text = CourseActionStrings.courseActionDeleteSecondary.zh,
+                text = CourseActionStrings.courseActionDeleteSecondary.text,
                 // 危险色只染字：把 `color` 传成错误色会得到「整颗红底 + 灰字」，
                 // 那既不是 Dart 的观感（磨砂中性底 + 红字），对比度也不够。
                 colors = ButtonDefaults.textButtonColors(textColor = destructive),

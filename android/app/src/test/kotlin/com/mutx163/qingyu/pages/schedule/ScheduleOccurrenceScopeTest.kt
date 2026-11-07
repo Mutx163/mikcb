@@ -155,7 +155,7 @@ class ScheduleOccurrenceScopeTest {
         )
         assertTrue(
             "删除确认框应复用现成文案键 deleteScheduleTitle / deleteScheduleMessage（不新增文案）",
-            text.contains("ScheduleStrings.deleteScheduleTitle.zh") &&
+            text.contains("ScheduleStrings.deleteScheduleTitle.text") &&
                 text.contains("ScheduleStrings.deleteScheduleMessage"),
         )
         assertTrue(

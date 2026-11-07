@@ -66,7 +66,7 @@ object SettingsBingWallpaperGalleryPage {
             BingGalleryBody.LOADING -> nodes += SettingsDescription(
                 id = "gallery.loading",
                 textKey = SettingsStringsExt1.commonLoadingLabel.key,
-                text = SettingsStringsExt1.commonLoadingLabel.zh,
+                text = SettingsStringsExt1.commonLoadingLabel.text,
             )
 
             BingGalleryBody.FAILURE -> {
@@ -74,7 +74,7 @@ object SettingsBingWallpaperGalleryPage {
                 nodes += SettingsDescription(
                     id = "gallery.failed",
                     textKey = SettingsStringsExt1.bingWallpaperGalleryFailed.key,
-                    text = SettingsStringsExt1.bingWallpaperGalleryFailed.zh,
+                    text = SettingsStringsExt1.bingWallpaperGalleryFailed.text,
                 )
                 nodes += SettingsGroup(
                     id = "gallery.failureActions",
@@ -108,7 +108,7 @@ object SettingsBingWallpaperGalleryPage {
         return SettingsPageSpec(
             id = ID,
             titleKey = TITLE.key,
-            title = TITLE.zh,
+            title = TITLE.text,
             nodes = nodes,
         )
     }
@@ -152,7 +152,7 @@ object SettingsBingWallpaperGalleryPage {
     fun copyrightText(copyright: String, title: String, thumbFailed: Boolean): String {
         val base = copyright.ifEmpty { title }
         return if (thumbFailed) {
-            base + "（" + SettingsStringsExt1.wallpaperThumbRetryHint.zh + "）"
+            base + "（" + SettingsStringsExt1.wallpaperThumbRetryHint.text + "）"
         } else {
             base
         }
@@ -234,8 +234,8 @@ object SettingsBingWallpaperGalleryPage {
         val parsed = parseDateKey(dateKey) ?: return dateKey
         val daysAgo = ChronoUnit.DAYS.between(parsed, today)
         return when (daysAgo) {
-            0L -> SettingsStringsExt1.bingWallpaperDateToday.zh
-            1L -> SettingsStringsExt1.bingWallpaperDateYesterday.zh
+            0L -> SettingsStringsExt1.bingWallpaperDateToday.text
+            1L -> SettingsStringsExt1.bingWallpaperDateYesterday.text
             // 未来的日期（Bing 的 enddate 偶尔跨到明天）与更早的走同一条月日
             else -> {
                 // 模板有两个占位符，`ArbText.filled` 一次只换一个：先换月、再换日

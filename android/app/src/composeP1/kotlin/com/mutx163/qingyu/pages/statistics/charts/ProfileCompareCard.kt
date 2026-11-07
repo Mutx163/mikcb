@@ -195,7 +195,7 @@ fun ProfileCompareSection(
 ) {
     if (entries.isEmpty()) return
     Column(modifier = modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        com.mutx163.qingyu.components.QingyuSectionTitle(text = ChartsStrings.statisticsCompareTitle.zh)
+        com.mutx163.qingyu.components.QingyuSectionTitle(text = ChartsStrings.statisticsCompareTitle.text)
         ProfileCompareCard(entries = entries, dark = dark)
     }
 }

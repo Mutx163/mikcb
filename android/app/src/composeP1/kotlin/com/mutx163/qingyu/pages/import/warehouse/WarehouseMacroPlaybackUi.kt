@@ -105,7 +105,7 @@ private fun PlayingContent(
         CircularProgressIndicator(size = 48.dp, strokeWidth = 3.dp)
         Spacer(modifier = Modifier.height(24.dp))
         Text(
-            text = WarehouseMacroReplayStrings.quickImportPlayingTitle.zh,
+            text = WarehouseMacroReplayStrings.quickImportPlayingTitle.text,
             style = MiuixTheme.textStyles.title2,
             color = Color.White,
         )
@@ -143,7 +143,7 @@ private fun PlayingContent(
         }
         Spacer(modifier = Modifier.height(32.dp))
         Button(onClick = onCancel, colors = ButtonDefaults.buttonColors()) {
-            Text(text = WarehouseMacroReplayStrings.quickImportCancelPlaybackAction.zh)
+            Text(text = WarehouseMacroReplayStrings.quickImportCancelPlaybackAction.text)
         }
     }
 }
@@ -169,7 +169,7 @@ private fun PausedBottomCard(
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
             Text(
-                text = WarehouseMacroReplayStrings.quickImportManualInputTitle.zh,
+                text = WarehouseMacroReplayStrings.quickImportManualInputTitle.text,
                 style = MiuixTheme.textStyles.title3,
             )
             Spacer(modifier = Modifier.height(8.dp))
@@ -177,7 +177,7 @@ private fun PausedBottomCard(
                 text = progress?.pauseReason
                     ?.takeIf { it.isNotEmpty() }
                     ?.let { WarehouseMacroReplayStrings.localize(it) }
-                    ?: WarehouseMacroReplayStrings.quickImportManualInputHint.zh,
+                    ?: WarehouseMacroReplayStrings.quickImportManualInputHint.text,
                 style = MiuixTheme.textStyles.body2,
                 color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
                 textAlign = TextAlign.Center,
@@ -192,14 +192,14 @@ private fun PausedBottomCard(
                         contentColor = MiuixTheme.colorScheme.onSurfaceVariantActions,
                     ),
                 ) {
-                    Text(text = WarehouseMacroReplayStrings.quickImportCancelImportAction.zh)
+                    Text(text = WarehouseMacroReplayStrings.quickImportCancelImportAction.text)
                 }
                 Button(
                     onClick = onContinueAfterPause,
                     modifier = Modifier.weight(1f),
                     colors = ButtonDefaults.buttonColorsPrimary(),
                 ) {
-                    Text(text = WarehouseMacroReplayStrings.quickImportContinueAction.zh)
+                    Text(text = WarehouseMacroReplayStrings.quickImportContinueAction.text)
                 }
             }
         }
@@ -212,7 +212,7 @@ private fun ExecutingContent(schoolName: String, adapterName: String) {
         CircularProgressIndicator(size = 48.dp, strokeWidth = 3.dp)
         Spacer(modifier = Modifier.height(24.dp))
         Text(
-            text = WarehouseMacroReplayStrings.quickImportExecutingScriptTitle.zh,
+            text = WarehouseMacroReplayStrings.quickImportExecutingScriptTitle.text,
             style = MiuixTheme.textStyles.title2,
             color = Color.White,
             textAlign = TextAlign.Center,
@@ -242,7 +242,7 @@ private fun ErrorCard(
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         Text(
-            text = WarehouseStrings.importFailedStatus.zh,
+            text = WarehouseStrings.importFailedStatus.text,
             style = MiuixTheme.textStyles.title3,
             textAlign = TextAlign.Center,
         )
@@ -251,7 +251,7 @@ private fun ErrorCard(
             text = progress?.errorMessage
                 ?.takeIf { it.isNotEmpty() }
                 ?.let { WarehouseMacroReplayStrings.localize(it) }
-                ?: WarehouseMacroReplayStrings.quickImportUnknownError.zh,
+                ?: WarehouseMacroReplayStrings.quickImportUnknownError.text,
             style = MiuixTheme.textStyles.body2,
             color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
             textAlign = TextAlign.Center,
@@ -266,14 +266,14 @@ private fun ErrorCard(
                     contentColor = MiuixTheme.colorScheme.onSurfaceVariantActions,
                 ),
             ) {
-                Text(text = WarehouseMacroReplayStrings.closeAction.zh)
+                Text(text = WarehouseMacroReplayStrings.closeAction.text)
             }
             Button(
                 onClick = onRetry,
                 modifier = Modifier.weight(1f),
                 colors = ButtonDefaults.buttonColorsPrimary(),
             ) {
-                Text(text = WarehouseMacroReplayStrings.quickImportRetryAction.zh)
+                Text(text = WarehouseMacroReplayStrings.quickImportRetryAction.text)
             }
         }
     }
@@ -294,13 +294,13 @@ fun WarehouseQuickImportPickerDialog(
     OverlayDialog(
         insideMargin = DpSize(16.dp, 16.dp),
         show = show,
-        title = WarehouseStrings.selectQuickImportTitle.zh,
+        title = WarehouseStrings.selectQuickImportTitle.text,
         onDismissRequest = onDismiss,
     ) {
         Column(modifier = Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(10.dp)) {
             if (records.isEmpty()) {
                 Text(
-                    text = WarehouseStrings.noSavedQuickImportRecords.zh,
+                    text = WarehouseStrings.noSavedQuickImportRecords.text,
                     style = MiuixTheme.textStyles.body2,
                     color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
                 )
@@ -317,7 +317,7 @@ fun WarehouseQuickImportPickerDialog(
             }
             TextButton(
                 modifier = Modifier.fillMaxWidth(),
-                text = WarehouseStrings.cancelAction.zh,
+                text = WarehouseStrings.cancelAction.text,
                 onClick = onDismiss,
             )
         }
@@ -340,7 +340,7 @@ fun WarehouseQuickImportFinishedDialog(
     OverlayDialog(
         insideMargin = DpSize(16.dp, 16.dp),
         show = show,
-        title = WarehouseStrings.quickImportFinishedTitle.zh,
+        title = WarehouseStrings.quickImportFinishedTitle.text,
         summary = "$schoolName · $adapterName",
         onDismissRequest = onDismiss,
     ) {
@@ -357,7 +357,7 @@ fun WarehouseQuickImportFinishedDialog(
                 modifier = Modifier.fillMaxWidth(),
                 colors = ButtonDefaults.buttonColorsPrimary(),
             ) {
-                Text(text = WarehouseStrings.quickImportDismissAction.zh)
+                Text(text = WarehouseStrings.quickImportDismissAction.text)
             }
         }
     }

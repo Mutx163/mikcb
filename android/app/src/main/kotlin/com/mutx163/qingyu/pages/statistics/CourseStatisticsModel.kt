@@ -102,7 +102,7 @@ data class AchievementView(
     val progressTarget: Int? = null,
     val progressRatio: Float = 0f,
     val statusLabel: String = "",
-    val confirmLabel: String = StatisticsStrings.statisticsAchievementDetailConfirm.zh,
+    val confirmLabel: String = StatisticsStrings.statisticsAchievementDetailConfirm.text,
     val rawAchievement: Achievement? = null,
 )
 
@@ -191,8 +191,8 @@ object CourseStatisticsLogic {
     private const val DELTA_PLACEHOLDER = "—"
 
     fun tabLabels(): List<String> = listOf(
-        StatisticsStrings.statisticsTabSemester.zh,
-        StatisticsStrings.statisticsTabWeek.zh,
+        StatisticsStrings.statisticsTabSemester.text,
+        StatisticsStrings.statisticsTabWeek.text,
     )
 
     fun selectedTabIndex(semesterView: Boolean): Int = if (semesterView) 0 else 1
@@ -214,33 +214,33 @@ object CourseStatisticsLogic {
     fun analysisEntries(hasOtherProfiles: Boolean): List<StatisticsAnalysisEntry> {
         val entries = mutableListOf(
             StatisticsAnalysisEntry(
-                StatisticsStrings.statisticsSessionTitle.zh,
+                StatisticsStrings.statisticsSessionTitle.text,
                 StatisticsEntryTarget.Sessions,
             ),
             StatisticsAnalysisEntry(
-                StatisticsStrings.statisticsTrendTitle.zh,
+                StatisticsStrings.statisticsTrendTitle.text,
                 StatisticsEntryTarget.Analysis(StatisticsAnalysisModule.TREND),
             ),
             StatisticsAnalysisEntry(
-                StatisticsStrings.statisticsTimeUtilTitle.zh,
+                StatisticsStrings.statisticsTimeUtilTitle.text,
                 StatisticsEntryTarget.Analysis(StatisticsAnalysisModule.TIME_UTIL),
             ),
             StatisticsAnalysisEntry(
-                StatisticsStrings.statisticsVenueTitle.zh,
+                StatisticsStrings.statisticsVenueTitle.text,
                 StatisticsEntryTarget.Analysis(StatisticsAnalysisModule.VENUE),
             ),
             StatisticsAnalysisEntry(
-                StatisticsStrings.statisticsTeacherTitle.zh,
+                StatisticsStrings.statisticsTeacherTitle.text,
                 StatisticsEntryTarget.Analysis(StatisticsAnalysisModule.TEACHER),
             ),
             StatisticsAnalysisEntry(
-                StatisticsStrings.statisticsRankingTitle.zh,
+                StatisticsStrings.statisticsRankingTitle.text,
                 StatisticsEntryTarget.Analysis(StatisticsAnalysisModule.RANKING),
             ),
         )
         if (hasOtherProfiles) {
             entries += StatisticsAnalysisEntry(
-                StatisticsStrings.statisticsCompareTitle.zh,
+                StatisticsStrings.statisticsCompareTitle.text,
                 StatisticsEntryTarget.Analysis(StatisticsAnalysisModule.COMPARE),
             )
         }
@@ -253,20 +253,20 @@ object CourseStatisticsLogic {
         return listOf(
             StatisticsMetricView(
                 stats.totalCourses.toString(),
-                StatisticsStrings.statisticsSemesterLabelCourses.zh,
+                StatisticsStrings.statisticsSemesterLabelCourses.text,
                 highlight = true,
             ),
             StatisticsMetricView(
                 stats.totalSections.toString(),
-                StatisticsStrings.statisticsSemesterLabelSections.zh,
+                StatisticsStrings.statisticsSemesterLabelSections.text,
             ),
             StatisticsMetricView(
                 stats.totalWeeks.toString(),
-                StatisticsStrings.statisticsSemesterLabelWeeks.zh,
+                StatisticsStrings.statisticsSemesterLabelWeeks.text,
             ),
             StatisticsMetricView(
                 stats.longestStreak.toString(),
-                StatisticsStrings.statisticsSemesterLabelDayStreak.zh,
+                StatisticsStrings.statisticsSemesterLabelDayStreak.text,
             ),
         )
     }
@@ -286,7 +286,7 @@ object CourseStatisticsLogic {
         }
 
         val detailLabel = if (isBeforeStart) {
-            StatisticsStrings.statisticsSemesterProgressNotStarted.zh
+            StatisticsStrings.statisticsSemesterProgressNotStarted.text
         } else {
             StatisticsStrings.statisticsSemesterProgressDetail.filled(
                 "week" to progress.weeksElapsed.toString(),
@@ -301,7 +301,7 @@ object CourseStatisticsLogic {
                 StatisticsStrings.statisticsSemesterProgressAsOf.filled(
                     "date" to StatisticsDateLabels.monthDay(progress.currentDate.atStartOfDay()),
                 )
-            else -> StatisticsStrings.statisticsSemesterProgressEstimated.zh
+            else -> StatisticsStrings.statisticsSemesterProgressEstimated.text
         }
 
         val remainingLabel = if (isBeforeStart) {
@@ -316,7 +316,7 @@ object CourseStatisticsLogic {
         val ratio = semesterProgressRatio(progress)
 
         return SemesterProgressView(
-            title = StatisticsStrings.statisticsSemesterProgressTitle.zh,
+            title = StatisticsStrings.statisticsSemesterProgressTitle.text,
             weekLabel = "${progress.weeksElapsed}/${progress.totalWeeks}",
             rangeLabel = rangeLabel,
             percent = ratio,
@@ -339,17 +339,17 @@ object CourseStatisticsLogic {
             else -> DeltaTone.FLAT
         }
         return WeeklyComparisonView(
-            title = StatisticsStrings.statisticsComparisonTitle.zh,
+            title = StatisticsStrings.statisticsComparisonTitle.text,
             weekLabel = StatisticsStrings.statisticsWeekSelector.filled("week", currentWeek.toString()),
             weekSectionsValue = comparison.weekSections.toString(),
-            weekSectionsLabel = StatisticsStrings.statisticsSectionCount.zh,
+            weekSectionsLabel = StatisticsStrings.statisticsSectionCount.text,
             deltaValue = deltaValue,
             deltaLabel = StatisticsStrings.statisticsComparisonVsLastWeek.filled("delta", deltaValue),
             deltaTone = deltaTone,
             averageValue = oneDecimal(comparison.semesterAverageSections),
-            averageLabel = StatisticsStrings.statisticsComparisonAverage.zh,
+            averageLabel = StatisticsStrings.statisticsComparisonAverage.text,
             isFirstWeek = isFirstWeek,
-            newSemesterHint = if (isFirstWeek) StatisticsStrings.statisticsComparisonNew.zh else null,
+            newSemesterHint = if (isFirstWeek) StatisticsStrings.statisticsComparisonNew.text else null,
         )
     }
 
@@ -361,7 +361,7 @@ object CourseStatisticsLogic {
         val hasProgress = achievement.hasProgress && !hideInvertedProgress
         val progressLabel = if (hasProgress) {
             if (achievement.isUnlocked) {
-                StatisticsStrings.statisticsAchievementDone.zh
+                StatisticsStrings.statisticsAchievementDone.text
             } else {
                 StatisticsStrings.statisticsAchievementProgress.filled(
                     "current" to (achievement.progressCurrent ?: 0).toString(),
@@ -377,9 +377,9 @@ object CourseStatisticsLogic {
             if (achievement.isUnlocked) 1f else 0f
         }
         val statusLabel = if (achievement.isUnlocked) {
-            StatisticsStrings.statisticsAchievementDone.zh
+            StatisticsStrings.statisticsAchievementDone.text
         } else {
-            StatisticsStrings.statisticsAchievementLocked.zh
+            StatisticsStrings.statisticsAchievementLocked.text
         }
         return AchievementView(
             id = achievement.id,
@@ -393,7 +393,7 @@ object CourseStatisticsLogic {
             progressTarget = if (hasProgress) achievement.progressTarget else null,
             progressRatio = ratio,
             statusLabel = statusLabel,
-            confirmLabel = StatisticsStrings.statisticsAchievementDetailConfirm.zh,
+            confirmLabel = StatisticsStrings.statisticsAchievementDetailConfirm.text,
             rawAchievement = achievement,
         )
     }
@@ -409,7 +409,7 @@ object CourseStatisticsLogic {
         return when (story.type) {
             StoryType.BUSIEST_DAY -> StoryView(
                 story.type,
-                StatisticsStrings.storyBusiestDayTitle.zh,
+                StatisticsStrings.storyBusiestDayTitle.text,
                 StatisticsStrings.storyBusiestDayContent.filled(
                     "week" to week,
                     "day" to day,
@@ -418,7 +418,7 @@ object CourseStatisticsLogic {
             )
             StoryType.LIGHTEST_DAY -> StoryView(
                 story.type,
-                StatisticsStrings.storyLightestDayTitle.zh,
+                StatisticsStrings.storyLightestDayTitle.text,
                 StatisticsStrings.storyLightestDayContent.filled(
                     "week" to week,
                     "day" to day,
@@ -427,7 +427,7 @@ object CourseStatisticsLogic {
             )
             StoryType.FAVORITE_ROOM -> StoryView(
                 story.type,
-                StatisticsStrings.storyFavoriteRoomTitle.zh,
+                StatisticsStrings.storyFavoriteRoomTitle.text,
                 StatisticsStrings.storyFavoriteRoomContent.filled(
                     "week" to week,
                     "room" to (story.room ?: ""),
@@ -436,7 +436,7 @@ object CourseStatisticsLogic {
             )
             StoryType.BUILDING_COUNT -> StoryView(
                 story.type,
-                StatisticsStrings.storyBuildingCountTitle.zh,
+                StatisticsStrings.storyBuildingCountTitle.text,
                 StatisticsStrings.storyBuildingCountContent.filled(
                     "week" to week,
                     "count" to (story.buildingCount ?: 0).toString(),
@@ -444,7 +444,7 @@ object CourseStatisticsLogic {
             )
             StoryType.TIME_RANGE -> StoryView(
                 story.type,
-                StatisticsStrings.storyTimeRangeTitle.zh,
+                StatisticsStrings.storyTimeRangeTitle.text,
                 StatisticsStrings.storyTimeRangeContent.filled(
                     "earliest" to (story.earliestTime ?: ""),
                     "latest" to (story.latestTime ?: ""),
@@ -471,15 +471,15 @@ object CourseStatisticsLogic {
             return NatureRatioView(hasData = false, legend = emptyList(), missingLabel = null)
         }
         val missingLabel = when {
-            stats.requiredCount == 0 -> StatisticsStrings.statisticsNatureNoneRequired.zh
-            stats.electiveCount == 0 -> StatisticsStrings.statisticsNatureNoneElective.zh
+            stats.requiredCount == 0 -> StatisticsStrings.statisticsNatureNoneRequired.text
+            stats.electiveCount == 0 -> StatisticsStrings.statisticsNatureNoneElective.text
             else -> null
         }
         return NatureRatioView(
             hasData = true,
             legend = listOf(
                 NatureLegendView(
-                    label = StatisticsStrings.courseNatureRequired.zh,
+                    label = StatisticsStrings.courseNatureRequired.text,
                     detail = StatisticsStrings.statisticsNatureLegendDetail.filled(
                         "count" to stats.requiredCount.toString(),
                         "sections" to stats.requiredSections.toString(),
@@ -488,7 +488,7 @@ object CourseStatisticsLogic {
                     isRequired = true,
                 ),
                 NatureLegendView(
-                    label = StatisticsStrings.courseNatureElective.zh,
+                    label = StatisticsStrings.courseNatureElective.text,
                     detail = StatisticsStrings.statisticsNatureLegendDetail.filled(
                         "count" to stats.electiveCount.toString(),
                         "sections" to stats.electiveSections.toString(),
@@ -532,12 +532,12 @@ object CourseStatisticsLogic {
 
         if (!hasData) {
             return CourseStatisticsViewState(
-                title = StatisticsStrings.statisticsTitle.zh,
+                title = StatisticsStrings.statisticsTitle.text,
                 tabs = tabLabels(),
                 selectedTabIndex = selectedTabIndex(semesterView),
                 hasData = false,
-                emptyTitle = StatisticsStrings.statisticsNoData.zh,
-                emptyHint = StatisticsStrings.statisticsNoDataHint.zh,
+                emptyTitle = StatisticsStrings.statisticsNoData.text,
+                emptyHint = StatisticsStrings.statisticsNoDataHint.text,
                 showHeaderActions = false,
                 analysisEntries = emptyList(),
                 semester = null,
@@ -587,12 +587,12 @@ object CourseStatisticsLogic {
         )
 
         return CourseStatisticsViewState(
-            title = StatisticsStrings.statisticsTitle.zh,
+            title = StatisticsStrings.statisticsTitle.text,
             tabs = tabLabels(),
             selectedTabIndex = selectedTabIndex(semesterView),
             hasData = true,
-            emptyTitle = StatisticsStrings.statisticsNoData.zh,
-            emptyHint = StatisticsStrings.statisticsNoDataHint.zh,
+            emptyTitle = StatisticsStrings.statisticsNoData.text,
+            emptyHint = StatisticsStrings.statisticsNoDataHint.text,
             showHeaderActions = true,
             analysisEntries = analysisEntries(hasOtherProfiles),
             semester = SemesterContent(

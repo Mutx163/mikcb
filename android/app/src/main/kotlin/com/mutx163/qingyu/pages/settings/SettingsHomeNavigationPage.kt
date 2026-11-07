@@ -86,7 +86,7 @@ object SettingsHomeNavigationPage {
         nodes += SettingsLabel(
             id = "homeNavigation.form.label",
             textKey = SettingsStringsExt2.homeNavigationFormLabel.key,
-            text = SettingsStringsExt2.homeNavigationFormLabel.zh,
+            text = SettingsStringsExt2.homeNavigationFormLabel.text,
         )
         nodes += SettingsGroup(
             id = "homeNavigation.form",
@@ -99,7 +99,7 @@ object SettingsHomeNavigationPage {
             nodes += SettingsLabel(
                 id = "homeNavigation.dock.label",
                 textKey = SettingsStringsExt2.glassDockCustomizeSectionTitle.key,
-                text = SettingsStringsExt2.glassDockCustomizeSectionTitle.zh,
+                text = SettingsStringsExt2.glassDockCustomizeSectionTitle.text,
             )
             nodes += SettingsGroup(
                 id = "homeNavigation.dock",
@@ -112,7 +112,7 @@ object SettingsHomeNavigationPage {
         nodes += SettingsLabel(
             id = "homeNavigation.menu.label",
             textKey = SettingsStringsExt2.homeMenuCustomizeSectionTitle.key,
-            text = SettingsStringsExt2.homeMenuCustomizeSectionTitle.zh,
+            text = SettingsStringsExt2.homeMenuCustomizeSectionTitle.text,
         )
         nodes += SettingsGroup(
             id = "homeNavigation.menu",
@@ -147,7 +147,7 @@ object SettingsHomeNavigationPage {
         nodes += SettingsLabel(
             id = "homeNavigation.homeTitle.label",
             textKey = SettingsStringsExt2.homeTitleSectionTitle.key,
-            text = SettingsStringsExt2.homeTitleSectionTitle.zh,
+            text = SettingsStringsExt2.homeTitleSectionTitle.text,
         )
         nodes += SettingsGroup(
             id = "homeNavigation.homeTitle",
@@ -185,7 +185,7 @@ object SettingsHomeNavigationPage {
         return SettingsPageSpec(
             id = ID,
             titleKey = SettingsStringsExt2.homeNavigationTitle.key,
-            title = SettingsStringsExt2.homeNavigationTitle.zh,
+            title = SettingsStringsExt2.homeNavigationTitle.text,
             nodes = nodes,
         )
     }
@@ -317,10 +317,10 @@ object SettingsHomeNavigationPage {
                 note = "首页标题微缩预览（settings_appearance.dart:871-909）：官方没有标题样式预览，" +
                     "两行文字由应用自绘；第二行固定取 defaultTimetablePreviewName",
                 texts = listOf(
-                    SettingsInlineText(SettingsStringsExt2.appTitle.key, SettingsStringsExt2.appTitle.zh),
+                    SettingsInlineText(SettingsStringsExt2.appTitle.key, SettingsStringsExt2.appTitle.text),
                     SettingsInlineText(
                         SettingsStringsExt2.defaultTimetablePreviewName.key,
-                        SettingsStringsExt2.defaultTimetablePreviewName.zh,
+                        SettingsStringsExt2.defaultTimetablePreviewName.text,
                     ),
                 ),
             )
@@ -331,7 +331,7 @@ object SettingsHomeNavigationPage {
                 note = "首页标题微缩预览（settings_appearance.dart:871-909）：官方没有标题样式预览，" +
                     "classic 只有一行应用标题",
                 texts = listOf(
-                    SettingsInlineText(SettingsStringsExt2.appTitle.key, SettingsStringsExt2.appTitle.zh),
+                    SettingsInlineText(SettingsStringsExt2.appTitle.key, SettingsStringsExt2.appTitle.text),
                 ),
             )
         }
@@ -339,13 +339,13 @@ object SettingsHomeNavigationPage {
     // ------------------------------------------------------------- 纯函数行为
 
     /** 「已启用 N/M 个」（`homeGridCustomizeDetails` 模板）。 */
-    fun customizeDetails(count: Int, maxSlots: Int): ArbText = ArbText(
-        SettingsStringsExt2.homeGridCustomizeDetails.key,
-        // ArbText.filled 返回 String（整串替换完的结果），两处占位符要一次换完
-        SettingsStringsExt2.homeGridCustomizeDetails.zh
-            .replace("{count}", count.toString())
-            .replace("{max}", maxSlots.toString()),
-    )
+    fun customizeDetails(count: Int, maxSlots: Int): ArbText {
+        val template = SettingsStringsExt2.homeGridCustomizeDetails
+        return template.withArguments(
+            "count" to count.toString(),
+            "max" to maxSlots.toString(),
+        )
+    }
 
     /**
      * 底栏排列解析（`home_menu_catalog.dart:539-556` 的 `resolveGlassDockActionIds`）。

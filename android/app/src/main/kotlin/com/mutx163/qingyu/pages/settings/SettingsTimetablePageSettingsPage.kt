@@ -96,7 +96,7 @@ object SettingsTimetablePageSettingsPage {
         nodes += SettingsLabel(
             id = "timetablePage.label.density",
             textKey = SettingsStringsExt5.timetablePageSectionDensity.key,
-            text = SettingsStringsExt5.timetablePageSectionDensity.zh,
+            text = SettingsStringsExt5.timetablePageSectionDensity.text,
         )
         nodes += SettingsGroup(
             id = "timetablePage.density",
@@ -108,7 +108,7 @@ object SettingsTimetablePageSettingsPage {
         nodes += SettingsLabel(
             id = "timetablePage.label.backToWeek",
             textKey = SettingsStringsExt5.timetablePageSectionBackToWeek.key,
-            text = SettingsStringsExt5.timetablePageSectionBackToWeek.zh,
+            text = SettingsStringsExt5.timetablePageSectionBackToWeek.text,
         )
         nodes += SettingsGroup(
             id = "timetablePage.backToWeek",
@@ -135,7 +135,7 @@ object SettingsTimetablePageSettingsPage {
         nodes += SettingsLabel(
             id = "timetablePage.label.background",
             textKey = SettingsStringsExt5.timetablePageSectionBackground.key,
-            text = SettingsStringsExt5.timetablePageSectionBackground.zh,
+            text = SettingsStringsExt5.timetablePageSectionBackground.text,
         )
         nodes += SettingsGroup(
             id = "timetablePage.background",
@@ -147,7 +147,7 @@ object SettingsTimetablePageSettingsPage {
         nodes += SettingsLabel(
             id = "timetablePage.label.glass",
             textKey = SettingsStrings.frostedSheetSectionTitle.key,
-            text = SettingsStrings.frostedSheetSectionTitle.zh,
+            text = SettingsStrings.frostedSheetSectionTitle.text,
         )
         nodes += SettingsGroup(
             id = "timetablePage.glass",
@@ -174,7 +174,7 @@ object SettingsTimetablePageSettingsPage {
         nodes += SettingsLabel(
             id = "timetablePage.textColors.light.label",
             textKey = SettingsStrings.themeModeLight.key,
-            text = SettingsStrings.themeModeLight.zh,
+            text = SettingsStrings.themeModeLight.text,
         )
         nodes += SettingsGroup(
             id = "timetablePage.textColors.light",
@@ -205,7 +205,7 @@ object SettingsTimetablePageSettingsPage {
         nodes += SettingsLabel(
             id = "timetablePage.textColors.dark.label",
             textKey = SettingsStrings.themeModeDark.key,
-            text = SettingsStrings.themeModeDark.zh,
+            text = SettingsStrings.themeModeDark.text,
         )
         nodes += SettingsGroup(
             id = "timetablePage.textColors.dark",
@@ -247,7 +247,7 @@ object SettingsTimetablePageSettingsPage {
         return SettingsPageSpec(
             id = ID,
             titleKey = SettingsStringsExt2.timetablePageSettingsTitle.key,
-            title = SettingsStringsExt2.timetablePageSettingsTitle.zh,
+            title = SettingsStringsExt2.timetablePageSettingsTitle.text,
             nodes = nodes,
             collapsibleLargeTitle = false,
             previewFlex = 4,
@@ -378,7 +378,7 @@ object SettingsTimetablePageSettingsPage {
             kind = InlineKind.COLOR_CHIP_GROUP,
             note = "课表背景色六色板（:337-349）：官方没有色板组控件，色块与选中态由应用画",
             labelKey = SettingsStringsExt5.timetableBackgroundColorSectionTitle.key,
-            label = SettingsStringsExt5.timetableBackgroundColorSectionTitle.zh,
+            label = SettingsStringsExt5.timetableBackgroundColorSectionTitle.text,
             colors = BACKGROUND_COLORS,
             selectedColor = state.pageBackgroundColor,
         )
@@ -424,7 +424,7 @@ object SettingsTimetablePageSettingsPage {
             title = SettingsStringsExt1.homePageWallpaperBlurTitle,
             valueKey = if (blurOff) SettingsStringsExt1.homePageWallpaperBlurOff.key else null,
             value = if (blurOff) {
-                SettingsStringsExt1.homePageWallpaperBlurOff.zh
+                SettingsStringsExt1.homePageWallpaperBlurOff.text
             } else {
                 blur.toInt().toString()
             },

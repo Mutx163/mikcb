@@ -29,13 +29,13 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import com.mutx163.qingyu.components.QingyuCard
 import com.mutx163.qingyu.components.QingyuSheet
 import com.mutx163.qingyu.components.QingyuWeightDelta
+import com.mutx163.qingyu.components.rememberSheetMaxHeight
 import com.mutx163.qingyu.components.shiftWeight
 import com.mutx163.qingyu.theme.QingyuTheme
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
@@ -135,7 +135,7 @@ fun TimeSchemeMenuSheet(
             Spacer(modifier = Modifier.height(4.dp))
             TextButton(
                 modifier = Modifier.fillMaxWidth(),
-                text = TimeSchemeManagementStrings.cancelAction.zh,
+                text = TimeSchemeManagementStrings.cancelAction.text,
                 onClick = onDismiss,
             )
         }
@@ -174,7 +174,7 @@ fun TimeSchemeNameSheet(
                     .padding(bottom = 16.dp),
             )
             DialogActionRow(
-                cancelLabel = TimeSchemeManagementStrings.cancelAction.zh,
+                cancelLabel = TimeSchemeManagementStrings.cancelAction.text,
                 onCancel = onDismiss,
                 confirmLabel = current.confirmLabel,
                 onConfirm = { onConfirm(text) },
@@ -220,7 +220,7 @@ fun TimeSchemeDeleteSheet(
                     // Dart 的两个删除弹层里「取消」都用 `l10n.cancelAction`（`_deleteScheme:683` /
                     // `_explainDeleteBlocked:793`）；模型目前把 `cancelLabel` 灌成 `closeAction`
                     // （「关闭」），那是使用情况弹层的动作词，所以这里直接用 ARB 的 cancelAction。
-                    cancelLabel = TimeSchemeManagementStrings.cancelAction.zh,
+                    cancelLabel = TimeSchemeManagementStrings.cancelAction.text,
                     onCancel = onCancel,
                     confirmLabel = current.confirmLabel,
                     onConfirm = onConfirm,
@@ -252,7 +252,7 @@ fun TimeSchemeDeleteBlockedSheet(
     val dark = isSystemInDarkTheme()
     val current = rememberLastNonNull(check)
     // 占用清单条数无上界：正文限高 + 可滚，两个动作按钮固定在外。
-    val maxBodyHeight = (LocalConfiguration.current.screenHeightDp * 0.45f).dp
+    val maxBodyHeight = rememberSheetMaxHeight(0.45f)
     OverlayDialog(
         insideMargin = DpSize(16.dp, 16.dp),
         show = check != null,
@@ -304,12 +304,12 @@ fun TimeSchemeDeleteBlockedSheet(
                         modifier = Modifier.weight(1f),
                         // 同 [TimeSchemeDeleteSheet]：Dart 这里也是 `cancelAction`（「取消」），
                         // 不是使用情况弹层的 `closeAction`（「关闭」）。
-                        text = TimeSchemeManagementStrings.cancelAction.zh,
+                        text = TimeSchemeManagementStrings.cancelAction.text,
                         onClick = onCancel,
                     )
                     TextButton(
                         modifier = Modifier.weight(1f),
-                        text = TimeSchemeManagementStrings.viewUsageAction.zh,
+                        text = TimeSchemeManagementStrings.viewUsageAction.text,
                         colors = ButtonDefaults.textButtonColorsPrimary(),
                         onClick = onViewUsage,
                     )
@@ -337,7 +337,7 @@ fun TimeSchemeUsageSheet(
     val dark = isSystemInDarkTheme()
     val current = rememberLastNonNull(view)
     // 清单限高按屏高走：矮屏不再被 380dp 硬上限顶掉「关闭」按钮。
-    val maxListHeight = (LocalConfiguration.current.screenHeightDp * 0.42f).dp
+    val maxListHeight = rememberSheetMaxHeight(0.42f)
     OverlayDialog(
         insideMargin = DpSize(16.dp, 16.dp),
         show = view != null,
@@ -421,7 +421,7 @@ fun TimeSchemeUsageSheet(
                 Spacer(modifier = Modifier.height(16.dp))
                 TextButton(
                     modifier = Modifier.fillMaxWidth(),
-                    text = TimeSchemeManagementStrings.closeAction.zh,
+                    text = TimeSchemeManagementStrings.closeAction.text,
                     onClick = onClose,
                 )
             }
@@ -556,7 +556,7 @@ private fun DialogActionRow(
             )
             TextButton(
                 modifier = Modifier.fillMaxWidth(),
-                text = TimeSchemeManagementStrings.viewUsageAction.zh,
+                text = TimeSchemeManagementStrings.viewUsageAction.text,
                 onClick = onSecondary,
             )
             TextButton(

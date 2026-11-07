@@ -107,12 +107,12 @@ class WeatherWiringGuardTest {
         )
         assertTrue(
             "失败分支没用现成的「搜索失败，请稍后重试」（`WeatherStrings.weatherCitySearchFailed`）。",
-            "WeatherStrings.weatherCitySearchFailed.zh" in page,
+            "WeatherStrings.weatherCitySearchFailed.text" in page,
         )
         assertTrue(
             "失败分支没给「重试」入口（`WeatherStrings.weatherRetryAction` + `onRetrySearch`）：" +
                 "用户只能改一下输入框才可能重发。",
-            "WeatherStrings.weatherRetryAction.zh" in page && "onRetrySearch" in page,
+            "WeatherStrings.weatherRetryAction.text" in page && "onRetrySearch" in page,
         )
     }
 

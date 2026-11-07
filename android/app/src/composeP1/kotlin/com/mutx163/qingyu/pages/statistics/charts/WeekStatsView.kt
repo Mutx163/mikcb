@@ -83,7 +83,7 @@ fun WeekStatsView(
         // ── 每日课时分布（周口径柱图，真的画柱） ──
         Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
             QingyuSectionTitle(
-                text = ChartsStrings.statisticsDailyDistribution.zh,
+                text = ChartsStrings.statisticsDailyDistribution.text,
                 // 页面已统一缩进 12dp；标题再缩 16dp 才能与卡内文字一起落在 28dp 轴线。
                 insideMargin = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
             )
@@ -98,7 +98,7 @@ fun WeekStatsView(
         // ── 必修 / 选修（真的画环） ──
         Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
             QingyuSectionTitle(
-                text = ChartsStrings.statisticsNatureRatio.zh,
+                text = ChartsStrings.statisticsNatureRatio.text,
                 insideMargin = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
             )
             NatureRatioCard(stats = stats.natureStats, dark = dark)
@@ -107,7 +107,7 @@ fun WeekStatsView(
         if (timeUtilization != null && !timeUtilization.isEmpty) {
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 QingyuSectionTitle(
-                    text = ChartsStrings.statisticsTimeUtilTitle.zh,
+                    text = ChartsStrings.statisticsTimeUtilTitle.text,
                     insideMargin = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
                 )
                 TimeUtilizationCard(stats = timeUtilization, dark = dark)
@@ -118,7 +118,7 @@ fun WeekStatsView(
         if (courseRows.isNotEmpty()) {
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 QingyuSectionTitle(
-                    text = ChartsStrings.statisticsCourseList.zh,
+                    text = ChartsStrings.statisticsCourseList.text,
                     insideMargin = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
                 )
                 WeekCourseListCard(rows = courseRows, dark = dark)
@@ -283,7 +283,7 @@ private fun WeekCourseTile(row: WeekStatsModel.WeekCourseRow, dark: Boolean) {
                 color = Color(QingyuTheme.primary(dark = dark)),
             )
             Text(
-                text = ChartsStrings.statisticsSectionsUnit.zh,
+                text = ChartsStrings.statisticsSectionsUnit.text,
                 style = MiuixTheme.textStyles.footnote2,
                 color = Color(QingyuTheme.secondaryText(dark)),
             )

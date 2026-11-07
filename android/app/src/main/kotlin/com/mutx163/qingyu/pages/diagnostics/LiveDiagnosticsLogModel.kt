@@ -270,12 +270,12 @@ fun buildDiagnosticsFullLogText(
 
 /** 详情 / 设备信息里的键名（Dart `_prettyKey` 1499-1517 行）。 */
 fun prettyDiagnosticsFieldLabel(key: String): String = when (key) {
-    "exportedAt" -> DiagnosticsStrings.diagnosticsExportedAt.zh
-    "time" -> DiagnosticsStrings.diagnosticsTime.zh
-    "category" -> DiagnosticsStrings.diagnosticsCategory.zh
-    "message" -> DiagnosticsStrings.diagnosticsMessage.zh
-    "stackTrace" -> DiagnosticsStrings.diagnosticsStackTrace.zh
-    "level", "severity" -> DiagnosticsStrings.diagnosticsLevelLabel.zh
+    "exportedAt" -> DiagnosticsStrings.diagnosticsExportedAt.text
+    "time" -> DiagnosticsStrings.diagnosticsTime.text
+    "category" -> DiagnosticsStrings.diagnosticsCategory.text
+    "message" -> DiagnosticsStrings.diagnosticsMessage.text
+    "stackTrace" -> DiagnosticsStrings.diagnosticsStackTrace.text
+    "level", "severity" -> DiagnosticsStrings.diagnosticsLevelLabel.text
     // 未知键原样返回：Dart 侧 `localizeField` 未命中时同样回落到键名本身。
     else -> key
 }
@@ -313,9 +313,9 @@ fun buildDiagnosticsLogEntryView(
         level = entry.level,
         levelLabel = DiagnosticsStrings.levelLabel(entry.level),
         sourceLabel = if (entry.isNativeSource) {
-            DiagnosticsStrings.appLogsSourceNative.zh
+            DiagnosticsStrings.appLogsSourceNative.text
         } else {
-            DiagnosticsStrings.appLogsSourceApp.zh
+            DiagnosticsStrings.appLogsSourceApp.text
         },
         isLevelInferred = entry.isLevelInferred,
         // 分类 / 消息的多语言映射（Dart `AppLogMessageLocalizer`，229 个键）属于跨页共享件，

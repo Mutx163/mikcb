@@ -92,7 +92,7 @@ fun WarehouseCustomDebugHost(onBack: () -> Unit) {
                     context,
                     WarehouseStrings.executeFailedWithError.filled(
                         "error",
-                        SettingsStrings.aboutUnavailable.zh,
+                        SettingsStrings.aboutUnavailable.text,
                     ),
                     Toast.LENGTH_SHORT,
                 ).show()
@@ -121,7 +121,7 @@ fun WarehouseCustomDebugHost(onBack: () -> Unit) {
         OverlayDialog(
             insideMargin = DpSize(16.dp, 16.dp),
             show = target != null,
-            title = WarehouseStrings.deleteDebugRecordTitle.zh,
+            title = WarehouseStrings.deleteDebugRecordTitle.text,
             onDismissRequest = { pendingDelete = null },
         ) {
             Column(modifier = Modifier.fillMaxWidth()) {
@@ -147,12 +147,12 @@ fun WarehouseCustomDebugHost(onBack: () -> Unit) {
                 ) {
                     TextButton(
                         modifier = Modifier.weight(1f),
-                        text = WarehouseStrings.cancelAction.zh,
+                        text = WarehouseStrings.cancelAction.text,
                         onClick = { pendingDelete = null },
                     )
                     TextButton(
                         modifier = Modifier.weight(1f),
-                        text = WarehouseStrings.deleteAction.zh,
+                        text = WarehouseStrings.deleteAction.text,
                         onClick = {
                             val record = pendingDelete
                             pendingDelete = null
@@ -174,7 +174,7 @@ fun WarehouseCustomDebugHost(onBack: () -> Unit) {
                                         Toast.LENGTH_SHORT,
                                     ).show()
                                 } else {
-                                    Toast.makeText(context, WarehouseStrings.saveFailed.zh, Toast.LENGTH_SHORT).show()
+                                    Toast.makeText(context, WarehouseStrings.saveFailed.text, Toast.LENGTH_SHORT).show()
                                 }
                             }
                         },

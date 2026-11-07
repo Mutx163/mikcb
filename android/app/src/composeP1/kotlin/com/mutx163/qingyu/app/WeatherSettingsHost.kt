@@ -94,7 +94,7 @@ fun WeatherSettingsHost(
             onFailure = {
                 Toast.makeText(
                     context,
-                    SettingsStringsExt2.saveFailed.zh,
+                    SettingsStringsExt2.saveFailed.text,
                     Toast.LENGTH_SHORT,
                 ).show()
             },
@@ -111,7 +111,7 @@ fun WeatherSettingsHost(
             val estimated = provider.lastLocateWasEstimated
             val message = when {
                 failure != null -> WeatherStrings.locationFailureMessage(failure.toWeatherLocationFailure())
-                estimated -> WeatherStrings.weatherLocationEstimated.zh
+                estimated -> WeatherStrings.weatherLocationEstimated.text
                 else -> null
             }
             if (message != null) showToast(message)

@@ -43,22 +43,22 @@ class QrTransferScanModel(
      * 「这个错误说什么」，不必去 `when` 里翻。
      */
     enum class Error {
-        SESSION_MISMATCH { override fun messageOf() = TransferStrings.qrTransferSessionMismatch.zh },
-        CHECKSUM_FAILED { override fun messageOf() = TransferStrings.qrTransferChecksumFailed.zh },
-        RAW_LENGTH_MISMATCH { override fun messageOf() = TransferStrings.qrTransferRawLengthMismatch.zh },
-        DECOMPRESSION_FAILED { override fun messageOf() = TransferStrings.qrTransferDecompressionFailed.zh },
-        RESOURCE_LIMIT { override fun messageOf() = TransferStrings.qrTransferResourceLimit.zh },
-        SESSION_EXPIRED { override fun messageOf() = TransferStrings.qrTransferSessionExpired.zh },
-        DECODE_FAILED { override fun messageOf() = TransferStrings.qrTransferDecodeFailed.zh };
+        SESSION_MISMATCH { override fun messageOf() = TransferStrings.qrTransferSessionMismatch.text },
+        CHECKSUM_FAILED { override fun messageOf() = TransferStrings.qrTransferChecksumFailed.text },
+        RAW_LENGTH_MISMATCH { override fun messageOf() = TransferStrings.qrTransferRawLengthMismatch.text },
+        DECOMPRESSION_FAILED { override fun messageOf() = TransferStrings.qrTransferDecompressionFailed.text },
+        RESOURCE_LIMIT { override fun messageOf() = TransferStrings.qrTransferResourceLimit.text },
+        SESSION_EXPIRED { override fun messageOf() = TransferStrings.qrTransferSessionExpired.text },
+        DECODE_FAILED { override fun messageOf() = TransferStrings.qrTransferDecodeFailed.text };
 
         abstract fun messageOf(): String
     }
 
-    val title: String get() = TransferStrings.qrTransferScanTitle.zh
-    val scanHint: String get() = TransferStrings.qrTransferScanHint.zh
-    val completeMessage: String get() = TransferStrings.qrTransferReceiveComplete.zh
-    val restartLabel: String get() = TransferStrings.qrTransferRestart.zh
-    val plaintextWarning: String get() = TransferStrings.qrTransferPlaintextWarning.zh
+    val title: String get() = TransferStrings.qrTransferScanTitle.text
+    val scanHint: String get() = TransferStrings.qrTransferScanHint.text
+    val completeMessage: String get() = TransferStrings.qrTransferReceiveComplete.text
+    val restartLabel: String get() = TransferStrings.qrTransferRestart.text
+    val plaintextWarning: String get() = TransferStrings.qrTransferPlaintextWarning.text
 
     /** 是否在收集中。 */
     val isScanning: Boolean get() = error == null && !isComplete
@@ -102,6 +102,6 @@ class QrTransferScanModel(
      *
      * 这是「确认后才会发生」的提示，不是错误，所以单独一个字段而不是塞进 error。
      */
-    val fullBackupWarning: String get() = TransferStrings.qrTransferFullBackupWarning.zh
-    val importFullBackupLabel: String get() = TransferStrings.qrTransferImportFullBackup.zh
+    val fullBackupWarning: String get() = TransferStrings.qrTransferFullBackupWarning.text
+    val importFullBackupLabel: String get() = TransferStrings.qrTransferImportFullBackup.text
 }

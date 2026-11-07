@@ -259,6 +259,10 @@ class SheetBottomGapGuardTest {
             "pages/shell/HomeGlassDock.kt",
             // 坞的导航栏形态：同上。
             "pages/shell/GlassDockNavigationBar.kt",
+            // 设置页列表：边到边壳里 Scaffold 的 innerPadding 不含导航栏，列表自己要补
+            // 底部留白，否则滚到底时最后一行会被系统导航栏盖住（2026-11-07 用户截图）。
+            // 它不是弹层正文，不存在「键盘弹起后多出一截」的问题。
+            "pages/settings/SettingsPageRenderers.kt",
         )
     }
 }

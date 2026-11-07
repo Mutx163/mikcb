@@ -184,7 +184,7 @@ object UmengDiagnosticReporter {
                 "mikcb-live-diagnostics-${System.currentTimeMillis()}.log"
             )
             val header = buildString {
-                appendLine(DiagnosticsStrings.appLogsShareSubject.zh)
+                appendLine(DiagnosticsStrings.appLogsShareSubject.text)
                 appendLine("exportedAt=${System.currentTimeMillis()}")
                 buildDiagnosticContext(context).forEach { (key, value) ->
                     appendLine("$key=${value ?: "null"}")
@@ -209,7 +209,7 @@ object UmengDiagnosticReporter {
                 return@runCatching null
             }
             val header = buildString {
-                appendLine(DiagnosticsStrings.appLogsShareSubject.zh)
+                appendLine(DiagnosticsStrings.appLogsShareSubject.text)
                 appendLine("exportedAt=${System.currentTimeMillis()}")
                 buildDiagnosticContext(context).forEach { (key, value) ->
                     appendLine("$key=${value ?: "null"}")

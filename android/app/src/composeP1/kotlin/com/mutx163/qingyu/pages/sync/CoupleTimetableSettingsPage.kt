@@ -388,9 +388,9 @@ private fun StepButton(
         Icon(
             imageVector = if (isPlus) MiuixIcons.Add else MiuixIcons.Remove,
             contentDescription = if (isPlus) {
-                CoupleStrings.increaseAction.zh
+                CoupleStrings.increaseAction.text
             } else {
-                CoupleStrings.decreaseAction.zh
+                CoupleStrings.decreaseAction.text
             },
             tint = tint,
             modifier = Modifier.size(20.dp),

@@ -82,7 +82,7 @@ data class IcsExportViewState(
 
     /** 下拉项：显示名 → 课表 id。 */
     val profileItems: LinkedHashMap<String, String>
-        get() = IcsExportLogic.profileItems(profiles, ExportStrings.icsExportProfileLabel.zh)
+        get() = IcsExportLogic.profileItems(profiles, ExportStrings.icsExportProfileLabel.text)
 
     val summary: IcsExportSummary
         get() = IcsExportLogic.summary(selectedProfile, options)
@@ -189,10 +189,10 @@ object IcsExportLogic {
     /** 摘要内容行「日历内容: 课程, 考试」的值部分；一种都没勾时是短横。 */
     fun selectedTypesLabel(eventKinds: Set<IcsExportEventKind>): String {
         val labels = buildList {
-            if (eventKinds.contains(IcsExportEventKind.COURSE)) add(ExportStrings.icsExportCourses.zh)
-            if (eventKinds.contains(IcsExportEventKind.EXAM)) add(ExportStrings.icsExportExams.zh)
+            if (eventKinds.contains(IcsExportEventKind.COURSE)) add(ExportStrings.icsExportCourses.text)
+            if (eventKinds.contains(IcsExportEventKind.EXAM)) add(ExportStrings.icsExportExams.text)
             if (eventKinds.contains(IcsExportEventKind.SCHEDULE_ITEM)) {
-                add(ExportStrings.icsExportSchedules.zh)
+                add(ExportStrings.icsExportSchedules.text)
             }
         }
         return if (labels.isEmpty()) "-" else labels.joinToString(", ")
@@ -205,26 +205,26 @@ object IcsExportLogic {
      * 再按需追加「已跳过节假日课程」（普通行）与「请先设置学期开始日期」（错误行）。
      */
     fun summary(profile: IcsExportProfile?, options: IcsExportOptions): IcsExportSummary {
-        val title = profile?.name ?: ExportStrings.icsExportNoProfiles.zh
+        val title = profile?.name ?: ExportStrings.icsExportNoProfiles.text
         val lines = mutableListOf(
             IcsExportSummaryLine(
-                "${ExportStrings.icsExportStartDate.zh}: ${formatDate(options.fromDate)}",
+                "${ExportStrings.icsExportStartDate.text}: ${formatDate(options.fromDate)}",
             ),
             IcsExportSummaryLine(
-                "${ExportStrings.icsExportEndDate.zh}: ${formatDate(options.toDate)}",
+                "${ExportStrings.icsExportEndDate.text}: ${formatDate(options.toDate)}",
             ),
             IcsExportSummaryLine(
-                "${ExportStrings.icsExportTypesTitle.zh}: ${selectedTypesLabel(options.eventKinds)}",
+                "${ExportStrings.icsExportTypesTitle.text}: ${selectedTypesLabel(options.eventKinds)}",
             ),
         )
         if (options.skipHolidayCourses && options.eventKinds.contains(IcsExportEventKind.COURSE)) {
-            lines += IcsExportSummaryLine(ExportStrings.icsExportSkipHolidayCoursesOn.zh)
+            lines += IcsExportSummaryLine(ExportStrings.icsExportSkipHolidayCoursesOn.text)
         }
         if (options.eventKinds.contains(IcsExportEventKind.COURSE) &&
             profile?.semesterStartDate == null
         ) {
             lines += IcsExportSummaryLine(
-                ExportStrings.icsExportSemesterStartRequired.zh,
+                ExportStrings.icsExportSemesterStartRequired.text,
                 isError = true,
             )
         }

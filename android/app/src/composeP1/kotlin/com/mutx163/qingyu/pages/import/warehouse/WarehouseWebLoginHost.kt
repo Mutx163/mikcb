@@ -170,7 +170,7 @@ fun WarehouseWebLoginHost(
         // 拿不到目标（只可能从页面清单直接点进来）：给一句实话 + 返回键，
         // **不再静默退回选校页**——用户实报的「点网页导入，回答学校列表页面」就是那一下静默跳转。
         LaunchedEffect(Unit) { Log.w(LOG_TAG, "webLogin opened without school/adapter") }
-        WarehouseNoTargetPage(WarehouseStrings.webLoginImport.zh, onBack)
+        WarehouseNoTargetPage(WarehouseStrings.webLoginImport.text, onBack)
         return
     }
 
@@ -295,9 +295,9 @@ fun WarehouseWebLoginHost(
         Toast.makeText(
             context,
             if (autoRecord) {
-                WarehouseStrings.courseImportAutoRecordingStartedTip.zh
+                WarehouseStrings.courseImportAutoRecordingStartedTip.text
             } else {
-                WarehouseStrings.courseImportRecordingStartedTip.zh
+                WarehouseStrings.courseImportRecordingStartedTip.text
             },
             Toast.LENGTH_SHORT,
         ).show()
@@ -337,7 +337,7 @@ fun WarehouseWebLoginHost(
                 resetMacroRecording()
                 Toast.makeText(
                     context,
-                    WarehouseStrings.courseImportRecordingEmptyTip.zh,
+                    WarehouseStrings.courseImportRecordingEmptyTip.text,
                     Toast.LENGTH_SHORT,
                 ).show()
             } else {
@@ -410,7 +410,7 @@ fun WarehouseWebLoginHost(
                 ).show()
                 onBack()
             } else {
-                Toast.makeText(context, WarehouseStrings.saveFailed.zh, Toast.LENGTH_SHORT).show()
+                Toast.makeText(context, WarehouseStrings.saveFailed.text, Toast.LENGTH_SHORT).show()
             }
         }
     }
@@ -686,7 +686,7 @@ fun WarehouseWebLoginHost(
         // 其余（脚本卡死）用 `executeFailedWithError('timeout')`。
         val waitingForCourses = playbackWaitingForCourses
         val message = if (waitingForCourses) {
-            WarehouseStrings.courseImportScriptNoCourses.zh
+            WarehouseStrings.courseImportScriptNoCourses.text
         } else {
             WarehouseStrings.executeFailedWithError.filled("error", "timeout")
         }
@@ -742,9 +742,9 @@ fun WarehouseWebLoginHost(
                 Toast.makeText(
                     context,
                     when (plan.reason) {
-                        WarehouseScriptBlockReason.NO_SCRIPT_PATH -> WarehouseStrings.scriptEmpty.zh
+                        WarehouseScriptBlockReason.NO_SCRIPT_PATH -> WarehouseStrings.scriptEmpty.text
                         WarehouseScriptBlockReason.PAGE_NOT_LOADED ->
-                            WarehouseStrings.macroReplayWaitPageLoad.zh
+                            WarehouseStrings.macroReplayWaitPageLoad.text
                     },
                     Toast.LENGTH_SHORT,
                 ).show()
@@ -766,7 +766,7 @@ fun WarehouseWebLoginHost(
                     // 所以注入前先问网页里的运行哨兵（wrapper 置位、脚本收尾时复位），为真就跳过本轮。
                     if (evalJsNormalized(WAREHOUSE_IMPORT_RUNNING_PROBE_JS) == "true") {
                         Log.w(LOG_TAG, "execute import skipped: previous script instance still running")
-                        val message = WarehouseStrings.courseImportScriptStillRunning.zh
+                        val message = WarehouseStrings.courseImportScriptStillRunning.text
                         endScriptWindow(message)
                         Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
                         isExecuting = false
@@ -782,7 +782,7 @@ fun WarehouseWebLoginHost(
                             controller.injectJavaScript(
                                 warehouseImportScriptWrapper(
                                     script = loaded.value,
-                                    confirmText = WarehouseStrings.confirmImportAction.zh,
+                                    confirmText = WarehouseStrings.confirmImportAction.text,
                                 ),
                             )
                             session = session.withStage(WarehouseWebLoginStage.EXECUTING)
@@ -799,10 +799,10 @@ fun WarehouseWebLoginHost(
                             )
                             // 拉脚本失败也走统一收尾：stage 回到 LOADED（页面本身是好的），
                             // 网络恢复后用户可以直接再点一次，不用先刷新页面。
-                            endScriptWindow(WarehouseStrings.courseImportScriptFailed.zh)
+                            endScriptWindow(WarehouseStrings.courseImportScriptFailed.text)
                             Toast.makeText(
                                 context,
-                                WarehouseStrings.courseImportScriptFailed.zh,
+                                WarehouseStrings.courseImportScriptFailed.text,
                                 Toast.LENGTH_SHORT,
                             ).show()
                         }
@@ -927,7 +927,7 @@ fun WarehouseWebLoginHost(
             }
             Toast.makeText(
                 context,
-                WarehouseStrings.rememberedCurrentLoginSuccess.zh,
+                WarehouseStrings.rememberedCurrentLoginSuccess.text,
                 Toast.LENGTH_SHORT,
             ).show()
         }
@@ -977,8 +977,8 @@ fun WarehouseWebLoginHost(
         // 第三步（节次补齐确认）取消落在「导入已中断」，与旧版 capacity 路径同文案。
         showToasts(
             listOf(
-                if (interrupted) WarehouseStrings.importInterruptedStatus.zh
-                else WarehouseStrings.importCancelledStatus.zh,
+                if (interrupted) WarehouseStrings.importInterruptedStatus.text
+                else WarehouseStrings.importCancelledStatus.text,
             ),
         )
     }
@@ -988,7 +988,7 @@ fun WarehouseWebLoginHost(
         val messages = mutableListOf<String>()
         messages.add(
             when {
-                importedCount == 0 -> WarehouseStrings.importNoCourseChanges.zh
+                importedCount == 0 -> WarehouseStrings.importNoCourseChanges.text
                 plan.replaceExisting -> WarehouseStrings.importOverwriteCount.filled("count", importedCount.toString())
                 else -> WarehouseStrings.importUpdatedCount.filled("count", importedCount.toString())
             },
@@ -1077,7 +1077,7 @@ fun WarehouseWebLoginHost(
                     // 服务码（如节次补不满）过本地化再展示；其余落固定文案。
                     val text = result.serviceMessage
                         ?.let { TimeSchemeServiceMessages.localize(it) }
-                        ?: WarehouseStrings.importFailedStatus.zh
+                        ?: WarehouseStrings.importFailedStatus.text
                     Log.w(LOG_TAG, "courses import failed serviceMessage=${result.serviceMessage}")
                     showToasts(listOf(text))
                     // 回放等课程期间的写回失败：覆盖层切 ERROR（失败可重试/关闭），
@@ -1162,7 +1162,7 @@ fun WarehouseWebLoginHost(
         if (repo == null) {
             // 壳没传仓储：不许假装导入成功。
             Log.w(LOG_TAG, "courses received but repository is not wired")
-            showToasts(listOf(WarehouseStrings.importFailedStatus.zh))
+            showToasts(listOf(WarehouseStrings.importFailedStatus.text))
             return
         }
         if (coursesSession != null) {
@@ -1179,8 +1179,8 @@ fun WarehouseWebLoginHost(
                 val courses = WarehouseCourseImportLogic.parse(
                     rawCourses = decoded,
                     idFactory = { UUID.randomUUID().toString() },
-                    unknownTeacher = WarehouseStrings.unknownTeacher.zh,
-                    unknownLocation = WarehouseStrings.unknownLocation.zh,
+                    unknownTeacher = WarehouseStrings.unknownTeacher.text,
+                    unknownLocation = WarehouseStrings.unknownLocation.text,
                     maxWeek = MAX_ALLOWED_SEMESTER_WEEK_COUNT,
                 ) { reason, _, _ ->
                     when (reason) {
@@ -1195,13 +1195,13 @@ fun WarehouseWebLoginHost(
             }
             if (parsed == null) {
                 // 载荷不是数组：对齐旧版直接报格式错误，不进弹窗。
-                showToasts(listOf(WarehouseStrings.invalidCourseDataFormat.zh))
+                showToasts(listOf(WarehouseStrings.invalidCourseDataFormat.text))
                 return@launch
             }
             val (courses, dropped, trimmed) = parsed
             if (courses.isEmpty()) {
                 // 对齐旧版：解析后一门都没有 → 提示 + 丢弃计数，不进弹窗。
-                val toasts = mutableListOf(WarehouseStrings.noImportableCoursesFromScript.zh)
+                val toasts = mutableListOf(WarehouseStrings.noImportableCoursesFromScript.text)
                 if (dropped > 0) {
                     toasts.add(
                         WarehouseStrings.importCourseRecordsDropped.filled(
@@ -1285,7 +1285,7 @@ fun WarehouseWebLoginHost(
         if (repo == null) {
             // 壳没传仓储：配置没落盘，不能回 true 骗脚本（与降级回 false 同一口径）。
             answerAndClose(warehouseBridgeSaveConfigAnswer(action.requestId, saved = false))
-            showToasts(listOf(WarehouseStrings.saveFailed.zh))
+            showToasts(listOf(WarehouseStrings.saveFailed.text))
             return
         }
         val resolution = warehouseCourseConfigResolution(action.values)
@@ -1318,7 +1318,7 @@ fun WarehouseWebLoginHost(
                 }
             }
             if (!saved) {
-                showToasts(listOf(WarehouseStrings.saveFailed.zh))
+                showToasts(listOf(WarehouseStrings.saveFailed.text))
             }
             answerAndClose(warehouseBridgeSaveConfigAnswer(action.requestId, saved = saved))
         }
@@ -1351,7 +1351,7 @@ fun WarehouseWebLoginHost(
         if (repo == null) {
             // 壳没传仓储：作息没落盘，不能回 true 骗脚本（与 saveCourseConfig 同一口径）。
             answerRequest(request.requestId, "false", kind = "savePresetTimeSlots")
-            showToasts(listOf(WarehouseStrings.saveFailed.zh))
+            showToasts(listOf(WarehouseStrings.saveFailed.text))
             return
         }
         scope.launch {
@@ -1371,12 +1371,12 @@ fun WarehouseWebLoginHost(
 
                 is WarehousePresetTimeSlotsWriteBack.PayloadResult.InvalidFormat -> {
                     answerRequest(request.requestId, "false", kind = "savePresetTimeSlots")
-                    showToasts(listOf(WarehouseStrings.invalidSectionTimeFormat.zh))
+                    showToasts(listOf(WarehouseStrings.invalidSectionTimeFormat.text))
                 }
 
                 is WarehousePresetTimeSlotsWriteBack.PayloadResult.NoSectionTimes -> {
                     answerRequest(request.requestId, "false", kind = "savePresetTimeSlots")
-                    showToasts(listOf(WarehouseStrings.noSectionTimesToSave.zh))
+                    showToasts(listOf(WarehouseStrings.noSectionTimesToSave.text))
                 }
 
                 is WarehousePresetTimeSlotsWriteBack.PayloadResult.Failed -> {
@@ -1587,7 +1587,7 @@ fun WarehouseWebLoginHost(
                 // 对齐旧版：轻提示显示脚本上报的具体原因，缺省才落到固定文案。
                 // 收尾走统一出口：脚本报错也要能把 stage 放回 LOADED 再重试。
                 val errorText = warehouseBridgeMessageText(raw)
-                    ?: WarehouseStrings.courseImportScriptFailed.zh
+                    ?: WarehouseStrings.courseImportScriptFailed.text
                 Log.w(LOG_TAG, "bridge error reported by adapter script")
                 endScriptWindow(errorMessage = errorText)
                 showToasts(listOf(errorText))
@@ -1686,7 +1686,7 @@ fun WarehouseWebLoginHost(
                 val message = WarehouseWebLoginWebState.errorText(error) { key ->
                     when (key) {
                         WarehouseStrings.importCleartextBlockedHint.key ->
-                            WarehouseStrings.importCleartextBlockedHint.zh
+                            WarehouseStrings.importCleartextBlockedHint.text
 
                         else -> null
                     }
@@ -1709,7 +1709,7 @@ fun WarehouseWebLoginHost(
                     copyTextToClipboard(context, "warehouse-current-url", url)
                     Toast.makeText(
                         context,
-                        WarehouseStrings.copiedCurrentAddress.zh,
+                        WarehouseStrings.copiedCurrentAddress.text,
                         Toast.LENGTH_SHORT,
                     ).show()
                 }
@@ -1862,7 +1862,7 @@ fun WarehouseWebLoginHost(
 @Composable
 private fun WarehouseWebLoginMissingUrlPage(onBack: () -> Unit) {
     QingyuPageScaffold(
-        title = WarehouseStrings.webLoginImport.zh,
+        title = WarehouseStrings.webLoginImport.text,
         onBack = onBack,
     ) {
         QingyuPageList(
@@ -1877,7 +1877,7 @@ private fun WarehouseWebLoginMissingUrlPage(onBack: () -> Unit) {
                     insideMargin = QingyuCardDefaults.ContentInsideMargin,
                 ) {
                     Text(
-                        text = WarehouseStrings.noValidWarehouseLoginUrl.zh,
+                        text = WarehouseStrings.noValidWarehouseLoginUrl.text,
                         style = MiuixTheme.textStyles.body1,
                         color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
                     )
@@ -1912,7 +1912,7 @@ internal fun WarehouseNoTargetPage(title: String, onBack: () -> Unit) {
                     insideMargin = QingyuCardDefaults.ContentInsideMargin,
                 ) {
                     Text(
-                        text = WarehouseStrings.warehouseSchoolTapHint.zh,
+                        text = WarehouseStrings.warehouseSchoolTapHint.text,
                         style = MiuixTheme.textStyles.body1,
                         color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
                     )

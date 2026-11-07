@@ -636,9 +636,9 @@ object LiveDisplayLogic {
 
     /** 阶段词（ARB `liveIslandPreviewStage*`）。 */
     fun stageWord(stage: LivePreviewStage): String = when (stage) {
-        LivePreviewStage.BEFORE_CLASS -> DisplaySettingsStrings.stageBeforeClass.zh
-        LivePreviewStage.DURING_CLASS -> DisplaySettingsStrings.stageInClass.zh
-        LivePreviewStage.BEFORE_END -> DisplaySettingsStrings.stageBeforeEnd.zh
+        LivePreviewStage.BEFORE_CLASS -> DisplaySettingsStrings.stageBeforeClass.text
+        LivePreviewStage.DURING_CLASS -> DisplaySettingsStrings.stageInClass.text
+        LivePreviewStage.BEFORE_END -> DisplaySettingsStrings.stageBeforeEnd.text
     }
 
     /**
@@ -900,7 +900,7 @@ object LiveDisplayLogic {
                             LiveDetailLine(
                                 DisplaySettingsStrings.detailLineLocation.filled(
                                     "value",
-                                    DisplaySettingsStrings.unfilledValue.zh,
+                                    DisplaySettingsStrings.unfilledValue.text,
                                 ),
                                 unfilled = true,
                             ),
@@ -917,7 +917,7 @@ object LiveDisplayLogic {
                             LiveDetailLine(
                                 DisplaySettingsStrings.detailLineTeacher.filled(
                                     "value",
-                                    DisplaySettingsStrings.unfilledValue.zh,
+                                    DisplaySettingsStrings.unfilledValue.text,
                                 ),
                                 unfilled = true,
                             ),
@@ -934,7 +934,7 @@ object LiveDisplayLogic {
                             LiveDetailLine(
                                 DisplaySettingsStrings.detailLineNext.filled(
                                     "value",
-                                    DisplaySettingsStrings.unfilledValue.zh,
+                                    DisplaySettingsStrings.unfilledValue.text,
                                 ),
                                 unfilled = true,
                             ),
@@ -951,7 +951,7 @@ object LiveDisplayLogic {
                             LiveDetailLine(
                                 DisplaySettingsStrings.detailLineNote.filled(
                                     "value",
-                                    DisplaySettingsStrings.unfilledValue.zh,
+                                    DisplaySettingsStrings.unfilledValue.text,
                                 ),
                                 unfilled = true,
                             ),

@@ -314,10 +314,10 @@ fun CloudSyncPage(
     // 与选边框同口径：常驻组合、只翻 `show`，退场动画能播完。
     LegacyPasswordReentryDialog(
         show = showReentry,
-        title = SyncStrings.cloudSyncTitle.zh,
-        body = SyncStrings.webdavPasswordReentryBody.zh,
-        connectLabel = SyncStrings.cloudSyncConnectAccount.zh,
-        cancelLabel = SyncStrings.cancelAction.zh,
+        title = SyncStrings.cloudSyncTitle.text,
+        body = SyncStrings.webdavPasswordReentryBody.text,
+        connectLabel = SyncStrings.cloudSyncConnectAccount.text,
+        cancelLabel = SyncStrings.cancelAction.text,
         onConnect = {
             showReentry = false
             onConnect()
@@ -341,7 +341,7 @@ fun CloudSyncPage(
             )
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 TextButton(
-                    text = SyncStrings.cancelAction.zh,
+                    text = SyncStrings.cancelAction.text,
                     onClick = { if (!savingAdvanced) showHttpConfirm = false },
                     enabled = !savingAdvanced,
                     modifier = Modifier.weight(1f),
@@ -380,7 +380,7 @@ fun CloudSyncPage(
             )
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 TextButton(
-                    text = SyncStrings.cancelAction.zh,
+                    text = SyncStrings.cancelAction.text,
                     onClick = { showDisconnectConfirm = false },
                     modifier = Modifier.weight(1f),
                 )

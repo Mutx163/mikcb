@@ -75,7 +75,7 @@ object SettingsLiveSelfCheckPage {
             nodes += SettingsLabel(
                 id = "liveSelfCheck.section.holidayOverride",
                 textKey = s.liveTestingHolidayOverride.key,
-                text = s.liveTestingHolidayOverride.zh,
+                text = s.liveTestingHolidayOverride.text,
             )
             nodes += SettingsGroup(
                 id = "liveSelfCheck.group.holidayOverride",
@@ -91,7 +91,7 @@ object SettingsLiveSelfCheckPage {
             nodes += SettingsDescription(
                 id = "liveSelfCheck.desc.sessionRunning",
                 textKey = s.liveTestingSessionRunning.key,
-                text = s.liveTestingSessionRunning.zh,
+                text = s.liveTestingSessionRunning.text,
             )
         }
         data.courseTestLabel?.let { label ->
@@ -107,9 +107,9 @@ object SettingsLiveSelfCheckPage {
             note = "测试通知卡（:749-827）：卡内是 4~6 个官方 Button 组成的动作区，" +
                 "胶囊芯片已提到卡前（见文件头口径 1）",
             labelKey = s.liveTestingNotificationTitle.key,
-            label = s.liveTestingNotificationTitle.zh,
+            label = s.liveTestingNotificationTitle.text,
             valueKey = s.liveTestingNotificationSubtitle.key,
-            value = s.liveTestingNotificationSubtitle.zh,
+            value = s.liveTestingNotificationSubtitle.text,
             texts = notificationButtons(data),
         )
         nodes += SettingsGap("liveSelfCheck.gap.notification")
@@ -121,7 +121,7 @@ object SettingsLiveSelfCheckPage {
             note = "上岛状态诊断卡头（:847-848）：副标题在 Dart 里被删（:849 注释），" +
                 "卡内动作是刷新诊断 / 导出并分享日志",
             labelKey = s.liveTestingIslandStatusTitle.key,
-            label = s.liveTestingIslandStatusTitle.zh,
+            label = s.liveTestingIslandStatusTitle.text,
             texts = islandStatusButtons(data),
         )
         // 学期未填的红色提示（:860-870）：Dart 里在卡内最前
@@ -129,7 +129,7 @@ object SettingsLiveSelfCheckPage {
             nodes += SettingsDescription(
                 id = "liveSelfCheck.desc.semester",
                 textKey = s.pleaseSetSemesterStartDate.key,
-                text = s.pleaseSetSemesterStartDate.zh,
+                text = s.pleaseSetSemesterStartDate.text,
             )
         }
         // 第一颗芯片：服务运行中 / 服务未运行（:875-885）
@@ -141,9 +141,9 @@ object SettingsLiveSelfCheckPage {
                 s.liveTestingServiceStatusStopped.key
             },
             text = if (data.serviceRunning) {
-                s.liveTestingServiceStatusRunning.zh
+                s.liveTestingServiceStatusRunning.text
             } else {
-                s.liveTestingServiceStatusStopped.zh
+                s.liveTestingServiceStatusStopped.text
             },
         )
         // 第二颗芯片：原生给的 statusText（:886-895），空则不渲染
@@ -158,7 +158,7 @@ object SettingsLiveSelfCheckPage {
         nodes += SettingsLabel(
             id = "liveSelfCheck.label.noIslandReason",
             textKey = s.liveTestingNoIslandReasonTitle.key,
-            text = s.liveTestingNoIslandReasonTitle.zh,
+            text = s.liveTestingNoIslandReasonTitle.text,
         )
         nodes += SettingsDescription(
             id = "liveSelfCheck.desc.noIslandReason",
@@ -179,7 +179,7 @@ object SettingsLiveSelfCheckPage {
                 s.liveTestingRefreshedAt.key
             },
             text = if (data.refreshedAtText == null) {
-                s.liveTestingNotRefreshed.zh
+                s.liveTestingNotRefreshed.text
             } else {
                 s.liveTestingRefreshedAt.filled("time", data.refreshedAtText)
             },
@@ -190,7 +190,7 @@ object SettingsLiveSelfCheckPage {
         nodes += SettingsLabel(
             id = "liveSelfCheck.section.timeCorrection",
             textKey = s.timeCorrectionTitle.key,
-            text = s.timeCorrectionTitle.zh,
+            text = s.timeCorrectionTitle.text,
         )
         nodes += SettingsGroup(
             id = "liveSelfCheck.group.timeCorrection",
@@ -221,9 +221,9 @@ object SettingsLiveSelfCheckPage {
                 kind = InlineKind.CONTROL_CARD,
                 note = "原始 JSON 折叠块（:1115-1148）：官方 0.8.8 无折叠卡，见文件头口径 2",
                 labelKey = s.liveTestingExpandRawJson.key,
-                label = s.liveTestingExpandRawJson.zh,
+                label = s.liveTestingExpandRawJson.text,
                 valueKey = s.liveTestingExpandRawJsonSubtitle.key,
-                value = s.liveTestingExpandRawJsonSubtitle.zh,
+                value = s.liveTestingExpandRawJsonSubtitle.text,
                 texts = listOf(SettingsInlineText(NON_ARB_TEXT, data.rawDebugJson)),
             )
             nodes += SettingsGap("liveSelfCheck.gap.rawJson")
@@ -236,14 +236,14 @@ object SettingsLiveSelfCheckPage {
             note = "本地诊断日志卡（:1149-1183）：副标题在 Dart 里被删（:1151 注释，" +
                 "三个按钮里没有导出，文案与实际不符）",
             labelKey = s.liveTestingLocalLogsTitle.key,
-            label = s.liveTestingLocalLogsTitle.zh,
+            label = s.liveTestingLocalLogsTitle.text,
             texts = localLogButtons(data),
         )
 
         return SettingsPageSpec(
             id = ID,
             titleKey = s.liveSelfCheckTitle.key,
-            title = s.liveSelfCheckTitle.zh,
+            title = s.liveSelfCheckTitle.text,
             nodes = nodes,
         )
     }
@@ -279,12 +279,9 @@ object SettingsLiveSelfCheckPage {
             component = MiuixRowComponent.SWITCH,
             title = s.liveTestingAutoRefreshTitle,
             subtitle = if (data.autoRefreshEnabled) {
-                ArbText(
-                    s.liveTestingAutoRefreshOn.key,
-                    s.liveTestingAutoRefreshOn.filled(
-                        "seconds",
-                        data.autoRefreshIntervalSeconds.toString(),
-                    ),
+                s.liveTestingAutoRefreshOn.withArguments(
+                    "seconds",
+                    data.autoRefreshIntervalSeconds.toString(),
                 )
             } else {
                 s.liveTestingAutoRefreshOffReason
@@ -306,9 +303,9 @@ object SettingsLiveSelfCheckPage {
         return settingsRow(
             id = "liveSelfCheck.timeCorrection",
             component = MiuixRowComponent.SLIDER,
-            title = ArbText(
-                s.timeCorrectionLabel.key,
-                s.timeCorrectionLabel.filled("value", formatTimeCorrection(seconds)),
+            title = s.timeCorrectionLabel.withArguments(
+                "value",
+                formatTimeCorrection(seconds),
             ),
             slider = SettingsSliderSpec(
                 min = TIME_CORRECTION_MIN,
@@ -396,7 +393,7 @@ object SettingsLiveSelfCheckPage {
         )
     }
 
-    private fun inline(text: ArbText) = SettingsInlineText(text.key, text.zh)
+    private fun inline(text: ArbText) = SettingsInlineText(text.key, text.text)
 
     // ------------------------------------------------------------ 不上岛原因
 
@@ -415,8 +412,8 @@ object SettingsLiveSelfCheckPage {
     }
 
     private fun noIslandReasonText(data: LiveSelfCheckData): String = when {
-        data.holidayBlocksIsland -> SettingsStringsExt3.liveTestingHolidayHidden.zh
-        data.notIslandReason.isEmpty() -> SettingsStringsExt3.liveTestingNoIslandReasonEmpty.zh
+        data.holidayBlocksIsland -> SettingsStringsExt3.liveTestingHolidayHidden.text
+        data.notIslandReason.isEmpty() -> SettingsStringsExt3.liveTestingNoIslandReasonEmpty.text
         else -> data.notIslandReason
     }
 
@@ -428,7 +425,7 @@ object SettingsLiveSelfCheckPage {
     fun formatTimeCorrection(seconds: Int): String {
         val s = SettingsStringsExt3
         return when {
-            seconds == 0 -> s.liveTimeCorrectionNone.zh
+            seconds == 0 -> s.liveTimeCorrectionNone.text
             seconds > 0 -> s.liveTimeCorrectionDelay.filled("seconds", seconds.toString())
             else -> s.liveTimeCorrectionAdvance.filled("seconds", (-seconds).toString())
         }
@@ -460,7 +457,7 @@ enum class LiveDebugSection {
     /** 卡标题的 ARB 键（:1041-1114 的八处 `l10n.liveTestingSection*`）。 */
     fun titleKey(): String = title().key
 
-    fun titleText(): String = title().zh
+    fun titleText(): String = title().text
 
     private fun title(): ArbText = when (this) {
         ENVIRONMENT -> SettingsStringsExt3.liveTestingSectionEnvironment

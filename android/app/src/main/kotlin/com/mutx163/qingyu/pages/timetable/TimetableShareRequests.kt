@@ -67,10 +67,10 @@ object TimetableShareRequests {
             title = TimetableStrings.timetableShareExportWeek(week),
             weekCompactLabel = TimetableStrings.formatCurrentWeekCompact(week),
             overlineLabels = mapOf(
-                WeekCardOverline.NON_CURRENT_WEEK to TimetableStrings.nonCurrentWeekLabel.zh,
-                WeekCardOverline.CONFLICT to TimetableStrings.conflictLabel.zh,
+                WeekCardOverline.NON_CURRENT_WEEK to TimetableStrings.nonCurrentWeekLabel.text,
+                WeekCardOverline.CONFLICT to TimetableStrings.conflictLabel.text,
             ),
-            shareText = TimetableStrings.timetableShareText.zh,
+            shareText = TimetableStrings.timetableShareText.text,
         )
     }
 
@@ -111,8 +111,8 @@ object TimetableShareRequests {
                 weekday = TimetableStrings.formatWeekday(dayOfWeek),
             ),
             subtitle = subtitle,
-            emptyDayText = TimetableStrings.timetableShareExportEmptyDay.zh,
-            shareText = TimetableStrings.timetableShareText.zh,
+            emptyDayText = TimetableStrings.timetableShareExportEmptyDay.text,
+            shareText = TimetableStrings.timetableShareText.text,
         )
     }
 }

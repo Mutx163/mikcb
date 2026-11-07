@@ -88,7 +88,7 @@ object GuideSettingsMapping {
         return ForuiTheme.entries.map { theme ->
             GuideSeedOption(
                 hex = theme.seedHex,
-                label = foruiThemeLabel(theme).zh,
+                label = foruiThemeLabel(theme).text,
             )
         }
     }

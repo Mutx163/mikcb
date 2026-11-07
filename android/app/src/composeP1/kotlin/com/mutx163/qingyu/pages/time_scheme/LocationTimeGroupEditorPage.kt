@@ -79,7 +79,7 @@ fun LocationTimeGroupEditorPage(
     val context = LocalContext.current
     val model = remember(allGroups) { LocationTimeMatchModel(groups = allGroups) }
     val editingGroupId = existing?.id
-    val title = if (existing == null) LocationTimeMatchStrings.createGroup.zh else LocationTimeMatchStrings.editGroup.zh
+    val title = if (existing == null) LocationTimeMatchStrings.createGroup.text else LocationTimeMatchStrings.editGroup.text
 
     // 校验错误一律 toast，不放列表顶部横幅——底部「保存」与中段「添加关键词」都在滚动
     // 深处，横幅渲染在屏幕外时用户看到的是「点了没反应」。Dart 侧同一个入口全部走
@@ -120,7 +120,7 @@ fun LocationTimeGroupEditorPage(
         val trimmed = pattern.trim()
         if (trimmed.isEmpty()) return false
         if (keywords.any { it.pattern.trim().equals(trimmed, ignoreCase = true) }) {
-            toast(LocationTimeMatchStrings.keywordAlreadyExists.zh)
+            toast(LocationTimeMatchStrings.keywordAlreadyExists.text)
             return false
         }
         val owner = model.keywordOwnerHint(trimmed, editingGroupId)
@@ -145,7 +145,7 @@ fun LocationTimeGroupEditorPage(
         actions = {
             // Dart `:1271-1277` 的 FHeaderAction：永远可点，点了直接提交流程（校验在 trySave）。
             TextButton(
-                text = LocationTimeMatchStrings.saveAction.zh,
+                text = LocationTimeMatchStrings.saveAction.text,
                 onClick = { trySave() },
                 colors = ButtonDefaults.textButtonColorsPrimary(),
             )
@@ -165,7 +165,7 @@ fun LocationTimeGroupEditorPage(
                         verticalArrangement = Arrangement.spacedBy(12.dp),
                     ) {
                         // 组名
-                        QingyuSectionTitle(text = LocationTimeMatchStrings.groupNameLabel.zh)
+                        QingyuSectionTitle(text = LocationTimeMatchStrings.groupNameLabel.text)
                         QingyuCard(
                             modifier = Modifier.fillMaxWidth(),
                             insideMargin = QingyuCardDefaults.ContentInsideMargin,
@@ -173,19 +173,19 @@ fun LocationTimeGroupEditorPage(
                             TextField(
                                 value = name,
                                 onValueChange = { name = it },
-                                label = LocationTimeMatchStrings.groupNameHint.zh,
+                                label = LocationTimeMatchStrings.groupNameHint.text,
                                 singleLine = true,
                             )
                         }
 
                         // 绑定时间模板
-                        QingyuSectionTitle(text = LocationTimeMatchStrings.boundSchemeLabel.zh)
+                        QingyuSectionTitle(text = LocationTimeMatchStrings.boundSchemeLabel.text)
                         if (schemes.isEmpty()) {
                             QingyuCard(modifier = Modifier.fillMaxWidth()) {
                                 ArrowPreference(
-                                    title = LocationTimeMatchStrings.needTimeScheme.zh,
+                                    title = LocationTimeMatchStrings.needTimeScheme.text,
                                     summary = null,
-                                    onClick = { toast(LocationTimeMatchStrings.needTimeScheme.zh) },
+                                    onClick = { toast(LocationTimeMatchStrings.needTimeScheme.text) },
                                 )
                             }
                         } else {
@@ -214,26 +214,26 @@ fun LocationTimeGroupEditorPage(
                             SwitchPreference(
                                 checked = enabled,
                                 onCheckedChange = { enabled = it },
-                                title = LocationTimeMatchStrings.enabledLabel.zh,
+                                title = LocationTimeMatchStrings.enabledLabel.text,
                                 summary = null,
                             )
                         }
 
                         // 地点关键词
-                        QingyuSectionTitle(text = LocationTimeMatchStrings.keywordsSection.zh)
+                        QingyuSectionTitle(text = LocationTimeMatchStrings.keywordsSection.text)
                         QingyuCard(
                             modifier = Modifier.fillMaxWidth(),
                             insideMargin = QingyuCardDefaults.ContentInsideMargin,
                         ) {
                             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                                 Text(
-                                    text = LocationTimeMatchStrings.selectedKeywords.zh,
+                                    text = LocationTimeMatchStrings.selectedKeywords.text,
                                     style = MiuixTheme.textStyles.body2,
                                     color = Color(QingyuTheme.primaryText(dark)),
                                 )
                                 if (keywords.isEmpty()) {
                                     Text(
-                                        text = LocationTimeMatchStrings.noSelectedKeywords.zh,
+                                        text = LocationTimeMatchStrings.noSelectedKeywords.text,
                                         style = MiuixTheme.textStyles.footnote1,
                                         color = Color(QingyuTheme.secondaryText(dark)),
                                     )
@@ -261,7 +261,7 @@ fun LocationTimeGroupEditorPage(
                                 TextField(
                                     value = newPattern,
                                     onValueChange = { newPattern = it },
-                                    label = LocationTimeMatchStrings.keywordHint.zh,
+                                    label = LocationTimeMatchStrings.keywordHint.text,
                                     singleLine = true,
                                 )
                                 // 匹配模式三选一
@@ -279,7 +279,7 @@ fun LocationTimeGroupEditorPage(
                                     }
                                 }
                                 ArrowPreference(
-                                    title = LocationTimeMatchStrings.addKeyword.zh,
+                                    title = LocationTimeMatchStrings.addKeyword.text,
                                     summary = null,
                                     onClick = {
                                         // 加成功才清空输入框；被拒时保留原文，用户能就地改。
@@ -289,18 +289,18 @@ fun LocationTimeGroupEditorPage(
                             }
                         }
                         Text(
-                            text = LocationTimeMatchStrings.keywordsHelp.zh,
+                            text = LocationTimeMatchStrings.keywordsHelp.text,
                             style = MiuixTheme.textStyles.footnote1,
                             color = Color(QingyuTheme.secondaryText(dark)),
                             modifier = Modifier.padding(horizontal = 4.dp),
                         )
 
                         // 楼栋建议
-                        QingyuSectionTitle(text = LocationTimeMatchStrings.buildingSuggestions.zh)
+                        QingyuSectionTitle(text = LocationTimeMatchStrings.buildingSuggestions.text)
                         if (uncovered.isEmpty()) {
                             QingyuCard(modifier = Modifier.fillMaxWidth()) {
                                 ArrowPreference(
-                                    title = LocationTimeMatchStrings.noBuildingSuggestions.zh,
+                                    title = LocationTimeMatchStrings.noBuildingSuggestions.text,
                                     summary = null,
                                     onClick = null,
                                     enabled = false,
@@ -315,7 +315,7 @@ fun LocationTimeGroupEditorPage(
                             }
                             QingyuCard(modifier = Modifier.fillMaxWidth()) {
                                 ArrowPreference(
-                                    title = LocationTimeMatchStrings.addAllBuildings.zh,
+                                    title = LocationTimeMatchStrings.addAllBuildings.text,
                                     summary = null,
                                     onClick = {
                                         var added = 0
@@ -327,7 +327,7 @@ fun LocationTimeGroupEditorPage(
                                             keywords = keywords + cluster.suggestedKeyword
                                             added++
                                         }
-                                        if (added == 0) toast(LocationTimeMatchStrings.keywordAlreadyExists.zh)
+                                        if (added == 0) toast(LocationTimeMatchStrings.keywordAlreadyExists.text)
                                     },
                                 )
                             }
@@ -336,7 +336,7 @@ fun LocationTimeGroupEditorPage(
                         // 保存（底部）
                         QingyuCard(modifier = Modifier.fillMaxWidth()) {
                             ArrowPreference(
-                                title = LocationTimeMatchStrings.saveAction.zh,
+                                title = LocationTimeMatchStrings.saveAction.text,
                                 summary = null,
                                 onClick = { trySave() },
                             )
@@ -371,7 +371,7 @@ private fun ClusterCard(cluster: BuildingCluster, onAdd: () -> Unit) {
                 color = Color(QingyuTheme.secondaryText(dark)),
             )
             Text(
-                text = LocationTimeMatchStrings.addBuilding.zh,
+                text = LocationTimeMatchStrings.addBuilding.text,
                 style = MiuixTheme.textStyles.body2,
                 color = Color(QingyuTheme.primary(dark = dark)),
                 modifier = Modifier

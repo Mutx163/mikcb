@@ -65,16 +65,4 @@ object MonthViewStrings {
  * 与 `pages/timetable/TimetableStrings.kt` 里那份同构（那边是周视图的）。之所以不跨包
  * 复用：两边各自的对拍测试按包定位 ARB 键，共用会让「谁漏了键」变模糊。
  */
-data class ArbText(val key: String, val zh: String) {
-    /** 替换模板中的单占位符（`{name}` → [value]）。 */
-    fun filled(name: String, value: String): String = zh.replace("{$name}", value)
-
-    /** 替换模板中的多个占位符。 */
-    fun filled(vararg pairs: Pair<String, String>): String {
-        var result = zh
-        for ((name, value) in pairs) {
-            result = result.replace("{$name}", value)
-        }
-        return result
-    }
-}
+typealias ArbText = com.mutx163.qingyu.app.ArbText

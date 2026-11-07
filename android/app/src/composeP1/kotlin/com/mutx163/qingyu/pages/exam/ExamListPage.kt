@@ -91,13 +91,13 @@ fun ExamListPage(
     // 共享骨架：官方 TopAppBar + 标准返回键 + 顶栏毛玻璃 + actions 槽；大标题可折叠
     // （Dart `exam_list_screen.dart:30-32` 走 HyperosSubpage 默认参数）。
     QingyuPageScaffold(
-        title = ExamStrings.examListTitle.zh,
+        title = ExamStrings.examListTitle.text,
         onBack = onBack,
         actions = {
             IconButton(onClick = onAddExam) {
                 Icon(
                     imageVector = MiuixIcons.Add,
-                    contentDescription = ExamStrings.addExam.zh,
+                    contentDescription = ExamStrings.addExam.text,
                     tint = Color(QingyuTheme.actionIcon(dark)),
                 )
             }
@@ -147,7 +147,7 @@ fun ExamListPage(
 
                     if (viewState.past.isNotEmpty()) {
                         item {
-                            QingyuSectionTitle(ExamStrings.examPassed.zh)
+                            QingyuSectionTitle(ExamStrings.examPassed.text)
                         }
                         item {
                             QingyuCard(
@@ -176,7 +176,7 @@ fun ExamListPage(
     OverlayDialog(
         insideMargin = DpSize(16.dp, 16.dp),
         show = pendingDelete != null,
-        title = ExamStrings.deleteExam.zh,
+        title = ExamStrings.deleteExam.text,
         summary = ExamStrings.deleteExamConfirm.filled("name", deleteTarget?.name.orEmpty()),
         onDismissRequest = { pendingDelete = null },
     ) {
@@ -188,7 +188,7 @@ fun ExamListPage(
                 onClick = { pendingDelete = null },
                 modifier = Modifier.weight(1f),
             ) {
-                Text(text = ExamStrings.cancelAction.zh)
+                Text(text = ExamStrings.cancelAction.text)
             }
             Button(
                 onClick = {
@@ -201,7 +201,7 @@ fun ExamListPage(
                     contentColor = Color(QingyuTheme.onError(dark)),
                 ),
             ) {
-                Text(text = ExamStrings.deleteAction.zh)
+                Text(text = ExamStrings.deleteAction.text)
             }
         }
     }
@@ -228,7 +228,7 @@ private fun ExamEmptyState(dark: Boolean, onAddExam: () -> Unit) {
         )
         Spacer(modifier = Modifier.height(16.dp))
         Text(
-            text = ExamStrings.noExams.zh,
+            text = ExamStrings.noExams.text,
             style = MiuixTheme.textStyles.headline1,
             color = Color(QingyuTheme.primaryText(dark)),
             textAlign = TextAlign.Center,
@@ -238,7 +238,7 @@ private fun ExamEmptyState(dark: Boolean, onAddExam: () -> Unit) {
             onClick = onAddExam,
             colors = ButtonDefaults.buttonColorsPrimary(),
         ) {
-            Text(text = ExamStrings.addExam.zh)
+            Text(text = ExamStrings.addExam.text)
         }
     }
 }
@@ -361,7 +361,7 @@ private fun ExamOverviewCard(overview: ExamOverviewView, dark: Boolean, onClick:
                         )
                         Spacer(modifier = Modifier.width(3.dp))
                         Text(
-                            text = ExamStrings.examOverviewCountdownUnit.zh,
+                            text = ExamStrings.examOverviewCountdownUnit.text,
                             style = MiuixTheme.textStyles.footnote1,
                             color = secondaryText,
                         )
@@ -496,7 +496,7 @@ private fun ExamRow(
         IconButton(onClick = onDelete, modifier = Modifier.size(36.dp)) {
             Icon(
                 imageVector = MiuixIcons.Delete,
-                contentDescription = ExamStrings.deleteExam.zh,
+                contentDescription = ExamStrings.deleteExam.text,
                 tint = if (row.isPast) mutedSecondary else Color(QingyuTheme.actionIcon(dark)),
                 modifier = Modifier.size(17.dp),
             )

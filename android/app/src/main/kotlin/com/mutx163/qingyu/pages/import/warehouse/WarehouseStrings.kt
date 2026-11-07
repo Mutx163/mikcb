@@ -7,16 +7,7 @@ package com.mutx163.qingyu.pages.import.warehouse
  * [WarehouseStringsParityTest] 里与 ARB 机械比对，键缺失或值被改写都会红。
  * 覆盖仓库适配、学校适配器、网页登录、宏录制、自定义调试与 AI 识图导入共 8 件 Dart 页面中的 ARB 文案。
  */
-data class WarehouseArbText(val key: String, val zh: String) {
-    fun filled(name: String, value: String): String = zh.replace("{$name}", value)
-    fun filled(vararg pairs: Pair<String, String>): String {
-        var result = zh
-        for ((name, value) in pairs) {
-            result = result.replace("{$name}", value)
-        }
-        return result
-    }
-}
+typealias WarehouseArbText = com.mutx163.qingyu.app.ArbText
 
 fun String.filled(name: String, value: String): String = replace("{$name}", value)
 

@@ -75,7 +75,7 @@ fun HyperosShowcasePage(
     var checkboxState by remember { mutableStateOf(true) }
     var selectedRadio by remember { mutableStateOf("A") }
     var sliderValue by remember { mutableFloatStateOf(0.6f) }
-    var sampleInputText by remember { mutableStateOf(GuideStrings.hyperosShowcaseSampleText.zh) }
+    var sampleInputText by remember { mutableStateOf(GuideStrings.hyperosShowcaseSampleText.text) }
     var pickerValue by remember { mutableIntStateOf(18) }
     var accordionExpanded1 by remember { mutableStateOf(true) }
     var accordionExpanded2 by remember { mutableStateOf(false) }
@@ -94,7 +94,7 @@ fun HyperosShowcasePage(
 
     // 共享骨架：官方 TopAppBar + 标准返回键 + 顶栏毛玻璃；大标题可折叠
     // （Dart 原件 hyperos_showcase_screen.dart:92 走 HyperosSubpage 默认）。
-    QingyuPageScaffold(title = GuideStrings.hyperosShowcaseTitle.zh, onBack = onBack) {
+    QingyuPageScaffold(title = GuideStrings.hyperosShowcaseTitle.text, onBack = onBack) {
         // 展示册里含 TextField 演示项：imePadding 把列表抬到键盘之上。
         QingyuPageList(
             modifier = Modifier.imePadding(),
@@ -106,7 +106,7 @@ fun HyperosShowcasePage(
         ) {
                 // 1. 概要卡片
                 item {
-                    ShowcaseSectionHeader(title = GuideStrings.hyperosShowcaseSectionSummary.zh, dark = dark)
+                    ShowcaseSectionHeader(title = GuideStrings.hyperosShowcaseSectionSummary.text, dark = dark)
                     QingyuCard(
                         modifier = Modifier.fillMaxWidth(),
                         insideMargin = PaddingValues(16.dp)
@@ -135,7 +135,7 @@ fun HyperosShowcasePage(
                                 )
                                 Spacer(modifier = Modifier.height(2.dp))
                                 Text(
-                                    text = GuideStrings.hyperosShowcaseKitSubtitle.zh,
+                                    text = GuideStrings.hyperosShowcaseKitSubtitle.text,
                                     style = MiuixTheme.textStyles.footnote1,
                                     color = Color(QingyuTheme.secondaryText(dark))
                                 )
@@ -146,7 +146,7 @@ fun HyperosShowcasePage(
 
                 // 2. 标签与手风琴 (Accordion)
                 item {
-                    ShowcaseSectionHeader(title = GuideStrings.hyperosShowcaseSectionTags.zh, dark = dark)
+                    ShowcaseSectionHeader(title = GuideStrings.hyperosShowcaseSectionTags.text, dark = dark)
                     QingyuCard(
                         modifier = Modifier.fillMaxWidth(),
                         insideMargin = PaddingValues(14.dp)
@@ -171,8 +171,8 @@ fun HyperosShowcasePage(
 
                             // 手风琴 1
                             AccordionRow(
-                                title = GuideStrings.hyperosShowcaseAccordionSection1.zh,
-                                body = GuideStrings.hyperosShowcaseAccordionSection1Body.zh,
+                                title = GuideStrings.hyperosShowcaseAccordionSection1.text,
+                                body = GuideStrings.hyperosShowcaseAccordionSection1Body.text,
                                 expanded = accordionExpanded1,
                                 onToggle = { accordionExpanded1 = !accordionExpanded1 }
                             )
@@ -180,8 +180,8 @@ fun HyperosShowcasePage(
 
                             // 手风琴 2
                             AccordionRow(
-                                title = GuideStrings.hyperosShowcaseAccordionSection2.zh,
-                                body = GuideStrings.hyperosShowcaseAccordionSection2Body.zh,
+                                title = GuideStrings.hyperosShowcaseAccordionSection2.text,
+                                body = GuideStrings.hyperosShowcaseAccordionSection2Body.text,
                                 expanded = accordionExpanded2,
                                 onToggle = { accordionExpanded2 = !accordionExpanded2 }
                             )
@@ -191,7 +191,7 @@ fun HyperosShowcasePage(
 
                 // 3. 控件卡片 (按钮、分段、滑条)
                 item {
-                    ShowcaseSectionHeader(title = GuideStrings.hyperosShowcaseSectionControls.zh, dark = dark)
+                    ShowcaseSectionHeader(title = GuideStrings.hyperosShowcaseSectionControls.text, dark = dark)
                     QingyuCard(
                         modifier = Modifier.fillMaxWidth(),
                         insideMargin = PaddingValues(16.dp)
@@ -323,7 +323,7 @@ fun HyperosShowcasePage(
 
                 // 5. 输入与选择器
                 item {
-                    ShowcaseSectionHeader(title = GuideStrings.hyperosShowcaseSectionInput.zh, dark = dark)
+                    ShowcaseSectionHeader(title = GuideStrings.hyperosShowcaseSectionInput.text, dark = dark)
                     QingyuCard(
                         modifier = Modifier.fillMaxWidth(),
                         insideMargin = PaddingValues(16.dp)

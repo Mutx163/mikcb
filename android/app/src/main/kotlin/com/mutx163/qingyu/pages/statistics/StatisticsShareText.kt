@@ -44,7 +44,7 @@ import com.mutx163.qingyu.pages.statistics.charts.ChartsStrings
 object StatisticsShareText {
 
     /** 分享面板的标题（Dart `ShareParams.subject: l10n.statisticsShareTitle`）。 */
-    fun subject(): String = ChartsStrings.statisticsShareTitle.zh
+    fun subject(): String = ChartsStrings.statisticsShareTitle.text
 
     /**
      * 分享正文：标题 + 正文句 + 指标行。
@@ -53,7 +53,7 @@ object StatisticsShareText {
      * @return 多行文本；**无数据时只回一句**（不拼空指标行）
      */
     fun build(viewState: CourseStatisticsViewState): String {
-        val lines = arrayListOf(viewState.title, ChartsStrings.statisticsShareText.zh)
+        val lines = arrayListOf(viewState.title, ChartsStrings.statisticsShareText.text)
         lines += metricLines(viewState)
         return lines.joinToString("\n")
     }
@@ -84,7 +84,7 @@ object StatisticsShareText {
                 "week" to week.weekNumber.toString(),
                 "sections" to week.sectionCount.toString(),
             ),
-            "${ChartsStrings.statisticsWeeklyCourses.zh}：${week.courseCount}",
+            "${ChartsStrings.statisticsWeeklyCourses.text}：${week.courseCount}",
         )
     }
 }

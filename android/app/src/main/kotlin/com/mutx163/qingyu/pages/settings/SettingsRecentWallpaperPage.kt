@@ -95,7 +95,7 @@ object SettingsRecentWallpaperSection {
                 texts = listOf(
                     SettingsInlineText(
                         SettingsStringsExt1.homePageWallpaperRecentImageLabel.key,
-                        SettingsStringsExt1.homePageWallpaperRecentImageLabel.zh,
+                        SettingsStringsExt1.homePageWallpaperRecentImageLabel.text,
                     ),
                 ),
                 colors = state.entries,
@@ -107,7 +107,7 @@ object SettingsRecentWallpaperSection {
             nodes += SettingsDescription(
                 id = "backdrop.recent.confirmHint",
                 textKey = CONFIRM_HINT.key,
-                text = CONFIRM_HINT.zh,
+                text = CONFIRM_HINT.text,
             )
             nodes += SettingsGroup(
                 id = "backdrop.recent.confirmActions",
@@ -134,7 +134,7 @@ object SettingsRecentWallpaperSection {
         return SettingsPageSpec(
             id = "settings-recent-wallpaper",
             titleKey = SettingsStringsExt1.homePageWallpaperRecentTitle.key,
-            title = SettingsStringsExt1.homePageWallpaperRecentTitle.zh,
+            title = SettingsStringsExt1.homePageWallpaperRecentTitle.text,
             nodes = nodes,
         )
     }

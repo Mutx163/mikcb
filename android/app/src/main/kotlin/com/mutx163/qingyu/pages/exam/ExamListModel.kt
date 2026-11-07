@@ -179,7 +179,7 @@ object ExamListLogic {
      */
     fun reminderSummary(exam: Exam): String {
         val minutes = exam.effectiveReminderMinutes
-        if (minutes.isEmpty()) return ExamStrings.examOverviewReminderOff.zh
+        if (minutes.isEmpty()) return ExamStrings.examOverviewReminderOff.text
         if (exam.reminderPreset != ExamReminderPreset.CUSTOM) {
             return ExamStrings.presetLabel(exam.reminderPreset)
         }
@@ -237,7 +237,7 @@ object ExamListLogic {
 
         return ExamListViewState(
             isEmpty = exams.isEmpty(),
-            emptyTitle = ExamStrings.noExams.zh,
+            emptyTitle = ExamStrings.noExams.text,
             overview = overview,
             upcoming = upcomingRows,
             past = pastRows,
@@ -259,14 +259,14 @@ object ExamListLogic {
         val isLive = livePhase == ExamLivePhase.ONGOING
 
         val statusLabel = when {
-            isLive -> ExamStrings.examOverviewInProgress.zh
-            livePhase == ExamLivePhase.BEFORE && isToday -> ExamStrings.examToday.zh
+            isLive -> ExamStrings.examOverviewInProgress.text
+            livePhase == ExamLivePhase.BEFORE && isToday -> ExamStrings.examToday.text
             livePhase == ExamLivePhase.BEFORE ->
                 ExamStrings.daysUntilExam.filled("days", daysUntil.toString())
-            else -> ExamStrings.examPassed.zh
+            else -> ExamStrings.examPassed.text
         }
 
-        val name = exam.name.trim().ifEmpty { ExamStrings.examNameLabel.zh }
+        val name = exam.name.trim().ifEmpty { ExamStrings.examNameLabel.text }
         val timeRange = ExamStrings.examTimeRange.filled("start" to exam.startTime, "end" to exam.endTime)
         val location = exam.location?.trim()
         val seat = exam.seatNumber?.trim()
@@ -275,7 +275,7 @@ object ExamListLogic {
         secondaryBits.add(dateLabel)
         if (!location.isNullOrEmpty()) secondaryBits.add(location)
         if (!seat.isNullOrEmpty()) {
-            secondaryBits.add("${ExamStrings.examSeatLabel.zh} $seat")
+            secondaryBits.add("${ExamStrings.examSeatLabel.text} $seat")
         }
 
         val reminderEnabled = exam.effectiveReminderMinutes.isNotEmpty()
@@ -302,9 +302,9 @@ object ExamListLogic {
             metaText = secondaryBits.joinToString("  ·  ").ifEmpty { null },
             reminderEnabled = reminderEnabled,
             reminderText = if (reminderEnabled) {
-                "${ExamStrings.examOverviewReminderOn.zh}  ·  $reminderLabel"
+                "${ExamStrings.examOverviewReminderOn.text}  ·  $reminderLabel"
             } else {
-                ExamStrings.examOverviewReminderOff.zh
+                ExamStrings.examOverviewReminderOff.text
             },
             countdownDays = if (!isLive && !isToday && daysUntil > 0) daysUntil else null,
             trailingCountText = trailingCountText,
@@ -329,13 +329,13 @@ object ExamListLogic {
 
         val metaParts = mutableListOf<String>()
         if (!location.isNullOrEmpty()) metaParts.add(location)
-        if (!seat.isNullOrEmpty()) metaParts.add("${ExamStrings.examSeatLabel.zh} $seat")
+        if (!seat.isNullOrEmpty()) metaParts.add("${ExamStrings.examSeatLabel.text} $seat")
         if (!teacher.isNullOrEmpty()) metaParts.add(teacher)
 
         val countdownBadge = if (!isPast) {
             when {
-                livePhase == ExamLivePhase.ONGOING -> ExamStrings.examOverviewLiveBadge.zh
-                livePhase == ExamLivePhase.BEFORE && daysUntil == 0 -> ExamStrings.examCountdownToday.zh
+                livePhase == ExamLivePhase.ONGOING -> ExamStrings.examOverviewLiveBadge.text
+                livePhase == ExamLivePhase.BEFORE && daysUntil == 0 -> ExamStrings.examCountdownToday.text
                 livePhase == ExamLivePhase.BEFORE ->
                     ExamStrings.examCountdownDays.filled("days", daysUntil.toString())
                 else -> null

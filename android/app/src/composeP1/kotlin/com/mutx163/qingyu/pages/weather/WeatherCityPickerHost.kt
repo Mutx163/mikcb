@@ -101,7 +101,7 @@ fun WeatherCityPickerHost(
                 // 按网络 IP 估算的位置要如实标注（旧版 weather_city_picker_screen.dart:107-109），
                 // 标注后照常返回——它仍是可用结果。
                 if (provider.lastLocateWasEstimated) {
-                    toast(WeatherStrings.weatherLocationEstimated.zh)
+                    toast(WeatherStrings.weatherLocationEstimated.text)
                 }
                 onBack() // 与「点选城市」一致：回到设置页那一行已显示新地点
             }

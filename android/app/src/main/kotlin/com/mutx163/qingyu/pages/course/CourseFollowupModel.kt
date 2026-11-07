@@ -225,21 +225,21 @@ data class CourseRescheduleDraft(
         val weekChoices = weekOptions(weekCount)
 
         return CourseReschedulePresentation(
-            title = CourseFollowupStrings.rescheduleCurrentOccurrenceTitle.zh,
+            title = CourseFollowupStrings.rescheduleCurrentOccurrenceTitle.text,
             subtitle = CourseFollowupStrings.rescheduleCurrentOccurrenceSubtitle
                 .filled("week", sourceWeek.toString()),
             // Dart `:585`：`'${l10n.currentBadge}：$sourceLine'` —— 全角冒号是 Dart 源码里
             // 写死的分隔符，ARB 没有对应键，此处逐字照抄。
-            currentLine = "${CourseFollowupStrings.currentBadge.zh}：$currentLine",
+            currentLine = "${CourseFollowupStrings.currentBadge.text}：$currentLine",
             currentLocationLine = if (currentLocation.isEmpty()) {
                 null
             } else {
                 CourseFollowupStrings.locationPrefix.filled("value", currentLocation)
             },
             weekField = CourseFollowupField(
-                label = CourseFollowupStrings.rescheduleTargetWeekLabel.zh,
+                label = CourseFollowupStrings.rescheduleTargetWeekLabel.text,
                 value = CourseFollowupStrings.week(targetWeek),
-                pickerTitle = CourseFollowupStrings.rescheduleTargetWeekLabel.zh,
+                pickerTitle = CourseFollowupStrings.rescheduleTargetWeekLabel.text,
                 options = weekChoices.map { week ->
                     CourseFollowupPickerItem(
                         label = CourseFollowupStrings.week(week),
@@ -249,14 +249,14 @@ data class CourseRescheduleDraft(
                 },
             ),
             startSectionField = sectionField(
-                label = CourseFollowupStrings.startSectionLabel.zh,
+                label = CourseFollowupStrings.startSectionLabel.text,
                 current = targetStartSection,
                 sectionTimes = sectionTimes,
                 course = course,
                 filter = { true },
             ),
             endSectionField = sectionField(
-                label = CourseFollowupStrings.endSectionLabel.zh,
+                label = CourseFollowupStrings.endSectionLabel.text,
                 current = targetEndSection,
                 sectionTimes = sectionTimes,
                 course = course,
@@ -268,13 +268,13 @@ data class CourseRescheduleDraft(
                 endSection = targetEndSection,
             ),
             locationField = CourseFollowupField(
-                label = CourseFollowupStrings.locationLabel.zh,
+                label = CourseFollowupStrings.locationLabel.text,
                 value = if (locationText.isEmpty()) {
-                    CourseFollowupStrings.manualInputLabel.zh
+                    CourseFollowupStrings.manualInputLabel.text
                 } else {
                     locationText
                 },
-                pickerTitle = CourseFollowupStrings.selectLocationTitle.zh,
+                pickerTitle = CourseFollowupStrings.selectLocationTitle.text,
                 options = emptyList(),
             ),
             locationIsPlaceholder = locationText.isEmpty(),
@@ -470,13 +470,13 @@ object CourseFollowupModel {
         return listOf(
             CourseDeleteScopeOption(
                 scope = CourseDeleteScope.WHOLE_COURSE,
-                title = CourseFollowupStrings.deleteCourseAction.zh,
+                title = CourseFollowupStrings.deleteCourseAction.text,
                 subtitle = "",
                 enabled = true,
             ),
             CourseDeleteScopeOption(
                 scope = CourseDeleteScope.THIS_WEEK,
-                title = CourseFollowupStrings.deleteOccurrenceAction.zh,
+                title = CourseFollowupStrings.deleteOccurrenceAction.text,
                 subtitle = hint,
                 enabled = canDeleteOccurrence,
             ),
@@ -500,24 +500,24 @@ object CourseFollowupModel {
         CourseSuspendScopeOption(
             scope = CourseSuspendScope.THIS_WEEK,
             title = if (suspendedThisWeek) {
-                CourseFollowupStrings.courseActionUnsuspend.zh
+                CourseFollowupStrings.courseActionUnsuspend.text
             } else {
-                CourseFollowupStrings.suspendThisWeek.zh
+                CourseFollowupStrings.suspendThisWeek.text
             },
-            subtitle = CourseFollowupStrings.suspendThisWeekDesc.zh,
+            subtitle = CourseFollowupStrings.suspendThisWeekDesc.text,
             resuming = suspendedThisWeek,
         ),
         CourseSuspendScopeOption(
             scope = CourseSuspendScope.ALL_WEEKS,
             title = if (hasAnySuspended) {
-                CourseFollowupStrings.unsuspendAllWeeks.zh
+                CourseFollowupStrings.unsuspendAllWeeks.text
             } else {
-                CourseFollowupStrings.suspendAllWeeks.zh
+                CourseFollowupStrings.suspendAllWeeks.text
             },
             subtitle = if (hasAnySuspended) {
-                CourseFollowupStrings.unsuspendAllWeeksDesc.zh
+                CourseFollowupStrings.unsuspendAllWeeksDesc.text
             } else {
-                CourseFollowupStrings.suspendAllWeeksDesc.zh
+                CourseFollowupStrings.suspendAllWeeksDesc.text
             },
             resuming = hasAnySuspended,
         ),

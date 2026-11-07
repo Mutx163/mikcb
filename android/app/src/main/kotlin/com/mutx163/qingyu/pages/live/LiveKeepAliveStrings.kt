@@ -61,8 +61,8 @@ object LiveKeepAliveStrings {
 
     /** 权限三态 -> 屏上状态词（未知态用「建议检查」，不猜）。 */
     fun statusLabel(status: LivePermissionStatus): String = when (status) {
-        LivePermissionStatus.UNKNOWN -> guideStatusSuggestedCheck.zh
-        LivePermissionStatus.GRANTED -> guideStatusEnabled.zh
-        LivePermissionStatus.DENIED -> guideStatusDisabled.zh
+        LivePermissionStatus.UNKNOWN -> guideStatusSuggestedCheck.text
+        LivePermissionStatus.GRANTED -> guideStatusEnabled.text
+        LivePermissionStatus.DENIED -> guideStatusDisabled.text
     }
 }

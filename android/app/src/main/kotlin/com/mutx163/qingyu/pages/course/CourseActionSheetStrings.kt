@@ -178,8 +178,8 @@ object CourseActionSheetStrings {
 
     /** 周一到周日的全名，索引 = `dayOfWeek - 1`（越界由 [weekdayLabel] 兜底）。 */
     val weekdayLabels: List<String> = listOf(
-        weekdayMon.zh, weekdayTue.zh, weekdayWed.zh, weekdayThu.zh,
-        weekdayFri.zh, weekdaySat.zh, weekdaySun.zh,
+        weekdayMon.text, weekdayTue.text, weekdayWed.text, weekdayThu.text,
+        weekdayFri.text, weekdaySat.text, weekdaySun.text,
     )
 
     /** 星期全名；越界退化成数字（与 Dart `_weekdayLabel` 同口径）。 */
@@ -223,26 +223,26 @@ object CourseActionSheetStrings {
 
     /** 天气现象名（Dart `WeatherCategoryLocalizer.label` 的 Kotlin 对位件）。 */
     fun weatherCategoryLabel(category: WeatherCategory): String = when (category) {
-        WeatherCategory.CLEAR -> weatherClear.zh
-        WeatherCategory.MAINLY_CLEAR -> weatherMainlyClear.zh
-        WeatherCategory.PARTLY_CLOUDY -> weatherPartlyCloudy.zh
-        WeatherCategory.OVERCAST -> weatherOvercast.zh
-        WeatherCategory.FOG -> weatherFog.zh
-        WeatherCategory.DRIZZLE -> weatherDrizzle.zh
-        WeatherCategory.FREEZING_DRIZZLE -> weatherFreezingDrizzle.zh
-        WeatherCategory.LIGHT_RAIN -> weatherLightRain.zh
-        WeatherCategory.RAIN -> weatherRain.zh
-        WeatherCategory.HEAVY_RAIN -> weatherHeavyRain.zh
-        WeatherCategory.FREEZING_RAIN -> weatherFreezingRain.zh
-        WeatherCategory.RAIN_SHOWERS -> weatherRainShowers.zh
-        WeatherCategory.HEAVY_RAIN_SHOWERS -> weatherHeavyRainShowers.zh
-        WeatherCategory.LIGHT_SNOW -> weatherLightSnow.zh
-        WeatherCategory.SNOW -> weatherSnow.zh
-        WeatherCategory.HEAVY_SNOW -> weatherHeavySnow.zh
-        WeatherCategory.SNOW_GRAINS -> weatherSnowGrains.zh
-        WeatherCategory.SNOW_SHOWERS -> weatherSnowShowers.zh
-        WeatherCategory.THUNDERSTORM -> weatherThunderstorm.zh
-        WeatherCategory.THUNDERSTORM_HAIL -> weatherThunderstormHail.zh
+        WeatherCategory.CLEAR -> weatherClear.text
+        WeatherCategory.MAINLY_CLEAR -> weatherMainlyClear.text
+        WeatherCategory.PARTLY_CLOUDY -> weatherPartlyCloudy.text
+        WeatherCategory.OVERCAST -> weatherOvercast.text
+        WeatherCategory.FOG -> weatherFog.text
+        WeatherCategory.DRIZZLE -> weatherDrizzle.text
+        WeatherCategory.FREEZING_DRIZZLE -> weatherFreezingDrizzle.text
+        WeatherCategory.LIGHT_RAIN -> weatherLightRain.text
+        WeatherCategory.RAIN -> weatherRain.text
+        WeatherCategory.HEAVY_RAIN -> weatherHeavyRain.text
+        WeatherCategory.FREEZING_RAIN -> weatherFreezingRain.text
+        WeatherCategory.RAIN_SHOWERS -> weatherRainShowers.text
+        WeatherCategory.HEAVY_RAIN_SHOWERS -> weatherHeavyRainShowers.text
+        WeatherCategory.LIGHT_SNOW -> weatherLightSnow.text
+        WeatherCategory.SNOW -> weatherSnow.text
+        WeatherCategory.HEAVY_SNOW -> weatherHeavySnow.text
+        WeatherCategory.SNOW_GRAINS -> weatherSnowGrains.text
+        WeatherCategory.SNOW_SHOWERS -> weatherSnowShowers.text
+        WeatherCategory.THUNDERSTORM -> weatherThunderstorm.text
+        WeatherCategory.THUNDERSTORM_HAIL -> weatherThunderstormHail.text
     }
 
     /**
@@ -257,7 +257,7 @@ object CourseActionSheetStrings {
         if (plan.showPhenomenon) parts += weatherCategoryLabel(plan.category)
         if (plan.showTemperature) parts += temperatureValue(plan.temperatureC)
         plan.probability?.let { parts += probabilityValue(it) }
-        return parts.joinToString(weatherSummarySeparator.zh)
+        return parts.joinToString(weatherSummarySeparator.text)
     }
 
     /**
@@ -274,8 +274,8 @@ object CourseActionSheetStrings {
             return courseWeekListLabel.filled("weeks", formatWeekList(custom))
         }
         val mode = when {
-            course.isOddWeek -> " ${oddWeeksFilter.zh}"
-            course.isEvenWeek -> " ${evenWeeksFilter.zh}"
+            course.isOddWeek -> " ${oddWeeksFilter.text}"
+            course.isEvenWeek -> " ${evenWeeksFilter.text}"
             else -> ""
         }
         return courseWeekRangeLabel
@@ -306,6 +306,6 @@ object CourseActionSheetStrings {
             previous = current
         }
         ranges += if (rangeStart == previous) "$rangeStart" else "$rangeStart-$previous"
-        return ranges.joinToString(weekListSeparator.zh)
+        return ranges.joinToString(weekListSeparator.text)
     }
 }

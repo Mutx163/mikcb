@@ -304,17 +304,17 @@ object DataTransferPackageLogic {
 
     /** 分享正文：三条 ARB 按 scope 分派（`data_transfer_screen.dart:268-370`）。 */
     fun shareTextFor(scope: TransferScope): String = when (scope) {
-        TransferScope.ALL_DATA -> fullBackupShareText.zh
-        TransferScope.TIME_TEMPLATE -> timeSchemeShareText.zh
-        else -> profileShareText.zh
+        TransferScope.ALL_DATA -> fullBackupShareText.text
+        TransferScope.TIME_TEMPLATE -> timeSchemeShareText.text
+        else -> profileShareText.text
     }
 
     /** 分享主题：全量/时间模板各有专属主题，其余按「有无课表名」二选一。 */
     fun shareSubjectFor(scope: TransferScope, profileName: String?): String = when (scope) {
-        TransferScope.ALL_DATA -> fullBackupShareSubject.zh
-        TransferScope.TIME_TEMPLATE -> timeSchemeShareSubjectArb.zh
+        TransferScope.ALL_DATA -> fullBackupShareSubject.text
+        TransferScope.TIME_TEMPLATE -> timeSchemeShareSubjectArb.text
         else -> profileName?.let { profileShareSubjectNamed.filled("profileName", it) }
-            ?: profileShareSubject.zh
+            ?: profileShareSubject.text
     }
 
     /** 一次打包里「跟着 scope 收窄」的四块附属数据。 */

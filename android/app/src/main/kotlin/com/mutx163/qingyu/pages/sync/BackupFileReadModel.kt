@@ -95,7 +95,7 @@ object BackupFileReadLogic {
             return BackupFileReadResult.Failure(
                 kind = BackupFileFailureKind.EMPTY_FILE,
                 errorCode = null,
-                userMessage = CoupleStrings.importFileReadFailed.zh,
+                userMessage = CoupleStrings.importFileReadFailed.text,
                 damage = "chars=${content.length}; bytes=$byteLength",
             )
         }
@@ -106,14 +106,14 @@ object BackupFileReadLogic {
             return BackupFileReadResult.Failure(
                 kind = BackupFileFailureKind.MALFORMED_JSON,
                 errorCode = e.message ?: SNAPSHOT_PARSE_ERROR_PAYLOAD_INVALID,
-                userMessage = CoupleStrings.importFailedInvalidFile.zh,
+                userMessage = CoupleStrings.importFailedInvalidFile.text,
                 damage = "snippet=${damageSnippet(content)}",
             )
         } catch (_: Exception) {
             return BackupFileReadResult.Failure(
                 kind = BackupFileFailureKind.MALFORMED_JSON,
                 errorCode = SNAPSHOT_PARSE_ERROR_PAYLOAD_INVALID,
-                userMessage = CoupleStrings.importFailedInvalidFile.zh,
+                userMessage = CoupleStrings.importFailedInvalidFile.text,
                 damage = "snippet=${damageSnippet(content)}",
             )
         }
@@ -129,7 +129,7 @@ object BackupFileReadLogic {
             return BackupFileReadResult.Failure(
                 kind = BackupFileFailureKind.META_INVALID,
                 errorCode = meta.errorCode,
-                userMessage = BackupFileStrings.serviceMsgSyncSnapshotUnrecognized.zh,
+                userMessage = BackupFileStrings.serviceMsgSyncSnapshotUnrecognized.text,
                 damage = metaDamage(json),
             )
         }
@@ -141,7 +141,7 @@ object BackupFileReadLogic {
             return BackupFileReadResult.Failure(
                 kind = BackupFileFailureKind.NO_PROFILES,
                 errorCode = BACKUP_FILE_NO_PROFILES_CODE,
-                userMessage = BackupFileStrings.serviceMsgSyncSnapshotNoProfiles.zh,
+                userMessage = BackupFileStrings.serviceMsgSyncSnapshotNoProfiles.text,
                 damage = "profiles=0; timeSchemes=$timeSchemeCount",
             )
         }
@@ -177,14 +177,14 @@ object BackupFileReadLogic {
         SNAPSHOT_PARSE_ERROR_UNRECOGNIZED -> BackupFileReadResult.Failure(
             kind = BackupFileFailureKind.UNSUPPORTED_VERSION,
             errorCode = code,
-            userMessage = BackupFileStrings.serviceMsgUnrecognizedSyncSnapshot.zh,
+            userMessage = BackupFileStrings.serviceMsgUnrecognizedSyncSnapshot.text,
             damage = envelopeDamage(json),
         )
 
         SNAPSHOT_PARSE_ERROR_MISSING_TIMETABLE -> BackupFileReadResult.Failure(
             kind = BackupFileFailureKind.MISSING_REQUIRED_FIELDS,
             errorCode = code,
-            userMessage = BackupFileStrings.serviceMsgMissingSyncTimetableData.zh,
+            userMessage = BackupFileStrings.serviceMsgMissingSyncTimetableData.text,
             damage = "profiles=${describeTypeOf(json, "profiles")}; " +
                 "timeSchemes=${describeTypeOf(json, "timeSchemes")}",
         )
@@ -192,14 +192,14 @@ object BackupFileReadLogic {
         SNAPSHOT_PARSE_ERROR_CHECKSUM_INVALID -> BackupFileReadResult.Failure(
             kind = BackupFileFailureKind.CHECKSUM_FIELD_INVALID,
             errorCode = code,
-            userMessage = BackupFileStrings.serviceMsgSyncSnapshotChecksumFailed.zh,
+            userMessage = BackupFileStrings.serviceMsgSyncSnapshotChecksumFailed.text,
             damage = "contentSha256=${describeTypeOf(json, "contentSha256")}",
         )
 
         SNAPSHOT_PARSE_ERROR_CHECKSUM_FAILED -> BackupFileReadResult.Failure(
             kind = BackupFileFailureKind.CHECKSUM_MISMATCH,
             errorCode = code,
-            userMessage = BackupFileStrings.serviceMsgSyncSnapshotChecksumFailed.zh,
+            userMessage = BackupFileStrings.serviceMsgSyncSnapshotChecksumFailed.text,
             // 留档的是「声明值 vs 重算值」这对坏值，不是整包内容：
             // 排查要的是哪个哈希对不上，整包 JSON 已经在手上了。
             damage = "expected=$expectedHash; actual=$actualHash",
@@ -210,7 +210,7 @@ object BackupFileReadLogic {
         else -> BackupFileReadResult.Failure(
             kind = BackupFileFailureKind.MALFORMED_JSON,
             errorCode = code,
-            userMessage = CoupleStrings.importFailedInvalidFile.zh,
+            userMessage = CoupleStrings.importFailedInvalidFile.text,
             damage = "code=$code",
         )
     }

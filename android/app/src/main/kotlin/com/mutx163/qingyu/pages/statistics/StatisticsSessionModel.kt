@@ -44,14 +44,14 @@ object StatisticsSessionModel {
     }
 
     /** 页面标题。 */
-    val title: String get() = StatisticsExtStrings.statisticsSessionTitle.zh
+    val title: String get() = StatisticsExtStrings.statisticsSessionTitle.text
 
     /** 「课程」选择行标签（Dart `HyperosSelectTile<String>(label: statisticsSessionCourseLabel)`）。 */
-    val courseLabel: String get() = StatisticsExtStrings.statisticsSessionCourseLabel.zh
+    val courseLabel: String get() = StatisticsExtStrings.statisticsSessionCourseLabel.text
 
     /** 没设开学日期时的提示（Dart：`if (!stats.hasCalendar)` 才显示）。 */
     fun noCalendarHint(hasCalendar: Boolean): String? =
-        if (hasCalendar) null else StatisticsExtStrings.statisticsSessionNoCalendarHint.zh
+        if (hasCalendar) null else StatisticsExtStrings.statisticsSessionNoCalendarHint.text
 
     /** 四格汇总里的一格。首格（课次）用主题色强调，见 `session_summary_card.dart`。 */
     data class SummaryMetric(val value: String, val label: String, val highlight: Boolean = false)
@@ -67,20 +67,20 @@ object StatisticsSessionModel {
         return listOf(
             SummaryMetric(
                 stats.sessions.size.toString(),
-                StatisticsExtStrings.statisticsSessionMetricSessions.zh,
+                StatisticsExtStrings.statisticsSessionMetricSessions.text,
                 highlight = true,
             ),
             SummaryMetric(
                 stats.doneSessions.toString(),
-                StatisticsExtStrings.statisticsSessionMetricDone.zh,
+                StatisticsExtStrings.statisticsSessionMetricDone.text,
             ),
             SummaryMetric(
                 stats.doneSections.toString(),
-                StatisticsExtStrings.statisticsSessionMetricSections.zh,
+                StatisticsExtStrings.statisticsSessionMetricSections.text,
             ),
             SummaryMetric(
                 stats.notedSessions.toString(),
-                StatisticsExtStrings.statisticsSessionMetricNoted.zh,
+                StatisticsExtStrings.statisticsSessionMetricNoted.text,
             ),
         )
     }
@@ -115,12 +115,12 @@ object StatisticsSessionModel {
     ): List<CoverageRow> {
         val total = stats.sessions.size
         val rows = mutableListOf(
-            coverageRow(StatisticsExtStrings.statisticsSessionCoverageNote.zh, stats.notedSessions, total),
-            coverageRow(StatisticsExtStrings.statisticsSessionCoverageHomework.zh, stats.homeworkSessions, total),
+            coverageRow(StatisticsExtStrings.statisticsSessionCoverageNote.text, stats.notedSessions, total),
+            coverageRow(StatisticsExtStrings.statisticsSessionCoverageHomework.text, stats.homeworkSessions, total),
         )
         if (reminderDataAvailable) {
             rows += coverageRow(
-                StatisticsExtStrings.statisticsSessionCoverageReminder.zh,
+                StatisticsExtStrings.statisticsSessionCoverageReminder.text,
                 stats.reminderSessions,
                 total,
             )
@@ -142,16 +142,16 @@ object StatisticsSessionModel {
     }
 
     /** 覆盖卡空态文案（Dart `if (total == 0) Text(statisticsSessionEmpty)`）。 */
-    val coverageEmptyText: String get() = StatisticsExtStrings.statisticsSessionEmpty.zh
+    val coverageEmptyText: String get() = StatisticsExtStrings.statisticsSessionEmpty.text
 
     /** 课次阶段标签（Dart `session_list_card.dart:167-172` 的 switch）。 */
     fun phaseLabel(phase: CourseSessionPhase): String = when (phase) {
-        CourseSessionPhase.DONE -> StatisticsExtStrings.statisticsSessionPhaseDone.zh
-        CourseSessionPhase.TODAY -> StatisticsExtStrings.statisticsSessionPhaseToday.zh
-        CourseSessionPhase.UPCOMING -> StatisticsExtStrings.statisticsSessionPhaseUpcoming.zh
-        CourseSessionPhase.SUSPENDED -> StatisticsExtStrings.statisticsSessionPhaseSuspended.zh
-        CourseSessionPhase.HOLIDAY -> StatisticsExtStrings.statisticsSessionPhaseHoliday.zh
-        CourseSessionPhase.UNDATED -> StatisticsExtStrings.statisticsSessionPhaseUndated.zh
+        CourseSessionPhase.DONE -> StatisticsExtStrings.statisticsSessionPhaseDone.text
+        CourseSessionPhase.TODAY -> StatisticsExtStrings.statisticsSessionPhaseToday.text
+        CourseSessionPhase.UPCOMING -> StatisticsExtStrings.statisticsSessionPhaseUpcoming.text
+        CourseSessionPhase.SUSPENDED -> StatisticsExtStrings.statisticsSessionPhaseSuspended.text
+        CourseSessionPhase.HOLIDAY -> StatisticsExtStrings.statisticsSessionPhaseHoliday.text
+        CourseSessionPhase.UNDATED -> StatisticsExtStrings.statisticsSessionPhaseUndated.text
     }
 
     /**
@@ -196,7 +196,7 @@ object StatisticsSessionModel {
             phaseLabel = phaseLabel(session.phase),
             subtitle = parts.joinToString(" · "),
             noteText = session.noteText?.takeIf { it.trim().isNotEmpty() },
-            examBadge = if (session.examCount > 0) ChartsStrings.examBadgeLabel.zh else null,
+            examBadge = if (session.examCount > 0) ChartsStrings.examBadgeLabel.text else null,
         )
     }
 
@@ -254,8 +254,8 @@ object StatisticsSessionModel {
             coverageRows = stats?.let { coverageRows(it, reminderDataAvailable) } ?: emptyList(),
             sessionRows = stats?.let { sessionRows(it, dateTextOf) } ?: emptyList(),
             noCalendarHint = stats?.let { noCalendarHint(it.hasCalendar) },
-            emptyTitle = StatisticsExtStrings.statisticsNoData.zh,
-            emptySubtitle = StatisticsExtStrings.statisticsNoDataHint.zh,
+            emptyTitle = StatisticsExtStrings.statisticsNoData.text,
+            emptySubtitle = StatisticsExtStrings.statisticsNoDataHint.text,
             coverageEmptyText = coverageEmptyText,
         )
     }

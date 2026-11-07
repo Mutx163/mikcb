@@ -11,18 +11,7 @@ import com.mutx163.qingyu.infra.DiagnosticsLogLevel
  *
  * 命名与 ARB 键逐字一致（`appLogsCopyAction` 等），便于 `grep` 双向核对。
  */
-data class ArbText(val key: String, val zh: String) {
-    /** 替换模板里的占位符（`{name}` → [value]）。 */
-    fun filled(name: String, value: String): String = zh.replace("{$name}", value)
-
-    fun filled(vararg pairs: Pair<String, String>): String {
-        var result = zh
-        for ((name, value) in pairs) {
-            result = result.replace("{$name}", value)
-        }
-        return result
-    }
-}
+typealias ArbText = com.mutx163.qingyu.app.ArbText
 
 object DiagnosticsStrings {
 
@@ -165,11 +154,11 @@ object DiagnosticsStrings {
 
     /** 等级名（Dart `_levelLabel`）。 */
     fun levelLabel(level: DiagnosticsLogLevel): String = when (level) {
-        DiagnosticsLogLevel.ALL -> diagnosticsLevelAll.zh
-        DiagnosticsLogLevel.ERROR -> diagnosticsLevelError.zh
-        DiagnosticsLogLevel.WARN -> diagnosticsLevelWarn.zh
-        DiagnosticsLogLevel.INFO -> diagnosticsLevelInfo.zh
-        DiagnosticsLogLevel.DEBUG -> diagnosticsLevelDebug.zh
-        DiagnosticsLogLevel.VERBOSE -> diagnosticsLevelVerbose.zh
+        DiagnosticsLogLevel.ALL -> diagnosticsLevelAll.text
+        DiagnosticsLogLevel.ERROR -> diagnosticsLevelError.text
+        DiagnosticsLogLevel.WARN -> diagnosticsLevelWarn.text
+        DiagnosticsLogLevel.INFO -> diagnosticsLevelInfo.text
+        DiagnosticsLogLevel.DEBUG -> diagnosticsLevelDebug.text
+        DiagnosticsLogLevel.VERBOSE -> diagnosticsLevelVerbose.text
     }
 }

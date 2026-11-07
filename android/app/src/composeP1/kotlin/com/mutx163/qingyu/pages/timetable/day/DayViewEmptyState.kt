@@ -76,7 +76,7 @@ fun DayViewEmptyState(
     ) {
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
             Text(
-                text = DayViewStrings.dayViewEmptyTitle.zh,
+                text = DayViewStrings.dayViewEmptyTitle.text,
                 style = MiuixTheme.textStyles.main.shiftWeight(QingyuWeightDelta.MEDIUM),
                 color = titleColor,
                 textAlign = TextAlign.Center,

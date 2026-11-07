@@ -72,7 +72,7 @@ fun AiImageCourseImportPage(
     val aiAccent = Color(parseImportAccentHex("purple"))
 
     val workflowSteps = remember {
-        splitWorkflowArrowTitle(WarehouseStrings.aiWorkflowTitle.zh).ifEmpty {
+        splitWorkflowArrowTitle(WarehouseStrings.aiWorkflowTitle.text).ifEmpty {
             listOf("复制提示词", "豆包专家模式识别", "复制JSON返回导入")
         }
     }
@@ -80,7 +80,7 @@ fun AiImageCourseImportPage(
     fun parseCurrentInput() {
         if (rawJsonInput.trim().isEmpty()) {
             parseResult = null
-            parseError = WarehouseStrings.aiPasteJsonFirst.zh
+            parseError = WarehouseStrings.aiPasteJsonFirst.text
             return
         }
         val result = parseAiImageImportJson(rawJsonInput)
@@ -89,13 +89,13 @@ fun AiImageCourseImportPage(
             parseError = null
         } else {
             parseResult = null
-            parseError = result.warnings.firstOrNull() ?: WarehouseStrings.aiParseFailedIncompleteJson.zh
+            parseError = result.warnings.firstOrNull() ?: WarehouseStrings.aiParseFailedIncompleteJson.text
         }
     }
 
     // Dart ai_image_course_import_screen.dart:207-209 的 HyperosSubpage 标题是纯 Text ⇒ 可折叠大标题。
     QingyuPageScaffold(
-        title = WarehouseStrings.aiImportTitle.zh,
+        title = WarehouseStrings.aiImportTitle.text,
         onBack = onBack,
         bottomBar = {
             Box(
@@ -111,7 +111,7 @@ fun AiImageCourseImportPage(
                     Button(
                         onClick = ::parseCurrentInput,
                         modifier = Modifier.weight(1f),
-                        content = { Text(text = WarehouseStrings.previewAction.zh) },
+                        content = { Text(text = WarehouseStrings.previewAction.text) },
                         colors = ButtonDefaults.buttonColors(
                             color = MiuixTheme.colorScheme.surfaceVariant,
                             contentColor = MiuixTheme.colorScheme.primary
@@ -123,7 +123,7 @@ fun AiImageCourseImportPage(
                             parseResult?.let { onConfirmImport(it) }
                         },
                         modifier = Modifier.weight(1f),
-                        content = { Text(text = if (isImporting) "导入中..." else WarehouseStrings.confirmImportAction.zh) },
+                        content = { Text(text = if (isImporting) "导入中..." else WarehouseStrings.confirmImportAction.text) },
                         enabled = !isImporting
                     )
                 }
@@ -160,12 +160,12 @@ fun AiImageCourseImportPage(
                             Spacer(modifier = Modifier.width(12.dp))
                             Column {
                                 Text(
-                                    text = WarehouseStrings.importMethodAiTitle.zh,
+                                    text = WarehouseStrings.importMethodAiTitle.text,
                                     style = MiuixTheme.textStyles.body1.shiftWeight(QingyuWeightDelta.BOLD)
                                 )
                                 Spacer(modifier = Modifier.height(2.dp))
                                 Text(
-                                    text = WarehouseStrings.aiWorkflowSubtitle.zh,
+                                    text = WarehouseStrings.aiWorkflowSubtitle.text,
                                     style = MiuixTheme.textStyles.footnote1,
                                     color = MiuixTheme.colorScheme.onSurfaceVariantSummary
                                 )
@@ -207,7 +207,7 @@ fun AiImageCourseImportPage(
 
                         Spacer(modifier = Modifier.height(10.dp))
                         Text(
-                            text = "💡 ${WarehouseStrings.aiExpertModeSuggestion.zh}",
+                            text = "💡 ${WarehouseStrings.aiExpertModeSuggestion.text}",
                             style = MiuixTheme.textStyles.footnote1,
                             color = MiuixTheme.colorScheme.onSurfaceVariantSummary
                         )
@@ -231,7 +231,7 @@ fun AiImageCourseImportPage(
                         Button(
                             onClick = onCopyPrompt,
                             modifier = Modifier.fillMaxWidth(),
-                            content = { Text(text = WarehouseStrings.copyAddress.zh) }
+                            content = { Text(text = WarehouseStrings.copyAddress.text) }
                         )
                         Row(
                             modifier = Modifier.fillMaxWidth(),
@@ -240,7 +240,7 @@ fun AiImageCourseImportPage(
                             Button(
                                 onClick = onShowPromptSheet,
                                 modifier = Modifier.weight(1f),
-                                content = { Text(text = WarehouseStrings.aiPromptShortAction.zh) },
+                                content = { Text(text = WarehouseStrings.aiPromptShortAction.text) },
                                 colors = ButtonDefaults.buttonColors(
                                     color = MiuixTheme.colorScheme.surfaceVariant,
                                     contentColor = MiuixTheme.colorScheme.primary
@@ -255,7 +255,7 @@ fun AiImageCourseImportPage(
                                     }
                                 },
                                 modifier = Modifier.weight(1f),
-                                content = { Text(text = WarehouseStrings.pasteAction.zh) },
+                                content = { Text(text = WarehouseStrings.pasteAction.text) },
                                 colors = ButtonDefaults.buttonColors(
                                     color = MiuixTheme.colorScheme.surfaceVariant,
                                     contentColor = MiuixTheme.colorScheme.primary
@@ -268,7 +268,7 @@ fun AiImageCourseImportPage(
                                     parseError = null
                                 },
                                 modifier = Modifier.weight(1f),
-                                content = { Text(text = WarehouseStrings.clearAction.zh) },
+                                content = { Text(text = WarehouseStrings.clearAction.text) },
                                 colors = ButtonDefaults.buttonColors(
                                     color = MiuixTheme.colorScheme.surfaceVariant,
                                     contentColor = MiuixTheme.colorScheme.onSurfaceVariantActions
@@ -290,12 +290,12 @@ fun AiImageCourseImportPage(
                 ) {
                     Column(modifier = Modifier.fillMaxWidth()) {
                         Text(
-                            text = WarehouseStrings.aiPasteJsonTitle.zh,
+                            text = WarehouseStrings.aiPasteJsonTitle.text,
                             style = MiuixTheme.textStyles.body1.shiftWeight(QingyuWeightDelta.SEMIBOLD)
                         )
                         Spacer(modifier = Modifier.height(4.dp))
                         Text(
-                            text = WarehouseStrings.aiPasteJsonHintLong.zh,
+                            text = WarehouseStrings.aiPasteJsonHintLong.text,
                             style = MiuixTheme.textStyles.footnote1,
                             color = MiuixTheme.colorScheme.onSurfaceVariantSummary
                         )
@@ -310,7 +310,7 @@ fun AiImageCourseImportPage(
                                 }
                             },
                             modifier = Modifier.fillMaxWidth(),
-                            label = WarehouseStrings.aiPasteJsonHintShort.zh,
+                            label = WarehouseStrings.aiPasteJsonHintShort.text,
                             useLabelAsPlaceholder = true,
                             minLines = 6,
                             maxLines = 16,
@@ -340,7 +340,7 @@ fun AiImageCourseImportPage(
                             Spacer(modifier = Modifier.width(10.dp))
                             Column(modifier = Modifier.weight(1f)) {
                                 Text(
-                                    text = WarehouseStrings.aiParseFailedChip.zh,
+                                    text = WarehouseStrings.aiParseFailedChip.text,
                                     style = MiuixTheme.textStyles.body2.shiftWeight(QingyuWeightDelta.BOLD),
                                     color = MiuixTheme.colorScheme.error
                                 )
@@ -366,7 +366,7 @@ fun AiImageCourseImportPage(
                     ) {
                         Column(modifier = Modifier.fillMaxWidth()) {
                             Text(
-                                text = WarehouseStrings.aiPreviewCoursesTitle.zh,
+                                text = WarehouseStrings.aiPreviewCoursesTitle.text,
                                 style = MiuixTheme.textStyles.body1.shiftWeight(QingyuWeightDelta.BOLD)
                             )
                             Spacer(modifier = Modifier.height(6.dp))

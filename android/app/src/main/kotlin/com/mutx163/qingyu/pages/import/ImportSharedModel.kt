@@ -48,13 +48,13 @@ object ImportSharedModel {
 
     /** 星期短名（一~日）；越界回数字（Dart switch default 语义）。 */
     fun importWeekdayLabel(dayOfWeek: Int): String = when (dayOfWeek) {
-        1 -> ImportStrings.weekdayShortMonday.zh
-        2 -> ImportStrings.weekdayShortTuesday.zh
-        3 -> ImportStrings.weekdayShortWednesday.zh
-        4 -> ImportStrings.weekdayShortThursday.zh
-        5 -> ImportStrings.weekdayShortFriday.zh
-        6 -> ImportStrings.weekdayShortSaturday.zh
-        7 -> ImportStrings.weekdayShortSunday.zh
+        1 -> ImportStrings.weekdayShortMonday.text
+        2 -> ImportStrings.weekdayShortTuesday.text
+        3 -> ImportStrings.weekdayShortWednesday.text
+        4 -> ImportStrings.weekdayShortThursday.text
+        5 -> ImportStrings.weekdayShortFriday.text
+        6 -> ImportStrings.weekdayShortSaturday.text
+        7 -> ImportStrings.weekdayShortSunday.text
         else -> dayOfWeek.toString()
     }
 
@@ -133,7 +133,7 @@ object ImportSharedModel {
                 ImportStrings.importUpdatedCount.filled("count", importedCount.toString())
             }) + warningSuffix
         }
-        return ImportStrings.importNoCourseChanges.zh + warningSuffix
+        return ImportStrings.importNoCourseChanges.text + warningSuffix
     }
 
     // ------------------------------------------------------------------
@@ -210,13 +210,13 @@ object ImportSharedModel {
 
     /** 颜色组显示名（预设组沿用配色风格标签，「全部颜色」为全量色板）。 */
     fun colorGroupDisplayName(groupId: String): String = when (groupId) {
-        "pastel" -> ImportStrings.colorGroupPastel.zh
-        "vibrant" -> ImportStrings.colorGroupVibrant.zh
-        "deep" -> ImportStrings.colorGroupDeep.zh
-        "dopamine" -> ImportStrings.colorGroupDopamine.zh
-        "sunset" -> ImportStrings.colorGroupSunset.zh
-        "ocean" -> ImportStrings.colorGroupOcean.zh
-        else -> ImportStrings.colorGroupAll.zh
+        "pastel" -> ImportStrings.colorGroupPastel.text
+        "vibrant" -> ImportStrings.colorGroupVibrant.text
+        "deep" -> ImportStrings.colorGroupDeep.text
+        "dopamine" -> ImportStrings.colorGroupDopamine.text
+        "sunset" -> ImportStrings.colorGroupSunset.text
+        "ocean" -> ImportStrings.colorGroupOcean.text
+        else -> ImportStrings.colorGroupAll.text
     }
 
     /**

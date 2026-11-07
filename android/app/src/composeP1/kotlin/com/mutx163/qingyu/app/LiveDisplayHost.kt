@@ -152,9 +152,9 @@ fun LiveDisplayHost(
         scope.launch {
             stagePreviewBusy = true
             val stageWord = if (forDuringEnd) {
-                DisplaySettingsStrings.stagePreviewStageDuringClass.zh
+                DisplaySettingsStrings.stagePreviewStageDuringClass.text
             } else {
-                DisplaySettingsStrings.stagePreviewStageBeforeClass.zh
+                DisplaySettingsStrings.stagePreviewStageBeforeClass.text
             }
             when (val outcome = trigger.startStagePreview(forDuringEnd = forDuringEnd, display = latestState)) {
                 is LiveTestTrigger.Outcome.Started -> {
@@ -165,7 +165,7 @@ fun LiveDisplayHost(
                     trigger.moveTaskToBack()
                 }
                 LiveTestTrigger.Outcome.InFlight ->
-                    showToast(DisplaySettingsStrings.testingInFlight.zh)
+                    showToast(DisplaySettingsStrings.testingInFlight.text)
                 is LiveTestTrigger.Outcome.DispatchFailed ->
                     // Dart 同口径：sendFailedWithError 的 error 参数带失败细节。
                     showToast(
@@ -184,7 +184,7 @@ fun LiveDisplayHost(
             trigger.cancelStagePreview()
             stagePreviewActive = false
             stagePreviewEndMillis = 0
-            showToast(DisplaySettingsStrings.stagePreviewStoppedToast.zh)
+            showToast(DisplaySettingsStrings.stagePreviewStoppedToast.text)
             stagePreviewBusy = false
         }
     }
@@ -275,7 +275,7 @@ fun LiveDisplayHost(
         previewInfo = previewInfo,
         // 学期未设置时，空态除了「暂无课程」再给一句可操作的原因；其余空态只留主句。
         previewEmptyHint = if (previewInfo == null && currentCourse.semesterStartMissing) {
-            DisplaySettingsStrings.islandPreviewSemesterUnsetHint.zh
+            DisplaySettingsStrings.islandPreviewSemesterUnsetHint.text
         } else {
             null
         },
@@ -347,7 +347,7 @@ private const val IMAGE_MIME = "image/*"
  * 选图失败提示。文案走 `DisplaySettingsStrings`（ARB `liveImagePickFailed`），
  * 不再在渲染层写死中文——2026-10-29 质量审核发现该句绕过了 i18n 层。
  */
-private val IMAGE_PICK_FAILED_MESSAGE: String = DisplaySettingsStrings.imagePickFailed.zh
+private val IMAGE_PICK_FAILED_MESSAGE: String = DisplaySettingsStrings.imagePickFailed.text
 
 /** 选图结果三态：成功带绝对路径 / 超限 / 其他失败。 */
 private sealed interface ImagePickOutcome {
@@ -430,7 +430,7 @@ private fun openDoNotDisturbAccess(context: Context, toast: (String) -> Unit) {
     val intent = Intent(Settings.ACTION_NOTIFICATION_POLICY_ACCESS_SETTINGS)
         .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
     val opened = runCatching { context.startActivity(intent) }.isSuccess
-    if (!opened) toast(DisplaySettingsStrings.doNotDisturbAccessUnavailable.zh)
+    if (!opened) toast(DisplaySettingsStrings.doNotDisturbAccessUnavailable.text)
 }
 
 /** 壳与正式包共用的存储装配：`FlutterSharedPreferences` + 冻结键格式。 */

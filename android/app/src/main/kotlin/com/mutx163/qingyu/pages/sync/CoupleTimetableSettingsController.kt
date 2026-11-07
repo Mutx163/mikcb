@@ -171,7 +171,7 @@ class CoupleTimetableSettingsController(
             notifyChanged()
             null
         } catch (_: Exception) {
-            SyncToast(CoupleStrings.saveFailed.zh, isError = true)
+            SyncToast(CoupleStrings.saveFailed.text, isError = true)
         }
     }
 
@@ -323,11 +323,11 @@ class CoupleTimetableSettingsController(
             val content = partnerPort.buildMyPackage()
             val fileName = exportFileName()
             if (exportSink(content, fileName)) null else SyncToast(
-                CoupleStrings.saveFailed.zh,
+                CoupleStrings.saveFailed.text,
                 isError = true,
             )
         } catch (_: Exception) {
-            SyncToast(CoupleStrings.saveFailed.zh, isError = true)
+            SyncToast(CoupleStrings.saveFailed.text, isError = true)
         } finally {
             setBusy(busy.copy(isExporting = false))
         }
@@ -338,7 +338,7 @@ class CoupleTimetableSettingsController(
         setBusy(busy.copy(isImporting = true))
         return try {
             if (content.isBlank()) {
-                SyncToast(CoupleStrings.importFileReadFailed.zh, isError = true)
+                SyncToast(CoupleStrings.importFileReadFailed.text, isError = true)
             } else {
                 val outcome = partnerPort.importPackage(content)
                 binding = partnerPort.loadBinding()
@@ -349,7 +349,7 @@ class CoupleTimetableSettingsController(
         } catch (e: CouplePackageException) {
             SyncToast(CoupleStrings.localizeServiceMessage(e.errorCode), isError = true)
         } catch (_: Exception) {
-            SyncToast(CoupleStrings.importFailedInvalidFile.zh, isError = true)
+            SyncToast(CoupleStrings.importFailedInvalidFile.text, isError = true)
         } finally {
             setBusy(busy.copy(isImporting = false))
         }
@@ -381,19 +381,19 @@ class CoupleTimetableSettingsController(
                     // 档案没删掉 ⇒ 绑定仍有效；界面必须还显示「已绑定」，别把真话抹掉。
                     reloadBindingQuietly()
                     notifyChanged()
-                    SyncToast(CoupleStrings.deleteFailed.zh, isError = true)
+                    SyncToast(CoupleStrings.deleteFailed.text, isError = true)
                 }
                 CoupleUnlinkStage.BINDING_CLEAR_FAILED -> {
                     // 档案已经删了 ⇒ 课表页要看得到变化；绑定状态按盘上真值刷新。
                     partnerPort.notifyTimetableChanged()
                     reloadBindingQuietly()
                     notifyChanged()
-                    SyncToast(CoupleStrings.saveFailed.zh, isError = true)
+                    SyncToast(CoupleStrings.saveFailed.text, isError = true)
                 }
             }
         } catch (_: Exception) {
             reloadBindingQuietly()
-            SyncToast(CoupleStrings.saveFailed.zh, isError = true)
+            SyncToast(CoupleStrings.saveFailed.text, isError = true)
         } finally {
             setBusy(busy.copy(isUnlinking = false))
         }
@@ -424,7 +424,7 @@ class CoupleTimetableSettingsController(
             null
         } catch (_: Exception) {
             // 内存里没改过 ⇒ 界面自然保持原值；不写回、不假装成功。
-            SyncToast(CoupleStrings.saveFailed.zh, isError = true)
+            SyncToast(CoupleStrings.saveFailed.text, isError = true)
         }
     }
 
@@ -447,7 +447,7 @@ class CoupleTimetableSettingsController(
             notifyChanged()
             null
         } catch (_: Exception) {
-            SyncToast(CoupleStrings.saveFailed.zh, isError = true)
+            SyncToast(CoupleStrings.saveFailed.text, isError = true)
         }
     }
 

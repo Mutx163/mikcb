@@ -129,20 +129,20 @@ fun LiveDiagnosticsLogPage(
             if (viewState.loadError == null) {
                 QingyuGlassIconButton(
                     onClick = { showOptions = true },
-                    contentDescription = DiagnosticsStrings.diagnosticsDisplayOptionsTitle.zh,
+                    contentDescription = DiagnosticsStrings.diagnosticsDisplayOptionsTitle.text,
                     icon = MiuixIcons.Tune,
                     tint = Color(QingyuTheme.actionIcon(dark)),
                 )
                 QingyuGlassIconButton(
                     onClick = onCopy,
-                    contentDescription = DiagnosticsStrings.appLogsCopyAction.zh,
+                    contentDescription = DiagnosticsStrings.appLogsCopyAction.text,
                     icon = MiuixIcons.Copy,
                     tint = Color(QingyuTheme.actionIcon(dark)),
                     enabled = viewState.canCopy,
                 )
                 QingyuGlassIconButton(
                     onClick = onExport,
-                    contentDescription = DiagnosticsStrings.appLogsExportAction.zh,
+                    contentDescription = DiagnosticsStrings.appLogsExportAction.text,
                     icon = MiuixIcons.Share,
                     tint = Color(QingyuTheme.actionIcon(dark)),
                     enabled = viewState.canExport,
@@ -164,7 +164,7 @@ fun LiveDiagnosticsLogPage(
                 }
                 QingyuGlassIconButton(
                     onClick = { showClearConfirm = true },
-                    contentDescription = DiagnosticsStrings.appLogsClearAction.zh,
+                    contentDescription = DiagnosticsStrings.appLogsClearAction.text,
                     icon = MiuixIcons.Delete,
                     tint = Color(QingyuTheme.actionIcon(dark)),
                     enabled = viewState.canClear,
@@ -212,7 +212,7 @@ fun LiveDiagnosticsLogPage(
 
                 viewState.isEmpty -> DiagnosticsCenteredState(
                     icon = MiuixIcons.File,
-                    title = DiagnosticsStrings.diagnosticsEmptyTitle.zh,
+                    title = DiagnosticsStrings.diagnosticsEmptyTitle.text,
                     dark = dark,
                 )
 
@@ -228,7 +228,7 @@ fun LiveDiagnosticsLogPage(
 
                     if (viewState.showPausedHint) {
                         Text(
-                            text = DiagnosticsStrings.appLogsRecordingPausedHint.zh,
+                            text = DiagnosticsStrings.appLogsRecordingPausedHint.text,
                             style = MiuixTheme.textStyles.footnote1,
                             color = Color(QingyuTheme.secondaryText(dark)),
                             modifier = Modifier.padding(horizontal = 16.dp, vertical = 6.dp),
@@ -238,7 +238,7 @@ fun LiveDiagnosticsLogPage(
                     if (viewState.showNoMatching) {
                         DiagnosticsCenteredState(
                             icon = MiuixIcons.Filter,
-                            title = DiagnosticsStrings.diagnosticsNoMatchingTitle.zh,
+                            title = DiagnosticsStrings.diagnosticsNoMatchingTitle.text,
                             dark = dark,
                         )
                     } else {
@@ -267,7 +267,7 @@ fun LiveDiagnosticsLogPage(
 
     QingyuSheet(
         show = showOptions,
-        title = DiagnosticsStrings.diagnosticsDisplayOptionsTitle.zh,
+        title = DiagnosticsStrings.diagnosticsDisplayOptionsTitle.text,
         onDismissRequest = { showOptions = false },
         // 内容自带 16dp（TabRow 的分段控件需要离面板边 16）：套件侧边距归零，避免叠成 32。
         contentPadsHorizontally = true,
@@ -281,8 +281,8 @@ fun LiveDiagnosticsLogPage(
             // 查看方式：结构化 / 原文（Dart 两个 tab）
             TabRow(
                 tabs = listOf(
-                    DiagnosticsStrings.diagnosticsStructuredTab.zh,
-                    DiagnosticsStrings.diagnosticsRawTab.zh,
+                    DiagnosticsStrings.diagnosticsStructuredTab.text,
+                    DiagnosticsStrings.diagnosticsRawTab.text,
                 ),
                 selectedTabIndex = if (viewState.viewMode == DiagnosticsLogViewMode.STRUCTURED) 0 else 1,
                 onTabSelected = { index ->
@@ -297,8 +297,8 @@ fun LiveDiagnosticsLogPage(
             // 时间排序：正序 / 倒序（Dart 第二个分段控件）
             TabRow(
                 tabs = listOf(
-                    DiagnosticsStrings.diagnosticsTimeSortAscending.zh,
-                    DiagnosticsStrings.diagnosticsTimeSortDescending.zh,
+                    DiagnosticsStrings.diagnosticsTimeSortAscending.text,
+                    DiagnosticsStrings.diagnosticsTimeSortDescending.text,
                 ),
                 selectedTabIndex = if (viewState.timeSort == DiagnosticsLogTimeSort.ASCENDING) 0 else 1,
                 onTabSelected = { index ->
@@ -315,7 +315,7 @@ fun LiveDiagnosticsLogPage(
 
     OverlayDialog(
         show = showClearConfirm,
-        title = DiagnosticsStrings.appLogsClearAction.zh,
+        title = DiagnosticsStrings.appLogsClearAction.text,
         onDismissRequest = { showClearConfirm = false },
         // 内容自己写了左右 8dp；miuix 对话框默认 insideMargin 是 (24,24) ⇒ 合起来单边 32dp。
         // 横向给 8dp：8（框架）+ 8（内容）= **16dp**，正好是本仓 Dart 对话框的口径
@@ -331,7 +331,7 @@ fun LiveDiagnosticsLogPage(
                 onClick = { showClearConfirm = false },
                 modifier = Modifier.weight(1f),
             ) {
-                Text(text = DiagnosticsStrings.cancelAction.zh)
+                Text(text = DiagnosticsStrings.cancelAction.text)
             }
             Button(
                 onClick = {
@@ -343,7 +343,7 @@ fun LiveDiagnosticsLogPage(
                 // 与 Dart 主按钮（强调色）不一致。
                 colors = ButtonDefaults.buttonColorsPrimary(),
             ) {
-                Text(text = DiagnosticsStrings.confirmAction.zh)
+                Text(text = DiagnosticsStrings.confirmAction.text)
             }
         }
     }
@@ -514,7 +514,7 @@ private fun DiagnosticsDeviceInfoCard(
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Text(
-                text = DiagnosticsStrings.diagnosticsDeviceInfoTitle.zh,
+                text = DiagnosticsStrings.diagnosticsDeviceInfoTitle.text,
                 style = MiuixTheme.textStyles.body1.shiftWeight(QingyuWeightDelta.MEDIUM),
                 color = Color(QingyuTheme.primaryText(dark)),
                 modifier = Modifier.weight(1f),
@@ -754,7 +754,7 @@ private fun DiagnosticsEntryTagFlow(entry: DiagnosticsLogEntryView, dark: Boolea
         DiagnosticsTag(label = entry.sourceLabel, outlined = true, dark = dark)
         if (entry.isLevelInferred) {
             DiagnosticsTag(
-                label = DiagnosticsStrings.diagnosticsLevelInferred.zh,
+                label = DiagnosticsStrings.diagnosticsLevelInferred.text,
                 outlined = true,
                 dark = dark,
             )
@@ -841,7 +841,7 @@ private fun DiagnosticsLoadErrorBody(
             modifier = Modifier.size(40.dp),
         )
         Text(
-            text = DiagnosticsStrings.diagnosticsLoadFailedTitle.zh,
+            text = DiagnosticsStrings.diagnosticsLoadFailedTitle.text,
             style = MiuixTheme.textStyles.body1.shiftWeight(QingyuWeightDelta.MEDIUM),
             color = Color(QingyuTheme.primaryText(dark)),
             textAlign = TextAlign.Center,
@@ -860,7 +860,7 @@ private fun DiagnosticsLoadErrorBody(
                 onClick = onRefresh,
                 modifier = Modifier.padding(top = 16.dp),
             ) {
-                Text(text = DiagnosticsStrings.liveTestingRefreshAction.zh)
+                Text(text = DiagnosticsStrings.liveTestingRefreshAction.text)
             }
         }
     }

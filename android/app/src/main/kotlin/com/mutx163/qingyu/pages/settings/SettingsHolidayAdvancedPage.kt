@@ -44,12 +44,12 @@ object SettingsHolidayAdvancedPage {
         return SettingsPageSpec(
             id = ID,
             titleKey = s.holidayAdvancedTitle.key,
-            title = s.holidayAdvancedTitle.zh,
+            title = s.holidayAdvancedTitle.text,
             nodes = listOf(
                 SettingsLabel(
                     id = "holidayAdvanced.section.log",
                     textKey = s.holidayUpdateLog.key,
-                    text = s.holidayUpdateLog.zh,
+                    text = s.holidayUpdateLog.text,
                 ),
                 SettingsGroup(
                     id = "holidayAdvanced.group.log",
@@ -77,9 +77,9 @@ object SettingsHolidayAdvancedPage {
             note = "检查更新按钮（:792-812）：固定底栏里的整宽官方 Button，" +
                 "与列表滚动区分离，故单独走 SettingsPageSpec.footerNode",
             labelKey = s.holidayCheckUpdate.key,
-            label = s.holidayCheckUpdate.zh,
+            label = s.holidayCheckUpdate.text,
             texts = listOf(
-                SettingsInlineText(s.holidayCheckUpdate.key, s.holidayCheckUpdate.zh),
+                SettingsInlineText(s.holidayCheckUpdate.key, s.holidayCheckUpdate.text),
             ),
             busy = refreshing,
         )

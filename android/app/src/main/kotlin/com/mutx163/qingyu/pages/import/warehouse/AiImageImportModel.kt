@@ -75,7 +75,7 @@ const val AI_IMPORT_SYSTEM_PROMPT = """你是轻屿课表的专属视觉解析�
 fun parseAiImageImportJson(rawInput: String): AiCourseImportParseResult {
     val trimmed = rawInput.trim()
     if (trimmed.isEmpty()) {
-        return AiCourseImportParseResult(warnings = listOf(WarehouseStrings.aiPasteJsonFirst.zh))
+        return AiCourseImportParseResult(warnings = listOf(WarehouseStrings.aiPasteJsonFirst.text))
     }
 
     // 剥离 ```json 或 ``` 围栏
@@ -90,7 +90,7 @@ fun parseAiImageImportJson(rawInput: String): AiCourseImportParseResult {
     val parsed = runCatching { MiniJson.parse(jsonContent) }.getOrNull()
     if (parsed !is Map<*, *>) {
         return AiCourseImportParseResult(
-            warnings = listOf(WarehouseStrings.aiParseFailedIncompleteJson.zh)
+            warnings = listOf(WarehouseStrings.aiParseFailedIncompleteJson.text)
         )
     }
 

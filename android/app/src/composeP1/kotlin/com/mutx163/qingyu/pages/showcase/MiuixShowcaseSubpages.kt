@@ -165,23 +165,23 @@ private fun ShowcaseButtonsSection(
                 Button(
                     onClick = { onStateChange(state.onButtonClick("Primary")) }
                 ) {
-                    Text(ShowcaseStrings.btnPrimary.zh)
+                    Text(ShowcaseStrings.btnPrimary.text)
                 }
                 Button(
                     onClick = { onStateChange(state.onButtonClick("Secondary")) }
                 ) {
-                    Text(ShowcaseStrings.btnSecondary.zh)
+                    Text(ShowcaseStrings.btnSecondary.text)
                 }
                 Button(
                     onClick = { onStateChange(state.onButtonClick("Error")) }
                 ) {
-                    Text(ShowcaseStrings.btnError.zh)
+                    Text(ShowcaseStrings.btnError.text)
                 }
                 Button(
                     onClick = {},
                     enabled = false
                 ) {
-                    Text(ShowcaseStrings.btnDisabled.zh)
+                    Text(ShowcaseStrings.btnDisabled.text)
                 }
             }
         }
@@ -193,15 +193,15 @@ private fun ShowcaseButtonsSection(
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 TextButton(
-                    text = ShowcaseStrings.btnConfirm.zh,
+                    text = ShowcaseStrings.btnConfirm.text,
                     onClick = { onStateChange(state.onButtonClick("确定")) }
                 )
                 TextButton(
-                    text = ShowcaseStrings.btnCancel.zh,
+                    text = ShowcaseStrings.btnCancel.text,
                     onClick = { onStateChange(state.onButtonClick("取消")) }
                 )
                 TextButton(
-                    text = ShowcaseStrings.btnDisabledZh.zh,
+                    text = ShowcaseStrings.btnDisabledZh.text,
                     onClick = {},
                     enabled = false
                 )
@@ -262,13 +262,13 @@ private fun ShowcaseInputsSection(
                 TextField(
                     value = state.usernameInput,
                     onValueChange = { onStateChange(state.setUsername(it)) },
-                    label = ShowcaseStrings.inputUsername.zh,
+                    label = ShowcaseStrings.inputUsername.text,
                     modifier = Modifier.fillMaxWidth()
                 )
                 TextField(
                     value = "******",
                     onValueChange = {},
-                    label = ShowcaseStrings.inputPassword.zh,
+                    label = ShowcaseStrings.inputPassword.text,
                     modifier = Modifier.fillMaxWidth()
                 )
             }
@@ -282,7 +282,7 @@ private fun ShowcaseInputsSection(
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Text(ShowcaseStrings.inputWifi.zh, style = MiuixTheme.textStyles.body1)
+                    Text(ShowcaseStrings.inputWifi.text, style = MiuixTheme.textStyles.body1)
                     Switch(
                         checked = state.wifiEnabled,
                         onCheckedChange = { onStateChange(state.toggleWifi()) }
@@ -293,7 +293,7 @@ private fun ShowcaseInputsSection(
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Text(ShowcaseStrings.inputBluetooth.zh, style = MiuixTheme.textStyles.body1)
+                    Text(ShowcaseStrings.inputBluetooth.text, style = MiuixTheme.textStyles.body1)
                     Switch(
                         checked = state.bluetoothEnabled,
                         onCheckedChange = { onStateChange(state.toggleBluetooth()) }
@@ -304,7 +304,7 @@ private fun ShowcaseInputsSection(
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Text(ShowcaseStrings.inputAirplane.zh, style = MiuixTheme.textStyles.body1)
+                    Text(ShowcaseStrings.inputAirplane.text, style = MiuixTheme.textStyles.body1)
                     Switch(
                         checked = state.airplaneMode,
                         onCheckedChange = { onStateChange(state.toggleAirplaneMode()) }
@@ -327,7 +327,7 @@ private fun ShowcaseInputsSection(
                         onClick = { onStateChange(state.toggleRememberPassword()) }
                     )
                     Spacer(modifier = Modifier.width(10.dp))
-                    Text(ShowcaseStrings.inputRememberPassword.zh, style = MiuixTheme.textStyles.body1)
+                    Text(ShowcaseStrings.inputRememberPassword.text, style = MiuixTheme.textStyles.body1)
                 }
                 Row(
                     modifier = Modifier
@@ -345,7 +345,7 @@ private fun ShowcaseInputsSection(
                     )
                     Spacer(modifier = Modifier.width(10.dp))
                     Text(
-                        "${ShowcaseStrings.inputTriState.zh} (状态: ${state.triState})",
+                        "${ShowcaseStrings.inputTriState.text} (状态: ${state.triState})",
                         style = MiuixTheme.textStyles.body1
                     )
                 }
@@ -356,7 +356,7 @@ private fun ShowcaseInputsSection(
         Card(insideMargin = PaddingValues(16.dp)) {
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 Text(
-                    "${ShowcaseStrings.inputContinuousSlider.zh}: ${(state.continuousSliderValue * 100).toInt()}%",
+                    "${ShowcaseStrings.inputContinuousSlider.text}: ${(state.continuousSliderValue * 100).toInt()}%",
                     style = MiuixTheme.textStyles.body2
                 )
                 QingyuSlider(
@@ -365,7 +365,7 @@ private fun ShowcaseInputsSection(
                     modifier = Modifier.fillMaxWidth()
                 )
                 Text(
-                    "${ShowcaseStrings.inputSteppedSlider.zh}: ${state.steppedSliderValue} 档",
+                    "${ShowcaseStrings.inputSteppedSlider.text}: ${state.steppedSliderValue} 档",
                     style = MiuixTheme.textStyles.body2
                 )
                 // steps = 9 ⇒ 10 个区间 / 11 个档位（0..10）：让滑杆自己量化到档，
@@ -505,21 +505,21 @@ private fun ShowcasePreferencesSection(
         Card(insideMargin = PaddingValues(12.dp)) {
             Column {
                 ArrowPreference(
-                    title = ShowcaseStrings.prefSecurity.zh,
-                    summary = ShowcaseStrings.prefSecuritySummary.zh,
+                    title = ShowcaseStrings.prefSecurity.text,
+                    summary = ShowcaseStrings.prefSecuritySummary.text,
                     onClick = {}
                 )
                 ArrowPreference(
-                    title = ShowcaseStrings.prefGeneral.zh,
+                    title = ShowcaseStrings.prefGeneral.text,
                     onClick = {}
                 )
                 SwitchPreference(
-                    title = ShowcaseStrings.prefLocation.zh,
+                    title = ShowcaseStrings.prefLocation.text,
                     checked = state.locationEnabled,
                     onCheckedChange = { onStateChange(state.toggleLocation()) }
                 )
                 CheckboxPreference(
-                    title = ShowcaseStrings.inputRememberPassword.zh,
+                    title = ShowcaseStrings.inputRememberPassword.text,
                     checked = state.rememberPassword,
                     onCheckedChange = { onStateChange(state.toggleRememberPassword()) }
                 )
@@ -530,9 +530,9 @@ private fun ShowcasePreferencesSection(
         Card(insideMargin = PaddingValues(12.dp)) {
             Column {
                 val themes = listOf(
-                    ShowcaseStrings.prefThemeFollowSystem.zh,
-                    ShowcaseStrings.prefThemeLight.zh,
-                    ShowcaseStrings.prefThemeDark.zh
+                    ShowcaseStrings.prefThemeFollowSystem.text,
+                    ShowcaseStrings.prefThemeLight.text,
+                    ShowcaseStrings.prefThemeDark.text
                 )
                 themes.forEachIndexed { index, name ->
                     RadioButtonPreference(
@@ -708,23 +708,23 @@ private fun ShowcaseFeedbackSection(
         OverlayDialog(
             insideMargin = DpSize(16.dp, 16.dp),
             show = state.isBasicDialogOpen,
-            title = ShowcaseStrings.feedbackDialogTitle.zh,
-            summary = ShowcaseStrings.feedbackDialogMessage.zh,
+            title = ShowcaseStrings.feedbackDialogTitle.text,
+            summary = ShowcaseStrings.feedbackDialogMessage.text,
             onDismissRequest = { onStateChange(state.showBasicDialog(false)) }
         ) {
             Button(
                 modifier = Modifier.fillMaxWidth(),
                 onClick = { onStateChange(state.showBasicDialog(false)) }
             ) {
-                Text(ShowcaseStrings.feedbackKnown.zh)
+                Text(ShowcaseStrings.feedbackKnown.text)
             }
         }
 
         OverlayDialog(
             insideMargin = DpSize(16.dp, 16.dp),
             show = state.isConfirmDialogOpen,
-            title = ShowcaseStrings.feedbackConfirmTitle.zh,
-            summary = ShowcaseStrings.feedbackConfirmMessage.zh,
+            title = ShowcaseStrings.feedbackConfirmTitle.text,
+            summary = ShowcaseStrings.feedbackConfirmMessage.text,
             onDismissRequest = { onStateChange(state.showConfirmDialog(false)) }
         ) {
             Row(
@@ -733,7 +733,7 @@ private fun ShowcaseFeedbackSection(
             ) {
                 TextButton(
                     modifier = Modifier.weight(1f),
-                    text = ShowcaseStrings.btnCancel.zh,
+                    text = ShowcaseStrings.btnCancel.text,
                     onClick = { onStateChange(state.showConfirmDialog(false)) }
                 )
                 Button(
@@ -743,7 +743,7 @@ private fun ShowcaseFeedbackSection(
                     // 确认键应走主色（与诊断日志清空确认框同口径）。
                     colors = ButtonDefaults.buttonColorsPrimary(),
                 ) {
-                    Text(ShowcaseStrings.btnConfirm.zh)
+                    Text(ShowcaseStrings.btnConfirm.text)
                 }
             }
         }
@@ -800,7 +800,7 @@ private fun ShowcaseOverlaysSection(
         // - 底部手势区让位由套件在内容末尾补 Spacer（内容不滚动时自动），不再贴到小白条。
         QingyuSheet(
             show = state.isBottomSheetOpen,
-            title = ShowcaseStrings.overlaySheetTitle.zh,
+            title = ShowcaseStrings.overlaySheetTitle.text,
             onDismissRequest = { onStateChange(state.showBottomSheet(false)) },
             contentPadsHorizontally = true,
         ) {
@@ -811,7 +811,7 @@ private fun ShowcaseOverlaysSection(
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
                 Text(
-                    text = ShowcaseStrings.overlaySheetContent.zh,
+                    text = ShowcaseStrings.overlaySheetContent.text,
                     style = MiuixTheme.textStyles.body2,
                     color = Color(QingyuTheme.secondaryText(dark))
                 )
@@ -819,7 +819,7 @@ private fun ShowcaseOverlaysSection(
                     modifier = Modifier.fillMaxWidth(),
                     onClick = { onStateChange(state.showBottomSheet(false)) }
                 ) {
-                    Text(ShowcaseStrings.feedbackKnown.zh)
+                    Text(ShowcaseStrings.feedbackKnown.text)
                 }
             }
         }
@@ -837,10 +837,10 @@ private fun ShowcaseNavigationSection(
     primaryColor: Color
 ) {
     val tabs = listOf(
-        ShowcaseStrings.navTabRecommend.zh,
-        ShowcaseStrings.navTabFollow.zh,
-        ShowcaseStrings.navTabHot.zh,
-        ShowcaseStrings.navTabNearby.zh
+        ShowcaseStrings.navTabRecommend.text,
+        ShowcaseStrings.navTabFollow.text,
+        ShowcaseStrings.navTabHot.text,
+        ShowcaseStrings.navTabNearby.text
     )
 
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -907,7 +907,7 @@ private fun ShowcaseThemingSection(
         SmallTitle(text = "DynamicTheme · 动态种子色取色")
         Card(insideMargin = PaddingValues(16.dp)) {
             Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
-                Text(ShowcaseStrings.themeSeedColor.zh, style = MiuixTheme.textStyles.body2)
+                Text(ShowcaseStrings.themeSeedColor.text, style = MiuixTheme.textStyles.body2)
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceAround
@@ -938,7 +938,7 @@ private fun ShowcaseThemingSection(
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Text(ShowcaseStrings.themeModeLabel.zh, style = MiuixTheme.textStyles.body1)
+                    Text(ShowcaseStrings.themeModeLabel.text, style = MiuixTheme.textStyles.body1)
                     Switch(
                         checked = state.isDarkTheme,
                         onCheckedChange = { onStateChange(state.toggleDarkTheme()) }

@@ -88,7 +88,7 @@ fun WarehouseSchoolAdaptersPage(
         onBack = onBack,
         actions = {
             IconButton(onClick = onRefresh) {
-                Icon(imageVector = MiuixIcons.Refresh, contentDescription = WarehouseStrings.reloadAction.zh)
+                Icon(imageVector = MiuixIcons.Refresh, contentDescription = WarehouseStrings.reloadAction.text)
             }
         },
     ) {
@@ -131,7 +131,7 @@ fun WarehouseSchoolAdaptersPage(
                                 CircularProgressIndicator()
                             } else {
                                 Text(
-                                    text = WarehouseStrings.warehouseAdaptersLoadFailedTitle.zh,
+                                    text = WarehouseStrings.warehouseAdaptersLoadFailedTitle.text,
                                     style = MiuixTheme.textStyles.body1.shiftWeight(QingyuWeightDelta.MEDIUM),
                                     color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
                                 )
@@ -155,7 +155,7 @@ fun WarehouseSchoolAdaptersPage(
                                     Spacer(modifier = Modifier.height(16.dp))
                                     Button(
                                         onClick = onRetry,
-                                        content = { Text(text = WarehouseStrings.reloadAction.zh) },
+                                        content = { Text(text = WarehouseStrings.reloadAction.text) },
                                         colors = ButtonDefaults.buttonColors(
                                             color = MiuixTheme.colorScheme.secondary,
                                             contentColor = MiuixTheme.colorScheme.onSecondaryVariant,
@@ -185,7 +185,7 @@ fun WarehouseSchoolAdaptersPage(
                             // 元信息是标签行：footnote2（比说明小一档）弱化，说明才用 body2。
                             // 旧版同样直接显示原始分类串（warehouse_shared.dart:174），不动内容。
                             Text(
-                                text = "${WarehouseStrings.categoryLabel.zh}：${adapter.category} · ${WarehouseStrings.maintainerLabel.zh}：${adapter.maintainer.ifEmpty { "社区" }}",
+                                text = "${WarehouseStrings.categoryLabel.text}：${adapter.category} · ${WarehouseStrings.maintainerLabel.text}：${adapter.maintainer.ifEmpty { "社区" }}",
                                 style = MiuixTheme.textStyles.footnote2,
                                 color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
                             )
@@ -221,7 +221,7 @@ fun WarehouseSchoolAdaptersPage(
                                     onClick = { onImportAdapter(adapter) },
                                     modifier = Modifier.weight(1f),
                                     colors = ButtonDefaults.buttonColorsPrimary(),
-                                    content = { Text(text = WarehouseStrings.webLoginImport.zh) },
+                                    content = { Text(text = WarehouseStrings.webLoginImport.text) },
                                 )
                                 Button(
                                     onClick = { onRecordAdapter(adapter) },
@@ -230,7 +230,7 @@ fun WarehouseSchoolAdaptersPage(
                                         color = MiuixTheme.colorScheme.secondary,
                                         contentColor = MiuixTheme.colorScheme.onSecondaryVariant,
                                     ),
-                                    content = { Text(text = WarehouseStrings.recordImportAction.zh) },
+                                    content = { Text(text = WarehouseStrings.recordImportAction.text) },
                                 )
                             }
 
@@ -250,7 +250,7 @@ fun WarehouseSchoolAdaptersPage(
                                             color = MiuixTheme.colorScheme.secondary,
                                             contentColor = MiuixTheme.colorScheme.onSecondaryVariant,
                                         ),
-                                        content = { Text(text = WarehouseStrings.quickImportAction.zh) },
+                                        content = { Text(text = WarehouseStrings.quickImportAction.text) },
                                     )
                                 } else {
                                     Spacer(modifier = Modifier.weight(1f))
@@ -263,7 +263,7 @@ fun WarehouseSchoolAdaptersPage(
                                         color = MiuixTheme.colorScheme.secondary,
                                         contentColor = MiuixTheme.colorScheme.onSecondaryVariant,
                                     ),
-                                    content = { Text(text = WarehouseStrings.viewDetailsAction.zh) },
+                                    content = { Text(text = WarehouseStrings.viewDetailsAction.text) },
                                 )
                             }
                         }

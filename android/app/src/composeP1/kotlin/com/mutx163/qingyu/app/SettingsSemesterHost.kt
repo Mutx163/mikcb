@@ -125,7 +125,7 @@ fun SettingsSemesterHost(
         )
         val ok = runCatching { repository.setCurrentWeek(week) }.isSuccess
         if (!ok) {
-            notify(SettingsStringsExt2.saveFailed.zh)
+            notify(SettingsStringsExt2.saveFailed.text)
             return
         }
         if (showTip) {
@@ -138,7 +138,7 @@ fun SettingsSemesterHost(
         val settings = repository.snapshot.settings
         val next = settings.copy(semesterStartDate = SemesterSettingsLogic.startDateTime(date))
         if (runCatching { repository.updateSettings(next) }.isFailure) {
-            notify(SettingsStringsExt2.saveFailed.zh)
+            notify(SettingsStringsExt2.saveFailed.text)
             return
         }
         // ⚠️ 顺序不能反：先落盘再同步，同步要用**新**日期算周次。
@@ -150,7 +150,7 @@ fun SettingsSemesterHost(
         val settings = repository.snapshot.settings
         if (count == settings.semesterWeekCount) return
         if (runCatching { repository.updateSettings(settings.copy(semesterWeekCount = count)) }.isFailure) {
-            notify(SettingsStringsExt2.saveFailed.zh)
+            notify(SettingsStringsExt2.saveFailed.text)
             return
         }
         // 用刚写进去的周数判断（同样取仓储现值，别取还没重组的 compose state）。
@@ -159,7 +159,7 @@ fun SettingsSemesterHost(
             newWeekCount = count,
         )?.let { week ->
             if (runCatching { repository.setCurrentWeek(week) }.isFailure) {
-                notify(SettingsStringsExt2.saveFailed.zh)
+                notify(SettingsStringsExt2.saveFailed.text)
             }
         }
     }
@@ -239,7 +239,7 @@ private fun SemesterStartDateSheet(
 
     QingyuSheet(
         show = show,
-        title = SettingsStringsExt2.semesterStartDateLabel.zh,
+        title = SettingsStringsExt2.semesterStartDateLabel.text,
         onDismissRequest = onDismiss,
         // 内容根 Column 自己给了左右 16（里面没有通栏元素）⇒ 框架侧横向归零，
         // 单边就是 Dart 那个 16（`hyperosMiuixBottomSheetInsideMargin`），不再叠成 32。
@@ -324,7 +324,7 @@ private fun SemesterWeekCountSheet(
 
     QingyuSheet(
         show = show,
-        title = SettingsStringsExt2.selectSemesterWeekCountTitle.zh,
+        title = SettingsStringsExt2.selectSemesterWeekCountTitle.text,
         onDismissRequest = onDismiss,
         // 与开学日期弹层同一个口径（见上）。
         contentPadsHorizontally = true,

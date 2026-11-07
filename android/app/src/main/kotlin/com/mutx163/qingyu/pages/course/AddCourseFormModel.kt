@@ -434,7 +434,7 @@ object AddCourseFormLogic {
 
     /** 课程名必填：空或纯空白不通过。通过时返回 null。 */
     fun validateCourseName(name: String): String? =
-        if (name.trim().isEmpty()) AddCourseStrings.pleaseEnterCourseName.zh else null
+        if (name.trim().isEmpty()) AddCourseStrings.pleaseEnterCourseName.text else null
 
     /** 条目周次校验：最终周次为空集则无效。 */
     fun validateEntry(entry: AddCourseScheduleEntryData): AddCourseEntryIssue? =
@@ -448,7 +448,7 @@ object AddCourseFormLogic {
     fun entryWeeksErrorMessage(entryIndex: Int): String =
         AddCourseStrings.scheduleEntryTitle.filled("index", (entryIndex + 1).toString()) +
             ": " +
-            AddCourseStrings.selectAtLeastOneWeek.zh
+            AddCourseStrings.selectAtLeastOneWeek.text
 
     // ------------------------------------------------------------------
     // 6. 周次摘要（Dart :1546-1608）
@@ -512,7 +512,7 @@ object AddCourseFormLogic {
     ): String {
         // 覆盖全部可选周 → 「全部」（不区分模式）
         if (availableWeeks.isNotEmpty() && selectedWeeks.toSet() == availableWeeks.toSet()) {
-            return AddCourseStrings.allWeeksFilter.zh
+            return AddCourseStrings.allWeeksFilter.text
         }
         if (mode == AddCourseWeekSelectionMode.CUSTOM) {
             return formatWeekList(selectedWeeks)
@@ -527,8 +527,8 @@ object AddCourseFormLogic {
         }
         // Dart `:1599-1600` 是两个独立 `if`：单双周同时为真时**单周先命中**。
         val suffix = when {
-            isOddWeek -> " · " + AddCourseStrings.oddWeeksFilter.zh
-            isEvenWeek -> " · " + AddCourseStrings.evenWeeksFilter.zh
+            isOddWeek -> " · " + AddCourseStrings.oddWeeksFilter.text
+            isEvenWeek -> " · " + AddCourseStrings.evenWeeksFilter.text
             else -> ""
         }
         return label + suffix
@@ -589,7 +589,7 @@ object AddCourseFormLogic {
      */
     fun scheduleEntryCardTitle(entryCount: Int): String =
         if (entryCount <= 1) {
-            AddCourseStrings.scheduleEntrySingleTitle.zh
+            AddCourseStrings.scheduleEntrySingleTitle.text
         } else {
             AddCourseStrings.scheduleEntryTitle.filled("index", "1")
                 .replace(Regex("""\s?1$"""), "")

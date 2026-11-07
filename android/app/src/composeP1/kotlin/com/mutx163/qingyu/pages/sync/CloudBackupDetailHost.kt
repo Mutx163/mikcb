@@ -189,7 +189,7 @@ fun CloudBackupDetailHost(
     OverlayDialog(
         insideMargin = DpSize(16.dp, 16.dp),
         show = showRestoreConfirm,
-        title = SyncStrings.cloudBackupRestoreTitle.zh,
+        title = SyncStrings.cloudBackupRestoreTitle.text,
         onDismissRequest = { if (!busy) cancelRestoreConfirm() },
     ) {
         Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -221,7 +221,7 @@ fun CloudBackupDetailHost(
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
             ) {
                 TextButton(
-                    text = SyncStrings.cancelAction.zh,
+                    text = SyncStrings.cancelAction.text,
                     onClick = { if (!busy) cancelRestoreConfirm() },
                     enabled = !busy,
                     colors = ButtonDefaults.textButtonColors(),
@@ -233,7 +233,7 @@ fun CloudBackupDetailHost(
                     colors = ButtonDefaults.buttonColorsPrimary(),
                     modifier = Modifier.weight(1f),
                 ) {
-                    Text(SyncStrings.cloudBackupRestoreAction.zh)
+                    Text(SyncStrings.cloudBackupRestoreAction.text)
                 }
             }
         }
@@ -244,7 +244,7 @@ fun CloudBackupDetailHost(
     OverlayDialog(
         insideMargin = DpSize(16.dp, 16.dp),
         show = confirmDelete,
-        title = SyncStrings.cloudBackupDeleteTitle.zh,
+        title = SyncStrings.cloudBackupDeleteTitle.text,
         onDismissRequest = { confirmDelete = false },
     ) {
         Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -260,7 +260,7 @@ fun CloudBackupDetailHost(
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
             ) {
                 TextButton(
-                    text = SyncStrings.cancelAction.zh,
+                    text = SyncStrings.cancelAction.text,
                     onClick = { confirmDelete = false },
                     enabled = !busy,
                     colors = ButtonDefaults.textButtonColors(),
@@ -286,7 +286,7 @@ fun CloudBackupDetailHost(
                     ),
                     modifier = Modifier.weight(1f),
                 ) {
-                    Text(SyncStrings.deleteAction.zh)
+                    Text(SyncStrings.deleteAction.text)
                 }
             }
         }

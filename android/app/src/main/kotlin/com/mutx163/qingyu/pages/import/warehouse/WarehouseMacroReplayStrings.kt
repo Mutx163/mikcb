@@ -181,10 +181,10 @@ object WarehouseMacroReplayStrings {
     }
 
     private fun localizeCode(code: String, args: Map<String, String>): String? = when (code) {
-        "manual_input_captcha" -> serviceMsgManualInputCaptcha.zh
-        "manual_input_password" -> serviceMsgManualInputPassword.zh
-        "macro_no_steps" -> serviceMsgMacroNoSteps.zh
-        "macro_user_cancelled" -> serviceMsgMacroUserCancelled.zh
+        "manual_input_captcha" -> serviceMsgManualInputCaptcha.text
+        "manual_input_password" -> serviceMsgManualInputPassword.text
+        "macro_no_steps" -> serviceMsgMacroNoSteps.text
+        "macro_user_cancelled" -> serviceMsgMacroUserCancelled.text
         "macro_step_failed" -> serviceMsgMacroStepFailed.filled(
             "stepIndex" to numberArg(args, "stepIndex"),
             "totalSteps" to numberArg(args, "totalSteps"),
@@ -192,32 +192,32 @@ object WarehouseMacroReplayStrings {
             "detail" to localize(args["detail"]),
         )
 
-        "macro_navigate_url_empty" -> serviceMsgMacroNavigateUrlEmpty.zh
+        "macro_navigate_url_empty" -> serviceMsgMacroNavigateUrlEmpty.text
         "macro_navigate_url_invalid" -> serviceMsgMacroNavigateUrlInvalid.filled(
             "url" to args["url"].orEmpty(),
         )
-        "macro_fill_selector_empty" -> serviceMsgMacroFillSelectorEmpty.zh
+        "macro_fill_selector_empty" -> serviceMsgMacroFillSelectorEmpty.text
         "macro_element_not_found" -> serviceMsgMacroElementNotFound.filled(
             "selector" to args["selector"].orEmpty(),
         )
-        "macro_click_selector_empty" -> serviceMsgMacroClickSelectorEmpty.zh
-        "macro_url_pattern_empty" -> serviceMsgMacroUrlPatternEmpty.zh
-        "macro_wait_selector_empty" -> serviceMsgMacroWaitSelectorEmpty.zh
-        "macro_manual_input_default" -> serviceMsgMacroManualInputDefault.zh
+        "macro_click_selector_empty" -> serviceMsgMacroClickSelectorEmpty.text
+        "macro_url_pattern_empty" -> serviceMsgMacroUrlPatternEmpty.text
+        "macro_wait_selector_empty" -> serviceMsgMacroWaitSelectorEmpty.text
+        "macro_manual_input_default" -> serviceMsgMacroManualInputDefault.text
         "macro_poll_timeout" -> serviceMsgMacroPollTimeout.filled(
             "stepLabel" to args["stepLabel"].orEmpty(),
             "timeoutSeconds" to numberArg(args, "timeoutSeconds"),
             "lastError" to args["lastError"].orEmpty(),
         )
 
-        "macro_replay_navigate" -> serviceMsgMacroReplayNavigate.zh
-        "macro_replay_fill_field" -> serviceMsgMacroReplayFillField.zh
-        "macro_replay_click" -> serviceMsgMacroReplayClick.zh
-        "macro_replay_wait_url" -> serviceMsgMacroReplayWaitUrl.zh
-        "macro_replay_wait_selector" -> serviceMsgMacroReplayWaitSelector.zh
-        "macro_replay_wait_manual" -> serviceMsgMacroReplayWaitManual.zh
-        "macro_replay_execute_script" -> serviceMsgMacroReplayExecuteScript.zh
-        "macro_replay_delay" -> serviceMsgMacroReplayDelay.zh
+        "macro_replay_navigate" -> serviceMsgMacroReplayNavigate.text
+        "macro_replay_fill_field" -> serviceMsgMacroReplayFillField.text
+        "macro_replay_click" -> serviceMsgMacroReplayClick.text
+        "macro_replay_wait_url" -> serviceMsgMacroReplayWaitUrl.text
+        "macro_replay_wait_selector" -> serviceMsgMacroReplayWaitSelector.text
+        "macro_replay_wait_manual" -> serviceMsgMacroReplayWaitManual.text
+        "macro_replay_execute_script" -> serviceMsgMacroReplayExecuteScript.text
+        "macro_replay_delay" -> serviceMsgMacroReplayDelay.text
         "macro_replay_failed" -> serviceMsgMacroReplayFailed.filled(
             "detail" to localize(args["detail"]),
         )
@@ -233,28 +233,18 @@ object WarehouseMacroReplayStrings {
 }
 
 /** 宏回放域文案条目（与 [WarehouseArbText] 同形，独立成类避免跨文件混淆对拍集合）。 */
-data class MacroReplayText(val key: String, val zh: String) {
-    fun filled(vararg pairs: Pair<String, String>): String {
-        var result = zh
-        for ((name, value) in pairs) {
-            result = result.replace("{$name}", value)
-        }
-        return result
-    }
+typealias MacroReplayText = com.mutx163.qingyu.app.ArbText
 
-    companion object {
-        /** 步骤类型 → 过程文案（回放覆盖层「正在……」行）。 */
-        fun stepLabel(type: WarehouseMacroStepType): String = when (type) {
-            WarehouseMacroStepType.NAVIGATE -> WarehouseMacroReplayStrings.macroReplayStepNavigating.zh
-            WarehouseMacroStepType.FILL_FIELD -> WarehouseMacroReplayStrings.macroReplayStepFilling.zh
-            WarehouseMacroStepType.CLICK -> WarehouseMacroReplayStrings.macroReplayStepClicking.zh
-            WarehouseMacroStepType.WAIT_FOR_URL -> WarehouseMacroReplayStrings.macroReplayStepWaitUrl.zh
-            WarehouseMacroStepType.WAIT_FOR_SELECTOR -> WarehouseMacroReplayStrings.macroReplayStepWaitSelector.zh
-            WarehouseMacroStepType.WAIT_FOR_MANUAL_INPUT -> WarehouseMacroReplayStrings.macroReplayStepWaitManual.zh
-            WarehouseMacroStepType.EXECUTE_SCRIPT -> WarehouseMacroReplayStrings.macroReplayStepExecuteScript.zh
-            WarehouseMacroStepType.DELAY -> WarehouseMacroReplayStrings.macroReplayStepDelay.zh
-        }
-    }
+/** 步骤类型 → 过程文案（回放覆盖层「正在……」行）。 */
+fun macroReplayStepLabel(type: WarehouseMacroStepType): String = when (type) {
+    WarehouseMacroStepType.NAVIGATE -> WarehouseMacroReplayStrings.macroReplayStepNavigating.text
+    WarehouseMacroStepType.FILL_FIELD -> WarehouseMacroReplayStrings.macroReplayStepFilling.text
+    WarehouseMacroStepType.CLICK -> WarehouseMacroReplayStrings.macroReplayStepClicking.text
+    WarehouseMacroStepType.WAIT_FOR_URL -> WarehouseMacroReplayStrings.macroReplayStepWaitUrl.text
+    WarehouseMacroStepType.WAIT_FOR_SELECTOR -> WarehouseMacroReplayStrings.macroReplayStepWaitSelector.text
+    WarehouseMacroStepType.WAIT_FOR_MANUAL_INPUT -> WarehouseMacroReplayStrings.macroReplayStepWaitManual.text
+    WarehouseMacroStepType.EXECUTE_SCRIPT -> WarehouseMacroReplayStrings.macroReplayStepExecuteScript.text
+    WarehouseMacroStepType.DELAY -> WarehouseMacroReplayStrings.macroReplayStepDelay.text
 }
 
 /**

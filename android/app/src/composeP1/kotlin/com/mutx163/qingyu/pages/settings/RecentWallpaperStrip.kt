@@ -470,7 +470,7 @@ private fun RecentWallpaperRemoveBadge(onPressed: () -> Unit) {
         Icon(
             imageVector = MiuixIcons.Close,
             // 读屏只听得出「按钮」时不知道删的是什么（`:390-397`）。
-            contentDescription = SettingsRecentWallpaperSection.BADGE_TOOLTIP.zh,
+            contentDescription = SettingsRecentWallpaperSection.BADGE_TOOLTIP.text,
             tint = Color.White,
             modifier = Modifier.size(SettingsRecentWallpaperSection.BADGE_GLYPH_SIZE.dp),
         )
@@ -563,13 +563,13 @@ private fun RecentWallpaperUndoBar(
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Text(
-                text = SettingsBackdropFlowPage.REMOVED_TOAST.zh,
+                text = SettingsBackdropFlowPage.REMOVED_TOAST.text,
                 modifier = Modifier.weight(1f),
                 style = MiuixTheme.textStyles.footnote1,
                 color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
             )
             TextButton(
-                text = SettingsBackdropFlowPage.REMOVE_UNDO.zh,
+                text = SettingsBackdropFlowPage.REMOVE_UNDO.text,
                 onClick = { onUndo(undoKey) },
                 colors = ButtonDefaults.textButtonColors(),
             )

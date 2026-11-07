@@ -3,19 +3,7 @@ package com.mutx163.qingyu.pages.timetable
 /**
  * 封装 ARB 键名与中文原文的数据结构，便于单测机械化对拍。
  */
-data class ArbText(val key: String, val zh: String) {
-    /** 替换模板中的单占位符（`{name}` → [value]）。 */
-    fun filled(name: String, value: String): String = zh.replace("{$name}", value)
-
-    /** 替换模板中的多个占位符。 */
-    fun filled(vararg pairs: Pair<String, String>): String {
-        var result = zh
-        for ((name, value) in pairs) {
-            result = result.replace("{$name}", value)
-        }
-        return result
-    }
-}
+typealias ArbText = com.mutx163.qingyu.app.ArbText
 
 /**
  * 课表周视图与课表档案管理模块用到的全部 ARB 文案与纯格式化函数（`lib/l10n/app_zh.arb`）。
@@ -236,13 +224,13 @@ object TimetableStrings {
         clearedProfile.filled("name", name)
 
     fun formatWeekday(dayOfWeek: Int): String = when (dayOfWeek) {
-        1 -> weekdayMon.zh
-        2 -> weekdayTue.zh
-        3 -> weekdayWed.zh
-        4 -> weekdayThu.zh
-        5 -> weekdayFri.zh
-        6 -> weekdaySat.zh
-        7 -> weekdaySun.zh
+        1 -> weekdayMon.text
+        2 -> weekdayTue.text
+        3 -> weekdayWed.text
+        4 -> weekdayThu.text
+        5 -> weekdayFri.text
+        6 -> weekdaySat.text
+        7 -> weekdaySun.text
         else -> ""
     }
 
@@ -283,7 +271,7 @@ object TimetableStrings {
             parts += weatherProbabilityValue.filled("probability", probability.toString())
         }
         if (parts.isEmpty()) return null
-        return parts.joinToString(weatherSummarySeparator.zh)
+        return parts.joinToString(weatherSummarySeparator.text)
     }
 
     /**
@@ -297,8 +285,8 @@ object TimetableStrings {
             return courseWeekListLabel.filled("weeks", formatWeekList(custom))
         }
         val mode = when {
-            course.isOddWeek -> " ${oddWeeksFilter.zh}"
-            course.isEvenWeek -> " ${evenWeeksFilter.zh}"
+            course.isOddWeek -> " ${oddWeeksFilter.text}"
+            course.isEvenWeek -> " ${evenWeeksFilter.text}"
             else -> ""
         }
         return courseWeekRangeLabel.filled(
@@ -326,7 +314,7 @@ object TimetableStrings {
             previous = current
         }
         ranges.add(if (rangeStart == previous) "$rangeStart" else "$rangeStart-$previous")
-        return ranges.joinToString(weekListSeparator.zh)
+        return ranges.joinToString(weekListSeparator.text)
     }
 
     /**
