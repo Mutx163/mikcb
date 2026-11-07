@@ -44,7 +44,6 @@ object ExportStrings {
 
     // ── 导出按钮与产出 ──
     val icsExportButton = ArbText("icsExportButton", "导出并分享")
-    val icsExportSharing = ArbText("icsExportSharing", "准备日历……")
     val icsExportShared = ArbText("icsExportShared", "已导出并分享 {count} 个日历事件")
     val icsExportShareText = ArbText("icsExportShareText", "这是来自轻屿课表的日历文件")
     val icsExportShareSubject = ArbText("icsExportShareSubject", "轻屿课表日历")
@@ -56,7 +55,6 @@ object ExportStrings {
 
     // ── 校验与失败提示 ──
     val icsExportNoProfiles = ArbText("icsExportNoProfiles", "暂无可导出的课表")
-    val icsExportDateRangeInvalid = ArbText("icsExportDateRangeInvalid", "请选择不早于开始日期的结束日期")
     val icsExportNoSelection = ArbText("icsExportNoSelection", "至少选择一种日历内容")
     val icsExportSemesterStartRequired =
         ArbText("icsExportSemesterStartRequired", "导出课程前，请先设置学期开始日期")
@@ -114,7 +112,6 @@ object ExportStrings {
         icsExportSkipHolidayCoursesSubtitle,
         icsExportSkipHolidayCoursesOn,
         icsExportButton,
-        icsExportSharing,
         icsExportShared,
         icsExportShareText,
         icsExportShareSubject,
@@ -124,7 +121,6 @@ object ExportStrings {
         icsExportSaveCancelled,
         icsExportSaveFailed,
         icsExportNoProfiles,
-        icsExportDateRangeInvalid,
         icsExportNoSelection,
         icsExportSemesterStartRequired,
         icsExportNoEvents,

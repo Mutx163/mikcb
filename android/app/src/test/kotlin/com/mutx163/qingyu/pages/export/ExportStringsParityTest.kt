@@ -2,6 +2,7 @@ package com.mutx163.qingyu.pages.export
 
 import com.mutx163.qingyu.core.MiniJson
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import java.io.File
@@ -24,6 +25,46 @@ class ExportStringsParityTest {
             val template = arbMap[item.key]
             assertTrue("ARB(app_zh.arb) 中缺少键 `${item.key}`", template != null)
             assertMatchesArb(item.key, item.zh, template!!)
+        }
+    }
+
+    /**
+     * 两条死键 2026-11-06 已删（`icsExportSharing` / `icsExportDateRangeInvalid`：
+     * ARB 六份都有、但 Dart 与 Kotlin 代码零引用的遗留文案键）。
+     *
+     * 这条守卫防「加回」：一旦谁把它们加回 `ExportStrings` 或任何一份 ARB，
+     * `gen-l10n` 会重新生成 getter，而死键清单是**只减不增**的棘轮——所以在这里拦。
+     */
+    @Test
+    fun `两条已删死键不许加回来`() {
+        val removedKeys = listOf("icsExportSharing", "icsExportDateRangeInvalid")
+
+        for (key in removedKeys) {
+            assertFalse(
+                "`$key` 又回到了 `ExportStrings.allTexts`（Kotlin 侧把死键加回来了）。",
+                ExportStrings.allTexts.any { it.key == key },
+            )
+        }
+
+        val arbDir = File(repoRoot(), "lib/l10n")
+        val arbFiles = listOf(
+            "app_zh.arb",
+            "app_en.arb",
+            "app_ja.arb",
+            "app_ko.arb",
+            "app_zh_HK.arb",
+            "app_zh_TW.arb",
+        )
+        for (name in arbFiles) {
+            val file = File(arbDir, name)
+            assertTrue("找不到 ARB 文件：${file.absolutePath}", file.isFile)
+            val text = file.readText(Charsets.UTF_8)
+            for (key in removedKeys) {
+                assertFalse(
+                    "`$key` 又回到了 $name（ARB 侧把死键加回来了，gen-l10n 会再生成 getter）。",
+                    text.contains("\"$key\""),
+                )
+            }
         }
     }
 
@@ -88,5 +129,15 @@ class ExportStringsParityTest {
         val map = LinkedHashMap<String, String>()
         parsed.forEach { (k, v) -> if (k is String && v is String) map[k] = v }
         return map
+    }
+
+    /** 仓库根：以 `lib/l10n/app_zh.arb` 为标志文件向上找（L0 与 Gradle 的工作目录不同）。 */
+    private fun repoRoot(): File {
+        var dir: File? = File("").absoluteFile
+        repeat(8) {
+            if (File(dir, "lib/l10n/app_zh.arb").isFile) return dir!!
+            dir = dir?.parentFile
+        }
+        error("找不到仓库根（lib/l10n/app_zh.arb），工作目录 ${File("").absolutePath}")
     }
 }
