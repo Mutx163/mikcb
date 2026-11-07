@@ -29,55 +29,54 @@ class SettingsGeneralPageTest {
     }
 
     @Test
-    fun `首组四行按 Dart 顺序排列`() {
-        // settings_general.dart:56-101：语言 → 转场速度 → 震动反馈 → 下拉快捷导入
+    fun `首组两行按 Dart 顺序排列`() {
+        // settings_general.dart:56-101：语言 → 转场速度 → 震动反馈 → 下拉快捷导入。
+        // 2026-11-05：语言行与下拉导入行都先隐藏（见各自 `暂时隐藏` 用例），只剩这两行。
         assertEquals(
             listOf(
-                "general.language",
                 "general.transitionSpeed",
                 "general.haptics",
-                "general.homePullImport",
             ),
             spec().group("general.main").childRowIds(),
         )
     }
 
     @Test
-    fun `四行各自用的官方组件`() {
+    fun `两行各自用的官方组件`() {
         val page = spec()
-        assertEquals(MiuixRowComponent.DROPDOWN, page.row("general.language").component)
         assertEquals(MiuixRowComponent.SLIDER, page.row("general.transitionSpeed").component)
         assertEquals(MiuixRowComponent.SWITCH, page.row("general.haptics").component)
-        assertEquals(MiuixRowComponent.SWITCH, page.row("general.homePullImport").component)
     }
 
     // -------------------------------------------------------------- 语言行
 
     @Test
-    fun `语言行文案与选项表`() {
-        // settings_general.dart:58-66 + settings_shared.dart:111-125
-        val row = spec().row("general.language")
-        assertEquals("languageModeLabel", row.titleKey)
-        assertEquals("语言选择", row.title)
-        assertEquals("languageSectionSubtitle", row.subtitleKey)
-        assertEquals("可跟随系统，或手动切换到已适配语言", row.subtitle)
-        assertEquals(
-            listOf("跟随系统", "English", "日本語", "한국어", "简体中文", "繁體中文（香港）", "繁體中文（台灣）"),
-            row.options.map { it.label },
-        )
+    fun `语言行暂时隐藏`() {
+        // 2026-11-05：composeP1 的界面文字没有外语版（`.zh` 上千处、`.en` 零处），这个下拉给 6 个
+        // 选项却一个都换不掉界面语言，副标题还写着「可跟随系统，或手动切换到已适配语言」——
+        // 等于在页面上写一句不成立的话。按「不许留点了必无效的入口」口径先隐藏。
+        // 模型字段 appLocaleTag / ROW_LOCALE 写盘分支 / 文案键全部保留，locale 真切换落地后原样回来。
+        // 本条断言是防止「悄悄加回」的闸：恢复渲染时必须同时改这里。
+        val ids = spec().group("general.main").childRowIds()
+        assertFalse("界面文字没有外语版之前，语言选择行不许渲染", ids.contains("general.language"))
+        // 文案与选项表仍留在模型层：接回来后不用重新翻译、不用重排选项
+        assertEquals("languageModeLabel", SettingsStrings.languageModeLabel.key)
+        assertEquals("语言选择", SettingsStrings.languageModeLabel.zh)
+        assertEquals("languageSectionSubtitle", SettingsStrings.languageSectionSubtitle.key)
         assertEquals(
             listOf("", "en", "ja", "ko", "zh", "zh_HK", "zh_TW"),
-            row.options.map { it.id },
+            SettingsGeneralPage.localeOptions().map { it.id },
         )
     }
 
     @Test
-    fun `语言行选中值走 normalizeLocaleTagForDropdown`() {
-        // settings_shared.dart:84-105
-        assertEquals("", spec().row("general.language").selectedOptionId)
-        assertEquals("zh", spec(SettingsPageState(appLocaleTag = "zh-Hans")).row("general.language").selectedOptionId)
-        assertEquals("en", spec(SettingsPageState(appLocaleTag = "en-US")).row("general.language").selectedOptionId)
-        assertEquals("zh_HK", spec(SettingsPageState(appLocaleTag = "zh_HK")).row("general.language").selectedOptionId)
+    fun `语言标签归一判据保留 行隐藏也不许删实现`() {
+        // settings_shared.dart:84-105；行藏了，但归一判据仍要正确，否则接回来时选中项会错。
+        // （原来这条是经 row.selectedOptionId 间接测的，行隐藏后改为直接测判据本身。）
+        assertEquals("", SettingsGeneralPage.normalizeLocaleTag(""))
+        assertEquals("zh", SettingsGeneralPage.normalizeLocaleTag("zh-Hans"))
+        assertEquals("en", SettingsGeneralPage.normalizeLocaleTag("en-US"))
+        assertEquals("zh_HK", SettingsGeneralPage.normalizeLocaleTag("zh_HK"))
     }
 
     @Test
@@ -153,14 +152,19 @@ class SettingsGeneralPageTest {
     }
 
     @Test
-    fun `下拉快捷导入开关文案与默认值`() {
-        // settings_general.dart:90-99；默认 false 见 timetable_settings.dart:822
-        val row = spec().row("general.homePullImport")
-        assertEquals("homePullQuickImportTitle", row.titleKey)
-        assertEquals("首页下拉快捷导入", row.title)
-        assertEquals("homePullQuickImportSubtitle", row.subtitleKey)
-        assertEquals("在首页下拉时自动执行教务快捷导入", row.subtitle)
-        assertEquals(false, row.switchValue)
+    fun `下拉快捷导入开关暂时隐藏`() {
+        // 2026-11-05：引擎（WarehouseBackgroundImportEngine）还没落地，首页也没读
+        // homePullQuickImportEnabled —— 这个开关承诺「下拉即自动导入」，用户照做一定落空。
+        // 按「不许留点了必无效的入口」口径先隐藏；接上引擎后**这一行原样回来**，
+        // 模型字段与写盘逻辑（SettingsActionDispatcher.ROW_HOME_PULL_IMPORT）全程保留。
+        // 本条断言就是那道防止「悄悄加回」的闸：恢复渲染时必须同时改这里。
+        val ids = spec().group("general.main").childRowIds()
+        assertFalse("引擎未接之前，首页下拉快捷导入开关不许渲染", ids.contains("general.homePullImport"))
+        // 文案与默认值仍留在模型层：接回来后不该需要重新翻译或改默认
+        assertEquals("homePullQuickImportTitle", SettingsStrings.homePullQuickImportTitle.key)
+        assertEquals("首页下拉快捷导入", SettingsStrings.homePullQuickImportTitle.zh)
+        assertEquals("homePullQuickImportSubtitle", SettingsStrings.homePullQuickImportSubtitle.key)
+        assertEquals(false, SettingsPageState().homePullQuickImportEnabled)
     }
 
     // -------------------------------------------------------- 课表自动更新
@@ -360,7 +364,6 @@ class SettingsGeneralPageTest {
             assertNull("行 ${row.id} 不应有导航目标", row.actionTarget)
         }
         assertEquals(SettingsAction.WRITE_SETTING, page.row("general.haptics").action)
-        assertEquals(SettingsAction.WRITE_SETTING, page.row("general.language").action)
         assertEquals(SettingsAction.WRITE_SETTING, page.row("general.transitionSpeed").action)
     }
 }

@@ -11,10 +11,10 @@ import java.util.Locale
  * |---|---|---|
  * | `HyperosSubpage(title: generalSettingsTitle)`（:50-52） | `titleKey/title` | `basic.TopAppBar` |
  * | `HyperosListGroup`（:56） | `SettingsGroup("general.main")` | `basic.Card` |
- * | `HyperosSelectTile`（:58-66） | `general.language` | `MiuixOverlayDropdownPreference` |
+ * | ~~`HyperosSelectTile`（:58-66）~~ | ~~`general.language`~~（2026-11-05 起隐藏，见下） | — |
  * | `HyperosSliderTile`（:67-81） | `general.transitionSpeed` | `MiuixSliderPreference` |
  * | `HyperosSwitchTile`（:82-89） | `general.haptics` | `MiuixSwitchPreference` |
- * | `HyperosSwitchTile`（:90-99） | `general.homePullImport` | `MiuixSwitchPreference` |
+ * | ~~`HyperosSwitchTile`（:90-99）~~ | ~~`general.homePullImport`~~（2026-11-05 起隐藏，见下） | — |
  * | `HyperosSectionGap`（:102） | `SettingsGap("general.gap.autoRefresh")` | `SizedBox(12dp)` |
  * | `CourseAutoRefreshSettingsSection`（:103） | `general.autoRefresh.*` | 见下 |
  * | `HyperosSectionLabel`（widgets/course_auto_refresh_settings.dart:104） | `SettingsLabel` | preference category 文案 |
@@ -24,6 +24,25 @@ import java.util.Locale
  * | `HyperosNavTile`（:148-153） | `general.autoRefresh.dailyTime` | `MiuixArrowPreference` |
  * | `HyperosNavTile`（:154-158） | `general.autoRefresh.tryNow` | `MiuixArrowPreference` |
  * | `HyperosSectionDescription`（:162） | `SettingsDescription` | 整宽脚注（不受 11/17 口径约束） |
+ *
+ * ## 暂时隐藏的一行：`general.homePullImport`
+ *
+ * 「首页下拉快捷导入」开关**已从渲染里去掉**（2026-11-05）：它承诺「在首页下拉时自动执行教务
+ * 快捷导入」，而后台回放引擎（`WarehouseBackgroundImportEngine`）还没落地、首页也没有读
+ * `homePullQuickImportEnabled` 的地方 —— 用户照说明做一定落空，等于一个假开关。
+ * 按「不许留点了必无效的入口」口径先隐藏；模型字段与写盘逻辑保留，引擎接上后这一行原样回来。
+ * `SettingsGeneralPageTest` 里有一条 `下拉快捷导入开关暂时隐藏` 钉住这条，别在接引擎之前悄悄加回。
+ *
+ * ## 暂时隐藏的一行：`general.language`
+ *
+ * 「语言选择」下拉**已从渲染里去掉**（2026-11-05）：它写 `appLocaleTag`，但 composeP1 的界面文字
+ * 没有外语版（`.zh` 引用上千处、`.en` 零处），生效点自己也注明「不会把界面文字换成外语」——
+ * 副标题「可跟随系统，或手动切换到已适配语言」在页面上写了一句不成立的话，而且它给出 6 个选项、
+ * 没有一个真的换掉界面文字。按「不许留点了必无效的入口」口径先隐藏（比下拉导入那个开关更该藏：
+ * 那个是「还没实现」，这个是「给了选项但每个都没效果」）。
+ * 模型字段 `appLocaleTag`、写盘分支 `SettingsActionDispatcher.ROW_LOCALE`、`SettingsStrings` 键
+ * 全部保留，用户旧值不丢；等 locale 真切换落地（界面文字有外语版）后这一行原样回来。
+ * `SettingsGeneralPageTest` 里有一条 `语言行暂时隐藏` 钉住这条。
  *
  * ## 两条「不写进模型」的行为，接线层必须照做
  *
@@ -47,15 +66,14 @@ object SettingsGeneralPage {
         nodes += SettingsGroup(
             id = "general.main",
             children = listOf(
-                settingsRow(
-                    id = "general.language",
-                    component = MiuixRowComponent.DROPDOWN,
-                    title = SettingsStrings.languageModeLabel,
-                    subtitle = SettingsStrings.languageSectionSubtitle,
-                    options = localeOptions(),
-                    selectedOptionId = normalizeLocaleTag(state.appLocaleTag),
-                    action = SettingsAction.WRITE_SETTING,
-                ),
+                // 2026-11-05 起**暂时隐藏**「语言选择」这一行（`general.language`）。
+                // 它写 `appLocaleTag`，但 composeP1 的界面文字没有外语版（`.zh` 引用上千处、`.en` 零处），
+                // 生效点自己也注明「不会把界面文字换成外语」——副标题写着「可跟随系统，或手动切换到
+                // 已适配语言」，等于在页面上写一句不成立的话；而且它提供 6 个选项、没有一个真的换掉界面语言。
+                // 按「不许留点了必无效的入口」口径先藏起来；**模型字段 `appLocaleTag`、写盘分支
+                // `SettingsActionDispatcher.ROW_LOCALE`、`SettingsStrings` 键全部保留**，
+                // 用户旧值不丢。等 locale 真切换落地（界面文字有外语版）后，把这段
+                // `settingsRow(id = "general.language", …)` 原样加回来。
                 settingsRow(
                     id = "general.transitionSpeed",
                     component = MiuixRowComponent.SLIDER,
@@ -78,14 +96,14 @@ object SettingsGeneralPage {
                     switchValue = state.enableHaptics,
                     action = SettingsAction.WRITE_SETTING,
                 ),
-                settingsRow(
-                    id = "general.homePullImport",
-                    component = MiuixRowComponent.SWITCH,
-                    title = SettingsStrings.homePullQuickImportTitle,
-                    subtitle = SettingsStrings.homePullQuickImportSubtitle,
-                    switchValue = state.homePullQuickImportEnabled,
-                    action = SettingsAction.WRITE_SETTING,
-                ),
+                // 2026-11-05 起**暂时隐藏**「首页下拉快捷导入」这一行（`general.homePullImport`）。
+                // 它承诺「在首页下拉时自动执行教务快捷导入」，但后台回放引擎
+                // （`WarehouseBackgroundImportEngine`）还没落地，首页也没有任何一处读
+                // `homePullQuickImportEnabled` —— 用户照说明做一定落空。
+                // 按「不许留点了必无效的入口」口径先藏起来；**模型字段与写盘逻辑原样保留**
+                // （`TimetableSettingsModel.homePullQuickImportEnabled` +
+                // `SettingsActionDispatcher.ROW_HOME_PULL_IMPORT`），引擎接上后把这段
+                // `settingsRow(id = "general.homePullImport", …)` 原样加回来即可，旧设置值不会丢。
             ),
         )
 

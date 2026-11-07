@@ -1171,6 +1171,9 @@ fun HomeNavigationHost(
             model = newModel
         } else {
             Log.e(LOG_TAG, "home navigation save did not land")
+            // 首页导航保存失败以前也只写日志：用户点完看不出没生效，重进页面又回到旧值。
+            // model 保持不动（没落盘就不改内存），这里补一句和设置页其它行同键的提示。
+            toast(SettingsStringsExt2.saveFailed.zh)
         }
         return landed
     }
@@ -1494,6 +1497,9 @@ fun GlassDockEditorHost(
     onBack: () -> Unit,
 ) {
     var model by remember(store) { mutableStateOf(store.load()) }
+    // 写盘失败要说话：底栏编辑器的状态类没有错误通道（也不该为了这件事膨胀结构），
+    // 宿主持有 Context 就在这里补一句 toast —— 与设置页其它行同一条口径、同一个键。
+    val context = LocalContext.current
     fun write(rowId: String, target: String?) {
         // 空表（从没存过）先回退出厂排列：否则「加一个」以空表为底会把 day/week 一起丢掉。
         val base = if (model.glassDockActions.isEmpty()) {
@@ -1512,6 +1518,8 @@ fun GlassDockEditorHost(
                 model = result.model
             } else {
                 Log.e(LOG_TAG, "glass dock editor save did not land")
+                // 以前只有日志：用户点了「加/删/移」看不出没生效。model 保持不动（没落盘就不改界面）。
+                Toast.makeText(context, SettingsStringsExt2.saveFailed.zh, Toast.LENGTH_SHORT).show()
             }
         }
     }
@@ -1535,6 +1543,8 @@ fun HomeMenuEditorHost(
     onBack: () -> Unit,
 ) {
     var model by remember(store) { mutableStateOf(store.load()) }
+    // 同底栏编辑器：菜单编辑器也没有错误通道，写盘失败在宿主这里给一句 toast。
+    val context = LocalContext.current
     fun write(rowId: String, target: String?) {
         val base = if (model.homeGridMenuActions.isEmpty()) {
             model.copy(homeGridMenuActions = SettingsHomeMenuEditorPage.DEFAULT_ACTIONS)
@@ -1552,6 +1562,7 @@ fun HomeMenuEditorHost(
                 model = result.model
             } else {
                 Log.e(LOG_TAG, "home menu editor save did not land")
+                Toast.makeText(context, SettingsStringsExt2.saveFailed.zh, Toast.LENGTH_SHORT).show()
             }
         }
     }
