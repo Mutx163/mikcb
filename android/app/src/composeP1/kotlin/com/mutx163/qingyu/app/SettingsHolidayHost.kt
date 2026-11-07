@@ -118,9 +118,16 @@ fun SettingsHolidayHost(
         provider.addListener(listener)
         onDispose { provider.removeListener(listener) }
     }
+    // 首屏加载态：`initialize()` 在 IO 上跑（远端超时 8 秒），这段时间页面必须是
+    // 「正在加载」而不是「近期没有节假日」。判据 = 本页还没跑完第一次 initialize 且
+    // 快照里还没有数据；重复进页面时 `snapshot.data` 非空，直接不进加载态。
+    var initializing by remember { mutableStateOf(true) }
     // 首次进入读盘 + 缺年份补一次远端（幂等；重复进出页面不会发第二次请求）。
     LaunchedEffect(provider) {
-        withContext(Dispatchers.IO) { provider.initialize() }
+        // `runCatching` 是必须的：`initialize()` 若抛（磁盘/解码异常），没有它这一句就不会
+        // 执行，`initializing` 永远停在 true —— 那是比修前更糟的「永久加载中」。
+        runCatching { withContext(Dispatchers.IO) { provider.initialize() } }
+        initializing = false
     }
     // 读取 version 建立快照订阅（值本身不参与渲染）。
     @Suppress("UNUSED_EXPRESSION")
@@ -218,6 +225,7 @@ fun SettingsHolidayHost(
         customHolidays = snapshot.customHolidays,
         customCorrupted = snapshot.customCorrupted,
         today = LocalDate.now(),
+        loading = initializing && snapshot.data == null,
     )
     val spec = SettingsHolidayPage.spec(SettingsPageState(), data)
 

@@ -11,6 +11,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalContext
 import com.mutx163.qingyu.calendar.HolidayProvider
+import com.mutx163.qingyu.calendar.HolidaySnapshot
 import com.mutx163.qingyu.pages.settings.SettingsHolidayAdvancedPage
 import com.mutx163.qingyu.pages.settings.SettingsPageScreen
 import com.mutx163.qingyu.pages.settings.SettingsPageState
@@ -76,22 +77,35 @@ fun SettingsHolidayAdvancedHost(
     @Suppress("UNUSED_EXPRESSION")
     version
 
-    /** 检查更新（Dart `_refreshHolidayData`，`:676-697`）：刷新中不重入 → 刷完提示。 */
+    /**
+     * 检查更新（Dart `_refreshHolidayData`，`:676-697`）：刷新中不重入 → 按**结果**提示。
+     *
+     * Dart 侧这条动作只有「成功」一条路：`try` 里刷完必弹 `l10n.holidayCheckUpdate`
+     * （就是按钮名本身），`finally` 复位，没有失败分支。这里改成两句真结果：
+     * - 远端真的拉到了（[HolidaySnapshot.remoteFetchSucceeded] == true）→「节假日数据已更新」；
+     * - 拉过但全失败（== false，此时数据是内置兜底）→「更新失败，已使用本地数据」；
+     * - `null`（不发请求就命中缓存，理论上 forceRemote 下不会出现）→ 按成功算，不谎报失败。
+     *
+     * 之所以不能只看 `runCatching` 成不成功：provider 从不外抛，动作永远「成功」，
+     * 真正该报给用户的是「数据有没有更新」。
+     */
     fun checkUpdate() {
         // Dart `:677-679` `if (_refreshing) return;`——按钮虽然会按 refreshing 置灰，
         // 这里再兜一次，避免连点两次排队刷两遍。
         if (provider.snapshot.refreshing) return
         scope.launch {
-            val ok = runCatching {
+            val outcome = runCatching {
                 withContext(Dispatchers.IO) { provider.refresh() }
-            }.isSuccess
-            if (ok) {
-                Toast.makeText(
-                    context,
-                    SettingsStringsExt3.holidayCheckUpdate.zh,
-                    Toast.LENGTH_SHORT,
-                ).show()
+            }.fold(
+                onSuccess = { provider.snapshot.remoteFetchSucceeded },
+                onFailure = { false },
+            )
+            val message = if (outcome == false) {
+                SettingsStringsExt3.holidayDataUpdateFailed.zh
+            } else {
+                SettingsStringsExt3.holidayDataUpdated.zh
             }
+            Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
         }
     }
 

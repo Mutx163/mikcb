@@ -137,9 +137,11 @@ object SettingsHolidayPage {
                 // ── 区块 3：法定节假日（:596-629）
                 SettingsLabel(
                     id = "holiday.section.official",
-                    textKey = s.holidayDataYearLabel.key,
-                    // :601 `holidayDataYearLabel(holidayData?.year ?? '')`——年份缺失就留空
-                    text = s.holidayDataYearLabel.filled("year", data.year),
+                    textKey = officialSectionLabel(data).key,
+                    // :601 `holidayDataYearLabel(holidayData?.year ?? '')`——年份缺失时
+                    // Dart 会渲染成「 年法定节假日」（前导空格 + 空年份）。加载中 / 没数据
+                    // 的时候直接退回不带年份的那句「法定节假日」，别把半个模板摆上屏。
+                    text = officialSectionLabel(data).zh,
                 ),
                 SettingsGroup(
                     id = "holiday.group.official",
@@ -200,6 +202,8 @@ object SettingsHolidayPage {
             )
         }
         if (data.customHolidays.isEmpty()) {
+            // 加载中不摆「暂无自定义假期」：列表还没读出来，说「没有」是假的。
+            if (data.isLoading) return emptyList()
             return listOf(
                 settingsRow(
                     id = "holiday.customEmpty",
@@ -230,9 +234,39 @@ object SettingsHolidayPage {
         }
     }
 
-    /** 法定节假日：空态一行，否则逐条（:603-627）。 */
+    /**
+     * 法定节假日区块的小标题。
+     *
+     * - **加载中且还没有年份**：用不带年份的「法定节假日」。这是 Dart 没有的状态
+     *   （Dart 没有加载态），不这么做会渲染成「 年法定节假日」——半个模板摆上屏；
+     * - **其余情况**：保持 Dart 逐字口径 `holidayDataYearLabel(holidayData?.year ?? '')`，
+     *   包括年份缺失时那个前导空格（`SettingsHolidayPageTest` 钉着它，改了口径就是要改对拍）。
+     */
+    internal fun officialSectionLabel(data: HolidayPageData): ArbText {
+        val s = SettingsStringsExt3
+        return if (data.year.isEmpty() && data.isLoading) {
+            s.holidayStatutoryLabel
+        } else {
+            ArbText(s.holidayDataYearLabel.key, s.holidayDataYearLabel.filled("year", data.year))
+        }
+    }
+
+    /** 法定节假日：加载态一行、空态一行，否则逐条（:603-627）。 */
     private fun officialHolidayRows(data: HolidayPageData): List<SettingsNode> {
         val s = SettingsStringsExt3
+        // 加载中优先于空态：远端超时 8 秒（`HolidayService.TIMEOUT_MILLIS`），这段时间
+        // 显示「近期没有节假日」等于告诉用户一件假事（他确实可能在放假）。
+        // 只在**没有条目**时顶掉空态：真拿到了就先显示条目，不拿加载行盖住真数据。
+        if (data.isLoading && data.officialHolidays.isEmpty()) {
+            return listOf(
+                settingsRow(
+                    id = "holiday.loading",
+                    component = MiuixRowComponent.ARROW,
+                    title = s.holidayDataLoading,
+                    enabled = false,
+                ),
+            )
+        }
         if (data.officialHolidays.isEmpty()) {
             return listOf(
                 settingsRow(
@@ -299,6 +333,14 @@ object SettingsHolidayPage {
         customHolidays: List<HolidayEntry>,
         customCorrupted: Boolean,
         today: LocalDate,
+        /**
+         * 首屏是否还在加载（`HolidayProvider.initialize` 还没跑完）。
+         *
+         * 缺省 `false` ⇒ 既有调用点与既有测试的行为完全不变；宿主传
+         * `初始化为 true && snapshot.data == null`，于是「远端超时 8 秒」这段时间
+         * 显示的是加载态而不是「近期没有节假日」的假空态。
+         */
+        loading: Boolean = false,
     ): HolidayPageData = HolidayPageData(
         enableHolidayMarking = enableHolidayMarking,
         customHolidaysCorrupted = customCorrupted,
@@ -306,6 +348,7 @@ object SettingsHolidayPage {
         // :601 `holidayData?.year ?? ''`
         year = official?.year?.toString() ?: "",
         officialHolidays = if (official == null) emptyList() else buildOfficialItems(official, today),
+        isLoading = loading,
     )
 
     /** `_groupCustomHolidays`（:396-412）。 */
@@ -508,6 +551,12 @@ data class HolidayPageData(
     val year: String = "",
     /** 已按开始日期排序的法定节假日。 */
     val officialHolidays: List<HolidayItem> = emptyList(),
+    /**
+     * 首屏加载中：两个区块都不出「没有」的空态，法定节假日区块显示一行加载提示。
+     *
+     * 与 [customHolidaysCorrupted] 不冲突：损坏态是**读到了**但解不出来，优先于加载态显示。
+     */
+    val isLoading: Boolean = false,
 )
 
 /** 一条已归并的自定义假期（Dart `_CustomHolidayGroup`，:835-849）。 */

@@ -1,8 +1,10 @@
 package com.mutx163.qingyu.pages.settings
 
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import java.io.File
 
 /**
  * P3-B-3 四页的文案逐字对照 ARB（`lib/l10n/app_zh.arb` = template，见 `l10n.yaml`）。
@@ -178,9 +180,75 @@ class SettingsStringsExt3ParityTest {
         assertTrue("改掉模板片段应当比对失败", failed.isFailure)
     }
 
+    /**
+     * 两条与 `DiagnosticsStrings` 逐字重复的死键，2026-11-06 已从 `SettingsStringsExt3` 删除：
+     * `liveDiagnosticsCleared` / `liveDiagnosticsClearFailed`（同句在
+     * `pages/diagnostics/DiagnosticsStrings.kt:34-35` 的 `appLogsCleared` / `appLogsClearFailed`，
+     * Kotlin 侧真正在用的是后者，见 `DiagnosticsLogHost.kt:370-372` / `LiveSelfCheckHost.kt:348-350`）。
+     *
+     * ## 为什么只删 Kotlin、ARB 六份必须留着
+     *
+     * 这两个键**不是死键**：`lib/screens/settings/settings_live.dart:443-444` 仍在读
+     * `AppLocalizations.liveDiagnosticsCleared/ClearFailed`。删 ARB 会让 `gen-l10n`
+     * 少生成两个 getter，Flutter 侧直接编译失败。所以：
+     * - Kotlin 文案表：不许再加回（第①段）；
+     * - ARB 六份：**必须仍在**，少了就是有人误删（第②段）；
+     * - Dart 消费点：仍在引用才成立；哪天 Dart 侧删了，这条会红——那时才该按
+     *   `ExportStringsParityTest` 的先例把 ARB 一起删并改这里。
+     *
+     * 咬合探针（已实测）：把 `val liveDiagnosticsCleared = ArbText("liveDiagnosticsCleared", …)`
+     * 加回 `SettingsStringsExt3` ⇒ 本测试红；删掉 ⇒ 绿。
+     */
     @Test
-    fun `四个页面的标题都对上了`() {
-        assertEquals("liveSettingsTitle", SettingsLivePage.ID_TITLE_KEY)
+    fun `两条与 DiagnosticsStrings 重复的死键不许加回`() {
+        val removed = listOf("liveDiagnosticsCleared", "liveDiagnosticsClearFailed")
+
+        // ① Kotlin 文案表里不许再出现（防加回）
+        val declared = stringsExt3Entries().map { it.first }.toSet()
+        for (key in removed) {
+            assertFalse(
+                "`$key` 又回到了 `SettingsStringsExt3`（Kotlin 侧把与 DiagnosticsStrings 重复的死键加回来了）。",
+                key in declared,
+            )
+        }
+
+        // ② ARB 六份必须保留：Dart 侧还在消费，删了 gen-l10n 产物会缺 getter。
+        val arbDir = File(repoRoot(), "lib/l10n")
+        val arbFiles = listOf(
+            "app_zh.arb",
+            "app_en.arb",
+            "app_ja.arb",
+            "app_ko.arb",
+            "app_zh_HK.arb",
+            "app_zh_TW.arb",
+        )
+        for (name in arbFiles) {
+            val file = File(arbDir, name)
+            assertTrue("找不到 ARB 文件：${file.absolutePath}", file.isFile)
+            val text = file.readText(Charsets.UTF_8)
+            for (key in removed) {
+                assertTrue(
+                    "`$key` 从 $name 里消失了：Dart 侧 settings_live.dart 还在读它，" +
+                        "删了 `gen-l10n` 会缺 getter，Flutter 侧编译失败。",
+                    text.contains("\"$key\""),
+                )
+            }
+        }
+
+        // ③ 消费点自检：Dart 侧确实还在用（换成「Dart 删了」时才该动 ARB）
+        val dartFile = File(repoRoot(), "lib/screens/settings/settings_live.dart")
+        assertTrue("找不到 Dart 消费点：${dartFile.absolutePath}", dartFile.isFile)
+        val dartText = dartFile.readText(Charsets.UTF_8)
+        for (key in removed) {
+            assertTrue(
+                "Dart 侧不再引用 `$key`：可以按 ExportStringsParityTest 的先例连 ARB 一起删，并同步改本测试。",
+                key in dartText,
+            )
+        }
+    }
+
+    @Test
+    fun `四个页面的标题都对上了`() {        assertEquals("liveSettingsTitle", SettingsLivePage.ID_TITLE_KEY)
         assertEquals("liveSelfCheckTitle", SettingsLiveSelfCheckPage.ID_TITLE_KEY)
         assertEquals("holidaySettingsTitle", SettingsHolidayPage.ID_TITLE_KEY)
         assertEquals("holidayAdvancedTitle", SettingsHolidayAdvancedPage.ID_TITLE_KEY)
@@ -198,6 +266,16 @@ class SettingsStringsExt3ParityTest {
                 val text = method.invoke(SettingsStringsExt3) as ArbText
                 text.key to text.zh
             }
+
+    /** 仓库根：以 `lib/l10n/app_zh.arb` 为标志文件向上找（L0 与 Gradle 的工作目录不同）。 */
+    private fun repoRoot(): File {
+        var dir: File? = File("").absoluteFile
+        repeat(8) {
+            if (File(dir, "lib/l10n/app_zh.arb").isFile) return dir!!
+            dir = dir?.parentFile
+        }
+        error("找不到仓库根（lib/l10n/app_zh.arb），工作目录 ${File("").absolutePath}")
+    }
 
     private fun assertMatchesArb(key: String, text: String) {
         val template = ArbZh.value(key)

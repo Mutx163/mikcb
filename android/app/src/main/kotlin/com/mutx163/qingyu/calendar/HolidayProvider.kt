@@ -26,7 +26,11 @@ data class HolidayLogLine(val time: String, val message: String)
  *   小组件判定）请用 [HolidayProvider.mergedData]；
  * - [customCorrupted]：自定义假期持久化数据损坏（页面据此出提示条，而不是显示「暂无」）；
  * - [refreshing]：正在强制刷新（只影响按钮 loading 态）；
- * - [logs]：[HolidayProvider.logs] 的同一份拷贝，最新在前，上限 [HolidayProvider.MAX_LOGS]。
+ * - [logs]：[HolidayProvider.logs] 的同一份拷贝，最新在前，上限 [HolidayProvider.MAX_LOGS]；
+ * - [remoteFetchSucceeded]：**这一轮到底有没有把远端拉下来**——`null` = 本轮没发请求
+ *   （命中了内存 / 本地缓存），`true` = 至少有一年从远端拿到了非空数据，`false` = 发过请求
+ *   但全部失败（此时 [data] 是内置资产兜底，界面不能谎报「已更新」）。
+ *   高级页「检查更新」的结果提示就靠它分流：动作本身成功不等于数据真的更新了。
  */
 data class HolidaySnapshot(
     val year: Int,
@@ -35,6 +39,7 @@ data class HolidaySnapshot(
     val customCorrupted: Boolean,
     val refreshing: Boolean,
     val logs: List<HolidayLogLine>,
+    val remoteFetchSucceeded: Boolean? = null,
 )
 
 /**
@@ -257,11 +262,14 @@ class HolidayProvider(
         // 字面量顺序一致，合并结果的条目顺序因此也一致。
         val years = holidayYearsToLoad(LocalDateTime.of(today, LocalTime.NOON))
 
-        val current = dataForYear(today.year, forceRemote)
+        // 远端结果的观察窗：`dataForYear` 里命中缓存时不会碰它，界面据此区分
+        // 「缓存命中（不需要拉）」与「拉过但失败了」。
+        val remoteReport = RemoteFetchReport()
+        val current = dataForYear(today.year, forceRemote, remoteReport)
         val allEntries = ArrayList(current.entries)
         for (year in years) {
             if (year == today.year) continue
-            allEntries.addAll(dataForYear(year, forceRemote).entries)
+            allEntries.addAll(dataForYear(year, forceRemote, remoteReport).entries)
         }
 
         val storedCustoms = preferences.loadCustomHolidays()
@@ -283,7 +291,16 @@ class HolidayProvider(
             customCorrupted = storedCustoms == null,
             refreshing = refreshing,
             logs = logs,
+            remoteFetchSucceeded = remoteReport.outcome(),
         )
+    }
+
+    /** 一轮加载里「有没有真的拉远端、拉成功没有」的观察窗（`null` = 没发请求）。 */
+    private class RemoteFetchReport {
+        var attempted = false
+        var succeeded = false
+
+        fun outcome(): Boolean? = if (attempted) succeeded else null
     }
 
     /**
@@ -292,7 +309,7 @@ class HolidayProvider(
      * 永远返回非 null：走到最后一步的内置兜底时，没有该年资产就返回空数据
      * （「没有数据」是合法结果，不假装失败）。
      */
-    private fun dataForYear(year: Int, forceRemote: Boolean): HolidayData {
+    private fun dataForYear(year: Int, forceRemote: Boolean, report: RemoteFetchReport? = null): HolidayData {
         if (forceRemote) {
             memoryCache.remove(year)
             preferences.clearYear(year)
@@ -311,9 +328,11 @@ class HolidayProvider(
         }
 
         log("$KEY_NO_CACHE_FETCHING|year=$year")
+        report?.attempted = true
         val remote = service.fetchYear(year) { raw -> log(raw) }
         // 空条目不算成功（网关已保证，这里再兜一层，防止假网关回空列表被写进缓存）。
         if (remote != null && remote.entries.isNotEmpty()) {
+            report?.succeeded = true
             memoryCache[year] = remote
             preferences.saveYear(year, remote)
             log("$KEY_REMOTE_SUCCESS|year=$year|count=${remote.entries.size}")

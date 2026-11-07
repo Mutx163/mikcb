@@ -96,8 +96,14 @@ object SettingsStringsExt3 {
     val liveTestingRefreshedAt = ArbText("liveTestingRefreshedAt", "上次刷新：{time}")
     val liveTestingNotRefreshed = ArbText("liveTestingNotRefreshed", "尚未刷新")
     val liveDiagnosticsNothingToExport = ArbText("liveDiagnosticsNothingToExport", "当前没有可导出的日志文件，也没有可导出的状态快照")
-    val liveDiagnosticsCleared = ArbText("liveDiagnosticsCleared", "已清空应用日志")
-    val liveDiagnosticsClearFailed = ArbText("liveDiagnosticsClearFailed", "清空应用日志失败")
+    // `liveDiagnosticsCleared` / `liveDiagnosticsClearFailed` 2026-11-06 已从本类删除：
+    // 这两条与 `pages/diagnostics/DiagnosticsStrings.kt:34-35` 的 `appLogsCleared` /
+    // `appLogsClearFailed` 是同一句话，Kotlin 侧零引用（真正在用的是 DiagnosticsStrings，
+    // 见 `DiagnosticsLogHost.kt:370-372` / `LiveSelfCheckHost.kt:348-350`）。
+    // ⚠️ **只删 Kotlin 声明，ARB 六份保留**：`lib/screens/settings/settings_live.dart:443-444`
+    // 仍在读 `AppLocalizations.liveDiagnosticsCleared/ClearFailed`，删 ARB 会让 Flutter 侧
+    // 生成物缺 getter（死键判据是 Dart+Kotlin 双 corpus，Dart 在用 ⇒ 它们不是死键）。
+    // 防回潮守卫见 `SettingsStringsExt3ParityTest.两条与 DiagnosticsStrings 重复的死键不许加回`。
     val liveDiagnosticsShareText = ArbText("liveDiagnosticsShareText", "轻屿课表超级岛运行日志，用于排查不显示等问题")
     val liveDiagnosticsShareSubject = ArbText("liveDiagnosticsShareSubject", "轻屿课表 - 超级岛日志")
     val liveDiagnosticsSnapshotShareText = ArbText("liveDiagnosticsSnapshotShareText", "轻屿课表超级岛状态快照，用于排查不显示等问题")
@@ -169,6 +175,14 @@ object SettingsStringsExt3 {
     val holidayAdvancedTitle = ArbText("holidayAdvancedTitle", "节假日数据更新")
     val holidayUpdateLog = ArbText("holidayUpdateLog", "更新日志")
     val holidayCheckUpdate = ArbText("holidayCheckUpdate", "检查更新")
+
+    // 2026-11-05 新增：三条原文在 ARB 里没有对应键（Dart 侧「检查更新」成功后弹的就是
+    // 按钮名本身、失败根本没有分支），所以这是**发布版之上的改进**，不是逐字搬运。
+    // 弹层/整宽提示不在 11/17 行控件口径内；`holidayDataLoading` 会作为一行标题上屏，
+    // 宽度 10（恰在 11 的上限内），改文案时先量宽度。
+    val holidayDataUpdated = ArbText("holidayDataUpdated", "节假日数据已更新")
+    val holidayDataUpdateFailed = ArbText("holidayDataUpdateFailed", "更新失败，已使用本地数据")
+    val holidayDataLoading = ArbText("holidayDataLoading", "正在加载节假日数据…")
 
     // ---- 天气（`settings_weather.dart`） ----
 

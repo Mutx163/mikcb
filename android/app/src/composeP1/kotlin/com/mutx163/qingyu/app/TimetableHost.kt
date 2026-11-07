@@ -1,5 +1,7 @@
 package com.mutx163.qingyu.app
 
+import android.content.Context
+import android.content.SharedPreferences
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -8,6 +10,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.Dp
@@ -28,11 +31,14 @@ import com.mutx163.qingyu.pages.timetable.TimetableDateLogic
 import com.mutx163.qingyu.pages.timetable.TimetableStrings
 import com.mutx163.qingyu.pages.timetable.WeekHolidayMarking
 import com.mutx163.qingyu.pages.timetable.WeekViewStyle
+import com.mutx163.qingyu.pages.timetable.month.MonthHolidaySettings
 import com.mutx163.qingyu.pages.timetable.shareTimetableImage
 import com.mutx163.qingyu.pages.weather.WeatherStrings
 import com.mutx163.qingyu.weather.WeatherProvider
+import com.mutx163.qingyu.widgetdata.CoupleOverlaySource
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
+import kotlinx.coroutines.launch
 import java.time.LocalDate
 import java.time.LocalDateTime
 
@@ -141,6 +147,11 @@ fun TimetableHost(
      * 缩放的是不透明层、不会每帧重采样玻璃；落定后再置回 true 显示实时玻璃。
      */
     glassSurfacesEnabled: Boolean = true,
+    /**
+     * 情侣叠加数据版本号（B1 第二阶段，2026-11-06）：情侣页改叠加色 / 周偏移只写键值存储、
+     * 不碰课表仓储，宿主靠这个序号重读 [CoupleOverlaySource]。0 = 默认（未接 / 无绑定）。
+     */
+    coupleOverlayRevision: Int = 0,
 ) {
     // 首帧直接用仓储当前快照，避免「先画空网格再跳成有课」的闪一下。
     // ⚠️ 这不是优化，是**接口语义**：`TimetableRepository.observe` 只在**后续变更**时回调，
@@ -151,6 +162,13 @@ fun TimetableHost(
         val subscription = repository.observe { updated -> snapshot = updated }
         onDispose { subscription.close() }
     }
+
+    // 情侣叠加数据（B1 第二阶段，2026-11-06）：有绑定且对方档有课才有值，否则 null = 现行为。
+    // 外观编辑页的缩尺预览（previewMode）**不叠加**，与日视图预览「不受绑定影响」同一口径。
+    val loadedCoupleOverlay = remember(coupleOverlayRevision, snapshot) {
+        CoupleOverlaySource.load(repository)
+    }
+    val coupleOverlay = if (previewMode) null else loadedCoupleOverlay
 
     val settings = snapshot.settings
     // 显示偏好解析（S1）：注入点优先 → 用户存档推导 → Dart 默认。
@@ -209,9 +227,40 @@ fun TimetableHost(
     // 数据在 HolidayPreferences（官方年度缓存 + 自定义条目），与 IcsExportHost 同一来源。
     val appContext = LocalContext.current.applicationContext
     val holidayPrefs = remember(appContext) { HolidayPreferences(PrefsKeyValueStore(appContext)) }
+
+    // ⚠️ 假期这块必须**跟着变**（2026-11-05 修）：节假日两个设置页是**另一个宿主**
+    // （`SettingsHolidayHost`），它改的是 prefs（`custom_holidays` / `holiday_data_<year>` /
+    // `timetable_settings`），而壳没把那份 `HolidayProvider` 实例传到本宿主来，所以这里
+    // 直接订阅**同一个 SharedPreferences 文件**：命中这三类键就把 revision 加一，
+    // 下面几处 `remember` 随之重读。
+    // 修前实测：加/改/删自定义假期后，已挂载的周视图要重启才更新；且「今天放假」被写死 false。
+    var holidayRevision by remember { mutableIntStateOf(0) }
+    val holidayScope = rememberCoroutineScope()
+    DisposableEffect(appContext) {
+        val preferences = appContext.getSharedPreferences(PrefsKeyValueStore.PREFS_NAME, Context.MODE_PRIVATE)
+        val listener = SharedPreferences.OnSharedPreferenceChangeListener { _, physicalKey ->
+            val logical = physicalKey?.let { FrozenValueCodec.logicalKey(it) }
+                ?: return@OnSharedPreferenceChangeListener
+            val relevant = logical == HolidayPreferences.CUSTOM_HOLIDAYS_KEY ||
+                logical.startsWith(HolidayPreferences.DATA_KEY_PREFIX) ||
+                logical == TimetableStore.KEY_SETTINGS
+            // 回调线程 = 真正的写入线程（设置页在 IO 上写），Compose 状态必须回主线程改。
+            if (relevant) holidayScope.launch { holidayRevision++ }
+        }
+        preferences.registerOnSharedPreferenceChangeListener(listener)
+        onDispose { preferences.unregisterOnSharedPreferenceChangeListener(listener) }
+    }
+
     val holidayMarkingEnabled = settingsModel?.enableHolidayMarking ?: true
-    val holidayOfficialByYear = remember(holidayPrefs) { mutableMapOf<Int, HolidayData?>() }
-    val customHolidays = remember(holidayPrefs) {
+    // 「今天放假」覆盖（`timetable_settings.holidayOverrideEnabled`）：与月视图 / 桌面卡片 /
+    // 自检页同一份真值（读侧缺键或坏值 = false，口径见 `MonthHolidaySettings`）。
+    // 修前这里是写死的 `false`，于是同一个开关在月视图生效、周视图永远不生效。
+    val holidayOverrideEnabled = remember(repository, holidayRevision) {
+        runCatching { MonthHolidaySettings.fromSettingsJson(repository.settingsJson()).overrideEnabled }
+            .getOrDefault(false)
+    }
+    val holidayOfficialByYear = remember(holidayPrefs, holidayRevision) { mutableMapOf<Int, HolidayData?>() }
+    val customHolidays = remember(holidayPrefs, holidayRevision) {
         runCatching { holidayPrefs.loadCustomHolidays() }.getOrNull().orEmpty()
     }
     val semesterStart = settings.semesterStartDate?.toLocalDate()
@@ -227,7 +276,8 @@ fun TimetableHost(
                 date = date,
                 official = official,
                 custom = customHolidays,
-                overrideEnabled = false, // `holidayOverrideEnabled` 尚未进 TimetableSettingsModel
+                // 真值来自 `timetable_settings.holidayOverrideEnabled`（见上），不再写死。
+                overrideEnabled = holidayOverrideEnabled,
                 markingEnabled = holidayMarkingEnabled,
             )
         }
@@ -342,6 +392,8 @@ fun TimetableHost(
 
     TimetableWeekPage(
         courses = snapshot.courses,
+        // 情侣叠加（B1 第二阶段）：绑定且对方档有课时非空，周视图据此把 TA 课叠进来。
+        coupleOverlay = coupleOverlay,
         timeScheme = TimetableHostLogic.resolveActiveTimeScheme(
             schemes = snapshot.timeSchemes,
             activeTimeSchemeId = snapshot.activeTimeSchemeId,
