@@ -139,6 +139,15 @@ object DataTransferApplyLogic {
         val exams: List<Exam> = emptyList(),
         val scheduleItems: List<ScheduleItem> = emptyList(),
         val settings: TimetableSettings? = null,
+        /**
+         * 包里 `settings` 的完整原文（含 Dart 侧 250+ 键）。
+         *
+         * 非 null 时宿主应该用它走 `updateSettingsPatch`（按键合并写），**不要**只写
+         * [settings] 的 core 投影——那会把其余偏好抹成默认。
+         */
+        val settingsJson: Map<String, Any?>? = null,
+        /** 全量备份：每份档案 id → 包里内嵌的完整 settings（写入时铺底用）。 */
+        val profileSettingsById: Map<String, Map<String, Any?>> = emptyMap(),
         val currentWeek: Int? = null,
         /** 要补进本机时间模板表的模板（幂等：id 已存在则更新）。 */
         val timeSchemes: List<TimeScheme> = emptyList(),
@@ -167,6 +176,8 @@ object DataTransferApplyLogic {
         val tasks: List<CourseTask> = emptyList(),
         val exams: List<Exam> = emptyList(),
         val scheduleItems: List<ScheduleItem> = emptyList(),
+        /** 合并地点作息分组的基线（合并模式不删本机独有分组）。 */
+        val locationTimeGroups: List<LocationTimeGroup> = emptyList(),
     )
 
     /**
@@ -198,6 +209,18 @@ object DataTransferApplyLogic {
         // 同设备往返会把所有引用抹掉，那是净损失。
         val rules = remapScheduleDateRules(plan.scheduleDateRules, schemeIdMap)
         val groups = remapLocationTimeGroups(plan.locationTimeGroups, schemeIdMap)
+        // 「覆盖」的边界：局部 scope 只更新包边界内的实体，边界外原样保留
+        // （`unified_transfer_service.dart:666-676` ⇒ 语义上等同合并，只是不报删除）。
+        // 这里提前算好，地点分组也要用同一个判据。
+        val merge = mode == TransferApplyMode.MERGE || scope.overwriteUsesMergeSemantics
+        // 2026-11-07 修（审核 1-2）：旧实现 groups 恒为整份替换，合并模式也不 merge
+        // ⇒ 导入「本周课表/选课」会把本机独有分组删掉，并让 resync 重排所有档案。
+        // 空列表仍表示「包没带这块」，保持本机不动（与日程规则同一约定）。
+        val groupsForWrite = when {
+            groups.isEmpty() -> emptyList()
+            merge -> mergeById(current.locationTimeGroups, groups, LocationTimeGroup::id)
+            else -> groups
+        }
 
         if (isFullBackupPlan(plan)) {
             val profiles = plan.profiles.map { remapProfileSchemes(it, schemeIdMap) }
@@ -209,6 +232,8 @@ object DataTransferApplyLogic {
                 activeProfileId = plan.activeProfileId,
                 // 全量包：档案里已经带齐 courses/tasks/exams/scheduleItems，随档案一起写。
                 settings = active?.settings,
+                settingsJson = plan.settingsJson,
+                profileSettingsById = plan.profileSettingsById,
                 // 当前周：全量包顶层通常不带 `currentWeek`（Dart `buildFullPackage` 不传，
                 // 本仓 `DataTransferPackageLogic` 对 ALL_DATA 也传 null），所以只能回落到
                 // 恢复出来的活动档案自己那份。不写回的话本机全局 `current_week` 仍是旧值，
@@ -216,7 +241,7 @@ object DataTransferApplyLogic {
                 currentWeek = plan.currentWeek ?: active?.currentWeek?.toInt(),
                 timeSchemes = plan.timeSchemes,
                 scheduleDateRules = rules,
-                locationTimeGroups = groups,
+                locationTimeGroups = groupsForWrite,
             )
         }
 
@@ -233,7 +258,6 @@ object DataTransferApplyLogic {
 
         // 「覆盖」的边界：局部 scope 只更新包边界内的实体，边界外原样保留
         // （`unified_transfer_service.dart:666-676` ⇒ 语义上等同合并，只是不报删除）。
-        val merge = mode == TransferApplyMode.MERGE || scope.overwriteUsesMergeSemantics
         val courses = if (merge) {
             mergeCourses(current.courses, plan.courses)
         } else {
@@ -262,10 +286,11 @@ object DataTransferApplyLogic {
                 plan.scheduleItems
             },
             settings = plan.settings?.let { remapSettingsScheme(it, schemeIdMap) },
+            settingsJson = remapSettingsJson(plan.settingsJson, schemeIdMap),
             currentWeek = plan.currentWeek,
             timeSchemes = plan.timeSchemes,
             scheduleDateRules = rules,
-            locationTimeGroups = groups,
+            locationTimeGroups = groupsForWrite,
         )
     }
 
@@ -303,6 +328,24 @@ object DataTransferApplyLogic {
         } else {
             settings.copy(activeTimeSchemeId = mapped)
         }
+    }
+
+    /**
+     * 完整 settings 原文的模板引用改写：只改 `activeTimeSchemeId`，其余键逐字保留。
+     *
+     * 与 [remapSettingsScheme] 同一判据，区别是不能拿 `TimetableSettings` 重新编码
+     * （那会只剩 core 键）。
+     */
+    fun remapSettingsJson(
+        settingsJson: Map<String, Any?>?,
+        schemeIdMap: Map<String, String>,
+    ): Map<String, Any?>? {
+        if (settingsJson == null || schemeIdMap.isEmpty()) return settingsJson
+        val current = settingsJson["activeTimeSchemeId"] as? String ?: return settingsJson
+        val mapped = schemeIdMap[current] ?: return settingsJson
+        val copy = LinkedHashMap(settingsJson)
+        copy["activeTimeSchemeId"] = mapped
+        return copy
     }
 
     /**
@@ -733,6 +776,10 @@ data class TransferUndoSnapshot(
     val exams: List<Exam> = emptyList(),
     val scheduleItems: List<ScheduleItem> = emptyList(),
     val settings: TimetableSettings? = null,
+    /** 导入前的完整 settings 原文；null = 快照不负责它。 */
+    val settingsJson: Map<String, Any?>? = null,
+    /** 全量导入前每份档案内嵌的完整 settings；撤销整份写回时铺底。 */
+    val profileSettingsById: Map<String, Map<String, Any?>>? = null,
     val currentWeek: Int = 1,
     /** null = 本次导入没动日程规则，撤销时也不碰它。 */
     val scheduleDateRules: List<ScheduleDateRule>? = null,

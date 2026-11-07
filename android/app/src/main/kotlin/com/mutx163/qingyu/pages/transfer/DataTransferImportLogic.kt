@@ -103,6 +103,20 @@ data class TransferImportPlan(
     val activeProfileId: String?,
     val courses: List<Course>,
     val settings: TimetableSettings?,
+    /**
+     * 包里 `settings` 的**原始 JSON map**（含 Dart 侧 250+ 偏好键）。
+     *
+     * [settings] 只是时间/周次核心投影；旧实现只保留它，落盘时用 6 键整份写，
+     * 包里的其余键被静默丢弃。这里保留原文，宿主走 `updateSettingsPatch` 合并写回。
+     */
+    val settingsJson: Map<String, Any?>? = null,
+    /**
+     * 全量备份用：每份档案 id → 包里内嵌的完整 settings map。
+     *
+     * [profiles] 的 `settings` 只有 core 键；不保留这份原文，全量恢复后每份档案的
+     * 外观/语言等偏好都会回落默认。
+     */
+    val profileSettingsById: Map<String, Map<String, Any?>> = emptyMap(),
     val currentWeek: Int?,
     val timeSchemes: List<TimeScheme>,
     val tasks: List<CourseTask>,
@@ -168,15 +182,20 @@ object DataTransferImportLogic {
                 mapList("location_time_group", root["locationTimeGroups"]) {
                     LocationTimeGroup.fromJson(it)
                 }
-            val settings = asJsonMap(root["settings"])?.let {
+            val settingsJson = asJsonMap(root["settings"])
+            val settings = settingsJson?.let {
                 TimetableSettings.fromJson(it)
             }
+            // 全量包的每份档案都内嵌完整 settings；模型只解 core 键，原文另存一份。
+            val profileSettingsById = profileSettingsByIdFrom(root["profiles"])
             val currentWeek = (root["currentWeek"] as? Number)?.toInt()
             val plan = TransferImportPlan(
                 profiles = profiles,
                 activeProfileId = root["activeProfileId"] as? String,
                 courses = courses,
                 settings = settings,
+                settingsJson = settingsJson,
+                profileSettingsById = profileSettingsById,
                 currentWeek = currentWeek,
                 timeSchemes = timeSchemes,
                 tasks = tasks,
@@ -252,6 +271,24 @@ object DataTransferImportLogic {
             null
         },
     )
+
+    /**
+     * 从 `profiles` 原始数组里抽出「档案 id → 内嵌 settings 原文」。
+     *
+     * 读不懂的条目直接跳过（与 `TimetableStore.embeddedSettingsById` 同口径）：
+     * 结构门已保证 id/列表形状，这里只做防御，不让坏条目炸掉整份导入。
+     */
+    private fun profileSettingsByIdFrom(raw: Any?): Map<String, Map<String, Any?>> {
+        val list = raw as? List<*> ?: return emptyMap()
+        val out = LinkedHashMap<String, Map<String, Any?>>()
+        for (item in list) {
+            val map = item as? Map<*, *> ?: continue
+            val id = map["id"] as? String ?: continue
+            val settings = asJsonMap(map["settings"]) ?: continue
+            out[id] = settings
+        }
+        return out
+    }
 
     /** `MiniJson` 产出的对象键恒为 String，这一处集中做一次强转。 */
     @Suppress("UNCHECKED_CAST")

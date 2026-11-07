@@ -10,6 +10,7 @@ import com.mutx163.qingyu.core.MiniJson
 import com.mutx163.qingyu.core.ScheduleDateRule
 import com.mutx163.qingyu.core.ScheduleItem
 import com.mutx163.qingyu.core.TimeScheme
+import com.mutx163.qingyu.core.TimetableProfile
 import com.mutx163.qingyu.core.WeekCalculator
 import com.mutx163.qingyu.share.TransferChannel
 import com.mutx163.qingyu.share.TransferScope
@@ -60,11 +61,13 @@ import java.time.LocalDateTime
  *    原样写出（与 Dart `provider.locationTimeGroups` 同源），包内键名 `locationTimeGroups`。
  *    受它影响的「按地点匹配作息」分支（Dart `_selectScopedMetadata` 里的
  *    `LocationTimeMatchLogic`）因此才拿得到分组。
- * 4. **设置只落 core 子集**：`core/TimetableSettings.toJson()` 只有
+ * 4. **设置整份导出**（2026-11-07 修）：`core/TimetableSettings.toJson()` 只有
  *    `sections` / `activeTimeSchemeId` / `semesterWeekCount` / `semesterStartDate`
- *    （+`semesterStartDateText`）五个键；Dart 是 250+ 键。所以导出的
- *    `settings` 是**时间/周次核心子集**，不是整份设备偏好。接收端按本仓
- *    `TimetableSettings.fromJson` 解析不会报错，但也不会覆盖对方的其余偏好。
+ *    （+`semesterStartDateText`）/ `classReminders` 六个键，Dart 是 250+ 键。
+ *    旧实现直接写 [TimetableSnapshot.settings] 的 core 投影，导出的包只剩 6 键，
+ *    接收端恢复时其余偏好被抹成默认。现在由宿主把**盘上完整 settings map**
+ *    经 [build] 的 `settingsJson` / `profileSettingsById` 传进来，原样写包；
+ *    缺省（旧调用点/单测）时才回落到 core 投影。
  * 5. **失败前置**：Dart 打包后不先自检，空包要等接收端 `validate()` 才被拒
  *    （`transfer_package_empty`）。这里打完就地跑一次
  *    [validateTransferPackageJson]，不合法立刻返回 [TransferPackageResult.Failure]，
@@ -173,7 +176,25 @@ object DataTransferPackageLogic {
      *
      * 成功时保证 `validateTransferPackageJson(json).isValid == true`。
      */
-    fun build(snapshot: TimetableSnapshot, request: TransferPackageRequest): TransferPackageResult {
+    fun build(
+        snapshot: TimetableSnapshot,
+        request: TransferPackageRequest,
+        /**
+         * 盘上**活动档案的完整 settings map**（含 Dart 侧 250+ 偏好键）。
+         *
+         * null = 调用方没有完整文档（旧测试），回落 [TimetableSnapshot.settings] 的
+         * core 投影。生产宿主必须传 `repository.readRawSettings()`，否则又退回
+         * 「只带 6 键」的旧缺陷。
+         */
+        settingsJson: Map<String, Any?>? = null,
+        /**
+         * 全量备份用：每份档案 id → 盘上内嵌的完整 settings map。
+         *
+         * [TimetableProfile.toJson] 的 `settings` 只有 core 键；全量包不带这份映射
+         * 就会在每份档案里丢掉其余偏好。
+         */
+        profileSettingsById: Map<String, Map<String, Any?>> = emptyMap(),
+    ): TransferPackageResult {
         val scope = request.scope
         val channel = request.channel
         val activeProfile = snapshot.profiles.firstOrNull { it.id == snapshot.activeProfileId }
@@ -233,8 +254,8 @@ object DataTransferPackageLogic {
 
         val metadata = selectScopedMetadata(snapshot, scope, courses, request.now)
 
-        val settingsJson = if (scope.carriesSettings && !isFullBackup) {
-            snapshot.settings.toJson()
+        val exportedSettingsJson = if (scope.carriesSettings && !isFullBackup) {
+            settingsJson ?: snapshot.settings.toJson()
         } else {
             null
         }
@@ -252,7 +273,7 @@ object DataTransferPackageLogic {
                 else -> snapshot.currentWeek
             },
             activeProfileId = if (isFullBackup) snapshot.activeProfileId else null,
-            settingsJson = settingsJson,
+            settingsJson = exportedSettingsJson,
             coursesJson = if (isFullBackup) emptyList() else courses.map { it.toJson() },
             tasksJson = if (isFullBackup) emptyList() else tasks.map { it.toJson() },
             scheduleItemsJson = if (isFullBackup) {
@@ -277,7 +298,7 @@ object DataTransferPackageLogic {
             // 结果导出侧静默丢数据：跨设备导入后「按地点匹配作息」全失效，且包内无痕迹。
             locationTimeGroupsJson = snapshot.locationTimeGroups.map { it.toJsonMap() },
             profilesJson = if (isFullBackup) {
-                snapshot.profiles.map { it.toJson() }
+                snapshot.profiles.map { profile -> profileJsonWithFullSettings(profile, profileSettingsById) }
             } else {
                 emptyList()
             },
@@ -300,6 +321,20 @@ object DataTransferPackageLogic {
             scope = scope,
             isFullBackup = isFullBackup,
         )
+    }
+
+    /**
+     * 档案 JSON + 盘上完整 settings（有就覆盖 core 投影）。
+     *
+     * 用 `LinkedHashMap` 复制：`TimetableProfile.toJson()` 返回可变 map，直接改会污染模型。
+     */
+    private fun profileJsonWithFullSettings(
+        profile: TimetableProfile,
+        profileSettingsById: Map<String, Map<String, Any?>>,
+    ): Map<String, Any?> {
+        val json = LinkedHashMap(profile.toJson())
+        profileSettingsById[profile.id]?.let { full -> json["settings"] = full }
+        return json
     }
 
     /** 分享正文：三条 ARB 按 scope 分派（`data_transfer_screen.dart:268-370`）。 */

@@ -552,15 +552,29 @@ class TimetableRepository(
      *
      * **失败语义**：先落盘、成功后才改内存；落盘抛错时内存与监听者都不动。
      */
-    fun replaceAllProfiles(profiles: List<TimetableProfile>, activeProfileId: String?) {
-        replaceAllProfilesLocked(profiles, activeProfileId)
+    fun replaceAllProfiles(
+        profiles: List<TimetableProfile>,
+        activeProfileId: String?,
+        /**
+         * 外部来源（全量备份）的完整档案内嵌 settings（id → 键值表）。
+         *
+         * 铺底顺序见 [TimetableStore.saveProfiles]：本机旧内嵌 → 这里给的外部内嵌
+         * → 本次 core 投影。不传 = 与旧行为完全一致。
+         */
+        preferredEmbeddedSettings: Map<String, Map<String, Any?>> = emptyMap(),
+    ) {
+        replaceAllProfilesLocked(profiles, activeProfileId, preferredEmbeddedSettings)
         drainPendingNotify()
     }
 
     @Synchronized
-    private fun replaceAllProfilesLocked(profiles: List<TimetableProfile>, activeProfileId: String?) {
+    private fun replaceAllProfilesLocked(
+        profiles: List<TimetableProfile>,
+        activeProfileId: String?,
+        preferredEmbeddedSettings: Map<String, Map<String, Any?>> = emptyMap(),
+    ) {
         // 先落盘：失败则内存与监听者都不动。
-        store.saveProfiles(profiles)
+        store.saveProfiles(profiles, preferredEmbeddedSettings)
         store.saveActiveProfileId(activeProfileId)
         loadedProfiles = profiles
         loadedActiveProfileId = activeProfileId

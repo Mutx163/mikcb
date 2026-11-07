@@ -186,7 +186,16 @@ fun DataTransferHost(
         isExporting = true
         coroutineScope.launch {
             val failure = withContext(Dispatchers.IO) {
-                when (val built = DataTransferPackageLogic.build(snapshot, exportRequest(scope))) {
+                when (
+                    val built = DataTransferPackageLogic.build(
+                        snapshot = snapshot,
+                        request = exportRequest(scope),
+                        // 盘上完整 settings（含 Dart 侧 250+ 键）：不传就只剩 core 6 键。
+                        settingsJson = repository.readRawSettings(),
+                        // 全量包的每份档案也要带自己的完整内嵌设置。
+                        profileSettingsById = repository.embeddedSettingsById(),
+                    )
+                ) {
                     is TransferPackageResult.Failure -> built.code
                     is TransferPackageResult.Success -> when (
                         val outcome = shareAdapter.share(
@@ -212,7 +221,9 @@ fun DataTransferHost(
         isExporting = true
         coroutineScope.launch {
             // 预检（压缩 + 分帧容量）是重活：放 IO，回到主线程再决定导航还是提示。
-            val result = withContext(Dispatchers.IO) { prepareQrPayload(snapshot, scope, selectedCourseIds, title) }
+            val result = withContext(Dispatchers.IO) {
+                prepareQrPayload(repository, snapshot, scope, selectedCourseIds, title)
+            }
             isExporting = false
             when (result) {
                 is QrPayloadResult.Failure -> showSendFailure(result.code)
@@ -461,6 +472,7 @@ private fun exportRequest(scope: TransferScope): TransferPackageRequest =
     )
 
 private fun prepareQrPayload(
+    repository: TimetableRepository,
     snapshot: TimetableSnapshot,
     scope: TransferScope,
     selectedCourseIds: Set<String>,
@@ -475,6 +487,8 @@ private fun prepareQrPayload(
             now = LocalDateTime.now(),
             selectedCourseIds = selectedCourseIds,
         ),
+        settingsJson = repository.readRawSettings(),
+        profileSettingsById = repository.embeddedSettingsById(),
     )
 ) {
     is TransferPackageResult.Failure -> QrPayloadResult.Failure(built.code)
@@ -538,6 +552,7 @@ private fun applyImport(
             tasks = repository.tasks,
             exams = repository.exams,
             scheduleItems = before.scheduleItems,
+            locationTimeGroups = before.locationTimeGroups,
         ),
         scope = scope,
     ).let { it.locationTimeGroups.isNotEmpty() || scope == TransferScope.ALL_DATA }
@@ -552,6 +567,8 @@ private fun applyImport(
             currentWeek = before.currentWeek,
             scheduleDateRules = before.scheduleDateRules,
             locationTimeGroups = before.locationTimeGroups,
+            // 全量恢复会整份重写档案，撤销要把每份档案的完整内嵌设置一起还原。
+            profileSettingsById = repository.embeddedSettingsById(),
             // 模板表在第一次改动（`reconcileTimeSchemes`）之前抓：导入会新建模板，
             // 不整份还原就会在本机留下多出来的一套、且救不回来（仓储无跨 key 事务）。
             timeSchemes = before.timeSchemes,
@@ -567,6 +584,8 @@ private fun applyImport(
             currentWeek = before.currentWeek,
             scheduleDateRules = before.scheduleDateRules,
             locationTimeGroups = before.locationTimeGroups,
+            // 单课表导入也写完整设置，撤销要能把它回到原文。
+            settingsJson = repository.activeProfileSettingsJson(),
             timeSchemes = before.timeSchemes,
         )
     }
@@ -587,6 +606,7 @@ private fun applyImport(
                 tasks = repository.tasks,
                 exams = repository.exams,
                 scheduleItems = before.scheduleItems,
+                locationTimeGroups = before.locationTimeGroups,
             ),
             // scope 决定「覆盖」的边界：局部 scope 只更新包内实体（Dart 同判据），
             // time_template 连内容块都不碰——写作用域与 [writes] 一一对应。
@@ -594,9 +614,19 @@ private fun applyImport(
             schemeIdMap = schemeIdMap,
         )
         if (writes.isFullBackup) {
-            repository.replaceAllProfiles(writes.profiles, writes.activeProfileId)
-            // 全量包里的全局设置（活动作息 / 学期周数 / 开学日）单独写：档案表不带它。
-            writes.settings?.let(repository::updateSettings)
+            // 全量包的每份档案都要带自己的完整 settings（模型只带 core 键，
+            // 不铺这份原文，恢复后外观/语言等偏好全部回默认）。
+            repository.replaceAllProfiles(
+                profiles = writes.profiles,
+                activeProfileId = writes.activeProfileId,
+                preferredEmbeddedSettings = writes.profileSettingsById,
+            )
+            // 全量包里的全局设置：优先写完整原文（按键合并），否则回落到 core 投影。
+            if (writes.settingsJson != null) {
+                repository.updateSettingsPatch(writes.settingsJson)
+            } else {
+                writes.settings?.let(repository::updateSettings)
+            }
             // 全量包也要还原当前周（见 planWrites 全量分支：顶层没有时取档案自己那份）。
             writes.currentWeek?.let(repository::setCurrentWeek)
         } else if (writes.writesActiveProfileContent) {
@@ -610,7 +640,13 @@ private fun applyImport(
             // 不是「没带该键」；合并模式下 planWrites 已保留本机独有的条目。
             // 2026-11-01 修（P2）：旧版 isNotEmpty() 守卫让覆盖时空包清不掉本机日程。
             repository.scheduleItems = writes.scheduleItems
-            writes.settings?.let(repository::updateSettings)
+            // 设置：有完整原文就按键合并写（不丢包里的 250+ 键，也不删本机独有键）；
+            // 只有旧包（无完整原文）时才回落到 core 投影。
+            if (writes.settingsJson != null) {
+                repository.updateSettingsPatch(writes.settingsJson)
+            } else {
+                writes.settings?.let(repository::updateSettings)
+            }
             writes.currentWeek?.let(repository::setCurrentWeek)
             // 日程条目 / 设置 / 当前周一次落盘（上面的 setter 只改内存）。
             repository.persistActiveProfileState()
@@ -696,6 +732,8 @@ private fun applyImportAsNew(
         // 「导入为新课表」不碰日程规则 / 地点分组：null = 撤销时也不碰。
         scheduleDateRules = null,
         locationTimeGroups = null,
+        // 全量导入的撤销会把档案表整份写回，每份档案的完整内嵌设置也要一起还原。
+        profileSettingsById = repository.embeddedSettingsById(),
         // 模板表在 `reconcileTimeSchemes` 之前抓：as-new 会新建「<名> 时间」等模板，
         // 撤销/回滚必须整份写回，否则本机永久多出模板且无法回收。
         timeSchemes = before.timeSchemes,
@@ -742,6 +780,13 @@ private fun applyImportAsNew(
             settings = settings,
             currentWeek = newProfile.currentWeek.toInt(),
         )
+        // ⑤ 包里带了完整 settings 时，把非 core 键也铺进新档（core 键以解析后的
+        //    模板/节次为准）。不这一步，「导入为新课表」只落 6 键、其余偏好回默认。
+        plan.settingsJson?.let { raw ->
+            val merged = LinkedHashMap(raw)
+            merged.putAll(settings.toJson())
+            repository.replaceActiveProfileSettingsJson(merged)
+        }
         // ④ 把本机全局偏好铺到新档（失败按快照整份回滚，不留「多一份档、外观是默认值」）。
         if (globalPreferences.isNotEmpty() && !repository.writeRawSettingsPatch(globalPreferences)) {
             error("seed_profile_settings_failed")
@@ -863,7 +908,13 @@ private fun restoreFromSnapshot(
     snapshot.timeSchemes?.let { schemes -> step { repository.replaceTimeSchemes(schemes) } }
     when (snapshot.kind) {
         TransferUndoScope.FULL_PROFILES -> {
-            step { repository.replaceAllProfiles(snapshot.profiles, snapshot.activeProfileId) }
+            step {
+                repository.replaceAllProfiles(
+                    profiles = snapshot.profiles,
+                    activeProfileId = snapshot.activeProfileId,
+                    preferredEmbeddedSettings = snapshot.profileSettingsById.orEmpty(),
+                )
+            }
             snapshot.settings?.let { settings -> step { repository.updateSettings(settings) } }
             // 全量导入现在会写当前周（见 applyImport），撤销必须一起还原。
             step { repository.setCurrentWeek(snapshot.currentWeek) }
@@ -880,6 +931,8 @@ private fun restoreFromSnapshot(
                 )
             }
             snapshot.settings?.let { settings -> step { repository.updateSettings(settings) } }
+            // 完整设置原文（非 core 键）也要回到导入前，否则撤销只回滚一半。
+            snapshot.settingsJson?.let { json -> step { repository.replaceActiveProfileSettingsJson(json) } }
             step { repository.setCurrentWeek(snapshot.currentWeek) }
             step { repository.persistActiveProfileState() }
         }
