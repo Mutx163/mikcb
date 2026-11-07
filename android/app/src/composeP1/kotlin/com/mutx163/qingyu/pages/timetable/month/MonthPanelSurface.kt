@@ -39,6 +39,11 @@ import top.yukonga.miuix.kmp.theme.MiuixTheme
  * > 卡片是**实底**的，与上半那张日历卡同一档；卡与卡之间露出背景，靠圆角与
  * > 缝区分，不靠灰白差。
  *
+ * ⚠️ **2026-11-07 修正**：旧实现取 `colorScheme.surface`（亮色 = 页底 #F2F2F2）
+ * 当卡面，而日历卡走 `QingyuCard` 默认的 `surfaceContainer`（#FFFFFF）。结果
+ * 「同一档」在代码里并不成立，无壁纸时信息卡还会和页底同色、卡界直接消失。
+ * 现在两者统一到 `surfaceContainer`，卡面差异只由投影表达（日历卡高一档）。
+ *
  * ## 与 Dart 版的三处对应关系
  *
  * | Dart | 这里 |
@@ -52,25 +57,29 @@ import top.yukonga.miuix.kmp.theme.MiuixTheme
  * 处理了深浅），墨色直接用主题 `onSurface` 就恒正确 —— 照抄那套计算反而会
  * 引入一个「按壁纸亮度判色」的旁路，而 Compose 页面根本没有屏级壁纸亮度读数。
  *
- * ## 为什么没有投影
+ * ## 为什么信息卡没有投影
  *
  * [MonthMetrics.CARD_SHADOW_ALPHA] 是 Dart `CourseSurface` 的投影强度。Miuix 的
  * 卡片语言里**没有投影**（`BasicCard` = squircle 实底 + 无 elevation），照搬
- * 一条 Flutter 投影会在 miuix 页面上显得脏。层级已经由「日历卡 24 圆角 / 信息卡
- * 20 圆角 + 卡间缝」表达，不靠阴影。
+ * 一条 Flutter 投影会在 miuix 页面上显得脏。
+ *
+ * 日历卡是**唯一的例外**：它压在满屏壁纸上，没有投影时白卡边界只能靠色差读，
+ * 所以 `MonthCalendarCard` 自己补了一层 6% 黑投影。这是**有意的两级**：
+ * 日历卡高一层（白 + 投影），信息卡平铺（白 + 无投影）；圆角 24 / 20 再补一级。
+ * 不要把它读成「两张卡完全同档」——同档的是**卡面颜色**，不是层级。
  */
 object MonthPanelSurface {
 
     /** 信息卡圆角（= [MonthMetrics.CARD_RADIUS]，20dp，与日视图议程卡同档）。 */
     val Radius = MonthMetrics.CARD_RADIUS.dp
 
-    /** 卡面填充（主题 `surface`；深浅两套都由主题给，不分叉）。 */
+    /** 卡面填充（主题 `surfaceContainer`：亮色 #FFFFFF / 暗色 #2D2D2D，与日历卡同源）。 */
     @Composable
-    fun fill(): Color = MiuixTheme.colorScheme.surface
+    fun fill(): Color = MiuixTheme.colorScheme.surfaceContainer
 
     /** 卡内主墨色（卡标题、议程行标题、概览大数字）。 */
     @Composable
-    fun ink(): Color = MiuixTheme.colorScheme.onSurface
+    fun ink(): Color = MiuixTheme.colorScheme.onSurfaceContainer
 
     /** [QingyuCard] 的配色：实底 + 主题墨，与上面两个函数同源。 */
     @Composable
@@ -84,6 +93,7 @@ object MonthPanelSurface {
      *
      * 只允许传 [MonthInk] 里的档位：这五档是按**对比度**定的，随手传一个
      * 0.4 这类数字会掉到 3:1 以下（[MonthInk] 的注释里有实测值）。
+     * 11sp 及以下的说明文字请用 [MonthInk.SECONDARY]，不要用 [MonthInk.TERTIARY]。
      */
     fun muted(base: Color, level: Double = MonthInk.SECONDARY): Color =
         base.copy(alpha = level.toFloat())
@@ -132,7 +142,7 @@ fun MonthPanelCard(
                 Text(
                     text = title,
                     modifier = Modifier.weight(1f),
-                    // 15dp = body2（Dart MonthType.title）
+                    // 14dp = body2（Dart MonthType.title；官方 body2 实际就是 14sp）
                     style = MiuixTheme.textStyles.body2.shiftWeight(QingyuWeightDelta.BOLD),
                     color = ink,
                     maxLines = 1,
@@ -144,7 +154,9 @@ fun MonthPanelCard(
                         text = trailing,
                         // 11dp = footnote2（Dart MonthType.caption）
                         style = MiuixTheme.textStyles.footnote2.shiftWeight(QingyuWeightDelta.MEDIUM),
-                        color = MonthPanelSurface.muted(ink, MonthInk.TERTIARY),
+                        // 11dp = footnote2（Dart MonthType.caption）；这是 11sp 小字，
+                        // 用 SECONDARY（亮色约 5.7:1），不能用 TERTIARY（约 3.2:1）。
+                        color = MonthPanelSurface.muted(ink, MonthInk.SECONDARY),
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
                     )

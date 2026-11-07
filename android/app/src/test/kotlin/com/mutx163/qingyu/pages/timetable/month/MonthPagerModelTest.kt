@@ -1,7 +1,9 @@
 package com.mutx163.qingyu.pages.timetable.month
 
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
 import org.junit.Test
+import kotlin.math.abs
 
 /**
  * 月视图横向翻月的页号账与卡片高度判据。
@@ -74,5 +76,34 @@ class MonthPagerModelTest {
         assertEquals(5, MonthPagerModel.cardRowCount(lastPage.toDouble()) { if (it == lastPage) 5 else 6 })
         // 末页回弹 0.4 页：上界钳到末页本身，不会去查 PAGE_COUNT。
         assertEquals(5, MonthPagerModel.cardRowCount(lastPage + 0.4) { if (it == lastPage) 5 else 4 })
+        assertEquals(5.0, MonthPagerModel.cardRows(lastPage + 0.4) { if (it == lastPage) 5 else 4 }, 1e-9)
+    }
+
+    /**
+     * 卡高连续插值：拖拽过程中不再在「手指刚动」或「落定」时整行跳变。
+     *
+     * 旧 `cardRowCount` 是两页取大：4→6 行时手指刚动 ε 就从 4 跳到 6（91dp），
+     * 6→4 行时则在落定瞬间缩回去。新 `cardRows` 按页进度线性过渡。
+     */
+    @Test
+    fun 卡片高度连续插值_不存在整行跳变() {
+        val rows = mapOf(5 to 5, 6 to 6)
+        assertEquals(5.0, MonthPagerModel.cardRows(5.0) { rows[it] ?: 6 }, 1e-9)
+        assertEquals(5.5, MonthPagerModel.cardRows(5.5) { rows[it] ?: 6 }, 1e-9)
+        assertEquals(6.0, MonthPagerModel.cardRows(6.0) { rows[it] ?: 6 }, 1e-9)
+
+        // 反向 6 → 5：中点同样是 5.5，旧实现会一直停在 6 直到落定。
+        assertEquals(5.5, MonthPagerModel.cardRows(5.5) { if (it == 5) 6 else 5 }, 1e-9)
+
+        // 相邻 10% 的增量不超过 0.1 行；任何整行跳变都会在这里被抓住。
+        var previous = MonthPagerModel.cardRows(5.0) { rows[it] ?: 6 }
+        for (step in 1..10) {
+            val current = MonthPagerModel.cardRows(5.0 + step / 10.0) { rows[it] ?: 6 }
+            assertTrue(
+                "页进度 10% 内卡高跳了 ${abs(current - previous)} 行",
+                abs(current - previous) <= 0.1 + 1e-9,
+            )
+            previous = current
+        }
     }
 }

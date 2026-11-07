@@ -142,9 +142,9 @@ object MonthPanelChrome {
 
     /**
      * 标题行的行高：Dart `_InfoCard.titleLineHeight = 20`
-     * （[MonthType.TITLE] = 15 按默认行高系数约 1.33 取整）。
+     * （官方 `body2` 14sp 的行高按 20 取）。
      *
-     * 写成常数而不是 `MonthType.TITLE * 1.33`：字号一改这里要跟着重算，而
+     * 写成常数而不是 `MonthType.TITLE * 1.4`：字号一改这里要跟着重算，而
      * 「重算」这个动作必须看得见 —— 乘出来的浮点值会掩盖「标题换档了」。
      */
     const val CARD_TITLE_LINE: Double = 20.0
@@ -393,9 +393,21 @@ object MonthPanelModel {
      * @param rowCount 这批日期实际要画的行数（[MonthGrid.rowsInMonth]，4~6）。
      *   越界值钳到 [MonthCollapse.COLLAPSED_ROWS]..[MonthCollapse.MAX_ROWS]。
      */
-    fun visibleRows(progress: Double, rowCount: Int = MonthCollapse.MAX_ROWS): Double {
+    fun visibleRows(progress: Double, rowCount: Int = MonthCollapse.MAX_ROWS): Double =
+        visibleRowsExact(progress, rowCount.toDouble())
+
+    /**
+     * [visibleRows] 的连续行数版：给翻月时「4→6 行」的过渡用。
+     *
+     * 行数仍然只影响窗口大小，不影响行高（行高由宽度决定）；所以 5.4 行是允许的，
+     * 不会把格子压扁。
+     */
+    fun visibleRowsExact(progress: Double, rowCount: Double): Double {
         val clamped = progress.coerceIn(0.0, 1.0)
-        val rows = rowCount.coerceIn(MonthCollapse.COLLAPSED_ROWS, MonthCollapse.MAX_ROWS)
+        val rows = rowCount.coerceIn(
+            MonthCollapse.COLLAPSED_ROWS.toDouble(),
+            MonthCollapse.MAX_ROWS.toDouble(),
+        )
         return MonthCollapse.COLLAPSED_ROWS +
             (rows - MonthCollapse.COLLAPSED_ROWS) * clamped
     }
@@ -567,10 +579,47 @@ object MonthPanelModel {
         handleHeightDp: Double = 0.0,
         topPaddingDp: Double = 0.0,
         rowCount: Int = MonthCollapse.MAX_ROWS,
+    ): MonthPanelLayout = layoutExact(
+        progress = progress,
+        availableHeightDp = availableHeightDp,
+        availableWidthDp = availableWidthDp,
+        headerHeightDp = headerHeightDp,
+        weekLabelWidthDp = weekLabelWidthDp,
+        minRowHeightDp = minRowHeightDp,
+        maxRowHeightDp = maxRowHeightDp,
+        keptRow = keptRow,
+        weekNumberColumnVisible = weekNumberColumnVisible,
+        handleHeightDp = handleHeightDp,
+        topPaddingDp = topPaddingDp,
+        rowCount = rowCount.toDouble(),
+    )
+
+    /**
+     * [layout] 的连续行数版：`rowCount` 可以是 5.4 行这样的插值结果。
+     *
+     * 只用于「翻月时卡片高度」与面板联动；单页内部仍用整数行数，所以格子不会被压扁。
+     * `rowCount` 故意不给默认值：避免与 [layout] 的 Int 默认参数在调用处产生歧义。
+     */
+    fun layoutExact(
+        progress: Double,
+        availableHeightDp: Double,
+        availableWidthDp: Double,
+        headerHeightDp: Double,
+        weekLabelWidthDp: Double,
+        minRowHeightDp: Double,
+        maxRowHeightDp: Double,
+        keptRow: Int,
+        weekNumberColumnVisible: Boolean,
+        handleHeightDp: Double,
+        topPaddingDp: Double,
+        rowCount: Double,
     ): MonthPanelLayout {
         val t = progress.coerceIn(0.0, 1.0)
-        val rows = rowCount.coerceIn(MonthCollapse.COLLAPSED_ROWS, MonthCollapse.MAX_ROWS)
-        val visible = visibleRows(t, rows)
+        val rows = rowCount.coerceIn(
+            MonthCollapse.COLLAPSED_ROWS.toDouble(),
+            MonthCollapse.MAX_ROWS.toDouble(),
+        )
+        val visible = visibleRowsExact(t, rows)
 
         // 行高只能用「扣掉上内边距、卡内开销、面板下限之后」的高度：这些都占同一块
         // 可用高度，少扣一个算出的行高就偏大，放不下必然溢出。

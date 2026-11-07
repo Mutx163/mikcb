@@ -20,17 +20,17 @@ class MonthMetricsTest {
     // ------------------------------------------------------------------
 
     @Test
-    fun `字阶相邻比至少 1_15 且整体只有 5 级`() {
+    fun `字阶只有 5 级且全部落在官方字级上`() {
         val ladder = MonthType.ladder
-        assertEquals("字阶级数（不含周次轨专用值）", 5, ladder.size)
+        assertEquals("字阶级数", 5, ladder.size)
         requireLadder(ladder)
     }
 
     /**
      * 咬合探针：把「半档字号」塞回阶梯，[requireLadder] 必须红。
      *
-     * 11.5 / 12.5 就是旧实现里真实存在的那批值（相邻比 1.13 < 1.15），
-     * 不验这一步，守卫可能已经退化成永远绿的摆设。
+     * 12.5 / 15 / 22 都不在 Miuix 官方字级里（旧实现真实用过 12.5 与 15/22，
+     * 但它们分别来自 body2/title3 的误标），不验这一步，守卫会退化成摆设。
      */
     @Test
     fun `咬合探针_字阶守卫能抓住半档字号混入`() {
@@ -40,12 +40,20 @@ class MonthMetricsTest {
         requireLadder(MonthType.ladder)
     }
 
+    /**
+     * 字阶守卫：**只许 Miuix 官方字级 + 严格递增**。
+     *
+     * 旧规则是「相邻比 ≥1.15」，但官方字库里 13→14（1.08）、18→20（1.11）都达不到；
+     * 那条规则逼着代码把 14 写成 15、20 写成 22，结果规格与上屏永久脱节。
+     * 现在守的是「不许自己发明字号」，层级由字重（BOLD / SEMIBOLD / 常规）补。
+     */
     private fun requireLadder(ladder: List<Double>) {
+        val official = setOf(11.0, 13.0, 14.0, 16.0, 17.0, 18.0, 20.0, 24.0, 32.0)
+        ladder.forEach { size ->
+            assertTrue("字阶 $size 不是 Miuix 官方字级（半档字号会重新制造层级噪声）", official.contains(size))
+        }
         ladder.zipWithNext().forEach { (small, large) ->
-            assertTrue(
-                "字阶 $small → $large 的相邻比 ${large / small} 低于 1.15，肉眼分不出层级",
-                large / small >= 1.15,
-            )
+            assertTrue("字阶必须严格递增：$small → $large", large > small)
         }
     }
 
@@ -55,17 +63,17 @@ class MonthMetricsTest {
         assertEquals(ladder.sorted(), ladder)
         assertEquals(11.0, MonthType.CAPTION, 0.0)
         assertEquals(13.0, MonthType.BODY, 0.0)
-        assertEquals(15.0, MonthType.TITLE, 0.0)
+        assertEquals(14.0, MonthType.TITLE, 0.0)
         assertEquals(18.0, MonthType.DAY_NUMBER, 0.0)
-        assertEquals(22.0, MonthType.DISPLAY, 0.0)
+        assertEquals(20.0, MonthType.DISPLAY, 0.0)
     }
 
     @Test
-    fun `周次轨 10 是阶梯之外的专用值`() {
-        // 40dp 列宽里「第 17 周」压不进 11sp 一行 —— 所以它单独一个值，且不得混进阶梯。
-        assertEquals(10.0, MonthType.RAIL, 0.0)
-        assertFalse(MonthType.ladder.contains(MonthType.RAIL))
-        assertTrue(MonthType.RAIL < MonthType.ladder.first())
+    fun `周次轨复用 caption 字号 不是第七级`() {
+        // 40dp 列宽扣 4dp 右留白 = 36dp，11sp 的「第 17 周」约 33dp，一行放得下；
+        // 真放不下时由 WeekRailLabel 等比缩小——那是渲染兜底，不是新增字级。
+        assertEquals(MonthType.CAPTION, MonthType.RAIL, 0.0)
+        assertTrue(MonthType.ladder.contains(MonthType.RAIL))
     }
 
     // ------------------------------------------------------------------
@@ -166,13 +174,13 @@ class MonthMetricsTest {
     }
 
     @Test
-    fun `色带槽位高度恒等于间距加色带高`() {
+    fun `标记槽位高度恒等于间距加标记高`() {
         assertEquals(
-            MonthMetrics.DAY_NUMBER_STRIP_GAP + MonthMetrics.CELL_STRIP_HEIGHT,
-            MonthMetrics.CELL_STRIP_SLOT_HEIGHT,
+            MonthMetrics.DAY_NUMBER_MARK_GAP + MonthMetrics.CELL_MARK_HEIGHT,
+            MonthMetrics.CELL_MARK_SLOT_HEIGHT,
             1e-9,
         )
-        assertTrue(MonthMetrics.CELL_STRIP_SLOT_HEIGHT > MonthMetrics.CELL_STRIP_HEIGHT)
+        assertTrue(MonthMetrics.CELL_MARK_SLOT_HEIGHT > MonthMetrics.CELL_MARK_HEIGHT)
     }
 
     @Test

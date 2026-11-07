@@ -480,8 +480,9 @@ private fun StatCell(
     ) {
         Text(
             text = value.toString(),
-            // 22dp = title3（Dart MonthType.display，也是工具栏的月份字号）
-            style = MiuixTheme.textStyles.title3.shiftWeight(QingyuWeightDelta.BOLD),
+            // 18dp = title4：概览数字比月份标题（20）低一级，避免三个统计数字
+            // 和「这是哪个月」抢同一层；正文卡片标题仍是 14（body2）。
+            style = MiuixTheme.textStyles.title4.shiftWeight(QingyuWeightDelta.BOLD),
             color = if (value == 0) mixToward(ink, cardFill) else ink,
             maxLines = 1,
         )

@@ -80,8 +80,13 @@ fun MonthGrid(
 ) {
     val dark = isSystemInDarkThemeSafe()
     // 表头与周次轨：压在白卡上，跟主题走。
-    val mutedInk = Color(QingyuTheme.actionIcon(dark))
-    val weekendInk = Color(QingyuTheme.secondaryText(dark))
+    //
+    // 2026-11-07：七列**统一一色**。旧实现工作日用 `actionIcon`（40% 黑，亮色下
+    // 正好等于 #999999），周末用 `secondaryText`（也是 #999999）——所谓「周末重
+    // 一档」在亮色下根本没有发生；而且周末比工作日更重，与「周一为列首」的扫读
+    // 锚点无关。现在统一用 SECONDARY（亮色约 5.7:1），11sp 小字也达标。
+    val headerInk = Color(QingyuTheme.primaryText(dark))
+        .copy(alpha = MonthInk.SECONDARY.toFloat())
 
     // 周次行标列：只在真的能算出周次时占位（学期未配置时整列收起）。
     val weekNumberColumnVisible = showWeekNumbers && grid.days.any { it.weekIndex != null }
@@ -108,9 +113,7 @@ fun MonthGrid(
                     Text(
                         text = MonthText.weekday(dayOfWeek),
                         style = MiuixTheme.textStyles.footnote2.shiftWeight(QingyuWeightDelta.SEMIBOLD),
-                        // 周末比工作日重一档（secondary vs tertiary），
-                        // 扫读时才找得到「一周从哪儿开始」。
-                        color = if (dayOfWeek >= 6) weekendInk else mutedInk,
+                        color = headerInk,
                         maxLines = 1,
                         textAlign = TextAlign.Center,
                         modifier = Modifier.padding(bottom = 6.dp),
@@ -151,7 +154,7 @@ fun MonthGrid(
                     MonthWeekRow(
                         week = grid.weeks[row],
                         weekNumberColumnVisible = weekNumberColumnVisible,
-                        mutedInk = mutedInk,
+                        headerInk = headerInk,
                         isDark = dark,
                         rowHeight = rowHeight,
                         today = todayDay,
@@ -169,7 +172,7 @@ fun MonthGrid(
 private fun MonthWeekRow(
     week: MonthWeek,
     weekNumberColumnVisible: Boolean,
-    mutedInk: Color,
+    headerInk: Color,
     isDark: Boolean,
     rowHeight: Dp,
     today: LocalDateTime,
@@ -195,7 +198,7 @@ private fun MonthWeekRow(
                 if (weekIndex != null) {
                     WeekRailLabel(
                         text = MonthText.weekRail(weekIndex.toInt()),
-                        color = mutedInk,
+                        color = headerInk,
                     )
                 }
             }
@@ -204,9 +207,7 @@ private fun MonthWeekRow(
             Box(
                 modifier = Modifier
                     .weight(1f)
-                    .fillMaxHeight()
-                    // 格间留白：格子之间要透气。
-                    .padding(MonthMetrics.CELL_GAP.dp),
+                    .fillMaxHeight(),
             ) {
                 MonthDayCell(
                     entry = day,
@@ -236,7 +237,10 @@ private fun WeekRailLabel(
     BoxWithConstraints(
         modifier = Modifier
             .fillMaxSize()
-            .padding(end = 4.dp),
+            .padding(end = 4.dp)
+            // 与日号共享光学中心：日号下面恒有 8dp 标记槽，整块内容因此上移 4dp；
+            // 周次轨也补同样的底边距，才不会被读成「比日号低一行」。
+            .padding(bottom = MonthMetrics.CELL_MARK_SLOT_HEIGHT.dp),
         contentAlignment = Alignment.Center,
     ) {
         val maxWidthPx = constraints.maxWidth.toFloat()

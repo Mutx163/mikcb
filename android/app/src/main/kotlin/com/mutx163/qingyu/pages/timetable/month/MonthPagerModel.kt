@@ -59,11 +59,13 @@ object MonthPagerModel {
         floor(page).toInt().coerceIn(0, PAGE_COUNT - 1)
 
     /**
-     * 日历卡高度该按几行算：**当前跨着的两页**里较多的行数。
+     * 拖拽行程与版面预算用的**整数**行数：当前跨着的两页里取较大值。
      *
-     * 静止时 `floor == ceil` ⇒ 等于聚焦月自己的行数（不多留空白）；水平滑动
-     * 途中两页共存 ⇒ 取大值，否则 5 行月挨着 6 行月时高那一页的最后一行被裁掉
-     *（Dart 2026-11 实测：2026-10 是 5 行、11 月是 6 行）。
+     * 静止时 `floor == ceil` ⇒ 等于聚焦月自己的行数；水平滑动途中两页共存 ⇒ 取大值，
+     * 否则 5 行月挨着 6 行月时行程会用少一行的口径，走不满。
+     *
+     * ⚠️ **不要拿它定卡高**：它在手指刚动 ε 时会从 5 跳到 6（或落定瞬间缩回），
+     * 卡高要用连续插值的 [cardRows]。
      *
      * @param page 小数页号（`pagerState.currentPage + currentPageOffsetFraction`）。
      * @param rowsOfPage 给定整页号返回该月真实行数（4~6，[MonthGrid.rowsInMonth]）。
@@ -74,5 +76,26 @@ object MonthPagerModel {
         val upper = ceil(page).toInt().coerceIn(0, PAGE_COUNT - 1)
         if (upper == lower) return lowerRows
         return max(lowerRows, rowsOfPage(upper))
+    }
+
+    /**
+     * 日历卡高度的**连续**行数：当前页与下一页之间线性插值。
+     *
+     * 为什么不再用 [cardRowCount] 直接定卡高：它是「两页取大」，在拖拽起点
+     * 从 4 行月滑向 6 行月时，手指刚动 ε 卡高就从 4 行跳到 6 行（91dp）；
+     * 反向则在落定瞬间缩回去。卡高应该在整段手势里连续变化，而不是在两端各跳一次。
+     *
+     * 静止时 `frac = 0` ⇒ 等于聚焦月自己的行数；滑动中两页的高度按进度过渡。
+     * 代价是较高的那一页在过渡前半段会被卡底裁掉一点——页面本来就在横向移动，
+     * 这比整张卡瞬跳一行自然得多。
+     */
+    fun cardRows(page: Double, rowsOfPage: (Int) -> Int): Double {
+        val clamped = page.coerceIn(0.0, (PAGE_COUNT - 1).toDouble())
+        val lower = floor(clamped).toInt().coerceIn(0, PAGE_COUNT - 1)
+        val upper = (lower + 1).coerceAtMost(PAGE_COUNT - 1)
+        val lowerRows = rowsOfPage(lower).toDouble()
+        if (upper == lower) return lowerRows
+        val fraction = (clamped - lower).coerceIn(0.0, 1.0)
+        return lowerRows + (rowsOfPage(upper) - lowerRows) * fraction
     }
 }

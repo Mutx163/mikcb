@@ -462,9 +462,15 @@ private fun MonthViewBody(
             selectedDate = selectedInMonth,
             today = today,
         )
-        // 卡高按**跨着的两页**里较多的行数算（判据在 `MonthPagerModel.cardRowCount`）：
-        // 5 行月挨着 6 行月时只按聚焦月算会把高那页最后一行裁掉。
+        // 拖拽行程按**跨着的两页**里较多的行数算（判据在 `MonthPagerModel.cardRowCount`）：
+        // 5 行月挨着 6 行月时行程若用聚焦月的行数，会走不满 / 走过头（差一整行）。
+        // 卡高本身用下面的 `cardRowsExact`，不再用这个整数。
         val cardRowCount = MonthPagerModel.cardRowCount(pageValue) { page ->
+            gridForPage(page).rowsInMonth
+        }
+        // 卡高用的**连续**行数：在 4/5/6 行之间按页进度插值，避免“手指刚动 ε 就长高
+        // 一整行”与“落定瞬间缩回一整行”。见 MonthPagerModel.cardRows 的注释。
+        val cardRowsExact = MonthPagerModel.cardRows(pageValue) { page ->
             gridForPage(page).rowsInMonth
         }
 
@@ -496,12 +502,35 @@ private fun MonthViewBody(
                 rowCount = rowCount,
             )
 
+        fun layoutCardAt(
+            progress: Double,
+            rows: Double,
+            weekNumberVisible: Boolean,
+        ): MonthPanelLayout = MonthPanelModel.layoutExact(
+            progress = progress,
+            availableHeightDp = availableHeightDp,
+            availableWidthDp = availableWidthDp,
+            headerHeightDp = MonthGridMetrics.HEADER_HEIGHT,
+            weekLabelWidthDp = MonthGridMetrics.WEEK_LABEL_WIDTH,
+            minRowHeightDp = MonthGridMetrics.MIN_ROW_HEIGHT,
+            maxRowHeightDp = MonthGridMetrics.MAX_ROW_HEIGHT,
+            keptRow = keptRow,
+            weekNumberColumnVisible = weekNumberVisible,
+            handleHeightDp = MonthCalendarChrome.CARD_CHROME,
+            topPaddingDp = MonthMetrics.CARD_PADDING,
+            rowCount = rows,
+        )
+
         // 卡的那份版面账：**读它才取进度**（测量阶段读 → 只失效布局，不重组）。
         val cardLayout by remember(
-            availableHeightDp, availableWidthDp, keptRow, cardRowCount, weekNumberColumnVisible,
+            availableHeightDp, availableWidthDp, keptRow, cardRowsExact, weekNumberColumnVisible,
         ) {
             derivedStateOf {
-                layoutAt(expandProgress().toDouble(), cardRowCount, weekNumberColumnVisible)
+                layoutCardAt(
+                    progress = expandProgress().toDouble(),
+                    rows = cardRowsExact,
+                    weekNumberVisible = weekNumberColumnVisible,
+                )
             }
         }
         // 行高与进度**无关**（模型里只由可用高、宽度、行数决定）：组合期取一次，
@@ -541,8 +570,8 @@ private fun MonthViewBody(
                         )
                     },
                     onDragStart = onDragStart,
-                    // 行程按**跨页口径**：卡高本身就是按 `cardRowCount` 算的，行程若用
-                    // 聚焦月的行数，5 行月贴 6 行月时就走不满 / 走过头（差一整行）。
+                    // 行程按**跨页口径**：拖拽行程用两页中较大的行数；卡高用连续行数，
+                    // 两者取不同的量是有意的——行程要“走满”，卡高要“不跳”。
                     onDragUpdate = { dy -> onDragUpdate(dy, rowHeightDp, cardRowCount) },
                     onDragEnd = onDragEnd,
                 ) {

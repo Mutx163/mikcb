@@ -72,12 +72,16 @@ fun MonthViewToolbar(
 ) {
     val dark = isSystemInDarkTheme()
     val ink = Color(QingyuTheme.primaryText(dark))
-    val muted = Color(QingyuTheme.actionIcon(dark))
+    // 箭头与年份：旧实现用 `actionIcon`（40% 黑，亮色约 2.85:1）——图标低于 3:1、
+    // 13sp 年份低于 4.5:1，正是注释里「靠猜」的那档。统一提到 SECONDARY（约 5.7:1）。
+    val muted = ink.copy(alpha = MonthInk.SECONDARY.toFloat())
 
     Row(
         modifier = modifier
             .fillMaxWidth()
-            .padding(horizontal = MonthMetrics.CARD_PADDING.dp),
+            // 与网格内容同一条左右边线（卡内 11dp = GRID_INNER_PADDING − CELL_GAP）：
+            // 左箭头从网格左沿起、标题从第一列日期起，右端的「今天」也停在网格右沿。
+            .padding(horizontal = (MonthMetrics.GRID_INNER_PADDING - MonthMetrics.CELL_GAP).dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         MonthNavArrow(
@@ -86,28 +90,29 @@ fun MonthViewToolbar(
             tint = muted,
             onTap = onPreviousMonth,
         )
-        Box(
+        MonthNavTitle(
+            year = year,
+            month = month,
+            ink = ink,
+            muted = muted,
+            fraction = pageFraction,
             modifier = Modifier
-                .weight(1f)
+                .width(MonthViewToolbarMetrics.TITLE_WIDTH.dp)
                 .height(MonthMetrics.CALENDAR_NAV_HEIGHT.dp),
-            contentAlignment = Alignment.Center,
-        ) {
-            MonthNavTitle(
-                year = year,
-                month = month,
-                ink = ink,
-                muted = muted,
-                fraction = pageFraction,
-            )
-        }
+        )
         MonthNavArrow(
             forward = true,
             contentDescription = MonthText.nextMonth.text,
             tint = muted,
             onTap = onNextMonth,
         )
+        // 标题组左对齐，右侧留弹性空间给「今天」。
+        //
+        // 旧实现是「左箭头 + 弹性标题 + 右箭头 + 56dp 尾槽」：标题被尾槽往左推
+        // 28dp，而网格又被周次列往右推 20dp，两者中线差 48dp——读起来像「标题
+        // 几乎居中但没有居正」。现在标题组从网格左沿起排，不再假装居中。
+        Spacer(modifier = Modifier.weight(1f))
         // 尾部固定槽位：本月留空（同宽），非本月放「今天」。
-        // 标题的可用宽度因此恒定，不会因为多出/少掉一个按钮而左右跳。
         Box(
             modifier = Modifier
                 .width(MonthViewToolbarMetrics.TRAILING_SLOT_WIDTH.dp)
@@ -136,6 +141,9 @@ object MonthViewToolbarMetrics {
 
     /** 尾部槽位宽度：「今天」药丸与箭头同宽，本月空着时标题也不偏移。 */
     const val TRAILING_SLOT_WIDTH = 56.0
+
+    /** 标题组宽度：固定值，翻页时两个月份标签在其中滑动，箭头不跟着字宽跳。 */
+    const val TITLE_WIDTH = 112.0
 
     /** 「今天」药丸圆角。 */
     const val TODAY_PILL_RADIUS = 13.0
@@ -182,13 +190,12 @@ private fun MonthNavTitle(
     ink: Color,
     muted: Color,
     fraction: Float,
+    modifier: Modifier = Modifier,
 ) {
     val clamped = fraction.coerceIn(0f, 1f)
     val next = nextMonthOf(year, month)
     BoxWithConstraints(
-        modifier = Modifier
-            .fillMaxSize()
-            .clipToBounds(),
+        modifier = modifier.clipToBounds(),
     ) {
         val slotWidth = maxWidth
         Box(
@@ -250,10 +257,11 @@ private fun MonthTodayPill(
 ) {
     Box(
         modifier = Modifier
+            .height(32.dp)
             .clip(RoundedCornerShape(MonthViewToolbarMetrics.TODAY_PILL_RADIUS.dp))
             .background(ink.copy(alpha = MonthInk.FILL.toFloat()))
             .clickable(onClick = onTap)
-            .padding(horizontal = 10.dp, vertical = 4.dp),
+            .padding(horizontal = 10.dp),
         contentAlignment = Alignment.Center,
     ) {
         Text(
