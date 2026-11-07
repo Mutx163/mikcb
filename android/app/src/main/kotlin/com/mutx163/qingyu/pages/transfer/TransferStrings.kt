@@ -151,6 +151,21 @@ object TransferStrings {
     val importAsNewTimetable = ArbText("importAsNewTimetable", "导入为新课表")
     val createdNewTimetableAfterImport =
         ArbText("createdNewTimetableAfterImport", "导入成功，已创建新的课表")
+
+    /**
+     * 「导入为新课表」用的默认档名（包内没带课表名时）。
+     *
+     * 发布版这条是**硬编码字面量** `'导入课表'`（`timetable_import_export_service.dart:780` 工作区），
+     * 本仓不许新增硬编码中文（`CjkLiteralGateTest`），所以走文案系统；值与发布版逐字相同。
+     */
+    val transferImportedProfileName = ArbText("transferImportedProfileName", "导入课表")
+
+    /**
+     * 「导入为新课表」建新档时，若包里没有可用模板、需要新建一套时用的模板名：
+     * `<课表名> 时间`（发布版硬编码 `'$nextName 时间'`，语义与用词照抄）。
+     */
+    val transferImportedTimeSchemeName =
+        ArbText("transferImportedTimeSchemeName", "{name} 时间")
     val backupRestoredSuccess = ArbText("backupRestoredSuccess", "导入成功，备份数据已恢复")
     val importFailedInvalidFile = ArbText("importFailedInvalidFile", "导入失败，请确认文件有效")
     val importFileReadFailed = ArbText("importFileReadFailed", "无法读取所选文件")
@@ -244,6 +259,8 @@ object TransferStrings {
         replaceCurrentTimetable,
         importAsNewTimetable,
         createdNewTimetableAfterImport,
+        transferImportedProfileName,
+        transferImportedTimeSchemeName,
         backupRestoredSuccess,
         importFailedInvalidFile,
         importFileReadFailed,

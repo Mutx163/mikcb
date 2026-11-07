@@ -41,6 +41,8 @@ import top.yukonga.miuix.kmp.theme.MiuixTheme
  *
  * @param description 第二行说明（比正文小一号、次要色）；null = 只有一行。
  *   对应 Dart `showAppToast(description:)`，失败提示的「试试直接打开 App」放这里。
+ * @param isError true = 错误样式（正文用 error 色，Dart `AppToastKind.error` 的对位）；
+ *   默认 false = 常规样式，既有调用点零变化。
  * @param autoDismissMillis ≤ 0 表示不自动消失（需要用户点一下才走）。
  */
 @Composable
@@ -49,6 +51,7 @@ fun AppToastCapsule(
     dark: Boolean,
     modifier: Modifier = Modifier,
     description: String? = null,
+    isError: Boolean = false,
     actionLabel: String? = null,
     onAction: (() -> Unit)? = null,
     onDismiss: () -> Unit = {},
@@ -79,7 +82,11 @@ fun AppToastCapsule(
                 Text(
                     text = message,
                     style = MiuixTheme.textStyles.body2,
-                    color = Color(QingyuTheme.primaryText(dark)),
+                    color = if (isError) {
+                        Color(QingyuTheme.error(dark))
+                    } else {
+                        Color(QingyuTheme.primaryText(dark))
+                    },
                 )
                 if (!description.isNullOrBlank()) {
                     Text(

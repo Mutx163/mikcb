@@ -38,15 +38,29 @@ import com.mutx163.qingyu.share.qrTransferDecompress
  *
  * | 触发点 | Error |
  * |---|---|
- * | 帧文本解析失败（含超长/字段非法/degree>k） | `DECODE_FAILED` |
- * | 与已建立的会话 info 不一致 | `SESSION_MISMATCH` |
+ * | 已收齐但解出来的数据拿不出（`finish` 里 `decodedData()` 为 null、载荷短于声明） | `DECODE_FAILED` / `CHECKSUM_FAILED` |
  * | 超过 15 分钟会话上限 | `SESSION_EXPIRED` |
  * | 帧数 / 唯一 seed / 邻接边预算超限 | `RESOURCE_LIMIT` |
- * | 软解码没能还原 | `DECODE_FAILED` |
  * | SHA-256 不符 | `CHECKSUM_FAILED` |
  * | 解压后长度与声明不符 | `RAW_LENGTH_MISMATCH` |
  * | 载荷不是合法 gzip | `DECOMPRESSION_FAILED` |
- * | 解压输出/压缩体超预算 | `RESOURCE_LIMIT` |
+ *
+ * ## 哪些情况**不**判死（2026-11-05 修）
+ *
+ * | 触发点 | 处理 | 计数 |
+ * |---|---|---|
+ * | 扫到不是本协议的二维码 | 静默忽略 | [foreignFrameCount] |
+ * | 本协议前缀但解析失败（反光/半截码被误读） | 静默忽略 | [brokenFrameCount] |
+ * | 会话元信息不符（视野里另有一台发送端） | 静默忽略 | [mismatchedFrameCount] |
+ *
+ * 这三条以前都会落到一个**终态** `DECODE_FAILED` / `SESSION_MISMATCH`，此后
+ * [onBarcode] 把所有后续结果全丢，用户必须点「重新开始」——已收到的帧一起作废。
+ * 而现场（桌面、书本、包装、别人手机屏幕）到处是二维码，误扫一次就毁掉几分钟的收集。
+ *
+ * 发布版是**忽略**它们：`qr_transfer_scan_screen.dart:129-131` 对 `FormatException`
+ * 直接 `continue`，`:132-140` 对 `qr_transfer_session_mismatch` 只显示一条提示并继续收，
+ * 只有其它 StateError 才 `_stopWithError`。本文件现在与它同口径（Kotlin 侧把提示条换成
+ * 计数，UI 若要显示「请对准发送方屏幕」再读计数即可，不必自己重新解析帧文本）。
  *
  * @param nowMillis 时钟（单测注入假时间，不睡觉）
  */
@@ -64,6 +78,15 @@ class QrTransferReceiveSession(
     private var duplicateFrames = 0
     private var adjacencyEdges = 0
     private val submittedSeeds = HashSet<Int>()
+
+    /** 看着就不是本协议的识别次数（别的二维码）——用来提示「请对准发送方屏幕」。 */
+    private var foreignFrames = 0
+
+    /** 是本协议前缀但解析失败的次数（反光/半张码被误读）——不判死，只计数。 */
+    private var brokenFrames = 0
+
+    /** 与本会话元信息不一致的帧数（视野里另有一台发送端）——不判死，只计数。 */
+    private var mismatchedFrames = 0
 
     private var error: QrTransferScanModel.Error? = null
 
@@ -85,6 +108,15 @@ class QrTransferReceiveSession(
     /** 重复帧数（同一 seed 被反复识别）——调试与单测用。 */
     val duplicateCount: Int get() = duplicateFrames
 
+    /** 不是本协议的二维码被扫到的次数（**不参与**进度、不判死）。 */
+    val foreignFrameCount: Int get() = foreignFrames
+
+    /** 本协议前缀但解析失败的次数（**不参与**进度、不判死）。 */
+    val brokenFrameCount: Int get() = brokenFrames
+
+    /** 与本会话元信息不符的帧数（**不参与**进度、不判死）。 */
+    val mismatchedFrameCount: Int get() = mismatchedFrames
+
     /** 当前该渲染成什么。 */
     fun model(): QrTransferScanModel = QrTransferScanModel(
         receivedFrames = detectedFrames,
@@ -104,10 +136,19 @@ class QrTransferReceiveSession(
         // 已经失败或已经收齐：后续结果一律不参与，免得把一条终态错误覆盖回「正常」。
         if (error != null || verifiedPayload != null) return model()
 
+        val text = result.rawValue
         val frame = try {
-            QrTransferFrame.parse(result.rawValue)
+            QrTransferFrame.parse(text)
         } catch (_: IllegalArgumentException) {
-            fail(QrTransferScanModel.Error.DECODE_FAILED)
+            // **不判死**：扫到不是本协议的码（桌面/书本/包装/别人手机屏幕上的 QR 到处都是）
+            // 或本协议的帧没读清，都只是「这一条没用」，会话继续收下一帧。
+            //
+            // 发布版就是这个行为：`qr_transfer_scan_screen.dart:129-131` 把
+            // `on FormatException` 直接 `continue`（静默忽略，不落任何终态）。
+            // 早前 Kotlin 版把它塌成了 `DECODE_FAILED` 终态，一帧误扫就毁掉整轮收集。
+            //
+            // 两类分开计数，UI 可据此提示「请对准发送方屏幕」而不必自己再解析一遍文本。
+            if (QrTransferFrame.looksLikeFrame(text)) brokenFrames++ else foreignFrames++
             return model()
         }
 
@@ -120,7 +161,10 @@ class QrTransferReceiveSession(
                 symbolSize = frame.info.symbolSize,
             )
         } else if (current != frame.info) {
-            fail(QrTransferScanModel.Error.SESSION_MISMATCH)
+            // 视野里同时有另一台发送端（或发送方中途换了数据）：**也不判死**，只记一笔。
+            // 发布版 `qr_transfer_scan_screen.dart:132-140` 对 `qr_transfer_session_mismatch`
+            // 只显示一条提示、继续收；真正终态的只有其它 StateError。
+            mismatchedFrames++
             return model()
         }
 
@@ -205,6 +249,9 @@ class QrTransferReceiveSession(
         duplicateFrames = 0
         adjacencyEdges = 0
         submittedSeeds.clear()
+        foreignFrames = 0
+        brokenFrames = 0
+        mismatchedFrames = 0
         error = null
         verifiedPayload = null
         rawPayload = null

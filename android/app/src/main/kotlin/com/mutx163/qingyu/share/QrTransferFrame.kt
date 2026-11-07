@@ -41,6 +41,20 @@ class QrTransferFrame(
         const val FIELD_SEPARATOR = "|"
         const val EXPECTED_FIELD_COUNT = 9
 
+        /** 魔数 + 分隔符，即「看起来是本协议帧」的最短前缀（`QRV2|`）。 */
+        const val MAGIC_PREFIX = "$MAGIC$FIELD_SEPARATOR"
+
+        /**
+         * 这段文本**看起来**是不是本协议的帧——只看前缀，不做任何内容校验。
+         *
+         * 用途只有一个：把「扫到别人屏幕/纸上/包装上的二维码」与「扫本协议的帧但没读清」
+         * 分开。前者应当**静默忽略**（现场到处是这样的码），后者才是真帧坏。
+         * 判据取 `trim()` 后的 `QRV2|` 前缀：只认完整魔数 + 分隔符，
+         * 「QRV2xxx」这种不是本协议。
+         */
+        fun looksLikeFrame(text: String): Boolean =
+            text.trim().startsWith(MAGIC_PREFIX)
+
         /** QRV2 来自摄像头输入，元信息不可信：上限与 Dart 侧一致，防 OOM/死循环。 */
         const val MAX_FRAME_TEXT_LENGTH = QrTransferLimits.MAX_FRAME_TEXT_LENGTH
         const val MAX_SOURCE_SYMBOL_COUNT = QrTransferLimits.MAX_SOURCE_SYMBOL_COUNT

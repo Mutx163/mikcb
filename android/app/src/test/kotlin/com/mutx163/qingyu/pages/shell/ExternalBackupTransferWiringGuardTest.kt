@@ -33,11 +33,24 @@ class ExternalBackupTransferWiringGuardTest {
                 "外部打开 .mikcb 备份只会被推到传输页，payload 永远留在 hub 里没人消费。",
             "ShellExternalEntryHub.consumeImport(\"backup\")" in host,
         )
+        // 2026-11-06：`openImportPreview` 多了 `entry` 参数（「导入为新课表」只对
+        // 「外部打开备份」开放）。守卫随之升级成**更严**的两条：两条入口各传各的标记。
         assertTrue(
-            "`DataTransferHost` 取到备份 payload 后没有接进导入预览链路" +
-                "（找不到 `openImportPreview(payload.text, TransferChannel.FILE)`）——" +
-                "外部打开备份不会弹出导入预览。",
-            "openImportPreview(payload.text, TransferChannel.FILE)" in host,
+            "`DataTransferHost` 取到备份 payload 后没有接进导入预览链路，或没把入口标成 " +
+                "`ImportEntry.EXTERNAL_OPEN`（找不到 " +
+                "`openImportPreview(payload.text, TransferChannel.FILE, ImportEntry.EXTERNAL_OPEN)`）——" +
+                "标错的话「导入为新课表」会变成处处都有 / 处处都没有。",
+            "openImportPreview(payload.text, TransferChannel.FILE, ImportEntry.EXTERNAL_OPEN)" in host,
+        )
+        assertTrue(
+            "选文件导入必须显式传 `ImportEntry.FILE_PICK`（找不到 " +
+                "`openImportPreview(result.text, TransferChannel.FILE, ImportEntry.FILE_PICK)`）——" +
+                "靠默认值的话，有人把它改成 EXTERNAL_OPEN 这条守卫咬不住。",
+            "openImportPreview(result.text, TransferChannel.FILE, ImportEntry.FILE_PICK)" in host,
+        )
+        assertTrue(
+            "`ImportEntry` 枚举不见了——上面两条字面断言会退化成「随便哪个字符串凑上就算过」的假绿。",
+            "private enum class ImportEntry" in host,
         )
     }
 

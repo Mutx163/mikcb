@@ -142,16 +142,41 @@ class QrTransferReceiveSessionTest {
     // ── 错误映射：一类错一句话 ────────────────────────────────────
 
     @Test
-    fun 不是本协议的文本报解码失败() {
+    fun 不是本协议的二维码静默忽略_不判死会话() {
+        // 桌面/书本/包装/别人手机屏幕上到处是二维码：误扫一次不该毁掉整轮收集。
+        // 发布版同口径（`qr_transfer_scan_screen.dart:129-131`：FormatException → continue）。
         val receiver = QrTransferReceiveSession()
         val model = receiver.onBarcode(barcode("这不是二维码传输的帧"))
-        assertEquals(QrTransferScanModel.Error.DECODE_FAILED, model.error)
-        assertEquals(TransferStrings.qrTransferDecodeFailed.zh, model.errorMessage)
-        assertTrue("失败态必须给「重新开始」", model.showRestart)
+
+        assertNull("非本协议文本不能置任何终态", model.error)
+        assertEquals("不计入「已接收帧」", 0, model.receivedFrames)
+        assertNull("更不能建会话", receiver.sessionInfo)
+        assertEquals(1, receiver.foreignFrameCount)
+        assertEquals(0, receiver.brokenFrameCount)
+
+        // 会话仍然活着：紧接着的正确帧照收不误。
+        val sender = QrTransferSendSession.prepare(randomPayload())
+        val done = feed(receiver, { tick -> sender.frameTextForTick(tick)!! })
+        assertNull(done.error)
+        assertTrue("误扫之后必须还能收齐", done.isComplete)
+        assertEquals(1, receiver.foreignFrameCount)
     }
 
     @Test
-    fun 扫到另一份数据报会话不匹配() {
+    fun 本协议前缀但帧坏也不判死_只计数() {
+        val receiver = QrTransferReceiveSession()
+        // `QRV2|` 开头但字段不全：是「本协议的帧没读清」，不是别人的码。
+        val model = receiver.onBarcode(barcode("QRV2|1|256"))
+
+        assertNull("帧坏同样不能置终态", model.error)
+        assertEquals(0, model.receivedFrames)
+        assertEquals(1, receiver.brokenFrameCount)
+        assertEquals(0, receiver.foreignFrameCount)
+        assertNull(receiver.sessionInfo)
+    }
+
+    @Test
+    fun 扫到另一份数据只记不匹配_不判死会话() {
         val senderA = QrTransferSendSession.prepare(randomPayload())
         val senderB = QrTransferSendSession.prepare(kotlin.random.Random(99).nextBytes(3000))
         val receiver = QrTransferReceiveSession()
@@ -159,8 +184,15 @@ class QrTransferReceiveSessionTest {
         receiver.onBarcode(barcode(senderA.frameTextForTick(0)!!))
         val model = receiver.onBarcode(barcode(senderB.frameTextForTick(0)!!))
 
-        assertEquals(QrTransferScanModel.Error.SESSION_MISMATCH, model.error)
-        assertEquals(TransferStrings.qrTransferSessionMismatch.zh, model.errorMessage)
+        // 发布版只弹一条提示、继续收（`qr_transfer_scan_screen.dart:132-140`），当前会话不动。
+        assertNull("另一份数据不能把会话打死", model.error)
+        assertEquals(1, receiver.mismatchedFrameCount)
+        assertEquals("会话元信息仍是第一份数据", 1, model.receivedFrames)
+
+        // 回到发送端 A 的屏幕，能继续收齐（B 的帧只是被忽略）。
+        val done = feed(receiver, { tick -> senderA.frameTextForTick(tick)!! })
+        assertNull(done.error)
+        assertTrue("被别的发送端干扰过也必须还能收齐", done.isComplete)
     }
 
     @Test
@@ -231,22 +263,36 @@ class QrTransferReceiveSessionTest {
     }
 
     @Test
-    fun 第一条错误就是终态_后续不再改口() {
+    fun 第一条终态错误说了算_后续帧不再改口() {
+        // 终态只剩「真资源/真数据问题」这几类（超时、超限、校验失败…）——
+        // 非本协议文本与坏帧已经改成忽略（见上面的用例），不再参与这条。
+        var now = 1_000_000L
+        val receiver = QrTransferReceiveSession(nowMillis = { now })
         val sender = QrTransferSendSession.prepare(randomPayload())
-        val receiver = QrTransferReceiveSession()
-        receiver.onBarcode(barcode("坏帧"))
-        val model = receiver.onBarcode(barcode(sender.frameTextForTick(0)!!))
-        assertEquals("坏帧之后不该被后续正常帧「治好」", QrTransferScanModel.Error.DECODE_FAILED, model.error)
+
+        now += QrTransferLimits.MAX_SESSION_DURATION_MILLIS + 1
+        receiver.onBarcode(barcode(sender.frameTextForTick(0)!!))
+        val model = receiver.onBarcode(barcode(sender.frameTextForTick(1)!!))
+
+        assertEquals(
+            "超时之后不该被后续帧「治好」",
+            QrTransferScanModel.Error.SESSION_EXPIRED,
+            model.error,
+        )
     }
 
     // ── 重新开始 ──────────────────────────────────────────────────
 
     @Test
     fun 重新开始把帧与错误一起清掉() {
+        var now = 1_000_000L
         val sender = QrTransferSendSession.prepare(randomPayload())
-        val receiver = QrTransferReceiveSession()
-        receiver.onBarcode(barcode("坏帧"))
-        assertEquals(QrTransferScanModel.Error.DECODE_FAILED, receiver.model().error)
+        val receiver = QrTransferReceiveSession(nowMillis = { now })
+        receiver.onBarcode(barcode("别人的二维码"))
+        receiver.onBarcode(barcode("QRV2|1|256"))
+        now += QrTransferLimits.MAX_SESSION_DURATION_MILLIS + 1
+        receiver.onBarcode(barcode(sender.frameTextForTick(0)!!))
+        assertEquals(QrTransferScanModel.Error.SESSION_EXPIRED, receiver.model().error)
 
         receiver.reset()
         val model = receiver.model()
@@ -255,6 +301,9 @@ class QrTransferReceiveSessionTest {
         assertEquals(0, model.decodedSymbols)
         assertEquals(0, model.totalSymbols)
         assertNull(receiver.sessionInfo)
+        assertEquals("外来/坏帧的计数也要清掉", 0, receiver.foreignFrameCount)
+        assertEquals(0, receiver.brokenFrameCount)
+        assertEquals(0, receiver.mismatchedFrameCount)
 
         // reset 之后同一份数据能重新收：说明 seed 去重与会话状态都清干净了
         val fresh = feed(receiver, { tick -> sender.frameTextForTick(tick)!! })

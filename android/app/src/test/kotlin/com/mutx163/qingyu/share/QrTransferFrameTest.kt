@@ -2,6 +2,7 @@ package com.mutx163.qingyu.share
 
 import org.junit.Assert.assertArrayEquals
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Assert.fail
 import org.junit.Test
@@ -159,5 +160,18 @@ class QrTransferFrameTest {
         )
         // 符号不是 base64。
         assertInvalid(replaceField(text, 8, "!!!"))
+    }
+
+    // ── looksLikeFrame：只看前缀，不校验内容 ──────────────────────
+
+    @Test fun `看起来是本协议帧_只认QRV2前缀`() {
+        assertTrue(QrTransferFrame.looksLikeFrame(validFrame().encode()))
+        assertTrue("前后空白要忽略", QrTransferFrame.looksLikeFrame("  \nQRV2|1|256|x  "))
+        assertTrue("字段不全也算「像是本协议的帧」", QrTransferFrame.looksLikeFrame("QRV2|1|256"))
+        assertFalse("没有分隔符不算", QrTransferFrame.looksLikeFrame("QRV2"))
+        assertFalse("别的前缀不算", QrTransferFrame.looksLikeFrame("QRV2X|1|2|3|4|5|6|7|8"))
+        assertFalse("普通网址不算", QrTransferFrame.looksLikeFrame("https://example.com"))
+        assertFalse("空串不算", QrTransferFrame.looksLikeFrame("   "))
+        assertFalse("魔数固定大写", QrTransferFrame.looksLikeFrame("qrv2|1|2"))
     }
 }

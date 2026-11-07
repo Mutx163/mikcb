@@ -68,6 +68,11 @@ class TransferStringsParityTest {
             "发送失败：未知错误",
             TransferStrings.sendFailedWithError.filled("error", "未知错误"),
         )
+        // 「导入为新课表」新建模板名：`<课表名> 时间`（发布版硬编码 `'$nextName 时间'`，逐字照抄）。
+        assertEquals(
+            "我的课表 时间",
+            TransferStrings.transferImportedTimeSchemeName.filled("name", "我的课表"),
+        )
     }
 
     private fun assertMatchesArb(key: String, text: String, template: String) {
