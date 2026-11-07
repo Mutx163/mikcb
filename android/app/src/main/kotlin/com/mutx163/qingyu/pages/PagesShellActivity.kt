@@ -1074,6 +1074,8 @@ private fun PagesShell(
                         ShellPageContent(
                             pageId = route.id,
                             onBack = { popPage() },
+                            // 导入成功后的「自动回首页」：弹到栈底（Dock），不是只退一层。
+                            onBackToRoot = { while (backStack.size > 1) backStack.removeLastOrNull() },
                             wiring = wiring,
                             // 页面内部「推新页」：路由字符串 → 壳页面 id（映射表在 ShellWiring.kt）。
                             onOpenPage = { target -> openPage(target) },

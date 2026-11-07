@@ -6,6 +6,7 @@ import com.mutx163.qingyu.app.TimetableSnapshot
 import com.mutx163.qingyu.core.Course
 import com.mutx163.qingyu.core.MiniJson
 import com.mutx163.qingyu.core.TimeScheme
+import com.mutx163.qingyu.core.TimeSchemeLogic
 import com.mutx163.qingyu.core.WeekCalculator
 import com.mutx163.qingyu.transfer.MAX_ALLOWED_SEMESTER_WEEK_COUNT
 import com.mutx163.qingyu.transfer.courseListsEqual
@@ -258,8 +259,19 @@ object WarehouseCourseWriteBack {
         }
 
         return try {
+            // Dart `importParsedCourses` 在落库前按生效时间模板回填钟点
+            // （`syncCoursesWithEffectiveTimeSchemes`）。不补这一步，脚本没给
+            // `isCustomTime` 的课 `startTime/endTime` 永远是空串，首页课卡只剩节次。
+            // 必须重取 `repository.snapshot`：扩节/学期设置刚写过，`before` 里的模板是旧的。
+            val syncedCourses = TimeSchemeLogic.syncCoursesWithEffectiveTimeSchemes(
+                source = mergedCourses,
+                schemes = repository.snapshot.timeSchemes,
+                settings = repository.snapshot.settings,
+                locationTimeGroups = repository.snapshot.locationTimeGroups,
+                scheduleDateRules = repository.snapshot.scheduleDateRules,
+            )
             repository.replaceActiveProfileContent(
-                courses = mergedCourses,
+                courses = syncedCourses,
                 tasks = repository.tasks,
                 exams = repository.exams,
             )

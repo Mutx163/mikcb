@@ -376,6 +376,46 @@ class WarehouseWebLoginHostWiringGuardTest {
         )
     }
 
+    /**
+     * 导入落盘成功后自动回首页（2026-11-07 用户实报「导入完成后没有返回首页」）。
+     *
+     * 钉四件事：普通成功调 `onImported()`；录制/回放不抢跑；不保存宏也离开；
+     * 失败/取消路径**绝不**调（否则连重试机会都没了）。壳侧同时钉「接到回栈底」。
+     */
+    @Test
+    fun `普通导入成功后必须回首页 失败路径不许回`() {
+        val done = blockAfter(hostSource, "is WarehouseCoursesImportApply.Result.Done ->")
+        assertTrue("取不到 Done 分支（守卫自身失效）", done.isNotEmpty())
+        assertTrue("普通成功必须调 onImported()", done.contains("onImported()"))
+        assertTrue(
+            "必须排除录制/回放（它们各有收尾）",
+            done.contains("WarehouseMacroActionState.RECORDING") && done.contains("playbackFinishing"),
+        )
+        val discard = blockAfter(hostSource, "fun discardCurrentMacro(")
+        assertTrue("取不到 discardCurrentMacro（守卫自身失效）", discard.isNotEmpty())
+        assertTrue("不保存宏也要离开网页页", discard.contains("onImported()"))
+        val finished = blockAfter(hostSource, "WarehouseQuickImportFinishedDialog(")
+        assertTrue("完成 sheet 关闭后要回首页", finished.contains("onImported()"))
+        // 失败/取消路径不许把用户甩回首页：连重试机会都没了。
+        listOf(
+            "fun cancelCoursesImport(",
+            "is WarehouseCoursesImportApply.Result.Failed ->",
+            "fun onScriptExecutionTimeout(",
+        ).forEach { marker ->
+            val block = blockAfter(hostSource, marker)
+            assertTrue("取不到 $marker", block.isNotEmpty())
+            assertFalse("失败/取消路径不许调 onImported()：$marker", block.contains("onImported()"))
+        }
+        val shellIndex = readSource("android/app/src/main/kotlin/com/mutx163/qingyu/pages/ShellPageIndex.kt")
+        val webLogin = shellIndex
+            .substringAfter("\"g2.webLogin\" ->", "")
+            .substringBefore("\"g2.customDebug\"", "")
+        assertTrue(
+            "壳必须把 onImported 接到「回栈底」，否则只退一层、停在上一个导入页",
+            webLogin.contains("onImported = onBackToRoot"),
+        )
+    }
+
     private fun readHostSource(): String =
         readSource("android/app/src/composeP1/kotlin/com/mutx163/qingyu/pages/import/warehouse/WarehouseWebLoginHost.kt")
 

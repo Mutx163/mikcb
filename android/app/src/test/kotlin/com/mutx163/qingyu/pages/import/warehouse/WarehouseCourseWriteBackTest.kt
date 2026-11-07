@@ -11,6 +11,7 @@ import com.mutx163.qingyu.core.TimetableProfile
 import com.mutx163.qingyu.core.TimetableSettings
 import com.mutx163.qingyu.core.WeekCalculator
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import java.time.LocalDateTime
@@ -32,6 +33,9 @@ class WarehouseCourseWriteBackTest {
         startSection: Int = 1,
         endSection: Int = 2,
         weeks: List<Int> = listOf(1, 2),
+        startTime: String = "",
+        endTime: String = "",
+        hasCustomTime: Boolean = false,
     ) = Course(
         id = id,
         name = name,
@@ -40,8 +44,9 @@ class WarehouseCourseWriteBackTest {
         dayOfWeek = day,
         startSection = startSection,
         endSection = endSection,
-        startTime = "",
-        endTime = "",
+        startTime = startTime,
+        endTime = endTime,
+        hasCustomTime = hasCustomTime,
         customWeeks = weeks,
     )
 
@@ -151,6 +156,49 @@ class WarehouseCourseWriteBackTest {
         assertEquals(WarehouseCourseWriteBack.Mode.REPLACE, outcome.mode)
         assertEquals(2, outcome.importedCount)
         assertEquals(listOf("数学", "英语"), repository.snapshot.courses.map { it.name })
+    }
+
+    @Test
+    fun `导入的非自定义时间课程按生效作息回填上课时间`() {
+        // 脚本只给节次（startSection=1,endSection=2）、没给 isCustomTime。
+        // Dart `importParsedCourses` 在落库前按生效模板回填 startTime/endTime；
+        // 少了这一步，首页课卡只剩节次、上课时间是空的（2026-11-07 用户实报）。
+        val repository = repositoryWithSections(twoSections())
+        val result = WarehouseCourseWriteBack.apply(
+            repository = repository,
+            courses = listOf(course("c1", name = "数学", startSection = 1, endSection = 2)),
+        )
+
+        assertTrue(result is WarehouseCourseWriteBack.Result.Done)
+        val written = repository.snapshot.courses.single()
+        assertEquals("模板第 1 节开始", "08:00", written.startTime)
+        assertEquals("模板第 2 节结束", "09:40", written.endTime)
+        assertFalse("模板回填不等于用户自定义时间", written.hasCustomTime)
+    }
+
+    @Test
+    fun `脚本给的自定义时间不被模板覆盖`() {
+        val repository = repositoryWithSections(twoSections())
+        val result = WarehouseCourseWriteBack.apply(
+            repository = repository,
+            courses = listOf(
+                course(
+                    "c1",
+                    name = "早读",
+                    startSection = 1,
+                    endSection = 1,
+                    startTime = "07:30",
+                    endTime = "07:45",
+                    hasCustomTime = true,
+                ),
+            ),
+        )
+
+        assertTrue(result is WarehouseCourseWriteBack.Result.Done)
+        val written = repository.snapshot.courses.single()
+        assertEquals("07:30", written.startTime)
+        assertEquals("07:45", written.endTime)
+        assertTrue(written.hasCustomTime)
     }
 
     @Test

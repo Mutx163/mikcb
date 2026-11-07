@@ -489,6 +489,24 @@ class WarehouseBridgeDialogTest {
         assertTrue("底部必须有「记住并自动填充」", dialog.contains("rememberAndAutofillAction"))
     }
 
+    /**
+     * 「自动填充登录信息」同样必须是标准两按钮确认弹窗（2026-11-07 用户实报）。
+     * 旧实现是底栏「已记住账号：X」卡片，两个小按钮挤一行。
+     */
+    @Test
+    fun `自动填充提示必须走两按钮确认弹窗`() {
+        val page = readSource("composeP1", "WarehouseWebLoginPage.kt")
+        assertTrue("页面必须挂自动填充确认弹窗", page.contains("WarehouseAutofillLoginDialog("))
+        assertFalse(
+            "底栏不许再画「已记住账号」卡片（两个小按钮挤一行）",
+            page.contains("rememberedAccountLabel"),
+        )
+        val dialog = readSource("composeP1", "WarehouseAutofillLoginDialog.kt")
+        assertTrue("必须是官方 OverlayDialog", dialog.contains("OverlayDialog("))
+        assertTrue("底部必须有「暂不」", dialog.contains("notNowAction"))
+        assertTrue("底部必须有「自动填充」", dialog.contains("autofillAction"))
+    }
+
     /** 课程构造的测试助手：只给周次相关的最小字段。 */    private fun testCourse(
         startWeek: Int,
         endWeek: Int,

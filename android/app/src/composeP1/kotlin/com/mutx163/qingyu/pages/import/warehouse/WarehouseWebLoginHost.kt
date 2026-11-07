@@ -151,6 +151,8 @@ fun WarehouseWebLoginHost(
     state: WarehouseShellState,
     prefs: WarehouseImportPrefs,
     onBack: () -> Unit,
+    /** 导入真的落盘成功后的出口；默认退一层（壳可接到「回栈底」实现自动回首页）。 */
+    onImported: () -> Unit = onBack,
     onOpenPage: (String) -> Unit,
     repository: TimetableRepository? = null,
     fetch: WarehouseFetch = remember { WarehouseJdkFetch() },
@@ -416,6 +418,8 @@ fun WarehouseWebLoginHost(
     fun discardCurrentMacro() {
         macroSavePrompt = null
         resetMacroRecording()
+        // 发布版「存不存都回」：不保存宏也把用户送回导入入口，不把人留在网页页。
+        onImported()
     }
 
     /** `macro:event` 分支：录制态收事件进缓冲（坏 payload 丢这一条，不中断录制）。 */
@@ -1029,6 +1033,16 @@ fun WarehouseWebLoginHost(
                 is WarehouseCoursesImportApply.Result.Done -> {
                     Log.i(LOG_TAG, "courses import done importedCount=${result.importedCount}")
                     showToasts(doneMessagesFor(plan, result.importedCount))
+                    // 普通导入成功（非录制、非回放）：对齐发布版 `navigator.pop(true)`，
+                    // 立即离开网页页。录制/回放各有自己的收尾（保存询问 / 完成 sheet），
+                    // 不在这里抢跑；`importedCount == 0` 也不返回（发布版同口径）。
+                    val playbackFinishing = playbackWaitingForCourses
+                    if (result.importedCount > 0 &&
+                        macroState != WarehouseMacroActionState.RECORDING &&
+                        !playbackFinishing
+                    ) {
+                        onImported()
+                    }
                     // 导入成功（写回课程数 > 0）且正在录制：自动完成录制并询问保存
                     // （对齐 Dart `importedCount > 0 && recording → _completeMacroAndPop`）。
                     if (result.importedCount > 0 && macroState == WarehouseMacroActionState.RECORDING) {
@@ -1834,7 +1848,7 @@ fun WarehouseWebLoginHost(
                 showFinishedSheet = false
                 finishedScriptStatus = null
                 resetPlaybackUi()
-                onBack()
+                onImported()
             },
         )
     }

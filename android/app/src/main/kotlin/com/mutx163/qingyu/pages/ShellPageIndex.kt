@@ -353,6 +353,8 @@ data class DayViewOverlayBinding(
 fun ShellPageContent(
     pageId: String,
     onBack: () -> Unit,
+    /** 「回到首页（栈底）」：导入成功后自动返回用；默认退一层，保持旧调用点行为。 */
+    onBackToRoot: () -> Unit = onBack,
     wiring: ShellWiring,
     /** 页面内部要「推一个新页」时用它（路由字符串 → 壳页面 id 由 [shellPageIdForRoute] 负责）。 */
     onOpenPage: (String) -> Unit = {},
@@ -2057,6 +2059,8 @@ fun ShellPageContent(
             // 抓回的课程由宿主写回当前课表；不传就只剩日志（F32）。
             repository = wiring.timetable,
             onBack = onBack,
+            // 导入落盘成功 → 直接回首页（发布版 pop 到栈底，不留在网页页）。
+            onImported = onBackToRoot,
             onOpenPage = onOpenPage,
         )
         // 2026-11-01 F26：这两页原先只传 onBack，所有按钮都是空回调（点了没反应）。
@@ -2139,6 +2143,8 @@ fun ShellPageContent(
         "i.startup" -> StartupFlowHost(
             repository = wiring.timetable,
             onBack = onBack,
+            // 导入落盘成功 → 直接回首页（发布版 pop 到栈底，不留在网页页）。
+            onImported = onBackToRoot,
             onOpenPage = onOpenPage,
         )
         "i.userGuide" -> {

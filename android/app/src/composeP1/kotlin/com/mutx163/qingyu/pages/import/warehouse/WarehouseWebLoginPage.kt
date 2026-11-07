@@ -10,19 +10,14 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.Alignment
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.unit.dp
-import com.mutx163.qingyu.components.QingyuCard
 import com.mutx163.qingyu.components.QingyuPageScaffold
 import com.mutx163.qingyu.components.QingyuWeightDelta
 import com.mutx163.qingyu.components.shiftWeight
 import top.yukonga.miuix.kmp.basic.Button
-import top.yukonga.miuix.kmp.basic.ButtonDefaults
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.IconButton
 import top.yukonga.miuix.kmp.basic.Text
@@ -154,45 +149,6 @@ fun WarehouseWebLoginPage(
                     .background(MiuixTheme.colorScheme.surface)
                     .padding(horizontal = 16.dp, vertical = 12.dp)
             ) {
-                // 账号自动填充提示
-                if (sessionState.shouldPromptAutofill) {
-                    QingyuCard(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(bottom = 10.dp)
-                    ) {
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(12.dp),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Text(
-                                text = WarehouseStrings.rememberedAccountLabel.filled(
-                                    "username",
-                                    sessionState.rememberedAccount?.username.orEmpty()
-                                ),
-                                style = MiuixTheme.textStyles.footnote1.shiftWeight(QingyuWeightDelta.MEDIUM)
-                            )
-                            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                                Button(
-                                    onClick = onDismissAutofill,
-                                    content = { Text(text = WarehouseStrings.notNowAction.zh) },
-                                    colors = ButtonDefaults.buttonColors(
-                                        color = MiuixTheme.colorScheme.surfaceVariant,
-                                        contentColor = MiuixTheme.colorScheme.onSurfaceVariantActions
-                                    )
-                                )
-                                Button(
-                                    onClick = onAutofillLogin,
-                                    content = { Text(text = WarehouseStrings.autofillAction.zh) }
-                                )
-                            }
-                        }
-                    }
-                }
-
                 // 底部操作主按钮（Dart 底栏只有「执行导入脚本」一个按钮；宏录制开关在顶栏）
                 //
                 // 只有 LOADED 才允许执行：页面没加载完就点，脚本注入进去没有 `document`
@@ -289,4 +245,21 @@ fun WarehouseWebLoginPage(
         onDismiss = onDismissSaveLogin,
         onConfirm = onSaveRememberedLogin,
     )
+
+    // 「自动填充登录信息」确认弹窗（发布版同为 showAppConfirmDialog）。
+    // 旧实现是底栏「已记住账号：X」卡片，两个小按钮挤一行，与主按钮抢高度。
+    WarehouseAutofillLoginDialog(
+        // 回放中不弹模态框（发布版 `macroRecord != null` 时直接填充、不问）。
+        // 模态比原卡片更挡人：它会把正在无人值守跑的回放盖住。
+        show = sessionState.shouldPromptAutofill && !foregroundReplayActive,
+        username = sessionState.rememberedAccount?.username.orEmpty(),
+        onDismiss = onDismissAutofill,
+        onConfirm = onAutofillLogin,
+    )
+    // 回放旁路：与发布版同口径，静默填充而不是等用户点。
+    LaunchedEffect(sessionState.shouldPromptAutofill, foregroundReplayActive) {
+        if (foregroundReplayActive && sessionState.shouldPromptAutofill) {
+            onAutofillLogin()
+        }
+    }
 }
