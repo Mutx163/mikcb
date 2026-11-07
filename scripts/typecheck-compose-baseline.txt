@@ -117,10 +117,6 @@ android/app/src/composeP1/kotlin/com/mutx163/qingyu/pages/settings/SettingsPageR
 android/app/src/composeP1/kotlin/com/mutx163/qingyu/pages/statistics/charts/StatisticsExportCards.kt|unresolved reference 'R'.
 android/app/src/composeP1/kotlin/com/mutx163/qingyu/pages/statistics/charts/StatisticsExportCards.kt|unresolved reference 'R'.
 android/app/src/composeP1/kotlin/com/mutx163/qingyu/pages/statistics/charts/StatisticsExportCards.kt|unresolved reference 'R'.
-android/app/src/composeP1/kotlin/com/mutx163/qingyu/pages/timetable/TimetableWeekPage.kt|no parameter with name 'saver' found.
-android/app/src/composeP1/kotlin/com/mutx163/qingyu/pages/timetable/TimetableWeekPage.kt|no value passed for parameter 'calculation'.
-android/app/src/composeP1/kotlin/com/mutx163/qingyu/pages/timetable/TimetableWeekPage.kt|none of the following candidates is applicable:
-android/app/src/composeP1/kotlin/com/mutx163/qingyu/pages/timetable/TimetableWeekPage.kt|none of the following candidates is applicable:
 android/app/src/composeP1/kotlin/com/mutx163/qingyu/pages/transfer/LanEditHost.kt|cannot infer type for type parameter 'T'. Specify it explicitly.
 android/app/src/composeP1/kotlin/com/mutx163/qingyu/pages/transfer/LanEditHost.kt|cannot infer type for type parameter 'T'. Specify it explicitly.
 android/app/src/composeP1/kotlin/com/mutx163/qingyu/pages/transfer/LanEditHost.kt|cannot infer type for type parameter 'T'. Specify it explicitly.
