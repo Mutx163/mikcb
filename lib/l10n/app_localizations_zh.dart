@@ -3224,7 +3224,11 @@ class AppLocalizationsZh extends AppLocalizations {
   String get homeWidgetShowCountdownTitle => '显示倒计时';
 
   @override
-  String get homeWidgetShowCountdownSubtitle => '显示下节课倒计时';
+  String get homeWidgetShowCountdownSubtitle => '开启后每分钟刷新';
+
+  @override
+  String get homeWidgetCountdownBatteryHint =>
+      '开启后卡片每分钟重绘一次，上课日约增加几百次唤醒，待机耗电明显上升。';
 
   @override
   String get homeWidgetCountdownLeadTitle => '倒计时提前量';
@@ -13336,7 +13340,11 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get homeWidgetShowCountdownTitle => '顯示倒計時';
 
   @override
-  String get homeWidgetShowCountdownSubtitle => '顯示下一節課倒計時';
+  String get homeWidgetShowCountdownSubtitle => '開啟後每分鐘刷新';
+
+  @override
+  String get homeWidgetCountdownBatteryHint =>
+      '開啟後卡片每分鐘重繪一次，上課日約增加幾百次喚醒，待機耗電明顯上升。';
 
   @override
   String get homeWidgetCountdownLeadTitle => '倒計時提前量';
@@ -23488,7 +23496,11 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get homeWidgetShowCountdownTitle => '顯示倒計時';
 
   @override
-  String get homeWidgetShowCountdownSubtitle => '顯示下一節課倒計時';
+  String get homeWidgetShowCountdownSubtitle => '開啟後每分鐘刷新';
+
+  @override
+  String get homeWidgetCountdownBatteryHint =>
+      '開啟後卡片每分鐘重繪一次，上課日約增加幾百次喚醒，待機耗電明顯上升。';
 
   @override
   String get homeWidgetCountdownLeadTitle => '倒計時提前量';

@@ -677,6 +677,37 @@ void main() {
     expect(reads.first, isTrue, reason: '首帧就该读到快照，否则玻璃会先画一块平的、下一帧才变玻璃');
   });
 
+  testWidgets('捕获节点在卸载销毁时必须从 controller 解绑监听器（防止内存泄漏）', (tester) async {
+    final controller = HyperosGlassBackdropController();
+    addTearDown(controller.dispose);
+
+    expect(controller.hasListeners, isFalse);
+
+    await tester.pumpWidget(
+      TestApp(
+        home: HyperosLayerBackdropCapture(
+          controller: controller,
+          child: const SizedBox(width: 100, height: 100),
+        ),
+      ),
+    );
+    expect(controller.hasListeners, isTrue);
+
+    // 卸载该捕获节点
+    await tester.pumpWidget(
+      const TestApp(
+        home: SizedBox(width: 100, height: 100),
+      ),
+    );
+    await tester.pump();
+
+    expect(
+      controller.hasListeners,
+      isFalse,
+      reason: '卸载后应解绑监听器，防止 RenderObject 内存泄漏',
+    );
+  });
+
   // 上游 `MiuixGlass` 契约（flutter_miuix 1.2.0 miuix_glass.dart:54）：
   //   "必须放在 backdrop 捕获子树之外，防止反馈采样。"
   // 本项目 os4_glass_backdrop.dart:13-14 也把这条抄了一遍。

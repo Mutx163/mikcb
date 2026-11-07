@@ -3292,7 +3292,11 @@ class AppLocalizationsKo extends AppLocalizations {
   String get homeWidgetShowCountdownTitle => '카운트다운 표시';
 
   @override
-  String get homeWidgetShowCountdownSubtitle => '다음 수업까지 카운트다운 표시';
+  String get homeWidgetShowCountdownSubtitle => '켜면 1분마다 갱신';
+
+  @override
+  String get homeWidgetCountdownBatteryHint =>
+      '켜면 카드를 1분마다 다시 그립니다. 수업일에는 수백 번 깨어나 대기 전력 소모가 늘어납니다.';
 
   @override
   String get homeWidgetCountdownLeadTitle => '카운트다운 선행량';

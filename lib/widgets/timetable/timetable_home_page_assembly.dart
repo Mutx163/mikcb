@@ -146,7 +146,7 @@ Widget buildTimetableHomePage(TimetableHomePageInput input) {
       pullDragDistance: homePull.dragDistance,
       pullTriggerDistance: HomePullController.triggerDistance,
       isDayView: input.isDayView,
-      glassDockContentScrollInset: input.glassDockContentScrollInset(settings),
+      glassDockContentScrollInset: input.glassDockHomeScrollInset(settings),
       onScrollNotification: homePull.handleScrollNotification,
       onPullUpdate: homePull.updateDrag,
       onPullEnd: homePull.finishDrag,
@@ -295,7 +295,7 @@ Widget _buildWeekPageBody(
   final scrollKey = 'week-scroll-$week';
   return TimetableWeekPageBody(
     grid: grid,
-    scrollRelief: input.glassDockContentScrollInset(settings),
+    scrollRelief: input.glassDockHomeScrollInset(settings),
     autoFit: settings.timetableAutoFitSectionHeight,
     scrollKey: scrollKey,
     controller: input.previewControllerFor(scrollKey),

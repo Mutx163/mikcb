@@ -620,7 +620,7 @@ extension _TimetableScreenDayView on _TimetableScreenState {
     final taskBand = _buildDayTaskBand(provider, settings, week, dayOfWeek);
     // 避让用滚动 padding：静止在底部时最后一项仍停在玻璃坞上方，滚动中连续
     // 穿过避让带（不在边界硬裁出空带）。浮钮同理。
-    final dockScrollAvoidance = _glassDockContentScrollInset(settings);
+    final dockScrollAvoidance = _glassDockHomeScrollInset(settings);
     final todayButtonAvoidance = _backToTodayButtonScrollInset(provider);
     final listBottomContentInset = 8 + dockScrollAvoidance + todayButtonAvoidance;
     // 空态只留药丸避让：带上浮钮避让会让「今天 ↔ 非今天」换位置、文字跳一下。

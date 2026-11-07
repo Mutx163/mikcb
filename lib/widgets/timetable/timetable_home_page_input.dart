@@ -64,7 +64,13 @@ class TimetableHomePageInput {
   final bool coupleOverlayActive;
   final ValueListenable<(int, int)?> dayHeaderPreview;
   final double glassDockPillOccupancy;
+
+  /// 坞内嵌页（设置、考试安排等）的底部滚动余量：只算药丸物理占用。
   final double Function(TimetableSettings settings) glassDockContentScrollInset;
+
+  /// 首页内容（周网格 / 日议程）的底部滚动余量：药丸占用 + 呼吸间隙，
+  /// 滑到底时最后一项不贴着药丸顶边。
+  final double Function(TimetableSettings settings) glassDockHomeScrollInset;
 
   final VoidCallback onToggleCoupleOverlay;
   final void Function(BuildContext hostContext, Rect sourceRect)
@@ -147,6 +153,7 @@ class TimetableHomePageInput {
     required this.dayHeaderPreview,
     required this.glassDockPillOccupancy,
     required this.glassDockContentScrollInset,
+    required this.glassDockHomeScrollInset,
     required this.onToggleCoupleOverlay,
     required this.openProfileManagePage,
     required this.isSelectedDay,

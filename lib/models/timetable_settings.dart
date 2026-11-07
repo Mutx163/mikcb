@@ -786,7 +786,7 @@ class TimetableSettings {
     this.widgetBackgroundStyle = WidgetBackgroundStyle.solid,
     this.widgetCourseAccentMode = WidgetCourseAccentMode.barAndText,
     this.widgetShowLocation = true,
-    this.widgetShowCountdown = true,
+    this.widgetShowCountdown = false,
     this.widgetHideCompletedCourses = false,
     this.widgetShowTomorrowCourses = true,
     this.widgetHeightAdjustment = -11,
@@ -1448,7 +1448,7 @@ class TimetableSettings {
         lenientString(json['widgetCourseAccentMode']),
       ),
       widgetShowLocation: lenientBool(json['widgetShowLocation']) ?? true,
-      widgetShowCountdown: lenientBool(json['widgetShowCountdown']) ?? true,
+      widgetShowCountdown: lenientBool(json['widgetShowCountdown']) ?? false,
       widgetHideCompletedCourses:
           lenientBool(json['widgetHideCompletedCourses']) ?? false,
       widgetShowTomorrowCourses:

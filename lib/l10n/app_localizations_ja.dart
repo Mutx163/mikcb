@@ -3278,7 +3278,11 @@ class AppLocalizationsJa extends AppLocalizations {
   String get homeWidgetShowCountdownTitle => 'カウントダウンを表示';
 
   @override
-  String get homeWidgetShowCountdownSubtitle => '次の授業までのカウントダウンを表示';
+  String get homeWidgetShowCountdownSubtitle => 'オンで1分ごとに更新';
+
+  @override
+  String get homeWidgetCountdownBatteryHint =>
+      'オンにするとカードを1分ごとに再描画します。授業日は数百回の起床が増え、待機中の電池消費が増えます。';
 
   @override
   String get homeWidgetCountdownLeadTitle => 'カウントダウン先行量';

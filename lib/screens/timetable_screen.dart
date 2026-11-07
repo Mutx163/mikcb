@@ -112,6 +112,13 @@ class _TimetableScreenState extends State<TimetableScreen>
   /// 玻璃坞药丸占用高度：药丸 56 + 底部安全 6（药丸顶到屏幕底的距离）。
   static const double _glassDockPillOccupancy = 62;
 
+  /// 首页内容与底部障碍（药丸 / 浮钮）之间额外留出的一小段呼吸间隙。
+  ///
+  /// 避让量本身只等于障碍的物理占用：不加这一段，滑到底时最后一项的底边
+  /// 正好压在药丸顶边上（周网格更是无缝贴住），远看像内容被切掉一角。
+  /// 留一段空白，「滑到底」才读得成自然停靠。
+  static const double _homeBottomBreathingGap = 12;
+
   /// 玻璃坞玻璃材质实验开关（用户 A/B 对比用）。
   ///
   /// true = 包原版默认材质：底栏本体 kBottomBarGlassDefaults、拖拽透镜
@@ -731,6 +738,7 @@ class _TimetableScreenState extends State<TimetableScreen>
             dayHeaderPreview: _dayHeaderPreview,
             glassDockPillOccupancy: _glassDockPillOccupancy,
             glassDockContentScrollInset: _glassDockContentScrollInset,
+            glassDockHomeScrollInset: _glassDockHomeScrollInset,
             onToggleCoupleOverlay: () {
               setState(() {
                 _coupleOverlayEnabled = !_coupleOverlayEnabled;
@@ -1482,6 +1490,17 @@ class _TimetableScreenState extends State<TimetableScreen>
     return _glassDockPillOccupancy + MediaQuery.viewPaddingOf(context).bottom;
   }
 
+  /// 首页内容（周网格 / 日议程）的底部避让量：药丸占用 + 呼吸间隙。
+  ///
+  /// 与 [_glassDockContentScrollInset] 分开，是为了让坞内嵌页仍按物理占用
+  /// 收尾（内嵌页是一整段列表，多留的空隙会改变它的段落节奏）；首页要
+  /// 「滑到底时最后一项不着落在药丸顶边上」，才在这里加呼吸间隙。经典形态
+  /// （避让为 0）不加：页面底部本来就不被底栏遮挡。
+  double _glassDockHomeScrollInset(TimetableSettings settings) {
+    final dockInset = _glassDockContentScrollInset(settings);
+    return dockInset <= 0 ? dockInset : dockInset + _homeBottomBreathingGap;
+  }
+
   /// 底栏点击分发：'day'/'week' 闪现直切（animate:false，不播锚点展开/
   /// 收起转场，对齐「点底栏直接就位」的手感，日期栏路径不受影响）并收回
   /// 内嵌页；页面条目走内嵌宿主（坞常驻），未登记的流程页才推入新路由。
@@ -1540,8 +1559,9 @@ class _TimetableScreenState extends State<TimetableScreen>
   /// 玻璃坞形态下按钮底边与药丸顶边之间的视觉间隙。
   static const double _backToTodayButtonDockGap = 12;
 
-  /// 列表最后一项与按钮顶边之间的视觉间隙。
-  static const double _backToTodayButtonGap = 8;
+  /// 列表最后一项与按钮顶边之间的视觉间隙（含呼吸间隙，见
+  /// [_homeBottomBreathingGap]）。
+  static const double _backToTodayButtonGap = 12;
 
   /// 经典形态（底栏在页面之外）下按钮距页面底边的边距。
   static const double _backToTodayButtonClassicMargin = 24;
@@ -1586,7 +1606,7 @@ class _TimetableScreenState extends State<TimetableScreen>
 
   /// 日课表列表为「回今日」浮钮留出的底部滚动余量。
   ///
-  /// 与玻璃坞避让（[_glassDockContentScrollInset]）叠加使用：坞避让负责
+  /// 与玻璃坞避让（[_glassDockHomeScrollInset]）叠加使用：坞避让负责
   /// "别被药丸盖住"，这里补上"别被浮钮盖住"的那一段（浮钮比药丸高出的
   /// 间隙 + 钮高 + 一个视觉间隙）。钮不显示时返回 0——不为一颗看不见的
   /// 按钮白留一条空白，也不改变今天那天的滚动手感。
@@ -1601,7 +1621,7 @@ class _TimetableScreenState extends State<TimetableScreen>
       0,
       buttonTop +
           _backToTodayButtonGap -
-          _glassDockContentScrollInset(provider.settings),
+          _glassDockHomeScrollInset(provider.settings),
     );
   }
 

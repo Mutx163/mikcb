@@ -3385,7 +3385,11 @@ class AppLocalizationsEn extends AppLocalizations {
   String get homeWidgetShowCountdownTitle => 'Show countdown';
 
   @override
-  String get homeWidgetShowCountdownSubtitle => 'Countdown to next class';
+  String get homeWidgetShowCountdownSubtitle => 'When on: refresh every minute';
+
+  @override
+  String get homeWidgetCountdownBatteryHint =>
+      'When on, the card redraws every minute: hundreds of extra wakes on a school day, so standby drains faster.';
 
   @override
   String get homeWidgetCountdownLeadTitle => 'Countdown lead time';

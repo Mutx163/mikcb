@@ -6009,8 +6009,14 @@ abstract class AppLocalizations {
   /// No description provided for @homeWidgetShowCountdownSubtitle.
   ///
   /// In zh, this message translates to:
-  /// **'显示下节课倒计时'**
+  /// **'开启后每分钟刷新'**
   String get homeWidgetShowCountdownSubtitle;
+
+  /// No description provided for @homeWidgetCountdownBatteryHint.
+  ///
+  /// In zh, this message translates to:
+  /// **'开启后卡片每分钟重绘一次，上课日约增加几百次唤醒，待机耗电明显上升。'**
+  String get homeWidgetCountdownBatteryHint;
 
   /// No description provided for @homeWidgetCountdownLeadTitle.
   ///

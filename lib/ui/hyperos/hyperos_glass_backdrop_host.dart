@@ -750,6 +750,12 @@ class _RenderHyperosLayerBackdropCapture extends RenderProxyBox {
     super.detach();
   }
 
+  @override
+  void dispose() {
+    _controller.removeListener(_onDemandChanged);
+    super.dispose();
+  }
+
   /// 上一次录帧后是否已经通知过消费者（玻璃）。
   ///
   /// 玻璃就在本捕获子树里时（页内玻璃都是），`updateSnapshot` 的通知会让它

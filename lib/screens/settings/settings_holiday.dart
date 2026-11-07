@@ -93,7 +93,10 @@ class HolidaySettingsScreenState extends State<HolidaySettingsScreen> {
     DateTime? endDate = initialEnd ?? existing?.date;
     HolidayType selectedType = existing?.type ?? HolidayType.vacation;
 
-    final result = await showHyperosSheet<String>(
+    final String? result;
+    final String name;
+    try {
+      result = await showHyperosSheet<String>(
       context: context,
       builder: (ctx) {
         return StatefulBuilder(
@@ -262,7 +265,11 @@ class HolidaySettingsScreenState extends State<HolidaySettingsScreen> {
           },
         );
       },
-    );
+      );
+      name = nameController.text.trim();
+    } finally {
+      nameController.dispose();
+    }
 
     if (!mounted) return;
     if (result == 'delete' && existing?.groupId != null) {
@@ -270,7 +277,6 @@ class HolidaySettingsScreenState extends State<HolidaySettingsScreen> {
       return;
     }
     if (result != 'save' || startDate == null || endDate == null) return;
-    final name = nameController.text.trim();
     final groupId =
         existing?.groupId ?? 'custom-${DateTime.now().millisecondsSinceEpoch}';
     final provider = context.read<TimetableProvider>();

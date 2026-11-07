@@ -37,7 +37,7 @@ void main() {
     expect(settings.timetableAutoFitSectionHeight, isFalse);
     expect(settings.widgetBackgroundStyle, WidgetBackgroundStyle.solid);
     expect(settings.widgetShowLocation, isTrue);
-    expect(settings.widgetShowCountdown, isTrue);
+    expect(settings.widgetShowCountdown, isFalse);
     expect(settings.widgetHideCompletedCourses, isFalse);
     expect(settings.widgetHeightAdjustment, -11);
     expect(settings.widgetCornerRadius, 22);
@@ -136,7 +136,7 @@ void main() {
     expect(restored.timetableAutoFitSectionHeight, isFalse);
     expect(restored.widgetBackgroundStyle, WidgetBackgroundStyle.solid);
     expect(restored.widgetShowLocation, isTrue);
-    expect(restored.widgetShowCountdown, isTrue);
+    expect(restored.widgetShowCountdown, isFalse);
     expect(restored.widgetHideCompletedCourses, isFalse);
     expect(restored.widgetHeightAdjustment, -11);
     expect(restored.widgetCornerRadius, 22);
