@@ -55,6 +55,7 @@ import com.mutx163.qingyu.pages.timetable.TimetableStrings
 import com.mutx163.qingyu.pages.timetable.WeekAgendaKind
 import com.mutx163.qingyu.platform.AndroidWeatherLocationSource
 import com.mutx163.qingyu.platform.PrefsKeyValueStore
+import com.mutx163.qingyu.widgetdata.CoupleOverlaySource
 import com.mutx163.qingyu.weather.JdkWeatherHttp
 import com.mutx163.qingyu.weather.WeatherPreferences
 import com.mutx163.qingyu.weather.WeatherProvider
@@ -132,6 +133,14 @@ class ShellWiring(context: Context) {
      *
      * 只在 settings 里**存在该键**时覆盖；缺失（Compose 新建档案还没写过）时不动 pref，
      * 避免把「旧版只写 pref、settings 里没这个键」的用户静默关掉。
+     *
+     * 2026-11-06 口径收窄（hy1 交叉复核，第五轮按其结论逐条修正）：hy1 收窄的是
+     * 「**写失败 ≠ settings 一定缺键**」——半写场景下不能假设「写失败会落进
+     * 『缺键 ⇒ 不动 pref』这条安全网」。对账决策本身的三条事实（`NativePrefReconcileLogic`）：
+     * - 值损坏经 `as? Boolean` 归 null，与缺键合流，**仍是 NO_CHANGE**（不是 ENABLE/CANCEL）；
+     * - 「缺键 ⇒ NO_CHANGE」是 `:74` 的**硬分支**（真实存在，不是"必然唯一结局"之外的路）；
+     * - 对账中途失败（store 抛）走的是**启动崩溃**路径，不是决策分支。
+     * 别把「写失败」直接等价于「键缺失」，也别把 NO_CHANGE 当唯一结局去依赖。
      */
     init {
         reconcileNativePrefsFromSettings()
@@ -215,6 +224,19 @@ class ShellWiring(context: Context) {
      * 不要在每帧或每次滚动里自增。
      */
     var settingsRevision: Int by mutableIntStateOf(0)
+
+    /**
+     * 情侣课表叠加的变更序号（B1 第一阶段 · 2026-11-06）。
+     *
+     * 背景：情侣页改「叠加颜色 / 周次偏移」走的是 `CouplePartnerPort.saveBinding`——
+     * 只写键值存储、**不碰课表仓储**，所以日视图的 `dataVersion`（= 仓储快照）感知不到，
+     * 用户改完颜色回日视图看到的是旧色（新接叠加就会犯的「改了没反应」）。
+     *
+     * 用法与 [settingsRevision] 同一套：情侣页宿主（`f.couple`）退出时自增一次；
+     * `c3.day` 把 `wiring.coupleOverlayRevision` 读进组合并算进 `dataVersion`。
+     * 只增不碰盘，成本是一次重组。
+     */
+    var coupleOverlayRevision: Int by mutableIntStateOf(0)
 
     /**
      * 「课表自动更新」的配置与台账（通用设置页那一整块）。
@@ -614,7 +636,12 @@ class ShellWiring(context: Context) {
                 port = timetable,
                 item = core,
                 isNew = existing == null,
-                isOccurrenceEditing = draft.occurrenceDate != null,
+                // 「单次编辑」= 草稿带了发生日 **并且** 目标确实是重复系列（根或覆盖行）。
+                // 只凭 `occurrenceDate != null` 判会把**跨天 / 单日的单次日程**误分派成
+                // `updateOccurrence`：它会造一条只继承不到列表里的覆盖行、并给原条目打 exception，
+                // 用户看到的是「整段日期只改了一天」。发布版的范围框也只对重复日程出现。
+                isOccurrenceEditing = draft.occurrenceDate != null &&
+                    (existing?.isRecurring == true || existing?.seriesId != null),
                 applyToAll = applyToAll,
             )
             true
@@ -754,8 +781,12 @@ fun TimetableWithCourseActions(
     }
 
     // 预览条目：主课 + 同周冲突课（Dart `timetable_course_action_items.dart`）。
-    // 情侣课本轮**没有数据源**（Compose 周视图还没有情侣叠加层），按缺口留空口、不伪造。
-    val previewItems = remember(actionTarget, week, snapshot.courses) {
+    // 情侣课（B1 第二阶段，2026-11-06）：叠加生效时把对方课表也递进去——点对方的课
+    // 变成**只读**预览（`buildPreviewItems` 内部判 primary 是否落在对方课表里）。
+    val coupleOverlayForSheet = remember(wiring.coupleOverlayRevision, snapshot) {
+        CoupleOverlaySource.load(repository)
+    }
+    val previewItems = remember(actionTarget, week, snapshot.courses, coupleOverlayForSheet) {
         val target = actionTarget
         if (target == null) {
             emptyList()
@@ -764,6 +795,8 @@ fun TimetableWithCourseActions(
                 courses = snapshot.courses,
                 primary = target,
                 week = week,
+                partnerCourses = coupleOverlayForSheet?.partnerCourses.orEmpty(),
+                coupleOverlayActive = coupleOverlayForSheet != null,
             )
         }
     }
@@ -830,6 +863,9 @@ fun TimetableWithCourseActions(
 
     TimetableHost(
         repository = repository,
+        // 情侣页改叠加色 / 周偏移只写键值存储、不碰课表仓储 ⇒ 宿主靠这个序号重读叠加数据
+        // （周视图与日视图共用同一个序号；日视图在 c3.day 里读它算进 dataVersion）。
+        coupleOverlayRevision = wiring.coupleOverlayRevision,
         onOpenAddCourse = { dayOfWeek, section ->
             wiring.pendingAddCourseSeed = dayOfWeek to section
             wiring.pendingEditCourse = null

@@ -85,6 +85,7 @@ import com.mutx163.qingyu.core.TimetableSettings
 import com.mutx163.qingyu.core.WeekCalculator
 import com.mutx163.qingyu.core.Course
 import com.mutx163.qingyu.core.CourseTask
+import com.mutx163.qingyu.core.LocationTimeMatchLogic
 import com.mutx163.qingyu.course.CoursePortExamAdapter
 import com.mutx163.qingyu.course.TimetableCourseService
 import com.mutx163.qingyu.course.TimetableExamService
@@ -143,8 +144,7 @@ import com.mutx163.qingyu.pages.import.warehouse.WarehouseSchoolAdaptersHost
 import com.mutx163.qingyu.pages.import.warehouse.WarehouseShellState
 import com.mutx163.qingyu.pages.import.warehouse.WarehouseWebLoginHost
 import com.mutx163.qingyu.pages.live.LiveKeepAliveSettingsPage
-import com.mutx163.qingyu.pages.schedule.AddScheduleItemPage
-import com.mutx163.qingyu.pages.schedule.ScheduleDateRuleAutoApplyHost
+import com.mutx163.qingyu.pages.schedule.ScheduleEditHost
 import com.mutx163.qingyu.pages.schedule.ScheduleItemBridge
 import com.mutx163.qingyu.pages.settings.BackdropFlowState
 import com.mutx163.qingyu.pages.settings.BingGalleryHost
@@ -191,6 +191,7 @@ import com.mutx163.qingyu.pages.statistics.StatisticsSessionPage
 import com.mutx163.qingyu.pages.statistics.StatisticsSettingsLogic
 import com.mutx163.qingyu.pages.statistics.StatisticsSettingsPage
 import com.mutx163.qingyu.pages.statistics.StatisticsShareText
+import com.mutx163.qingyu.pages.statistics.WeeklyReportToggleLogic
 import com.mutx163.qingyu.pages.statistics.shareStatisticsText
 import com.mutx163.qingyu.pages.sync.CloudBackupDetailHost
 import com.mutx163.qingyu.pages.sync.CloudBackupListPage
@@ -217,6 +218,7 @@ import com.mutx163.qingyu.pages.task.AddTaskViewState
 import com.mutx163.qingyu.pages.task.TaskFilterLogic
 import com.mutx163.qingyu.pages.task.TaskStrings
 import com.mutx163.qingyu.pages.task.TaskListController
+import com.mutx163.qingyu.pages.time_scheme.LocationTimeApplyLogic
 import com.mutx163.qingyu.pages.time_scheme.LocationTimeMatchHost
 import com.mutx163.qingyu.pages.timetable.TimetableProfilesController
 import com.mutx163.qingyu.pages.timetable.TimetableStyleMapping
@@ -231,6 +233,7 @@ import com.mutx163.qingyu.pages.timetable.day.DayViewDataAssembler
 import com.mutx163.qingyu.pages.timetable.day.DayViewStrings
 import com.mutx163.qingyu.pages.timetable.day.DayViewWeather
 import com.mutx163.qingyu.pages.timetable.day.dayViewPageDataOf
+import com.mutx163.qingyu.widgetdata.CoupleOverlaySource
 import com.mutx163.qingyu.pages.timetable.day.DayAgendaEntry
 import com.mutx163.qingyu.pages.timetable.day.DayViewPage
 import com.mutx163.qingyu.pages.timetable.day.DayViewPageData
@@ -786,6 +789,14 @@ fun ShellPageContent(
             // 不接这一层时，日视图是一块不透明主题底 —— 用户在周视图看到的壁纸与玻璃
             // 一带到日视图就没了。判据、快照、降级全在那一份里，这里只往下透传。
             val homeChrome = rememberHomeBackdropChrome(appSettings)
+            // 情侣课表叠加（B1 · 2026-11-06）：绑定不在仓储里，读一次键值存储拼 overlay。
+            // `wiring.coupleOverlayRevision` 进 remember 键——情侣页改颜色/周偏移退出时自增，
+            // 这里才重读；`snapshot` 也进键（云同步恢复会换整份档案，对方课跟着变）。
+            // null = 没绑定/没对方档，装配层按「不叠加」走旧路径，行为不变。
+            val coupleOverlayRevision = wiring.coupleOverlayRevision
+            val partnerOverlay = remember(coupleOverlayRevision, snapshot) {
+                CoupleOverlaySource.load(repository)
+            }
             // 「回今日」浮钮与列表底部的避让：按玻璃坞药丸的真实占用算（见 `HomeFloatingMetrics`）。
             val floatingInsets = rememberHomeFloatingInsets(appSettings)
             // 「点星期栏某一天」是**单次意图**：`ShellWiring.onOpenDay` 写进
@@ -836,6 +847,10 @@ fun ShellPageContent(
             val dayViewNow = LocalDateTime.now()
             DayViewPage(
                 summaryModifier = dayOverlay?.summaryModifier ?: Modifier,
+                // 日卡天气行挂载后补一次「过期就刷」（页面内部 LaunchedEffect → IO → ensureFresh）。
+                // Dart 是每张天气行 addPostFrameCallback 里调（`day_course_weather_row.dart:72-80`），
+                // 一屏多卡各调也只有第一次可能真发请求（provider 内部单飞 + 3h TTL + 15min 退避）。
+                weatherProvider = weatherProvider,
                 initialWeek = dayOverlay?.initialWeek ?: snapshot.currentWeek.coerceAtLeast(1),
                 // 有显式意图（点星期栏某天）就用它；否则回到**上次看的那一天**，与 Dart
                 // `_restoreViewStateFromProvider`（`timetable_screen.dart:862-890`）同口径。
@@ -926,13 +941,21 @@ fun ShellPageContent(
                             weatherOf = weatherOf?.let { resolve ->
                                 { date, course -> resolve(week, date, course) }
                             },
+                            // 情侣课表叠加（B1 · 2026-11-06）：TA 课追加进当天议程并带
+                            // 「TA的课」徽标（`DayViewCourseCard` 的渲染已就位）。null =
+                            // 未绑定，装配层走旧路径。外观编辑页预览（独立调用点）不传它，
+                            // 预览不受绑定影响——与发布版一致。
+                            partnerOverlay = partnerOverlay,
                         ),
                     )
                 },
                 // 装配结果的失效信号：仓储快照变了才重跑 `dataProvider`。
                 // 不传的话，页面里每秒跳动的心跳会把整页装配（全量过滤 + 冲突表）
                 // 一起重跑一遍（见 DayViewPage `dataVersion` 的 KDoc）。
-                dataVersion = snapshot,
+                // 叠加序号也算进去：情侣页改颜色/周偏移只写键值存储、仓储快照不变，
+                // 不加这个键的话改完回日视图还是旧色（B1 · 2026-11-06）。
+                // Pair 的比较是按 equals 的：快照（data class）或序号任一变了都失效。
+                dataVersion = snapshot.let { Pair(it, coupleOverlayRevision) },
                 onCloseToWeekView = dayOverlay?.onRequestClose ?: onBack,
                 // 待办带里「关联课程」的名字与颜色（Dart `provider.getCourseForTask`）。
                 courseResolver = { task ->
@@ -1180,43 +1203,33 @@ fun ShellPageContent(
             },
             onDelete = { item -> wiring.deleteScheduleItem(item, null) },
         )
-        "d2.addSchedule" -> AddScheduleItemPage(
+        // 添加 / 编辑日程：必须经 `ScheduleEditHost`（不要直调 `AddScheduleItemPage`）。
+        // 宿主负责三件页面自己做不到的事：① 落盘成败的反馈（失败不关页 + 提示，不能「点了没反应」）；
+        // ② 通知权限状态机（`PermissionFlow` + `rememberLauncherForActivityResult`），
+        // 选中提醒档位时把 `reminderPermissionMissing` / `onRequestNotificationPermission` /
+        // `onReminderSelected` 三个参数喂给页面，让「检查通知权限」那块真的出现；
+        // ③ 成功后关页并清一次性意图。壳里重复写一套权限判据必然与宿主漂移。
+        // `successToast = false`：本版成功路径「关页即反馈」，不额外弹提示。
+        "d2.addSchedule" -> ScheduleEditHost(
             scheduleItem = wiring.pendingScheduleEdit,
             initialDate = wiring.pendingScheduleInitialDate ?: LocalDate.now().toString(),
             occurrenceDate = wiring.pendingScheduleOccurrenceDate,
-            onBack = {
+            onSave = { draft, applyToAll -> wiring.saveScheduleItem(draft, applyToAll) },
+            onDelete = { item, applyToAll -> wiring.deleteScheduleItem(item, applyToAll) },
+            onFinish = {
                 wiring.clearScheduleIntent()
                 onBack()
             },
-            onSave = { draft, applyToAll ->
-                if (wiring.saveScheduleItem(draft, applyToAll)) {
-                    wiring.clearScheduleIntent()
-                    onBack()
-                }
-            },
-            onDelete = { item, applyToAll ->
-                if (wiring.deleteScheduleItem(item, applyToAll)) {
-                    wiring.clearScheduleIntent()
-                    onBack()
-                }
-            },
+            successToast = false,
         )
-        "d2.dateRule" -> {
-            val context = LocalContext.current
-            val rulePrefs = remember(context) { PrefsKeyValueStore(context) }
-            val ruleScope = rememberCoroutineScope()
-            ScheduleDateRuleHost(
-                repository = wiring.timetable,
-                todayIso = LocalDate.now().toString(),
-                onBack = onBack,
-                // 保存 / 删除规则后按「今天是否命中」自动套用作息（Dart 同款触发点）。
-                onRulesChanged = {
-                    ruleScope.launch(Dispatchers.IO) {
-                        ScheduleDateRuleAutoApplyHost.applyDue(wiring.timetable, rulePrefs)
-                    }
-                },
-            )
-        }
+        // 日期规则：规则读写 + 保存后的「自动套用 + 四态提示」都收在宿主里。
+        // 壳**不再**自己 launch applyDue —— 那样返回值只能丢掉，规则今天该套却套失败时
+        // 用户会看到「已保存」而作息没变（2026-11-05 修）。
+        "d2.dateRule" -> ScheduleDateRuleHost(
+            repository = wiring.timetable,
+            todayIso = LocalDate.now().toString(),
+            onBack = onBack,
+        )
         // 任务清单：宿主抽到 `app/TaskHost.kt`（`TaskListHost`），与底栏「任务」tab 复用同一份接线。
         //
         // 为什么要抽：这个页面有**两个渲染点**——本路由与 `PagesShellActivity` 的 `DockSlot.TASK`。
@@ -1391,9 +1404,9 @@ fun ShellPageContent(
         // 原先 `LocationTimeMatchModel()` 空模型 + 五个空回调 ⇒ 永远空列表、点哪都没反应。
         // 现在分组读仓储快照、增删改开关整份写回 `location_time_groups`
         //（`TimetableRepository.updateLocationTimeGroups`），编辑子页在同一宿主内切换。
-        // ⚠️ 「重新匹配当前课表」的落地入口（Dart `TimetableLocationRuleService.applyToActiveProfile`）
-        //    Kotlin 侧还不存在 ⇒ 传 null，宿主按 §1.2 给一句实话（ARB `aboutUnavailable`），
-        //    **不是**空 lambda、也不假装成功。
+        // 「重新匹配当前课表」已接入（2026-11-05）：纯逻辑 `LocationTimeApplyLogic`（JVM 可测）
+        // 照 Dart `TimetableLocationRuleService.applyToActiveProfile` 移植，写盘走
+        // `replaceActiveProfileContent`（先落盘成功才改内存，失败抛错由宿主弹「保存失败」）。
         "d3.locationMatch" -> {
             val snapshot = wiring.timetable.snapshot
             LocationTimeMatchHost(
@@ -1408,9 +1421,46 @@ fun ShellPageContent(
                 onBack = onBack,
                 onSaveGroups = { groups ->
                     // 落盘失败会抛错，宿主据此不回显、给「保存失败」——不能吞掉异常。
-                    wiring.timetable.updateLocationTimeGroups(groups)
+                    // `resync = true`：分组变了就必须按新分组重算课程钟点（Dart 三个 CRUD
+                    // 入口 createGroup/updateGroup/deleteGroup 都跟着 resyncAllProfiles，
+                    // `timetable_location_rule_service.dart:199-205 / 236-240 / 256-260`）。
+                    // 少了它，界面上模板名变了、课表时间仍是旧楼的节次（仓储
+                    // `updateLocationTimeGroupsLocked` 的 `if (!resync)` 早退分支）。
+                    wiring.timetable.updateLocationTimeGroups(groups, resync = true)
                 },
-                onApplyActive = null,
+                // 确认框正文里的「命中 N 门」：用**当前生效的分组**现算，
+                // 与 Dart `_applyToActive` 的 `provider.matchLocationTime(course.location)`
+                // 逐条同口径（`location_time_match_screen.dart:171-173`）。
+                matchedCourseCount = { groups ->
+                    snapshot.courses.count {
+                        LocationTimeMatchLogic.match(it.location, groups) != null
+                    }
+                },
+                onApplyActive = { groups ->
+                    // 「重新匹配当前课表」：纯逻辑在 `LocationTimeApplyLogic`，这里只做
+                    // 「算 → 有新东西才落盘 → 把统计回给宿主」（Dart `applyLocationTimeRulesToActiveProfile`）。
+                    // `groups` 由宿主传入（列表里当前那份，也是确认框算命中数用的那份）；
+                    // 不用 `snapshot.locationTimeGroups` 是为了避开「刚保存、还没重组」那一下
+                    // 弹窗数与执行口径不一致的窄窗口。
+                    val plan = LocationTimeApplyLogic.plan(
+                        courses = snapshot.courses,
+                        schemes = snapshot.timeSchemes,
+                        settings = snapshot.settings,
+                        locationTimeGroups = groups,
+                        scheduleDateRules = snapshot.scheduleDateRules,
+                    )
+                    if (plan.stats.hasChanges) {
+                        // 与 Dart 一致：没有任何变化就不落盘（只在有更新时写）。
+                        // `replaceActiveProfileContent` 是「先落盘、成功才改内存」，失败会抛错，
+                        // 宿主据此弹「保存失败」，不会出现「报了成功、盘上没变」。
+                        wiring.timetable.replaceActiveProfileContent(
+                            courses = plan.courses,
+                            tasks = wiring.timetable.tasks,
+                            exams = wiring.timetable.exams,
+                        )
+                    }
+                    plan.stats
+                },
             )
         }
         // ── F10（2026-10-29）：加考试页接真状态机 ─────────────────────
@@ -1688,27 +1738,54 @@ fun ShellPageContent(
                 // 触发时刻逐字对齐 Dart `weekly_report_service.dart:23-34`（**每周日 21:00**，
                 // 「已到点」也算已到点、顺延一周）；标题/正文对齐 `:36` / `:38-71`。
                 // 统计数字**不重算**——复用已交付的 `statistics/StatisticsService`。
+                //
+                // 顺序与补偿都在 `WeeklyReportToggleLogic.applyToggle`（纯逻辑、L0 直测）：
+                // 先查通知可达性 → 不可达拒绝打开（不写任何状态）→ 先调度成功再写 settings →
+                // settings 写失败用开头算好的同一组值补偿回写。这里只注入真实副作用，**不重排顺序**。
                 onWeeklyReportToggle = { enabled ->
-                    // Lead 授权例外科改（行为接线，仅本函数体）：开关值同时写 settings，
-                    // 否则备份/导出永远读到旧的 false。settings 已是唯一真源（见 TimetableStore）。
-                    wiring.timetable.writeRawSettingsPatch(mapOf("weeklyReportEnabled" to enabled))
-                    if (enabled) {
-                        val now = LocalDateTime.now()
-                        val snap = wiring.timetable.snapshot
-                        WeeklyReportScheduler.scheduleNext(
-                            context = wiring.context,
-                            enabled = true,
-                            fireAtMillis = WeeklyReportScheduleLogic.nextFireAtMillis(now),
-                            title = WeeklyReportScheduleLogic.buildTitle(),
-                            body = WeeklyReportScheduleLogic.buildBody(
-                                courses = snap.courses,
-                                currentWeek = snap.currentWeek,
-                                semesterWeekCount = snap.settings.semesterWeekCount,
-                            ),
-                        )
-                    } else {
-                        WeeklyReportScheduler.cancel(wiring.context)
-                    }
+                    WeeklyReportToggleLogic.applyToggle(
+                        enabled = enabled,
+                        plan = {
+                            val now = LocalDateTime.now()
+                            val snap = wiring.timetable.snapshot
+                            WeeklyReportToggleLogic.Plan(
+                                fireAtMillis = WeeklyReportScheduleLogic.nextFireAtMillis(now),
+                                title = WeeklyReportScheduleLogic.buildTitle(),
+                                body = WeeklyReportScheduleLogic.buildBody(
+                                    courses = snap.courses,
+                                    currentWeek = snap.currentWeek,
+                                    semesterWeekCount = snap.settings.semesterWeekCount,
+                                ),
+                            )
+                        },
+                        canDeliver = { WeeklyReportScheduler.canDeliver(wiring.context) },
+                        scheduleNext = { planned ->
+                            WeeklyReportScheduler.scheduleNext(
+                                context = wiring.context,
+                                enabled = true,
+                                fireAtMillis = planned.fireAtMillis,
+                                title = planned.title,
+                                body = planned.body,
+                            )
+                        },
+                        cancel = { WeeklyReportScheduler.cancel(wiring.context) },
+                        // 开关值同时写 settings，否则备份/导出永远读到旧的 false。
+                        // settings 已是唯一真源（见 TimetableStore）。
+                        //
+                        // 2026-11-06 返工①（hy 首查+交叉复核坐实）：writeRawSettingsPatch
+                        // 返回 Boolean、false = 底层抛错（TimetableRepository:464-484 内部
+                        // catch），原先直接把 Boolean 当 Unit 丢掉 ⇒ 写失败无声吞掉，
+                        // WeeklyReportToggleLogic 的两条补偿（挂 catch(Throwable)）永不执行
+                        // ⇒ pref=开、settings 真源=关的假开关。现在**写失败必须抛**
+                        // （同仓先例 LanTransferSettingsStore.kt:48-52）：逻辑层 catch 后
+                        // 撤闹钟（开）/补偿回写（关）再 rethrow，页面 catch 回滚 UI。
+                        // 接线由 WeeklyReportShellWiringGuardTest 钉住。
+                        writeSettings = { value ->
+                            if (!wiring.timetable.writeRawSettingsPatch(mapOf("weeklyReportEnabled" to value))) {
+                                throw IllegalStateException("weekly_report_settings_write_failed")
+                            }
+                        },
+                    )
                 },
             )
         }
@@ -1914,9 +1991,15 @@ fun ShellPageContent(
         // ⇒ 永远停在「尚未绑定」、九个按钮点了没反应（审核见
         // `docs/plans/2026-10-29-compose-couple-audit.md` §四）。现在换成真宿主：
         // 状态从仓储/prefs 读、九个动作落到控制器、导入导出走 SAF、结果弹 Toast。
+        // 退出时自增 `coupleOverlayRevision`（B1 · 2026-11-06）：这一页改的绑定/颜色/周偏移
+        // 只落键值存储、不碰课表仓储，日视图的 `dataVersion` 感知不到——不自增的话
+        // 用户在情侣页改完颜色，回日视图看到的是旧色（「改了没反应」）。
         "f.couple" -> CoupleTimetableSettingsHost(
             wiring = wiring,
-            onBack = onBack,
+            onBack = {
+                wiring.coupleOverlayRevision++
+                onBack()
+            },
         )
 
         // ── P3-G1 导入 · 基础 ────────────────────────────────────────
