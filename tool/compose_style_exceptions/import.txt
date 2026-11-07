@@ -5,3 +5,4 @@
 # 只允许人工编辑。scripts/compose-style-lint.ps1 -Write 只能删过期行，绝不新增。
 # R2 是结构性豁免：底部弹层内部的「内容可滚 + 动作固定」分区，不是页面级滚动容器。
 import/warehouse/WarehouseCoursesImportDialogs.kt|R2|学期确认弹层按 miuix 弹层契约拆成「内容滚动区 + 固定动作行」：滚动区只能是 Column+verticalScroll（弹层内不能用 QingyuPageList 的惰性列表），按钮必须留在滚动区外才不会被超高内容顶出面板；R2 管的是页面级滚动容器，此处是弹层内局部滚动
+import/warehouse/WarehouseBridgeDialogHost.kt|R2|网页单选弹层同样拆成「选项滚动区 + 固定动作行」：学期列表由适配脚本下发，8 个以上就会把取消/保存推到面板底外；滚动区只能是 Column+verticalScroll（弹层内不能用 QingyuPageList），同样属于弹层内局部滚动而非页面级容器

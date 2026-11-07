@@ -1,6 +1,8 @@
 package com.mutx163.qingyu.pages.import.warehouse
 
 import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -221,23 +223,36 @@ fun WarehouseBridgeDialogHost(
         onDismissRequest = { selection?.let { onAction(WarehouseBridgeDialogUserAction.Dismiss(it.requestId)) } },
         title = selection?.title?.ifBlank { WarehouseStrings.pleaseChooseTitle.zh },
         maxHeightFraction = 0.6f,
+        contentScrolls = true,
     ) {
         val s = selection
         if (s != null) {
-            s.options.forEachIndexed { index, option ->
-                RadioButtonPreference(
-                    title = option,
-                    selected = index == selectedIndex,
-                    onClick = { selectedIndex = index },
+            Column(modifier = Modifier.fillMaxWidth()) {
+                // 选项多时只滚列表：动作行固定在面板内。旧写法把选项与按钮放进同一个
+                // 滚动列，学期一多（8 个以上）「取消/保存」就被推到面板底部之外。
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .weight(1f, fill = false)
+                        .verticalScroll(rememberScrollState()),
+                ) {
+                    s.options.forEachIndexed { index, option ->
+                        RadioButtonPreference(
+                            title = option,
+                            selected = index == selectedIndex,
+                            onClick = { selectedIndex = index },
+                        )
+                    }
+                }
+                Spacer(modifier = Modifier.height(16.dp))
+                DialogActionRow(
+                    cancelText = WarehouseStrings.cancelAction.zh,
+                    confirmText = WarehouseStrings.saveAction.zh,
+                    onCancel = { onAction(WarehouseBridgeDialogUserAction.Dismiss(s.requestId)) },
+                    onConfirm = { onAction(WarehouseBridgeDialogUserAction.Selection(s.requestId, selectedIndex)) },
                 )
+                Spacer(modifier = Modifier.height(bottomInset))
             }
-            Spacer(modifier = Modifier.height(16.dp))
-            DialogActionRow(
-                cancelText = WarehouseStrings.cancelAction.zh,
-                confirmText = WarehouseStrings.saveAction.zh,
-                onCancel = { onAction(WarehouseBridgeDialogUserAction.Dismiss(s.requestId)) },
-                onConfirm = { onAction(WarehouseBridgeDialogUserAction.Selection(s.requestId, selectedIndex)) },
-            )
         }
     }
 

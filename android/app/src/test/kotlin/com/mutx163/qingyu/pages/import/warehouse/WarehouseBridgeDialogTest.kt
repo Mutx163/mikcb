@@ -434,8 +434,42 @@ class WarehouseBridgeDialogTest {
         )
     }
 
-    /** 课程构造的测试助手：只给周次相关的最小字段。 */
-    private fun testCourse(
+    /**
+     * 单选弹层的动作行也必须固定在面板内（2026-11-07 用户截图实报）。
+     *
+     * 学期列表由适配脚本下发；8 个学期 + 标题就把「取消/保存」推出面板。
+     * 与学期确认弹层同款修法：选项滚动区 `weight(1f, fill = false)`，动作行在滚动区外。
+     */
+    @Test
+    fun `单选弹层动作行必须固定在面板内`() {
+        // 取「单选弹层整段调用」：从 val selection 到 saveCourseConfig 段之前。
+        // 不能用 blockAfter(maxHeightFraction...)：那会从末尾 lambda 的 `{` 开始，
+        // 参数（contentScrolls）本身在 lambda 外，断言必然取不到。
+        val start = dialogHostSource.indexOf(
+            "val selection = current as? WarehouseBridgeDialogRequest.SingleSelection",
+        )
+        val end = dialogHostSource.indexOf(
+            "val form = current as? WarehouseBridgeDialogRequest.SaveConfig",
+        )
+        assertTrue("取不到单选弹层源码段（守卫自身失效，先修守卫）", start >= 0 && end > start)
+        val sheetBody = dialogHostSource.substring(start, end)
+        assertTrue(
+            "单选弹层必须声明 contentScrolls = true（内容自理滚动）",
+            sheetBody.contains("contentScrolls = true"),
+        )
+        assertTrue(
+            "选项滚动区必须 weight(1f, fill = false)，否则动作行会被压成 0 高",
+            sheetBody.contains("weight(1f, fill = false)"),
+        )
+        val scrollBlock = blockAfter(sheetBody, "verticalScroll(")
+        assertTrue("取不到滚动区块（守卫自身失效）", scrollBlock.isNotEmpty())
+        assertFalse(
+            "取消/保存不许在滚动区内：学期一多就被推到面板底外（用户截图实报）",
+            scrollBlock.contains("DialogActionRow("),
+        )
+    }
+
+    /** 课程构造的测试助手：只给周次相关的最小字段。 */    private fun testCourse(
         startWeek: Int,
         endWeek: Int,
         isOddWeek: Boolean = false,
