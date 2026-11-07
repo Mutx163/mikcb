@@ -69,6 +69,7 @@ import top.yukonga.miuix.kmp.basic.TabRowWithContour
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.ChevronForward
+import top.yukonga.miuix.kmp.icon.extended.Info
 import top.yukonga.miuix.kmp.icon.extended.Refresh
 import top.yukonga.miuix.kmp.preference.RadioButtonPreference
 import top.yukonga.miuix.kmp.theme.MiuixTheme
@@ -278,9 +279,46 @@ private fun GuideParagraph(text: String, dark: Boolean) {
     )
 }
 
-/** 一行动作：文字 + 细箭头（无图标，靠排版。Dart 欢迎页三动作）。 */
+/**
+ * 带图标的一行提示条（发布版 `HyperosHintBanner`：自适应卡片 + 18dp 图标 + 10dp 间距 + 一句说明）。
+ *
+ * 图标用 [MiuixIcons.Info]：miuix 图标集里没有发布版那颗 lightbulb，同仓 `CloudSyncPage`
+ * 的 `HintCard` 也是用 Info，保持一致。
+ */
 @Composable
-private fun GuideNavRow(title: String, onClick: () -> Unit) {
+private fun GuideHintBanner(text: String, dark: Boolean) {
+    QingyuCard(
+        modifier = Modifier.fillMaxWidth(),
+        insideMargin = PaddingValues(horizontal = 14.dp, vertical = 12.dp),
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(10.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Icon(
+                imageVector = MiuixIcons.Info,
+                contentDescription = null,
+                tint = Color(QingyuTheme.primary(dark = dark)),
+                modifier = Modifier.size(18.dp),
+            )
+            Text(
+                text = text,
+                style = MiuixTheme.textStyles.body2,
+                color = Color(QingyuTheme.primaryText(dark)),
+            )
+        }
+    }
+}
+
+/**
+ * 一行动作：文字（可带一句说明）+ 细箭头（无图标，靠排版。Dart 欢迎页三动作）。
+ *
+ * [subtitle] 对应发布版 `_GuideActionTile(subtitle:)`——挂在「导入课表」「从备份恢复」两行，
+ * 「开始使用」行发布版就没有副标题（原副标题与实际行为不符，已被删掉）。
+ */
+@Composable
+private fun GuideNavRow(title: String, onClick: () -> Unit, subtitle: String? = null) {
     val dark = isSystemInDarkTheme()
     Row(
         modifier = Modifier
@@ -289,12 +327,21 @@ private fun GuideNavRow(title: String, onClick: () -> Unit) {
             .heightIn(min = 56.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Text(
-            text = title,
-            style = MiuixTheme.textStyles.body1.shiftWeight(QingyuWeightDelta.MEDIUM),
-            color = Color(QingyuTheme.primaryText(dark)),
-            modifier = Modifier.weight(1f),
-        )
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = title,
+                style = MiuixTheme.textStyles.body1.shiftWeight(QingyuWeightDelta.MEDIUM),
+                color = Color(QingyuTheme.primaryText(dark)),
+            )
+            if (subtitle != null) {
+                Spacer(Modifier.height(2.dp))
+                Text(
+                    text = subtitle,
+                    style = MiuixTheme.textStyles.footnote1,
+                    color = Color(QingyuTheme.secondaryText(dark)),
+                )
+            }
+        }
         Icon(
             imageVector = MiuixIcons.ChevronForward,
             contentDescription = null,
@@ -341,8 +388,16 @@ private fun WelcomePage(
             ) {
                 Column {
                     GuideNavRow(GuideStrings.startUsingTitle.zh, onStart)
-                    GuideNavRow(GuideStrings.importTimetableTitle.zh, onImport)
-                    GuideNavRow(GuideStrings.restoreBackupTitle.zh, onRestore)
+                    GuideNavRow(
+                        title = GuideStrings.importTimetableTitle.zh,
+                        onClick = onImport,
+                        subtitle = GuideStrings.importTimetableSubtitle.zh,
+                    )
+                    GuideNavRow(
+                        title = GuideStrings.restoreBackupTitle.zh,
+                        onClick = onRestore,
+                        subtitle = GuideStrings.restoreBackupSubtitle.zh,
+                    )
                 }
             }
         }
@@ -490,6 +545,9 @@ private fun PermissionsPage(
                     insideMargin = QingyuCardDefaults.ContentInsideMargin,
                 ) {
                     Column {
+                        // 发布版摘要卡的第一句（`HyperosTypography.listDetail`）：为什么这套设置值得做。
+                        GuideParagraph(GuideStrings.guidePermissionsSubtitle.zh, dark)
+                        Spacer(Modifier.height(10.dp))
                         Text(
                             text = GuideStrings.guidePermissionsProgressLabel.filled(
                                 "ready" to "${progress.readyCount}",
@@ -533,6 +591,11 @@ private fun PermissionsPage(
                         }
                     }
                 }
+            }
+
+            // 发布版在权限列表之后跟一条提示条（`HyperosHintBanner`：灯泡图标 + 一句话）。
+            item(key = "footerHint") {
+                GuideHintBanner(GuideStrings.guidePermissionsFooterHint.zh, dark)
             }
         }
     }
@@ -820,6 +883,9 @@ private fun TipsPage(
                 Column {
                     GuideGroupTitle(GuideStrings.guideShortNameAdviceTitle.zh, dark)
                     Spacer(Modifier.height(8.dp))
+                    // 发布版卡片首句：先说「为什么简称值得填」，再给推荐 / 不推荐两行示例。
+                    GuideParagraph(GuideStrings.guideShortNameAdviceSubtitle.zh, dark)
+                    Spacer(Modifier.height(8.dp))
                     ExampleRow(ok = true, label = GuideStrings.guideShortNameRecommended.zh, example = GuideStrings.guideShortNameRecommendedExample.zh, dark = dark)
                     Spacer(Modifier.height(6.dp))
                     ExampleRow(ok = false, label = GuideStrings.guideShortNameNotRecommended.zh, example = GuideStrings.guideShortNameNotRecommendedExample.zh, dark = dark)
@@ -846,9 +912,13 @@ private fun TipsPage(
             ) {
                 Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                     GuideGroupTitle(GuideStrings.guideImportMethodsTitle.zh, dark)
+                    // 发布版卡片首句：先说整体有什么方式，再列 3 条步骤。
+                    GuideParagraph(GuideStrings.guideImportMethodsSubtitle.zh, dark)
                     StepRow("1", GuideStrings.guideImportMethodStep1.zh, dark)
                     StepRow("2", GuideStrings.guideImportMethodStep2.zh, dark)
                     StepRow("3", GuideStrings.guideImportMethodStep3.zh, dark)
+                    // 发布版在 3 条步骤之后补一句「也可以参与适配」的次要说明（mutedBody）。
+                    GuideParagraph(GuideStrings.guideImportMethodExtra.zh, dark)
                 }
             }
         }
