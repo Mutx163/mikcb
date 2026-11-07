@@ -163,6 +163,48 @@ data class CloudSyncViewState(
 
 object CloudSyncLogic {
 
+    /**
+     * 高级设置保存的 verdict → 页面提示（2026-11-05 云同步反馈修复①）。
+     *
+     * - INVALID → 「地址非法」错误提示（页面弹胶囊）；
+     * - NEED_HTTP_CONFIRM → null：走明文二次确认框（不是 toast）；
+     * - PROCEED → 「已保存」成功提示（2026-11-06 ARB 批：键 `cloudSyncSaved` 放闸补上；
+     *   发布版 `_saveConfig` 本就静默，这里按 Chief 裁决比发布版多一步成功反馈）。
+     *
+     * 单测钉住三档映射：把这里的分支删掉（探针）→ [CloudSyncModelTest] 必红。
+     */
+    fun advancedSaveFeedback(verdict: BaseUrlVerdict): SyncToast? = when (verdict) {
+        BaseUrlVerdict.INVALID -> SyncResultToasts.forBaseUrlInvalid()
+        BaseUrlVerdict.NEED_HTTP_CONFIRM -> null
+        BaseUrlVerdict.PROCEED -> SyncToast(message = SyncStrings.cloudSyncSaved.zh, isError = false)
+    }
+
+    /**
+     * 高级设置**落盘失败**的页面提示（2026-11-06 ARB 批）：`commitOrThrow` 的
+     * IOException 等被 runCatching 兜住后不再静默——弹「保存失败」错误胶囊。
+     * 文案**复用 ARB 既有通用键 `saveFailed`**（发布版全仓库的同一句），不新增重复键。
+     *
+     * 单测钉住键引用：把这里的 `saveFailed` 换掉（探针）→ [SyncResultToastsTest] 必红。
+     */
+    fun advancedSaveFailureFeedback(): SyncToast =
+        SyncToast(message = SyncStrings.saveFailed.zh, isError = true)
+
+    /**
+     * 连接成功的页面提示（A 类第 16 条，2026-11-05）：发布版连接成功后
+     * `showAppToast`（cloud_sync_screen.dart:271-273），此前 Kotlin 侧连接成功只关弹层
+     * 静默、`cloudSyncConnectSuccess` 键零消费。成功态（非 error）、无动作位。
+     *
+     * 消费点在页面（CloudSyncControllerPage）：壳层弹层负责调 `controller.connect`，
+     * 页面观察 `account.connected` 的「未连接 → 已连接」翻转弹胶囊——页面不重复调
+     * connect，也不经 ShellPageIndex 传回调（那是别的成员的文件）。
+     *
+     * 单测钉住键引用：把这里的 `cloudSyncConnectSuccess` 换掉（探针）→
+     * [SyncResultToastsTest] 必红。
+     */
+    fun connectSuccessFeedback(): SyncToast =
+        SyncToast(message = SyncStrings.cloudSyncConnectSuccess.zh, isError = false)
+
+
     /** Dart `_maxBackupCountOptions` / `_maxBackupAgeOptions`。 */
     val MAX_BACKUP_COUNT_OPTIONS: List<Int> = listOf(5, 10, 15, 20, 30)
     val MAX_BACKUP_AGE_OPTIONS: List<Int> = listOf(7, 14, 30, 60, 90)

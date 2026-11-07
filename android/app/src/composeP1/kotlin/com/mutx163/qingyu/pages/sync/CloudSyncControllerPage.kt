@@ -3,8 +3,12 @@ package com.mutx163.qingyu.pages.sync
 import android.widget.Toast
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -13,17 +17,20 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
+import com.mutx163.qingyu.pages.transfer.AppToastCapsule
 import com.mutx163.qingyu.platform.AndroidLegacyCredentialProbe
 import com.mutx163.qingyu.platform.PrefsKeyValueStore
 import com.mutx163.qingyu.sync.SyncConflictChoice
 import com.mutx163.qingyu.sync.SyncConflictInfo
 import com.mutx163.qingyu.theme.QingyuTheme
+import android.util.Log
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -51,6 +58,12 @@ import top.yukonga.miuix.kmp.theme.MiuixTheme
  *   [WebdavConnectSheet]、明文 http 二次确认弹窗、备份详情/恢复 sheet、路由。这些都要
  *   密码存储与页面导航，属壳层职责，本层不臆造。
  */
+
+/**
+ * 页面层提示：[SyncToast]（含 isError / actionLabel）+ 可选动作回调。
+ * 动作挂在提示尾部（Dart `showAppToastWithAction` 同位），点掉提示再执行。
+ */
+private class PageToast(val toast: SyncToast, val onAction: (() -> Unit)? = null)
 
 /**
  * 订阅控制器版本号：控制器任一状态变化会 `notifyChanged()` 自增 `revision`，
@@ -86,6 +99,8 @@ fun CloudSyncPage(
     val viewState = remember(controller, revision) { controller.cloudSyncViewState() }
     val scope = rememberCoroutineScope()
     val context = LocalContext.current
+    // 胶囊与确认框的明暗样式用（此前该组合体没用过 dark，新胶囊接线后补声明）。
+    val dark = isSystemInDarkTheme()
 
     // 升级后一次性提示：新版密文键为空、旧 Dart 插件 prefs 里仍有密码、且标记没写过。
     // 只在本页入口算一次（`remember(controller)`），不随重组反复探测；判为「该提示」时
@@ -111,14 +126,45 @@ fun CloudSyncPage(
     var conflictInfo by remember { mutableStateOf<SyncConflictInfo?>(null) }
     var conflictBusy by remember { mutableStateOf(false) }
 
+    // 页内提示胶囊（2026-11-05 云同步反馈修复）：替代四处系统 Toast——胶囊带
+    // isError 样式与动作位（「以本机为准备份」直达），Dart showAppToastWithAction 同形。
+    var cloudToast by remember { mutableStateOf<PageToast?>(null) }
+
+    // 高级设置保存：verdict 分流 + 明文二次确认（成员八复核①）
+    var showHttpConfirm by remember { mutableStateOf(false) }
+    var savingAdvanced by remember { mutableStateOf(false) }
+
+    // 断开确认（成员八复核⑤）：文案说清「清凭据、数据保留」，确认后才动。
+    var showDisconnectConfirm by remember { mutableStateOf(false) }
+
     // 进页首次加载：已连接时拉一次远端备份列表（否则备份区恒空，像云端没有备份）。
     LaunchedEffect(controller) {
         withContext(Dispatchers.IO) { controller.refreshOnEnter() }
     }
 
+    // 连接成功提示（A 类第 16 条）：发布版连接成功后 showAppToast「账号连接成功」
+    // （cloud_sync_screen.dart:271-273），此前 Kotlin 侧连接成功只关弹层静默。
+    // 壳层弹层（ShellPageIndex 的 onConfirm）负责调 controller.connect，页面不重复调、
+    // 也不给壳层传回调——只观察 account.connected 的翻转：
+    // 「未连接 → 已连接」弹成功胶囊（文案走模型层 connectSuccessFeedback，键有单测钉住）；
+    // 进页时已连接（首次只定基线）与断开翻转（发布版断开静默）都不弹。
+    var lastConnected by remember { mutableStateOf<Boolean?>(null) }
+    LaunchedEffect(viewState.account.connected) {
+        val connected = viewState.account.connected
+        when (lastConnected) {
+            null -> lastConnected = connected
+            false -> if (connected) {
+                lastConnected = true
+                cloudToast = PageToast(CloudSyncLogic.connectSuccessFeedback())
+            }
+            true -> if (!connected) lastConnected = false
+        }
+    }
+
+    // 提示走胶囊（isError 样式 + 动作位）。CANCELLED 不带动作：冲突语义由选边框承接
+    // （挂起冲突时弹「选边」框、不弹 toast），放弃选边后动作是空转（2026-11-06 返工③）。
     fun toastSyncResult(kind: SyncResultKind) {
-        val toast = SyncResultToasts.forSyncNow(kind, controller.lastErrorCode)
-        Toast.makeText(context, toast.message, Toast.LENGTH_SHORT).show()
+        cloudToast = PageToast(SyncResultToasts.forSyncNow(kind, controller.lastErrorCode))
     }
 
     // 立即同步：返回后有挂起冲突就弹选边框（不弹「已取消」，避免两个提示打架）。
@@ -148,34 +194,102 @@ fun CloudSyncPage(
     fun undoRestore() {
         scope.launch {
             val success = withContext(Dispatchers.IO) { controller.undoLastRestore() }
-            val toast = SyncResultToasts.forUndoRestore(success, controller.lastErrorCode)
-            Toast.makeText(context, toast.message, Toast.LENGTH_SHORT).show()
+            cloudToast = PageToast(SyncResultToasts.forUndoRestore(success, controller.lastErrorCode))
         }
     }
 
-    CloudSyncPage(
-        viewState = viewState,
-        onBack = onBack,
-        onConnect = onConnect,
-        onDisconnect = { controller.disconnect() },
-        onToggleEnabled = { controller.setSyncEnabled(it) },
-        onProviderSelected = { controller.selectProvider(it) },
-        onModeSelected = { controller.selectMode(it) },
-        onBaseUrlChange = { controller.onBaseUrlChanged(it) },
-        onRemoteFolderChange = { controller.onRemoteFolderChanged(it) },
-        onDeviceLabelChange = { controller.onDeviceLabelChanged(it) },
-        // 返回的 verdict 里 NEED_HTTP_CONFIRM / INVALID 需宿主弹框；默认 https 直接生效。
-        onSaveAdvanced = { controller.saveAdvanced() },
-        // 上传是同步阻塞的网络调用：必须离开主线程，否则真机上一份大课表会卡住界面。
-        onSyncNow = { syncNow() },
-        onCreateBackup = { scope.launch { withContext(Dispatchers.IO) { controller.createBackup() } } },
-        onOpenBackup = onOpenBackup,
-        onViewAllBackups = onViewAllBackups,
-        onUndoRestore = { undoRestore() },
-        onMaxCountSelected = { controller.selectMaxCount(it) },
-        onMaxAgeSelected = { controller.selectMaxAge(it) },
-        onManualProtectedChange = { controller.setManualBackupProtected(it) },
-    )
+    // ── 保存高级设置（成员八复核①）：verdict 分流 + 主线程写盘兜崩 ──
+    //
+    // 崩溃链（复核员坐实）：saveAdvanced → persist → store.saveConfig →
+    // PrefsKeyValueStore.commitOrThrow 在盘满等情况下抛 IOException，原实现直接在
+    // 主线程调用、未捕获 ⇒ 应用崩溃。现在挪 IO + runCatching 兜住。
+    //
+    // verdict 分流（进 IO 前判定在模型层 advancedSaveFeedback，有单测钉住）：
+    // - INVALID → forBaseUrlInvalid 错误胶囊；
+    // - NEED_HTTP_CONFIRM → 弹明文 http 二次确认框，确认后带 allowedInsecureHttp = true 重存；
+    // - PROCEED → 「已保存」成功提示（2026-11-06 ARB 批补键 cloudSyncSaved）。
+    // 落盘失败（onFailure）→ 「保存失败」错误胶囊（复用通用键 saveFailed）。
+    fun saveAdvanced(allowedInsecureHttp: Boolean) {
+        savingAdvanced = true
+        scope.launch {
+            val result = withContext(Dispatchers.IO) {
+                runCatching { controller.saveAdvanced(allowedInsecureHttp) }
+            }
+            savingAdvanced = false
+            result.fold(
+                onSuccess = { verdict ->
+                    // 提示映射在模型层 advancedSaveFeedback（有单测钉住）：INVALID →
+                    // 「地址非法」错误胶囊；NEED_HTTP_CONFIRM → 弹明文确认框；PROCEED →
+                    // 「已保存」成功胶囊。
+                    when (verdict) {
+                        BaseUrlVerdict.INVALID, BaseUrlVerdict.PROCEED ->
+                            CloudSyncLogic.advancedSaveFeedback(verdict)?.let { feedback ->
+                                cloudToast = PageToast(feedback)
+                            }
+                        BaseUrlVerdict.NEED_HTTP_CONFIRM -> showHttpConfirm = true
+                    }
+                },
+                onFailure = { error ->
+                    // 落盘失败（commitOrThrow IOException 等）：不崩、界面保持原状，
+                    // 并弹「保存失败」错误胶囊（2026-11-06 ARB 批：不再静默）。
+                    Log.w("CloudSyncPage", "saveAdvanced failed", error)
+                    cloudToast = PageToast(CloudSyncLogic.advancedSaveFailureFeedback())
+                },
+            )
+        }
+    }
+
+    Box(modifier = Modifier.fillMaxSize()) {
+        CloudSyncPage(
+            viewState = viewState,
+            onBack = onBack,
+            onConnect = onConnect,
+            // 断开先弹确认框（成员八复核⑤）：清凭据、数据保留的口径说清，确认后才动。
+            onDisconnect = { showDisconnectConfirm = true },
+            onToggleEnabled = { controller.setSyncEnabled(it) },
+            onProviderSelected = { controller.selectProvider(it) },
+            onModeSelected = { controller.selectMode(it) },
+            onBaseUrlChange = { controller.onBaseUrlChanged(it) },
+            onRemoteFolderChange = { controller.onRemoteFolderChanged(it) },
+            onDeviceLabelChange = { controller.onDeviceLabelChanged(it) },
+            // 返回的 verdict 里 NEED_HTTP_CONFIRM / INVALID 在宿主层分流（弹确认框 / 报错胶囊）；
+            // 默认 https 直接生效。保存挪 IO + runCatching（主线程写盘崩溃链已兜住）。
+            onSaveAdvanced = { saveAdvanced(allowedInsecureHttp = false) },
+            // 上传是同步阻塞的网络调用：必须离开主线程，否则真机上一份大课表会卡住界面。
+            onSyncNow = { syncNow() },
+            onCreateBackup = {
+                scope.launch {
+                    val kind = withContext(Dispatchers.IO) { controller.createBackup() }
+                    // 立即备份接结果（成员八复核②）：成功/失败都弹（forCreateBackup 分好样式）。
+                    cloudToast = PageToast(SyncResultToasts.forCreateBackup(kind, controller.lastErrorCode))
+                }
+            },
+            onOpenBackup = onOpenBackup,
+            onViewAllBackups = onViewAllBackups,
+            onUndoRestore = { undoRestore() },
+            onMaxCountSelected = { controller.selectMaxCount(it) },
+            onMaxAgeSelected = { controller.selectMaxAge(it) },
+            onManualProtectedChange = { controller.setManualBackupProtected(it) },
+        )
+
+        // 页内提示胶囊（isError 样式 + 动作位），替代系统 Toast。
+        cloudToast?.let { pageToast ->
+            AppToastCapsule(
+                message = pageToast.toast.message,
+                dark = dark,
+                isError = pageToast.toast.isError,
+                actionLabel = pageToast.toast.actionLabel,
+                onAction = {
+                    pageToast.onAction?.invoke()
+                    cloudToast = null
+                },
+                onDismiss = { cloudToast = null },
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .padding(horizontal = 16.dp, vertical = 32.dp),
+            )
+        }
+    }
 
     // 弹层常驻组合：显隐在对话框内部由 info 判空驱动，这里不再条件挂载。
     SyncConflictChoiceDialog(
@@ -210,6 +324,86 @@ fun CloudSyncPage(
         },
         onDismiss = { showReentry = false },
     )
+
+    // 明文 http 二次确认框（verdict = NEED_HTTP_CONFIRM 时弹；文案来自 viewState 模型字段）。
+    OverlayDialog(
+        insideMargin = DpSize(16.dp, 16.dp),
+        show = showHttpConfirm,
+        title = viewState.httpConfirmTitle,
+        onDismissRequest = { if (!savingAdvanced) showHttpConfirm = false },
+    ) {
+        Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            Text(
+                text = viewState.httpConfirmMessage,
+                style = MiuixTheme.textStyles.body2,
+                color = Color(QingyuTheme.secondaryText(dark)),
+                modifier = Modifier.fillMaxWidth(),
+            )
+            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                TextButton(
+                    text = SyncStrings.cancelAction.zh,
+                    onClick = { if (!savingAdvanced) showHttpConfirm = false },
+                    enabled = !savingAdvanced,
+                    modifier = Modifier.weight(1f),
+                )
+                Button(
+                    onClick = {
+                        showHttpConfirm = false
+                        // 「仍要保存」= 带明文放行重存（controller 内部走 PROCEED 分支落盘）。
+                        saveAdvanced(allowedInsecureHttp = true)
+                    },
+                    enabled = !savingAdvanced,
+                    colors = ButtonDefaults.buttonColorsPrimary(),
+                    modifier = Modifier.weight(1f),
+                ) {
+                    Text(text = viewState.httpConfirmProceedLabel)
+                }
+            }
+        }
+    }
+
+    // 断开确认框（成员八复核⑤）：现成文案已说清「清 WebDAV 凭据、课表数据保留」；
+    // 确认后挪 IO 执行。结果提示：无「已断开」现成键（发布版亦静默、界面状态翻转即
+    // 反馈），缺键已报 Chief。
+    OverlayDialog(
+        insideMargin = DpSize(16.dp, 16.dp),
+        show = showDisconnectConfirm,
+        title = viewState.disconnectTitle,
+        onDismissRequest = { showDisconnectConfirm = false },
+    ) {
+        Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            Text(
+                text = viewState.disconnectBody,
+                style = MiuixTheme.textStyles.body2,
+                color = Color(QingyuTheme.secondaryText(dark)),
+                modifier = Modifier.fillMaxWidth(),
+            )
+            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                TextButton(
+                    text = SyncStrings.cancelAction.zh,
+                    onClick = { showDisconnectConfirm = false },
+                    modifier = Modifier.weight(1f),
+                )
+                Button(
+                    onClick = {
+                        showDisconnectConfirm = false
+                        scope.launch {
+                            // clearPassword / persist 都是本地 prefs 写，挪 IO 防主线程卡顿。
+                            withContext(Dispatchers.IO) { controller.disconnect() }
+                        }
+                    },
+                    // 断开是破坏性操作：红底 + onError 字（同删除备份确认键样式）。
+                    colors = ButtonDefaults.buttonColors(
+                        color = Color(QingyuTheme.error(dark)),
+                        contentColor = Color(QingyuTheme.onError(dark)),
+                    ),
+                    modifier = Modifier.weight(1f),
+                ) {
+                    Text(text = viewState.disconnectActionLabel)
+                }
+            }
+        }
+    }
 }
 
 /**
@@ -226,7 +420,10 @@ fun CloudBackupListPage(
     val revision = rememberControllerRevision(controller)
     val viewState = remember(controller, revision) { controller.backupListViewState() }
     val scope = rememberCoroutineScope()
-    val context = LocalContext.current
+
+    // 页内提示胶囊（成员八复核②）：立即备份结果在这里弹（成功/失败都提示）。
+    var backupToast by remember { mutableStateOf<SyncToast?>(null) }
+    val dark = isSystemInDarkTheme()
 
     // 同云同步页：进页首次加载，避免整页恒空。
     LaunchedEffect(controller) {
@@ -236,18 +433,40 @@ fun CloudBackupListPage(
     fun undoRestore() {
         scope.launch {
             val success = withContext(Dispatchers.IO) { controller.undoLastRestore() }
-            val toast = SyncResultToasts.forUndoRestore(success, controller.lastErrorCode)
-            Toast.makeText(context, toast.message, Toast.LENGTH_SHORT).show()
+            backupToast = SyncResultToasts.forUndoRestore(success, controller.lastErrorCode)
         }
     }
 
-    CloudBackupListPage(
-        viewState = viewState,
-        onBack = onBack,
-        onCreateBackup = { scope.launch { withContext(Dispatchers.IO) { controller.createBackup() } } },
-        onOpenBackup = onOpenBackup,
-        onUndoRestore = { undoRestore() },
-    )
+    Box(modifier = Modifier.fillMaxSize()) {
+        CloudBackupListPage(
+            viewState = viewState,
+            onBack = onBack,
+            onCreateBackup = {
+                scope.launch {
+                    val kind = withContext(Dispatchers.IO) { controller.createBackup() }
+                    // 立即备份接结果（成员八复核②，备份列表页 ：247 同修）：成功/失败都提示。
+                    backupToast = SyncResultToasts.forCreateBackup(kind, controller.lastErrorCode)
+                }
+            },
+            onOpenBackup = onOpenBackup,
+            onUndoRestore = { undoRestore() },
+            onRetryRefresh = {
+                scope.launch { withContext(Dispatchers.IO) { controller.refreshBackups() } }
+            },
+        )
+
+        backupToast?.let { toast ->
+            AppToastCapsule(
+                message = toast.message,
+                dark = dark,
+                isError = toast.isError,
+                onDismiss = { backupToast = null },
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .padding(horizontal = 16.dp, vertical = 32.dp),
+            )
+        }
+    }
 }
 
 /**

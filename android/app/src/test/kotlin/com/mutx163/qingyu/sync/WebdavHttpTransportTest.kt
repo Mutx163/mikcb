@@ -196,9 +196,9 @@ class WebdavHttpTransportTest {
     @Test
     fun propfindRejectsBodyCutShortByEarlyDisconnect() {
         // 成员八复核③（裸 socket 路径）：声明的 Content-Length 比实发多 50、提前断开 =
-        // 半截 PROPFIND 响应，必须判 truncated → invalid_response。readBounded
-        // （HttpURLConnection 路径）的同类破口已排下一轮（复核员口径：契约破口、非必然
-        // 脏数据），本用例只钉 raw 路径。判别力关键：**体本身是完整可解析的 XML**——
+        // 半截 PROPFIND 响应，必须判 truncated → invalid_response。HttpURLConnection
+        // 路径（readBounded）的同款用例见 getBytesRejectsBodyCutShortByEarlyDisconnect。
+        // 判别力关键：**体本身是完整可解析的 XML**——
         // 探针态（truncated=false）解析照样成功、用例才会翻红；发二进制垃圾会让两个
         // 分支都判 invalid_response，探针打不红。
         val fullBody = HISTORY_MULTISTATUS.toByteArray(Charsets.UTF_8)
@@ -207,6 +207,24 @@ class WebdavHttpTransportTest {
         }
 
         val result = transport().propfind("/Apps/qingyu-sync/history/", depth = 1)
+
+        assertTrue(result.isFailed)
+        assertEquals("invalid_response", result.errorMessage)
+    }
+
+    @Test
+    fun getBytesRejectsBodyCutShortByEarlyDisconnect() {
+        // 成员八复核③的 HttpURLConnection 路径同款（2026-11-05 补）：声明的
+        // Content-Length 比实发多 50、提前断开 = 半截响应，EOF 不算完整——必须判
+        // truncated → invalid_response，不许把可解析的半截快照当完整数据。
+        // 判别力关键与 propfind 版相同：**体本身是完整可解析的 XML**——探针态
+        // （truncated=false）getBytes 照样返回 ok(半截字节)，用例才会翻红。
+        val fullBody = HISTORY_MULTISTATUS.toByteArray(Charsets.UTF_8)
+        server.handler = { exchange, _ ->
+            exchange.respond(200, fullBody, mapOf("Content-Length" to "${fullBody.size + 50}"))
+        }
+
+        val result = transport().getBytes("/cutshort.mikcb")
 
         assertTrue(result.isFailed)
         assertEquals("invalid_response", result.errorMessage)

@@ -64,12 +64,36 @@ data class StatisticsSettingsViewState(
 )
 
 /**
+ * 周报开关「打开」失败：**系统通知根本送不到**（POST_NOTIFICATIONS 未授予 / 应用通知被关 /
+ * 周报渠道被调成静默）。
+ *
+ * 为什么不复用 `IllegalStateException` 让页面去认 message：页面按异常**类型**选一句人话
+ * （「去开通知」≠「保存失败」），认字符串就是两处各解析一次，改一个字两边就漂。
+ * 也不在不可达时假装成功——留一个「能打开但永远送不到」的开关就是假开关。
+ */
+class WeeklyReportNotificationUnavailableException(
+    message: String = "weekly report notification not deliverable",
+) : IllegalStateException(message)
+
+/**
  * 统计设置页的纯逻辑：视图状态装配与操作反馈文案。
  */
 object StatisticsSettingsLogic {
 
     /** 落盘失败提示（ARB `saveFailed`）。 */
     val SAVE_FAILED_MESSAGE: String = StatisticsStrings.saveFailed.zh
+
+    /**
+     * 开关操作失败时给用户的那一句：
+     * - 通知不可达（[WeeklyReportNotificationUnavailableException]）⇒ 告诉用户去开通知；
+     * - 其余（落盘 / 调度抛错）⇒ 通用「保存失败」。
+     */
+    fun failureMessage(error: Throwable): String =
+        if (error is WeeklyReportNotificationUnavailableException) {
+            StatisticsStrings.weeklyReportPermissionMissing.zh
+        } else {
+            SAVE_FAILED_MESSAGE
+        }
 
     /**
      * 开关副标题：

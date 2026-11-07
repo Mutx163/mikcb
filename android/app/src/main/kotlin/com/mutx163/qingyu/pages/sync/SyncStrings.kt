@@ -92,6 +92,12 @@ object SyncStrings {
     val cloudSyncTestSuccess = ArbText("cloudSyncTestSuccess", "WebDAV 连接成功")
     val cloudSyncTestFailed = ArbText("cloudSyncTestFailed", "WebDAV 连接失败，请检查账号、应用密码和网络")
     val cloudSyncConnectSuccess = ArbText("cloudSyncConnectSuccess", "账号连接成功")
+    // 2026-11-06 ARB 批（Chief 待办池放闸）：保存成功 / 重试为本批新增键；保存失败
+    // **复用 ARB 既有通用键 saveFailed**（全仓库 30+ 处消费的同一句「保存失败」），
+    // 不新增重复语义的域内键。
+    val cloudSyncSaved = ArbText("cloudSyncSaved", "已保存")
+    val saveFailed = ArbText("saveFailed", "保存失败")
+    val cloudBackupRetryAction = ArbText("cloudBackupRetryAction", "重试")
     val cloudSyncResultUploaded = ArbText("cloudSyncResultUploaded", "已上传到云端")
     val cloudSyncResultDownloaded = ArbText("cloudSyncResultDownloaded", "已从云端恢复")
     val cloudSyncResultUpToDate = ArbText("cloudSyncResultUpToDate", "本地与云端已一致")
@@ -107,6 +113,12 @@ object SyncStrings {
         "cloudSyncConflictFirstSyncBody",
         "云端与本机数据不一致。保留本机将上传并覆盖云端，使用云端将下载并覆盖本机。",
     )
+    // 2026-11-06 死键账目结案（第五轮，hy1 当面认错——它 grep 漏了 lib/、没用权威判据、
+    // 越级把 Kotlin 结论说成全仓）：Dart 侧 `cloud_sync_screen.dart:537` 有业务消费
+    // （showAppToastWithAction 的动作），且 SyncStrings 定义本身就在判活 corpus 内——
+    // **这键从来不是死键**。Kotlin 侧暂无业务消费（冲突语义走选边框，CANCELLED toast
+    // 已摘空动作，见 SyncResultToasts）：登记保留，将来 Kotlin 侧接回「以本机为准备份」
+    // 的真实出口时直接用，不必再翻 ARB。
     val cloudSyncKeepLocalBackupAction = ArbText("cloudSyncKeepLocalBackupAction", "以本机为准备份")
 
     // ── 云备份（两个页面共用：CloudSyncScreen / CloudBackupListScreen） ──
@@ -268,6 +280,9 @@ object SyncStrings {
             cloudSyncTestSuccess,
             cloudSyncTestFailed,
             cloudSyncConnectSuccess,
+            cloudSyncSaved,
+            saveFailed,
+            cloudBackupRetryAction,
             cloudSyncResultUploaded,
             cloudSyncResultDownloaded,
             cloudSyncResultUpToDate,

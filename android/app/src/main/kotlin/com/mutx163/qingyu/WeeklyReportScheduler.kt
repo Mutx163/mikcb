@@ -282,13 +282,39 @@ object WeeklyReportScheduler {
         )
     }
 
-    private fun postNotification(
-        context: Context,
-        notificationId: Int,
-        title: String,
-        body: String,
-    ): Boolean {
+    /**
+     * 此刻系统**真的**能不能投递周报通知——供开关在「打开」前先查（2026-11-05）。
+     *
+     * 判据只有一份：[weeklyReportCanPostNotification]（权限 / 应用通知开关 / 渠道重要度），
+     * 本函数与 [postNotification] 都走它，不许在壳里再抄第三份。
+     *
+     * 先 [ensureChannel]：渠道还没建时 `getNotificationChannel` 返回 null，会被误判成
+     * 「渠道被静默」——那会让第一次开周报的用户被错误地叫去开权限。
+     */
+    fun canDeliver(context: Context): Boolean {
+        ensureChannel(context)
         val manager = context.getSystemService(NotificationManager::class.java) ?: return false
+        return notificationDeliverability(context, manager).canPost
+    }
+
+    /** 三个投递前提的读数（[canPost] 就是唯一判据的结论）。 */
+    private data class Deliverability(
+        val permissionGranted: Boolean,
+        val appNotificationsEnabled: Boolean,
+        val channelImportance: Int,
+    ) {
+        val canPost: Boolean
+            get() = weeklyReportCanPostNotification(
+                permissionGranted = permissionGranted,
+                appNotificationsEnabled = appNotificationsEnabled,
+                channelImportance = channelImportance,
+            )
+    }
+
+    private fun notificationDeliverability(
+        context: Context,
+        manager: NotificationManager,
+    ): Deliverability {
         val permissionGranted = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             context.checkSelfPermission(
                 android.Manifest.permission.POST_NOTIFICATIONS,
@@ -302,18 +328,28 @@ object WeeklyReportScheduler {
         } else {
             NotificationManager.IMPORTANCE_DEFAULT
         }
-        if (!weeklyReportCanPostNotification(
-                permissionGranted = permissionGranted,
-                appNotificationsEnabled = manager.areNotificationsEnabled(),
-                channelImportance = channelImportance,
-            )
-        ) {
+        return Deliverability(
+            permissionGranted = permissionGranted,
+            appNotificationsEnabled = manager.areNotificationsEnabled(),
+            channelImportance = channelImportance,
+        )
+    }
+
+    private fun postNotification(
+        context: Context,
+        notificationId: Int,
+        title: String,
+        body: String,
+    ): Boolean {
+        val manager = context.getSystemService(NotificationManager::class.java) ?: return false
+        val deliverability = notificationDeliverability(context, manager)
+        if (!deliverability.canPost) {
             Log.w(
                 TAG,
                 "skip notify: not deliverable " +
-                    "granted=$permissionGranted " +
-                    "appEnabled=${manager.areNotificationsEnabled()} " +
-                    "importance=$channelImportance",
+                    "granted=${deliverability.permissionGranted} " +
+                    "appEnabled=${deliverability.appNotificationsEnabled} " +
+                    "importance=${deliverability.channelImportance}",
             )
             return false
         }

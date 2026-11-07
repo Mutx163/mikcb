@@ -201,6 +201,15 @@ object StatisticsStrings {
     val weeklyReportNextFire = ArbText("weeklyReportNextFire", "下次推送 {date} {time}")
     val weeklyReportEnabledHint = ArbText("weeklyReportEnabledHint", "已开启每周周报推送")
     val weeklyReportDisabledHint = ArbText("weeklyReportDisabledHint", "已关闭每周周报推送")
+    /**
+     * 通知不可达时**拒绝打开**开关的提示（2026-11-05）：不写 settings、不排调度，
+     * 直接告诉用户去哪里开。不复用日程那句（`scheduleReminderPermissionMissing` 说的是
+     * 「日程仍会保存」，用在周报上就是假话）。
+     */
+    val weeklyReportPermissionMissing = ArbText(
+        "weeklyReportPermissionMissing",
+        "通知权限未开启，请到系统设置里允许通知后再开启周报",
+    )
     val saveFailed = ArbText("saveFailed", "保存失败")
 
     /** 星期全名（周一~周日，越界回退到数字字符串，对齐 Dart `_weekdayFullLabel`）。 */
@@ -397,6 +406,7 @@ object StatisticsStrings {
         weeklyReportNextFire,
         weeklyReportEnabledHint,
         weeklyReportDisabledHint,
+        weeklyReportPermissionMissing,
         saveFailed,
     )
 }

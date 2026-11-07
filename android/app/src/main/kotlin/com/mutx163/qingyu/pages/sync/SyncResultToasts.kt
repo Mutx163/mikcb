@@ -44,14 +44,16 @@ object SyncResultToasts {
     /**
      * 手动同步（Dart `_syncNow`）。
      *
-     * 取消只会来自冲突弹窗放弃选边，因此另给「以本机为准备份」直达动作，
-     * 且用的是 success 样式（不是错误）。
+     * 取消来自冲突弹窗放弃选边。Kotlin 侧**冲突语义由选边框承接**（挂起冲突时页面弹
+     * 「选边」框、不弹 toast），所以 CANCELLED toast 不带「以本机为准备份」动作——
+     * 放弃选边后挂起冲突已被消费，再点动作只会落进 `resolveSyncConflict` 的幂等出口
+     * `pending ?: return CANCELLED`，是空动作（2026-11-06 返工③摘除；Dart 的同名
+     * 动作在其自己的状态机里有真实出口，两边不共用语义）。样式仍按 Dart 用 success。
      */
     fun forSyncNow(kind: SyncResultKind, errorCode: String?): SyncToast = when (kind) {
         SyncResultKind.CANCELLED -> SyncToast(
             message = SyncStrings.cloudSyncResultCancelled.zh,
             isError = false,
-            actionLabel = SyncStrings.cloudSyncKeepLocalBackupAction.zh,
         )
 
         SyncResultKind.UPLOADED -> SyncToast(

@@ -1,23 +1,26 @@
 package com.mutx163.qingyu.pages.sync
 
-import android.widget.Toast
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
+import com.mutx163.qingyu.pages.transfer.AppToastCapsule
 import com.mutx163.qingyu.theme.QingyuTheme
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -75,7 +78,6 @@ fun CloudBackupDetailHost(
     onDismiss: () -> Unit,
 ) {
     val dark = isSystemInDarkTheme()
-    val context = LocalContext.current
     val scope = rememberCoroutineScope()
 
     var busy by remember { mutableStateOf(false) }
@@ -102,8 +104,12 @@ fun CloudBackupDetailHost(
     }
     val shownRestoreTime = rememberLastNonNull(restoreBodyTime)
 
+    // 提示胶囊（成员八复核③/统一提示形态）：系统 Toast 换成应用内胶囊——
+    // isError 样式 + 动作位（恢复成功的「撤销」按钮由此可点）。
+    var capsule by remember { mutableStateOf<SyncToast?>(null) }
+
     fun toast(toast: SyncToast) {
-        Toast.makeText(context, toast.message, Toast.LENGTH_SHORT).show()
+        capsule = toast
     }
 
     fun restore() {
@@ -140,20 +146,45 @@ fun CloudBackupDetailHost(
             val kind = withContext(Dispatchers.IO) { controller.confirmPreparedRestore() }
             busy = false
             showRestoreConfirm = false
+            // 只弹胶囊不再立刻关详情：胶囊（含「撤销」动作位）展示 2s 自动消失后才
+            // 回调 onDismiss 收详情——胶囊挂在宿主 Box 内，宿主被壳摘除时胶囊会跟着没。
             toast(SyncResultToasts.forRestore(kind == SyncResultKind.DOWNLOADED, controller.lastErrorCode))
-            onDismiss()
         }
     }
 
-    CloudBackupDetailSheet(
-        show = detailView != null,
-        view = shownView,
-        busy = busy,
-        onDismissRequest = { if (!busy) onDismiss() },
-        // 恢复是**整份覆盖**且会丢本地未同步修改：先下载算概要，确认框里看过影响面再写回。
-        onRestore = { restore() },
-        onDelete = { confirmDelete = true },
-    )
+    Box(modifier = Modifier.fillMaxSize()) {
+        CloudBackupDetailSheet(
+            show = detailView != null,
+            view = shownView,
+            busy = busy,
+            onDismissRequest = { if (!busy) onDismiss() },
+            // 恢复是**整份覆盖**且会丢本地未同步修改：先下载算概要，确认框里看过影响面再写回。
+            onRestore = { restore() },
+            onDelete = { confirmDelete = true },
+        )
+
+        // 提示胶囊（成员八复核③：系统 Toast → 应用内胶囊，isError 样式 + 动作位）。
+        // 挂在宿主内：胶囊消失（2s 自动）才回调 onDismiss 收详情——宿主被壳摘除时胶囊
+        // 会跟着消失，所以「先弹胶囊、后关详情」；点「撤销」则撤销后再弹撤销结果。
+        capsule?.let { capsuleToast ->
+            AppToastCapsule(
+                message = capsuleToast.message,
+                dark = dark,
+                isError = capsuleToast.isError,
+                actionLabel = capsuleToast.actionLabel,
+                onAction = {
+                    scope.launch {
+                        val ok = withContext(Dispatchers.IO) { controller.undoLastRestore() }
+                        capsule = SyncResultToasts.forUndoRestore(ok, controller.lastErrorCode)
+                    }
+                },
+                onDismiss = onDismiss,
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .padding(horizontal = 16.dp, vertical = 32.dp),
+            )
+        }
+    }
 
     OverlayDialog(
         insideMargin = DpSize(16.dp, 16.dp),
@@ -243,8 +274,8 @@ fun CloudBackupDetailHost(
                         scope.launch {
                             val kind = withContext(Dispatchers.IO) { controller.deleteBackup(id) }
                             busy = false
+                            // 只弹胶囊不立刻关详情：胶囊 2s 自动消失后才收详情（同恢复分支）。
                             toast(SyncResultToasts.forDeleteBackup(kind, controller.lastErrorCode))
-                            onDismiss()
                         }
                     },
                     enabled = !busy,

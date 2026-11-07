@@ -1,6 +1,7 @@
 package com.mutx163.qingyu.pages.sync
 
 import com.mutx163.qingyu.core.MiniJson
+import com.mutx163.qingyu.sync.HistoryListResult
 import com.mutx163.qingyu.sync.SyncConflictChoice
 import com.mutx163.qingyu.sync.WebdavSyncConfig
 import org.junit.Assert.assertArrayEquals
@@ -211,6 +212,33 @@ class CloudSyncControllerTest {
         val outcome = controller.refreshBackups()
         assertEquals(SyncOpKind.FAILED, outcome.kind)
         assertEquals("missing_credentials", outcome.errorCode)
+    }
+
+    @Test
+    fun `刷新成功即清上次错误码`() {
+        // 2026-11-06 第三轮返工①-2：refreshBackups 的 OK/EMPTY 分支原先不清
+        // status.lastErrorCode——刷新成功后仍显示陈旧错误 + 死重试提示（错误条挂着，
+        // 点重试其实已经没事了）。成功即清，OK 与 EMPTY 都是「刷新成功」。
+        val transport = FakeRemoteTransport()
+        val controller = controller(transport = transport)
+        controller.connect("me@example.com", "pw")
+
+        transport.listResultOverride = HistoryListResult.failed("connection_timeout")
+        assertEquals(SyncOpKind.FAILED, controller.refreshBackups().kind)
+        assertEquals("connection_timeout", controller.lastErrorCode)
+
+        transport.listResultOverride = null
+        transport.files["${WebdavSyncConfig().historyRemoteFolder}20260307-170501-abcdef12.mikcb"] =
+            buildSyncSnapshotBytes()
+        assertEquals(SyncOpKind.OK, controller.refreshBackups().kind)
+        assertNull("刷新成功（OK）必须清掉陈旧错误码", controller.lastErrorCode)
+
+        transport.listResultOverride = HistoryListResult.failed("connection_timeout")
+        assertEquals("connection_timeout", controller.refreshBackups().let { controller.lastErrorCode })
+
+        transport.listResultOverride = HistoryListResult.ok(emptyList())
+        controller.refreshBackups()
+        assertNull("刷新成功（EMPTY，云端空也算成功）同样必须清掉陈旧错误码", controller.lastErrorCode)
     }
 
     @Test

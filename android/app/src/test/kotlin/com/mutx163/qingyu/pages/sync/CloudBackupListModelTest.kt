@@ -229,6 +229,51 @@ class CloudBackupListModelTest {
     }
 
     @Test
+    fun `errorCode有值即透出errorText两个状态都有可见出口`() {
+        // 2026-11-06 第三轮返工①（hy1 推翻「有缓存静默用缓存」）：errorText 不再按
+        // 「列表是否为空」过滤——**errorCode 有值即透出**，空态与非空列表都要有可见
+        // 出口（空态：失败原因替代 emptyText + 重试；非空：顶部轻量错误条 + 重试，
+        // 列表照常展示缓存）。此前「非空丢 errorCode」是 S2 原病（刷新失败完全静默），
+        // 曾被两条测试钉死＝把 bug 宣布成语义。
+        val failedEmpty = CloudBackupListLogic.buildListViewState(
+            entries = emptyList(),
+            isLoading = false,
+            isCreatingBackup = false,
+            zone = zone,
+            errorCode = "connection_timeout",
+        )
+        assertTrue(failedEmpty.isEmpty)
+        assertEquals("连接超时", failedEmpty.errorText)
+
+        val failedNonEmpty = CloudBackupListLogic.buildListViewState(
+            entries = listOf(entry()),
+            isLoading = false,
+            isCreatingBackup = false,
+            zone = zone,
+            errorCode = "connection_timeout",
+        )
+        assertFalse(failedNonEmpty.isEmpty)
+        assertEquals("连接超时", failedNonEmpty.errorText)
+        // 有缓存 + 刷新成功：不出错误条。
+        val okNonEmpty = CloudBackupListLogic.buildListViewState(
+            entries = listOf(entry()),
+            isLoading = false,
+            isCreatingBackup = false,
+            zone = zone,
+            errorCode = null,
+        )
+        assertNull(okNonEmpty.errorText)
+        val okEmpty = CloudBackupListLogic.buildListViewState(
+            entries = emptyList(),
+            isLoading = false,
+            isCreatingBackup = false,
+            zone = zone,
+            errorCode = null,
+        )
+        assertNull(okEmpty.errorText)
+    }
+
+    @Test
     fun `可撤销恢复的显隐与文案透出到渲染层`() {
         val hidden = CloudBackupListLogic.buildListViewState(
             entries = emptyList(),

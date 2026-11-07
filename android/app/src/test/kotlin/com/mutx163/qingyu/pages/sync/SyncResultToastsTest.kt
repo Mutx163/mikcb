@@ -40,11 +40,14 @@ class SyncResultToastsTest {
     }
 
     @Test
-    fun `取消同步给出以本机为准备份的直达动作`() {
+    fun `取消同步不带动作`() {
+        // 2026-11-06 返工③：冲突语义由选边框承接（挂起冲突时页面弹框、不弹 toast），
+        // 放弃选边后挂起冲突已被消费，CANCELLED toast 带「以本机为准备份」动作只会
+        // 落进 resolveSyncConflict 的幂等出口 `pending ?: return CANCELLED`——空动作。
+        // 摘除动作，样式仍按 Dart 用 success。
         val toast = SyncResultToasts.forSyncNow(SyncResultKind.CANCELLED, null)
         assertEquals("已取消同步", toast.message)
-        assertEquals("以本机为准备份", toast.actionLabel)
-        // Dart 这里用的是 success 样式。
+        assertNull(toast.actionLabel)
         assertFalse(toast.isError)
         assertFalse(toast.reloadBackups)
     }
@@ -185,5 +188,45 @@ class SyncResultToastsTest {
         assertEquals("WebDAV 连接失败，请检查账号、应用密码和网络",
             SyncResultToasts.forTestConnection(false).message)
         assertTrue(SyncResultToasts.forTestConnection(false).isError)
+    }
+
+    @Test
+    fun `高级设置保存的verdict映射三档`() {
+        // INVALID → 「地址非法」错误提示（成员八复核①）
+        val invalid = CloudSyncLogic.advancedSaveFeedback(BaseUrlVerdict.INVALID)
+        assertEquals("WebDAV 地址必须以 http:// 或 https:// 开头", invalid?.message)
+        assertTrue(invalid?.isError ?: false)
+
+        // NEED_HTTP_CONFIRM → 走明文二次确认框（不是 toast）→ 无提示映射
+        assertNull(CloudSyncLogic.advancedSaveFeedback(BaseUrlVerdict.NEED_HTTP_CONFIRM))
+
+        // PROCEED → 「已保存」成功提示（2026-11-06 ARB 批补键 cloudSyncSaved；
+        // 原先缺键按发布版静默收尾，Chief 裁决补反馈后不再静默）
+        val proceed = CloudSyncLogic.advancedSaveFeedback(BaseUrlVerdict.PROCEED)
+        assertEquals("已保存", proceed?.message)
+        assertFalse(proceed?.isError ?: true)
+    }
+
+    @Test
+    fun `高级设置落盘失败提示消费saveFailed键`() {
+        // 2026-11-06 ARB 批：commitOrThrow IOException 被兜住后不再静默。
+        // 文案复用 ARB 既有通用键 saveFailed（「保存失败」，发布版全仓库同句）。
+        // 守卫：把 advancedSaveFailureFeedback 里的键引用换掉（探针）→ 本用例必红。
+        val toast = CloudSyncLogic.advancedSaveFailureFeedback()
+        assertEquals("保存失败", toast.message)
+        assertTrue(toast.isError)
+        assertNull(toast.actionLabel)
+    }
+
+    @Test
+    fun `连接成功提示消费connectSuccess键`() {
+        // A 类第 16 条（2026-11-05）：发布版连接成功后 showAppToast（cloud_sync_screen.dart
+        // :271-273），此前 Kotlin 侧连接成功只关弹层静默、cloudSyncConnectSuccess 键零消费。
+        // 守卫：连接成功路径必须消费这个键——把 CloudSyncLogic.connectSuccessFeedback 里的
+        // 键引用换掉（探针）→ 本用例必红。成功态（非 error）、无动作位。
+        val toast = CloudSyncLogic.connectSuccessFeedback()
+        assertEquals(SyncStrings.cloudSyncConnectSuccess.zh, toast.message)
+        assertFalse(toast.isError)
+        assertNull(toast.actionLabel)
     }
 }

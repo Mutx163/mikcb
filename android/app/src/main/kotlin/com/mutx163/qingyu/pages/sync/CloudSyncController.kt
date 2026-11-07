@@ -411,8 +411,15 @@ class CloudSyncController(
 
     /** 刷新远端备份列表（PROPFIND）。返回结局供页面判断错误码。 */
     fun refreshBackups(): ListBackupsOutcome {
-        val coordinator = coordinatorOrNull()
-            ?: return ListBackupsOutcome(SyncOpKind.FAILED, errorCode = "missing_credentials")
+        val coordinator = coordinatorOrNull() ?: run {
+            // 2026-11-06 第五轮复核④：未连接的早退也清旧错误码——onRetryRefresh 可达时
+            // （比如密码被清后错误条还挂着）点重试走到这里，status 里残留的上次失败码
+            // 会变成死提示。未配置是正常首屏状态（本方法 KDoc 口径），不写新错误码、
+            // 也不留旧错误码。
+            status = status.copy(lastErrorCode = null)
+            notifyChanged()
+            return ListBackupsOutcome(SyncOpKind.FAILED, errorCode = "missing_credentials")
+        }
         loadingBackups = true
         notifyChanged()
         val outcome = coordinator.listRemoteBackups(config)
@@ -420,9 +427,18 @@ class CloudSyncController(
         if (outcome.kind == SyncOpKind.OK) {
             remoteFiles = outcome.files
             backupEntries = outcome.files.map { toEntry(it) }
+            // 2026-11-06 第三轮返工①-2：成功即清上次错误码——否则刷新成功后仍显示
+            // 陈旧错误 + 死重试提示（错误条挂着，点重试其实已经没事了）。
+            if (status.lastErrorCode != null) {
+                status = status.copy(lastErrorCode = null)
+            }
         } else if (outcome.kind == SyncOpKind.EMPTY) {
             remoteFiles = emptyList()
             backupEntries = emptyList()
+            // 同上：云端空也是「刷新成功」——同样清掉陈旧错误。
+            if (status.lastErrorCode != null) {
+                status = status.copy(lastErrorCode = null)
+            }
         } else {
             status = status.copy(lastErrorCode = outcome.errorCode)
         }

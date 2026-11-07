@@ -259,8 +259,12 @@ object CloudBackupListLogic {
         title = SyncStrings.cloudBackupSectionTitle.zh,
         createLabel = SyncStrings.cloudBackupCreateNow.zh,
         emptyText = SyncStrings.cloudBackupEmpty.zh,
-        // 只有「列表是空的」时才有意义：有数据时轮不到空态，不该盖住列表。
-        errorText = if (entries.isEmpty()) errorCode?.let { SyncStrings.localizeSyncError(it) } else null,
+        // 2026-11-06 第三轮返工①（hy1 推翻「有缓存静默用缓存」）：errorCode **有值即透出**，
+        // 不再按「列表是否为空」过滤——两个状态都要有可见出口：空态用 errorText 替代
+        // emptyText（失败原因 + 重试），非空列表顶部出轻量错误条 + 重试（列表照常展示，
+        // 下面的数据是上次拉到的缓存）。此前「非空丢 errorCode」正是最初审核的 S2 原病
+        // （刷新失败完全静默），且曾被两条测试钉死＝把 bug 宣布成语义，已改。
+        errorText = errorCode?.let { SyncStrings.localizeSyncError(it) },
         canUndoRestore = canUndoRestore,
         undoRestoreTitle = SyncStrings.cloudBackupUndoRestoreTitle.zh,
         undoRestoreSummary = SyncStrings.cloudBackupUndoRestoreSummary.zh,

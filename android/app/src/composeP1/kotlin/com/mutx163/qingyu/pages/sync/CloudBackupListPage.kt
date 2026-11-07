@@ -1,5 +1,7 @@
 package com.mutx163.qingyu.pages.sync
 
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -40,6 +42,7 @@ import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TextButton
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.ChevronForward
+import top.yukonga.miuix.kmp.icon.extended.Refresh
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 /**
@@ -61,6 +64,10 @@ fun CloudBackupListPage(
     onCreateBackup: () -> Unit,
     onOpenBackup: (entryId: String) -> Unit,
     onUndoRestore: () -> Unit,
+    // 刷新失败重试（成员八复核④；2026-11-06 第三轮返工①改语义）：errorText 在
+    // **两个状态**都可能有值（模型层 errorCode 有值即透出）——空态分支用失败原因
+    // 替代「为什么空」+ 重试；非空分支顶部出轻量错误条 + 重试（列表照常展示缓存）。
+    onRetryRefresh: () -> Unit = {},
 ) {
     val dark = isSystemInDarkTheme()
 
@@ -95,12 +102,32 @@ fun CloudBackupListPage(
                         .padding(24.dp),
                     contentAlignment = Alignment.Center,
                 ) {
-                    Text(
-                        // 拉取失败时换成「为什么空」（断网 / 密码失效），不把失败说成「还没有备份」。
-                        text = viewState.errorText ?: viewState.emptyText,
-                        style = MiuixTheme.textStyles.body1,
-                        color = Color(QingyuTheme.secondaryText(dark)),
-                    )
+                    // 拉取失败时换成「为什么空」（断网 / 密码失效），不把失败说成「还没有备份」。
+                    // 2026-11-06 第三轮返工①后的模型口径：errorText **有 errorCode 即透出**、
+                    // 不再按「列表是否为空」过滤——空态与非空列表都要有可见出口。空态分支
+                    // 的出口 = 失败原因 + 显式「重试」（cloudBackupRetryAction）；纯空态
+                    // 仍是静态文字；非空列表的出口见下方错误条窗口。
+                    if (viewState.errorText != null) {
+                        val error = viewState.errorText
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            Text(
+                                text = error,
+                                style = MiuixTheme.textStyles.body1,
+                                color = Color(QingyuTheme.secondaryText(dark)),
+                            )
+                            TextButton(
+                                text = SyncStrings.cloudBackupRetryAction.zh,
+                                onClick = onRetryRefresh,
+                                modifier = Modifier.padding(top = 16.dp),
+                            )
+                        }
+                    } else {
+                        Text(
+                            text = viewState.emptyText,
+                            style = MiuixTheme.textStyles.body1,
+                            color = Color(QingyuTheme.secondaryText(dark)),
+                        )
+                    }
                 }
 
                 else -> QingyuPageList(
@@ -109,6 +136,43 @@ fun CloudBackupListPage(
                     contentPadding = PaddingValues(top = 4.dp, bottom = 24.dp),
                     verticalArrangement = Arrangement.spacedBy(12.dp),
                 ) {
+                    // 刷新失败可见（2026-11-06 第三轮返工①）：errorText 有值 = 本次刷新
+                    // 失败，列表是**上次拉到的缓存**——顶部轻量错误条 + 重试，列表照常
+                    // 展示。「有缓存就静默用缓存」被 hy1 推翻：那正是最初审核的 S2 原病
+                    // （刷新失败完全静默），失败必须有可见出口。
+                    viewState.errorText?.let { error ->
+                        item(key = "refresh_error_bar") {
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clip(RoundedCornerShape(12.dp))
+                                    .background(Color(QingyuTheme.error(dark)).copy(alpha = 0.12f))
+                                    .clickable(onClick = onRetryRefresh)
+                                    .padding(horizontal = 14.dp, vertical = 10.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                            ) {
+                                Text(
+                                    text = error,
+                                    style = MiuixTheme.textStyles.footnote1,
+                                    color = Color(QingyuTheme.error(dark)),
+                                    modifier = Modifier.weight(1f),
+                                )
+                                Text(
+                                    text = SyncStrings.cloudBackupRetryAction.zh,
+                                    style = MiuixTheme.textStyles.footnote1
+                                        .shiftWeight(QingyuWeightDelta.SEMIBOLD),
+                                    color = Color(QingyuTheme.error(dark)),
+                                )
+                                Icon(
+                                    imageVector = MiuixIcons.Refresh,
+                                    contentDescription = null,
+                                    tint = Color(QingyuTheme.error(dark)),
+                                    modifier = Modifier.size(18.dp),
+                                )
+                            }
+                        }
+                    }
+
                     item(key = "create_backup") {
                         QingyuCard(
                             modifier = Modifier.fillMaxWidth(),

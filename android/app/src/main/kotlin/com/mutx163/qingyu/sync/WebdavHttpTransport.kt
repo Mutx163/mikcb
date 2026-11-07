@@ -454,7 +454,7 @@ class WebdavHttpTransport(
             } else {
                 opened.errorStream
             }
-            val read = readBounded(stream)
+            val read = readBounded(stream, declaredBodyLength(method, status, responseHeaders))
             RawResponse(
                 statusCode = status,
                 body = read.bytes,
@@ -717,8 +717,28 @@ class WebdavHttpTransport(
 
     private class ReadResult(val bytes: ByteArray, val truncated: Boolean)
 
+    /**
+     * 这条连接声明的响应体长度（字节）；无法定界时返回 `null`。
+     *
+     * `null` 的三种情形（对应裸 socket 路径 [readRawBody] 的定界分支）：
+     * - HEAD / 204 / 304：无体可读，Content-Length 只是「假想体的长度」，不做比对；
+     * - `Transfer-Encoding: chunked`：体长由分块定界（JDK 自行解码），HTTP 语义要求
+     *   忽略 Content-Length，EOF 即完整体；
+     * - 没有（或解析不了）Content-Length：只能靠连接关闭定界（HTTP/1.0 风格）。
+     */
+    private fun declaredBodyLength(
+        method: WebdavMethod,
+        statusCode: Int,
+        headers: WebdavResponseHeaders,
+    ): Long? {
+        if (method == WebdavMethod.HEAD || statusCode == 204 || statusCode == 304) return null
+        val transferEncoding = headers.first("Transfer-Encoding")?.lowercase()
+        if (transferEncoding != null && transferEncoding.contains("chunked")) return null
+        return headers.first("Content-Length")?.trim()?.toLongOrNull()
+    }
+
     /** 读响应体，超过 [maxResponseBytes] 立即停手并标记截断（不返回半截数据）。 */
-    private fun readBounded(stream: InputStream?): ReadResult {
+    private fun readBounded(stream: InputStream?, declaredContentLength: Long?): ReadResult {
         if (stream == null) return ReadResult(ByteArray(0), false)
         stream.use {
             val out = ByteArrayOutputStream()
@@ -731,7 +751,13 @@ class WebdavHttpTransport(
                 }
                 out.write(buffer, 0, read)
             }
-            return ReadResult(out.toByteArray(), false)
+            // 2026-11-05 复核③同款破口的 HttpURLConnection 路径：EOF ≠ 完整——
+            // 服务端声明了 Content-Length 却提前断开（实际字节 < 声明）同样是半截
+            // 响应，标记 truncated，**与 chunked/fixed-length 分支的判定对齐**。
+            // 调用方（getBytes）据此判 invalid_response，而不是把可解析的半截
+            // 响应当完整数据。
+            val cutShort = declaredContentLength != null && declaredContentLength > out.size()
+            return ReadResult(out.toByteArray(), truncated = cutShort)
         }
     }
 

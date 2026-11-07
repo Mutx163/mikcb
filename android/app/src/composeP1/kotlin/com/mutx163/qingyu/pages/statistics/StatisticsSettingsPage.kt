@@ -107,10 +107,13 @@ fun StatisticsSettingsPage(
                             } catch (error: Throwable) {
                                 // 落盘/调度失败：开关回滚 + 诚实提示（Dart 同语义，
                                 // `_setWeeklyReportEnabled` 的 catch 分支）。
+                                // 文案按异常**类型**选（`StatisticsSettingsLogic.failureMessage`）：
+                                // 通知不可达 → 「去开通知」；其余 → 「保存失败」。
+                                // 不在这里认 message 字符串——那是两处各解析一次的老毛病。
                                 enabled = previous
                                 Toast.makeText(
                                     context,
-                                    StatisticsSettingsLogic.SAVE_FAILED_MESSAGE,
+                                    StatisticsSettingsLogic.failureMessage(error),
                                     Toast.LENGTH_SHORT,
                                 ).show()
                             }
