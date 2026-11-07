@@ -31,6 +31,8 @@ import com.mutx163.qingyu.pages.export.IcsShareLogic
 import com.mutx163.qingyu.pages.export.IcsShareWiring
 import com.mutx163.qingyu.platform.AndroidShareAdapter
 import com.mutx163.qingyu.platform.IcsShareOutcome
+import com.mutx163.qingyu.platform.IcsSharePreparation
+import com.mutx163.qingyu.platform.IcsShareResultReceiver
 import com.mutx163.qingyu.platform.PrefsKeyValueStore
 import io.flutter.plugin.common.MethodCall
 import io.flutter.plugin.common.MethodChannel
@@ -56,7 +58,7 @@ import java.time.temporal.ChronoUnit
  * | 日历内容三勾选 | 模型层 `eventKinds`；勾了课程才出现「跳过节假日课程」 |
  * | 跳过节假日课程 | 本地假期数据（官方 + 自定义）+ 设置里的「假期标记」开关，与首页判据同源 |
  * | 导出并分享 | 收集事件 → 序列化 → 弹「分享 / 保存」二选一 |
- * | 分享给别人 | `AndroidShareAdapter.share`（写 cacheDir → FileProvider → 系统分享面板） |
+ * | 分享给别人 | `AndroidShareAdapter.prepareShare` + `StartIntentSenderForResult` 拉起系统面板（选定目标 / 划掉取消 / 失败三种提示） |
  * | 保存到手机目录 | SAF `CreateDocument("text/calendar")` → `contentResolver.openOutputStream` |
  * | 同步到系统日历 | `CalendarSync` 的 ContentProvider 批处理（专属日历，幂等覆盖） |
  * | 移除已同步的日程 | `CalendarSync` 的 deleteCalendar（只删本应用账户下那个日历） |
@@ -275,7 +277,41 @@ fun IcsExportHost(
         }
     }
 
-    // ── 7. 分享：写 cacheDir → FileProvider → 系统分享面板 ──
+    // ── 7. 分享：写 cacheDir → FileProvider → 系统分享面板，关闭后用广播回执判结局 ──
+    //
+    // 2026-11-05：旧写法是 `context.startActivity(chooser)`，拿不到任何结果，用户把面板
+    // 划掉之后一句提示都没有（Dart 会弹「已取消分享日历」，
+    // `v2.1.4.1:lib/screens/ics_export_screen.dart:805-811`）。
+    //
+    // **判据不是 launcher 的 resultCode**：Android 选择器普遍恒回 `RESULT_CANCELED`，
+    // 拿它当判据会把「分享成功」也说成取消。发布版用的 share_plus 同样不看 resultCode，
+    // 而是给 `Intent.createChooser(intent, title, sender)` 挂一个广播 sender，
+    // 由系统在用户真选定目标时投 `EXTRA_CHOSEN_COMPONENT`（本仓对位
+    // `platform/IcsShareResultReceiver`）。launcher 只负责等「面板关了」这一下。
+
+    /** 本次分享的回执通道是否可用（`prepareShare` 给出）；回调是异步的，先存住再读。 */
+    var shareRelayAvailable by remember { mutableStateOf(false) }
+
+    val shareLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.StartActivityForResult(),
+    ) { _ ->
+        val outcome = shareAdapter.outcomeForClose(
+            chosenComponent = IcsShareResultReceiver.take(),
+            relayAvailable = shareRelayAvailable,
+        )
+        pendingContent = null
+        menuVisible = false
+        shareRelayAvailable = false
+        when (outcome) {
+            IcsShareOutcome.Shared ->
+                toast(ExportStrings.icsExportShared.filled("count", pendingCount.toString()))
+            IcsShareOutcome.Cancelled -> toast(ExportStrings.icsExportCancelled.zh)
+            // 回执通道没接上（manifest 少一行接收器声明）：分不清取消与成功，宁可不说话。
+            IcsShareOutcome.Unconfirmed -> Unit
+            is IcsShareOutcome.Failed -> toast(ExportStrings.icsExportFailed.zh)
+        }
+    }
+
     val runShare: () -> Unit = {
         val content = pendingContent
         menuVisible = false
@@ -283,13 +319,31 @@ fun IcsExportHost(
             toast(ExportStrings.icsExportFailed.zh)
         } else {
             val profileName = selectedSource?.profileName.orEmpty()
-            when (shareAdapter.share(content, profileName, effectiveOptions.fromDate, effectiveOptions.toDate)) {
-                is IcsShareOutcome.Launched ->
-                    toast(ExportStrings.icsExportShared.filled("count", pendingCount.toString()))
-                is IcsShareOutcome.Failed -> toast(ExportStrings.icsExportFailed.zh)
+            when (
+                val prepared = shareAdapter.prepareShare(
+                    content = content,
+                    profileName = profileName,
+                    from = effectiveOptions.fromDate,
+                    to = effectiveOptions.toDate,
+                )
+            ) {
+                is IcsSharePreparation.Failed -> {
+                    // 拉起之前就失败（写文件 / FileProvider / Uri 形状）：与「取消」不同，报失败。
+                    pendingContent = null
+                    toast(ExportStrings.icsExportFailed.zh)
+                }
+
+                is IcsSharePreparation.Ready -> {
+                    shareRelayAvailable = prepared.resultRelayAvailable
+                    runCatching { shareLauncher.launch(prepared.chooser) }.onFailure {
+                        // 没有能接 `text/calendar` 的应用 / 系统拒绝拉起：也报失败，不谎报取消。
+                        shareRelayAvailable = false
+                        pendingContent = null
+                        toast(ExportStrings.icsExportFailed.zh)
+                    }
+                }
             }
         }
-        pendingContent = null
     }
 
     // ── 8. 保存：SAF（文本按 UTF-8 写进用户选的文件） ──

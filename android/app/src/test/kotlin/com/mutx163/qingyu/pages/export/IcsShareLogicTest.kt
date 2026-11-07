@@ -163,4 +163,50 @@ class IcsShareLogicTest {
         assertFalse(IcsShareLogic.contentUriMatches(authority, authority, null))
         assertFalse(IcsShareLogic.contentUriMatches(authority, null, "ics_export"))
     }
+
+    // ── 分享面板关闭后的语义（2026-11-05：取消要有自己的结局，不许并进失败）──
+
+    @Test
+    fun `有回执就是选定目标，没回执且通道可用才是取消`() {
+        val chosen = "com.android.chrome/com.android.chrome.Main"
+        assertEquals(
+            IcsShareLaunchSignal.CONFIRMED,
+            IcsShareLogic.closeOutcome(chosenComponent = chosen, relayAvailable = true),
+        )
+        assertEquals(
+            IcsShareLaunchSignal.CANCELLED,
+            IcsShareLogic.closeOutcome(chosenComponent = null, relayAvailable = true),
+        )
+    }
+
+    @Test
+    fun `通道不可用时不许把「没回执」当取消`() {
+        // manifest 少一行接收器声明时，回执根本送不到：这时候分不清「用户划掉」和
+        // 「回执丢了」。判成 CANCELLED 会在用户真分享成功之后跟他说「你取消了」，
+        // 所以这一格必须是 INDETERMINATE（宿主据此保持沉默）。
+        assertEquals(
+            IcsShareLaunchSignal.INDETERMINATE,
+            IcsShareLogic.closeOutcome(chosenComponent = null, relayAvailable = false),
+        )
+    }
+
+    @Test
+    fun `空白回执等同于没回执，有回执时通道状态不影响判定`() {
+        assertEquals(
+            IcsShareLaunchSignal.CANCELLED,
+            IcsShareLogic.closeOutcome(chosenComponent = "   ", relayAvailable = true),
+        )
+        assertEquals(
+            IcsShareLaunchSignal.INDETERMINATE,
+            IcsShareLogic.closeOutcome(chosenComponent = "", relayAvailable = false),
+        )
+        // 有回执 ⇒ 一定是选定目标，哪怕通道检查说「不可用」（检查可能误判，回执不会）。
+        assertEquals(
+            IcsShareLaunchSignal.CONFIRMED,
+            IcsShareLogic.closeOutcome(
+                chosenComponent = "com.tencent.mm/.ui.tools.ShareImgUI",
+                relayAvailable = false,
+            ),
+        )
+    }
 }

@@ -151,6 +151,14 @@
                 android:name="android.support.FILE_PROVIDER_PATHS"
                 android:resource="@xml/file_paths" />
         </provider>
+        <!-- 分享面板「用户选了谁」的回执接收器（2026-11-05 按 Chief 授权添加，仅此一行声明）。
+             ICS 导出的「已取消分享日历 / 已导出并分享 N 个」靠它判：系统只在用户**真的选定目标**时
+             往 `Intent.createChooser(intent, title, sender)` 的 sender 投 EXTRA_CHOSEN_COMPONENT，
+             划掉面板则不投（发布版 share_plus 的 SharePlusPendingIntent 同一套声明方式）。
+             不声明时 `prepareShare` 会判「通道不可用」，宿主对「没回执」保持沉默，不谎报取消。 -->
+        <receiver
+            android:name=".platform.IcsShareResultReceiver"
+            android:exported="false" />
         <!-- 正式包启动页 = Compose 壳（2026-11-02 从 Flutter 的 .MainActivity 切过来）。
              dev / perf 两个渠道此前各自在自己的清单里声明过这一段；启动页落进 main 后
              它们只保留「关掉 MainActivity」那一条，不再重复声明本 Activity

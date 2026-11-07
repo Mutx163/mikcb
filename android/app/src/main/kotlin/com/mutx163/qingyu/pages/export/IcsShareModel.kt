@@ -47,6 +47,36 @@ data class IcsShareSpec(
 )
 
 /**
+ * 系统分享面板关闭时的**三种结局**。
+ *
+ * 为什么判据在纯 Kotlin 这一层：适配器引 `android.*` 进不了 JVM 单测，而「用户划掉面板 ≠
+ * 分享成功、也 ≠ 拉起失败」必须被测试钉住（Dart 在取消时弹「已取消分享日历」，
+ * 不弹「导出失败」）。
+ *
+ * **怎么得知「选了谁」**：照 `share_plus` 的做法（发布版就用它，见
+ * `share_plus-12.0.2/android/.../Share.kt` + `ShareSuccessManager.kt`）——给
+ * `Intent.createChooser(intent, title, sender)` 传一个广播 `PendingIntent` 的 sender，
+ * 系统在**用户真的选定目标时**把 `EXTRA_CHOSEN_COMPONENT` 投进那个广播。
+ * 它**不看** activity result 的 `resultCode`/`data`：`ShareSuccessManager.onActivityResult`
+ * 的注释就是 "Called regardless of success or dismissal"。所以「面板关了但没有回执」
+ * 才是取消——单看 resultCode 会把成功也判成取消（Android 选择器普遍恒回 `RESULT_CANCELED`）。
+ */
+enum class IcsShareLaunchSignal {
+    /** 收到了回执：用户在面板里选定了某个目标应用。 */
+    CONFIRMED,
+
+    /** 面板关了、回执通道是通的，但没有任何目标被选中 ⇒ 用户划掉了。**不是失败**。 */
+    CANCELLED,
+
+    /**
+     * 面板关了，但**拿不到可信信号**（回执通道没接上 / 回执可疑）。
+     *
+     * 这时既不报成功也不报取消：宁可不说话，也不能在用户真分享成功之后跟他说「你取消了」。
+     */
+    INDETERMINATE,
+}
+
+/**
  * 分享意图的纯逻辑判据来源。**适配器只读这里，不另立一套字符串。**
  *
  * 常量与 Android 框架/`androidx.core` 的契约一一对应，改一个就必须同步改：
@@ -152,4 +182,22 @@ object IcsShareLogic {
         uriAuthority: String?,
         firstPathSegment: String?,
     ): Boolean = uriAuthority == expectedAuthority && firstPathSegment == PROVIDER_PATH_NAME
+
+    /**
+     * 分享面板关闭后：`选了谁` + `回执通道通不通` → [IcsShareLaunchSignal]。
+     *
+     * 三条判据（顺序即优先级）：
+     * 1. 收到了目标组件 ⇒ [IcsShareLaunchSignal.CONFIRMED]（有回执就是有回执，不管通道检查结果）；
+     * 2. 没收到、且通道可用（`relayAvailable`）⇒ [IcsShareLaunchSignal.CANCELLED]（真取消）；
+     * 3. 没收到、通道不可用 ⇒ [IcsShareLaunchSignal.INDETERMINATE]（**不许当取消**：
+     *    分不清「用户划掉」和「回执没送到」，宁可不说）。
+     *
+     * @param chosenComponent 回执里的目标应用（`ComponentName.flattenToString()`）；null = 没回执
+     * @param relayAvailable 回执通道是否可用（manifest 里声明了接收器）
+     */
+    fun closeOutcome(chosenComponent: String?, relayAvailable: Boolean): IcsShareLaunchSignal = when {
+        !chosenComponent.isNullOrBlank() -> IcsShareLaunchSignal.CONFIRMED
+        relayAvailable -> IcsShareLaunchSignal.CANCELLED
+        else -> IcsShareLaunchSignal.INDETERMINATE
+    }
 }
