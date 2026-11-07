@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -24,6 +25,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -65,6 +67,7 @@ import top.yukonga.miuix.kmp.icon.extended.Ok
 import top.yukonga.miuix.kmp.overlay.OverlayDialog
 import java.time.LocalDate
 import java.time.YearMonth
+import kotlinx.coroutines.launch
 
 private val kColorPalette = listOf(
     "#6366F1", "#0EA5E9", "#2196F3", "#8B5CF6", "#D946EF",
@@ -112,6 +115,9 @@ fun AddScheduleItemPage(
 
     var showOccurrenceScopeDialog by remember { mutableStateOf(false) }
     var pendingActionIsDelete by remember { mutableStateOf(false) }
+    // 一次性删除的二次确认（Dart `_confirmDelete:961-1019`：标题 + 消息 + 破坏性确认）。
+    // 重复日程走下面的「本次 / 全部」范围框，不叠这一层。
+    var showDeleteConfirmDialog by remember { mutableStateOf(false) }
 
     // 日期/时间滚轮弹层：正在选「哪一端」（对应 Dart `_pickDate` / `_pickTime` 的 isStart）。
     var pickingDate by remember { mutableStateOf<ScheduleEndpoint?>(null) }
@@ -120,32 +126,44 @@ fun AddScheduleItemPage(
     // 弹层里没有文本框，不收的话键盘会顶在弹层底下。
     val focusManager = LocalFocusManager.current
 
+    // 校验失败必须「看得见」：错误横幅是列表第一项，用户滚在表单底部点顶栏保存时它在屏幕外，
+    // 表现成「点了没反应」。miuix 的 `TextField` 没有 error 槽位（不自绘），所以不动横幅本身、
+    // 只把列表带回顶部——不加 UI、不改文案，效果等同发布版「必须给出一条可见反馈」。
+    val listState = rememberLazyListState()
+    val scope = rememberCoroutineScope()
+
+    fun revealValidationError(message: String) {
+        errorMessage = message
+        scope.launch { listState.animateScrollToItem(0) }
+    }
+
     fun validateAndProceed(isDeleting: Boolean) {
         if (isDeleting) {
             if (isOccurrenceEditing) {
                 pendingActionIsDelete = true
                 showOccurrenceScopeDialog = true
-            } else {
-                scheduleItem?.let { onDelete(it, null) }
+            } else if (scheduleItem != null) {
+                // 一次性删除先问一句再删；发布版同样是确认框（Dart `_confirmDelete`）。
+                showDeleteConfirmDialog = true
             }
             return
         }
 
         val trimmedTitle = title.trim()
         if (trimmedTitle.isEmpty()) {
-            errorMessage = ScheduleStrings.scheduleTitleRequired.zh
+            revealValidationError(ScheduleStrings.scheduleTitleRequired.zh)
             return
         }
         if (startDate == endDate) {
             val startMin = ScheduleDateUtils.parseMinutes(startTime)
             val endMin = ScheduleDateUtils.parseMinutes(endTime)
             if (endMin <= startMin) {
-                errorMessage = ScheduleStrings.scheduleTimeRangeInvalid.zh
+                revealValidationError(ScheduleStrings.scheduleTimeRangeInvalid.zh)
                 return
             }
         }
         if (endDate < startDate) {
-            errorMessage = ScheduleStrings.scheduleDateRangeInvalid.zh
+            revealValidationError(ScheduleStrings.scheduleDateRangeInvalid.zh)
             return
         }
 
@@ -165,7 +183,11 @@ fun AddScheduleItemPage(
             reminderMinutesBefore = reminderMinutes,
             enabled = enabled,
             seriesId = scheduleItem?.seriesId,
-            occurrenceDate = occurrenceDate,
+            // 只有「正在编辑某一次发生」才把发生日交给宿主。壳按 `draft.occurrenceDate != null`
+            // 判「单次编辑」，无条件带上会让**跨天 / 单日的单次日程**被分派成 `updateOccurrence`
+            // ——它会造一条只继承不到列表里的覆盖行，并给原条目打 exception，
+            // 用户看到的是「整段日期只改了一天」（发布版只在范围框分支里带 occurrenceDate）。
+            occurrenceDate = occurrenceDate.takeIf { isOccurrenceEditing },
         )
 
         if (isOccurrenceEditing) {
@@ -245,6 +267,8 @@ fun AddScheduleItemPage(
             // 横向留白按配方由每张卡自己带 QingyuPageCardMargin(12dp)，不放进 contentPadding。
             QingyuPageList(
                 innerPadding = PaddingValues(0.dp),
+                // 校验失败要把横幅（列表第一项）带进视野，所以列表状态由本页持有。
+                state = listState,
                 scrollBehavior = scrollBehavior,
                 contentPadding = PaddingValues(
                     top = 8.dp,
@@ -767,6 +791,43 @@ fun AddScheduleItemPage(
                     },
                     modifier = Modifier.weight(1f),
                     primary = true,
+                )
+            }
+        }
+    }
+
+    // 一次性（非重复）条目的删除确认：官方 `OverlayDialog` + 现成文案键（与日程列表页
+    // `ScheduleListPage.kt:219-220` 同一对），确认键走破坏性红色。
+    // 发布版此前就是这么问的（Dart `_confirmDelete:1008-1019` → `showHyperosConfirmDialog`），
+    // 之前这里直接 `onDelete` ⇒ 误触顶栏垃圾桶就把数据删了，且没有任何撤销途径。
+    val deleteConfirmTarget = scheduleItem
+    OverlayDialog(
+        show = showDeleteConfirmDialog,
+        title = ScheduleStrings.deleteScheduleTitle.zh,
+        summary = deleteConfirmTarget?.let {
+            ScheduleStrings.deleteScheduleMessage.filled("title", it.title)
+        },
+        onDismissRequest = { showDeleteConfirmDialog = false },
+        insideMargin = DpSize(16.dp, 16.dp),
+    ) {
+        if (deleteConfirmTarget != null) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+            ) {
+                TextButton(
+                    modifier = Modifier.weight(1f),
+                    text = ScheduleStrings.cancelAction.zh,
+                    onClick = { showDeleteConfirmDialog = false },
+                )
+                ScheduleActionButton(
+                    text = ScheduleStrings.deleteAction.zh,
+                    onClick = {
+                        showDeleteConfirmDialog = false
+                        onDelete(deleteConfirmTarget, null)
+                    },
+                    modifier = Modifier.weight(1f),
+                    destructive = true,
                 )
             }
         }

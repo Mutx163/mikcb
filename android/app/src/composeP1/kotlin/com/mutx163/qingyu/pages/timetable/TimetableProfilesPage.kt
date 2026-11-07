@@ -158,9 +158,14 @@ fun TimetableProfilesPage(
     var localToast by remember { mutableStateOf<String?>(null) }
 
     val currentToast = toastMessage ?: localToast
-    LaunchedEffect(localToast) {
-        if (localToast != null) {
+    // ⚠️ key 必须是 [currentToast]（两条来源的合集），不能只写 `localToast`：
+    // 宿主喂的是 `toastMessage`（控制器算好的「已创建 / 已切换 / 已删除」），
+    // 只拿 localToast 当 key 时宿主文案变化不会重启本 effect ⇒ 底部那条黑胶囊**永远不走**。
+    LaunchedEffect(currentToast) {
+        if (currentToast != null) {
             delay(2200)
+            // 两条来源都要清：localToast 是页内提示（「至少保留一个课表」），
+            // toastMessage 由宿主持有、靠 onDismissToast 交还。
             localToast = null
             onDismissToast?.invoke()
         }
@@ -792,11 +797,13 @@ private fun ProfileMoreActionsDialog(
             }
 
             // 5. 删除课表
+            // 这里**不再**用 `enabled = canDelete` 把整行置灰：置灰后 `clickable(enabled=false)`
+            // 把下面的 `onCannotDeleteWarning()` 变成不可达分支，用户点「删除」既不删也不提示，
+            // 看起来就是「点了没反应」。现在可删 → 走确认；不可删 → 弹「至少保留一个课表」。
             ActionMenuItem(
                 title = TimetableStrings.deleteAction.zh,
                 icon = MiuixIcons.Delete,
                 isDestructive = true,
-                enabled = canDelete,
                 onClick = {
                     if (canDelete) {
                         onDelete()

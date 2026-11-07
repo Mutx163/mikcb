@@ -122,7 +122,9 @@ class ScheduleDialogGuardTest {
         val expectedDialogCount = mapOf(
             SCHEDULE_LIST to 1, // 删除确认
             RULE_PAGE to 2, // 规则编辑 + 规则删除确认
-            ADD_SCHEDULE to 1, // 重复日程「本次 / 全部」
+            // 2 = 重复日程「本次 / 全部」范围框 + 一次性删除确认
+            //     （2026-11-05 补齐：发布版 `_confirmDelete` 会先问一句，此前是直接删）。
+            ADD_SCHEDULE to 2,
         )
         val offenders = mutableListOf<String>()
         for ((path, expected) in expectedDialogCount) {

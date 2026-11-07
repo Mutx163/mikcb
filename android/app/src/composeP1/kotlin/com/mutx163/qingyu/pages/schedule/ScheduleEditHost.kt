@@ -68,8 +68,21 @@ fun ScheduleEditHost(
     onSave: (ScheduleItemData, Boolean?) -> Boolean,
     onDelete: (ScheduleItemData, Boolean?) -> Boolean,
     onFinish: () -> Unit,
+    /**
+     * 成功提示（Dart `:919-925` 的「已添加 / 已更新」与 `:1036-1040` 的「已删除」）开关。
+     *
+     * 壳（`ShellPageIndex` 的 `d2.addSchedule`）按本版口径传 `false`：成功路径「关页即反馈」，
+     * 不额外弹提示。缺省 `true` = 发布版行为，将来要恢复只改壳那一处字面量。
+     * **失败提示不受本开关影响**：落盘失败必须让用户知道（见下面的失败分支）。
+     */
+    successToast: Boolean = true,
 ) {
     val context = LocalContext.current
+
+    /** 成功路径的统一出口：按 [successToast] 决定要不要弹。 */
+    fun toastOnSuccess(message: String) {
+        if (successToast) toast(context, message)
+    }
 
     // ── 通知权限（对齐旧版 add_schedule_item_screen.dart:552-597）──
     //
@@ -130,8 +143,7 @@ fun ScheduleEditHost(
                 // 先关页再弹提示：Dart 也是 `pop(true)` 之后 showAppToast
                 // （`:919-925`），保证提示挂在上一层的 context 上而不是被销毁的页面上。
                 onFinish()
-                toast(
-                    context,
+                toastOnSuccess(
                     if (scheduleItem == null) {
                         ScheduleStrings.scheduleSavedHint.zh
                     } else {
@@ -146,7 +158,7 @@ fun ScheduleEditHost(
         onDelete = { item, applyToAll ->
             if (onDelete(item, applyToAll)) {
                 onFinish()
-                toast(context, ScheduleStrings.scheduleDeletedHint.zh)
+                toastOnSuccess(ScheduleStrings.scheduleDeletedHint.zh)
             } else {
                 toast(context, ScheduleStrings.deleteFailed.zh)
             }

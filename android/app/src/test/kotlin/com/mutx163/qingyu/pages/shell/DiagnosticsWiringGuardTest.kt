@@ -274,7 +274,9 @@ class DiagnosticsWiringGuardTest {
             "d1.addCourse" to listOf("AddCoursePage", "wiring.pendingEditCourse"),
             "d1.overview" to listOf("CourseOverviewHost"),
             // -- d2 --
-            "d2.addSchedule" to listOf("AddScheduleItemPage", "wiring.saveScheduleItem"),
+            // 2026-11-05：日程编辑页改经 `ScheduleEditHost`（落盘反馈 + 通知权限状态机都在宿主里），
+            // 不再直调页面；本守卫只要求「分支接到了真宿主」。
+            "d2.addSchedule" to listOf("ScheduleEditHost", "wiring.saveScheduleItem"),
             "d2.dateRule" to listOf("ScheduleDateRuleHost"),
             // -- d3 --
             "d3.timeSchemes" to listOf("TimeSchemeManagementHost"),
