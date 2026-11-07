@@ -513,14 +513,14 @@ fun WarehouseAdapterDetailHost(
     }
 
     var customImportUrl by remember(adapter.id) { mutableStateOf(prefs.customImportUrl(adapter.id)) }
-    // 首次导入自动录制：详情页入口也要按「该适配器有没有已存宏」判定。
-    // 列表页的主按钮已这样做；详情页之前直接 publish(school, adapter)，
-    // 从详情页进网页登录时永远不会自动开录（用户实报的「第一次导入不录」）。
-    val macroStore = remember(school.id) { WarehouseMacroStore(PrefsKeyValueStore(context)) }
-    var hasExistingMacro by remember(school.id, adapter.id) { mutableStateOf(false) }
-    LaunchedEffect(school.id, adapter.id) {
-        hasExistingMacro = withContext(Dispatchers.IO) { macroStore.hasMacro(school.id, adapter.id) }
+    // 目标回写：从网页登录返回时本条目的 state 可能是新实例，不补写会掉进「拿不到目标」空态。
+    LaunchedEffect(Unit) {
+        if (state.school == null) state.school = school
+        if (state.adapter == null) state.adapter = adapter
     }
+    // 首次导入自动录制：不在进页预读（会与点击竞态/变陈旧），改成点击时现读（对齐 Dart）。
+    val macroStore = remember(school.id) { WarehouseMacroStore(PrefsKeyValueStore(context)) }
+    val scope = rememberCoroutineScope()
 
     // 脚本状态卡（2026-11-05）：详情页要在**不注入脚本**的前提下说清「这个适配器的脚本能不能用」。
     // 这里拉一次正文（含 SHA-256 校验），结果降维成四态交给页面；失败码只进日志、不出文案。
@@ -584,15 +584,21 @@ fun WarehouseAdapterDetailHost(
             }
         },
         onOpenWebLogin = {
-            val autoRecord = shouldAutoRecordWarehouseImport(
-                forceRecord = false,
-                hasExistingMacro = hasExistingMacro,
-            )
-            state.adapter = adapter
-            state.autoRecordMacro = autoRecord
-            state.playbackMacro = null
-            WarehouseImportHandoff.publish(school, adapter, autoRecordMacro = autoRecord)
-            onOpenPage(WarehouseRoutes.WEB_LOGIN)
+            // 点击时现读（对齐 Dart）：避免「进页预读」的竞态与陈旧值导致已有宏还自动录。
+            scope.launch {
+                val hasExistingMacro = withContext(Dispatchers.IO) {
+                    macroStore.hasMacro(school.id, adapter.id)
+                }
+                val autoRecord = shouldAutoRecordWarehouseImport(
+                    forceRecord = false,
+                    hasExistingMacro = hasExistingMacro,
+                )
+                state.adapter = adapter
+                state.autoRecordMacro = autoRecord
+                state.playbackMacro = null
+                WarehouseImportHandoff.publish(school, adapter, autoRecordMacro = autoRecord)
+                onOpenPage(WarehouseRoutes.WEB_LOGIN)
+            }
         },
     )
 }

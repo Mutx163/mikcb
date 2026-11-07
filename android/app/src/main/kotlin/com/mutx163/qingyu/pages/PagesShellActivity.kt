@@ -1117,8 +1117,12 @@ private fun PagesShell(
                         ShellPageContent(
                             pageId = route.id,
                             onBack = { popPage() },
-                            // 导入成功后的「自动回首页」：弹到栈底（Dock），不是只退一层。
-                            onBackToRoot = { while (backStack.size > 1) backStack.removeLastOrNull() },
+                            // 导入成功后的「自动回首页」：弹到栈底（Dock），再归位到课表周视图。
+                            // 只弹栈会落在用户进导入前停留的底栏格（统计/设置等），不是课表首页。
+                            onBackToRoot = {
+                                while (backStack.size > 1) backStack.removeLastOrNull()
+                                selectRoot(ROOT_WEEK)
+                            },
                             wiring = wiring,
                             // 页面内部「推新页」：路由字符串 → 壳页面 id（映射表在 ShellWiring.kt）。
                             onOpenPage = { target -> openPage(target) },

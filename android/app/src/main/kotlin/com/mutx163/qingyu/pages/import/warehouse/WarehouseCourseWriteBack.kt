@@ -252,31 +252,47 @@ object WarehouseCourseWriteBack {
             droppedCount = droppedCount,
             weeksTrimmedCount = weeksTrimmedCount,
         )
-        // 合并后没有任何变化：若学期设置也没变，不写、不通知，界面不需要闪一下。
-        if (importedCount == 0) {
+        // 合并后没有任何变化：若学期设置也没变，且没有需要补钟点的存量课，
+        // 不写、不通知，界面不需要闪一下。
+        //
+        // 为什么同步要放在早退之前：升级前用旧代码导入的课 `startTime/endTime` 是空的；
+        // 重导入同一份课表会得到 `importedCount == 0`。提前返回的话，这些存量坏数据
+        // 永远自愈不了，用户会看到「课表没有变化、时间还是空」。
+        val after = repository.snapshot
+        val syncedCourses = try {
+            // Dart `importParsedCourses` 在落库前按生效时间模板回填钟点
+            // （`syncCoursesWithEffectiveTimeSchemes`）。
+            TimeSchemeLogic.syncCoursesWithEffectiveTimeSchemes(
+                source = mergedCourses,
+                schemes = after.timeSchemes,
+                settings = after.settings,
+                locationTimeGroups = after.locationTimeGroups,
+                scheduleDateRules = after.scheduleDateRules,
+            )
+        } catch (error: Exception) {
+            rollbackImportWrites(repository, before, scheme, sectionsExpanded, settingsWritten)
+            return Result.Failed(error)
+        }
+        // 只有本地已存在的课（id 匹配）才计入「补时间」条数；新导入课已算在 importedCount。
+        val beforeTimes = before.courses.associate { it.id to (it.startTime to it.endTime) }
+        val timesFilledCount = syncedCourses.count { course ->
+            val old = beforeTimes[course.id] ?: return@count false
+            old.first != course.startTime || old.second != course.endTime
+        }
+        if (importedCount == 0 && timesFilledCount == 0) {
             refreshCurrentWeek()
             return Result.Done(outcome)
         }
 
         return try {
-            // Dart `importParsedCourses` 在落库前按生效时间模板回填钟点
-            // （`syncCoursesWithEffectiveTimeSchemes`）。不补这一步，脚本没给
-            // `isCustomTime` 的课 `startTime/endTime` 永远是空串，首页课卡只剩节次。
-            // 必须重取 `repository.snapshot`：扩节/学期设置刚写过，`before` 里的模板是旧的。
-            val syncedCourses = TimeSchemeLogic.syncCoursesWithEffectiveTimeSchemes(
-                source = mergedCourses,
-                schemes = repository.snapshot.timeSchemes,
-                settings = repository.snapshot.settings,
-                locationTimeGroups = repository.snapshot.locationTimeGroups,
-                scheduleDateRules = repository.snapshot.scheduleDateRules,
-            )
             repository.replaceActiveProfileContent(
                 courses = syncedCourses,
                 tasks = repository.tasks,
                 exams = repository.exams,
             )
             refreshCurrentWeek()
-            Result.Done(outcome)
+            // 只补了存量课时间时也要告诉用户「更新了几门」，不能报「没有变化」。
+            Result.Done(outcome.copy(importedCount = maxOf(importedCount, timesFilledCount)))
         } catch (error: Exception) {
             // 仓储先落盘、成功才改内存；抛错时内存仍是旧课表，宿主据此提示失败。
             // 学期设置/补齐的节次已先行写入，这里尽力回滚，避免「课没进、作息却变了」的半个状态。

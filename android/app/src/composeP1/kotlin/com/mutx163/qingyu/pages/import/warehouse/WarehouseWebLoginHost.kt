@@ -356,7 +356,8 @@ fun WarehouseWebLoginHost(
             macroBusy = false
             if (steps.isEmpty()) {
                 resetMacroRecording()
-                onBack()
+                // 导入成功自动完成：没有步骤也直接回首页（发布版 `_completeMacroAndPop` 同口径）。
+                onImported()
             } else {
                 macroSavePrompt = WarehouseMacroSavePrompt(steps = steps, autoRecord = true)
             }
@@ -408,7 +409,9 @@ fun WarehouseWebLoginHost(
                         .filled("count", prompt.steps.size.toString()),
                     Toast.LENGTH_SHORT,
                 ).show()
-                onBack()
+                // 只有「导入成功自动完成」（autoRecord=true）才回首页；
+                // 手动停止录制保存宏不离开原页——用户可能还要继续操作。
+                if (prompt.autoRecord) onImported()
             } else {
                 Toast.makeText(context, WarehouseStrings.saveFailed.text, Toast.LENGTH_SHORT).show()
             }
@@ -416,10 +419,12 @@ fun WarehouseWebLoginHost(
     }
 
     fun discardCurrentMacro() {
+        // 发布版两种问答去向不同：导入成功自动完成那一问，存不存都回首页；
+        // 手动停止录制那一问，不保存就留在原页继续操作（用户实报的误弹回首页）。
+        val leaveAfterImport = macroSavePrompt?.autoRecord == true
         macroSavePrompt = null
         resetMacroRecording()
-        // 发布版「存不存都回」：不保存宏也把用户送回导入入口，不把人留在网页页。
-        onImported()
+        if (leaveAfterImport) onImported()
     }
 
     /** `macro:event` 分支：录制态收事件进缓冲（坏 payload 丢这一条，不中断录制）。 */
@@ -1039,6 +1044,8 @@ fun WarehouseWebLoginHost(
                     val playbackFinishing = playbackWaitingForCourses
                     if (result.importedCount > 0 &&
                         macroState != WarehouseMacroActionState.RECORDING &&
+                        macroSavePrompt == null &&
+                        !macroBusy &&
                         !playbackFinishing
                     ) {
                         onImported()

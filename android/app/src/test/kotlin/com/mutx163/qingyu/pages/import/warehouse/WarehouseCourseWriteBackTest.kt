@@ -202,6 +202,24 @@ class WarehouseCourseWriteBackTest {
     }
 
     @Test
+    fun `存量空时间课表重导入时也要补回上课时间`() {
+        // 升级前用旧代码导入的课：startTime/endTime 为空。再导入同一份课表时
+        // mergedCourses 与 before 完全相同（importedCount=0），但 sync 必须仍然执行
+        // 并把时间补回去——否则存量坏数据永远自愈不了。
+        val broken = course("c1", name = "数学", startSection = 1, endSection = 2)
+        val repository = repositoryWithSections(twoSections(), courses = listOf(broken))
+        val result = WarehouseCourseWriteBack.apply(
+            repository = repository,
+            courses = listOf(broken.copy(id = "imported-id")),
+        )
+
+        assertTrue(result is WarehouseCourseWriteBack.Result.Done)
+        val written = repository.snapshot.courses.single()
+        assertEquals("08:00", written.startTime)
+        assertEquals("09:40", written.endTime)
+    }
+
+    @Test
     fun `已有课表默认合并 原有课程一条不少`() {
         val repository = repositoryWith(listOf(course("old", name = "旧课")))
         val result = WarehouseCourseWriteBack.apply(
@@ -243,7 +261,18 @@ class WarehouseCourseWriteBackTest {
 
     @Test
     fun `合并后课程一字不差时按0条上报且不写盘`() {
-        val existing = course("c1", name = "数学", day = 2, weeks = listOf(1, 2))
+        // 用「自定义时间」的课做基线：模板回填会跳过它，合并后确实一字不差。
+        // （普通课若 startTime 为空，回填本身就是一次真实变化，不能再报 0——
+        //   那条路径由 `存量空时间课表重导入时也要补回上课时间` 覆盖。）
+        val existing = course(
+            "c1",
+            name = "数学",
+            day = 2,
+            weeks = listOf(1, 2),
+            startTime = "08:00",
+            endTime = "09:40",
+            hasCustomTime = true,
+        )
         val repository = repositoryWith(listOf(existing))
         val seen = mutableListOf<Any>()
         repository.observe { seen.add(it) }

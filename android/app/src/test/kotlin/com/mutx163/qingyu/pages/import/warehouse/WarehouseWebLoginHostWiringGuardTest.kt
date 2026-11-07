@@ -393,7 +393,14 @@ class WarehouseWebLoginHostWiringGuardTest {
         )
         val discard = blockAfter(hostSource, "fun discardCurrentMacro(")
         assertTrue("取不到 discardCurrentMacro（守卫自身失效）", discard.isNotEmpty())
-        assertTrue("不保存宏也要离开网页页", discard.contains("onImported()"))
+        assertTrue(
+            "不保存宏只在「导入成功自动完成」那一次回首页（手动停止不保存要留在原页）",
+            discard.contains("autoRecord") && discard.contains("onImported()"),
+        )
+        assertTrue(
+            "保存询问挂着时不许抢跑：导入落盘不能把页面连同宏一起销毁",
+            done.contains("macroSavePrompt == null"),
+        )
         val finished = blockAfter(hostSource, "WarehouseQuickImportFinishedDialog(")
         assertTrue("完成 sheet 关闭后要回首页", finished.contains("onImported()"))
         // 失败/取消路径不许把用户甩回首页：连重试机会都没了。
