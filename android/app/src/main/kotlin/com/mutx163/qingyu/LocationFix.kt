@@ -9,8 +9,7 @@ import android.location.LocationManager
 import android.os.Build
 import android.os.Handler
 import android.os.Looper
-import io.flutter.plugin.common.MethodCall
-import io.flutter.plugin.common.MethodChannel
+import com.mutx163.qingyu.platform.ResultSink
 import kotlin.math.abs
 
 /**
@@ -37,9 +36,20 @@ object LocationFix {
 
     const val CHANNEL = "com.mutx163.qingyu/location"
 
-    fun handle(call: MethodCall, context: Context, result: MethodChannel.Result) {
-        when (call.method) {
-            "getCurrentPosition" -> getCurrentPosition(call, context, result)
+    /**
+     * 通道方法的**原生入口**（去 Flutter 化阶段 1：不再吃 `MethodCall` / `MethodChannel.Result`）。
+     *
+     * 行为与旧实现逐字等价：唯一方法名 `getCurrentPosition`、唯一参数 `budgetMs`，
+     * 回投语义（`success(可空坐标)` / `notImplemented`）不变；通道适配在 `MainActivity`。
+     */
+    fun handle(
+        method: String,
+        arguments: Map<*, *>?,
+        context: Context,
+        result: ResultSink,
+    ) {
+        when (method) {
+            "getCurrentPosition" -> getCurrentPosition(arguments, context, result)
             else -> result.notImplemented()
         }
     }
@@ -51,9 +61,9 @@ object LocationFix {
      * （系统缓存 → IP 估算）。异常留给真正的失败，Dart 侧对异常有回退路径。
      */
     private fun getCurrentPosition(
-        call: MethodCall,
+        arguments: Map<*, *>?,
         context: Context,
-        result: MethodChannel.Result,
+        result: ResultSink,
     ) {
         if (!hasLocationPermission(context)) {
             // Dart 侧会先问权限，正常走不到这里；真到了也只是没坐标。
@@ -67,7 +77,7 @@ object LocationFix {
         }
 
         // 预算夹在 1~60 秒：太短来不及出结果，太长不该让用户盯着转圈。
-        val budgetMs = (call.argument<Number>("budgetMs")?.toLong() ?: DEFAULT_BUDGET_MS)
+        val budgetMs = ((arguments?.get("budgetMs") as? Number)?.toLong() ?: DEFAULT_BUDGET_MS)
             .coerceIn(1_000L, 60_000L)
 
         val providers = PROVIDER_PRIORITY.filter { isProviderEnabled(manager, it) }
@@ -177,7 +187,7 @@ private fun isBetter(candidate: Location, current: Location?): Boolean {
 private class OneShotRequest(
     private val manager: LocationManager,
     private val budgetMs: Long,
-    private val result: MethodChannel.Result,
+    private val result: ResultSink,
 ) : LocationListener {
 
     private val handler = Handler(Looper.getMainLooper())

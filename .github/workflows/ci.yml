@@ -96,9 +96,15 @@ jobs:
       - name: Analyze
         # --fatal-infos：info 级问题也视为失败（analysis_options.yaml 已启用
         # strict-casts/strict-raw-types 与扩展 lint 集，需严格门禁防劣化）。
+        #
+        # 去 Flutter 化阶段 1（2026-11-07）：Dart 侧已不是交付路径，先**降为非阻塞**（阶段 2
+        # 删 lib/ 时再撤掉这两步）。continue-on-error 只让本步骤失败不拖垮 job；日志里仍能看到红。
+        continue-on-error: true
         run: flutter analyze --fatal-infos
 
       - name: Test
+        # 同上：阶段 1 起 flutter test 非阻塞，理由与撤除时机见上一步。
+        continue-on-error: true
         run: flutter test
 
       # JVM 单测（android/app/src/test）：WidgetStatsLogicTest 等。

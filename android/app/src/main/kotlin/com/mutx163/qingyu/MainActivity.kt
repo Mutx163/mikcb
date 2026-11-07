@@ -45,6 +45,7 @@ import io.flutter.embedding.android.FlutterActivity
 import io.flutter.embedding.android.FlutterSurfaceView
 import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.plugin.common.MethodChannel
+import com.mutx163.qingyu.platform.ResultSink
 import java.util.Locale
 import java.util.concurrent.Executor
 import java.util.concurrent.Executors
@@ -468,7 +469,10 @@ class MainActivity : FlutterActivity() {
         createNotificationChannels()
 
         // 公平运行内存：绑定 Flutter 通道（原生广播本身不依赖引擎）。
-        FairMemoryAdapter.attachFlutterEngine(flutterEngine.dartExecutor.binaryMessenger)
+        // 去 Flutter 化阶段 1：通道调用抽进 MethodChannelFairMemoryBridge，内存保护逻辑不变。
+        FairMemoryAdapter.attachFlutterBridge(
+            MethodChannelFairMemoryBridge(flutterEngine.dartExecutor.binaryMessenger),
+        )
 
         MethodChannel(
             flutterEngine.dartExecutor.binaryMessenger,
@@ -492,13 +496,26 @@ class MainActivity : FlutterActivity() {
 
         MethodChannel(flutterEngine.dartExecutor.binaryMessenger, LocationFix.CHANNEL)
             .setMethodCallHandler { call, result ->
-                LocationFix.handle(call, applicationContext, result)
+                // 去 Flutter 化阶段 1：LocationFix 已改为原生入口，通道参数只在这一层适配。
+                LocationFix.handle(
+                    method = call.method,
+                    arguments = call.arguments as? Map<*, *>,
+                    context = applicationContext,
+                    result = ChannelResultSink(result),
+                )
             }
 
         // ── 一键同步课表到系统日历 ──
         MethodChannel(flutterEngine.dartExecutor.binaryMessenger, CalendarSync.CHANNEL)
             .setMethodCallHandler { call, result ->
-                CalendarSync.handle(call, this, applicationContext, result)
+                // 同上：CalendarSync 的原生入口吃（方法名 + 参数表 + ResultSink）。
+                CalendarSync.handle(
+                    method = call.method,
+                    arguments = call.arguments as? Map<*, *>,
+                    activity = this,
+                    context = applicationContext,
+                    result = ChannelResultSink(result),
+                )
             }
 
         MethodChannel(flutterEngine.dartExecutor.binaryMessenger, SYSTEM_UI_CHANNEL)
@@ -800,7 +817,7 @@ class MainActivity : FlutterActivity() {
                         } else {
                             // 只有一个槽：上一次请求还没被系统回调消费就再点一次时，
                             // 必须先把旧槽回 false，否则那个 Dart 调用永远等不到结果。
-                            notificationPermissionSlot.replace(result)?.success(false)
+                            notificationPermissionSlot.replace(ChannelResultSink(result))?.success(false)
                             requestNotificationPermission()
                         }
                     }
@@ -2561,14 +2578,25 @@ class MainActivity : FlutterActivity() {
     }
 
     override fun cleanUpFlutterEngine(flutterEngine: FlutterEngine) {
-        FairMemoryAdapter.detachFlutterEngine()
+        FairMemoryAdapter.detachFlutterBridge()
         super.cleanUpFlutterEngine(flutterEngine)
     }
 }
 
-internal fun liveShouldMirrorStatusIntoMiuiFocusHint(
-    sdkInt: Int,
-    shouldPromote: Boolean,
-): Boolean {
-    return !(sdkInt >= 36 && shouldPromote)
+/**
+ * `MethodChannel.Result` → [ResultSink] 的适配（去 Flutter 化阶段 1，2026-11-07）。
+ *
+ * 为什么需要它：`CalendarSync` / `LocationFix` 的原生入口不再吃 Flutter 类型，
+ * 通道这一层仍要回投给 Dart，这里把三个方法**逐字透传**（不改 code/message/details，
+ * 也不吞异常——与旧实现直接传 `result` 的行为完全一致）。
+ */
+private class ChannelResultSink(
+    private val result: MethodChannel.Result,
+) : ResultSink {
+    override fun success(value: Any?) = result.success(value)
+
+    override fun error(code: String, message: String?, details: Any?) =
+        result.error(code, message, details)
+
+    override fun notImplemented() = result.notImplemented()
 }

@@ -15,6 +15,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalContext
 import com.mutx163.qingyu.CalendarSync
 import com.mutx163.qingyu.calendar.HolidayData
+import com.mutx163.qingyu.platform.ResultSink
 import com.mutx163.qingyu.calendar.HolidayPreferences
 import com.mutx163.qingyu.pages.ShellWiring
 import com.mutx163.qingyu.pages.export.ExportStrings
@@ -34,8 +35,6 @@ import com.mutx163.qingyu.platform.IcsShareOutcome
 import com.mutx163.qingyu.platform.IcsSharePreparation
 import com.mutx163.qingyu.platform.IcsShareResultReceiver
 import com.mutx163.qingyu.platform.PrefsKeyValueStore
-import io.flutter.plugin.common.MethodCall
-import io.flutter.plugin.common.MethodChannel
 import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.temporal.ChronoUnit
@@ -69,9 +68,10 @@ import java.time.temporal.ChronoUnit
  *   `pages/export/IcsEventCollection.kt`（纯 Kotlin、有单测）。宿主这里不做任何「算日期」的事。
  * - 分享与文件名：判据全在 `IcsShareLogic` / `IcsExportLogic`，适配器只照单执行。
  * - 系统日历：**不复制 CalendarProvider 逻辑**。`CalendarSync` 是现成的（清旧 + 整批插入同事务），
- *   它的入口是 Dart 通道形状的 `handle(MethodCall, …)`，所以这里按 Dart 同一份载荷契约
- *   （`calendarName` + `events[{startMs,endMs,title,location,description}]`）构造一次 `MethodCall`
- *   调它 —— 少一层平台通道，但不产生第二份日历写入实现。
+ *   它的入口是去 Flutter 依赖的原生 `handle(method, arguments, activity, context, ResultSink)`
+ *   （2026-11-07 去 Flutter 化阶段 1 起），这里按 Dart 同一份载荷契约
+ *   （`calendarName` + `events[{startMs,endMs,title,location,description}]`）直接调
+ *   —— 不产生第二份日历写入实现。
  * - 权限：用 `rememberLauncherForActivityResult(RequestMultiplePermissions)` 在本页申请。
  *   `PagesShellActivity` 是 `ComponentActivity`，且仓内已有同款先例
  *   （`CoupleTimetableSettingsHost` 的 SAF 启动器），不需要改 Activity（那是 Lead 的文件）。
@@ -577,13 +577,12 @@ private const val HOLIDAY_PRECOMPUTE_MAX_DAYS = 1100L
 private const val CALENDAR_SYNC_NOTICE_KEY = "ics_calendar_sync_notice_acknowledged_v1"
 
 /**
- * 调 [CalendarSync] 的既有实现（清旧 + 整批插入 / 删专属日历）。
+ * 调 [CalendarSync] 的**原生入口**（去 Flutter 化阶段 1，2026-11-07）。
  *
- * **为什么是 `MethodCall` 而不是一个 Kotlin 函数**：`CalendarSync` 的 public 入口只有
- * Dart 通道形状的 `handle(call, activity, context, result)`（`syncInternal` / `deleteLocalCalendar`
- * 都是 private）。本批的写作用域不包含 `CalendarSync.kt`（它是壳共享件，属别的批次/Lead），
- * 所以不去改它；这里按它**已经吃的那份载荷契约**构造一次 `MethodCall` 直接调，
- * 好处是日历写入只有一份实现，不会出现「Dart 走一条、Compose 走另一条」的双判据。
+ * 旧写法构造一次 `MethodCall` / `MethodChannel.Result` 去复用 Dart 通道形状；现在
+ * [CalendarSync.handle] 已经是去 Flutter 依赖的原生入口（吃方法名 + 参数表 + [ResultSink]），
+ * 这里直接调，**载荷契约不变**（`calendarName` + `events`），日历写入仍只有一份实现，
+ * 不会出现「Dart 走一条、Compose 走另一条」的双判据。
  *
  * `activity` 传 `null`：`handle` 里只有 `requestPermission` 分支需要它，而权限由调用方
  * 用 `rememberLauncherForActivityResult` 申请（结果直接回到 Compose 的回调，不经过
@@ -596,20 +595,25 @@ private fun invokeCalendarSync(
     onSuccess: (Any?) -> Unit,
     onError: (String?) -> Unit,
 ) {
-    val result = object : MethodChannel.Result {
-        override fun success(result: Any?) {
-            onSuccess(result)
-        }
+    CalendarSync.handle(
+        method = method,
+        arguments = arguments,
+        activity = null,
+        context = context,
+        result = object : ResultSink {
+            override fun success(value: Any?) {
+                onSuccess(value)
+            }
 
-        override fun error(errorCode: String, errorMessage: String?, errorDetails: Any?) {
-            onError(errorCode)
-        }
+            override fun error(code: String, message: String?, details: Any?) {
+                onError(code)
+            }
 
-        override fun notImplemented() {
-            onError("NOT_IMPLEMENTED")
-        }
-    }
-    CalendarSync.handle(MethodCall(method, arguments), null, context, result)
+            override fun notImplemented() {
+                onError("NOT_IMPLEMENTED")
+            }
+        },
+    )
 }
 
 /**

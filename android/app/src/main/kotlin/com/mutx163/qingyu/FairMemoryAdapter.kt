@@ -11,18 +11,12 @@ import android.os.Bundle
 import android.os.Handler
 import android.os.HandlerThread
 import android.os.IBinder
-import android.os.Looper
 import android.os.Parcel
 import android.os.Process
 import android.os.RemoteException
 import android.os.SystemClock
 import android.util.Log
-import io.flutter.plugin.common.BinaryMessenger
-import io.flutter.plugin.common.MethodChannel
 import java.util.Locale
-import java.util.concurrent.CountDownLatch
-import java.util.concurrent.TimeUnit
-import java.util.concurrent.atomic.AtomicBoolean
 
 /**
  * 金标联盟 / ITGSA「公平运行内存机制」适配。
@@ -43,7 +37,6 @@ object FairMemoryAdapter {
     const val ITGSA_ACTION_TRIM = "itgsa.intent.action.TRIM"
     /** 应用查杀广播（官方「监听预警和异常广播」文字要求；示例代码未写，必须一并注册）。 */
     const val ITGSA_ACTION_KILL = "itgsa.intent.action.KILL"
-    private const val CHANNEL_NAME = "com.mutx163.qingyu/fair_memory"
     private const val TRANSACTION_EXCEPTION_REPLY = IBinder.FIRST_CALL_TRANSACTION
     private const val HANDLING_BUDGET_MILLIS = 2_500L
 
@@ -71,7 +64,26 @@ object FairMemoryAdapter {
     private var initialized = false
 
     private var workerHandler: Handler? = null
-    private var methodChannel: MethodChannel? = null
+
+    /**
+     * Flutter 侧的「已处理」回执通道（去 Flutter 化阶段 1，2026-11-07）。
+     *
+     * 旧实现直接持有 `MethodChannel`；现在把「通道调用」抽成这条接缝，实现在
+     * [MethodChannelFairMemoryBridge]（**Flutter 专有文件**，无 Flutter 构型不参与编译）。
+     * 没有东西 attach 时 `notifyFlutterAndWait` 立刻返回 [FlutterHandlingOutcome.ENGINE_UNAVAILABLE]
+     * ——与旧实现「引擎还没起来」的语义逐字一致。
+     */
+    internal interface FlutterHandlingBridge {
+        fun invokeAndWait(
+            method: String,
+            payload: Map<String, Any?>,
+            timeoutMillis: Long,
+        ): FlutterHandlingOutcome
+    }
+
+    @Volatile
+    private var flutterBridge: FlutterHandlingBridge? = null
+
     private var replyBinder: IBinder? = null
 
     private val deathRecipient = IBinder.DeathRecipient {
@@ -117,17 +129,13 @@ object FairMemoryAdapter {
         }
     }
 
-    /** Flutter 引擎就绪后绑定通道，用于内存清理和 KILL 现场快照。 */
-    fun attachFlutterEngine(messenger: BinaryMessenger) {
-        synchronized(this) {
-            methodChannel = MethodChannel(messenger, CHANNEL_NAME)
-        }
+    /** 绑定回执通道（Flutter 构型下由 `MainActivity` 调用；无 Flutter 构型从不调用）。 */
+    internal fun attachFlutterBridge(bridge: FlutterHandlingBridge) {
+        flutterBridge = bridge
     }
 
-    fun detachFlutterEngine() {
-        synchronized(this) {
-            methodChannel = null
-        }
+    internal fun detachFlutterBridge() {
+        flutterBridge = null
     }
 
     private val broadcastReceiver = object : BroadcastReceiver() {
@@ -383,63 +391,22 @@ object FairMemoryAdapter {
             .coerceAtLeast(0L)
     }
 
+    /**
+     * 把「已处理 / 未处理」问一次 Flutter（通道实现见 [MethodChannelFairMemoryBridge]）。
+     *
+     * 语义与旧实现逐字等价：没有引擎 = ENGINE_UNAVAILABLE；预算已耗尽 = TIMED_OUT；
+     * 其余交给桥（成功值只认 `true`，失败 / 未实现 / 异常都算 FAILED）。
+     */
     private fun notifyFlutterAndWait(
         method: String,
         payload: Map<String, Any?>,
         timeoutMillis: Long,
     ): FlutterHandlingOutcome {
-        val channel = synchronized(this) { methodChannel }
-            ?: return FlutterHandlingOutcome.ENGINE_UNAVAILABLE
+        val bridge = flutterBridge ?: return FlutterHandlingOutcome.ENGINE_UNAVAILABLE
         if (timeoutMillis <= 0L) {
             return FlutterHandlingOutcome.TIMED_OUT
         }
-
-        val completed = CountDownLatch(1)
-        val succeeded = AtomicBoolean(false)
-        Handler(Looper.getMainLooper()).post {
-            try {
-                channel.invokeMethod(
-                    method,
-                    payload,
-                    object : MethodChannel.Result {
-                        override fun success(result: Any?) {
-                            succeeded.set(result == true)
-                            completed.countDown()
-                        }
-
-                        override fun error(
-                            errorCode: String,
-                            errorMessage: String?,
-                            errorDetails: Any?,
-                        ) {
-                            Log.w(TAG, "Flutter $method failed: $errorCode $errorMessage")
-                            completed.countDown()
-                        }
-
-                        override fun notImplemented() {
-                            Log.w(TAG, "Flutter $method is not implemented")
-                            completed.countDown()
-                        }
-                    },
-                )
-            } catch (error: Exception) {
-                Log.w(TAG, "notify Flutter $method failed (engine may be gone)", error)
-                completed.countDown()
-            }
-        }
-
-        return try {
-            if (!completed.await(timeoutMillis, TimeUnit.MILLISECONDS)) {
-                FlutterHandlingOutcome.TIMED_OUT
-            } else if (succeeded.get()) {
-                FlutterHandlingOutcome.COMPLETED
-            } else {
-                FlutterHandlingOutcome.FAILED
-            }
-        } catch (error: InterruptedException) {
-            Thread.currentThread().interrupt()
-            FlutterHandlingOutcome.FAILED
-        }
+        return bridge.invokeAndWait(method, payload, timeoutMillis)
     }
 
     private fun replyToSystem(

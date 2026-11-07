@@ -1,9 +1,12 @@
 package com.mutx163.qingyu
 
-import io.flutter.plugin.common.MethodChannel
+import com.mutx163.qingyu.platform.ResultSink
 
 /**
- * 「一次只等一个」的 MethodChannel 权限回调登记处。
+ * 「一次只等一个」的异步结果登记处（去 Flutter 化阶段 1 起只依赖 [ResultSink]）。
+ *
+ * 历史：本类最初装的是 `MethodChannel.Result`，故注释里仍称「权限回调」；改成
+ * [ResultSink] 后与 Flutter 无关，`-PwithFlutter=false` 构型也照常编译。
  *
  * 它存在的理由是把两条已经踩过的失效面收成一处必然发生的事：
  *
@@ -18,17 +21,17 @@ import io.flutter.plugin.common.MethodChannel
  * `replace` 与 `take` 都把"该由调用方去收束"的那个槽返回出去，所以不存在静默丢失。
  */
 internal class PendingResultSlot {
-    private var current: MethodChannel.Result? = null
+    private var current: ResultSink? = null
 
     /** 装入新的等待者，返回**没被消费**的旧等待者（调用方必须回它）。 */
-    fun replace(next: MethodChannel.Result?): MethodChannel.Result? {
+    fun replace(next: ResultSink?): ResultSink? {
         val previous = current
         current = next
         return previous
     }
 
     /** 取出并清空当前等待者：系统回调到达、或宿主销毁时都走这里。 */
-    fun take(): MethodChannel.Result? {
+    fun take(): ResultSink? {
         val previous = current
         current = null
         return previous

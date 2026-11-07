@@ -14,8 +14,7 @@ import android.provider.CalendarContract
 import android.util.Log
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
-import io.flutter.plugin.common.MethodCall
-import io.flutter.plugin.common.MethodChannel
+import com.mutx163.qingyu.platform.ResultSink
 import java.util.TimeZone
 
 /**
@@ -72,13 +71,22 @@ object CalendarSync {
 
     private val permissionQueue = PermissionRequestQueue()
 
+    /**
+     * 通道方法的**原生入口**（去 Flutter 化阶段 1：不再吃 `MethodCall` / `MethodChannel.Result`）。
+     *
+     * 与旧签名逐字等价：方法名（`checkPermission` / `requestPermission` / `sync` /
+     * `deleteCalendar`）、参数名（`calendarName` / `events`）、回投语义
+     * （`success` / `error` / `notImplemented`）全不变。Flutter 通道由 `MainActivity` 的
+     * `ChannelResultSink` 适配；Compose 侧（ICS 导出）直接调本函数。
+     */
     fun handle(
-        call: MethodCall,
+        method: String,
+        arguments: Map<*, *>?,
         activity: Activity?,
         context: Context,
-        result: MethodChannel.Result,
+        result: ResultSink,
     ) {
-        when (call.method) {
+        when (method) {
             "checkPermission" -> result.success(hasCalendarPermission(context))
             "requestPermission" -> {
                 if (hasCalendarPermission(context)) {
@@ -110,9 +118,9 @@ object CalendarSync {
                 // 已有对话框在飞：本 result 已挂进队列，等同一扇出结果，不再弹第二次。
             }
             "sync" -> {
-                val calendarName = call.argument<String>("calendarName").orEmpty()
+                val calendarName = (arguments?.get("calendarName") as? String).orEmpty()
                 @Suppress("UNCHECKED_CAST")
-                val events = call.argument<List<Map<String, Any?>>>("events")
+                val events = (arguments?.get("events") as? List<Map<String, Any?>>)
                     ?: emptyList()
                 Thread {
                     try {

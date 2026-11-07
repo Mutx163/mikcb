@@ -1,6 +1,6 @@
 package com.mutx163.qingyu
 
-import io.flutter.plugin.common.MethodChannel
+import com.mutx163.qingyu.platform.ResultSink
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
@@ -23,7 +23,7 @@ import org.junit.Test
  * 本文件钉住这两条。
  */
 class PendingResultSlotTest {
-    private class RecordingResult : MethodChannel.Result {
+    private class RecordingResult : ResultSink {
         var payload: Any? = null
         var delivered = false
         var error: String? = null
