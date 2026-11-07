@@ -32,6 +32,7 @@ import com.mutx163.qingyu.components.shiftWeight
 import top.yukonga.miuix.kmp.basic.Button
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
 import top.yukonga.miuix.kmp.basic.HorizontalDivider
+import top.yukonga.miuix.kmp.basic.LinearProgressIndicator
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TextField
 import top.yukonga.miuix.kmp.theme.MiuixTheme
@@ -62,6 +63,20 @@ fun WarehouseAdapterDetailPage(
     onCopyLoginUrl: () -> Unit = {},
     onCopyScriptUrl: () -> Unit = {},
     onOpenWebLogin: () -> Unit = {},
+    /**
+     * 脚本正文的拉取状态（2026-11-05 新增槽位，宿主已填值）。
+     *
+     * 渲染见 [ScriptStatusBody]：`Loading` → 不确定进度条；`Loaded(length)` → 「已成功读取，
+     * N 字符」；`Empty` → 「脚本为空」（错误色）；`Failed` → 「无法读取适配器脚本」（错误色，
+     * 键 `warehouseScriptLoadFailed`）。
+     *
+     * `Failed.issue` 这一批**不上屏**：四档原因那句都靠 `attempts` 或与本屏无关的处置建议，
+     * 而 `Failed` 契约里没有 attempts。就是一句话的事，不再为它动已锁的契约。
+     *
+     * 默认 [WarehouseScriptStatus.Loading]：还没接宿主的调用点看起来就是「正在读取」，
+     * 不会误报成「脚本坏了」。
+     */
+    scriptStatus: WarehouseScriptStatus = WarehouseScriptStatus.Loading,
 ) {
     var editUrl by remember(customImportUrl) { mutableStateOf(customImportUrl ?: "") }
     val isCustomized = !customImportUrl.isNullOrBlank()
@@ -128,6 +143,22 @@ fun WarehouseAdapterDetailPage(
                             DetailMetaRow("学校代码", adapter.schoolCode)
                         }
                     }
+                }
+            }
+
+            // ── 分组：脚本状态 ──
+            // 发布版（`warehouse_adapter_detail_screen.dart:124-159`）把这一组紧跟「适配器信息」：
+            // 用户点进详情最想先确认的就是「这个适配器的脚本到底能不能用」。
+            item(key = "script_status") {
+                QingyuSectionTitle(WarehouseStrings.scriptStatusTitle.zh)
+                QingyuCard(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = QingyuPageCardMargin)
+                        .padding(bottom = QingyuSectionGap),
+                    insideMargin = QingyuCardDefaults.ContentInsideMargin,
+                ) {
+                    ScriptStatusBody(scriptStatus)
                 }
             }
 
@@ -250,6 +281,43 @@ fun WarehouseAdapterDetailPage(
                 }
             }
         }
+    }
+}
+
+/**
+ * 脚本状态卡的正文：四态各一句（对齐发布版 `warehouse_adapter_detail_screen.dart:125-159`）。
+ *
+ * - 读取中用**不确定进度条**而不是转圈：发布版是 3dp 的 `HyperosLinearProgress(minHeight: 3)`，
+ *   同样是「还在读」，横条更贴卡片的行内排版；
+ * - 「空」与「读不到」都是「这个适配器现在用不了」，发布版同样用错误色，这里一致；
+ * - 只画一句人话，不把 `code` 摆上屏（那串对用户毫无意义，留给日志）。
+ */
+@Composable
+private fun ScriptStatusBody(status: WarehouseScriptStatus) {
+    when (status) {
+        is WarehouseScriptStatus.Loading -> LinearProgressIndicator(
+            progress = null,
+            modifier = Modifier.fillMaxWidth(),
+        )
+
+        is WarehouseScriptStatus.Loaded -> Text(
+            text = WarehouseStrings.scriptLoadedLength.filled("count", status.length.toString()),
+            style = MiuixTheme.textStyles.footnote1,
+        )
+
+        is WarehouseScriptStatus.Empty -> Text(
+            text = WarehouseStrings.scriptEmpty.zh,
+            style = MiuixTheme.textStyles.footnote1,
+            color = MiuixTheme.colorScheme.error,
+        )
+
+        is WarehouseScriptStatus.Failed -> Text(
+            // 「无法读取适配器脚本」：比「无法读取脚本文件」更贴这一屏（用户在看的是适配器详情）。
+            // `Failed.issue` 仍不上屏——四档原因那句都在列表页那台机器上，这里只说清「脚本没读到」。
+            text = WarehouseStrings.warehouseScriptLoadFailed.zh,
+            style = MiuixTheme.textStyles.footnote1,
+            color = MiuixTheme.colorScheme.error,
+        )
     }
 }
 
