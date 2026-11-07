@@ -319,13 +319,56 @@ class TimetableProfilesControllerTest {
     }
 
     @Test
-    fun `情侣导入档拒绝删除`() {
+    fun `有绑定的情侣导入档仍拒绝删除`() {
         val partner = profile("p_partner", "TA的课表", kind = TimetableProfileKind.PARTNER_IMPORTED)
-        val f = fixture(profiles = listOf(profile("p1"), partner), activeId = "p1")
+        val f = fixture(profiles = listOf(profile("p1"), partner), activeId = "p1", partnerBinding = true)
         val controller = TimetableProfilesController(f.repo)
 
         assertTrue(controller.deleteProfile("p_partner") is TimetableProfileActionResult.Rejected)
         assertEquals(2, f.repo.snapshot.profiles.size)
+    }
+
+    /**
+     * S1 自愈：恢复备份后留下的「有档案、没绑定」孤儿档必须能删。
+     *
+     * 判据是**盘上的绑定键**，不是内存里有没有绑定：删除入口与情侣页各走各的，
+     * 不能互相顶牛。
+     */
+    @Test
+    fun `无绑定的孤儿情侣档允许删除`() {
+        val partner = profile("p_partner", "TA的课表", kind = TimetableProfileKind.PARTNER_IMPORTED)
+        val f = fixture(profiles = listOf(profile("p1"), partner), activeId = "p1")
+        val controller = TimetableProfilesController(f.repo)
+
+        val result = controller.deleteProfile("p_partner")
+
+        assertTrue("孤儿档应可删：$result", result is TimetableProfileActionResult.Success)
+        assertEquals(listOf("p1"), f.repo.snapshot.profiles.map { it.id })
+        assertEquals("p1", f.repo.snapshot.activeProfileId)
+        assertEquals("p1", f.store.loadActiveProfileId())
+        assertTrue(
+            "要真落盘：盘上档案列表里不该再出现 TA 的课表",
+            !f.raw.getString(TimetableStore.KEY_PROFILES)!!.contains("TA的课表"),
+        )
+    }
+
+    @Test
+    fun `列表隐藏孤儿情侣档 有绑定时照常显示`() {
+        val partner = profile("p_partner", "TA的课表", kind = TimetableProfileKind.PARTNER_IMPORTED)
+        val orphan = fixture(profiles = listOf(profile("p1"), partner), activeId = "p1")
+        assertEquals(
+            "没有绑定 ⇒ 孤儿档不给用户看（它既显示不出内容也切不走）",
+            listOf("p1"),
+            TimetableProfilesController(orphan.repo).items().map { it.id },
+        )
+
+        val bound = fixture(profiles = listOf(profile("p1"), partner), activeId = "p1", partnerBinding = true)
+        assertEquals(
+            "还绑定着 ⇒ 情侣课表必须留在列表里（带只读徽标）",
+            listOf("p1", "p_partner"),
+            TimetableProfilesController(bound.repo).items().map { it.id },
+        )
+        assertTrue(TimetableProfilesController(bound.repo).items().last().isPartnerImported)
     }
 
     @Test
@@ -391,7 +434,8 @@ class TimetableProfilesControllerTest {
         val partner = profile("p_partner", "TA的课表", kind = TimetableProfileKind.PARTNER_IMPORTED)
         val mine = profile("p1", "我的课表", courses = listOf(course("c1"), course("c2")), currentWeek = 5L)
             .copy(settings = profile("p1").settings.copy(activeTimeSchemeId = "ts1"))
-        val f = fixture(profiles = listOf(mine, partner), activeId = "p1")
+        // partnerBinding = true：对方档还在绑定期（未绑定的孤儿档会被列表隐藏，见下方专门用例）。
+        val f = fixture(profiles = listOf(mine, partner), activeId = "p1", partnerBinding = true)
         val controller = TimetableProfilesController(f.repo)
 
         val items = controller.items()
@@ -670,6 +714,8 @@ class TimetableProfilesControllerTest {
         activeId: String? = profiles.firstOrNull()?.id,
         schemes: List<TimeScheme> = emptyList(),
         settings: TimetableSettings? = null,
+        /** true = 本机还持有对方课表绑定（写 `partner_timetable_binding` 键）。 */
+        partnerBinding: Boolean = false,
     ): Fixture {
         val raw = InMemoryKeyValueStore()
         val store = TimetableStore(raw)
@@ -677,6 +723,8 @@ class TimetableProfilesControllerTest {
         store.saveActiveProfileId(activeId)
         settings?.let { store.saveSettings(it) }
         if (schemes.isNotEmpty()) store.saveTimeSchemes(schemes)
+        // 与情侣页同一个逻辑 key（`CouplePartnerStorage.BINDING_KEY`；不带 flutter. 前缀）。
+        if (partnerBinding) raw.putString("partner_timetable_binding", """{"partnerName":"小屿"}""")
         return Fixture(raw, store, TimetableRepository(store))
     }
 

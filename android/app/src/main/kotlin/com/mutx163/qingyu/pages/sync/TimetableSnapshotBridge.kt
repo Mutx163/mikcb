@@ -107,6 +107,11 @@ object TimetableSnapshotBridge {
      */
     fun localHasUserAuthoredData(repository: TimetableRepository): Boolean {
         val snapshot = repository.snapshot
+        val partnerBound = hasLocalPartnerBinding(repository)
+        // 孤儿对方档（有 `partner-imported` 档案、本机却没有绑定键）是 Compose 侧的适配缺口
+        // 产物：它在 App 里既显示不出来、也删不掉，所以**不能**被当成「用户亲手沉淀的数据」。
+        // 旧判据把它算进去，导致每次云同步都被判成「本机有数据」→ 反复弹「选边」框。
+        val userProfiles = snapshot.profiles.filterNot { isOrphanPartnerProfile(it, partnerBound) }
         return hasUserAuthoredData(
             SnapshotUserDataSignals(
                 locationTimeGroupsNotEmpty = snapshot.locationTimeGroups.isNotEmpty(),
@@ -114,15 +119,17 @@ object TimetableSnapshotBridge {
                 timeSchemeCount = snapshot.timeSchemes.size,
                 timeSchemeMatchesFactoryDefault = snapshot.timeSchemes.size == 1 &&
                     matchesFactoryDefaultTimeScheme(snapshot.timeSchemes.single()),
-                profileCount = snapshot.profiles.size,
-                profilesHaveCourses = snapshot.profiles.any { profile ->
+                profileCount = userProfiles.size,
+                profilesHaveCourses = userProfiles.any { profile ->
                     profile.courses.isNotEmpty() ||
                         profile.tasks.isNotEmpty() ||
                         profile.exams.isNotEmpty() ||
                         profile.scheduleItems.isNotEmpty()
                 },
-                partnerImportedPresent = snapshot.profiles.any { it.isPartnerImported },
-                renamedAwayFromDefaultPresent = snapshot.profiles.any { profile ->
+                // 判据按 Dart 的形状给：绑定是绑定、对方档是对方档；孤儿不算对方档。
+                partnerBindingPresent = partnerBound,
+                partnerImportedPresent = partnerBound && snapshot.profiles.any { it.isPartnerImported },
+                renamedAwayFromDefaultPresent = userProfiles.any { profile ->
                     profile.name.trim().isNotEmpty() &&
                         profile.name.trim() != TimetableRepository.DEFAULT_PROFILE_NAME
                 },
@@ -131,7 +138,24 @@ object TimetableSnapshotBridge {
     }
 
     /**
+     * 本机是否还持有对方课表绑定（`partner_timetable_binding` 有值即可）。
+     *
+     * 只读原始串、不解码：键在、值坏也按「还可能绑定过」算（坏值自愈在
+     * `CouplePartnerPortImpl.loadBinding` 那一层，这里不该顺手删别人的键）。
+     */
+    private fun hasLocalPartnerBinding(repository: TimetableRepository): Boolean =
+        !repository.rawStoredJson(CouplePartnerStorage.BINDING_KEY).isNullOrBlank()
+
+    /** 孤儿对方档：是对方课表档案，但本机已经没有绑定。 */
+    private fun isOrphanPartnerProfile(profile: TimetableProfile, partnerBound: Boolean): Boolean =
+        profile.isPartnerImported && !partnerBound
+
+    /**
      * 恢复侧：快照字节 → 仓储（整份覆盖，写回成功后仓储只通知一次）。
+     *
+     * **Compose 侧适配（发布版无此问题）**：恢复前会剔掉「本机没有绑定的对方课表档案」
+     * （`partner-imported`），见方法体内「孤儿对方档自愈」那一段——上传快照暂不带绑定键，
+     * 不剔就会在每台恢复过的设备上留一份删不掉、切不走的僵尸档。
      *
      * [applyWarehouseMacros] 非空时同一趟把快照里的宏列表（原始 `List<*>`，可能为 null）
      * 交给调用方落库；**宏导入失败只记录、不翻转结果**（2026-11-05 数据安全修复：
@@ -163,6 +187,24 @@ object TimetableSnapshotBridge {
         if (profiles.isEmpty()) {
             return SnapshotApplyResult.Invalid("sync_snapshot_no_profiles")
         }
+        // ── 孤儿对方档自愈（Compose 侧适配，**发布版没有这个洞**）────────────────
+        // 背景：本层上传的快照还不带 `partner_timetable_binding`（见类 KDoc 的诚实边界），
+        // 但档案列表会带走 `partner-imported` 那份。于是「恢复备份 / 换机」之后磁盘上就出现
+        // 「有对方课表档案、没有绑定」的组合：课表管理页删不掉也切不走，情侣页却显示未绑定。
+        // 恢复是整份覆盖的唯一写入口，这里直接把没有主子的对方档从待写档案里剔掉——
+        // 读侧（课表管理列表）只做「隐藏」，不替用户静默删掉盘上已有的数据：
+        // 绑定键被坏值留档清掉时，档案本身还能救，删了就真丢了。
+        val partnerBound = hasLocalPartnerBinding(repository)
+        val healedProfiles = if (partnerBound) {
+            profiles
+        } else {
+            profiles.filterNot { it.isPartnerImported }
+        }
+        if (healedProfiles.isEmpty()) {
+            // 整份备份里只有一份对方课表且本机未绑定 ⇒ 没有可恢复的用户数据。
+            // 宁可报「这份快照没有课表」，也不要把本机写成 0 档案。
+            return SnapshotApplyResult.Invalid("sync_snapshot_no_profiles")
+        }
         val rawTimeSchemes = json["timeSchemes"] as? List<*> ?: emptyList<Any?>()
         val timeSchemes = parseLenient(json["timeSchemes"]) { TimeScheme.fromJson(it) }
         if (rawTimeSchemes.isNotEmpty() && timeSchemes.isEmpty()) {
@@ -171,6 +213,12 @@ object TimetableSnapshotBridge {
         val scheduleDateRules = parseLenient(json["scheduleDateRules"]) { ScheduleDateRule.fromJson(it) }
         val locationTimeGroups = parseLenient(json["locationTimeGroups"]) { LocationTimeGroup.fromJson(it) }
         val activeProfileId = json["activeProfileId"] as? String
+        // 若原来指向的正好是被剔掉的对方档，显式改指第一份留下的档案（不靠仓储的回落）。
+        val healedActiveId = when {
+            activeProfileId != null && healedProfiles.any { it.id == activeProfileId } -> activeProfileId
+            healedProfiles.size != profiles.size -> healedProfiles.first().id
+            else -> activeProfileId
+        }
         val settings = (json["settings"] as? Map<*, *>)?.let { raw ->
             @Suppress("UNCHECKED_CAST")
             runCatching { TimetableSettings.fromJson(raw as Map<String, Any?>) }.getOrNull()
@@ -180,8 +228,8 @@ object TimetableSnapshotBridge {
         val preferredEmbeddedSettings = embeddedSettingsFromProfiles(rawProfiles)
         return try {
             repository.restoreFromCloudSnapshot(
-                profiles = profiles,
-                activeProfileId = activeProfileId,
+                profiles = healedProfiles,
+                activeProfileId = healedActiveId,
                 timeSchemes = timeSchemes,
                 scheduleDateRules = scheduleDateRules,
                 locationTimeGroups = locationTimeGroups,

@@ -25,6 +25,37 @@ interface CoupleConfigStorePort {
 }
 
 /**
+ * 对方课表在键值存储里的落点（**唯一常量来源**）。
+ *
+ * `pages/sync` 与 `platform/CouplePartnerPortImpl` 都用它，别再各写一份字面量。
+ * 注意 `pages/timetable` 的 L0 classpath 不含本模块，那边另有一份同值常量
+ * `TimetableProfilesLogic.PARTNER_BINDING_KEY`，由
+ * `CouplePartnerBindingKeyGuardTest` 逐字比对两边是否一致。
+ */
+object CouplePartnerStorage {
+    /** Dart `storage_service.dart` 的 `_partnerTimetableBindingKey`。 */
+    const val BINDING_KEY: String = "partner_timetable_binding"
+}
+
+/**
+ * 解绑的分步结局（S2）。
+ *
+ * 发布版 `partner_timetable_service.dart:132-139` 的顺序是**先删对方档案、成功后清绑定**；
+ * 反过来（先清绑定、后删档案）一旦删档失败就会留下「无绑定 + 有档案」的僵尸档——
+ * 那份档案在课表管理里既删不掉也切不走。所以这里按步返回，让上层能如实说清是哪一步没成。
+ */
+enum class CoupleUnlinkStage {
+    /** 两步都成了。 */
+    DONE,
+
+    /** 对方课表档案没删掉：**绑定仍然有效**，界面应保持「已绑定」，用户可重试。 */
+    PROFILE_DELETE_FAILED,
+
+    /** 档案已删、但绑定键没清掉：重试一次解绑即可收尾（此时只剩「清绑定」这一步）。 */
+    BINDING_CLEAR_FAILED,
+}
+
+/**
  * 对方课表数据的读写口。
  *
  * 「绑定」（`partner_timetable_binding`）与「对方课表档案」（`timetable_profiles` 里
@@ -37,8 +68,12 @@ interface CouplePartnerPort {
     fun loadBinding(): PartnerTimetableBindingModel?
     fun saveBinding(binding: PartnerTimetableBindingModel)
 
-    /** 解除绑定：删绑定键 **并且** 删对方课表档案。 */
-    fun unlink()
+    /**
+     * 解除绑定：**先**删对方课表档案、**成功后**再清绑定键（对齐发布版顺序）。
+     *
+     * @return 分步结局；失败时**不抛**，让上层按 [CoupleUnlinkStage] 给不同提示。
+     */
+    fun unlink(): CoupleUnlinkStage
     fun partnerCourseCount(): Int
     fun partnerProfileName(): String?
 

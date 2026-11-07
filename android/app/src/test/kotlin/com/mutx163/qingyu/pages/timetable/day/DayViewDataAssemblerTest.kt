@@ -7,6 +7,7 @@ import com.mutx163.qingyu.core.ScheduleItem
 import com.mutx163.qingyu.core.ScheduleRecurrence
 import com.mutx163.qingyu.core.TimetableSettings
 import com.mutx163.qingyu.pages.timetable.TimetableDateLogic
+import com.mutx163.qingyu.widgetdata.CoupleOverlay
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
@@ -362,6 +363,113 @@ class DayViewDataAssemblerTest {
             now = now.plusSeconds(1),
         )
         assertFalse("拆钟后同一页被判成昨天，这正是单次取钟要消除的错位", splitClock.isToday)
+    }
+
+    // ── 情侣课表叠加（B1 第一阶段 · 2026-11-06）────────────────────────
+    //
+    // 判据：partnerOverlay != null 时当天课程走合并内核（`coupleMergedDayCoursesTagged`），
+    // TA 课追加且 `isPartnerCourse=true`（`DayViewCourseCard:231` 的「TA的课」徽标自动亮）；
+    // null = 完全现行为。Dart 对照 `buildCoupleDayCourseDisplayItems`
+    //（`day_course_display_logic.dart:464-476`）：TA 课不吃「非本周开关」，由合并内核按
+    // 周偏移映射后的周次过滤；同行程（同名 + 节次重叠）按我的那份去重。
+
+    @Test
+    fun `不传叠加时行为不变 TA徽标不出现`() {
+        val day = DayViewDataAssembler.build(
+            week = 3,
+            dayOfWeek = 3,
+            courses = listOf(course("m1")),
+            settings = TimetableSettings(semesterWeekCount = 20),
+            currentWeek = 3,
+            now = now,
+        )
+        val entries = day.agendaEntries.filterIsInstance<DayAgendaEntry.CourseEntry>()
+        assertEquals(listOf("m1"), entries.map { it.course.id })
+        assertTrue("旧路径不叠加，徽标一个都不该亮", entries.none { it.isPartnerCourse })
+    }
+
+    @Test
+    fun `传叠加后TA课追加并带徽标 同行程按我的去重`() {
+        val day = DayViewDataAssembler.build(
+            week = 3,
+            dayOfWeek = 3,
+            courses = listOf(course("m1")),
+            settings = TimetableSettings(semesterWeekCount = 20),
+            currentWeek = 3,
+            now = now,
+            partnerOverlay = CoupleOverlay(
+                weekOffset = 0,
+                mineColorHex = "#111111",
+                partnerColorHex = "#222222",
+                togetherColorHex = "#333333",
+                partnerCourses = listOf(
+                    // 同名同天节次重叠 = 同行程：按我的那份去重，不重复出现。
+                    Course(id = "p_dup", name = "课程m1", teacher = "", location = "", dayOfWeek = 3, startSection = 2, endSection = 3, startTime = "08:00", endTime = "09:40"),
+                    // 独立的 TA 课：追加，徽标亮。
+                    course(id = "p1", dayOfWeek = 3, startSection = 5),
+                ),
+            ),
+        )
+        val entries = day.agendaEntries.filterIsInstance<DayAgendaEntry.CourseEntry>()
+        assertEquals("同行程去重后 = 我的 1 门 + TA 独立 1 门", listOf("m1", "p1"), entries.map { it.course.id })
+        val partnerEntry = entries.single { it.course.id == "p1" }
+        assertTrue("TA 课必须带「TA的课」徽标", partnerEntry.isPartnerCourse)
+        assertFalse("我的课不带徽标", entries.single { it.course.id == "m1" }.isPartnerCourse)
+    }
+
+    @Test
+    fun `叠加时三色随绑定 我的课着色 TA课着TA色`() {
+        val day = DayViewDataAssembler.build(
+            week = 3,
+            dayOfWeek = 3,
+            courses = listOf(course("m1")),
+            settings = TimetableSettings(semesterWeekCount = 20),
+            currentWeek = 3,
+            now = now,
+            partnerOverlay = CoupleOverlay(
+                weekOffset = 0,
+                mineColorHex = "#111111",
+                partnerColorHex = "#222222",
+                togetherColorHex = "#333333",
+                partnerCourses = listOf(course(id = "p1", dayOfWeek = 3, startSection = 5)),
+            ),
+        )
+        val entries = day.agendaEntries.filterIsInstance<DayAgendaEntry.CourseEntry>()
+        assertEquals("#111111", entries.first { it.course.id == "m1" }.course.color)
+        assertEquals("#222222", entries.first { it.course.id == "p1" }.course.color)
+    }
+
+    @Test
+    fun `叠加的TA课按周偏移映射过滤 本周无效的TA课不出现`() {
+        // TA 课只在 TA 的第 5 周（= 我的第 3 周 + 偏移 2）有效；偏移 2 时我的第 3 周
+        // 应该看到它；偏移 0 时 TA 的第 3 周它没课，不该出现。
+        fun build(offset: Int) = DayViewDataAssembler.build(
+            week = 3,
+            dayOfWeek = 3,
+            courses = listOf(course("m1")),
+            settings = TimetableSettings(semesterWeekCount = 20),
+            currentWeek = 3,
+            now = now,
+            partnerOverlay = CoupleOverlay(
+                weekOffset = offset,
+                mineColorHex = "#111111",
+                partnerColorHex = "#222222",
+                togetherColorHex = "#333333",
+                partnerCourses = listOf(
+                    course(id = "p_far", dayOfWeek = 3, startSection = 5, startWeek = 5, endWeek = 5),
+                ),
+            ),
+        )
+        assertTrue(
+            "偏移 2：TA 的第 5 周正好有课",
+            build(offset = 2).agendaEntries.filterIsInstance<DayAgendaEntry.CourseEntry>()
+                .any { it.course.id == "p_far" && it.isPartnerCourse },
+        )
+        assertTrue(
+            "偏移 0：TA 的第 3 周没课，不该出现",
+            build(offset = 0).agendaEntries.filterIsInstance<DayAgendaEntry.CourseEntry>()
+                .none { it.course.id == "p_far" },
+        )
     }
 
     // ------------------------------------------------------------------ 夹具

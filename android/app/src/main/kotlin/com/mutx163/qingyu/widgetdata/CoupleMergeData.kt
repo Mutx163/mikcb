@@ -57,6 +57,9 @@ object CoupleTimetableData {
  * 我方课程为主表（沿用 active 路径的解析与展示名，由调用方预处理），叠加 TA
  * 课程按周偏移映射后的同天课程；同行程按我的那份去重，其余 TA 课程追加，
  * 着情侣三色后按起始节次排序——同节次内按钟点分钟数比（`9:00` 不补零也正确）。
+ *
+ * B1 第一阶段（2026-11-06）起实现下沉到 [coupleMergedDayCoursesTagged]：
+ * 本函数改薄包装（剥标记、吐纯 Course），旧签名与全部旧单测原样保留。
  */
 fun coupleMergedDayCourses(
     mineCourses: List<com.mutx163.qingyu.core.Course>,
@@ -66,10 +69,42 @@ fun coupleMergedDayCourses(
     mineColorHex: String? = null,
     partnerColorHex: String? = null,
     togetherColorHex: String? = null,
-): List<com.mutx163.qingyu.core.Course> {
+): List<com.mutx163.qingyu.core.Course> =
+    coupleMergedDayCoursesTagged(
+        mineCourses = mineCourses,
+        partnerCourses = partnerCourses,
+        week = week,
+        partnerWeekOffset = partnerWeekOffset,
+        mineColorHex = mineColorHex,
+        partnerColorHex = partnerColorHex,
+        togetherColorHex = togetherColorHex,
+    ).map { it.course }
+
+/** 合并结果里一门课 + 它的情侣身份（我 / TA / 一起）。 */
+data class CoupleTaggedCourse(
+    val course: com.mutx163.qingyu.core.Course,
+    val kind: CoupleCourseKind,
+)
+
+/**
+ * [coupleMergedDayCourses] 的带标记变体：排序、去重、着色与原实现逐字同口径，
+ * 只是不把身份丢掉——日视图装配要用它给 TA 条目打 `isPartnerCourse=true`
+ *（`DayViewCourseCard` 的「TA的课」徽标，B1 第一阶段）。
+ *
+ * 合并 / 排序的判据注释见原函数（上一屏），这里不重复。
+ */
+fun coupleMergedDayCoursesTagged(
+    mineCourses: List<com.mutx163.qingyu.core.Course>,
+    partnerCourses: List<com.mutx163.qingyu.core.Course>,
+    week: Int,
+    partnerWeekOffset: Int,
+    mineColorHex: String? = null,
+    partnerColorHex: String? = null,
+    togetherColorHex: String? = null,
+): List<CoupleTaggedCourse> {
     val mineSorted = mineCourses.sortedBy { it.startSection }
     val partnerSorted = partnerCourses.sortedBy { it.startSection }
-    val merged = mutableListOf<com.mutx163.qingyu.core.Course>()
+    val merged = mutableListOf<CoupleTaggedCourse>()
     val usedPartnerIds = mutableSetOf<String>()
     for (course in mineSorted) {
         var hasTogetherPartner = false
@@ -80,30 +115,34 @@ fun coupleMergedDayCourses(
                 break
             }
         }
+        val kind = if (hasTogetherPartner) CoupleCourseKind.TOGETHER else CoupleCourseKind.MINE
         val color = CoupleTimetableData.colorHexForKind(
-            if (hasTogetherPartner) CoupleCourseKind.TOGETHER else CoupleCourseKind.MINE,
+            kind,
             mineColorHex, partnerColorHex, togetherColorHex,
         )
-        merged.add(course.copy(color = color))
+        merged.add(CoupleTaggedCourse(course.copy(color = color), kind))
     }
     for (course in partnerSorted) {
         if (usedPartnerIds.contains(course.id)) continue
         merged.add(
-            course.copy(
-                color = CoupleTimetableData.colorHexForKind(
-                    CoupleCourseKind.PARTNER, mineColorHex, partnerColorHex, togetherColorHex,
+            CoupleTaggedCourse(
+                course.copy(
+                    color = CoupleTimetableData.colorHexForKind(
+                        CoupleCourseKind.PARTNER, mineColorHex, partnerColorHex, togetherColorHex,
+                    ),
                 ),
+                CoupleCourseKind.PARTNER,
             ),
         )
     }
     return merged.sortedWith { a, b ->
-        val bySection = a.startSection.compareTo(b.startSection)
+        val bySection = a.course.startSection.compareTo(b.course.startSection)
         if (bySection != 0) {
             bySection
         } else {
             // 同一节次内的次序按分钟数比：钟点串可能来自外来存档（`9:00` 不补零），
             // 字典序下 '10:00' < '9:00' 会把合并后的同节次课程排反（:773-781）。
-            WidgetDataClock.compareClockText(a.startTime, b.startTime)
+            WidgetDataClock.compareClockText(a.course.startTime, b.course.startTime)
         }
     }
 }

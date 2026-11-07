@@ -11,7 +11,9 @@ import com.mutx163.qingyu.pages.sync.CouplePackageException
 import com.mutx163.qingyu.pages.sync.CouplePartnerPackageCodec
 import com.mutx163.qingyu.pages.sync.CouplePartnerParseResult
 import com.mutx163.qingyu.pages.sync.CouplePartnerPort
+import com.mutx163.qingyu.pages.sync.CouplePartnerStorage
 import com.mutx163.qingyu.pages.sync.CoupleTimetableSettingsLogic
+import com.mutx163.qingyu.pages.sync.CoupleUnlinkStage
 import com.mutx163.qingyu.pages.sync.PartnerTimetableBindingModel
 import com.mutx163.qingyu.pages.sync.newCouplePackageId
 import java.security.MessageDigest
@@ -67,19 +69,41 @@ class CouplePartnerPortImpl(
         store.putString(BINDING_KEY, CoupleBindingCodec.encode(binding))
     }
 
-    override fun unlink() {
-        store.remove(BINDING_KEY)
+    /**
+     * 解除绑定（S2，2026-11-05 复核修复）：**先删对方课本档案、成功后清绑定键**。
+     *
+     * 顺序照抄发布版 `partner_timetable_service.dart:132-139`：`updateProfiles(去掉情侣档)`
+     * 成功之后才 `savePartnerTimetableBinding(null)`。反过来（旧实现先 `remove` 绑定再删档）
+     * 一旦删档落盘失败，就留下「无绑定 + 有档案」的孤儿档——`timetable_profiles` 里那份
+     * `partnerImported` 在课表管理页既删不掉（`TimetableProfilesController` 拒删）也切不走。
+     *
+     * 两步各自 try：失败不抛、按 [CoupleUnlinkStage] 如实回报，由控制器给不同提示
+     * （旧实现一律「保存失败」，用户看不出「档案还在」还是「绑定没清」）。
+     */
+    override fun unlink(): CoupleUnlinkStage {
         val snapshot = repository.snapshot
         val next = snapshot.profiles.filter { it.id != CoupleTimetableSettingsLogic.PARTNER_PROFILE_ID }
         if (next.size != snapshot.profiles.size) {
-            // Dart `timetable_partner_service.dart:161-184`：active 正是被删的情侣档时，
+            // 发布版 `timetable_partner_service.dart:161-184`：active 正是被删的情侣档时，
             // 切回第一份非情侣档并落盘；否则界面会停在一份已删除的课表上。
             val nextActiveId = if (snapshot.activeProfileId == CoupleTimetableSettingsLogic.PARTNER_PROFILE_ID) {
-                next.firstOrNull()?.id ?: snapshot.activeProfileId
+                next.firstOrNull { !it.isPartnerImported }?.id ?: next.firstOrNull()?.id
+                ?: snapshot.activeProfileId
             } else {
                 snapshot.activeProfileId
             }
-            repository.replaceAllProfiles(next, nextActiveId)
+            try {
+                // 落盘失败会抛（仓储 replaceAllProfiles 的契约）；此时绑定一个字节都没动。
+                repository.replaceAllProfiles(next, nextActiveId)
+            } catch (_: Exception) {
+                return CoupleUnlinkStage.PROFILE_DELETE_FAILED
+            }
+        }
+        return try {
+            store.remove(CouplePartnerStorage.BINDING_KEY)
+            CoupleUnlinkStage.DONE
+        } catch (_: Exception) {
+            CoupleUnlinkStage.BINDING_CLEAR_FAILED
         }
     }
 
@@ -183,7 +207,12 @@ class CouplePartnerPortImpl(
     }
 
     companion object {
-        /** Dart `storage_service.dart:38` 的 `_partnerTimetableBindingKey`。 */
-        const val BINDING_KEY: String = "partner_timetable_binding"
+        /**
+         * 绑定键（Dart `storage_service.dart:38` 的 `_partnerTimetableBindingKey`）。
+         *
+         * 值只有一个来源：[CouplePartnerStorage.BINDING_KEY]——`pages/timetable` 读绑定态、
+         * 快照桥判孤儿档都要用同一个字符串，散落成几份字面量迟早对不上。
+         */
+        const val BINDING_KEY: String = CouplePartnerStorage.BINDING_KEY
     }
 }

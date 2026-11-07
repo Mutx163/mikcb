@@ -6,6 +6,7 @@ import com.mutx163.qingyu.app.TimetableRepository
 import com.mutx163.qingyu.app.TimetableStore
 import com.mutx163.qingyu.core.MiniJson
 import com.mutx163.qingyu.core.TimetableProfile
+import com.mutx163.qingyu.core.TimetableProfileKind
 import com.mutx163.qingyu.sync.SNAPSHOT_APP_ID
 import com.mutx163.qingyu.sync.SNAPSHOT_BACKUP_TYPE
 import com.mutx163.qingyu.sync.SNAPSHOT_SCHEMA_VERSION
@@ -123,6 +124,88 @@ class TimetableSnapshotBridgeTest {
         assertEquals("老备份没有的键按本机旧内嵌保留", 9.0, restored["courseCardFontSize"])
     }
 
+    // ============ S1：孤儿对方档自愈（Compose 侧适配）============
+
+    @Test
+    fun `恢复时剔掉本机没有绑定的对方课表档`() {
+        // 上传侧还不带绑定键 ⇒ 换机/恢复之后本机就不会有绑定；这份档案在本机没有主子。
+        val local = fixture(profiles = listOf(profileJson("p1", "我的课表", fullSettings("light", "zh", 12.0))))
+        val backup = fixture(
+            profiles = listOf(
+                profileJson("p1", "我的课表", fullSettings("light", "zh", 12.0)),
+                partnerProfileJson("partner-imported", "TA的课表"),
+            ),
+        )
+
+        assertTrue(TimetableSnapshotBridge.applySnapshot(local.repository, buildBytes(backup.repository)) is SnapshotApplyResult.Applied)
+
+        assertEquals(
+            "孤儿对方档不该写进本机（写进去就删不掉、切不走了）",
+            listOf("p1"),
+            local.repository.snapshot.profiles.map { it.id },
+        )
+        assertEquals("p1", local.repository.snapshot.activeProfileId)
+    }
+
+    @Test
+    fun `本机有绑定时恢复保留对方课表档`() {
+        val local = fixture(
+            profiles = listOf(profileJson("p1", "我的课表", fullSettings("light", "zh", 12.0))),
+            partnerBinding = """{"partnerName":"小屿"}""",
+        )
+        val backup = fixture(
+            profiles = listOf(
+                profileJson("p1", "我的课表", fullSettings("light", "zh", 12.0)),
+                partnerProfileJson("partner-imported", "TA的课表"),
+            ),
+        )
+
+        assertTrue(TimetableSnapshotBridge.applySnapshot(local.repository, buildBytes(backup.repository)) is SnapshotApplyResult.Applied)
+
+        assertTrue(
+            "还绑定着 ⇒ 对方课表是有效数据，必须留下",
+            local.repository.snapshot.profiles.any { it.id == "partner-imported" },
+        )
+    }
+
+    @Test
+    fun `备份里只有一份孤儿对方档时拒绝恢复而不是把本机写成空`() {
+        val local = fixture(profiles = listOf(profileJson("p1", "我的课表", fullSettings("light", "zh", 12.0))))
+        val backup = fixture(profiles = listOf(partnerProfileJson("partner-imported", "TA的课表")))
+
+        val result = TimetableSnapshotBridge.applySnapshot(local.repository, buildBytes(backup.repository))
+
+        assertEquals("sync_snapshot_no_profiles", (result as SnapshotApplyResult.Invalid).errorCode)
+        assertEquals("本机档案必须原样不动", listOf("p1"), local.repository.snapshot.profiles.map { it.id })
+    }
+
+    @Test
+    fun `孤儿对方档不算本机用户数据 有绑定时才算`() {
+        // 只有一份默认名、没课的档案 + 一份孤儿对方档 ⇒ 空壳本机（不弹「选边」）。
+        val orphan = fixture(
+            profiles = listOf(
+                profileJson("p1", TimetableRepository.DEFAULT_PROFILE_NAME, fullSettings("light", "zh", 12.0)),
+                partnerProfileJson("partner-imported", "TA的课表"),
+            ),
+        )
+        assertTrue(
+            "孤儿对方档不该被当成用户亲手沉淀的数据（否则每次同步都弹选边）",
+            !TimetableSnapshotBridge.localHasUserAuthoredData(orphan.repository),
+        )
+
+        val bound = fixture(
+            profiles = listOf(
+                profileJson("p1", TimetableRepository.DEFAULT_PROFILE_NAME, fullSettings("light", "zh", 12.0)),
+                partnerProfileJson("partner-imported", "TA的课表"),
+            ),
+            partnerBinding = """{"partnerName":"小屿"}""",
+        )
+        assertTrue(
+            "绑定还在 ⇒ 对方课表是有效数据，仍算本机有数据",
+            TimetableSnapshotBridge.localHasUserAuthoredData(bound.repository),
+        )
+    }
+
     // ============ 夹具 ============
 
     private class Fixture(
@@ -133,13 +216,32 @@ class TimetableSnapshotBridgeTest {
     private fun fixture(
         profiles: List<Map<String, Any?>>,
         global: Map<String, Any?>? = null,
+        /** 非 null = 本机还持有对方课表绑定（`partner_timetable_binding` 的值）。 */
+        partnerBinding: String? = null,
     ): Fixture {
         val initial = LinkedHashMap<String, String>()
         initial[TimetableStore.KEY_PROFILES] = MiniJson.encode(profiles)
         initial[TimetableStore.KEY_ACTIVE_PROFILE_ID] = "p1"
         if (global != null) initial[AppGlobalSettingsStore.KEY] = MiniJson.encode(global)
+        if (partnerBinding != null) initial[CouplePartnerStorage.BINDING_KEY] = partnerBinding
         val raw = InMemoryKeyValueStore(initial)
         return Fixture(raw, TimetableRepository(TimetableStore(raw)))
+    }
+
+    /** 对方课表档案（`profileKind = partnerImported`，与情侣页导入出来的那份同形）。 */
+    private fun partnerProfileJson(id: String, name: String): Map<String, Any?> {
+        val base = LinkedHashMap(
+            TimetableProfile(
+                id = id,
+                name = name,
+                currentWeek = 1L,
+                createdAt = t0,
+                lastUsedAt = t0,
+                profileKind = TimetableProfileKind.PARTNER_IMPORTED,
+            ).toJson(),
+        )
+        base["settings"] = fullSettings("light", "zh", 12.0)
+        return base
     }
 
     /** 磁盘档案 JSON：完整内嵌 settings（`saveProfiles` 造不出来，只能直接播种）。 */

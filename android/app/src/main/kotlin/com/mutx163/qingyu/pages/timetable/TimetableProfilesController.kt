@@ -91,7 +91,14 @@ class TimetableProfilesController(
     /** 当前展示条目：把仓储里的真实档案映射成渲染条目（课程数取 `courses.size`）。 */
     fun items(): List<TimetableProfileItem> {
         val snap = snapshot
-        return snap.profiles.map { buildItem(it, isActive = it.id == snap.activeProfileId) }
+        val partnerBound = hasPartnerBinding()
+        return snap.profiles
+            // 孤儿对方档（有 `partner-imported` 档案、本机却没有任何绑定）不给用户看：
+            // 它在 App 里既显示不出内容、又切不走，留在列表里只会让人以为数据坏了。
+            // 这里只**隐藏**、不落盘删（绑定键被坏值留档清掉时档案还能救；
+            // 真恢复场景由 `TimetableSnapshotBridge.applySnapshot` 在写入前一并剔掉）。
+            .filterNot { isOrphanPartnerProfile(it, partnerBound) }
+            .map { buildItem(it, isActive = it.id == snap.activeProfileId) }
     }
 
     /** 新建课表：空课程、立即激活、落盘（一条通知）。 */
@@ -228,7 +235,14 @@ class TimetableProfilesController(
         }
     }
 
-    /** 删除课表：至少留一份、拒删情侣导入档；删激活档时自动激活第一份非情侣导入档。 */
+    /**
+     * 删除课表：至少留一份、拒删**仍有绑定**的情侣导入档；删激活档时自动激活第一份
+     * 非情侣导入档。
+     *
+     * 2026-11-05（S1 自愈）：情侣导入档以前无条件拒删，于是「恢复备份后留下的孤儿档」
+     * 永远删不掉。现在**没有绑定**的情侣档可以删（它就是孤儿），仍有绑定的照旧拒删——
+     * 解绑入口在情侣页，删档入口在这里，两者不该互相顶牛。
+     */
     fun deleteProfile(id: String): TimetableProfileActionResult {
         val snap = snapshot
         if (snap.profiles.size <= 1) {
@@ -236,20 +250,18 @@ class TimetableProfilesController(
         }
         val target = snap.profiles.firstOrNull { it.id == id }
             ?: return TimetableProfileActionResult.Rejected()
-        if (target.isPartnerImported) {
+        val orphanPartner = isOrphanPartnerProfile(target, hasPartnerBinding())
+        if (target.isPartnerImported && !orphanPartner) {
             return TimetableProfileActionResult.Rejected()
         }
         val isActive = id == snap.activeProfileId
-        if (isActive && snap.profiles.none { it.id != id && !it.isPartnerImported }) {
-            // 删激活档必须有「非情侣导入」的回退档，否则删完没有可工作的课表（Dart :2099-2108）。
+        // 回退档必须是非情侣导入档（Dart :2099-2108）：否则删完没有可工作的课表。
+        val fallbacks = snap.profiles.filter { it.id != id && !it.isPartnerImported }
+        if (isActive && fallbacks.isEmpty()) {
             return TimetableProfileActionResult.Rejected(TimetableStrings.keepAtLeastOneProfile.zh)
         }
         val remaining = snap.profiles.filter { it.id != id }
-        val newActiveId = if (isActive) {
-            remaining.first { !it.isPartnerImported }.id
-        } else {
-            snap.activeProfileId
-        }
+        val newActiveId = if (isActive) fallbacks.first().id else snap.activeProfileId
         // 回收候选必须取**删除前**那份档案的壁纸（删完就从盘上消失了）。
         val profilesJsonBefore = readRawJson(TimetableStore.KEY_PROFILES)
         // 删激活档会自动换档，全局设置要跟着回退档走（Dart 删档后同样 `_applyProfileState`）。
@@ -474,7 +486,31 @@ class TimetableProfilesController(
             currentWeek = profile.currentWeek,
         )
 
+    /**
+     * 本机是否还持有对方课表绑定（`partner_timetable_binding` 有值）。
+     *
+     * 读的是**同一份** `FlutterSharedPreferences`：`KeyValueStore` 的逻辑 key 不带
+     * `flutter.` 前缀，情侣页写进去的键在这里按同一口径读得到。
+     * 只判「有没有值」、不解码：键在、值坏也算「可能还绑定着」（坏值的留档自愈在
+     * `CouplePartnerPortImpl.loadBinding` 那一层，这里不该顺手删别人的键）。
+     */
+    private fun hasPartnerBinding(): Boolean =
+        !repository.rawStoredJson(PARTNER_BINDING_KEY).isNullOrBlank()
+
+    /** 孤儿对方档：是对方课表档案，但本机已经没有绑定（S1 自愈的判据）。 */
+    private fun isOrphanPartnerProfile(profile: TimetableProfile, partnerBound: Boolean): Boolean =
+        profile.isPartnerImported && !partnerBound
+
     private companion object {
+        /**
+         * 绑定键（Dart `storage_service.dart:38` 的 `_partnerTimetableBindingKey`）。
+         *
+         * 与 `pages/sync/CoupleStores.kt` 的 `CouplePartnerStorage.BINDING_KEY` **必须同值**：
+         * 本模块的 L0 classpath 不含 `pages/sync`，没法直接引那个常量，所以重复声明一份；
+         * 一致性由 `CouplePartnerBindingKeyGuardTest` 逐字比对（改两边任一就红）。
+         */
+        const val PARTNER_BINDING_KEY: String = "partner_timetable_binding"
+
         /**
          * 整机级「全局偏好」键集，逐字对齐 Dart `lib/services/app_global_settings_service.dart:59-114`。
          *

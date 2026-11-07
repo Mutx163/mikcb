@@ -74,6 +74,16 @@ object CoupleStrings {
     val importPartialSkippedSuffix = ArbText("importPartialSkippedSuffix", "，其中 {count} 条格式损坏已跳过")
     val quickImportUnknownError = ArbText("quickImportUnknownError", "发生未知错误")
     val saveFailed = ArbText("saveFailed", "保存失败")
+
+    /**
+     * 通用「删除失败」（ARB 键 `deleteFailed`，`lib/l10n/app_zh.arb:490`）。
+     *
+     * 情侣页解绑要先删对方课表档案：那一步失败时**不能**说成「保存失败」——
+     * 档案还在、绑定也还在，用户该做的是重试解绑，不是去查保存。同一句在本仓
+     * `AddCourseStrings` / `ScheduleStrings` / `TimetableStrings` 里各有一份同值声明，
+     * 这里按同一惯例只复述 ARB，不新造键。
+     */
+    val deleteFailed = ArbText("deleteFailed", "删除失败")
     val cancelAction = ArbText("cancelAction", "取消")
 
     // ── 连接坚果云弹层（Dart `couple_webdav_connect_sheet.dart`） ──
@@ -210,6 +220,7 @@ object CoupleStrings {
             importPartialSkippedSuffix,
             quickImportUnknownError,
             saveFailed,
+            deleteFailed,
             cancelAction,
             coupleWebdavLoginSheetTitle,
             coupleWebdavLoginSheetSubtitle,

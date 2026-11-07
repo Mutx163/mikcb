@@ -357,20 +357,51 @@ class CoupleTimetableSettingsController(
 
     // ── 解绑 ──
 
-    /** 解除绑定（Dart `_confirmUnlink` 的「确认之后」那一段）。 */
+    /**
+     * 解除绑定（发布版 `_confirmUnlink` 的「确认之后」那一段）。
+     *
+     * 落盘**顺序**在端口里（先删对方档案、成功后清绑定，见 [CoupleUnlinkStage]）；
+     * 这里只按步给不同结果，不假装成功：
+     * - [CoupleUnlinkStage.PROFILE_DELETE_FAILED] ⇒ 绑定一个字节都没动，界面**保持已绑定**，
+     *   提示「删除失败」（旧实现一律「保存失败」，用户看不出档案其实还在）；
+     * - [CoupleUnlinkStage.BINDING_CLEAR_FAILED] ⇒ 档案已删、只剩绑定没清，提示「保存失败」，
+     *   再点一次「解除绑定」即可收尾（那次只剩清绑定一步）。
+     */
     fun unlink(): SyncToast {
         setBusy(busy.copy(isUnlinking = true))
         return try {
-            partnerPort.unlink()
-            partnerPort.notifyTimetableChanged()
-            binding = null
-            notifyChanged()
-            CoupleTimetableSettingsLogic.unlinkSuccessToast()
+            when (partnerPort.unlink()) {
+                CoupleUnlinkStage.DONE -> {
+                    partnerPort.notifyTimetableChanged()
+                    binding = null
+                    notifyChanged()
+                    CoupleTimetableSettingsLogic.unlinkSuccessToast()
+                }
+                CoupleUnlinkStage.PROFILE_DELETE_FAILED -> {
+                    // 档案没删掉 ⇒ 绑定仍有效；界面必须还显示「已绑定」，别把真话抹掉。
+                    reloadBindingQuietly()
+                    notifyChanged()
+                    SyncToast(CoupleStrings.deleteFailed.zh, isError = true)
+                }
+                CoupleUnlinkStage.BINDING_CLEAR_FAILED -> {
+                    // 档案已经删了 ⇒ 课表页要看得到变化；绑定状态按盘上真值刷新。
+                    partnerPort.notifyTimetableChanged()
+                    reloadBindingQuietly()
+                    notifyChanged()
+                    SyncToast(CoupleStrings.saveFailed.zh, isError = true)
+                }
+            }
         } catch (_: Exception) {
+            reloadBindingQuietly()
             SyncToast(CoupleStrings.saveFailed.zh, isError = true)
         } finally {
             setBusy(busy.copy(isUnlinking = false))
         }
+    }
+
+    /** 失败分支重读绑定：读不出来时按「未绑定」展示，不拿旧内存值糊过去。 */
+    private fun reloadBindingQuietly() {
+        binding = runCatching { partnerPort.loadBinding() }.getOrNull()
     }
 
     // ── 周偏移 / 换色 ──

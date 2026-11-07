@@ -8,6 +8,10 @@ import com.mutx163.qingyu.core.TimetableSettings
 import com.mutx163.qingyu.pages.timetable.TimetableDateLogic
 import com.mutx163.qingyu.pages.timetable.WeekAgendaLogic
 import com.mutx163.qingyu.pages.timetable.WeekGridCourseMapping
+import com.mutx163.qingyu.widgetdata.CoupleOverlay
+import com.mutx163.qingyu.widgetdata.CoupleCourseKind
+import com.mutx163.qingyu.widgetdata.CoupleTimetableData
+import com.mutx163.qingyu.widgetdata.coupleMergedDayCoursesTagged
 import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.temporal.ChronoUnit
@@ -78,6 +82,13 @@ object DayViewDataAssembler {
      * @param now 注入时钟（单测用；页面传 `LocalDateTime.now()`）
      * @param showNonCurrentWeekCourses 「显示非本周课程」开关（Dart `timetableShowNonCurrentWeekCourses`）
      * @param weatherOf 可选：给某条议程取天气一行（页面把它指到 `WeatherProvider`）
+     * @param partnerOverlay 可选：情侣课表叠加（B1 第一阶段，2026-11-06）。
+     *   非 null 时「当天课程」改走合并内核（`coupleMergedDayCoursesTagged`）：我的课照旧
+     *   （着三色之一），TA 课追加且 `isPartnerCourse=true`（`DayViewCourseCard` 的
+     *   「TA的课」徽标自动亮）。**默认 null = 完全现行为**——不传就不叠加，
+     *   外观编辑页预览等旧调用零影响。叠加层的非本周显示开关沿用
+     *   [showNonCurrentWeekCourses]（合并内核按周过滤后 TA 课只有当周有效的才留，
+     *   与 Dart `buildCoupleDayCourseDisplayItems` 一致）。
      */
     fun build(
         week: Int,
@@ -91,6 +102,7 @@ object DayViewDataAssembler {
         now: LocalDateTime = LocalDateTime.now(),
         showNonCurrentWeekCourses: Boolean = false,
         weatherOf: ((date: LocalDate?, course: Course) -> String?)? = null,
+        partnerOverlay: CoupleOverlay? = null,
     ): DayViewDay {
         val today = now.toLocalDate()
         val semesterStart = settings.semesterStartDate?.toLocalDate()
@@ -109,23 +121,52 @@ object DayViewDataAssembler {
         // 剪枝（Dart `buildDayCourseDisplayItems`）：本周有课时，被它压住的非本周课不画，
         // 否则同一个坑位会叠着两门课；这一步收敛在 `WeekGridCourseMapping.visibleDayCourses`，
         // 与周视图同一口径。
-        val dayCourses = WeekGridCourseMapping.visibleDayCourses(
-            dayCourses = WeekGridCourseMapping.coursesForDay(
-                allCourses = courses,
+        //
+        // 情侣叠加（partnerOverlay != null）时改走合并内核：我的课为主表、TA 课按周偏移
+        // 追加、同行程按我的去重，每门课带着「我 / TA / 一起」的身份出来。TA 课在
+        // Dart `buildCoupleDayCourseDisplayItems`（`day_course_display_logic.dart:464-476`）
+        // 里**不吃**「非本周开关」——它有独立的周次映射；但周有效性（isActiveInWeek）
+        // 由合并内核判，所以当周没课的 TA 课自然不出现，视觉口径一致。
+        // 冲突表仍按**我的**课表算（Dart 的冲突角标也只算自己那半边）。
+        val taggedCourses = if (partnerOverlay == null) {
+            WeekGridCourseMapping.visibleDayCourses(
+                dayCourses = WeekGridCourseMapping.coursesForDay(
+                    allCourses = courses,
+                    week = week,
+                    dayOfWeek = dayOfWeek,
+                    showNonCurrentWeekCourses = showNonCurrentWeekCourses,
+                ),
                 week = week,
-                dayOfWeek = dayOfWeek,
-                showNonCurrentWeekCourses = showNonCurrentWeekCourses,
-            ),
-            week = week,
-        )
+            ).map { com.mutx163.qingyu.widgetdata.CoupleTaggedCourse(it, CoupleCourseKind.MINE) }
+        } else {
+            // 周有效性过滤与小组件同一口径（`HomeWidgetHostPipeline`）：TA 课先按
+            // 「周偏移映射后的那一周」滤一遍再进合并内核——内核只在判「同行程」时查
+            // TA 课的周有效性，独立追加的 TA 课不过内核的周过滤，这里不滤就会
+            // 把 TA 其它周的课全叠进来。
+            val partnerWeek = CoupleTimetableData.partnerWeekForMyWeek(week, partnerOverlay.weekOffset)
+            coupleMergedDayCoursesTagged(
+                mineCourses = courses.filter { it.dayOfWeek == dayOfWeek },
+                partnerCourses = partnerOverlay.partnerCourses.filter {
+                    it.dayOfWeek == dayOfWeek && it.isActiveInWeek(partnerWeek)
+                },
+                week = week,
+                partnerWeekOffset = partnerOverlay.weekOffset,
+                mineColorHex = partnerOverlay.mineColorHex,
+                partnerColorHex = partnerOverlay.partnerColorHex,
+                togetherColorHex = partnerOverlay.togetherColorHex,
+            )
+        }
+        val dayCourses = taggedCourses.map { it.course }
         val conflicts = WeekGridCourseMapping.conflictMap(courses, week)
         val currentMinutes = now.hour * 60.0 + now.minute + now.second / 60.0
 
-        val courseEntries = dayCourses.map { course ->
+        val courseEntries = taggedCourses.map { tagged ->
+            val course = tagged.course
             val isCurrent = course.isInWeek(week)
             DayAgendaEntry.CourseEntry(
                 course = course,
                 isCurrentWeekCourse = isCurrent,
+                isPartnerCourse = tagged.kind == CoupleCourseKind.PARTNER,
                 isConflicting = conflicts[course.id]?.isNotEmpty() == true,
                 isCurrentCourse = isToday && DayAgendaLogic.resolveProgress(
                     startTime = course.startTime,

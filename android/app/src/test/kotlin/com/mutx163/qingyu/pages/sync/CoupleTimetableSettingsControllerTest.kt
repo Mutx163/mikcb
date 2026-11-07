@@ -58,16 +58,22 @@ class CoupleTimetableSettingsControllerTest {
         var failSave = false
         var notifyCount = 0
         var unlinkCount = 0
+        /** 解绑的分步结局（S2）：失败分支要把盘上真值的变化如实反映出来。 */
+        var unlinkStage: CoupleUnlinkStage = CoupleUnlinkStage.DONE
         override fun loadBinding(): PartnerTimetableBindingModel? = binding
         override fun saveBinding(binding: PartnerTimetableBindingModel) {
             if (failSave) throw IllegalStateException("disk_full")
             this.binding = binding
         }
-        override fun unlink() {
+        override fun unlink(): CoupleUnlinkStage {
             unlinkCount++
-            binding = null
-            courses = 0
-            profileName = null
+            // 只有两步都成了才算解除：失败分支里绑定/档案按真实现的口径保持原样。
+            if (unlinkStage == CoupleUnlinkStage.DONE) {
+                binding = null
+                courses = 0
+                profileName = null
+            }
+            return unlinkStage
         }
         override fun partnerCourseCount(): Int = courses
         override fun partnerProfileName(): String? = profileName
@@ -376,6 +382,36 @@ class CoupleTimetableSettingsControllerTest {
         assertNull(partner.binding)
         assertEquals(1, partner.unlinkCount)
         assertEquals(1, partner.notifyCount)
+    }
+
+    @Test
+    fun unlinkProfileDeleteFailureKeepsBindingAndSaysDeleteFailed() {
+        val partner = FakePartnerPort(binding = PartnerTimetableBindingModel(partnerName = "小屿"))
+        partner.unlinkStage = CoupleUnlinkStage.PROFILE_DELETE_FAILED
+
+        val c = controller(partnerPort = partner)
+        val toast = c.unlink()
+
+        // 档案没删掉 ⇒ 界面必须还显示「已绑定」；文案是「删除失败」不是「保存失败」。
+        assertEquals(CoupleStrings.deleteFailed.zh, toast.message)
+        assertTrue(toast.isError)
+        assertTrue("绑定必须还在", c.viewState().bound)
+        assertEquals("啥也没变，不该通知课表页", 0, partner.notifyCount)
+    }
+
+    @Test
+    fun unlinkBindingClearFailureKeepsProfileGoneAndSaysSaveFailed() {
+        val partner = FakePartnerPort(binding = PartnerTimetableBindingModel(partnerName = "小屿"))
+        partner.unlinkStage = CoupleUnlinkStage.BINDING_CLEAR_FAILED
+
+        val c = controller(partnerPort = partner)
+        val toast = c.unlink()
+
+        // 档案已删 ⇒ 课表页要看得到变化；绑定还在盘上 ⇒ 界面据实显示仍未解绑。
+        assertEquals(CoupleStrings.saveFailed.zh, toast.message)
+        assertTrue(toast.isError)
+        assertEquals(1, partner.notifyCount)
+        assertTrue(c.viewState().bound)
     }
 
     @Test
