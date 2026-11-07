@@ -29,18 +29,12 @@ import com.mutx163.qingyu.components.QingyuCard
 import com.mutx163.qingyu.components.QingyuGlassIconButton
 import com.mutx163.qingyu.components.QingyuPageCardMargin
 import com.mutx163.qingyu.components.QingyuPageList
-import com.mutx163.qingyu.components.QingyuPageTheme
+import com.mutx163.qingyu.components.QingyuPageScaffold
 import com.mutx163.qingyu.theme.QingyuTheme
-import top.yukonga.miuix.kmp.basic.Icon
-import top.yukonga.miuix.kmp.basic.IconButton
-import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
-import top.yukonga.miuix.kmp.basic.Scaffold
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TextButton
 import top.yukonga.miuix.kmp.basic.TextField
-import top.yukonga.miuix.kmp.basic.TopAppBar
 import top.yukonga.miuix.kmp.icon.MiuixIcons
-import top.yukonga.miuix.kmp.icon.extended.ChevronBackward
 import top.yukonga.miuix.kmp.icon.extended.Delete
 import top.yukonga.miuix.kmp.icon.extended.Ok
 import top.yukonga.miuix.kmp.overlay.OverlayDialog
@@ -97,10 +91,6 @@ fun AddTaskPage(
     val colors = MiuixTheme.colorScheme
 
     val pageTitle = if (viewState.isEditing) TaskStrings.editTask else TaskStrings.addTask
-
-    // 顶栏折叠行为：与 Dart 侧 HyperosSubpage（overlayHeader + collapsibleLargeTitle
-    // 均为默认 true）的可折叠大标题一致。必须同时传给 TopAppBar 和内容的 nestedScroll。
-    val scrollBehavior = MiuixScrollBehavior()
 
     // task-18：两个子弹层由页面自己持有开关（判据仍在宿主的 reducer 里）。
     var showCoursePicker by remember { mutableStateOf(false) }
@@ -159,225 +149,209 @@ fun AddTaskPage(
         onDismiss = { showDueDatePicker = false },
     )
 
-    QingyuPageTheme {
-        Scaffold(
-            containerColor = Color(QingyuTheme.scaffoldBackground(dark)),
-            // 顶栏进槽位：官方 TopAppBar 自带系统栏顶部内边距，
-            // 放进槽位后 Scaffold 不再重复给这份内边距（第一版就是在这里算了两遍）。
-            topBar = {
-                TopAppBar(
-                    title = pageTitle,
-                    largeTitle = pageTitle,
-                    scrollBehavior = scrollBehavior,
-                    navigationIcon = {
-                        IconButton(onClick = onBack) {
-                            Icon(
-                                imageVector = MiuixIcons.ChevronBackward,
-                                contentDescription = TaskStrings.cancelAction,
-                                tint = Color(QingyuTheme.actionIcon(dark)),
-                            )
-                        }
-                    },
-                    // 右上动作键与左上返回键同一套外观：共享玻璃圆底 + 细边 + 小外浮影。
-                    actions = {
-                        if (viewState.isEditing && onDelete != null) {
-                            // B11：Dart 是线框 `Icons.delete_outline_rounded`（`:171`）。
-                            // 解包核对：0.9.4 的 `MiuixIcons.Delete` 本身就是线框——
-                            // 路径是 5 条闭合轮廓（.kt 里 5×MoveTo/Close）+ EvenOdd 填充，
-                            // 不是什么实心色块；没有比它更接近的线框变体，故保留。
-                            QingyuGlassIconButton(
-                                onClick = { showDeleteConfirm = true },
-                                contentDescription = TaskStrings.taskDelete,
-                                icon = MiuixIcons.Delete,
-                                tint = Color(QingyuTheme.actionIcon(dark)),
-                            )
-                        }
-                        // 2026-10-29 复核更正（V1）：这里原先 `enabled = viewState.canSave`，
-                        // 把 Dart 的**报错路径整条封死**了。Dart `add_task_screen.dart:175-179`
-                        // 的保存键**没有禁用态**：标题空着点下去，`_save()` 走
-                        // `_formKey.currentState!.validate()` → 标题框下出现
-                        // `helper: field.errorText`＝「请输入任务标题」（`:195-206`）。
-                        // 禁用键只能让用户看到「点不动」，永远等不到那句话，也看不出缺了什么。
-                        // 现在恒可点：空标题点它 ⇒ 壳里的 `AddTaskFormReducer.validate` 落
-                        // `titleError`，框下红字出现。
-                        // B10：Dart 是 `Icons.check_rounded`（`:176`）。
-                        // `MiuixIcons.SelectAll`（勾 + 两条横线）语义是「全选」，不对。
-                        // 改 `MiuixIcons.Ok`（`icon/extended/Ok.kt:15`，= Regular 权重）：
-                        // 与课程表单保存键 `AddCoursePage.kt:233` 同形，同族「保存」只有一种长相。
-                        // 附：`miuix-icons` 里对勾类确实只有 `Ok`；更粗的圆头勾在 `miuix-ui` 的
-                        // `icon/basic/Check.kt`（仓库先例 `SettingsPageRenderers.kt:531` 用过
-                        // `MiuixIcons.Basic.*`），形状更贴 check_rounded，但为了族内一致不采用。
-                        QingyuGlassIconButton(
-                            onClick = onSave,
-                            contentDescription = TaskStrings.saveTask,
-                            icon = MiuixIcons.Ok,
-                            tint = Color(QingyuTheme.actionIcon(dark)),
-                        )
-                    },
+    // 共享骨架（2026-11-05 B 组迁移）：官方顶栏 + 标准返回键 + 顶栏毛玻璃 + actions 槽。
+    // 返回键的显隐（根页不画）与玻璃圆底的出没门控都由骨架注入，页面不再自己读根页判据、
+    // 也不再手拼 `TopAppBar` + 裸 `IconButton`。大标题仍可折叠（Dart `HyperosSubpage` 默认参数）。
+    QingyuPageScaffold(
+        title = pageTitle,
+        onBack = onBack,
+        // 右上动作键与左上返回键同一套外观：共享玻璃圆底 + 细边 + 小外浮影。
+        actions = {
+            if (viewState.isEditing && onDelete != null) {
+                // B11：Dart 是线框 `Icons.delete_outline_rounded`（`:171`）。
+                // 解包核对：0.9.4 的 `MiuixIcons.Delete` 本身就是线框——
+                // 路径是 5 条闭合轮廓（.kt 里 5×MoveTo/Close）+ EvenOdd 填充，
+                // 不是什么实心色块；没有比它更接近的线框变体，故保留。
+                QingyuGlassIconButton(
+                    onClick = { showDeleteConfirm = true },
+                    contentDescription = TaskStrings.taskDelete,
+                    icon = MiuixIcons.Delete,
+                    tint = Color(QingyuTheme.actionIcon(dark)),
                 )
-            },
-        ) { innerPadding ->
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    // 表单页必须避让键盘：底部输入框被 IME 盖住的话没法填。
-                    // Dart 侧靠 resizeToAvoidBottomInset: true 达到同一效果。
-                    .imePadding(),
+            }
+            // 2026-10-29 复核更正（V1）：这里原先 `enabled = viewState.canSave`，
+            // 把 Dart 的**报错路径整条封死**了。Dart `add_task_screen.dart:175-179`
+            // 的保存键**没有禁用态**：标题空着点下去，`_save()` 走
+            // `_formKey.currentState!.validate()` → 标题框下出现
+            // `helper: field.errorText`＝「请输入任务标题」（`:195-206`）。
+            // 禁用键只能让用户看到「点不动」，永远等不到那句话，也看不出缺了什么。
+            // 现在恒可点：空标题点它 ⇒ 壳里的 `AddTaskFormReducer.validate` 落
+            // `titleError`，框下红字出现。
+            // B10：Dart 是 `Icons.check_rounded`（`:176`）。
+            // `MiuixIcons.SelectAll`（勾 + 两条横线）语义是「全选」，不对。
+            // 改 `MiuixIcons.Ok`（`icon/extended/Ok.kt:15`，= Regular 权重）：
+            // 与课程表单保存键 `AddCoursePage.kt:233` 同形，同族「保存」只有一种长相。
+            // 附：`miuix-icons` 里对勾类确实只有 `Ok`；更粗的圆头勾在 `miuix-ui` 的
+            // `icon/basic/Check.kt`（仓库先例 `SettingsPageRenderers.kt:531` 用过
+            // `MiuixIcons.Basic.*`），形状更贴 check_rounded，但为了族内一致不采用。
+            QingyuGlassIconButton(
+                onClick = onSave,
+                contentDescription = TaskStrings.saveTask,
+                icon = MiuixIcons.Ok,
+                tint = Color(QingyuTheme.actionIcon(dark)),
+            )
+        },
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                // 表单页必须避让键盘：底部输入框被 IME 盖住的话没法填。
+                // Dart 侧靠 resizeToAvoidBottomInset: true 达到同一效果。
+                .imePadding(),
+        ) {
+            QingyuPageList(
+                innerPadding = innerPadding,
+                scrollBehavior = scrollBehavior,
+                // 官方配方：横向留白由卡片自己带（12dp），滚动条才贴得到屏幕边缘。
+                horizontalPadding = QingyuPageCardMargin,
+                // 顶部/底部 12：Dart `HyperosListView(padding: EdgeInsets.all(12))`
+                // （`add_task_screen.dart:184`）。底部手势条那段由 QingyuPageList
+                // 内部按 innerPadding 算（等价于原先手写的
+                // innerPadding.calculateBottomPadding()），不要重复相加。
+                contentPadding = PaddingValues(top = 12.dp, bottom = 12.dp),
+                // 卡间 10：Dart 两卡之间 `SizedBox(height: 10)`（`:229`）。
+                verticalArrangement = Arrangement.spacedBy(10.dp),
             ) {
-                QingyuPageList(
-                    innerPadding = innerPadding,
-                    scrollBehavior = scrollBehavior,
-                    // 官方配方：横向留白由卡片自己带（12dp），滚动条才贴得到屏幕边缘。
-                    horizontalPadding = QingyuPageCardMargin,
-                    // 顶部/底部 12：Dart `HyperosListView(padding: EdgeInsets.all(12))`
-                    // （`add_task_screen.dart:184`）。底部手势条那段由 QingyuPageList
-                    // 内部按 innerPadding 算（等价于原先手写的
-                    // innerPadding.calculateBottomPadding()），不要重复相加。
-                    contentPadding = PaddingValues(top = 12.dp, bottom = 12.dp),
-                    // 卡间 10：Dart 两卡之间 `SizedBox(height: 10)`（`:229`）。
-                    verticalArrangement = Arrangement.spacedBy(10.dp),
-                ) {
-                    // ── 1. 标题与备注卡片（Dart `HyperosControlCard(title: 任务清单)` :186-228）──
-                    item {
-                        QingyuCard(modifier = Modifier.fillMaxWidth()) {
-                            Column(modifier = Modifier.fillMaxWidth()) {
-                                // B1：卡头标题。Dart 卡头 = 内边距 LTRB(16,16,16,0)
-                                // （`hyperos_controls.dart:122-124`）+ 字号 **17 / w400** / primaryText
-                                // （`hyperos_theme.dart:512-520` 的 `HyperosTypography.title`
-                                //   → `HyperosTokens.titleSize` → `HyperosMiuixSpec.preferenceTitleSize`
-                                //   = 17.0，`hyperos_miuix_spec.dart:80`）。miuix 的 `main` 就是 17sp 常规档。
-                                //
-                                // 2026-10-29 复核更正（V2）：这里原先写 `title3`（20sp）并声称 Dart 卡头
-                                // 是 20sp —— 那是把 `HyperosMiuixNestedHeader.titleSize`（毛玻璃子页的
-                                // 居中大标题）当成了 `HyperosTokens.titleSize`。差 3sp，偏大一眼可见。
-                                Text(
-                                    text = TaskStrings.taskListTitle,
-                                    style = MiuixTheme.textStyles.main,
-                                    color = Color(QingyuTheme.primaryText(dark)),
-                                    modifier = Modifier.padding(
+                // ── 1. 标题与备注卡片（Dart `HyperosControlCard(title: 任务清单)` :186-228）──
+                item {
+                    QingyuCard(modifier = Modifier.fillMaxWidth()) {
+                        Column(modifier = Modifier.fillMaxWidth()) {
+                            // B1：卡头标题。Dart 卡头 = 内边距 LTRB(16,16,16,0)
+                            // （`hyperos_controls.dart:122-124`）+ 字号 **17 / w400** / primaryText
+                            // （`hyperos_theme.dart:512-520` 的 `HyperosTypography.title`
+                            //   → `HyperosTokens.titleSize` → `HyperosMiuixSpec.preferenceTitleSize`
+                            //   = 17.0，`hyperos_miuix_spec.dart:80`）。miuix 的 `main` 就是 17sp 常规档。
+                            //
+                            // 2026-10-29 复核更正（V2）：这里原先写 `title3`（20sp）并声称 Dart 卡头
+                            // 是 20sp —— 那是把 `HyperosMiuixNestedHeader.titleSize`（毛玻璃子页的
+                            // 居中大标题）当成了 `HyperosTokens.titleSize`。差 3sp，偏大一眼可见。
+                            Text(
+                                text = TaskStrings.taskListTitle,
+                                style = MiuixTheme.textStyles.main,
+                                color = Color(QingyuTheme.primaryText(dark)),
+                                modifier = Modifier.padding(
+                                    start = 16.dp,
+                                    top = 16.dp,
+                                    end = 16.dp,
+                                ),
+                            )
+                            // 卡头 → 正文间距 12（`hyperos_controls.dart:149`），正文横向 16、
+                            // 底部 12（`HyperosControlCardInset`：16/0/16/12，
+                            // 见 `hyperos_controls.dart:34-43` + `layout.dart:60-65`）。
+                            Column(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(
                                         start = 16.dp,
-                                        top = 16.dp,
+                                        top = 12.dp,
                                         end = 16.dp,
+                                        bottom = 12.dp,
                                     ),
-                                )
-                                // 卡头 → 正文间距 12（`hyperos_controls.dart:149`），正文横向 16、
-                                // 底部 12（`HyperosControlCardInset`：16/0/16/12，
-                                // 见 `hyperos_controls.dart:34-43` + `layout.dart:60-65`）。
-                                Column(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .padding(
-                                            start = 16.dp,
-                                            top = 12.dp,
-                                            end = 16.dp,
-                                            bottom = 12.dp,
-                                        ),
-                                    // 两框之间 8：Dart `SizedBox(height: 8)`（`:210`）。
-                                    verticalArrangement = Arrangement.spacedBy(8.dp),
-                                ) {
-                                    Column(modifier = Modifier.fillMaxWidth()) {
-                                        TextField(
-                                            value = viewState.title,
-                                            onValueChange = onTitleChange,
-                                            modifier = Modifier
-                                                .fillMaxWidth()
-                                                .focusRequester(titleFocus),
-                                            label = TaskStrings.taskTitleLabel,
-                                            singleLine = true,
-                                            // B5：Dart `textInputAction: next`，提交后把焦点
-                                            // 交给备注框（`:205-206`）。
-                                            keyboardOptions = KeyboardOptions(
-                                                imeAction = ImeAction.Next,
-                                            ),
-                                            keyboardActions = KeyboardActions(
-                                                onNext = { noteFocus.requestFocus() },
-                                            ),
-                                        )
-                                        if (!viewState.titleError.isNullOrBlank()) {
-                                            // Dart `helper: field.errorText` 排在框下
-                                            // `SizedBox(height: 6)` 处、与框左缘对齐
-                                            // （`hyperos_text_field.dart:107-116`）。
-                                            Text(
-                                                text = viewState.titleError,
-                                                style = MiuixTheme.textStyles.footnote1,
-                                                color = colors.error,
-                                                modifier = Modifier.padding(top = 6.dp),
-                                            )
-                                        }
-                                    }
-
+                                // 两框之间 8：Dart `SizedBox(height: 8)`（`:210`）。
+                                verticalArrangement = Arrangement.spacedBy(8.dp),
+                            ) {
+                                Column(modifier = Modifier.fillMaxWidth()) {
                                     TextField(
-                                        value = viewState.note,
-                                        onValueChange = onNoteChange,
+                                        value = viewState.title,
+                                        onValueChange = onTitleChange,
                                         modifier = Modifier
                                             .fillMaxWidth()
-                                            .focusRequester(noteFocus),
-                                        label = TaskStrings.taskNoteLabel,
-                                        singleLine = false,
-                                        minLines = 1,
-                                        maxLines = 4,
-                                        // B5：备注是表单里最后一个输入框，Dart 用 `done` +
-                                        // `onSubmitted: (_) => _save()` 直接保存（`:222-223`），
-                                        // 不再把焦点推到开关上（开关不可输入，停在那里什么也不会发生）。
+                                            .focusRequester(titleFocus),
+                                        label = TaskStrings.taskTitleLabel,
+                                        singleLine = true,
+                                        // B5：Dart `textInputAction: next`，提交后把焦点
+                                        // 交给备注框（`:205-206`）。
                                         keyboardOptions = KeyboardOptions(
-                                            imeAction = ImeAction.Done,
+                                            imeAction = ImeAction.Next,
                                         ),
                                         keyboardActions = KeyboardActions(
-                                            onDone = { onSave() },
+                                            onNext = { noteFocus.requestFocus() },
                                         ),
                                     )
+                                    if (!viewState.titleError.isNullOrBlank()) {
+                                        // Dart `helper: field.errorText` 排在框下
+                                        // `SizedBox(height: 6)` 处、与框左缘对齐
+                                        // （`hyperos_text_field.dart:107-116`）。
+                                        Text(
+                                            text = viewState.titleError,
+                                            style = MiuixTheme.textStyles.footnote1,
+                                            color = colors.error,
+                                            modifier = Modifier.padding(top = 6.dp),
+                                        )
+                                    }
                                 }
+
+                                TextField(
+                                    value = viewState.note,
+                                    onValueChange = onNoteChange,
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .focusRequester(noteFocus),
+                                    label = TaskStrings.taskNoteLabel,
+                                    singleLine = false,
+                                    minLines = 1,
+                                    maxLines = 4,
+                                    // B5：备注是表单里最后一个输入框，Dart 用 `done` +
+                                    // `onSubmitted: (_) => _save()` 直接保存（`:222-223`），
+                                    // 不再把焦点推到开关上（开关不可输入，停在那里什么也不会发生）。
+                                    keyboardOptions = KeyboardOptions(
+                                        imeAction = ImeAction.Done,
+                                    ),
+                                    keyboardActions = KeyboardActions(
+                                        onDone = { onSave() },
+                                    ),
+                                )
                             }
                         }
                     }
+                }
 
-                    // ── 2. 来源课程 / 截止日期 / 已完成（Dart `HyperosListGroup` :230-270）──
-                    item {
-                        QingyuCard(modifier = Modifier.fillMaxWidth()) {
-                            // 官方配方（`QingyuCard.kt:48-58`）：包 Preference 行时**不传**
-                            // `insideMargin`——行组件自带 16dp，再给会变成 32dp。
-                            // Dart 这三行的横向内边距同样是 16（`hyperos_miuix_spec.dart:81`）。
-                            //
-                            // 行间不画分隔线：Dart 的 `HyperosListGroup` 只做首/末行标记、
-                            // 不插分隔线（`layout.dart:191-216`），`HyperosChoiceTile.showDivider`
-                            // 默认 false，`add_task_screen.dart:230-269` 一处都没传。
-                            // B6：来源课程行（`:232-237`）→ title=课程名/无关联课程，
-                            // summary=来源课程，chevron 由 ArrowPreference 自带。
+                // ── 2. 来源课程 / 截止日期 / 已完成（Dart `HyperosListGroup` :230-270）──
+                item {
+                    QingyuCard(modifier = Modifier.fillMaxWidth()) {
+                        // 官方配方（`QingyuCard.kt:48-58`）：包 Preference 行时**不传**
+                        // `insideMargin`——行组件自带 16dp，再给会变成 32dp。
+                        // Dart 这三行的横向内边距同样是 16（`hyperos_miuix_spec.dart:81`）。
+                        //
+                        // 行间不画分隔线：Dart 的 `HyperosListGroup` 只做首/末行标记、
+                        // 不插分隔线（`layout.dart:191-216`），`HyperosChoiceTile.showDivider`
+                        // 默认 false，`add_task_screen.dart:230-269` 一处都没传。
+                        // B6：来源课程行（`:232-237`）→ title=课程名/无关联课程，
+                        // summary=来源课程，chevron 由 ArrowPreference 自带。
+                        ArrowPreference(
+                            title = viewState.selectedCourseName,
+                            summary = TaskStrings.taskCourseLabel,
+                            onClick = courseRowClick,
+                        )
+                        // B7：截止日期开关（`:238-255`）。subtitle 只在关闭时显示
+                        // ——不设日期的作业不会出现在日视图待办带、也不进「今日」档，
+                        // 而新建时这个开关默认是关的，用户很容易存完就再也找不到。
+                        SwitchPreference(
+                            checked = viewState.hasDueDate,
+                            onCheckedChange = onHasDueDateChange,
+                            title = TaskStrings.taskDueDateLabel,
+                            summary = if (viewState.hasDueDate) {
+                                null
+                            } else {
+                                TaskStrings.taskDueDateHint
+                            },
+                        )
+                        // B8：截止日期取值行（Dart `if (_hasDueDate)`，`:256-261`）。
+                        // Dart 这行只有标题（日期文本）+ chevron，没有 subtitle。
+                        if (viewState.hasDueDate) {
                             ArrowPreference(
-                                title = viewState.selectedCourseName,
-                                summary = TaskStrings.taskCourseLabel,
-                                onClick = courseRowClick,
-                            )
-                            // B7：截止日期开关（`:238-255`）。subtitle 只在关闭时显示
-                            // ——不设日期的作业不会出现在日视图待办带、也不进「今日」档，
-                            // 而新建时这个开关默认是关的，用户很容易存完就再也找不到。
-                            SwitchPreference(
-                                checked = viewState.hasDueDate,
-                                onCheckedChange = onHasDueDateChange,
-                                title = TaskStrings.taskDueDateLabel,
-                                summary = if (viewState.hasDueDate) {
-                                    null
-                                } else {
-                                    TaskStrings.taskDueDateHint
+                                title = viewState.dueDateFormatted.ifEmpty {
+                                    TaskStrings.taskDueDateLabel
                                 },
-                            )
-                            // B8：截止日期取值行（Dart `if (_hasDueDate)`，`:256-261`）。
-                            // Dart 这行只有标题（日期文本）+ chevron，没有 subtitle。
-                            if (viewState.hasDueDate) {
-                                ArrowPreference(
-                                    title = viewState.dueDateFormatted.ifEmpty {
-                                        TaskStrings.taskDueDateLabel
-                                    },
-                                    onClick = dueDateRowClick,
-                                )
-                            }
-                            // B9：已完成开关（`:262-268`）。
-                            SwitchPreference(
-                                checked = viewState.isCompleted,
-                                onCheckedChange = onCompletedChange,
-                                title = TaskStrings.taskCompletedSection,
+                                onClick = dueDateRowClick,
                             )
                         }
+                        // B9：已完成开关（`:262-268`）。
+                        SwitchPreference(
+                            checked = viewState.isCompleted,
+                            onCheckedChange = onCompletedChange,
+                            title = TaskStrings.taskCompletedSection,
+                        )
                     }
                 }
             }

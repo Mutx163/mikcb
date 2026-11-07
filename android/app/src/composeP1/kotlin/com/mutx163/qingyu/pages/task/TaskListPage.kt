@@ -29,13 +29,12 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
-import com.mutx163.qingyu.app.CommonUiStrings
 import com.mutx163.qingyu.components.QingyuCard
+import com.mutx163.qingyu.components.QingyuGlassIconButton
 import com.mutx163.qingyu.components.QingyuPageCardMargin
 import com.mutx163.qingyu.components.QingyuPageList
-import com.mutx163.qingyu.components.QingyuPageTheme
+import com.mutx163.qingyu.components.QingyuPageScaffold
 import com.mutx163.qingyu.components.QingyuSectionTitle
-import com.mutx163.qingyu.components.rememberShellShouldShowBackButton
 import com.mutx163.qingyu.core.CourseTask
 import com.mutx163.qingyu.theme.QingyuTheme
 import top.yukonga.miuix.kmp.basic.BasicComponent
@@ -44,15 +43,11 @@ import top.yukonga.miuix.kmp.basic.ButtonDefaults
 import top.yukonga.miuix.kmp.basic.Checkbox
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.IconButton
-import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
-import top.yukonga.miuix.kmp.basic.Scaffold
 import top.yukonga.miuix.kmp.basic.TabRowWithContour
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TextButton
-import top.yukonga.miuix.kmp.basic.TopAppBar
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.Add
-import top.yukonga.miuix.kmp.icon.extended.ChevronBackward
 import top.yukonga.miuix.kmp.icon.extended.ContactsBook
 import top.yukonga.miuix.kmp.icon.extended.Delete
 import top.yukonga.miuix.kmp.icon.extended.Months
@@ -68,7 +63,7 @@ import top.yukonga.miuix.kmp.theme.MiuixTheme
  *
  * | 元素 | Dart 出处 | 本文件控件 |
  * |---|---|---|
- * | 顶栏（返回 + 标题 + 新建） | `:38-47` | 官方 `TopAppBar` + `IconButton` |
+ * | 顶栏（返回 + 标题 + 新建） | `:38-47` | 共享骨架 `QingyuPageScaffold`（返回键 `QingyuBackIconButton`、动作键 `QingyuGlassIconButton`） |
  * | 日期分段（全部/今日/本周） | `:51-63` | 官方 `basic.TabRowWithContour`（见 [TaskDateSegmentedControl]） |
  * | 段后 10dp | `:64` | `Spacer(TaskSegmentGap)` |
  * | 课程筛选入口 | `:65` → `:201-218`（`HyperosChoiceTile`） | 官方 `preference.ArrowPreference` |
@@ -97,6 +92,8 @@ import top.yukonga.miuix.kmp.theme.MiuixTheme
  *   `CommonUiStrings.back`（「返回」）。Dart 的 `HyperosBackButton` 本身**没有**语义标签
  *   （`lib/ui/hyperos/hyperos_back_button.dart:70-71` 明确写了没加），但读屏必须有个正确的名字，
  *   所以取全站统一的 `CommonUiStrings.back`，而不是沿用错误的「取消」。
+ *   2026-11-05 B 组迁移：返回键改由骨架提供（`QingyuBackIconButton` 的默认文案就是
+ *   `CommonUiStrings.back`），结论不变、取值处从本文件挪到共享件。
  * - **A11** 删掉冗余参数 `onCourseFilterClick`（弹层是页内行为，壳里永远是空实现）。
  *
  * ## 刻意保留的差异（详见本轮收口报告）
@@ -126,139 +123,114 @@ fun TaskListPage(
     var showCourseFilter by remember { mutableStateOf(false) }
     var pendingDelete by remember { mutableStateOf<CourseTask?>(null) }
 
-    // 顶栏折叠行为：与 Dart 侧 HyperosSubpage（overlayHeader + collapsibleLargeTitle
-    // 均为默认 true）的可折叠大标题一致。必须同时传给 TopAppBar 和内容的 nestedScroll。
-    val scrollBehavior = MiuixScrollBehavior()
+    // 共享骨架（2026-11-05 B 组迁移）：官方顶栏 + 标准返回键 + 顶栏毛玻璃 + actions 槽。
+    // 返回键的显隐（从底栏进入的根页不画）与玻璃圆底的出没门控都由骨架注入，
+    // 页面不再自己读根页判据、也不再手拼 `TopAppBar`；大标题仍可折叠（Dart `HyperosSubpage` 默认参数）。
+    QingyuPageScaffold(
+        title = TaskStrings.taskListTitle,
+        onBack = onBack,
+        // 右上动作键与左上返回键同一套外观：共享玻璃圆底 + 细边 + 小外浮影。
+        actions = {
+            QingyuGlassIconButton(
+                onClick = onAddTask,
+                contentDescription = TaskStrings.addTask,
+                icon = MiuixIcons.Add,
+                tint = Color(QingyuTheme.actionIcon(dark)),
+            )
+        },
+    ) {
+        QingyuPageList(
+            innerPadding = innerPadding,
+            scrollBehavior = scrollBehavior,
+            // Dart `:49` 是 `EdgeInsets.all(12)`：横向留白由卡片自己带（12dp），
+            // 滚动条才贴得到屏幕边缘。
+            horizontalPadding = QingyuPageCardMargin,
+            // 上下同为 Dart 那 12dp；底部手势条那一份由 QingyuPageList 内部按
+            // innerPadding 算，不要重复相加。
+            contentPadding = PaddingValues(top = TaskPagePadding, bottom = TaskPagePadding),
+            // 段间距按 Dart 逐段显式给（10 / 16），不用整页统一 spacedBy。
+            verticalArrangement = Arrangement.Top,
+        ) {
+            // ── 1. 日期分段控制器（Dart `:51-63`） ──
+            item {
+                TaskDateSegmentedControl(
+                    currentFilter = viewState.dateFilter,
+                    onFilterSelected = onDateFilterChange,
+                )
+            }
 
-    QingyuPageTheme {
-        Scaffold(
-            containerColor = Color(QingyuTheme.scaffoldBackground(dark)),
-            // 顶栏进槽位：官方 TopAppBar 自带系统栏顶部内边距，
-            // 放进槽位后 Scaffold 不再重复给这份内边距（第一版就是在这里算了两遍）。
-            topBar = {
-                TopAppBar(
-                    title = TaskStrings.taskListTitle,
-                    largeTitle = TaskStrings.taskListTitle,
-                    scrollBehavior = scrollBehavior,
-                    navigationIcon = {
-                        // 从底栏进入的根页没有上一级可回，不画返回键；推入的二级页照常画。
-                        // 判据取法与全站骨架同一份（rememberShellShouldShowBackButton）。
-                        if (rememberShellShouldShowBackButton()) {
-                            IconButton(onClick = onBack) {
-                                Icon(
-                                    imageVector = MiuixIcons.ChevronBackward,
-                                    // A8：读屏念「返回」，不是「取消」。
-                                    contentDescription = CommonUiStrings.back,
-                                    tint = Color(QingyuTheme.actionIcon(dark)),
-                                )
-                            }
-                        }
-                    },
-                    actions = {
-                        IconButton(onClick = onAddTask) {
-                            Icon(
-                                imageVector = MiuixIcons.Add,
-                                contentDescription = TaskStrings.addTask,
-                                tint = Color(QingyuTheme.actionIcon(dark)),
-                            )
+            // Dart `:64` 的 `SizedBox(height: 10)`。
+            item { Spacer(modifier = Modifier.height(TaskSegmentGap)) }
+
+            // ── 2. 课程筛选入口（Dart `:65`、`:201-218`） ──
+            item {
+                TaskCourseFilterRow(
+                    selectedCourseLabel = viewState.selectedCourseLabel,
+                    dark = dark,
+                    onClick = {
+                        if (onCourseFilterPicked != null && courseFilterOptions.isNotEmpty()) {
+                            showCourseFilter = true
                         }
                     },
                 )
-            },
-        ) { innerPadding ->
-            QingyuPageList(
-                innerPadding = innerPadding,
-                scrollBehavior = scrollBehavior,
-                // Dart `:49` 是 `EdgeInsets.all(12)`：横向留白由卡片自己带（12dp），
-                // 滚动条才贴得到屏幕边缘。
-                horizontalPadding = QingyuPageCardMargin,
-                // 上下同为 Dart 那 12dp；底部手势条那一份由 QingyuPageList 内部按
-                // innerPadding 算，不要重复相加。
-                contentPadding = PaddingValues(top = TaskPagePadding, bottom = TaskPagePadding),
-                // 段间距按 Dart 逐段显式给（10 / 16），不用整页统一 spacedBy。
-                verticalArrangement = Arrangement.Top,
-            ) {
-                // ── 1. 日期分段控制器（Dart `:51-63`） ──
-                item {
-                    TaskDateSegmentedControl(
-                        currentFilter = viewState.dateFilter,
-                        onFilterSelected = onDateFilterChange,
-                    )
-                }
+            }
 
-                // Dart `:64` 的 `SizedBox(height: 10)`。
-                item { Spacer(modifier = Modifier.height(TaskSegmentGap)) }
+            // Dart `:66` 的 `SizedBox(height: 16)`。
+            item { Spacer(modifier = Modifier.height(TaskSectionGap)) }
 
-                // ── 2. 课程筛选入口（Dart `:65`、`:201-218`） ──
+            if (viewState.isEmpty) {
+                // ── 3. 空态（Dart `:67-75`、`hyperos_empty_state.dart:7`） ──
                 item {
-                    TaskCourseFilterRow(
-                        selectedCourseLabel = viewState.selectedCourseLabel,
+                    TaskEmptyState(
+                        title = viewState.emptyTitle,
                         dark = dark,
-                        onClick = {
-                            if (onCourseFilterPicked != null && courseFilterOptions.isNotEmpty()) {
-                                showCourseFilter = true
-                            }
-                        },
+                        onAddTask = onAddTask,
                     )
                 }
-
-                // Dart `:66` 的 `SizedBox(height: 16)`。
-                item { Spacer(modifier = Modifier.height(TaskSectionGap)) }
-
-                if (viewState.isEmpty) {
-                    // ── 3. 空态（Dart `:67-75`、`hyperos_empty_state.dart:7`） ──
-                    item {
-                        TaskEmptyState(
-                            title = viewState.emptyTitle,
-                            dark = dark,
-                            onAddTask = onAddTask,
-                        )
+            } else {
+                // ── 4. 任务分组（Dart `:220-267`：段与段之间 16dp） ──
+                viewState.sections.forEachIndexed { index, section ->
+                    if (index > 0) {
+                        item { Spacer(modifier = Modifier.height(TaskSectionGap)) }
                     }
-                } else {
-                    // ── 4. 任务分组（Dart `:220-267`：段与段之间 16dp） ──
-                    viewState.sections.forEachIndexed { index, section ->
-                        if (index > 0) {
-                            item { Spacer(modifier = Modifier.height(TaskSectionGap)) }
-                        }
-                        // 分组标题走官方 SmallTitle（自带 28dp 左缘）；行文字左缘是
-                        // 页面 12 + 行内 16 = 28，两者同一轴线。
-                        item { QingyuSectionTitle(section.title) }
-                        item {
-                            QingyuCard(modifier = Modifier.fillMaxWidth()) {
-                                section.items.forEach { row ->
-                                    TaskRowItem(
-                                        item = row,
-                                        onToggle = { onToggleTask(row.task) },
-                                        onEdit = { onEditTask(row.task) },
-                                        onDelete = { pendingDelete = row.task },
-                                        onViewCourse = if (row.hasCourse && onViewCourse != null) {
-                                            { onViewCourse(row.task) }
-                                        } else {
-                                            null
-                                        },
-                                        dark = dark,
-                                        colors = colors,
-                                    )
-                                }
+                    // 分组标题走官方 SmallTitle（自带 28dp 左缘）；行文字左缘是
+                    // 页面 12 + 行内 16 = 28，两者同一轴线。
+                    item { QingyuSectionTitle(section.title) }
+                    item {
+                        QingyuCard(modifier = Modifier.fillMaxWidth()) {
+                            section.items.forEach { row ->
+                                TaskRowItem(
+                                    item = row,
+                                    onToggle = { onToggleTask(row.task) },
+                                    onEdit = { onEditTask(row.task) },
+                                    onDelete = { pendingDelete = row.task },
+                                    onViewCourse = if (row.hasCourse && onViewCourse != null) {
+                                        { onViewCourse(row.task) }
+                                    } else {
+                                        null
+                                    },
+                                    dark = dark,
+                                    colors = colors,
+                                )
                             }
                         }
                     }
                 }
+            }
 
-                // ── 5. 未设到期日被过滤隐藏条目提示条（Dart `:81`、`:151-168`） ──
-                // 无截止日期的作业不归属任何一天，在「今日」「本周」里必然被筛掉；
-                // 不提示的话，用户在编辑页把日期一关，那条作业就像凭空消失了。
-                if (viewState.undatedHiddenCount > 0) {
-                    // Dart `:154` 的 `Padding(top: 16)`。
-                    item { Spacer(modifier = Modifier.height(TaskSectionGap)) }
-                    item {
-                        TaskUndatedHintRow(
-                            count = viewState.undatedHiddenCount,
-                            dark = dark,
-                            // 点它就切到「全部」——那是唯一能看到这些作业的档。
-                            onClick = { onDateFilterChange(TaskDateFilter.ALL) },
-                        )
-                    }
+            // ── 5. 未设到期日被过滤隐藏条目提示条（Dart `:81`、`:151-168`） ──
+            // 无截止日期的作业不归属任何一天，在「今日」「本周」里必然被筛掉；
+            // 不提示的话，用户在编辑页把日期一关，那条作业就像凭空消失了。
+            if (viewState.undatedHiddenCount > 0) {
+                // Dart `:154` 的 `Padding(top: 16)`。
+                item { Spacer(modifier = Modifier.height(TaskSectionGap)) }
+                item {
+                    TaskUndatedHintRow(
+                        count = viewState.undatedHiddenCount,
+                        dark = dark,
+                        // 点它就切到「全部」——那是唯一能看到这些作业的档。
+                        onClick = { onDateFilterChange(TaskDateFilter.ALL) },
+                    )
                 }
             }
         }

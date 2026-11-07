@@ -129,6 +129,9 @@ class TopBarActionGlassGuardTest {
             ExpectedAction("MiuixIcons.Delete", "TaskStrings.taskDelete"),
             ExpectedAction("MiuixIcons.Ok", "TaskStrings.saveTask"),
         ),
+        "pages/task/TaskListPage.kt" to listOf(
+            ExpectedAction("MiuixIcons.Add", "TaskStrings.addTask"),
+        ),
         "pages/timetable/TimetableProfilesPage.kt" to listOf(
             ExpectedAction("MiuixIcons.Add", "TimetableStrings.createTimetableTooltip.zh"),
         ),
@@ -148,7 +151,6 @@ class TopBarActionGlassGuardTest {
     private val pending: Map<String, Int> = mapOf(
         // 别的成员正在改这些文件：落完再换。
         "pages/exam/ExamListPage.kt" to 1,
-        "pages/task/TaskListPage.kt" to 1,
         "pages/statistics/CourseStatisticsPage.kt" to 2,
         "pages/settings/SettingsPageRenderers.kt" to 1,
         "pages/settings/BingGalleryHost.kt" to 1,
@@ -168,19 +170,15 @@ class TopBarActionGlassGuardTest {
      * 采样源（成员七 的 B 组迁移批）。**在那之前不许再加新的裸返回键**，也不许只进不出。
      */
     private val pendingNavigation: Map<String, Int> = mapOf(
-        // B 组手拼顶栏的 7 页：等成员七 的迁移批统一换 QingyuBackIconButton。
+        // 2026-11-05 批 1 迁走 AddTaskPage / ScheduleDateRulePage / TaskListPage；
+        // 批 2 迁走 CourseOverviewPage / QrTransferScanPage / QrTransferSendPage；
+        // 批 3 迁走 ScheduleListPage。余下三页等各自的迁移批统一换 QingyuBackIconButton
+        // （AddCoursePage 随课程表单批、AddScheduleItemPage 与 TimetableProfilesPage 随外观批）。
         "pages/course/AddCoursePage.kt" to 1,
-        "pages/course/CourseOverviewPage.kt" to 1,
         "pages/schedule/AddScheduleItemPage.kt" to 1,
-        "pages/schedule/ScheduleDateRulePage.kt" to 1,
-        "pages/schedule/ScheduleListPage.kt" to 1,
-        "pages/task/AddTaskPage.kt" to 1,
         "pages/timetable/TimetableProfilesPage.kt" to 1,
         // 同样是手拼顶栏的页（不属这批，先登记以免新漂移没人看见）。
-        "pages/task/TaskListPage.kt" to 1,
         "pages/transfer/LanEditPage.kt" to 1,
-        "pages/transfer/QrTransferScanPage.kt" to 1,
-        "pages/transfer/QrTransferSendPage.kt" to 1,
     )
 
     // ── 判据 ────────────────────────────────────────────────────────────

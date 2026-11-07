@@ -32,25 +32,19 @@ import com.mutx163.qingyu.components.QingyuCard
 import com.mutx163.qingyu.components.QingyuGlassIconButton
 import com.mutx163.qingyu.components.QingyuPageCardMargin
 import com.mutx163.qingyu.components.QingyuPageList
+import com.mutx163.qingyu.components.QingyuPageScaffold
 import com.mutx163.qingyu.components.QingyuSectionTitle
 import com.mutx163.qingyu.components.QingyuWeightDelta
-import com.mutx163.qingyu.components.rememberShellShouldShowBackButton
 import com.mutx163.qingyu.components.shiftWeight
 import com.mutx163.qingyu.theme.QingyuIconColors
 import com.mutx163.qingyu.theme.QingyuTheme
 import top.yukonga.miuix.kmp.basic.Icon
-import top.yukonga.miuix.kmp.basic.IconButton
-import top.yukonga.miuix.kmp.basic.Scaffold
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TextButton
 import top.yukonga.miuix.kmp.overlay.OverlayDialog
 import top.yukonga.miuix.kmp.icon.MiuixIcons
-import top.yukonga.miuix.kmp.icon.extended.ChevronBackward
 import top.yukonga.miuix.kmp.icon.extended.ChevronForward
 import top.yukonga.miuix.kmp.theme.MiuixTheme
-import com.mutx163.qingyu.components.QingyuPageTheme
-import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
-import top.yukonga.miuix.kmp.basic.TopAppBar
 import top.yukonga.miuix.kmp.icon.extended.Add
 
 /**
@@ -70,177 +64,153 @@ fun ScheduleListPage(
     val dark = isSystemInDarkTheme()
     var deleteCandidate by remember { mutableStateOf<ScheduleItemData?>(null) }
 
-    // 顶栏折叠行为：Dart 侧 schedule_list_screen.dart:38 走 HyperosSubpage，
-    // overlayHeader / collapsibleLargeTitle 均为默认 true（可折叠大标题）。
-    val scrollBehavior = MiuixScrollBehavior()
-
-    QingyuPageTheme {
-        Scaffold(
-            containerColor = Color(QingyuTheme.scaffoldBackground(dark)),
-            // 顶栏进槽位：官方 TopAppBar 自带系统栏顶部内边距，放进槽位后
-            // Scaffold 不再重复给一份（第一版手搓 Row 时状态栏被算了两遍）。
-            topBar = {
-                TopAppBar(
-                    title = ScheduleStrings.scheduleListTitle.zh,
-                    largeTitle = ScheduleStrings.scheduleListTitle.zh,
-                    scrollBehavior = scrollBehavior,
-                    navigationIcon = {
-                        // 从底栏进入的根页没有上一级可回，不画返回键；推入的二级页照常画。
-                        // 判据取法与全站骨架同一份（rememberShellShouldShowBackButton）。
-                        if (rememberShellShouldShowBackButton()) {
-                            IconButton(onClick = onBack) {
-                                Icon(
-                                    imageVector = MiuixIcons.ChevronBackward,
-                                    contentDescription = ScheduleStrings.cancelAction.zh,
-                                    tint = Color(QingyuTheme.actionIcon(dark)),
+    // 共享骨架（2026-11-05 B 组迁移）：官方顶栏 + 标准返回键 + 顶栏毛玻璃 + actions 槽。
+    // 返回键的显隐（根页不画）与玻璃圆底的出没门控都由骨架注入；大标题仍可折叠
+    //（Dart `schedule_list_screen.dart:38` 走 HyperosSubpage 默认参数）。
+    QingyuPageScaffold(
+        title = ScheduleStrings.scheduleListTitle.zh,
+        onBack = onBack,
+        // Dart 侧顶栏右侧是 FHeaderAction(Icons.add_rounded) 图标按钮，
+        // 第一版用了文字按钮「添加」，与现版本形态不一致。
+        // 右上动作键与左上返回键同一套外观：共享玻璃圆底 + 细边 + 小外浮影。
+        actions = {
+            QingyuGlassIconButton(
+                onClick = onAddSchedule,
+                contentDescription = ScheduleStrings.addScheduleAction.zh,
+                icon = MiuixIcons.Add,
+                tint = Color(QingyuTheme.actionIcon(dark)),
+            )
+        },
+    ) {
+        // 主滚动统一走共享套件（R2）：内含官方三件套（末端轻震 + 过度滚动 + 顶栏联动）
+        // 与右侧滚动条。底部手势条由本页**显式**算一次放进 contentPadding，所以喂给套件的
+        // innerPadding 只取顶部——套件内部还会再加一次 innerPadding 的 bottom，
+        // 两份都给就会把小白条算两遍（原版正是「Column padding(innerPadding) +
+        // contentPadding 里再来一次」，本来就重复）。
+        QingyuPageList(
+            innerPadding = PaddingValues(top = innerPadding.calculateTopPadding()),
+            scrollBehavior = scrollBehavior,
+            contentPadding = PaddingValues(
+                top = 8.dp,
+                // 底部把系统手势条那段算进去，否则最后一行钻到小白条底下。
+                bottom = innerPadding.calculateBottomPadding() + 24.dp,
+            ),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            if (groups.isEmpty) {
+                // ── 空态展示 ──
+                item(key = "empty") {
+                    Box(
+                        modifier = Modifier
+                            .fillParentMaxSize()
+                            .padding(24.dp),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        QingyuCard(
+                            modifier = Modifier.fillMaxWidth(),
+                            insideMargin = PaddingValues(24.dp),
+                        ) {
+                            Column(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalAlignment = Alignment.CenterHorizontally,
+                                verticalArrangement = Arrangement.spacedBy(16.dp),
+                            ) {
+                                Text(
+                                    text = ScheduleStrings.scheduleListEmptyTitle.zh,
+                                    style = MiuixTheme.textStyles.body1,
+                                    color = Color(QingyuTheme.secondaryText(dark)),
+                                )
+                                ScheduleActionButton(
+                                    text = ScheduleStrings.addScheduleAction.zh,
+                                    onClick = onAddSchedule,
+                                    primary = true,
                                 )
                             }
                         }
-                    },
-                    // Dart 侧顶栏右侧是 FHeaderAction(Icons.add_rounded) 图标按钮，
-                    // 第一版用了文字按钮「添加」，与现版本形态不一致。
-                    // 右上动作键与左上返回键同一套外观：共享玻璃圆底 + 细边 + 小外浮影。
-                    actions = {
-                        QingyuGlassIconButton(
-                            onClick = onAddSchedule,
-                            contentDescription = ScheduleStrings.addScheduleAction.zh,
-                            icon = MiuixIcons.Add,
-                            tint = Color(QingyuTheme.actionIcon(dark)),
+                    }
+                }
+            } else {
+                // ── 分组列表：横向留白按配方由每个块自己带 12dp ──
+                if (groups.upcoming.isNotEmpty()) {
+                    item(key = "header_upcoming") {
+                        QingyuSectionTitle(ScheduleStrings.scheduleUpcomingSection.zh)
+                    }
+                    items(groups.upcoming, key = { "upcoming_${it.item.id}" }) { entry ->
+                        ScheduleListCard(
+                            entry = entry,
+                            dimmed = false,
+                            dark = dark,
+                            modifier = Modifier.padding(horizontal = QingyuPageCardMargin),
+                            onEdit = { onEditSchedule(entry.item) },
+                            onDelete = { deleteCandidate = entry.item },
                         )
-                    },
-                )
-            },
-        ) { innerPadding ->
-            // 主滚动统一走共享套件（R2）：内含官方三件套（末端轻震 + 过度滚动 + 顶栏联动）
-            // 与右侧滚动条。底部手势条由本页**显式**算一次放进 contentPadding，所以喂给套件的
-            // innerPadding 只取顶部——套件内部还会再加一次 innerPadding 的 bottom，
-            // 两份都给就会把小白条算两遍（原版正是「Column padding(innerPadding) +
-            // contentPadding 里再来一次」，本来就重复）。
-            QingyuPageList(
-                innerPadding = PaddingValues(top = innerPadding.calculateTopPadding()),
-                scrollBehavior = scrollBehavior,
-                contentPadding = PaddingValues(
-                    top = 8.dp,
-                    // 底部把系统手势条那段算进去，否则最后一行钻到小白条底下。
-                    bottom = innerPadding.calculateBottomPadding() + 24.dp,
-                ),
-                verticalArrangement = Arrangement.spacedBy(12.dp),
-            ) {
-                if (groups.isEmpty) {
-                    // ── 空态展示 ──
-                    item(key = "empty") {
-                        Box(
-                            modifier = Modifier
-                                .fillParentMaxSize()
-                                .padding(24.dp),
-                            contentAlignment = Alignment.Center,
-                        ) {
-                            QingyuCard(
-                                modifier = Modifier.fillMaxWidth(),
-                                insideMargin = PaddingValues(24.dp),
-                            ) {
-                                Column(
-                                    modifier = Modifier.fillMaxWidth(),
-                                    horizontalAlignment = Alignment.CenterHorizontally,
-                                    verticalArrangement = Arrangement.spacedBy(16.dp),
-                                ) {
-                                    Text(
-                                        text = ScheduleStrings.scheduleListEmptyTitle.zh,
-                                        style = MiuixTheme.textStyles.body1,
-                                        color = Color(QingyuTheme.secondaryText(dark)),
-                                    )
-                                    ScheduleActionButton(
-                                        text = ScheduleStrings.addScheduleAction.zh,
-                                        onClick = onAddSchedule,
-                                        primary = true,
-                                    )
-                                }
-                            }
-                        }
                     }
-                } else {
-                    // ── 分组列表：横向留白按配方由每个块自己带 12dp ──
-                    if (groups.upcoming.isNotEmpty()) {
-                        item(key = "header_upcoming") {
-                            QingyuSectionTitle(ScheduleStrings.scheduleUpcomingSection.zh)
-                        }
-                        items(groups.upcoming, key = { "upcoming_${it.item.id}" }) { entry ->
-                            ScheduleListCard(
-                                entry = entry,
-                                dimmed = false,
-                                dark = dark,
-                                modifier = Modifier.padding(horizontal = QingyuPageCardMargin),
-                                onEdit = { onEditSchedule(entry.item) },
-                                onDelete = { deleteCandidate = entry.item },
-                            )
-                        }
-                    }
+                }
 
-                    if (groups.past.isNotEmpty()) {
-                        item(key = "header_past") {
-                            QingyuSectionTitle(ScheduleStrings.schedulePastSection.zh)
-                        }
-                        items(groups.past, key = { "past_${it.item.id}" }) { entry ->
-                            ScheduleListCard(
-                                entry = entry,
-                                dimmed = true,
-                                dark = dark,
-                                modifier = Modifier.padding(horizontal = QingyuPageCardMargin),
-                                onEdit = { onEditSchedule(entry.item) },
-                                onDelete = { deleteCandidate = entry.item },
-                            )
-                        }
+                if (groups.past.isNotEmpty()) {
+                    item(key = "header_past") {
+                        QingyuSectionTitle(ScheduleStrings.schedulePastSection.zh)
                     }
+                    items(groups.past, key = { "past_${it.item.id}" }) { entry ->
+                        ScheduleListCard(
+                            entry = entry,
+                            dimmed = true,
+                            dark = dark,
+                            modifier = Modifier.padding(horizontal = QingyuPageCardMargin),
+                            onEdit = { onEditSchedule(entry.item) },
+                            onDelete = { deleteCandidate = entry.item },
+                        )
+                    }
+                }
 
-                    if (groups.paused.isNotEmpty()) {
-                        item(key = "header_paused") {
-                            QingyuSectionTitle(ScheduleStrings.schedulePausedSection.zh)
-                        }
-                        items(groups.paused, key = { "paused_${it.item.id}" }) { entry ->
-                            ScheduleListCard(
-                                entry = entry,
-                                dimmed = true,
-                                dark = dark,
-                                modifier = Modifier.padding(horizontal = QingyuPageCardMargin),
-                                onEdit = { onEditSchedule(entry.item) },
-                                onDelete = { deleteCandidate = entry.item },
-                            )
-                        }
+                if (groups.paused.isNotEmpty()) {
+                    item(key = "header_paused") {
+                        QingyuSectionTitle(ScheduleStrings.schedulePausedSection.zh)
+                    }
+                    items(groups.paused, key = { "paused_${it.item.id}" }) { entry ->
+                        ScheduleListCard(
+                            entry = entry,
+                            dimmed = true,
+                            dark = dark,
+                            modifier = Modifier.padding(horizontal = QingyuPageCardMargin),
+                            onEdit = { onEditSchedule(entry.item) },
+                            onDelete = { deleteCandidate = entry.item },
+                        )
                     }
                 }
             }
         }
+    }
 
-        // 删除确认框：官方 OverlayDialog（遮罩 + 点外部 / 返回键关闭 + 居中）。
-        // 原来是一张裸 QingyuCard 直接画在页面里，既不遮罩也不居中，返回键会退掉整页。
-        val candidate = deleteCandidate
-        OverlayDialog(
-            show = candidate != null,
-            title = ScheduleStrings.deleteScheduleTitle.zh,
-            summary = candidate?.let { ScheduleStrings.deleteScheduleMessage.filled("title", it.title) },
-            onDismissRequest = { deleteCandidate = null },
-            insideMargin = DpSize(16.dp, 16.dp),
-        ) {
-            if (candidate != null) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(12.dp),
-                ) {
-                    TextButton(
-                        modifier = Modifier.weight(1f),
-                        text = ScheduleStrings.cancelAction.zh,
-                        onClick = { deleteCandidate = null },
-                    )
-                    ScheduleActionButton(
-                        text = ScheduleStrings.deleteAction.zh,
-                        onClick = {
-                            onDeleteSchedule(candidate)
-                            deleteCandidate = null
-                        },
-                        modifier = Modifier.weight(1f),
-                        destructive = true,
-                    )
-                }
+    // 删除确认框：官方 OverlayDialog（遮罩 + 点外部 / 返回键关闭 + 居中）。
+    // 原来是一张裸 QingyuCard 直接画在页面里，既不遮罩也不居中，返回键会退掉整页。
+    val candidate = deleteCandidate
+    OverlayDialog(
+        show = candidate != null,
+        title = ScheduleStrings.deleteScheduleTitle.zh,
+        summary = candidate?.let { ScheduleStrings.deleteScheduleMessage.filled("title", it.title) },
+        onDismissRequest = { deleteCandidate = null },
+        insideMargin = DpSize(16.dp, 16.dp),
+    ) {
+        if (candidate != null) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+            ) {
+                TextButton(
+                    modifier = Modifier.weight(1f),
+                    text = ScheduleStrings.cancelAction.zh,
+                    onClick = { deleteCandidate = null },
+                )
+                ScheduleActionButton(
+                    text = ScheduleStrings.deleteAction.zh,
+                    onClick = {
+                        onDeleteSchedule(candidate)
+                        deleteCandidate = null
+                    },
+                    modifier = Modifier.weight(1f),
+                    destructive = true,
+                )
             }
         }
     }

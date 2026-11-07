@@ -67,14 +67,19 @@ class RootEntryBackGuardTest {
                 code.contains("isRoot:") || code.contains("showBack:"),
             )
         }
-        // 反向探针：把任务清单页的判定改成常显，判据必须红。
-        val taskPath = HAND_BUILT_PAGES.first { it.first == "任务清单页" }.second
-        val broken = codeOnly(source(taskPath)).replace(
+        // 反向探针：把**月视图页**的判定改成常显，判据必须红。
+        //
+        // 2026-11-05：任务清单页随 B 组批 1 迁到 `QingyuPageScaffold`（骨架内部消费同一份判据），
+        // 已从 [HAND_BUILT_PAGES] 移除，探针改指月视图页。选它是因为它**不在** B 组迁移清单里
+        // （它不是手拼 `TopAppBar`，走自己的 `navigationIcon` 槽），不会在后续批次里被迁走；
+        // 将来它真接骨架时，把这份名单与探针一起改到当时仍在手拼的页上，别让探针悬空。
+        val monthPath = HAND_BUILT_PAGES.first { it.first == "月视图页" }.second
+        val broken = codeOnly(source(monthPath)).replace(
             "if (rememberShellShouldShowBackButton()) {",
             "if (true) {",
         )
         assertFalse(
-            "咬合探针失效：任务清单页判定改成常显后守卫仍为真",
+            "咬合探针失效：月视图页判定改成常显后守卫仍为真",
             broken.contains("if (rememberShellShouldShowBackButton())"),
         )
     }
@@ -182,11 +187,13 @@ class RootEntryBackGuardTest {
          *
          * 2026-11-03 收口：月视图（`c2.month`，从「更多功能」推入时是二级页）与
          * 课表管理（`d1.profiles`）接上同一份判据，并入清单。
+         *
+         * 2026-11-05：任务清单页迁到 `QingyuPageScaffold`（返回键显隐由骨架内部消费），
+         * 已从本名单移除——它不再手拼顶栏，就不再需要在页面里消费这份判据。
+         * 同日批 2：课程总览页同样迁走并移出名单。
+         * 同日批 3：日程列表页同样迁走并移出名单。
          */
         val HAND_BUILT_PAGES = listOf(
-            "任务清单页" to "android/app/src/composeP1/kotlin/com/mutx163/qingyu/pages/task/TaskListPage.kt",
-            "日程列表页" to "android/app/src/composeP1/kotlin/com/mutx163/qingyu/pages/schedule/ScheduleListPage.kt",
-            "课程总览页" to "android/app/src/composeP1/kotlin/com/mutx163/qingyu/pages/course/CourseOverviewPage.kt",
             "局域网传输页" to "android/app/src/composeP1/kotlin/com/mutx163/qingyu/pages/transfer/LanEditPage.kt",
             "月视图页" to "android/app/src/composeP1/kotlin/com/mutx163/qingyu/pages/timetable/month/MonthViewPage.kt",
             "课表管理页" to "android/app/src/composeP1/kotlin/com/mutx163/qingyu/pages/timetable/TimetableProfilesPage.kt",

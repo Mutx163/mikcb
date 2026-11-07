@@ -40,9 +40,8 @@ import com.mutx163.qingyu.components.QingyuCard
 import com.mutx163.qingyu.components.QingyuGlassIconButton
 import com.mutx163.qingyu.components.QingyuPageCardMargin
 import com.mutx163.qingyu.components.QingyuPageList
-import com.mutx163.qingyu.components.QingyuPageTheme
+import com.mutx163.qingyu.components.QingyuPageScaffold
 import com.mutx163.qingyu.components.QingyuWeightDelta
-import com.mutx163.qingyu.components.rememberShellShouldShowBackButton
 import com.mutx163.qingyu.components.shiftWeight
 import com.mutx163.qingyu.theme.QingyuIconColors
 import com.mutx163.qingyu.theme.QingyuTheme
@@ -51,16 +50,11 @@ import top.yukonga.miuix.kmp.basic.Button
 import top.yukonga.miuix.kmp.basic.DropdownImpl
 import top.yukonga.miuix.kmp.basic.DropdownItem
 import top.yukonga.miuix.kmp.basic.Icon
-import top.yukonga.miuix.kmp.basic.IconButton
 import top.yukonga.miuix.kmp.basic.ListPopupColumn
-import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
 import top.yukonga.miuix.kmp.basic.PopupPositionProvider
-import top.yukonga.miuix.kmp.basic.Scaffold
 import top.yukonga.miuix.kmp.basic.Text
-import top.yukonga.miuix.kmp.basic.TopAppBar
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.Add
-import top.yukonga.miuix.kmp.icon.extended.ChevronBackward
 import top.yukonga.miuix.kmp.icon.extended.ChevronForward
 import top.yukonga.miuix.kmp.icon.extended.ContactsBook
 import top.yukonga.miuix.kmp.icon.extended.Info
@@ -133,124 +127,100 @@ fun CourseOverviewPage(
 ) {
     val dark = isSystemInDarkTheme()
 
-    // 顶栏折叠行为：Dart 侧 course_overview_screen.dart:46 走 HyperosSubpage，
-    // overlayHeader / collapsibleLargeTitle 均为默认 true（可折叠大标题）。
-    val scrollBehavior = MiuixScrollBehavior()
-
     // 「排序」弹层的显示开关与锚点：**纯 UI 状态**（Dart `_sortPopupOpen` /
     // `_sortAnchorRect` 的对应物）。锚点在排序图标 `onGloballyPositioned` 时实测。
     var sortPopupOpen by remember { mutableStateOf(false) }
     var sortAnchorBounds by remember { mutableStateOf<Rect?>(null) }
 
-    QingyuPageTheme {
-        // 页面根容器。排序弹层本体挂在下面 Scaffold 的 content 末尾——官方 Overlay 系
-        // 弹层的宿主由 Scaffold 注入，挂到 Scaffold 子树外面弹不出来。
-        Box(modifier = Modifier.fillMaxSize()) {
-            Scaffold(
-                containerColor = Color(QingyuTheme.scaffoldBackground(dark)),
-                // 顶栏进槽位：官方 TopAppBar 自带系统栏顶部内边距，放进槽位后
-                // Scaffold 不再重复给一份（ScheduleListPage 第一版踩过）。
-                topBar = {
-                    TopAppBar(
-                        title = CourseOverviewStrings.courseOverviewTitle.zh,
-                        largeTitle = CourseOverviewStrings.courseOverviewTitle.zh,
-                        scrollBehavior = scrollBehavior,
-                        navigationIcon = {
-                            // 从底栏进入的根页没有上一级可回，不画返回键；推入的二级页照常画。
-                            // 判据取法与全站骨架同一份（rememberShellShouldShowBackButton）。
-                            if (rememberShellShouldShowBackButton()) {
-                                IconButton(onClick = onBack) {
-                                    Icon(
-                                        imageVector = MiuixIcons.ChevronBackward,
-                                        contentDescription = CourseOverviewStrings.cancelAction.zh,
-                                        tint = Color(QingyuTheme.actionIcon(dark)),
-                                    )
-                                }
-                            }
-                        },
-                        // Dart 侧两个后缀都是 FHeaderAction 图标按钮：排序 + 添加。
-                        // 右上动作键与左上返回键同一套外观：共享玻璃圆底 + 细边 + 小外浮影。
-                        actions = {
-                            QingyuGlassIconButton(
-                                onClick = { sortPopupOpen = true },
-                                contentDescription = CourseOverviewStrings.sortAction.zh,
-                                icon = MiuixIcons.Sort,
-                                tint = Color(QingyuTheme.actionIcon(dark)),
-                                // 记下排序图标的屏幕矩形，弹层据此右对齐、贴其下方。
-                                // 圆底外径 44dp（比原 IconButton 大 4dp），弹层跟着走 2dp，属预期。
-                                modifier = Modifier.onGloballyPositioned { coords ->
-                                    sortAnchorBounds = coords.boundsInWindow()
-                                },
-                            )
-                            QingyuGlassIconButton(
-                                onClick = onAddCourse,
-                                contentDescription = CourseOverviewStrings.addNewCourseTooltip.zh,
-                                icon = MiuixIcons.Add,
-                                tint = Color(QingyuTheme.actionIcon(dark)),
-                            )
-                        },
-                    )
-                },
-            ) { innerPadding ->
-                if (viewState.isEmpty) {
-                    CourseOverviewEmptyState(
-                        hint = viewState.emptyHint,
-                        actionLabel = viewState.addCourseAction,
-                        dark = dark,
-                        onAddCourse = onAddCourse,
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .padding(innerPadding),
-                    )
-                } else {
-                    // 主滚动统一走共享套件：内含官方三件套（末端轻震 + 过度滚动 + 顶栏联动）
-                    // 与右侧滚动条。横向留白按配方由每个块自己带 12dp，**不**放进
-                    // contentPadding —— 放进去滚动条会跟着内缩、也偏离 28dp 轴线。
-                    QingyuPageList(
-                        innerPadding = innerPadding,
-                        scrollBehavior = scrollBehavior,
-                        contentPadding = PaddingValues(top = 8.dp, bottom = 24.dp),
-                        verticalArrangement = Arrangement.spacedBy(12.dp),
-                    ) {
-                        // 冲突入口：只有一条，详情在独立页（对齐 Dart「单入口」注释）。
-                        // 它是**独立的单行卡片**，与课程卡之间由 spacedBy(12dp) 隔开
-                        // （= Dart 的 HyperosSectionGap）。
-                        if (viewState.conflictCount > 0) {
-                            item(key = "conflict_entry") {
-                                CourseConflictEntryCard(
-                                    title = viewState.conflictEntryTitle,
-                                    detail = viewState.conflictEntryDetail,
-                                    dark = dark,
-                                    modifier = Modifier.padding(horizontal = QingyuPageCardMargin),
-                                    onClick = onOpenConflictDetail,
-                                )
-                            }
-                        }
-                        // 同名课程聚合行：**全部行放进同一张卡片**（Dart 的一个 HyperosListGroup）。
-                        item(key = "course_list") {
-                            CourseGroupListCard(
-                                rows = viewState.rows,
+    // 共享骨架（2026-11-05 B 组迁移）：官方顶栏 + 标准返回键 + 顶栏毛玻璃 + actions 槽。
+    // 返回键的显隐（根页不画）与玻璃圆底的出没门控都由骨架注入；大标题仍可折叠
+    //（Dart `course_overview_screen.dart:46` 走 HyperosSubpage 默认参数）。
+    // 外层 Box 保留：排序弹层（`OverlayListPopup`）挂在 Scaffold 的 content 末尾，
+    // 官方 Overlay 系弹层的宿主由 Scaffold 注入，这里只维持原来的根容器层级。
+    Box(modifier = Modifier.fillMaxSize()) {
+        QingyuPageScaffold(
+            title = CourseOverviewStrings.courseOverviewTitle.zh,
+            onBack = onBack,
+            // Dart 侧两个后缀都是 FHeaderAction 图标按钮：排序 + 添加。
+            // 右上动作键与左上返回键同一套外观：共享玻璃圆底 + 细边 + 小外浮影。
+            actions = {
+                QingyuGlassIconButton(
+                    onClick = { sortPopupOpen = true },
+                    contentDescription = CourseOverviewStrings.sortAction.zh,
+                    icon = MiuixIcons.Sort,
+                    tint = Color(QingyuTheme.actionIcon(dark)),
+                    // 记下排序图标的屏幕矩形，弹层据此右对齐、贴其下方。
+                    // 圆底外径 44dp（比原 IconButton 大 4dp），弹层跟着走 2dp，属预期。
+                    modifier = Modifier.onGloballyPositioned { coords ->
+                        sortAnchorBounds = coords.boundsInWindow()
+                    },
+                )
+                QingyuGlassIconButton(
+                    onClick = onAddCourse,
+                    contentDescription = CourseOverviewStrings.addNewCourseTooltip.zh,
+                    icon = MiuixIcons.Add,
+                    tint = Color(QingyuTheme.actionIcon(dark)),
+                )
+            },
+        ) {
+            if (viewState.isEmpty) {
+                CourseOverviewEmptyState(
+                    hint = viewState.emptyHint,
+                    actionLabel = viewState.addCourseAction,
+                    dark = dark,
+                    onAddCourse = onAddCourse,
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(innerPadding),
+                )
+            } else {
+                // 主滚动统一走共享套件：内含官方三件套（末端轻震 + 过度滚动 + 顶栏联动）
+                // 与右侧滚动条。横向留白按配方由每个块自己带 12dp，**不**放进
+                // contentPadding —— 放进去滚动条会跟着内缩、也偏离 28dp 轴线。
+                QingyuPageList(
+                    innerPadding = innerPadding,
+                    scrollBehavior = scrollBehavior,
+                    contentPadding = PaddingValues(top = 8.dp, bottom = 24.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp),
+                ) {
+                    // 冲突入口：只有一条，详情在独立页（对齐 Dart「单入口」注释）。
+                    // 它是**独立的单行卡片**，与课程卡之间由 spacedBy(12dp) 隔开
+                    // （= Dart 的 HyperosSectionGap）。
+                    if (viewState.conflictCount > 0) {
+                        item(key = "conflict_entry") {
+                            CourseConflictEntryCard(
+                                title = viewState.conflictEntryTitle,
+                                detail = viewState.conflictEntryDetail,
                                 dark = dark,
                                 modifier = Modifier.padding(horizontal = QingyuPageCardMargin),
-                                onOpenGroup = onOpenGroup,
+                                onClick = onOpenConflictDetail,
                             )
                         }
                     }
+                    // 同名课程聚合行：**全部行放进同一张卡片**（Dart 的一个 HyperosListGroup）。
+                    item(key = "course_list") {
+                        CourseGroupListCard(
+                            rows = viewState.rows,
+                            dark = dark,
+                            modifier = Modifier.padding(horizontal = QingyuPageCardMargin),
+                            onOpenGroup = onOpenGroup,
+                        )
+                    }
                 }
-                // 排序弹层：常驻组合、按 show 切显示（官方 OverlayListPopup 内部驱动进出场、
-                // 遮罩与返回/点空白关闭）。必须挂在 Scaffold 子树里——官方 Overlay 系的弹层
-                // 宿主由 Scaffold 注入，挂到 Scaffold 外面弹不出来。
-                CourseOverviewSortPopup(
-                    show = sortPopupOpen,
-                    options = viewState.sortOptions,
-                    anchor = sortAnchorBounds,
-                    onSelect = { option ->
-                        onSortModeSelected(option.mode)
-                        sortPopupOpen = false
-                    },
-                    onDismiss = { sortPopupOpen = false },
-                )
             }
+            // 排序弹层：常驻组合、按 show 切显示（官方 OverlayListPopup 内部驱动进出场、
+            // 遮罩与返回/点空白关闭）。必须挂在 Scaffold 子树里——官方 Overlay 系的弹层
+            // 宿主由 Scaffold 注入，挂到 Scaffold 外面弹不出来。
+            CourseOverviewSortPopup(
+                show = sortPopupOpen,
+                options = viewState.sortOptions,
+                anchor = sortAnchorBounds,
+                onSelect = { option ->
+                    onSortModeSelected(option.mode)
+                    sortPopupOpen = false
+                },
+                onDismiss = { sortPopupOpen = false },
+            )
         }
     }
 }
