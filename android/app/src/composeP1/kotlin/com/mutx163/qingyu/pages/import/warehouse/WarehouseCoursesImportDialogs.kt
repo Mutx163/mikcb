@@ -147,10 +147,10 @@ fun WarehouseSectionExpansionDialog(
  *
  * ## 高度（2026-11-07 用户实报「确定按钮在页面外面」）
  *
- * 内容 = 副标题两行 + 两个 160dp 滚轮 + 两行说明 + 平移提示 + 按钮行，天然超过
- * `maxHeightFraction = 0.75f` 的限高。旧写法只把**整个 Column 套了限高**：
- * `QingyuSheet` 的限高用 `heightIn(max)`，Column 装不下时**按子项声明顺序留主轴**，
- * 排在最后的按钮行直接被挤到面板可视区外（真机症状）。
+ * 内容 = 副标题两行 + 日期滚轮（160dp）+ 首周滚轮（160dp）+ 两行说明 + 平移提示 +
+ * 按钮行，天然超过 `maxHeightFraction = 0.75f` 的限高。旧写法没传 `contentScrolls`，
+ * `QingyuSheet` 会把**整列**（含按钮）套进一个 `verticalScroll`：按钮排在滚动内容
+ * 末尾，首屏看不到，要滚到底才出现——真机观感就是「确定键在页面外」。
  *
  * 修法（两件事同时做，缺一会复发）：
  * 1. `contentScrolls = true`：内容自己管滚动，限高时可视区内的部分可滚到；
@@ -161,7 +161,10 @@ fun WarehouseSectionExpansionDialog(
  *    确定按钮永远在面板内可见。底部让位（手势区）垫在固定件之后（见
  *    `QingyuSheet` KDoc「滚动区下面还有固定件」一段）。
  *
- * 滚轮行文按发布版语义对齐（初值钳制 1~20、无课选第 2 周的提示、平移提示实时反映）。
+ * 滚轮行文按发布版语义对齐（首周从 1 起、范围 1..20；无课选第 2 周的提示；
+ * 平移提示在抬手后反映当前选择）。开学日初值先夹进 `2020..2035`：
+ * `NumberPicker` 只夹显示值，不夹状态，存档里的越界日期不在这里夹就会「看到 2020、
+ * 写回 2019」。
  */
 @Composable
 fun WarehouseSemesterMappingSheet(
@@ -170,14 +173,20 @@ fun WarehouseSemesterMappingSheet(
     onConfirm: (LocalDate, Int) -> Unit,
     onDismiss: () -> Unit,
 ) {
-    var year by remember(show, initialStartDate) { mutableIntStateOf(initialStartDate.year) }
+    var year by remember(show, initialStartDate) {
+        mutableIntStateOf(initialStartDate.year.coerceIn(IMPORT_START_DATE_YEAR_RANGE))
+    }
     var month by remember(show, initialStartDate) { mutableIntStateOf(initialStartDate.monthValue) }
     var day by remember(show, initialStartDate) { mutableIntStateOf(initialStartDate.dayOfMonth) }
     var firstWeek by remember(show, initialStartDate) { mutableIntStateOf(1) }
 
-    val maxDay = YearMonth.of(year, month).lengthOfMonth()
+    // 存档里的开学日可能落在 2020..2035 之外（旧版本手改 / 还原备份 / 设备时钟停住）。
+    // `NumberPicker` 只夹**显示值**，不夹 `year` 状态；不在这里夹，用户看到 2020、
+    // 确认后却写回 2019。与 `SemesterSettingsLogic.clampPickerDate` 同口径。
+    val safeYear = year.coerceIn(IMPORT_START_DATE_YEAR_RANGE)
+    val maxDay = YearMonth.of(safeYear, month).lengthOfMonth()
     val safeDay = day.coerceAtMost(maxDay)
-    val selectedDate = LocalDate.of(year, month, safeDay)
+    val selectedDate = LocalDate.of(safeYear, month, safeDay)
     val shiftedWeeks = firstWeek - 1
 
     QingyuSheet(
@@ -213,7 +222,7 @@ fun WarehouseSemesterMappingSheet(
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     NumberPicker(
-                        value = year,
+                        value = safeYear,
                         onValueChange = { year = it },
                         range = IMPORT_START_DATE_YEAR_RANGE,
                         label = { it.toString() },
@@ -249,7 +258,9 @@ fun WarehouseSemesterMappingSheet(
                     style = MiuixTheme.textStyles.footnote1.shiftWeight(QingyuWeightDelta.MEDIUM),
                 )
                 Row(
-                    modifier = Modifier.fillMaxWidth(),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(160.dp),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     NumberPicker(

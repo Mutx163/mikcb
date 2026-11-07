@@ -341,6 +341,23 @@ class WarehouseWebLoginHostWiringGuardTest {
         )
     }
 
+    /**
+     * 保存后只在「人还停在触发卡片的那一页」时回填。
+     *
+     * 卡片会活到跳转之后（这正是本次修复的前提）；若保存动作照旧无条件注入填充脚本，
+     * 同 host 的登录后落地页会通过站点门禁，`__qingyuAutofillLogin` 会把学号写进
+     * 页面第一个文本框（搜索框 / 个人中心表单）。所以必须同时校验：
+     * 1. 当前页还有密码框；2. 文档仍是触发卡片的那一页。
+     */
+    @Test
+    fun `保存后只在仍停在登录页时才回填`() {
+        val save = blockAfter(hostSource, "fun saveRememberedLogin(")
+        assertTrue("取不到 saveRememberedLogin（守卫自身失效，先修守卫）", save.isNotEmpty())
+        assertTrue("回填前必须确认当前页仍有密码框", save.contains("session.hasPasswordField"))
+        assertTrue("回填前必须确认文档仍是触发卡片的那一页", save.contains("warehouseDocumentKey("))
+        assertTrue("触发卡片的文档键必须来自 handleLoginAttempt", save.contains("savePromptDocumentKey"))
+    }
+
     private fun readHostSource(): String =
         readSource("android/app/src/composeP1/kotlin/com/mutx163/qingyu/pages/import/warehouse/WarehouseWebLoginHost.kt")
 

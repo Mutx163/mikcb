@@ -229,6 +229,14 @@ fun WarehouseWebLoginHost(
     // 与 session.rememberedAccount 分开存是因为「门禁挡住自动填充」时仍要知道
     // 「这个适配器已经记过账号」——那决定保存提示问不问。
     var storedLogin by remember { mutableStateOf<WarehouseRememberedLogin?>(null) }
+    /**
+     * 触发「记住密码」卡片时所在的文档（`warehouseDocumentKey`）。
+     *
+     * 卡片会活到跳转之后；保存时只有当前文档仍是这张才算「人还在登录页」，
+     * 才允许把凭据回填进页面。否则（登录后落地页，哪怕同 host）只落盘、不注入，
+     * 避免把学号写进搜索框 / 个人中心表单。
+     */
+    var savePromptDocumentKey by remember(adapter.id) { mutableStateOf<String?>(null) }
     // 受信 host（适配器登记地址 + 自定义覆盖地址）：凭据**没绑 host**（老数据）时只认这几个站。
     val trustedLoginHosts = remember(adapter.importUrl, customUrl) {
         warehouseTrustedLoginHosts(adapter.importUrl, customUrl)
@@ -844,6 +852,7 @@ fun WarehouseWebLoginHost(
     /** `loginAttempt`：用户真的点了登录 / 提交表单——从现在起才问「要不要记住密码」。 */
     fun handleLoginAttempt() {
         if (session.hasLoginAttempt) return
+        savePromptDocumentKey = warehouseDocumentKey(controller.liveUrl() ?: session.currentUrl)
         session = session.copy(hasLoginAttempt = true)
     }
 
@@ -870,10 +879,18 @@ fun WarehouseWebLoginHost(
         session = session.copy(hasPromptedAutofill = true)
     }
 
-    /** 「记住并自动填充」：候选凭据**绑当前站 host**后加密落盘，再填进页面。 */
+    /**
+     * 「记住并自动填充」：候选凭据绑**采集时**的站点 host 后加密落盘。
+     *
+     * 回填自带来源校验：卡片会活到跳转之后，只有当前文档仍是触发卡片的那一页
+     * （[savePromptDocumentKey]）且这页确实还有密码框时才注入，避免在登录后的
+     * 落地页把学号写进搜索框 / 个人中心表单（发布版弹模态框时人还在登录页，
+     * 所以它没有这个后置问题）。
+     */
     fun saveRememberedLogin() {
         val candidate = session.candidateAccount
         val liveUrl = controller.liveUrl() ?: session.currentUrl
+        val promptKey = savePromptDocumentKey
         if (candidate.username.isEmpty() || candidate.password.isEmpty()) {
             session = session.copy(hasPromptedSave = true)
             return
@@ -884,12 +901,24 @@ fun WarehouseWebLoginHost(
         } else {
             candidate.copy(host = warehouseUrlHost(liveUrl))
         }
-        session = session.copy(hasPromptedSave = true)
+        session = session.copy(
+            hasPromptedSave = true,
+            // 作答即结束这次「登录尝试」：把口令从会话状态里抹掉，并记下「自动填充问过」，
+            // 免得卡片刚消失又弹一张「要不要帮你填」。
+            hasLoginAttempt = false,
+            hasPromptedAutofill = true,
+            candidateAccount = candidate.copy(password = ""),
+        )
         scope.launch {
             withContext(Dispatchers.IO) { rememberedStore.saveRememberedLogin(adapter.id, bound) }
             storedLogin = bound
             session = session.copy(rememberedAccount = bound)
-            if (autofillAllowedOn(liveUrl, bound)) {
+            val nowUrl = controller.liveUrl() ?: session.currentUrl
+            if (session.hasPasswordField &&
+                promptKey != null &&
+                promptKey == warehouseDocumentKey(nowUrl) &&
+                autofillAllowedOn(nowUrl, bound)
+            ) {
                 controller.injectJavaScript(warehouseAutofillLoginScript(bound))
             }
             Toast.makeText(
@@ -902,7 +931,13 @@ fun WarehouseWebLoginHost(
 
     /** 「不记住」：这次不问而已；盘上已有的凭据保持原样（清除是另一条明确动作）。 */
     fun dismissSavePrompt() {
-        session = session.copy(hasPromptedSave = true)
+        session = session.copy(
+            hasPromptedSave = true,
+            // 作答即结束这次尝试：口令不再留在会话状态里，也不再追问自动填充。
+            hasLoginAttempt = false,
+            hasPromptedAutofill = true,
+            candidateAccount = session.candidateAccount.copy(password = ""),
+        )
     }
 
     /** 一次待确认的脚本课程包：解析结果 + 上屏要用的计数（F32 前缺的两步确认挂这里）。 */

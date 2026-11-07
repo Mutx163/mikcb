@@ -399,11 +399,12 @@ class WarehouseBridgeDialogTest {
     /**
      * 学期弹窗按钮不许被挤到面板外（2026-11-07 用户实报「确定按钮在页面外面」）。
      *
-     * 旧写法把按钮行也放进整个限高 Column 的子项末尾：内容超过
-     * `maxHeightFraction` 限高时，排在主轴最后的按钮被挤到可视区外。
+     * 旧写法没传 `contentScrolls`，`QingyuSheet` 会把整列（含按钮）套进一个
+     * `verticalScroll`：按钮排在滚动内容末尾，首屏看不到，要滚到底才出现。
      * 修法：`contentScrolls = true` + 按钮行**在滚动区之外**固定（滚动区 +
-     * 固定动作行，底部让位垫在固定件之后）。守卫钉三点：弹层声明滚动自理、
-     * 动作行不再被包进带 `verticalScroll` 的那层、底部让位 `bottomInset`
+     * 固定动作行，底部让位垫在固定件之后）。守卫钉四点：弹层声明滚动自理、
+     * 滚动区用 `weight(1f, fill = false)` 收缩（去掉它固定区会被压成 0 高）、
+     * 动作行不在带 `verticalScroll` 的那层里、底部让位 `bottomInset`
      * 垫在按钮之后（「滚动区下面还有固定件」的落点要求）。
      */
     @Test
@@ -416,6 +417,11 @@ class WarehouseBridgeDialogTest {
         )
         val scrollBlock = blockAfter(sheetBody, "verticalScroll(")
         assertTrue("取不到滚动区块（守卫自身失效）", scrollBlock.isNotEmpty())
+        assertTrue(
+            "滚动区必须用 weight(1f, fill = false) 参与父列的高度分配：去掉它，" +
+                "滚动区会吃掉全部限高，固定按钮行被压成 0 高（布局回到坏的状态）",
+            sheetBody.contains("weight(1f, fill = false)"),
+        )
         assertFalse(
             "确定/取消按钮不许在滚动区内：超高时被挤到面板可视区外（用户实报）",
             scrollBlock.contains("spreadsheetImportWarningsContinue"),

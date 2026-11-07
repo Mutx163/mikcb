@@ -146,6 +146,12 @@ fun shouldPromptRememberedLoginSave(
  * 未作答」的候选钉住；作答后（`hasPromptedSave = true`）恢复跟随页面输入，
  * 下一次登录仍能采集新值。
  *
+ * 另一条：**同一份账号口令已经在登录页绑过 host 时，不再改绑**。
+ * `handleLoginState` 取的是消息处理时的地址，若 `onPageStarted` 先到，拿到的已经
+ * 是落地页 host；统一认证 `cas.x` → `jw.x` 时会把口令绑到错误站点，下一次在真登录页
+ * 的自动填充会被门禁永久拒掉（用户看到的是「记住了但没用」）。口令没变 ⇒ 沿用第一次
+ * 观察到的 host；用户重输了新口令才允许重新绑定。
+ *
  * @param previous 当前内存里的候选（可能还留着提交时采集的账号口令）。
  * @param incoming 新页面刚回传的候选。
  */
@@ -159,7 +165,12 @@ fun warehouseLoginCandidateAfterState(
         !hasPromptedSave &&
         previous.password.isNotEmpty() &&
         incoming.password.isEmpty()
-    return if (keepSubmitted) previous else incoming
+    if (keepSubmitted) return previous
+    val sameCredential = incoming.username == previous.username &&
+        incoming.password == previous.password &&
+        incoming.password.isNotEmpty() &&
+        previous.host.isNotEmpty()
+    return if (sameCredential) incoming.copy(host = previous.host) else incoming
 }
 
 /**

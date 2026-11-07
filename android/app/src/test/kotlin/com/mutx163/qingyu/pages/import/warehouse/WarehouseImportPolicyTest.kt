@@ -220,6 +220,49 @@ class WarehouseImportPolicyTest {
     }
 
     @Test
+    fun `warehouseLoginCandidateAfterState 同一份口令不改绑 host`() {
+        val bound = WarehouseRememberedLogin(
+            username = "202401",
+            password = "secret_password",
+            host = "cas.school.edu.cn",
+        )
+        // 换页后新文档回传同一份账号口令、host 是落地页：沿用第一次绑定的登录页 host
+        assertEquals(
+            "同一份口令不许因为换页改绑 host（统一认证 cas -> jw 会把密码绑错站）",
+            bound,
+            warehouseLoginCandidateAfterState(
+                previous = bound,
+                incoming = WarehouseRememberedLogin(
+                    username = "202401",
+                    password = "secret_password",
+                    host = "jw.school.edu.cn",
+                ),
+                hasLoginAttempt = true,
+                hasPromptedSave = false,
+            ),
+        )
+        // 用户重输了新口令：允许重新绑定到当前页
+        assertEquals(
+            "新口令应重新绑定当前页 host",
+            WarehouseRememberedLogin(
+                username = "202401",
+                password = "new_password",
+                host = "jw.school.edu.cn",
+            ),
+            warehouseLoginCandidateAfterState(
+                previous = bound,
+                incoming = WarehouseRememberedLogin(
+                    username = "202401",
+                    password = "new_password",
+                    host = "jw.school.edu.cn",
+                ),
+                hasLoginAttempt = true,
+                hasPromptedSave = false,
+            ),
+        )
+    }
+
+    @Test
     fun `shouldAutoRecordWarehouseImport 宏录制自动开启策略`() {
         // 强制录制 -> 恒开启
         assertTrue(shouldAutoRecordWarehouseImport(forceRecord = true, hasExistingMacro = true))
