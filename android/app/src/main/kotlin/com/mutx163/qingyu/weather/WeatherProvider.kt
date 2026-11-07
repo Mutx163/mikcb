@@ -161,8 +161,13 @@ class WeatherProvider(
         ensureFresh()
     }
 
-    /** 搜索城市（直接转发给 service，界面不必自建第二个 HTTP 客户端）。 */
-    fun searchLocations(query: String): List<WeatherLocation> = service.searchLocations(query)
+    /**
+     * 搜索城市（直接转发给 service，界面不必自建第二个 HTTP 客户端）。
+     *
+     * `null` = 请求失败（界面据此显示「搜索失败」+ 重试）；空表 = 搜到了但没有匹配，
+     * 两条语义不能合并，见 [WeatherGateway.searchLocations]。
+     */
+    fun searchLocations(query: String): List<WeatherLocation>? = service.searchLocations(query)
 
     /**
      * 一键定位：取当前位置 → 反查地名 → 作为天气城市。

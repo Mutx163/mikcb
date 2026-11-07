@@ -67,10 +67,13 @@ import com.mutx163.qingyu.pages.timetable.DaySelectionBridge
 import com.mutx163.qingyu.pages.timetable.LocalDaySelectionBridge
 import com.mutx163.qingyu.pages.timetable.TimetableChromeBandGlass
 import com.mutx163.qingyu.theme.QingyuTheme
+import com.mutx163.qingyu.weather.WeatherProvider
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import top.yukonga.miuix.kmp.basic.Scaffold
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.blur.Backdrop
@@ -346,7 +349,25 @@ fun DayViewPage(
      */
     summaryModifier: Modifier = Modifier,
     modifier: Modifier = Modifier,
+    /**
+     * 天气 provider（可选）：传了就在**日页挂载后**补一次「过期就刷」。
+     *
+     * Dart 对位：`day_course_weather_row.dart:72-80` 每张天气行 `addPostFrameCallback`
+     * 里调 `provider.ensureFresh()`。一屏多卡各调一次也只有第一次可能真发请求——
+     * provider 内部有单飞 + 3h TTL + 15min 失败退避，所以这里**只在页面级调一次**，
+     * 等价且更省。
+     *
+     * 不传（预览 / 分享图 / 未接天气的入口）就完全不做事，行为与旧版一致。
+     */
+    weatherProvider: WeatherProvider? = null,
 ) {
+    // 挂载后（首帧之后）补一次刷新：放 `LaunchedEffect` 而不是组合期，避免在绘制路径上
+    // 发网络；线程走 IO，因为 `ensureFresh` 会读缓存盘并可能同步等一次 HTTP。
+    LaunchedEffect(weatherProvider) {
+        if (weatherProvider != null) {
+            withContext(Dispatchers.IO) { weatherProvider.ensureFresh() }
+        }
+    }
     val dark = isSystemInDarkTheme()
     val pageCount = (totalWeeks * visibleDays.size).coerceAtLeast(1)
 

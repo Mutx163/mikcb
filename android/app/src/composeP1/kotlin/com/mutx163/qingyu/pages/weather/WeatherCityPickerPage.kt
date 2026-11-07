@@ -34,6 +34,7 @@ import top.yukonga.miuix.kmp.basic.CircularProgressIndicator
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.IconButton
 import top.yukonga.miuix.kmp.basic.Text
+import top.yukonga.miuix.kmp.basic.TextButton
 import top.yukonga.miuix.kmp.basic.TextField
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.Location
@@ -58,6 +59,13 @@ data class WeatherCityPickerUiState(
     val searching: Boolean = false,
     /** 已经搜过一次（用于区分「还没搜」与「搜了没结果」）。 */
     val settled: Boolean = false,
+    /**
+     * 这次搜索**请求失败**（断网 / 超时 / 接口返回非 JSON）。
+     *
+     * 与「搜到了但没有匹配」必须分开：前者要一句「搜索失败」+ 重试，后者才是
+     * 「没有找到匹配的城市」。原先两者都走空结果，断网时等于告诉用户这个城市不存在。
+     */
+    val searchFailed: Boolean = false,
     val locating: Boolean = false,
     /** 当前已选城市（尾随「当前位置」行显示其地名）。 */
     val currentCity: WeatherLocation? = null,
@@ -72,6 +80,8 @@ fun WeatherCityPickerPage(
     onQueryChange: (String) -> Unit,
     onSelect: (WeatherLocation) -> Unit,
     onRelocate: () -> Unit,
+    /** 搜索失败时的「重试」：按当前关键字再搜一次。 */
+    onRetrySearch: () -> Unit = {},
 ) {
     val colors = MiuixTheme.colorScheme
 
@@ -198,6 +208,31 @@ fun WeatherCityPickerPage(
                         contentAlignment = Alignment.Center,
                     ) {
                         CircularProgressIndicator(modifier = Modifier.size(22.dp))
+                    }
+                }
+
+                state.searchFailed -> item(key = "search-failed") {
+                    QingyuCard(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = QingyuPageCardMargin, vertical = 4.dp),
+                        insideMargin = PaddingValues(horizontal = 14.dp, vertical = 10.dp),
+                    ) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            Text(
+                                text = WeatherStrings.weatherCitySearchFailed.zh,
+                                modifier = Modifier.weight(1f),
+                                style = MiuixTheme.textStyles.body2,
+                                color = colors.error,
+                            )
+                            TextButton(
+                                text = WeatherStrings.weatherRetryAction.zh,
+                                onClick = onRetrySearch,
+                            )
+                        }
                     }
                 }
 

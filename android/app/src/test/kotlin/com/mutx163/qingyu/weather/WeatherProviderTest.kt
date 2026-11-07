@@ -20,12 +20,12 @@ class WeatherProviderTest {
     private class FakeGateway : WeatherGateway {
         var forecast: WeatherForecast? = null
         var fetchCount = 0
-        var searchResult: List<WeatherLocation> = emptyList()
+        var searchResult: List<WeatherLocation>? = emptyList()
         override fun fetchForecast(location: WeatherLocation): WeatherForecast? {
             fetchCount++
             return forecast
         }
-        override fun searchLocations(query: String): List<WeatherLocation> = searchResult
+        override fun searchLocations(query: String): List<WeatherLocation>? = searchResult
         override fun reverseGeocode(latitude: Double, longitude: Double): WeatherLocation? = null
         override fun networkGeocode(): WeatherLocation? = null
     }
@@ -209,7 +209,20 @@ class WeatherProviderTest {
     fun search_delegates_to_gateway() {
         val gateway = FakeGateway().apply { searchResult = listOf(hangzhou) }
         val provider = provider(gateway, clock = { LocalDateTime.of(2026, 10, 28, 8, 0) })
-        assertEquals(1, provider.searchLocations("杭州").size)
+        assertEquals(1, provider.searchLocations("杭州")!!.size)
+    }
+
+    @Test
+    fun search_keeps_failure_and_empty_apart() {
+        val gateway = FakeGateway().apply { searchResult = null }
+        val provider = provider(gateway, clock = { LocalDateTime.of(2026, 10, 28, 8, 0) })
+        // 网关的「请求失败」必须原样透传成 null，不能被折成空表——否则界面分不出
+        // 「没网」和「没这个城市」。
+        assertNull(provider.searchLocations("杭州"))
+
+        gateway.searchResult = emptyList()
+        assertNotNull(provider.searchLocations("杭州"))
+        assertTrue(provider.searchLocations("杭州")!!.isEmpty())
     }
 
     @Test

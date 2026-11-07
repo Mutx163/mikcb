@@ -53,6 +53,10 @@ fun WeatherCityPickerHost(
     var results by remember { mutableStateOf<List<WeatherLocation>>(emptyList()) }
     var searching by remember { mutableStateOf(false) }
     var settled by remember { mutableStateOf(false) }
+    /** 上次搜索是「请求失败」而不是「搜到了但没有」（两者在旧版里都落成空结果）。 */
+    var searchFailed by remember { mutableStateOf(false) }
+    /** 「重试」的计数器：变了就让下面的搜索 effect 重跑一次。 */
+    var retryTick by remember { mutableStateOf(0) }
     var version by remember { mutableStateOf(0) }
 
     DisposableEffect(provider) {
@@ -63,20 +67,25 @@ fun WeatherCityPickerHost(
     @Suppress("UNUSED_EXPRESSION")
     version
 
-    // 防抖搜索：query 变化 → 400ms 后再发；<2 字直接清空。
-    LaunchedEffect(query) {
+    // 防抖搜索：query 变化（或点「重试」）→ 400ms 后再发；<2 字直接清空。
+    // 重试也走这 400ms：`searching` 在 delay **之前**置真，用户点下去立刻见到转圈。
+    LaunchedEffect(query, retryTick) {
         val trimmed = query.trim()
         if (trimmed.length < 2) {
             results = emptyList()
+            searchFailed = false
             searching = false
             settled = false
             return@LaunchedEffect
         }
         searching = true
         settled = false
+        searchFailed = false
         delay(400)
+        // null = 请求失败；空表 = 搜到了但没有匹配。两者不能合并（见 WeatherGateway）。
         val found = withContext(Dispatchers.IO) { provider.searchLocations(trimmed) }
-        results = found
+        results = found.orEmpty()
+        searchFailed = found == null
         settled = true
         searching = false
     }
@@ -153,6 +162,7 @@ fun WeatherCityPickerHost(
         results = results,
         searching = searching,
         settled = settled,
+        searchFailed = searchFailed,
         locating = provider.isLocating,
         currentCity = provider.location,
         error = provider.lastLocateFailure?.let { locationFailureText(it) },
@@ -169,6 +179,7 @@ fun WeatherCityPickerHost(
             }
         },
         onRelocate = { ensurePermissionThenLocate() },
+        onRetrySearch = { retryTick += 1 },
     )
 }
 

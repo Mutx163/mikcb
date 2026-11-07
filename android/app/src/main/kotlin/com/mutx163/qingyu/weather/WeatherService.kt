@@ -17,13 +17,27 @@ import java.time.LocalDateTime
  *
  * **纯 Kotlin（只用 JDK 的 [HttpURLConnection]，零新依赖）**：这样 `weather/` 能进
  * `scripts/test-kotlin-module.ps1` 的 JVM 单测 classpath（那里只有 kotlin-stdlib + junit）。
- * 失败一律返回 null / 空列表，绝不向上抛（天气是装饰性信息）。
+ * 失败一律返回 null，绝不向上抛（天气是装饰性信息）；唯一例外是城市搜索，它用
+ * `null` 表示「请求失败」、空表表示「搜到了但没有结果」，见 [WeatherGateway.searchLocations]。
  */
 
 /** 天气取数的四个动作（[WeatherService] 的实现契约，供单测注入假件）。 */
 interface WeatherGateway {
     fun fetchForecast(location: WeatherLocation): WeatherForecast?
-    fun searchLocations(query: String): List<WeatherLocation>
+
+    /**
+     * 按名字搜城市。
+     *
+     * **两件事必须分开**（2026-11-05 审核 G1）：
+     * - `null` = 请求失败（断网 / 超时 / HTTP 非 200 / body 不是 JSON）——用户该看到
+     *   「搜索失败，请稍后重试」+ 重试；
+     * - 空列表 = 请求成功、但确实没有匹配的城市——用户该看到「没有找到匹配的城市」。
+     *
+     * 用空列表同时表示两种语义，等于断网时告诉用户「这个城市不存在」（事实相反，
+     * 且没有任何重试出口）。Dart 原版就是这么合并的，这一处是刻意不照抄。
+     */
+    fun searchLocations(query: String): List<WeatherLocation>?
+
     fun reverseGeocode(latitude: Double, longitude: Double): WeatherLocation?
     fun networkGeocode(): WeatherLocation?
 }
@@ -87,8 +101,13 @@ class WeatherService(
         const val FORECAST_DAYS = 16
     }
 
-    /** 按关键字搜索地点；名字不足 2 字符直接短路（接口只返回空）。 */
-    override fun searchLocations(query: String): List<WeatherLocation> {
+    /**
+     * 按关键字搜索地点；名字不足 2 字符直接短路（接口只返回空）。
+     *
+     * 返回 `null` 只在「请求失败」时（见 [WeatherGateway.searchLocations]）；解析出合法
+     * JSON 但没有 `results` 字段算**真空结果**，返回空表——那不是故障，不该让用户点重试。
+     */
+    override fun searchLocations(query: String): List<WeatherLocation>? {
         val trimmed = query.trim()
         if (trimmed.length < 2) return emptyList()
 
@@ -102,9 +121,9 @@ class WeatherService(
                     "format" to "json",
                 ),
             ),
-        ) ?: return emptyList()
+        ) ?: return null
 
-        val json = parseObject(body) ?: return emptyList()
+        val json = parseObject(body) ?: return null
         val results = json["results"]
         if (results !is List<*>) return emptyList()
 

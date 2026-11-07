@@ -43,7 +43,7 @@ class WeatherServiceTest {
             ]}
         """.trimIndent()
         val (svc, _) = service("geocoding-api" to json)
-        val results = svc.searchLocations("杭州")
+        val results = svc.searchLocations("杭州")!!
 
         assertEquals(2, results.size)
         assertEquals("杭州", results[0].name)
@@ -57,20 +57,30 @@ class WeatherServiceTest {
     @Test
     fun search_short_query_short_circuits_without_http() {
         val (svc, http) = service()
-        assertTrue(svc.searchLocations("杭").isEmpty())
+        // 少于 2 字不算失败：没发请求，就是「没有结果」。
+        assertTrue(svc.searchLocations("杭")!!.isEmpty())
         assertTrue(http.calls.isEmpty())
     }
 
     @Test
-    fun search_null_response_returns_empty() {
+    fun search_http_failure_returns_null_not_empty() {
         val (svc, _) = service() // 没有任何路由 → http 返回 null
-        assertTrue(svc.searchLocations("杭州").isEmpty())
+        // null = 请求失败（界面显示「搜索失败」+ 重试）；空表 = 搜到了但没有。
+        // 两者共用空表就是本条要挡的回归：断网会被说成「这个城市不存在」。
+        assertNull(svc.searchLocations("杭州"))
+    }
+
+    @Test
+    fun search_unparsable_body_returns_null_not_empty() {
+        val (svc, _) = service("geocoding-api" to "<html>502 Bad Gateway</html>")
+        assertNull(svc.searchLocations("杭州"))
     }
 
     @Test
     fun search_missing_results_returns_empty() {
+        // 合法 JSON 但没有 results：接口说「搜到了、没匹配」，这是真空结果不是故障。
         val (svc, _) = service("geocoding-api" to """{"generationtime_ms":0.1}""")
-        assertTrue(svc.searchLocations("杭州").isEmpty())
+        assertTrue(svc.searchLocations("杭州")!!.isEmpty())
     }
 
     // ---------- 反查 / IP 估算 ----------

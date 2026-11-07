@@ -265,6 +265,13 @@ class PagesShellActivity : ComponentActivity() {
                     //（对位上面日程提醒的安装；开机 / 换时区补排走 ExamReminderReceiver，无需在此装）。
                     ExamReminderCoordinator.install(applicationContext, wiring.timetable)
                     ScheduleDateRuleAutoApplyHost.applyDue(wiring.timetable, schedulePrefs)
+                    // 天气：Dart 是 `ChangeNotifierProvider(create: (_) => WeatherProvider()..initialize())`
+                    //（`lib/main.dart:492`）——**启动即读配置 + 补一次过期就刷**。
+                    // 此前 Compose 侧唯一调用点是「设置 → 天气」页，于是冷启动到首页时
+                    // `enabled` 还是默认 false，日卡/周卡天气行整块不渲染，用户得偶然进一次
+                    // 设置页才看得到天气。initialize() 幂等（内部 `initialized` 门控），
+                    // 放 IO 里是因为它会读盘并可能发一次网。
+                    wiring.weather.initialize()
                 }
             }
             // A1（2026-11-03）：初值不再自己解析一遍 JSON —— 取 ShellWiring 构造时
