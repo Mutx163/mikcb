@@ -1520,6 +1520,9 @@ class AppLocalizationsZh extends AppLocalizations {
   String get startSectionLabel => '开始节次';
 
   @override
+  String get targetWeekLabel => '目标周';
+
+  @override
   String get endSectionLabel => '结束节次';
 
   @override
@@ -2055,6 +2058,21 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get generateAction => '生成';
+
+  @override
+  String get liveActivitySettingsTitle => '实时活动设置';
+
+  @override
+  String get liveActivityEnableSubtitle => '在锁屏和状态栏胶囊中实时展示课程信息与倒计时';
+
+  @override
+  String get liveIslandStyleTitle => '实时活动样式';
+
+  @override
+  String get liveReminderDismissAfterClass => '下课后驻留时间';
+
+  @override
+  String get liveSaveSuccess => '设置已保存';
 
   @override
   String get liveSettingsTitle => '超级岛与通知';
@@ -11614,6 +11632,9 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get startSectionLabel => '開始節次';
 
   @override
+  String get targetWeekLabel => '目標週';
+
+  @override
   String get endSectionLabel => '結束節次';
 
   @override
@@ -12149,6 +12170,21 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
 
   @override
   String get generateAction => '生成';
+
+  @override
+  String get liveActivitySettingsTitle => '即時活動設定';
+
+  @override
+  String get liveActivityEnableSubtitle => '在鎖屏和狀態欄膠囊中即時顯示課程資訊與倒數';
+
+  @override
+  String get liveIslandStyleTitle => '即時活動樣式';
+
+  @override
+  String get liveReminderDismissAfterClass => '下課後停留時間';
+
+  @override
+  String get liveSaveSuccess => '設定已儲存';
 
   @override
   String get liveSettingsTitle => '超級島與通知';
@@ -21748,6 +21784,9 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get startSectionLabel => '開始節次';
 
   @override
+  String get targetWeekLabel => '目標週';
+
+  @override
   String get endSectionLabel => '結束節次';
 
   @override
@@ -22283,6 +22322,21 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get generateAction => '生成';
+
+  @override
+  String get liveActivitySettingsTitle => '即時活動設定';
+
+  @override
+  String get liveActivityEnableSubtitle => '在鎖定畫面與狀態列膠囊中即時顯示課程資訊與倒數';
+
+  @override
+  String get liveIslandStyleTitle => '即時活動樣式';
+
+  @override
+  String get liveReminderDismissAfterClass => '下課後停留時間';
+
+  @override
+  String get liveSaveSuccess => '設定已儲存';
 
   @override
   String get liveSettingsTitle => '超級島與通知';

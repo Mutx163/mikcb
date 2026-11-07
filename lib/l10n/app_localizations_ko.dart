@@ -1553,6 +1553,9 @@ class AppLocalizationsKo extends AppLocalizations {
   String get startSectionLabel => '시작 교시';
 
   @override
+  String get targetWeekLabel => '대상 주';
+
+  @override
   String get endSectionLabel => '종료 교시';
 
   @override
@@ -2100,6 +2103,21 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get generateAction => '생성';
+
+  @override
+  String get liveActivitySettingsTitle => '라이브 액티비티 설정';
+
+  @override
+  String get liveActivityEnableSubtitle => '잠금 화면과 상태 표시줄 캡슐에 수업 정보와 카운트다운을 표시';
+
+  @override
+  String get liveIslandStyleTitle => '라이브 액티비티 스타일';
+
+  @override
+  String get liveReminderDismissAfterClass => '수업 종료 후 표시 시간';
+
+  @override
+  String get liveSaveSuccess => '설정이 저장되었습니다';
 
   @override
   String get liveSettingsTitle => '슈퍼아일랜드 및 알림';

@@ -1599,6 +1599,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get startSectionLabel => 'Start Section';
 
   @override
+  String get targetWeekLabel => 'Target week';
+
+  @override
   String get endSectionLabel => 'End Section';
 
   @override
@@ -2162,6 +2165,22 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get generateAction => 'Generate';
+
+  @override
+  String get liveActivitySettingsTitle => 'Live activity settings';
+
+  @override
+  String get liveActivityEnableSubtitle =>
+      'Show course info and countdown on the lock screen and status bar capsule';
+
+  @override
+  String get liveIslandStyleTitle => 'Live activity style';
+
+  @override
+  String get liveReminderDismissAfterClass => 'Keep showing after class';
+
+  @override
+  String get liveSaveSuccess => 'Settings saved';
 
   @override
   String get liveSettingsTitle => 'Island & Notifications';

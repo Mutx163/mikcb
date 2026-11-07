@@ -2894,6 +2894,12 @@ abstract class AppLocalizations {
   /// **'开始节次'**
   String get startSectionLabel;
 
+  /// No description provided for @targetWeekLabel.
+  ///
+  /// In zh, this message translates to:
+  /// **'目标周'**
+  String get targetWeekLabel;
+
   /// No description provided for @endSectionLabel.
   ///
   /// In zh, this message translates to:
@@ -3870,6 +3876,36 @@ abstract class AppLocalizations {
   /// In zh, this message translates to:
   /// **'生成'**
   String get generateAction;
+
+  /// No description provided for @liveActivitySettingsTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'实时活动设置'**
+  String get liveActivitySettingsTitle;
+
+  /// No description provided for @liveActivityEnableSubtitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'在锁屏和状态栏胶囊中实时展示课程信息与倒计时'**
+  String get liveActivityEnableSubtitle;
+
+  /// No description provided for @liveIslandStyleTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'实时活动样式'**
+  String get liveIslandStyleTitle;
+
+  /// No description provided for @liveReminderDismissAfterClass.
+  ///
+  /// In zh, this message translates to:
+  /// **'下课后驻留时间'**
+  String get liveReminderDismissAfterClass;
+
+  /// No description provided for @liveSaveSuccess.
+  ///
+  /// In zh, this message translates to:
+  /// **'设置已保存'**
+  String get liveSaveSuccess;
 
   /// No description provided for @liveSettingsTitle.
   ///

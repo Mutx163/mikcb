@@ -1548,6 +1548,9 @@ class AppLocalizationsJa extends AppLocalizations {
   String get startSectionLabel => '開始時限';
 
   @override
+  String get targetWeekLabel => '対象週';
+
+  @override
   String get endSectionLabel => '終了時限';
 
   @override
@@ -2090,6 +2093,21 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get generateAction => '生成';
+
+  @override
+  String get liveActivitySettingsTitle => 'ライブアクティビティ設定';
+
+  @override
+  String get liveActivityEnableSubtitle => 'ロック画面とステータスバーのカプセルに授業情報とカウントダウンを表示';
+
+  @override
+  String get liveIslandStyleTitle => 'ライブアクティビティのスタイル';
+
+  @override
+  String get liveReminderDismissAfterClass => '授業終了後の表示時間';
+
+  @override
+  String get liveSaveSuccess => '設定を保存しました';
 
   @override
   String get liveSettingsTitle => 'スーパーアイランドと通知';
