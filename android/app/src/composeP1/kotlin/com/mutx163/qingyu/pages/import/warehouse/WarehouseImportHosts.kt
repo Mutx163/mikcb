@@ -149,6 +149,32 @@ fun WarehouseImportPickerHost(
     var macroRecords by remember { mutableStateOf<List<WarehouseMacroRecord>>(emptyList()) }
     var showMacroPicker by remember { mutableStateOf(false) }
 
+    // 选校页的搜索词也提到宿主：点学校是**本条目内换页**（下面那段），列表页会整体离开组合，
+    // 页面内的 remember 会清零 ⇒ 从学校页返回就丢了筛选条件。存在这里 ⇒ 返回后仍停在原来的
+    // 搜索结果上（发布版是 Navigator 压栈，列表页留在栈里，观感一致）。
+    var schoolSearchQuery by remember { mutableStateOf("") }
+
+    // 2026-11-07 用户实报「学校列表点学校没反应，只把它排到第一位」：本条目的 state 上已经有选中的
+    // 学校时，**在本条目内**换成适配器列表，不再指望 onOpenPage 推一层。
+    //
+    // 为什么只靠推栈不行（根因）：壳里两个 id（g2.warehouseImport / g2.schoolAdapters）共用同一个
+    // WarehouseImportBranch，而那一层的分流判据自 974a8a24d 起锁成了 `remember(state)`（首次组合
+    // 定型，之后 state 变化不再重判）。从「导入方式」页进教务导入时本条目 id 就是
+    // g2.schoolAdapters，点学校时 onOpenPage 推的也是 g2.schoolAdapters ⇒ 壳的 pushRoute 判定
+    // 「同一页已在栈里」直接返回（幂等，本来是为了挡住连点压出两层同样的页），既不压新页、壳那层
+    // 又不会因 state.school 变化重判 ⇒ 整下点击只剩「最近使用」重排生效，页面纹丝不动。
+    //
+    // 放在 LaunchedEffect 之前：已经进入适配器列表时不必再跑选校页的缓存/网络那一段。
+    if (state.school != null) {
+        WarehouseSchoolAdaptersHost(
+            state = state,
+            // 返回 = 回到选校列表：这是本条目内换页，栈深度没变，不能靠壳弹栈。
+            onBack = { state.school = null },
+            onOpenPage = onOpenPage,
+        )
+        return
+    }
+
     LaunchedEffect(reloadToken) {
         // ① 本地记录先出：最近使用 + 已存宏都在盘上（读 prefs，几十毫秒），
         //    不等网络也不等缓存 —— 弱网首帧就已有 ★ 分组与快捷导入入口。
@@ -251,14 +277,17 @@ fun WarehouseImportPickerHost(
         // P2 起有真值：存过宏才亮快捷导入入口，数量 = 已存宏数。
         hasQuickImportMacro = macroRecords.isNotEmpty(),
         quickImportMacroCount = macroRecords.size,
+        searchQuery = schoolSearchQuery,
+        onSearchQueryChange = { schoolSearchQuery = it },
         onRetry = { reloadToken += 1 },
         onSelectSchool = { school ->
+            // 2026-11-07：这一跳不再 onOpenPage 推栈，改成函数顶部那段「本条目内换成适配器列表」。
+            // 为什么推栈不行：从「导入方式」页进教务导入时本条目的 id 就是 g2.schoolAdapters，
+            // 推同一个 id 会被壳的 pushRoute 按「同一页已在栈里」幂等挡掉（既不压页也不 nav）；
+            // 而换个 id 去推（g2.warehouseImport）又会多压一层同样的列表页，返回时要点两次。
+            // 跨条目交接件也不必再发布：同一条目内换页，state 里就有学校，没有跨组合作用域的需求
+            // （登录页/详情页那两跳仍要 publish，各自的 push 是不同 id，见下面）。
             state.school = school
-            // 跨条目必须带过去：壳给**每个路由条目独立**的 WarehouseShellState，只写本条目的话
-            // 新条目读到的 school 是 null → 又渲染一遍选校页（用户得把同一所学校点两遍，
-            // 「最近使用」还记两次）。这一跳 2026-11-03 修前两跳时漏了。
-            WarehouseImportHandoff.publish(school)
-            onOpenPage(WarehouseRoutes.ADAPTERS)
             scope.launch {
                 withContext(Dispatchers.IO) { prefs.recordRecentSchool(school.id) }
                 recentSchoolIds = withContext(Dispatchers.IO) { prefs.recentSchoolIds() }

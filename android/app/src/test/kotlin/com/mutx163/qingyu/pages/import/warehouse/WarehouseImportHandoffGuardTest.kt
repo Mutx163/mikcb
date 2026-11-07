@@ -28,6 +28,10 @@ import org.junit.Test
  * 2. **不缺发布**：`WarehouseImportHosts` 里每个跳去登录页/详情页的 `onOpenPage` 之前都必须
  *    `publish`（漏一处就是一个新的「点了没反应 / 被打回列表」）；
  * 3. **不静默退回**：登录页与详情页拿不到目标时留在原页给实话，不得再 `onOpenPage(IMPORT_PICKER)`。
+ * 4. **点击必须真的换页**（2026-11-07 用户实报「点学校没反应，只把它排到第一位」）：选校页点学校
+ *    必须**在本条目内**换成适配器列表。壳里两个 id 共用 `WarehouseImportBranch`，而主路径的条目
+ *    id 就是 `g2.schoolAdapters`——推同一个 id 被 `pushRoute` 幂等挡掉，分流判据又锁在
+ *    `remember(state)`，于是只写 state + 推栈的写法是死点击。
  *
  * 读源码的判据**先剥注释**（[stripKotlinComments]）：KDoc 里为了解释根因写了那些字样，
  * 不剥注释会把文档当成违规（同 `OverlayDialog` 守卫踩过的坑）。
@@ -205,20 +209,68 @@ class WarehouseImportHandoffGuardTest {
     }
 
     @Test
-    fun `选校页点学校后必须先发布交接件再进适配器列表`() {
+    fun `选校页点学校后必须写 state 且不许再推同一个 id 的适配器列表`() {
         val host = stripKotlinComments(source("WarehouseImportHosts.kt").readText(Charsets.UTF_8))
         val body = functionBody(host, "fun WarehouseImportPickerHost(")
         val selectStart = body.indexOf("onSelectSchool = {")
         assertTrue("选校页里找不到 onSelectSchool 回调（判据本身失效了）", selectStart >= 0)
-        val jump = body.indexOf("onOpenPage(WarehouseRoutes.ADAPTERS)", selectStart)
-        assertTrue("onSelectSchool 里没有进适配器列表的跳转（判据本身失效了）", jump > selectStart)
+        val selectEnd = body.indexOf("onQuickImportClick", selectStart)
+        assertTrue("找不到 onSelectSchool 的结尾边界 onQuickImportClick（解析可能失效）", selectEnd > selectStart)
+        val window = body.substring(selectStart, selectEnd)
 
-        val window = body.substring(selectStart, jump)
         assertTrue(
-            "onSelectSchool 在 onOpenPage(ADAPTERS) 之前必须 publish 交接件：壳给每个路由条目" +
-                "独立的 WarehouseShellState，新条目读不到学校就会把选校页再画一遍（同一所学校要点两遍，" +
-                "「最近使用」还记两次）",
-            window.contains("WarehouseImportHandoff.publish(school)"),
+            "点学校必须把学校写进本条目的 state（函数顶部靠它在本条目内换成适配器列表）",
+            window.contains("state.school = school"),
+        )
+        assertFalse(
+            "不许再 onOpenPage(WarehouseRoutes.ADAPTERS)：从「导入方式」页进教务导入时本条目 id 就是" +
+                "g2.schoolAdapters，推同一个 id 被壳的 pushRoute 幂等挡掉 ⇒ 死点击" +
+                "（2026-11-07 用户实报「点学校没反应，只把它排到第一位」）；换 id 推又多压一层同样的" +
+                "列表页，返回要点两次。这一跳改为本条目内换页。",
+            window.contains("onOpenPage(WarehouseRoutes.ADAPTERS)"),
+        )
+    }
+
+    @Test
+    fun `选校页点学校后必须在本条目内换成适配器列表`() {
+        val host = stripKotlinComments(source("WarehouseImportHosts.kt").readText(Charsets.UTF_8))
+        val body = functionBody(host, "fun WarehouseImportPickerHost(")
+
+        assertTrue(
+            "选校页必须在 state.school 有值时**于本条目内**渲染适配器列表。为什么不能只靠推栈：" +
+                "从「导入方式」页进教务导入时本条目 id 就是 g2.schoolAdapters，点学校时 " +
+                "onOpenPage 推的还是同一个 id，壳的 pushRoute 幂等返回（不压新页），壳那层的分流" +
+                "判据又锁在 remember(state)（首次组合定型）⇒ 只靠推栈的点击是死点击：" +
+                "列表纹丝不动，只有「最近使用」重排生效（2026-11-07 用户实报）。",
+            body.contains("if (state.school != null)") &&
+                body.contains("WarehouseSchoolAdaptersHost("),
+        )
+        assertTrue(
+            "本条目内换页没压栈，适配器列表的返回必须自己把 state.school 清空（回到选校列表），" +
+                "不能靠壳弹栈——弹的是整个教务导入这一层。",
+            body.contains("onBack = { state.school = null }"),
+        )
+    }
+
+    @Test
+    fun `从学校页返回选校列表要保留搜索词`() {
+        val host = stripKotlinComments(source("WarehouseImportHosts.kt").readText(Charsets.UTF_8))
+        val body = functionBody(host, "fun WarehouseImportPickerHost(")
+        val page = stripKotlinComments(source("WarehouseCourseImportPage.kt").readText(Charsets.UTF_8))
+
+        assertTrue(
+            "搜索词必须由宿主保存：点学校是本条目内换页，列表页会整体离开组合，" +
+                "页面内 remember 会清零 ⇒ 从学校页返回就丢了筛选条件（发布版是压栈，列表页留在栈里）。",
+            body.contains("var schoolSearchQuery by remember"),
+        )
+        assertTrue(
+            "选校列表必须把宿主保存的搜索词传进去并回写，否则输入框变只读、返回仍清零。",
+            body.contains("searchQuery = schoolSearchQuery") &&
+                body.contains("onSearchQueryChange = { schoolSearchQuery = it }"),
+        )
+        assertFalse(
+            "搜索词不许退回页面内 remember：本条目内换页时它会清零，与发布版「返回仍停在原筛选结果」不一致。",
+            Regex("""var\s+searchQuery\s+by\s+remember""").containsMatchIn(page),
         )
     }
 

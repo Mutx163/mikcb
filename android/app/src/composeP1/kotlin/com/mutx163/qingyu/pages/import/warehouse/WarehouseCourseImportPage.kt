@@ -1,6 +1,10 @@
 package com.mutx163.qingyu.pages.import.warehouse
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -14,7 +18,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -37,13 +40,12 @@ import top.yukonga.miuix.kmp.basic.ButtonDefaults
 import top.yukonga.miuix.kmp.basic.CircularProgressIndicator
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.IconButton
+import top.yukonga.miuix.kmp.basic.InputField
 import top.yukonga.miuix.kmp.basic.Text
-import top.yukonga.miuix.kmp.basic.TextField
 import top.yukonga.miuix.kmp.icon.MiuixIcons
+import top.yukonga.miuix.kmp.icon.basic.SearchCleanup
 import top.yukonga.miuix.kmp.icon.extended.ChevronForward
-import top.yukonga.miuix.kmp.icon.extended.Close
 import top.yukonga.miuix.kmp.icon.extended.More
-import top.yukonga.miuix.kmp.icon.extended.Search
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 /**
@@ -61,6 +63,16 @@ fun WarehouseCourseImportPage(
     adapterMatches: Map<String, List<String>> = emptyMap(),
     hasQuickImportMacro: Boolean = false,
     quickImportMacroCount: Int = 0,
+    /**
+     * 当前搜索词（受控状态，由宿主保存）。
+     *
+     * 为什么不让页面自己 `remember`：点学校是**本条目内换页**（见 `WarehouseImportHosts`），
+     * 列表页会整体离开组合，页面内的 remember 会清零，返回列表就丢了筛选条件；
+     * 发布版是 Navigator 压栈（列表页留在栈里，`_searchQuery` 是 State 字段），返回后
+     * 搜索词与筛选结果都还在。把状态提到宿主才能复现这个观感。
+     */
+    searchQuery: String,
+    onSearchQueryChange: (String) -> Unit,
     onBack: () -> Unit = {},
     onSelectSchool: (WarehouseSchoolEntry) -> Unit = {},
     onQuickImportClick: () -> Unit = {},
@@ -76,7 +88,6 @@ fun WarehouseCourseImportPage(
     phase: WarehouseListPhase = WarehouseListPhase.Idle,
     onRetry: () -> Unit = {},
 ) {
-    var searchQuery by remember { mutableStateOf("") }
     var showMoreMenu by remember { mutableStateOf(false) }
 
     val filteredSchools = remember(allSchools, searchQuery, adapterMatches) {
@@ -110,45 +121,50 @@ fun WarehouseCourseImportPage(
             scrollBehavior = scrollBehavior,
             contentPadding = PaddingValues(bottom = 8.dp),
         ) {
-            // 搜索输入栏
+            // 搜索输入栏：miuix 官方 `InputField`（`SearchBar.kt`）的**页内常驻**用法——
+            // 自己就是一个 45dp 高、胶囊形、surfaceContainerHigh 底色的搜索框，左右自带
+            // 放大镜与「清空」两个图标，不需要再套一层卡片、也不该自己拼 Row+TextField。
+            // 参数按官方 demo（`SuperSearchBar.kt` 的 SearchBarFake / SearchBar）取：
+            // 水平 12dp 外边距（= QingyuPageCardMargin，与下面学校卡同一条轴线）、底部 6dp。
+            // `expanded` 恒 false：本页是「边输边滤」的常驻搜索框，不展开成全屏搜索页；
+            // minSdk 33 不触发库内 API 26-27 的焦点补丁，隐藏 label 也不会让输入框变禁用。
             item(key = "search_bar") {
-                QingyuCard(
+                InputField(
+                    query = searchQuery,
+                    onQueryChange = onSearchQueryChange,
+                    // 输入即筛，没有独立提交动作（对齐发布版：回车只收键盘）。
+                    onSearch = { },
+                    expanded = false,
+                    onExpandedChange = { },
+                    label = WarehouseStrings.searchSchoolHint.zh,
+                    // 清空图标自己画一颗：官方默认那颗的无障碍文案是库里的英文 "Search Cleanup"，
+                    // 发布版这里是「清空」（`clearSearchTooltip`）。写法照官方 demo
+                    // `SuperSearchBar.kt:254-273`：44dp 触区 + start 8 / end 16 内边距、
+                    // 无涟漪点击、输入非空才出现（与库内默认的显隐条件一致）。
+                    trailingIcon = {
+                        AnimatedVisibility(
+                            visible = searchQuery.isNotEmpty(),
+                            enter = fadeIn(),
+                            exit = fadeOut(),
+                        ) {
+                            Icon(
+                                imageVector = MiuixIcons.Basic.SearchCleanup,
+                                contentDescription = WarehouseStrings.clearSearchTooltip.zh,
+                                tint = MiuixTheme.colorScheme.onSurface,
+                                modifier = Modifier
+                                    .size(44.dp)
+                                    .padding(start = 8.dp, end = 16.dp)
+                                    .clickable(interactionSource = null, indication = null) {
+                                        onSearchQueryChange("")
+                                    },
+                            )
+                        }
+                    },
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = QingyuPageCardMargin, vertical = 8.dp),
-                ) {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 12.dp, vertical = 4.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                    ) {
-                        Icon(
-                            imageVector = MiuixIcons.Search,
-                            contentDescription = null,
-                            modifier = Modifier.size(20.dp),
-                            tint = MiuixTheme.colorScheme.onSurfaceVariantActions,
-                        )
-                        Spacer(modifier = Modifier.width(8.dp))
-                        TextField(
-                            value = searchQuery,
-                            onValueChange = { searchQuery = it },
-                            modifier = Modifier.weight(1f),
-                            label = WarehouseStrings.searchSchoolHint.zh,
-                            useLabelAsPlaceholder = true,
-                            singleLine = true,
-                        )
-                        if (isSearching) {
-                            IconButton(onClick = { searchQuery = "" }) {
-                                Icon(
-                                    imageVector = MiuixIcons.Close,
-                                    contentDescription = WarehouseStrings.clearSearchTooltip.zh,
-                                    modifier = Modifier.size(18.dp),
-                                )
-                            }
-                        }
-                    }
-                }
+                        .padding(horizontal = QingyuPageCardMargin)
+                        .padding(top = 8.dp, bottom = 6.dp),
+                )
             }
 
             // 快捷导入卡片

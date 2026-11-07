@@ -27,6 +27,18 @@ package com.mutx163.qingyu.pages.import.warehouse
  * 「最近使用」也跟着记两次。现在这一跳同样 `publish(school)`（没有适配器，`adapter` 可空），
  * 壳的 `WarehouseImportBranch` 用 [peek] 只读判断该画哪一页。
  *
+ * ## 2026-11-07 第三跳改为「本条目内换页」，不再经推栈与交接件
+ *
+ * 用户实报「学校列表点学校没反应，只把它排到第一位」。根因：从「导入方式」页进教务导入时
+ * 本条目的路由 id **就是** `g2.schoolAdapters`，而点击后推的也是它 ⇒ 壳的 `pushRoute`
+ * 按「同一页已在栈里」幂等返回，既不压新页；壳那层的分流判据又自 `974a8a24d` 起锁成了
+ * `remember(state)`（首次组合定型），state 之后变化不再重判 ⇒ 整下点击只剩「最近使用」重排。
+ *
+ * 现在这一跳改为：`WarehouseImportPickerHost` 在 `state.school != null` 时**于本条目内**
+ * 渲染 `WarehouseSchoolAdaptersHost`（返回 = 把 `state.school` 清空，回到选校列表），
+ * 所以这一跳**既不推栈、也不需要交接件**。登录页/详情页那两跳仍是不同 id 的真推栈，
+ * 继续用 [publish] / [take]。
+ *
  * 只读判据与消耗权**分开**：`peek` 不消耗，`take` 消耗——否则壳一判断就把交接件拿走，
  * 里面的适配器宿主 `take()` 到 null，又回落到诚实空态。
  *
