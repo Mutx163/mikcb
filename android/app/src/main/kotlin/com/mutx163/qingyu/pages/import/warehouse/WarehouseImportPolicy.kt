@@ -133,6 +133,36 @@ fun shouldPromptRememberedLoginSave(
 }
 
 /**
+ * 换页后的候选账号取舍：**已提交登录、还没回答「记住密码」时，不许被空口令冲掉**。
+ *
+ * 为什么需要这条：点「登录」会触发表单提交 ⇒ 页面跳转，新文档装好观察脚本就立刻
+ * `collect()` 一次。新页面（课表页 / 个人中心）通常没有密码框，回传的是
+ * 「username = 页面上第一个文本框（往往是搜索框），password = ""」。照单全收会把
+ * 刚采集到的「账号 + 口令」冲成空口令，[shouldPromptRememberedLoginSave] 立刻变假，
+ * 「记住密码」卡片闪一下就消失——真机表现就是「第一次输密码不弹记住密码」。
+ *
+ * 发布版不受影响：它在 `_handleLoginAttempt` 里**当场弹模态框**，之后新页面再回传
+ * 什么都影响不到已经弹出的框。卡片式提示要活到用户作答，所以在这里把「已提交、
+ * 未作答」的候选钉住；作答后（`hasPromptedSave = true`）恢复跟随页面输入，
+ * 下一次登录仍能采集新值。
+ *
+ * @param previous 当前内存里的候选（可能还留着提交时采集的账号口令）。
+ * @param incoming 新页面刚回传的候选。
+ */
+fun warehouseLoginCandidateAfterState(
+    previous: WarehouseRememberedLogin,
+    incoming: WarehouseRememberedLogin,
+    hasLoginAttempt: Boolean,
+    hasPromptedSave: Boolean,
+): WarehouseRememberedLogin {
+    val keepSubmitted = hasLoginAttempt &&
+        !hasPromptedSave &&
+        previous.password.isNotEmpty() &&
+        incoming.password.isEmpty()
+    return if (keepSubmitted) previous else incoming
+}
+
+/**
  * 「要不要帮你填密码」的决定是否应该等在途的会话探针。
  */
 fun sessionProbeMayStillSettle(

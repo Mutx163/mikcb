@@ -396,6 +396,38 @@ class WarehouseBridgeDialogTest {
         assertTrue("替换/合并弹窗必须显式 insideMargin", importDialogsSource.contains("DpSize(16.dp, 16.dp)"))
     }
 
+    /**
+     * 学期弹窗按钮不许被挤到面板外（2026-11-07 用户实报「确定按钮在页面外面」）。
+     *
+     * 旧写法把按钮行也放进整个限高 Column 的子项末尾：内容超过
+     * `maxHeightFraction` 限高时，排在主轴最后的按钮被挤到可视区外。
+     * 修法：`contentScrolls = true` + 按钮行**在滚动区之外**固定（滚动区 +
+     * 固定动作行，底部让位垫在固定件之后）。守卫钉三点：弹层声明滚动自理、
+     * 动作行不再被包进带 `verticalScroll` 的那层、底部让位 `bottomInset`
+     * 垫在按钮之后（「滚动区下面还有固定件」的落点要求）。
+     */
+    @Test
+    fun `学期弹窗按钮必须固定在面板内 内容超高只能滚`() {
+        val sheetBody = blockAfter(importDialogsSource, "fun WarehouseSemesterMappingSheet(")
+        assertTrue("取不到 WarehouseSemesterMappingSheet 函数体（守卫自身失效，先修守卫）", sheetBody.isNotEmpty())
+        assertTrue(
+            "弹层必须声明 contentScrolls = true（内容自理滚动，否则限高时没有滚动可用）",
+            sheetBody.contains("contentScrolls = true"),
+        )
+        val scrollBlock = blockAfter(sheetBody, "verticalScroll(")
+        assertTrue("取不到滚动区块（守卫自身失效）", scrollBlock.isNotEmpty())
+        assertFalse(
+            "确定/取消按钮不许在滚动区内：超高时被挤到面板可视区外（用户实报）",
+            scrollBlock.contains("spreadsheetImportWarningsContinue"),
+        )
+        val buttonAt = sheetBody.indexOf("spreadsheetImportWarningsContinue")
+        val insetAt = sheetBody.indexOf("Spacer(modifier = Modifier.height(bottomInset))", buttonAt)
+        assertTrue(
+            "底部让位（bottomInset）必须垫在固定按钮**之后**：垫进滚动区会在按钮上方留一截空白",
+            insetAt > 0,
+        )
+    }
+
     /** 课程构造的测试助手：只给周次相关的最小字段。 */
     private fun testCourse(
         startWeek: Int,
@@ -453,6 +485,34 @@ class WarehouseBridgeDialogTest {
             dir = dir?.parentFile
         }
         error("找不到源码 $relative（当前目录 ${File("").absolutePath}）")
+    }
+
+    /**
+     * 取 `marker` 之后、与它后面第一个 `{` 配对的那段代码（花括号深度计数）。
+     *
+     * 守卫只看「某段结构里有没有 / 该不该有某行」时，不能用 `substring(indexOf(marker))`
+     * ——那会一路取到文件末尾，后面的分支会把前一处已经删掉的调用替它满足。
+     * 与 `WarehouseWebLoginHostWiringGuardTest.blockAfter` 同款（该测试在 `test/`
+     * 根目录另有 `readSource`，两份不能互借）。
+     */
+    private fun blockAfter(source: String, marker: String): String {
+        val markerAt = source.indexOf(marker)
+        if (markerAt < 0) return ""
+        val begin = source.indexOf('{', markerAt)
+        if (begin < 0) return ""
+        var depth = 0
+        var i = begin
+        while (i < source.length) {
+            when (source[i]) {
+                '{' -> depth++
+                '}' -> {
+                    depth--
+                    if (depth == 0) return source.substring(begin, i + 1)
+                }
+            }
+            i++
+        }
+        return ""
     }
 
     /**

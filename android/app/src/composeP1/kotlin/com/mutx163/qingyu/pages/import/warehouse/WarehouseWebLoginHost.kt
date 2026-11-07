@@ -818,11 +818,24 @@ fun WarehouseWebLoginHost(
     fun handleLoginState(raw: String) {
         val snapshot = warehouseLoginStateSnapshot(raw) ?: return
         val liveUrl = controller.liveUrl() ?: session.currentUrl
+        // 登录提交后的新页面也会立刻 collect() 一次（通常没有密码框 ⇒ 空口令）。
+        // 已提交、未作答的候选由模型层钉住，否则「记住密码」卡片会闪一下就消失。
+        val incoming = WarehouseRememberedLogin(
+            username = snapshot.username,
+            password = snapshot.password,
+            // 采集当时就带密码框 = 当前真在登录页：把宿主 host 一起记下。
+            // 卡片会活到跳转之后，保存时不能再按「当时页面」算 host：统一认证常从
+            // `cas.x` 跳到 `jw.x`，按跳转后的页面绑会让下次在登录页的填充永远被门禁拒掉。
+            host = if (snapshot.hasPasswordField) warehouseUrlHost(liveUrl) else "",
+        )
+        val candidate = warehouseLoginCandidateAfterState(
+            previous = session.candidateAccount,
+            incoming = incoming,
+            hasLoginAttempt = session.hasLoginAttempt,
+            hasPromptedSave = session.hasPromptedSave,
+        )
         session = session.copy(
-            candidateAccount = WarehouseRememberedLogin(
-                username = snapshot.username,
-                password = snapshot.password,
-            ),
+            candidateAccount = candidate,
             hasPasswordField = snapshot.hasPasswordField,
             autofillHostAllowed = autofillAllowedOn(liveUrl, storedLogin),
         )
@@ -1570,14 +1583,21 @@ fun WarehouseWebLoginHost(
                     currentUrl = url,
                     stage = WarehouseWebLoginStage.LOADING,
                     errorMessage = null,
-                    // 换页 = 换了一组输入框：候选账号与「问过没有」全部作废，
-                    // 自动填充权限在页面加载完/收到 loginState 时按新 host 重算
-                    //（Dart 在 `_onPageStarted` 里同样重置 `_hasPromptedAutofill`）。
-                    candidateAccount = WarehouseRememberedLogin(),
+                    // 换页 = 换了一组输入框：「问过没有」全部作废，自动填充权限在页面
+                    // 加载完/收到 loginState 时按新 host 重算（Dart 在 `_onPageStarted`
+                    // 里同样重置 `_hasPromptedAutofill`）。
+                    //
+                    // candidateAccount / hasLoginAttempt **不清**（2026-11-07 用户实报
+                    // 「第一次输密码不弹记住密码」）：填完账号密码点「登录」会触发表单
+                    // 提交 ⇒ 跳转 ⇒ 新页面，`loginAttempt` 常在新文档注入观察脚本
+                    // **之前/同时**到达，候选账号也往往来不及在新页面重采。这时清零的
+                    // 后果：门禁收到 loginAttempt 时 `hasLoginAttempt` 又是 false、
+                    // 候选是空的 ⇒ 「记住密码」卡片永远不出现。Dart 只重置
+                    // `_hasPromptedAutofill`（`onPageStarted`，:390），
+                    // `_latestLoginCandidate` / `_hasPromptedSave` 都留在内存里等
+                    // `_handleLoginAttempt` 消费——同口径保留。
                     hasPasswordField = false,
-                    hasLoginAttempt = false,
                     hasPromptedAutofill = false,
-                    hasPromptedSave = false,
                     autofillHostAllowed = false,
                 )
             },

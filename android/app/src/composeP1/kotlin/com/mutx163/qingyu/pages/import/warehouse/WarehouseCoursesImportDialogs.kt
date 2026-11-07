@@ -7,6 +7,8 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
@@ -141,10 +143,25 @@ fun WarehouseSectionExpansionDialog(
  * 第二步：确认开学日期与「课表第 1 周 = 校历第几周」。
  *
  * 形态对齐 Dart `pickImportSemesterConfig`（`import_shared.dart:275`）：标题 +
- * 副标题 + 开学日期行（这里直接嵌官方 `NumberPicker` 三列滚轮，形态同
- * `SettingsSemesterHost` 的开学日期弹层——本仓 miuix 0.9.4 没有月历组件）
- * + 首周滚轮（1~20，对齐旧版 `weekItems` 与初值钳制）+ 平移提示 + 取消/继续。
- * 平移提示实时反映当前选择（旧版同款两条文案）。
+ * 副标题 + 开学日期 + 首周选择 + 平移提示 + 取消/继续。
+ *
+ * ## 高度（2026-11-07 用户实报「确定按钮在页面外面」）
+ *
+ * 内容 = 副标题两行 + 两个 160dp 滚轮 + 两行说明 + 平移提示 + 按钮行，天然超过
+ * `maxHeightFraction = 0.75f` 的限高。旧写法只把**整个 Column 套了限高**：
+ * `QingyuSheet` 的限高用 `heightIn(max)`，Column 装不下时**按子项声明顺序留主轴**，
+ * 排在最后的按钮行直接被挤到面板可视区外（真机症状）。
+ *
+ * 修法（两件事同时做，缺一会复发）：
+ * 1. `contentScrolls = true`：内容自己管滚动，限高时可视区内的部分可滚到；
+ * 2. **按钮行不进滚动区**：发布版（`showHyperosSheet` + `HyperosSheetFrame` +
+ *    `SingleChildScrollView`）的按钮在滚动内容末尾、整层可滚——但本仓滚动收口在
+ *    `QingyuSheet`，按钮跟着滚的观感是「确认键跑到手指底下」；miuix 官方弹层的
+ *    契约是动作固定在面板内。这里按「滚动区 + 固定动作行」重排：滚轮滚，
+ *    确定按钮永远在面板内可见。底部让位（手势区）垫在固定件之后（见
+ *    `QingyuSheet` KDoc「滚动区下面还有固定件」一段）。
+ *
+ * 滚轮行文按发布版语义对齐（初值钳制 1~20、无课选第 2 周的提示、平移提示实时反映）。
  */
 @Composable
 fun WarehouseSemesterMappingSheet(
@@ -168,95 +185,103 @@ fun WarehouseSemesterMappingSheet(
         title = WarehouseStrings.importConfirmSemesterMappingTitle.zh,
         onDismissRequest = onDismiss,
         maxHeightFraction = 0.75f,
+        contentScrolls = true,
     ) {
-        Column(
-            modifier = Modifier.fillMaxWidth(),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
-        ) {
-            Text(
-                text = WarehouseStrings.importConfirmSemesterMappingSubtitleWarehouse.zh,
-                style = MiuixTheme.textStyles.body2,
-                color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-                lineHeight = 20.sp,
-            )
-            Text(
-                text = WarehouseStrings.importSemesterStartDateTitle.zh,
-                style = MiuixTheme.textStyles.footnote1.shiftWeight(QingyuWeightDelta.MEDIUM),
-            )
-            Row(
+        Column(modifier = Modifier.fillMaxWidth()) {
+            // ---- 滚动区：副标题 + 两个滚轮 + 说明 + 平移提示 ----
+            Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(160.dp),
-                verticalAlignment = Alignment.CenterVertically,
+                    .weight(1f, fill = false)
+                    .verticalScroll(rememberScrollState()),
+                verticalArrangement = Arrangement.spacedBy(12.dp),
             ) {
-                NumberPicker(
-                    value = year,
-                    onValueChange = { year = it },
-                    range = IMPORT_START_DATE_YEAR_RANGE,
-                    label = { it.toString() },
-                    textStyle = MiuixTheme.textStyles.title3,
-                    modifier = Modifier.weight(1f),
+                Text(
+                    text = WarehouseStrings.importConfirmSemesterMappingSubtitleWarehouse.zh,
+                    style = MiuixTheme.textStyles.body2,
+                    color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                    lineHeight = 20.sp,
                 )
-                NumberPicker(
-                    value = month,
-                    onValueChange = { month = it },
-                    range = 1..12,
-                    wrapAround = true,
-                    label = { it.toString() },
-                    textStyle = MiuixTheme.textStyles.title3,
-                    modifier = Modifier.weight(1f),
+                Text(
+                    text = WarehouseStrings.importSemesterStartDateTitle.zh,
+                    style = MiuixTheme.textStyles.footnote1.shiftWeight(QingyuWeightDelta.MEDIUM),
                 )
-                NumberPicker(
-                    value = safeDay,
-                    onValueChange = { day = it },
-                    range = 1..maxDay,
-                    wrapAround = true,
-                    label = { it.toString() },
-                    textStyle = MiuixTheme.textStyles.title3,
-                    modifier = Modifier.weight(1f),
-                )
-            }
-            Text(
-                text = WarehouseStrings.importSemesterStartDateSubtitle.zh,
-                style = MiuixTheme.textStyles.footnote2,
-                color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-            )
-            Text(
-                text = WarehouseStrings.importFirstCourseWeekMappingLabel.zh,
-                style = MiuixTheme.textStyles.footnote1.shiftWeight(QingyuWeightDelta.MEDIUM),
-            )
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                NumberPicker(
-                    value = firstWeek,
-                    onValueChange = { firstWeek = it },
-                    range = 1..20,
-                    label = { WarehouseStrings.calendarWeekOption.filled("week", it.toString()) },
-                    textStyle = MiuixTheme.textStyles.title3,
-                    modifier = Modifier.weight(1f),
-                )
-            }
-            Text(
-                text = WarehouseStrings.importFirstCourseWeekMappingSubtitle.zh,
-                style = MiuixTheme.textStyles.footnote2,
-                color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-            )
-            Text(
-                text = if (shiftedWeeks <= 0) {
-                    WarehouseStrings.importSemesterMappingNoShiftHint.zh
-                } else {
-                    WarehouseStrings.importSemesterMappingShiftHint.filled(
-                        "shiftedWeeks" to shiftedWeeks.toString(),
-                        "calendarWeek" to firstWeek.toString(),
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(160.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    NumberPicker(
+                        value = year,
+                        onValueChange = { year = it },
+                        range = IMPORT_START_DATE_YEAR_RANGE,
+                        label = { it.toString() },
+                        textStyle = MiuixTheme.textStyles.title3,
+                        modifier = Modifier.weight(1f),
                     )
-                },
-                style = MiuixTheme.textStyles.footnote2,
-                color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-                modifier = Modifier.padding(top = 4.dp),
-            )
-            Spacer(modifier = Modifier.height(4.dp))
+                    NumberPicker(
+                        value = month,
+                        onValueChange = { month = it },
+                        range = 1..12,
+                        wrapAround = true,
+                        label = { it.toString() },
+                        textStyle = MiuixTheme.textStyles.title3,
+                        modifier = Modifier.weight(1f),
+                    )
+                    NumberPicker(
+                        value = safeDay,
+                        onValueChange = { day = it },
+                        range = 1..maxDay,
+                        wrapAround = true,
+                        label = { it.toString() },
+                        textStyle = MiuixTheme.textStyles.title3,
+                        modifier = Modifier.weight(1f),
+                    )
+                }
+                Text(
+                    text = WarehouseStrings.importSemesterStartDateSubtitle.zh,
+                    style = MiuixTheme.textStyles.footnote2,
+                    color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                )
+                Text(
+                    text = WarehouseStrings.importFirstCourseWeekMappingLabel.zh,
+                    style = MiuixTheme.textStyles.footnote1.shiftWeight(QingyuWeightDelta.MEDIUM),
+                )
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    NumberPicker(
+                        value = firstWeek,
+                        onValueChange = { firstWeek = it },
+                        range = 1..20,
+                        label = { WarehouseStrings.calendarWeekOption.filled("week", it.toString()) },
+                        textStyle = MiuixTheme.textStyles.title3,
+                        modifier = Modifier.weight(1f),
+                    )
+                }
+                Text(
+                    text = WarehouseStrings.importFirstCourseWeekMappingSubtitle.zh,
+                    style = MiuixTheme.textStyles.footnote2,
+                    color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                )
+                Text(
+                    text = if (shiftedWeeks <= 0) {
+                        WarehouseStrings.importSemesterMappingNoShiftHint.zh
+                    } else {
+                        WarehouseStrings.importSemesterMappingShiftHint.filled(
+                            "shiftedWeeks" to shiftedWeeks.toString(),
+                            "calendarWeek" to firstWeek.toString(),
+                        )
+                    },
+                    style = MiuixTheme.textStyles.footnote2,
+                    color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                    modifier = Modifier.padding(top = 4.dp),
+                )
+            }
+            // ---- 固定区：按钮行 + 底部让位（手势区 + 呼吸）----
+            Spacer(modifier = Modifier.height(16.dp))
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
@@ -277,6 +302,7 @@ fun WarehouseSemesterMappingSheet(
                     )
                 }
             }
+            Spacer(modifier = Modifier.height(bottomInset))
         }
     }
 }

@@ -1,5 +1,6 @@
 package com.mutx163.qingyu.pages.import.warehouse
 
+import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -162,6 +163,59 @@ class WarehouseImportPolicyTest {
                 verdict = WarehouseSessionProbeVerdict.UNKNOWN,
                 inFlight = true,
             )
+        )
+    }
+
+    @Test
+    fun `warehouseLoginCandidateAfterState 登录提交后的空口令回传不得冲掉候选`() {
+        val submitted = WarehouseRememberedLogin(username = "202401", password = "secret_password")
+
+        // 主路径：提交后跳课表页，新页面 collect() 回传「第一个文本框 + 空口令」⇒ 保留提交时的候选
+        assertEquals(
+            "已提交且未作答时，空口令回传不许冲掉候选（否则保存提示当场消失）",
+            submitted,
+            warehouseLoginCandidateAfterState(
+                previous = submitted,
+                incoming = WarehouseRememberedLogin(username = "搜索课程", password = ""),
+                hasLoginAttempt = true,
+                hasPromptedSave = false,
+            ),
+        )
+
+        // 用户已作答「记住/不记住」⇒ 恢复跟随页面输入（下一次登录要能采集新值）
+        assertEquals(
+            "作答后必须恢复跟随页面输入",
+            WarehouseRememberedLogin(username = "202402", password = ""),
+            warehouseLoginCandidateAfterState(
+                previous = submitted,
+                incoming = WarehouseRememberedLogin(username = "202402", password = ""),
+                hasLoginAttempt = true,
+                hasPromptedSave = true,
+            ),
+        )
+
+        // 新回传本身带口令（用户重输 / 站点回填）⇒ 以新值为准
+        assertEquals(
+            "带口令的新回传优先（用户重输后要存新值）",
+            WarehouseRememberedLogin(username = "202401", password = "new_pass"),
+            warehouseLoginCandidateAfterState(
+                previous = submitted,
+                incoming = WarehouseRememberedLogin(username = "202401", password = "new_pass"),
+                hasLoginAttempt = true,
+                hasPromptedSave = false,
+            ),
+        )
+
+        // 还没提交：边输边采，空口令也要如实反映（不能把已清空的口令当仍有效）
+        assertEquals(
+            "未提交时不许钉住候选（边输边采要跟手）",
+            WarehouseRememberedLogin(username = "202401", password = ""),
+            warehouseLoginCandidateAfterState(
+                previous = submitted,
+                incoming = WarehouseRememberedLogin(username = "202401", password = ""),
+                hasLoginAttempt = false,
+                hasPromptedSave = false,
+            ),
         )
     }
 

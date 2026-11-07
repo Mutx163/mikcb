@@ -308,6 +308,39 @@ class WarehouseWebLoginHostWiringGuardTest {
         return source.substring(begin)
     }
 
+    // ---- 2026-11-07 用户实报三件（学期弹窗按钮出界 + 首登不弹记住密码）----
+
+    /**
+     * 「记住密码」卡片必须在**登录提交引发的跳转之后**还能出现。
+     *
+     * 用户实报「第一次输密码不会弹记住密码」：填完账号密码点登录 → submit 事件发
+     * `loginAttempt` 并跳转 → 新页面 `onWebPageStarted`。旧写法在跳转时把
+     * `candidateAccount` / `hasLoginAttempt` / `hasPromptedSave` 一起清零，而
+     * `loginAttempt` 与候选采集常在新文档注入观察脚本之前/同时到达 ⇒ 门禁读到的是
+     * 全空状态 ⇒ `shouldPromptSave` 恒假 ⇒ 卡片永远不出现。发布版
+     * （`_onPageStarted` :390）只重置 `_hasPromptedAutofill`，候选与问过标记留在
+     * 内存里等 `_handleLoginAttempt` 消费。
+     *
+     * 钉两头：跳转回调不许再清那三个字段；「记住密码」的保存路径必须挂在
+     * `onSaveRememberedLogin`（消费端还在）。
+     */
+    @Test
+    fun `换页不许清候选账号与登录尝试 记住密码要能跨跳转弹出`() {
+        val started = blockAfter(hostSource, "onWebPageStarted = {")
+        assertTrue("取不到 onWebPageStarted 回调（守卫自身失效，先修守卫）", started.isNotEmpty())
+        listOf("candidateAccount", "hasLoginAttempt", "hasPromptedSave").forEach { field ->
+            assertFalse(
+                "onWebPageStarted 不许清 `$field`：登录提交会跳转，清了它「记住密码」卡片就永远不弹" +
+                    "（发布版 `_onPageStarted` 只重置 `_hasPromptedAutofill`）",
+                started.contains("$field ="),
+            )
+        }
+        assertTrue(
+            "「记住密码」保存路径必须接在页面上（消费端不许丢）",
+            hostSource.contains("onSaveRememberedLogin"),
+        )
+    }
+
     private fun readHostSource(): String =
         readSource("android/app/src/composeP1/kotlin/com/mutx163/qingyu/pages/import/warehouse/WarehouseWebLoginHost.kt")
 
