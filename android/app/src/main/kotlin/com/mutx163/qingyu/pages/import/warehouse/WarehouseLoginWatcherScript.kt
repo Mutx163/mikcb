@@ -80,8 +80,20 @@ object WarehouseLoginWatcherJs {
   window.__qingyuCollectLoginState = collect;
   window.__qingyuAutofillLogin = (username, password) => {
     let filled = false;
-    if (username) { filled = setValue(textInput(), String(username)) || filled; }
-    if (password) { filled = setValue(passwordInput(), String(password)) || filled; }
+    const account = textInput();
+    const pwd = passwordInput();
+    if (username) { filled = setValue(account, String(username)) || filled; }
+    if (password) { filled = setValue(pwd, String(password)) || filled; }
+    // 填完把最后落值的输入框滚到视口中间：登录框常在首屏下方，
+    // 不滚的话用户看不到「已经填好了」（2026-11-07 用户实报）。
+    const target = password ? pwd : (username ? account : null);
+    if (target && typeof target.scrollIntoView === 'function') {
+      try {
+        target.scrollIntoView({ block: 'center', inline: 'nearest', behavior: 'smooth' });
+      } catch (e) {
+        try { target.scrollIntoView(); } catch (e2) {}
+      }
+    }
     return filled;
   };
   if (!window.__qingyuLoginWatcherInstalled) {
