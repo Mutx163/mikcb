@@ -23,11 +23,13 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
+import com.mutx163.qingyu.app.AppGlobalSettingsStore
 import com.mutx163.qingyu.app.TimetableHostLogic
 import com.mutx163.qingyu.app.TimetableRepository
 import com.mutx163.qingyu.app.TimetableSnapshot
 import com.mutx163.qingyu.components.QingyuCard
 import com.mutx163.qingyu.core.TimeScheme
+import com.mutx163.qingyu.core.TimetableSettings
 import com.mutx163.qingyu.pages.ShellExternalEntryHub
 import com.mutx163.qingyu.pages.shell.ShellExternalEntry
 import com.mutx163.qingyu.platform.AndroidTransferDocumentAdapter
@@ -46,6 +48,7 @@ import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TextButton
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import java.time.LocalDateTime
+import java.util.UUID
 
 /**
  * 「数据备份与迁移」页的**宿主**：把页面回调接到真实能力上。
@@ -115,8 +118,12 @@ fun DataTransferHost(
         )
     }
 
-    /** 导入一份包文本（文件与二维码两条入口共用）。 */
-    fun openImportPreview(text: String, channel: TransferChannel) {
+    /** 导入一份包文本（文件 / 二维码 / 外部打开三条入口共用）。 */
+    fun openImportPreview(
+        text: String,
+        channel: TransferChannel,
+        entry: ImportEntry = ImportEntry.FILE_PICK,
+    ) {
         // 2026-11-03：旧格式（无信封的单课表备份 / backupType=full 的全量备份）走
         // 兼容解析；信封坏了一律整份拒收，不回退（Dart `parseCompatible`）。
         when (val parsed = DataTransferLegacyBackupLogic.parseCompatible(text, channel)) {
@@ -132,9 +139,13 @@ fun DataTransferHost(
                     tasks = repository.tasks,
                     exams = repository.exams,
                 )
-                // 全量包不支持合并（见 DataTransferApplyLogic.rejectionCode）：不把这条
-                // 点了必然失败的按钮摆给用户，正文里也就不给 merge 那一段。
-                val canMerge = !DataTransferApplyLogic.isFullBackupPlan(parsed.plan)
+                // 正文的「合并」段必须和**按钮**同口径（2026-11-06 返工）：
+                // - 全量包不支持合并（见 DataTransferApplyLogic.rejectionCode）；
+                // - 「外部打开备份」这条入口发布版只有 取消/覆盖/导入为新，**没有合并**，
+                //   正文也就不许出现 `merge:` 段（发布版那条弹框正文只有一句 selectImportModeMessage）。
+                // 旧实现只看全量包、不看 entry，于是外部打开会出现「按钮没合并、正文却有合并」。
+                val canMerge = entry != ImportEntry.EXTERNAL_OPEN &&
+                    !DataTransferApplyLogic.isFullBackupPlan(parsed.plan)
                 val overwrite = DataTransferDiffLogic
                     .compare(diffCurrent, parsed.plan, parsed.info.scope, TransferApplyMode.OVERWRITE)
                     .toSummaries()
@@ -147,16 +158,24 @@ fun DataTransferHost(
                 } else {
                     null
                 }
-                pendingImport = PendingImport(info = parsed.info, plan = parsed.plan)
+                pendingImport = PendingImport(info = parsed.info, plan = parsed.plan, entry = entry)
                 previewContent = TransferPreviewContent(
                     title = TransferStrings.selectImportModeTitle.zh,
-                    message = DataTransferImportLogic.previewMessage(
-                        channel = channel,
-                        scope = parsed.info.scope,
-                        packageId = parsed.info.packageId,
-                        overwrite = overwrite,
-                        merge = merge,
-                    ),
+                    message = if (entry == ImportEntry.EXTERNAL_OPEN) {
+                        // 发布版「外部打开备份」那条弹框（`_runBackupImportFlow`）正文**只有一句**
+                        // `selectImportModeMessage`；channel/scope/transferId/差异摘要都是
+                        // 文件选择那套预览弹框（`transfer_preview_dialog.dart`）的正文，这里不带
+                        //（2026-11-06 三轮返工：正文与按钮同口径）。
+                        TransferStrings.selectImportModeMessage.zh
+                    } else {
+                        DataTransferImportLogic.previewMessage(
+                            channel = channel,
+                            scope = parsed.info.scope,
+                            packageId = parsed.info.packageId,
+                            overwrite = overwrite,
+                            merge = merge,
+                        )
+                    },
                 )
             }
         }
@@ -231,7 +250,9 @@ fun DataTransferHost(
                         showToast(TransferStrings.importFailedInvalidFile.zh)
 
                     is AndroidTransferDocumentAdapter.ReadResult.Success ->
-                        openImportPreview(result.text, TransferChannel.FILE)
+                        // 显式传 FILE_PICK：这条入口与「外部打开备份」共用同一个弹窗，
+                        // 只有后者开放「导入为新课表」；显式写出来守卫才咬得住（默认值容易被顺手改掉）。
+                        openImportPreview(result.text, TransferChannel.FILE, ImportEntry.FILE_PICK)
                 }
             }
         }
@@ -260,7 +281,10 @@ fun DataTransferHost(
     LaunchedEffect(ShellExternalEntryHub.pendingImport) {
         val payload = ShellExternalEntryHub.consumeImport("backup") ?: return@LaunchedEffect
         if (payload is ShellExternalEntry.ImportPayload.Backup) {
-            openImportPreview(payload.text, TransferChannel.FILE)
+            // 外部打开备份 = 发布版唯一会出现「导入为新课表」那条动作的入口
+            // （工作区 `lib/main.dart:1669` / 发布版 v2.1.4.1 `:1569`；弹框本体
+            // 工作区 `:1490-1522` / 发布版 `:1401-1422`）。文件选择 / 二维码 / 局域网保持三条。
+            openImportPreview(payload.text, TransferChannel.FILE, ImportEntry.EXTERNAL_OPEN)
         }
     }
 
@@ -286,42 +310,72 @@ fun DataTransferHost(
             onQrScan = { if (!isImporting) onRequestQrScan() },
         )
 
-        // 预览弹窗（Dart `showTransferPreviewDialog`）：选完模式才落盘。
+        // 预览弹窗（Dart `showTransferPreviewDialog`）：选完动作才落盘。
         TransferPreviewDialog(
             content = previewContent,
-            // 全量包不支持合并（见 DataTransferApplyLogic.rejectionCode）：不把这条
-            // 点了必然失败的按钮摆给用户。旧版摆了，点了弹「发生未知错误」。
-            canMerge = pendingImport?.let { !DataTransferApplyLogic.isFullBackupPlan(it.plan) } ?: true,
-            onChoose = { mode ->
+            // 合并的两条限制：
+            // 1. 全量包不支持合并（见 DataTransferApplyLogic.rejectionCode），不摆点了必然失败的按钮；
+            // 2. 「外部打开备份」这条入口发布版只有**三**个动作（取消/覆盖/导入为新，
+            //    `_runBackupImportFlow` 的弹框没有「合并」）——「合并」属于文件选择那套弹框。
+            canMerge = pendingImport?.let {
+                it.entry != ImportEntry.EXTERNAL_OPEN && !DataTransferApplyLogic.isFullBackupPlan(it.plan)
+            } ?: true,
+            // 「导入为新课表」只在「外部打开备份文件」这条入口出现——发布版里有它的
+            // 三动作弹框只挂在 `_runBackupImportFlow`（`main.dart:1490-1522`（工作区；发布版 `:1401-1422`）），而
+            // 文件选择 / 二维码 / 局域网用的预览弹框本来就没有这条。全量备份不显示
+            // （Dart 会挑一条拒；我们沿用「死按钮先隐藏」的同一总口径）。
+            canImportAsNew = pendingImport?.let {
+                it.entry == ImportEntry.EXTERNAL_OPEN && !DataTransferApplyLogic.isFullBackupPlan(it.plan)
+            } ?: false,
+            onChoose = { action ->
                 val pending = pendingImport
+                val mode = action?.mode
                 previewContent = null
                 pendingImport = null
-                if (pending != null && mode != null) {
-                    val rejection = DataTransferApplyLogic.rejectionCode(pending.plan, mode)
+                // action == null = 取消；非 as-new 却没有 mode 属异常，一律当取消处理。
+                if (pending != null && action != null && (action.importAsNew || mode != null)) {
+                    val rejection = if (action.importAsNew) {
+                        DataTransferApplyLogic.importAsNewRejectionCode(pending.plan)
+                    } else {
+                        // 上面的守卫保证非 as-new 时 mode 非空。
+                        DataTransferApplyLogic.rejectionCode(pending.plan, mode!!)
+                    }
                     if (rejection != null) {
                         showToast(TransferServiceMessages.localize(rejection))
                     } else {
                         isImporting = true
                         coroutineScope.launch {
-                            val outcome = withContext(Dispatchers.IO) { applyImport(repository, pending, mode) }
+                            val outcome = withContext(Dispatchers.IO) {
+                                if (action.importAsNew) {
+                                    applyImportAsNew(repository, pending)
+                                } else {
+                                    applyImport(repository, pending, mode!!)
+                                }
+                            }
                             isImporting = false
                             when (outcome) {
                                 is ApplyOutcome.Failed ->
                                     showToast(TransferServiceMessages.localize(outcome.code))
 
                                 is ApplyOutcome.Applied -> {
-                                    val after = repository.snapshot
-                                    val sectionCount = sectionCountOf(after)
-                                    val notice = DataTransferLogic.restoredNotice(
-                                        beyondSchemeCount = DataTransferApplyLogic.coursesBeyondScheme(
-                                            courses = after.courses,
+                                    val notice = if (action.importAsNew) {
+                                        // 发布版 as-new 的成功句是「已创建新的课表」+「坏条目已跳过」，
+                                        // 不算「超出作息范围」那一段（`main.dart:1584-1593`（工作区））。
+                                        DataTransferLogic.createdNotice(droppedCount = pending.info.droppedTotal)
+                                    } else {
+                                        val after = repository.snapshot
+                                        val sectionCount = sectionCountOf(after)
+                                        DataTransferLogic.restoredNotice(
+                                            beyondSchemeCount = DataTransferApplyLogic.coursesBeyondScheme(
+                                                courses = after.courses,
+                                                sectionCount = sectionCount,
+                                            ),
                                             sectionCount = sectionCount,
-                                        ),
-                                        sectionCount = sectionCount,
-                                        // 旧格式文件逐条跳过的坏条目数（Dart
-                                        // `lastImportDroppedCounts`）；当前信封恒 0。
-                                        droppedCount = pending.info.droppedTotal,
-                                    )
+                                            // 旧格式文件逐条跳过的坏条目数（Dart
+                                            // `lastImportDroppedCounts`）；当前信封恒 0。
+                                            droppedCount = pending.info.droppedTotal,
+                                        )
+                                    }
                                     undoToken = outcome.token
                                     if (outcome.token == null) {
                                         showToast(notice.message)
@@ -369,10 +423,20 @@ fun DataTransferHost(
     }
 }
 
+/**
+ * 这次导入是从哪个入口进来的。
+ *
+ * 只用来决定预览弹窗**摆几条动作**：发布版里「导入为新课表」只挂在
+ * 「外部打开一份备份文件」这条链路上（`main.dart:1490-1522`（工作区；发布版 `:1401-1422`）），文件选择 / 二维码 /
+ * 局域网都保持 取消·合并·覆盖。别的行为一律不加入口差异。
+ */
+private enum class ImportEntry { FILE_PICK, EXTERNAL_OPEN }
+
 /** 一次待落盘的导入（预览弹窗确认后消费）。 */
 private data class PendingImport(
     val info: TransferImportPackageInfo,
     val plan: TransferImportPlan,
+    val entry: ImportEntry,
 )
 
 /** 落盘结果。 */
@@ -460,7 +524,26 @@ private fun applyImport(
     if (referenceErrors.isNotEmpty()) {
         return ApplyOutcome.Failed(code = referenceErrors.first())
     }
-    val undoSnapshot = when (DataTransferApplyLogic.undoKindFor(plan)) {
+    // 「改多少、还原多少」必须对称（2026-11-06 三轮返工）：本函数末尾会
+    // `updateLocationTimeGroups(..., resync = true)`（或 all_data 整设备覆盖），
+    // 那会把**所有档案**的课程钟点按新分组重排；回滚若只还原活动档，其它档就停在新钟点上。
+    // 所以凡是会触发 resync 的路径，快照必须按整份档案表抓。
+    // 这里用「不含 schemeIdMap」的 planWrites 只为判 `locationTimeGroups` 是否为空/是否 all_data
+    // ——引用改写不影响这两个判据，故不必等 reconcile 完再算。
+    val willResyncAllProfiles = DataTransferApplyLogic.planWrites(
+        plan = plan,
+        mode = mode,
+        current = DataTransferApplyLogic.TransferCurrentContent(
+            courses = before.courses,
+            tasks = repository.tasks,
+            exams = repository.exams,
+            scheduleItems = before.scheduleItems,
+        ),
+        scope = scope,
+    ).let { it.locationTimeGroups.isNotEmpty() || scope == TransferScope.ALL_DATA }
+    val undoSnapshot = when (
+        DataTransferApplyLogic.undoKindFor(plan, rewritesAllProfiles = willResyncAllProfiles)
+    ) {
         TransferUndoScope.FULL_PROFILES -> TransferUndoSnapshot(
             kind = TransferUndoScope.FULL_PROFILES,
             profiles = before.profiles,
@@ -469,6 +552,9 @@ private fun applyImport(
             currentWeek = before.currentWeek,
             scheduleDateRules = before.scheduleDateRules,
             locationTimeGroups = before.locationTimeGroups,
+            // 模板表在第一次改动（`reconcileTimeSchemes`）之前抓：导入会新建模板，
+            // 不整份还原就会在本机留下多出来的一套、且救不回来（仓储无跨 key 事务）。
+            timeSchemes = before.timeSchemes,
         )
 
         TransferUndoScope.ACTIVE_PROFILE_CONTENT -> TransferUndoSnapshot(
@@ -481,6 +567,7 @@ private fun applyImport(
             currentWeek = before.currentWeek,
             scheduleDateRules = before.scheduleDateRules,
             locationTimeGroups = before.locationTimeGroups,
+            timeSchemes = before.timeSchemes,
         )
     }
     // 2026-11-01 修（P1）：失败必须回滚。旧版整段 runCatching 却不还原，任何一步抛错
@@ -536,7 +623,12 @@ private fun applyImport(
             repository.updateScheduleDateRules(writes.scheduleDateRules)
         }
         if (writes.locationTimeGroups.isNotEmpty() || overwriteAllData) {
-            repository.updateLocationTimeGroups(writes.locationTimeGroups)
+            // `resync = true`：本函数的顺序是「② 先写课 → ③ 后换分组」，不重算就会留下
+            // 「分组是包里的、课程钟点还是按本机旧分组算的」。Dart 侧
+            // `_replaceRulesAndLocations` 之后走 `replaceLocationTimeGroups(resync: true)`
+            // （默认即 true，`timetable_location_rule_service.dart:265-279`），
+            // 仓储 `updateLocationTimeGroupsLocked` 的 KDoc 也点名「传输层必须用它」。
+            repository.updateLocationTimeGroups(writes.locationTimeGroups, resync = true)
         }
     }
     return applied.fold(
@@ -551,22 +643,145 @@ private fun applyImport(
         },
         onFailure = { error ->
             // Dart：应用失败且无具体原因 → 「导入失败，请确认文件有效」。
-            restoreFromSnapshot(repository, undoSnapshot)
-            ApplyOutcome.Failed(code = error.message ?: "import_failed_invalid_file")
+            // 回滚**不许吞掉结果**：快照还原也可能是半份（仓储无跨 key 事务），
+            // 还原失败必须报发布版那条用户可见码 `import_rollback_incomplete`，
+            // 别让用户以为「什么都没发生」。
+            val restored = restoreFromSnapshot(repository, undoSnapshot)
+            ApplyOutcome.Failed(
+                code = when {
+                    !restored -> "import_rollback_incomplete"
+                    else -> error.message ?: "import_failed_invalid_file"
+                },
+            )
         },
     )
 }
 
 /**
- * 把包里带的时间模板补进本机模板表，返回「包 id → 本机 id」映射。
+ * 落盘「导入为新课表」（Dart `importAppDataBackupAsNewProfile`，发布版 v2.1.4.1
+ * `lib/providers/timetable/import_export_service.dart:550-638`；工作区对应实现
+ * `lib/services/timetable_import_export_service.dart:754-849`）。
  *
- * 判据全部下沉到 [DataTransferApplyLogic.planTimeSchemeSteps]（同 id 更新 /
- * 节次签名相同的双胞胎**复用本机 id** / 其余新建）——旧版只做了 1 与 3，
- * 每次跨设备导入都会给表里多堆一套节次完全相同的模板（Dart 有双胞胎复用）。
+ * 与 [applyImport] 的区别：**不写当前档案一个字节**，只多出一份新档并切过去。
+ * 顺序照发布版：补模板 → 设置对齐模板表 → 建新档 → 整份档案表落盘 → 铺本机全局偏好。
+ * 撤销快照抓 `FULL_PROFILES`（多一份档 + 换激活 id + 换全局设置/周次），撤销即整份还原。
  *
- * 只调用仓储既有方法（`updateTimeScheme` / `createTimeScheme`），不碰落盘细节；
- * 更新被拒（节次非法 / 收窄到低于已用节次）时保留本机那套、不动映射：宁可
- * 变回默认作息，也不要往模板表里塞一套坏数据（这条是刻意保留的差异）。
+ * ## 设备信任锚（刻意与发布版不同，别「对齐」掉）
+ *
+ * 发布版这条路径**没有**剥掉设备信任锚（`keepingDeviceTrustAnchorsFrom` 只在覆盖路径用），
+ * 也就是说包里的更新通道会跟着进来；**本版主动保留本机信任锚**——`appUpdateMirrorPreset` /
+ * `appUpdateMirrorUrlPrefix` 住在整机级 `AppGlobalSettingsStore`（44 键真源），
+ * 不从包内取值，也不写回。这是安全加固，不是漏迁。
+ */
+private fun applyImportAsNew(
+    repository: TimetableRepository,
+    pending: PendingImport,
+): ApplyOutcome {
+    val plan = pending.plan
+    val before = repository.snapshot
+    // 落盘前把「本机全局偏好」（外观 / 语言 / 更新通道…）抓下来：切档后活动档变成新档，
+    // 而本仓传输包只携带 core 设置子集（`DataTransferPackageLogic.kt:63-67`），
+    // 不铺这一步新档的镜像里就缺这些键、备份出去/旧读侧会当它们没设过。
+    // 键表用整机级真源的公开清单 `AppGlobalSettingsStore.KEYS`（44 键，Dart `app_global_settings_service.dart:59-114`），
+    // 值取自 `readRawSettings()` 的叠加视图（内嵌 + 全局真源，见 `TimetableStore:593`）。
+    // 新建 / 复制档走的是同一条口子（`TimetableProfilesController.seedActiveSettings`）。
+    val globalPreferences = repository.readRawSettings()
+        .filterKeys { key -> key in AppGlobalSettingsStore.KEYS }
+    val undoSnapshot = TransferUndoSnapshot(
+        kind = TransferUndoScope.FULL_PROFILES,
+        profiles = before.profiles,
+        activeProfileId = before.activeProfileId,
+        settings = before.settings,
+        currentWeek = before.currentWeek,
+        // 「导入为新课表」不碰日程规则 / 地点分组：null = 撤销时也不碰。
+        scheduleDateRules = null,
+        locationTimeGroups = null,
+        // 模板表在 `reconcileTimeSchemes` 之前抓：as-new 会新建「<名> 时间」等模板，
+        // 撤销/回滚必须整份写回，否则本机永久多出模板且无法回收。
+        timeSchemes = before.timeSchemes,
+    )
+    val applied = runCatching {
+        val nextName = DataTransferApplyLogic.resolvedProfileName(pending.info.profileName)
+        // ① 包里的时间模板补进本机表，拿到「包 id → 本机 id」映射。
+        val schemeIdMap = reconcileTimeSchemes(repository, plan.timeSchemes)
+        // ② 设置对齐本机模板表（本机有 → 复用；节次签名相同 → 复用；都没有 → 新建「<名> 时间」）。
+        val baseSettings = plan.settings
+            ?.let { DataTransferApplyLogic.remapSettingsScheme(it, schemeIdMap) }
+            ?: TimetableSettings.defaults()
+        val now = LocalDateTime.now()
+        val resolution = DataTransferApplyLogic.resolveSettingsAgainstSchemes(
+            settings = baseSettings,
+            schemes = repository.snapshot.timeSchemes,
+            // 模板名 `<课表名> 时间`（发布版硬编码 `'$nextName 时间'`）走文案系统，
+            // 不许新增硬编码中文（`CjkLiteralGateTest`）。
+            fallbackSchemeName = TransferStrings.transferImportedTimeSchemeName.filled("name", nextName),
+            newSchemeId = UUID.randomUUID().toString(),
+            now = now,
+        )
+        val settings = resolution.schemeToCreate?.let { toCreate ->
+            val created = repository.createTimeScheme(toCreate.name, toCreate.sections)
+            // 仓储建出来的 id 才是真 id：以它为准重建设置（与 Dart 同一处意图）。
+            resolution.settings.copy(
+                activeTimeSchemeId = created.id,
+                sections = created.sections.toList(),
+            )
+        } ?: resolution.settings
+        // ③ 建新档 → 整份档案表 + 激活 id + 全局设置 / 周次，一次写、一次通知。
+        val newProfile = DataTransferApplyLogic.planImportAsNew(
+            plan = plan,
+            profileName = nextName,
+            settings = settings,
+            schemes = repository.snapshot.timeSchemes,
+            newProfileId = UUID.randomUUID().toString(),
+            now = now,
+            schemeIdMap = schemeIdMap,
+        )
+        repository.replaceAllProfilesAndSettings(
+            profiles = before.profiles + newProfile,
+            activeProfileId = newProfile.id,
+            settings = settings,
+            currentWeek = newProfile.currentWeek.toInt(),
+        )
+        // ④ 把本机全局偏好铺到新档（失败按快照整份回滚，不留「多一份档、外观是默认值」）。
+        if (globalPreferences.isNotEmpty() && !repository.writeRawSettingsPatch(globalPreferences)) {
+            error("seed_profile_settings_failed")
+        }
+    }
+    return applied.fold(
+        onSuccess = {
+            ApplyOutcome.Applied(
+                token = TransferUndoToken(
+                    id = TransferEnvelope.newPackageId(),
+                    snapshot = undoSnapshot,
+                    createdAt = LocalDateTime.now(),
+                ),
+            )
+        },
+        onFailure = { error ->
+            // 回滚结果不许吞：as-new 一路已落过模板 / 档案表 / 全局偏好多次盘，
+            // 还原失败必须报 `import_rollback_incomplete`（发布版有同一用户可见码）。
+            val restored = restoreFromSnapshot(repository, undoSnapshot)
+            ApplyOutcome.Failed(
+                code = when {
+                    !restored -> "import_rollback_incomplete"
+                    else -> error.message ?: "import_failed_invalid_file"
+                },
+            )
+        },
+    )
+}
+
+/**
+ * 把包里带的时间模板并进本机模板表，返回「包 id → 本机 id」映射。
+ *
+ * 判据全部下沉到 [DataTransferApplyLogic.planTimeSchemeSteps]，但**只落 Create**：
+ * - 同 id（Update）→ **一个字都不改本机模板**（2026-11-06 返工：旧实现会把本机模板的
+ *   name/sections 用包里的覆盖掉，用户原有模板被改坏且回滚救不回；违背方案三段设计）；
+ * - 节次签名相同（Reuse）→ 复用本机 id，不新建、不改写；
+ * - 其余（Create）→ 新建一套。
+ *
+ * 该落哪些写的判据由 [DataTransferApplyLogic.timeSchemeStepsToCreate] 统一给出（可单测），
+ * 这里不自己再判一遍，避免两处漂移。
  */
 private fun reconcileTimeSchemes(
     repository: TimetableRepository,
@@ -578,23 +793,18 @@ private fun reconcileTimeSchemes(
         current = repository.snapshot.timeSchemes,
         incoming = incoming,
     )
+    // 复用：只记映射（id 相同/同签名都不需要新建，也不可能改本机那份）。
     for (step in steps) {
-        when (step) {
-            is DataTransferApplyLogic.TimeSchemeStep.Update ->
-                runCatching {
-                    repository.updateTimeScheme(step.localId, step.name, step.sections)
-                }
-
-            is DataTransferApplyLogic.TimeSchemeStep.Reuse ->
-                mapping[step.incomingId] = step.localId
-
-            is DataTransferApplyLogic.TimeSchemeStep.Create -> {
-                val created = runCatching {
-                    repository.createTimeScheme(step.name, step.sections)
-                }.getOrNull()
-                if (created != null) mapping[step.incomingId] = created.id
-            }
+        if (step is DataTransferApplyLogic.TimeSchemeStep.Reuse) {
+            mapping[step.incomingId] = step.localId
         }
+    }
+    // 新建：只落 Create；Update 一律跳过（见 KDoc）。
+    for (step in DataTransferApplyLogic.timeSchemeStepsToCreate(steps)) {
+        val created = runCatching {
+            repository.createTimeScheme(step.name, step.sections)
+        }.getOrNull()
+        if (created != null) mapping[step.incomingId] = created.id
     }
     return mapping
 }
@@ -605,43 +815,81 @@ private fun undoImport(repository: TimetableRepository, token: TransferUndoToken
 
 /**
  * 按快照整份写回。**撤销**与「导入失败回滚」共用这一份判据——两处需要还原的
- * 东西完全一样（profiles / 活动档案内容 / 设置 / 当前周 / 日程 / 规则 / 分组），
+ * 东西完全一样（时间模板表 / profiles / 活动档案内容 / 设置 / 当前周 / 日程 / 规则 / 分组），
  * 分成两份实现早晚会漂。
  *
  * 快照里的每一块都是**导入前本机的真实值**（不是「包里没带」），所以空列表也必须
  * 照写：否则撤销清不掉本次导入进来的日程，回滚也会留下半替换现场。
+ *
+ * **时间模板表先写回**（2026-11-06 返工）：导入第一步就会新建模板，不还原就永久留一套；
+ * 先写模板表再写档案内容，任何内部按模板同步的路径看到的都是原始模板。
+ *
+ * ## 逐步尽力还原（2026-11-06 二轮返工）
+ *
+ * 发布版失败回滚是「每步各自 catch、继续还原剩余步骤」，最后按是否有失败决定报
+ * `import_rollback_incomplete`；本函数照此改掉「一个 `runCatching` 包全部」的写法——
+ * 旧写法第一笔写挂就整段中止，后面的步骤一个都不还原，等于半还原。
+ * 与本仓 `LanTransferApplier.restoreState` 的「尽力补偿」同一口径。
+ *
+ * 返回值 = **所有步骤是否都成功**；任何一步失败都返回 false，调用方翻成
+ * `import_rollback_incomplete`（用户可见）。单步失败不中断后续步骤。
+ *
+ * ## 已知差异（如实记，不装等价）
+ *
+ * 发布版**有** `runSettingsMirrorTransaction` 之类的事务包裹（整份恢复在事务里），
+ * 本仓仓储是「多 key 独立落盘、没有跨 key 事务」（`TimetableRepository` 的 KDoc 自认）——
+ * 所以这里只能**逐步尽力还原**，失败聚合报 `import_rollback_incomplete`，做不到发布版那种原子性。
+ *
+ * 发布版回滚还会还原 partnerBinding / signature / live 状态；但「导入为新课表」与
+ * 「单课表/全量覆盖」这两条路径**根本不碰**那些（快照里也就没有它们），
+ * 所以本函数不纳入——这是范围差异，不是漏迁。
+ *
+ * 另一处曾是的差异已经**消除**：`updateLocationTimeGroups(resync = true)` / `all_data` 会重排
+ * **所有档案**的课程钟点，旧快照只抓活动档 ⇒ 其它档停在新钟点上（半还原）。现在这类路径
+ * 由 `undoKindFor(..., rewritesAllProfiles = true)` 改抓 `FULL_PROFILES`，改多少档就还原多少档。
  */
 private fun restoreFromSnapshot(
     repository: TimetableRepository,
     snapshot: TransferUndoSnapshot,
-): Boolean =
-    runCatching {
-        when (snapshot.kind) {
-            TransferUndoScope.FULL_PROFILES -> {
-                repository.replaceAllProfiles(snapshot.profiles, snapshot.activeProfileId)
-                snapshot.settings?.let(repository::updateSettings)
-                // 全量导入现在会写当前周（见 applyImport），撤销必须一起还原。
-                repository.setCurrentWeek(snapshot.currentWeek)
-            }
+): Boolean {
+    var allSucceeded = true
 
-            TransferUndoScope.ACTIVE_PROFILE_CONTENT -> {
-                // 日程条目无条件写回（含空列表），理由见函数注释。
-                repository.scheduleItems = snapshot.scheduleItems
+    // 单步失败只记账、继续走完剩余步骤（见 KDoc「逐步尽力还原」）。
+    fun step(block: () -> Unit) {
+        if (!runCatching(block).isSuccess) allSucceeded = false
+    }
+
+    // 模板表：null = 这份快照不负责它（老调用点），有值就整份写回。
+    snapshot.timeSchemes?.let { schemes -> step { repository.replaceTimeSchemes(schemes) } }
+    when (snapshot.kind) {
+        TransferUndoScope.FULL_PROFILES -> {
+            step { repository.replaceAllProfiles(snapshot.profiles, snapshot.activeProfileId) }
+            snapshot.settings?.let { settings -> step { repository.updateSettings(settings) } }
+            // 全量导入现在会写当前周（见 applyImport），撤销必须一起还原。
+            step { repository.setCurrentWeek(snapshot.currentWeek) }
+        }
+
+        TransferUndoScope.ACTIVE_PROFILE_CONTENT -> {
+            // 日程条目无条件写回（含空列表），理由见函数注释。
+            step { repository.scheduleItems = snapshot.scheduleItems }
+            step {
                 repository.replaceActiveProfileContent(
                     courses = snapshot.courses,
                     tasks = snapshot.tasks,
                     exams = snapshot.exams,
                 )
-                snapshot.settings?.let(repository::updateSettings)
-                repository.setCurrentWeek(snapshot.currentWeek)
-                repository.persistActiveProfileState()
             }
+            snapshot.settings?.let { settings -> step { repository.updateSettings(settings) } }
+            step { repository.setCurrentWeek(snapshot.currentWeek) }
+            step { repository.persistActiveProfileState() }
         }
-        // 本次导入动过日程规则才还原（null = 没动过，别把本机规则抹了）。
-        snapshot.scheduleDateRules?.let(repository::updateScheduleDateRules)
-        // 地点作息分组同理：导入会写它，撤销就得能一起回到原样。
-        snapshot.locationTimeGroups?.let(repository::updateLocationTimeGroups)
-    }.isSuccess
+    }
+    // 本次导入动过日程规则才还原（null = 没动过，别把本机规则抹了）。
+    snapshot.scheduleDateRules?.let { rules -> step { repository.updateScheduleDateRules(rules) } }
+    // 地点作息分组同理：导入会写它，撤销就得能一起回到原样。
+    snapshot.locationTimeGroups?.let { groups -> step { repository.updateLocationTimeGroups(groups) } }
+    return allSucceeded
+}
 
 /** 当前作息的有效节数（`TimetableSettings` 没有 `sectionCount`，取活动模板，再回落设置里的节次表）。 */
 private fun sectionCountOf(snapshot: TimetableSnapshot): Int {

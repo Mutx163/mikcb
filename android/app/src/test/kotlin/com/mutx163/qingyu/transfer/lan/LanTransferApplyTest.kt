@@ -16,6 +16,7 @@ import com.mutx163.qingyu.core.TimetableProfile
 import com.mutx163.qingyu.core.TimetableSettings
 import com.mutx163.qingyu.share.TransferApplyMode
 import com.mutx163.qingyu.share.TransferChannel
+import com.mutx163.qingyu.share.TransferEnvelope
 import com.mutx163.qingyu.share.TransferScope
 import com.mutx163.qingyu.sync.buildTransferPackageJson
 import org.junit.Assert.assertEquals
@@ -264,6 +265,85 @@ class LanTransferApplyTest {
         assertEquals(before, store.rawSnapshot())
     }
 
+    @Test
+    fun `all_data 包即便不带 full 也被拒 该半边在局域网不可达`() {
+        // 第五轮返工·第 6 件：判据里曾有 `scope == ALL_DATA` 这半边，但它**不可达**——
+        // `LanTransferLogic.parseCompatible` 的 `_rejectWholeDeviceWrite`（:141-143）在解析阶段
+        // 就对 `all_data` 直接抛 `use_profile_backup_not_full`，`backupType` 不是 full 也一样拒；
+        // 旧 `.mikcb` 通道（`legacyIncoming`）也有同一道门。所以「全量包走 LAN 会怎样」没有
+        // 行为可测，能测且必须测的是**它一定被拒、且盘上一字未变**。
+        val store = InMemoryKeyValueStore()
+        val repository = repositoryOn(store)
+        repository.addCourse(course("c1", "高等数学"))
+        val before = store.rawSnapshot()
+        val host = LanEditRepositoryHost(repository)
+
+        val error = try {
+            host.applyTransferJson(
+                packageJson(
+                    scope = TransferScope.ALL_DATA,
+                    courses = listOf(course("c9", "外来课程")),
+                    isFullBackup = false,
+                ),
+                TransferApplyMode.OVERWRITE,
+            )
+            null
+        } catch (e: com.mutx163.qingyu.core.FormatException) {
+            e
+        }
+        assertEquals(
+            "all_data 即便不带 backupType=full 也必须被整设备写入守门拒绝",
+            "use_profile_backup_not_full",
+            error?.message,
+        )
+        assertEquals("被拒的全量包盘上一字未变", before, store.rawSnapshot())
+    }
+
+    @Test
+    fun `旧包全量备份走 legacy 门被拒 盘上一字未变`() {
+        // 第五轮返工·第 3 件（hy3）：`parseCompatible` 有**两条**通道，各自都有
+        // 「整设备写入」门——上面那条测的是信封通道（`parseStrictIncoming:141-143`），
+        // 这条测旧 `.mikcb` 通道（`legacyIncoming:188-190`）。两处代码位置不同，
+        // 只测一条会漏掉另一条（旧包 `backupType: full` 走的是 legacy 解析，不经过信封门）。
+        val store = InMemoryKeyValueStore()
+        val repository = repositoryOn(store)
+        repository.addCourse(course("c1", "高等数学"))
+        val before = store.rawSnapshot()
+        val host = LanEditRepositoryHost(repository)
+
+        val legacyFullBackup = MiniJson.encode(
+            linkedMapOf(
+                "app" to "mikcb",
+                "schemaVersion" to TransferEnvelope.SCHEMA_VERSION,
+                "backupType" to "full",
+                "packageId" to "legacy-full-1",
+                "profiles" to listOf(
+                    TimetableProfile(
+                        id = "p1",
+                        name = "默认课表",
+                        currentWeek = 7,
+                        createdAt = stamp,
+                        lastUsedAt = stamp,
+                    ).toJson(),
+                ),
+                "timeSchemes" to emptyList<Any?>(),
+            ),
+        )
+
+        val error = try {
+            host.applyTransferJson(legacyFullBackup, TransferApplyMode.OVERWRITE)
+            null
+        } catch (e: com.mutx163.qingyu.core.FormatException) {
+            e
+        }
+        assertEquals(
+            "旧包全量备份也必须被 legacy 通道的整设备写入门拒绝",
+            "use_profile_backup_not_full",
+            error?.message,
+        )
+        assertEquals("被拒的旧全量包盘上一字未变", before, store.rawSnapshot())
+    }
+
     // -----------------------------------------------------------------------
     // 写盘失败 → 尽力补偿
     // -----------------------------------------------------------------------
@@ -296,7 +376,23 @@ class LanTransferApplyTest {
             repository.courses.map { it.id },
         )
         assertEquals("内存里的设置也要回到旧值", 20, repository.snapshot.settings.semesterWeekCount)
-        assertEquals("盘上必须和导入前一模一样", before, backing.rawSnapshot())
+        // 精确原态（2026-11-06 第五轮返工）：
+        // ① 导入前不存在的三块集合 key，补偿后必须**仍然不存在**（不是写成 []）；
+        // ② 补偿不是「使用」，`lastUsedAt` 不许被刷成补偿时刻。
+        // 两条都成立时，逐字节对比才是真口径（此前多 3 个键 + lastUsedAt 变了会被门禁抓到）。
+        assertFalse(
+            "time_schemes key 导入前不存在，补偿后不应被写出来",
+            backing.rawSnapshot().containsKey("flutter.time_schemes"),
+        )
+        assertFalse(
+            "schedule_date_rules key 导入前不存在，补偿后不应被写出来",
+            backing.rawSnapshot().containsKey("flutter.schedule_date_rules"),
+        )
+        assertFalse(
+            "location_time_groups key 导入前不存在，补偿后不应被写出来",
+            backing.rawSnapshot().containsKey("flutter.location_time_groups"),
+        )
+        assertEquals("盘上必须和导入前一模一样（含 lastUsedAt）", before, backing.rawSnapshot())
     }
 
     // -----------------------------------------------------------------------
@@ -331,10 +427,14 @@ class LanTransferApplyTest {
     }
 
     @Test
-    fun `同 id 模板按外来名字与节次更新`() {
+    fun `同 id 模板只建映射_不改写本机名字与节次`() {
+        // 2026-11-06 返工：导入不再拿包里的 name/sections 覆盖同 id 的本机模板
+        //（`executeTimeSchemes` 的 Update 只建映射）。改写不可逆且回滚救不回，
+        // 方案的三段设计只允许「复用 / 新建」。
         val store = InMemoryKeyValueStore()
         val repository = repositoryOn(store)
-        val localScheme = repository.createTimeScheme("本地模板", listOf(SectionTime("08:00", "08:45")))
+        val sectionsLocal = listOf(SectionTime("08:00", "08:45"))
+        val localScheme = repository.createTimeScheme("本地模板", sectionsLocal)
         val host = LanEditRepositoryHost(repository)
 
         val applied = host.applyTransferJson(
@@ -344,9 +444,11 @@ class LanTransferApplyTest {
             TransferApplyMode.MERGE,
         )
         assertEquals(true, applied["applied"])
-        val updated = repository.snapshot.timeSchemes.single { it.id == localScheme.id }
-        assertEquals("外来改名", updated.name)
-        assertEquals(sectionsB, updated.sections)
+
+        val unchanged = repository.snapshot.timeSchemes.single { it.id == localScheme.id }
+        assertEquals("本机模板名不许被包里的覆盖", "本地模板", unchanged.name)
+        assertEquals("本机模板节次不许被包里的覆盖", sectionsLocal, unchanged.sections)
+        assertEquals("同 id 不该多出一套模板", 1, repository.snapshot.timeSchemes.size)
     }
 
     // -----------------------------------------------------------------------

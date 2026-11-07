@@ -41,8 +41,20 @@ data class TransferDiffSummary(
 /** 导入预览弹窗的标题与正文。 */
 data class TransferPreviewContent(val title: String, val message: String)
 
-/** 预览弹窗的一个动作（[mode] 为 null 表示取消）。 */
-data class TransferPreviewAction(val label: String, val mode: TransferApplyMode?)
+/**
+ * 预览弹窗的一个动作。
+ *
+ * @param mode 落盘模式；null = 取消，或「导入为新课表」这种不走 [TransferApplyMode] 的动作。
+ * @param importAsNew true = 这次是「导入为新课表」（新建一份档案，不是写进当前档）。
+ *   用独立标记而不是给 [TransferApplyMode] 加枚举值：那个枚举在 LAN / diff 全链路被
+ *   `when` 穷举（`LanTransferLogic.modeName` 等），加值会把一行改动扩散到别人域；
+ *   这条动作本来就只属于「外部打开备份」一个入口，标记更贴事实。
+ */
+data class TransferPreviewAction(
+    val label: String,
+    val mode: TransferApplyMode?,
+    val importAsNew: Boolean = false,
+)
 
 /** 二维码发送前可选的传输范围。 */
 data class QrScopeOption(
@@ -302,14 +314,36 @@ object DataTransferLogic {
         lines.joinToString("\n") { diffSummaryLine(it) }
 
     /**
+     * 「导入为新课表」完成的提示（Dart `main.dart:1584-1593`（工作区））：
+     * 基础句是 `createdNewTimetableAfterImport`，只追加「格式损坏已跳过」后缀。
+     *
+     * **不带**「超出当前作息范围」后缀：发布版 as-new 不算这一段（新档的节次表来自包本身）。
+     */
+    fun createdNotice(droppedCount: Int): TransferRestoredNotice {
+        var message = TransferStrings.createdNewTimetableAfterImport.zh
+        if (droppedCount > 0) {
+            message += TransferStrings.importPartialSkippedSuffix
+                .filled("count", droppedCount.toString())
+        }
+        return TransferRestoredNotice(message = message, isWarning = droppedCount > 0)
+    }
+
+    /**
      * 预览弹窗的动作（Dart `transfer_preview_dialog.dart:41-53`）：取消 / 合并 / 覆盖
      * （覆盖为主操作）。
      *
      * @param canMerge false ⇒ 不显示「合并更改」。只给全量备份用：Kotlin 侧没有
      *   逐实体合并服务（[DataTransferApplyLogic.rejectionCode] 明确拒绝），把这条
      *   点了必然失败的按钮摆出来只会让用户看到一句「发生未知错误」。
+     * @param canImportAsNew true ⇒ 追加「导入为新课表」。**只在「外部打开备份文件」**
+     *   这条入口给（发布版那条三动作弹框就是它，`main.dart:1490-1522`（工作区；发布版 `:1401-1422`））；文件选择 /
+     *   二维码 / 局域网用的预览弹框在发布版里没有这条，保持原样。
+     *   全量备份不给（[DataTransferApplyLogic.importAsNewRejectionCode] 会拒，UI 先隐藏）。
      */
-    fun previewActions(canMerge: Boolean = true): List<TransferPreviewAction> = buildList {
+    fun previewActions(
+        canMerge: Boolean = true,
+        canImportAsNew: Boolean = false,
+    ): List<TransferPreviewAction> = buildList {
         add(TransferPreviewAction(TransferStrings.cancelAction.zh, null))
         if (canMerge) {
             add(TransferPreviewAction(TransferStrings.selectImportModeMerge.zh, TransferApplyMode.MERGE))
@@ -320,6 +354,15 @@ object DataTransferLogic {
                 TransferApplyMode.OVERWRITE,
             ),
         )
+        if (canImportAsNew) {
+            add(
+                TransferPreviewAction(
+                    label = TransferStrings.importAsNewTimetable.zh,
+                    mode = null,
+                    importAsNew = true,
+                ),
+            )
+        }
     }
 }
 

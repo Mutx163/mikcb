@@ -5,6 +5,8 @@ import com.mutx163.qingyu.app.TimetableRepository
 import com.mutx163.qingyu.app.TimetableStore
 import com.mutx163.qingyu.core.Course
 import com.mutx163.qingyu.core.MiniJson
+import com.mutx163.qingyu.core.SectionTime
+import com.mutx163.qingyu.core.TimeScheme
 import com.mutx163.qingyu.core.TimetableProfile
 import com.mutx163.qingyu.core.TimetableSettings
 import com.mutx163.qingyu.share.LanEditSession
@@ -306,6 +308,79 @@ class LanEditRepositoryEndToEndTest {
             assertTrue("重复撤销不能报成功：${again.body}", again.body.contains("\"undo\":false"))
             assertTrue(again.body.contains("transfer_undo_already_undone"))
             assertFalse(repository.courses.any { it.id == "c9" })
+        }
+    }
+
+    @Test
+    fun `import_undo 少撤一套模板时 HTTP 响应必须带 skippedCount`() {
+        // 三段链路里最容易断的一环：后端产出了 `skippedCount`，接口层筛字段就丢了——
+        // 网页端于是永远说「全部撤销」。这条走**真 socket**，断言网页端能读到的响应体。
+        val store = InMemoryKeyValueStore()
+        val repository = repositoryOn(store)
+        val session = session()
+        val stamp = LocalDateTime.of(2026, 10, 30, 9, 0)
+        val content = MiniJson.encode(
+            buildTransferPackageJson(
+                packageId = "transfer-e2e-skip",
+                scope = TransferScope.CURRENT_TIMETABLE,
+                exportedAtIso = "2026-10-30T09:00:00.000",
+                channel = TransferChannel.LAN,
+                currentWeek = 7,
+                settingsJson = TimetableSettings.defaults().toJson(),
+                coursesJson = listOf(course("c9", "外来课程").toJson()),
+                timeSchemesJson = listOf(
+                    TimeScheme(
+                        id = "s9",
+                        name = "全新模板",
+                        sections = listOf(SectionTime("10:00", "10:45"), SectionTime("10:55", "11:40")),
+                        createdAt = stamp,
+                        updatedAt = stamp,
+                    ).toJson(),
+                ),
+            ),
+        )
+
+        withServer(repository, session) { port ->
+            val applied = parseResponse(
+                exchange(
+                    port,
+                    post(
+                        port,
+                        "/api/v1/import/apply",
+                        MiniJson.encode(mapOf("content" to content, "mode" to "overwrite", "profileId" to "p1")),
+                        session.token,
+                    ),
+                ),
+            )
+            assertEquals(200, applied.status)
+            val transferId = (MiniJson.tryParse(applied.body) as? Map<*, *>)?.get("transferId") as? String
+            assertNotNull("apply 必须回撤销点 id：${applied.body}", transferId)
+            val created = repository.snapshot.timeSchemes.single { it.name == "全新模板" }
+            // 导入后用户把一门课绑到这套模板 ⇒ 撤销时它仍被引用、不能删
+            repository.addCourse(course("c_user", "用户后加的课").copy(timeSchemeIdOverride = created.id))
+
+            val undone = parseResponse(
+                exchange(
+                    port,
+                    post(port, "/api/v1/import/undo", MiniJson.encode(mapOf("transferId" to transferId)), session.token),
+                ),
+            )
+            assertEquals(200, undone.status)
+            val body = MiniJson.tryParse(undone.body) as? Map<*, *>
+            assertNotNull("撤销响应必须是 JSON 对象：${undone.body}", body)
+            assertEquals("撤销本身要成：${undone.body}", true, body?.get("undo"))
+            assertEquals(
+                "仍被引用的模板在 skipped 里如实上报（网页端据此说「其中 N 套未撤」）：${undone.body}",
+                listOf("time_scheme_delete_refused:${created.id}"),
+                body?.get("skipped"),
+            )
+            assertEquals(
+                "skippedCount 必须从 executeUndo 一路透传到 HTTP 响应：${undone.body}",
+                1,
+                (body?.get("skippedCount") as? Number)?.toInt(),
+            )
+            // 模板真的没被删（说「未撤销」就要真的没撤）
+            assertNotNull(repository.snapshot.timeSchemes.firstOrNull { it.id == created.id })
         }
     }
 

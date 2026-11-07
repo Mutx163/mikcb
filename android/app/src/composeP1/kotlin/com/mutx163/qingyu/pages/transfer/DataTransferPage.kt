@@ -470,14 +470,17 @@ private val TransferCardInsideMargin = PaddingValues(start = 16.dp, top = 16.dp,
  * 导入方式预览弹窗（`lib/screens/transfer_preview_dialog.dart`）。
  *
  * - 正文是**多行纯文本**（段间空行），居中显示，样式 listDetail（14/次级灰）；
- * - 三个动作竖排：取消 / 合并更改 / 覆盖当前课表（最后一个 primary）；
+ * - 动作竖排：取消 / 合并更改 / 覆盖当前课表（最后一个非取消动作 primary）；
+ *   「外部打开备份」这条入口额外多一个「导入为新课表」（发布版 `main.dart:1401-1422`；
+ *   工作区 `main.dart:1490-1522` 那条）；
  * - 关闭（点遮罩 / 返回键）回传 null = 不导入。
  */
 @Composable
 fun TransferPreviewDialog(
     content: TransferPreviewContent?,
     canMerge: Boolean = true,
-    onChoose: (TransferApplyMode?) -> Unit,
+    canImportAsNew: Boolean = false,
+    onChoose: (TransferPreviewAction?) -> Unit,
 ) {
     val dark = isSystemInDarkTheme()
     // 退场动画期间保留最后一份非空 content：content 置 null 触发关闭时，标题若直接
@@ -516,10 +519,10 @@ fun TransferPreviewDialog(
                     )
                 }
             }
-            for (action in DataTransferLogic.previewActions(canMerge)) {
+            for (action in DataTransferLogic.previewActions(canMerge, canImportAsNew)) {
                 TransferButton(
                     label = action.label,
-                    onClick = { onChoose(action.mode) },
+                    onClick = { onChoose(action) },
                     modifier = Modifier.fillMaxWidth(),
                     primary = action.mode == TransferApplyMode.OVERWRITE,
                     fillWidth = true,

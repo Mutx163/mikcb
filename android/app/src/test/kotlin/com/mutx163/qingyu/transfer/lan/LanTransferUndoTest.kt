@@ -180,7 +180,11 @@ class LanTransferUndoTest {
     }
 
     @Test
-    fun `撤销会删掉本次导入新建的时间模板并还原被改名的模板`() {
+    fun `撤销会删掉本次导入新建的时间模板_同id模板不再被导入改名`() {
+        // 2026-11-06 返工：导入不再拿包里的 name/sections 改写同 id 的本机模板
+        // （`LanTransferApplier.executeTimeSchemes` 的 Update 只建映射）。
+        // 所以「被改名再还原」这个场景已经不存在——同 id 模板导入前后都是本机原名，
+        // 撤销只需把导入**新建**的那套收回。断言按新语义保留。
         val store = InMemoryKeyValueStore()
         val repository = repositoryOn(store)
         val localScheme = repository.createTimeScheme("本地模板", sectionsTwo())
@@ -200,11 +204,16 @@ class LanTransferUndoTest {
         assertEquals(true, applied["applied"])
         val createdId = repository.snapshot.timeSchemes.first { it.id != localScheme.id }.id
         assertEquals(2, repository.snapshot.timeSchemes.size)
+        assertEquals(
+            "同 id 模板不许被包里的名字覆盖（导入前就叫本地模板）",
+            "本地模板",
+            repository.snapshot.timeSchemes.first { it.id == localScheme.id }.name,
+        )
 
         val undone = host.undoTransferJson(applied["transferId"] as String)
         assertEquals(true, undone["undo"])
         assertFalse("导入新建的模板要删掉", repository.snapshot.timeSchemes.any { it.id == createdId })
-        assertEquals("被改名的模板要还原", "本地模板", repository.snapshot.timeSchemes.single().name)
+        assertEquals("同 id 模板仍是本机原名", "本地模板", repository.snapshot.timeSchemes.single().name)
         assertTrue("导入新建的课也要撤掉", repository.courses.none { it.id == "c9" })
     }
 

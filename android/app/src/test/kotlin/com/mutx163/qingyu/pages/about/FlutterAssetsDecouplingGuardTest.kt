@@ -73,11 +73,22 @@ class FlutterAssetsDecouplingGuardTest {
         "licenses/NOTICES.gz" to "2cd0a6d59033bb94180d038b4aad6a78bf40e69e13ac22d05a531b7c4a0a134e",
     )
 
-    /** 文本资产（lan_edit 控制台）：钉规范化换行后的哈希。 */
+    /**
+     * 文本资产（lan_edit 控制台）：钉规范化换行后的哈希。
+     *
+     * 2026-11-07 更新 `app.js` / `i18n.js` 两个钉值：局域网撤销的**部分成功**要如实说——
+     * 后端已经产出 `skipped` / `skippedCount`，网页端 `undoLastTransfer` 现在会读它，
+     * 有未撤条目时改说「撤销完成，其中 N 套时间模板未撤销」（`transferUndoPartial`，
+     * en/zh 各一份）。改动只在这两个文件，`index.html` / 两份 css 钉值不变。
+     *
+     * **同时把仓库根 `assets/lan_edit/` 那份旧拷贝同步成主 assets 的内容**：根那份自
+     * `6c4a40dd0`（整份恢复预演 + 四语错误文案）起就没跟上，两边内容长期漂移；
+     * 本次起两份归一化后逐字节一致（本地 `normalizedTextHash` 对拍验证过）。
+     */
     private val textPins = mapOf(
         "lan_edit/index.html" to "c405bc1a2b2a3777e1fa32384378ffb2faa98965c9b2830242a3394ec9580d1a",
-        "lan_edit/app.js" to "37477b3e43920e14f59bc527d69cebb4fe520bfd5108ef46195ad36904d9bff7",
-        "lan_edit/i18n.js" to "8959222eef02ec53b4fdd4c04efae396fd63f6f68fb60fe01b92ca6dcfbd9ba3",
+        "lan_edit/app.js" to "0a6cc14f0c5aed942ddfb455dcf1cf6d30123040e552a99c0d998c691e12b9ff",
+        "lan_edit/i18n.js" to "1cd8784fe9eac6567e579365c6701650b3f58300f0ca8d139afbc2283d28be42",
         "lan_edit/lan-timetable.css" to "1775921243900872d299a71b6a2084725cf527142cc8e498c03117cad38d07cc",
         "lan_edit/tabler-icons-subset.css" to "d2e977c5168fecd9f49ff53006da7c676fcf759f68c8caa92e67f9c39df5e2fe",
     )

@@ -459,10 +459,13 @@ object LanTransferLogic {
 
     /**
      * Dart `UnifiedTransferService._mergeTimeSchemes` 的移植，但**只出计划不写盘**：
-     * - 同一个 id → [LanTimeSchemeStep.Update]（外来名字与节次覆盖本地）；
+     * - 同一个 id → [LanTimeSchemeStep.Update]（**只标记「引用无需重映射」；执行端不得应用**。
+     *   2026-11-06 返工：拿包里的 name/sections 覆盖本机会改坏用户已有模板，回滚也救不回）；
      * - 节次签名相同、id 不同 → [LanTimeSchemeStep.Reuse]（复用本地 id，一次写都不做）；
      * - 同一次应用内前面刚创建的同签名模板 → [LanTimeSchemeStep.Alias]（指向那位创建者）；
      * - 否则 → [LanTimeSchemeStep.Create]。
+     *
+     * 执行端实际只落 Create（[lanTimeSchemeStepsToCreate]）；Reuse/Alias 只建映射。
      */
     fun planTimeSchemes(
         local: List<TimeScheme>,
@@ -478,8 +481,11 @@ object LanTransferLogic {
             val signature = schemeSignature(scheme)
             val sameId = localById[scheme.id]
             if (sameId != null) {
+                // 同 id：只标记引用无需重映射；**不改本机模板，也不改签名索引**
+                // （2026-11-06 三轮返工，与 transfer 侧同一处病灶）：本机节次没变，
+                // 索引若改成「外来签名 → 本机 id」，后续同签名外来表会复用节次不符的模板，
+                // 还会把本机真实签名挤出索引导致重复新建。
                 steps += LanTimeSchemeStep.Update(sameId.id, scheme.name, scheme.sections)
-                localIdBySignature[signature] = sameId.id
                 continue
             }
             val twinId = localIdBySignature[signature]
@@ -497,6 +503,18 @@ object LanTransferLogic {
         }
         return steps
     }
+
+    /**
+     * 模板对齐时执行端**只该落哪些写**：只有 [LanTimeSchemeStep.Create] 会新建。
+     *
+     * [LanTimeSchemeStep.Update]（同 id）与 [LanTimeSchemeStep.Reuse] / [LanTimeSchemeStep.Alias]
+     * **一律不动本机模板表**——这就是「本机有→复用、签名相同→复用、否则新建」的三段约束，
+     * 导入不得改写用户已有模板（改写不可逆，回滚救不回被覆盖的节次）。
+     *
+     * 单列成纯函数，让这条约束能被单测直接钉住，而不是靠读执行端循环。
+     */
+    fun lanTimeSchemeStepsToCreate(steps: List<LanTimeSchemeStep>): List<LanTimeSchemeStep.Create> =
+        steps.filterIsInstance<LanTimeSchemeStep.Create>()
 
     /** 节次签名：Dart `_timeSchemeSectionsSignature` 就是 `jsonEncode(sections)`。 */
     fun schemeSignature(scheme: TimeScheme): String =

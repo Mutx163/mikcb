@@ -284,4 +284,76 @@ class DataTransferModelTest {
         assertEquals(TransferApplyMode.OVERWRITE, actions[1].mode)
         assertTrue("全量包的动作里不该再有 MERGE", actions.none { it.mode == TransferApplyMode.MERGE })
     }
+
+    // ── 「导入为新课表」（2026-11-06） ────────────────────────────────
+
+    @Test
+    fun `两种生产可达组合的动作形状`() {
+        // 生产里 `canMerge` 与 `canImportAsNew` 互斥（外部打开关合并、其它入口关 as-new），
+        // 所以只测这两种**可达**组合；「合并 + 导入为新同时出现」在生产永远不可达，测它等于空转。
+        //
+        // 组合一：文件选择 / 二维码 / 局域网（非全量）→ 取消 / 合并 / 覆盖，没有 as-new。
+        val picker = DataTransferLogic.previewActions(canMerge = true, canImportAsNew = false)
+        assertEquals(
+            listOf("取消", "合并更改", "覆盖当前课表"),
+            picker.map { it.label },
+        )
+        assertTrue("文件选择入口不许出现导入为新", picker.none { it.importAsNew })
+        assertEquals(TransferApplyMode.MERGE, picker[1].mode)
+        assertEquals(TransferApplyMode.OVERWRITE, picker[2].mode)
+
+        // 组合二：外部打开备份（非全量）→ 取消 / 覆盖 / 导入为新，没有合并。
+        val external = DataTransferLogic.previewActions(canMerge = false, canImportAsNew = true)
+        assertEquals(
+            listOf("取消", "覆盖当前课表", "导入为新课表"),
+            external.map { it.label },
+        )
+        assertTrue("外部打开不许出现合并", external.none { it.mode == TransferApplyMode.MERGE })
+        assertTrue("as-new 必须被标出来", external.last().importAsNew)
+        assertNull("as-new 不走 TransferApplyMode，mode 必须是 null", external.last().mode)
+        assertTrue("前两条不许被误标成 importAsNew", external.take(2).none { it.importAsNew })
+    }
+
+    @Test
+    fun `文件选择与二维码入口不给导入为新课表`() {
+        assertTrue(
+            "默认（文件选择 / 二维码 / 局域网）必须保持发布版的三条动作",
+            DataTransferLogic.previewActions(canMerge = true).none { it.importAsNew },
+        )
+        assertTrue(
+            "全量包既不合并也不导入为新",
+            DataTransferLogic.previewActions(canMerge = false).none { it.importAsNew },
+        )
+    }
+
+    @Test
+    fun `外部打开备份是三个动作_取消覆盖导入为新_没有合并`() {
+        // 发布版 `_runBackupImportFlow` 的弹框只有取消 / 覆盖当前课表 / 导入为新课表
+        // （工作区 `main.dart:1490-1522`，发布版 v2.1.4.1 `:1401-1422`）；
+        // 「合并」属于文件选择那套预览弹框，外部打开这条入口不给。
+        val actions = DataTransferLogic.previewActions(canMerge = false, canImportAsNew = true)
+        assertEquals(
+            listOf("取消", "覆盖当前课表", "导入为新课表"),
+            actions.map { it.label },
+        )
+        assertTrue("外部打开不许出现合并", actions.none { it.mode == TransferApplyMode.MERGE })
+        assertTrue("最后一条是 as-new", actions.last().importAsNew)
+        assertEquals("覆盖仍是唯一的 primary 动作", TransferApplyMode.OVERWRITE, actions[1].mode)
+    }
+
+    @Test
+    fun `导入为新课表的完成提示用已创建新的课表那句`() {
+        assertEquals(
+            TransferStrings.createdNewTimetableAfterImport.zh,
+            DataTransferLogic.createdNotice(0).message,
+        )
+        assertEquals(
+            "坏条目要如实追加（工作区 main.dart:1579-1593）",
+            TransferStrings.createdNewTimetableAfterImport.zh +
+                TransferStrings.importPartialSkippedSuffix.filled("count", "3"),
+            DataTransferLogic.createdNotice(3).message,
+        )
+        assertFalse(DataTransferLogic.createdNotice(0).isWarning)
+        assertTrue(DataTransferLogic.createdNotice(3).isWarning)
+    }
 }

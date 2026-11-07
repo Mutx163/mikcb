@@ -338,7 +338,10 @@ class LanTransferLogicTest {
     // -----------------------------------------------------------------------
 
     @Test
-    fun `模板合并计划 同 id 更新 同签名复用 新签名创建 同批同签名走别名`() {
+    fun `模板合并计划 同 id 只标引用 同签名复用 新签名创建 同批同签名走别名`() {
+        // 2026-11-06 返工：Update 的**语义改成「只标记引用无需重映射，执行端不得应用」**
+        // （不改写本机模板）。这里仍断言 Update 步骤本身（计划形状不变），
+        // 「不落盘」由 `pages/transfer/LanTimeSchemeNoRewriteTest` 的纯过滤 + 真应用用例钉住。
         val sectionsA = listOf(SectionTime("08:00", "08:45"))
         val sectionsB = listOf(SectionTime("09:00", "09:45"))
         val steps = LanTransferLogic.planTimeSchemes(

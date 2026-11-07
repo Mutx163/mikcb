@@ -48,6 +48,25 @@ data class LanTransferState(
     /** 整份设置原始 map（未接线读写缝时为 null，撤销口径退化为核心四键）。 */
     val settingsJson: Map<String, Any?>? = null,
     val currentWeek: Int = 1,
+    /**
+     * **所有档案的课程**（档案 id → 课程），仅在导入会 `resync=true` 时填充。
+     *
+     * 为什么需要：`updateLocationTimeGroups(resync = true)` 会按新分组重排**每份档案**的
+     * 课程钟点；只快照活动档的话，非活动档会停在新钟点上（半还原，2026-11-06 第五轮返工）。
+     * 只存课程（不进整份档案）：体积 ≈「档案数 × 课程数」的列表/引用，撤销点容量 3，
+     * 增量有界；不需要 resync 的导入保持空表，不额外占内存。
+     */
+    val profileCourses: Map<String, List<Course>> = emptyMap(),
+    /**
+     * 三块可选顶层集合**导入前是否真的存在于盘上**。
+     *
+     * 「不存在」与「存在但为空数组」在恢复原样时必须区别对待：前者要删 key
+     * （`TimetableStore.removeKey`），后者写回 `[]`；一律写空数组会多出键，
+     * 逐字节对比会红（`LanTransferApplyTest` 的补偿用例）。
+     */
+    val timeSchemesPresent: Boolean = true,
+    val scheduleDateRulesPresent: Boolean = true,
+    val locationTimeGroupsPresent: Boolean = true,
 )
 
 /**
@@ -157,6 +176,15 @@ data class LanTransferUndoPlan(
     val currentWeek: Int? = null,
     val timeSchemesToDelete: List<String> = emptyList(),
     val timeSchemesToRestore: List<TimeScheme> = emptyList(),
+    /**
+     * 导入**重排了所有档案**的课程钟点时，这里放「各档课程」的反向补丁（档案 id → 课程）；
+     * null = 这次导入没重排、不动其它档（见 [LanTransferState.profileCourses]）。
+     */
+    val profileCourses: Map<String, List<Course>>? = null,
+    /** 三块可选集合「导入前是否存在」：false + 撤销后为空 ⇒ 删 key 而不是写 `[]`。 */
+    val timeSchemesPresentBefore: Boolean = true,
+    val scheduleDateRulesPresentBefore: Boolean = true,
+    val locationTimeGroupsPresentBefore: Boolean = true,
     /** 每类真正回退了多少条；只记非零项（网页端据此提示「撤销了什么」）。 */
     val restoredCounts: Map<String, Int> = emptyMap(),
 ) {
@@ -272,6 +300,24 @@ object LanTransferUndoLogic {
         }
         week?.let { counts["current_week"] = 1 }
 
+        // 所有档案的课程：只有「导入重排了（before 有这份快照）」且「导入确实改过」
+        // 且「现在仍是导入后的样子」才回退——与其它实体同一条判据。
+        val profilesPatch = if (
+            token.before.profileCourses.isNotEmpty() &&
+            token.before.profileCourses != token.after.profileCourses &&
+            current.profileCourses == token.after.profileCourses
+        ) {
+            token.before.profileCourses
+        } else {
+            null
+        }
+        if (profilesPatch != null) {
+            val changed = profilesPatch.keys.count { id ->
+                profilesPatch[id] != token.after.profileCourses[id]
+            }
+            if (changed > 0) counts["profiles"] = changed
+        }
+
         return LanTransferUndoPlan(
             courses = coursesPatch?.items,
             tasks = tasksPatch?.items,
@@ -284,11 +330,21 @@ object LanTransferUndoLogic {
             currentWeek = week,
             timeSchemesToDelete = schemePlan.deletedIds,
             timeSchemesToRestore = schemePlan.restored,
+            profileCourses = profilesPatch,
+            timeSchemesPresentBefore = token.before.timeSchemesPresent,
+            scheduleDateRulesPresentBefore = token.before.scheduleDateRulesPresent,
+            locationTimeGroupsPresentBefore = token.before.locationTimeGroupsPresent,
             restoredCounts = counts,
         )
     }
 
-    /** 撤销接口的响应体：`{undo, transferId, restored, skipped, error?}`。 */
+    /**
+     * 撤销接口的响应体：`{undo, transferId, restored, skipped, skippedCount, error?}`。
+     *
+     * `skippedCount` 是 [skipped] 的条数，供网页端直接提示
+     * 「已撤销，其中 N 条未撤」（与导入侧「其中 N 条格式损坏已跳过」同族口径）——
+     * 例如仍被课程引用的模板会被保留，不再静默少数一套。
+     */
     fun resultJson(
         undone: Boolean,
         transferId: String,
@@ -300,6 +356,7 @@ object LanTransferUndoLogic {
         "transferId" to transferId,
         "restored" to restoredCounts,
         "skipped" to skipped,
+        "skippedCount" to skipped.size,
     ).apply { if (error != null) this["error"] = error }
 
     // -----------------------------------------------------------------------

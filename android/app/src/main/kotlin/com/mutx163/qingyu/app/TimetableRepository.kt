@@ -755,6 +755,44 @@ class TimetableRepository(
     }
 
     /**
+     * 还原当前周次——**仅供导入回滚 / 撤销使用**，不是普通「切周」入口。
+     *
+     * 与 [setCurrentWeek] 的唯一差别：**不碰活动档的 `lastUsedAt`**。
+     * [persistActiveProfileState] 会把 `lastUsedAt` 刷成当下时刻，而回滚 / 撤销不是「使用」
+     * 这份课表：刷了它，盘上状态就与「导入前」不再逐字节相同（局域网导入的补偿用例正是
+     * 靠逐字节对比抓回归，2026-11-06 第五轮返工）。
+     *
+     * 其余语义与 [setCurrentWeek] 一致：先按本机学期范围钳制、写 `profiles` /
+     * `activeProfileId` / `settings` / `current_week` 四个键，落盘成功后才通知监听者。
+     * **档案自带的 `currentWeek` 必须一起同步**，否则之后任何一次落盘（都会写档案本体）
+     * 会把旧周次写回去，还原白做。
+     */
+    fun restoreCurrentWeek(week: Int) {
+        restoreCurrentWeekLocked(week)
+        drainPendingNotify()
+    }
+
+    @Synchronized
+    private fun restoreCurrentWeekLocked(week: Int) {
+        val clamped = clampCurrentWeekToSettings(week.toLong(), loadedSettings).toInt()
+        val profile = activeProfile.copy(
+            settings = loadedSettings,
+            // 刻意**不写** lastUsedAt：保留当前档案原有的那个值。
+            currentWeek = clamped.toLong(),
+        )
+        val nextProfiles = upsertProfile(profile)
+        store.saveProfiles(nextProfiles)
+        store.saveActiveProfileId(profile.id)
+        store.saveSettings(loadedSettings)
+        store.saveCurrentWeek(clamped)
+        loadedProfiles = nextProfiles
+        loadedActiveProfileId = profile.id
+        loadedCurrentWeek = clamped
+        currentLiveCourseId = null
+        pendingNotify = true
+    }
+
+    /**
      * 把「按日历算出的周次」夹回本机学期范围（**纯计算，不写回**）。
      *
      * 对齐 Dart `syncTemporalContext`（`timetable_provider.dart:3259-3302`）：日历周由
@@ -972,6 +1010,70 @@ class TimetableRepository(
             pendingNotify = true
         }
         return scheme
+    }
+
+    /**
+     * **整份写回时间模板表**——**仅供导入回滚 / 撤销使用**，不是普通编辑入口。
+     *
+     * 为什么单独要一个：导入的第一步就会 reconcile 模板（新建一套），而本仓储是
+     * 「多 key 独立落盘、没有跨 key 事务」。回滚若只还原档案表，本机就会留下导入新建的模板，
+     * 且没有任何接口能救回来——发布版快照含 `timeSchemes`、失败时整份写回，本方法就是那个落点。
+     *
+     * **刻意不做** `updateTimeScheme` 那套「被引用节数校验 / 课程钟点重排」：这是恢复原样、
+     * 不是改模板；课程钟点由调用方用**同一份快照里的档案内容**一起写回，两边同源。
+     */
+    fun replaceTimeSchemes(schemes: List<TimeScheme>) {
+        replaceTimeSchemesLocked(schemes)
+        drainPendingNotify()
+    }
+
+    @Synchronized
+    private fun replaceTimeSchemesLocked(schemes: List<TimeScheme>) {
+        store.saveTimeSchemes(schemes)
+        loadedTimeSchemes = schemes
+        pendingNotify = true
+    }
+
+    /** 顶层集合 key 是否真的存在于盘上（恢复「导入前不存在」的精确原态时需要）。 */
+    fun isStoredCollectionPresent(key: String): Boolean = store.containsKey(key)
+
+    /** 删除整张时间模板表（恢复「导入前根本没有这个 key」，见 [isStoredCollectionPresent]）。 */
+    fun removeTimeSchemes() {
+        removeTimeSchemesLocked()
+        drainPendingNotify()
+    }
+
+    @Synchronized
+    private fun removeTimeSchemesLocked() {
+        store.removeKey(TimetableStore.KEY_TIME_SCHEMES)
+        loadedTimeSchemes = emptyList()
+        pendingNotify = true
+    }
+
+    /** 删除日程规则 key（同上，恢复「导入前不存在」）。 */
+    fun removeScheduleDateRules() {
+        removeScheduleDateRulesLocked()
+        drainPendingNotify()
+    }
+
+    @Synchronized
+    private fun removeScheduleDateRulesLocked() {
+        store.removeKey(TimetableStore.KEY_SCHEDULE_DATE_RULES)
+        loadedScheduleDateRules = emptyList()
+        pendingNotify = true
+    }
+
+    /** 删除地点作息分组 key（同上）。 */
+    fun removeLocationTimeGroups() {
+        removeLocationTimeGroupsLocked()
+        drainPendingNotify()
+    }
+
+    @Synchronized
+    private fun removeLocationTimeGroupsLocked() {
+        store.removeKey(TimetableStore.KEY_LOCATION_TIME_GROUPS)
+        loadedLocationTimeGroups = emptyList()
+        pendingNotify = true
     }
 
     /** 改名；找不到返回 null（不落盘、不通知）。 */

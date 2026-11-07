@@ -49,7 +49,7 @@
 | `PUT /api/v1/courses/group` | 200 `{courses:[…]}`（按课名整组替换）/ 400 `at_least_one_schedule_slot`·`course_name_required`·`invalid_slot_entry`；**逐 slot 解析 `weekExpression` / `suspendedWeekExpression`** |
 | `POST /api/v1/import/spreadsheet` | 200 `{importedCount, warnings, format}` / 400 `content_base64_required`·`content_base64_invalid` |
 | `POST /api/v1/import/apply` | 200 应用结果（成功时 `transferId` = **撤销点 id**，不是包里的 `packageId`）/ 400 `transfer_content_and_mode_required` · 坏包 `400 invalid_request` / 501 `transfer_apply_not_supported`（仅当 host 未实现应用时；当前已实现） |
-| `POST /api/v1/import/undo` | **Kotlin 新增**：200 `{undo, transferId, restored, skipped, error?}`；缺 `transferId` 400 `transfer_id_required`。撤销点不存在 / 已撤销过回 200 + `undo:false` + 错误码，**都不写盘**。只回退这次导入写入且之后没被改过的那部分 |
+| `POST /api/v1/import/undo` | **Kotlin 新增**：200 `{undo, transferId, restored, skipped, skippedCount, error?}`；缺 `transferId` 400 `transfer_id_required`。撤销点不存在 / 已撤销过回 200 + `undo:false` + 错误码，**都不写盘**。只回退这次导入写入且之后没被改过的那部分。`skipped` 是未撤条目说明（如仍被引用的模板 `time_scheme_delete_refused:<id>`），`skippedCount` 是它的条数——**网页端据此把「撤销成功」改说「其中 N 套时间模板未撤销」**，三段链路见 §三 B2 #20 |
 | `POST /api/v1/import/merge` | **409 `transfer_preview_required`**（Dart 对具备 `LanTransferHost` 的宿主回 409；legacy host 会真正合并回 200。生产宿主恒具备能力，所以生产行为与 Dart 一致；Kotlin 统一 409 是端点级差异，见 §三 B3） |
 
 横切规则：跨源 403、Bearer 令牌、`Content-Type: application/json` 强制、请求体 5 MiB 上限、
@@ -176,6 +176,7 @@ Kotlin 侧要发的是 Android `assets/lan_edit/**`（需把这些前端产物�
 | # | 差异 | 现状 |
 |---|---|---|
 | 20 | `POST /api/v1/import/undo` 端点 | Dart 的撤销点（`TransferUndoService`）只在手机端 UI 消费，没有 HTTP 对应物。Kotlin 侧把它暴露成端点，网页端导入成功后拿 `apply` 回包的 `transferId` 直接调；手机端与网页端共用同一份撤销索引（`LanTransferUndoStore.shared`，**内存态**，杀进程失效）。契约测试：`LanEditApiRouterTest`（400/501/200）+ `LanEditRepositoryEndToEndTest`（真 HTTP 撤回后再撤一次） |
+| 21 | 撤销的**部分成功**要如实说（`skippedCount`） | 三段链路：① 后端 `LanTransferUndoLogic.resultJson` 产出 `skipped`（未撤条目，如 `time_scheme_delete_refused:<id>`）与 `skippedCount`（条数）；② 路由 `handleTransferUndo` 把宿主的结果 map **原样** 200 透传（不筛字段）；③ 网页端 `assets/lan_edit/app.js` 的 `undoLastTransfer` 读 `result.skippedCount`，`>0` 时提示 `transferUndoPartial`（「撤销完成，其中 N 套时间模板未撤销」，`i18n.js` en/zh 各一份），`=0` 时维持「已撤销本次导入」。**网页端行为没有自动化测试**（`assets/lan_edit/` 无 JS 测试基建），由 `LanEditStaticAssetsTest` 的源码级守卫 + 真机验收兜底 |
 
 ### B3. 端点级差异（有取舍 / 存量）
 

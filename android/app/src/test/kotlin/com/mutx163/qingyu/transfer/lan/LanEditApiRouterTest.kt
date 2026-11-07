@@ -428,7 +428,8 @@ class LanEditApiRouterTest {
             "undo" to true,
             "transferId" to "t1",
             "restored" to mapOf("courses" to 1),
-            "skipped" to emptyList<String>(),
+            "skipped" to listOf("time_scheme_delete_refused:s1"),
+            "skippedCount" to 1,
         )
         val session = session(boundProfileId = "p1")
         val response = router(host = host, session = session).route(
@@ -443,6 +444,13 @@ class LanEditApiRouterTest {
         assertEquals("t1", json(response)["transferId"])
         // JSON 往返后嵌套数字是 Long，按 Number 取值，避免 Int/Long 断言噪声。
         assertEquals(1, ((json(response)["restored"] as Map<*, *>)["courses"] as Number).toInt())
+        // 部分成功必须原样透传：网页端只认 `skippedCount` 决定说「全部撤销」还是「其中 N 套未撤」。
+        // 路由层若把宿主的结果 map 筛过一遍，这两个字段就会在这里丢掉（hy3 点名的那类缺口）。
+        assertEquals(
+            listOf("time_scheme_delete_refused:s1"),
+            json(response)["skipped"],
+        )
+        assertEquals(1, (json(response)["skippedCount"] as Number).toInt())
     }
 
     // -----------------------------------------------------------------------

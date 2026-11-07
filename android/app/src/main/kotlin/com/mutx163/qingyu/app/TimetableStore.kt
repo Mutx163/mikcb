@@ -766,6 +766,20 @@ class TimetableStore(
         store.putString(KEY_TIME_SCHEMES, MiniJson.encode(schemes.map { it.toJson() }))
     }
 
+    /**
+     * 某个顶层集合 key 是否**真的存在**于盘上。
+     *
+     * 「导入前不存在」与「存在但为空数组」在**恢复原样**时必须区别对待：
+     * 前者要删除 key（删掉才叫原样），后者写回 `[]`。一律写空数组会多出一个键，
+     * 逐字节对比（`LanTransferApplyTest` 的补偿用例就是这种口径）会红。
+     */
+    fun containsKey(key: String): Boolean = store.contains(key)
+
+    /** 删除某个顶层集合 key（用于恢复「导入前不存在」的精确原态）。 */
+    fun removeKey(key: String) {
+        store.remove(key)
+    }
+
     // ---------- schedule_date_rules ----------
 
     /**

@@ -200,4 +200,37 @@ class LanEditStaticAssetsTest {
             assertTrue("资源是空文件：$assetPath", file.length() > 0)
         }
     }
+
+    // ── 6. 网页端行为没有自动化：靠源码守卫钉「字段真被消费」 ──
+
+    @Test
+    fun `网页端撤销结果必须消费 skippedCount 并配好中英文案`() {
+        // `assets/lan_edit/` 下没有 JS 测试基建（无 node 测试入口），网页端行为本身
+        // 只能真机验。这里守的是最容易被无声破坏的一步：响应里有 `skippedCount`、
+        // 网页端却不读——用户就会看到「撤销成功」而少撤了 N 套模板（hy3 判不能放行的那处）。
+        //
+        // 两份拷贝都查：仓库根 `assets/lan_edit/` 是 Dart 时代原件（现在不打包），
+        // 主 assets 才是打进 APK 的那份；漏掉任何一份都会在「下次从根拷贝覆盖」时复发。
+        for (copy in listOf("assets/lan_edit", "android/app/src/main/assets/lan_edit")) {
+            val appJs = repoFile("$copy/app.js").readText()
+            assertTrue(
+                "$copy/app.js 必须把 result.skippedCount 真的读进数值（注释里提一句不算）",
+                Regex("""Number\(\s*result\.skippedCount\s*\)""").containsMatchIn(appJs),
+            )
+            assertTrue(
+                "$copy/app.js 有未撤条目时不许只说「撤销成功」：必须真的调 transferUndoPartial",
+                appJs.contains("t('transferUndoPartial'"),
+            )
+            val i18n = repoFile("$copy/i18n.js").readText()
+            val keyCount = Regex("""transferUndoPartial\s*:""").findAll(i18n).count()
+            assertTrue(
+                "$copy/i18n.js 的 transferUndoPartial 至少要中英两份（现在 $keyCount 份）",
+                keyCount >= 2,
+            )
+            assertTrue(
+                "$copy/i18n.js 的中文案必须带 {0} 占位（条数要真的显示出来）",
+                i18n.contains("transferUndoPartial: '撤销完成，其中 {0} 套时间模板未撤销"),
+            )
+        }
+    }
 }

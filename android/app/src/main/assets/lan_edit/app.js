@@ -962,10 +962,20 @@ async function undoLastTransfer() {
       throw new Error(describeTransferError(result.error));
     }
     const undoneId = result.transferId || lastTransferId;
+    // 撤销可能只撤回了一部分：仍被引用的时间模板会被保留，后端在 `skipped` /
+    // `skippedCount` 里如实上报。只说「撤销成功」会让用户以为全回去了，所以有未撤
+    // 条目时必须说清条数。字段口径见 transfer/lan/WIRING-NOTE.md 与
+    // LanTransferUndoLogic.resultJson。
+    const skippedCount = Number(result.skippedCount) || 0;
     lastTransferId = null;
     hide(btnTransferUndo);
-    showToast(t('transferUndoSuccess'), 'success');
-    addActivityLog(t('transferUndoActivity'), `${undoneId}`);
+    if (skippedCount > 0) {
+      showToast(t('transferUndoPartial', skippedCount), 'info');
+      addActivityLog(t('transferUndoActivity'), `${undoneId} · ${t('transferUndoPartial', skippedCount)}`);
+    } else {
+      showToast(t('transferUndoSuccess'), 'success');
+      addActivityLog(t('transferUndoActivity'), `${undoneId}`);
+    }
     await loadEditorData();
   } catch (error) {
     showToast(t('transferUndoFailed') + error.message, 'error');

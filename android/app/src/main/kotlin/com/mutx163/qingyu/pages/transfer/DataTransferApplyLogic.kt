@@ -8,8 +8,11 @@ import com.mutx163.qingyu.core.ScheduleDateRule
 import com.mutx163.qingyu.core.ScheduleItem
 import com.mutx163.qingyu.core.SectionTime
 import com.mutx163.qingyu.core.TimeScheme
+import com.mutx163.qingyu.core.TimeSchemeLogic
 import com.mutx163.qingyu.core.TimetableProfile
 import com.mutx163.qingyu.core.TimetableSettings
+import com.mutx163.qingyu.core.clampCurrentWeekToSettings
+import com.mutx163.qingyu.core.sectionsSignature
 import com.mutx163.qingyu.share.TransferApplyMode
 import com.mutx163.qingyu.share.TransferScope
 import com.mutx163.qingyu.share.overwriteUsesMergeSemantics
@@ -65,6 +68,25 @@ object DataTransferApplyLogic {
     /** 全量备份 + 合并模式：Kotlin 侧没有逐实体合并服务，明确拒绝。 */
     const val ERROR_FULL_BACKUP_MERGE_UNSUPPORTED = "full_backup_merge_unsupported"
 
+    /**
+     * 全量备份 + 「导入为新课表」：发布版明确拒绝（Dart
+     * `lib/providers/timetable/import_export_service.dart:550-638` 返回 `import_use_overwrite_for_full_backup`）。
+     *
+     * 文案键已存在（`TransferServiceMessages` 的「此文件为完整备份，请使用覆盖方式导入」），
+     * 不新增任何 ARB。UI 侧对全量包**根本不显示**这个动作，这里是防御式兜底。
+     */
+    const val ERROR_IMPORT_AS_NEW_FULL_BACKUP = "import_use_overwrite_for_full_backup"
+
+    /**
+     * 包内没带课表名时的新档名。
+     *
+     * 发布版这里是**硬编码字面量** `'导入课表'`（发布版 v2.1.4.1
+     * `lib/providers/timetable/import_export_service.dart:550-638`），本仓不许新增硬编码中文
+     * （`CjkLiteralGateTest`），所以文案走 [TransferStrings.transferImportedProfileName]，值与发布版逐字相同。
+     */
+    val defaultImportedProfileName: String
+        get() = TransferStrings.transferImportedProfileName.zh
+
     /** 计划是否代表「全量备份」（档案表非空）。 */
     fun isFullBackupPlan(plan: TransferImportPlan): Boolean = plan.profiles.isNotEmpty()
 
@@ -86,6 +108,16 @@ object DataTransferApplyLogic {
         // 单课表包：合并/覆盖都支持（合并 = 只加改不删）。
         return null
     }
+
+    /**
+     * 「导入为新课表」的拒绝判据：返回 null = 可以做，否则是要提示的机器码。
+     *
+     * 只有一条：**全量备份不行**（发布版 `lib/providers/timetable/import_export_service.dart:550-638`）。
+     * 其余 scope（currentTimetable / week / selected_courses / time_template …）发布版放行——
+     * 它会照包里的内容建一份新档，内容少就是一份内容少的课表，没有破坏性。
+     */
+    fun importAsNewRejectionCode(plan: TransferImportPlan): String? =
+        if (isFullBackupPlan(plan)) ERROR_IMPORT_AS_NEW_FULL_BACKUP else null
 
     // ── 落盘计划（2026-10-29 二轮修复的核心） ────────────────────────
 
@@ -360,12 +392,178 @@ object DataTransferApplyLogic {
      * 与写入范围一一对应——撤销必须能把这次写进去的每一处都还原（多抓是浪费，
      * 少抓就是「撤销了一半」，那比没有撤销更糟）。
      *
-     * ⚠️ 时间模板表**不在**撤销范围内：本次新建的模板留在表里（列表多一条，
-     * 不影响任何课表渲染），因为删模板要走 `deleteTimeScheme` 的「是否被引用」判据，
-     * 撤销时若别的档案已经在用它，删不掉会变成半还原。这是刻意的取舍。
+     * ## 时间模板表**必须**一起抓（2026-11-06 返工修）
+     *
+     * 旧注释说「模板表不在撤销范围内、新建的留着无所谓」——**那条取舍作废**：
+     * 导入会先 `reconcileTimeSchemes`（新建一套模板 / 改写同 id 模板的节次），
+     * 而仓储明写「本层不实现跨 key 事务」。若回滚只还原档案不还原模板表，本机就留下
+     * 一份**多出来的模板**（更糟：旧实现还会把本机原有模板的节次改写掉，且救不回）。
+     * 发布版快照本来就含 `timeSchemes`（`import_export_service.dart:566-568` 注释自己
+     * 点名了这个风险），失败时整份写回并带 `import_rollback_incomplete` 用户可见码。
+     * 现在 [TransferUndoSnapshot.timeSchemes] 同样整份抓、[TransferUndoScope] 两种还原分支
+     * 都整份写回。
      */
-    fun undoKindFor(plan: TransferImportPlan): TransferUndoScope =
-        if (isFullBackupPlan(plan)) TransferUndoScope.FULL_PROFILES else TransferUndoScope.ACTIVE_PROFILE_CONTENT
+    fun undoKindFor(
+        plan: TransferImportPlan,
+        importAsNew: Boolean = false,
+        /**
+         * 这次导入会不会**重排所有档案**的课程钟点（`updateLocationTimeGroups(resync = true)`
+         * 或 `scope == all_data` 整设备覆盖时会发生）。
+         *
+         * 必须与快照范围对称：改了多少档、就能还原多少档。只还原活动档会让其它档停在
+         * 新钟点上（半还原），所以这种情况一律按 [TransferUndoScope.FULL_PROFILES] 抓。
+         */
+        rewritesAllProfiles: Boolean = false,
+    ): TransferUndoScope =
+        if (importAsNew || rewritesAllProfiles || isFullBackupPlan(plan)) {
+            // 「导入为新课表」写的是**档案表**（多一份档 + 换激活 id + 换全局设置/周次），
+            // 撤销必须整份还原；按单档内容还原会「把新档内容写成旧档」而新档还留着。
+            TransferUndoScope.FULL_PROFILES
+        } else {
+            TransferUndoScope.ACTIVE_PROFILE_CONTENT
+        }
+
+    /**
+     * 模板对齐时宿主**只该做哪些写**：只有 [TimeSchemeStep.Create] 会落盘。
+     *
+     * [TimeSchemeStep.Reuse]（节次签名相同 → 复用本机 id）与 [TimeSchemeStep.Update]
+     * （包内同 id）**一律不动本机模板表**——这是「本机有→复用 / 签名相同→复用 / 否则新建」
+     * 三段设计的硬约束：导入不得改写用户已有的模板（改写不可逆，回滚也救不回被覆盖的节次）。
+     *
+     * 单列成纯函数是为了让「不改写本机模板」这条能被单测直接钉住，而不是靠读宿主的循环。
+     */
+    fun timeSchemeStepsToCreate(steps: List<TimeSchemeStep>): List<TimeSchemeStep.Create> =
+        steps.filterIsInstance<TimeSchemeStep.Create>()
+
+    // ── 「导入为新课表」（2026-11-06，对齐 Dart importAppDataBackupAsNewProfile） ──
+
+    /**
+     * 新档名：包内名 trim，空则 [defaultImportedProfileName]
+     * （发布版 `lib/providers/timetable/import_export_service.dart:550-638`）。
+     *
+     * **不去重**：发布版允许两份同名档案并存（全文没有改名/加后缀的逻辑），照做。
+     */
+    fun resolvedProfileName(packageProfileName: String?): String =
+        (packageProfileName ?: "").trim().ifEmpty { defaultImportedProfileName }
+
+    /**
+     * 「导入为新课表」的生效作息解析结果（Dart `_resolveSettingsAgainstTimeSchemes`，
+     * `lib/providers/timetable_provider.dart:1800-1844`）。
+     *
+     * @param settings `sections`/`activeTimeSchemeId` 已替换为本机这套；其余键原样保留。
+     * @param schemeToCreate 需要宿主 `createTimeScheme` 落盘的新模板（第三段才非 null）。
+     */
+    data class SettingsResolution(
+        val settings: TimetableSettings,
+        val schemeToCreate: TimeScheme? = null,
+    )
+
+    /**
+     * 把包里的设置对齐到本机时间模板表——三段判据与发布版逐句同款：
+     *
+     * 1. `activeTimeSchemeId` 在本机表里**存在** → 用它，并把 `sections` 换成本机这套；
+     * 2. 否则找**节次签名相同**的本机模板 → 复用它的 id 与 sections；
+     * 3. 都没有 → 造一套名为 [fallbackSchemeName] 的新模板交给宿主落盘，设置指向它。
+     *
+     * 为什么要换 `sections`：包与包的节次表可能不同，设置里的 `sections` 若照抄包的，
+     * 与 `activeTimeSchemeId` 指向的本机模板就打架（渲染按模板、校验按 settings）。
+     *
+     * @param newSchemeId 第三段要新建时用的 id（宿主传入，便于单测固定）
+     */
+    fun resolveSettingsAgainstSchemes(
+        settings: TimetableSettings,
+        schemes: List<TimeScheme>,
+        fallbackSchemeName: String,
+        newSchemeId: String,
+        now: LocalDateTime,
+    ): SettingsResolution {
+        val byId = TimeSchemeLogic.getSchemeById(schemes, settings.activeTimeSchemeId)
+        if (byId != null) {
+            return SettingsResolution(
+                settings = settings.copy(
+                    activeTimeSchemeId = byId.id,
+                    sections = byId.sections.toList(),
+                ),
+            )
+        }
+        val signature = sectionsSignature(settings.sections)
+        val twin = schemes.firstOrNull {
+            sectionsSignature(it.sections) == signature
+        }
+        if (twin != null) {
+            return SettingsResolution(
+                settings = settings.copy(
+                    activeTimeSchemeId = twin.id,
+                    sections = twin.sections.toList(),
+                ),
+            )
+        }
+        val created = TimeScheme(
+            id = newSchemeId,
+            name = fallbackSchemeName,
+            sections = settings.sections.toList(),
+            createdAt = now,
+            updatedAt = now,
+        )
+        return SettingsResolution(
+            settings = settings.copy(
+                activeTimeSchemeId = created.id,
+                sections = created.sections.toList(),
+            ),
+            schemeToCreate = created,
+        )
+    }
+
+    /**
+     * 「导入为新课表」要建的那份档案（发布版 v2.1.4.1
+     * `lib/providers/timetable/import_export_service.dart:550-638` 的纯逻辑段）。
+     *
+     * 引用口径：本文件里的行号区间指**发布版 v2.1.4.1** 那个整函数；工作区对应实现是
+     * `lib/services/timetable_import_export_service.dart:754-849`（已漂移，别拿工作区行号当发布版）。
+     *
+     * 与「覆盖当前课表」不同，它**不碰本机现有档案的任何内容**，只多出一份新档：
+     * - 课程：包内课程先按 [schemeIdMap] 改写模板引用，再按 [settings] 同步钟点
+     *   （Dart `host.syncCoursesWithEffectiveTimeSchemes(backup.courses, settings: resolvedSettings)`）；
+     * - 作业：只留 `courseId` 为空或指向本次新档课程的（Dart 同款**孤儿过滤**）；
+     * - 考试 / 日程条目：整份带过来；
+     * - `currentWeek`：包内的周次按**新解析出的 [settings]**（不是本机的）钳制
+     *   （Dart `clampCurrentWeekToSettings(backup.currentWeek, resolvedSettings)`）。
+     *
+     * @param schemes 落盘后的本机模板表（含刚 reconcile/新建的那几套），课程同步要用
+     */
+    fun planImportAsNew(
+        plan: TransferImportPlan,
+        profileName: String,
+        settings: TimetableSettings,
+        schemes: List<TimeScheme>,
+        newProfileId: String,
+        now: LocalDateTime,
+        schemeIdMap: Map<String, String> = emptyMap(),
+    ): TimetableProfile {
+        val remapped = remapCourseSchemes(plan.courses, schemeIdMap)
+        val courses = TimeSchemeLogic.syncCoursesWithEffectiveTimeSchemes(
+            source = remapped,
+            schemes = schemes,
+            settings = settings,
+        )
+        val courseIds = courses.mapTo(HashSet(courses.size)) { it.id }
+        val tasks = plan.tasks.filter { task ->
+            val courseId = task.courseId
+            courseId == null || courseId in courseIds
+        }
+        return TimetableProfile(
+            id = newProfileId,
+            name = profileName,
+            courses = courses,
+            tasks = tasks,
+            scheduleItems = plan.scheduleItems,
+            exams = plan.exams,
+            settings = settings,
+            currentWeek = clampCurrentWeekToSettings((plan.currentWeek ?: 1).toLong(), settings),
+            createdAt = now,
+            lastUsedAt = now,
+        )
+    }
 
     // ── 落盘前校验（Dart `TransferDiffService.validate(..., current: current)`） ──
 
@@ -450,16 +648,17 @@ object DataTransferApplyLogic {
      * 时间模板落盘步骤（Dart `_mergeTimeSchemes`，`unified_transfer_service.dart:842-894`）。
      *
      * 三条判据，顺序也一致：
-     * 1. **同 id**：用外来名称 / 节次更新本机那套（宿主执行失败必须抛出，Dart 同）；
-     * 2. **id 不同但节次表完全相同**：复用本机 id，**不改名**——这是「同一张表的另一份」，
-     *    把机主自起的名字顶掉会连带改掉所有引用它的档案；
-     * 3. 其余新建。
+     * 1. **同 id** → [TimeSchemeStep.Update]。**宿主不得应用**（2026-11-06 返工）：
+     *    把本机模板的 name/sections 用包里的覆盖，等于改坏用户已有模板且回滚救不回；
+     *    方案的三段设计只允许「复用 / 新建」。这里保留这一步只是为了判「引用不用重映射」。
+     * 2. **id 不同但节次表完全相同** → [TimeSchemeStep.Reuse]，复用本机 id、不改名；
+     * 3. 其余 → [TimeSchemeStep.Create]。
      *
-     * 旧宿主 `reconcileTimeSchemes` 只做了 1 与 3，于是每次跨设备导入都会多堆一套
-     * 节次完全相同的模板（Dart 有 2）。抽成纯函数后这条判据才有 JVM 单测钉着。
+     * 宿主实际落盘哪些写，统一走 [timeSchemeStepsToCreate]（只返回 Create），
+     * 由单测钉住「Update / Reuse 一律不写本机模板表」。
      */
     sealed interface TimeSchemeStep {
-        /** 同 id：按外来值更新；[localId] 即引用映射目标。 */
+        /** 同 id。宿主**不得应用**（见上）；[localId] 仅用于判「引用无需重映射」。 */
         data class Update(
             val localId: String,
             val name: String,
@@ -488,12 +687,13 @@ object DataTransferApplyLogic {
         for (scheme in incoming) {
             val sameId = localById[scheme.id]
             if (sameId != null) {
+                // 同 id：只标记「引用无需重映射」。
+                // **不改本机模板，也不改签名索引**（2026-11-06 三轮返工）：
+                // 本机那套的节次没被改写，索引若跟着改成「外来签名 → 本机 id」，
+                // ① 同批后续同签名的外来表会复用**节次不符**的本机模板（课程钟点算错）；
+                // ② 本机真实签名被挤出索引，后续外来表与它同签名时会被判成「没有双胞胎」
+                //    而**重复新建一套**。
                 steps += TimeSchemeStep.Update(sameId.id, scheme.name, scheme.sections)
-                // 更新后本机的节次变了：旧签名从索引里摘掉、新签名指向本机 id，
-                // 否则同一批里后续同签名的外来表会误判为「没有双胞胎」而多建一套
-                // （Dart :868-872 同）。
-                localIdBySignature.remove(sameId.sections)
-                localIdBySignature[scheme.sections] = sameId.id
                 continue
             }
             val twinId = localIdBySignature[scheme.sections]
@@ -542,6 +742,15 @@ data class TransferUndoSnapshot(
      * 2026-10-30 起导入会写这块，撤销必须能一起回到原样，否则「撤销」只回滚一半。
      */
     val locationTimeGroups: List<LocationTimeGroup>? = null,
+    /**
+     * 撤销时要**整份写回**的时间模板表；null = 这份快照不负责还原模板表。
+     *
+     * 2026-11-06 返工补：导入第一步 `reconcileTimeSchemes` 就会新建模板（老实现还会改写
+     * 同 id 模板），而仓储没有跨 key 事务。不还原模板表 = 撤销/回滚后本机多一套（或被改坏的）
+     * 模板，且没有任何接口能救回来。发布版快照含 `timeSchemes`
+     * （`import_export_service.dart:566-568`），本字段与之对齐。
+     */
+    val timeSchemes: List<TimeScheme>? = null,
 )
 
 /** 一次可撤销的导入（Dart `TransferUndoToken` 的展示侧最小投影）。 */
