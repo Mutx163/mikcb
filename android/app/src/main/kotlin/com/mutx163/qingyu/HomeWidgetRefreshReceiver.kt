@@ -13,6 +13,10 @@ class HomeWidgetRefreshReceiver : BroadcastReceiver() {
             Intent.ACTION_MY_PACKAGE_REPLACED,
             Intent.ACTION_TIME_CHANGED,
             Intent.ACTION_TIMEZONE_CHANGED -> {
+                // 桌面 0 个小部件 ⇒ 这个刷新广播本不该来（闹钟已停 / BOOT 时没卡片），直接忽略。
+                if (!WidgetRefreshGate.shouldSchedule(HomeWidgetStorage.widgetInstanceCounts(context))) {
+                    return
+                }
                 // Don't overwrite Flutter-synced snapshot with native-computed data.
                 // TodayWidgetSupport.readSnapshot already falls back to native
                 // computation when no synced snapshot exists.

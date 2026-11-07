@@ -5,6 +5,7 @@ import android.appwidget.AppWidgetProvider
 import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
+import android.os.SystemClock
 import android.widget.RemoteViews
 
 /**
@@ -46,10 +47,33 @@ abstract class BaseQingyuWidgetProvider : AppWidgetProvider() {
         }
     }
 
+    override fun onEnabled(context: Context) {
+        super.onEnabled(context)
+        // 首个实例启用（首次加卡）：必达来源，强制重排一次。
+        HomeWidgetStorage.rescheduleRefresh(context)
+    }
+
     override fun onReceive(context: Context, intent: Intent) {
+        // super 会把 APPWIDGET_UPDATE 分发到 onUpdate —— 但**只有 EXTRA_APPWIDGET_IDS 非空时**
+        // 才会按 id 逐个派发，空 ids / 部分 ids 的广播进不去 onUpdate（刚加的卡会短暂空白）。
         super.onReceive(context, intent)
-        if (intent.action == AppWidgetManager.ACTION_APPWIDGET_UPDATE) {
+        if (intent.action != AppWidgetManager.ACTION_APPWIDGET_UPDATE) return
+        // 一次取快照：本类 ids、全 app 并集、重排都用它（一次广播只查 10 次，不再 ~130 次）。
+        val widgetIds = HomeWidgetStorage.collectWidgetIds(context)
+        val classAllIds = widgetIds[providerClass()] ?: intArrayOf()
+        val intentIds = intent.getIntArrayExtra(AppWidgetManager.EXTRA_APPWIDGET_IDS)
+        // 渲染兜底（只在「空 ids / 部分 ids」这个回落分支里做，不是无条件调用）：
+        // 空 ids 或只含部分 ids 时补一次本类全量刷新。
+        if (intentIds == null || intentIds.isEmpty() || intentIds.size < classAllIds.size) {
             updateAll(context)
+        }
+        // 重排去重：加卡（全量 ids 里出现新 id）必须必达 —— 判据是「集合内容」不是数量。
+        if (broadcastDedupe.shouldHandle(
+                SystemClock.elapsedRealtime(),
+                HomeWidgetStorage.allWidgetIds(widgetIds),
+            )
+        ) {
+            HomeWidgetStorage.rescheduleRefresh(context, widgetIds)
         }
     }
 
@@ -59,6 +83,27 @@ abstract class BaseQingyuWidgetProvider : AppWidgetProvider() {
         appWidgetIds.forEach { appWidgetId ->
             WidgetBindingStore.remove(context, appWidgetId)
             HomeWidgetStorage.clearWidgetSnapshot(context, appWidgetId)
+        }
+        // 删掉 A 卡但 B 卡还在时，刷新点必须按剩余实例重算（否则 A 的时间点还在调度）。
+        HomeWidgetStorage.rescheduleRefresh(context)
+    }
+
+    /**
+     * 桌面上本类型的**最后一个小部件**被移除时系统会回调这里。
+     *
+     * 与 [HomeWidgetStorage.rescheduleRefresh] 的零实例门用同一判据
+     * （[WidgetRefreshGate.shouldSchedule]）：**只有全部 Provider 都无实例时才
+     * 取消刷新闹钟**，避免「删了 A 卡、B 卡还在」时误停。
+     *
+     * 原先没有这个覆写，删光卡片后 `updatePeriodMillis=0` 的自定义 alarm 照跑 ——
+     * 用户报的「桌面上 0 个小部件、却每分钟 RTC_WAKEUP 唤醒整机」正是这条缺失。
+     */
+    override fun onDisabled(context: Context) {
+        super.onDisabled(context)
+        if (!WidgetRefreshGate.shouldSchedule(HomeWidgetStorage.widgetInstanceCounts(context))) {
+            // 桌面 0 个小部件：精确闹钟 + WorkManager 兜底一起停。
+            HomeWidgetStorage.cancelRefreshAlarm(context)
+            WidgetRefreshWorker.cancel(context)
         }
     }
 
@@ -114,5 +159,10 @@ abstract class BaseQingyuWidgetProvider : AppWidgetProvider() {
         ids.forEach { appWidgetId ->
             renderWidget(context, manager, appWidgetId)
         }
+    }
+
+    companion object {
+        /** 同一次系统广播会被 10 个 Provider 各收一遍：短窗口内只让第一个处理。 */
+        private val broadcastDedupe = BroadcastDedupe(windowMillis = 200L)
     }
 }

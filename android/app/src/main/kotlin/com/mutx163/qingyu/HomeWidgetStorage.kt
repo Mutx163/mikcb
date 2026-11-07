@@ -24,21 +24,23 @@ object HomeWidgetStorage {
             .putString(KEY_SNAPSHOT_JSON, payload)
             .apply()
         TodayWidgetSupport.updateAll(context)
+        // 调度（含 WorkManager 兜底）统一由 rescheduleRefresh 收口：那里一次判定实例数，
+        // 非零时闹钟+Worker 一起排，零实例时一起撤 —— 避免两处各自判零造成不一致。
         rescheduleRefresh(context)
-        // WorkManager backup: ensures widget refresh even when
-        // AlarmManager is suppressed (e.g. MIUI + accessibility service).
-        WidgetRefreshWorker.ensureScheduled(context)
     }
 
     fun clearSnapshot(context: Context) {
-        context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-            .edit()
-            .remove(KEY_SNAPSHOT_JSON)
-            .remove(KEY_REFRESH_TIMES_JSON)
-            .apply()
-        cancelRefreshAlarm(context)
-        WidgetRefreshWorker.cancel(context)
+        val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        // 语义 = **「当前算不出快照时撤过期快照」**（Dart timetable_live_activity_service.dart:1195-1202），
+        // 不是清数据/登出：只清全局快照 + 刷新点。绑定（widget_binding_*，用户资产）与
+        // 每卡专属快照（widget_snapshot_*，另一套）一个不碰。
+        val editor = prefs.edit()
+        WidgetSnapshotDataKeys.keysToClear(prefs.all.keys).forEach { editor.remove(it) }
+        editor.apply()
+        // 清完 updateAll：读快照优先实时计算（TodayWidgetSupport.kt:184-203），实时失败时
+        // **回落到未清的专属快照、绑定卡按绑定 profile 渲染**（不是空态）—— 如实记录。
         TodayWidgetSupport.updateAll(context)
+        rescheduleRefresh(context)
     }
 
     fun scheduleRefresh(context: Context, triggerAtMillis: List<Long>) {
@@ -88,7 +90,73 @@ object HomeWidgetStorage {
             .getString(KEY_REFRESH_TIMES_JSON, null)
     }
 
+    /** 本应用注册的全部桌面小部件 Provider（`updatePeriodMillis` 全为 0，刷新靠自定义 alarm）。 */
+    private val WIDGET_PROVIDER_CLASSES: List<Class<out BaseQingyuWidgetProvider>> = listOf(
+        TodayCompactWidgetProvider::class.java,
+        TodayMiniListWidgetProvider::class.java,
+        TodayMediumWidgetProvider::class.java,
+        TodayLargeWidgetProvider::class.java,
+        TodayWideWidgetProvider::class.java,
+        TodayStripWidgetProvider::class.java,
+        StatsCompactWidgetProvider::class.java,
+        StatsMediumWidgetProvider::class.java,
+        StatsStripWidgetProvider::class.java,
+        ExamCountdownWidgetProvider::class.java,
+    )
+
+    /**
+     * **一次遍历**查全 10 类的实例 id。
+     *
+     * 用户报的耗电问题里，每次系统广播会被 10 个 Provider 各收一遍；若每个 Provider 内部
+     * 又各自遍历 10 类（`allWidgetIds` / `widgetInstanceCounts` / `ensureScheduled` 各一份），
+     * 一次广播就是 ~130 次跨进程 `getAppWidgetIds`。这里收成一份快照，所有消费方共用。
+     *
+     * 不做事后时间缓存：快照「按次新鲜」，避免又引入时序窗口。
+     */
+    internal fun collectWidgetIds(
+        context: Context,
+    ): Map<Class<out BaseQingyuWidgetProvider>, IntArray> {
+        val manager = AppWidgetManager.getInstance(context)
+        return WIDGET_PROVIDER_CLASSES.associateWith { cls ->
+            manager.getAppWidgetIds(ComponentName(context, cls))
+        }
+    }
+
+    /** 每个已注册 Provider 当前的实例数（消费快照，不再自己遍历）。 */
+    internal fun widgetInstanceCounts(
+        widgetIds: Map<Class<out BaseQingyuWidgetProvider>, IntArray>,
+    ): List<Int> = widgetIds.values.map { it.size }
+
+    /** 便捷重载：调用方没有快照时自行取一次（只取一次）。 */
+    internal fun widgetInstanceCounts(context: Context): List<Int> =
+        widgetInstanceCounts(collectWidgetIds(context))
+
+    /** 本应用全部 widget 实例 id 的并集（消费快照）。 */
+    internal fun allWidgetIds(
+        widgetIds: Map<Class<out BaseQingyuWidgetProvider>, IntArray>,
+    ): Set<Int> = widgetIds.values.flatMap { it.toList() }.toSet()
+
+    internal fun allWidgetIds(context: Context): Set<Int> =
+        allWidgetIds(collectWidgetIds(context))
+
     fun rescheduleRefresh(context: Context) {
+        rescheduleRefresh(context, collectWidgetIds(context))
+    }
+
+    /** 消费调用方已经取好的 id 快照（一次广播只该取一次）。 */
+    internal fun rescheduleRefresh(
+        context: Context,
+        widgetIds: Map<Class<out BaseQingyuWidgetProvider>, IntArray>,
+    ) {
+        // **先判后撤**：确认桌面上真的一个小部件实例都没有，才撤闹钟与 WorkManager。
+        // 反过来（先撤再判）会在「第一张卡刚加、getAppWidgetIds 还没反映」的窗口里
+        // 把精确闹钟和 15 分钟兜底一起弄死，且没有任何补偿 —— hy 复核指出的误伤。
+        if (!WidgetRefreshGate.shouldSchedule(widgetInstanceCounts(widgetIds))) {
+            cancelRefreshAlarm(context)
+            WidgetRefreshWorker.cancel(context)
+            return
+        }
+        // 非零：重排（先撤旧闹钟，避免残留两份）。
         cancelRefreshAlarm(context)
         val nowMillis = System.currentTimeMillis()
         // 刷新点 = 当前课表 + 所有已绑定课表的并集：TA 第三节课开始时
@@ -125,7 +193,11 @@ object HomeWidgetStorage {
             ?: loadRefreshTimes(context)
                 .filter { it > nowMillis }
                 .minOrNull()
-            ?: return
+            ?: run {
+                // 算不出下一次刷新点：仍要保证 WorkManager 兜底在，不许「只剩取消没有补偿」。
+                WidgetRefreshWorker.ensureScheduled(context, widgetIds)
+                return
+            }
 
         val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
         val pendingIntent = buildRefreshPendingIntent(context)
@@ -150,9 +222,11 @@ object HomeWidgetStorage {
                 pendingIntent
             )
         }
+        // 正向收尾：非零实例必须「闹钟已排 + WorkManager 已排」，不许只剩取消没有补偿。
+        WidgetRefreshWorker.ensureScheduled(context, widgetIds)
     }
 
-    private fun cancelRefreshAlarm(context: Context) {
+    internal fun cancelRefreshAlarm(context: Context) {
         val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
         alarmManager.cancel(buildRefreshPendingIntent(context))
     }

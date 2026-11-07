@@ -426,9 +426,10 @@ class LiveUpdateService : Service() {
             if (!hasStartedForeground || !isServiceRunning) {
                 return
             }
-            val text = computeRemainingText(System.currentTimeMillis())
+            val now = System.currentTimeMillis()
+            val text = computeRemainingText(now)
             getSystemService(NotificationManager::class.java)
-                ?.notify(NOTIFICATION_ID, buildNotification(text))
+                ?.notify(NOTIFICATION_ID, buildNotification(text, resolveStageChrome(now)))
             UmengDiagnosticReporter.record(
                 context = applicationContext,
                 category = "live_update_island_background_refresh",
@@ -674,9 +675,10 @@ class LiveUpdateService : Service() {
                 lastStartedLogSignature = startedLogSignature
             }
 
-            val initialText = computeRemainingText(System.currentTimeMillis())
+            val startNow = System.currentTimeMillis()
+            val initialText = computeRemainingText(startNow)
             lastRemainingText = initialText
-            updateForegroundNotification(buildNotification(initialText))
+            updateForegroundNotification(buildNotification(initialText, resolveStageChrome(startNow)))
             startTicker()
             // 通知此刻已交给系统：唤醒还在等的通道调用，让 Flutter 侧可以安全退后台。
             notifyNotificationPosted()
@@ -990,8 +992,9 @@ class LiveUpdateService : Service() {
     /** 通知按钮跟随真实铃声/勿扰状态；状态翻转后立即重建通知并更新缓存签名。 */
     private fun refreshQuickActionNotification() {
         if (hasStartedForeground) {
+            val now = System.currentTimeMillis()
             updateForegroundNotification(
-                buildNotification(computeRemainingText(System.currentTimeMillis()))
+                buildNotification(computeRemainingText(now), resolveStageChrome(now))
             )
         }
         lastQuickActionState = currentQuickActionButtons().toString()
@@ -1233,7 +1236,8 @@ class LiveUpdateService : Service() {
                     }
                     return
                 }
-                val stage = resolveStage(now)
+                val stageChrome = resolveStageChrome(now)
+                val stage = stageChrome.stage
                 if (autoDismissAfterStartMinutes > 0 &&
                     now >= startAtMillis + autoDismissAfterStartMinutes * 60_000L
                 ) {
@@ -1316,6 +1320,10 @@ class LiveUpdateService : Service() {
                     return
                 }
 
+                // 标准通知：整句文案（尊重 showCountdown/hidePrefixText），按分钟重发、不逐秒；
+                // 岛上：逐秒重绘（红线）。`stageChrome` 是本轮唯一一次求值，tick 间隔与
+                // buildNotification 共用，杜绝「两处各判」的窄窗口。
+                val promotedFormActive = stageChrome.promotedFormActive
                 val currentText = computeRemainingText(now)
                 val currentDuringClassProgress = if (stage == "duringClass") {
                     buildDuringClassProgress(now)
@@ -1332,20 +1340,33 @@ class LiveUpdateService : Service() {
                         -1
                     }
                 val currentQuickActionState = currentQuickActionButtons().toString()
-                if (currentText != lastRemainingText ||
-                    currentProgress != lastProgressUnits ||
-                    currentCriticalTimeText != lastCriticalTimeText ||
-                    currentQuickActionState != lastQuickActionState
-                ) {
+                val currentSignature = NotificationContentSignature(
+                    remainingText = currentText,
+                    criticalTimeText = currentCriticalTimeText,
+                    quickActionState = currentQuickActionState,
+                    progressUnits = currentProgress,
+                )
+                val previousSignature = NotificationContentSignature(
+                    remainingText = lastRemainingText,
+                    criticalTimeText = lastCriticalTimeText,
+                    quickActionState = lastQuickActionState,
+                    progressUnits = lastProgressUnits,
+                )
+                // 内容签名去抖：四字段与上次发出去的完全一致就不重发
+                //（用户报的 95.8% 空发即在此处被挡掉）。判据在 NotificationDedupe，可 JVM 直测。
+                if (NotificationDedupe.shouldPost(previous = previousSignature, next = currentSignature)) {
                     lastRemainingText = currentText
                     lastProgressUnits = currentProgress
                     lastCriticalTimeText = currentCriticalTimeText
                     lastQuickActionState = currentQuickActionState
                     getSystemService(NotificationManager::class.java)
-                        ?.notify(NOTIFICATION_ID, buildNotification(currentText))
+                        ?.notify(NOTIFICATION_ID, buildNotification(currentText, stageChrome))
                 }
 
-                handler.postDelayed(this, computeNextTickDelayMillis(now, stage, currentDuringClassProgress))
+                handler.postDelayed(
+                    this,
+                    computeNextTickDelayMillis(now, stage, currentDuringClassProgress, promotedFormActive),
+                )
             }
         }
         handler.post(ticker!!)
@@ -1357,6 +1378,56 @@ class LiveUpdateService : Service() {
         }
         ticker = null
     }
+
+    /**
+     * 「这条通知实际会不会上岛」的**权威判定**（与诊断页 `isActuallyPromotable` 同源）。
+     *
+     * 小米 HyperOS 的焦点通知由 `miui.focus.param` 决定能否上岛，**不看 SDK**；
+     * 上一版只查 `canPostPromotedNotificationsCompat`（SDK>=36+授权），于是小米设备上
+     * 策略判「非 promoted」而通知实际已上岛 ⇒ 启用走字 ⇒ **岛内逐秒文本被冻结**。
+     *
+     * 构建通知时拿不到通知本体（`hasPromotableCharacteristics` 需要 Notification 对象），
+     * 所以这里取**保守上界**：只要「可能上岛」就按上岛处理。误判为「会走岛」的代价是
+     * 少省电；误判为「不走岛」的代价是岛观感冻结 —— 后者是红线，不能赌。
+     */
+    /** 同一次求值里得到的「阶段 + 是否要求上岛 + 是否真会上岛」，供 ticker 与通知构建共用。 */
+    private data class StageChrome(
+        val now: Long,
+        val stage: String?,
+        val shouldPromote: Boolean,
+        val promotedFormActive: Boolean,
+    )
+
+    /**
+     * 每轮循环**只调一次**：把 `stage` / `shouldPromote` / `promotedFormActive` 收成单份结果，
+     * ticker 的 tick 间隔与 `buildNotification` 消费同一份 —— 避免「两处各判、状态翻转的窄窗口
+     * 里岛形态 + 60 秒心跳同时成立」（上岛设备被降频 = 冻岛，红线）。
+     */
+    private fun resolveStageChrome(now: Long): StageChrome {
+        val stage = resolveStage(now)
+        val shouldPromote = when {
+            stage == "duringClassStatusBar" -> false
+            stage == "duringClass" -> promoteDuringClass
+            else -> true
+        }
+        return StageChrome(
+            now = now,
+            stage = stage,
+            shouldPromote = shouldPromote,
+            promotedFormActive = computedPromotedFormActive(stage, shouldPromote),
+        )
+    }
+
+    private fun computedPromotedFormActive(stage: String?, shouldPromote: Boolean): Boolean =
+        PromotedFormPolicy.isPromotedFormActive(
+            stage = stage,
+            shouldPromote = shouldPromote,
+            isXiaomiFamily = isXiaomiFamilyDevice(),
+            sdkInt = Build.VERSION.SDK_INT,
+            notificationsAllowed = areNotificationsEnabledCompat(this),
+            channelEnabled = isLiveUpdateChannelEnabledCompat(this),
+            canPostPromoted = canPostPromotedNotificationsCompat(this),
+        )
 
     private fun computeRemainingText(now: Long): String {
         val stage = resolveStage(now)
@@ -2309,18 +2380,14 @@ class LiveUpdateService : Service() {
         "teacher", "shortName", "next", "note",
     )
 
-    private fun buildNotification(remainingText: String): Notification {
-        val now = System.currentTimeMillis()
-        val stage = resolveStage(now)
+    private fun buildNotification(remainingText: String, stageChrome: StageChrome): Notification {
+        val now = stageChrome.now
+        val stage = stageChrome.stage
         val isUpcoming = stage == "beforeClass"
         val isDuringClassStatusBar = stage == "duringClassStatusBar"
         val isEndingSoon = stage == "beforeEnd"
         val isDuringClass = stage == "duringClass" || isDuringClassStatusBar
-        val shouldPromote = when {
-            isDuringClassStatusBar -> false
-            isDuringClass -> promoteDuringClass
-            else -> true
-        }
+        val shouldPromote = stageChrome.shouldPromote
         val showStandardNotification = when {
             isDuringClassStatusBar -> true
             isDuringClass -> showNotificationDuringClass
@@ -2583,8 +2650,18 @@ class LiveUpdateService : Service() {
                 }
             )
             setColorized(false)
-            setShowWhen(!shouldPromote)
+            // chrome 决策统一走 LiveUpdateChromePolicy：只看「是否真走 promoted（超级岛）形态」
+            // 决定 when 区显隐（原来用 shouldPromote 这个本地意图位，导致开课前 when 被恒藏）。
+            val chrome = LiveUpdateChromePolicy.chromeFor(
+                // 单一求值源：promoted 判定在 resolveStageChrome 里算过一次，这里直接消费，
+                // 不再自己 computedPromotedFormActive（两处各判会在状态翻转窄窗口里打架）。
+                promotedFormActive = stageChrome.promotedFormActive,
+            )
+            setShowWhen(chrome.showWhen)
             setWhen(if (isUpcoming) startAtMillis else endAtMillis)
+            // 走字方案已撤（静态前缀是悬空句、且会架空 showCountdown 设置）：
+            // 标准通知回到整句文案 + 按分钟重发（见 computeNextTickDelayMillis），
+            // 岛上仍逐秒重绘。这里显式写 false，防止任何上游再把它打开。
             setUsesChronometer(false)
             if (usesProgressExpandedStyle) {
                 val progress = requireNotNull(classProgress)
@@ -3051,7 +3128,20 @@ class LiveUpdateService : Service() {
         now: Long,
         stage: String?,
         duringClassProgress: DuringClassProgress?,
+        promotedFormActive: Boolean,
     ): Long {
+        // 标准通知（不上岛）：整句倒计时文案按分钟重发一次（文本真变，去抖放行；
+        // 一小时 60 次 vs 逐秒 3600 次）。不逐秒、不用 chronometer —— 对齐发布版形态，
+        // 且沿用原文案计算，天然尊重 showCountdown / hidePrefixText。
+        // 范围仅 beforeClass / beforeEnd；**上课中（duringClass）的进度条仍逐秒**（观感，不降频）。
+        // 非上岛设备的秒级样式最多滞后 ≤59 秒 —— 这是「按分钟」设计的自然结果（真机验点）。
+        if (!promotedFormActive && (stage == "beforeClass" || stage == "beforeEnd")) {
+            val untilFlip = when (stage) {
+                "beforeClass" -> startAtMillis - now
+                else -> endAtMillis - now
+            }.coerceAtLeast(1_000L)
+            return minOf(untilFlip, 60_000L).coerceAtLeast(1_000L)
+        }
         val refreshEverySecond = when (stage) {
             "beforeClass" -> shouldRefreshEverySecond(
                 durationMillis = (startAtMillis - now).coerceAtLeast(0L),

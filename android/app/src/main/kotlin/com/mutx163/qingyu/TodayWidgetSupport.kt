@@ -822,7 +822,15 @@ internal fun findNextRefreshAtMillis(
         if (examEnd != null && examEnd > nowMillis) {
             triggers += examEnd + 1000L
         }
-        // 倒计时激活时每 60 秒刷新
+        // 倒计时激活时每 60 秒刷新一次。
+        //
+        // 为什么**保留**（没有跟通知侧一起改用 chronometer 走字）：桌面小部件是
+        // RemoteViews，不吃 systemui 的通知走字能力；卡片上「还有 N 分钟上课」这类
+        // 文本倒计时只能靠定时重绘推进。**没有小部件实例时根本走不到这里** —— 上游
+        // HomeWidgetStorage.rescheduleRefresh 已加 WidgetRefreshGate 零实例门，配合
+        // BaseQingyuWidgetProvider.onDisabled，用户报的「0 实例却每分钟 RTC_WAKEUP」
+        // 已在那道门被掐断。有实例时保持每分钟一次，是为倒计时观感不倒退
+        //（用户口径：不许用砍功能换省电）。
         val snapshot = snapshotForExam
         if (snapshot != null
             && snapshot.showCountdown
