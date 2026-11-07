@@ -232,22 +232,45 @@ class HomeBackgroundModelTest {
     // ───────────────────────── 墨色 ─────────────────────────
 
     @Test
-    fun `chromeInkPolarity 用 0_45 分界，未知亮度按深墨`() {
+    fun `chromeInkPolarity 按黑白对比度择优 不再用 0_45 阈值`() {
+        // 分界点是「白墨与近黑墨对比度相等」≈0.2017，不是顶栏那套 0.45。
         assertEquals(HomeInkPolarity.Light, HomeBackgroundModel.chromeInkPolarity(0.0))
-        assertEquals(HomeInkPolarity.Light, HomeBackgroundModel.chromeInkPolarity(0.4499))
-        assertEquals(HomeInkPolarity.Dark, HomeBackgroundModel.chromeInkPolarity(0.45)) // 严格小于才翻白
-        assertEquals(HomeInkPolarity.Dark, HomeBackgroundModel.chromeInkPolarity(0.9))
+        assertEquals(HomeInkPolarity.Light, HomeBackgroundModel.chromeInkPolarity(0.20))
+        assertEquals(HomeInkPolarity.Dark, HomeBackgroundModel.chromeInkPolarity(0.21))
+        // 关键：0.30 亮度上白字只有 3.0:1、近黑有 5.8:1 —— 旧阈值给白字，现在必须给深墨。
+        assertEquals(HomeInkPolarity.Dark, HomeBackgroundModel.chromeInkPolarity(0.30))
+        assertEquals(HomeInkPolarity.Dark, HomeBackgroundModel.chromeInkPolarity(0.4499))
+        assertEquals(HomeInkPolarity.Dark, HomeBackgroundModel.chromeInkPolarity(0.90))
         assertEquals(HomeInkPolarity.Dark, HomeBackgroundModel.chromeInkPolarity(null))
     }
 
     @Test
-    fun `cardGlassInkPolarity 用 0_20 分界，不是顶栏那套 0_45`() {
+    fun `cardGlassInkPolarity 与顶栏同一套择优 不再单独写 0_20`() {
         assertEquals(HomeInkPolarity.Light, HomeBackgroundModel.cardGlassInkPolarity(0.19))
-        assertEquals(HomeInkPolarity.Dark, HomeBackgroundModel.cardGlassInkPolarity(0.2))
-        // 0.3 这一档顶栏会判深墨、卡面也判深墨；但 0.25 顶栏仍是浅墨、卡面已是深墨。
-        assertEquals(HomeInkPolarity.Light, HomeBackgroundModel.chromeInkPolarity(0.25))
+        assertEquals(HomeInkPolarity.Dark, HomeBackgroundModel.cardGlassInkPolarity(0.21))
         assertEquals(HomeInkPolarity.Dark, HomeBackgroundModel.cardGlassInkPolarity(0.25))
+        assertEquals(HomeInkPolarity.Dark, HomeBackgroundModel.cardGlassInkPolarity(0.45))
         assertEquals(HomeInkPolarity.Dark, HomeBackgroundModel.cardGlassInkPolarity(null))
+        // 两个入口必须同判：一处在 0.30 判白、另一处判黑就说明有人又塞回了阈值。
+        for (lum in listOf(0.0, 0.05, 0.19, 0.2017, 0.21, 0.30, 0.45, 0.90)) {
+            assertEquals(
+                "亮度 $lum 上顶栏与卡面判反了",
+                HomeBackgroundModel.chromeInkPolarity(lum),
+                HomeBackgroundModel.cardGlassInkPolarity(lum),
+            )
+        }
+    }
+
+    @Test
+    fun `中灰背景给近黑墨 —— 0_45 阈值会把它判成白字`() {
+        val dark = HomeBackgroundModel.ON_LIGHT_INK_ARGB
+        // 0.19 的白墨确实更好（4.2:1 vs 4.1:1）。
+        assertEquals(HomeBackgroundModel.WHITE_ARGB, HomeBackgroundModel.inkOverWallpaperArgb(null, dark, 0.19))
+        // 0.30：白字只有 3.0:1、近黑有 5.8:1 ⇒ 必须给近黑；旧的 0.45 阈值会给白字。
+        assertEquals(dark, HomeBackgroundModel.inkOverWallpaperArgb(null, dark, 0.30))
+        assertEquals(dark, HomeBackgroundModel.inkOverWallpaperArgb(null, dark, 0.44))
+        // 亮度未知时仍回兜底墨色。
+        assertEquals(dark, HomeBackgroundModel.inkOverWallpaperArgb(null, dark, null))
     }
 
     @Test
