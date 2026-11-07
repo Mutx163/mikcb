@@ -84,7 +84,7 @@ fun DayViewScrollContent(
     /** 空态那块的壁纸亮度（正文带）；null = 没壁纸，保持主题原色。 */
     wallpaperLuminance: Double? = null,
     /**
-     * 摘要卡背后壁纸的**星期栏那档**亮度（玻璃压壁纸时按卡面有效亮度翻墨色，对齐发布版）；
+     * 摘要卡背后壁纸的**星期栏那档**亮度（玻璃压壁纸时按卡面有效亮度翻墨色）；
      * null = 没壁纸 / 亮度未知 ⇒ 摘要卡用主题前景色。
      */
     summaryWallpaperLuminance: Double? = null,
@@ -150,6 +150,7 @@ fun DayViewScrollContent(
                     courseResolver = courseResolver,
                     material = material,
                     glassBackdrop = glassBackdrop,
+                    wallpaperLuminance = wallpaperLuminance,
                 )
                 Spacer(modifier = Modifier.height(8.dp))
             }
@@ -194,6 +195,7 @@ fun DayViewScrollContent(
                             showConflictBadge = showConflictBadge,
                             material = material,
                             glassBackdrop = glassBackdrop,
+                            wallpaperLuminance = wallpaperLuminance,
                         )
                     }
 
@@ -206,6 +208,7 @@ fun DayViewScrollContent(
                             },
                             material = material,
                             glassBackdrop = glassBackdrop,
+                            wallpaperLuminance = wallpaperLuminance,
                         )
                     }
 
@@ -215,6 +218,7 @@ fun DayViewScrollContent(
                             onTap = onOpenExam?.let { open -> { open(entry.exam.id) } },
                             material = material,
                             glassBackdrop = glassBackdrop,
+                            wallpaperLuminance = wallpaperLuminance,
                         )
                     }
                 }

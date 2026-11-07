@@ -19,6 +19,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -26,6 +27,7 @@ import androidx.compose.ui.unit.sp
 import com.mutx163.qingyu.components.QingyuWeightDelta
 import com.mutx163.qingyu.components.shiftWeight
 import com.mutx163.qingyu.pages.settings.HomeMaterialRenderSpec
+import com.mutx163.qingyu.pages.timetable.CourseCardInk
 import com.mutx163.qingyu.theme.QingyuTheme
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.Text
@@ -53,6 +55,8 @@ fun DayViewExamCard(
     material: HomeMaterialRenderSpec? = null,
     /** 液态档的整页共享背景采样源（见 [dayAgendaSurface]）。 */
     glassBackdrop: Backdrop? = null,
+    /** 这张卡背后壁纸的**正文带**亮度；玻璃 / 半透明档据此算卡面有效亮度定墨色。 */
+    wallpaperLuminance: Double? = null,
     modifier: Modifier = Modifier,
 ) {
     val dark = isSystemInDarkTheme()
@@ -61,7 +65,21 @@ fun DayViewExamCard(
     val cardColor = errorColor.copy(
         alpha = dayAgendaSurfaceAlpha(material, 0.95f).coerceIn(0.08f, 1f),
     )
-    val ink = Color.White
+    val glass = dayAgendaGlassBackdrop(material, glassBackdrop)
+    // 墨色（2026-11-07）：旧实现恒白字 —— 液态档染色最低时卡面只剩一层近透明的红雾，
+    // 白字压在浅壁纸上直接消失。现在与课程卡同一份实现：玻璃 / 半透明档按卡面有效
+    // 亮度翻黑白，实色档按考试卡底色亮度择优（参考历史实现的实底分支）。
+    val ink = Color(
+        CourseCardInk.resolveCardInkOverWallpaper(
+            fillArgb = errorColor.toArgb(),
+            fillAlpha = cardColor.alpha,
+            wallpaperLuminance = wallpaperLuminance,
+            showsWallpaper = glass != null || cardColor.alpha < 1f,
+            // 实心档：按考试卡底色的真实亮度择优（多数考试红仍会拿到白字，
+            // 但浅色主题下的亮红不再被写死成白字）。
+            fallbackArgb = CourseCardInk.bestContrastInk(errorColor.toArgb()),
+        ),
+    )
     val shape = RoundedCornerShape(radius)
 
     val countdownText = if (entry.daysUntil == 0) {
@@ -75,7 +93,7 @@ fun DayViewExamCard(
             .fillMaxWidth()
             .clip(shape)
             .dayAgendaSurface(
-                glassBackdrop = dayAgendaGlassBackdrop(material, glassBackdrop),
+                glassBackdrop = glass,
                 shape = shape,
                 fill = cardColor,
                 material = material,

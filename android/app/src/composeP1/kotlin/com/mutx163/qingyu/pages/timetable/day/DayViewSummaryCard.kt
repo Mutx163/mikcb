@@ -21,7 +21,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.luminance
+import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -31,6 +31,7 @@ import com.mutx163.qingyu.components.QingyuWeightDelta
 import com.mutx163.qingyu.components.shiftWeight
 import com.mutx163.qingyu.pages.settings.HomeMaterialRenderSpec
 import com.mutx163.qingyu.pages.shell.HomeBackgroundModel
+import com.mutx163.qingyu.pages.timetable.CourseCardInk
 import com.mutx163.qingyu.theme.QingyuTheme
 import top.yukonga.miuix.kmp.basic.Card
 import top.yukonga.miuix.kmp.basic.CardDefaults
@@ -61,7 +62,7 @@ fun DayViewSummaryCard(
     /** 液态档的整页共享背景采样源（见 [dayAgendaSurface]）。 */
     glassBackdrop: Backdrop? = null,
     /**
-     * 卡背后壁纸的**星期栏那档**亮度（对齐发布版 `_weekdayInkLuminance`）：玻璃压壁纸时用它按
+     * 卡背后壁纸的**星期栏那档**亮度（与摘要卡的星期栏字色同源）：玻璃压壁纸时用它按
      * 卡面有效亮度自动翻黑/白，避免灰字糊在灰玻璃上。null = 没壁纸 / 亮度未知 ⇒ 用主题前景。
      */
     wallpaperLuminance: Double? = null,
@@ -86,23 +87,27 @@ fun DayViewSummaryCard(
     val fillAlpha = dayAgendaSurfaceAlpha(material, 1f).coerceIn(0.08f, 1f)
     val translucent = glass != null || fillAlpha < 1f
 
-    // ── 摘要卡文字墨色（对齐发布版 v2.1.4.1 `_buildDayViewSummary`）──
-    // 玻璃压壁纸时：按**卡面有效亮度**（卡底色 × 染色强度 + 壁纸亮度 ×(1−染色)）自动翻黑/白，
-    // 而不是用固定的主题灰（浅色主题 secondaryText = #999999 压在灰玻璃上几乎看不见）。
-    // 非玻璃档：用主题前景色（深/浅主题各有足够对比），次级行用其派生 muted。
-    val cardFillLuminance = MiuixTheme.colorScheme.surface.luminance().toDouble()
-    val inkArgb = if (glass != null && wallpaperLuminance != null) {
-        val surfaceLuminance = HomeBackgroundModel.cardGlassSurfaceLuminance(
-            cardFillLuminance = cardFillLuminance,
-            washAlpha = fillAlpha.toDouble(),
+    // ── 摘要卡文字墨色（2026-11-07 按卡面有效亮度重算）──
+    // 卡面半透明（玻璃 / 高斯 / 染色 < 1）时：按**卡面有效亮度**
+    //（卡底色亮度 × α + 壁纸亮度 × (1−α)，见 `CourseCardInk.compositeLuminanceOverWallpaper`）
+    // 在黑 / 白里挑对比度更高的一档 —— 与四张议程卡同一份实现。
+    // 旧实现有两处门槛会漏判：①要求 `glass != null`（只认液态档），高斯档 alpha 已经 0.55
+    // 却仍用主题前景色；②翻面用写死的 0.20 阈值，分界点附近白给了 ~4% 亮度差。
+    // 非半透明档（实色）：按卡底色自身亮度择优（`fallbackArgb`），次级行用其派生 muted。
+    // 卡面底色：画法与判墨**共用这一份**，避免一处改了另一处漏（`DayViewTaskBandCard` 同）。
+    val cardFill = MiuixTheme.colorScheme.surface
+    val inkArgb = if (translucent && wallpaperLuminance != null) {
+        CourseCardInk.resolveCardInkOverWallpaper(
+            fillArgb = cardFill.toArgb(),
+            fillAlpha = fillAlpha,
             wallpaperLuminance = wallpaperLuminance,
-        )
-        HomeBackgroundModel.inkOverWallpaperArgb(
-            // 与星期栏同一套自定义字色：配置了就用它（对比不足按亮度推），未配置/默认则按亮度翻黑白。
-            configuredArgb = HomeBackgroundModel.parseInkArgb(weekdayFontColorHex),
+            showsWallpaper = true,
             fallbackArgb = QingyuTheme.primaryText(dark),
-            wallpaperLuminance = surfaceLuminance,
-            builtInDefaultArgb = HomeBackgroundModel.parseInkArgb(weekdayFontColorDefaultHex),
+            // 与星期栏同一套自定义字色：配置了（且不是内置默认值）就优先用它，
+            // 只有它在卡面有效亮度上达不到 3:1 时才回自动黑 / 白（与
+            // `HomeBackgroundModel.MIN_INK_CONTRAST_RATIO` 同一条达标线）。
+            preferredArgb = HomeBackgroundModel.parseInkArgb(weekdayFontColorHex)
+                ?.takeIf { it != HomeBackgroundModel.parseInkArgb(weekdayFontColorDefaultHex) },
         )
     } else {
         QingyuTheme.primaryText(dark)
@@ -118,7 +123,7 @@ fun DayViewSummaryCard(
                     Modifier.dayAgendaSurface(
                         glassBackdrop = glass,
                         shape = shape,
-                        fill = MiuixTheme.colorScheme.surface.copy(alpha = fillAlpha),
+                        fill = cardFill.copy(alpha = fillAlpha),
                         material = material,
                     )
                 } else {

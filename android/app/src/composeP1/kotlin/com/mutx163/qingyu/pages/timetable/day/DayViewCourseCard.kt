@@ -28,6 +28,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
@@ -35,6 +36,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.mutx163.qingyu.components.QingyuWeightDelta
 import com.mutx163.qingyu.pages.settings.HomeMaterialRenderSpec
+import com.mutx163.qingyu.pages.timetable.CourseCardInk
 import com.mutx163.qingyu.pages.timetable.WeekGridCourseMapping
 import com.mutx163.qingyu.theme.QingyuTheme
 import top.yukonga.miuix.kmp.basic.Icon
@@ -82,6 +84,11 @@ fun DayViewCourseCard(
      * 非空且生效档为液态时才真采样，否则退回卡色填充（见 [dayAgendaSurface]）。
      */
     glassBackdrop: Backdrop? = null,
+    /**
+     * 这张卡背后壁纸的**正文带**亮度（`DayViewPage` 一次采好逐卡下传）。
+     * 玻璃 / 半透明档拿它算卡面有效亮度来定墨色；null = 没壁纸 / 还没采到 ⇒ 主题口径。
+     */
+    wallpaperLuminance: Double? = null,
     modifier: Modifier = Modifier,
 ) {
     val dark = isSystemInDarkTheme()
@@ -98,7 +105,22 @@ fun DayViewCourseCard(
     val cardColor = baseCardColor.copy(
         alpha = dayAgendaSurfaceAlpha(material, cardAlpha).coerceIn(0.08f, 1f),
     )
-    val ink = calculateCardInk(baseCardColor)
+    val glass = dayAgendaGlassBackdrop(material, glassBackdrop)
+    // 墨色（2026-11-07）：玻璃 / 半透明档按**卡面实际呈现的亮度**翻黑白
+    // （卡色 × 染色强度 + 背后壁纸 × 其余），参考历史实现的 `dayAgendaAutoInk`；
+    // 实色档 / 亮度未知时按卡色自身的 WCAG 亮度择优（[CourseCardInk.bestContrastInk]）。
+    // 旧实现在任何档位都只按**不透明卡色**判 —— 深树壁纸上的近透明卡因此拿到深字。
+    val ink = Color(
+        CourseCardInk.resolveCardInkOverWallpaper(
+            fillArgb = baseCardColor.toArgb(),
+            fillAlpha = cardColor.alpha,
+            wallpaperLuminance = wallpaperLuminance,
+            showsWallpaper = glass != null || cardColor.alpha < 1f,
+            // 实心档（不露壁纸）：按**卡色自身的 WCAG 亮度**在白 / 近黑里择优，
+            // 不再走 calculateCardInk 那套 gamma 0.55 阈值（#808080 会判成白字）。
+            fallbackArgb = CourseCardInk.bestContrastInk(baseCardColor.toArgb()),
+        ),
+    )
 
     val shape = RoundedCornerShape(radius)
     val borderModifier = if (entry.isConflicting) {
@@ -127,7 +149,7 @@ fun DayViewCourseCard(
             .fillMaxWidth()
             .clip(shape)
             .dayAgendaSurface(
-                glassBackdrop = dayAgendaGlassBackdrop(material, glassBackdrop),
+                glassBackdrop = glass,
                 shape = shape,
                 fill = cardColor,
                 material = material,

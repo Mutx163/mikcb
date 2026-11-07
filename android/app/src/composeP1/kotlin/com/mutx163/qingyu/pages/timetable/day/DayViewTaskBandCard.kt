@@ -19,6 +19,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.state.ToggleableState
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
@@ -30,6 +31,7 @@ import com.mutx163.qingyu.components.shiftWeight
 import com.mutx163.qingyu.core.Course
 import com.mutx163.qingyu.core.CourseTask
 import com.mutx163.qingyu.pages.settings.HomeMaterialRenderSpec
+import com.mutx163.qingyu.pages.timetable.CourseCardInk
 import com.mutx163.qingyu.theme.QingyuTheme
 import top.yukonga.miuix.kmp.basic.CardDefaults
 import top.yukonga.miuix.kmp.basic.Checkbox
@@ -64,6 +66,8 @@ fun DayViewTaskBandCard(
     material: HomeMaterialRenderSpec? = null,
     /** 液态档的整页共享背景采样源（见 [dayAgendaSurface]）。 */
     glassBackdrop: Backdrop? = null,
+    /** 这张卡背后壁纸的**正文带**亮度；玻璃 / 半透明档据此算卡面有效亮度定墨色。 */
+    wallpaperLuminance: Double? = null,
     modifier: Modifier = Modifier,
 ) {
     if (data.isEmpty) {
@@ -71,9 +75,6 @@ fun DayViewTaskBandCard(
     }
 
     val dark = isSystemInDarkTheme()
-    val primaryTextColor = Color(QingyuTheme.primaryText(dark))
-    val secondaryTextColor = Color(QingyuTheme.secondaryText(dark))
-    val actionIconColor = Color(QingyuTheme.actionIcon(dark))
     val destructiveColor = Color(QingyuTheme.destructive())
 
     // 待办带与摘要卡 / 议程卡同材质（Dart `day_view_task_band.dart:43`：材质与其余内容卡同源）。
@@ -81,6 +82,29 @@ fun DayViewTaskBandCard(
     val glass = dayAgendaGlassBackdrop(material, glassBackdrop)
     val fillAlpha = dayAgendaSurfaceAlpha(material, 1f).coerceIn(0.08f, 1f)
     val translucent = glass != null || fillAlpha < 1f
+    // 卡面底色：画法与判墨**共用这一份**（分头各取一次，日后一处改了另一处必漏）。
+    val cardFill = MiuixTheme.colorScheme.surface
+
+    // 墨色（2026-11-07）：玻璃 / 半透明档按**卡面有效亮度**择优黑白，参考历史实现的
+    // `dayAgendaAutoInk(surfaceColor, washAlpha)` —— 玻璃档与实底档不能在这里漂移。
+    // 旧实现恒用主题前景色：深色主题（白字）撞浅壁纸、浅色主题（深字）撞深壁纸。
+    val wallpaperInk = translucent && wallpaperLuminance != null
+    val primaryTextColor = Color(
+        CourseCardInk.resolveCardInkOverWallpaper(
+            fillArgb = cardFill.toArgb(),
+            fillAlpha = fillAlpha,
+            wallpaperLuminance = wallpaperLuminance,
+            showsWallpaper = translucent,
+            // 实心档：按卡底色的 WCAG 亮度择优（浅色主题白底 ⇒ 近黑，深色主题 ⇒ 白）。
+            fallbackArgb = CourseCardInk.bestContrastInk(cardFill.toArgb()),
+        ),
+    )
+    // 次级墨与标题同极性（主墨压到 62% 不透明度）：只在压壁纸时
+    // 派生 —— 半透明墨会把对比度再打掉一截，而实色档的主题次级色本来就有足够对比。
+    val secondaryTextColor =
+        if (wallpaperInk) primaryTextColor.copy(alpha = 0.62f) else Color(QingyuTheme.secondaryText(dark))
+    val actionIconColor =
+        if (wallpaperInk) secondaryTextColor else Color(QingyuTheme.actionIcon(dark))
 
     QingyuCard(
         modifier = modifier
@@ -90,7 +114,7 @@ fun DayViewTaskBandCard(
                     Modifier.dayAgendaSurface(
                         glassBackdrop = glass,
                         shape = shape,
-                        fill = MiuixTheme.colorScheme.surface.copy(alpha = fillAlpha),
+                        fill = cardFill.copy(alpha = fillAlpha),
                         material = material,
                     )
                 } else {

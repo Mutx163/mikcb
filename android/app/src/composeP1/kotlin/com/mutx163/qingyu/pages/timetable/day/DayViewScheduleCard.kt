@@ -24,6 +24,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -31,6 +32,7 @@ import androidx.compose.ui.unit.sp
 import com.mutx163.qingyu.components.QingyuWeightDelta
 import com.mutx163.qingyu.components.shiftWeight
 import com.mutx163.qingyu.pages.settings.HomeMaterialRenderSpec
+import com.mutx163.qingyu.pages.timetable.CourseCardInk
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.blur.Backdrop
@@ -60,6 +62,8 @@ fun DayViewScheduleCard(
     material: HomeMaterialRenderSpec? = null,
     /** 液态档的整页共享背景采样源（见 [dayAgendaSurface]）。 */
     glassBackdrop: Backdrop? = null,
+    /** 这张卡背后壁纸的**正文带**亮度；玻璃 / 半透明档据此算卡面有效亮度定墨色。 */
+    wallpaperLuminance: Double? = null,
     modifier: Modifier = Modifier,
 ) {
     // 日程色是用户数据色；缺省/解析失败时退回主题 primary（不写死字面量，R5）。
@@ -69,7 +73,19 @@ fun DayViewScheduleCard(
     val cardColor = baseColor.copy(
         alpha = dayAgendaSurfaceAlpha(material, 0.95f).coerceIn(0.08f, 1f),
     )
-    val ink = calculateCardInk(baseColor)
+    val glass = dayAgendaGlassBackdrop(material, glassBackdrop)
+    // 墨色与课程卡同一份实现（`CourseCardInk.resolveCardInkOverWallpaper`）：
+    // 玻璃 / 半透明档按卡面实际呈现的亮度翻黑白，实色档保持旧的「按卡色翻」。
+    val ink = Color(
+        CourseCardInk.resolveCardInkOverWallpaper(
+            fillArgb = baseColor.toArgb(),
+            fillAlpha = cardColor.alpha,
+            wallpaperLuminance = wallpaperLuminance,
+            showsWallpaper = glass != null || cardColor.alpha < 1f,
+            // 实心档：按卡色自身的 WCAG 亮度择优（同课程卡）。
+            fallbackArgb = CourseCardInk.bestContrastInk(baseColor.toArgb()),
+        ),
+    )
     val shape = RoundedCornerShape(radius)
     // 跨日徽标只看**这一次发生**的区间：Dart 用物化后的 `effectiveItem`
     //（`timetable_day_agenda_models.dart:84-93`，重复日程物化成当天起止），所以
@@ -81,7 +97,7 @@ fun DayViewScheduleCard(
             .fillMaxWidth()
             .clip(shape)
             .dayAgendaSurface(
-                glassBackdrop = dayAgendaGlassBackdrop(material, glassBackdrop),
+                glassBackdrop = glass,
                 shape = shape,
                 fill = cardColor,
                 material = material,
