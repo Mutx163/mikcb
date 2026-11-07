@@ -61,8 +61,26 @@ fun WarehouseSchoolAdaptersPage(
      * 否则「还在请求」和「请求失败」都会显示成同一句空态，用户不知道该不该等。
      */
     phase: WarehouseListPhase = WarehouseListPhase.Idle,
+    /**
+     * 最近一次失败的**具体原因**（2026-11-05 新增槽位，宿主已填值）。
+     *
+     * 契约见 `WarehouseLoadIssue.kt`：`code` 只留日志/排查，页面出文案**只用 `issue`**
+     * （四档：网不通 / 超时 / 仓库全挂 / 格式错），不许再按 `code` 解析一遍。
+     *
+     * 默认 `null`：还没接到数据层的调用点行为不变（仍按 [phase] 显示通用标题 + 重试）。
+     * 注意 [failure] 与「有缓存」可以同时成立：刷新失败但列表还是上次的名单时，
+     * 宿主会保留列表并把原因放这里，页面适合用轻提示而不是整块失败页。
+     */
+    failure: WarehouseLoadFailed? = null,
     onRetry: () -> Unit = onRefresh,
 ) {
+    // 四档原因 → 一句人话（main 层 `warehouseLoadIssueText`，可被 L0 单测钉住）。
+    // `showingCachedList = adapters.isNotEmpty()`：名单还在时只说「下面显示的是上次加载的列表」，
+    // 不把「已尝试 N 条线路」这类细节压给手上有名单的用户；内容格式错仍走各自那句（见函数 KDoc）。
+    val failureText = failure?.let {
+        warehouseLoadIssueText(it, showingCachedList = adapters.isNotEmpty())
+    }
+
     // Dart warehouse_school_adapters_screen.dart 的 HyperosSubpage 标题是学校名 Text ⇒ 可折叠大标题。
     // 骨架 / 顶栏 / 返回键走共享套件（R1），页面级滚动走 QingyuPageList（R2）。
     QingyuPageScaffold(
@@ -81,6 +99,22 @@ fun WarehouseSchoolAdaptersPage(
         ) {
             // 学校概览卡（旧版 Dart 没有这张卡）：页面大标题就是学校名，再画一张
             // 「头像 + 校名」卡是显式冗余（用户 2026-11-03 实报），身份由标题承担。
+
+            // 刷新失败但**列表还在**（缓存保留，phase 已是 Idle）：顶部一条轻提示说清原因，
+            // 别把整页换成失败页——用户手上的名单仍然是可用的。
+            if (adapters.isNotEmpty() && failureText != null) {
+                item(key = "load_issue") {
+                    Text(
+                        text = failureText,
+                        style = MiuixTheme.textStyles.footnote1,
+                        color = MiuixTheme.colorScheme.error,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = QingyuPageCardMargin)
+                            .padding(top = 12.dp),
+                    )
+                }
+            }
 
             // 适配器列表
             if (adapters.isEmpty()) {
@@ -101,6 +135,18 @@ fun WarehouseSchoolAdaptersPage(
                                     style = MiuixTheme.textStyles.body1.shiftWeight(QingyuWeightDelta.MEDIUM),
                                     color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
                                 )
+                                // 真失败时把四档原因补一句：只留通用标题用户不知道该查什么。
+                                // 无缓存 ⇒ `showingCachedList` 为 false，走的是「已尝试 N 条线路」/网不通/
+                                // 超时/格式错那句（`attempts == 0` 的病句情形仍返回 null）。
+                                if (phase == WarehouseListPhase.Failed && failureText != null) {
+                                    Spacer(modifier = Modifier.height(6.dp))
+                                    Text(
+                                        text = failureText,
+                                        style = MiuixTheme.textStyles.footnote1,
+                                        color = MiuixTheme.colorScheme.error,
+                                        modifier = Modifier.padding(horizontal = 24.dp),
+                                    )
+                                }
                                 if (phase == WarehouseListPhase.Failed) {
                                     // 真失败才给重试；Idle 是「调用方没接数据层」，给重试按钮没有意义。
                                     // 配色对齐旧版（warehouse_school_adapters_screen.dart:119-123

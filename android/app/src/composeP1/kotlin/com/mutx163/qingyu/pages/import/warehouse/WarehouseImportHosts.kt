@@ -13,6 +13,12 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalContext
+import com.mutx163.qingyu.app.KeyValueStore
+import com.mutx163.qingyu.app.TimetableStore
+import com.mutx163.qingyu.infra.AppUpdateDownloadChannel
+import com.mutx163.qingyu.infra.AppUpdateDownloadSource
+import com.mutx163.qingyu.pages.about.AppUpdateSettings
+import com.mutx163.qingyu.pages.about.resolveMirrorUrlPrefix
 import com.mutx163.qingyu.pages.settings.SettingsStrings
 import com.mutx163.qingyu.platform.PrefsKeyValueStore
 import kotlinx.coroutines.Dispatchers
@@ -52,8 +58,10 @@ import kotlinx.coroutines.withContext
  *    地址是真的，但登录完**不会**自己抓课表。这一点写在 F08 认领文件的诚实清单里。
  * 2. **宏录制**已接（P1：录制/保存/键名与 Dart 同键共读）；**快捷导入（回放）**未接（P2），
  *    保存过的宏在本期只落盘不回放。
- * 3. **没有缓存**：每次进页面都真拉一次（Dart 会落 SharedPreferences 并标缓存时间），
- *    断网时看到的是失败态 + 重试，而不是上次的旧名单冒充新数据。
+ * 3. **缓存（2026-11-05 接上）**：索引落到 [WarehouseRepositoryCache]（原文 + 拉取时刻，TTL 6h）。
+ *    进页面先出本地记录（最近使用 / 已存宏）→ 再出缓存名单 → 新鲜就不打网、过期则后台刷新。
+ *    刷新失败时**保留缓存列表**并把原因写进 [WarehouseShellState.lastLoadIssue]，不把用户
+ *    已经能看见的名单换成一张失败页。Dart 侧没有这一层，是本侧补强。
  * 4. 真机没对照：本刀只证明「编译通过 + JVM 单测通过」。仓库文件能不能拉到、学校名对不对，
  *    要用户真机验收。
  */
@@ -97,6 +105,16 @@ class WarehouseShellState {
      * 登录页 `LaunchedEffect` 消费一次即清（与 [autoRecordMacro] 同款跨页暂存）。
      */
     var playbackMacro by mutableStateOf<WarehouseMacroRecord?>(null)
+
+    /**
+     * 最近一次拉取的失败原因（四档，[WarehouseLoadIssue]）。
+     *
+     * 为什么放在跨页状态里而不是各页私有：两个列表页都会写它，而「失败原因出人话」的渲染
+     * 在页面层——同一个页面实例可能先拿到缓存（成功）再拿到刷新失败，页面要能读到**最近一次**
+     * 的结论，不必自己再解析 `WarehouseFeedCodes` 的串。
+     * 成功时清成 `null`（页面据此收起失败提示）。
+     */
+    var lastLoadIssue by mutableStateOf<WarehouseLoadIssue?>(null)
 }
 
 /** `g2.warehouseImport`：学校选择页（数据源 = `index/root_index.yaml`）。 */
@@ -110,7 +128,16 @@ fun WarehouseImportPickerHost(
 ) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
-    val service = remember(fetch) { WarehouseRepositoryService(fetch) }
+    // 拉取偏好（更新下载渠道 → GitCode / 镜像前缀）。按设置的「渠道」选源，
+    // 以前这里写死 GitHub raw 主地址，设置里切 GitCode 对适配仓毫无作用（见 WarehouseFetchOptions）。
+    val fetchOptions = remember(context) {
+        readWarehouseFetchOptions(PrefsKeyValueStore(context))
+    }
+    val service = remember(fetch, fetchOptions) {
+        WarehouseRepositoryService(fetch, options = fetchOptions)
+    }
+    // 索引落盘缓存：与宏记录同一份 prefs。弱网/镜像半死时先用上次的名单秒开。
+    val cache = remember(context) { WarehouseRepositoryCache(PrefsKeyValueStore(context)) }
     // 宏持久化（P2）：课程导入页的快捷导入入口要列「全部已存宏」（跨学校）。
     val macroStore = remember(context) { WarehouseMacroStore(PrefsKeyValueStore(context)) }
 
@@ -123,30 +150,70 @@ fun WarehouseImportPickerHost(
     var showMacroPicker by remember { mutableStateOf(false) }
 
     LaunchedEffect(reloadToken) {
-        phase = WarehouseListPhase.Loading
-        val loaded = withContext(Dispatchers.IO) { service.loadRootIndex() }
-        recentSchoolIds = withContext(Dispatchers.IO) { prefs.recentSchoolIds() }
-            .also { ids ->
-                // 显式记录：盘上的最近列表带重复（云恢复原样直写的历史数据）时，
-                // 渲染层会按首次出现去重（schoolsToBeans）——这里留一条日志方便对账。
-                if (ids.size != ids.distinct().size) {
-                    Log.w(LOG_TAG, "recent school ids contain duplicates; render dedupes by first occurrence")
+        // ① 本地记录先出：最近使用 + 已存宏都在盘上（读 prefs，几十毫秒），
+        //    不等网络也不等缓存 —— 弱网首帧就已有 ★ 分组与快捷导入入口。
+        val local = withContext(Dispatchers.IO) {
+            WarehousePickerLocalRecords(
+                recentSchoolIds = prefs.recentSchoolIds(),
+                macroRecords = macroStore.getAllMacroEntries()
+                    .mapNotNull { macroStore.getMacro(it.schoolId, it.adapterId) },
+                cachedRootIndex = cache.readRootIndex(),
+            )
+        }
+        recentSchoolIds = local.recentSchoolIds.also { ids ->
+            // 显式记录：盘上的最近列表带重复（云恢复原样直写的历史数据）时，
+            // 渲染层会按首次出现去重（schoolsToBeans）——这里留一条日志方便对账。
+            if (ids.size != ids.distinct().size) {
+                Log.w(LOG_TAG, "recent school ids contain duplicates; render dedupes by first occurrence")
+            }
+        }
+        macroRecords = local.macroRecords
+
+        // ② 缓存优先：有缓存就先渲染，stale 也先用（过期只代表「该刷新了」，不代表不能用）。
+        val cached = local.cachedRootIndex
+        if (cached != null) {
+            schools = cached.value.schools
+            phase = WarehouseListPhase.Idle
+            state.lastLoadIssue = null
+        } else {
+            phase = WarehouseListPhase.Loading
+        }
+
+        // ③ 新鲜缓存直接收工：6h 内同一份名单，没必要再打网（省掉整条候选链）。
+        if (cached != null && cache.isFresh(cached)) {
+            Log.d(LOG_TAG, "root_index fresh cache hit fetchedAt=${cached.fetchedAtMillis}")
+            return@LaunchedEffect
+        }
+
+        // ④ 打网（无缓存 = 首载，有缓存 = 后台刷新）；成功就把原文写回缓存。
+        val loaded = withContext(Dispatchers.IO) {
+            service.loadRootIndex().also { result ->
+                if (result is WarehouseLoad.Ok) {
+                    result.raw?.let { cache.writeRootIndex(it) }
                 }
             }
-        macroRecords = withContext(Dispatchers.IO) {
-            macroStore.getAllMacroEntries().mapNotNull { macroStore.getMacro(it.schoolId, it.adapterId) }
         }
         when (loaded) {
             is WarehouseLoad.Ok -> {
                 schools = loaded.value.schools
                 phase = WarehouseListPhase.Idle
+                state.lastLoadIssue = null
             }
 
             is WarehouseLoad.Failed -> {
-                schools = emptyList()
-                phase = WarehouseListPhase.Failed
+                val issue = warehouseLoadIssueOf(loaded)
+                state.lastLoadIssue = issue
+                // 有缓存：**保留列表**（phase 已是 Idle），只在日志与 lastLoadIssue 里交代原因；
+                // 没缓存才退到失败页（此时页面上本来就没内容可留）。
+                if (cached == null) {
+                    schools = emptyList()
+                    phase = WarehouseListPhase.Failed
+                }
                 // 日志用英文：composeP1 有中文字面量棘轮门禁（CjkLiteralGateTest），代码里的字符串不许硬写中文。
-                Log.w(LOG_TAG, "root_index load failed code=${loaded.code} attempts=${loaded.attempts}")
+                Log.w(
+                    LOG_TAG,
+                    "root_index load failed code=${loaded.code} attempts=${loaded.attempts} issue=$issue cached=${cached != null}",
+                )
             }
         }
     }
@@ -251,7 +318,14 @@ fun WarehouseSchoolAdaptersHost(
     }
     LaunchedEffect(Unit) { if (state.school == null) state.school = school }
 
-    val service = remember(fetch) { WarehouseRepositoryService(fetch) }
+    val fetchOptions = remember(context) {
+        readWarehouseFetchOptions(PrefsKeyValueStore(context))
+    }
+    val service = remember(fetch, fetchOptions) {
+        WarehouseRepositoryService(fetch, options = fetchOptions)
+    }
+    // 适配器清单缓存（按学校分桶，互不覆盖）：同一所学校第二次进来秒开。
+    val cache = remember(context) { WarehouseRepositoryCache(PrefsKeyValueStore(context)) }
     // 宏持久化（P1）：与网页登录宿主同一套键（Dart SharedPreferences 同键共读），
     // 实例各建各的，物理上是同一份文件。
     val macroStore = remember(school.id) { WarehouseMacroStore(PrefsKeyValueStore(context)) }
@@ -259,15 +333,48 @@ fun WarehouseSchoolAdaptersHost(
     var adapters by remember(school.id) { mutableStateOf<List<WarehouseAdapterEntry>>(emptyList()) }
     // 哪些适配器存过录制（驱动卡片上的「快捷导入」按钮显隐，D7：P1/P2 间隙用空表天然隐藏）。
     var macroMap by remember(school.id) { mutableStateOf<Map<String, Boolean>>(emptyMap()) }
+    // 最近一次失败的形状（码 + 试了几个候选 + 四档分类），透传给页面的失败卡。
+    // 成功 / 命中缓存时清空；**有缓存时不清列表**，但仍把原因带给页面（可通过 lastLoadIssue 出提示）。
+    var failure by remember(school.id) { mutableStateOf<WarehouseLoadFailed?>(null) }
     var reloadToken by remember(school.id) { mutableStateOf(0) }
 
     LaunchedEffect(school.id, reloadToken) {
-        phase = WarehouseListPhase.Loading
-        val loaded = withContext(Dispatchers.IO) { service.loadAdaptersIndex(school) }
+        // ① 缓存优先（列表 + 该列表对应的宏映射一起出，避免「先亮快捷导入入口再消失」）。
+        val cached = withContext(Dispatchers.IO) { cache.readAdaptersIndex(school) }
+        if (cached != null) {
+            adapters = cached.value.adapters
+            phase = WarehouseListPhase.Idle
+            state.lastLoadIssue = null
+            failure = null
+            macroMap = withContext(Dispatchers.IO) {
+                cached.value.adapters.associate { adapter ->
+                    adapter.id to macroStore.hasMacro(school.id, adapter.id)
+                }
+            }
+        } else {
+            phase = WarehouseListPhase.Loading
+        }
+
+        // ② 6h 内同一份清单不再打网。
+        if (cached != null && cache.isFresh(cached)) {
+            Log.d(LOG_TAG, "adapters fresh cache hit school=${school.id} fetchedAt=${cached.fetchedAtMillis}")
+            return@LaunchedEffect
+        }
+
+        // ③ 打网（或后台刷新）；成功写回缓存。
+        val loaded = withContext(Dispatchers.IO) {
+            service.loadAdaptersIndex(school).also { result ->
+                if (result is WarehouseLoad.Ok) {
+                    result.raw?.let { cache.writeAdaptersIndex(school, it) }
+                }
+            }
+        }
         when (loaded) {
             is WarehouseLoad.Ok -> {
                 adapters = loaded.value.adapters
                 phase = WarehouseListPhase.Idle
+                state.lastLoadIssue = null
+                failure = null
                 macroMap = withContext(Dispatchers.IO) {
                     loaded.value.adapters.associate { adapter ->
                         adapter.id to macroStore.hasMacro(school.id, adapter.id)
@@ -276,12 +383,20 @@ fun WarehouseSchoolAdaptersHost(
             }
 
             is WarehouseLoad.Failed -> {
-                adapters = emptyList()
-                phase = WarehouseListPhase.Failed
-                macroMap = emptyMap()
+                val issue = warehouseLoadIssueOf(loaded)
+                state.lastLoadIssue = issue
+                failure = loaded.toLoadFailed()
+                // 有缓存：保留清单（phase 已是 Idle），原因进 lastLoadIssue 与日志；
+                // 没缓存才退失败页。
+                if (cached == null) {
+                    adapters = emptyList()
+                    phase = WarehouseListPhase.Failed
+                    macroMap = emptyMap()
+                }
                 Log.w(
                     LOG_TAG,
-                    "adapters load failed school=${school.id} code=${loaded.code} attempts=${loaded.attempts}",
+                    "adapters load failed school=${school.id} code=${loaded.code} " +
+                        "attempts=${loaded.attempts} issue=$issue cached=${cached != null}",
                 )
             }
         }
@@ -293,6 +408,8 @@ fun WarehouseSchoolAdaptersHost(
         // 宏映射真值（P2）：存过录制的适配器亮「快捷导入」按钮（回放引擎已接）。
         macroMap = macroMap,
         phase = phase,
+        // 失败卡的具体原因：码只进日志，页面出文案用 failure.issue（四档）。
+        failure = failure,
         onBack = onBack,
         onRefresh = { reloadToken += 1 },
         onRetry = { reloadToken += 1 },
@@ -368,10 +485,35 @@ fun WarehouseAdapterDetailHost(
 
     var customImportUrl by remember(adapter.id) { mutableStateOf(prefs.customImportUrl(adapter.id)) }
 
+    // 脚本状态卡（2026-11-05）：详情页要在**不注入脚本**的前提下说清「这个适配器的脚本能不能用」。
+    // 这里拉一次正文（含 SHA-256 校验），结果降维成四态交给页面；失败码只进日志、不出文案。
+    val fetchOptions = remember(context) {
+        readWarehouseFetchOptions(PrefsKeyValueStore(context))
+    }
+    val scriptService = remember(fetchOptions) {
+        WarehouseRepositoryService(WarehouseJdkFetch(), options = fetchOptions)
+    }
+    var scriptStatus by remember(school.id, adapter.id) {
+        mutableStateOf<WarehouseScriptStatus>(WarehouseScriptStatus.Loading)
+    }
+    LaunchedEffect(school.id, adapter.id) {
+        scriptStatus = WarehouseScriptStatus.Loading
+        val loaded = withContext(Dispatchers.IO) { scriptService.loadAdapterScript(school, adapter) }
+        scriptStatus = warehouseScriptStatusOf(loaded)
+        if (loaded is WarehouseLoad.Failed) {
+            Log.w(
+                LOG_TAG,
+                "adapter script load failed adapter=${adapter.id} code=${loaded.code} attempts=${loaded.attempts}",
+            )
+        }
+    }
+
     WarehouseAdapterDetailPage(
         school = school,
         adapter = adapter,
         customImportUrl = customImportUrl,
+        // 脚本状态四态：Loading / Loaded(length) / Empty / Failed(code, issue)。
+        scriptStatus = scriptStatus,
         onBack = onBack,
         onSaveCustomUrl = { url ->
             prefs.putCustomImportUrl(adapter.id, url)
@@ -428,4 +570,40 @@ internal fun toastUnavailable(context: Context, reason: String) {
 internal fun copyTextToClipboard(context: Context, label: String, text: String) {
     val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as? ClipboardManager ?: return
     clipboard.setPrimaryClip(ClipData.newPlainText(label, text))
+}
+
+/**
+ * 选校页一次本地预读的结果（都在盘上，IO 一次取回）。
+ *
+ * 三样分开是因为它们**出场顺序不同**：最近使用与已存宏马上要渲染（★ 分组、快捷导入入口），
+ * 缓存名单决定「首帧有没有内容」，而网络是最后才补的。合成一个数据类是为了只下一次 IO。
+ */
+private class WarehousePickerLocalRecords(
+    val recentSchoolIds: List<String>,
+    val macroRecords: List<WarehouseMacroRecord>,
+    val cachedRootIndex: WarehouseRepositoryCache.Cached<WarehouseRootIndex>?,
+)
+
+/**
+ * 由「更新下载渠道 / 下载来源 / 镜像预设」推出适配仓拉取偏好。
+ *
+ * 逐字对齐 Dart `WarehouseFetchOptions.fromSettings`（`warehouse_repository_service.dart:33-45`）：
+ * - `preferGitCode` = 渠道是 **GitCode 或蒲公英**（两者都国内可直连，见
+ *   `preferGitCodeSync`：`timetable_settings_extensions.dart:446-450`）；
+ * - 镜像前缀**只在下载来源 = mirror 时**才拼（`original` 渠道不该把请求丢给第三方代理，
+ *   同 Dart `_buildCandidateUris` 的 `downloadSource != mirror → [originalUri]`）。
+ *
+ * 为什么读全部设置再映射、而不是只读两个键：`AppUpdateSettings.fromJson` 已经封了
+ * 「缺键/非法值按默认回落」的口径，自己挑键会把那份口径抄第二遍。
+ */
+private fun readWarehouseFetchOptions(prefs: KeyValueStore): WarehouseFetchOptions {
+    val settings = AppUpdateSettings.fromJson(TimetableStore(prefs).loadSettingsJson())
+    val preferGitCode = settings.downloadChannel == AppUpdateDownloadChannel.GITCODE ||
+        settings.downloadChannel == AppUpdateDownloadChannel.PGYER
+    val mirrorUrlPrefix = if (settings.downloadSource == AppUpdateDownloadSource.MIRROR) {
+        resolveMirrorUrlPrefix(settings.mirrorPreset, settings.mirrorUrlPrefix)
+    } else {
+        null
+    }
+    return WarehouseFetchOptions(preferGitCode = preferGitCode, mirrorUrlPrefix = mirrorUrlPrefix)
 }

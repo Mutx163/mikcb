@@ -248,6 +248,19 @@ object WarehouseStrings {
     val searchSchoolHint = WarehouseArbText("searchSchoolHint", "搜索学校或适配器名称")
     val searchSchoolSuggestion = WarehouseArbText("searchSchoolSuggestion", "可输入学校全称、适配器名称如 WakeUp 或学校代码")
     val selectQuickImportTitle = WarehouseArbText("selectQuickImportTitle", "选择快捷导入")
+
+    /**
+     * 仓库拉取失败（线路全挂）——**四档失败原因里唯一已有 ARB 原文的一档**。
+     *
+     * 键与值逐字来自 `lib/l10n/app_zh.arb:4284`（Dart 侧由 `service_message_localizer.dart`
+     * 的 `warehouse_fetch_failed_mirror` 分支消费）；`{candidatesCount}` 由宿主传进来的
+     * `attempts`（试过几条候选线路）填。另外三档（网不通 / 超时 / 内容格式错）目前**没有**
+     * 专用键，见 [warehouseLoadIssueText] 的 TODO。
+     */
+    val serviceMsgWarehouseFetchFailedMirror = WarehouseArbText(
+        "serviceMsgWarehouseFetchFailedMirror",
+        "无法连接适配仓，已尝试 {candidatesCount} 条线路，请检查网络或切换镜像线路",
+    )
     val startDebugAction = WarehouseArbText("startDebugAction", "开始调试")
     val startRecordingTooltip = WarehouseArbText("startRecordingTooltip", "录制操作")
     val stopRecordingTooltip = WarehouseArbText("stopRecordingTooltip", "停止录制")
@@ -265,11 +278,33 @@ object WarehouseStrings {
     val warehouseFeedbackMissingSchoolTitle = WarehouseArbText("warehouseFeedbackMissingSchoolTitle", "缺少学校？去反馈")
     val warehouseImportedTimeSchemeName = WarehouseArbText("warehouseImportedTimeSchemeName", "{schoolName} 导入节次")
     val warehouseImportExecutionLogMenuLabel = WarehouseArbText("warehouseImportExecutionLogMenuLabel", "课表导入执行日志")
+
+    // ── 拉取失败的「四档原因」+ 脚本读不到（2026-11-05 ARB 窗口落地）──
+    // 四档对应 `WarehouseLoadIssue` 的四档：页面对用户只说这一句，不摆原始码。
+    val warehouseLoadIssueInvalidFormat = WarehouseArbText(
+        "warehouseLoadIssueInvalidFormat",
+        "适配仓返回的内容无法识别，请反馈给适配仓维护者",
+    )
+    val warehouseLoadIssueNetworkUnreachable = WarehouseArbText(
+        "warehouseLoadIssueNetworkUnreachable",
+        "网络不可用，请检查网络或代理后重试",
+    )
+    /** 列表还在（命中缓存）时那句：只说清「这是上次的」，不吓人。 */
+    val warehouseLoadIssueShowingCached = WarehouseArbText(
+        "warehouseLoadIssueShowingCached",
+        "网络不太顺畅，下面显示的是上次加载的列表",
+    )
+    val warehouseLoadIssueTimeout = WarehouseArbText(
+        "warehouseLoadIssueTimeout",
+        "适配仓响应太慢，请换个网络或稍后再试",
+    )
     val warehouseMatchedAdaptersLabel = WarehouseArbText("warehouseMatchedAdaptersLabel", "匹配适配器：{names}")
     val warehouseMissingSchoolSubtitle = WarehouseArbText("warehouseMissingSchoolSubtitle", "请到反馈页提交 Issue，附上学校名称、教务系统网址与课表页截图，便于补充适配")
     val warehouseMissingSchoolTitle = WarehouseArbText("warehouseMissingSchoolTitle", "没找到你的学校？")
     val warehouseRootLoadFailedTitle = WarehouseArbText("warehouseRootLoadFailedTitle", "暂时无法读取适配仓")
     val warehouseSchoolTapHint = WarehouseArbText("warehouseSchoolTapHint", "点击进入，选择适配器导入")
+    /** 详情页「脚本状态」失败态：脚本正文拉不回来。 */
+    val warehouseScriptLoadFailed = WarehouseArbText("warehouseScriptLoadFailed", "无法读取适配器脚本")
     val warehouseSessionAlreadyActive = WarehouseArbText("warehouseSessionAlreadyActive", "教务仍处于登录状态，可直接导入")
     val webAddressHint = WarehouseArbText("webAddressHint", "输入网页地址")
     val webLoginImport = WarehouseArbText("webLoginImport", "网页登录导入")
@@ -490,6 +525,7 @@ object WarehouseStrings {
         searchSchoolHint,
         searchSchoolSuggestion,
         selectQuickImportTitle,
+        serviceMsgWarehouseFetchFailedMirror,
         startDebugAction,
         startRecordingTooltip,
         stopRecordingTooltip,
@@ -506,11 +542,16 @@ object WarehouseStrings {
         warehouseFeedbackMissingSchoolTitle,
         warehouseImportedTimeSchemeName,
         warehouseImportExecutionLogMenuLabel,
+        warehouseLoadIssueInvalidFormat,
+        warehouseLoadIssueNetworkUnreachable,
+        warehouseLoadIssueShowingCached,
+        warehouseLoadIssueTimeout,
         warehouseMatchedAdaptersLabel,
         warehouseMissingSchoolSubtitle,
         warehouseMissingSchoolTitle,
         warehouseRootLoadFailedTitle,
         warehouseSchoolTapHint,
+        warehouseScriptLoadFailed,
         warehouseSessionAlreadyActive,
         webAddressHint,
         webLoginImport,
