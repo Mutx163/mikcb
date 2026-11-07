@@ -510,6 +510,12 @@ class AppLocalizationsJa extends AppLocalizations {
   String get cloudSyncConnectSuccess => 'アカウント接続成功';
 
   @override
+  String get cloudSyncSaved => '保存しました';
+
+  @override
+  String get cloudBackupRetryAction => '再試行';
+
+  @override
   String get cloudBackupSectionTitle => '履歴バージョン';
 
   @override
@@ -1320,6 +1326,14 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get createdNewTimetableAfterImport => 'インポート成功、新しい時間割を作成しました';
+
+  @override
+  String get transferImportedProfileName => 'インポートした時間割';
+
+  @override
+  String transferImportedTimeSchemeName(String name) {
+    return '$name 時間';
+  }
 
   @override
   String get backupRestoredSuccess => 'インポート成功、バックアップデータを復元しました';
@@ -4174,6 +4188,24 @@ class AppLocalizationsJa extends AppLocalizations {
   String get warehouseAdaptersLoadFailedTitle => 'アダプタ一覧を読み込めません';
 
   @override
+  String get warehouseLoadIssueNetworkUnreachable =>
+      'ネットワークに接続できません。ネットワークかプロキシを確認して再試行してください';
+
+  @override
+  String get warehouseLoadIssueTimeout =>
+      '適応倉庫の応答が遅すぎます。別のネットワークか、しばらくしてから再試行してください';
+
+  @override
+  String get warehouseLoadIssueInvalidFormat =>
+      '取得した内容を認識できません。適応倉庫のメンテナーに報告してください';
+
+  @override
+  String get warehouseLoadIssueShowingCached => '通信が不安定です。以下は前回読み込んだ一覧です';
+
+  @override
+  String get warehouseScriptLoadFailed => 'アダプターのスクリプトを読み込めません';
+
+  @override
   String get stopRecordingTooltip => '録画停止';
 
   @override
@@ -5085,6 +5117,15 @@ class AppLocalizationsJa extends AppLocalizations {
   String get holidayCheckUpdate => '更新を確認';
 
   @override
+  String get holidayDataUpdated => '祝日データを更新しました';
+
+  @override
+  String get holidayDataUpdateFailed => '更新に失敗しました（ローカルデータを使用）';
+
+  @override
+  String get holidayDataLoading => '祝日データを読み込み中…';
+
+  @override
   String get holidayAdvancedTitle => '休日データの更新';
 
   @override
@@ -5779,6 +5820,10 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get weeklyReportDisabledHint => '週間レポートを無効にしました';
+
+  @override
+  String get weeklyReportPermissionMissing =>
+      '通知が許可されていません。システム設定で通知を許可してから週報をオンにしてください';
 
   @override
   String get statisticsCompareTitle => '時間割比較';
@@ -9310,13 +9355,7 @@ class AppLocalizationsJa extends AppLocalizations {
   String get icsExportButton => 'エクスポートして共有';
 
   @override
-  String get icsExportSharing => 'カレンダーを準備中…';
-
-  @override
   String get icsExportNoProfiles => 'エクスポートできる時間割プロフィールがありません';
-
-  @override
-  String get icsExportDateRangeInvalid => '終了日は開始日以降にしてください';
 
   @override
   String get icsExportNoSelection => '少なくとも1種類の内容を選択してください';

@@ -1034,6 +1034,18 @@ abstract class AppLocalizations {
   /// **'账号连接成功'**
   String get cloudSyncConnectSuccess;
 
+  /// No description provided for @cloudSyncSaved.
+  ///
+  /// In zh, this message translates to:
+  /// **'已保存'**
+  String get cloudSyncSaved;
+
+  /// No description provided for @cloudBackupRetryAction.
+  ///
+  /// In zh, this message translates to:
+  /// **'重试'**
+  String get cloudBackupRetryAction;
+
   /// No description provided for @cloudBackupSectionTitle.
   ///
   /// In zh, this message translates to:
@@ -2479,6 +2491,18 @@ abstract class AppLocalizations {
   /// In zh, this message translates to:
   /// **'导入成功，已创建新的课表'**
   String get createdNewTimetableAfterImport;
+
+  /// No description provided for @transferImportedProfileName.
+  ///
+  /// In zh, this message translates to:
+  /// **'导入课表'**
+  String get transferImportedProfileName;
+
+  /// No description provided for @transferImportedTimeSchemeName.
+  ///
+  /// In zh, this message translates to:
+  /// **'{name} 时间'**
+  String transferImportedTimeSchemeName(String name);
 
   /// No description provided for @backupRestoredSuccess.
   ///
@@ -7600,6 +7624,36 @@ abstract class AppLocalizations {
   /// **'暂时无法读取适配器列表'**
   String get warehouseAdaptersLoadFailedTitle;
 
+  /// No description provided for @warehouseLoadIssueNetworkUnreachable.
+  ///
+  /// In zh, this message translates to:
+  /// **'网络不可用，请检查网络或代理后重试'**
+  String get warehouseLoadIssueNetworkUnreachable;
+
+  /// No description provided for @warehouseLoadIssueTimeout.
+  ///
+  /// In zh, this message translates to:
+  /// **'适配仓响应太慢，请换个网络或稍后再试'**
+  String get warehouseLoadIssueTimeout;
+
+  /// No description provided for @warehouseLoadIssueInvalidFormat.
+  ///
+  /// In zh, this message translates to:
+  /// **'适配仓返回的内容无法识别，请反馈给适配仓维护者'**
+  String get warehouseLoadIssueInvalidFormat;
+
+  /// No description provided for @warehouseLoadIssueShowingCached.
+  ///
+  /// In zh, this message translates to:
+  /// **'网络不太顺畅，下面显示的是上次加载的列表'**
+  String get warehouseLoadIssueShowingCached;
+
+  /// No description provided for @warehouseScriptLoadFailed.
+  ///
+  /// In zh, this message translates to:
+  /// **'无法读取适配器脚本'**
+  String get warehouseScriptLoadFailed;
+
   /// No description provided for @stopRecordingTooltip.
   ///
   /// In zh, this message translates to:
@@ -9188,6 +9242,24 @@ abstract class AppLocalizations {
   /// **'检查更新'**
   String get holidayCheckUpdate;
 
+  /// No description provided for @holidayDataUpdated.
+  ///
+  /// In zh, this message translates to:
+  /// **'节假日数据已更新'**
+  String get holidayDataUpdated;
+
+  /// No description provided for @holidayDataUpdateFailed.
+  ///
+  /// In zh, this message translates to:
+  /// **'更新失败，已使用本地数据'**
+  String get holidayDataUpdateFailed;
+
+  /// No description provided for @holidayDataLoading.
+  ///
+  /// In zh, this message translates to:
+  /// **'正在加载节假日数据…'**
+  String get holidayDataLoading;
+
   /// No description provided for @holidayAdvancedTitle.
   ///
   /// In zh, this message translates to:
@@ -10462,6 +10534,12 @@ abstract class AppLocalizations {
   /// In zh, this message translates to:
   /// **'已关闭每周周报推送'**
   String get weeklyReportDisabledHint;
+
+  /// No description provided for @weeklyReportPermissionMissing.
+  ///
+  /// In zh, this message translates to:
+  /// **'通知权限未开启，请到系统设置里允许通知后再开启周报'**
+  String get weeklyReportPermissionMissing;
 
   /// No description provided for @statisticsCompareTitle.
   ///
@@ -16492,23 +16570,11 @@ abstract class AppLocalizations {
   /// **'导出并分享'**
   String get icsExportButton;
 
-  /// No description provided for @icsExportSharing.
-  ///
-  /// In zh, this message translates to:
-  /// **'准备日历……'**
-  String get icsExportSharing;
-
   /// No description provided for @icsExportNoProfiles.
   ///
   /// In zh, this message translates to:
   /// **'暂无可导出的课表'**
   String get icsExportNoProfiles;
-
-  /// No description provided for @icsExportDateRangeInvalid.
-  ///
-  /// In zh, this message translates to:
-  /// **'请选择不早于开始日期的结束日期'**
-  String get icsExportDateRangeInvalid;
 
   /// No description provided for @icsExportNoSelection.
   ///

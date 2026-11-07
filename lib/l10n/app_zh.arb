@@ -228,6 +228,8 @@
   "cloudSyncLoginSheetSubtitle": "请使用应用专用密码，不要使用坚果云登录密码",
   "cloudSyncConfirmConnect": "确认连接",
   "cloudSyncConnectSuccess": "账号连接成功",
+  "cloudSyncSaved": "已保存",
+  "cloudBackupRetryAction": "重试",
   "cloudBackupSectionTitle": "备份版本",
   "cloudBackupCurrentLabel": "当前版本",
   "cloudBackupCurrentBadge": "当前",
@@ -753,6 +755,15 @@
   "replaceCurrentTimetable": "覆盖当前课表",
   "importAsNewTimetable": "导入为新课表",
   "createdNewTimetableAfterImport": "导入成功，已创建新的课表",
+  "transferImportedProfileName": "导入课表",
+  "transferImportedTimeSchemeName": "{name} 时间",
+  "@transferImportedTimeSchemeName": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "backupRestoredSuccess": "导入成功，备份数据已恢复",
   "importFailedInvalidFile": "导入失败，请确认文件有效",
   "welcomeTitle": "欢迎使用",
@@ -2344,6 +2355,11 @@
     }
   },
   "warehouseAdaptersLoadFailedTitle": "暂时无法读取适配器列表",
+  "warehouseLoadIssueNetworkUnreachable": "网络不可用，请检查网络或代理后重试",
+  "warehouseLoadIssueTimeout": "适配仓响应太慢，请换个网络或稍后再试",
+  "warehouseLoadIssueInvalidFormat": "适配仓返回的内容无法识别，请反馈给适配仓维护者",
+  "warehouseLoadIssueShowingCached": "网络不太顺畅，下面显示的是上次加载的列表",
+  "warehouseScriptLoadFailed": "无法读取适配器脚本",
   "stopRecordingTooltip": "停止录制",
   "startRecordingTooltip": "录制操作",
   "savedImportUrlHint": "已保存教务网址，下次可直接导入",
@@ -3034,6 +3050,10 @@
   "holidayEnableTitle": "启用节假日标记",
   "holidayEnableSubtitle": "标记法定节假日和调休补班日",
   "holidayCheckUpdate": "检查更新",
+
+  "holidayDataUpdated": "节假日数据已更新",
+  "holidayDataUpdateFailed": "更新失败，已使用本地数据",
+  "holidayDataLoading": "正在加载节假日数据…",
   "holidayAdvancedTitle": "节假日数据更新",
   "holidayNoUpcoming": "近期没有节假日",
   "holidayBadgeLabel": "假",
@@ -3469,6 +3489,7 @@
   },
   "weeklyReportEnabledHint": "已开启每周周报推送",
   "weeklyReportDisabledHint": "已关闭每周周报推送",
+  "weeklyReportPermissionMissing": "通知权限未开启，请到系统设置里允许通知后再开启周报",
   "statisticsCompareTitle": "课表对比",
   "statisticsCompareActive": "当前课表",
   "statisticsCompareDelta": "较当前 {delta} 节",
@@ -5589,9 +5610,7 @@
   "icsExportSkipHolidayCoursesSubtitle": "调休休息日也跳过，上班日仍导出",
   "icsExportSkipHolidayCoursesOn": "已跳过节假日课程",
   "icsExportButton": "导出并分享",
-  "icsExportSharing": "准备日历……",
   "icsExportNoProfiles": "暂无可导出的课表",
-  "icsExportDateRangeInvalid": "请选择不早于开始日期的结束日期",
   "icsExportNoSelection": "至少选择一种日历内容",
   "icsExportSemesterStartRequired": "导出课程前，请先设置学期开始日期",
   "icsExportNoEvents": "所选日期范围内没有日历事件",

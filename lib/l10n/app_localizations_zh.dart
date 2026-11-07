@@ -498,6 +498,12 @@ class AppLocalizationsZh extends AppLocalizations {
   String get cloudSyncConnectSuccess => '账号连接成功';
 
   @override
+  String get cloudSyncSaved => '已保存';
+
+  @override
+  String get cloudBackupRetryAction => '重试';
+
+  @override
   String get cloudBackupSectionTitle => '备份版本';
 
   @override
@@ -1295,6 +1301,14 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get createdNewTimetableAfterImport => '导入成功，已创建新的课表';
+
+  @override
+  String get transferImportedProfileName => '导入课表';
+
+  @override
+  String transferImportedTimeSchemeName(String name) {
+    return '$name 时间';
+  }
 
   @override
   String get backupRestoredSuccess => '导入成功，备份数据已恢复';
@@ -4103,6 +4117,21 @@ class AppLocalizationsZh extends AppLocalizations {
   String get warehouseAdaptersLoadFailedTitle => '暂时无法读取适配器列表';
 
   @override
+  String get warehouseLoadIssueNetworkUnreachable => '网络不可用，请检查网络或代理后重试';
+
+  @override
+  String get warehouseLoadIssueTimeout => '适配仓响应太慢，请换个网络或稍后再试';
+
+  @override
+  String get warehouseLoadIssueInvalidFormat => '适配仓返回的内容无法识别，请反馈给适配仓维护者';
+
+  @override
+  String get warehouseLoadIssueShowingCached => '网络不太顺畅，下面显示的是上次加载的列表';
+
+  @override
+  String get warehouseScriptLoadFailed => '无法读取适配器脚本';
+
+  @override
   String get stopRecordingTooltip => '停止录制';
 
   @override
@@ -5013,6 +5042,15 @@ class AppLocalizationsZh extends AppLocalizations {
   String get holidayCheckUpdate => '检查更新';
 
   @override
+  String get holidayDataUpdated => '节假日数据已更新';
+
+  @override
+  String get holidayDataUpdateFailed => '更新失败，已使用本地数据';
+
+  @override
+  String get holidayDataLoading => '正在加载节假日数据…';
+
+  @override
   String get holidayAdvancedTitle => '节假日数据更新';
 
   @override
@@ -5702,6 +5740,9 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get weeklyReportDisabledHint => '已关闭每周周报推送';
+
+  @override
+  String get weeklyReportPermissionMissing => '通知权限未开启，请到系统设置里允许通知后再开启周报';
 
   @override
   String get statisticsCompareTitle => '课表对比';
@@ -9046,13 +9087,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get icsExportButton => '导出并分享';
 
   @override
-  String get icsExportSharing => '准备日历……';
-
-  @override
   String get icsExportNoProfiles => '暂无可导出的课表';
-
-  @override
-  String get icsExportDateRangeInvalid => '请选择不早于开始日期的结束日期';
 
   @override
   String get icsExportNoSelection => '至少选择一种日历内容';
@@ -10557,6 +10592,12 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get cloudSyncConnectSuccess => '帳號連接成功';
 
   @override
+  String get cloudSyncSaved => '已保存';
+
+  @override
+  String get cloudBackupRetryAction => '重試';
+
+  @override
   String get cloudBackupSectionTitle => '備份版本';
 
   @override
@@ -11354,6 +11395,14 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
 
   @override
   String get createdNewTimetableAfterImport => '匯入成功，已建立新的課表';
+
+  @override
+  String get transferImportedProfileName => '匯入的課表';
+
+  @override
+  String transferImportedTimeSchemeName(String name) {
+    return '$name 時間';
+  }
 
   @override
   String get backupRestoredSuccess => '匯入成功，備份資料已還原';
@@ -14162,6 +14211,21 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get warehouseAdaptersLoadFailedTitle => '暫時無法讀取適配器列表';
 
   @override
+  String get warehouseLoadIssueNetworkUnreachable => '網絡不可用，請檢查網絡或代理後重試';
+
+  @override
+  String get warehouseLoadIssueTimeout => '適配倉回應太慢，請換個網絡或稍後再試';
+
+  @override
+  String get warehouseLoadIssueInvalidFormat => '適配倉回傳的內容無法辨識，請回報給適配倉維護者';
+
+  @override
+  String get warehouseLoadIssueShowingCached => '網絡不太順暢，下面顯示的是上次載入的列表';
+
+  @override
+  String get warehouseScriptLoadFailed => '無法讀取適配器腳本';
+
+  @override
   String get stopRecordingTooltip => '停止錄製';
 
   @override
@@ -15072,6 +15136,15 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get holidayCheckUpdate => '檢查更新';
 
   @override
+  String get holidayDataUpdated => '節假日資料已更新';
+
+  @override
+  String get holidayDataUpdateFailed => '更新失敗，已使用本機資料';
+
+  @override
+  String get holidayDataLoading => '正在載入節假日資料…';
+
+  @override
   String get holidayAdvancedTitle => '假期資料更新';
 
   @override
@@ -15761,6 +15834,9 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
 
   @override
   String get weeklyReportDisabledHint => '已關閉每週週報推送';
+
+  @override
+  String get weeklyReportPermissionMissing => '通知權限未開啟，請到系統設定裡允許通知後再開啟週報';
 
   @override
   String get statisticsCompareTitle => '課表對比';
@@ -19145,13 +19221,7 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get icsExportButton => '匯出並分享';
 
   @override
-  String get icsExportSharing => '準備日曆…';
-
-  @override
   String get icsExportNoProfiles => '暫無可匯出的課表';
-
-  @override
-  String get icsExportDateRangeInvalid => '請選擇不早於開始日期的結束日期';
 
   @override
   String get icsExportNoSelection => '至少選擇一種日曆內容';
@@ -20656,6 +20726,12 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get cloudSyncConnectSuccess => '帳號連接成功';
 
   @override
+  String get cloudSyncSaved => '已保存';
+
+  @override
+  String get cloudBackupRetryAction => '重試';
+
+  @override
   String get cloudBackupSectionTitle => '備份版本';
 
   @override
@@ -21453,6 +21529,14 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get createdNewTimetableAfterImport => '匯入成功，已建立新的課表';
+
+  @override
+  String get transferImportedProfileName => '匯入的課表';
+
+  @override
+  String transferImportedTimeSchemeName(String name) {
+    return '$name 時間';
+  }
 
   @override
   String get backupRestoredSuccess => '匯入成功，備份資料已還原';
@@ -24261,6 +24345,21 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get warehouseAdaptersLoadFailedTitle => '暫時無法讀取適配器列表';
 
   @override
+  String get warehouseLoadIssueNetworkUnreachable => '網路不可用，請檢查網路或代理後重試';
+
+  @override
+  String get warehouseLoadIssueTimeout => '適配倉回應太慢，請換個網路或稍後再試';
+
+  @override
+  String get warehouseLoadIssueInvalidFormat => '適配倉回傳的內容無法辨識，請回報給適配倉維護者';
+
+  @override
+  String get warehouseLoadIssueShowingCached => '網路不太順暢，下面顯示的是上次載入的列表';
+
+  @override
+  String get warehouseScriptLoadFailed => '無法讀取適配器腳本';
+
+  @override
   String get stopRecordingTooltip => '停止錄製';
 
   @override
@@ -25171,6 +25270,15 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get holidayCheckUpdate => '檢查更新';
 
   @override
+  String get holidayDataUpdated => '節假日資料已更新';
+
+  @override
+  String get holidayDataUpdateFailed => '更新失敗，已使用本機資料';
+
+  @override
+  String get holidayDataLoading => '正在載入節假日資料…';
+
+  @override
   String get holidayAdvancedTitle => '假日資料更新';
 
   @override
@@ -25860,6 +25968,9 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get weeklyReportDisabledHint => '已關閉每週週報推送';
+
+  @override
+  String get weeklyReportPermissionMissing => '通知權限未開啟，請到系統設定裡允許通知後再開啟週報';
 
   @override
   String get statisticsCompareTitle => '課表對比';
@@ -29244,13 +29355,7 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get icsExportButton => '匯出並分享';
 
   @override
-  String get icsExportSharing => '準備日曆…';
-
-  @override
   String get icsExportNoProfiles => '暫無可匯出的課表';
-
-  @override
-  String get icsExportDateRangeInvalid => '請選擇不早於開始日期的結束日期';
 
   @override
   String get icsExportNoSelection => '至少選擇一種日曆內容';

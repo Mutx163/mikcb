@@ -523,6 +523,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get cloudSyncConnectSuccess => 'Account connected';
 
   @override
+  String get cloudSyncSaved => 'Saved';
+
+  @override
+  String get cloudBackupRetryAction => 'Retry';
+
+  @override
   String get cloudBackupSectionTitle => 'Version history';
 
   @override
@@ -1362,6 +1368,14 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get createdNewTimetableAfterImport =>
       'Import succeeded, a new timetable was created';
+
+  @override
+  String get transferImportedProfileName => 'Imported Timetable';
+
+  @override
+  String transferImportedTimeSchemeName(String name) {
+    return '$name Time';
+  }
 
   @override
   String get backupRestoredSuccess => 'Import succeeded, backup data restored';
@@ -4310,6 +4324,25 @@ class AppLocalizationsEn extends AppLocalizations {
   String get warehouseAdaptersLoadFailedTitle => 'Could not load adapter list';
 
   @override
+  String get warehouseLoadIssueNetworkUnreachable =>
+      'Network unavailable, check your network or proxy and try again';
+
+  @override
+  String get warehouseLoadIssueTimeout =>
+      'The adapter repository is responding too slowly, try another network or try again later';
+
+  @override
+  String get warehouseLoadIssueInvalidFormat =>
+      'The adapter repository returned data we cannot read, please report it to the maintainers';
+
+  @override
+  String get warehouseLoadIssueShowingCached =>
+      'The network seems unstable, this is the list from the previous load';
+
+  @override
+  String get warehouseScriptLoadFailed => 'Unable to read the adapter script';
+
+  @override
   String get stopRecordingTooltip => 'Stop recording';
 
   @override
@@ -5232,6 +5265,15 @@ class AppLocalizationsEn extends AppLocalizations {
   String get holidayCheckUpdate => 'Check for updates';
 
   @override
+  String get holidayDataUpdated => 'Holiday data updated';
+
+  @override
+  String get holidayDataUpdateFailed => 'Update failed, using local data';
+
+  @override
+  String get holidayDataLoading => 'Loading holiday data…';
+
+  @override
   String get holidayAdvancedTitle => 'Holiday Data Update';
 
   @override
@@ -5948,6 +5990,10 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get weeklyReportDisabledHint => 'Weekly report disabled';
+
+  @override
+  String get weeklyReportPermissionMissing =>
+      'Notifications are turned off, allow notifications in system settings and then turn the weekly report on';
 
   @override
   String get statisticsCompareTitle => 'Compare timetables';
@@ -9508,15 +9554,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get icsExportButton => 'Export and share';
 
   @override
-  String get icsExportSharing => 'Preparing calendar…';
-
-  @override
   String get icsExportNoProfiles =>
       'No timetable profile is available for export';
-
-  @override
-  String get icsExportDateRangeInvalid =>
-      'Choose an end date on or after the start date';
 
   @override
   String get icsExportNoSelection =>

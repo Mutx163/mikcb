@@ -509,6 +509,12 @@ class AppLocalizationsKo extends AppLocalizations {
   String get cloudSyncConnectSuccess => '계정 연결 성공';
 
   @override
+  String get cloudSyncSaved => '저장됨';
+
+  @override
+  String get cloudBackupRetryAction => '재시도';
+
+  @override
   String get cloudBackupSectionTitle => '버전 기록';
 
   @override
@@ -1324,6 +1330,14 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get createdNewTimetableAfterImport => '가져오기 성공, 새 시간표가 생성되었습니다';
+
+  @override
+  String get transferImportedProfileName => '가져온 시간표';
+
+  @override
+  String transferImportedTimeSchemeName(String name) {
+    return '$name 시간';
+  }
 
   @override
   String get backupRestoredSuccess => '가져오기 성공, 백업 데이터가 복원되었습니다';
@@ -4190,6 +4204,25 @@ class AppLocalizationsKo extends AppLocalizations {
   String get warehouseAdaptersLoadFailedTitle => '어댑터 목록을 불러올 수 없습니다';
 
   @override
+  String get warehouseLoadIssueNetworkUnreachable =>
+      '네트워크를 사용할 수 없습니다. 네트워크나 프록시를 확인한 뒤 다시 시도하세요';
+
+  @override
+  String get warehouseLoadIssueTimeout =>
+      '적응 저장소 응답이 너무 느립니다. 다른 네트워크에서 다시 시도하거나 잠시 후 다시 시도하세요';
+
+  @override
+  String get warehouseLoadIssueInvalidFormat =>
+      '받아온 내용을 인식할 수 없습니다. 적응 저장소 관리자에게 알려 주세요';
+
+  @override
+  String get warehouseLoadIssueShowingCached =>
+      '네트워크가 원활하지 않습니다. 아래는 마지막으로 불러온 목록입니다';
+
+  @override
+  String get warehouseScriptLoadFailed => '어댑터 스크립트를 읽을 수 없습니다';
+
+  @override
   String get stopRecordingTooltip => '녹화 중지';
 
   @override
@@ -5102,6 +5135,15 @@ class AppLocalizationsKo extends AppLocalizations {
   String get holidayCheckUpdate => '업데이트 확인';
 
   @override
+  String get holidayDataUpdated => '공휴일 데이터를 업데이트했습니다';
+
+  @override
+  String get holidayDataUpdateFailed => '업데이트 실패, 로컬 데이터를 사용합니다';
+
+  @override
+  String get holidayDataLoading => '공휴일 데이터를 불러오는 중…';
+
+  @override
   String get holidayAdvancedTitle => '공휴일 데이터 업데이트';
 
   @override
@@ -5800,6 +5842,10 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get weeklyReportDisabledHint => '주간 리포트가 꺼졌습니다';
+
+  @override
+  String get weeklyReportPermissionMissing =>
+      '알림이 허용되지 않았습니다. 시스템 설정에서 알림을 허용한 뒤 주간 보고서를 켜세요';
 
   @override
   String get statisticsCompareTitle => '시간표 비교';
@@ -9338,13 +9384,7 @@ class AppLocalizationsKo extends AppLocalizations {
   String get icsExportButton => '내보내고 공유';
 
   @override
-  String get icsExportSharing => '캘린더 준비 중…';
-
-  @override
   String get icsExportNoProfiles => '내보낼 시간표 프로필이 없습니다';
-
-  @override
-  String get icsExportDateRangeInvalid => '종료 날짜를 시작 날짜 이후로 선택하세요';
 
   @override
   String get icsExportNoSelection => '하나 이상의 캘린더 내용 유형을 선택하세요';
