@@ -384,7 +384,7 @@ class WarehouseBridgeDialogTest {
     @Test
     fun `toast 与 error 必须消费脚本给的原文`() {
         assertTrue("toast 分支必须取 message 原文", hostSource.contains("warehouseBridgeMessageText(raw)"))
-        assertTrue("error 缺省必须兜底固定文案", hostSource.contains("?: WarehouseStrings.courseImportScriptFailed.zh"))
+        assertTrue("error 缺省必须兜底固定文案", hostSource.contains("?: WarehouseStrings.courseImportScriptFailed.text"))
     }
 
     @Test
