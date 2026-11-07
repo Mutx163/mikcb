@@ -469,6 +469,26 @@ class WarehouseBridgeDialogTest {
         )
     }
 
+    /**
+     * 「记住密码」必须是标准两按钮确认弹窗（2026-11-07 用户实报「有点怪」）。
+     *
+     * 旧实现是底栏一张小卡片：两个小按钮挤在一行，还和「执行导入脚本」抢高度。
+     * 钉三点：页面挂弹窗、底栏不再画这张卡、弹窗本身是官方 OverlayDialog 且带两个动作。
+     */
+    @Test
+    fun `记住密码必须走两按钮确认弹窗`() {
+        val page = readSource("composeP1", "WarehouseWebLoginPage.kt")
+        assertTrue("页面必须挂记住密码确认弹窗", page.contains("WarehouseRememberPasswordDialog("))
+        assertFalse(
+            "底栏不许再画「记住密码」卡片（两个小按钮挤一行，用户实报有点怪）",
+            page.contains("rememberPasswordTitle"),
+        )
+        val dialog = readSource("composeP1", "WarehouseRememberPasswordDialog.kt")
+        assertTrue("必须是官方 OverlayDialog", dialog.contains("OverlayDialog("))
+        assertTrue("底部必须有「不记住」", dialog.contains("dontRememberAction"))
+        assertTrue("底部必须有「记住并自动填充」", dialog.contains("rememberAndAutofillAction"))
+    }
+
     /** 课程构造的测试助手：只给周次相关的最小字段。 */    private fun testCourse(
         startWeek: Int,
         endWeek: Int,

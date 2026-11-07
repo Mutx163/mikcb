@@ -193,42 +193,6 @@ fun WarehouseWebLoginPage(
                     }
                 }
 
-                // 凭据保存提示
-                if (sessionState.shouldPromptSave) {
-                    QingyuCard(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(bottom = 10.dp)
-                    ) {
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(12.dp),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Text(
-                                text = WarehouseStrings.rememberPasswordTitle.zh,
-                                style = MiuixTheme.textStyles.footnote1.shiftWeight(QingyuWeightDelta.MEDIUM)
-                            )
-                            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                                Button(
-                                    onClick = onDismissSaveLogin,
-                                    content = { Text(text = WarehouseStrings.dontRememberAction.zh) },
-                                    colors = ButtonDefaults.buttonColors(
-                                        color = MiuixTheme.colorScheme.surfaceVariant,
-                                        contentColor = MiuixTheme.colorScheme.onSurfaceVariantActions
-                                    )
-                                )
-                                Button(
-                                    onClick = onSaveRememberedLogin,
-                                    content = { Text(text = WarehouseStrings.rememberAndAutofillAction.zh) }
-                                )
-                            }
-                        }
-                    }
-                }
-
                 // 底部操作主按钮（Dart 底栏只有「执行导入脚本」一个按钮；宏录制开关在顶栏）
                 //
                 // 只有 LOADED 才允许执行：页面没加载完就点，脚本注入进去没有 `document`
@@ -316,4 +280,13 @@ fun WarehouseWebLoginPage(
             )
         }
     }
+
+    // 「记住密码」确认弹窗（发布版是 showAppConfirmDialog）。旧实现是底栏卡片：
+    // 两个小按钮挤在一行、还和主按钮抢底部高度，用户实报「有点怪」。
+    WarehouseRememberPasswordDialog(
+        show = sessionState.shouldPromptSave,
+        username = sessionState.candidateAccount.username,
+        onDismiss = onDismissSaveLogin,
+        onConfirm = onSaveRememberedLogin,
+    )
 }
