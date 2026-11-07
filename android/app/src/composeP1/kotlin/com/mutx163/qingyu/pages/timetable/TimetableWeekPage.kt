@@ -93,6 +93,7 @@ import com.mutx163.qingyu.core.SectionTime
 import com.mutx163.qingyu.core.TimeScheme
 import com.mutx163.qingyu.core.TimetableSettings
 import com.mutx163.qingyu.theme.QingyuTheme
+import com.mutx163.qingyu.widgetdata.CoupleOverlay
 import kotlin.math.max
 import kotlinx.coroutines.launch
 import top.yukonga.miuix.kmp.basic.Icon
@@ -136,6 +137,11 @@ import kotlin.math.roundToInt
 @Composable
 fun TimetableWeekPage(
     courses: List<Course> = emptyList(),
+    /**
+     * 情侣课表叠加（B1 第二阶段，2026-11-06）。非 null 时周网格把对方课按周偏移叠进来，
+     * 情侣三色优先于统一卡片颜色；null = 完全现行为（未绑定 / 预览）。
+     */
+    coupleOverlay: CoupleOverlay? = null,
     timeScheme: TimeScheme? = null,
     settings: TimetableSettings = TimetableSettings.defaults(),
     style: WeekViewStyle = WeekViewStyle(),
@@ -824,6 +830,8 @@ fun TimetableWeekPage(
                             reminderKeys = reminderKeys,
                             visibleDays = visibleDays,
                             courses = courses,
+                            // 外观编辑页预览不叠加情侣课（与日视图预览「不受绑定影响」同口径）。
+                            coupleOverlay = null,
                             style = style,
                             sectionTimes = sectionTimes,
                             sectionCount = sectionCount,
@@ -878,6 +886,7 @@ fun TimetableWeekPage(
                         reminderKeys = reminderKeys,
                         visibleDays = visibleDays,
                         courses = courses,
+                        coupleOverlay = coupleOverlay,
                         style = style,
                         sectionTimes = sectionTimes,
                         sectionCount = sectionCount,
@@ -1129,6 +1138,8 @@ private fun WeekPageContent(
     reminderKeys: Set<String> = emptySet(),
     visibleDays: List<Int>,
     courses: List<Course>,
+    /** 情侣叠加（非 null 时周网格叠 TA 课，三色优先于统一色）。 */
+    coupleOverlay: CoupleOverlay? = null,
     style: WeekViewStyle,
     sectionTimes: List<SectionTime>,
     sectionCount: Int,
@@ -1160,16 +1171,30 @@ private fun WeekPageContent(
     /** 内容层外壳（缓存图层挂在这里，见 pager 调用处的说明）。 */
     modifier: Modifier = Modifier,
 ) {
-    val cardsByDay = remember(courses, pageWeek, style, visibleDays, weatherOf, reminderKeys, semesterStart) {
-        WeekGridCourseMapping.cardsForWeek(
-            courses = courses,
-            week = pageWeek,
-            style = style,
-            visibleDays = visibleDays,
-            weatherOf = weatherOf,
-            reminderKeys = reminderKeys,
-            semesterStartDate = semesterStart,
-        )
+    val cardsByDay = remember(courses, pageWeek, style, visibleDays, weatherOf, reminderKeys, semesterStart, coupleOverlay) {
+        if (coupleOverlay == null) {
+            WeekGridCourseMapping.cardsForWeek(
+                courses = courses,
+                week = pageWeek,
+                style = style,
+                visibleDays = visibleDays,
+                weatherOf = weatherOf,
+                reminderKeys = reminderKeys,
+                semesterStartDate = semesterStart,
+            )
+        } else {
+            // 情侣叠加（B1 第二阶段）：情侣三色优先于统一卡片颜色，见该函数 KDoc。
+            WeekGridCourseMapping.cardsForWeekWithCoupleOverlay(
+                courses = courses,
+                week = pageWeek,
+                style = style,
+                overlay = coupleOverlay,
+                visibleDays = visibleDays,
+                weatherOf = weatherOf,
+                reminderKeys = reminderKeys,
+                semesterStartDate = semesterStart,
+            )
+        }
     }
     val agendaByDay = remember(exams, scheduleItems, pageWeek, style, visibleDays, semesterStart) {
         buildAgendaByDay(

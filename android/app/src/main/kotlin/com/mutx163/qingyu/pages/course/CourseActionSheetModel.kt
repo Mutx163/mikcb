@@ -502,7 +502,7 @@ object CourseActionSheetModel {
     const val DEFAULT_WEEK_COUNT: Int = 16
 
     /**
-     * 点课卡那一刻的预览条目（Dart `buildTimetableCourseActionPreviewItems` 的**冲突课那一半**，
+     * 点课卡那一刻的预览条目（Dart `buildTimetableCourseActionPreviewItems`，
      * `lib/widgets/timetable/timetable_course_action_items.dart:22-113` + `:184-203`）。
      *
      * 第 0 条恒为 [primary] 本身；其余是**同周**冲突课，口径逐条照 Dart：
@@ -510,19 +510,19 @@ object CourseActionSheetModel {
      * 2. 去掉自己（`id == primary.id`）与重复 id（Dart `seenIds`）；
      * 3. 排序：`dayOfWeek` → `startSection` → `id`（Dart `:194-201`）。
      *
-     * ## 情侣课为什么先不产出
+     * ## 情侣课（B1 第二阶段，2026-11-06）
      *
-     * Dart 的另外两半（`coupleKind` / `isPartnerCourse`）依赖**情侣叠加层**：
-     * `partnerCourses` + `partnerWeekOffset` + `CoupleTimetableLogic`。
-     * Compose 周视图目前没有这一层（audit §五），弹层不伪造数据。
-     * 所以这里对 [coupleOverlayActive] 取 `require` 而不是静默返回半成品 ——
-     * 真要接的时候必须实现 together / partner / mine 三个分支，不能被一个默认 false 蒙过去。
+     * [coupleOverlayActive] 为真且被点的 [primary] 落在 [partnerCourses] 里 ⇒ 这一条是
+     * **对方的课**：只读（[CourseActionPreviewItem.isReadOnly]）、带 `coupleKind = PARTNER`，
+     * 且**不展开冲突课**（Dart 对方课预览只有它自己那一半）。以前这里对
+     * `coupleOverlayActive` 取 `require`、恒不接；现在放开，但只做「点 TA 课 → 只读预览」
+     * 这一条最小面，`together` 混合预览等更细的分支仍留待后续。
      *
-     * @param courses 当前课表快照（`snapshot.courses`）。
+     * @param courses 当前课表快照（`snapshot.courses`，我方）。
      * @param primary 被点的那门课。
      * @param week 当前浏览周次（冲突判据按这一周算）。
-     * @param partnerCourses 对方课表（本轮恒空）。
-     * @param coupleOverlayActive 情侣覆盖层是否开启（本轮恒 false）。
+     * @param partnerCourses 对方课表（未绑定时为空；用于判定 primary 是不是 TA 的课）。
+     * @param coupleOverlayActive 情侣覆盖层是否开启（有绑定且叠加生效）。
      */
     fun buildPreviewItems(
         courses: List<Course>,
@@ -531,9 +531,16 @@ object CourseActionSheetModel {
         partnerCourses: List<Course> = emptyList(),
         coupleOverlayActive: Boolean = false,
     ): List<CourseActionPreviewItem> {
-        require(!coupleOverlayActive) {
-            "couple overlay preview items are not implemented yet " +
-                "(partnerCourses=${partnerCourses.size}, week=$week)"
+        val primaryIsPartner = coupleOverlayActive && partnerCourses.any { it.id == primary.id }
+        if (primaryIsPartner) {
+            // 对方的课：只读、只有它自己，不列冲突、不展开（Dart 对方课预览口径）。
+            return listOf(
+                CourseActionPreviewItem(
+                    course = primary,
+                    isPartnerCourse = true,
+                    coupleKind = CourseCoupleKind.PARTNER,
+                ),
+            )
         }
         val items = mutableListOf(CourseActionPreviewItem(course = primary))
         // 主课理论上就在快照里；万一是「刚加进来还没进列表」的实例，也得能算出冲突

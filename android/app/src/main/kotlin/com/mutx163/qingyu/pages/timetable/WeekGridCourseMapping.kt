@@ -2,6 +2,10 @@ package com.mutx163.qingyu.pages.timetable
 
 import com.mutx163.qingyu.core.Course
 import com.mutx163.qingyu.course.CourseDomain
+import com.mutx163.qingyu.widgetdata.CoupleCourseKind
+import com.mutx163.qingyu.widgetdata.CoupleOverlay
+import com.mutx163.qingyu.widgetdata.CoupleTimetableData
+import com.mutx163.qingyu.widgetdata.WidgetDataClock
 import java.time.LocalDate
 
 /**
@@ -58,6 +62,14 @@ data class WeekCardModel(
      * `timetable_day_column.dart:164`）。天气没开 / 没数据时为 null。
      */
     val weatherText: String? = null,
+    /**
+     * 这张卡是不是**对方（TA）课表**里的课（B1 第二阶段，2026-11-06）。
+     *
+     * 只有 [WeekGridCourseMapping.cardsForWeekWithCoupleOverlay] 会置 true；渲染层据此在
+     * 右上角画「TA的课」角标（`CourseGridCard` 的 badge 行）。默认 false = 我自己的课，
+     * 旧调用零影响。对方的课是**只读**的（点开操作层的动作区整块不渲染）。
+     */
+    val isPartnerCourse: Boolean = false,
 ) {
     val sectionSpan: Int get() = course.sectionCount
 }
@@ -233,6 +245,123 @@ object WeekGridCourseMapping {
                 },
             )
         }
+    }
+
+    /**
+     * 整周排版 + 情侣课表叠加（B1 第二阶段，2026-11-06）。
+     *
+     * 与 [cardsForWeek] 的唯一差别是「课程从哪来」：
+     * - **我的课**照旧走 [coursesForDay] / [displayCards]（本周/非本周压盖、冲突、假期、铃铛
+     *   口径全不变），但卡面**重着色**成情侣三色里的「我的课」色；
+     * - **对方课**先按「周偏移映射到我的周次」（[CoupleTimetableData.partnerWeekForMyWeek]）
+     *   取该周有效（`isActiveInWeek(partnerWeek)`）的那些，按天追加，着「TA的课」色并打
+     *   `isPartnerCourse=true`（渲染层据此画「TA的课」角标）；
+     * - **同行程**（同天、节次重叠、同名忽略大小写与首尾空白）按我的那份去重：我的那张
+     *   改着「一起上课」色，对方那张不重复出现。
+     *
+     * **颜色优先级（Chief 2026-11-06 拍板）**：开了叠加一律用情侣三色，盖过
+     * `style.unifiedCardColorHex`（统一卡片颜色）；没开叠加 / 无绑定走 [cardsForWeek] 旧路径。
+     *
+     * 对方课不参与冲突表（Dart 冲突角标只算自己那半边），也不带天气 / 铃铛（那是本机数据，
+     * 对方课没有对应的本机日期与提醒）。
+     */
+    fun cardsForWeekWithCoupleOverlay(
+        courses: List<Course>,
+        week: Int,
+        style: WeekViewStyle,
+        overlay: CoupleOverlay,
+        visibleDays: List<Int> = (1..7).toList(),
+        weatherOf: ((week: Int, dayOfWeek: Int, Course) -> String?)? = null,
+        reminderKeys: Set<String>? = null,
+        semesterStartDate: LocalDate? = null,
+    ): Map<Int, List<WeekCardModel>> {
+        val conflicts = conflictMap(courses, week)
+        val partnerWeek = CoupleTimetableData.partnerWeekForMyWeek(week, overlay.weekOffset)
+        val mineColor = CoupleTimetableData.colorHexForKind(
+            CoupleCourseKind.MINE, overlay.mineColorHex, overlay.partnerColorHex, overlay.togetherColorHex,
+        )
+        val partnerColor = CoupleTimetableData.colorHexForKind(
+            CoupleCourseKind.PARTNER, overlay.mineColorHex, overlay.partnerColorHex, overlay.togetherColorHex,
+        )
+        val togetherColor = CoupleTimetableData.colorHexForKind(
+            CoupleCourseKind.TOGETHER, overlay.mineColorHex, overlay.partnerColorHex, overlay.togetherColorHex,
+        )
+        return visibleDays.associateWith { dayOfWeek ->
+            val dayCourses = coursesForDay(
+                allCourses = courses,
+                week = week,
+                dayOfWeek = dayOfWeek,
+                showNonCurrentWeekCourses = style.showNonCurrentWeekCourses,
+            )
+            val reminderDate = reminderKeys?.let {
+                TimetableDateLogic.dateForWeekDay(semesterStartDate, week, dayOfWeek)
+            }
+            val mineCards = displayCards(
+                dayCourses = dayCourses,
+                week = week,
+                style = style,
+                conflicts = conflicts,
+                weatherOf = weatherOf?.let { resolve -> { course -> resolve(week, dayOfWeek, course) } },
+                hasReminderOf = if (reminderKeys != null && reminderDate != null) {
+                    { course -> "${course.id}|$reminderDate" in reminderKeys }
+                } else {
+                    null
+                },
+            )
+            // 对方这一天的课：先按「周偏移映射后的那一周」过滤有效周。
+            val partnerDay = overlay.partnerCourses.filter {
+                it.dayOfWeek == dayOfWeek &&
+                    it.startSection >= 1 &&
+                    it.endSection >= it.startSection &&
+                    it.isActiveInWeek(partnerWeek)
+            }
+            val usedPartnerIds = mutableSetOf<String>()
+            val recoloredMine = mineCards.map { card ->
+                val partner = partnerDay.firstOrNull { candidate ->
+                    !usedPartnerIds.contains(candidate.id) && isSameTrip(card.course, candidate)
+                }
+                val color = if (partner != null) {
+                    usedPartnerIds.add(partner.id)
+                    togetherColor
+                } else {
+                    mineColor
+                }
+                // 覆盖 colorHex（displayCards 里原本是 unifiedCardColorHex 或 null）：
+                // 让情侣三色优先于统一卡片颜色。
+                card.copy(colorHex = color)
+            }
+            val partnerCards = partnerDay
+                .filter { !usedPartnerIds.contains(it.id) }
+                .map { partnerCourse ->
+                    WeekCardModel(
+                        course = partnerCourse,
+                        isCurrentWeek = true,
+                        isConflicting = false,
+                        isSuspended = false,
+                        overline = null,
+                        badge = null,
+                        opacity = 1f,
+                        colorHex = partnerColor,
+                        isPartnerCourse = true,
+                    )
+                }
+            (recoloredMine + partnerCards).sortedWith { a, b ->
+                val bySection = a.course.startSection.compareTo(b.course.startSection)
+                if (bySection != 0) {
+                    bySection
+                } else {
+                    val byTime = WidgetDataClock.compareClockText(a.course.startTime, b.course.startTime)
+                    if (byTime != 0) byTime else a.course.id.compareTo(b.course.id)
+                }
+            }
+        }
+    }
+
+    /** 同行程：同天、节次重叠、同名忽略大小写与首尾空白（Dart `isTogetherClass` 的周有效性部分由调用方先滤）。 */
+    private fun isSameTrip(mine: Course, partner: Course): Boolean {
+        if (mine.dayOfWeek != partner.dayOfWeek) return false
+        if (mine.endSection < partner.startSection || partner.endSection < mine.startSection) return false
+        return mine.name.trim().lowercase() == partner.name.trim().lowercase()
     }
 
     /** 卡面透明度（Dart `courseDisplayOpacity`）。 */

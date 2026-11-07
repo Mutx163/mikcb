@@ -37,6 +37,7 @@ import com.mutx163.qingyu.components.shiftWeight
 import com.mutx163.qingyu.core.Course
 import com.mutx163.qingyu.pages.settings.HomeMaterialRenderSpec
 import com.mutx163.qingyu.pages.settings.SurfaceMaterialState
+import com.mutx163.qingyu.pages.timetable.day.DayViewStrings
 import com.mutx163.qingyu.theme.QingyuTheme
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.Text
@@ -504,6 +505,9 @@ fun CourseGridCard(
         // 铃铛**只在真实设过提醒时亮**（`WeekCardModel.hasReminder` ← `classReminders`）；
         // 没有这份数据（开学日未设 / 宿主没传键集）就什么都不画，不做假的已设标记。
         val badges = buildList {
+            // 情侣课的「TA的课」角标（B1 第二阶段）：与日视图同一枚文案
+            //（`DayViewStrings.coupleTimetableLegendPartner`），不新增 ARB 键。
+            if (model.isPartnerCourse) add(DayViewStrings.coupleTimetableLegendPartner.zh)
             if (isHoliday) add(TimetableStrings.holidayBadgeLabel.zh)
             if (model.isSuspended && !isHoliday) add(TimetableStrings.suspendedBadgeLabel.zh)
             if (model.badge == WeekCardBadge.CONFLICT) add(TimetableStrings.conflictLabel.zh)

@@ -23,9 +23,10 @@ import org.junit.Test
  * 2. `"d3.timeSchemeEditor" ->` 分支必须调用 `TimeSchemeEditorHost(`；
  * 3. `"d3.locationMatch" ->` 分支必须调用真宿主 `LocationTimeMatchHost(`，
  *    且真数据来自 `snapshot.locationTimeGroups` / `snapshot.timeSchemes`，
- *    写盘走 `onSaveGroups` → `updateLocationTimeGroups(`；
- * 4. 「重新匹配当前课表」当前**诚实未接**：`onApplyActive = null`，不许退化成
- *    空 `{}` 假成功（假成功 = 用户以为改了、盘上没变）；
+ *    写盘走 `onSaveGroups` → `updateLocationTimeGroups(` **且带 `resync = true`**；
+ * 4. 「重新匹配当前课表」**已接入**（2026-11-05）：`onApplyActive` 必须是真执行入口
+ *    （`LocationTimeApplyLogic.plan(` 算 + `replaceActiveProfileContent(` 落盘），
+ *    不许退回 `null`（按钮恒不可用），也不许退化成空 `{}` 假成功；
  * 5. 三个分支里都不许再出现空模型构造 `TimeSchemeManagementModel(` / `LocationTimeMatchModel(`。
  *
  * ## 为什么要文本守卫而不是单测
@@ -83,22 +84,36 @@ class TimeSchemeWiringGuardTest {
             "增删改开关必须经 onSaveGroups 真写盘（updateLocationTimeGroups）",
             branch.contains("onSaveGroups") && branch.contains("updateLocationTimeGroups("),
         )
+        assertTrue(
+            "增删改开关落盘必须带 `resync = true`——少了它分组写进盘、课表时间却不重算，" +
+                "用户看到「已保存 + 模板名变了」但课还是旧楼的节次（Dart 三个 CRUD 入口都跟着 resyncAllProfiles）",
+            branch.contains("resync = true"),
+        )
     }
 
     @Test
-    fun `重新匹配当前课表当前诚实未接 不许假成功`() {
+    fun `重新匹配当前课表必须接真执行入口`() {
         val branch = branch("d3.locationMatch", "d3.addExam")
-        // 入口尚未落地（Dart 的 applyToActiveProfile 在 Kotlin 侧还不存在）；宿主约定
-        // 传 null → 给一句实话「尚未接入」。一旦有人图省事写 onApplyActive = {}，
-        // 就是「假装重新匹配成功、盘上没变」的假成功，这里拦下。
+        // 2026-11-05 前这里是 `onApplyActive = null`（诚实未接，按钮恒「不可用」）；
+        // 现在能力已落地成 LocationTimeApplyLogic + 仓储写盘，守卫改为钉住「真接上」。
         assertFalse(
-            "d3.locationMatch 分支出现了 `onApplyActive = {`——空 lambda 是假成功；" +
-                "未接时传 null（宿主会显示「尚未接入」），接入时传真实执行入口",
+            "d3.locationMatch 分支又把 onApplyActive 写回 null——能力已落地，" +
+                "退回 null 就是「按钮永远只回一句不可用、用户没有任何补救入口」",
+            branch.contains("onApplyActive = null"),
+        )
+        assertTrue(
+            "onApplyActive 必须是真执行入口（`onApplyActive = {`）；空 `{}` 是假成功，" +
+                "会报「已重新匹配」而盘上没变",
             branch.contains("onApplyActive = {"),
         )
         assertTrue(
-            "未接时必须是 onApplyActive = null（诚实未接），当前实现缺失",
-            branch.contains("onApplyActive = null"),
+            "重新匹配必须经 LocationTimeApplyLogic.plan( 算（Dart applyToActiveProfile 的移植），" +
+                "不许在壳里另写一套匹配",
+            branch.contains("LocationTimeApplyLogic.plan("),
+        )
+        assertTrue(
+            "算出来的课程必须真写盘（replaceActiveProfileContent()），否则「报了成功、盘上没变」",
+            branch.contains("replaceActiveProfileContent("),
         )
     }
 

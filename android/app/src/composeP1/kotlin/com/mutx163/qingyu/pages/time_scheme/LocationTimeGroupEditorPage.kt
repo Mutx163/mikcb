@@ -1,5 +1,6 @@
 package com.mutx163.qingyu.pages.time_scheme
 
+import android.widget.Toast
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
@@ -19,6 +20,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.mutx163.qingyu.components.QingyuCard
@@ -74,9 +76,17 @@ fun LocationTimeGroupEditorPage(
     onSave: (name: String, timeSchemeId: String, enabled: Boolean, keywords: List<LocationKeyword>) -> Unit,
 ) {
     val dark = isSystemInDarkTheme()
+    val context = LocalContext.current
     val model = remember(allGroups) { LocationTimeMatchModel(groups = allGroups) }
     val editingGroupId = existing?.id
     val title = if (existing == null) LocationTimeMatchStrings.createGroup.zh else LocationTimeMatchStrings.editGroup.zh
+
+    // 校验错误一律 toast，不放列表顶部横幅——底部「保存」与中段「添加关键词」都在滚动
+    // 深处，横幅渲染在屏幕外时用户看到的是「点了没反应」。Dart 侧同一个入口全部走
+    // `showAppToast`（`location_time_match_screen.dart:1036-1069`、`:521-535`）。
+    fun toast(message: String) {
+        Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
+    }
 
     var name by remember { mutableStateOf(existing?.name ?: "") }
     var timeSchemeId by remember {
@@ -86,7 +96,6 @@ fun LocationTimeGroupEditorPage(
     var keywords by remember { mutableStateOf(existing?.keywords ?: emptyList<LocationKeyword>()) }
     var newPattern by remember { mutableStateOf("") }
     var newMode by remember { mutableStateOf(LocationKeywordMatchMode.PREFIX) }
-    var errorText by remember { mutableStateOf<String?>(null) }
 
     fun currentKeywords(): List<LocationKeyword> =
         keywords.map { LocationKeyword(it.pattern.trim(), it.mode) }.filter { it.pattern.isNotEmpty() }
@@ -100,27 +109,27 @@ fun LocationTimeGroupEditorPage(
             editingGroupId = editingGroupId,
         )
         if (err != null) {
-            errorText = err
+            toast(err)
         } else {
-            errorText = null
             onSave(name.trim(), timeSchemeId, enabled, currentKeywords())
         }
     }
 
-    fun addKeyword(pattern: String, mode: LocationKeywordMatchMode) {
+    /** 加一条关键词；@return 是否真的加进去了（调用方据此决定要不要清空输入框）。 */
+    fun addKeyword(pattern: String, mode: LocationKeywordMatchMode): Boolean {
         val trimmed = pattern.trim()
-        if (trimmed.isEmpty()) return
+        if (trimmed.isEmpty()) return false
         if (keywords.any { it.pattern.trim().equals(trimmed, ignoreCase = true) }) {
-            errorText = LocationTimeMatchStrings.keywordAlreadyExists.zh
-            return
+            toast(LocationTimeMatchStrings.keywordAlreadyExists.zh)
+            return false
         }
         val owner = model.keywordOwnerHint(trimmed, editingGroupId)
         if (owner != null) {
-            errorText = owner
-            return
+            toast(owner)
+            return false
         }
         keywords = keywords + LocationKeyword(trimmed, mode)
-        errorText = null
+        return true
     }
 
     // 楼栋建议：当前已有关键词 + 别的组关键词都算「已覆盖」
@@ -155,15 +164,6 @@ fun LocationTimeGroupEditorPage(
                         modifier = Modifier.fillMaxWidth(),
                         verticalArrangement = Arrangement.spacedBy(12.dp),
                     ) {
-                        errorText?.let { message ->
-                            Text(
-                                text = message,
-                                style = MiuixTheme.textStyles.footnote1,
-                                color = Color(QingyuTheme.error(dark)),
-                                modifier = Modifier.padding(horizontal = 4.dp),
-                            )
-                        }
-
                         // 组名
                         QingyuSectionTitle(text = LocationTimeMatchStrings.groupNameLabel.zh)
                         QingyuCard(
@@ -185,16 +185,22 @@ fun LocationTimeGroupEditorPage(
                                 ArrowPreference(
                                     title = LocationTimeMatchStrings.needTimeScheme.zh,
                                     summary = null,
-                                    onClick = { errorText = LocationTimeMatchStrings.needTimeScheme.zh },
+                                    onClick = { toast(LocationTimeMatchStrings.needTimeScheme.zh) },
                                 )
                             }
                         } else {
+                            // 同名模板追加 id 前 8 位（Dart `_timeSchemeSelectLabel`），否则两行
+                            // 逐字相同的「默认作息」让用户选不出自己绑的是哪一套。
+                            // 纯字符串装配（模板只有几套），不必 memo。
+                            val schemeLabels = LocationTimeMatchModel.schemeSelectLabels(
+                                schemes.map { it.id to it.name },
+                            )
                             QingyuCard(modifier = Modifier.fillMaxWidth()) {
                                 Column {
-                                    schemes.forEach { scheme ->
+                                    schemes.forEachIndexed { index, scheme ->
                                         // 单选用官方 RadioButtonPreference，不再用 ●/○ 前缀拼箭头行。
                                         RadioButtonPreference(
-                                            title = scheme.name,
+                                            title = schemeLabels[index],
                                             selected = scheme.id == timeSchemeId,
                                             onClick = { timeSchemeId = scheme.id },
                                         )
@@ -276,8 +282,8 @@ fun LocationTimeGroupEditorPage(
                                     title = LocationTimeMatchStrings.addKeyword.zh,
                                     summary = null,
                                     onClick = {
-                                        addKeyword(newPattern, newMode)
-                                        if (errorText == null) newPattern = ""
+                                        // 加成功才清空输入框；被拒时保留原文，用户能就地改。
+                                        if (addKeyword(newPattern, newMode)) newPattern = ""
                                     },
                                 )
                             }
@@ -321,7 +327,7 @@ fun LocationTimeGroupEditorPage(
                                             keywords = keywords + cluster.suggestedKeyword
                                             added++
                                         }
-                                        if (added == 0) errorText = LocationTimeMatchStrings.keywordAlreadyExists.zh
+                                        if (added == 0) toast(LocationTimeMatchStrings.keywordAlreadyExists.zh)
                                     },
                                 )
                             }

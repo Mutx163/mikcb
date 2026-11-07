@@ -213,4 +213,39 @@ class LocationTimeMatchModel(
     val modeLabelTitle: String get() = LocationTimeMatchStrings.modeLabel.zh
     val savedMessage: String get() = LocationTimeMatchStrings.saved.zh
     val saveFailedMessage: String get() = LocationTimeMatchStrings.saveFailed.zh
+
+    companion object {
+
+        /**
+         * 编辑页「绑定时间模板」单选行的显示名，逐行照 Dart
+         * `_timeSchemeSelectLabel`（`lib/screens/location_time_match_screen.dart:1120-1131`）：
+         * 名字唯一 → 就是名字本身；**有同名模板 → 追加 ` · ` + id 前 8 位**。
+         *
+         * ## 为什么必须区分
+         *
+         * 同一套模板被导入两次会得到两个都叫「默认作息」的行，界面上两行逐字相同：用户
+         * 不知道自己绑的是哪一套，而绑错的表现恰恰是「保存了、课表时间却没变」——恰好和
+         * 「分组没触发重算」的故障长得一样，排查时会被误导。
+         *
+         * Dart 的注释写着 "duplicate names never collapse Map keys"：它当时是为
+         * `HyperosSelectTile` 的 items 做 Map 键去重，Compose 侧是逐行渲染没有键塌陷问题，
+         * 但**显示文本**沿用同一套口径，用户看到的字才和发布版一致。
+         *
+         * @param schemes 每项是 `id to name`，顺序即展示顺序。
+         * @return 与入参等长的显示名列表（下标一一对应）。
+         */
+        fun schemeSelectLabels(schemes: List<Pair<String, String>>): List<String> {
+            val counts = HashMap<String, Int>()
+            for ((_, name) in schemes) counts[name] = (counts[name] ?: 0) + 1
+            return schemes.map { (id, name) ->
+                if ((counts[name] ?: 0) <= 1) return@map name
+                // Dart 用「长度 ≤ 8 就整条取」，不补位、不加省略号。
+                val shortId = if (id.length <= DUP_SUFFIX_ID_LENGTH) id else id.substring(0, DUP_SUFFIX_ID_LENGTH)
+                "$name · $shortId"
+            }
+        }
+
+        /** Dart 取 id 前 8 位（`:1129`）。 */
+        const val DUP_SUFFIX_ID_LENGTH = 8
+    }
 }

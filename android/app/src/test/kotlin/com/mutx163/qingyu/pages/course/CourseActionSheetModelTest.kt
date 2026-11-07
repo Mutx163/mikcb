@@ -742,21 +742,34 @@ class CourseActionSheetModelTest {
     }
 
     @Test
-    fun `预览条目_情侣覆盖层还没接时明确抛错而不是静默返回半成品`() {
-        try {
-            CourseActionSheetModel.buildPreviewItems(
-                courses = listOf(course()),
-                primary = course(),
-                week = 1,
-                coupleOverlayActive = true,
-            )
-            fail("情侣覆盖层开关为 true 时必须抛错（本轮未实现）")
-        } catch (expected: IllegalArgumentException) {
-            assertTrue(
-                "错误信息要能让人看出是情侣通道没接",
-                expected.message!!.contains("couple overlay"),
-            )
-        }
+    fun `预览条目_点对方的课_只读且不展开冲突课`() {
+        val primary = course(id = "p1", name = "对方课", dayOfWeek = 2, startSection = 1, endSection = 2)
+        val mine = course(id = "m1", name = "我的课", dayOfWeek = 2, startSection = 1, endSection = 2)
+        val items = CourseActionSheetModel.buildPreviewItems(
+            courses = listOf(mine),
+            primary = primary,
+            week = 1,
+            partnerCourses = listOf(primary),
+            coupleOverlayActive = true,
+        )
+        assertEquals(1, items.size)
+        assertTrue("对方的课必须只读", items[0].isReadOnly)
+        assertEquals(CourseCoupleKind.PARTNER, items[0].coupleKind)
+    }
+
+    @Test
+    fun `预览条目_叠加开启但点自己的课_不抛错且照常可编辑`() {
+        val primary = course(id = "m1", name = "高数", dayOfWeek = 3, startSection = 1, endSection = 2)
+        val other = course(id = "m2", name = "线代", dayOfWeek = 3, startSection = 2, endSection = 3)
+        val items = CourseActionSheetModel.buildPreviewItems(
+            courses = listOf(primary, other),
+            primary = primary,
+            week = 1,
+            partnerCourses = listOf(course(id = "pX", name = "对方课")),
+            coupleOverlayActive = true,
+        )
+        assertTrue(items.isNotEmpty())
+        assertFalse("我自己的课不能被当成对方课只读", items[0].isReadOnly)
     }
 
     // ───────────────────────── 删除确认文案 ─────────────────────────
