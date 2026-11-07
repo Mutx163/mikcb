@@ -17,6 +17,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
@@ -24,6 +25,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.mutx163.qingyu.components.QingyuWeightDelta
 import com.mutx163.qingyu.components.shiftWeight
+import com.mutx163.qingyu.pages.timetable.CourseCardInk
 import com.mutx163.qingyu.theme.QingyuTheme
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.Text
@@ -54,12 +56,15 @@ fun dayAgendaInkWash(ink: Color, alpha: Float = 0.16f): Color {
 }
 
 /**
- * 根据背景色彩计算高对比前景色（深色底配白字，浅色底配深墨色）。
+ * 根据背景色彩挑高对比前景色：**白 / 近黑里与底色 WCAG 对比度更高的一档**。
+ *
+ * 2026-11-07 之前这里是 `0.299R + 0.587G + 0.114B > 0.55` 的 gamma 加权阈值，
+ * 它对中灰判断是错的：`#808080` 的 gamma 加权是 0.502（判白字，对比度 3.95:1），
+ * 而它的真实 WCAG 亮度是 0.216（近黑字 4.41:1）——实心卡上黑字更清楚。
+ * 现在与壁纸墨色共用 `CourseCardInk` 那套判据，不再有第二套阈值。
  */
-fun calculateCardInk(backgroundColor: Color): Color {
-    val luminance = 0.299 * backgroundColor.red + 0.587 * backgroundColor.green + 0.114 * backgroundColor.blue
-    return if (luminance > 0.55) Color(0xFF1E293B) else Color.White
-}
+fun calculateCardInk(backgroundColor: Color): Color =
+    Color(CourseCardInk.bestContrastInk(backgroundColor.toArgb()))
 
 /**
  * 日视图通用状态胶囊徽标。
