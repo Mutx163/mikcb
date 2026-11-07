@@ -21,7 +21,7 @@ import kotlin.math.roundToInt
  * | [HomeBackgroundModel.backdropKey] / [HomeBackdropSnapshot.hasWallpaper] | `:346-392`（`resolveHomePageBackdropImagePath` / `homePageBackdropKey`） |
  * | [HomeBackgroundModel.resolvePageColorArgb] | `:273-285` + `lib/utils/hex_color.dart:3-21` |
  * | [HomeBackdropScope] / [HomeBackdropRegion] / [HomeBackgroundModel.regionPaint] | `:467-501` + `lib/models/settings/timetable_settings_enums.dart:110-125` |
- * | 墨色阈值 [HomeBackgroundModel.chromeInkPolarity] 等 | `:715-727`（0.45）、`:801-807`（0.20）、`:287-343`（0.1791） |
+ * | 墨色极性 [HomeBackgroundModel.chromeInkPolarity] / [HomeBackgroundModel.cardGlassInkPolarity] | 2026-11-07 起改为**白/近黑 WCAG 对比度择优**（不再用 0.45 / 0.20 阈值）；状态栏仍按 `:287-343` 的 0.1791 |
  * | [HomeBackgroundModel.cardGlassSurfaceLuminance] | `:809-820` |
  * | [HomeBackgroundModel.hasSufficientContrast] | `:863-878` |
  * | [HomeBackgroundModel.relativeLuminance] / [HomeBackgroundModel.meanRelativeLuminance] / [HomeBackgroundModel.bandRows] | `:1330-1358`（逐像素 sRGB 线性化 + 三带 floor/ceil）+ `lib/utils/wallpaper_luminance_profile.dart:61-88` |
@@ -184,20 +184,6 @@ object HomeBackgroundModel {
     /** 拿不到视口时的解码宽兜底（`:196` 的 `1440`）。 */
     const val FALLBACK_DECODE_WIDTH_PX = 1440
 
-    /**
-     * 顶栏 / 标题墨色的黑白分界（`home_page_background.dart:716-727` 的 `darkThreshold = 0.45`）。
-     *
-     * 注意这只是**顶栏那套**口径：它回答的是「背景多暗才配白字」，不是黑白对比度相等点。
-     */
-    const val CHROME_INK_FLIP_LUMINANCE = 0.45
-
-    /**
-     * 卡面玻璃墨色的分界（`:801-807` 的 `cardGlassInkFlipLuminance`）。
-     *
-     * 0.2 才是「黑/白对比度相等」那一点（`1.05/(L+0.05) = (L+0.05)/0.06 ⇒ L ≈ 0.20`），
-     * 两侧最差也有 ~4.1:1。顶栏那套 0.45 用在卡面上，分界点附近只剩 ~2:1。
-     */
-    const val CARD_GLASS_INK_FLIP_LUMINANCE = 0.2
 
     /**
      * 状态栏图标极性的分界（`:310` 的 `statusBarIconFlipLuminance = 0.1791`）。
@@ -467,12 +453,20 @@ object HomeBackgroundModel {
     // ───────────── 墨色建议（阈值全抄 Dart，别自己定 0.5） ─────────────
 
     /**
-     * 顶栏 / 标题墨色：亮度 < 0.45 → 浅墨（白字），否则深墨；亮度未知 → 深墨
-     * （Dart `homePageChromeForegroundForLuminance`，fallback 是 OnLight）。
+     * 顶栏 / 标题墨色：壁纸亮度上**白墨与近黑墨谁对比度高就用谁**。
+     *
+     * 2026-11-07 之前这里是硬阈值 0.45（发布版那套「背景多暗才配白字」）。阈值在
+     * 0.20–0.45 这一段是错的：亮度 0.30 的壁纸配白字只有 3.0:1、配近黑有 5.8:1，
+     * 白字反而更难读。现在按 [HomeBackgroundModel.relativeLuminance] 的 WCAG 对比度
+     * 择优，分界点自动落在 ~0.2017（近黑 `#1A1A1A` 与纯白的相等点）。
+     *
+     * 亮度未知（没壁纸 / 首帧）⇒ 深墨（浅色主题兜底，旧行为不变）。
      */
     fun chromeInkPolarity(wallpaperLuminance: Double?): HomeInkPolarity {
         if (wallpaperLuminance == null) return HomeInkPolarity.Dark
-        return if (wallpaperLuminance < CHROME_INK_FLIP_LUMINANCE) {
+        return if (contrastOnLuminance(WHITE_ARGB, wallpaperLuminance) >=
+            contrastOnLuminance(ON_LIGHT_INK_ARGB, wallpaperLuminance)
+        ) {
             HomeInkPolarity.Light
         } else {
             HomeInkPolarity.Dark
@@ -480,15 +474,16 @@ object HomeBackgroundModel {
     }
 
     /**
-     * 日视图**内容卡**玻璃档的墨色：亮度 < 0.2 → 浅墨，否则深墨；未知 → 深墨
-     * （Dart `contentCardInkOverWallpaper` 传 `darkThreshold = cardGlassInkFlipLuminance`）。
+     * 日视图**内容卡**玻璃档的墨色：同样按对比度择优（不再用写死的 0.20）。
      *
      * 传进来的亮度应当是 [cardGlassSurfaceLuminance] 的结果（卡面混合后的亮度），
      * 不是裸壁纸亮度。
      */
     fun cardGlassInkPolarity(surfaceLuminance: Double?): HomeInkPolarity {
         if (surfaceLuminance == null) return HomeInkPolarity.Dark
-        return if (surfaceLuminance < CARD_GLASS_INK_FLIP_LUMINANCE) {
+        return if (contrastOnLuminance(WHITE_ARGB, surfaceLuminance) >=
+            contrastOnLuminance(ON_LIGHT_INK_ARGB, surfaceLuminance)
+        ) {
             HomeInkPolarity.Light
         } else {
             HomeInkPolarity.Dark
@@ -598,9 +593,28 @@ object HomeBackgroundModel {
         }
     }
 
-    /** 按亮度翻黑 / 白：深壁纸用白、浅壁纸用近黑（Dart `homePageChromeForegroundForLuminance`，`:709-727`）。 */
+    /**
+     * 按亮度翻黑 / 白：**白墨与近黑墨里对比度更高的那一档**（旧版是写死 0.45 阈值）。
+     *
+     * 阈值在 0.20–0.45 这段会把该用近黑的中灰背景判成白字（对比度掉到 1.7–3.0:1）；
+     * 现在直接比 WCAG 对比度，分界点自动落在约 0.2017（近黑 `#1A1A1A` 与纯白的相等点）。
+     */
     fun flipInkArgb(wallpaperLuminance: Double): Int =
-        if (wallpaperLuminance < CHROME_INK_FLIP_LUMINANCE) WHITE_ARGB else ON_LIGHT_INK_ARGB
+        if (contrastOnLuminance(WHITE_ARGB, wallpaperLuminance) >=
+            contrastOnLuminance(ON_LIGHT_INK_ARGB, wallpaperLuminance)
+        ) {
+            WHITE_ARGB
+        } else {
+            ON_LIGHT_INK_ARGB
+        }
+
+    /** [inkArgb] 在亮度为 [backgroundLuminance] 的背景上的 WCAG 对比度（1–21）。 */
+    private fun contrastOnLuminance(inkArgb: Int, backgroundLuminance: Double): Double {
+        val inkLuminance = relativeLuminance(inkArgb)
+        val hi = max(inkLuminance, backgroundLuminance)
+        val lo = minOf(inkLuminance, backgroundLuminance)
+        return (hi + 0.05) / (lo + 0.05)
+    }
 
     /**
      * 解析设置里的墨色：`#RRGGBB` 与 `#AARRGGBB` 都接受（8 位只取 RGB）。
