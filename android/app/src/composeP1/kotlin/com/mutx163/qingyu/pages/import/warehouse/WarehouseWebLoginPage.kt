@@ -43,6 +43,7 @@ import top.yukonga.miuix.kmp.theme.MiuixTheme
  */
 @Composable
 fun WarehouseWebLoginPage(
+    /** 顶栏标题；发布版传空（Dart `SizedBox.shrink()`），网页导入页通常不显示标题。 */
     title: String,
     sessionState: WarehouseWebLoginSessionState,
     // ---- task-21 接线新增：全部带默认值，不破坏任何现有调用点 ----

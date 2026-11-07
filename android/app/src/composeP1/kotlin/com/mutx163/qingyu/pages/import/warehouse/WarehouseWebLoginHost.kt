@@ -1591,7 +1591,9 @@ fun WarehouseWebLoginHost(
 
     Box(modifier = Modifier.fillMaxSize()) {
         WarehouseWebLoginPage(
-            title = school.name,
+            // 对齐发布版（Dart `title: const SizedBox.shrink()`）：校名一律被截成两三个字，
+            // 顶栏不再显示；网页页头本身就有学校名，返回上一级也能看到。
+            title = "",
             sessionState = session.copy(
                 macroState = macroState,
                 recordedStepsCount = recordedStepsCount,

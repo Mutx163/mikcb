@@ -358,6 +358,24 @@ class WarehouseWebLoginHostWiringGuardTest {
         assertTrue("触发卡片的文档键必须来自 handleLoginAttempt", save.contains("savePromptDocumentKey"))
     }
 
+    /**
+     * 网页导入顶栏不再显示学校名（2026-11-07 用户实报）。
+     *
+     * 所有校名在顶栏都会被截成两三个字（截图里是「重庆城…」），而发布版本来就传
+     * `title: SizedBox.shrink()`。这一页的网页自身有校名页头，返回上一级也能看到。
+     */
+    @Test
+    fun `网页导入顶栏不显示学校名`() {
+        assertFalse(
+            "顶栏不许再传 school.name：所有校名都会被截成两三个字",
+            hostSource.contains("title = school.name"),
+        )
+        assertTrue(
+            "网页导入页标题必须显式传空（对齐发布版 SizedBox.shrink）",
+            hostSource.contains("title = \"\","),
+        )
+    }
+
     private fun readHostSource(): String =
         readSource("android/app/src/composeP1/kotlin/com/mutx163/qingyu/pages/import/warehouse/WarehouseWebLoginHost.kt")
 
