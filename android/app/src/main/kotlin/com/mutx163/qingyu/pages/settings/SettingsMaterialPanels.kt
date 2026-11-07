@@ -8,11 +8,7 @@ import kotlin.math.roundToInt
  *
  * ## 页内顺序（:921-924）
  *
- * 「观感明显的在前」：总闸 → 首页顶栏玻璃 → 各面当前材质（只读结果）→ 高级材质。
- *
- * 2026-11-07 把「各面当前材质」从整页末尾移到高级材质之前：它展示的是上面两处**选择**的
- * 结果（各面到底用的是实体还是玻璃），放在末尾时用户要先滚 4 屏半才看得到；上移后
- * 打开面板即见，也把它后面的「恢复默认」从第 3.2 屏提前到第 2.6 屏。只动顺序，行 id 不变。
+ * 「观感明显的在前」：总闸 → 首页顶栏玻璃 → 液态预设与八根旋钮 → 只读总览。
  *
  * ## 逐项对照
  *
@@ -103,15 +99,14 @@ object SettingsMaterialGeneralPage {
             ),
         )
 
+        // ── 高级材质整块只在液态档出现（:1019-1160）
+        if (displayed == GlassModeChoice.LIQUID_GLASS) {
+            nodes += advancedNodes(material, tuning)
+        }
+
         // ── 各表面当前材质地图（:1162-1191）：**不在条件里**，实体档照样显示。
         //    只列可调表面：锁死的（弹窗家族、子页顶栏）一律不显示——固定的东西
         //    不出现，用户就不会以为它可调（:1164-1167）。
-        //
-        //    2026-11-07 位置上移（原本排在整页末尾）：块位置是「总闸/顶栏这两处**选择** →
-        //    它们算出来的**结果** → 参数微调」。原顺序下它落在第 4.4 屏（按 393×852、
-        //    半屏面板推算），而它回答的恰好是「我刚选的那档到底生效在哪个面上」；
-        //    上移后随面板打开即见，同时把后面「恢复默认」的深度前移 0.6 屏。
-        //    行 id 一个没改（分派器 / 落盘 / 守卫都不受影响），只改节点顺序。
         nodes += SettingsGap("material.general.gap.surfaces")
         nodes += SettingsLabel(
             id = "material.general.surfaces.label",
@@ -122,11 +117,6 @@ object SettingsMaterialGeneralPage {
             id = "material.general.surfaces",
             children = surfaceRows(material),
         )
-
-        // ── 高级材质整块只在液态档出现（:1019-1160）
-        if (displayed == GlassModeChoice.LIQUID_GLASS) {
-            nodes += advancedNodes(material, tuning)
-        }
 
         return SettingsPageSpec(
             id = ID,

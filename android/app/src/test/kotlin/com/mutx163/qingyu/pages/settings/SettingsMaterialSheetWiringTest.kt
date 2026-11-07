@@ -294,37 +294,9 @@ class SettingsMaterialSheetWiringTest {
 
     // ------------------------------------------------------------ 表面材质地图
 
-    /**
-     * 版式顺序（2026-11-07）：只读地图排在「高级材质」之前。
-     *
-     * 这条**不是**在断实现细节，而是在钉住那个决定：这块是「上面两处选择算出来的结果」，
-     * 用户打开面板就该看到；一旦有人出于「信息靠后不碍事」把它挪回整页末尾，这里会红。
-     * 同时断一次行 id 没被顺手改掉（改名会让分派器静默丢掉写入）。
-     */
     @Test
-    fun `只读表面地图排在高级材质之前且行 id 不变`() {
-        val nodes = generalSpec().nodes
-        val surfacesLabel = nodes.indexOfFirst { it.id == "material.general.surfaces.label" }
-        val advancedLabel = nodes.indexOfFirst { it.id == "material.general.advanced.label" }
-        assertTrue("表面地图标题不在 spec 里", surfacesLabel >= 0)
-        assertTrue("高级材质标题不在 spec 里", advancedLabel >= 0)
-        assertTrue(
-            "只读地图应在高级材质之前（当前 $surfacesLabel vs $advancedLabel）",
-            surfacesLabel < advancedLabel,
-        )
-        // 上移不能改行 id：三行只读行仍是原 id、仍不带动作（不可点）。
-        val spec = generalSpec()
-        for (id in listOf(
-            "material.general.surface.homeBand",
-            "material.general.surface.dock",
-            "material.general.surface.courseCard",
-        )) {
-            assertEquals("$id 上移后行 id 变了", null, spec.row(id).action)
-        }
-    }
-
-    @Test
-    fun `表面地图与写回同口径变化`() {        // 默认（模糊开）：玻璃带 / 玻璃坞液态；课卡默认实体档。
+    fun `表面地图与写回同口径变化`() {
+        // 默认（模糊开）：玻璃带 / 玻璃坞液态；课卡默认实体档。
         val liquid = written(write("material.general.glassMode.row", "liquidGlass"))
         val liquidSpec = generalSpec(AppearanceEditorBridge.toState(liquid).material)
         assertEquals(

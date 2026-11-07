@@ -1,6 +1,5 @@
 package com.mutx163.qingyu.pages.settings
 
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.WindowInsets
@@ -12,12 +11,10 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.ime
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalLayoutDirection
@@ -52,26 +49,6 @@ private const val MATERIAL_SHEET_MAX_HEIGHT_FACTOR = 0.5f
  * 宿主必须传 `title = null`——页签行自己就是标题（:2312-2314）。
  */
 private val MATERIAL_SHEET_CARRIER_CHROME = 42.dp
-
-/**
- * 页签行**每一格**的宽度（2026-11-07）。整行宽 = 本值 × 页数，居中。
- *
- * 为什么要收窄：面板内的三处选值分段（`SegmentedRow`）用的就是 `TabRowWithContour`
- * 通栏铺满（`SettingsPageRenderers.kt:1044-1063`）。页签若同样通栏、同样 45dp 高，
- * 「换一类看」和「改一个值」在屏上**长得一模一样**，层级就没了——原件 Dart 是刻意
- * 把它做成独立筛选胶囊的（`settings_appearance_editor.dart:2315-2337`，发布说明
- * v2.1.3.2「胶囊 = 哪类看，短线标签 = 翻页」）。
- *
- * 只改参数、不换组件（miuix 没有 chip row，也不许自研）：宽度收到 120/格、居中、
- * 高度 38（见 [MATERIAL_TAB_ROW_HEIGHT]），与通栏 45 那个一眼分得开。
- */
-private val MATERIAL_TAB_SLOT_WIDTH = 120.dp
-
-/**
- * 页签行高（2026-11-07）：官方通栏分段是 45（`TabRowDefaults.TabRowWithContourHeight`），
- * 这里压到 38 再拉一层差。38 − 5×2（`contourPadding`）= 28 的内轨，仍高于一行字。
- */
-private val MATERIAL_TAB_ROW_HEIGHT = 38.dp
 
 /**
  * 材质弹层的正文：顶上「通用 / 课程卡片」翻页页签（**自己就是标题**），下面一层可左右滑
@@ -215,37 +192,29 @@ fun MaterialSheetBody(
             // 溢出的内容交给每页自己的滚动。
             .heightIn(max = maxHeight),
     ) {
-        // 页签行：**收窄 + 居中 + 压高**，与面板内的选值分段拉开一层（见
-        // [MATERIAL_TAB_SLOT_WIDTH] 的说明）。外层 Box 负责居中与下沿呼吸，内层 Box 给
-        // `TabRowWithContour` 一个定宽约束——它内部第一句就是 `fillMaxWidth()`，所以只能从
-        // **父约束**收窄，直接给它的 modifier 塞 `width` 会被 `fillMaxWidth` 顶回满宽。
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                // 官方 demo 的页签行内距（`component/TabRowSection.kt:37-47` 的 `padding(horizontal)`）；
-                // 左右不垫：弹层的 `insideMargin`（16）已经是 Dart 那个 16（2026-11-05 口径）。
-                // ⚠️ 必须用 start/top/end/bottom 那个重载：Compose 没有「horizontal + bottom」组合。
-                .padding(bottom = 8.dp),
-            contentAlignment = Alignment.Center,
-        ) {
-            Box(modifier = Modifier.width(MATERIAL_TAB_SLOT_WIDTH * pageCount)) {
-                TabRowWithContour(
-                    tabs = SettingsMaterialSheetPage.TAB_LABELS.map { it.text },
-                    // 选中态跟 pager 的真实页走：用户自己滑出来的那一页也由 `currentPage` 回收索引
-                    // （Dart :2342-2346 的 `onPageChanged` 是同一件事），不会出现「滑过去一格、页签还亮着
-                    // 原来那格」。
-                    selectedTabIndex = pagerState.currentPage,
-                    onTabSelected = { index ->
-                        scope.launch { pagerState.animateScrollToPage(index) }
-                    },
-                    // 定宽父约束下按可用宽均分（`calculateTabWidth`：0/∞ 时取 idealWidth），
-                    // 两格各占一半、轨道正好裹住内容。
-                    minWidth = 0.dp,
-                    maxWidth = Dp.Infinity,
-                    height = MATERIAL_TAB_ROW_HEIGHT,
-                )
-            }
-        }
+        TabRowWithContour(
+            tabs = SettingsMaterialSheetPage.TAB_LABELS.map { it.text },
+            // 选中态跟 pager 的真实页走：用户自己滑出来的那一页也由 `currentPage` 回收索引
+            // （Dart :2342-2346 的 `onPageChanged` 是同一件事），不会出现「滑过去一格、页签还亮着
+            // 原来那格」。
+            selectedTabIndex = pagerState.currentPage,
+            onTabSelected = { index ->
+                scope.launch { pagerState.animateScrollToPage(index) }
+            },
+            // 官方 `TabRowWithContour` 默认按 62~84 定宽从左排，格数少时右边空一大块；
+            // 放宽到 0 / ∞ 让它铺满整行（与渲染层 `SegmentedRow` 同一口径，Lead 2026-10-29 拍板）。
+            minWidth = 0.dp,
+            maxWidth = Dp.Infinity,
+            // 官方 demo 的页签行内距（`component/TabRowSection.kt:37-47` 的 `padding(horizontal)`）；
+            // 页面容器的左右 16 来自弹层 `insideMargin`，这里只给页签自己那圈呼吸。
+            // ⚠️ 必须用 start/top/end/bottom 那个重载：Compose 没有「horizontal + bottom」组合。
+            //
+            // 2026-11-05：**左右那 16 去掉**。弹层的 `insideMargin`（`QingyuSheetDefaults.InsideMargin`）
+            // 已经给了 Dart 那个 16，再垫一层页签就距边 32、比下面的卡片各窄 16（并排看像一条
+            // 悬在中间的窄轨）。发布版胶囊与正文同宽：`settings_appearance_editor.dart:2161-2179`
+            // 的 `bleed` 只有那 16。壁纸面板同一处口径（`WallpaperSheetBody`）。
+            modifier = Modifier.padding(bottom = 8.dp),
+        )
         HorizontalPager(
             state = pagerState,
             modifier = Modifier.weight(1f),
