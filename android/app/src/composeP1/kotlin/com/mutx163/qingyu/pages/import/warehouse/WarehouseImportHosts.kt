@@ -513,6 +513,14 @@ fun WarehouseAdapterDetailHost(
     }
 
     var customImportUrl by remember(adapter.id) { mutableStateOf(prefs.customImportUrl(adapter.id)) }
+    // 首次导入自动录制：详情页入口也要按「该适配器有没有已存宏」判定。
+    // 列表页的主按钮已这样做；详情页之前直接 publish(school, adapter)，
+    // 从详情页进网页登录时永远不会自动开录（用户实报的「第一次导入不录」）。
+    val macroStore = remember(school.id) { WarehouseMacroStore(PrefsKeyValueStore(context)) }
+    var hasExistingMacro by remember(school.id, adapter.id) { mutableStateOf(false) }
+    LaunchedEffect(school.id, adapter.id) {
+        hasExistingMacro = withContext(Dispatchers.IO) { macroStore.hasMacro(school.id, adapter.id) }
+    }
 
     // 脚本状态卡（2026-11-05）：详情页要在**不注入脚本**的前提下说清「这个适配器的脚本能不能用」。
     // 这里拉一次正文（含 SHA-256 校验），结果降维成四态交给页面；失败码只进日志、不出文案。
@@ -576,8 +584,14 @@ fun WarehouseAdapterDetailHost(
             }
         },
         onOpenWebLogin = {
+            val autoRecord = shouldAutoRecordWarehouseImport(
+                forceRecord = false,
+                hasExistingMacro = hasExistingMacro,
+            )
             state.adapter = adapter
-            WarehouseImportHandoff.publish(school, adapter)
+            state.autoRecordMacro = autoRecord
+            state.playbackMacro = null
+            WarehouseImportHandoff.publish(school, adapter, autoRecordMacro = autoRecord)
             onOpenPage(WarehouseRoutes.WEB_LOGIN)
         },
     )

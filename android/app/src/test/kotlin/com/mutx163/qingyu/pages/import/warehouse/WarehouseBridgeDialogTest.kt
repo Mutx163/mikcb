@@ -384,7 +384,7 @@ class WarehouseBridgeDialogTest {
     @Test
     fun `toast 与 error 必须消费脚本给的原文`() {
         assertTrue("toast 分支必须取 message 原文", hostSource.contains("warehouseBridgeMessageText(raw)"))
-        assertTrue("error 缺省必须兜底固定文案", hostSource.contains("?: WarehouseStrings.courseImportScriptFailed.text"))
+        assertTrue("error 缺省必须兜底固定文案", hostSource.contains("?: WarehouseStrings.courseImportScriptFailed.zh"))
     }
 
     @Test
@@ -552,6 +552,29 @@ class WarehouseBridgeDialogTest {
         assertTrue("回话必须经 resolve 脚本注入", hostSource.contains("warehouseBridgeResolveScript("))
         // 降级路径不许删：解析不出界面时仍要按默认值回话。
         assertTrue("降级路径必须保留", hostSource.contains("handleDialogFallback(raw)"))
+    }
+
+    /**
+     * 详情页进网页登录也要做「首次导入自动录制」判定（2026-11-07 用户实报）。
+     *
+     * 列表页主按钮已按 `shouldAutoRecordWarehouseImport` 判定；详情页之前直接
+     * `publish(school, adapter)`，从详情页进网页登录永远不会自动开录。
+     */
+    @Test
+    fun `详情页进网页登录必须带首次自动录制判定`() {
+        val hosts = readSource("composeP1", "WarehouseImportHosts.kt")
+        val detail = hosts
+            .substringAfter("fun WarehouseAdapterDetailHost(")
+            .substringBefore("private fun toastUnavailable(")
+        assertTrue("取不到详情宿主（守卫自身失效）", detail.isNotEmpty())
+        assertTrue(
+            "详情页入口必须调用 shouldAutoRecordWarehouseImport 判定",
+            detail.contains("shouldAutoRecordWarehouseImport("),
+        )
+        assertTrue(
+            "判定结果必须带进交接件（否则网页登录页收不到）",
+            detail.contains("autoRecordMacro = autoRecord"),
+        )
     }
 
     private fun readSource(sourceSet: String, fileName: String): String {
