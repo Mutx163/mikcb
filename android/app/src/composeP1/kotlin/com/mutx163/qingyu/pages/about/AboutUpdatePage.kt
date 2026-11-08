@@ -13,7 +13,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
@@ -62,15 +61,19 @@ import java.util.Locale
  * - "查看 Release" 改为**居中的文字动作**，不再与主按钮一样做成通栏按钮；
  * - 版本号用正文字阶（13sp）而非 11sp 等宽；检查中文案字号加大。
  *
- * 2026-11-08 全面优化（对着官方 `miuix-demo` 的 `AboutPage` 找参照）：
- * - 列表改**顶对齐**（去掉 `AboutPageListSpacingCentered`）：居中把约 165dp 空白搬到
- *   标题栏下方，被读成「没加载出来」；demo 的身份块也是从顶部开始的。
- * - 标题抬到 `title2 + SEMIBOLD`，图标 72 → 64dp：标题和版本号之间要有明显的字重落。
- * - 动作从「两个等重蓝色文字链」改成官方 `ArrowPreference` 行（满行触控 + 右侧箭头），
- *   与身份块用 1dp 细线分开：上面是「什么状态」，下面是「能做什么」。
+ * 2026-11-08 全面优化（两轮）：第一轮对着官方 `miuix-demo` 的 `AboutPage` 去掉了垂直居中；
+ * 第二轮按用户指定的参照（外部同类应用的更新页）重做状态区：
+ *
+ * - **取消身份块**：图标 + 居中标题 + 版本号那一堆东西全部不要了。参照页没有任何图标，
+ *   状态就是一张普通卡里的两行字（「当前版本」+ 版本号）。
+ * - **状态收进行尾**：「已是最新 / 有更新」只作为一个短标签挂在「重新检查」行的
+ *   `endActions` 里，不再占一整块版面；有更新时另起「最新版本」区块 + 主按钮。
+ * - **列表顶对齐**（去掉 `AboutPageListSpacingCentered`）：居中把约 165dp 空白搬到
+ *   标题栏下方，被读成「没加载出来」。
  * - 「更新说明」回到 `QingyuSectionTitle` 卡外分组标题（28dp 轴线）；卡内不再重复一行
  *   「更新重点」小标题。
  * - `更新于 {时间}` 从卡首通栏降到卡尾弱色元信息：日期不该是这张卡最先被读到的内容。
+ * - 行控件一律用官方 `ArrowPreference`（满行触控 + 右侧箭头），不再用裸文字当按钮。
  *
  * 判据与结构逐段对应 Dart `:605-1720`：顶栏标题 +「高级选项」入口 / 三态（检查中 /
  * 检查失败 / 就绪）/ 就绪=状态卡 + 更新说明分组 + 说明卡 / 底部下载进度条。
@@ -309,79 +312,92 @@ private fun AboutUpdateStatusCardFull(
     }
     val openReleaseList: () -> Unit = { onOpenUrl(releaseListUrlFor(channel)) }
 
-    // 卡内不再放 16dp 统一内边距：上半是自排的身份块（居中、20/16），下半是官方
-    // ArrowPreference 行（自带 16dp），两者要各自控制内边距，否则行会缩进成 32dp。
+    // 参照同类应用的更新页骨架：那边**没有大图标 + 居中状态块**，整个状态区就是一张卡里的
+    // 两行文字（「当前版本」+ 版本号），下面才是可点行；「已是最新」只做一个行尾短标签。
+    // 我们照这个骨架来：版本是陈述，行是动作，两者都不占整屏。
     QingyuCard(
         modifier = Modifier.fillMaxWidth(),
         insideMargin = PaddingValues(0.dp),
     ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(start = 16.dp, top = 20.dp, end = 16.dp, bottom = 16.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-        ) {
-            AppIconBadge(size = 64.dp)
-            Spacer(Modifier.height(12.dp))
-            Text(
-                text = if (hasUpdate) {
-                    AboutUpdateStrings.updateAvailableHeadline
-                } else {
-                    AboutUpdateStrings.alreadyLatestHeadline
-                },
-                // 标题抬到 title2 + 半粗：标题和版本号只差一级半粗度不够时，
-                // 全卡最宽的那行（版本号）会抢走视觉重心。
-                style = MiuixTheme.textStyles.title2
-                    .shiftWeight(QingyuWeightDelta.SEMIBOLD),
-                color = if (hasUpdate) colors.primary else colors.onSurface,
-                textAlign = TextAlign.Center,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-            )
-            Spacer(Modifier.height(6.dp))
-            if (hasUpdate) {
-                VersionTransition(
-                    currentVersion = result.currentVersion,
-                    latestVersion = release?.version ?: AboutUpdatePageStrings.unreleasedLabel,
+        Column(modifier = Modifier.fillMaxWidth()) {
+            // ── 版本块：两行普通文字，不再有图标与居中堆叠 ──
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 14.dp),
+            ) {
+                Text(
+                    text = AboutUpdateStrings.currentVersionLabel,
+                    style = MiuixTheme.textStyles.body1.shiftWeight(QingyuWeightDelta.MEDIUM),
+                    color = colors.onSurface,
                 )
-                Spacer(Modifier.height(18.dp))
-                // 只有「有更新」才用醒目的主按钮下载——本页唯一的主操作。
-                Button(
-                    onClick = onPrimary,
-                    modifier = Modifier.fillMaxWidth(),
-                    colors = ButtonDefaults.buttonColorsPrimary(),
-                ) {
-                    Text(primaryLabel)
-                }
-            } else {
-                // 已是最新：版本号降级成一行弱化小字（单行省略，技术串不许把卡撑宽）。
+                Spacer(Modifier.height(2.dp))
                 Text(
                     text = result.currentVersion,
                     style = MiuixTheme.textStyles.footnote1,
                     color = colors.onSurfaceVariantSummary,
-                    textAlign = TextAlign.Center,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                 )
             }
-        }
 
-        // 动作区：身份块陈述「现在是什么状态」，这一块才回答「我能做什么」。
-        // 用一根 1dp 细线分开，动作换成官方 ArrowPreference 行（自带 16dp 内边距、
-        // 满行触控高度与右侧箭头）——比两个等重的蓝色文字链挤在卡片中间清楚得多，
-        // 也不会再把 30dp 高的裸文字当按钮。
-        val showReleaseRow = !hasUpdate || primaryAction != AboutUpdatePrimaryAction.OPEN_RELEASE_PAGE
-        if (showReleaseRow) {
+            // 有更新：最新版本单独一行（主题色）+ 本页唯一的主按钮，仍在同一张卡里。
+            // 不做「旧 → 新」的箭头行：把当前/最新拆成两个区块，读起来比箭头更直白。
+            if (hasUpdate) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp),
+                ) {
+                    Text(
+                        text = AboutUpdateStrings.latestVersionLabel,
+                        style = MiuixTheme.textStyles.footnote1,
+                        color = colors.onSurfaceVariantActions,
+                    )
+                    Spacer(Modifier.height(2.dp))
+                    Text(
+                        text = release?.version ?: AboutUpdatePageStrings.unreleasedLabel,
+                        style = MiuixTheme.textStyles.body1.shiftWeight(QingyuWeightDelta.SEMIBOLD),
+                        color = colors.primary,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                    Spacer(Modifier.height(14.dp))
+                    Button(
+                        onClick = onPrimary,
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = ButtonDefaults.buttonColorsPrimary(),
+                    ) {
+                        Text(primaryLabel)
+                    }
+                    Spacer(Modifier.height(14.dp))
+                }
+            }
+
+            // ── 可点行：检查/重新检查，行尾只挂一个状态词（`endActions` 手法）──
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(1.dp)
                     .background(colors.secondaryContainer),
             )
-            if (hasUpdate) {
-                ArrowPreference(title = AboutUpdateStrings.viewReleaseAction, onClick = openReleaseList)
-            } else {
-                ArrowPreference(title = AboutUpdateStrings.retryAction, onClick = onRefresh)
+            ArrowPreference(
+                title = AboutUpdateStrings.retryAction,
+                endActions = {
+                    Text(
+                        text = if (hasUpdate) {
+                            AboutUpdateStrings.updateAvailableHeadline
+                        } else {
+                            AboutUpdateStrings.alreadyLatestHeadline
+                        },
+                        style = MiuixTheme.textStyles.footnote1,
+                        color = if (hasUpdate) colors.primary else colors.onSurfaceVariantSummary,
+                    )
+                },
+                onClick = onRefresh,
+            )
+            // 主按钮已经是「查看 Release」时不再重复给行，避免两处同一动作。
+            if (!hasUpdate || primaryAction != AboutUpdatePrimaryAction.OPEN_RELEASE_PAGE) {
                 ArrowPreference(title = AboutUpdateStrings.viewReleaseAction, onClick = openReleaseList)
             }
         }
@@ -408,37 +424,6 @@ private fun InlineTextAction(text: String, onClick: () -> Unit) {
             text = text,
             style = MiuixTheme.textStyles.footnote1.shiftWeight(QingyuWeightDelta.MEDIUM),
             color = MiuixTheme.colorScheme.primary,
-        )
-    }
-}
-
-/** Dart `_buildVersionTransition`：旧版本弱化 → 箭头 → 新版本强调（版本号走正文字阶，不用等宽）。 */
-@Composable
-private fun VersionTransition(currentVersion: String, latestVersion: String) {
-    val colors = MiuixTheme.colorScheme
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.Center,
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Text(
-            text = currentVersion,
-            style = MiuixTheme.textStyles.footnote1,
-            color = colors.onSurfaceVariantSummary,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
-            modifier = Modifier.weight(1f, fill = false),
-        )
-        Spacer(Modifier.width(6.dp))
-        Text(text = "→", style = MiuixTheme.textStyles.footnote1, color = colors.onSurfaceVariantSummary)
-        Spacer(Modifier.width(6.dp))
-        Text(
-            text = latestVersion,
-            style = MiuixTheme.textStyles.footnote1.shiftWeight(QingyuWeightDelta.SEMIBOLD),
-            color = colors.primary,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
-            modifier = Modifier.weight(1f, fill = false),
         )
     }
 }
