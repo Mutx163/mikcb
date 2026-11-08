@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -38,6 +39,7 @@ import androidx.compose.ui.input.nestedscroll.nestedScroll
 import com.mutx163.qingyu.components.QingyuCard
 import com.mutx163.qingyu.components.QingyuGlassIconButton
 import com.mutx163.qingyu.components.QingyuPageList
+import com.mutx163.qingyu.components.QingyuPageTheme
 import com.mutx163.qingyu.components.QingyuSheet
 import com.mutx163.qingyu.components.QingyuWeightDelta
 import com.mutx163.qingyu.components.rememberShellShouldShowBackButton
@@ -45,6 +47,7 @@ import com.mutx163.qingyu.components.shiftWeight
 import top.yukonga.miuix.kmp.utils.overScrollVertical
 import top.yukonga.miuix.kmp.utils.scrollEndHaptic
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import com.mutx163.qingyu.core.TimetableProfile
@@ -888,4 +891,145 @@ private fun <T : Any> rememberLastNonNull(current: T?): T? {
     var shown by remember { mutableStateOf(current) }
     if (current != null) shown = current
     return shown
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// IDE 预览（2026-11-08，照 about/ContributorsPage.kt 样板铺）
+//
+// 只给实现阶段看效果，不进业务路径。覆盖两个维度：
+//
+//   数据状态 3 档：有数据 / 空列表 / 底部操作提示；
+//   外观 3 档：亮色、暗色、大字号 1.3。
+//
+// 为什么偏偏是这几档：
+//   · 暗色 —— 历史上出现过「白字落在白卡片上」（壳用无参 MiuixTheme，页面取色却走
+//     isSystemInDarkTheme()）；这一档就是防它复发；
+//   · 大字号 —— 「12 门课程 · 第 8 周」与「情侣课表」徽标是最先被挤掉的一行；
+//   · 空列表 —— 只剩最后一条课表时的空态文案与按钮是另一条分支；
+//   · 操作提示 —— 底部 Toast 是绝对定位，容易压住最后一行。
+//
+// 固定写法：主题一律包 QingyuPageTheme(isDark = …)，不要直接 MiuixTheme { }；
+// 字号用 QingyuPageTheme(textScale = …)，不要用 @Preview(fontScale = …)；
+// 宽度按 400dp（本仓折行实测口径），高度给一屏多。
+// ─────────────────────────────────────────────────────────────────────────────
+
+/** 预览用假数据：三条课表，覆盖激活 / 普通 / 情侣导入三种行形态。 */
+private fun previewProfileItems(): List<TimetableProfileItem> = listOf(
+    TimetableProfileItem(
+        id = "profile_preview_1",
+        name = "大二下学期",
+        courseCount = 12,
+        currentWeek = 8,
+        isPartnerImported = false,
+        isActive = true,
+    ),
+    TimetableProfileItem(
+        id = "profile_preview_2",
+        name = "考研自习",
+        courseCount = 4,
+        currentWeek = 8,
+        isPartnerImported = false,
+        isActive = false,
+    ),
+    TimetableProfileItem(
+        id = "profile_preview_3",
+        name = "小柒的课表",
+        courseCount = 9,
+        currentWeek = 8,
+        isPartnerImported = true,
+        isActive = false,
+    ),
+)
+
+/** 一档预览的公共身体：数据状态 + 外观档位。 */
+@Composable
+private fun PreviewTimetableProfilesPage(
+    profiles: List<TimetableProfileItem>,
+    dark: Boolean = false,
+    textScale: Float = 1f,
+    toastMessage: String? = null,
+) {
+    QingyuPageTheme(isDark = dark, textScale = textScale) {
+        TimetableProfilesPage(
+            profiles = profiles,
+            onBack = {},
+            onCreateProfile = {},
+            onSwitchProfile = {},
+            onRenameProfile = { _, _ -> },
+            onDuplicateProfile = {},
+            onClearCourses = {},
+            onDeleteProfile = {},
+            toastMessage = toastMessage,
+        )
+    }
+}
+
+// ── 单档：数据三态 × 亮色 ──────────────────────────────────────────────────
+
+@Suppress("unused")
+@Preview(name = "1 有数据", showBackground = true, widthDp = 400, heightDp = 900)
+@Composable
+private fun TimetableProfilesPagePreviewData() {
+    PreviewTimetableProfilesPage(previewProfileItems())
+}
+
+@Suppress("unused")
+@Preview(name = "2 空列表", showBackground = true, widthDp = 400, heightDp = 900)
+@Composable
+private fun TimetableProfilesPagePreviewEmpty() {
+    PreviewTimetableProfilesPage(profiles = emptyList())
+}
+
+@Suppress("unused")
+@Preview(name = "3 操作提示", showBackground = true, widthDp = 400, heightDp = 900)
+@Composable
+private fun TimetableProfilesPagePreviewToast() {
+    PreviewTimetableProfilesPage(
+        profiles = previewProfileItems(),
+        toastMessage = "已新建课表「考研自习」",
+    )
+}
+
+// ── 单档：外观两档（以「有数据」为基准，其余状态换外观直接加参数）───────────
+
+@Suppress("unused")
+@Preview(name = "4 暗色", showBackground = true, widthDp = 400, heightDp = 900)
+@Composable
+private fun TimetableProfilesPagePreviewDark() {
+    PreviewTimetableProfilesPage(profiles = previewProfileItems(), dark = true)
+}
+
+@Suppress("unused")
+@Preview(name = "5 大字号 1.3", showBackground = true, widthDp = 400, heightDp = 900)
+@Composable
+private fun TimetableProfilesPagePreviewLargeText() {
+    PreviewTimetableProfilesPage(profiles = previewProfileItems(), textScale = 1.3f)
+}
+
+// ── 总览：三态并排，一屏看完 ─────────────────────────────────────────────────
+
+/**
+ * 一屏总览：有数据 / 空列表 / 暗色 横向并排，用来一眼比结构差异。
+ *
+ * 3 × 400dp + 2 × 16dp 间距 = 1232dp，所以画布给 1280dp。Studio 会等比缩小显示，
+ * **缩放后字看不清是正常的**——要看细节点上面 1~5 的单档标签。
+ */
+@Suppress("unused")
+@Preview(name = "0 总览·三态并排", showBackground = true, widthDp = 1280, heightDp = 900)
+@Composable
+private fun TimetableProfilesPagePreviewOverview() {
+    Row(
+        modifier = Modifier.fillMaxSize(),
+        horizontalArrangement = Arrangement.spacedBy(16.dp),
+    ) {
+        Box(Modifier.width(400.dp).fillMaxHeight()) {
+            PreviewTimetableProfilesPage(previewProfileItems())
+        }
+        Box(Modifier.width(400.dp).fillMaxHeight()) {
+            PreviewTimetableProfilesPage(profiles = emptyList())
+        }
+        Box(Modifier.width(400.dp).fillMaxHeight()) {
+            PreviewTimetableProfilesPage(profiles = previewProfileItems(), dark = true)
+        }
+    }
 }

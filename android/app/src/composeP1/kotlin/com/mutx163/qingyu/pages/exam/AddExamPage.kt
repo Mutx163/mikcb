@@ -9,6 +9,8 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.imePadding
@@ -27,12 +29,14 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import com.mutx163.qingyu.components.QingyuCard
 import com.mutx163.qingyu.components.QingyuGlassIconButton
 import com.mutx163.qingyu.components.QingyuPageList
 import com.mutx163.qingyu.components.QingyuPageScaffold
+import com.mutx163.qingyu.components.QingyuPageTheme
 import com.mutx163.qingyu.components.QingyuWeightDelta
 import com.mutx163.qingyu.components.shiftWeight
 import com.mutx163.qingyu.core.Course
@@ -499,5 +503,196 @@ private fun ExamSettingRow(
             tint = Color(QingyuTheme.actionIcon(dark)),
             modifier = Modifier.size(14.dp),
         )
+    }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// IDE 预览（2026-11-08，照 about/ContributorsPage.kt 样板铺）
+//
+// 只给实现阶段看效果，不进业务路径。覆盖两个维度：
+//
+//   数据状态 3 档：新建空表单 / 编辑已有考试 / 校验失败；
+//   外观 3 档：亮色、暗色、大字号 1.3。
+//
+// 为什么偏偏是这几档：
+//   · 暗色 —— 历史上出现过「白字落在白卡片上」（壳用无参 MiuixTheme，页面取色却走
+//     isSystemInDarkTheme()）；这一档就是防它复发；
+//   · 大字号 —— 「提前 1 天 + 提前 1 小时」这类提醒行与时间行最先折行；
+//   · 新建 / 编辑 —— 顶栏标题与右上动作两个套（编辑多了删除），且未选课程时多一行红字；
+//   · 校验失败 —— 字段错误（名称下红字）+ 页顶错误条是两条独立渲染分支。
+//
+// 日期一律用全限定 java.time.LocalDateTime（本文件不为预览添 import）。
+// 固定写法：主题一律包 QingyuPageTheme(isDark = …)，不要直接 MiuixTheme { }；
+// 字号用 QingyuPageTheme(textScale = …)，不用 @Preview(fontScale = …)；
+// 宽度按 400dp（本仓折行实测口径），高度给一屏多。
+// ─────────────────────────────────────────────────────────────────────────────
+
+/** 预览用假数据：关联课程（页上只用到名字 / 教师 / 教室）。 */
+private fun previewExamCourse(): Course = Course(
+    id = "course_preview_1",
+    name = "高等数学（上）",
+    teacher = "王老师",
+    location = "三教 204",
+    dayOfWeek = 3,
+    startSection = 1,
+    endSection = 2,
+    startTime = "08:00",
+    endTime = "09:40",
+    color = "#2196F3",
+)
+
+/** 新建：未选课程、名称为空，日期落在默认的「七天后」。 */
+private fun previewAddExamStateCreate(): AddExamViewState = AddExamViewState(
+    isEditing = false,
+    selectedCourseId = null,
+    name = "",
+    hasSelectedDate = true,
+    selectedDate = java.time.LocalDateTime.of(2026, 11, 15, 0, 0),
+    startTime = "08:30",
+    endTime = "10:30",
+    reminderPreset = ExamReminderPreset.DAY_1_AND_HOUR_1,
+)
+
+/** 编辑：全部字段有值，提醒用自定义两档（走「提前 N 天 · 提前 N 小时」分支）。 */
+private fun previewAddExamStateEditing(): AddExamViewState = AddExamViewState(
+    isEditing = true,
+    selectedCourseId = "course_preview_1",
+    name = "高等数学（上）期末考试",
+    hasSelectedDate = true,
+    selectedDate = java.time.LocalDateTime.of(2026, 11, 20, 0, 0),
+    startTime = "09:00",
+    endTime = "11:00",
+    location = "三教 204",
+    seatNumber = "27",
+    note = "带学生证和黑色签字笔",
+    reminderPreset = ExamReminderPreset.CUSTOM,
+    customReminderMinutes = listOf(1440, 60),
+)
+
+/** 校验失败：名称下红字 + 页顶错误条同时出现。 */
+private fun previewAddExamStateInvalid(): AddExamViewState = previewAddExamStateCreate().copy(
+    nameError = "请输入考试名称",
+    toastMessage = "请先选择关联课程",
+)
+
+/** 一档预览的公共身体：视图状态 + 外观档位。 */
+@Composable
+private fun PreviewAddExamPage(
+    viewState: AddExamViewState,
+    selectedCourse: Course? = null,
+    courseGroupsEmpty: Boolean = false,
+    dateDisplayText: String = "2026年11月20日 周五",
+    locationHintText: String = "上课教室：三教 204",
+    dark: Boolean = false,
+    textScale: Float = 1f,
+) {
+    QingyuPageTheme(isDark = dark, textScale = textScale) {
+        AddExamPage(
+            viewState = viewState,
+            selectedCourse = selectedCourse,
+            courseGroupsEmpty = courseGroupsEmpty,
+            dateDisplayText = dateDisplayText,
+            locationHintText = locationHintText,
+            onBack = {},
+            onSave = {},
+            onDelete = {},
+            onNameChange = {},
+            onPickCourse = {},
+            onPickDate = {},
+            onPickStartTime = {},
+            onPickEndTime = {},
+            onLocationChange = {},
+            onSeatChange = {},
+            onNoteChange = {},
+            onReminderPresetChange = {},
+            onAddCustomReminder = {},
+            onEditCustomReminder = {},
+            onRemoveCustomReminder = {},
+        )
+    }
+}
+
+// ── 单档：数据三态 × 亮色 ──────────────────────────────────────────────────
+
+@Suppress("unused")
+@Preview(name = "1 新建空表单", showBackground = true, widthDp = 400, heightDp = 900)
+@Composable
+private fun AddExamPagePreviewCreate() {
+    PreviewAddExamPage(viewState = previewAddExamStateCreate())
+}
+
+@Suppress("unused")
+@Preview(name = "2 编辑已有考试", showBackground = true, widthDp = 400, heightDp = 900)
+@Composable
+private fun AddExamPagePreviewEdit() {
+    PreviewAddExamPage(
+        viewState = previewAddExamStateEditing(),
+        selectedCourse = previewExamCourse(),
+    )
+}
+
+@Suppress("unused")
+@Preview(name = "3 校验失败", showBackground = true, widthDp = 400, heightDp = 900)
+@Composable
+private fun AddExamPagePreviewInvalid() {
+    PreviewAddExamPage(viewState = previewAddExamStateInvalid())
+}
+
+// ── 单档：外观两档（以「编辑已有考试」为基准）──────────────────────────────
+
+@Suppress("unused")
+@Preview(name = "4 暗色", showBackground = true, widthDp = 400, heightDp = 900)
+@Composable
+private fun AddExamPagePreviewDark() {
+    PreviewAddExamPage(
+        viewState = previewAddExamStateEditing(),
+        selectedCourse = previewExamCourse(),
+        dark = true,
+    )
+}
+
+@Suppress("unused")
+@Preview(name = "5 大字号 1.3", showBackground = true, widthDp = 400, heightDp = 900)
+@Composable
+private fun AddExamPagePreviewLargeText() {
+    PreviewAddExamPage(
+        viewState = previewAddExamStateEditing(),
+        selectedCourse = previewExamCourse(),
+        textScale = 1.3f,
+    )
+}
+
+// ── 总览：三态并排，一屏看完 ─────────────────────────────────────────────────
+
+/**
+ * 一屏总览：新建 / 编辑 / 暗色 横向并排，用来一眼比结构差异。
+ *
+ * 3 × 400dp + 2 × 16dp 间距 = 1232dp，所以画布给 1280dp。Studio 会等比缩小显示，
+ * **缩放后字看不清是正常的**——要看细节点上面 1~5 的单档标签。
+ */
+@Suppress("unused")
+@Preview(name = "0 总览·三态并排", showBackground = true, widthDp = 1280, heightDp = 900)
+@Composable
+private fun AddExamPagePreviewOverview() {
+    Row(
+        modifier = Modifier.fillMaxSize(),
+        horizontalArrangement = Arrangement.spacedBy(16.dp),
+    ) {
+        Box(Modifier.width(400.dp).fillMaxHeight()) {
+            PreviewAddExamPage(viewState = previewAddExamStateCreate())
+        }
+        Box(Modifier.width(400.dp).fillMaxHeight()) {
+            PreviewAddExamPage(
+                viewState = previewAddExamStateEditing(),
+                selectedCourse = previewExamCourse(),
+            )
+        }
+        Box(Modifier.width(400.dp).fillMaxHeight()) {
+            PreviewAddExamPage(
+                viewState = previewAddExamStateEditing(),
+                selectedCourse = previewExamCourse(),
+                dark = true,
+            )
+        }
     }
 }

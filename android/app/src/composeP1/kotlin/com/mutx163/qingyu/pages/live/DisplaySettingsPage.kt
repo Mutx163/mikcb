@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
@@ -29,11 +30,13 @@ import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.mutx163.qingyu.components.QingyuCard
 import com.mutx163.qingyu.components.QingyuPageCardMargin
 import com.mutx163.qingyu.components.QingyuPageList
 import com.mutx163.qingyu.components.QingyuPageScaffold
+import com.mutx163.qingyu.components.QingyuPageTheme
 import com.mutx163.qingyu.components.QingyuSectionTitle
 import com.mutx163.qingyu.components.QingyuSliderPreference
 import com.mutx163.qingyu.components.QingyuWeightDelta
@@ -900,3 +903,168 @@ private fun parseColor(hex: String): Color {
  * 与主题无关（深色下也应当是中性灰），所以不进主题语义槽。
  */
 private val NeutralFallback = Color(red = 0x88, green = 0x88, blue = 0x88)
+
+// ─────────────────────────────────────────────────────────────────────────────
+// IDE 预览（2026-11-08）
+//
+// 只给实现阶段看效果，不进业务路径。覆盖两个维度：
+//
+//   数据状态 4 档：课前页 / 课中下课·跟随课前 / 课中下课·独立设置 / 无课程空态；
+//   外观 3 档：亮色、暗色、大字号 1.3。
+//
+// 为什么偏偏是这几档：
+//   · 暗色 —— 页面取色走 isSystemInDarkTheme()，只有 QingyuPageTheme 会把
+//     LocalConfiguration 的 uiMode 一起改写，预览才和真机同口径；
+//   · 大字号 —— 行内文案的折行点，只在字被放大后才暴露；
+//   · 跟随 / 独立 —— duringEndFollowBeforeClass 决定整页是否半透明、上课前快捷操作出不出现；
+//   · 无课程 —— 没有真实课程时必须画诚实空态，不许拿演示课冒充。
+//
+// 固定写法：主题一律 QingyuPageTheme(isDark = …)、字号走 textScale 参数
+//（@Preview(fontScale = …) 绕过了应用的 appTextScale 口径）；宽度按 400dp（本仓折行实测口径）。
+// ─────────────────────────────────────────────────────────────────────────────
+
+/** 预览用假课程：一门正在上的课 + 下一节，全用中文实义值。 */
+private fun previewIslandInfo(): LiveIslandPreviewInfo = LiveIslandPreviewInfo(
+    courseName = "高等数学（下）",
+    courseShortName = "高数",
+    location = "示例大学 · 理科楼 302",
+    teacher = "王老师",
+    startTime = "08:00",
+    endTime = "09:40",
+    note = "带计算器",
+    nextCourseName = "大学物理",
+)
+
+/** 渲染层能收到的四种输入组合；[name] 只用来给预览命名，不参与渲染。 */
+private data class PreviewDisplaySettingsState(
+    val name: String,
+    val forDuringEnd: Boolean,
+    val duringEndFollowBeforeClass: Boolean,
+    val previewInfo: LiveIslandPreviewInfo?,
+    val previewEmptyHint: String?,
+)
+
+private val previewDisplaySettingsStates: List<PreviewDisplaySettingsState> = listOf(
+    PreviewDisplaySettingsState(
+        name = "课前页",
+        forDuringEnd = false,
+        duringEndFollowBeforeClass = true,
+        previewInfo = previewIslandInfo(),
+        previewEmptyHint = null,
+    ),
+    PreviewDisplaySettingsState(
+        name = "课中下课·跟随",
+        forDuringEnd = true,
+        duringEndFollowBeforeClass = true,
+        previewInfo = previewIslandInfo(),
+        previewEmptyHint = null,
+    ),
+    PreviewDisplaySettingsState(
+        name = "课中下课·独立",
+        forDuringEnd = true,
+        duringEndFollowBeforeClass = false,
+        previewInfo = previewIslandInfo(),
+        previewEmptyHint = null,
+    ),
+    PreviewDisplaySettingsState(
+        name = "无课程",
+        forDuringEnd = false,
+        duringEndFollowBeforeClass = true,
+        previewInfo = null,
+        previewEmptyHint = "请先在课表设置里填写开学日期",
+    ),
+)
+
+private fun previewDisplaySettingsState(name: String): PreviewDisplaySettingsState =
+    previewDisplaySettingsStates.first { it.name == name }
+
+/** 一档预览的公共身体：数据状态 + 外观档位。 */
+@Composable
+private fun PreviewDisplaySettingsPage(
+    state: PreviewDisplaySettingsState,
+    dark: Boolean = false,
+    textScale: Float = 1f,
+) {
+    QingyuPageTheme(isDark = dark, textScale = textScale) {
+        DisplaySettingsPage(
+            state = LiveDisplayState(
+                duringEndFollowBeforeClass = state.duringEndFollowBeforeClass,
+            ),
+            onStateChange = {},
+            onBack = {},
+            forDuringEnd = state.forDuringEnd,
+            previewInfo = state.previewInfo,
+            previewEmptyHint = state.previewEmptyHint,
+        )
+    }
+}
+
+// ── 单档：四态 × 亮色 ──────────────────────────────────────────────────────
+
+@Suppress("unused")
+@Preview(name = "1 课前页", showBackground = true, widthDp = 400, heightDp = 900)
+@Composable
+private fun DisplaySettingsPagePreviewBeforeClass() {
+    PreviewDisplaySettingsPage(previewDisplaySettingsState("课前页"))
+}
+
+@Suppress("unused")
+@Preview(name = "2 课中下课·跟随", showBackground = true, widthDp = 400, heightDp = 900)
+@Composable
+private fun DisplaySettingsPagePreviewDuringEndFollow() {
+    PreviewDisplaySettingsPage(previewDisplaySettingsState("课中下课·跟随"))
+}
+
+@Suppress("unused")
+@Preview(name = "3 课中下课·独立", showBackground = true, widthDp = 400, heightDp = 900)
+@Composable
+private fun DisplaySettingsPagePreviewDuringEndEditable() {
+    PreviewDisplaySettingsPage(previewDisplaySettingsState("课中下课·独立"))
+}
+
+@Suppress("unused")
+@Preview(name = "4 无课程", showBackground = true, widthDp = 400, heightDp = 900)
+@Composable
+private fun DisplaySettingsPagePreviewNoCourse() {
+    PreviewDisplaySettingsPage(previewDisplaySettingsState("无课程"))
+}
+
+// ── 单档：外观两档（以「课前页」为基准，其余状态换外观直接加参数）───────────
+
+@Suppress("unused")
+@Preview(name = "5 暗色", showBackground = true, widthDp = 400, heightDp = 900)
+@Composable
+private fun DisplaySettingsPagePreviewDark() {
+    PreviewDisplaySettingsPage(previewDisplaySettingsState("课前页"), dark = true)
+}
+
+@Suppress("unused")
+@Preview(name = "6 大字号 1.3", showBackground = true, widthDp = 400, heightDp = 900)
+@Composable
+private fun DisplaySettingsPagePreviewLargeText() {
+    PreviewDisplaySettingsPage(previewDisplaySettingsState("课前页"), textScale = 1.3f)
+}
+
+// ── 总览：四态并排，一屏看完 ────────────────────────────────────────────────
+
+/**
+ * 一屏总览：四种状态横向并排，用来一眼比结构差异（谁多了 / 少了哪一块）。
+ *
+ * 4 × 400dp + 3 × 16dp 间距 = 1648dp，所以画布给 1700dp。Studio 会等比缩小显示，
+ * **缩放后字看不清是正常的**——要看细节点上面 1~6 的单档标签。
+ */
+@Suppress("unused")
+@Preview(name = "0 总览·四态并排", showBackground = true, widthDp = 1700, heightDp = 900)
+@Composable
+private fun DisplaySettingsPagePreviewOverview() {
+    Row(
+        modifier = Modifier.fillMaxSize(),
+        horizontalArrangement = Arrangement.spacedBy(16.dp),
+    ) {
+        for (state in previewDisplaySettingsStates) {
+            Box(Modifier.width(400.dp).fillMaxHeight()) {
+                PreviewDisplaySettingsPage(state)
+            }
+        }
+    }
+}

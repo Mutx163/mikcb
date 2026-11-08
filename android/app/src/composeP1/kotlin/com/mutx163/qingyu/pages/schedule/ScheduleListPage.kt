@@ -8,6 +8,8 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -26,6 +28,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import com.mutx163.qingyu.components.QingyuCard
@@ -33,6 +36,7 @@ import com.mutx163.qingyu.components.QingyuGlassIconButton
 import com.mutx163.qingyu.components.QingyuPageCardMargin
 import com.mutx163.qingyu.components.QingyuPageList
 import com.mutx163.qingyu.components.QingyuPageScaffold
+import com.mutx163.qingyu.components.QingyuPageTheme
 import com.mutx163.qingyu.components.QingyuSectionTitle
 import com.mutx163.qingyu.components.QingyuWeightDelta
 import com.mutx163.qingyu.components.shiftWeight
@@ -399,5 +403,214 @@ private fun parseHexColor(hex: String?, fallback: Color): Color {
         }
     } catch (_: Exception) {
         fallback
+    }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// IDE 预览（2026-11-08，照 about/ContributorsPage.kt 样板铺）
+//
+// 只给实现阶段看效果，不进业务路径。覆盖两个维度：
+//
+//   数据状态 3 档：三组都有数据 / 空态 / 跨天日程；
+//   外观 3 档：亮色、暗色、大字号 1.3。
+//
+// 为什么偏偏是这几档：
+//   · 暗色 —— 历史上出现过「白字落在白卡片上」（壳用无参 MiuixTheme，页面取色却走
+//     isSystemInDarkTheme()）；这一档就是防它复发；
+//   · 大字号 —— 行内「11月09日 周一 · 19:00 - 21:00」这类元信息最先折行；
+//   · 空态 —— 一张卡片居中，与列表两套布局，最容易只改了一条；
+//   · 跨天 —— 同一行要换成「跨天」提示文案，是另一条分支。
+//
+// 数据由真实的 ScheduleListGrouper 分组（今天固定 2026-11-08），不手写分组结果，
+// 否则预览好看而真机仍可能分错组。
+//
+// 固定写法：主题一律包 QingyuPageTheme(isDark = …)，不要直接 MiuixTheme { }；
+// 字号用 QingyuPageTheme(textScale = …)，不用 @Preview(fontScale = …)；
+// 宽度按 400dp（本仓折行实测口径），高度给一屏多。
+// ─────────────────────────────────────────────────────────────────────────────
+
+/** 预览用的「今天」：固定值，避开跑预览当天的日期漂移。 */
+private const val PREVIEW_SCHEDULE_TODAY = "2026-11-08"
+
+/** 预览用假数据：一条日程条目。 */
+private fun previewScheduleItem(
+    id: String,
+    title: String,
+    startDate: String,
+    startTime: String,
+    endTime: String,
+    location: String,
+    endDate: String = startDate,
+    note: String? = null,
+    recurrence: ScheduleRecurrence = ScheduleRecurrence.NONE,
+    enabled: Boolean = true,
+): ScheduleItemData = ScheduleItemData(
+    id = id,
+    title = title,
+    location = location,
+    note = note,
+    startDate = startDate,
+    endDate = endDate,
+    startTime = startTime,
+    endTime = endTime,
+    color = "#5B9CF6",
+    recurrence = recurrence,
+    reminderMinutesBefore = 15,
+    enabled = enabled,
+)
+
+/** 三组都有数据：即将到来（含重复日程）/ 已过期 / 已暂停。 */
+private fun previewScheduleGroups(): ScheduleListGroups = ScheduleListGrouper.group(
+    items = listOf(
+        previewScheduleItem(
+            id = "schedule_preview_1",
+            title = "高等数学辅导",
+            startDate = "2026-11-09",
+            startTime = "19:00",
+            endTime = "21:00",
+            location = "示例大学 · 三教 204",
+            note = "带习题册，讲第 5 章",
+            recurrence = ScheduleRecurrence.WEEKLY,
+        ),
+        previewScheduleItem(
+            id = "schedule_preview_2",
+            title = "英语四级报名截止",
+            startDate = "2026-11-20",
+            startTime = "09:00",
+            endTime = "17:00",
+            location = "线上 · 教务处",
+        ),
+        previewScheduleItem(
+            id = "schedule_preview_3",
+            title = "小组项目答辩",
+            startDate = "2026-10-30",
+            startTime = "14:00",
+            endTime = "16:00",
+            location = "示例大学 · 实验楼 501",
+        ),
+        previewScheduleItem(
+            id = "schedule_preview_4",
+            title = "晨跑打卡",
+            startDate = "2026-11-10",
+            startTime = "06:30",
+            endTime = "07:10",
+            location = "东区操场",
+            recurrence = ScheduleRecurrence.DAILY,
+            enabled = false,
+        ),
+    ),
+    todayIso = PREVIEW_SCHEDULE_TODAY,
+)
+
+/** 单条跨天日程：元信息行走「跨天」文案分支。 */
+private fun previewScheduleGroupsCrossDay(): ScheduleListGroups = ScheduleListGrouper.group(
+    items = listOf(
+        previewScheduleItem(
+            id = "schedule_preview_cross_day",
+            title = "通宵备考自习室",
+            startDate = "2026-11-09",
+            endDate = "2026-11-10",
+            startTime = "22:00",
+            endTime = "01:00",
+            location = "示例大学 · 图书馆 24h 自修区",
+        ),
+    ),
+    todayIso = PREVIEW_SCHEDULE_TODAY,
+)
+
+/** 一档预览的公共身体：分组数据 + 外观档位。 */
+@Composable
+private fun PreviewScheduleListPage(
+    groups: ScheduleListGroups,
+    dark: Boolean = false,
+    textScale: Float = 1f,
+) {
+    QingyuPageTheme(isDark = dark, textScale = textScale) {
+        ScheduleListPage(
+            groups = groups,
+            onBack = {},
+            onAddSchedule = {},
+            onEditSchedule = {},
+            onDeleteSchedule = {},
+        )
+    }
+}
+
+// ── 单档：数据三态 × 亮色 ──────────────────────────────────────────────────
+
+@Suppress("unused")
+@Preview(name = "1 三组有数据", showBackground = true, widthDp = 400, heightDp = 900)
+@Composable
+private fun ScheduleListPagePreviewData() {
+    PreviewScheduleListPage(previewScheduleGroups())
+}
+
+@Suppress("unused")
+@Preview(name = "2 空态", showBackground = true, widthDp = 400, heightDp = 900)
+@Composable
+private fun ScheduleListPagePreviewEmpty() {
+    PreviewScheduleListPage(
+        groups = ScheduleListGroups(
+            upcoming = emptyList(),
+            past = emptyList(),
+            paused = emptyList(),
+        ),
+    )
+}
+
+@Suppress("unused")
+@Preview(name = "3 跨天日程", showBackground = true, widthDp = 400, heightDp = 900)
+@Composable
+private fun ScheduleListPagePreviewCrossDay() {
+    PreviewScheduleListPage(previewScheduleGroupsCrossDay())
+}
+
+// ── 单档：外观两档（以「三组有数据」为基准）─────────────────────────────────
+
+@Suppress("unused")
+@Preview(name = "4 暗色", showBackground = true, widthDp = 400, heightDp = 900)
+@Composable
+private fun ScheduleListPagePreviewDark() {
+    PreviewScheduleListPage(previewScheduleGroups(), dark = true)
+}
+
+@Suppress("unused")
+@Preview(name = "5 大字号 1.3", showBackground = true, widthDp = 400, heightDp = 900)
+@Composable
+private fun ScheduleListPagePreviewLargeText() {
+    PreviewScheduleListPage(previewScheduleGroups(), textScale = 1.3f)
+}
+
+// ── 总览：三态并排，一屏看完 ─────────────────────────────────────────────────
+
+/**
+ * 一屏总览：三组有数据 / 空态 / 暗色 横向并排，用来一眼比结构差异。
+ *
+ * 3 × 400dp + 2 × 16dp 间距 = 1232dp，所以画布给 1280dp。Studio 会等比缩小显示，
+ * **缩放后字看不清是正常的**——要看细节点上面 1~5 的单档标签。
+ */
+@Suppress("unused")
+@Preview(name = "0 总览·三态并排", showBackground = true, widthDp = 1280, heightDp = 900)
+@Composable
+private fun ScheduleListPagePreviewOverview() {
+    Row(
+        modifier = Modifier.fillMaxSize(),
+        horizontalArrangement = Arrangement.spacedBy(16.dp),
+    ) {
+        Box(Modifier.width(400.dp).fillMaxHeight()) {
+            PreviewScheduleListPage(previewScheduleGroups())
+        }
+        Box(Modifier.width(400.dp).fillMaxHeight()) {
+            PreviewScheduleListPage(
+                groups = ScheduleListGroups(
+                    upcoming = emptyList(),
+                    past = emptyList(),
+                    paused = emptyList(),
+                ),
+            )
+        }
+        Box(Modifier.width(400.dp).fillMaxHeight()) {
+            PreviewScheduleListPage(previewScheduleGroups(), dark = true)
+        }
     }
 }

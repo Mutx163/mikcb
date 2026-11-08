@@ -9,6 +9,8 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -27,12 +29,14 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import com.mutx163.qingyu.components.QingyuCard
 import com.mutx163.qingyu.components.QingyuPageList
 import com.mutx163.qingyu.components.QingyuPageScaffold
 import com.mutx163.qingyu.components.QingyuSectionTitle
+import com.mutx163.qingyu.components.QingyuPageTheme
 import com.mutx163.qingyu.components.QingyuWeightDelta
 import com.mutx163.qingyu.components.shiftWeight
 import com.mutx163.qingyu.core.Exam
@@ -569,4 +573,223 @@ private fun <T : Any> rememberLastNonNull(current: T?): T? {
     var shown by remember { mutableStateOf(current) }
     if (current != null) shown = current
     return shown
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// IDE 预览（2026-11-08，照 about/ContributorsPage.kt 样板铺）
+//
+// 只给实现阶段看效果，不进业务路径。覆盖两个维度：
+//
+//   数据状态 3 档：四场考试（进行中 / 今天 / 七天后 / 已结束）/ 空态 / 仅一场；
+//   外观 3 档：亮色、暗色、大字号 1.3。
+//
+// 为什么偏偏是这几档：
+//   · 暗色 —— 历史上出现过「白字落在白卡片上」（壳用无参 MiuixTheme，页面取色却走
+//     isSystemInDarkTheme()）；这一档就是防它复发；
+//   · 大字号 —— 「11月08日 周日 · 三教 204 · 座位 27」这类元信息行最先折行；
+//   · 空态 —— 空态卡片与列表两套布局，最容易只改了一条；
+//   · 仅一场 —— 右上角场次统计（「今日 N 场」/「共 N 场」）在只剩一场时不显示，是另一条分支。
+//
+// 视图状态一律由真实的 ExamListLogic.buildListViewState 组装（「今天」固定 2026-11-08），
+// 不手写排序与文案——否则预览好看而真机仍可能算错。
+// 日期用全限定 java.time.LocalDateTime（本文件不为预览添 import）。
+// 固定写法：主题一律包 QingyuPageTheme(isDark = …)，不要直接 MiuixTheme { }；
+// 字号用 QingyuPageTheme(textScale = …)，不用 @Preview(fontScale = …)；
+// 宽度按 400dp（本仓折行实测口径），高度给一屏多。
+// ─────────────────────────────────────────────────────────────────────────────
+
+/** 预览用假数据：一场考试。 */
+private fun previewExam(
+    id: String,
+    courseId: String,
+    name: String,
+    dateYear: Int,
+    dateMonth: Int,
+    dateDay: Int,
+    startTime: String,
+    endTime: String,
+    location: String,
+    seatNumber: String,
+): Exam = Exam(
+    id = id,
+    courseId = courseId,
+    name = name,
+    dateTime = java.time.LocalDateTime.of(dateYear, dateMonth, dateDay, 0, 0),
+    startTime = startTime,
+    endTime = endTime,
+    location = location,
+    seatNumber = seatNumber,
+    createdAt = java.time.LocalDateTime.of(2026, 10, 1, 8, 0),
+    updatedAt = java.time.LocalDateTime.of(2026, 10, 1, 8, 0),
+)
+
+/** 四场考试：进行中 / 今天 / 七天后 / 已结束（未结束按开始时刻正序，已结束倒序）。 */
+private fun previewExamListState(): ExamListViewState = ExamListLogic.buildListViewState(
+    exams = listOf(
+        previewExam(
+            id = "exam_preview_1",
+            courseId = "course_preview_1",
+            name = "高等数学（上）期末考试",
+            dateYear = 2026,
+            dateMonth = 11,
+            dateDay = 8,
+            startTime = "07:30",
+            endTime = "09:00",
+            location = "三教 204",
+            seatNumber = "27",
+        ),
+        previewExam(
+            id = "exam_preview_2",
+            courseId = "course_preview_2",
+            name = "大学英语四级口语",
+            dateYear = 2026,
+            dateMonth = 11,
+            dateDay = 8,
+            startTime = "14:00",
+            endTime = "16:00",
+            location = "外语楼 A302",
+            seatNumber = "08",
+        ),
+        previewExam(
+            id = "exam_preview_3",
+            courseId = "course_preview_3",
+            name = "线性代数期末考试",
+            dateYear = 2026,
+            dateMonth = 11,
+            dateDay = 15,
+            startTime = "09:00",
+            endTime = "11:00",
+            location = "三教 108",
+            seatNumber = "15",
+        ),
+        previewExam(
+            id = "exam_preview_4",
+            courseId = "course_preview_4",
+            name = "中国近现代史纲要期末考试",
+            dateYear = 2026,
+            dateMonth = 10,
+            dateDay = 30,
+            startTime = "14:00",
+            endTime = "16:00",
+            location = "文科楼 201",
+            seatNumber = "31",
+        ),
+    ),
+    courses = emptyList(),
+    semesterStart = null,
+    now = java.time.LocalDateTime.of(2026, 11, 8, 8, 0),
+)
+
+/** 仅一场（未结束也只有它）：右上角场次统计不显示。 */
+private fun previewExamListStateSingle(): ExamListViewState = ExamListLogic.buildListViewState(
+    exams = listOf(
+        previewExam(
+            id = "exam_preview_5",
+            courseId = "course_preview_3",
+            name = "线性代数期末考试",
+            dateYear = 2026,
+            dateMonth = 11,
+            dateDay = 15,
+            startTime = "09:00",
+            endTime = "11:00",
+            location = "三教 108",
+            seatNumber = "15",
+        ),
+    ),
+    courses = emptyList(),
+    semesterStart = null,
+    now = java.time.LocalDateTime.of(2026, 11, 8, 8, 0),
+)
+
+/** 一场都没有。 */
+private fun previewExamListStateEmpty(): ExamListViewState = ExamListLogic.buildListViewState(
+    exams = emptyList(),
+    courses = emptyList(),
+    semesterStart = null,
+    now = java.time.LocalDateTime.of(2026, 11, 8, 8, 0),
+)
+
+/** 一档预览的公共身体：视图状态 + 外观档位。 */
+@Composable
+private fun PreviewExamListPage(
+    viewState: ExamListViewState,
+    dark: Boolean = false,
+    textScale: Float = 1f,
+) {
+    QingyuPageTheme(isDark = dark, textScale = textScale) {
+        ExamListPage(
+            viewState = viewState,
+            onBack = {},
+            onAddExam = {},
+            onOpenExam = {},
+            onDeleteExam = {},
+        )
+    }
+}
+
+// ── 单档：数据三态 × 亮色 ──────────────────────────────────────────────────
+
+@Suppress("unused")
+@Preview(name = "1 四场考试", showBackground = true, widthDp = 400, heightDp = 900)
+@Composable
+private fun ExamListPagePreviewData() {
+    PreviewExamListPage(previewExamListState())
+}
+
+@Suppress("unused")
+@Preview(name = "2 空态", showBackground = true, widthDp = 400, heightDp = 900)
+@Composable
+private fun ExamListPagePreviewEmpty() {
+    PreviewExamListPage(previewExamListStateEmpty())
+}
+
+@Suppress("unused")
+@Preview(name = "3 仅一场", showBackground = true, widthDp = 400, heightDp = 900)
+@Composable
+private fun ExamListPagePreviewSingle() {
+    PreviewExamListPage(previewExamListStateSingle())
+}
+
+// ── 单档：外观两档（以「四场考试」为基准）──────────────────────────────────
+
+@Suppress("unused")
+@Preview(name = "4 暗色", showBackground = true, widthDp = 400, heightDp = 900)
+@Composable
+private fun ExamListPagePreviewDark() {
+    PreviewExamListPage(previewExamListState(), dark = true)
+}
+
+@Suppress("unused")
+@Preview(name = "5 大字号 1.3", showBackground = true, widthDp = 400, heightDp = 900)
+@Composable
+private fun ExamListPagePreviewLargeText() {
+    PreviewExamListPage(previewExamListState(), textScale = 1.3f)
+}
+
+// ── 总览：三态并排，一屏看完 ─────────────────────────────────────────────────
+
+/**
+ * 一屏总览：四场考试 / 空态 / 暗色 横向并排，用来一眼比结构差异。
+ *
+ * 3 × 400dp + 2 × 16dp 间距 = 1232dp，所以画布给 1280dp。Studio 会等比缩小显示，
+ * **缩放后字看不清是正常的**——要看细节点上面 1~5 的单档标签。
+ */
+@Suppress("unused")
+@Preview(name = "0 总览·三态并排", showBackground = true, widthDp = 1280, heightDp = 900)
+@Composable
+private fun ExamListPagePreviewOverview() {
+    Row(
+        modifier = Modifier.fillMaxSize(),
+        horizontalArrangement = Arrangement.spacedBy(16.dp),
+    ) {
+        Box(Modifier.width(400.dp).fillMaxHeight()) {
+            PreviewExamListPage(previewExamListState())
+        }
+        Box(Modifier.width(400.dp).fillMaxHeight()) {
+            PreviewExamListPage(previewExamListStateEmpty())
+        }
+        Box(Modifier.width(400.dp).fillMaxHeight()) {
+            PreviewExamListPage(previewExamListState(), dark = true)
+        }
+    }
 }

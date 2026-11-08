@@ -25,6 +25,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import com.mutx163.qingyu.components.QingyuCard
@@ -33,6 +34,7 @@ import com.mutx163.qingyu.components.QingyuPageCardMargin
 import com.mutx163.qingyu.components.rememberSheetMaxHeight
 import com.mutx163.qingyu.components.QingyuPageList
 import com.mutx163.qingyu.components.QingyuPageScaffold
+import com.mutx163.qingyu.components.QingyuPageTheme
 import com.mutx163.qingyu.components.QingyuSectionGap
 import com.mutx163.qingyu.components.QingyuSectionTitle
 import com.mutx163.qingyu.pages.export.ExportStrings
@@ -530,4 +532,79 @@ fun TransferPreviewDialog(
             }
         }
     }
+}
+
+// ── Android Studio 预览（@Preview）────────────────────────────────────────────
+//
+// 与 `ContributorsPage` 同一套口径：一个 `Preview<页面>` 承担「视图状态 + 外观档位」，
+// 下面每个 `@Preview` 只选一档。预览不接宿主：回调一律空实现，数据全是中文实义值。
+
+/** 预览用的迁移概览：一份在用课表、两套档案、三套模板、第 8 周。 */
+private fun previewTransferViewState(
+    isExporting: Boolean = false,
+    isImporting: Boolean = false,
+): DataTransferViewState = DataTransferViewState(
+    overview = TransferOverviewInput(
+        courseCount = 28,
+        activeProfileName = "2026 秋季课表",
+        profileCount = 2,
+        timeSchemeCount = 3,
+        currentWeek = 8,
+        semesterStartDate = null,
+    ),
+    timeSchemeCount = 3,
+    isExporting = isExporting,
+    isImporting = isImporting,
+    activeProfileName = "2026 秋季课表",
+)
+
+/** 一档预览的公共身体：视图状态 + 外观档位。 */
+@Composable
+private fun PreviewDataTransferPage(
+    viewState: DataTransferViewState,
+    dark: Boolean = false,
+    textScale: Float = 1f,
+) {
+    QingyuPageTheme(isDark = dark, textScale = textScale) {
+        DataTransferPage(
+            viewState = viewState,
+            onBack = {},
+            onExportCurrent = {},
+            onExportAllData = {},
+            onExportTimeTemplate = {},
+            onOpenIcsExport = {},
+            onChooseFileAndImport = {},
+            onQrSend = { _, _ -> },
+            onQrSendAll = {},
+            onQrScan = {},
+        )
+    }
+}
+
+@Suppress("unused")
+@Preview(name = "1 常态", showBackground = true, widthDp = 400, heightDp = 900)
+@Composable
+private fun DataTransferPagePreviewIdle() {
+    PreviewDataTransferPage(viewState = previewTransferViewState())
+}
+
+@Suppress("unused")
+@Preview(name = "2 导出中", showBackground = true, widthDp = 400, heightDp = 900)
+@Composable
+private fun DataTransferPagePreviewExporting() {
+    PreviewDataTransferPage(viewState = previewTransferViewState(isExporting = true))
+}
+
+@Suppress("unused")
+@Preview(name = "3 暗色", showBackground = true, widthDp = 400, heightDp = 900)
+@Composable
+private fun DataTransferPagePreviewDark() {
+    PreviewDataTransferPage(viewState = previewTransferViewState(), dark = true)
+}
+
+@Suppress("unused")
+@Preview(name = "4 大字号 1.3", showBackground = true, widthDp = 400, heightDp = 900)
+@Composable
+private fun DataTransferPagePreviewLargeText() {
+    PreviewDataTransferPage(viewState = previewTransferViewState(), textScale = 1.3f)
 }

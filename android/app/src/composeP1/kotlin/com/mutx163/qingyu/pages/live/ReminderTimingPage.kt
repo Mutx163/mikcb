@@ -12,10 +12,12 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.tooling.preview.Preview
 import com.mutx163.qingyu.components.QingyuCard
 import com.mutx163.qingyu.components.QingyuCardDefaults
 import com.mutx163.qingyu.components.QingyuPageList
 import com.mutx163.qingyu.components.QingyuPageScaffold
+import com.mutx163.qingyu.components.QingyuPageTheme
 import com.mutx163.qingyu.components.QingyuSectionTitle
 import com.mutx163.qingyu.theme.QingyuShapes
 import top.yukonga.miuix.kmp.preference.OverlayDropdownPreference
@@ -254,4 +256,88 @@ private fun ReminderGroup(
         insideMargin = PaddingValues(0.dp),
         content = content,
     )
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// IDE 预览（2026-11-08）
+//
+// 只给实现阶段看效果，不进业务路径。覆盖两个维度：
+//
+//   数据状态 2 档：默认（课中提醒开 ⇒ 三个下拉都在）/ 课中提醒关（少一个切入时机下拉）；
+//   外观 3 档：亮色、暗色、大字号 1.3。
+//
+// 为什么偏偏是这两档数据：「重点提醒切入时机」这一行只在课中提醒开着时才渲染，
+// 关掉后整页少一行——模型层的 OR 判据（两个字段任一为真即算开）最容易在这里改错。
+//
+// 固定写法：主题一律 QingyuPageTheme(isDark = …)、字号走 textScale 参数
+//（@Preview(fontScale = …) 绕过了应用的 appTextScale 口径）；宽度按 400dp。
+// 这里刻意用**无状态重载**（`state = …`）：状态化重载会额外清洗 + 回调落库，预览里不需要。
+// ─────────────────────────────────────────────────────────────────────────────
+
+/** 默认草稿：课中提醒开着，三个下拉与两侧摘要全部可见。 */
+private val previewReminderTimingDefault: ReminderTimingState = ReminderTimingState(
+    liveEnableBeforeClass = true,
+    liveEnableDuringClass = true,
+    liveEnableBeforeEnd = true,
+    liveClassReminderStartMinutes = 10,
+    liveShowDuringClassNotification = true,
+    livePromoteDuringClass = true,
+    liveShowBeforeClassMinutes = 20,
+    liveEndSecondsCountdownThreshold = 60,
+    liveDuringEndTimeDisplayMode = LiveDuringClassTimeDisplayMode.NEAREST,
+)
+
+/** 课中与下课提醒关掉（两个字段一起为 false）：整页少一行，状态栏通知那行的副句也换口径。 */
+private val previewReminderTimingDuringClassOff: ReminderTimingState =
+    previewReminderTimingDefault.copy(
+        liveEnableDuringClass = false,
+        liveEnableBeforeEnd = false,
+    )
+
+/** 一档预览的公共身体：草稿状态 + 外观档位。 */
+@Composable
+private fun PreviewLiveReminderTimingPage(
+    state: ReminderTimingState,
+    dark: Boolean = false,
+    textScale: Float = 1f,
+) {
+    QingyuPageTheme(isDark = dark, textScale = textScale) {
+        LiveReminderTimingPage(
+            state = state,
+            onStateChange = {},
+            onBack = {},
+        )
+    }
+}
+
+// ── 单档：两态 × 亮色 ──────────────────────────────────────────────────────
+
+@Suppress("unused")
+@Preview(name = "1 默认", showBackground = true, widthDp = 400, heightDp = 900)
+@Composable
+private fun LiveReminderTimingPagePreviewDefault() {
+    PreviewLiveReminderTimingPage(previewReminderTimingDefault)
+}
+
+@Suppress("unused")
+@Preview(name = "2 课中提醒关闭", showBackground = true, widthDp = 400, heightDp = 900)
+@Composable
+private fun LiveReminderTimingPagePreviewDuringClassOff() {
+    PreviewLiveReminderTimingPage(previewReminderTimingDuringClassOff)
+}
+
+// ── 单档：外观两档（以「默认」为基准）───────────────────────────────────────
+
+@Suppress("unused")
+@Preview(name = "3 暗色", showBackground = true, widthDp = 400, heightDp = 900)
+@Composable
+private fun LiveReminderTimingPagePreviewDark() {
+    PreviewLiveReminderTimingPage(previewReminderTimingDefault, dark = true)
+}
+
+@Suppress("unused")
+@Preview(name = "4 大字号 1.3", showBackground = true, widthDp = 400, heightDp = 900)
+@Composable
+private fun LiveReminderTimingPagePreviewLargeText() {
+    PreviewLiveReminderTimingPage(previewReminderTimingDefault, textScale = 1.3f)
 }

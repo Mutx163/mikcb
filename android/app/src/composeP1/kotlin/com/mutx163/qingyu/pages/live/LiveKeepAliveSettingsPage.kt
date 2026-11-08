@@ -27,11 +27,13 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.DpSize
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.mutx163.qingyu.components.QingyuCard
 import com.mutx163.qingyu.components.QingyuCardDefaults
 import com.mutx163.qingyu.components.QingyuPageList
 import com.mutx163.qingyu.components.QingyuPageScaffold
+import com.mutx163.qingyu.components.QingyuPageTheme
 import com.mutx163.qingyu.components.QingyuWeightDelta
 import com.mutx163.qingyu.components.shiftWeight
 import com.mutx163.qingyu.theme.QingyuIconColors
@@ -377,4 +379,123 @@ private fun toneColor(tone: LiveStatusTone): Int = when (tone) {
     LiveStatusTone.NEUTRAL -> QingyuIconColors.BLUE
     LiveStatusTone.POSITIVE -> QingyuIconColors.GREEN
     LiveStatusTone.CAUTION -> QingyuIconColors.ORANGE
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// IDE 预览（2026-11-08）
+//
+// 只给实现阶段看效果，不进业务路径。覆盖两个维度：
+//
+//   数据状态 3 档：未开启服务（行尾出「去开启」）/ 已开启 + 勿扰已授权 / 勿扰未授权；
+//   外观 3 档：亮色、暗色、大字号 1.3。
+//
+// 为什么偏偏是这几档：
+//   · 已开启 / 未开启 —— 同一个行首徽标在绿勾与橙图标之间切换，「去开启」按钮还只在
+//     未开启时出现，是最容易改错的一处；
+//   · 勿扰两档 —— 未授权是警示色、已授权是正向色，色靠模型层 tone 决定，预览能直接看错；
+//   · 暗色 / 大字号 —— 页面取色走 isSystemInDarkTheme()，只有 QingyuPageTheme 会把
+//     LocalConfiguration 的 uiMode 一起改写；行内文案的折行点只有在字放大后才暴露。
+//
+// 固定写法：主题一律 QingyuPageTheme(isDark = …)、字号走 textScale 参数
+//（@Preview(fontScale = …) 绕过了应用的 appTextScale 口径）；宽度按 400dp。
+// 这里刻意用**无状态重载**（`state = …`）：状态化重载里有 3 × 450ms 的探测重试，
+// 预览里跑它既慢又会一直转在「未探测」上。
+// ─────────────────────────────────────────────────────────────────────────────
+
+/** 一档预览：服务开关组合 + 是否画勿扰权限行；[name] 只用来给预览命名。 */
+private data class PreviewKeepAliveState(
+    val name: String,
+    val state: LiveKeepAliveState,
+    val showDoNotDisturbAccessRow: Boolean,
+)
+
+private val previewKeepAliveStates: List<PreviewKeepAliveState> = listOf(
+    PreviewKeepAliveState(
+        name = "未开启服务",
+        state = LiveKeepAliveState(hideFromRecents = false),
+        showDoNotDisturbAccessRow = false,
+    ),
+    PreviewKeepAliveState(
+        name = "已开启·勿扰已授权",
+        state = LiveKeepAliveState(
+            hideFromRecents = true,
+            accessibilityEnabled = true,
+            accessibilityChecked = true,
+            doNotDisturbAccessGranted = true,
+            doNotDisturbAccessChecked = true,
+        ),
+        showDoNotDisturbAccessRow = true,
+    ),
+    PreviewKeepAliveState(
+        name = "勿扰未授权",
+        state = LiveKeepAliveState(
+            hideFromRecents = true,
+            accessibilityEnabled = true,
+            accessibilityChecked = true,
+            doNotDisturbAccessGranted = false,
+            doNotDisturbAccessChecked = true,
+        ),
+        showDoNotDisturbAccessRow = true,
+    ),
+)
+
+private fun previewKeepAliveState(name: String): PreviewKeepAliveState =
+    previewKeepAliveStates.first { it.name == name }
+
+/** 一档预览的公共身体：数据状态 + 外观档位。 */
+@Composable
+private fun PreviewLiveKeepAliveSettingsPage(
+    state: PreviewKeepAliveState,
+    dark: Boolean = false,
+    textScale: Float = 1f,
+) {
+    QingyuPageTheme(isDark = dark, textScale = textScale) {
+        LiveKeepAliveSettingsPage(
+            state = state.state,
+            onHideFromRecentsChange = {},
+            onOpenAccessibilitySettings = {},
+            onBack = {},
+            showDoNotDisturbAccessRow = state.showDoNotDisturbAccessRow,
+            onOpenDoNotDisturbAccessSettings = {},
+        )
+    }
+}
+
+// ── 单档：三态 × 亮色 ──────────────────────────────────────────────────────
+
+@Suppress("unused")
+@Preview(name = "1 未开启服务", showBackground = true, widthDp = 400, heightDp = 900)
+@Composable
+private fun LiveKeepAliveSettingsPagePreviewDisabled() {
+    PreviewLiveKeepAliveSettingsPage(previewKeepAliveState("未开启服务"))
+}
+
+@Suppress("unused")
+@Preview(name = "2 已开启·勿扰已授权", showBackground = true, widthDp = 400, heightDp = 900)
+@Composable
+private fun LiveKeepAliveSettingsPagePreviewEnabled() {
+    PreviewLiveKeepAliveSettingsPage(previewKeepAliveState("已开启·勿扰已授权"))
+}
+
+@Suppress("unused")
+@Preview(name = "3 勿扰未授权", showBackground = true, widthDp = 400, heightDp = 900)
+@Composable
+private fun LiveKeepAliveSettingsPagePreviewDoNotDisturbDenied() {
+    PreviewLiveKeepAliveSettingsPage(previewKeepAliveState("勿扰未授权"))
+}
+
+// ── 单档：外观两档（以「未开启服务」为基准）─────────────────────────────────
+
+@Suppress("unused")
+@Preview(name = "4 暗色", showBackground = true, widthDp = 400, heightDp = 900)
+@Composable
+private fun LiveKeepAliveSettingsPagePreviewDark() {
+    PreviewLiveKeepAliveSettingsPage(previewKeepAliveState("未开启服务"), dark = true)
+}
+
+@Suppress("unused")
+@Preview(name = "5 大字号 1.3", showBackground = true, widthDp = 400, heightDp = 900)
+@Composable
+private fun LiveKeepAliveSettingsPagePreviewLargeText() {
+    PreviewLiveKeepAliveSettingsPage(previewKeepAliveState("未开启服务"), textScale = 1.3f)
 }

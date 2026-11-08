@@ -24,6 +24,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.mutx163.qingyu.components.QingyuCard
 import com.mutx163.qingyu.components.QingyuCardDefaults
@@ -31,6 +32,7 @@ import com.mutx163.qingyu.components.QingyuGlassIconButton
 import com.mutx163.qingyu.components.QingyuPageCardMargin
 import com.mutx163.qingyu.components.QingyuPageList
 import com.mutx163.qingyu.components.QingyuPageScaffold
+import com.mutx163.qingyu.components.QingyuPageTheme
 import com.mutx163.qingyu.components.QingyuSectionGap
 import com.mutx163.qingyu.components.QingyuSectionTitle
 import com.mutx163.qingyu.components.QingyuWeightDelta
@@ -453,3 +455,116 @@ private fun SecondaryButton(
  * 它是占位符而不是句子，ARB 里也没有对应键，所以不做本地化。
  */
 private const val NO_SECTION_PLACEHOLDER = "-"
+
+// ── Android Studio 预览（@Preview）────────────────────────────────────────────
+//
+// 与 `ContributorsPage` 同一套口径：一个 `Preview<页面>` 承担「模型 + 外观档位」，
+// 下面每个 `@Preview` 只选一档。预览不接宿主：回调一律空实现，数据全是中文实义值。
+//
+// 模板实例走 `TimeScheme.fromJson`（写全限定名是刻意的：预览段只允许新增
+// `Preview` / `QingyuPageTheme` 两个 import，不为预览再引 core 的构造工具）。
+
+/** 预览用节次表：按 [count] 截取前几节，全是 45 分钟一节。 */
+private fun previewSectionMaps(count: Int): List<Map<String, String>> {
+    val template = listOf(
+        "08:00" to "08:45",
+        "08:55" to "09:40",
+        "10:00" to "10:45",
+        "10:55" to "11:40",
+        "14:00" to "14:45",
+    )
+    return template.take(count).map { (start, end) -> mapOf("startTime" to start, "endTime" to end) }
+}
+
+/** 预览用模板清单：一套 5 节、一套 4 节、一套没有节次（触发卡片上的「-」占位）。 */
+private fun previewManagedSchemes(): List<com.mutx163.qingyu.core.TimeScheme> = listOf(
+    com.mutx163.qingyu.core.TimeScheme.fromJson(
+        mapOf(
+            "id" to "scheme-winter",
+            "name" to "秋冬作息",
+            "sections" to previewSectionMaps(5),
+        ),
+    ),
+    com.mutx163.qingyu.core.TimeScheme.fromJson(
+        mapOf(
+            "id" to "scheme-spring",
+            "name" to "春夏作息",
+            "sections" to previewSectionMaps(4),
+        ),
+    ),
+    com.mutx163.qingyu.core.TimeScheme.fromJson(
+        mapOf(
+            "id" to "scheme-exam",
+            "name" to "考试周作息",
+            "sections" to emptyList<Map<String, String>>(),
+        ),
+    ),
+)
+
+/** 预览用模型：[empty] = 一套模板都没有（空态）；否则三套模板 + 使用中标记。 */
+private fun previewManagementModel(empty: Boolean = false): TimeSchemeManagementModel =
+    TimeSchemeManagementModel(
+        schemes = if (empty) emptyList() else previewManagedSchemes(),
+        activeSchemeId = if (empty) null else "scheme-winter",
+        locationGroupCount = if (empty) 0 else 3,
+        dateRuleCount = if (empty) 0 else 2,
+        hasActiveDateRule = !empty,
+    )
+
+/** 一档预览的公共身体：模型 + 首装载开关 + 外观档位。 */
+@Composable
+private fun PreviewTimeSchemeManagementPage(
+    model: TimeSchemeManagementModel,
+    isLoading: Boolean = false,
+    dark: Boolean = false,
+    textScale: Float = 1f,
+) {
+    QingyuPageTheme(isDark = dark, textScale = textScale) {
+        TimeSchemeManagementPage(
+            model = model,
+            onBack = {},
+            onCreate = {},
+            onOpenMenu = {},
+            onApply = {},
+            onEditSections = {},
+            onOpenLocationEntry = {},
+            onOpenDateRules = {},
+            isLoading = isLoading,
+        )
+    }
+}
+
+@Suppress("unused")
+@Preview(name = "1 有模板", showBackground = true, widthDp = 400, heightDp = 900)
+@Composable
+private fun TimeSchemeManagementPagePreviewSchemes() {
+    PreviewTimeSchemeManagementPage(model = previewManagementModel())
+}
+
+@Suppress("unused")
+@Preview(name = "2 空态", showBackground = true, widthDp = 400, heightDp = 900)
+@Composable
+private fun TimeSchemeManagementPagePreviewEmpty() {
+    PreviewTimeSchemeManagementPage(model = previewManagementModel(empty = true))
+}
+
+@Suppress("unused")
+@Preview(name = "3 首装载中", showBackground = true, widthDp = 400, heightDp = 900)
+@Composable
+private fun TimeSchemeManagementPagePreviewLoading() {
+    PreviewTimeSchemeManagementPage(model = previewManagementModel(), isLoading = true)
+}
+
+@Suppress("unused")
+@Preview(name = "4 暗色", showBackground = true, widthDp = 400, heightDp = 900)
+@Composable
+private fun TimeSchemeManagementPagePreviewDark() {
+    PreviewTimeSchemeManagementPage(model = previewManagementModel(), dark = true)
+}
+
+@Suppress("unused")
+@Preview(name = "5 大字号 1.3", showBackground = true, widthDp = 400, heightDp = 900)
+@Composable
+private fun TimeSchemeManagementPagePreviewLargeText() {
+    PreviewTimeSchemeManagementPage(model = previewManagementModel(), textScale = 1.3f)
+}

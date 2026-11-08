@@ -16,12 +16,14 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.mutx163.qingyu.components.QingyuCard
 import com.mutx163.qingyu.components.QingyuPageCardMargin
 import com.mutx163.qingyu.components.QingyuPageList
 import com.mutx163.qingyu.components.QingyuPageScaffold
+import com.mutx163.qingyu.components.QingyuPageTheme
 import com.mutx163.qingyu.components.QingyuWeightDelta
 import com.mutx163.qingyu.components.shiftWeight
 import com.mutx163.qingyu.theme.QingyuTheme
@@ -191,4 +193,104 @@ private fun ProgressBar(fraction: Float) {
             )
         }
     }
+}
+
+// ── Android Studio 预览（@Preview）────────────────────────────────────────────
+//
+// 与 `ContributorsPage` 同一套口径：一个 `Preview<页面>` 承担「接收状态 + 外观档位」，
+// 下面每个 `@Preview` 只选一档。预览不接宿主：回调一律空实现。
+//
+// 相机是宿主传进来的槽位（CameraX 的权限与生命周期在壳层），预览里换成一行占位说明，
+// 页面自己的进度、错误与完成态才看得清。
+
+/** 预览用的相机槽位：预览环境不起相机，只说明这里本来是什么。 */
+@Composable
+private fun PreviewCameraSlot() {
+    Text(text = "相机预览（预览里不启动相机）", style = MiuixTheme.textStyles.body2)
+}
+
+/** 一档预览的公共身体：接收状态 + 外观档位。 */
+@Composable
+private fun PreviewQrTransferScanPage(
+    model: QrTransferScanModel,
+    dark: Boolean = false,
+    textScale: Float = 1f,
+) {
+    QingyuPageTheme(isDark = dark, textScale = textScale) {
+        QrTransferScanPage(
+            model = model,
+            onBack = {},
+            onRestart = {},
+            onImportFullBackup = {},
+            cameraSlot = { PreviewCameraSlot() },
+        )
+    }
+}
+
+@Suppress("unused")
+@Preview(name = "1 收集中", showBackground = true, widthDp = 400, heightDp = 900)
+@Composable
+private fun QrTransferScanPagePreviewScanning() {
+    PreviewQrTransferScanPage(
+        model = QrTransferScanModel(
+            receivedFrames = 18,
+            decodedSymbols = 12,
+            totalSymbols = 40,
+        ),
+    )
+}
+
+@Suppress("unused")
+@Preview(name = "2 已收齐", showBackground = true, widthDp = 400, heightDp = 900)
+@Composable
+private fun QrTransferScanPagePreviewComplete() {
+    PreviewQrTransferScanPage(
+        model = QrTransferScanModel(
+            receivedFrames = 40,
+            decodedSymbols = 40,
+            totalSymbols = 40,
+        ),
+    )
+}
+
+@Suppress("unused")
+@Preview(name = "3 校验失败", showBackground = true, widthDp = 400, heightDp = 900)
+@Composable
+private fun QrTransferScanPagePreviewFailed() {
+    PreviewQrTransferScanPage(
+        model = QrTransferScanModel(
+            receivedFrames = 23,
+            decodedSymbols = 20,
+            totalSymbols = 40,
+            error = QrTransferScanModel.Error.CHECKSUM_FAILED,
+        ),
+    )
+}
+
+@Suppress("unused")
+@Preview(name = "4 暗色", showBackground = true, widthDp = 400, heightDp = 900)
+@Composable
+private fun QrTransferScanPagePreviewDark() {
+    PreviewQrTransferScanPage(
+        model = QrTransferScanModel(
+            receivedFrames = 18,
+            decodedSymbols = 12,
+            totalSymbols = 40,
+        ),
+        dark = true,
+    )
+}
+
+@Suppress("unused")
+@Preview(name = "5 大字号 1.3", showBackground = true, widthDp = 400, heightDp = 900)
+@Composable
+private fun QrTransferScanPagePreviewLargeText() {
+    PreviewQrTransferScanPage(
+        model = QrTransferScanModel(
+            receivedFrames = 18,
+            decodedSymbols = 12,
+            totalSymbols = 40,
+        ),
+        textScale = 1.3f,
+    )
 }

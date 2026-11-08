@@ -11,11 +11,13 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
@@ -32,6 +34,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import com.mutx163.qingyu.components.QingyuCard
@@ -1106,5 +1109,133 @@ private fun formatScheduleDateDisplay(iso: String): String {
     } else {
         "${date.year}${TaskStrings.datePickerYear}" +
             "${date.monthValue}${TaskStrings.datePickerMonth}${date.dayOfMonth}${TaskStrings.datePickerDay}"
+    }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// IDE 预览（2026-11-08，照 about/ContributorsPage.kt 样板铺）
+//
+// 只给实现阶段看效果，不进业务路径。覆盖两个维度：
+//
+//   数据状态 3 档：新建空表单 / 编辑已有日程 / 提醒权限缺失；
+//   外观 3 档：亮色、暗色、大字号 1.3。
+//
+// 为什么偏偏是这几档：
+//   · 暗色 —— 历史上出现过「白字落在白卡片上」（壳用无参 MiuixTheme，页面取色却走
+//     isSystemInDarkTheme()）；这一档就是防它复发；
+//   · 大字号 —— 快捷模板横条与「19:00 - 21:00」这类行内值最先被挤掉；
+//   · 新建 / 编辑 —— 标题、右上动作与顶部说明两套文案，且编辑多了删除入口；
+//   · 权限缺失 —— 提醒卡片下多一行「检查通知权限」，只在真机权限被拒时出现。
+//
+// 固定写法：主题一律包 QingyuPageTheme(isDark = …)，不要直接 MiuixTheme { }；
+// 字号用 QingyuPageTheme(textScale = …)，不用 @Preview(fontScale = …)；
+// 宽度按 400dp（本仓折行实测口径），高度给一屏多。
+// ─────────────────────────────────────────────────────────────────────────────
+
+/** 预览用假数据：编辑态打开的一条每周重复日程。 */
+private fun previewScheduleItem(): ScheduleItemData = ScheduleItemData(
+    id = "schedule_preview_edit",
+    title = "高等数学辅导",
+    location = "示例大学 · 三教 204",
+    note = "带习题册，讲第 5 章",
+    startDate = "2026-11-09",
+    endDate = "2026-12-28",
+    startTime = "19:00",
+    endTime = "21:00",
+    color = "#6366F1",
+    recurrence = ScheduleRecurrence.WEEKLY,
+    reminderMinutesBefore = 15,
+    enabled = true,
+)
+
+/** 一档预览的公共身体：数据状态 + 外观档位。 */
+@Composable
+private fun PreviewAddScheduleItemPage(
+    scheduleItem: ScheduleItemData? = null,
+    reminderPermissionMissing: Boolean = false,
+    onRequestNotificationPermission: (() -> Unit)? = null,
+    dark: Boolean = false,
+    textScale: Float = 1f,
+) {
+    QingyuPageTheme(isDark = dark, textScale = textScale) {
+        AddScheduleItemPage(
+            scheduleItem = scheduleItem,
+            initialDate = "2026-11-09",
+            onBack = {},
+            onSave = { _, _ -> },
+            reminderPermissionMissing = reminderPermissionMissing,
+            onRequestNotificationPermission = onRequestNotificationPermission,
+        )
+    }
+}
+
+// ── 单档：数据三态 × 亮色 ──────────────────────────────────────────────────
+
+@Suppress("unused")
+@Preview(name = "1 新建空表单", showBackground = true, widthDp = 400, heightDp = 900)
+@Composable
+private fun AddScheduleItemPagePreviewCreate() {
+    PreviewAddScheduleItemPage()
+}
+
+@Suppress("unused")
+@Preview(name = "2 编辑已有日程", showBackground = true, widthDp = 400, heightDp = 900)
+@Composable
+private fun AddScheduleItemPagePreviewEdit() {
+    PreviewAddScheduleItemPage(scheduleItem = previewScheduleItem())
+}
+
+@Suppress("unused")
+@Preview(name = "3 提醒权限缺失", showBackground = true, widthDp = 400, heightDp = 900)
+@Composable
+private fun AddScheduleItemPagePreviewReminderPermissionMissing() {
+    PreviewAddScheduleItemPage(
+        scheduleItem = previewScheduleItem(),
+        reminderPermissionMissing = true,
+        onRequestNotificationPermission = {},
+    )
+}
+
+// ── 单档：外观两档（以「编辑已有日程」为基准）──────────────────────────────
+
+@Suppress("unused")
+@Preview(name = "4 暗色", showBackground = true, widthDp = 400, heightDp = 900)
+@Composable
+private fun AddScheduleItemPagePreviewDark() {
+    PreviewAddScheduleItemPage(scheduleItem = previewScheduleItem(), dark = true)
+}
+
+@Suppress("unused")
+@Preview(name = "5 大字号 1.3", showBackground = true, widthDp = 400, heightDp = 900)
+@Composable
+private fun AddScheduleItemPagePreviewLargeText() {
+    PreviewAddScheduleItemPage(scheduleItem = previewScheduleItem(), textScale = 1.3f)
+}
+
+// ── 总览：三态并排，一屏看完 ─────────────────────────────────────────────────
+
+/**
+ * 一屏总览：新建 / 编辑 / 暗色 横向并排，用来一眼比结构差异。
+ *
+ * 3 × 400dp + 2 × 16dp 间距 = 1232dp，所以画布给 1280dp。Studio 会等比缩小显示，
+ * **缩放后字看不清是正常的**——要看细节点上面 1~5 的单档标签。
+ */
+@Suppress("unused")
+@Preview(name = "0 总览·三态并排", showBackground = true, widthDp = 1280, heightDp = 900)
+@Composable
+private fun AddScheduleItemPagePreviewOverview() {
+    Row(
+        modifier = Modifier.fillMaxSize(),
+        horizontalArrangement = Arrangement.spacedBy(16.dp),
+    ) {
+        Box(Modifier.width(400.dp).fillMaxHeight()) {
+            PreviewAddScheduleItemPage()
+        }
+        Box(Modifier.width(400.dp).fillMaxHeight()) {
+            PreviewAddScheduleItemPage(scheduleItem = previewScheduleItem())
+        }
+        Box(Modifier.width(400.dp).fillMaxHeight()) {
+            PreviewAddScheduleItemPage(scheduleItem = previewScheduleItem(), dark = true)
+        }
     }
 }

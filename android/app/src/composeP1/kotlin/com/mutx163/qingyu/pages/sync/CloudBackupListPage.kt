@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -24,11 +25,13 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.mutx163.qingyu.components.QingyuCard
 import com.mutx163.qingyu.components.QingyuPageList
 import com.mutx163.qingyu.components.QingyuPageScaffold
+import com.mutx163.qingyu.components.QingyuPageTheme
 import com.mutx163.qingyu.components.QingyuWeightDelta
 import com.mutx163.qingyu.components.shiftWeight
 import com.mutx163.qingyu.theme.QingyuTheme
@@ -357,4 +360,200 @@ private fun DetailLine(text: String, dark: Boolean) {
         style = MiuixTheme.textStyles.footnote1,
         color = Color(QingyuTheme.secondaryText(dark)),
     )
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// IDE 预览（2026-11-08）
+//
+// 只给实现阶段看效果，不进业务路径。覆盖两个维度：
+//
+//   数据状态 4 档：有备份（可撤销恢复）/ 空列表 / 加载中 / 刷新失败（列表留着缓存）；
+//   外观 3 档：亮色、暗色、大字号 1.3。
+//
+// 为什么偏偏是这几档：
+//   · 空列表 —— 只有「还没有备份版本」一句，没有按钮，最容易被改错成不可操作；
+//   · 刷新失败 —— errorText 在两个分支都要有出口：空态顶替空文案 + 重试，
+//     非空列表顶部出轻量错误条 + 重试（列表照常画缓存）；
+//   · 可撤销恢复 —— 撤销卡在列表**外面**，空态 / 加载中也要能看见；
+//   · 暗色 / 大字号 —— 页面取色走 isSystemInDarkTheme()，只有 QingyuPageTheme 会把
+//     LocalConfiguration 的 uiMode 一起改写；行内文案的折行点只在字放大后才暴露。
+//
+// 固定写法：主题一律 QingyuPageTheme(isDark = …)、字号走 textScale 参数
+//（@Preview(fontScale = …) 绕过了应用的 appTextScale 口径）；宽度按 400dp（本仓折行实测口径）。
+//
+// 数据一律走 `CloudBackupListLogic.buildListViewState`，不手工拼 viewState：
+// 排序、当前版本徽标、副标题都在模型层算，手工拼等于绕过被测代码。
+// ─────────────────────────────────────────────────────────────────────────────
+
+/** 预览用三份备份：当前版本 + 两台设备的旧备份，全用中文实义值。 */
+private fun previewBackupEntries(): List<CloudBackupEntryModel> = listOf(
+    CloudBackupEntryModel(
+        id = "backup-current",
+        fileName = "history/2026-11-08T09-12.mikcb",
+        exportedAtIso = "2026-11-08T09:12:00",
+        contentSha256 = "a1b2c3d4",
+        deviceId = "device-demo-1",
+        deviceLabel = "示例手机",
+        appVersion = "1.0.0",
+        isCurrent = true,
+        source = CloudBackupSource.MANUAL,
+        profileCount = 3,
+        courseCount = 42,
+    ),
+    CloudBackupEntryModel(
+        id = "backup-2",
+        fileName = "history/2026-11-07T21-40.mikcb",
+        exportedAtIso = "2026-11-07T21:40:00",
+        contentSha256 = "e5f6a7b8",
+        deviceId = "device-demo-2",
+        deviceLabel = "示例平板",
+        appVersion = "1.0.0",
+        isCurrent = false,
+        source = CloudBackupSource.AUTO,
+        profileCount = 2,
+        courseCount = 36,
+    ),
+    CloudBackupEntryModel(
+        id = "backup-3",
+        fileName = "history/2026-11-06T07-05.mikcb",
+        exportedAtIso = "2026-11-06T07:05:00",
+        contentSha256 = "c9d0e1f2",
+        deviceId = "device-demo-1",
+        deviceLabel = "示例手机",
+        appVersion = "0.9.8",
+        isCurrent = false,
+        source = CloudBackupSource.AUTO,
+        profileCount = 2,
+        courseCount = 30,
+    ),
+)
+
+/** 一档预览：模型层输入；[name] 只用来给预览命名，不参与渲染。 */
+private data class PreviewBackupListState(
+    val name: String,
+    val entries: List<CloudBackupEntryModel>,
+    val isLoading: Boolean = false,
+    val isCreatingBackup: Boolean = false,
+    val errorCode: String? = null,
+    val canUndoRestore: Boolean = false,
+)
+
+private val previewBackupListStates: List<PreviewBackupListState> = listOf(
+    PreviewBackupListState(
+        name = "有备份·可撤销恢复",
+        entries = previewBackupEntries(),
+        canUndoRestore = true,
+    ),
+    PreviewBackupListState(
+        name = "空列表",
+        entries = emptyList(),
+    ),
+    PreviewBackupListState(
+        name = "加载中",
+        entries = emptyList(),
+        isLoading = true,
+    ),
+    PreviewBackupListState(
+        name = "刷新失败·留着缓存",
+        entries = previewBackupEntries(),
+        errorCode = "connection_timeout",
+    ),
+)
+
+private fun previewBackupListState(name: String): PreviewBackupListState =
+    previewBackupListStates.first { it.name == name }
+
+/** 一档预览的公共身体：数据状态 + 外观档位。 */
+@Composable
+private fun PreviewCloudBackupListPage(
+    state: PreviewBackupListState,
+    dark: Boolean = false,
+    textScale: Float = 1f,
+) {
+    QingyuPageTheme(isDark = dark, textScale = textScale) {
+        CloudBackupListPage(
+            viewState = CloudBackupListLogic.buildListViewState(
+                entries = state.entries,
+                isLoading = state.isLoading,
+                isCreatingBackup = state.isCreatingBackup,
+                errorCode = state.errorCode,
+                canUndoRestore = state.canUndoRestore,
+            ),
+            onBack = {},
+            onCreateBackup = {},
+            onOpenBackup = {},
+            onUndoRestore = {},
+            onRetryRefresh = {},
+        )
+    }
+}
+
+// ── 单档：四态 × 亮色 ──────────────────────────────────────────────────────
+
+@Suppress("unused")
+@Preview(name = "1 有备份·可撤销恢复", showBackground = true, widthDp = 400, heightDp = 900)
+@Composable
+private fun CloudBackupListPagePreviewData() {
+    PreviewCloudBackupListPage(previewBackupListState("有备份·可撤销恢复"))
+}
+
+@Suppress("unused")
+@Preview(name = "2 空列表", showBackground = true, widthDp = 400, heightDp = 900)
+@Composable
+private fun CloudBackupListPagePreviewEmpty() {
+    PreviewCloudBackupListPage(previewBackupListState("空列表"))
+}
+
+@Suppress("unused")
+@Preview(name = "3 加载中", showBackground = true, widthDp = 400, heightDp = 900)
+@Composable
+private fun CloudBackupListPagePreviewLoading() {
+    PreviewCloudBackupListPage(previewBackupListState("加载中"))
+}
+
+@Suppress("unused")
+@Preview(name = "4 刷新失败·留着缓存", showBackground = true, widthDp = 400, heightDp = 900)
+@Composable
+private fun CloudBackupListPagePreviewRefreshFailed() {
+    PreviewCloudBackupListPage(previewBackupListState("刷新失败·留着缓存"))
+}
+
+// ── 单档：外观两档（以「有备份」为基准）─────────────────────────────────────
+
+@Suppress("unused")
+@Preview(name = "5 暗色", showBackground = true, widthDp = 400, heightDp = 900)
+@Composable
+private fun CloudBackupListPagePreviewDark() {
+    PreviewCloudBackupListPage(previewBackupListState("有备份·可撤销恢复"), dark = true)
+}
+
+@Suppress("unused")
+@Preview(name = "6 大字号 1.3", showBackground = true, widthDp = 400, heightDp = 900)
+@Composable
+private fun CloudBackupListPagePreviewLargeText() {
+    PreviewCloudBackupListPage(previewBackupListState("有备份·可撤销恢复"), textScale = 1.3f)
+}
+
+// ── 总览：四态并排，一屏看完 ────────────────────────────────────────────────
+
+/**
+ * 一屏总览：四种状态横向并排，用来一眼比结构差异（撤销卡 / 错误条 / 进度圈谁在）。
+ *
+ * 4 × 400dp + 3 × 16dp 间距 = 1648dp，所以画布给 1700dp。Studio 会等比缩小显示，
+ * **缩放后字看不清是正常的**——要看细节点上面 1~6 的单档标签。
+ */
+@Suppress("unused")
+@Preview(name = "0 总览·四态并排", showBackground = true, widthDp = 1700, heightDp = 900)
+@Composable
+private fun CloudBackupListPagePreviewOverview() {
+    Row(
+        modifier = Modifier.fillMaxSize(),
+        horizontalArrangement = Arrangement.spacedBy(16.dp),
+    ) {
+        for (state in previewBackupListStates) {
+            Box(Modifier.width(400.dp).fillMaxHeight()) {
+                PreviewCloudBackupListPage(state)
+            }
+        }
+    }
 }

@@ -20,6 +20,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.mutx163.qingyu.components.QingyuCard
@@ -28,6 +29,7 @@ import com.mutx163.qingyu.components.QingyuGlassIconButton
 import com.mutx163.qingyu.components.QingyuPageCardMargin
 import com.mutx163.qingyu.components.QingyuPageList
 import com.mutx163.qingyu.components.QingyuPageScaffold
+import com.mutx163.qingyu.components.QingyuPageTheme
 import com.mutx163.qingyu.components.QingyuSectionTitle
 import com.mutx163.qingyu.components.QingyuWeightDelta
 import com.mutx163.qingyu.components.shiftWeight
@@ -245,4 +247,114 @@ private fun GroupCardView(
             }
         }
     }
+}
+
+// ── Android Studio 预览（@Preview）────────────────────────────────────────────
+//
+// 与 `ContributorsPage` 同一套口径：一个 `Preview<页面>` 承担「示例数据 + 外观档位」，
+// 下面每个 `@Preview` 只选一档。预览不接宿主：回调一律空实现，数据全是中文实义值。
+//
+// 地点组用 `LocationTimeGroup.fromJson` 装配（写全限定名是刻意的：预览段只允许新增
+// `Preview` / `QingyuPageTheme` 两个 import，本文件原本没引 core，不为预览再补一条）。
+
+/** 预览用的模板名表（id → 名字）：故意漏掉 `scheme-deleted`，让「未知时间模板」兜底露出来。 */
+private fun previewSchemeNames(): Map<String, String> = mapOf(
+    "scheme-winter" to "秋冬作息",
+    "scheme-spring" to "春夏作息",
+)
+
+/** 预览用一个地点组（[keywords] 里每项是「关键词 to 匹配方式」）。 */
+private fun previewGroup(
+    id: String,
+    name: String,
+    schemeId: String,
+    enabled: Boolean = true,
+    keywords: List<Pair<String, String>> = emptyList(),
+): com.mutx163.qingyu.core.LocationTimeGroup =
+    com.mutx163.qingyu.core.LocationTimeGroup.fromJson(
+        mapOf(
+            "id" to id,
+            "name" to name,
+            "timeSchemeId" to schemeId,
+            "enabled" to enabled,
+            "keywords" to keywords.map { (pattern, mode) ->
+                mapOf("pattern" to pattern, "mode" to mode)
+            },
+        ),
+    )
+
+/** 预览用的地点组：有关键词的、只绑模板的、停用且模板已删的，三种卡面各来一张。 */
+private fun previewLocationGroups(): List<com.mutx163.qingyu.core.LocationTimeGroup> = listOf(
+    previewGroup(
+        id = "group-arts",
+        name = "艺术楼专业课",
+        schemeId = "scheme-winter",
+        keywords = listOf("艺术楼" to "prefix", "琴房" to "contains"),
+    ),
+    previewGroup(
+        id = "group-lab",
+        name = "实验楼晚课",
+        schemeId = "scheme-spring",
+        keywords = listOf("实验楼" to "prefix"),
+    ),
+    previewGroup(
+        id = "group-stadium",
+        name = "体育馆早操",
+        schemeId = "scheme-deleted",
+        enabled = false,
+    ),
+)
+
+/** 一档预览的公共身体：模型 + 外观档位。 */
+@Composable
+private fun PreviewLocationTimeMatchPage(
+    model: LocationTimeMatchModel,
+    dark: Boolean = false,
+    textScale: Float = 1f,
+) {
+    QingyuPageTheme(isDark = dark, textScale = textScale) {
+        LocationTimeMatchPage(
+            model = model,
+            onBack = {},
+            onCreateGroup = {},
+            onEditGroup = {},
+            onDeleteGroup = {},
+            onToggleGroup = { _, _ -> },
+            onApplyActive = {},
+        )
+    }
+}
+
+/** 预览用的模型：三组地点规则 + 模板名表。 */
+private fun previewMatchModel(): LocationTimeMatchModel = LocationTimeMatchModel(
+    groups = previewLocationGroups(),
+    schemeNames = previewSchemeNames(),
+)
+
+@Suppress("unused")
+@Preview(name = "1 有规则", showBackground = true, widthDp = 400, heightDp = 900)
+@Composable
+private fun LocationTimeMatchPagePreviewGroups() {
+    PreviewLocationTimeMatchPage(model = previewMatchModel())
+}
+
+@Suppress("unused")
+@Preview(name = "2 空态", showBackground = true, widthDp = 400, heightDp = 900)
+@Composable
+private fun LocationTimeMatchPagePreviewEmpty() {
+    PreviewLocationTimeMatchPage(model = LocationTimeMatchModel())
+}
+
+@Suppress("unused")
+@Preview(name = "3 暗色", showBackground = true, widthDp = 400, heightDp = 900)
+@Composable
+private fun LocationTimeMatchPagePreviewDark() {
+    PreviewLocationTimeMatchPage(model = previewMatchModel(), dark = true)
+}
+
+@Suppress("unused")
+@Preview(name = "4 大字号 1.3", showBackground = true, widthDp = 400, heightDp = 900)
+@Composable
+private fun LocationTimeMatchPagePreviewLargeText() {
+    PreviewLocationTimeMatchPage(model = previewMatchModel(), textScale = 1.3f)
 }

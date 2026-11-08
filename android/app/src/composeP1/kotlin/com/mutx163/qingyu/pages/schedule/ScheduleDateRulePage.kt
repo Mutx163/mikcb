@@ -3,10 +3,13 @@ package com.mutx163.qingyu.pages.schedule
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
@@ -25,6 +28,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import com.mutx163.qingyu.components.QingyuCard
@@ -33,6 +37,7 @@ import com.mutx163.qingyu.components.QingyuPageCardMargin
 import com.mutx163.qingyu.components.rememberSheetMaxHeight
 import com.mutx163.qingyu.components.QingyuPageList
 import com.mutx163.qingyu.components.QingyuPageScaffold
+import com.mutx163.qingyu.components.QingyuPageTheme
 import com.mutx163.qingyu.components.QingyuWeightDelta
 import com.mutx163.qingyu.components.shiftWeight
 import com.mutx163.qingyu.theme.QingyuTheme
@@ -525,6 +530,149 @@ private fun RuleDeleteConfirmDialog(
                     destructive = true,
                 )
             }
+        }
+    }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// IDE 预览（2026-11-08，照 about/ContributorsPage.kt 样板铺）
+//
+// 只给实现阶段看效果，不进业务路径。覆盖两个维度：
+//
+//   数据状态 3 档：两条规则（今天生效 + 未生效）/ 还没有规则 / 只有一条可用方案；
+//   外观 3 档：亮色、暗色、大字号 1.3。
+//
+// 为什么偏偏是这几档：
+//   · 暗色 —— 历史上出现过「白字落在白卡片上」（壳用无参 MiuixTheme，页面取色却走
+//     isSystemInDarkTheme()）；这一档就是防它复发；
+//   · 大字号 —— 卡片里的「2026-11-01 至 2027-03-31」区间行最先被挤掉；
+//   · 空规则 —— 空态与其右上的「+」是另一套渲染分支；
+//   · 只有一条可用方案 —— 新建对话框只剩一个可选方案（唯一选项）路径。
+//
+// 固定写法：主题一律包 QingyuPageTheme(isDark = …)，不要直接 MiuixTheme { }；
+// 字号用 QingyuPageTheme(textScale = …)，不用 @Preview(fontScale = …)；
+// 宽度按 400dp（本仓折行实测口径），高度给一屏多。
+// ─────────────────────────────────────────────────────────────────────────────
+
+/** 预览用假数据：两条日期规则，一条今天生效、一条未启用。 */
+private fun previewScheduleDateRules(): List<ScheduleDateRuleItemView> = listOf(
+    ScheduleDateRuleItemView(
+        rule = ScheduleDateRuleData(
+            id = "rule_preview_1",
+            name = "冬季作息",
+            timeSchemeId = "scheme_winter",
+            startDate = "2026-11-01",
+            endDate = "2027-03-31",
+            enabled = true,
+        ),
+        schemeName = "冬季作息（8:00 上课）",
+        isActiveToday = true,
+    ),
+    ScheduleDateRuleItemView(
+        rule = ScheduleDateRuleData(
+            id = "rule_preview_2",
+            name = "夏季作息",
+            timeSchemeId = "scheme_summer",
+            startDate = "2027-04-01",
+            endDate = "2027-10-31",
+            enabled = false,
+        ),
+        schemeName = "夏季作息（8:30 上课）",
+        isActiveToday = false,
+    ),
+)
+
+/** 预览用作息方案：id to 名称。 */
+private val previewAvailableSchemes: List<Pair<String, String>> = listOf(
+    "scheme_winter" to "冬季作息（8:00 上课）",
+    "scheme_summer" to "夏季作息（8:30 上课）",
+)
+
+/** 一档预览的公共身体：规则数据 + 外观档位。 */
+@Composable
+private fun PreviewScheduleDateRulePage(
+    rules: List<ScheduleDateRuleItemView>,
+    availableSchemes: List<Pair<String, String>> = previewAvailableSchemes,
+    dark: Boolean = false,
+    textScale: Float = 1f,
+) {
+    QingyuPageTheme(isDark = dark, textScale = textScale) {
+        ScheduleDateRulePage(
+            rules = rules,
+            availableSchemes = availableSchemes,
+            onBack = {},
+            onSaveRule = {},
+            onDeleteRule = {},
+        )
+    }
+}
+
+// ── 单档：数据三态 × 亮色 ──────────────────────────────────────────────────
+
+@Suppress("unused")
+@Preview(name = "1 两条规则", showBackground = true, widthDp = 400, heightDp = 900)
+@Composable
+private fun ScheduleDateRulePagePreviewData() {
+    PreviewScheduleDateRulePage(previewScheduleDateRules())
+}
+
+@Suppress("unused")
+@Preview(name = "2 还没有规则", showBackground = true, widthDp = 400, heightDp = 900)
+@Composable
+private fun ScheduleDateRulePagePreviewEmpty() {
+    PreviewScheduleDateRulePage(rules = emptyList())
+}
+
+@Suppress("unused")
+@Preview(name = "3 只有一条方案", showBackground = true, widthDp = 400, heightDp = 900)
+@Composable
+private fun ScheduleDateRulePagePreviewSingleScheme() {
+    PreviewScheduleDateRulePage(
+        rules = previewScheduleDateRules().take(1),
+        availableSchemes = previewAvailableSchemes.take(1),
+    )
+}
+
+// ── 单档：外观两档（以「两条规则」为基准）──────────────────────────────────
+
+@Suppress("unused")
+@Preview(name = "4 暗色", showBackground = true, widthDp = 400, heightDp = 900)
+@Composable
+private fun ScheduleDateRulePagePreviewDark() {
+    PreviewScheduleDateRulePage(previewScheduleDateRules(), dark = true)
+}
+
+@Suppress("unused")
+@Preview(name = "5 大字号 1.3", showBackground = true, widthDp = 400, heightDp = 900)
+@Composable
+private fun ScheduleDateRulePagePreviewLargeText() {
+    PreviewScheduleDateRulePage(previewScheduleDateRules(), textScale = 1.3f)
+}
+
+// ── 总览：三态并排，一屏看完 ─────────────────────────────────────────────────
+
+/**
+ * 一屏总览：两条规则 / 空规则 / 暗色 横向并排，用来一眼比结构差异。
+ *
+ * 3 × 400dp + 2 × 16dp 间距 = 1232dp，所以画布给 1280dp。Studio 会等比缩小显示，
+ * **缩放后字看不清是正常的**——要看细节点上面 1~5 的单档标签。
+ */
+@Suppress("unused")
+@Preview(name = "0 总览·三态并排", showBackground = true, widthDp = 1280, heightDp = 900)
+@Composable
+private fun ScheduleDateRulePagePreviewOverview() {
+    Row(
+        modifier = Modifier.fillMaxSize(),
+        horizontalArrangement = Arrangement.spacedBy(16.dp),
+    ) {
+        Box(Modifier.width(400.dp).fillMaxHeight()) {
+            PreviewScheduleDateRulePage(previewScheduleDateRules())
+        }
+        Box(Modifier.width(400.dp).fillMaxHeight()) {
+            PreviewScheduleDateRulePage(rules = emptyList())
+        }
+        Box(Modifier.width(400.dp).fillMaxHeight()) {
+            PreviewScheduleDateRulePage(previewScheduleDateRules(), dark = true)
         }
     }
 }

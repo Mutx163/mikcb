@@ -28,6 +28,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.DpSize
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.role
@@ -39,6 +40,7 @@ import com.mutx163.qingyu.components.QingyuCardDefaults
 import com.mutx163.qingyu.components.QingyuPageCardMargin
 import com.mutx163.qingyu.components.QingyuPageList
 import com.mutx163.qingyu.components.QingyuPageScaffold
+import com.mutx163.qingyu.components.QingyuPageTheme
 import com.mutx163.qingyu.components.QingyuSectionGap
 import com.mutx163.qingyu.components.QingyuSectionTitle
 import com.mutx163.qingyu.components.QingyuWeightDelta
@@ -516,4 +518,138 @@ private fun parseHexColor(hex: String, fallback: Color): Color {
     } catch (_: NumberFormatException) {
         fallback
     }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// IDE 预览（2026-11-08）
+//
+// 只给实现阶段看效果，不进业务路径。覆盖两个维度：
+//
+//   数据状态 3 档：已绑定·坚果云已连接 / 未绑定·未连接 / 导入中（按钮变「导入中...」）；
+//   外观 3 档：亮色、暗色、大字号 1.3。
+//
+// 为什么偏偏是这几档：
+//   · 已绑定 / 未绑定 —— 绑定信息卡、周次偏移、叠加颜色三块只在绑定后出现，
+//     「解除绑定」按钮也只在绑定后出现；
+//   · 未连接 —— 坚果云那一段只剩「连接」一个主色按钮，与已连接的三个按钮布局不同；
+//   · 导入中 —— 忙碌态只改按钮文案（接 `...`）与禁用，不动布局，最容易漏看；
+//   · 暗色 / 大字号 —— 页面取色走 isSystemInDarkTheme()，只有 QingyuPageTheme 会把
+//     LocalConfiguration 的 uiMode 一起改写；行内文案的折行点只在字放大后才暴露。
+//
+// 固定写法：主题一律 QingyuPageTheme(isDark = …)、字号走 textScale 参数
+//（@Preview(fontScale = …) 绕过了应用的 appTextScale 口径）；宽度按 400dp（本仓折行实测口径）。
+//
+// 数据一律走 `CoupleTimetableSettingsLogic.buildViewState`，不手工拼 viewState：
+// 显隐、按钮样式、色板都在模型层算，手工拼等于绕过被测代码。
+// `CoupleWebdavConfig` 用全限定名，避免给页面文件新增业务 import（本批只允许加预览用 import）。
+// ─────────────────────────────────────────────────────────────────────────────
+
+/** 预览用坚果云配置：`connected = true` 时填示例账号与上次拉取时间。 */
+private fun previewCoupleWebdavConfig(connected: Boolean): com.mutx163.qingyu.sync.CoupleWebdavConfig =
+    com.mutx163.qingyu.sync.CoupleWebdavConfig(
+        username = if (connected) "lisi@example.com" else "",
+        lastPulledAtIso = if (connected) "2026-11-07T20:00:00" else null,
+    )
+
+/** 预览用绑定：对方「李四」、周偏移 +1、三个颜色都留默认。 */
+private fun previewCoupleBinding(): PartnerTimetableBindingModel = PartnerTimetableBindingModel(
+    partnerName = "李四",
+    lastImportedAtIso = "2026-11-07T20:15:00",
+    weekOffset = 1,
+)
+
+/** 一档预览：模型层输入；[name] 只用来给预览命名，不参与渲染。 */
+private data class PreviewCoupleTimetableState(
+    val name: String,
+    val binding: PartnerTimetableBindingModel?,
+    val webdavConnected: Boolean,
+    val busy: CoupleBusyState = CoupleBusyState(),
+)
+
+private val previewCoupleTimetableStates: List<PreviewCoupleTimetableState> = listOf(
+    PreviewCoupleTimetableState(
+        name = "已绑定·已连接",
+        binding = previewCoupleBinding(),
+        webdavConnected = true,
+    ),
+    PreviewCoupleTimetableState(
+        name = "未绑定·未连接",
+        binding = null,
+        webdavConnected = false,
+    ),
+    PreviewCoupleTimetableState(
+        name = "导入中",
+        binding = previewCoupleBinding(),
+        webdavConnected = true,
+        busy = CoupleBusyState(isImporting = true),
+    ),
+)
+
+private fun previewCoupleTimetableState(name: String): PreviewCoupleTimetableState =
+    previewCoupleTimetableStates.first { it.name == name }
+
+/** 一档预览的公共身体：数据状态 + 外观档位。 */
+@Composable
+private fun PreviewCoupleTimetableSettingsPage(
+    state: PreviewCoupleTimetableState,
+    dark: Boolean = false,
+    textScale: Float = 1f,
+) {
+    QingyuPageTheme(isDark = dark, textScale = textScale) {
+        CoupleTimetableSettingsPage(
+            viewState = CoupleTimetableSettingsLogic.buildViewState(
+                binding = state.binding,
+                webdavConfig = previewCoupleWebdavConfig(state.webdavConnected),
+                hasStoredPassword = state.webdavConnected,
+                busy = state.busy,
+                partnerCourseCount = 24,
+                partnerProfileName = state.binding?.partnerName,
+                myWeek = 8,
+                partnerWeek = 8 + (state.binding?.weekOffset ?: 0),
+            ),
+            onBack = {},
+            onAction = {},
+            onShiftWeekOffset = {},
+            onPickColor = { _, _ -> },
+        )
+    }
+}
+
+// ── 单档：三态 × 亮色 ──────────────────────────────────────────────────────
+
+@Suppress("unused")
+@Preview(name = "1 已绑定·已连接", showBackground = true, widthDp = 400, heightDp = 900)
+@Composable
+private fun CoupleTimetableSettingsPagePreviewBound() {
+    PreviewCoupleTimetableSettingsPage(previewCoupleTimetableState("已绑定·已连接"))
+}
+
+@Suppress("unused")
+@Preview(name = "2 未绑定·未连接", showBackground = true, widthDp = 400, heightDp = 900)
+@Composable
+private fun CoupleTimetableSettingsPagePreviewUnbound() {
+    PreviewCoupleTimetableSettingsPage(previewCoupleTimetableState("未绑定·未连接"))
+}
+
+@Suppress("unused")
+@Preview(name = "3 导入中", showBackground = true, widthDp = 400, heightDp = 900)
+@Composable
+private fun CoupleTimetableSettingsPagePreviewImporting() {
+    PreviewCoupleTimetableSettingsPage(previewCoupleTimetableState("导入中"))
+}
+
+// ── 单档：外观两档（以「已绑定·已连接」为基准）─────────────────────────────
+
+@Suppress("unused")
+@Preview(name = "4 暗色", showBackground = true, widthDp = 400, heightDp = 900)
+@Composable
+private fun CoupleTimetableSettingsPagePreviewDark() {
+    PreviewCoupleTimetableSettingsPage(previewCoupleTimetableState("已绑定·已连接"), dark = true)
+}
+
+@Suppress("unused")
+@Preview(name = "5 大字号 1.3", showBackground = true, widthDp = 400, heightDp = 900)
+@Composable
+private fun CoupleTimetableSettingsPagePreviewLargeText() {
+    PreviewCoupleTimetableSettingsPage(previewCoupleTimetableState("已绑定·已连接"), textScale = 1.3f)
 }

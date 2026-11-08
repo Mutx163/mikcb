@@ -23,12 +23,14 @@ import androidx.compose.ui.semantics.disabled
 import androidx.compose.ui.semantics.onClick
 import androidx.compose.ui.semantics.role
 import androidx.compose.ui.text.style.TextDecoration
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.mutx163.qingyu.components.QingyuCard
 import com.mutx163.qingyu.components.QingyuCardDefaults
 import com.mutx163.qingyu.components.QingyuPageCardMargin
 import com.mutx163.qingyu.components.QingyuPageList
 import com.mutx163.qingyu.components.QingyuPageScaffold
+import com.mutx163.qingyu.components.QingyuPageTheme
 import com.mutx163.qingyu.components.QingyuSectionTitle
 import com.mutx163.qingyu.components.QingyuWeightDelta
 import com.mutx163.qingyu.components.shiftWeight
@@ -242,4 +244,66 @@ private fun BusyIndicator(accent: Color) {
             size = 22.dp,
         )
     }
+}
+
+// ── Android Studio 预览（@Preview）────────────────────────────────────────────
+//
+// 与 `ContributorsPage` 同一套口径：一个 `Preview<页面>` 承担「入口行状态 + 外观档位」，
+// 下面每个 `@Preview` 只选一档。预览不接宿主：回调一律空实现，入口表全由模型层给。
+
+/** 预览用的「未安装」判据：菜鸟裹裹与京东没装，其余都装了（行会淡下去）。 */
+private fun previewInstalledOf(preset: PickupCodesModel.Preset): Boolean =
+    preset.titleKey != "pickupCodePresetCainiao" && preset.titleKey != "pickupCodePresetJdParcels"
+
+/** 一档预览的公共身体：安装判据 + 正在跳转的入口 + 外观档位。 */
+@Composable
+private fun PreviewPickupCodesPage(
+    installedOf: (PickupCodesModel.Preset) -> Boolean = previewInstalledOf,
+    busyTitleKey: String? = null,
+    dark: Boolean = false,
+    textScale: Float = 1f,
+) {
+    QingyuPageTheme(isDark = dark, textScale = textScale) {
+        PickupCodesPage(
+            onBack = {},
+            onEntryClick = {},
+            installedOf = installedOf,
+            busyTitleKey = busyTitleKey,
+        )
+    }
+}
+
+@Suppress("unused")
+@Preview(name = "1 全部已安装", showBackground = true, widthDp = 400, heightDp = 900)
+@Composable
+private fun PickupCodesPagePreviewInstalled() {
+    PreviewPickupCodesPage(installedOf = { true })
+}
+
+@Suppress("unused")
+@Preview(name = "2 部分未安装", showBackground = true, widthDp = 400, heightDp = 900)
+@Composable
+private fun PickupCodesPagePreviewMissing() {
+    PreviewPickupCodesPage()
+}
+
+@Suppress("unused")
+@Preview(name = "3 跳转中", showBackground = true, widthDp = 400, heightDp = 900)
+@Composable
+private fun PickupCodesPagePreviewBusy() {
+    PreviewPickupCodesPage(busyTitleKey = "pickupCodePresetTaobao")
+}
+
+@Suppress("unused")
+@Preview(name = "4 暗色", showBackground = true, widthDp = 400, heightDp = 900)
+@Composable
+private fun PickupCodesPagePreviewDark() {
+    PreviewPickupCodesPage(installedOf = { true }, dark = true)
+}
+
+@Suppress("unused")
+@Preview(name = "5 大字号 1.3", showBackground = true, widthDp = 400, heightDp = 900)
+@Composable
+private fun PickupCodesPagePreviewLargeText() {
+    PreviewPickupCodesPage(installedOf = { true }, textScale = 1.3f)
 }

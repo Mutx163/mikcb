@@ -22,12 +22,14 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.mutx163.qingyu.components.QingyuCard
 import com.mutx163.qingyu.components.QingyuCardDefaults
 import com.mutx163.qingyu.components.QingyuPageCardMargin
 import com.mutx163.qingyu.components.QingyuPageList
 import com.mutx163.qingyu.components.QingyuPageScaffold
+import com.mutx163.qingyu.components.QingyuPageTheme
 import com.mutx163.qingyu.components.QingyuSectionTitle
 import com.mutx163.qingyu.components.QingyuWeightDelta
 import com.mutx163.qingyu.components.shiftWeight
@@ -393,4 +395,95 @@ private fun LocationTimeMatchLogicKeywordsFromOthers(
         result.addAll(group.keywords)
     }
     return result
+}
+
+// ── Android Studio 预览（@Preview）────────────────────────────────────────────
+//
+// 与 `ContributorsPage` 同一套口径：一个 `Preview<页面>` 承担「示例数据 + 外观档位」，
+// 下面每个 `@Preview` 只选一档。预览不接宿主：回调一律空实现，数据全是中文实义值。
+//
+// 主题必须走 `QingyuPageTheme`：它除了换 Miuix 配色，还会把 `LocalConfiguration.uiMode`
+// 和字号倍率一起覆盖掉，页面里那些 `isSystemInDarkTheme()` 才会跟着预览的档位走。
+
+/** 预览用的时间模板清单（编辑页「绑定模板」那几行单选）。 */
+private fun previewSchemeOptions(): List<SchemeOption> = listOf(
+    SchemeOption(id = "scheme-winter", name = "秋冬作息"),
+    SchemeOption(id = "scheme-spring", name = "春夏作息"),
+)
+
+/** 预览用的其它地点组：页面的「关键词已被别的组占用」提示要有数据才看得见。 */
+private fun previewOtherGroups(): List<LocationTimeGroup> = listOf(
+    LocationTimeGroup(
+        id = "group-lab",
+        name = "实验楼晚课",
+        timeSchemeId = "scheme-spring",
+        keywords = listOf(LocationKeyword(pattern = "实验楼", mode = LocationKeywordMatchMode.PREFIX)),
+    ),
+)
+
+/** 预览用的课表地点：编辑页从中挑「还没被关键词覆盖」的楼栋做一键添加。 */
+private fun previewLocations(): List<String> = listOf(
+    "第一教学楼A101",
+    "第一教学楼A102",
+    "第二教学楼B203",
+    "图书馆报告厅",
+)
+
+/** 预览用的待编辑组：两条关键词、已启用。 */
+private fun previewEditingGroup(): LocationTimeGroup = LocationTimeGroup(
+    id = "group-arts",
+    name = "艺术楼专业课",
+    timeSchemeId = "scheme-winter",
+    enabled = true,
+    keywords = listOf(
+        LocationKeyword(pattern = "艺术楼", mode = LocationKeywordMatchMode.PREFIX),
+        LocationKeyword(pattern = "琴房", mode = LocationKeywordMatchMode.CONTAINS),
+    ),
+)
+
+/** 一档预览的公共身体：待编辑组（null = 新建）+ 外观档位。 */
+@Composable
+private fun PreviewLocationTimeGroupEditorPage(
+    existing: LocationTimeGroup?,
+    dark: Boolean = false,
+    textScale: Float = 1f,
+) {
+    QingyuPageTheme(isDark = dark, textScale = textScale) {
+        LocationTimeGroupEditorPage(
+            existing = existing,
+            schemes = previewSchemeOptions(),
+            allGroups = previewOtherGroups() + listOfNotNull(existing),
+            availableLocations = previewLocations(),
+            onBack = {},
+            onSave = { _, _, _, _ -> },
+        )
+    }
+}
+
+@Suppress("unused")
+@Preview(name = "1 新建组", showBackground = true, widthDp = 400, heightDp = 900)
+@Composable
+private fun LocationTimeGroupEditorPagePreviewCreate() {
+    PreviewLocationTimeGroupEditorPage(existing = null)
+}
+
+@Suppress("unused")
+@Preview(name = "2 编辑已有组", showBackground = true, widthDp = 400, heightDp = 900)
+@Composable
+private fun LocationTimeGroupEditorPagePreviewEdit() {
+    PreviewLocationTimeGroupEditorPage(existing = previewEditingGroup())
+}
+
+@Suppress("unused")
+@Preview(name = "3 暗色", showBackground = true, widthDp = 400, heightDp = 900)
+@Composable
+private fun LocationTimeGroupEditorPagePreviewDark() {
+    PreviewLocationTimeGroupEditorPage(existing = previewEditingGroup(), dark = true)
+}
+
+@Suppress("unused")
+@Preview(name = "4 大字号 1.3", showBackground = true, widthDp = 400, heightDp = 900)
+@Composable
+private fun LocationTimeGroupEditorPagePreviewLargeText() {
+    PreviewLocationTimeGroupEditorPage(existing = previewEditingGroup(), textScale = 1.3f)
 }

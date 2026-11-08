@@ -20,12 +20,14 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.mutx163.qingyu.components.QingyuCard
 import com.mutx163.qingyu.components.QingyuCardDefaults
 import com.mutx163.qingyu.components.QingyuPageCardMargin
 import com.mutx163.qingyu.components.QingyuPageList
 import com.mutx163.qingyu.components.QingyuPageScaffold
+import com.mutx163.qingyu.components.QingyuPageTheme
 import com.mutx163.qingyu.components.QingyuSectionTitle
 import com.mutx163.qingyu.theme.QingyuIconColors
 import com.mutx163.qingyu.theme.QingyuTheme
@@ -384,4 +386,91 @@ private fun EditorTag(
             )
             .padding(horizontal = 8.dp, vertical = 2.dp),
     )
+}
+
+// ── Android Studio 预览（@Preview）────────────────────────────────────────────
+//
+// 与 `ContributorsPage` 同一套口径：一个 `Preview<页面>` 承担「示例数据 + 外观档位」，
+// 下面每个 `@Preview` 只选一档。预览不接宿主：回调一律空实现，数据全是中文实义值。
+//
+// 模板实例走 `TimeScheme.fromJson`（写全限定名是刻意的：预览段只允许新增
+// `Preview` / `QingyuPageTheme` 两个 import，不为预览再引 core 的构造工具）。
+
+/** 预览用模板：四节 45 分钟的常规作息。 */
+private fun previewTimeScheme(id: String, name: String): com.mutx163.qingyu.core.TimeScheme =
+    com.mutx163.qingyu.core.TimeScheme.fromJson(
+        mapOf(
+            "id" to id,
+            "name" to name,
+            "sections" to listOf(
+                mapOf("startTime" to "08:00", "endTime" to "08:45"),
+                mapOf("startTime" to "08:55", "endTime" to "09:40"),
+                mapOf("startTime" to "10:00", "endTime" to "10:45"),
+                mapOf("startTime" to "14:00", "endTime" to "14:45"),
+            ),
+        ),
+    )
+
+/** 预览用编辑器模型：[inUse] 决定这套模板是不是当前课表正在用的那套。 */
+private fun previewEditorModel(inUse: Boolean): TimeSchemeEditorModel {
+    val winter = previewTimeScheme("scheme-winter", "秋冬作息")
+    val spring = previewTimeScheme("scheme-spring", "春夏作息")
+    return TimeSchemeEditorModel(
+        schemeId = winter.id,
+        name = winter.name,
+        sections = winter.sections,
+        isActive = inUse,
+        schemes = listOf(winter, spring),
+        activeSchemeId = if (inUse) winter.id else spring.id,
+    )
+}
+
+/** 一档预览的公共身体：编辑器模型 + 外观档位。 */
+@Composable
+private fun PreviewTimeSchemeEditorPage(
+    model: TimeSchemeEditorModel,
+    dark: Boolean = false,
+    textScale: Float = 1f,
+) {
+    QingyuPageTheme(isDark = dark, textScale = textScale) {
+        TimeSchemeEditorPage(
+            model = model,
+            onBack = {},
+            onNameChange = {},
+            onSave = {},
+            onPickSectionTime = {},
+            onAddSection = {},
+            onRemoveLastSection = {},
+            onResetSections = {},
+            onOpenQuickGenerate = {},
+        )
+    }
+}
+
+@Suppress("unused")
+@Preview(name = "1 编辑中", showBackground = true, widthDp = 400, heightDp = 900)
+@Composable
+private fun TimeSchemeEditorPagePreviewEditing() {
+    PreviewTimeSchemeEditorPage(model = previewEditorModel(inUse = false))
+}
+
+@Suppress("unused")
+@Preview(name = "2 使用中", showBackground = true, widthDp = 400, heightDp = 900)
+@Composable
+private fun TimeSchemeEditorPagePreviewInUse() {
+    PreviewTimeSchemeEditorPage(model = previewEditorModel(inUse = true))
+}
+
+@Suppress("unused")
+@Preview(name = "3 暗色", showBackground = true, widthDp = 400, heightDp = 900)
+@Composable
+private fun TimeSchemeEditorPagePreviewDark() {
+    PreviewTimeSchemeEditorPage(model = previewEditorModel(inUse = true), dark = true)
+}
+
+@Suppress("unused")
+@Preview(name = "4 大字号 1.3", showBackground = true, widthDp = 400, heightDp = 900)
+@Composable
+private fun TimeSchemeEditorPagePreviewLargeText() {
+    PreviewTimeSchemeEditorPage(model = previewEditorModel(inUse = true), textScale = 1.3f)
 }

@@ -17,12 +17,14 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.mutx163.qingyu.components.QingyuCard
 import com.mutx163.qingyu.components.QingyuPageCardMargin
 import com.mutx163.qingyu.components.QingyuPageList
 import com.mutx163.qingyu.components.QingyuPageScaffold
+import com.mutx163.qingyu.components.QingyuPageTheme
 import com.mutx163.qingyu.components.QingyuWeightDelta
 import com.mutx163.qingyu.components.shiftWeight
 import com.mutx163.qingyu.theme.QingyuTheme
@@ -174,4 +176,101 @@ private fun ProgressBar(fraction: Float) {
             )
         }
     }
+}
+
+// ── Android Studio 预览（@Preview）────────────────────────────────────────────
+//
+// 与 `ContributorsPage` 同一套口径：一个 `Preview<页面>` 承担「发送状态 + 外观档位」，
+// 下面每个 `@Preview` 只选一档。预览不接宿主：回调一律空实现。
+//
+// 二维码图形由宿主传入（本页只留位），预览里换成一行占位说明，
+// 进度行、超时与超限提示才看得清。
+
+/** 预览用的二维码槽位：预览环境不跑编码，只说明这里本来是什么。 */
+@Composable
+private fun PreviewQrSlot() {
+    Text(text = "二维码（预览里不渲染）", style = MiuixTheme.textStyles.body2)
+}
+
+/** 一档预览的公共身体：发送状态 + 顶栏标题 + 外观档位。 */
+@Composable
+private fun PreviewQrTransferSendPage(
+    model: QrTransferSendModel,
+    title: String = "发送当前课表",
+    dark: Boolean = false,
+    textScale: Float = 1f,
+) {
+    QingyuPageTheme(isDark = dark, textScale = textScale) {
+        QrTransferSendPage(
+            model = model,
+            onBack = {},
+            onStop = {},
+            qrSlot = { PreviewQrSlot() },
+            title = title,
+        )
+    }
+}
+
+@Suppress("unused")
+@Preview(name = "1 发送中", showBackground = true, widthDp = 400, heightDp = 900)
+@Composable
+private fun QrTransferSendPagePreviewSending() {
+    PreviewQrTransferSendPage(
+        model = QrTransferSendModel(
+            sentFrames = 45,
+            totalFrames = 120,
+            elapsedMillis = 12_000L,
+        ),
+    )
+}
+
+@Suppress("unused")
+@Preview(name = "2 已超时", showBackground = true, widthDp = 400, heightDp = 900)
+@Composable
+private fun QrTransferSendPagePreviewExpired() {
+    PreviewQrTransferSendPage(
+        model = QrTransferSendModel(
+            sentFrames = 86,
+            totalFrames = 120,
+            elapsedMillis = 180_000L,
+            expired = true,
+        ),
+    )
+}
+
+@Suppress("unused")
+@Preview(name = "3 超出上限", showBackground = true, widthDp = 400, heightDp = 900)
+@Composable
+private fun QrTransferSendPagePreviewOverLimit() {
+    PreviewQrTransferSendPage(
+        model = QrTransferSendModel(overResourceLimit = true),
+    )
+}
+
+@Suppress("unused")
+@Preview(name = "4 暗色", showBackground = true, widthDp = 400, heightDp = 900)
+@Composable
+private fun QrTransferSendPagePreviewDark() {
+    PreviewQrTransferSendPage(
+        model = QrTransferSendModel(
+            sentFrames = 45,
+            totalFrames = 120,
+            elapsedMillis = 12_000L,
+        ),
+        dark = true,
+    )
+}
+
+@Suppress("unused")
+@Preview(name = "5 大字号 1.3", showBackground = true, widthDp = 400, heightDp = 900)
+@Composable
+private fun QrTransferSendPagePreviewLargeText() {
+    PreviewQrTransferSendPage(
+        model = QrTransferSendModel(
+            sentFrames = 45,
+            totalFrames = 120,
+            elapsedMillis = 12_000L,
+        ),
+        textScale = 1.3f,
+    )
 }

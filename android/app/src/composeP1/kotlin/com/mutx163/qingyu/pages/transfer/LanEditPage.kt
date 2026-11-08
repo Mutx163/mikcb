@@ -22,6 +22,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.mutx163.qingyu.components.QingyuCard
@@ -287,4 +288,81 @@ private fun InfoRow(label: String, value: String) {
             color = Color(QingyuTheme.secondaryText(dark)),
         )
     }
+}
+
+// ── Android Studio 预览（@Preview）────────────────────────────────────────────
+//
+// 与 `ContributorsPage` 同一套口径：一个 `Preview<页面>` 承担「模型 + 外观档位」，
+// 下面每个 `@Preview` 只选一档。预览不接宿主：回调一律空实现，数据全是中文实义值。
+//
+// 注意：页面内部自己包了一层 `QingyuPageTheme`（无参）。嵌套时它取的是外层广播出去的
+// 明暗与字号（`LocalQingyuBaseDensity` / `LocalConfiguration`），不会把预览档位吃掉。
+
+/** 预览用的「服务已跑起来」模型：拿到 IP、端口与 PIN，两台电脑已连。 */
+private fun previewRunningModel(): LanEditModel = LanEditModel(
+    running = true,
+    ipAddress = "192.168.1.23",
+    port = 8080,
+    pin = "482915",
+    connectedClients = 2,
+    lastActivityText = "11-08 14:32",
+    keepAliveWhenLeaving = true,
+)
+
+/** 一档预览的公共身体：模型 + 外观档位。 */
+@Composable
+private fun PreviewLanEditPage(
+    model: LanEditModel,
+    dark: Boolean = false,
+    textScale: Float = 1f,
+) {
+    QingyuPageTheme(isDark = dark, textScale = textScale) {
+        LanEditPage(
+            model = model,
+            onBack = {},
+            onToggleRunning = {},
+            onCopyAddress = {},
+            onKeepAliveChange = {},
+        )
+    }
+}
+
+@Suppress("unused")
+@Preview(name = "1 运行中", showBackground = true, widthDp = 400, heightDp = 900)
+@Composable
+private fun LanEditPagePreviewRunning() {
+    PreviewLanEditPage(model = previewRunningModel())
+}
+
+@Suppress("unused")
+@Preview(name = "2 未开启", showBackground = true, widthDp = 400, heightDp = 900)
+@Composable
+private fun LanEditPagePreviewStopped() {
+    PreviewLanEditPage(model = LanEditModel())
+}
+
+@Suppress("unused")
+@Preview(name = "3 启动失败", showBackground = true, widthDp = 400, heightDp = 900)
+@Composable
+private fun LanEditPagePreviewStartFailed() {
+    PreviewLanEditPage(
+        model = LanEditModel(
+            running = false,
+            startFailedReason = "端口 8080 已被其它程序占用",
+        ),
+    )
+}
+
+@Suppress("unused")
+@Preview(name = "4 暗色", showBackground = true, widthDp = 400, heightDp = 900)
+@Composable
+private fun LanEditPagePreviewDark() {
+    PreviewLanEditPage(model = previewRunningModel(), dark = true)
+}
+
+@Suppress("unused")
+@Preview(name = "5 大字号 1.3", showBackground = true, widthDp = 400, heightDp = 900)
+@Composable
+private fun LanEditPagePreviewLargeText() {
+    PreviewLanEditPage(model = previewRunningModel(), textScale = 1.3f)
 }
