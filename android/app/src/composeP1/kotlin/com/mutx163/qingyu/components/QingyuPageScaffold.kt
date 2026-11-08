@@ -116,7 +116,10 @@ private val QingyuChromeGlassSpec: GlassSpec = GlassSpecResolver.resolve(
  * 44×44 圆底 + 磨砂玻璃 + 0.75dp 细边 + 小外浮影，深浅色都用亮白纱低 alpha：
  * 发布版 `HyperosBackButton` 的液态玻璃标准档圆底 + `HyperosGlassShadow.compactShadow`
  * （blur≈4 / offset≈1.5 的外浮影）。用共享玻璃件 + Compose 小阴影等价实现，没有自研动画。
- * 无实时玻璃能力（`backdrop == null` / 关模糊）时退化成同色半透明实底圆，观感一致。
+ * 无实时玻璃能力（`backdrop == null` / 关模糊）时退化成实底圆：**必须先铺一层不透明页底色，
+ * 再叠白纱**。只铺半透明白纱会把圆底下的 2dp 浮影透出来 —— 圆内被压成一块灰盘，边缘那圈
+ * 0.75dp 白描边亮在灰盘上，肉眼就是「一大一小两个同心圈」（2026-11-08 版本更新页预览实报）。
+ * 版本更新页不走 [QingyuPageScaffold]，本来就没有采样源，真机也走这条退化分支。
  *
  * 2026-11-05 全站收口：返回键 [QingyuBackIconButton] 与各页 `actions` 槽里的右上动作键
  * **都走这一个实现**，槽里不许再裸写 `IconButton`（守卫 `TopBarActionGlassGuardTest`）。
@@ -208,7 +211,16 @@ fun QingyuGlassIconButton(
                 content = button,
             )
         } else {
-            Box(modifier = Modifier.fillMaxSize().background(veil, CircleShape)) { button() }
+            // 退化分支：先铺**不透明**页底色挡掉圆底下的浮影，再叠白纱。
+            // 只叠半透明白纱的话，`shadow(2.dp)` 会从圆内透出来（圆内压成灰盘、边缘白描边
+            // 反而更亮），一颗钮看着像两个同心圈 —— 2026-11-08 版本更新页预览就是这个。
+            val base = Color(QingyuTheme.scaffoldBackground(dark))
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(base, CircleShape)
+                    .background(veil, CircleShape),
+            ) { button() }
         }
     }
 }
