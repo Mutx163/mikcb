@@ -6,7 +6,7 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 import java.io.File
 
-/** [AboutUpdatePageStrings] 与 `lib/l10n/app_zh.arb` 逐字对拍（不手抄期望值，直读 ARB）。 */
+/** [AboutUpdatePageStrings] 与 `i18n/app_zh.arb` 逐字对拍（不手抄期望值，直读 ARB）。 */
 class AboutUpdatePageStringsArbTest {
 
     private fun repoFile(relative: String): File {
@@ -20,7 +20,7 @@ class AboutUpdatePageStringsArbTest {
     }
 
     private fun arb(): Map<String, Any?> {
-        val json = MiniJson.parse(repoFile("lib/l10n/app_zh.arb").readText(Charsets.UTF_8))
+        val json = MiniJson.parse(repoFile("i18n/app_zh.arb").readText(Charsets.UTF_8))
         @Suppress("UNCHECKED_CAST")
         return json as Map<String, Any?>
     }

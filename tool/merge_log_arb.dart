@@ -12,12 +12,12 @@ void main() {
   ) as Map<String, dynamic>;
 
   final targets = {
-    'zh': 'lib/l10n/app_zh.arb',
-    'en': 'lib/l10n/app_en.arb',
-    'zh_HK': 'lib/l10n/app_zh_HK.arb',
-    'zh_TW': 'lib/l10n/app_zh_TW.arb',
-    'ja': 'lib/l10n/app_ja.arb',
-    'ko': 'lib/l10n/app_ko.arb',
+    'zh': 'i18n/app_zh.arb',
+    'en': 'i18n/app_en.arb',
+    'zh_HK': 'i18n/app_zh_HK.arb',
+    'zh_TW': 'i18n/app_zh_TW.arb',
+    'ja': 'i18n/app_ja.arb',
+    'ko': 'i18n/app_ko.arb',
   };
 
   for (final entry in targets.entries) {

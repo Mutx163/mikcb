@@ -70,7 +70,7 @@ class ArbCatalogTest {
         )
         val out = LinkedHashMap<String, Map<String, String>>()
         for ((language, name) in files) {
-            val file = File(repoRoot(), "lib/l10n/$name")
+            val file = File(repoRoot(), "i18n/$name")
             assertTrue("找不到 ARB：${file.absolutePath}", file.isFile)
             val parsed = MiniJson.parse(file.readText(Charsets.UTF_8))
             check(parsed is Map<*, *>) { "$name 顶层不是对象" }
@@ -84,13 +84,13 @@ class ArbCatalogTest {
         return out
     }
 
-    /** 仓库根：以 `lib/l10n/app_zh.arb` 为标志向上找（L0 与 Gradle 工作目录不同）。 */
+    /** 仓库根：以 `i18n/app_zh.arb` 为标志向上找（L0 与 Gradle 工作目录不同）。 */
     private fun repoRoot(): File {
         var dir: File? = File("").absoluteFile
         repeat(8) {
-            if (File(dir, "lib/l10n/app_zh.arb").isFile) return dir!!
+            if (File(dir, "i18n/app_zh.arb").isFile) return dir!!
             dir = dir?.parentFile
         }
-        error("找不到仓库根（lib/l10n/app_zh.arb），工作目录 ${File("").absolutePath}")
+        error("找不到仓库根（i18n/app_zh.arb），工作目录 ${File("").absolutePath}")
     }
 }

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""从 lib/l10n/app_*.arb 生成 Compose 壳使用的 Kotlin 文案表。
+"""从 i18n/app_*.arb 生成 Compose 壳使用的 Kotlin 文案表。
 
 用法（仓库根）：
     python tool/gen_compose_arb_catalog.py            # 生成
@@ -16,7 +16,7 @@ import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
-ARB_DIR = ROOT / "lib" / "l10n"
+ARB_DIR = ROOT / "i18n"
 OUT = (
     ROOT / "android" / "app" / "src" / "main" / "kotlin"
     / "com" / "mutx163" / "qingyu" / "app" / "ArbCatalog.kt"
@@ -64,7 +64,7 @@ def build() -> str:
     out.append("package com.mutx163.qingyu.app")
     out.append("")
     out.append("/**")
-    out.append(" * 由 `tool/gen_compose_arb_catalog.py` 从 `lib/l10n/app_*.arb` 生成，**不要手改**。")
+    out.append(" * 由 `tool/gen_compose_arb_catalog.py` 从 `i18n/app_*.arb` 生成，**不要手改**。")
     out.append(" *")
     out.append(" * 每条 ARB 的键值原样搬过来。`ArbCatalogTest` 会拿 6 份 ARB 逐键对拍；")
     out.append(" * 手改或 ARB 更新后忘记重跑脚本都会红。重新生成：")

@@ -585,7 +585,7 @@ List<RestatingSubtitle> findRestatingSubtitles({
 /// 复述违规的稳定标识（写进基线文件的那一行）。
 String restatingId(RestatingSubtitle v) => v.id;
 
-/// 六种语言的 ARB 文件名（`lib/l10n/app_<locale>.arb`）。
+/// 六种语言的 ARB 文件名（`i18n/app_<locale>.arb`）。
 const List<String> appLocales = <String>[
   'zh',
   'en',
@@ -602,7 +602,7 @@ const List<String> appLocales = <String>[
 Map<String, ArbValues> loadArbs(String Function(String) resolve) {
   final result = <String, ArbValues>{};
   for (final locale in appLocales) {
-    final path = resolve('lib/l10n/app_$locale.arb');
+    final path = resolve('i18n/app_$locale.arb');
     final file = File(path);
     if (!file.existsSync()) {
       throw StateError('缺语言文件：$path');

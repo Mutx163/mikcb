@@ -14,7 +14,7 @@ import org.junit.Test
  * - 扫描与排序口径：逐条对照 `lib/screens/changelog_screen.dart:12-46 / 68-105`；
  * - 回退列表：`changelog_screen.dart:125-240` 逐字抄录，并**人工核对它本身严格倒序**
  *   （不是拿实现的排序结果当期望值）；
- * - 文案：直读 `lib/l10n/app_zh.arb` 逐字对拍（不手抄）。
+ * - 文案：直读 `i18n/app_zh.arb` 逐字对拍（不手抄）。
  *
  * 为什么「回退列表严格倒序」值得钉一条：那份列表是手写的 114 行版本号，
  * 新增版本时最容易犯的错就是往末尾追加（或插错位置）——那会让回退路径的展示顺序
@@ -34,7 +34,7 @@ class ChangelogModelTest {
 
     private fun arbString(key: String): String {
         @Suppress("UNCHECKED_CAST")
-        val json = MiniJson.parse(repoFile("lib/l10n/app_zh.arb").readText(Charsets.UTF_8))
+        val json = MiniJson.parse(repoFile("i18n/app_zh.arb").readText(Charsets.UTF_8))
             as Map<String, Any?>
         return json[key] as? String ?: error("ARB 缺少键 $key")
     }

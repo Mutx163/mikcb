@@ -16,7 +16,7 @@
 import 'dart:convert';
 import 'dart:io';
 
-const _arbDir = 'lib/l10n';
+const _arbDir = 'i18n';
 const _sourceFile = '$_arbDir/app_zh.arb';
 const _targetFiles = {
   'en': '$_arbDir/app_en.arb',

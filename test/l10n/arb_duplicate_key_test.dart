@@ -1,4 +1,4 @@
-﻿import 'dart:io';
+import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
 
@@ -23,7 +23,7 @@ void main() {
   group('ARB 键不能重复', () {
     for (final locale in locales) {
       test('app_$locale.arb 里没有重复的键', () {
-        final path = 'lib/l10n/app_$locale.arb';
+        final path = 'i18n/app_$locale.arb';
         final file = File(path);
         expect(file.existsSync(), isTrue, reason: '$path 不存在');
 

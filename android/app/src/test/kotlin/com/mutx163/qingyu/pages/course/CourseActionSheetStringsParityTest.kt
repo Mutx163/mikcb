@@ -11,7 +11,7 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 /**
- * 课程操作弹层文案逐字对拍 ARB（`lib/l10n/app_zh.arb`）+ 格式化纯函数的口径。
+ * 课程操作弹层文案逐字对拍 ARB（`i18n/app_zh.arb`）+ 格式化纯函数的口径。
  *
  * 两条门槛：
  * 1. **文案不许自拟**：每一处屏上文案都必须与 ARB 原文一致（占位符按模板片段比对）；
@@ -233,14 +233,14 @@ class CourseActionSheetStringsParityTest {
         var dir: File? = File("").absoluteFile
         var arbFile: File? = null
         repeat(8) {
-            val candidate = File(dir, "lib/l10n/app_zh.arb")
+            val candidate = File(dir, "i18n/app_zh.arb")
             if (candidate.isFile) {
                 arbFile = candidate
                 return@repeat
             }
             dir = dir?.parentFile
         }
-        val file = arbFile ?: error("找不到 lib/l10n/app_zh.arb")
+        val file = arbFile ?: error("找不到 i18n/app_zh.arb")
         val parsed = MiniJson.parse(file.readText(Charsets.UTF_8))
         check(parsed is Map<*, *>) { "app_zh.arb 顶层不是对象：${file.absolutePath}" }
         val map = LinkedHashMap<String, String>()

@@ -190,7 +190,7 @@ void main() {
   });
 
   test('砖上的说明行必须是新信息（跳过去具体到哪），不许重复分组标题', () {
-    final l10nZh = File('lib/l10n/app_zh.arb').readAsStringSync();
+    final l10nZh = File('i18n/app_zh.arb').readAsStringSync();
     final presets = File('lib/domain/pickup_code_presets.dart').readAsStringSync();
     // 每条预置都带 hint
     expect(

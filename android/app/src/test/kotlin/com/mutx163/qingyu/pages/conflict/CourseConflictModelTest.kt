@@ -16,7 +16,7 @@ import org.junit.Test
  *   的行号语义，以及 `lib/domain/course_domain.dart:52-67` 的双向索引形态；
  * - 行文案：对照 `course_conflict_screen.dart:143-152` 的拼装方式（含
  *   「结束周用裸数字」这条现状怪癖）；
- * - 文案：直读 `lib/l10n/app_zh.arb` 逐字对拍（不手抄）；
+ * - 文案：直读 `i18n/app_zh.arb` 逐字对拍（不手抄）；
  * - 边界（停课周/单双周/自定义周/未知星期/同 id）：人推得出。
  */
 class CourseConflictModelTest {
@@ -251,12 +251,12 @@ class CourseConflictModelTest {
 
     private fun arbString(key: String): String {
         val candidates = listOf(
-            File("../../lib/l10n/app_zh.arb"),
-            File("../lib/l10n/app_zh.arb"),
-            File("lib/l10n/app_zh.arb"),
+            File("../../i18n/app_zh.arb"),
+            File("../i18n/app_zh.arb"),
+            File("i18n/app_zh.arb"),
         )
         val file = candidates.firstOrNull { it.isFile }
-            ?: error("找不到 lib/l10n/app_zh.arb，工作目录=${File(".").absolutePath}")
+            ?: error("找不到 i18n/app_zh.arb，工作目录=${File(".").absolutePath}")
         @Suppress("UNCHECKED_CAST")
         val json = MiniJson.parse(file.readText(Charsets.UTF_8)) as Map<String, Any?>
         return json[key] as? String ?: error("ARB 缺少键 $key")

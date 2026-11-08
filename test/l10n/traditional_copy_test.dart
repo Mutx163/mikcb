@@ -64,7 +64,7 @@ void main() {
   group('Traditional Chinese copy', () {
     for (final locale in ['zh_TW', 'zh_HK']) {
       test('$locale has no simplified characters left in user-facing copy', () {
-        final arb = loadArb('lib/l10n/app_$locale.arb');
+        final arb = loadArb('i18n/app_$locale.arb');
         final offenders = <String>[];
 
         for (final entry in arb.entries) {
@@ -90,7 +90,7 @@ void main() {
       });
 
       test('$locale has no known machine-conversion typos', () {
-        final arb = loadArb('lib/l10n/app_$locale.arb');
+        final arb = loadArb('i18n/app_$locale.arb');
         for (final bad in knownBad) {
           for (final entry in arb.entries) {
             final value = entry.value;
@@ -103,13 +103,13 @@ void main() {
     }
 
     test('traditional locales keep the same key set as simplified', () {
-      final zh = loadArb('lib/l10n/app_zh.arb');
+      final zh = loadArb('i18n/app_zh.arb');
       final zhKeys = zh.keys
           .where((k) => k != '@@locale' && !k.startsWith('@'))
           .toSet();
 
       for (final locale in ['zh_TW', 'zh_HK']) {
-        final arb = loadArb('lib/l10n/app_$locale.arb');
+        final arb = loadArb('i18n/app_$locale.arb');
         final keys = arb.keys
             .where((k) => k != '@@locale' && !k.startsWith('@'))
             .toSet();
@@ -121,11 +121,11 @@ void main() {
     });
 
     test('traditional locales preserve every placeholder', () {
-      final zh = loadArb('lib/l10n/app_zh.arb');
+      final zh = loadArb('i18n/app_zh.arb');
       final re = RegExp(r'\{[^}]*\}');
 
       for (final locale in ['zh_TW', 'zh_HK']) {
-        final arb = loadArb('lib/l10n/app_$locale.arb');
+        final arb = loadArb('i18n/app_$locale.arb');
         for (final key in zh.keys) {
           if (key == '@@locale' || key.startsWith('@')) continue;
           final src = zh[key];

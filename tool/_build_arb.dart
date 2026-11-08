@@ -14,14 +14,14 @@ void main(List<String> args) {
   final chunkDir = args[1];
 
   final source = jsonDecode(
-    File('lib/l10n/app_zh.arb').readAsStringSync(),
+    File('i18n/app_zh.arb').readAsStringSync(),
   ) as Map<String, dynamic>;
 
   // 读取所有 chunk 文件
   final translations = <String, String>{};
 
   // 先读取现有的 ARB 文件（如果有）
-  final existingPath = 'lib/l10n/app_$locale.arb';
+  final existingPath = 'i18n/app_$locale.arb';
   if (File(existingPath).existsSync()) {
     final existing = jsonDecode(File(existingPath).readAsStringSync()) as Map<String, dynamic>;
     for (final e in existing.entries) {
@@ -67,7 +67,7 @@ void main(List<String> args) {
     }
   }
 
-  final outPath = 'lib/l10n/app_$locale.arb';
+  final outPath = 'i18n/app_$locale.arb';
   File(outPath).writeAsStringSync(
     '${const JsonEncoder.withIndent('  ').convert(merged)}\n',
   );

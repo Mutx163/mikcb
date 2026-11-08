@@ -667,9 +667,9 @@ class IcsImportModelTest {
     private fun repoFile(relative: String): File {
         var dir: File? = File("").absoluteFile
         repeat(8) {
-            if (File(dir, "lib/l10n/app_zh.arb").isFile) return File(dir!!, relative)
+            if (File(dir, "i18n/app_zh.arb").isFile) return File(dir!!, relative)
             dir = dir?.parentFile
         }
-        error("找不到仓库根（未定位到 lib/l10n/app_zh.arb）")
+        error("找不到仓库根（未定位到 i18n/app_zh.arb）")
     }
 }

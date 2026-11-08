@@ -185,14 +185,14 @@ class WeeklyReportScheduleLogicTest {
         var dir: File? = File("").absoluteFile
         var file: File? = null
         repeat(8) {
-            val candidate = File(dir, "lib/l10n/app_zh.arb")
+            val candidate = File(dir, "i18n/app_zh.arb")
             if (candidate.isFile) {
                 file = candidate
                 return@repeat
             }
             dir = dir?.parentFile
         }
-        val arbFile = file ?: error("找不到 lib/l10n/app_zh.arb")
+        val arbFile = file ?: error("找不到 i18n/app_zh.arb")
         val parsed = MiniJson.parse(arbFile.readText(Charsets.UTF_8))
         val map = LinkedHashMap<String, String>()
         (parsed as Map<*, *>).forEach { (k, v) -> if (k is String && v is String) map[k] = v }

@@ -280,7 +280,7 @@ tasks.withType(Test).configureEach { test ->
     // 基线 + ARB 是上面那条假绿的直接原因，必须声明。
     test.inputs.file(project.file('src/test/kotlin/com/mutx163/qingyu/i18n/cjk-literal-baseline.txt'))
             .withPropertyName('i18nCjkBaseline')
-    test.inputs.file(project.file('../../lib/l10n/app_zh.arb')).withPropertyName('i18nArbZh')
+    test.inputs.file(project.file('../../i18n/app_zh.arb')).withPropertyName('i18nArbZh')
     // 渲染层源码本会经编译进入 inputs，但门禁读的是磁盘原文（含未参与编译的资源式
     // 片段），显式再声明一次：任一文件改动都强制重跑，代价只是一次测试。
     test.inputs.dir(project.file('src/composeP1/kotlin')).withPropertyName('i18nRenderSources')

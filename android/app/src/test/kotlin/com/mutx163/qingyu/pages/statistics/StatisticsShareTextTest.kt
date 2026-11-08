@@ -15,7 +15,7 @@ import org.junit.Test
  *
  * - Dart `statistics_share_service.dart:104-108`：分享 payload 的 subject 取
  *   `l10n.statisticsShareTitle`、text 取 `l10n.statisticsShareText`；
- * - ARB 直读对拍（`lib/l10n/app_zh.arb`），不手抄；
+ * - ARB 直读对拍（`i18n/app_zh.arb`），不手抄；
  * - 「无数据不许编数字」是清单 §一 1.2 的红线（假成功比没反应更糟），人推得出。
  */
 class StatisticsShareTextTest {
@@ -83,9 +83,9 @@ class StatisticsShareTextTest {
     @Test
     fun `subject取ARB的statisticsShareTitle`() {
         val file = listOf(
-            File("../lib/l10n/app_zh.arb"),
-            File("../../lib/l10n/app_zh.arb"),
-            File("lib/l10n/app_zh.arb"),
+            File("../i18n/app_zh.arb"),
+            File("../../i18n/app_zh.arb"),
+            File("i18n/app_zh.arb"),
         ).firstOrNull { it.isFile } ?: error("找不到 app_zh.arb")
         @Suppress("UNCHECKED_CAST")
         val arb = MiniJson.parse(file.readText(Charsets.UTF_8)) as Map<String, Any?>

@@ -8,7 +8,7 @@ import java.io.File
  *
  * 这里只做三件事：
  * 1. 把 [SettingsPageSpec] 的节点树摊平成「(ARB 键, 屏上文案)」清单，供逐字对照；
- * 2. 从工作目录向上找到 `lib/l10n/app_zh.arb` 并解析（文案的**唯一真源**）；
+ * 2. 从工作目录向上找到 `i18n/app_zh.arb` 并解析（文案的**唯一真源**）；
  * 3. 文案宽度口径的**断言镜像**（权威定义在 `tool/copy_style_rules.dart`，
  *    这里只为「Kotlin 侧行控件标题 ≤11 / 说明 ≤17」这条纪律提供量尺，
  *    不是第二处定义——改口径请改 Dart 那份，然后同步这里）。
@@ -101,7 +101,7 @@ fun SettingsPageSpec.allArbTexts(): List<Pair<String, String>> {
 
 object ArbZh {
 
-    /** `lib/l10n/app_zh.arb` 的解析结果（key → zh 文案）。 */
+    /** `i18n/app_zh.arb` 的解析结果（key → zh 文案）。 */
     val strings: Map<String, String> by lazy { load() }
 
     fun value(key: String): String =
@@ -116,15 +116,15 @@ object ArbZh {
         return map
     }
 
-    /** 从工作目录向上找仓库根，再定位 `lib/l10n/app_zh.arb`。 */
+    /** 从工作目录向上找仓库根，再定位 `i18n/app_zh.arb`。 */
     private fun findArb(): File {
         var dir: File? = File("").absoluteFile
         repeat(8) {
-            val candidate = File(dir, "lib/l10n/app_zh.arb")
+            val candidate = File(dir, "i18n/app_zh.arb")
             if (candidate.isFile) return candidate
             dir = dir?.parentFile
         }
-        error("找不到 lib/l10n/app_zh.arb（工作目录 ${File("").absolutePath}）")
+        error("找不到 i18n/app_zh.arb（工作目录 ${File("").absolutePath}）")
     }
 }
 

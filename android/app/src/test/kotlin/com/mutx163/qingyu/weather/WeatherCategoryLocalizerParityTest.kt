@@ -8,7 +8,7 @@ import org.junit.Test
 import java.io.File
 
 /**
- * 共享层天气现象标签逐字对照 ARB（`lib/l10n/app_zh.arb`）。
+ * 共享层天气现象标签逐字对照 ARB（`i18n/app_zh.arb`）。
  *
  * [WeatherCategoryLocalizer] 的中文是**照抄 ARB 的第二份副本**（第一份在
  * `pages.weather.WeatherStrings`，由 `WeatherStringsParityTest` 对拍）。共享层不能
@@ -70,14 +70,14 @@ class WeatherCategoryLocalizerParityTest {
         var dir: File? = File("").absoluteFile
         var arbFile: File? = null
         repeat(8) {
-            val candidate = File(dir, "lib/l10n/app_zh.arb")
+            val candidate = File(dir, "i18n/app_zh.arb")
             if (candidate.isFile) {
                 arbFile = candidate
                 return@repeat
             }
             dir = dir?.parentFile
         }
-        val file = arbFile ?: error("找不到 lib/l10n/app_zh.arb")
+        val file = arbFile ?: error("找不到 i18n/app_zh.arb")
         val parsed = MiniJson.parse(file.readText(Charsets.UTF_8))
         check(parsed is Map<*, *>) { "app_zh.arb 顶层不是对象：${file.absolutePath}" }
         val map = LinkedHashMap<String, String>()

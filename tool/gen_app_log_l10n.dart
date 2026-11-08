@@ -46,7 +46,7 @@ void main(List<String> args) {
 
   final messagesFile = File('${root.path}/lib/logging/app_log_messages.dart');
   final localizerFile = File('${root.path}/lib/logging/app_log_message_localizer.dart');
-  final arbFile = File('${root.path}/lib/l10n/app_en.arb');
+  final arbFile = File('${root.path}/i18n/app_en.arb');
 
   for (final file in [messagesFile, localizerFile, arbFile]) {
     if (!file.existsSync()) {

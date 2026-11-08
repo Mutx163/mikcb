@@ -121,7 +121,7 @@ class AppLocaleRuntimeTest {
     }
 
     private fun loadArb(name: String): Map<String, String> {
-        val file = File(repoRoot(), "lib/l10n/$name")
+        val file = File(repoRoot(), "i18n/$name")
         val parsed = MiniJson.parse(file.readText(Charsets.UTF_8))
         check(parsed is Map<*, *>) { "$name 顶层不是对象" }
         val map = LinkedHashMap<String, String>()
@@ -132,9 +132,9 @@ class AppLocaleRuntimeTest {
     private fun repoRoot(): File {
         var dir: File? = File("").absoluteFile
         repeat(8) {
-            if (File(dir, "lib/l10n/app_zh.arb").isFile) return dir!!
+            if (File(dir, "i18n/app_zh.arb").isFile) return dir!!
             dir = dir?.parentFile
         }
-        error("找不到仓库根（lib/l10n/app_zh.arb），工作目录 ${File("").absolutePath}")
+        error("找不到仓库根（i18n/app_zh.arb），工作目录 ${File("").absolutePath}")
     }
 }

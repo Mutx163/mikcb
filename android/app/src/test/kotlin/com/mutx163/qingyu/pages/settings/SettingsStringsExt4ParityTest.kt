@@ -5,7 +5,7 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 /**
- * P3-B-4 文案逐字对照 ARB（`lib/l10n/app_zh.arb` = template，见 `l10n.yaml`）。
+ * P3-B-4 文案逐字对照 ARB（`i18n/app_zh.arb` = template，见 `l10n.yaml`）。
  *
  * 验收门槛 3：界面文字与 ARB 原文一字不差。这条测试同时钉三件事：
  *

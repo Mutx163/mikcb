@@ -7,7 +7,7 @@ import org.junit.Test
 import java.io.File
 
 /**
- * 「提醒时间」子屏文案逐字对照 ARB（`lib/l10n/app_zh.arb`）。
+ * 「提醒时间」子屏文案逐字对照 ARB（`i18n/app_zh.arb`）。
  *
  * 验收门槛：界面文案与 ARB 原文逐字一致，不自己改写、不省略占位符；
  * 且格式化纯函数、摘要/副标题映射都落在 ARB 原句上。
@@ -139,14 +139,14 @@ class ReminderTimingStringsParityTest {
         var dir: File? = File("").absoluteFile
         var arbFile: File? = null
         repeat(8) {
-            val candidate = File(dir, "lib/l10n/app_zh.arb")
+            val candidate = File(dir, "i18n/app_zh.arb")
             if (candidate.isFile) {
                 arbFile = candidate
                 return@repeat
             }
             dir = dir?.parentFile
         }
-        val file = arbFile ?: error("找不到 lib/l10n/app_zh.arb")
+        val file = arbFile ?: error("找不到 i18n/app_zh.arb")
         val parsed = MiniJson.parse(file.readText(Charsets.UTF_8))
         check(parsed is Map<*, *>) { "app_zh.arb 顶层不是对象：${file.absolutePath}" }
         val map = LinkedHashMap<String, String>()

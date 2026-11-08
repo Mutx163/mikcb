@@ -13,7 +13,7 @@ import org.junit.Test
  * 1. `NOTICES` 解析（许可证真实数据源）：用**手工构造**的极简样本，期望值是「按格式读出来应该是什么」，
  *    不是从实现里抄的；
  * 2. 贡献者分组排序：按名字升序；
- * 3. 新增文案与 `lib/l10n/app_zh.arb` **逐字对拍**（不手抄信任）。
+ * 3. 新增文案与 `i18n/app_zh.arb` **逐字对拍**（不手抄信任）。
  */
 class AboutFamilyModelTest {
 
@@ -124,12 +124,12 @@ class AboutFamilyModelTest {
 
     private fun arbString(key: String): String {
         val candidates = listOf(
-            File("../../lib/l10n/app_zh.arb"),
-            File("../lib/l10n/app_zh.arb"),
-            File("lib/l10n/app_zh.arb"),
+            File("../../i18n/app_zh.arb"),
+            File("../i18n/app_zh.arb"),
+            File("i18n/app_zh.arb"),
         )
         val file = candidates.firstOrNull { it.isFile }
-            ?: error("找不到 lib/l10n/app_zh.arb，工作目录=${File(".").absolutePath}")
+            ?: error("找不到 i18n/app_zh.arb，工作目录=${File(".").absolutePath}")
         @Suppress("UNCHECKED_CAST")
         val json = MiniJson.parse(file.readText(Charsets.UTF_8)) as Map<String, Any?>
         return json[key] as? String ?: error("ARB 缺少键 $key")

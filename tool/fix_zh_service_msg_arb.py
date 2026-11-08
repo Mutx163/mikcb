@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""只修 `lib/l10n/app_zh.arb` 里 **serviceMsg 系列**的译文，其余键一个不碰。
+"""只修 `i18n/app_zh.arb` 里 **serviceMsg 系列**的译文，其余键一个不碰。
 
 用法：
     python tool/fix_zh_service_msg_arb.py                 # 只检查，不写盘（默认）

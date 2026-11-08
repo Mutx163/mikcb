@@ -7,7 +7,7 @@ import org.junit.Test
 import java.io.File
 
 /**
- * 导出与传输族「余量三件」文案逐字对照 ARB（`lib/l10n/app_zh.arb`）。
+ * 导出与传输族「余量三件」文案逐字对照 ARB（`i18n/app_zh.arb`）。
  *
  * `TransferExtStrings.kt` 的类注释一直声称「每条都在 `TransferExtStringsParityTest`
  * 里与 ARB 机械比对」，但在此之前**这个测试并不存在**：取件码的标题、分组名、七个入口、
@@ -60,14 +60,14 @@ class TransferExtStringsParityTest {
         var dir: File? = File("").absoluteFile
         var arbFile: File? = null
         repeat(8) {
-            val candidate = File(dir, "lib/l10n/app_zh.arb")
+            val candidate = File(dir, "i18n/app_zh.arb")
             if (candidate.isFile) {
                 arbFile = candidate
                 return@repeat
             }
             dir = dir?.parentFile
         }
-        val file = arbFile ?: error("找不到 lib/l10n/app_zh.arb")
+        val file = arbFile ?: error("找不到 i18n/app_zh.arb")
         val parsed = MiniJson.parse(file.readText(Charsets.UTF_8))
         check(parsed is Map<*, *>) { "app_zh.arb 顶层不是对象：${file.absolutePath}" }
         val map = LinkedHashMap<String, String>()

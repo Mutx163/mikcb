@@ -209,12 +209,12 @@ class AboutUpdateLogicTest {
 
     private fun arbString(key: String): String {
         val candidates = listOf(
-            File("../../lib/l10n/app_zh.arb"),
-            File("../lib/l10n/app_zh.arb"),
-            File("lib/l10n/app_zh.arb"),
+            File("../../i18n/app_zh.arb"),
+            File("../i18n/app_zh.arb"),
+            File("i18n/app_zh.arb"),
         )
         val file = candidates.firstOrNull { it.isFile }
-            ?: error("找不到 lib/l10n/app_zh.arb，工作目录=" + File(".").absolutePath)
+            ?: error("找不到 i18n/app_zh.arb，工作目录=" + File(".").absolutePath)
         @Suppress("UNCHECKED_CAST")
         val json = MiniJson.parse(file.readText(Charsets.UTF_8)) as Map<String, Any?>
         return json[key] as? String ?: error("ARB 缺少键 " + key)

@@ -60,9 +60,9 @@ class NoRawChineseAccessorTest {
     private fun repoRoot(): File {
         var dir: File? = File("").absoluteFile
         repeat(8) {
-            if (File(dir, "lib/l10n/app_zh.arb").isFile) return dir!!
+            if (File(dir, "i18n/app_zh.arb").isFile) return dir!!
             dir = dir?.parentFile
         }
-        error("找不到仓库根（lib/l10n/app_zh.arb），工作目录 ${File("").absolutePath}")
+        error("找不到仓库根（i18n/app_zh.arb），工作目录 ${File("").absolutePath}")
     }
 }

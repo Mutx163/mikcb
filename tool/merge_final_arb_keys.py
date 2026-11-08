@@ -26,7 +26,7 @@ files = {
     "app_ko.arb": extra_en,
 }
 for fn, ex in files.items():
-    path = Path("lib/l10n") / fn
+    path = Path("i18n") / fn
     data = json.loads(path.read_text(encoding="utf-8"))
     for key, value in ex.items():
         if key in data:

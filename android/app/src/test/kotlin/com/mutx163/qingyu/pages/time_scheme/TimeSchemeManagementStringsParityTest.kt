@@ -8,7 +8,7 @@ import org.junit.Test
 import java.io.File
 
 /**
- * 时间模板管理页文案逐字对照 ARB（`lib/l10n/app_zh.arb`）。
+ * 时间模板管理页文案逐字对照 ARB（`i18n/app_zh.arb`）。
  *
  * 与 `ExamStringsParityTest` / `TimetableStringsParityTest` 同一套机制：页面是 Kotlin
  * 重写，不读 Flutter 的 gen-l10n，所以每条屏上文案都必须能被机械证明与 ARB 原文一致，
@@ -150,7 +150,7 @@ class TimeSchemeManagementStringsParityTest {
     }
 
     /**
-     * 从测试工作目录向上找 `lib/l10n/app_zh.arb`，用 core 的 [MiniJson] 解析。
+     * 从测试工作目录向上找 `i18n/app_zh.arb`，用 core 的 [MiniJson] 解析。
      *
      * 与 `TimetableStringsParityTest` 同一套加载方式：手写正则解析 ARB 会在
      * 值里出现转义引号或换行时静默读错，而读错的对拍测试比没有更危险。
@@ -159,14 +159,14 @@ class TimeSchemeManagementStringsParityTest {
         var dir: File? = File("").absoluteFile
         var arbFile: File? = null
         repeat(8) {
-            val candidate = File(dir, "lib/l10n/app_zh.arb")
+            val candidate = File(dir, "i18n/app_zh.arb")
             if (candidate.isFile) {
                 arbFile = candidate
                 return@repeat
             }
             dir = dir?.parentFile
         }
-        val file = arbFile ?: error("找不到 lib/l10n/app_zh.arb，当前工作目录 ${File("").absolutePath}")
+        val file = arbFile ?: error("找不到 i18n/app_zh.arb，当前工作目录 ${File("").absolutePath}")
         val parsed = MiniJson.parse(file.readText(Charsets.UTF_8))
         check(parsed is Map<*, *>) { "app_zh.arb 顶层不是对象：${file.absolutePath}" }
         val map = LinkedHashMap<String, String>()

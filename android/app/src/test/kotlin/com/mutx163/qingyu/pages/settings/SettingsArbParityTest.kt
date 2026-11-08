@@ -5,7 +5,7 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 /**
- * 文案逐字对照 ARB（`lib/l10n/app_zh.arb` = template，见 `l10n.yaml`）。
+ * 文案逐字对照 ARB（`i18n/app_zh.arb` = template，见 `l10n.yaml`）。
  *
  * ## 为什么这条要单独存在
  *

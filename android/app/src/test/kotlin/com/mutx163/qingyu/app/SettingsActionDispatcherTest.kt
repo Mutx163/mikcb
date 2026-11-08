@@ -1263,9 +1263,9 @@ class SettingsActionDispatcherTest {
     private fun repoRoot(): File {
         var dir: File? = File("").absoluteFile
         repeat(8) {
-            if (File(dir, "lib/l10n/app_zh.arb").isFile) return dir!!
+            if (File(dir, "i18n/app_zh.arb").isFile) return dir!!
             dir = dir?.parentFile
         }
-        error("找不到仓库根（未定位到 lib/l10n/app_zh.arb）")
+        error("找不到仓库根（未定位到 i18n/app_zh.arb）")
     }
 }

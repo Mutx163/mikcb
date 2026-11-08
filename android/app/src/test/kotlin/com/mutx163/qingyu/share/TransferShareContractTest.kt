@@ -15,7 +15,7 @@ import org.junit.Test
  * - 字节上限的边界值按 Dart `readImportFileBytes` 的 `length > maxBytes` 口径推
  *   （等于上限**能**导，多 1 字节就拒）；
  * - MIME 顺序按「JSON 在前」的既有约定（同 `BackupSafContract.OPEN_MIME_TYPES`）；
- * - 文案键直接写 ARB 里的键名字面量（`lib/l10n/app_zh.arb` 里逐字可查）。
+ * - 文案键直接写 ARB 里的键名字面量（`i18n/app_zh.arb` 里逐字可查）。
  *
  * 这些值一旦被谁改坏（例如把 `>` 写成 `>=`、把 authority 后缀拼错、把 MIME 顺序颠倒），
  * 本文件会红——Android 侧的两个胶水适配器进不了单测，它们是这份契约的**唯一**自动化证据。
@@ -174,7 +174,7 @@ class TransferShareContractTest {
     // ------------------------------------------------------------------
 
     @Test fun `导入侧文案键与ARB一致`() {
-        // 这两个键在 lib/l10n/app_zh.arb 里逐字存在
+        // 这两个键在 i18n/app_zh.arb 里逐字存在
         assertEquals(
             "importFileTooLarge",
             TransferShareContract.failureMessageKey(TransferShareContract.Failure.FILE_TOO_LARGE),

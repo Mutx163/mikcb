@@ -15,12 +15,12 @@ void main() {
   final en = jsonDecode(File(enPath).readAsStringSync()) as Map<String, dynamic>;
 
   final targets = {
-    'zh': ('lib/l10n/app_zh.arb', zh),
-    'en': ('lib/l10n/app_en.arb', en),
-    'zh_HK': ('lib/l10n/app_zh_HK.arb', zh),
-    'zh_TW': ('lib/l10n/app_zh_TW.arb', zh),
-    'ja': ('lib/l10n/app_ja.arb', en),
-    'ko': ('lib/l10n/app_ko.arb', en),
+    'zh': ('i18n/app_zh.arb', zh),
+    'en': ('i18n/app_en.arb', en),
+    'zh_HK': ('i18n/app_zh_HK.arb', zh),
+    'zh_TW': ('i18n/app_zh_TW.arb', zh),
+    'ja': ('i18n/app_ja.arb', en),
+    'ko': ('i18n/app_ko.arb', en),
   };
 
   for (final entry in targets.entries) {

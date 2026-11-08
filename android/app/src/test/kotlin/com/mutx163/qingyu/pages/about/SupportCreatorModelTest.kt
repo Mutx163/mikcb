@@ -13,7 +13,7 @@ import org.junit.Test
  * 期望值来源（独立于实现）：
  * - 解析/排序：逐条对照 `support_creator_service.dart` 的 `fromJson` /
  *   `_compareDonorDateDesc`（:53-103）行号语义；
- * - 文案：直读 `lib/l10n/app_zh.arb` 对拍（不手抄）；
+ * - 文案：直读 `i18n/app_zh.arb` 对拍（不手抄）；
  * - 边界：空名单、非 Map 元素、缺 name、日期不可解析，人推得出。
  */
 class SupportCreatorModelTest {
@@ -173,12 +173,12 @@ class SupportCreatorModelTest {
 
     private fun arbString(key: String): String {
         val candidates = listOf(
-            File("../../lib/l10n/app_zh.arb"),
-            File("../lib/l10n/app_zh.arb"),
-            File("lib/l10n/app_zh.arb"),
+            File("../../i18n/app_zh.arb"),
+            File("../i18n/app_zh.arb"),
+            File("i18n/app_zh.arb"),
         )
         val file = candidates.firstOrNull { it.isFile }
-            ?: error("找不到 lib/l10n/app_zh.arb，工作目录=${File(".").absolutePath}")
+            ?: error("找不到 i18n/app_zh.arb，工作目录=${File(".").absolutePath}")
         @Suppress("UNCHECKED_CAST")
         val json = MiniJson.parse(file.readText(Charsets.UTF_8)) as Map<String, Any?>
         return json[key] as? String ?: error("ARB 缺少键 $key")

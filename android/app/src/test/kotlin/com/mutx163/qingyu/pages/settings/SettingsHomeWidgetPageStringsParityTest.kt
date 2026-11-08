@@ -5,7 +5,7 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 /**
- * P3-B-2 四页的**文案逐字对拍**（ARB 真源：`lib/l10n/app_zh.arb`）。
+ * P3-B-2 四页的**文案逐字对拍**（ARB 真源：`i18n/app_zh.arb`）。
  *
  * ## 为什么单独一个文件
  *

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""从 `lib/l10n/app_zh.arb` 导出 `MonthViewStrings.kt`（月视图文案表）。
+"""从 `i18n/app_zh.arb` 导出 `MonthViewStrings.kt`（月视图文案表）。
 
 **唯一目的是保证逐字一致**：ARB 改了要重新跑本脚本，别手改生成物。
 用法：`PYTHONIOENCODING=utf-8 python tool/gen_month_view_strings.py`
@@ -8,7 +8,7 @@ import json
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-ARB = ROOT / "lib/l10n/app_zh.arb"
+ARB = ROOT / "i18n/app_zh.arb"
 OUT = ROOT / "android/app/src/main/kotlin/com/mutx163/qingyu/pages/timetable/month/MonthViewStrings.kt"
 
 # 上屏顺序：工具行/标题 → 议程/空态 → 概览 → 无障碍语义
@@ -57,7 +57,7 @@ def main():
     kotlin = f'''package com.mutx163.qingyu.pages.timetable.month
 
 /**
- * 月视图用到的全部 ARB 文案（`lib/l10n/app_zh.arb`）。
+ * 月视图用到的全部 ARB 文案（`i18n/app_zh.arb`）。
  *
  * **逐字抄录，不许改写**：每一条都在 [MonthViewStringsParityTest] 里与 ARB 机械比对，
  * 键缺失或值被改写都会红。表里只收录月视图真正上屏的 `monthView*` / `monthOverview*` 键。

@@ -73,13 +73,13 @@ class ComposeSourceSetMountGuardTest {
         )
     }
 
-    /** 与 `CjkLiteralGateTest` 一致的仓库根定位：往上找到含 `lib/l10n/app_zh.arb` 的目录。 */
+    /** 与 `CjkLiteralGateTest` 一致的仓库根定位：往上找到含 `i18n/app_zh.arb` 的目录。 */
     private fun repoRoot(): File {
         var dir: File? = File("").absoluteFile
         repeat(8) {
-            if (File(dir, "lib/l10n/app_zh.arb").isFile) return dir!!
+            if (File(dir, "i18n/app_zh.arb").isFile) return dir!!
             dir = dir?.parentFile
         }
-        error("找不到仓库根（未定位到 lib/l10n/app_zh.arb）")
+        error("找不到仓库根（未定位到 i18n/app_zh.arb）")
     }
 }

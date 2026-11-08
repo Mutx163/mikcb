@@ -14,7 +14,7 @@ import java.io.File
  * 服务消息本地化（[TimeSchemeServiceMessages]）的两件事：
  *
  * 1. **文案逐字对拍 ARB**（`serviceMsg*` 键）——屏上出现的每一句都必须能在
- *    `lib/l10n/app_zh.arb` 里找到同名键，不许自造；
+ *    `i18n/app_zh.arb` 里找到同名键，不许自造；
  * 2. **码 → 句子的映射**逐条走通，包括 `section_count_below_usage_detail` 里
  *    嵌套的 `usageType`（它本身也是一条 service message 码）。
  *
@@ -196,14 +196,14 @@ class TimeSchemeServiceMessagesParityTest {
         var dir: File? = File("").absoluteFile
         var arbFile: File? = null
         repeat(8) {
-            val candidate = File(dir, "lib/l10n/app_zh.arb")
+            val candidate = File(dir, "i18n/app_zh.arb")
             if (candidate.isFile) {
                 arbFile = candidate
                 return@repeat
             }
             dir = dir?.parentFile
         }
-        val file = arbFile ?: error("找不到 lib/l10n/app_zh.arb，当前工作目录 ${File("").absolutePath}")
+        val file = arbFile ?: error("找不到 i18n/app_zh.arb，当前工作目录 ${File("").absolutePath}")
         val parsed = MiniJson.parse(file.readText(Charsets.UTF_8))
         check(parsed is Map<*, *>) { "app_zh.arb 顶层不是对象：${file.absolutePath}" }
         val map = LinkedHashMap<String, String>()

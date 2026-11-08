@@ -8,7 +8,7 @@ import org.junit.Test
 import java.io.File
 
 /**
- * 地点作息匹配页（含编辑页）文案逐字对照 ARB（`lib/l10n/app_zh.arb`）。
+ * 地点作息匹配页（含编辑页）文案逐字对照 ARB（`i18n/app_zh.arb`）。
  *
  * 与 `TimeSchemeManagementStringsParityTest` 同一套机制：编辑页是 Kotlin 重写、不读
  * gen-l10n，所以每条屏上文案都必须被机械证明与 ARB 原文一致。编辑页用到的
@@ -56,14 +56,14 @@ class LocationTimeMatchStringsParityTest {
         var dir: File? = File("").absoluteFile
         var arbFile: File? = null
         repeat(8) {
-            val candidate = File(dir, "lib/l10n/app_zh.arb")
+            val candidate = File(dir, "i18n/app_zh.arb")
             if (candidate.isFile) {
                 arbFile = candidate
                 return@repeat
             }
             dir = dir?.parentFile
         }
-        val file = arbFile ?: error("找不到 lib/l10n/app_zh.arb，当前工作目录 ${File("").absolutePath}")
+        val file = arbFile ?: error("找不到 i18n/app_zh.arb，当前工作目录 ${File("").absolutePath}")
         val parsed = MiniJson.parse(file.readText(Charsets.UTF_8))
         check(parsed is Map<*, *>) { "app_zh.arb 顶层不是对象：${file.absolutePath}" }
         val map = LinkedHashMap<String, String>()

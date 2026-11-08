@@ -5,7 +5,7 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 /**
- * 「课表页面设置」页文案逐字对照 ARB（`lib/l10n/app_zh.arb` = template，见 `l10n.yaml`）。
+ * 「课表页面设置」页文案逐字对照 ARB（`i18n/app_zh.arb` = template，见 `l10n.yaml`）。
  *
  * 钉三件事：
  * 1. [SettingsStringsExt5.allTexts] 里每一条的键都在 ARB 里存在；

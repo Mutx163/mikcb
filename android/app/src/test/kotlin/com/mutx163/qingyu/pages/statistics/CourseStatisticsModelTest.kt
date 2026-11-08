@@ -31,7 +31,7 @@ import org.junit.Test
  *    `semester_progress_card.dart`（进度卡）、`weekly_comparison_card.dart`（本周小结）、
  *    `daily_chart.dart`（每日柱状，最大/最小高亮）、`nature_ratio.dart`（必修选修环 + 缺失提示）、
  *    `achievement_badge.dart`（进度文案）、`data_story_card.dart`（故事正文）；
- * 3. `lib/l10n/app_zh.arb` 的原文字面量。
+ * 3. `i18n/app_zh.arb` 的原文字面量。
  *
  * 这里刻意**不**重算学期统计数值（那是 Phase 2 已交付的 `StatisticsService`），
  * 而是把已算好的 `SemesterStats` / `SemesterProgress` / `WeeklyComparison` 等当输入，

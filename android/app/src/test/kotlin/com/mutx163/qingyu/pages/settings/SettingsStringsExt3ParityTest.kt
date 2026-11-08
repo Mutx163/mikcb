@@ -7,7 +7,7 @@ import org.junit.Test
 import java.io.File
 
 /**
- * P3-B-3 四页的文案逐字对照 ARB（`lib/l10n/app_zh.arb` = template，见 `l10n.yaml`）。
+ * P3-B-3 四页的文案逐字对照 ARB（`i18n/app_zh.arb` = template，见 `l10n.yaml`）。
  *
  * ## 与 `SettingsArbParityTest` 的分工
  *
@@ -213,7 +213,7 @@ class SettingsStringsExt3ParityTest {
         }
 
         // ② ARB 六份必须保留：Dart 侧还在消费，删了 gen-l10n 产物会缺 getter。
-        val arbDir = File(repoRoot(), "lib/l10n")
+        val arbDir = File(repoRoot(), "i18n")
         val arbFiles = listOf(
             "app_zh.arb",
             "app_en.arb",
@@ -267,14 +267,14 @@ class SettingsStringsExt3ParityTest {
                 text.key to text.zh
             }
 
-    /** 仓库根：以 `lib/l10n/app_zh.arb` 为标志文件向上找（L0 与 Gradle 的工作目录不同）。 */
+    /** 仓库根：以 `i18n/app_zh.arb` 为标志文件向上找（L0 与 Gradle 的工作目录不同）。 */
     private fun repoRoot(): File {
         var dir: File? = File("").absoluteFile
         repeat(8) {
-            if (File(dir, "lib/l10n/app_zh.arb").isFile) return dir!!
+            if (File(dir, "i18n/app_zh.arb").isFile) return dir!!
             dir = dir?.parentFile
         }
-        error("找不到仓库根（lib/l10n/app_zh.arb），工作目录 ${File("").absolutePath}")
+        error("找不到仓库根（i18n/app_zh.arb），工作目录 ${File("").absolutePath}")
     }
 
     private fun assertMatchesArb(key: String, text: String) {

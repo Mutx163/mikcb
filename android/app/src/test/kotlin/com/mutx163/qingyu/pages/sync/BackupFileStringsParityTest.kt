@@ -7,7 +7,7 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 /**
- * 备份文件读取用到的 ARB 文案逐字对照 `lib/l10n/app_zh.arb`（验收门槛 3）。
+ * 备份文件读取用到的 ARB 文案逐字对照 `i18n/app_zh.arb`（验收门槛 3）。
  *
  * 为什么这条单测必须存在：本批**不允许新增 ARB 键**，所以 [BackupFileStrings] 里的
  * 每一条都是「抄既有键」。抄错一个字（或哪天 ARB 那边改了措辞而这里没跟）就会
@@ -46,14 +46,14 @@ class BackupFileStringsParityTest {
         var dir: File? = File("").absoluteFile
         var arbFile: File? = null
         repeat(8) {
-            val candidate = File(dir, "lib/l10n/app_zh.arb")
+            val candidate = File(dir, "i18n/app_zh.arb")
             if (candidate.isFile) {
                 arbFile = candidate
                 return@repeat
             }
             dir = dir?.parentFile
         }
-        val file = arbFile ?: error("找不到 lib/l10n/app_zh.arb")
+        val file = arbFile ?: error("找不到 i18n/app_zh.arb")
         val parsed = MiniJson.parse(file.readText(Charsets.UTF_8))
         check(parsed is Map<*, *>) { "app_zh.arb 顶层不是对象：${file.absolutePath}" }
         val map = LinkedHashMap<String, String>()

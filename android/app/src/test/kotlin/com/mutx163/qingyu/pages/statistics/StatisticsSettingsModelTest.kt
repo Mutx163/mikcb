@@ -12,7 +12,7 @@ import org.junit.Test
  * 期望值全部从 Dart 源手推：
  * - 下次推送时刻取自 `lib/services/weekly_report_service.dart:WeeklyReportService.nextFireAt`
  *   （「今天起算到最近的周日 21:00，若今天已是/已过推送时刻则顺延一周」）；
- * - 文案取自 `lib/l10n/app_zh.arb`（`weeklyReportNextFire` 等）。
+ * - 文案取自 `i18n/app_zh.arb`（`weeklyReportNextFire` 等）。
  *
  * 日期基准：2026-10-27 是**周二**；该周的周日是 2026-11-01。
  */

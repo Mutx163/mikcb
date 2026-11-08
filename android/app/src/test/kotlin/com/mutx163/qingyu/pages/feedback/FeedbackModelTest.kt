@@ -16,7 +16,7 @@ import org.junit.Test
  *   逐个候选 URL 尝试、空串跳过、全部失败才回落复制 + 黄色提示；
  * - QQ 深链：`Uri.encodeComponent`（Dart 保留 `A-Za-z0-9-_.!~*'()`）拼接，
  *   期望值按 Dart 文档口径手推，不抄实现；
- * - 文案：直读 `lib/l10n/app_zh.arb` 逐字对拍。
+ * - 文案：直读 `i18n/app_zh.arb` 逐字对拍。
  */
 class FeedbackModelTest {
 
@@ -340,12 +340,12 @@ class FeedbackModelTest {
 
     private fun arbString(key: String): String {
         val candidates = listOf(
-            File("../../lib/l10n/app_zh.arb"),
-            File("../lib/l10n/app_zh.arb"),
-            File("lib/l10n/app_zh.arb"),
+            File("../../i18n/app_zh.arb"),
+            File("../i18n/app_zh.arb"),
+            File("i18n/app_zh.arb"),
         )
         val file = candidates.firstOrNull { it.isFile }
-            ?: error("找不到 lib/l10n/app_zh.arb，工作目录=${File(".").absolutePath}")
+            ?: error("找不到 i18n/app_zh.arb，工作目录=${File(".").absolutePath}")
         @Suppress("UNCHECKED_CAST")
         val json = MiniJson.parse(file.readText(Charsets.UTF_8)) as Map<String, Any?>
         return json[key] as? String ?: error("ARB 缺少键 $key")

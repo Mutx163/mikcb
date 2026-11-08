@@ -6,7 +6,7 @@ import org.junit.Test
 import java.io.File
 
 /**
- * 导入·仓库适配域文案逐字对照 ARB（`lib/l10n/app_zh.arb`）。
+ * 导入·仓库适配域文案逐字对照 ARB（`i18n/app_zh.arb`）。
  *
  * 验收门槛 3：界面文案与 ARB 原文逐字一致，不自己改写、不省略占位符。
  * 覆盖仓库适配、学校适配器、网页登录、宏录制、自定义调试与 AI 识图导入共 8 件 Dart 页面。
@@ -123,14 +123,14 @@ class WarehouseStringsParityTest {
         var dir: File? = File("").absoluteFile
         var arbFile: File? = null
         repeat(8) {
-            val candidate = File(dir, "lib/l10n/app_zh.arb")
+            val candidate = File(dir, "i18n/app_zh.arb")
             if (candidate.isFile) {
                 arbFile = candidate
                 return@repeat
             }
             dir = dir?.parentFile
         }
-        val file = arbFile ?: error("找不到 lib/l10n/app_zh.arb")
+        val file = arbFile ?: error("找不到 i18n/app_zh.arb")
         val parsed = com.mutx163.qingyu.core.MiniJson.parse(file.readText(Charsets.UTF_8))
         check(parsed is Map<*, *>) { "app_zh.arb 顶层不是对象：${file.absolutePath}" }
         val map = LinkedHashMap<String, String>()

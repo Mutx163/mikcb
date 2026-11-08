@@ -13,7 +13,7 @@ import 'package:flutter_test/flutter_test.dart';
 void main() {
   const locales = ['zh', 'zh_TW', 'zh_HK', 'en', 'ja', 'ko'];
   final arbs = <String, String>{
-    for (final l in locales) l: 'lib/l10n/app_$l.arb',
+    for (final l in locales) l: 'i18n/app_$l.arb',
   };
 
   Map<String, dynamic> load(String locale) {

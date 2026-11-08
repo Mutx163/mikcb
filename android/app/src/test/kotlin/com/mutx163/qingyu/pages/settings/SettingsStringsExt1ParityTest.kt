@@ -5,7 +5,7 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 /**
- * `SettingsStringsExt1` 的文案逐条等于 `lib/l10n/app_zh.arb`（模板语言 zh）。
+ * `SettingsStringsExt1` 的文案逐条等于 `i18n/app_zh.arb`（模板语言 zh）。
  *
  * ## 为什么补这一条（一轮审核 P2）
  *

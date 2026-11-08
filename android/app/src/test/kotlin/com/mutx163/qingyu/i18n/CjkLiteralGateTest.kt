@@ -154,7 +154,7 @@ class CjkLiteralGateTest {
                 problems.forEach { appendLine("  - $it") }
                 appendLine()
                 appendLine("新增 / 上调：屏上文案改走 `ArbText(\"<arbKey>\", \"<app_zh.arb 原文>\")`，")
-                appendLine("键值以 lib/l10n/app_zh.arb 为准，不得自拟说法。")
+                appendLine("键值以 i18n/app_zh.arb 为准，不得自拟说法。")
                 appendLine("已修复但基线未下调：执行 `python scripts/i18n-cjk-baseline.py --write`。")
             },
             problems.isEmpty(),
@@ -294,9 +294,9 @@ class CjkLiteralGateTest {
     private fun repoRoot(): File {
         var dir: File? = File("").absoluteFile
         repeat(8) {
-            if (File(dir, "lib/l10n/app_zh.arb").isFile) return dir!!
+            if (File(dir, "i18n/app_zh.arb").isFile) return dir!!
             dir = dir?.parentFile
         }
-        error("找不到仓库根（未定位到 lib/l10n/app_zh.arb）")
+        error("找不到仓库根（未定位到 i18n/app_zh.arb）")
     }
 }

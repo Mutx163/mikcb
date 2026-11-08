@@ -1,4 +1,7 @@
-arb-dir: lib/l10n
+# ARB 源已搬出 lib/（去 Flutter 化阶段 2 · P1）：源在 i18n/，生成物仍留在
+# lib/l10n/（Dart 侧还在 import 它；lib/ 整体删除时一并消失）。
+arb-dir: i18n
+output-dir: lib/l10n
 template-arb-file: app_zh.arb
 output-localization-file: app_localizations.dart
 untranslated-messages-file: l10n_untranslated.json
