@@ -215,6 +215,11 @@ jobs:
           restore-keys: |
             gradle-${{ runner.os }}-
 
+      # 去 Flutter 化阶段 2 · P2：出包改走 Gradle 原生任务，不再经 `flutter build apk`。
+      # ARM64 由 `app/build.gradle` 的 `abiFilters` 限定，不需要再传 `--target-platform`；
+      # `OVERRIDE_VERSION_NAME` 仍由 `app/build.gradle` 读环境变量，语义不变。
+      # Flutter 的 Dart 资源链此刻仍由 Flutter Gradle 插件挂在 assemble 上（withFlutter=true），
+      # 等 P4 删掉 lib/ 之后这条链才会彻底断开。
       - name: Build release APK
         env:
           ANDROID_KEYSTORE_PATH: app/upload-keystore.jks
@@ -222,7 +227,7 @@ jobs:
           ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
           ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
           OVERRIDE_VERSION_NAME: ${{ steps.meta.outputs.version_name }}
-        run: flutter build apk --release --flavor prod --target-platform android-arm64
+        run: ./gradlew :app:assembleProdRelease
 
       - name: Prepare artifact
         shell: bash

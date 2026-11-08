@@ -266,7 +266,7 @@
             # ── flutter_tools included build 镜像注入（同 stage 内联，规避 429）──
             # includeBuild 的 flutter_tools/gradle 自带 settings.gradle.kts（仓库仅
             # google+mavenCentral），主构建 settings 的镜像覆盖不到它；CNB 出口对
-            # Maven Central 限流（HTTP 429）。必须在同 stage 内、flutter build 前
+            # Maven Central 限流（HTTP 429）。必须在同 stage 内、Gradle 构建前
             # 就地注入（跨 stage 容器隔离，单独 stage 改镜像文件会丢失）。
             FTG_SETTINGS="$(cd "$(dirname "$(command -v flutter)")/.." && pwd)/packages/flutter_tools/gradle/settings.gradle.kts"
             if [ -f "$FTG_SETTINGS" ] && ! grep -q 'mirrors.cloud.tencent.com' "$FTG_SETTINGS"; then
@@ -285,7 +285,9 @@
             fi
 
             VERSION_NAME="${CNB_BRANCH#v}"
-            flutter build apk --release --flavor prod --target-platform android-arm64
+            # 去 Flutter 化阶段 2 · P2：出包改走 Gradle 原生任务（ARM64 由 app/build.gradle
+            # 的 abiFilters 限定），版本号仍通过 OVERRIDE_VERSION_NAME 注入，语义不变。
+            OVERRIDE_VERSION_NAME="$VERSION_NAME" ./gradlew :app:assembleProdRelease
 
             mkdir -p dist
             APK_PATH=""
