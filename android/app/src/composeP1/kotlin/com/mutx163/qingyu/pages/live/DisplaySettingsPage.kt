@@ -1,5 +1,6 @@
 package com.mutx163.qingyu.pages.live
 
+import android.animation.ValueAnimator
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -28,7 +29,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.dropShadow
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.graphics.shadow.Shadow
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -40,12 +44,23 @@ import com.mutx163.qingyu.components.QingyuPageTheme
 import com.mutx163.qingyu.components.QingyuSectionTitle
 import com.mutx163.qingyu.components.QingyuSliderPreference
 import com.mutx163.qingyu.components.QingyuWeightDelta
+import com.mutx163.qingyu.components.glass.GlassDockSpecular
+import com.mutx163.qingyu.components.glass.QingyuGlassSurface
+import com.mutx163.qingyu.components.glass.glassRimAlpha
 import com.mutx163.qingyu.components.shiftWeight
+import com.mutx163.qingyu.core.GlassSpec
+import com.mutx163.qingyu.core.GlassSpecResolver
+import com.mutx163.qingyu.core.HomeMaterialRenderSpec
+import com.mutx163.qingyu.core.dockGlassTuning
 import com.mutx163.qingyu.theme.QingyuShapes
 import com.mutx163.qingyu.theme.QingyuTheme
 import top.yukonga.miuix.kmp.basic.Switch
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TextButton
+import top.yukonga.miuix.kmp.blur.LayerBackdrop
+import top.yukonga.miuix.kmp.blur.isRuntimeShaderSupported
+import top.yukonga.miuix.kmp.blur.layerBackdrop
+import top.yukonga.miuix.kmp.blur.rememberLayerBackdrop
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import top.yukonga.miuix.kmp.preference.ArrowPreference
 import top.yukonga.miuix.kmp.preference.OverlayDropdownPreference
@@ -100,6 +115,23 @@ fun DisplaySettingsPage(
         endSecondsCountdownThresholdSeconds = state.endSecondsCountdownThreshold,
     )
 
+    // ── 速览 FAB 的玻璃采样源（2026-11-08 用户口径：这颗钮要“和首页导航栏一样的材质”）──
+    //
+    // 采的是**列表这一层**，不用骨架的 `LocalQingyuPageBackdrop`：那层把 FAB 自己也录进去
+    // （miuix 是“先录后采”，玻璃会一点点把自己上一帧糊进底座），而这里 FAB 是列表的兄弟节点，
+    // 只采它底下的卡片与页底色。`drawRect(pageBackground)` 不能省——`layerBackdrop` 只录
+    // 自己这一层、不含 Scaffold 底色，透明区进了模糊会扩成色块。
+    val pageBackground = Color(QingyuTheme.scaffoldBackground(dark))
+    val fabGlassEnabled = isRuntimeShaderSupported() && ValueAnimator.areAnimatorsEnabled()
+    val fabBackdrop = if (fabGlassEnabled) {
+        rememberLayerBackdrop {
+            drawRect(pageBackground)
+            drawContent()
+        }
+    } else {
+        null
+    }
+
     QingyuPageScaffold(title = title, onBack = onBack) {
         // 骨架照 `docs/reference/compose-page-style-rules.md` §三：滚动容器走共享套件
         //（官方三件套 + 右侧滚动条）。Box 仍保留：速览 FAB 要贴在底部居中。
@@ -107,6 +139,8 @@ fun DisplaySettingsPage(
         Box(modifier = Modifier.fillMaxSize().padding(innerPadding)) {
             QingyuPageList(
                 innerPadding = PaddingValues(0.dp),
+                // 玻璃采样层挂在列表自己这一层：录的就是“FAB 底下那片卡片 + 页底色”。
+                modifier = if (fabBackdrop != null) Modifier.layerBackdrop(fabBackdrop) else Modifier,
                 scrollBehavior = scrollBehavior,
                 verticalArrangement = Arrangement.spacedBy(12.dp),
                 contentPadding = PaddingValues(top = 8.dp, bottom = 104.dp),
@@ -518,6 +552,7 @@ fun DisplaySettingsPage(
                 active = stagePreviewActive,
                 busy = stagePreviewBusy,
                 dark = dark,
+                backdrop = fabBackdrop,
                 onClick = if (stagePreviewActive) onStagePreviewStop else onStagePreviewStart,
             )
         }
@@ -838,31 +873,115 @@ private fun IslandPreviewEmptyCard(
     }
 }
 
-/** 速览悬浮按钮（对照 Flutter `_LiveStagePreviewFab` 的胶囊玻璃钮；此处用实心胶囊兜底）。 */
+/**
+ * 速览悬浮按钮（对照 Flutter `_LiveStagePreviewFab` 的胶囊玻璃钮）。
+ *
+ * ## 材质 = 首页导航栏那一档（2026-11-08 用户口径）
+ *
+ * 原先是“主题面实心 + 1dp 描边”的白胶囊，与底下的列表毫无关系。现在走与玻璃坞**同一条**
+ * 渲染管线 [QingyuGlassSurface]（模糊 + 鲜活度 + 折射 + 边光）与**同一组出厂数值**
+ *（[StagePreviewFabGlassSpec] = `HomeMaterialRenderSpec.dockGlassTuning()`），染色色也用坞面的
+ * `surfaceContainer`，投影同口径（黑、10dp、亮色更淡）——屏幕上是“底栏那颗药丸的短版”。
+ *
+ * 拿不到采样源（设备不支持 runtime shader / 用户关了动效）时退回原来的实心胶囊：
+ * 不对着空气做模糊。
+ *
+ * @param backdrop 采样源 = **列表那一层**（见页面里 `fabBackdrop` 的注释）；null = 实心回落。
+ */
 @Composable
 private fun StagePreviewFab(
     label: String,
     active: Boolean,
     busy: Boolean,
     dark: Boolean,
+    backdrop: LayerBackdrop?,
     modifier: Modifier = Modifier,
     onClick: () -> Unit,
 ) {
     val ink = if (active) Color(QingyuTheme.error(dark)) else MiuixTheme.colorScheme.primary
-    Box(
-        modifier = modifier
-            .heightIn(min = 48.dp)
-            .clip(RoundedCornerShape(24.dp))
-            .background(MiuixTheme.colorScheme.surface)
-            .border(1.dp, Color(QingyuTheme.outline(dark)), RoundedCornerShape(24.dp))
-            .clickable(enabled = !busy, onClick = onClick)
-            .alpha(if (busy) 0.55f else 1f)
-            .padding(horizontal = 24.dp),
-        contentAlignment = Alignment.Center,
-    ) {
-        Text(text = label, style = MiuixTheme.textStyles.body2.shiftWeight(QingyuWeightDelta.MEDIUM), color = ink)
+    val shape = remember { RoundedCornerShape(StagePreviewFabCornerDp.dp) }
+    val surface = MiuixTheme.colorScheme.surfaceContainer
+    val shadow = remember(dark) {
+        Shadow(
+            radius = StagePreviewFabShadowRadiusDp.dp,
+            color = Color.Black,
+            // 亮色下更淡：深色阴影压在浅色页面上会显出一圈灰边（与底栏同一口径）。
+            alpha = if (dark) 0.2f else 0.1f,
+        )
+    }
+    /** 按钮内容：玻璃与实心两条分支共用一份，形态不会分叉。 */
+    val content: @Composable () -> Unit = {
+        Text(
+            text = label,
+            style = MiuixTheme.textStyles.body2.shiftWeight(QingyuWeightDelta.MEDIUM),
+            color = ink,
+            modifier = Modifier.padding(horizontal = StagePreviewFabHorizontalPaddingDp.dp),
+        )
+    }
+    val base = modifier.heightIn(min = StagePreviewFabMinHeightDp.dp)
+
+    if (backdrop != null) {
+        Box(
+            // 投影必须在 clip **之前**：写在条之后会被裁掉，胶囊就浮不起来。
+            modifier = base
+                .dropShadow(shape = shape, shadow = shadow)
+                .clip(shape)
+                .clickable(enabled = !busy, onClick = onClick)
+                .alpha(if (busy) 0.55f else 1f),
+            contentAlignment = Alignment.Center,
+        ) {
+            QingyuGlassSurface(
+                backdrop = backdrop,
+                spec = StagePreviewFabGlassSpec,
+                modifier = Modifier.matchParentSize(),
+                shape = shape,
+                // 染色就是坞面的 `surfaceContainer × liquidTintAlpha`，不是另调一个色。
+                tintBrush = SolidColor(surface.copy(alpha = StagePreviewFabGlassSpec.tintAlpha)),
+                highlight = GlassDockSpecular.copy(
+                    alpha = glassRimAlpha(StagePreviewFabGlassSpec.rimStrength),
+                ),
+            )
+            content()
+        }
+    } else {
+        Box(
+            modifier = base
+                .clip(shape)
+                .background(surface)
+                .border(1.dp, Color(QingyuTheme.outline(dark)), shape)
+                .clickable(enabled = !busy, onClick = onClick)
+                .alpha(if (busy) 0.55f else 1f),
+            contentAlignment = Alignment.Center,
+        ) {
+            content()
+        }
     }
 }
+
+/**
+ * 速览 FAB 的玻璃口径 = **首页导航栏的出厂档**。
+ *
+ * 数值只经 `HomeMaterialRenderSpec.dockGlassTuning()` → [GlassSpecResolver.resolve] 一条链，
+ * 不在本页另写一份（模糊 15 / 染色 0.70 / 折射 8 带 11 / 边光 0.2 / 色散 0.35）。
+ *
+ * 为什么不接用户的材质滑杆：本页拿不到材质快照（`SettingsMaterialModel.renderSpecOf` 要
+ * `TimetableSettingsModel`，它只在首页壳那一支上），所以先用出厂档；日后壳肯把快照传进来时，
+ * 只需把这里换成调用方传入的 spec，形状与调用点不用改。
+ */
+private val StagePreviewFabGlassSpec: GlassSpec =
+    GlassSpecResolver.resolve(HomeMaterialRenderSpec().dockGlassTuning())
+
+/** 胶囊圆角（dp）= 高度 48 的一半：两端是半圆，与底栏药丸同一读感。 */
+private const val StagePreviewFabCornerDp = 24f
+
+/** 命中区 / 视觉高度下限（dp）。 */
+private const val StagePreviewFabMinHeightDp = 48f
+
+/** 文字左右呼吸（dp）。 */
+private const val StagePreviewFabHorizontalPaddingDp = 24f
+
+/** 投影半径（dp），与底栏药丸同值。 */
+private const val StagePreviewFabShadowRadiusDp = 10f
 
 // ───────────────────────── 小工具 ─────────────────────────
 
