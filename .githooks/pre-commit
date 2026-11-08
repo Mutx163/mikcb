@@ -115,7 +115,7 @@ materialize() {
 
 # ---- 第一道：架构守卫（读提交快照，不读工作区） ----
 
-if [ -n "$guard_relevant" ]; then
+if [ -n "$guard_relevant" ] && [ -d test/architecture ]; then
   if ! command -v flutter >/dev/null 2>&1; then
     echo "pre-commit: 找不到 flutter，跳过架构守卫（CI 仍会兜住）。" >&2
   else
