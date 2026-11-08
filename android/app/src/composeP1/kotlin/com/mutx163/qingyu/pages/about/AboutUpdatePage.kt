@@ -1,5 +1,6 @@
 package com.mutx163.qingyu.pages.about
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -13,23 +14,29 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.mutx163.qingyu.app.CommonUiStrings
+import com.mutx163.qingyu.components.LocalQingyuPageIsRootEntry
 import com.mutx163.qingyu.components.QingyuCard
-import com.mutx163.qingyu.components.QingyuGlassIconButton
 import com.mutx163.qingyu.components.QingyuPageCardMargin
 import com.mutx163.qingyu.components.QingyuPageList
+import com.mutx163.qingyu.components.QingyuPageTheme
 import com.mutx163.qingyu.components.QingyuSectionTitle
 import com.mutx163.qingyu.components.QingyuWeightDelta
 import com.mutx163.qingyu.components.shiftWeight
@@ -42,10 +49,13 @@ import com.mutx163.qingyu.infra.releaseListUrlFor
 import top.yukonga.miuix.kmp.basic.Button
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
 import top.yukonga.miuix.kmp.basic.CircularProgressIndicator
+import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.ScrollBehavior
+import top.yukonga.miuix.kmp.basic.Surface
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TextButton
 import top.yukonga.miuix.kmp.icon.MiuixIcons
+import top.yukonga.miuix.kmp.icon.extended.Back
 import top.yukonga.miuix.kmp.icon.extended.Tune
 import top.yukonga.miuix.kmp.preference.ArrowPreference
 import top.yukonga.miuix.kmp.theme.MiuixTheme
@@ -108,45 +118,99 @@ fun AboutUpdatePage(
 ) {
     val phase = resolveAboutUpdatePagePhase(packageInfoAvailable, checking, result)
 
-    QingyuPageScaffold(
-        title = AboutUpdatePageStrings.screenTitle,
-        onBack = onBack,
-        // 右上动作键与左上返回键同一套外观：共享玻璃圆底 + 细边 + 小外浮影。
-        actions = {
-            QingyuGlassIconButton(
-                onClick = onOpenAdvancedOptions,
-                contentDescription = AboutUpdatePageStrings.advancedOptionsTitle,
-                icon = MiuixIcons.Tune,
-            )
-        },
-        bottomBar = {
-            if (download != null) {
-                DownloadProgressBar(download = download, onCancel = onCancelDownload)
+    // 顶栏：本页不要标题，只留左右两颗胶囊。
+    //
+    // 骨架的 actions 槽是个 RowScope，且被摆在整条栏的最右侧；这里让它铺满整栏，
+    // 用 SpaceBetween 把「返回」与「高级选项」分别顶到两端。
+    // 骨架自带的返回键必须关掉——否则它会在 x=0 再画一颗箭头，和左胶囊叠成两个返回。
+    // 关掉的方式沿用壳注入的同一个标记（本页自己 provide true，只影响这一棵子树）。
+    CompositionLocalProvider(LocalQingyuPageIsRootEntry provides true) {
+        QingyuPageScaffold(
+            title = "",
+            onBack = onBack,
+            smallTopBar = true,
+            actions = {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(start = 8.dp, end = 12.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    UpdateBarCapsule(
+                        icon = MiuixIcons.Back,
+                        contentDescription = CommonUiStrings.back,
+                        onClick = onBack,
+                    )
+                    UpdateBarCapsule(
+                        icon = MiuixIcons.Tune,
+                        contentDescription = AboutUpdatePageStrings.advancedOptionsTitle,
+                        onClick = onOpenAdvancedOptions,
+                    )
+                }
+            },
+            bottomBar = {
+                if (download != null) {
+                    DownloadProgressBar(download = download, onCancel = onCancelDownload)
+                }
+            },
+        ) {
+            when (phase) {
+                AboutUpdatePagePhase.CHECKING -> AboutUpdateCheckingView(
+                    appName = appName,
+                    innerPadding = innerPadding,
+                )
+
+                AboutUpdatePagePhase.CHECK_FAILED -> AboutUpdateCheckFailedView(
+                    innerPadding = innerPadding,
+                    onRefresh = onRefresh,
+                )
+
+                AboutUpdatePagePhase.READY -> AboutUpdateReadyView(
+                    innerPadding = innerPadding,
+                    scrollBehavior = scrollBehavior,
+                    appName = appName,
+                    result = result!!,
+                    settings = settings,
+                    onRefresh = onRefresh,
+                    onOpenUrl = onOpenUrl,
+                    onInAppDownload = onInAppDownload,
+                    onSystemDownload = onSystemDownload,
+                    onSystemDownloadUnavailable = onSystemDownloadUnavailable,
+                )
             }
-        },
+        }
+    }
+}
+
+/**
+ * 顶栏胶囊按钮：左右两颗同形（56×36，两端全圆），容器白底 + 1dp 细边。
+ *
+ * 只承担导航与设置两个动作，不参与页面其余层级的强调色——强调色留给渐变、版本号与主按钮。
+ */
+@Composable
+private fun UpdateBarCapsule(
+    icon: ImageVector,
+    contentDescription: String,
+    onClick: () -> Unit,
+) {
+    val colors = MiuixTheme.colorScheme
+    Surface(
+        onClick = onClick,
+        shape = RoundedCornerShape(percent = 50),
+        color = colors.surface,
+        border = BorderStroke(1.dp, colors.secondaryContainer),
+        shadowElevation = 0.dp,
     ) {
-        when (phase) {
-            AboutUpdatePagePhase.CHECKING -> AboutUpdateCheckingView(
-                appName = appName,
-                innerPadding = innerPadding,
-            )
-
-            AboutUpdatePagePhase.CHECK_FAILED -> AboutUpdateCheckFailedView(
-                innerPadding = innerPadding,
-                onRefresh = onRefresh,
-            )
-
-            AboutUpdatePagePhase.READY -> AboutUpdateReadyView(
-                innerPadding = innerPadding,
-                scrollBehavior = scrollBehavior,
-                appName = appName,
-                result = result!!,
-                settings = settings,
-                onRefresh = onRefresh,
-                onOpenUrl = onOpenUrl,
-                onInAppDownload = onInAppDownload,
-                onSystemDownload = onSystemDownload,
-                onSystemDownloadUnavailable = onSystemDownloadUnavailable,
+        Box(
+            modifier = Modifier.size(width = 56.dp, height = 36.dp),
+            contentAlignment = Alignment.Center,
+        ) {
+            Icon(
+                imageVector = icon,
+                contentDescription = contentDescription,
+                tint = colors.onSurfaceVariantActions,
+                modifier = Modifier.size(20.dp),
             )
         }
     }
@@ -627,4 +691,177 @@ private fun DownloadProgressBar(download: AboutUpdateDownloadUi, onCancel: () ->
             )
         }
     }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// IDE 预览（2026-11-08，照 ContributorsPage 样板铺）
+//
+// 只给实现阶段看效果，不进业务路径。本页主体由 `resolveAboutUpdatePagePhase` 分三屏，
+// 就绪屏再按 hasUpdate 分「有更新 / 已是最新」，底部还有一条下载进度条，所以覆盖：
+//
+//   数据状态 5 档：有更新 / 已是最新 / 检查中 / 检查失败 / 下载中；
+//   外观 3 档：亮色、暗色、大字号 1.3。
+//
+// 为什么是这几档：
+//   · 检查中与检查失败是两张完全不同的整屏（居中转圈 vs 居中失败卡），最容易只改一张；
+//   · 已是最新时状态卡只剩两行可点行，卡片高度和「有更新」差一截，改排版必看；
+//   · 下载中会多出 bottomBar，进度条与内容区的分界只在真机/预览里看得见；
+//   · 暗色档守「白字落在白卡片」，大字号档看行内文案折行。
+//
+// 固定写法同 ContributorsPage：主题一律包 QingyuPageTheme(isDark = …)、字号走 textScale、
+// 宽度按 400dp。
+// ─────────────────────────────────────────────────────────────────────────────
+
+/** 预览用假数据：一版已发布的说明，格式与本仓 `docs/releases/v*.md` 一致（导语 + 分类分组）。 */
+private fun previewUpdateRelease(): AppReleaseInfo = AppReleaseInfo(
+    version = "2.1.5",
+    title = "周视图可拖动调课",
+    body = """
+        # v2.1.5
+
+        > 本次重点：周视图可拖动调课、导入自动识别表头、小组件刷新提速
+
+        ## 新增 · 2
+
+        - 周视图长按课表格子即可拖动换课，松手后按周次补到对应星期
+        - 课程详情支持直接改上课地点，不必再回编辑页
+
+        ## 优化 · 1
+
+        - 桌面小组件刷新从约 800ms 降到约 480ms
+    """.trimIndent(),
+    releaseUrl = "https://github.com/Mutx163/mikcb/releases/tag/v2.1.5",
+    downloadUrl = "https://github.com/Mutx163/mikcb/releases/download/v2.1.5/app-release.apk",
+    updatedAtMillis = 1794096000000L,
+)
+
+/** 预览用假数据：当前版本 2.1.4.1，最新版本 2.1.5。 */
+private fun previewUpdateResult(hasUpdate: Boolean): AppUpdateCheckResult = AppUpdateCheckResult(
+    hasRelease = true,
+    hasUpdate = hasUpdate,
+    currentVersion = "2.1.4.1",
+    latestRelease = previewUpdateRelease(),
+    message = if (hasUpdate) "update_available" else "already_latest",
+)
+
+/**
+ * 渲染层会收到的全部输入组合（`packageInfoAvailable` 固定 true：预览里拿不到包信息时才走检查中）。
+ *
+ * 这五档就是 `AboutUpdateHostPage` 能传给 [AboutUpdatePage] 的全部形态：
+ * 有更新 / 已是最新 / 检查中 / 检查失败 / 下载中。
+ */
+private data class PreviewAboutUpdateState(
+    /** 只用来给预览命名，不参与渲染。 */
+    val name: String,
+    val checking: Boolean,
+    val result: AppUpdateCheckResult?,
+    val download: AboutUpdateDownloadUi? = null,
+)
+
+private val previewAboutUpdateStates: List<PreviewAboutUpdateState> = listOf(
+    PreviewAboutUpdateState(
+        name = "有更新",
+        checking = false,
+        result = previewUpdateResult(hasUpdate = true),
+    ),
+    PreviewAboutUpdateState(
+        name = "已是最新",
+        checking = false,
+        result = previewUpdateResult(hasUpdate = false),
+    ),
+    PreviewAboutUpdateState(
+        name = "检查中",
+        checking = true,
+        result = null,
+    ),
+    PreviewAboutUpdateState(
+        name = "检查失败",
+        checking = false,
+        result = null,
+    ),
+    PreviewAboutUpdateState(
+        name = "下载中",
+        checking = false,
+        result = previewUpdateResult(hasUpdate = true),
+        download = AboutUpdateDownloadUi(
+            downloadedBytes = 18_000_000L,
+            totalBytes = 42_000_000L,
+        ),
+    ),
+)
+
+private fun previewAboutUpdateState(name: String): PreviewAboutUpdateState =
+    previewAboutUpdateStates.first { it.name == name }
+
+/** 一档预览的公共身体：数据状态 + 外观档位。 */
+@Composable
+private fun PreviewAboutUpdatePage(
+    state: PreviewAboutUpdateState,
+    dark: Boolean = false,
+    textScale: Float = 1f,
+) {
+    QingyuPageTheme(isDark = dark, textScale = textScale) {
+        AboutUpdatePage(
+            onBack = {},
+            packageInfoAvailable = true,
+            checking = state.checking,
+            result = state.result,
+            settings = AppUpdateSettings(),
+            appName = "轻屿课表",
+            download = state.download,
+        )
+    }
+}
+
+// ── 单档：五态 × 亮色 ──────────────────────────────────────────────────────
+
+@Suppress("unused")
+@Preview(name = "1 有更新", showBackground = true, widthDp = 400, heightDp = 900)
+@Composable
+private fun AboutUpdatePagePreviewUpdate() {
+    PreviewAboutUpdatePage(previewAboutUpdateState("有更新"))
+}
+
+@Suppress("unused")
+@Preview(name = "2 已是最新", showBackground = true, widthDp = 400, heightDp = 900)
+@Composable
+private fun AboutUpdatePagePreviewLatest() {
+    PreviewAboutUpdatePage(previewAboutUpdateState("已是最新"))
+}
+
+@Suppress("unused")
+@Preview(name = "3 检查中", showBackground = true, widthDp = 400, heightDp = 900)
+@Composable
+private fun AboutUpdatePagePreviewChecking() {
+    PreviewAboutUpdatePage(previewAboutUpdateState("检查中"))
+}
+
+@Suppress("unused")
+@Preview(name = "4 检查失败", showBackground = true, widthDp = 400, heightDp = 900)
+@Composable
+private fun AboutUpdatePagePreviewFailed() {
+    PreviewAboutUpdatePage(previewAboutUpdateState("检查失败"))
+}
+
+@Suppress("unused")
+@Preview(name = "5 下载中", showBackground = true, widthDp = 400, heightDp = 900)
+@Composable
+private fun AboutUpdatePagePreviewDownloading() {
+    PreviewAboutUpdatePage(previewAboutUpdateState("下载中"))
+}
+
+// ── 单档：外观两档（以「有更新」为基准）───────────────────────────────────
+
+@Suppress("unused")
+@Preview(name = "6 暗色", showBackground = true, widthDp = 400, heightDp = 900)
+@Composable
+private fun AboutUpdatePagePreviewDark() {
+    PreviewAboutUpdatePage(previewAboutUpdateState("有更新"), dark = true)
+}
+
+@Suppress("unused")
+@Preview(name = "7 大字号 1.3", showBackground = true, widthDp = 400, heightDp = 900)
+@Composable
+private fun AboutUpdatePagePreviewLargeText() {
+    PreviewAboutUpdatePage(previewAboutUpdateState("有更新"), textScale = 1.3f)
 }

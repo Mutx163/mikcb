@@ -97,6 +97,13 @@ fun QingyuPageScaffold(
     onBack: () -> Unit,
     actions: @Composable RowScope.() -> Unit = {},
     bottomBar: (@Composable () -> Unit)? = null,
+    /**
+     * 传 true 走单行固定顶栏（官方 `SmallTopAppBar`）；默认仍是可折叠大标题。
+     *
+     * 2026-11-08：版本更新页改成「无标题 + 左右两颗胶囊」时需要这条通道，
+     * 这里只是原样转发给 [SharedPageScaffold]，不改其余行为。
+     */
+    smallTopBar: Boolean = false,
     content: @Composable QingyuPageContentScope.() -> Unit,
 ) {
     SharedPageScaffold(
@@ -104,6 +111,7 @@ fun QingyuPageScaffold(
         onBack = onBack,
         actions = actions,
         bottomBar = bottomBar,
+        smallTopBar = smallTopBar,
         content = content,
     )
 }
