@@ -22,28 +22,36 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.mutx163.qingyu.components.QingyuPageList
+import com.mutx163.qingyu.components.rememberSheetMaxHeight
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import top.yukonga.miuix.kmp.basic.TabRowWithContour
 
-/** 壁纸面板页序：0 = 壁纸，1 = 设置（`settings_appearance_editor.dart:2115-2117`）。 */
-object WallpaperSheetPages {
-    const val PICKER = 0
-    const val SETTINGS = 1
-    const val COUNT = 2
-}
-
 /**
- * 外观编辑页两块弹层**整体**最多占屏高的比例（Dart `_materialSheetMaxHeightFactor`，
- * `settings_appearance_editor.dart:116-120`；壁纸面板同口径，`:831-841`）。
+ * 壁纸面板的限高比例（屏高）。
+ *
+ * **这是本文件唯一一处刻意偏离 Dart 的数字**（Dart 与材质面板同用 0.5，`:831-841`）。
+ * 理由是可算的：
+ *
+ * - 0.5 下正文上限 = 屏高×0.5 − 42（载体），页签再吃 65 ⇒ 列表视口在 800dp 高的窗口上只有
+ *   293dp；
+ * - 第一页的真实内容（预览块 182 + 最近使用 160 + 底部让位 40）≈ 382dp ⇒ **永远要滚 89dp**，
+ *   而滚动前那一屏正好停在缩略图条中间——“打开就看到半张图”。
+ * - 0.62 在同样窗口上给 389dp 视口，第一页刚好一屏；仍留 38% 屏高能看到背后的预览，
+ *   两张面板也不会同屏出现（开一块就关另一块）。
+ *
+ * 代价诚实写下：第二页只有三行控件，在变高的面板里会多出一段空白。
+ * 如果用户觉得“两块面板应当一样高”更重要，把这里改回 0.5 即可（一行），
+ * 回退后第一页重新变成“必须滚动”。
  */
-private const val APPEARANCE_SHEET_MAX_HEIGHT_FACTOR = 0.5f
+internal const val WALLPAPER_SHEET_MAX_HEIGHT_FACTOR = 0.62f
 
 /**
  * 官方弹层载体在**内容之外**占掉的高度：把手条 24 + 无标题时的空标题行 18
@@ -130,32 +138,17 @@ object WallpaperSheetTargets {
 }
 
 /**
- * 「每天自动更换」那颗开关的取值来源认不认得出来。
- *
- * 认不出来时**不许画成能点的开关**：Dart 那颗开关的真源是 `BingWallpaperStore`
- * 台账，它不走草稿、也不走宿主 `setState`（`settings_home_backdrop_flow.dart:501-526`，
- * 2026-10-06 实报「点了一下没反应」）。[BackdropFlowState.bingAutoApplyEnabled] 现在
- * 仍是出厂值 false，所以默认 [UNKNOWN]：行照渲染、但禁用并把说明换成 ARB 已有的
- * 「不可用」（`SettingsStrings.aboutUnavailable`）。
- *
- * 台账一旦接上，宿主给 [WallpaperSheetBody] 传 `autoApplySnapshot` 即可 ——
- * 那一路会把开关值改成台账里的真实值、恢复可点（等价于显式传 [LEDGER]）。
- */
-enum class WallpaperAutoApplySource {
-    /** 真源已接（`BingWallpaperStore` 的台账），开关可点。 */
-    LEDGER,
-
-    /** 认不出来 / 还没接：只读禁用，并写明「不可用」。 */
-    UNKNOWN,
-}
-
-/**
  * 壁纸弹层的正文：顶上「壁纸 / 设置」翻页胶囊（**自己就是标题**），下面一层可左右滑
  * 的两页。形状与 [MaterialSheetBody] **逐字同构**（`settings_appearance_editor.dart:2104-2224`，
  * 用户口径 2026-09-28：「这个弹窗可以参考材质那边的，做切换」）。
  *
  * * **第一页「壁纸」**（`:439-476`）：选图行 + 「最近使用」缩略图条 + 图库入口；
- * * **第二页「设置」**（`:722-737`）：背景随周次滑动开关 + 壁纸模糊滑杆。
+ * * **第二页「设置」**（`:722-737`）：背景随周次滑动开关 + 壁纸模糊滑杆 + 「每天自动更换」。
+ *
+ * 「每天自动更换」**不在第一页**（用户 2026-11-07 口径：Bing 壁纸下面那颗设置挪到右边
+ * 设置页）。图库入口按钮仍留在第一页 —— 那是导航，不是设置。拆分只发生在渲染层
+ * （[wallpaperPageNodes]）：模型里这一组仍是一整块，因为 `SettingsBackdropFlowPage`
+ * 同时服务「课表页面」设置里的壁纸卡，那边不需要分页。
  *
  * ## 三条必须守住的（都是真机踩过的坑）
  *
@@ -226,6 +219,23 @@ fun WallpaperSheetBody(
     )
     val scope = rememberCoroutineScope()
 
+    // 停在半格的兜底吸附（2026-11-07 真机反馈：「右滑会卡在页面一半不动」）。
+    //
+    // `HorizontalPager` 的吸附动画跑在它自己的作用域里；手势被外层（弹层拖拽 / 列表）
+    // 打断时，这个动画偶尔不会重新起，子就停在偏移≈0.5 的位置——两页各露一半、再也
+    // 不动。这里在**空闲且偏移不为 0** 时补一次吸附到最近的页，等价于「松手后重排」。
+    // 只在异常态生效：正常滚动时 isScrollInProgress 为 true，正常吸附结束时偏移≈0。
+    LaunchedEffect(pagerState) {
+        snapshotFlow { pagerState.isScrollInProgress to pagerState.currentPageOffsetFraction }
+            .collectLatest { (scrolling, offset) ->
+                if (!scrolling && (offset > 0.01f || offset < -0.01f)) {
+                    pagerState.animateScrollToPage(
+                        pagerState.currentPage.coerceIn(0, WallpaperSheetPages.COUNT - 1),
+                    )
+                }
+            }
+    }
+
     // 系统图片选择器：`ActivityResultContracts.PickVisualMedia`（Android 13 起是系统
     // 相册，更老的系统自动退回 `ACTION_OPEN_DOCUMENT`）。与 Dart `:1025-1029` 的
     // `pickAndStoreManagedImage` 同一条：选完 → 定位 → 确认；这里只负责「选」，
@@ -286,7 +296,7 @@ fun WallpaperSheetBody(
         onRequestRemove = { key -> armedKey = key },
         // 正在用的那张被长按：只解释一句（Dart `:841-855`），什么都不改。
         onBlockedRemove = {
-            notice = SettingsRecentWallpaperSection.REMOVE_IN_USE_TOAST.zh
+            notice = SettingsRecentWallpaperSection.REMOVE_IN_USE_TOAST.text
         },
         onCancelRemove = { armedKey = null },
         // 确认删除：先把确认态收掉、把反悔窗点亮，再把「删哪一条」转给数据侧
@@ -351,13 +361,13 @@ fun WallpaperSheetBody(
         armedKey = armed,
     )
 
-    // 面板整体最多半屏（Dart `_materialSheetMaxHeightFactor = 0.5`，`:839-841`）。载体把
-    // 把手条 24 + 无标题时的空标题行 18 排在**内容之外**（`BottomSheetContentLayout.kt:643-657`
-    // / `:798-830`），所以正文上限要扣掉这 42 —— 不扣的话壁纸面板 = 屏高×50% + 42，
-    // 比隔壁材质面板高出一截，内容不满时底下还会多一块永远空的玻璃板
+    // 面板整体最多 [WALLPAPER_SHEET_MAX_HEIGHT_FACTOR]（理由 / 与 Dart 的差异见该常量）。
+    // 载体把把手条 24 + 无标题时的空标题行 18 排在**内容之外**
+    // （`BottomSheetContentLayout.kt:643-657` / `:798-830`），所以正文上限要扣掉这 42 ——
+    // 不扣的话面板高度 = 屏高×比例 + 42，内容不满时底下还会多一块永远空的玻璃板
     // （材质面板同一处口径：`MaterialSheetBody.kt:51,164-165`）。
     val sheetMaxHeight = (
-        LocalConfiguration.current.screenHeightDp * APPEARANCE_SHEET_MAX_HEIGHT_FACTOR -
+        rememberSheetMaxHeight(WALLPAPER_SHEET_MAX_HEIGHT_FACTOR).value -
             SHEET_CARRIER_CHROME_DP
         ).coerceAtLeast(0f).dp
 
@@ -367,7 +377,7 @@ fun WallpaperSheetBody(
             .heightIn(max = sheetMaxHeight),
     ) {
         TabRowWithContour(
-            tabs = SettingsWallpaperSheetPage.TAB_LABELS.map { it.zh },
+            tabs = SettingsWallpaperSheetPage.TAB_LABELS.map { it.text },
             selectedTabIndex = pagerState.currentPage,
             // 点胶囊翻页：手势滑动与点选走**同一个** pagerState，不会各走各的
             // （Dart `:2133-2147` 的 `_goToPage` 就是为这件事写的）。
@@ -419,19 +429,11 @@ private const val RECENT_CONFIRM_ACTIONS_ID = "backdrop.recent.confirmActions"
 private const val RECENT_CONFIRM_DELETE_ROW_ID = "backdrop.recent.confirmDelete"
 private const val RECENT_CONFIRM_CANCEL_ROW_ID = "backdrop.recent.cancelDelete"
 
-/** 「每天自动更换」那一行的 id（`SettingsBackdropFlowPage` 的 `backdrop.bing.autoApply`）。 */
-private const val BING_AUTO_APPLY_ROW_ID = WallpaperSheetActionTargets.AUTO_APPLY_TOGGLE
-
-/** 第一页「选图」那一组，以及组里那条「背景图片 + 文件名」标题行（`SettingsBackdropFlowPage.imageRows`）。 */
+/** 第一页「选图」那一组（`SettingsBackdropFlowPage.imageRows`）。 */
 private const val IMAGE_GROUP_ID = "backdrop.image"
-private const val IMAGE_TITLE_ROW_ID = "backdrop.image"
 
-/** 第一页「每日壁纸」那一组与图库入口行（`SettingsBackdropFlowPage.selectionPage` 的 `backdrop.bing`）。 */
-private const val BING_GROUP_ID = "backdrop.bing"
+/** 第一页「每日壁纸」组里那条图库入口行（组 id 与开关行 id 在 `WallpaperSheetPageNodes.kt`）。 */
 private const val BING_ENTRY_ROW_ID = "backdrop.bing.entry"
-
-/** 第二页「设置」那一组（`SettingsBackdropFlowPage.settingsPage` 的 `backdrop.settings`）。 */
-private const val SETTINGS_GROUP_ID = "backdrop.settings"
 
 /**
  * 模型插在「最近使用」与每日壁纸之间的空档节点。
@@ -443,112 +445,22 @@ private const val SETTINGS_GROUP_ID = "backdrop.settings"
 private const val BING_GAP_ID = "backdrop.gap.bing"
 
 /**
- * 一页的节点树。
- *
- * ⚠️ 面板宿主的内缩与「课表页面」那个宿主不同：面板的左右内缩取 0
- * （`SettingsBackdropFlowPage.HOST_SHEET_ROW_INSET`，理由见该文件 :79-103——面板的
- * `insideMargin` 已经给了 Dart 那个 16，再垫一层就是 32）。
- */
-internal fun wallpaperPageNodes(
-    state: AppearanceEditorState,
-    selection: SelectionPageState,
-    index: Int,
-    autoApplySource: WallpaperAutoApplySource = WallpaperAutoApplySource.UNKNOWN,
-    autoApplySnapshot: WallpaperAutoApplySnapshot? = null,
-): List<SettingsNode> {
-    val backdrop = backdropFlowState(state)
-    return when (index) {
-        WallpaperSheetPages.SETTINGS -> SettingsBackdropFlowPage.settingsPage(backdrop).nodes
-        else -> {
-            val nodes = SettingsBackdropFlowPage.selectionPage(backdrop, selection).nodes
-            // 台账快照优先：有它就用真实开关值，否则走旧的「认不出来就禁用」口径。
-            if (autoApplySnapshot != null) {
-                applyAutoApplyState(nodes, autoApplySnapshot)
-            } else {
-                applyAutoApplySource(nodes, autoApplySource)
-            }
-        }
-    }
-}
-
-/**
- * 台账已接上时，把「每天自动更换」那一行改成**真实开关值且可点**。
- *
- * 真源是 [WallpaperAutoApplySnapshot]（宿主从 `BingWallpaperStore` 台账读出，并在
- * 台账通知时传新快照）。面板只改这一行，其余节点原样。
- */
-private fun applyAutoApplyState(
-    nodes: List<SettingsNode>,
-    snapshot: WallpaperAutoApplySnapshot,
-): List<SettingsNode> = nodes.map { node ->
-    if (node !is SettingsGroup) {
-        node
-    } else {
-        SettingsGroup(
-            id = node.id,
-            children = node.children.map { child ->
-                if (child is SettingsRow && child.id == BING_AUTO_APPLY_ROW_ID) {
-                    child.copy(
-                        switchValue = snapshot.enabled,
-                        enabled = true,
-                    )
-                } else {
-                    child
-                }
-            },
-        )
-    }
-}
-
-/**
- * 「每天自动更换」的真源认不出来时，把那一行改成**禁用 + 写明「不可用」**。
- *
- * 只动这一行，其余节点原样（包括图库入口那条导航——图库页本身是存在的，
- * `SettingsBingWallpaperGalleryPage`）。
- */
-private fun applyAutoApplySource(
-    nodes: List<SettingsNode>,
-    source: WallpaperAutoApplySource,
-): List<SettingsNode> {
-    if (source != WallpaperAutoApplySource.UNKNOWN) return nodes
-    return nodes.map { node ->
-        if (node !is SettingsGroup) {
-            node
-        } else {
-            SettingsGroup(
-                id = node.id,
-                children = node.children.map { child ->
-                    if (child is SettingsRow && child.id == BING_AUTO_APPLY_ROW_ID) {
-                        child.copy(
-                            enabled = false,
-                            // 用 ARB 已有的「不可用」，不新造一句（`SettingsStrings.kt:57-62`
-                            // 就是这么定下来的规矩）。
-                            subtitleKey = SettingsStrings.aboutUnavailable.key,
-                            subtitle = SettingsStrings.aboutUnavailable.zh,
-                        )
-                    } else {
-                        child
-                    }
-                },
-            )
-        }
-    }
-}
-
-/**
  * 一页的列表渲染。
  *
  * 与 [SettingsNodeList] 的四处差异（都是「弹层按发布版版式画」这件事）：
  *
- * 1. 选图那组 → [WallpaperImageBlock]：标题 + 文件名 + 满宽主按钮 + 两颗次按钮，
+ * 1. 选图那组 → [WallpaperImageBlock]：**当前壁纸预览** + 标题 / 文件名 + 满宽主按钮 + 两颗次按钮，
  *    **不套白卡**（发布版的弹层宿主刻意无容器，`settings_home_backdrop_flow.dart:79-103`）；
  * 2. 「最近使用」那段在模型里是 `SettingsInline(CONTROL_CARD)`——官方没有横向缩略图条控件
  *    （`SettingsBackdropFlowPage` 里那条 `note` 写明了），所以按 id 换成真条
  *    [RecentWallpaperBlock]；
  * 3. 确认态的两颗按钮按 Dart 版式改成**并排满宽按钮**（`:178-202`），而不是两条行：
  *    模型把它写成两行是为了「有哪些动作」可断言，版式仍应由渲染层按 Dart 定；
- * 4. 每日壁纸那组 → [BingWallpaperBlock]（满宽次按钮 + 裸开关行）；第二页那组 → 两根**裸行**
- *    （发布版这一页没有容器，`appearance_editor_test.dart:1166-1175` 钉住了「行顶 = 页面让位」）。
+ * 4. 每日壁纸那组**不进列表**：图库入口被提到「最近使用」的标题行右侧（`trailingLabel`），
+ *    省掉整块 58dp；只有一条历史都没有时，才在末尾落回 [BingWallpaperBlock]。
+ *    第二页那组 → **裸行**（发布版这一页没有容器，`appearance_editor_test.dart:1166-1175`
+ *    钉住了「行顶 = 页面让位」）。第二页多出来的「每天自动更换」也是裸行——它由
+ *    [wallpaperPageNodes] 补进同一组，走的是同一条版式路径，不另写一套。
  *
  * 其余节点一律走 [SettingsNodeView]（分组也交给它，白卡的内缩由 [rowInset] 控），
  * 不另写第二套行部件。
@@ -568,8 +480,19 @@ internal fun WallpaperPageList(
     modifier: Modifier = Modifier,
     rowInset: Dp = SettingsBackdropFlowPage.HOST_SHEET_ROW_INSET.dp,
 ) {
-    // 每日壁纸的空档节点不再单独占位（理由见 [BING_GAP_ID]）。
-    val visibleNodes = nodes.filterNot { it is SettingsGap && it.id == BING_GAP_ID }
+    // 每日壁纸的空档节点不再单独占位（理由见 [BING_GAP_ID]）；整组也不进列表，
+    // 图库入口改由「最近使用」标题行右侧承载（见下方 `bingEntryRow`）。
+    val visibleNodes = nodes.filterNot {
+        (it is SettingsGap && it.id == BING_GAP_ID) ||
+            (it is SettingsGroup && it.id == BING_GROUP_ID)
+    }
+    // 图库入口那一行：从每日壁纸组里按 id 取（不认下标）。
+    val bingEntryRow = nodes
+        .filterIsInstance<SettingsGroup>()
+        .firstOrNull { it.id == BING_GROUP_ID }
+        ?.children
+        ?.filterIsInstance<SettingsRow>()
+        ?.firstOrNull { it.id == BING_ENTRY_ROW_ID }
     // 行 → 动作：与 `SettingsRowView` 的点击闭包**逐字同义**（`row.action` 为 null 的行不可点）。
     val dispatch: (SettingsRow) -> Unit = { row ->
         row.action?.let { action -> onAction(action, row.actionTarget, row.id) }
@@ -585,17 +508,14 @@ internal fun WallpaperPageList(
                 // 第一页「选图」块（发布版 `:857-940`）。
                 node is SettingsGroup && node.id == IMAGE_GROUP_ID -> {
                     val rows = node.children.filterIsInstance<SettingsRow>()
-                    val titleRow = rows.firstOrNull { it.id == IMAGE_TITLE_ROW_ID }
                     val missingRow = rows.firstOrNull { it.id == WallpaperSheetTargets.ROW_MISSING }
                     val pickRow = rows.firstOrNull { it.id == WallpaperSheetTargets.ROW_PICK }
                     val adjustRow = rows.firstOrNull { it.id == WallpaperSheetTargets.ROW_ADJUST }
                     val clearRow = rows.firstOrNull { it.id == WallpaperSheetTargets.ROW_CLEAR }
                     WallpaperImageBlock(
-                        title = titleRow?.title.orEmpty(),
-                        subtitle = titleRow?.subtitle.orEmpty(),
+                        pickLabel = pickRow?.title ?: SettingsStringsExt1.homePagePickImageAction.text,
                         missingTitle = missingRow?.title,
                         missingSubtitle = missingRow?.subtitle,
-                        pickLabel = pickRow?.title ?: SettingsStringsExt1.homePagePickImageAction.zh,
                         adjustLabel = adjustRow?.title,
                         clearLabel = clearRow?.title,
                         onPick = { pickRow?.let(dispatch) },
@@ -604,16 +524,24 @@ internal fun WallpaperPageList(
                     )
                 }
 
-                // 「最近使用」整段：标题 / 说明 / 缩略图条 / 反悔条（`settings_recent_wallpaper.dart:100-205`）。
+                // 「最近使用」整段：标题（右侧挂图库入口）/ 缩略图条 / 反悔条
+                // （`settings_recent_wallpaper.dart:100-205`）。说明句不再渲染，理由见
+                // [RecentWallpaperBlock] 的 KDoc。
                 node is SettingsInline && node.id == RECENT_STRIP_ID && recent != null ->
                     RecentWallpaperBlock(
                         title = node.label.orEmpty(),
-                        subtitle = node.value.orEmpty(),
                         label = node.texts.firstOrNull()?.text
-                            ?: SettingsStringsExt1.homePageWallpaperRecentImageLabel.zh,
+                            ?: SettingsStringsExt1.homePageWallpaperRecentImageLabel.text,
                         entries = node.colors,
                         selectedKey = node.selectedColor,
                         panel = recent,
+                        // 弹层里卡片放大到 78×150（≈ 手机屏比例）：它**就是**当前壁纸的预览，
+                        // 第一张永远是在用的那张（`recentEntries` 会把当前图补在最前）。
+                        // 「照片」标签恒为同一个词、零信息，这里不画，整高给图。
+                        stripHeight = 156.dp,
+                        showLabel = false,
+                        trailingLabel = bingEntryRow?.title,
+                        onTrailingClick = { bingEntryRow?.let(dispatch) },
                     )
 
                 // 确认态那句警示说明（Dart `:169-176` 用的是 error 色）。
@@ -626,8 +554,8 @@ internal fun WallpaperPageList(
                     val deleteRow = rows.firstOrNull { it.id == RECENT_CONFIRM_DELETE_ROW_ID }
                     val cancelRow = rows.firstOrNull { it.id == RECENT_CONFIRM_CANCEL_ROW_ID }
                     RecentWallpaperConfirmBar(
-                        deleteLabel = deleteRow?.title ?: SettingsStringsExt1.deleteAction.zh,
-                        cancelLabel = cancelRow?.title ?: SettingsStringsExt1.cancelAction.zh,
+                        deleteLabel = deleteRow?.title ?: SettingsStringsExt1.deleteAction.text,
+                        cancelLabel = cancelRow?.title ?: SettingsStringsExt1.cancelAction.text,
                         onDelete = {
                             // target 取模型写好的那一份（`backdrop.recent.confirmDelete:<key>`），
                             // 渲染层不自己拼第二遍。
@@ -645,18 +573,9 @@ internal fun WallpaperPageList(
                     )
                 }
 
-                // 第一页「每日壁纸」块：满宽次按钮 + 「每天自动更换」开关（发布版 `:482-530`）。
-                node is SettingsGroup && node.id == BING_GROUP_ID -> {
-                    val rows = node.children.filterIsInstance<SettingsRow>()
-                    val entryRow = rows.firstOrNull { it.id == BING_ENTRY_ROW_ID }
-                    val switchRow = rows.firstOrNull { it.id == BING_AUTO_APPLY_ROW_ID }
-                    BingWallpaperBlock(
-                        entryLabel = entryRow?.title ?: SettingsStringsExt1.bingWallpaperGalleryTitle.zh,
-                        onEntry = { entryRow?.let(dispatch) },
-                        onAction = onAction,
-                        switchNode = switchRow,
-                    )
-                }
+                // 第一页「每日壁纸」块**不再单独占一块**（图库入口挂在最近使用的标题行）；
+                // 下面这个分支永远不会命中，保留是为了让「节点存在但未渲染」一眼可查。
+                node is SettingsGroup && node.id == BING_GROUP_ID -> Unit
 
                 // 第二页「设置」：两根裸行（开关 + 模糊滑杆），**不套白卡**
                 // —— 发布版这一页直挂两块控件，测试 `appearance_editor_test.dart:1166-1175`
@@ -669,6 +588,17 @@ internal fun WallpaperPageList(
                     }
 
                 else -> SettingsNodeView(node = node, onAction = onAction, rowInset = rowInset)
+            }
+        }
+
+        // 一条历史都没有（首次进来 / 刚清空）时「最近使用」整段不存在，图库入口就没处挂了。
+        // 此时落回末尾单独一行，入口不能凭空消失。
+        if (recent == null && bingEntryRow != null) {
+            item(key = "$BING_GROUP_ID.fallback") {
+                BingWallpaperBlock(
+                    entryLabel = bingEntryRow.title,
+                    onEntry = { bingEntryRow.let(dispatch) },
+                )
             }
         }
     }
@@ -699,12 +629,3 @@ fun wallpaperSheetBottomGap(): PaddingValues {
         ).dp,
     )
 }
-
-/** 壁纸面板状态 → 壁纸流程输入（同一份真源，只换一次形状）。 */
-internal fun backdropFlowState(state: AppearanceEditorState): BackdropFlowState =
-    BackdropFlowState(
-        imagePath = state.wallpaper.path,
-        history = state.wallpaper.history.map { it.key },
-        followsWeekPager = state.wallpaper.followsWeekPager,
-        blurSigma = state.wallpaper.blurSigma,
-    )

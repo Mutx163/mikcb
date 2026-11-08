@@ -203,6 +203,10 @@ fun MaterialSheetBody(
             },
             // 官方 `TabRowWithContour` 默认按 62~84 定宽从左排，格数少时右边空一大块；
             // 放宽到 0 / ∞ 让它铺满整行（与渲染层 `SegmentedRow` 同一口径，Lead 2026-10-29 拍板）。
+            //
+            // 2026-11-07 试过「收窄居中 + 压到 38」来拉开层级，用户当场否掉：
+            // 「左右宽度应该一致」——页签与下面卡片同宽同轴才算整齐。层级问题改用
+            // 文案/位置解决，不再动宽度。
             minWidth = 0.dp,
             maxWidth = Dp.Infinity,
             // 官方 demo 的页签行内距（`component/TabRowSection.kt:37-47` 的 `padding(horizontal)`）；

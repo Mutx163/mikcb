@@ -3,7 +3,6 @@ package com.mutx163.qingyu.pages.settings
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -14,10 +13,11 @@ import androidx.compose.ui.unit.dp
 import top.yukonga.miuix.kmp.basic.Button
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
 import top.yukonga.miuix.kmp.basic.Text
+import top.yukonga.miuix.kmp.basic.TextButton
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 /**
- * 壁纸弹层里**按发布版版式**画的那两块：选图块与每日壁纸块。
+ * 壁纸弹层里**按发布版版式**画的那两块：操作块与每日壁纸入口。
  *
  * ## 为什么不是设置列表行
  *
@@ -27,30 +27,37 @@ import top.yukonga.miuix.kmp.theme.MiuixTheme
  * | 宿主 | 版式 | 出处 |
  * |---|---|---|
  * | 「课表页面」设置的壁纸卡 | 白卡里的行（`HyperosListTile` 族） | `:79-103` 的 `backdropRowsHaveCardBackground = true` |
- * | 「外观编辑」的壁纸弹层 | **整段无容器**：标题 + 说明 + 主按钮 + 次按钮 | 同处 `false` / `backdropRowHorizontalInset = 0` |
+ * | 「外观编辑」的壁纸弹层 | **整段无容器**：主按钮 + 次按钮 | 同处 `false` / `backdropRowHorizontalInset = 0` |
  *
  * 弹层那边若照设置页的行来画（白卡 + chevron 行），半屏弹窗就变成「一张缩小的设置列表」：
  * 主操作「选择图片」读不出是主操作，`背景图片` 那行还带着一颗点不动的箭头 —— 用户 2026-11-05
- * 报的「排版很奇怪」就是这件事。所以这里按发布版重画两块，**模型不动**（[SettingsBackdropFlowPage]
- * 仍服务两个宿主），文字全部取自模型节点，本文件不存第二份文案。
+ * 报的「排版很奇怪」就是这件事。所以这里按发布版重画，**模型不动**
+ * （[SettingsBackdropFlowPage] 仍服务两个宿主），文字全部取自模型节点，本文件不存第二份文案。
  *
- * ## 尺寸来源（逐条对拍发布版）
+ * ## 为什么这里没有「当前壁纸预览」（2026-11-07 三次修正）
  *
- * | 位置 | 值 | Dart |
- * |---|---|---|
- * | 选图块上下留白 | 14 / 14 | `:884-885` |
- * | 标题字号 | 17sp（`headline1`） | `:889` `HyperosTypography.listTitle` |
- * | 标题 → 文件名 | 4 | `:890` |
- * | 文件名字号 | 13sp（`body2`）+ 次要色 | `:891` `listDetail` |
- * | 文件名 → 主按钮 | 12 | `:896` |
- * | 主按钮 → 两颗次按钮 | 12 | `:911` |
- * | 两颗次按钮之间 | 12 | `:926` |
- * | 每日壁纸块上下留白 | 4 / 14 | `:488` |
- * | 图库按钮 → 开关行 | 4 | `:500` |
+ * 前两版都在这块里画一张小预览：
  *
- * 按钮一律是官方 [Button]：主操作用 `buttonColorsPrimary()`（实心主题色），次操作用
- * `buttonColors()`（`secondaryVariant`，与 `RecentWallpaperConfirmBar` 的「取消」同一档）。
- * 不自绘任何形状 / 按压反馈。
+ * 1. 固定 96×56 横框 + 裁切 ⇒ 竖屏壁纸只剩中间一条，用户说「全是横向的」；
+ * 2. 改成按真实宽高比（9:19.5 ⇒ 37×80）⇒ 变成一条细缝，旁边一大片空白，用户说「太丑了」。
+ *
+ * 结论：**预览不该是这一行的小配件**。当前壁纸本来就已经在「最近使用」条的第一张卡上
+ * （带主题色描边），把那条卡放大到 78×150（≈ 手机屏比例）就是预览；这里只剩操作。
+ * 文件名（`wallpaper_1759….jpg`）也一并不再显示 —— 它对「我用的是哪张」不构成答案。
+ *
+ * ## 尺寸
+ *
+ * | 位置 | 值 |
+ * |---|---|
+ * | 操作块上下留白 | 12 / 12 |
+ * | 主按钮 | 40（满宽、主题色实心） |
+ * | 主按钮 → 次按钮行 | 10 |
+ * | 次按钮 | 40，等宽并排，间距 12 |
+ *
+ * 按钮一律是官方 [Button] / [TextButton]：主操作用 `buttonColorsPrimary()`，
+ * 调整位置用 `buttonColors()`（`secondaryVariant`），清除图片用
+ * `textButtonColors(textColor = error)` ——「危险色只染字」是本仓对 destructive 的唯一口径
+ * （同 `TaskListPage` 的删除、`TimeSchemeManagementDialogs` 的删除）。不自绘任何形状 / 按压反馈。
  *
  * ## 文件丢失警示
  *
@@ -61,20 +68,16 @@ import top.yukonga.miuix.kmp.theme.MiuixTheme
  */
 
 /**
- * 第一页「选图」块：标题 + 文件名（+ 文件丢失警示）+ 主按钮 + 两颗次按钮。
+ * 第一页的操作块：文件丢失警示（备用）+ 满宽主按钮 + 调整位置 / 清除图片。
  *
- * @param title 标题（模型 `backdrop.image` 行的 title，DB 文案「背景图片」）。
- * @param subtitle 文件名，没选图时是「未选择」。
+ * @param pickLabel 「选择图片」按钮文案。
  * @param missingTitle 文件丢失警示的标题；null = 文件在（或不判断）。
  * @param missingSubtitle 警示的说明句。
- * @param pickLabel 「选择图片」按钮文案。
- * @param adjustLabel 「调整位置」按钮文案；null = 没有壁纸（模型只在有壁纸时给这三行）。
+ * @param adjustLabel 「调整位置」按钮文案；null = 没有壁纸（模型只在有壁纸时给这两行）。
  * @param clearLabel 「清除图片」按钮文案。
  */
 @Composable
 internal fun WallpaperImageBlock(
-    title: String,
-    subtitle: String,
     pickLabel: String,
     onPick: () -> Unit,
     modifier: Modifier = Modifier,
@@ -88,21 +91,9 @@ internal fun WallpaperImageBlock(
     Column(
         modifier = modifier
             .fillMaxWidth()
-            .padding(top = 14.dp, bottom = 14.dp),
+            .padding(top = 12.dp, bottom = 12.dp),
     ) {
-        Text(
-            text = title,
-            style = MiuixTheme.textStyles.headline1,
-            color = MiuixTheme.colorScheme.onBackground,
-        )
-        Spacer(modifier = Modifier.height(4.dp))
-        Text(
-            text = subtitle,
-            style = MiuixTheme.textStyles.body2,
-            color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-        )
         if (missingTitle != null) {
-            Spacer(modifier = Modifier.height(10.dp))
             Text(
                 text = missingTitle,
                 style = MiuixTheme.textStyles.body2,
@@ -116,8 +107,8 @@ internal fun WallpaperImageBlock(
                     color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
                 )
             }
+            Spacer(modifier = Modifier.height(10.dp))
         }
-        Spacer(modifier = Modifier.height(12.dp))
         // 主操作独占一行、满宽（`settings_home_backdrop_flow.dart:903-909`）。
         Button(
             onClick = onPick,
@@ -127,69 +118,65 @@ internal fun WallpaperImageBlock(
             Text(text = pickLabel, maxLines = 1)
         }
         if (adjustLabel != null && clearLabel != null) {
-            Spacer(modifier = Modifier.height(12.dp))
+            Spacer(modifier = Modifier.height(10.dp))
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
             ) {
                 // 两颗次按钮等宽并排（`:912-935`）。文字不折行：405dp 屏上每颗约 105dp，
                 // 四字文案在发布版里就是因为挤成一行才掉字的（`:900-902`）。
-                WallpaperSecondaryButton(label = adjustLabel, onClick = onAdjust)
-                WallpaperSecondaryButton(label = clearLabel, onClick = onClear)
+                Button(
+                    onClick = onAdjust,
+                    modifier = Modifier.weight(1f),
+                    colors = ButtonDefaults.buttonColors(),
+                ) {
+                    Text(text = adjustLabel, maxLines = 1)
+                }
+                // 清除是**破坏性**动作：底色与「调整位置」同档，只用危险色染字
+                // （`textButtonColors(color = …)` 是底色位，传错就是「红底 + 灰字」）。
+                TextButton(
+                    text = clearLabel,
+                    onClick = onClear,
+                    modifier = Modifier.weight(1f),
+                    colors = ButtonDefaults.textButtonColors(
+                        textColor = MiuixTheme.colorScheme.error,
+                    ),
+                )
             }
         }
     }
 }
 
-/** 每日壁纸块里那颗满宽次按钮 / 选图块的两颗次按钮（同一档样式）。 */
-@Composable
-private fun RowScope.WallpaperSecondaryButton(
-    label: String,
-    onClick: () -> Unit,
-) {
-    Button(
-        onClick = onClick,
-        modifier = Modifier.weight(1f),
-        colors = ButtonDefaults.buttonColors(),
-    ) {
-        Text(text = label, maxLines = 1)
-    }
-}
-
 /**
- * 第一页「每日壁纸」块：满宽次按钮 + 「每天自动更换」开关行。
+ * 第一页「每日壁纸」入口的**兜底形态**：单独一行 `TextButton`（36 高）。
  *
- * 发布版这两件是**无容器的两根**（`:487-528`）：按钮是 `HyperosButton(secondary)`，
- * 开关是 `HyperosSwitchTile(backgroundColor: Colors.transparent)` —— 弹层上再来一块白卡
- * 会读成「屏内嵌屏」。开关行仍走 [SettingsNodeView]（官方 `SwitchPreference`），
- * 只是外面不再套卡。
+ * 正常情况这一条根本不进列表：图库入口被提到「最近使用」的标题行右侧
+ * （[RecentWallpaperBlock] 的 `trailingLabel`），省掉整块 58dp —— 半屏弹层里那 58dp
+ * 正是「缩略条被切掉一半」的来源。只有**一条历史都没有**（首次进来、还没选过图）时
+ * 「最近使用」整段不存在，图库入口才落回这里，避免入口凭空消失。
+ *
+ * 尺寸：36 高 + 6 / 12 留白 = 54（原满宽按钮块 58）。仍是官方 [TextButton]，
+ * 只是从「实心次按钮」降到「链接档」——它是导航，不该和「选择图片」抢同一层的重量。
  *
  * @param entryLabel 图库入口按钮文案（模型 `backdrop.bing.entry` 行的 title）。
- * @param switchNode 「每天自动更换」那一行（模型 `backdrop.bing.autoApply`）；null = 模型没给。
  */
 @Composable
 internal fun BingWallpaperBlock(
     entryLabel: String,
     onEntry: () -> Unit,
-    onAction: (action: SettingsAction, target: String?, rowId: String) -> Unit,
-    switchNode: SettingsNode?,
     modifier: Modifier = Modifier,
 ) {
     Column(
         modifier = modifier
             .fillMaxWidth()
-            .padding(top = 4.dp, bottom = 14.dp),
+            .padding(top = 6.dp, bottom = 12.dp),
     ) {
-        Button(
+        TextButton(
+            text = entryLabel,
             onClick = onEntry,
             modifier = Modifier.fillMaxWidth(),
-            colors = ButtonDefaults.buttonColors(),
-        ) {
-            Text(text = entryLabel, maxLines = 1)
-        }
-        if (switchNode != null) {
-            Spacer(modifier = Modifier.height(4.dp))
-            SettingsNodeView(node = switchNode, onAction = onAction)
-        }
+            minHeight = 36.dp,
+            colors = ButtonDefaults.textButtonColors(),
+        )
     }
 }

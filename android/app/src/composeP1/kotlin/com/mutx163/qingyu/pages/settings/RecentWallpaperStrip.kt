@@ -21,7 +21,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyRow
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -35,6 +35,7 @@ import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
@@ -126,6 +127,14 @@ private val CARD_GAP = 10.dp
 /** 角标距卡右上角（Dart `:344-345`）。 */
 private val BADGE_INSET = 4.dp
 
+/**
+ * 角标的**命中区**（视觉仍 [SettingsRecentWallpaperSection.BADGE_SIZE] = 22）。
+ *
+ * 22dp 是唯一看得见的移除入口（另一个是长按），命中区与视觉一样大时很难按中；
+ * 外框扩到 44×44，视觉靠内层 4dp padding 仍贴在卡右上角。
+ */
+private val BADGE_HIT_SIZE = 44.dp
+
 /** 标签行高 = 11 × 1.2（Dart `:324-325`）——字号本身取主题的 `footnote2`（正好 11sp）。 */
 private val LABEL_LINE_HEIGHT =
     (SettingsRecentWallpaperSection.LABEL_FONT_SIZE *
@@ -163,44 +172,78 @@ class RecentWallpaperPanel(
  * 「最近使用」整段。
  *
  * @param title 段标题（模型 `SettingsInline.label`，DB 文案 `homePageWallpaperRecentTitle`）。
- * @param subtitle 段说明（模型 `SettingsInline.value`）。
  * @param label 单张卡的标签（Dart `:135` 的 `homePageWallpaperRecentImageLabel`）。
  * @param entries 条目键（壁纸绝对路径），最新在前。
  * @param selectedKey 当前正在用的那张；它**不给移除**（Dart `:128-137`）。
  * @param horizontalInset 宿主给的左右内缩：面板宿主是 0（`HOST_SHEET_ROW_INSET`，
  *   留白由官方弹层的 `insideMargin` 给）；「课表页面」宿主是 16（卡片自己的行内缩）。
+ * @param stripHeight 缩略图条高度：默认模型常量 116（设置页那个宿主不变）；
+ *   壁纸弹层传 92 —— 弹层是半屏，条高每多 1dp 都是从「一屏装得下」里扣的。
+ * @param labelMaxLines 卡内标签行数：默认 2（模型常量）；弹层传 1。
+ * @param trailingLabel 标题行右侧的尾随链接（目前只有「Bing 每日壁纸」）：
+ *   模型里它本来是第一页末尾一颗满宽按钮，弹层把它提到标题行右侧后**不再单独占一块**，
+ *   省下 58dp。null = 不画。
+ * @param onTrailingClick 尾随链接的点击。
+ *
+ * ## 2026-11-07 的两处版式优化
+ *
+ * 1. **说明句不再渲染**（模型仍给着 `value`）：那句话是「点按切回，点角标移除，最多保留
+ *    10 张」——按本仓文案口径属于「导航说明 / 过程描述」，本该删；在 293dp 的列表视口里
+ *    它还占一整行 13sp。
+ * 2. **图库入口进标题行**：原来它在末尾独占一个满宽按钮块（58dp），是「缩略条被切掉”的
+ *    直接原因；降到标题行右侧的链接档后，第一页才装得下。
  */
 @Composable
 fun RecentWallpaperBlock(
     title: String,
-    subtitle: String,
     label: String,
     entries: List<String>,
     selectedKey: String?,
     panel: RecentWallpaperPanel,
     modifier: Modifier = Modifier,
     horizontalInset: Dp = SettingsBackdropFlowPage.HOST_SHEET_ROW_INSET.dp,
+    stripHeight: Dp = SettingsRecentWallpaperSection.STRIP_HEIGHT.dp,
+    labelMaxLines: Int = SettingsRecentWallpaperSection.LABEL_MAX_LINES,
+    showLabel: Boolean = true,
+    trailingLabel: String? = null,
+    onTrailingClick: (() -> Unit)? = null,
 ) {
     Column(
         modifier = modifier
             .fillMaxWidth()
-            // 上下各 14（Dart `:100-106`），左右按宿主给。
-            .padding(start = horizontalInset, top = 14.dp, end = horizontalInset, bottom = 14.dp),
+            // 上下各 12（Dart `:100-106` 是 14；弹层里每块都收到 12，三段才对得上），
+            // 左右按宿主给。
+            .padding(start = horizontalInset, top = 12.dp, end = horizontalInset, bottom = 12.dp),
     ) {
-        Text(
-            text = title,
-            // Dart `HyperosTypography.listTitle` = 17sp / w400（`hyperos_theme.dart:522-529`）
-            // → 官方 `headline1`（17sp）。
-            style = MiuixTheme.textStyles.headline1,
-            color = MiuixTheme.colorScheme.onBackground,
-        )
-        Spacer(modifier = Modifier.height(4.dp))
-        Text(
-            text = subtitle,
-            // Dart `listDetail` = body2 字阶 + 次要色（`hyperos_theme.dart:531-540`）。
-            style = MiuixTheme.textStyles.body2,
-            color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-        )
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Text(
+                text = title,
+                // Dart `HyperosTypography.listTitle` = 17sp / w400（`hyperos_theme.dart:522-529`）
+                // → 官方 `headline1`（17sp）。
+                style = MiuixTheme.textStyles.headline1,
+                color = MiuixTheme.colorScheme.onBackground,
+                modifier = Modifier.weight(1f),
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+            if (trailingLabel != null && onTrailingClick != null) {
+                // 链接档：官方 `TextButton` 的次要色底 + 小字阶。高度 28 是为了不把这行
+                // 从 24 顶到 40（预算只有 293dp）；点击区仍是按钮自身，不做额外自绘。
+                TextButton(
+                    text = trailingLabel,
+                    onClick = onTrailingClick,
+                    modifier = Modifier.padding(start = 8.dp),
+                    minWidth = 0.dp,
+                    minHeight = 28.dp,
+                    insideMargin = PaddingValues(horizontal = 10.dp),
+                    colors = ButtonDefaults.textButtonColors(),
+                    textStyle = MiuixTheme.textStyles.footnote1,
+                )
+            }
+        }
         Spacer(modifier = Modifier.height(12.dp))
         RecentWallpaperStrip(
             label = label,
@@ -208,6 +251,9 @@ fun RecentWallpaperBlock(
             selectedKey = selectedKey,
             armedKey = panel.armedKey,
             panel = panel,
+            stripHeight = stripHeight,
+            labelMaxLines = labelMaxLines,
+            showLabel = showLabel,
         )
         if (panel.undoKey != null) {
             Spacer(modifier = Modifier.height(14.dp))
@@ -241,14 +287,17 @@ private fun RecentWallpaperStrip(
     armedKey: String?,
     panel: RecentWallpaperPanel,
     modifier: Modifier = Modifier,
+    stripHeight: Dp = SettingsRecentWallpaperSection.STRIP_HEIGHT.dp,
+    labelMaxLines: Int = SettingsRecentWallpaperSection.LABEL_MAX_LINES,
+    showLabel: Boolean = true,
 ) {
     LazyRow(
         modifier = modifier
             .fillMaxWidth()
-            .height(SettingsRecentWallpaperSection.STRIP_HEIGHT.dp),
+            .height(stripHeight),
         horizontalArrangement = Arrangement.spacedBy(CARD_GAP),
     ) {
-        items(items = entries, key = { key -> key }) { key ->
+        itemsIndexed(items = entries, key = { _, key -> key }) { index, key ->
             // 单卡的状态推导全走模型（`settings_recent_wallpaper.dart:230-356`）：
             // 选中 / 待删 / 可不可移除 / 描边色 / 是否压暗 / 角标出不出。
             val card = SettingsRecentWallpaperSection.cardState(key, selectedKey, armedKey)
@@ -256,6 +305,9 @@ private fun RecentWallpaperStrip(
                 label = label,
                 entryKey = key,
                 card = card,
+                index = index,
+                labelMaxLines = labelMaxLines,
+                showLabel = showLabel,
                 onTap = {
                     when (SettingsRecentWallpaperSection.tapIntent(card.armed, card.removable)) {
                         // 待删那张，单击是「取消」而不是切壁纸（`:139-147`）。
@@ -289,6 +341,9 @@ private fun RecentWallpaperCard(
     label: String,
     entryKey: String,
     card: RecentWallpaperCardState,
+    index: Int,
+    labelMaxLines: Int,
+    showLabel: Boolean,
     onTap: () -> Unit,
     onLongPress: () -> Unit,
     onRequestRemove: () -> Unit,
@@ -305,6 +360,8 @@ private fun RecentWallpaperCard(
         card.selected -> colors.primary
         else -> colors.onSurfaceVariantSummary
     }
+    // 只解一次：绘制用（卡片宽度固定为模型常量，不再随比例变，避免拖动时反复重排）。
+    val bitmap = rememberWallpaperThumb(entryKey)
     Box(
         modifier = Modifier
             .width(SettingsRecentWallpaperSection.CARD_WIDTH.dp)
@@ -322,7 +379,12 @@ private fun RecentWallpaperCard(
                 )
                 // 缩略图是装饰图，可读信息只有下方标签；合并后整张卡念成一句
                 // 「壁纸名，按钮」，而不是「图片 + 壁纸名」两个孤立节点。
-                .semantics(mergeDescendants = true) { role = Role.Button },
+                // 2026-11-07：十张卡的标签都是同一个字（「照片」），读屏者分不出是哪一张，
+                // 所以补序号——放在语义里，不改可见文案（ARB 不动）。
+                .semantics(mergeDescendants = true) {
+                    role = Role.Button
+                    contentDescription = "$label ${index + 1}"
+                },
         ) {
             Box(
                 modifier = Modifier
@@ -336,7 +398,7 @@ private fun RecentWallpaperCard(
                         .fillMaxSize()
                         .clip(RoundedCornerShape(THUMB_CORNER)),
                 ) {
-                    RecentWallpaperThumbnail(path = entryKey)
+                    WallpaperThumbImage(path = entryKey, bitmap = bitmap)
                     if (card.dimmed) {
                         // 「这张要被移除了」在图上也读得出来，而不只靠红边（`:293-307`）。
                         // Dart 是 `Color(0x99000000)`：纯黑、0x99/255 = 60%。
@@ -348,38 +410,49 @@ private fun RecentWallpaperCard(
                     }
                 }
             }
-            Spacer(modifier = Modifier.height(THUMB_LABEL_GAP))
-            // 标签位定高：常态一行 / 两行、确认态按钮行，缩略图尺寸不变（`:313-337`）。
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(SettingsRecentWallpaperSection.LABEL_HEIGHT.dp),
-                contentAlignment = Alignment.Center,
-            ) {
-                Text(
-                    text = label,
-                    // 字号取主题 `footnote2`（官方刻度里正好 11sp，与 Dart `:324` 同数），
-                    // 行高按 Dart 的 1.2 显式给。
-                    style = MiuixTheme.textStyles.footnote2.shiftWeight(
-                        if (card.selected || card.armed) QingyuWeightDelta.SEMIBOLD else 0,
-                    ),
-                    lineHeight = LABEL_LINE_HEIGHT,
-                    color = labelColor,
-                    maxLines = SettingsRecentWallpaperSection.LABEL_MAX_LINES,
-                    overflow = TextOverflow.Ellipsis,
-                    textAlign = TextAlign.Center,
-                    modifier = Modifier.fillMaxWidth(),
-                )
+            if (showLabel) {
+                Spacer(modifier = Modifier.height(THUMB_LABEL_GAP))
+                // 标签位定高：常态一行 / 两行、确认态按钮行，缩略图尺寸不变（`:313-337`）。
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(SettingsRecentWallpaperSection.LABEL_HEIGHT.dp),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Text(
+                        text = label,
+                        // 字号取主题 `footnote2`（官方刻度里正好 11sp，与 Dart `:324` 同数），
+                        // 行高按 Dart 的 1.2 显式给。
+                        style = MiuixTheme.textStyles.footnote2.shiftWeight(
+                            if (card.selected || card.armed) QingyuWeightDelta.SEMIBOLD else 0,
+                        ),
+                        lineHeight = LABEL_LINE_HEIGHT,
+                        color = labelColor,
+                        maxLines = labelMaxLines,
+                        overflow = TextOverflow.Ellipsis,
+                        textAlign = TextAlign.Center,
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                }
             }
         }
         // 角标画在按压区**之外**：压在卡内的话，点它会连带把壁纸也切了（`:341-351`）。
+        // 2026-11-07：角标本体的命中区只有 22dp（连 48dp 的一半都不到），扩成 44×44
+        // 的外框、视觉位置不变（仍距卡右上角 4dp，靠内层 padding 对齐）。
         if (card.showRemoveBadge) {
             Box(
                 modifier = Modifier
                     .align(Alignment.TopEnd)
+                    .size(BADGE_HIT_SIZE)
+                    .combinedClickable(
+                        interactionSource = remember { MutableInteractionSource() },
+                        indication = LocalIndication.current,
+                        onClick = onRequestRemove,
+                    )
                     .padding(BADGE_INSET),
+                contentAlignment = Alignment.TopEnd,
             ) {
-                RecentWallpaperRemoveBadge(onPressed = onRequestRemove)
+                RecentWallpaperRemoveBadge()
             }
         }
     }
@@ -396,23 +469,34 @@ private fun RecentWallpaperCard(
  * 而「最近使用」的条目键是**本地绝对路径**，所以本地缩略图走 `BitmapFactory` +
  * `ImageSizeSelector`（后者是 `app/imagecache` 的纯逻辑，算 2 的幂采样值，与
  * `AndroidImageLoader` 用的是同一个）。
+ * 2026-11-07：拆成「解码一次 + 位图入参」，因为卡片要先拿到宽高比再定宽，
+ * 不能为同一张图解两遍。
  */
 @Composable
-private fun RecentWallpaperThumbnail(path: String) {
+internal fun rememberWallpaperThumb(path: String): ImageBitmap? {
     val bitmap by produceState<ImageBitmap?>(initialValue = null, key1 = path) {
         value = withContext(Dispatchers.IO) { decodeLocalThumbnail(path) }
     }
-    val image = bitmap
-    if (image != null) {
+    return bitmap
+}
+
+/** 缩略图本体（尺寸由父级决定）。 */
+@Composable
+internal fun WallpaperThumbImage(
+    path: String,
+    bitmap: ImageBitmap?,
+    modifier: Modifier = Modifier,
+) {
+    if (bitmap != null) {
         BitmapImage(
-            bitmap = image,
+            bitmap = bitmap,
             contentDescription = null,
             contentScale = ContentScale.Crop,
-            modifier = Modifier.fillMaxSize(),
+            modifier = modifier.fillMaxSize(),
         )
     } else {
         Box(
-            modifier = Modifier
+            modifier = modifier
                 .fillMaxSize()
                 .background(MiuixTheme.colorScheme.surfaceContainer),
             contentAlignment = Alignment.Center,
@@ -451,19 +535,13 @@ private fun decodeLocalThumbnail(path: String): ImageBitmap? = runCatching {
  * 不加白底——压在照片上时白圆反而更抢眼。
  */
 @Composable
-private fun RecentWallpaperRemoveBadge(onPressed: () -> Unit) {
-    val interaction = remember { MutableInteractionSource() }
+private fun RecentWallpaperRemoveBadge() {
     Box(
         modifier = Modifier
             .size(SettingsRecentWallpaperSection.BADGE_SIZE.dp)
             .clip(RoundedCornerShape(BADGE_CORNER))
             .background(
                 Color.Black.copy(alpha = SettingsRecentWallpaperSection.BADGE_ALPHA.toFloat()),
-            )
-            .combinedClickable(
-                interactionSource = interaction,
-                indication = LocalIndication.current,
-                onClick = onPressed,
             ),
         contentAlignment = Alignment.Center,
     ) {
