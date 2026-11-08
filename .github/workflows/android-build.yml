@@ -157,7 +157,8 @@ jobs:
         id: meta
         shell: bash
         run: |
-          APP_VERSION=$(grep '^version:' pubspec.yaml | awk '{print $2}')
+          # 去 Flutter 化 P4：版本号唯一事实源从 pubspec.yaml 换成 android/version.properties。
+          APP_VERSION=$(grep '^versionName=' android/version.properties | cut -d= -f2-)
           RELEASE_TAG="${GITHUB_REF#refs/tags/}"
           VERSION_NAME="${RELEASE_TAG#v}"
           RELEASE_NOTES_FILE="docs/releases/v${VERSION_NAME}.md"

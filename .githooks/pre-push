@@ -37,7 +37,7 @@ remote_url="${2:-}"
 
 zero="0000000000000000000000000000000000000000"
 root="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
-guard="${root}/tool/verify_release_pubspec.sh"
+guard="${root}/tool/verify_release_version.sh"
 
 if [ ! -f "${guard}" ]; then
   echo "pre-push: 找不到 ${guard}，跳过 release 版本检查（不拦推送）。" >&2
@@ -51,7 +51,7 @@ fi
 # 只处理到第一行；配合「推 tag 时还要再跑一次 guard」，实测会直接挂住
 # （2026-10-27 踩到）。
 tag_refs=""
-pubspec_touched="no"
+version_touched="no"
 
 while read -r local_ref local_sha remote_ref remote_sha; do
   [ -z "${local_ref}" ] && continue
@@ -73,16 +73,16 @@ while read -r local_ref local_sha remote_ref remote_sha; do
   # （2026-10-27：rev-list 风格的参数交给 `git diff` 后行为未定义，进程不返回）。
   # 退回只看尖端那一个提交，够用：分支推送里真正会动版本号的就是最后一次提交。
   if [ "${remote_sha}" = "${zero}" ]; then
-    changed="$(git diff --name-only "${local_sha}^" "${local_sha}" < /dev/null 2>/dev/null || echo "pubspec.yaml")"
+    changed="$(git diff --name-only "${local_sha}^" "${local_sha}" < /dev/null 2>/dev/null || echo "android/version.properties")"
   else
     changed="$(git diff --name-only "${remote_sha}" "${local_sha}" < /dev/null 2>/dev/null || true)"
   fi
-  if printf '%s\n' "${changed}" | grep -qx "pubspec.yaml"; then
-    pubspec_touched="yes"
+  if printf '%s\n' "${changed}" | grep -qx "android/version.properties"; then
+    version_touched="yes"
   fi
 done < /dev/stdin
 
-if [ -z "${tag_refs}" ] && [ "${pubspec_touched}" = "no" ]; then
+if [ -z "${tag_refs}" ] && [ "${version_touched}" = "no" ]; then
   exit 0
 fi
 
@@ -93,9 +93,9 @@ if [ -n "${tag_refs}" ]; then
     *-*) mode="prerelease" ;;
     *) mode="release" ;;
   esac
-  echo "pre-push: 本次推送含 tag，按 ${mode} 校验 pubspec 版本…" >&2
+  echo "pre-push: 本次推送含 tag，按 ${mode} 校验版本号…" >&2
 else
-  echo "pre-push: 本次推送改了 pubspec.yaml，校验版本格式…" >&2
+  echo "pre-push: 本次推送改了 android/version.properties，校验版本格式…" >&2
 fi
 
 if ! command -v bash >/dev/null 2>&1; then
@@ -103,12 +103,12 @@ if ! command -v bash >/dev/null 2>&1; then
   exit 0
 fi
 
-if bash "${guard}" pubspec.yaml ${mode}; then
+if bash "${guard}" android/version.properties ${mode}; then
   exit 0
 fi
 
 echo "" >&2
 echo "pre-push: release 版本检查没过，已拦下本次推送。" >&2
-echo "          版本号规则见 docs/RELEASE.md（四段对外版本 v1.1.10.7 ↔ pubspec 1.1.10-7+build）。" >&2
+echo "          版本号规则见 docs/RELEASE.md（四段对外版本 v1.1.10.7 ↔ versionName 1.1.10-7）。" >&2
 echo "          确属误报可用 git push --no-verify，但请手动补跑上面那条命令。" >&2
 exit 1

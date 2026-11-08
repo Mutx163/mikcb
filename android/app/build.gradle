@@ -19,6 +19,16 @@ if (withFlutter) {
     apply plugin: "dev.flutter.flutter-gradle-plugin"
 }
 
+// 版本号源（去 Flutter 化 P4）：`android/version.properties` 是唯一事实源，
+// 与 pubspec 的 `version: <name>+<code>` 等价（见该文件头部注释）。
+def versionProps = new Properties()
+def versionPropsFile = rootProject.file('version.properties')
+if (versionPropsFile.exists()) {
+    versionPropsFile.withInputStream { versionProps.load(it) }
+}
+def appVersionNameBase = versionProps.getProperty('versionName', '0.0.0')
+def appVersionCodeBase = (versionProps.getProperty('versionCodeBase', '1')).toInteger()
+
 def keystoreProperties = new Properties()
 def keystorePropertiesFile = rootProject.file("key.properties")
 if (keystorePropertiesFile.exists()) {
@@ -62,10 +72,12 @@ android {
         // 移除 --split-per-abi 后 versionCode 会变小，导致 Android 误判为降级安装。
         // 加此偏移确保 versionCode 始终高于旧版分 ABI 构建的值。
         //
-        // 去 Flutter 化阶段 1：withFlutter=false 时 flutter 扩展不存在，给固定的兜底值
-        // （仅用于编译早筛，**不出包**；出包一律走默认 withFlutter=true）。
-        versionCode = withFlutter ? (flutter.versionCode as int) + 100000 : 100000
-        versionName = overrideVersionName ?: (withFlutter ? flutter.versionName : "0.0.0-noflutter")
+        // 去 Flutter 化 P4：版本号不再从 Flutter 插件（pubspec）读，改读
+        // `android/version.properties`。原因：pubspec 即将删除，而 versionCode/versionName
+        // 是发版必需项，不能跟着 Dart 层一起消失。
+        // +100000 偏移保留（分 ABI 打包时代的 versionCode 可能更大，加偏移防降级误判）。
+        versionCode = appVersionCodeBase + 100000
+        versionName = overrideVersionName ?: appVersionNameBase
         buildConfigField "String", "UMENG_APP_KEY", "\"69c1fd8f9a7f3764889fba4f\""
         buildConfigField "String", "UMENG_CHANNEL", "\"official\""
         missingDimensionStrategy 'env', 'prod'
