@@ -83,9 +83,6 @@ class TopBarActionGlassGuardTest {
      * （2026-11-05 成员三 复核抓到的假绿点）。
      */
     private val expectedActions: Map<String, List<ExpectedAction>> = mapOf(
-        "pages/about/AboutUpdatePage.kt" to listOf(
-            ExpectedAction("MiuixIcons.Tune", "AboutUpdatePageStrings.advancedOptionsTitle"),
-        ),
         "pages/course/AddCoursePage.kt" to listOf(
             ExpectedAction("MiuixIcons.Delete", "AddCourseStrings.deleteAction.text"),
             ExpectedAction("MiuixIcons.Ok", "AddCourseStrings.saveAction.text"),
@@ -140,6 +137,20 @@ class TopBarActionGlassGuardTest {
         ),
         "pages/time_scheme/TimeSchemeManagementPage.kt" to listOf(
             ExpectedAction("MiuixIcons.Add", "model.newSchemeTooltip"),
+        ),
+    )
+
+    /**
+     * 自定义顶栏区的页面（没有 `TopAppBar(` / `QingyuPageScaffold(` 的 actions 槽，顶栏由页面自己
+     * 组合）：顶栏玻璃钮按**全文件**的 `QingyuGlassIconButton(` 清单钉，不走顶栏槽扫描。
+     *
+     * `AboutUpdatePage`（2026-11-08 起）：整页是渐变底 + 自绘 Row 顶栏，右上只留一颗 Tune 钮
+     * （左上是 [QingyuBackIconButton]，那是「返回」公共件、不是动作键）。
+     * 别把这类文件再塞回 [expectedActions]：`scan` 只认顶栏槽，这页没有槽，钉成「无槽」别扭。
+     */
+    private val customTopZonePinned: Map<String, List<ExpectedAction>> = mapOf(
+        "pages/about/AboutUpdatePage.kt" to listOf(
+            ExpectedAction("MiuixIcons.Tune", "AboutUpdatePageStrings.advancedOptionsTitle"),
         ),
     )
 
@@ -219,12 +230,28 @@ class TopBarActionGlassGuardTest {
                     "  实际：" + actualLabels.joinToString("；")
             }
         }
+        // 自定义顶栏区的页面：按全文件玻璃钮清单钉（见 customTopZonePinned 的注释）。
+        customTopZonePinned.forEach { (owner, expected) ->
+            val code = codeOf(File(composeRoot(), owner).readText())
+            val foundActions = glassActions(code)
+            val bare = BARE_ICON_BUTTON.findAll(code).count()
+            if (bare > 0) {
+                problems += "$owner：仍混着 $bare 颗裸 IconButton（全文件口径）"
+            }
+            val expectedLabels = expected.map { it.toString() }
+            val actualLabels = foundActions.map { it.toString() }
+            if (actualLabels != expectedLabels) {
+                problems += "$owner：顶栏玻璃钮对不上\n" +
+                    "  期望：" + expectedLabels.joinToString("；") + "\n" +
+                    "  实际：" + actualLabels.joinToString("；")
+            }
+        }
         assertTrue(problems.joinToString("\n"), problems.isEmpty())
     }
 
     @Test
     fun `已迁移文件必须真的 import 共享件`() {
-        val missing = expectedActions.keys.filter { owner ->
+        val missing = (expectedActions.keys + customTopZonePinned.keys).filter { owner ->
             !File(composeRoot(), owner).readText()
                 .contains("import com.mutx163.qingyu.components.QingyuGlassIconButton")
         }
@@ -314,8 +341,49 @@ class TopBarActionGlassGuardTest {
         )
     }
 
-    /** 取某个函数声明的参数列表原文（从函数名到配对 `)`），把断言限定在这个函数自身。 */
-    private fun functionSignature(code: String, head: String): String {
+    /**
+     * 圆底分支只许画一层玻璃圆底：不许再套官方 `IconButton`（2026-11-08 用户实报「双重圈圈」）。
+     *
+     * miuix `IconButton` 自带圆底容器（40dp squircle + 水波圈），把它塞进外层 44dp 玻璃圆底里
+     * 会同心叠成两圈。圆底分支改成普通 clickable Box 承载图标，静止时只有外层那层玻璃圈。
+     * 裸图标分支不受影响（仍用官方 `IconButton`，静止不画圈）。
+     *
+     * 咬合探针：把圆底分支的可点击 Box 改回 `IconButton(` → 本条变红；改回 Box → 变绿。
+     */
+    @Test
+    fun `圆底分支不再套第二层图标容器`() {
+        val code = codeOf(File(composeRoot(), "components/QingyuPageScaffold.kt").readText())
+        val fnStart = code.indexOf("fun QingyuGlassIconButton(")
+        assertTrue("找不到 `fun QingyuGlassIconButton(`——守卫无法验证，按失败处理。", fnStart >= 0)
+        val fnOpen = code.indexOf('(', fnStart)
+        val fnClose = matchingClose(code, fnOpen, '(', ')')
+        assertTrue("`fun QingyuGlassIconButton(` 签名括号不配对。", fnClose > fnOpen)
+        val fnBodyStart = code.indexOf('{', fnClose)
+        val fnBodyClose = matchingClose(code, fnBodyStart, '{', '}')
+        assertTrue("`QingyuGlassIconButton` 函数体花括号不配对。", fnBodyClose > fnBodyStart)
+        val fnBody = code.substring(fnBodyStart, fnBodyClose + 1)
+        val glassStart = fnBody.indexOf("val backdrop = LocalQingyuPageBackdrop.current")
+        assertTrue("圆底分支的采样源取值不见了——守卫无法定位圆底分支，按失败处理。", glassStart >= 0)
+        val glass = fnBody.substring(glassStart)
+        assertFalse(
+            "圆底分支里又出现了 `IconButton(`：官方图标按钮自带一层 40dp 圆底，塞进外层 " +
+                "44dp 玻璃圆底里就是双重圆圈。圆底分支要换成普通可点击 Box 承载图标，" +
+                "裸图标分支才用 IconButton。",
+            glass.contains("IconButton("),
+        )
+        assertTrue(
+            "圆底分支的可点击节点丢了无障碍文案（`contentDescription = label`）：图标容器换了，" +
+                "但读屏标签不能跟着丢。",
+            glass.contains("contentDescription = label"),
+        )
+        assertTrue(
+            "圆底分支必须仍然是圆底：`.size(44.dp)` 与 `.clip(CircleShape)` 不在，就退化成裸图标，" +
+                "与返回键分叉。实际圆底分支：\n$glass",
+            glass.contains(".size(44.dp)") && glass.contains(".clip(CircleShape)"),
+        )
+    }
+
+    /** 取某个函数声明的参数列表原文（从函数名到配对 `)`），把断言限定在这个函数自身。 */    private fun functionSignature(code: String, head: String): String {
         val start = code.indexOf(head)
         if (start < 0) return ""
         val open = code.indexOf('(', start)
@@ -363,6 +431,11 @@ class TopBarActionGlassGuardTest {
     @Test
     fun `门控只许骨架注入 页面不得自己 provide`() {
         val allowed = "components/QingyuPageScaffold.kt"
+        // 豁免：AboutUpdatePage 整页没有顶栏（自绘渐变底 + 自定义 Row），右上只留 Tune 一颗玻璃钮；
+        // 左边返回键走公共件 QingyuBackIconButton，骨架那层 provides 不在它子树里，所以作者显式
+        // provide true（页面注释写明：本页没有栏，显式置 true 让两边从一开始就是同一颗圆钮）。
+        // 豁免只对「提供的值」豁免——这页的 Tune 键仍由 customTopZonePinned 逐颗钉住。
+        val exempt = setOf("pages/about/AboutUpdatePage.kt")
         val offenders = mutableListOf<String>()
         composeRoot().walkTopDown()
             // 官方 demo 展示页不进本规则。
@@ -370,7 +443,7 @@ class TopBarActionGlassGuardTest {
             .filter { it.isFile && it.extension == "kt" }
             .forEach { file ->
                 val owner = file.relativeTo(composeRoot()).invariantSeparatorsPath
-                if (owner == allowed) return@forEach
+                if (owner == allowed || owner in exempt) return@forEach
                 if (GATE_PROVIDES.containsMatchIn(codeOf(file.readText()))) {
                     offenders += owner
                 }

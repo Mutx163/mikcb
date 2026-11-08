@@ -83,6 +83,58 @@ object QingyuAdaptiveRules {
             limitContentWidth = shouldLimitContentWidth(width),
         )
     }
+
+    /**
+     * 短窗口判定线（dp）：窗口高度低于它才放宽弹层限高。
+     *
+     * 来源是「手机横屏 / 平板分屏 / 桌面自由窗口」的常见高度（360～599dp）。
+     * 平板竖屏（≥960dp）与手机竖屏（≥640dp）都在这条线以上，**行为与改造前一致**。
+     */
+    const val SHORT_WINDOW_MAX_HEIGHT_DP = 600f
+
+    /**
+     * 短窗口下给面板「非正文」部分预留的高度（dp）。
+     *
+     * 账目（都是实测过的固定件）：弹窗标题 ≈ 40 + 动作行 ≈ 52 + 上下外缘 24～32
+     * + 状态栏 / 导航栏 ≈ 48。官方 `DialogContentLayout` 在**非大屏**时对高度**不设上限**
+     * （`heightIn(max = if (isLargeScreen) … else Dp.Unspecified)`），预留不够就会把
+     * 取消 / 确认挤出屏幕。取 180 而不是更小，是因为宁少放大一点也不能裁掉按钮。
+     */
+    const val SHORT_WINDOW_SHEET_RESERVED_DP = 180f
+
+    /**
+     * 弹层正文的限高（dp）= 屏高 × [fraction]，短窗口下放宽为「屏高 − 预留」。
+     *
+     * 高窗口（≥ [SHORT_WINDOW_MAX_HEIGHT_DP]）**原样返回** `height × fraction`，
+     * 保证手机竖屏 / 平板竖屏逐像素不变；矮窗口把正文上限抬到
+     * `height − [SHORT_WINDOW_SHEET_RESERVED_DP]`，同时**不小于**原比例算出的值
+     * （只放大、不缩小，避免把已有的「矮屏已知债」改得更糟）。
+     *
+     * 例：h=360、fraction=0.55 → 198（原本就是 198，不动）；
+     * h=500、0.55 → 320（原 275）；h=900 → 原比例，与改造前一模一样。
+     *
+     * 入参非法（高度 / 比例 ≤ 0）返回 0，调用方得到 0dp 即「不额外限高」。
+     */
+    fun sheetMaxHeightDp(windowHeightDp: Float, fraction: Float): Float {
+        if (windowHeightDp <= 0f || fraction <= 0f) return 0f
+        val base = windowHeightDp * fraction
+        if (windowHeightDp >= SHORT_WINDOW_MAX_HEIGHT_DP) return base
+        val relaxed = (windowHeightDp - SHORT_WINDOW_SHEET_RESERVED_DP).coerceAtLeast(0f)
+        return maxOf(base, relaxed).coerceAtMost(windowHeightDp)
+    }
+
+    /**
+     * 把「写死的 dp 上限」夹到矮窗口可用高度：`min(desired, height − 180)`。
+     *
+     * 用于原本写 `heightIn(max = 380.dp / 420.dp)` 的弹层。锁竖屏时这些值永远碰不到屏幕
+     * 边界，解锁后手机横屏 / 分屏只剩 360～500dp 高，420dp 的列表会把取消/确认挤出屏幕。
+     * 高窗口原样返回 [desiredDp]，不影响现有观感。
+     */
+    fun cappedSheetHeightDp(windowHeightDp: Float, desiredDp: Float): Float {
+        if (windowHeightDp <= 0f || desiredDp <= 0f) return desiredDp
+        if (windowHeightDp >= SHORT_WINDOW_MAX_HEIGHT_DP) return desiredDp
+        return minOf(desiredDp, (windowHeightDp - SHORT_WINDOW_SHEET_RESERVED_DP).coerceAtLeast(0f))
+    }
 }
 
 /** [contentAreaAdaptive] 的结果：给 composeP1 的注入层换算成 [QingyuWindowAdaptive] 同名字段。 */

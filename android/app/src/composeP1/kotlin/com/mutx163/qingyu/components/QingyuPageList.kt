@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.calculateStartPadding
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.LazyListState
@@ -90,44 +91,65 @@ fun QingyuPageList(
     val end = horizontalPadding + contentPadding.calculateEndPadding(layoutDirection)
 
     Box(modifier = modifier.fillMaxSize()) {
-        // 坞避让与 Scaffold 底部内边距去重：取较大者，绝不叠加（系统栏只算一次）。
-        // 无坞 / 推入页 relief = 0 → 只用 innerPadding.bottom，行为与改动前一致。
-        // 不做「末项到顶」整屏留白：滚到底内容自然停在半透明坞上方。
-        val dockBottom = maxOf(innerPadding.calculateBottomPadding(), dockScrollRelief)
-        val padding = PaddingValues(
-            start = start,
-            top = top,
-            end = end,
-            bottom = dockBottom + contentPadding.calculateBottomPadding(),
-        )
+        // 宽屏：手拼 `Scaffold` 的页面（没有走 [QingyuPageScaffold] 的那几页）之前是通栏，
+        // 1200dp 窗口里一行设置项能拉到一尺长。这里与骨架同一口径、同一数值（640dp）
+        // 限宽居中；已经在骨架里的页面内容列本来就只有 640dp，内层再限一次是空操作。
+        // 紧凑档 cap = null ⇒ 走 fillMaxSize，与改造前逐像素一致。
+        val cap = rememberQingyuWindowAdaptive().maxContentWidth
 
-        LazyColumn(
-            state = state,
-            // 官方 pageScrollModifiers 的三件：末端触感 + 过度滚动 + 顶栏联动
-            modifier = Modifier
-                .then(if (enableScrollEndHaptic) Modifier.scrollEndHaptic() else Modifier)
-                .overScrollVertical()
-                .then(
-                    if (scrollBehavior != null) {
-                        Modifier.nestedScroll(scrollBehavior.nestedScrollConnection)
-                    } else {
-                        Modifier
-                    },
-                )
-                .fillMaxHeight(),
-            contentPadding = padding,
-            verticalArrangement = verticalArrangement,
-            content = content,
-        )
-
-        if (showScrollBar) {
-            VerticalScrollBar(
-                adapter = rememberScrollBarAdapter(state),
-                modifier = Modifier
-                    .align(Alignment.CenterEnd)
-                    .fillMaxHeight(),
-                trackPadding = padding,
+        Box(
+            modifier = if (cap != null) {
+                Modifier
+                    .fillMaxHeight()
+                    // 先 widthIn 把上限收到 640，再 fillMaxWidth 把列铺到该上限：
+                    // 不写 fillMaxWidth 时，遇到“行子项自己不铺满”的列表，整列会缩到
+                    // 最宽子项那么宽——比改前更窄、且居中位置随内容飘。
+                    .widthIn(max = cap)
+                    .fillMaxWidth()
+                    .align(Alignment.TopCenter)
+            } else {
+                Modifier.fillMaxSize()
+            },
+        ) {
+            // 坞避让与 Scaffold 底部内边距去重：取较大者，绝不叠加（系统栏只算一次）。
+            // 无坞 / 推入页 relief = 0 → 只用 innerPadding.bottom，行为与改动前一致。
+            // 不做「末项到顶」整屏留白：滚到底内容自然停在半透明坞上方。
+            val dockBottom = maxOf(innerPadding.calculateBottomPadding(), dockScrollRelief)
+            val padding = PaddingValues(
+                start = start,
+                top = top,
+                end = end,
+                bottom = dockBottom + contentPadding.calculateBottomPadding(),
             )
+
+            LazyColumn(
+                state = state,
+                // 官方 pageScrollModifiers 的三件：末端触感 + 过度滚动 + 顶栏联动
+                modifier = Modifier
+                    .then(if (enableScrollEndHaptic) Modifier.scrollEndHaptic() else Modifier)
+                    .overScrollVertical()
+                    .then(
+                        if (scrollBehavior != null) {
+                            Modifier.nestedScroll(scrollBehavior.nestedScrollConnection)
+                        } else {
+                            Modifier
+                        },
+                    )
+                    .fillMaxHeight(),
+                contentPadding = padding,
+                verticalArrangement = verticalArrangement,
+                content = content,
+            )
+
+            if (showScrollBar) {
+                VerticalScrollBar(
+                    adapter = rememberScrollBarAdapter(state),
+                    modifier = Modifier
+                        .align(Alignment.CenterEnd)
+                        .fillMaxHeight(),
+                    trackPadding = padding,
+                )
+            }
         }
     }
 }

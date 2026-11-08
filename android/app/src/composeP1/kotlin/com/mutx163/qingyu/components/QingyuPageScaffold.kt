@@ -3,9 +3,13 @@ package com.mutx163.qingyu.components
 import android.animation.ValueAnimator
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
@@ -36,6 +40,7 @@ import androidx.compose.ui.layout.Layout
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.Dp
@@ -62,7 +67,7 @@ import top.yukonga.miuix.kmp.blur.isRuntimeShaderSupported
 import top.yukonga.miuix.kmp.blur.layerBackdrop
 import top.yukonga.miuix.kmp.blur.rememberLayerBackdrop
 import top.yukonga.miuix.kmp.icon.MiuixIcons
-import top.yukonga.miuix.kmp.icon.extended.ChevronBackward
+import top.yukonga.miuix.kmp.icon.extended.Back
 
 /**
  * 全站统一的「子页返回键」。
@@ -86,6 +91,15 @@ import top.yukonga.miuix.kmp.icon.extended.ChevronBackward
  * 两个变体共用同一个 [QingyuBackIconButton]，所以返回键的图标、颜色、命中区、
  * 位置完全一致。
  */
+/**
+ * 顶栏右上动作键之间的横向间距。
+ *
+ * miuix 的 `TopAppBar` / `SmallTopAppBar` 只把 actions 包进 `Row(Arrangement.End)`，
+ * 子项之间**没有**间距；共享玻璃钮是 44dp 圆底，多颗动作键就会贴成一排。
+ * 8dp 与页面里的芯片 / 分组间距同一档，四颗并排时不拥挤、也不挤占标题。
+ */
+private val TopBarActionGap: Dp = 8.dp
+
 /** 顶栏/图标按钮的玻璃口径：小圆钮用薄磨砂，不做折射/高光（对齐发布版 `maxRefraction = 0`）。 */
 private val QingyuChromeGlassSpec: GlassSpec = GlassSpecResolver.resolve(
     GlassTuning(
@@ -124,10 +138,11 @@ private val QingyuChromeGlassSpec: GlassSpec = GlassSpecResolver.resolve(
  * 2026-11-05 全站收口：返回键 [QingyuBackIconButton] 与各页 `actions` 槽里的右上动作键
  * **都走这一个实现**，槽里不许再裸写 `IconButton`（守卫 `TopBarActionGlassGuardTest`）。
  *
- * ## 无障碍：文案只念一次，且必须写进 `IconButton` 调用块
+ * ## 无障碍：文案只念一次，且必须写进按钮自己的 modifier 里
  *
- * 标签落在**按钮节点**上——`IconButton` 自己的 modifier 里 `.semantics { this.contentDescription = … }`，
- * 里面的 `Icon` 传 `null`，所以读屏只念一遍。因此 [contentDescription] 是必填参数、没有默认值。
+ * 标签落在**可点击节点**上（裸图标分支的 `IconButton`、圆底分支的 clickable Box）——各自
+ * modifier 里都写 `.semantics { this.contentDescription = … }`，里面的 `Icon` 传 `null`，
+ * 所以读屏只念一遍。因此 [contentDescription] 是必填参数、没有默认值。
  * `AccessibilitySemanticsGuardTest` 只读 `IconButton(...) { … }` 的调用块原文，那句语义**不能挪到
  * 外部 `val` 再传进来**，否则守卫看不到、判成「无标签纯图标按钮」。
  */
@@ -151,10 +166,9 @@ fun QingyuGlassIconButton(
     val iconTint = tint ?: Color(QingyuTheme.actionIcon(dark))
     // 取成局部 val：下面在 lambda 里用，避免依赖「参数跨 lambda 智能转型」这种细节。
     val slot = content
-    // 无障碍文案**落在按钮节点上**：两个分支的 `IconButton(...)` 都把
-    // `.semantics { this.contentDescription = label }` 写在它自己的 modifier 里，图标则传 `null`
-    // ——读屏只念一次（写在按钮上、图标不再重复一份），`AccessibilitySemanticsGuardTest`
-    // 也能在 `IconButton` 调用块原文里直接看到这句标签（守卫只读调用块，不接受外部 `val` 传参）。
+    // 无障碍文案**落在可点击节点上**：两个分支的按钮 modifier 里都写
+    // `.semantics { this.contentDescription = label }`，图标则传 `null`
+    // ——读屏只念一次（文案在按钮上、图标不再重复一份），且圆底分支的 Box 也保留同一句标签。
     val label = contentDescription
     // 按钮内容（图标或加载转圈）：圆底分支与裸图标分支共用同一份，形态不会分叉。
     val inner: @Composable () -> Unit = {
@@ -192,13 +206,23 @@ fun QingyuGlassIconButton(
             .border(width = 0.75.dp, color = borderColor, shape = CircleShape),
     ) {
         val button: @Composable () -> Unit = {
-            IconButton(
-                onClick = onClick,
-                enabled = enabled,
+            // 圆底分支不能再套一颗 miuix `IconButton`：那组件自己带一层圆底（40dp 圆角 squircle
+            // + 按压水波圈），与外层玻璃圆底同心叠成**双重圆圈**（2026-11-08 用户实报：更新页
+            // 两颗按钮各自"有双重圈圈"）。改成普通可点击 Box + 同一句语义标签，只保留外层
+            // 玻璃圆底这一层。裸图标分支仍用官方 `IconButton`（官方 demo 顶栏的用法，静止无圈）。
+            val interactionSource = remember { MutableInteractionSource() }
+            Box(
                 modifier = Modifier
                     .fillMaxSize()
-                    // 与裸图标分支同一句标签：文案在按钮节点上（读屏只念一次）。
+                    // 与裸图标分支同一句标签：文案在可点击节点上（读屏只念一次）。
+                    .clickable(
+                        enabled = enabled,
+                        role = Role.Button,
+                        interactionSource = interactionSource,
+                        onClick = onClick,
+                    )
                     .semantics { this.contentDescription = label },
+                contentAlignment = Alignment.Center,
             ) { inner() }
         }
         if (backdrop != null) {
@@ -238,10 +262,18 @@ internal val LocalQingyuBackButtonGlass = staticCompositionLocalOf { false }
 
 /**
  * 全站统一的「子页返回键」——就是 [QingyuGlassIconButton] 的一层薄封装（图标写死为
- * [MiuixIcons.ChevronBackward]、文案默认「返回」）。
+ * [MiuixIcons.Back]、文案默认「返回」）。
  *
  * 门控在 [QingyuGlassIconButton] 里，所以这里不再自己判显隐：静止是裸箭头、压带后长出圆底，
  * 与右上动作键逐帧同步。
+ *
+ * ## 图标为什么是 [MiuixIcons.Back] 而不是 `ChevronBackward`
+ *
+ * 2026-11-08 用户实报（教务网页导入页）：「左上角的返回键是圆圈内的多边形，很奇怪」。
+ * 迁移期用的是 OS4 那颗细尖「‹」(`ChevronBackward`)：它只有约 11dp 宽、转角是直角，
+ * 放大到顶标圆底里就不再读作箭头，而是一块多边形色块。换成官方标准返回箭头 `Back`（「←」，
+ * 有线杆、宽高比也像箭头）后，圆底里才是一颗读得懂的返回键。**不要再改回 `ChevronBackward`**：
+ * 它在本仓的语义是「翻页/展开方向」（月视图、列表行尾箭头），不是导航返回。
  */
 @Composable
 fun QingyuBackIconButton(
@@ -252,7 +284,7 @@ fun QingyuBackIconButton(
     QingyuGlassIconButton(
         onClick = onBack,
         contentDescription = contentDescription,
-        icon = MiuixIcons.ChevronBackward,
+        icon = MiuixIcons.Back,
         tint = tint,
     )
 }
@@ -311,15 +343,20 @@ private fun backIconOrNull(
  *
  * 1. [rememberQingyuBlurBackdrop] 造一个「录像带」（`LayerBackdrop`），并先铺一层页面底色；
  * 2. `Modifier.layerBackdrop(backdrop)` 挂在**页面内容**容器上，把已画出的像素录进去；
- * 3. [QingyuBlurredTopBar] 用共享玻璃件 `QingyuGlassSurface` 把**单档均匀磨砂**面垫在顶栏下，
- *    再叠一层两段线性白纱（顶浓 → 带底透明），同时顶栏底色改成 `Color.Transparent`。
+ * 3. [QingyuBlurredTopBar] 用共享玻璃件 `QingyuGlassSurface` 把**均匀磨砂**面垫在顶栏下（模糊只做一次），
+ *    再叠一层**顶部加重的白纱渐变**（顶浓 → 可见底边归 0），顶栏底色改成 `Color.Transparent`。
  *
  * 三步缺一：只有 3 会采样到空气（黑/透明），只有 2 则毫无视觉变化。
  *
- * 2026-11-04 换方案：发布版 v2.1.4.1 的 `InspireHeaderBlur` 是一次变量模糊 + 两段线性白纱；
- * 旧的 miuix 多级渐进 stack（逐点弧度 + 锐化 overlay + dither）层数多、每帧重建多，读起来有
- * 一层层叠出来的廉价带且滑动发闪。现改为更稳更通透的「单档均匀磨砂 + 两段线性白纱」，
- * 模糊粗细仍对齐发布版 σ≈22。参数见 [QingyuTopBarBlur]。
+ * 2026-11-07 / 11-08 迭代结论（真机依次否掉两种做法，现在的形态是第三种）：
+ *
+ * - miuix 官方渐进档（多层合成）在真机上只要滚动就闪（半分辨率堆栈 + 全分辨率 overlay 两层
+ *   采样错位），且模糊面按展开高度固定、被可见栏高裁在渐变中途 → 底部切一条硬线；
+ * - 单次模糊 + 离屏 alpha 掩膜（saveLayer + DstIn）会把玻璃自己一起收没 → 顶部变透明、看不到模糊；
+ * - 现在：**模糊只做一次**，纵向权重接在模糊的 RenderEffect 链末端（`runtimeShaderEffect`，
+ *   顶边 1 → 可见底边 0），白纱也用正常混合跟着可见栏高一起收到 0 —— 不靠掩膜、底边不硬切。
+ *   2026-11-08 修过一版坐标方向写反（权重上下颠倒，可见栏几乎没有模糊）、以及白纱末尾
+ *   “先全透、再压回页底色”的两档互揍（就是“长得奇怪”的那条硬边），参数见 [QingyuTopBarBlur]。
  *
  * ## 退化路径（都回到改动前的样子，不会白屏/闪烁）
  *
@@ -424,6 +461,17 @@ private fun QingyuPageScaffoldBody(
     // 判据按栏型取量（见 [isContentUnderTopBar]）：可折叠大标题看 heightOffset（位置量），
     // 钉住的单行栏恒为 true（保留统一前的静止观感，别改成看滚动量）。
     val collapsibleTopBar = !smallTopBar && !adaptive.isWideScreen
+    // 右上动作键之间的横向间距。miuix 的 `SmallTopAppBar` / `TopAppBar` 只把 actions 包进
+    // `Row(horizontalArrangement = Arrangement.End)`、**不给子项间距**，而共享玻璃钮是 44dp 圆底
+    // ⇒ 多颗动作键（日志页有 4 颗）会严丝合缝贴成一排（2026-11-08 用户实报「间距太小」）。
+    // 在骨架里统一补 8dp：页面仍然只写 `actions = { QingyuGlassIconButton(…) }`，不用各自套 Row。
+    val topBarActions: @Composable RowScope.() -> Unit = {
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(TopBarActionGap),
+            verticalAlignment = Alignment.CenterVertically,
+            content = actions,
+        )
+    }
     // 「内容已压到顶栏带下」**只算这一次**：顶栏的「实底 ↔ 玻璃纱」切换与返回键的玻璃圆底
     // 共用同一个信号（2026-11-05 修）。此前骨架看 `contentOffset`、顶栏内部看 `heightOffset`，
     // 两套信号会在同一帧给出相反答案 —— 用户看到的是「顶栏已经变实底了，返回键还挂着一圈
@@ -447,6 +495,8 @@ private fun QingyuPageScaffoldBody(
                     collapsible = collapsibleTopBar,
                     // 同一个「压带」信号（见上方 contentUnderHeader）：顶栏据此切实底 / 玻璃纱。
                     underHeader = contentUnderHeader,
+                    // 绘制期读取：纵向渐隐要跟着可见底边收 0（不触发逐帧重组）。
+                    barHeightOffsetPx = { scrollBehavior.state.heightOffset },
                 ) {
                     // 宽屏/中宽档把顶栏内容限制到与正文同一根内容列（毛玻璃面仍然通栏）：
                     // 限宽只包内容、不包模糊面，标题/返回键/动作键与正文左缘保持对齐。
@@ -459,7 +509,7 @@ private fun QingyuPageScaffoldBody(
                                     title = title,
                                     color = barColor,
                                     navigationIcon = backIconOrNull(showBackButton, onBack),
-                                    actions = actions,
+                                    actions = topBarActions,
                                     // 必须把 scrollBehavior 传进来：官方 SmallTopAppBar 在
                                     // SideEffect 里把 heightOffsetLimit 钉成 0（固定不折叠）；
                                     // 不传的话它保持默认 -Float.MAX，onPreScroll 会整段吞掉一个
@@ -472,7 +522,7 @@ private fun QingyuPageScaffoldBody(
                                     title = title,
                                     color = barColor,
                                     navigationIcon = backIconOrNull(showBackButton, onBack),
-                                    actions = actions,
+                                    actions = topBarActions,
                                     // 宽屏档同样走 SmallTopAppBar，同样要钉 0，否则宽屏列表也只会单向滚。
                                     scrollBehavior = scrollBehavior,
                                 )
@@ -484,7 +534,7 @@ private fun QingyuPageScaffoldBody(
                                     largeTitle = title,
                                     scrollBehavior = scrollBehavior,
                                     navigationIcon = backIconOrNull(showBackButton, onBack),
-                                    actions = actions,
+                                    actions = topBarActions,
                                 )
                             }
                         }
@@ -517,7 +567,10 @@ private fun QingyuPageScaffoldBody(
             val contentModifier = if (cap != null) {
                 Modifier
                     .fillMaxHeight()
+                    // 列宽恒为 min(父宽, cap)：不加 fillMaxWidth 时，内容自己不铺满的页
+                    // 会把整列缩到内容宽，居中位置跟着内容飘。
                     .widthIn(max = cap)
+                    .fillMaxWidth()
                     .align(Alignment.TopCenter)
             } else {
                 Modifier.fillMaxSize()
@@ -536,34 +589,45 @@ private fun QingyuPageScaffoldBody(
 }
 
 /**
- * 子页顶栏玻璃参数（2026-11-04 换方案：**单档均匀磨砂 + 两段线性白纱**）。
+ * 子页顶栏玻璃参数（2026-11-08：**轻模糊 + 纵向权重 + 顶部加重的白纱**）。
  *
- * ## 为什么换
+ * ## 方案（四次真机迭代后的稳定形态）
  *
- * 旧实现走 miuix「多级渐进 stack + 锐化 overlay + dither」：层数多、每帧重建多，读起来有
- * 一层层叠出来的廉价带、滑动还会逐帧重糊发闪。发布版 v2.1.4.1（`InspireHeaderBlur`）是
- * **一次变量模糊** + 两段线性白纱（`tintGradient`：`[tint → transparent]`）+ 带底收 0。
- * 这里换成更稳更通透的等价做法：单档均匀高斯磨砂 + 两段线性白纱。
+ * - 模糊只做一次均匀高斯，半径 **26dp（σ≈12）**：σ22 会把内容抹成一块颜色，
+ *   “上糊下清”在物理上就看不出来（用户 2026-11-07 多次实报）；
+ * - 纵向权重乘在**模糊输出**上（`fadeEndFraction` + `QingyuVerticalFade` 着色器）：
+ *   顶边 1.0、到**可见底边**归 0，坐标以 `y = 0` 为顶（Skia / AGSL 约定）；
+ * - 白纱是正常混合的多段渐变：顶部 0.60，向下逐级变淡，**最后一段自己收到 0**。
+ *
+ * 2026-11-08 修掉的两个“长得奇怪”：
+ * - 着色器按“原点在底部”算，权重上下颠倒 → 可见栏几乎没模糊，只剩白纱；
+ * - 白纱末尾先到全透、再一下子压回不透明页底色（旧 0.84 / 1.0 两档）→ 栏底一条硬边 +
+ *   中间一段清晰文字往外漏。现在末尾只有一档 `1.00f * f → transparent`，与模糊同步消失。
+ *
+ * 为什么不用另外两条路：
+ * - miuix 官方渐进档：半分辨率堆栈 + 全分辨率 overlay 两层合成，真机滚动闪；
+ * - 离屏掩膜（saveLayer + DstIn）：会把玻璃自己一起乘没，顶部变透明。
  *
  * ## 数值
- * - **半径 49dp**：miuix `sigma_px = 0.45 × radius_dp × density`，49 → σ≈22，对齐发布版
- *   `progressiveSigma = 22`（粗细一致，只是不再逐点渐进）。
- * - **白纱两段线性**：顶边满浓度 → 带底全透明（发布版 `tintGradient(bottomScale=0)`）。
- *   旧「前 62% 满浓度、末段才收」大半条是实心白板，显廉价，已废。
- * - **浅 white@0.62 / 暗色亮 white@0.24**：暗色必须用**亮 veil**（用灰 `#565656` 压在暗底上
- *   会发灰、读成脏/透明），对齐发布版 `_frostedScrimColor` 暗色 0.16~0.30 档。
+ * - **半径 26dp**：σ≈12，保留可辨认的形状，渐变才看得出来。
+ * - **白纱顶边**：浅 / 暗均 0.60（颜色 = 页面底色，不是纯白），向下 55% / 18% / 0。
  *
- * 改这里必须同步 `TopBarProgressiveBlurGuardTest`（新方案实质被它钉住）。
+ * 改这里必须同步 `TopBarProgressiveBlurGuardTest`（方案实质被它钉住）。
  */
 internal object QingyuTopBarBlur {
-    /** 单档模糊半径（dp），σ≈22 对齐发布版 progressiveSigma。 */
-    const val MaxRadiusDp = 49f
+    /** 均匀模糊半径（dp）：σ≈12（0.45×26）。太大（σ22）会把内容抹成一块颜色，看不出“上糊下清”。 */
+    const val MaxRadiusDp = 26f
 
-    /** 浅色白纱 alpha（顶边满浓度，线性淡到带底 0）。 */
-    const val LightTintAlpha = 0.62f
+    /**
+     * 浅色白纱顶边 alpha。
+     *
+     * 颜色是页面底色（不是纯白，否则会比页面亮一档、收起时成一条白带）；浓度定在 0.60：
+     * 0.78~0.82 会把下面的模糊整个盖住，看上去就只剩一条均匀白带（用户 2026-11-07/08 实报）。
+     */
+    const val LightTintAlpha = 0.60f
 
-    /** 暗色**亮白纱** alpha（暗底上用亮 veil 才有对比）。 */
-    const val DarkVeilAlpha = 0.24f
+    /** 暗色顶边 alpha（同样是页面底色，不是纯白）。 */
+    const val DarkVeilAlpha = 0.60f
 }
 
 /**
@@ -586,23 +650,39 @@ private val QingyuTopBarGlassSpec: GlassSpec = GlassSpecResolver.resolve(
     ),
 )
 
-private fun qingyuTopBarTint(dark: Boolean): Color =
-    Color.White.copy(
+/**
+ * 顶栏叠色：[pageBackground] 本身（不是纯白）。
+ *
+ * 纯白会比页面底色亮一档 —— 后面没内容时整条顶栏就像一块白矩形，底边就是一条“分界线”。
+ * 用页面底色后：没内容经过时它与页面同色（看不出来），有内容时才是磨砂霜。
+ */
+private fun qingyuTopBarTint(dark: Boolean, pageBackground: Color): Color =
+    pageBackground.copy(
         alpha = if (dark) QingyuTopBarBlur.DarkVeilAlpha else QingyuTopBarBlur.LightTintAlpha,
     )
 
 /**
- * 顶栏白纱（2026-11-04 换方案）：**两段纯线性 `[顶边 tint → 带底 transparent]`**。
+ * 顶栏白纱：**正常混合**的多段垂直渐变，顶部最浓、向下逐级减弱、**可见底边归 0**。
  *
- * 发布版 `InspireHeaderBlur.tintGradient(bottomScale=0)` 就是两段线性；旧的
- * 「0→62% 满浓度、末段才收」大半条是实心白纱，读成一块廉价白板，已废。
- * 带底全透明 → 与下方清晰内容交界处不会切出横向硬边（配合下沿对齐内容起点）。
+ * [fraction] = 当前可见栏高 / 模糊面高：大标题收起后可见栏变矮，白纱必须跟着收缩，
+ * 否则会在面高度处才归零、被裁剪线切出一条硬边（用户 2026-11-07 实报的“均匀白带”）。
+ *
+ * 浓度控制在 0.6 左右：再厚就会把下面的模糊整个盖住，看上去就只剩一条均匀白带，
+ * 反而看不出“渐变模糊”。
+ *
+ * ⚠️ 末尾**只有**一档 `1.00f * f → Transparent`，不要再加“0.84f 全透 + 1.0f 压回页底色”这种
+ * 两档收尾：那会在栏底约 16% 的高度里从“内容完全看得见”直接跳到“全不透明页底色”，
+ * 视觉上就是一条硬边 + 中间一段清晰文字往外漏（用户 2026-11-08 截图实报）。
+ * 收尾由模糊自身的纵向权重负责（可见底边处权重已经是 0）。
  */
-private fun qingyuTopBarScrim(dark: Boolean): Brush {
-    val tint = qingyuTopBarTint(dark)
+private fun qingyuTopBarScrim(dark: Boolean, fraction: Float, pageBackground: Color): Brush {
+    val f = fraction.coerceIn(0.2f, 1f)
+    val tint = qingyuTopBarTint(dark, pageBackground)
     return Brush.verticalGradient(
-        0.0f to tint,
-        1.0f to tint.copy(alpha = 0f),
+        0.00f to tint,
+        0.35f * f to tint.copy(alpha = tint.alpha * 0.55f),
+        0.70f * f to tint.copy(alpha = tint.alpha * 0.18f),
+        1.00f * f to Color.Transparent,
     )
 }
 
@@ -711,6 +791,11 @@ private fun QingyuBlurredTopBar(
     collapsible: Boolean,
     /** 「内容已压到顶栏带下」：骨架算一次（[isContentUnderTopBar]），返回键玻璃读同一份。 */
     underHeader: Boolean,
+    /**
+     * 当前 `heightOffset`（px，≤0，滚动时逐帧变）。只用于**绘制期**算“可见栏高 / 模糊面高”：
+     * 底边收尾要跟着可见底边，不能停在固定位置。在 draw lambda 里读，不引起逐帧重组。
+     */
+    barHeightOffsetPx: () -> Float,
     content: @Composable () -> Unit,
 ) {
     // 展开高度只在「变大」时写一次（单调取大）：滚动收起不再写状态 → 不逐帧重组、尺寸恒定。
@@ -735,32 +820,34 @@ private fun QingyuBlurredTopBar(
     val contentGapPx = with(LocalDensity.current) {
         (if (collapsible) TopBarContentGap else TopBarContentGapSmall).roundToPx()
     }
-    // scrim 只在 dark 变化时重建一次，不在 draw 期每帧新建 Brush（避免滚动期 GC 抖动）。
-    val scrimBrush = remember(dark) { qingyuTopBarScrim(dark) }
-    // 带底「渐回页底色」：单档均匀磨砂没有 blur→0 的收尾，若直接与内容交界会留一条模糊硬边。
-    // 用最后 ~7%（正好是 TopBarContentGap 那段）由透明渐到页底色，把磨砂影像柔和压回底色。
-    val bottomFadeBrush = remember(pageBackground) {
-        Brush.verticalGradient(
-            0.0f to Color.Transparent,
-            0.93f to Color.Transparent,
-            1.0f to pageBackground,
-        )
-    }
+    // scrim 每帧按可见比例重建（一条 4 段的 Brush）：不重建模糊层，不会抖。
+    // （以前 remember(dark) 固定几何，收起时被裁在白纱中途，正是“均匀白带”的来源。）
     Layout(
         content = {
             if (backdrop != null) {
+                val surfaceHeightPx = (bandHeightPx + contentGapPx).coerceAtLeast(1)
                 QingyuGlassSurface(
                     backdrop = backdrop,
                     spec = QingyuTopBarGlassSpec,
                     shape = RectangleShape,
-                    // 单档均匀磨砂：不传渐进档（progressive = null ⇒ QingyuGlassSurface 走单次 blur，
-                    // 不再建多级 stack/锐化/dither，薄而稳，治“一层层”的廉价带与逐帧重糊发闪）。
+                    // 单次均匀模糊：不建多层合成，滚动期不会因两层采样错位而闪。
                     progressive = null,
+                    // 纵向渐变权重：直接接在模糊的 RenderEffect 链上（不会被框架忽略），
+                    // 顶部满强度、向下变清、可见底边归 0。
+                    fadeEndFraction = if (underHeader) {
+                        {
+                            (surfaceHeightPx + barHeightOffsetPx())
+                                .coerceIn(1f, surfaceHeightPx.toFloat()) / surfaceHeightPx
+                        }
+                    } else {
+                        null
+                    },
                     onDrawSurface = {
                         if (underHeader) {
-                            drawRect(brush = scrimBrush)
-                            // 磨砂没有“模糊归零”的收尾：用最后一段渐回页底色压掉与内容的交界硬边。
-                            drawRect(brush = bottomFadeBrush)
+                            // 顶部加重的白纱：正常混合叠在模糊上，跟着可见栏高一起收尾。
+                            val visibleFraction = (surfaceHeightPx + barHeightOffsetPx())
+                                .coerceIn(1f, surfaceHeightPx.toFloat()) / surfaceHeightPx
+                            drawRect(brush = qingyuTopBarScrim(dark, visibleFraction, pageBackground))
                         } else {
                             // opaqueAtRest：无内容压带时铺不透明页底色（静止即实底）。
                             drawRect(color = pageBackground)
@@ -792,10 +879,9 @@ private fun QingyuBlurredTopBar(
         val width = contentPlaceable.width.coerceAtLeast(constraints.minWidth)
         val height = contentPlaceable.height
         val blurPlaceable = if (backdrop != null && bandHeightPx > 0) {
-            // 玻璃/模糊面高度要对齐到**真实底边**（栏体 + 标题→正文间距 = 本 Layout 底边 = 内容起点），
-            // 这样 ProgressiveBlur 的零强度点（endFraction=1，映射到本面投影高度）正好落在内容起始处，
-            // 底部平滑渐隐到 0；若仍只量到「栏体 + overhang」，零强度边会在内容上方留下一段错位带，
-            // 表现为一条硬分界线（且滑动时副本与实时内容错位 → 闪）。见 TopBarContentGap。
+            // 玻璃面高度 = 展开高度 + 标题→正文间距。可见栏高在滚动时变矮，但渐变权重
+            // 按「可见高度 / 面高度」压缩、在可见底边归零 → 裁剪线落在全透明区，不会切出硬边。
+            // 见 TopBarContentGap。
             measurables.first().measure(Constraints.fixed(width, bandHeightPx + contentGapPx))
         } else {
             null

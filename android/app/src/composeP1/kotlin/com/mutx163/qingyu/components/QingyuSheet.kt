@@ -16,7 +16,6 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.layout
-import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.Dp
@@ -144,7 +143,7 @@ fun QingyuSheet(
             columnModifier = columnModifier.horizontalBleed(QingyuSheetDefaults.InsideMargin)
         }
         if (maxHeightFraction != null) {
-            val maxHeight = (LocalConfiguration.current.screenHeightDp * maxHeightFraction).dp
+            val maxHeight = rememberSheetMaxHeight(maxHeightFraction)
             columnModifier = columnModifier.heightIn(max = maxHeight)
         }
         if (!contentScrolls) {

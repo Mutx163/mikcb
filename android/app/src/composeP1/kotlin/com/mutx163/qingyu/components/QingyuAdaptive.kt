@@ -3,6 +3,7 @@ package com.mutx163.qingyu.components
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.staticCompositionLocalOf
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.unit.Dp
@@ -61,7 +62,9 @@ private fun qingyuAdaptiveFor(widthDp: Float, heightDp: Float): QingyuWindowAdap
         },
     )
 
-/** 壳层 Rail 的取值包：Rail 是否显示、是否展开、注入给页面的内容区自适应值。 */
+/**
+ * 壳层 Rail 的取值包：Rail 是否显示、是否展开、注入给页面的内容区自适应值。
+ */
 class QingyuShellRailAdaptive(
     val railVisible: Boolean,
     val railExpanded: Boolean,
@@ -106,5 +109,35 @@ fun rememberQingyuShellRailAdaptive(railEnabled: Boolean = true): QingyuShellRai
                 },
             ),
         )
+    }
+}
+
+/**
+ * 弹层正文的限高（`heightIn(max = …)` 用）：高窗口 = 屏高 × [fraction]，
+ * 矮窗口（横屏 / 分屏 / 自由窗口）自动放宽。
+ *
+ * 为什么收成一处：全仓原本 16 个调用点各自写 `screenHeightDp * 比例`，矮窗下同一个
+ * 问题要改 16 遍，且新页面很容易漏。判据本体在 [QingyuAdaptiveRules.sheetMaxHeightDp]
+ * （纯 Kotlin，L0 可测）；本函数只做 Compose 接线，读数仍是 `screenHeightDp`
+ * ——与改造前完全同源，所以高窗口（手机竖屏 / 平板竖屏）逐像素不变。
+ */
+@Composable
+fun rememberSheetMaxHeight(fraction: Float): Dp {
+    val screenHeightDp = LocalConfiguration.current.screenHeightDp
+    return remember(screenHeightDp, fraction) {
+        QingyuAdaptiveRules.sheetMaxHeightDp(screenHeightDp.toFloat(), fraction).dp
+    }
+}
+
+/**
+ * 写死 dp 上限的弹层用：矮窗口下夹到「屏高 − 180dp」，高窗口原样返回 [desired]。
+ *
+ * 与 [rememberSheetMaxHeight] 同一套账；区别是调用方本来就有个固定上限（380 / 420dp）。
+ */
+@Composable
+fun rememberCappedSheetHeight(desired: Dp): Dp {
+    val screenHeightDp = LocalConfiguration.current.screenHeightDp
+    return remember(screenHeightDp, desired) {
+        QingyuAdaptiveRules.cappedSheetHeightDp(screenHeightDp.toFloat(), desired.value).dp
     }
 }

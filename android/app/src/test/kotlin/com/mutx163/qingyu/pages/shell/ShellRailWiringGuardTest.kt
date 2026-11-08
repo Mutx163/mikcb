@@ -107,6 +107,35 @@ class ShellRailWiringGuardTest {
         )
     }
 
+    @Test
+    fun `Rail 旁的内容区不吃重复的起始侧内边距`() {
+        val activity = codeOnly(source(ACTIVITY))
+        assertTrue(
+            "壳没在 Rail 可见时按 Start 侧消费窗口内边距：横屏挖孔 / 侧边导航会让页面整体偏右",
+            railConsumesStartInsets(activity),
+        )
+        // 反向探针：把 Start 改成 End，判据必须红。
+        assertFalse(
+            "咬合探针失效：改成 End 侧后判据仍为真",
+            railConsumesStartInsets(activity.replace("WindowInsetsSides.Start", "WindowInsetsSides.End")),
+        )
+    }
+
+    @Test
+    fun `日视图展开层不吃第二遍左右内边距`() {
+        val day = codeOnly(source(DAY))
+        assertTrue(
+            "DayViewPage 在展开层（embeddedInHomePanel）里仍按窗口内边距缩一次：" +
+                "宿主 TimetableWeekPage 已经缩过了，横屏下正文会被推偏（右侧内容不居中）",
+            day.contains("start = if (embeddedInHomePanel)"),
+        )
+        // 反向探针：改回无条件取 innerPadding，判据必须红。
+        assertFalse(
+            "咬合探针失效：改回无条件内边距后判据仍为真",
+            dayInsetsOnce(day.replace("start = if (embeddedInHomePanel)", "start = if (false)")),
+        )
+    }
+
     // ------------------------------------------------------------------ 判据
 
     private fun shellInjectsAdaptive(text: String): Boolean =
@@ -117,6 +146,12 @@ class ShellRailWiringGuardTest {
 
     private fun railPopsThenSelects(text: String): Boolean =
         text.contains("fun railSelectRoot") && text.contains("onSelect = { id -> railSelectRoot(id) }")
+
+    private fun railConsumesStartInsets(text: String): Boolean =
+        text.contains("consumeWindowInsets(") && text.contains("WindowInsetsSides.Start")
+
+    private fun dayInsetsOnce(text: String): Boolean =
+        text.contains("start = if (embeddedInHomePanel)")
 
     // ------------------------------------------------------------------ 定位
 
@@ -149,5 +184,9 @@ class ShellRailWiringGuardTest {
         /** 玻璃坞（药丸 + 圆钮）的渲染点；宽屏档由壳传 replacedByRail 让位给 Rail。 */
         const val DOCK =
             "android/app/src/composeP1/kotlin/com/mutx163/qingyu/pages/shell/HomeGlassDock.kt"
+
+        /** 日视图（同时是首页的展开层渲染件）：展开层里不能再吃一遍宿主的内边距。 */
+        const val DAY =
+            "android/app/src/composeP1/kotlin/com/mutx163/qingyu/pages/timetable/day/DayViewPage.kt"
     }
 }
