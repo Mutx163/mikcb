@@ -46,6 +46,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.TextUnit
@@ -55,6 +56,7 @@ import com.mutx163.qingyu.R
 import com.mutx163.qingyu.components.QingyuCard
 import com.mutx163.qingyu.components.QingyuPageList
 import com.mutx163.qingyu.components.QingyuPageScaffold
+import com.mutx163.qingyu.components.QingyuPageTheme
 import com.mutx163.qingyu.components.QingyuSliderPreference
 import com.mutx163.qingyu.components.QingyuWeightDelta
 import com.mutx163.qingyu.components.shiftWeight
@@ -1572,4 +1574,317 @@ fun SettingsNodeList(
             SettingsNodeView(node = node, onAction = onAction, rowInset = rowInset)
         }
     }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// IDE 预览（2026-11-08）
+//
+// 只给实现阶段看效果，不进业务路径。
+//
+// 这一页是「一个渲染层喂二十份 spec」的通用壳，所以预览按**结构**分档，不按数据状态分档
+// （设置页没有加载 / 失败态：spec 由模型层在进入组合之前就算好了）：
+//
+//   1 常规列表 —— 七种行组件 + 学期摘要卡 + 控制卡 + 整宽说明，一屏看全；
+//   2 暗色     —— 同一份 spec，只换外观；
+//   3 大字号 1.3 —— 同一份 spec，只换字号；
+//   4 分栏 4:6 —— 顶部预览槽 + 下方列表那条结构分支（课程卡片 / 课表页走它），
+//                 顺带覆盖「不可折叠小顶栏」「顶栏齿轮」「固定底栏」，以及
+//                 危险行 / 变淡 + 长按行 / 上下两行的画法。
+//
+// 为什么偏偏是这几档：
+//   · 七种行组件各有自己的控件与行尾槽（见 SettingsRowRenderTable），改一处最容易只对了一行；
+//   · 分栏分支的 padding / weight 与常规列表完全不同，只在滚动这条路上才会暴露
+//     「列表被截断、滑不动」；
+//   · 暗色 —— 历史上出现过「白字落在白卡片上」（壳用无参 MiuixTheme，页面取色却走
+//     isSystemInDarkTheme()）；这一档就是防它复发；
+//   · 大字号 —— 行内文案 11 / 17 字的折行点，只在字被放大后才暴露。
+//
+// 固定写法（与 about/ContributorsPage.kt 尾部那批同口径，照抄，别自己想）：
+//   • 主题一律包 QingyuPageTheme(isDark = …)，不要直接 MiuixTheme { }：页面里取色走
+//     isSystemInDarkTheme()，只有它会把 LocalConfiguration 的 uiMode 一起改写，预览才和
+//     真机同口径；
+//   • 字号用 QingyuPageTheme(textScale = …)，不要用 @Preview(fontScale = …)：后者只改
+//     基准 density，绕过了应用的 appTextScale 口径；
+//   • 宽度按 400dp（本仓折行实测口径），高度给一屏多，避免列表被截断看不清。
+// ─────────────────────────────────────────────────────────────────────────────
+
+/**
+ * 预览用的一页设置：七种行组件 + 学期摘要卡 + 整宽说明 + 控制卡各来一份。
+ *
+ * 字面量是**预览假数据**，键一律留 [NON_ARB_TEXT]（与「不来自 ARB 的运行时文案」同一条
+ * 约定），不参与 ARB 对照；要核对真实文案请看各页模型。
+ */
+private fun previewSettingsSpec(): SettingsPageSpec = SettingsPageSpec(
+    id = "preview.settings",
+    titleKey = NON_ARB_TEXT,
+    title = "设置",
+    nodes = listOf(
+        // 学期摘要卡：不套分组卡，自己就是一张 16dp 内边距的可点白卡（左应用图标 + 右箭头）。
+        SettingsRow(
+            id = "preview.summary",
+            component = MiuixRowComponent.ARROW,
+            titleKey = NON_ARB_TEXT,
+            title = "第 12 周 · 共 20 周",
+            subtitleKey = NON_ARB_TEXT,
+            subtitle = "开学日期 2026-09-01",
+            standaloneSummaryCard = true,
+            leadingAppIcon = true,
+            action = SettingsAction.NAVIGATE,
+            actionTarget = "b.semester",
+        ),
+        SettingsLabel(
+            id = "preview.label.general",
+            textKey = NON_ARB_TEXT,
+            text = "通用",
+        ),
+        SettingsGroup(
+            id = "preview.group.general",
+            children = listOf(
+                // ARROW：行首徽章 + 行尾读数 + 右箭头。
+                SettingsRow(
+                    id = "preview.row.arrow",
+                    component = MiuixRowComponent.ARROW,
+                    titleKey = NON_ARB_TEXT,
+                    title = "语言",
+                    subtitleKey = NON_ARB_TEXT,
+                    subtitle = "界面语言与课程名翻译",
+                    details = "简体中文",
+                    icon = SettingsRowIcon(name = "theme"),
+                    action = SettingsAction.NAVIGATE,
+                    actionTarget = "b.language",
+                ),
+                // SWITCH：行首徽章 + 开关。
+                SettingsRow(
+                    id = "preview.row.switch",
+                    component = MiuixRowComponent.SWITCH,
+                    titleKey = NON_ARB_TEXT,
+                    title = "深色模式",
+                    subtitleKey = NON_ARB_TEXT,
+                    subtitle = "跟随系统",
+                    switchValue = true,
+                    icon = SettingsRowIcon(name = "background"),
+                    action = SettingsAction.WRITE_SETTING,
+                    actionTarget = "themeMode",
+                ),
+                // SLIDER：行尾读数 + 建议点位（材质面板那几根旋钮靠它好停）。
+                SettingsRow(
+                    id = "preview.row.slider",
+                    component = MiuixRowComponent.SLIDER,
+                    titleKey = NON_ARB_TEXT,
+                    title = "字号",
+                    subtitleKey = NON_ARB_TEXT,
+                    subtitle = "整页文字大小",
+                    value = "16sp",
+                    sliderValue = 16.0,
+                    slider = SettingsSliderSpec(
+                        min = 12.0,
+                        max = 24.0,
+                        divisions = 12,
+                        defaultValue = 16.0,
+                        showKeyPoints = true,
+                        keyPoints = listOf(14.0, 16.0, 18.0),
+                        dialogHelper = "可输入 12~24 之间的值",
+                    ),
+                ),
+                // DROPDOWN：行尾当前项。
+                SettingsRow(
+                    id = "preview.row.dropdown",
+                    component = MiuixRowComponent.DROPDOWN,
+                    titleKey = NON_ARB_TEXT,
+                    title = "每周起始日",
+                    subtitleKey = NON_ARB_TEXT,
+                    subtitle = "课表第一列从哪天算",
+                    options = listOf(
+                        SettingsOption(id = "mon", labelKey = NON_ARB_TEXT, label = "星期一"),
+                        SettingsOption(id = "sun", labelKey = NON_ARB_TEXT, label = "星期日"),
+                    ),
+                    selectedOptionId = "mon",
+                    action = SettingsAction.WRITE_SETTING,
+                ),
+                // CHECKBOX：方框勾选（开关之外的另一形态）。
+                SettingsRow(
+                    id = "preview.row.checkbox",
+                    component = MiuixRowComponent.CHECKBOX,
+                    titleKey = NON_ARB_TEXT,
+                    title = "显示周末",
+                    subtitleKey = NON_ARB_TEXT,
+                    subtitle = "课表里保留周六日两列",
+                    switchValue = false,
+                    action = SettingsAction.WRITE_SETTING,
+                ),
+                // COLOR_SWATCH：行尾 36dp 色块（官方没有承载任意色值的行）。
+                SettingsRow(
+                    id = "preview.row.color",
+                    component = MiuixRowComponent.COLOR_SWATCH,
+                    titleKey = NON_ARB_TEXT,
+                    title = "卡片文字色",
+                    value = "#1F1F1F",
+                    action = SettingsAction.COLOR_PICKER,
+                ),
+                // RADIO（多选项）：一行里横排全部分段（材质面板那三处）。
+                SettingsRow(
+                    id = "preview.row.segmented",
+                    component = MiuixRowComponent.RADIO,
+                    titleKey = NON_ARB_TEXT,
+                    title = "默认材质",
+                    options = listOf(
+                        SettingsOption(id = "glass", labelKey = NON_ARB_TEXT, label = "玻璃"),
+                        SettingsOption(id = "solid", labelKey = NON_ARB_TEXT, label = "实心"),
+                        SettingsOption(id = "paper", labelKey = NON_ARB_TEXT, label = "纸张"),
+                    ),
+                    selectedOptionId = "glass",
+                    action = SettingsAction.WRITE_SETTING,
+                ),
+            ),
+        ),
+        SettingsGap(id = "preview.gap"),
+        // 整宽说明：不在单行 11 / 17 字口径内，本来就该折行。
+        SettingsDescription(
+            id = "preview.description",
+            textKey = NON_ARB_TEXT,
+            text = "以上只用于预览排版，数值与文案都不是真实设置。",
+        ),
+        // 控制卡：标题 + 取值 + 两颗按钮（双按钮走 weight 平分分支）。
+        SettingsInline(
+            id = "preview.control.theme",
+            kind = InlineKind.CONTROL_CARD,
+            note = "预览用：官方 preference 族没有「标题 + 取值 + 按钮」的卡头",
+            labelKey = NON_ARB_TEXT,
+            label = "当前主题",
+            value = "基于默认蓝修改",
+            texts = listOf(
+                // 键必须是 controlCardWiring 认得的，否则按钮画得出、点不动。
+                SettingsInlineText(key = "themeResetToPreset", text = "重置"),
+                SettingsInlineText(key = "themeSaveCurrent", text = "保存当前主题"),
+            ),
+        ),
+    ),
+)
+
+/**
+ * 分栏页（预览区 4 : 列表 6）用的 spec：小顶栏 + 顶栏齿轮 + 固定底栏，行只放三种
+ * 特殊形态。这是 [SettingsPageScreen] 另一条结构分支的输入。
+ */
+private fun previewSettingsSplitSpec(): SettingsPageSpec = SettingsPageSpec(
+    id = "preview.settings.split",
+    titleKey = NON_ARB_TEXT,
+    title = "课程卡片",
+    // 小顶栏：课程卡片页 / 课表页不折叠大标题，列表也不挂折叠联动。
+    collapsibleLargeTitle = false,
+    previewFlex = 4,
+    contentFlex = 6,
+    // 顶栏右侧齿轮（节假日标记页右上角那颗）。
+    topBarAction = SettingsTopAction(route = "b.advanced", semanticsLabel = "高级设置"),
+    // 固定底栏：不随列表滚动（节假日高级页的「检查更新」就是 Column 的最后一个子项）。
+    footerNode = SettingsInline(
+        id = "preview.footer",
+        kind = InlineKind.CONTROL_CARD,
+        note = "预览用：固定底栏，单颗按钮（走 fillMaxWidth 整宽分支）",
+        labelKey = NON_ARB_TEXT,
+        label = "节假日数据",
+        texts = listOf(SettingsInlineText(key = "holidayCheckUpdate", text = "检查更新")),
+    ),
+    nodes = listOf(
+        SettingsLabel(
+            id = "preview.label.holiday",
+            textKey = NON_ARB_TEXT,
+            text = "法定节假日",
+        ),
+        SettingsGroup(
+            id = "preview.group.holiday",
+            children = listOf(
+                // 危险行：标题取 QingyuFixedTokens.DESTRUCTIVE。
+                SettingsRow(
+                    id = "preview.row.destructive",
+                    component = MiuixRowComponent.ARROW,
+                    titleKey = NON_ARB_TEXT,
+                    title = "恢复默认设置",
+                    destructive = true,
+                    action = SettingsAction.RESET_SCOPE,
+                ),
+                // 变淡行 + 长按：整行 55% 透明度，点击与长按各是一条通路。
+                SettingsRow(
+                    id = "preview.row.dimmed",
+                    component = MiuixRowComponent.ARROW,
+                    titleKey = NON_ARB_TEXT,
+                    title = "国庆节",
+                    subtitleKey = NON_ARB_TEXT,
+                    subtitle = "已过去",
+                    dimmed = true,
+                    longPressAction = SettingsAction.DIALOG,
+                ),
+                // 上下两行：时刻在上、正文在下（高级页的日志条目）。
+                SettingsRow(
+                    id = "preview.row.stacked",
+                    component = MiuixRowComponent.ARROW,
+                    titleKey = NON_ARB_TEXT,
+                    title = "10-08 09:12",
+                    subtitleKey = NON_ARB_TEXT,
+                    subtitle = "节假日数据已更新",
+                    stacked = true,
+                ),
+            ),
+        ),
+    ),
+)
+
+/** 一档预览的公共身体：一页 spec + 外观档位（分栏页另传预览槽）。 */
+@Composable
+private fun PreviewSettingsPageScreen(
+    spec: SettingsPageSpec,
+    preview: (@Composable () -> Unit)? = null,
+    dark: Boolean = false,
+    textScale: Float = 1f,
+) {
+    QingyuPageTheme(isDark = dark, textScale = textScale) {
+        SettingsPageScreen(spec = spec, preview = preview)
+    }
+}
+
+/** 分栏页顶部「预览区」的占位：真实宿主在这里注入课程卡片 / 课表。 */
+@Composable
+private fun PreviewSettingsSlotPlaceholder() {
+    Box(
+        modifier = Modifier.fillMaxSize(),
+        contentAlignment = Alignment.Center,
+    ) {
+        Text(
+            text = "预览区",
+            style = MiuixTheme.textStyles.footnote1,
+            color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+        )
+    }
+}
+
+// ── 单档：结构与外观 ───────────────────────────────────────────────────────
+
+@Suppress("unused")
+@Preview(name = "1 常规列表", showBackground = true, widthDp = 400, heightDp = 900)
+@Composable
+private fun SettingsPageScreenPreviewList() {
+    PreviewSettingsPageScreen(previewSettingsSpec())
+}
+
+@Suppress("unused")
+@Preview(name = "2 暗色", showBackground = true, widthDp = 400, heightDp = 900)
+@Composable
+private fun SettingsPageScreenPreviewDark() {
+    PreviewSettingsPageScreen(previewSettingsSpec(), dark = true)
+}
+
+@Suppress("unused")
+@Preview(name = "3 大字号 1.3", showBackground = true, widthDp = 400, heightDp = 900)
+@Composable
+private fun SettingsPageScreenPreviewLargeText() {
+    PreviewSettingsPageScreen(previewSettingsSpec(), textScale = 1.3f)
+}
+
+@Suppress("unused")
+@Preview(name = "4 分栏 4:6", showBackground = true, widthDp = 400, heightDp = 900)
+@Composable
+private fun SettingsPageScreenPreviewSplit() {
+    PreviewSettingsPageScreen(
+        spec = previewSettingsSplitSpec(),
+        preview = { PreviewSettingsSlotPlaceholder() },
+    )
 }

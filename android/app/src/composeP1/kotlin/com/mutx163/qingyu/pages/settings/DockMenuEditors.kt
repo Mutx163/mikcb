@@ -31,6 +31,7 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
@@ -38,6 +39,7 @@ import com.mutx163.qingyu.components.QingyuCard
 import com.mutx163.qingyu.components.QingyuPageCardMargin
 import com.mutx163.qingyu.components.QingyuPageList
 import com.mutx163.qingyu.components.QingyuPageScaffold
+import com.mutx163.qingyu.components.QingyuPageTheme
 import com.mutx163.qingyu.components.QingyuSectionGap
 import com.mutx163.qingyu.components.QingyuSectionTitle
 import com.mutx163.qingyu.components.QingyuWeightDelta
@@ -773,4 +775,133 @@ private fun dockGlyph(id: String): ImageVector = when (id) {
     "openSourceLicenses" -> MiuixIcons.File
     "memoryStats" -> MiuixIcons.Report
     else -> MiuixIcons.Info
+}
+
+// ── Android Studio 预览（@Preview）────────────────────────────────────────────
+//
+// 与 `ContributorsPage` 同一套口径：一个 `Preview<页面>` 承担「已启用排列 + 外观档位」，
+// 下面每个 `@Preview` 只选一档。预览不接宿主：回调一律空实现（添加 / 移除 / 拖动 / 重置）。
+//
+// 排列档位按页面的真实分支选，不凑数：
+// * 满格（底栏 5 / 八宫格 8）→ 候选行整行灰化、行尾「已达上限」，分类全启用时换一句说明；
+// * 只剩一格 → 「已启用」行的减号变灰不可点；
+// * 八宫格里 `settings` 钉住，即使未满格也不可移除。
+
+/** 底栏出厂的三个入口（`SettingsGlassDockEditorPage.DEFAULT_ACTIONS`）。 */
+private val previewDockDefaultIds = listOf("day", "week", "tasks")
+
+/** 底栏满格：出厂三个 + 两个功能入口（`MAX_SLOTS = 5`）。 */
+private val previewDockFullIds = listOf("day", "week", "tasks", "exams", "importCourses")
+
+/** 底栏只剩一格：此时 `canRemove = false`。 */
+private val previewDockSingleIds = listOf("week")
+
+/** 八宫格出厂排列（`SettingsHomeMenuEditorPage.DEFAULT_ACTIONS`，已满 8 格）。 */
+private val previewHomeMenuDefaultIds = listOf(
+    "overview", "statistics", "addCourse", "exams",
+    "tasks", "importCourses", "settings", "support",
+)
+
+/** 八宫格未满格：四个入口，其中 `settings` 被钉住。 */
+private val previewHomeMenuPartialIds = listOf("overview", "addCourse", "settings", "support")
+
+/** 一档预览的公共身体：玻璃坞底栏的已启用排列 + 外观档位。 */
+@Composable
+private fun PreviewGlassDockEditorScreen(
+    enabledIds: List<String> = previewDockDefaultIds,
+    dark: Boolean = false,
+    textScale: Float = 1f,
+) {
+    QingyuPageTheme(isDark = dark, textScale = textScale) {
+        GlassDockEditorScreen(
+            state = GlassDockEditorState(enabledIds = enabledIds),
+            onBack = {},
+            onAdd = {},
+            onRemove = {},
+            onMove = { _, _ -> },
+            onReset = {},
+        )
+    }
+}
+
+/** 一档预览的公共身体：八宫格菜单的已启用排列 + 外观档位。 */
+@Composable
+private fun PreviewHomeMenuEditorScreen(
+    enabledIds: List<String> = previewHomeMenuDefaultIds,
+    dark: Boolean = false,
+    textScale: Float = 1f,
+) {
+    QingyuPageTheme(isDark = dark, textScale = textScale) {
+        HomeMenuEditorScreen(
+            state = SettingsHomeMenuEditorState(enabledIds = enabledIds),
+            onBack = {},
+            onAdd = {},
+            onRemove = {},
+            onMove = { _, _ -> },
+            onReset = {},
+        )
+    }
+}
+
+@Suppress("unused")
+@Preview(name = "1 玻璃坞·出厂三格", showBackground = true, widthDp = 400, heightDp = 900)
+@Composable
+private fun GlassDockEditorScreenPreviewDefault() {
+    PreviewGlassDockEditorScreen()
+}
+
+@Suppress("unused")
+@Preview(name = "2 玻璃坞·满格五格", showBackground = true, widthDp = 400, heightDp = 900)
+@Composable
+private fun GlassDockEditorScreenPreviewFull() {
+    PreviewGlassDockEditorScreen(enabledIds = previewDockFullIds)
+}
+
+@Suppress("unused")
+@Preview(name = "3 玻璃坞·只剩一格", showBackground = true, widthDp = 400, heightDp = 900)
+@Composable
+private fun GlassDockEditorScreenPreviewSingle() {
+    PreviewGlassDockEditorScreen(enabledIds = previewDockSingleIds)
+}
+
+@Suppress("unused")
+@Preview(name = "4 玻璃坞·暗色", showBackground = true, widthDp = 400, heightDp = 900)
+@Composable
+private fun GlassDockEditorScreenPreviewDark() {
+    PreviewGlassDockEditorScreen(dark = true)
+}
+
+@Suppress("unused")
+@Preview(name = "5 玻璃坞·大字号 1.3", showBackground = true, widthDp = 400, heightDp = 900)
+@Composable
+private fun GlassDockEditorScreenPreviewLargeText() {
+    PreviewGlassDockEditorScreen(textScale = 1.3f)
+}
+
+@Suppress("unused")
+@Preview(name = "6 八宫格·出厂八格", showBackground = true, widthDp = 400, heightDp = 900)
+@Composable
+private fun HomeMenuEditorScreenPreviewDefault() {
+    PreviewHomeMenuEditorScreen()
+}
+
+@Suppress("unused")
+@Preview(name = "7 八宫格·未满格", showBackground = true, widthDp = 400, heightDp = 900)
+@Composable
+private fun HomeMenuEditorScreenPreviewPartial() {
+    PreviewHomeMenuEditorScreen(enabledIds = previewHomeMenuPartialIds)
+}
+
+@Suppress("unused")
+@Preview(name = "8 八宫格·暗色", showBackground = true, widthDp = 400, heightDp = 900)
+@Composable
+private fun HomeMenuEditorScreenPreviewDark() {
+    PreviewHomeMenuEditorScreen(dark = true)
+}
+
+@Suppress("unused")
+@Preview(name = "9 八宫格·大字号 1.3", showBackground = true, widthDp = 400, heightDp = 900)
+@Composable
+private fun HomeMenuEditorScreenPreviewLargeText() {
+    PreviewHomeMenuEditorScreen(textScale = 1.3f)
 }

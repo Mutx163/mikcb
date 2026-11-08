@@ -23,11 +23,13 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.mutx163.qingyu.components.QingyuCard
 import com.mutx163.qingyu.components.QingyuPageCardMargin
 import com.mutx163.qingyu.components.QingyuPageList
 import com.mutx163.qingyu.components.QingyuPageScaffold
+import com.mutx163.qingyu.components.QingyuPageTheme
 import top.yukonga.miuix.kmp.basic.CardDefaults
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.IconButton
@@ -298,3 +300,81 @@ private val SELECTED_BORDER_WIDTH = 1.6.dp
 
 /** 选中底色透明度（Dart `accentSurfaceTintColor` = `accent.withValues(alpha: 0.12)`）。 */
 private const val SELECTED_TINT_ALPHA = 0.12f
+
+// ─────────────────────────────────────────────────────────────────────────────
+// IDE 预览（2026-11-08）
+//
+// 只给实现阶段看效果，不进业务路径。
+//
+// 这一页只有两块（搜索卡 + 图标网格），分支也就两处，所以预览按分支铺：
+//
+//   1 默认加号 —— 没有选中项，首格是「默认」加号格；
+//   2 选中图标 —— 传一个真实图标名，那一格画成选中态（12% 主色底 + 1.6dp 描边）；
+//   3 暗色     —— 同一份数据换外观；
+//   4 大字号 1.3。
+//
+// 为什么偏偏是这几档：
+//   · 选中态是这页**唯一**有颜色分支的格子（squircleBackground + squircleBorder），
+//     不传名字就永远看不到它；
+//   · 暗色 —— 选中底是 12% 主色透明，落在深色底上最容易「看不出选中」；
+//   · 大字号 —— 格内名称是单行省略号，放大后才会暴露截断。
+//
+// 固定写法（与 about/ContributorsPage.kt 尾部那批同口径，照抄，别自己想）：
+//   • 主题一律包 QingyuPageTheme(isDark = …)，不要直接 MiuixTheme { }：页面里取色走
+//     isSystemInDarkTheme()，只有它会把 LocalConfiguration 的 uiMode 一起改写；
+//   • 字号用 QingyuPageTheme(textScale = …)，不要用 @Preview(fontScale = …)；
+//   • 宽度按 400dp（本仓折行实测口径），高度给一屏多。
+// ─────────────────────────────────────────────────────────────────────────────
+
+/**
+ * 预览用的选中图标名：取清单里真实存在的一个（[GlassDockIconCatalog.names] 里有 `alarm`，
+ * [GlassDockIconVectors.byName] 也认得），那一格才会走到「选中」分支。
+ * 写成常量而不是 `names.first()`：首格已经被「默认加号」占了，再用 `add` 会两者撞脸。
+ */
+private const val PREVIEW_SELECTED_ICON_NAME = "alarm"
+
+/** 一档预览的公共身体：选中档位 + 外观档位。 */
+@Composable
+private fun PreviewGlassDockIconPickerScreen(
+    initialName: String?,
+    dark: Boolean = false,
+    textScale: Float = 1f,
+) {
+    QingyuPageTheme(isDark = dark, textScale = textScale) {
+        GlassDockIconPickerScreen(
+            initialName = initialName,
+            onSelect = {},
+            onBack = {},
+        )
+    }
+}
+
+// ── 单档：选中分支 × 外观 ───────────────────────────────────────────────
+
+@Suppress("unused")
+@Preview(name = "1 默认加号", showBackground = true, widthDp = 400, heightDp = 900)
+@Composable
+private fun GlassDockIconPickerScreenPreviewDefault() {
+    PreviewGlassDockIconPickerScreen(initialName = null)
+}
+
+@Suppress("unused")
+@Preview(name = "2 选中图标", showBackground = true, widthDp = 400, heightDp = 900)
+@Composable
+private fun GlassDockIconPickerScreenPreviewSelected() {
+    PreviewGlassDockIconPickerScreen(initialName = PREVIEW_SELECTED_ICON_NAME)
+}
+
+@Suppress("unused")
+@Preview(name = "3 暗色", showBackground = true, widthDp = 400, heightDp = 900)
+@Composable
+private fun GlassDockIconPickerScreenPreviewDark() {
+    PreviewGlassDockIconPickerScreen(initialName = PREVIEW_SELECTED_ICON_NAME, dark = true)
+}
+
+@Suppress("unused")
+@Preview(name = "4 大字号 1.3", showBackground = true, widthDp = 400, heightDp = 900)
+@Composable
+private fun GlassDockIconPickerScreenPreviewLargeText() {
+    PreviewGlassDockIconPickerScreen(initialName = PREVIEW_SELECTED_ICON_NAME, textScale = 1.3f)
+}

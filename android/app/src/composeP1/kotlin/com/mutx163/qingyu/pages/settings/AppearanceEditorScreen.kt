@@ -44,10 +44,12 @@ import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalView
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
 import androidx.core.view.WindowCompat
+import com.mutx163.qingyu.components.QingyuPageTheme
 import top.yukonga.miuix.kmp.squircle.addSquircleRect
 import top.yukonga.miuix.kmp.squircle.squircleClip
 import top.yukonga.miuix.kmp.squircle.squircleSurface
@@ -698,4 +700,90 @@ internal fun appearanceEditorCardGeometry(
         bottomReserve = box.bottomReserveDp.dp,
         availableHeight = box.availableHeightDp.dp,
     )
+}
+
+// ── Android Studio 预览（@Preview）────────────────────────────────────────────
+//
+// 与 `ContributorsPage` 同一套口径：一个 `Preview<页面>` 承担「初始视图 + 外观档位」，
+// 下面每个 `@Preview` 只选一档。预览不接宿主：回调一律空实现。
+//
+// 看预览前先知道两处与真机的差别：
+// * 卡片内容槽 `preview` 在真机上由宿主注入**真课表页**，预览里没有那份数据源，
+//   这里换成一块占位说明——否则卡内是一片暗底，分不清「布局没画」还是「槽位空着」；
+// * 本页有 380ms 的缩放入场，**静态预览停在第一帧**（入场进度 0，整屏内容还没缩进落点卡）。
+//   要看落定后的卡片形态，用 Studio 的交互预览（Interactive mode）或真机。
+
+/** 预览用的卡片内容槽：真机这里是整棵课表页，预览只在中间标出当前停在日视图还是周视图。 */
+@Composable
+private fun PreviewAppearanceEditorCard(dayView: Boolean) {
+    Box(
+        modifier = Modifier.fillMaxSize(),
+        contentAlignment = Alignment.Center,
+    ) {
+        top.yukonga.miuix.kmp.basic.Text(
+            text = if (dayView) "日课表（预览不渲染）" else "周课表（预览不渲染）",
+            style = top.yukonga.miuix.kmp.theme.MiuixTheme.textStyles.body1,
+        )
+    }
+}
+
+/**
+ * 一档预览的公共身体：预览初始视图 + 加载罩状态 + 外观档位。
+ *
+ * 四个参数都带默认值，所以下面每个 `@Preview` 只写要变的那一项。
+ */
+@Composable
+private fun PreviewAppearanceEditorScreen(
+    initialDayView: Boolean = false,
+    previewReady: Boolean = true,
+    dark: Boolean = false,
+    textScale: Float = 1f,
+) {
+    QingyuPageTheme(isDark = dark, textScale = textScale) {
+        AppearanceEditorScreen(
+            initialDayView = initialDayView,
+            onCancel = {},
+            onDone = {},
+            onAdjustWallpaper = {},
+            onMaterial = {},
+            previewReady = previewReady,
+            // 槽位第二个参数是玻璃面开关（页面当前恒传 true），预览里用不上。
+            preview = { dayView, _ -> PreviewAppearanceEditorCard(dayView) },
+        )
+    }
+}
+
+@Suppress("unused")
+@Preview(name = "1 周课表（亮色）", showBackground = true, widthDp = 400, heightDp = 900)
+@Composable
+private fun AppearanceEditorScreenPreviewWeek() {
+    PreviewAppearanceEditorScreen()
+}
+
+@Suppress("unused")
+@Preview(name = "2 日课表", showBackground = true, widthDp = 400, heightDp = 900)
+@Composable
+private fun AppearanceEditorScreenPreviewDay() {
+    PreviewAppearanceEditorScreen(initialDayView = true)
+}
+
+@Suppress("unused")
+@Preview(name = "3 加载中", showBackground = true, widthDp = 400, heightDp = 900)
+@Composable
+private fun AppearanceEditorScreenPreviewLoading() {
+    PreviewAppearanceEditorScreen(previewReady = false)
+}
+
+@Suppress("unused")
+@Preview(name = "4 暗色", showBackground = true, widthDp = 400, heightDp = 900)
+@Composable
+private fun AppearanceEditorScreenPreviewDark() {
+    PreviewAppearanceEditorScreen(dark = true)
+}
+
+@Suppress("unused")
+@Preview(name = "5 大字号 1.3", showBackground = true, widthDp = 400, heightDp = 900)
+@Composable
+private fun AppearanceEditorScreenPreviewLargeText() {
+    PreviewAppearanceEditorScreen(textScale = 1.3f)
 }
