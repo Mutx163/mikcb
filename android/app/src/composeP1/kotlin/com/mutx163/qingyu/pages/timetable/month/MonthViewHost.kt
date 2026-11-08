@@ -66,6 +66,8 @@ fun MonthViewHost(
     holidayOverrideEnabled: Boolean = false,
     holidayMarkingEnabled: Boolean = true,
     showWeekNumbers: Boolean = true,
+    /** 非空 = 作为 `c1.week` 的第三种页内态渲染（不自己搭顶栏 / 壁纸 / Scaffold）。 */
+    embedded: Boolean = false,
     onOpenAgendaRow: (MonthAgendaRow) -> Unit = {},
     onAddCourse: (LocalDateTime) -> Unit = {},
     homeTitleStyle: HomeTitleStyle = HomeTitleStyle.CLASSIC,
@@ -148,6 +150,7 @@ fun MonthViewHost(
         homeMenuStyle = homeMenuStyle,
         homeMenuItems = homeMenuItems,
         onHomeMenuSelect = onHomeMenuSelect,
+        embedded = embedded,
         backdrop = backdrop,
         chromeInk = chromeInk,
         material = material,

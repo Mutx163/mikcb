@@ -269,6 +269,16 @@ fun TimetableWeekPage(
      * 由本页画（与周视图共用一条带），正文从这条高度往下开始。
      */
     dayContent: (@Composable (contentTop: Dp, summaryModifier: Modifier) -> Unit)? = null,
+    /**
+     * 当前是不是**月视图页内态**（`c1.week` 的第三种态，与 [dayMode] 互斥）。
+     *
+     * 为 true 时本页不画星期栏、周 pager 与日展开层，只保留顶栏玻璃带，
+     * 把 [monthContent] 铺在顶栏下方 —— 壁纸仍由本页最底层那一份静态画，
+     * 所以周 / 日 / 月三态切换不会带动壁纸。
+     */
+    monthMode: Boolean = false,
+    /** 月视图正文（由宿主注入 `ShellPageContent("c2.month", monthEmbedded = true)`）。 */
+    monthContent: (@Composable () -> Unit)? = null,
     /** 用户设置的页面转场速度（1.0 = 原速；周→日展开与其它转场同一口径缩放）。 */
     transitionSpeed: Double = 1.0,
     /**
@@ -433,6 +443,32 @@ fun TimetableWeekPage(
     // 落定后再按共用件自带的 fadeIn+scaleIn 淡入（与周视图「回本周」同一份出场动效）。
     val dayExpandSettled by remember {
         derivedStateOf { currentDayMode && dayExpand.value >= 0.999f }
+    }
+
+    // ── 月视图页内态的横向滑入 / 滑出（与日视图共用时长与缓动）──
+    // 三视图归一成 c1.week 后，Dock Pager 不再为月视图翻页；如果不补这一层，
+    // 底栏从周/日切到月会“瞬间换字”（2026-11-07 用户实报）。
+    val currentMonthMode by rememberUpdatedState(monthMode)
+    var monthMounted by remember { mutableStateOf(monthMode) }
+    val monthExpand = remember { Animatable(if (monthMode) 1f else 0f) }
+    val monthVisible by remember {
+        derivedStateOf { currentMonthMode || monthExpand.value > 0f }
+    }
+    LaunchedEffect(monthMode) {
+        if (monthMode) monthMounted = true
+        val target = if (monthMode) 1f else 0f
+        if (dayExpandReducedMotion || !daySwitchAnimate) {
+            monthExpand.snapTo(target)
+        } else {
+            monthExpand.animateTo(
+                targetValue = target,
+                animationSpec = tween(
+                    durationMillis = dayExpandDuration,
+                    easing = dayExpandEasing,
+                ),
+            )
+        }
+        if (!monthMode) monthMounted = false
     }
     // 展开层是否**本次开合期间挂在树上**：打开时置真，收起动画播完就置假 ——
     // 即**不跨开合保活**。周浏览时没有日视图的布局 / effect 成本（R07，`417db2569` 的口径），
@@ -621,13 +657,22 @@ fun TimetableWeekPage(
         settings.classReminders.map { it.key }.toSet()
     }
     val realCurrentWeek = currentSemesterWeek(semesterStart, totalWeeks, todayDate)
-    val showBackToCurrentWeek = style.showBackToCurrentWeek &&
+    val showBackToCurrentWeek = !monthMode && style.showBackToCurrentWeek &&
         realCurrentWeek != null &&
         realCurrentWeek != browsingWeek
 
     // 浮钮与玻璃坞同一档：真有壁纸 + 设备支持 runtime shader + 坞本身是玻璃材质。
     // 只是「要不要录整屏」的判据；真正的档位判断在共用件里再做一次。
-    val floatingGlassActive = showBackToCurrentWeek && !dayVisible &&
+    // 预览模式不录：挖洞预览里的浮钮只是「看样式 / 看不透明度」的替身，
+    // 为它整页离屏重画一帧不值得（预览里改用壁纸录像层，见下方 BackToTodayFab）。
+    val floatingGlassActive = !previewMode && showBackToCurrentWeek && !dayVisible &&
+        hasBackdrop && isRuntimeShaderSupported() &&
+        (materialSpec?.dock == SurfaceMaterialState.LIQUID_GLASS ||
+            materialSpec?.dock == SurfaceMaterialState.FROST)
+    // ⚠️ 录制层用**配置**判定，不跟 `dayVisible` / `showBackToCurrentWeek` 走（2026-11-07）。
+    // 否则日↔周切换那一帧会现场挂上/摘掉 `layerBackdrop(...)`：这一帧的录制层还是空的，
+    // 顶栏玻璃带采到空层 ⇒ 星期栏整块闪一下（用户实报）。录制层一直挂着，切换就只是复用上一帧。
+    val floatingGlassConfigured = !previewMode &&
         hasBackdrop && isRuntimeShaderSupported() &&
         (materialSpec?.dock == SurfaceMaterialState.LIQUID_GLASS ||
             materialSpec?.dock == SurfaceMaterialState.FROST)
@@ -639,7 +684,12 @@ fun TimetableWeekPage(
     val dayFabGlassActive = dayVisible && hasBackdrop && isRuntimeShaderSupported() &&
         (materialSpec?.dock == SurfaceMaterialState.LIQUID_GLASS ||
             materialSpec?.dock == SurfaceMaterialState.FROST)
-    val pageBackdropActive = bandBlurActive || cardGlassActive || dayFabGlassActive
+    // 同上：给 `pageBackdrop` 的录制开关只看配置。带子/课卡的采样层一旦随日↔周装卸，
+    // 切换那一帧顶栏就会采到空层——这正是「星期栏整体闪一下」的来源。
+    val dayFabGlassConfigured = hasBackdrop && isRuntimeShaderSupported() &&
+        (materialSpec?.dock == SurfaceMaterialState.LIQUID_GLASS ||
+            materialSpec?.dock == SurfaceMaterialState.FROST)
+    val pageBackdropActive = bandBlurActive || cardGlassActive || dayFabGlassConfigured
 
     Scaffold(
         // 有壁纸时底色必须透明，否则不透明主题底会把壁纸整张盖掉。
@@ -655,7 +705,7 @@ fun TimetableWeekPage(
             modifier = Modifier
                 .fillMaxSize()
                 .then(
-                    if (floatingGlassActive) {
+                    if (floatingGlassConfigured) {
                         Modifier.layerBackdrop(contentBackdrop)
                     } else {
                         Modifier
@@ -762,6 +812,7 @@ fun TimetableWeekPage(
                     // 显示「落定后的那一页」；滑动过程中保持上一页（见 displayedPage）。
                     // 日视图展开时改跟「日视图正在看的那一周/那一天」：日视图可以连续翻周，
                     // 而周 pager 停在下面不动，继续读 displayedPage 会把星期栏钉在旧周上。
+                    if (!monthMode) {
                     TimetableWeekdayHeader(
                         // 2141：不再需要飞行起点测量。
                         week = if (dayVisible) selectedWeek else displayedPage + 1,
@@ -798,6 +849,7 @@ fun TimetableWeekPage(
                         },
                         onWeekTitleClick = { showWeekSelectorDialog = true },
                     )
+                    }
                 }
             }
 
@@ -808,50 +860,44 @@ fun TimetableWeekPage(
                     .fillMaxWidth(),
             ) {
                 if (previewMode) {
-                    // 预览：单周、按框高自适应节高（对齐 Flutter `_TimetableWeekPreviewBody`
-                    // 的 heightBudget 分支：sectionHeight = 可用高 / 可见节数）。
-                    // 不接 pager（预览不可横滑；禁交互由外层挖洞件的 pointer 拦截负责），也不淡出。
+                    // 预览：单周、不接 pager（预览不可横滑；禁交互由外层挖洞件的 pointer
+                    // 拦截负责），也不淡出。
+                    // 节高**不在本页覆盖**：内容高由预览槽按「星期栏 + 节数 × 首页节高」
+                    // 给足，这里交给 `weekSectionHeight` 按真实盒子算（自动充满 = 盒高/节数，
+                    // 固定档 = 设置值）。再用 `maxHeight / sectionCount` 覆盖一遍会静默
+                    // 拉伸/压缩行高去填满框，把预览槽估值与首页口径的偏差藏起来
+                    //（2026-11-07 修：预览行高必须能与首页逐行对照）。
                     // 预览自己的滚动状态（就地 remember，不进真页的按周池子）。
                     val previewScrollState = rememberScrollState()
-                    BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
-                        val previewSectionHeight = if (sectionCount > 0) {
-                            (maxHeight / sectionCount.toFloat()).coerceAtLeast(0.dp)
-                        } else {
-                            0.dp
-                        }
-                        WeekPageContent(
-                            pageWeek = initialWeek,
-                            // 预览用**独立**的滚动状态，不进 `weekScrollStates`：
-                            // ① 那是首页真页按周保留位置的池子，预览滚一下不该改写首页那一周的位置；
-                            // ② 两边内容高不同（预览节高按框高折算、首页按设置节高），
-                            //    「像素相同 ≠ 同一行」，共用一个控制器只会互相 clamp 出跳位。
-                            scrollState = previewScrollState,
-                            semesterStart = semesterStart,
-                            reminderKeys = reminderKeys,
-                            visibleDays = visibleDays,
-                            courses = courses,
-                            // 外观编辑页预览不叠加情侣课（与日视图预览「不受绑定影响」同口径）。
-                            coupleOverlay = null,
-                            style = style,
-                            sectionTimes = sectionTimes,
-                            sectionCount = sectionCount,
-                            exams = exams,
-                            scheduleItems = scheduleItems,
-                            now = now,
-                            bottomInset = 0.dp,
-                            holidayOf = holidayOf,
-                            weatherOf = weatherOf,
-                            onCourseClick = {},
-                            onAgendaClick = {},
-                            onLongPressEmptySlot = { _, _ -> },
-                            material = material,
-                            cardGlassBackdrop = cardGlassSource,
-                            wallpaperLuminance = wallpaperBands?.body,
-                            modifier = Modifier.fillMaxSize(),
-                            sectionHeightOverride = previewSectionHeight,
-                            bottomClearanceDp = 0.dp,
-                        )
-                    }
+                    WeekPageContent(
+                        pageWeek = initialWeek,
+                        // 预览用**独立**的滚动状态，不进 `weekScrollStates`：
+                        // 那是首页真页按周保留位置的池子，预览滚一下不该改写首页那一周的位置。
+                        scrollState = previewScrollState,
+                        semesterStart = semesterStart,
+                        reminderKeys = reminderKeys,
+                        visibleDays = visibleDays,
+                        courses = courses,
+                        // 外观编辑页预览不叠加情侣课（与日视图预览「不受绑定影响」同口径）。
+                        coupleOverlay = null,
+                        style = style,
+                        sectionTimes = sectionTimes,
+                        sectionCount = sectionCount,
+                        exams = exams,
+                        scheduleItems = scheduleItems,
+                        now = now,
+                        bottomInset = 0.dp,
+                        holidayOf = holidayOf,
+                        weatherOf = weatherOf,
+                        onCourseClick = {},
+                        onAgendaClick = {},
+                        onLongPressEmptySlot = { _, _ -> },
+                        material = material,
+                        cardGlassBackdrop = cardGlassSource,
+                        wallpaperLuminance = wallpaperBands?.body,
+                        modifier = Modifier.fillMaxSize(),
+                        bottomClearanceDp = 0.dp,
+                    )
                 } else HorizontalPager(
                     state = pagerState,
                     modifier = Modifier
@@ -863,6 +909,11 @@ fun TimetableWeekPage(
                         // 否则整块 pager 每帧走离屏合成 → 周视图左右滑卡顿。
                         .then(
                             when {
+                                monthVisible && monthContent != null -> Modifier.graphicsLayer {
+                                    val progress = dayExpandEasing.transform(monthExpand.value)
+                                    translationX = -progress * size.width.toFloat()
+                                    alpha = (1f - progress).coerceIn(0f, 1f)
+                                }
                                 !dayVisible -> Modifier
                                 // 横滑（底栏「周/日」两格互点）：周内容随进度向**右**滑出（p: 0→1）。
                                 // 只做绘制期 translationX，不挂 alpha、不加手势。
@@ -931,7 +982,7 @@ fun TimetableWeekPage(
                 // 只做「高度从顶部往下长大露出」：全宽面板、Alignment.TopCenter、heightFactor 裁剪窗口。
                 // 不做按当天列的水平锚点 / 宽度收缩，也**不做垂直位移**——内容与壁纸都钉在顶部，
                 // 避免带动壁纸上下动；壁纸由页面级最底层那层静态画（见上方 `backdrop`）。
-                if (dayMounted && dayContent != null) {
+                if (!monthVisible && dayMounted && dayContent != null) {
                     // 日视图展开时**真拦截**命中：不只是「宣称」——pointerInput 必须 consume 掉事件，
                     // 否则下层周网格（长按空白格加课）仍能收到。周 pager 的横滑只移绘制
                     // （graphicsLayer translationX 不改命中区），所以拦截必须在这一层做。
@@ -1030,6 +1081,36 @@ fun TimetableWeekPage(
                         }
                     }
                 }
+
+                // ── 月视图页内态：横向滑入 / 滑出层 ──
+                // 与日视图同一套时长/缓动；周/日内容在下面由 pager 的 graphicsLayer
+                // 向左让位。壁纸在本页最底层不动，所以只换正文，不带动照片。
+                if (monthMounted && monthContent != null) {
+                    val monthHitGate = if (monthVisible) {
+                        Modifier.pointerInput(Unit) {
+                            awaitPointerEventScope {
+                                while (true) {
+                                    val event = awaitPointerEvent()
+                                    event.changes.forEach { it.consume() }
+                                }
+                            }
+                        }
+                    } else {
+                        Modifier
+                    }
+                    Box(
+                        modifier = Modifier
+                            .matchParentSize()
+                            .clipToBounds()
+                            .graphicsLayer {
+                                val progress = dayExpandEasing.transform(monthExpand.value)
+                                translationX = (1f - progress) * size.width.toFloat()
+                            }
+                            .then(monthHitGate),
+                    ) {
+                        monthContent()
+                    }
+                }
             }
         }
         }  // 关闭真实内容录制层（B1）
@@ -1037,31 +1118,50 @@ fun TimetableWeekPage(
         // ── 「回本周」浮钮（搬出录制层，采它背后的真实内容）──
         // 与日视图「回今日」共用同一颗 [BackToTodayFab]；backdrop 从 pageBackdrop（只录壁纸）
         // 改为 contentBackdrop（壁纸 + 课卡 + 文字）。可见性 / 点击行为不变。
+        // 预览模式也画：本页的「浮钮不透明度」滑杆必须有个能看的目标；
+        // 显示条件与首页同一组（非本周才出现），不造一个首页没有的钮。
+        // 预览不接 contentBackdrop（见上方 floatingGlassActive）：只采壁纸层。
         val buttonOpacity = style.backToCurrentWeekOpacity.coerceIn(0f, 1f)
         BackToTodayFab(
             onClick = {
-                realCurrentWeek?.let { target ->
-                    coroutineScope.launch {
-                        pagerState.animateScrollToPage(
-                            (target - 1).coerceIn(0, pageCount - 1),
-                        )
+                // 预览里这颗只是替身：挖洞件已经吃掉点击，这里也不接翻周（预览没有 pager）。
+                if (!previewMode) {
+                    realCurrentWeek?.let { target ->
+                        coroutineScope.launch {
+                            pagerState.animateScrollToPage(
+                                (target - 1).coerceIn(0, pageCount - 1),
+                            )
+                        }
                     }
                 }
             },
             label = DayViewStrings.backToTodayShort.text,
             contentDescription = TimetableStrings.backToCurrentWeekAction.text,
-            visible = !previewMode && showBackToCurrentWeek && !dayVisible,
-            backdrop = if (floatingGlassActive) contentBackdrop else pageBackdrop,
+            visible = showBackToCurrentWeek && !dayVisible,
+            backdrop = when {
+                // 真首页：浮钮采「壁纸 + 课卡 + 文字」的录制层。
+                floatingGlassActive -> contentBackdrop
+                // 预览：只采真实录过的壁纸层；没录（带子/卡片都是实体档）就传 null，
+                // 让共用件回落实底——传一个没录过的 Backdrop 会采到空白，看起来像坏图。
+                previewMode -> pageBackdrop.takeIf { pageBackdropActive }
+                else -> pageBackdrop
+            },
             material = materialSpec,
             hasBackdrop = hasBackdrop,
             alpha = buttonOpacity,
             modifier = Modifier
                 .align(Alignment.BottomCenter)
                 // 底边距由宿主按玻璃坞药丸的真实占用算好（见 `HomeFloatingMetrics`）。
+                // 预览内容底边就是最后一行、也没有坞：替身贴在内容底边 12dp，
+                // 与 Flutter 版预览替身同一位置。
                 .padding(
-                    bottom = (floatingButtonBottomInset
-                        ?: (innerPadding.calculateBottomPadding() + 72.dp)) -
-                        FAB_SHADOW_REACH_DP.dp,
+                    bottom = if (previewMode) {
+                        12.dp
+                    } else {
+                        (floatingButtonBottomInset
+                            ?: (innerPadding.calculateBottomPadding() + 72.dp)) -
+                            FAB_SHADOW_REACH_DP.dp
+                    },
                 ),
         )
 
@@ -1161,11 +1261,6 @@ private fun WeekPageContent(
     cardGlassBackdrop: Backdrop? = null,
     /** 时间列那档壁纸亮度；null = 没壁纸（保持设置里的字色）。 */
     wallpaperLuminance: Double? = null,
-    /**
-     * 预览模式：显式节高覆盖（按预览框高自适应算好传进来，见 [TimetableWeekPage] 的 previewMode）。
-     * null = 走原有 `weekSectionHeight`（自动充满或固定节高）。
-     */
-    sectionHeightOverride: Dp? = null,
     /** 底部避让余量；预览里传 0，避免 64dp 坞避让把网格撑出框。 */
     bottomClearanceDp: Dp = 0.dp,
     /** 内容层外壳（缓存图层挂在这里，见 pager 调用处的说明）。 */
@@ -1213,7 +1308,7 @@ private fun WeekPageContent(
     // `weekdayHeaderHeightDp = 0`：本 Box 的 maxHeight 已经不含星期栏，
     // 再减一次 40 会把节高压扁（旧结构里栏在页内、却又减了一遍栏高）。
     BoxWithConstraints(modifier = modifier.fillMaxSize()) {
-        val sectionHeight = sectionHeightOverride ?: weekSectionHeight(
+        val sectionHeight = weekSectionHeight(
             style = style,
             availableHeightDp = maxHeight.value,
             weekdayHeaderHeightDp = 0f,

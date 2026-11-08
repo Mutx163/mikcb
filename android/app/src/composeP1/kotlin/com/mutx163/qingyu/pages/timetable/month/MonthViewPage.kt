@@ -118,6 +118,14 @@ fun MonthViewPage(
     homeTitleStyle: HomeTitleStyle = HomeTitleStyle.CLASSIC,
     profileName: String? = null,
     showTopBar: Boolean = true,
+    /**
+     * 非空 = 作为 `c1.week` 的**第三种页内态**渲染（2026-11-07）。
+     *
+     * 此时本页不再自己搭 `Scaffold`、顶栏玻璃带与壁纸：宿主的顶栏、壁纸、坞都已在
+     * 上面一层画好，本页只画「日历卡 + 面板」。这样周 / 日 / 月三种态共用同一张
+     * 页面级静态壁纸，翻月/切态不会带动壁纸。
+     */
+    embedded: Boolean = false,
     /** 顶栏返回键的去处。显隐由根页判据决定（见 `navigationIcon` 传参处）。 */
     onBack: () -> Unit = {},
     homeMenuStyle: HomeMenuStyle = HomeMenuStyle.LIST,
@@ -252,6 +260,84 @@ fun MonthViewPage(
         slideToPage(pagerState.currentPage + delta)
     }
 
+    // 网格 + 面板的统一出口：正常页面把它放进 Scaffold 的内容区；embedded 模式
+    // （c1.week 的第三种页内态）直接把它铺在宿主顶栏下方，不再自己搭壳。
+    val renderBody: @Composable (Dp) -> Unit = { bottomInset ->
+        MonthViewBody(
+            grid = grid,
+            gridForPage = gridForPage,
+            pagerState = pagerState,
+            agendaRows = agendaRows,
+            upcoming = upcoming,
+            today = today,
+            selectedInMonth = selectedInMonth,
+            focusedYear = focusedYear,
+            focusedMonth = focusedMonth,
+            isCurrentMonth = isCurrentMonth,
+            expandProgress = { expandValue },
+            showWeekNumbers = showWeekNumbers,
+            innerBottomPadding = bottomInset,
+            dragState = dragState,
+            onPreviousMonth = { shiftMonth(-1) },
+            onNextMonth = { shiftMonth(1) },
+            onBackToCurrentMonth = {
+                val target = MonthPagerModel.pageOf(today.year, today.monthValue)
+                appliedPage = target
+                slideToPage(target)
+            },
+            onDayTap = { date ->
+                val page = MonthPagerModel.pageOf(date.year, date.monthValue)
+                if (page != appliedPage) {
+                    appliedPage = page
+                    selectedDate = date
+                    slideToPage(page)
+                } else {
+                    selectedDate = if (selectedDate == date) null else date
+                }
+            },
+            onDaySelect = { date -> selectedDate = date },
+            onOpenAgendaRow = onOpenAgendaRow,
+            onAddCourse = onAddCourse,
+            onDragStart = {
+                settleJob?.cancel()
+                dragStart = expandValue
+            },
+            onDragUpdate = { dy, rowHeightDp, rowCount ->
+                expandValue = MonthPanelModel.progressAfterDrag(
+                    progress = expandValue.toDouble(),
+                    deltaDy = dy.toDouble(),
+                    rowHeightDp = rowHeightDp,
+                    rowCount = rowCount,
+                ).toFloat()
+            },
+            onDragEnd = { velocityDy ->
+                val target = MonthPanelModel.settleTarget(
+                    startValue = dragStart.toDouble(),
+                    currentValue = expandValue.toDouble(),
+                    velocityDy = velocityDy.toDouble(),
+                )
+                settleJob?.cancel()
+                settleJob = scope.launch {
+                    animate(
+                        initialValue = expandValue,
+                        targetValue = target.toFloat(),
+                        animationSpec = tween(
+                            durationMillis = GRID_COLLAPSE_MS,
+                            easing = FastOutSlowInEasing,
+                        ),
+                    ) { value, _ -> expandValue = value }
+                }
+            },
+        )
+    }
+
+    if (embedded) {
+        // 宿主已经画了状态栏 / 顶栏 / 壁纸；这里只铺网格与面板，底部避让交给
+        // `LocalGlassDockScrollRelief`（坞的占位），不重复吃系统内边距。
+        renderBody(0.dp)
+        return
+    }
+
     Scaffold(
         // 有壁纸时底色必须透明，否则不透明主题底会把壁纸整张盖掉。
         containerColor = if (backdrop == null) scaffoldBg else Color.Transparent,
@@ -315,79 +401,7 @@ fun MonthViewPage(
                     }
                 }
             }
-            MonthViewBody(
-                grid = grid,
-                gridForPage = gridForPage,
-                pagerState = pagerState,
-                agendaRows = agendaRows,
-                upcoming = upcoming,
-                today = today,
-                selectedInMonth = selectedInMonth,
-                focusedYear = focusedYear,
-                focusedMonth = focusedMonth,
-                isCurrentMonth = isCurrentMonth,
-                expandProgress = { expandValue },
-                showWeekNumbers = showWeekNumbers,
-                innerBottomPadding = innerPadding.calculateBottomPadding(),
-                dragState = dragState,
-                onPreviousMonth = { shiftMonth(-1) },
-                onNextMonth = { shiftMonth(1) },
-                onBackToCurrentMonth = {
-                    // Dart 先 setState 再 animateToPage：面板与「今天」药丸立刻
-                    // 跟到目标月，卡片再滑过去。
-                    val target = MonthPagerModel.pageOf(today.year, today.monthValue)
-                    appliedPage = target
-                    slideToPage(target)
-                },
-                onDayTap = { date ->
-                    val page = MonthPagerModel.pageOf(date.year, date.monthValue)
-                    if (page != appliedPage) {
-                        // 点到邻月补位格：翻到那个月再选中它（否则点了什么都不发生）。
-                        appliedPage = page
-                        selectedDate = date
-                        slideToPage(page)
-                    } else {
-                        // 再点同一天 = 取消选中（与「点同一档 Tab 收起」同口径）。
-                        selectedDate = if (selectedDate == date) null else date
-                    }
-                },
-                onDaySelect = { date -> selectedDate = date },
-                onOpenAgendaRow = onOpenAgendaRow,
-                onAddCourse = onAddCourse,
-                onDragStart = {
-                    // 手指按下即接管：停掉正在跑的吸附动画，记下起点。
-                    settleJob?.cancel()
-                    dragStart = expandValue
-                },
-                onDragUpdate = { dy, rowHeightDp, rowCount ->
-                    // 同步写入（不 launch）：每帧指针事件合并成一次重组，跟手不排队。
-                    expandValue = MonthPanelModel.progressAfterDrag(
-                        progress = expandValue.toDouble(),
-                        deltaDy = dy.toDouble(),
-                        rowHeightDp = rowHeightDp,
-                        rowCount = rowCount,
-                    ).toFloat()
-                },
-                onDragEnd = { velocityDy ->
-                    val target = MonthPanelModel.settleTarget(
-                        startValue = dragStart.toDouble(),
-                        currentValue = expandValue.toDouble(),
-                        velocityDy = velocityDy.toDouble(),
-                    )
-                    settleJob?.cancel()
-                    settleJob = scope.launch {
-                        // 官方 animate：从当前值平滑吸到端点（简单、不收自研动画）。
-                        animate(
-                            initialValue = expandValue,
-                            targetValue = target.toFloat(),
-                            animationSpec = tween(
-                                durationMillis = GRID_COLLAPSE_MS,
-                                easing = FastOutSlowInEasing,
-                            ),
-                        ) { value, _ -> expandValue = value }
-                    }
-                },
-            )
+            renderBody(innerPadding.calculateBottomPadding())
         }
         }
     }

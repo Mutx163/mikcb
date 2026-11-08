@@ -124,6 +124,10 @@ fun TimetableHost(
      * 终点量不到、真卡也会和飞行卡一起画出来。
      */
     dayContent: (@Composable (contentTop: Dp, summaryModifier: Modifier) -> Unit)? = null,
+    /** 月视图第三种页内态（与日视图互斥）。 */
+    monthMode: Boolean = false,
+    /** 月视图正文（宿主注入；内层自己不再搭顶栏/壁纸/Scaffold）。 */
+    monthContent: (@Composable () -> Unit)? = null,
     /** 用户「页面转场速度」，周→日展开按同一倍率缩放。 */
     transitionSpeed: Double = 1.0,
     /**
@@ -429,6 +433,8 @@ fun TimetableHost(
         onSelectDay = onSelectDay,
         onCloseDay = onCloseDay,
         dayContent = dayContent,
+        monthMode = monthMode,
+        monthContent = monthContent,
         transitionSpeed = transitionSpeed,
         onSwitchProfileClick = onSwitchProfile,
         onWeekChanged = onWeekChanged,

@@ -1032,18 +1032,17 @@ fun TimetableWithCourseActions(
         // 下方以「无壳模式」渲染（`monthEmbedded = true`），不再自己搭 Scaffold /
         // 壁纸 / 顶栏——否则它作为另一页被 Pager 推入时，会带着自己那份壁纸一起滑。
         monthMode = wiring.homeViewMode == TimetableHomeViewMode.MONTH,
-        monthContent = if (wiring.homeViewMode == TimetableHomeViewMode.MONTH) {
-            {
-                ShellPageContent(
-                    pageId = "c2.month",
-                    onBack = {},
-                    wiring = wiring,
-                    onOpenPage = onNavigate,
-                    monthEmbedded = true,
-                )
-            }
-        } else {
-            null
+        // 始终给出月视图正文：`TimetableWeekPage` 只在 monthMounted 时组合它，
+        // 退出动画期间还要靠它继续画；按 homeViewMode 置 null 会让月内容在滑出前
+        // 突然消失（只剩壁纸）——这是“滑到一半没了”的根因。
+        monthContent = {
+            ShellPageContent(
+                pageId = "c2.month",
+                onBack = {},
+                wiring = wiring,
+                onOpenPage = onNavigate,
+                monthEmbedded = true,
+            )
         },
         // 周网格里的考试 / 日程卡：Dart 侧考试卡 → 考试页、日程卡 → 日程编辑页
         // （`week_grid_agenda_card.dart` 的 closedBuilder/openBuilder 同一条路）。

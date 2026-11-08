@@ -14,6 +14,9 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.asPaddingValues
+import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -228,6 +231,7 @@ import com.mutx163.qingyu.pages.timetable.toastOrNull
 import com.mutx163.qingyu.pages.timetable.TimetableProfilesPage
 import com.mutx163.qingyu.pages.timetable.TimetableWeekPage
 import com.mutx163.qingyu.pages.timetable.WeekdayHeaderMetrics
+import com.mutx163.qingyu.pages.timetable.TimetableTopBarMetrics
 import com.mutx163.qingyu.pages.timetable.weekSectionHeight
 import com.mutx163.qingyu.pages.timetable.day.DayViewDataAssembler
 import com.mutx163.qingyu.pages.timetable.day.DayViewStrings
@@ -369,6 +373,8 @@ fun ShellPageContent(
     onSettingsChanged: (TimetableSettingsModel) -> Unit = {},
     /** 非空 = 本页正作为**首页的日视图展开层**渲染（见 [DayViewOverlayBinding]）。 */
     dayOverlay: DayViewOverlayBinding? = null,
+    /** 非空 = 本页正作为**首页的月视图第三种页内态**渲染（见 `MonthViewPage.embedded`）。 */
+    monthEmbedded: Boolean = false,
 ) {
     // 单一天气 provider（设备级状态：开关/城市/预报缓存）。2026-10-29 起实例住在
     // `ShellWiring.weather`（`by lazy`），不再在这里 `remember` 一份 —— 因为**底部坞**那条
@@ -761,6 +767,7 @@ fun ShellPageContent(
                     activeProfileId = snapshot.activeProfileId,
                 ),
                 homeMenuItems = TimetableMenuDefaults.entries(),
+                embedded = monthEmbedded,
                 // 「添加课程」要带当前浏览周与今天星期几（Dart `openCourseForm`，
                 // `timetable_screen.dart:1745-1752`）；其余项只按映射表推页。
                 onHomeMenuSelect = { id ->
@@ -881,6 +888,9 @@ fun ShellPageContent(
                 weekdayStyle = TimetableStyleMapping.weekViewStyle(appSettings),
                 // 「课卡显示冲突角标」开关（Dart `showConflictBadgeOnTimetable`）。
                 showConflictBadge = appSettings.showConflictBadgeOnTimetable,
+                // 冲突课卡压淡：与周视图共用一个设置键（`WeekViewStyle.conflictCourseOpacity`
+                // 从同一份存档映射），日视图此前没接这条。
+                conflictCourseOpacity = appSettings.timetableConflictCourseOpacity.toFloat(),
                 // ── 作为首页展开层时：顶栏 / 星期栏由首页画（周视图那条共享玻璃带），
                 // 日视图只画正文；正文从 homePager 的顶栏高度开始，避免两套壳重叠。
                 showTopBar = dayOverlay == null,
@@ -2405,7 +2415,14 @@ private fun SettingsTimetablePreviewSlot(wiring: ShellWiring, settingsModel: Tim
     // 首页节高复用 `weekSectionHeight`（与真首页同一口径：自动充满档按可用高算、固定节高档用
     // `style.sectionHeightDp`）。滚动总高（= contentHeight × scale）遂与内容实际高相等，
     // 拉到底不再多出空白；初始滚动固定 0 ⇒ 顶部就是星期栏。
-    val snapshot = wiring.timetable.snapshot
+    // 仓储快照订阅：预览的内容高（节数）与页面同源，活动作息在本页开着时被外部
+    // 改掉也要跟着变；课程变化由 TimetableHost 自己的订阅负责，这里只多用一条监听。
+    val repository = wiring.timetable
+    var snapshot by remember(repository) { mutableStateOf(repository.snapshot) }
+    DisposableEffect(repository) {
+        val subscription = repository.observe { updated -> snapshot = updated }
+        onDispose { subscription.close() }
+    }
     val style = TimetableStyleMapping.weekViewStyle(settingsModel)
     val sectionCount = TimetableHostLogic
         .resolveActiveTimeScheme(snapshot.timeSchemes, snapshot.activeTimeSchemeId)
@@ -2414,12 +2431,21 @@ private fun SettingsTimetablePreviewSlot(wiring: ShellWiring, settingsModel: Tim
         ?: snapshot.settings.sections.size
     // 星期栏高：previewMode 下顶栏只剩星期栏，取其固定高度 40dp（`WeekdayHeaderMetrics.HEIGHT_DP`）。
     val weekbarHeightDp = WeekdayHeaderMetrics.HEIGHT_DP
+    // 首页网格的可用高 = 整屏 − 状态栏 − 首页顶栏 − 星期栏。
+    // 自动充满档的节高在首页由「网格盒子的实际高 / 节数」算（`WeekPageContent` 拿的是
+    // 星期栏以下的盒子），所以这里必须把首页那两条栏也扣掉。只减星期栏会让预览每行
+    // 比首页高一档：800dp 屏 / 12 节时约高 8%（含状态栏约 12%），正好落在用户拿来
+    // 对照密度的地方（2026-11-07 审读）。固定节高档不看这个值，只影响自动充满档。
+    val statusBarTopDp = WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
+    val homeGridHeightDp = (
+        configuration.screenHeightDp.dp - statusBarTopDp -
+            TimetableTopBarMetrics.HEIGHT.dp - weekbarHeightDp.dp
+        ).coerceAtLeast(0.dp)
     val contentHeightDp = weekbarHeightDp + sectionCount * weekSectionHeight(
         style = style,
-        // 自动充满档：与真首页口径一致，用整屏高算「首页节高 = (整屏高 − 星期栏高) / 节数」；
-        // 固定节高档不看这个值（直接返回 style.sectionHeightDp）。两档都得到「自然高」。
-        availableHeightDp = configuration.screenHeightDp.toFloat(),
-        weekdayHeaderHeightDp = weekbarHeightDp,
+        // 与真首页同一口径：传「星期栏以下的网格高」，星期栏高则传 0，不再二次扣除。
+        availableHeightDp = homeGridHeightDp.value,
+        weekdayHeaderHeightDp = 0f,
         sectionCount = sectionCount,
     )
     BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
@@ -2442,6 +2468,9 @@ private fun SettingsTimetablePreviewSlot(wiring: ShellWiring, settingsModel: Tim
                 onOpenAddCourse = { _, _ -> },
                 onOpenCourse = {},
                 settingsModel = settingsModel,
+                // 天气行与首页同一份数据源（壳里的设备级 provider）：漏传就等于
+                // 「首页课卡有天气行、预览没有」，卡片高度与折行会跟着不同。
+                weatherProvider = wiring.weather,
                 // 预览不接截屏监听：真首页那一份已经接上了，再来一份等于截一次屏
                 // 弹两次提示（Dart `_isPreview` 守卫，timetable_screen.dart:913-917）。
                 screenshotSharePromptEnabled = false,

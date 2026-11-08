@@ -793,9 +793,23 @@ private fun PagesShell(
         // 「选中的那一列长成整屏」的窗口动画由页面自己播（2026-11-02 用户实报后接的）。
         // day 与 week 在 Pager 里也是同一页（`DockPagerMotion.normalizePageKey`），
         // 所以这两格互点不滑动，只在「从别的底栏页切回课表」时才让 Pager 滑过去。
-        if (mode == TimetableHomeViewMode.WEEK || mode == TimetableHomeViewMode.DAY) {
+        if (mode == TimetableHomeViewMode.WEEK ||
+            mode == TimetableHomeViewMode.DAY ||
+            mode == TimetableHomeViewMode.MONTH
+        ) {
             if (DockPagerMotion.slideStep(currentRootId, ROOT_WEEK, dockPageIds) == 0) {
-                // 已在课表页：只切展开态，页面自己播窗口动画。
+                // 已在课表页：只切页内态，页面自己播窗口动画（周/日）或直接换正文（月）。
+                if (mode == TimetableHomeViewMode.MONTH) {
+                    if (wiring.homeViewMode == TimetableHomeViewMode.MONTH) return
+                    // 月视图没有展开/收起几何：在同一宿主里横向滑入/滑出，
+                    // 壁纸仍由宿主最底层静态画，不跟着走。
+                    wiring.switchHomeViewMode(
+                        TimetableHomeViewMode.MONTH,
+                        animate = true,
+                        horizontal = true,
+                    )
+                    return
+                }
                 if (mode == TimetableHomeViewMode.DAY) {
                     // 重复点「日」同档：无动作（Dart `timetable_dock_actions.dart` 同口径）。
                     if (wiring.homeViewMode == TimetableHomeViewMode.DAY) return
@@ -825,7 +839,7 @@ private fun PagesShell(
             return
         }
 
-        // ── 其余主屏条目（任务 / 设置 / 月视图…）：Pager 沿标签顺序滑动 ──
+        // ── 其余主屏条目（任务 / 设置…）：Pager 沿标签顺序滑动 ──
         // 方向由页下标决定（目标在右从右进、在左反之），判据是纯逻辑
         // `DockPagerMotion.slideStep`；0 = 重复点当前页，无动作（Dart 同口径）。
         if (DockPagerMotion.slideStep(currentRootId, itemId, dockPageIds) == 0) return
@@ -1169,6 +1183,7 @@ private fun dockSelectedIdOf(itemId: String, homeViewMode: TimetableHomeViewMode
     if (itemId == ROOT_WEEK) {
         when (homeViewMode) {
             TimetableHomeViewMode.DAY -> HomeDockNavModel.ACTION_DAY
+            TimetableHomeViewMode.MONTH -> "monthView"
             else -> ROOT_WEEK
         }
     } else {
@@ -1190,6 +1205,9 @@ private fun rootPageIdFor(itemId: String): String? = when (itemId) {
     // 日视图（2026-11-02 起）是 `c1.week` 宿主里的展开态，不再有自己的页面。
     // 保留这个映射是为了「存档里残留 day / 从别处进来的 day 路由」也落在同一个宿主。
     HomeDockNavModel.ACTION_DAY -> ROOT_WEEK_PAGE_ID
+    // 月视图（2026-11-07 起）是 `c1.week` 的第三种页内态：与周/日共用一张页面级
+    // 静态壁纸。它的整页 `c2.month` 仍留给「更多功能」等直接推入的入口。
+    "monthView" -> ROOT_WEEK_PAGE_ID
     else -> shellTimetableMenuPageId(itemId)
 }
 
@@ -1207,7 +1225,9 @@ private fun rootItemIdForView(mode: TimetableHomeViewMode): String = when (mode)
     // 不靠路由 id（否则首帧会先落到 c3.day 再切回来）。
     TimetableHomeViewMode.WEEK -> ROOT_WEEK
     TimetableHomeViewMode.DAY -> ROOT_WEEK
-    TimetableHomeViewMode.MONTH -> "monthView"
+    // 月视图也是 `c1.week` 的页内态：冷启动落在周宿主，由 `homeViewMode` 决定
+    // `TimetableWithCourseActions` 渲染月内容。
+    TimetableHomeViewMode.MONTH -> ROOT_WEEK
 }
 
 /**

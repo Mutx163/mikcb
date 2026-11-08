@@ -84,11 +84,12 @@ class DayViewOverlayPerfWiringGuardTest {
             "val dayMounted = dayVisible || dayLayerReady" in week,
         )
         // 2141 简单面板改版（2026-11-04）：不再用 drawWithContent 裁切，隐藏靠
-        // ① 组合门 `if (dayMounted && dayContent != null)`；② 面板 alpha=panelAlpha
-        // （收起 progress=0 → easeOutCubic(0)=0，透明）；③ 命中层按 `if (dayVisible)` 门控 pointerInput。
+        // ① 组合门 `if (!monthVisible && dayMounted && dayContent != null)`（月视图接管时
+        // 日层不组合）；② 面板 alpha=panelAlpha（收起 progress=0 → easeOutCubic(0)=0，透明）；
+        // ③ 命中层按 `if (dayVisible)` 门控 pointerInput。
         assertTrue(
-            "展开层没有 `if (dayMounted && dayContent != null)` 组合门——收起且未就绪时面板仍被组合/绘制。",
-            "if (dayMounted && dayContent != null)" in week,
+            "展开层没有 `if (!monthVisible && dayMounted && dayContent != null)` 组合门——收起且未就绪、或月视图接管时面板仍被组合/绘制。",
+            "if (!monthVisible && dayMounted && dayContent != null)" in week,
         )
         assertTrue(
             "隐藏的展开层没有按 `graphicsLayer { alpha = panelAlpha }` 绘制（收起 progress=0 → alpha=0 透明）——隐藏的日视图仍会每帧重画。",
@@ -327,10 +328,10 @@ class DayViewOverlayPerfWiringGuardTest {
         }
     }
 
-    /** `if (dayMounted && dayContent != null) { … }` 的块体。 */
+    /** `if (!monthVisible && dayMounted && dayContent != null) { … }` 的块体。 */
     private fun mountedBlockBody(source: String): String {
-        val head = source.indexOf("if (dayMounted && dayContent != null)")
-        if (head < 0) throw AssertionError("找不到挂载块 `if (dayMounted && dayContent != null)`")
+        val head = source.indexOf("if (!monthVisible && dayMounted && dayContent != null)")
+        if (head < 0) throw AssertionError("找不到挂载块 `if (!monthVisible && dayMounted && dayContent != null)`")
         return blockBodyAfter(source, head)
     }
 

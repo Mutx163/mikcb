@@ -25,13 +25,18 @@ package com.mutx163.qingyu.pages.shell
 object DockPagerMotion {
 
     /**
-     * 视图动作归一：`day` 与 `week` 是同一课表宿主的两种展开态，Pager 里必须是同一页。
+     * 视图动作归一：`day` / `monthView` 与 `week` 是**同一个课表宿主**的三种页内态，
+     * Pager 里必须是同一页。
      *
      * 高亮仍按原始 id 区分（`dockSelectedIdOf` 会把课表宿主的路由按 `homeViewMode`
-     * 折到 `day` 或 `week` 格上），这里只影响「几页、点哪格滑到哪页」。
+     * 折到 `day` / `week` / `monthView` 格上），这里只影响「几页、点哪格滑到哪页」。
      */
-    fun normalizePageKey(itemId: String): String =
-        if (itemId == HomeDockNavModel.ACTION_DAY) HomeDockNavModel.ACTION_WEEK else itemId
+    fun normalizePageKey(itemId: String): String = when (itemId) {
+        HomeDockNavModel.ACTION_DAY,
+        "monthView" -> HomeDockNavModel.ACTION_WEEK
+
+        else -> itemId
+    }
 
     /**
      * Pager 页列表：底栏排列里「主屏内渲染」的条目，按 [normalizePageKey] 去重保序。
