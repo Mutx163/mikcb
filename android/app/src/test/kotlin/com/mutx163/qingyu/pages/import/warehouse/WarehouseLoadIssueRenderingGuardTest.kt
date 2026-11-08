@@ -68,6 +68,10 @@ class WarehouseLoadIssueRenderingGuardTest {
 
     @Test
     fun `失败原因不许在页面里另写一套按 code 解析的映射`() {
+        // 判据针对**生产代码**：把 @Preview 样例函数剥掉后再判——预览样例为了展示
+        // 某态会直接构造 `WarehouseLoadIssue.MIRRORS_FAILED` 这类已存在的值，
+        // 那不是「按 code 解析的映射」，与本守卫要管的运行时自写映射是两回事（2026-11-08）。
+        val production = stripPreviewFunctions(adaptersPageSource)
         listOf(
             "WarehouseLoadIssue.MIRRORS_FAILED" to "按档位另写分支",
             "serviceMsgWarehouseFetchFailedMirror" to "把文案原文搬到页面",
@@ -75,7 +79,7 @@ class WarehouseLoadIssueRenderingGuardTest {
         ).forEach { (forbidden, why) ->
             assertFalse(
                 "页面不许出现 `$forbidden`（$why）——映射与文案都在 main 层 `WarehouseLoadIssue.kt`",
-                adaptersPageSource.contains(forbidden),
+                production.contains(forbidden),
             )
         }
     }
@@ -123,6 +127,88 @@ class WarehouseLoadIssueRenderingGuardTest {
     }
 
     // ── 工具 ────────────────────────────────────────────────────────────
+
+    /**
+     * 把带 `@Preview` 注解的用户函数整体挖掉（替换成空格，行号不漂）。
+     * 判据（与剥注释同一纪律）：样例只为展示某态，构造样本值不算页面自写映射。
+     */
+    private fun stripPreviewFunctions(source: String): String {
+        val out = source.toCharArray()
+        var searchFrom = 0
+        while (true) {
+            val annIdx = source.indexOf("@Preview", searchFrom)
+            if (annIdx < 0) break
+            // 找到注解之后最近的 fun 及其开括号（注解参数里也可能有括号——用“fun ”锚定）。
+            val funIdx = source.indexOf("fun ", annIdx)
+            if (funIdx < 0) break
+            // 从 fun 的开括号起配平大括号（字符串字面量原样跳过）。
+            var i = funIdx
+            var brace: Int? = null
+            var depth = 0
+            var quote: Char? = null
+            while (i < source.length) {
+                val ch = source[i]
+                if (quote != null) {
+                    if (ch == '\\') {
+                        i += 2
+                        continue
+                    }
+                    if (ch == quote) quote = null
+                    i++
+                    continue
+                }
+                when {
+                    ch == '"' || ch == '\'' -> quote = ch
+                    ch == '{' -> {
+                        if (brace == null) brace = i
+                        depth++
+                    }
+                    ch == '}' -> {
+                        depth--
+                        if (brace != null && depth == 0) break
+                    }
+                }
+                i++
+            }
+            if (brace != null && i < source.length) {
+                for (j in annIdx..i) {
+                    if (out[j] != '\n') out[j] = ' '
+                }
+                searchFrom = i + 1
+            } else {
+                break
+            }
+        }
+        return String(out)
+    }
+
+    /** 剥预览的判据自检：只在预览里引用不算，生产代码里引用才算。 */
+    @Test
+    fun `剥预览自检——预览引用不判、生产引用仍判`() {
+        val previewOnly = """
+            @Preview(name = "p")
+            @Composable
+            private fun PreviewIt() {
+                val issue = WarehouseLoadIssue.MIRRORS_FAILED
+            }
+            @Composable
+            fun Page() { }
+        """.trimIndent()
+        assertFalse(
+            "只在 @Preview 样例里的引用不该判红",
+            stripPreviewFunctions(previewOnly).contains("WarehouseLoadIssue.MIRRORS_FAILED"),
+        )
+        val production = """
+            @Composable
+            fun Page() {
+                val issue = WarehouseLoadIssue.MIRRORS_FAILED
+            }
+        """.trimIndent()
+        assertTrue(
+            "生产代码里写回引用必须仍判红",
+            stripPreviewFunctions(production).contains("WarehouseLoadIssue.MIRRORS_FAILED"),
+        )
+    }
 
     private fun readSource(relative: String): String {
         var dir: File? = File("").absoluteFile
