@@ -13,13 +13,13 @@
 
 | 指标 | 当前值 | 定义与出处 |
 |---|---|---|
-| 壳路由目录 | **89 总 / 88 可进入 / 0 暂不可用 / 1 常驻** | `ShellPageCatalogTest.kt:38,46-48`；这是用户点得到的入口数 |
-| 页面文件 | **63 个 `*Page.kt` / 176 个 `.kt`** | HEAD `845dd9a4`，`composeP1/.../pages/`；只说明代码规模 |
+| 壳路由目录 | **88 总 / 87 可进入 / 0 暂不可用 / 1 常驻** | `ShellPageCatalogTest` 实测 `openable=87` / `UNAVAILABLE=0` / `ALWAYS_VISIBLE=1`（2026-11-08 复核，HEAD `7f8395776`）；这是用户点得到的入口数 |
+| 页面文件 | **63 个 `*Page.kt` / 183 个 `.kt`** | HEAD `7f8395776`，`composeP1/.../pages/`；只说明代码规模（工作区另有 1 个未跟踪文件，计入为 184） |
 | Phase 3 页面单元 | **78**（历史口径） | 旧目录 82 − 暂不可用 3 − 常驻 1；只描述 2026-10-27 的搬运完成度，**不是现在的入口数** |
 | 剩余页任务 | **39 页 / 12 批**（历史任务） | 2026-10-30 复核时 28 已落地、11 未完成；后续批次均已交付，本清单只作历史 |
 | 弹层审核 | **138 条：126 已不成立 / 11 仍成立 / 1 部分成立** | `2026-11-02-compose-dialog-full-audit.md`（2026-11-03 第四批收尾口径） |
 | 文案三本账 | **清零** | 超宽、死键、复述三份基线只剩注释头 |
-| 样式例外 | **10 条**（timetable 9 + showcase 1） | `tool/compose_style_exceptions/<域>.txt`；timetable = 7×R5 数据色 + 2×R2 结构性，showcase = 1×R5，均注明原因 |
+| 样式例外 | **7 条**（timetable 4 + import 2 + showcase 1） | `tool/compose_style_exceptions/<域>.txt`；timetable = 3×R5 数据色 + 1×R2 结构性，import = 2×R2 弹层内局部滚动，showcase = 1×R5，均注明原因；`-Domain all` 实测待修 0 / 过期 0 |
 
 > 旧文档里的 82 / 78 / 87 / 88 / 165 都是不同日期、不同口径的快照。引用前先看上表，
 > 不要把历史页面单元数当成今天可进入的路由数。
@@ -31,8 +31,8 @@
 | 门 | 结果 | 证据 | 是否过期 |
 |---|---|---|---|
 | **L0 模块单测** | 各域随批交付时绿；`pages/timetable` 的跨域引用已由 `4517d938`（材质契约下沉 `core/`）治理 | 提交 `4517d938`（2026-11-03）；本域 L0 需复跑取证 | 需复跑 |
-| **L1 编译** | 分支顶曾在 2026-11-03 断裂（`QingyuTheme.primary` 签名变更），已由 `37c59d44` 修复；此后守卫复绿 | `37c59d44`、`da42188c` | 之后又有数百提交，需复跑 |
-| **L2 全量单测** | 2026-11-01 最后一次书面证据：**5569 例全绿**（台账另一处写 5791 例，两者冲突且都无法复核） | 台账旧 §9.10；此后已有 300+ 提交 | **已过期**，必须复跑并写明变体 |
+| **L1 编译** | **通过**：`BUILD SUCCESSFUL in 57s`（4 执行 / 187 复用） | 2026-11-08 11:20，`scripts/safe-gradle.ps1 :app:compileDevDebugKotlin`，HEAD `cb8f14d1f` + 工作区在途改动。首次尝试红是他人未提交的 `ShellWiring.kt` / `DataTransferHost.kt` 半成品，其提交后转绿 | 当次有效；此后有新提交需再跑 |
+| **L2 全量单测** | **7584 例 / 1 失败**：`ArbCatalogTest`「六份 ARB 的每一条都在文案表里」报 `en 的 liquidGlassPresetCustom 与 ARB 不一致 expected:<Custom> but was:<null>`。原因是 `ArbCatalog.kt` 未随 ARB 新键重新生成（`python tool/gen_compose_arb_catalog.py --check` 报过期），不是逻辑回归 | 2026-11-08 11:21，`scripts/safe-gradle.ps1 :app:testDevDebugUnitTest`（本地快速变体，非 CI 的 `testProdDebugUnitTest`） | 生成物刷新后需复跑 |
 | **L4 真机逐页对照** | **0 页** | 仓库内无任何真机截图/录屏/回填记录 | 仍归用户 |
 
 **声明纪律**：agent 只能声明「编译通过」（L1）或「JVM 单测通过」（L2）；不得声明「能跑 / 能装上 / 已验证」。
@@ -64,7 +64,7 @@ CI 权威变体是 `:app:testProdDebugUnitTest`（`.github/workflows/ci.yml:116`
 
 | # | 事项 | 现状 / 写作用域 |
 |---|---|---|
-| **R08** | **全仓 L1/L2 复跑（原 F19）** | 先等工作区在途索引收敛；跑 `:app:compileDevDebugKotlin` + 全量 JVM 单测，结果回填本文件。写作用域：无代码，只跑 `scripts/safe-gradle.ps1` |
+| **R08** | **全仓 L1/L2 复跑（原 F19）** | 部分完成（2026-11-08）：L1 已通过；L2 跑出 7584 例 / 1 失败，唯一失败是 `ArbCatalog.kt` 生成物过期（ARB 新键 `liquidGlassPresetCustom`），重新生成后再跑一次即可销账。写作用域：无代码，只跑 `scripts/safe-gradle.ps1` |
 | **R09** | **通知点击落页** | `NotificationLaunchTarget.kt:31` 自认壳不读 Intent 页面参数；`PagesShellActivity` 无 Intent 解析。生产端已有 `open_route` / `open_lan_edit` 两处 extras 但无人消费。需定义页面参数、冷启动 + `singleTop` 两路解析，并补断言目标路由 id 的契约测试。写作用域：`NotificationLaunchTarget.kt`、四个 scheduler/service、`test/`；壳侧 `PagesShellActivity.kt` **[Lead]** |
 | **R10** | **弹层剩余 11 条（`QingyuSheet` 两个底层缺口已修）** | ✅ `QingyuSheet.kt` 两处已修并提交 `bd0c3eb7`：IME>0 时底部只留 16dp 呼吸（原来多垫 24~40dp）、有标题动作时保留 16dp 并用私有 `horizontalBleed` 把内容反向撑出（标题不贴边、内容仍满宽）。仍未做：42dp 无标题空档 ×4、自动聚焦 ×4、选周结构、ICS 菜单等（部分待 R05 拍板）。写作用域：`components/`、`pages/course/`、`pages/timetable/`、`pages/settings/` |
 | **R11** | **弹窗玻璃铺开** | 试点只有加课页删除确认 1 处（`e8cafb75` / `4a8011b3`，守卫钉调用点数=1）。先等真机看采样跟手与低端机帧率，确认后再铺其余 46 处 OverlayDialog 与底部弹层。写作用域：`components/glass/`、`pages/**` |
@@ -170,7 +170,7 @@ L3 出包、L3.5 性能包、L4 真机一律用户跑；**性能只认 Bench 或
 | `2026-10-28-full-software-audit-and-completion-plan.md` | 全仓体检快照与技术债背景 |
 | `2026-10-28-compose-phase35-wiring-plan.md` | 分层接线规格（仍然有效） |
 | `2026-10-28-compose-phase35-batches.md` | Phase 3.5 历史批次 |
-| `2026-10-27-compose-phase3-l4-checklist.md` | 用户真机逐页清单（数字待更新为 89/88；`.ui` 包名与 flavor 已失效，按 `dev` 变体走） |
+| `2026-10-27-compose-phase3-l4-checklist.md` | 用户真机逐页清单（数字待更新为 88/87；`.ui` 包名与 flavor 已失效，按 `dev` 变体走） |
 | `2026-11-02-compose-dialog-full-audit.md` | 弹层审核明细与 8 个决策点 |
 | `2026-11-03-compose-widescreen-adaptive-plan.md` | 宽屏方案；前三批已落地，剩 R02/R17 |
 | `2026-10-26-compose-migration-plan.md` | 总体方案、硬约束、阶段与回退方案 |
@@ -189,6 +189,9 @@ L3 出包、L3.5 性能包、L4 真机一律用户跑；**性能只认 Bench 或
 
 ## 变更记录
 
+- **2026-11-08 L1/L2 复跑**：L1 通过（`BUILD SUCCESSFUL in 57s`，HEAD `cb8f14d1f`）；L2 `:app:testDevDebugUnitTest` **7584 例 / 1 失败**，唯一失败是 `ArbCatalogTest`——`ArbCatalog.kt` 未随 ARB 新键 `liquidGlassPresetCustom` 重新生成（生成器 `--check` 报过期）。刷新生成物后需再跑一次 L2 才能销 R08。
+- **2026-11-08 数字校正**：路由 89/88 → **88/87**（`ShellPageCatalogTest` 实测，HEAD `7f8395776`）；`pages/**/*.kt` 176 → **183**（同 HEAD，工作区含未跟踪文件为 184）；样式例外 10 → **7**（timetable 4 + import 2 + showcase 1，`-Domain all` 待修 0 / 过期 0）。
+  注意：`2026-11-07-refactor-full-audit.md` 里的 181 是 `3cf8d910b` 基线，不是当前值；例外 5 条同理。
 - **2026-11-03 建立**：合并派工大表、Phase 3 页面台账、剩余页任务清单、现状交接、全仓体检五份进度文档；
   统一口径为 89/88/0/1；把 78/82/87/165 标为历史；销账 I2 收尾、截屏面板、教务对话框、WebDAV 恢复、
   通知权限、JVM21、宽屏前三批、timetable L0 跨域；新增 R01–R17 待办与阻塞归属。
