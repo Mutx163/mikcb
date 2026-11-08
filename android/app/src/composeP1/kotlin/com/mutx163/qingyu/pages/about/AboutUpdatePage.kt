@@ -19,6 +19,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
@@ -137,6 +139,7 @@ fun AboutUpdatePage(
             AboutUpdatePagePhase.READY -> AboutUpdateReadyView(
                 innerPadding = innerPadding,
                 scrollBehavior = scrollBehavior,
+                appName = appName,
                 result = result!!,
                 settings = settings,
                 onRefresh = onRefresh,
@@ -223,6 +226,7 @@ private fun AboutUpdateCheckFailedView(
 private fun AboutUpdateReadyView(
     innerPadding: PaddingValues,
     scrollBehavior: ScrollBehavior,
+    appName: String,
     result: AppUpdateCheckResult,
     settings: AppUpdateSettings,
     onRefresh: () -> Unit,
@@ -235,16 +239,18 @@ private fun AboutUpdateReadyView(
     QingyuPageList(
         innerPadding = innerPadding,
         scrollBehavior = scrollBehavior,
-        horizontalPadding = QingyuPageCardMargin,
+        // 横向留白改为由每个块自己带：顶部身份区需要一层**通栏**的背景渐变，
+        // 列表级 padding 会把渐变裁在两侧 12dp 里，边界看得见。
+        horizontalPadding = 0.dp,
         contentPadding = PaddingValues(bottom = AboutPageListBottomPadding),
-        // 2026-11-08 版面重排：改成**顶对齐**。原先的 `AboutPageListSpacingCentered` 把整组
-        // 内容垂直居中，结果标题栏下面空出约 165dp，被读成「内容没加载出来」；空白放在
-        // 视觉动线起点比放在底部更刺眼。现在内容从顶栏下 8dp 开始，空白只留在末尾。
-        extraTopPadding = 8.dp,
         verticalArrangement = AboutPageListSpacing,
     ) {
+        item(key = "hero") {
+            UpdateHeroBlock(appName = appName, version = result.currentVersion)
+        }
         item(key = "status") {
             AboutUpdateStatusCardFull(
+                modifier = Modifier.padding(horizontal = QingyuPageCardMargin),
                 result = result,
                 settings = settings,
                 onRefresh = onRefresh,
@@ -255,22 +261,80 @@ private fun AboutUpdateReadyView(
             )
         }
         if (!release?.body.isNullOrBlank()) {
-            // 分组标题走官方 SmallTitle 包装（28dp 轴线）。状态卡不再自称「这次更新」之后，
-            // 这里就是说明块唯一的入口，不会出现「一条信息说三遍」。列表已统一加 12dp
-            // 横向留白，所以标题内边距给 16dp 才能和卡内文字一起落在 28dp 轴线上。
+            // 分组标题用默认 28dp 内边距：列表本身不再加横向留白，28 = 卡外 12 + 卡内 16，
+            // 正好和卡里的文字落在同一条轴线上。
             item(key = "notes-title") {
-                QingyuSectionTitle(
-                    text = AboutUpdatePageStrings.releaseNotesTitle,
-                    insideMargin = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
+                QingyuSectionTitle(text = AboutUpdatePageStrings.releaseNotesTitle)
+            }
+            item(key = "notes") {
+                NotesSection(
+                    release = release,
+                    modifier = Modifier.padding(horizontal = QingyuPageCardMargin),
                 )
             }
-            item(key = "notes") { NotesSection(release) }
+        }
+    }
+}
+
+/**
+ * 顶部身份区：图标 + 软件名 + 版本号，背后一层**主色渐变**向下淡出。
+ *
+ * 渐变只用主题主色推透明度（上 14% → 中 5% → 透明），不引第二套色板；
+ * 高度跟随内容（图标 80、名称一行、版本一行 + 上下留白 ≈ 190dp），不用固定高度硬撑。
+ * 这一块是整页唯一的装饰，下面的卡片全部是白底/容器色 + 12dp 等间距——
+ * 装饰只用来建立「这是谁」，不用来装饰每一个块。
+ */
+@Composable
+private fun UpdateHeroBlock(appName: String, version: String) {
+    val colors = MiuixTheme.colorScheme
+    Box(modifier = Modifier.fillMaxWidth()) {
+        Box(
+            modifier = Modifier
+                .matchParentSize()
+                .background(
+                    Brush.verticalGradient(
+                        colors = listOf(
+                            colors.primary.copy(alpha = 0.14f),
+                            colors.primary.copy(alpha = 0.05f),
+                            Color.Transparent,
+                        ),
+                    ),
+                ),
+        )
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(start = 24.dp, top = 20.dp, end = 24.dp, bottom = 22.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+        ) {
+            AppIconBadge(size = 80.dp)
+            if (appName.isNotEmpty()) {
+                Spacer(Modifier.height(14.dp))
+                Text(
+                    text = appName,
+                    style = MiuixTheme.textStyles.title1.shiftWeight(QingyuWeightDelta.BOLD),
+                    color = colors.onSurface,
+                    textAlign = TextAlign.Center,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+            }
+            Spacer(Modifier.height(6.dp))
+            Text(
+                text = version,
+                style = MiuixTheme.textStyles.footnote1,
+                color = colors.onSurfaceVariantSummary,
+                textAlign = TextAlign.Center,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
         }
     }
 }
 
 @Composable
 private fun AboutUpdateStatusCardFull(
+    modifier: Modifier = Modifier,
     result: AppUpdateCheckResult,
     settings: AppUpdateSettings,
     onRefresh: () -> Unit,
@@ -316,38 +380,16 @@ private fun AboutUpdateStatusCardFull(
     // 两行文字（「当前版本」+ 版本号），下面才是可点行；「已是最新」只做一个行尾短标签。
     // 我们照这个骨架来：版本是陈述，行是动作，两者都不占整屏。
     QingyuCard(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = modifier.fillMaxWidth(),
         insideMargin = PaddingValues(0.dp),
     ) {
         Column(modifier = Modifier.fillMaxWidth()) {
-            // ── 版本块：两行普通文字，不再有图标与居中堆叠 ──
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 14.dp),
-            ) {
-                Text(
-                    text = AboutUpdateStrings.currentVersionLabel,
-                    style = MiuixTheme.textStyles.body1.shiftWeight(QingyuWeightDelta.MEDIUM),
-                    color = colors.onSurface,
-                )
-                Spacer(Modifier.height(2.dp))
-                Text(
-                    text = result.currentVersion,
-                    style = MiuixTheme.textStyles.footnote1,
-                    color = colors.onSurfaceVariantSummary,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                )
-            }
-
-            // 有更新：最新版本单独一行（主题色）+ 本页唯一的主按钮，仍在同一张卡里。
-            // 不做「旧 → 新」的箭头行：把当前/最新拆成两个区块，读起来比箭头更直白。
+            // 有更新：最新版本单独一段（主题色）+ 本页唯一的主按钮；没有更新时这一段整体不出现。
             if (hasUpdate) {
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = 16.dp),
+                        .padding(start = 16.dp, top = 16.dp, end = 16.dp, bottom = 14.dp),
                 ) {
                     Text(
                         text = AboutUpdateStrings.latestVersionLabel,
@@ -370,29 +412,26 @@ private fun AboutUpdateStatusCardFull(
                     ) {
                         Text(primaryLabel)
                     }
-                    Spacer(Modifier.height(14.dp))
                 }
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(1.dp)
+                        .background(colors.secondaryContainer),
+                )
             }
 
-            // ── 可点行：检查/重新检查，行尾只挂一个状态词（`endActions` 手法）──
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(1.dp)
-                    .background(colors.secondaryContainer),
-            )
+            // 可点行：状态只挂在行尾（已是最新时），有更新时不重复说一遍。
             ArrowPreference(
                 title = AboutUpdateStrings.retryAction,
                 endActions = {
-                    Text(
-                        text = if (hasUpdate) {
-                            AboutUpdateStrings.updateAvailableHeadline
-                        } else {
-                            AboutUpdateStrings.alreadyLatestHeadline
-                        },
-                        style = MiuixTheme.textStyles.footnote1,
-                        color = if (hasUpdate) colors.primary else colors.onSurfaceVariantSummary,
-                    )
+                    if (!hasUpdate) {
+                        Text(
+                            text = AboutUpdateStrings.alreadyLatestHeadline,
+                            style = MiuixTheme.textStyles.footnote1,
+                            color = colors.onSurfaceVariantSummary,
+                        )
+                    }
                 },
                 onClick = onRefresh,
             )
@@ -437,14 +476,14 @@ private fun InlineTextAction(text: String, onClick: () -> Unit) {
  * 现在信息次序是「重点 → 计数 → 展开 → 时间」，时间作为出处收尾。
  */
 @Composable
-private fun NotesSection(release: AppReleaseInfo?) {
+private fun NotesSection(release: AppReleaseInfo?, modifier: Modifier = Modifier) {
     val colors = MiuixTheme.colorScheme
     val body = release?.body.orEmpty()
     val updatedText = release?.updatedAtMillis?.let {
         AboutUpdatePageStrings.updatedAt(formatUpdateDateTime(it))
     }
     QingyuCard(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = modifier.fillMaxWidth(),
         insideMargin = PaddingValues(0.dp),
     ) {
         Column(modifier = Modifier.fillMaxWidth()) {
