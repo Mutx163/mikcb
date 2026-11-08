@@ -17,29 +17,30 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.mutx163.qingyu.app.CommonUiStrings
+import com.mutx163.qingyu.components.LocalQingyuBackButtonGlass
+import com.mutx163.qingyu.components.QingyuBackIconButton
 import com.mutx163.qingyu.components.QingyuCard
 import com.mutx163.qingyu.components.QingyuPageCardMargin
 import com.mutx163.qingyu.components.QingyuPageList
 import com.mutx163.qingyu.components.QingyuPageTheme
+import com.mutx163.qingyu.components.QingyuGlassIconButton
 import com.mutx163.qingyu.components.QingyuSectionTitle
 import com.mutx163.qingyu.components.QingyuWeightDelta
 import com.mutx163.qingyu.components.rememberQingyuScrollBehavior
@@ -54,13 +55,10 @@ import com.mutx163.qingyu.theme.QingyuTheme
 import top.yukonga.miuix.kmp.basic.Button
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
 import top.yukonga.miuix.kmp.basic.CircularProgressIndicator
-import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.ScrollBehavior
-import top.yukonga.miuix.kmp.basic.Surface
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TextButton
 import top.yukonga.miuix.kmp.icon.MiuixIcons
-import top.yukonga.miuix.kmp.icon.extended.Back
 import top.yukonga.miuix.kmp.icon.extended.Tune
 import top.yukonga.miuix.kmp.preference.ArrowPreference
 import top.yukonga.miuix.kmp.theme.MiuixTheme
@@ -147,24 +145,26 @@ fun AboutUpdatePage(
                     ),
             )
             Column(modifier = Modifier.fillMaxSize()) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .windowInsetsPadding(WindowInsets.statusBars)
-                        .padding(start = 8.dp, top = 8.dp, end = 12.dp, bottom = 8.dp),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    UpdateBarCapsule(
-                        icon = MiuixIcons.Back,
-                        contentDescription = CommonUiStrings.back,
-                        onClick = onBack,
-                    )
-                    UpdateBarCapsule(
-                        icon = MiuixIcons.Tune,
-                        contentDescription = AboutUpdatePageStrings.advancedOptionsTitle,
-                        onClick = onOpenAdvancedOptions,
-                    )
+                // 顶栏两枚按钮用全站同一套：返回键 [QingyuBackIconButton]、右上动作键
+                // [QingyuGlassIconButton]，都是圆底玻璃钮。
+                // 骨架默认只在内容压到栏下时才给返回键长圆底；本页没有栏，就显式把
+                // `LocalQingyuBackButtonGlass` 置 true，让左边与右边从一开始就是同一颗圆钮。
+                CompositionLocalProvider(LocalQingyuBackButtonGlass provides true) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .windowInsetsPadding(WindowInsets.statusBars)
+                            .padding(start = 4.dp, top = 4.dp, end = 8.dp, bottom = 4.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        QingyuBackIconButton(onBack = onBack)
+                        QingyuGlassIconButton(
+                            onClick = onOpenAdvancedOptions,
+                            contentDescription = AboutUpdatePageStrings.advancedOptionsTitle,
+                            icon = MiuixIcons.Tune,
+                        )
+                    }
                 }
 
                 val contentInsets = PaddingValues(
@@ -205,39 +205,6 @@ fun AboutUpdatePage(
                     DownloadProgressBar(download = download, onCancel = onCancelDownload)
                 }
             }
-        }
-    }
-}
-
-/**
- * 顶栏胶囊按钮：左右两颗同形（56×36，两端全圆），容器色填充、**不描边**。
- *
- * 描边会让两颗胶囊在浅底上显得“框住了一圈”，与无边的卡片、渐变底打架，所以只用填充色
- * 把它们从背景里分出来；图标也只用中性次级墨色，不借主题强调色。
- */
-@Composable
-private fun UpdateBarCapsule(
-    icon: ImageVector,
-    contentDescription: String,
-    onClick: () -> Unit,
-) {
-    val colors = MiuixTheme.colorScheme
-    Surface(
-        onClick = onClick,
-        shape = RoundedCornerShape(percent = 50),
-        color = colors.surfaceContainer,
-        shadowElevation = 0.dp,
-    ) {
-        Box(
-            modifier = Modifier.size(width = 56.dp, height = 36.dp),
-            contentAlignment = Alignment.Center,
-        ) {
-            Icon(
-                imageVector = icon,
-                contentDescription = contentDescription,
-                tint = colors.onSurfaceVariantActions,
-                modifier = Modifier.size(20.dp),
-            )
         }
     }
 }
