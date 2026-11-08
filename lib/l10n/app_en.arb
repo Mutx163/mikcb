@@ -5368,6 +5368,7 @@
   "frostedGlassModeSolid": "Solid cards",
   "advancedMaterialTitle": "Advanced Material",
   "liquidGlassPresetLabel": "Liquid Glass Preset",
+  "liquidGlassPresetCustom": "Custom",
   "liquidGlassRefractionLabel": "Refraction strength",
   "liquidGlassRefractionBandLabel": "Refraction width",
   "liquidGlassRefractionEdgePowLabel": "Edge falloff",

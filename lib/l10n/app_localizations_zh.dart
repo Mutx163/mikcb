@@ -8636,6 +8636,9 @@ class AppLocalizationsZh extends AppLocalizations {
   String get liquidGlassPresetLabel => '液态玻璃预设';
 
   @override
+  String get liquidGlassPresetCustom => '自定义';
+
+  @override
   String get liquidGlassRefractionLabel => '折射强度';
 
   @override
@@ -18792,6 +18795,9 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get liquidGlassPresetLabel => '液態玻璃預設';
 
   @override
+  String get liquidGlassPresetCustom => '自訂';
+
+  @override
   String get liquidGlassRefractionLabel => '折射強度';
 
   @override
@@ -28946,6 +28952,9 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get liquidGlassPresetLabel => '液態玻璃預設';
+
+  @override
+  String get liquidGlassPresetCustom => '自訂';
 
   @override
   String get liquidGlassRefractionLabel => '折射強度';

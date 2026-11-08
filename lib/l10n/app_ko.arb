@@ -5118,6 +5118,7 @@
   "frostedSheetSectionTitle": "글래스 소재",
   "advancedMaterialTitle": "고급 재질",
   "liquidGlassPresetLabel": "리퀴드 글래스 프리셋",
+  "liquidGlassPresetCustom": "사용자 지정",
   "liquidGlassRefractionLabel": "굴절 강도",
   "liquidGlassRefractionBandLabel": "굴절 대역 너비",
   "liquidGlassRefractionEdgePowLabel": "가장자리 기울기",

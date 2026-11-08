@@ -5070,6 +5070,7 @@
   "frostedSheetSectionTitle": "ガラス素材",
   "advancedMaterialTitle": "高度なマテリアル",
   "liquidGlassPresetLabel": "ガラスプリセット",
+  "liquidGlassPresetCustom": "カスタム",
   "liquidGlassRefractionLabel": "屈折の強さ",
   "liquidGlassRefractionBandLabel": "屈折帯の幅",
   "liquidGlassRefractionEdgePowLabel": "エッジの急峻さ",

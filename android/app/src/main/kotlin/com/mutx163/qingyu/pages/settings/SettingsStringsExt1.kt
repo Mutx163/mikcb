@@ -42,6 +42,8 @@ object SettingsStringsExt1 {
     val homeBandGlassMaterialFollow = ArbText("homeBandGlassMaterialFollow", "跟随默认材质")
     val advancedMaterialTitle = ArbText("advancedMaterialTitle", "高级材质")
     val liquidGlassPresetLabel = ArbText("liquidGlassPresetLabel", "液态玻璃预设")
+    /** 档位读数的「自定义」后缀（只用在行尾读数，不是行标题）。 */
+    val liquidGlassPresetCustom = ArbText("liquidGlassPresetCustom", "自定义")
     val liquidGlassRefractionLabel = ArbText("liquidGlassRefractionLabel", "折射强度")
     val liquidGlassRefractionBandLabel = ArbText("liquidGlassRefractionBandLabel", "作用带宽度")
     val liquidGlassRefractionEdgePowLabel =

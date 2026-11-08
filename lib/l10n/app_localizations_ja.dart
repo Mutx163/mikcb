@@ -8897,6 +8897,9 @@ class AppLocalizationsJa extends AppLocalizations {
   String get liquidGlassPresetLabel => 'ガラスプリセット';
 
   @override
+  String get liquidGlassPresetCustom => 'カスタム';
+
+  @override
   String get liquidGlassRefractionLabel => '屈折の強さ';
 
   @override

@@ -5116,6 +5116,7 @@
   "frostedSheetSectionTitle": "玻璃材質",
   "advancedMaterialTitle": "進階材質",
   "liquidGlassPresetLabel": "液態玻璃預設",
+  "liquidGlassPresetCustom": "自訂",
   "liquidGlassRefractionLabel": "折射強度",
   "liquidGlassRefractionBandLabel": "作用帶寬度",
   "liquidGlassRefractionEdgePowLabel": "邊緣陡緩",

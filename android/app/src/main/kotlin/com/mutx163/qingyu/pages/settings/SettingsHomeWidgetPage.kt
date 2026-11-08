@@ -170,6 +170,13 @@ object SettingsHomeWidgetPage {
             ),
         )
 
+        // 开关下方的耗电说明：整宽段落，不受行标题/说明句的单行宽度口径约束。
+        nodes += SettingsDescription(
+            id = "homeWidget.countdownBatteryHint",
+            textKey = SettingsStringsExt2.homeWidgetCountdownBatteryHint.key,
+            text = SettingsStringsExt2.homeWidgetCountdownBatteryHint.text,
+        )
+
         // 区块 2：倒计时（「显示倒计时」关掉时整块不存在，:214/:219-221）
         if (state.showCountdown) {
             nodes += SettingsGap("homeWidget.gap.countdown")

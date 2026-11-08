@@ -23,7 +23,7 @@ object ArbCatalog {
         else -> null
     }
 
-    // ── en（3037 条）──
+    // ── en（3038 条）──
     private fun lookupen(key: String): String? = lookupen1(key) ?: lookupen2(key) ?: lookupen3(key) ?: lookupen4(key) ?: lookupen5(key) ?: lookupen6(key) ?: lookupen7(key) ?: lookupen8(key) ?: lookupen9(key) ?: lookupen10(key) ?: lookupen11(key)
     private fun lookupen1(key: String): String? = when (key) {
         "aboutAdvancedOptionsTitle" -> "Advanced options"
@@ -1143,6 +1143,7 @@ object ArbCatalog {
         "homeWidgetBindingSaveFailed" -> "Failed to save the widget binding. Please try again."
         "homeWidgetBindingSectionTitle" -> "Widget bindings"
         "homeWidgetCornerRadiusTitle" -> "Card corner radius"
+        "homeWidgetCountdownBatteryHint" -> "When on, the card redraws every minute: hundreds of extra wakes on a school day, so standby drains faster."
         "homeWidgetCountdownLeadAlways" -> "Always show"
         "homeWidgetCountdownLeadTitle" -> "Countdown lead time"
         "homeWidgetCourseAccentTitle" -> "Course colors"
@@ -1165,7 +1166,7 @@ object ArbCatalog {
         "homeWidgetPreviewTitle" -> "Preview"
         "homeWidgetPreviewUnavailable" -> "Preview unavailable"
         "homeWidgetSettingsTitle" -> "Home widgets"
-        "homeWidgetShowCountdownSubtitle" -> "Countdown to next class"
+        "homeWidgetShowCountdownSubtitle" -> "When on: refresh every minute"
         "homeWidgetShowCountdownTitle" -> "Show countdown"
         "homeWidgetShowLocationSubtitle" -> "Off: shows week and count"
         "homeWidgetShowLocationTitle" -> "Show location"
@@ -1234,10 +1235,10 @@ object ArbCatalog {
         "hyperosShowcaseSectionProgress" -> "Progress & refresh"
         "hyperosShowcaseSectionShell" -> "Page shell"
         "hyperosShowcaseSectionSummary" -> "Summary card"
-        "hyperosShowcaseSectionSwitchRows" -> "List rows · Switch / Destructive"
         else -> null
     }
     private fun lookupen5(key: String): String? = when (key) {
+        "hyperosShowcaseSectionSwitchRows" -> "List rows · Switch / Destructive"
         "hyperosShowcaseSectionTags" -> "Tags / Accordion / Hints"
         "hyperosShowcaseSegmentLeft" -> "Left"
         "hyperosShowcaseSegmentRight" -> "Right"
@@ -1537,10 +1538,10 @@ object ArbCatalog {
         "liveIslandPreviewStageBeforeEnd" -> "Before end"
         "liveIslandPreviewStageInClass" -> "In class"
         "liveIslandPreviewTitle" -> "Super Island preview"
-        "liveIslandPreviewTitleBeforeClass" -> "Before class: {course}"
         else -> null
     }
     private fun lookupen6(key: String): String? = when (key) {
+        "liveIslandPreviewTitleBeforeClass" -> "Before class: {course}"
         "liveIslandPreviewTitleBeforeEnd" -> "Before end: {course}"
         "liveIslandPreviewUntilClassEnd" -> "Ends in {time}"
         "liveIslandPreviewUntilClassStart" -> "Starts in {time}"
@@ -1840,10 +1841,10 @@ object ArbCatalog {
         "logFieldLiveHidePrefixText" -> "live Hide Prefix Text"
         "logFieldLiveMiuiIslandExpandedIconMode" -> "live Miui Island Expanded Icon Mode"
         "logFieldLiveMiuiIslandLabelContent" -> "live Miui Island Label Content"
-        "logFieldLiveMiuiIslandLabelFontColor" -> "live Miui Island Label Font Color"
         else -> null
     }
     private fun lookupen7(key: String): String? = when (key) {
+        "logFieldLiveMiuiIslandLabelFontColor" -> "live Miui Island Label Font Color"
         "logFieldLiveMiuiIslandLabelFontSize" -> "live Miui Island Label Font Size"
         "logFieldLiveMiuiIslandLabelFontWeight" -> "live Miui Island Label Font Weight"
         "logFieldLiveMiuiIslandLabelOffsetX" -> "live Miui Island Label Offset X"
@@ -2143,10 +2144,10 @@ object ArbCatalog {
         "qrTransferSendCurrent" -> "Send Current Timetable"
         "qrTransferSendHint" -> "Ask the other party to open \"Scan to Receive\" and keep the camera pointed at this screen until done"
         "qrTransferSessionExpired" -> "QR transfer timed out. Restart and keep the camera pointed at one screen."
-        "qrTransferSessionMismatch" -> "Detected a different transfer; make sure you are pointing at one stream only"
         else -> null
     }
     private fun lookupen8(key: String): String? = when (key) {
+        "qrTransferSessionMismatch" -> "Detected a different transfer; make sure you are pointing at one stream only"
         "qrTransferShareSelectedCourses" -> "Share selected courses"
         "qrTransferShareTimeTemplate" -> "Share time template"
         "qrTransferShareWeek" -> "Share this week"
@@ -2446,10 +2447,10 @@ object ArbCatalog {
         "serviceMsgMacroManualInputDefault" -> "Manual action required."
         "serviceMsgMacroNavigateUrlEmpty" -> "Navigation URL is empty."
         "serviceMsgMacroNavigateUrlInvalid" -> "Invalid URL: {url}"
-        "serviceMsgMacroNoSteps" -> "No recorded steps."
         else -> null
     }
     private fun lookupen9(key: String): String? = when (key) {
+        "serviceMsgMacroNoSteps" -> "No recorded steps."
         "serviceMsgMacroPollTimeout" -> "{stepLabel} timed out ({timeoutSeconds}s){lastError}"
         "serviceMsgMacroReplayClick" -> "Clicking…"
         "serviceMsgMacroReplayDelay" -> "Waiting…"
@@ -2749,10 +2750,10 @@ object ArbCatalog {
         "supportWeChatHint" -> "Use WeChat to scan and support the creator"
         "supportedFilesImageHint" -> "If you only have screenshots, go back and choose Image Import instead"
         "supportedFilesSuffix" -> "The file extension must be .ics."
-        "supportedFilesTitle" -> "Supported Files"
         else -> null
     }
     private fun lookupen10(key: String): String? = when (key) {
+        "supportedFilesTitle" -> "Supported Files"
         "surfaceCourseCard" -> "Course cards"
         "surfaceMaterialSectionTitle" -> "Current material per surface"
         "surfaceSubpageHeader" -> "Subpage top bar"
@@ -3052,10 +3053,10 @@ object ArbCatalog {
         "weekPickerCalendarTooltip" -> "Use calendar picker"
         "weekPickerTitle" -> "Select weeks"
         "weekdayFri" -> "Fri"
-        "weekdayInkContrastBodyDark" -> "Your weekday bar text color had too little contrast against the dark wallpaper, so it was lightened automatically to stay readable — your color is kept. You can change or reset it under \"Timetable Page → Text Colors\"."
         else -> null
     }
     private fun lookupen11(key: String): String? = when (key) {
+        "weekdayInkContrastBodyDark" -> "Your weekday bar text color had too little contrast against the dark wallpaper, so it was lightened automatically to stay readable — your color is kept. You can change or reset it under \"Timetable Page → Text Colors\"."
         "weekdayInkContrastBodyLight" -> "Your weekday bar text color had too little contrast against the light wallpaper, so it was darkened automatically to stay readable — your color is kept. You can change or reset it under \"Timetable Page → Text Colors\"."
         "weekdayInkContrastTitle" -> "Low Text Contrast"
         "weekdayLabel" -> "Weekday"
@@ -3096,7 +3097,7 @@ object ArbCatalog {
         else -> null
     }
 
-    // ── ja（3037 条）──
+    // ── ja（3038 条）──
     private fun lookupja(key: String): String? = lookupja1(key) ?: lookupja2(key) ?: lookupja3(key) ?: lookupja4(key) ?: lookupja5(key) ?: lookupja6(key) ?: lookupja7(key) ?: lookupja8(key) ?: lookupja9(key) ?: lookupja10(key) ?: lookupja11(key)
     private fun lookupja1(key: String): String? = when (key) {
         "aboutAdvancedOptionsTitle" -> "高度なオプション"
@@ -4216,6 +4217,7 @@ object ArbCatalog {
         "homeWidgetBindingSaveFailed" -> "ウィジェットの割り当ての保存に失敗しました。しばらくしてからもう一度お試しください。"
         "homeWidgetBindingSectionTitle" -> "ウィジェットの割り当て管理"
         "homeWidgetCornerRadiusTitle" -> "カード角丸"
+        "homeWidgetCountdownBatteryHint" -> "オンにするとカードを1分ごとに再描画します。授業日は数百回の起床が増え、待機中の電池消費が増えます。"
         "homeWidgetCountdownLeadAlways" -> "常に表示"
         "homeWidgetCountdownLeadTitle" -> "カウントダウン先行量"
         "homeWidgetCourseAccentTitle" -> "授業の色"
@@ -4238,7 +4240,7 @@ object ArbCatalog {
         "homeWidgetPreviewTitle" -> "プレビュー"
         "homeWidgetPreviewUnavailable" -> "プレビューを表示できません"
         "homeWidgetSettingsTitle" -> "ホームウィジェット"
-        "homeWidgetShowCountdownSubtitle" -> "次の授業までのカウントダウンを表示"
+        "homeWidgetShowCountdownSubtitle" -> "オンで1分ごとに更新"
         "homeWidgetShowCountdownTitle" -> "カウントダウンを表示"
         "homeWidgetShowLocationSubtitle" -> "オフにすると週数と授業数を表示"
         "homeWidgetShowLocationTitle" -> "場所を表示"
@@ -4307,10 +4309,10 @@ object ArbCatalog {
         "hyperosShowcaseSectionProgress" -> "Progress & refresh"
         "hyperosShowcaseSectionShell" -> "Page shell"
         "hyperosShowcaseSectionSummary" -> "Summary card"
-        "hyperosShowcaseSectionSwitchRows" -> "List rows · Switch / Destructive"
         else -> null
     }
     private fun lookupja5(key: String): String? = when (key) {
+        "hyperosShowcaseSectionSwitchRows" -> "List rows · Switch / Destructive"
         "hyperosShowcaseSectionTags" -> "Tags / Accordion / Hints"
         "hyperosShowcaseSegmentLeft" -> "Left"
         "hyperosShowcaseSegmentRight" -> "Right"
@@ -4610,10 +4612,10 @@ object ArbCatalog {
         "liveIslandPreviewStageBeforeEnd" -> "終了リマインダー"
         "liveIslandPreviewStageInClass" -> "授業中"
         "liveIslandPreviewTitle" -> "スーパー島プレビュー"
-        "liveIslandPreviewTitleBeforeClass" -> "まもなく授業: {course}"
         else -> null
     }
     private fun lookupja6(key: String): String? = when (key) {
+        "liveIslandPreviewTitleBeforeClass" -> "まもなく授業: {course}"
         "liveIslandPreviewTitleBeforeEnd" -> "終了のお知らせ: {course}"
         "liveIslandPreviewUntilClassEnd" -> "終了まで{time}"
         "liveIslandPreviewUntilClassStart" -> "授業まで{time}"
@@ -4913,10 +4915,10 @@ object ArbCatalog {
         "logFieldLiveHidePrefixText" -> "live Hide Prefix Text"
         "logFieldLiveMiuiIslandExpandedIconMode" -> "live Miui Island Expanded Icon Mode"
         "logFieldLiveMiuiIslandLabelContent" -> "live Miui Island Label Content"
-        "logFieldLiveMiuiIslandLabelFontColor" -> "live Miui Island Label Font Color"
         else -> null
     }
     private fun lookupja7(key: String): String? = when (key) {
+        "logFieldLiveMiuiIslandLabelFontColor" -> "live Miui Island Label Font Color"
         "logFieldLiveMiuiIslandLabelFontSize" -> "live Miui Island Label Font Size"
         "logFieldLiveMiuiIslandLabelFontWeight" -> "live Miui Island Label Font Weight"
         "logFieldLiveMiuiIslandLabelOffsetX" -> "live Miui Island Label Offset X"
@@ -5216,10 +5218,10 @@ object ArbCatalog {
         "qrTransferSendCurrent" -> "現在の時間割を送信"
         "qrTransferSendHint" -> "相手に「読み取って受信」を開いてもらい、カメラをこの画面に向けてもらってください"
         "qrTransferSessionExpired" -> "QR転送がタイムアウトしました。最初からやり直し、1台の画面だけにカメラを向けてください。"
-        "qrTransferSessionMismatch" -> "別の転送内容を検出しました。1つの画面だけに正対してください"
         else -> null
     }
     private fun lookupja8(key: String): String? = when (key) {
+        "qrTransferSessionMismatch" -> "別の転送内容を検出しました。1つの画面だけに正対してください"
         "qrTransferShareSelectedCourses" -> "選択した科目を共有"
         "qrTransferShareTimeTemplate" -> "時間テンプレートを共有"
         "qrTransferShareWeek" -> "今週の時間割を共有"
@@ -5519,10 +5521,10 @@ object ArbCatalog {
         "serviceMsgMacroManualInputDefault" -> "Manual action required."
         "serviceMsgMacroNavigateUrlEmpty" -> "Navigation URL is empty."
         "serviceMsgMacroNavigateUrlInvalid" -> "Invalid URL: {url}"
-        "serviceMsgMacroNoSteps" -> "No recorded steps."
         else -> null
     }
     private fun lookupja9(key: String): String? = when (key) {
+        "serviceMsgMacroNoSteps" -> "No recorded steps."
         "serviceMsgMacroPollTimeout" -> "{stepLabel} timed out ({timeoutSeconds}s){lastError}"
         "serviceMsgMacroReplayClick" -> "Clicking…"
         "serviceMsgMacroReplayDelay" -> "Waiting…"
@@ -5822,10 +5824,10 @@ object ArbCatalog {
         "supportWeChatHint" -> "WeChatでQRコードをスキャンして作者を支援"
         "supportedFilesImageHint" -> "スクリーンショットしかない場合は、前のページに戻って「画像認識インポート」を選択してください"
         "supportedFilesSuffix" -> "ファイル拡張子は.icsである必要があります。"
-        "supportedFilesTitle" -> "対応ファイル"
         else -> null
     }
     private fun lookupja10(key: String): String? = when (key) {
+        "supportedFilesTitle" -> "対応ファイル"
         "surfaceCourseCard" -> "時間割カード"
         "surfaceMaterialSectionTitle" -> "表面ごとの現在の素材"
         "surfaceSubpageHeader" -> "サブページの上部バー"
@@ -6125,10 +6127,10 @@ object ArbCatalog {
         "weekPickerCalendarTooltip" -> "カレンダーで選択"
         "weekPickerTitle" -> "授業週次を選択"
         "weekdayFri" -> "金曜"
-        "weekdayInkContrastBodyDark" -> "曜日バーの文字色は濃い壁紙とのコントラストが不足していたため、読みやすいよう自動で明るくしました（色味はそのまま）。「時間割ページ → 文字色」で色を変更またはリセットできます。"
         else -> null
     }
     private fun lookupja11(key: String): String? = when (key) {
+        "weekdayInkContrastBodyDark" -> "曜日バーの文字色は濃い壁紙とのコントラストが不足していたため、読みやすいよう自動で明るくしました（色味はそのまま）。「時間割ページ → 文字色」で色を変更またはリセットできます。"
         "weekdayInkContrastBodyLight" -> "曜日バーの文字色は明るい壁紙とのコントラストが不足していたため、読みやすいよう自動で暗くしました（色味はそのまま）。「時間割ページ → 文字色」で色を変更またはリセットできます。"
         "weekdayInkContrastTitle" -> "文字のコントラスト不足"
         "weekdayLabel" -> "曜日"
@@ -6169,7 +6171,7 @@ object ArbCatalog {
         else -> null
     }
 
-    // ── ko（3037 条）──
+    // ── ko（3038 条）──
     private fun lookupko(key: String): String? = lookupko1(key) ?: lookupko2(key) ?: lookupko3(key) ?: lookupko4(key) ?: lookupko5(key) ?: lookupko6(key) ?: lookupko7(key) ?: lookupko8(key) ?: lookupko9(key) ?: lookupko10(key) ?: lookupko11(key)
     private fun lookupko1(key: String): String? = when (key) {
         "aboutAdvancedOptionsTitle" -> "고급 옵션"
@@ -7289,6 +7291,7 @@ object ArbCatalog {
         "homeWidgetBindingSaveFailed" -> "위젯 바인딩 저장에 실패했어요. 잠시 후 다시 시도해 주세요."
         "homeWidgetBindingSectionTitle" -> "위젯 바인딩 관리"
         "homeWidgetCornerRadiusTitle" -> "카드 둥근 모서리"
+        "homeWidgetCountdownBatteryHint" -> "켜면 카드를 1분마다 다시 그립니다. 수업일에는 수백 번 깨어나 대기 전력 소모가 늘어납니다."
         "homeWidgetCountdownLeadAlways" -> "항상 표시"
         "homeWidgetCountdownLeadTitle" -> "카운트다운 선행량"
         "homeWidgetCourseAccentTitle" -> "수업 색상"
@@ -7311,7 +7314,7 @@ object ArbCatalog {
         "homeWidgetPreviewTitle" -> "미리보기"
         "homeWidgetPreviewUnavailable" -> "미리보기를 표시할 수 없음"
         "homeWidgetSettingsTitle" -> "홈 위젯"
-        "homeWidgetShowCountdownSubtitle" -> "다음 수업까지 카운트다운 표시"
+        "homeWidgetShowCountdownSubtitle" -> "켜면 1분마다 갱신"
         "homeWidgetShowCountdownTitle" -> "카운트다운 표시"
         "homeWidgetShowLocationSubtitle" -> "끄면 주차와 수업 수 표시"
         "homeWidgetShowLocationTitle" -> "장소 표시"
@@ -7380,10 +7383,10 @@ object ArbCatalog {
         "hyperosShowcaseSectionProgress" -> "Progress & refresh"
         "hyperosShowcaseSectionShell" -> "Page shell"
         "hyperosShowcaseSectionSummary" -> "Summary card"
-        "hyperosShowcaseSectionSwitchRows" -> "List rows · Switch / Destructive"
         else -> null
     }
     private fun lookupko5(key: String): String? = when (key) {
+        "hyperosShowcaseSectionSwitchRows" -> "List rows · Switch / Destructive"
         "hyperosShowcaseSectionTags" -> "Tags / Accordion / Hints"
         "hyperosShowcaseSegmentLeft" -> "Left"
         "hyperosShowcaseSegmentRight" -> "Right"
@@ -7683,10 +7686,10 @@ object ArbCatalog {
         "liveIslandPreviewStageBeforeEnd" -> "종료 알림"
         "liveIslandPreviewStageInClass" -> "수업 중"
         "liveIslandPreviewTitle" -> "슈퍼 아일랜드 미리보기"
-        "liveIslandPreviewTitleBeforeClass" -> "곧 수업: {course}"
         else -> null
     }
     private fun lookupko6(key: String): String? = when (key) {
+        "liveIslandPreviewTitleBeforeClass" -> "곧 수업: {course}"
         "liveIslandPreviewTitleBeforeEnd" -> "종료 알림: {course}"
         "liveIslandPreviewUntilClassEnd" -> "수업 종료 {time} 전"
         "liveIslandPreviewUntilClassStart" -> "수업 시작 {time} 전"
@@ -7986,10 +7989,10 @@ object ArbCatalog {
         "logFieldLiveHidePrefixText" -> "live Hide Prefix Text"
         "logFieldLiveMiuiIslandExpandedIconMode" -> "live Miui Island Expanded Icon Mode"
         "logFieldLiveMiuiIslandLabelContent" -> "live Miui Island Label Content"
-        "logFieldLiveMiuiIslandLabelFontColor" -> "live Miui Island Label Font Color"
         else -> null
     }
     private fun lookupko7(key: String): String? = when (key) {
+        "logFieldLiveMiuiIslandLabelFontColor" -> "live Miui Island Label Font Color"
         "logFieldLiveMiuiIslandLabelFontSize" -> "live Miui Island Label Font Size"
         "logFieldLiveMiuiIslandLabelFontWeight" -> "live Miui Island Label Font Weight"
         "logFieldLiveMiuiIslandLabelOffsetX" -> "live Miui Island Label Offset X"
@@ -8289,10 +8292,10 @@ object ArbCatalog {
         "qrTransferSendCurrent" -> "현재 시간표 전송"
         "qrTransferSendHint" -> "상대방이 스캔하여 받기를 열고 이 화면에 카메라를 대고 있게 하세요"
         "qrTransferSessionExpired" -> "QR 전송 시간이 초과되었습니다. 다시 시작하고 한 화면만 향하게 하세요."
-        "qrTransferSessionMismatch" -> "다른 전송 내용이 감지되었습니다. 하나의 화면에만 정면으로 대세요"
         else -> null
     }
     private fun lookupko8(key: String): String? = when (key) {
+        "qrTransferSessionMismatch" -> "다른 전송 내용이 감지되었습니다. 하나의 화면에만 정면으로 대세요"
         "qrTransferShareSelectedCourses" -> "선택한 과목 공유"
         "qrTransferShareTimeTemplate" -> "시간 템플릿 공유"
         "qrTransferShareWeek" -> "이번 주 시간표 공유"
@@ -8592,10 +8595,10 @@ object ArbCatalog {
         "serviceMsgMacroManualInputDefault" -> "Manual action required."
         "serviceMsgMacroNavigateUrlEmpty" -> "Navigation URL is empty."
         "serviceMsgMacroNavigateUrlInvalid" -> "Invalid URL: {url}"
-        "serviceMsgMacroNoSteps" -> "No recorded steps."
         else -> null
     }
     private fun lookupko9(key: String): String? = when (key) {
+        "serviceMsgMacroNoSteps" -> "No recorded steps."
         "serviceMsgMacroPollTimeout" -> "{stepLabel} timed out ({timeoutSeconds}s){lastError}"
         "serviceMsgMacroReplayClick" -> "Clicking…"
         "serviceMsgMacroReplayDelay" -> "Waiting…"
@@ -8895,10 +8898,10 @@ object ArbCatalog {
         "supportWeChatHint" -> "WeChat으로 QR 코드를 스캔하여 개발자 지원"
         "supportedFilesImageHint" -> "스크린샷만 있다면 이곳이 아닌 이전 페이지에서 '이미지 인식 가져오기'를 선택하세요"
         "supportedFilesSuffix" -> "파일 확장자는 .ics여야 합니다."
-        "supportedFilesTitle" -> "지원 파일"
         else -> null
     }
     private fun lookupko10(key: String): String? = when (key) {
+        "supportedFilesTitle" -> "지원 파일"
         "surfaceCourseCard" -> "시간표 카드"
         "surfaceMaterialSectionTitle" -> "표면별 현재 재질"
         "surfaceSubpageHeader" -> "하위 페이지 상단 바"
@@ -9198,10 +9201,10 @@ object ArbCatalog {
         "weekPickerCalendarTooltip" -> "달력으로 선택"
         "weekPickerTitle" -> "수업 주차 선택"
         "weekdayFri" -> "금요일"
-        "weekdayInkContrastBodyDark" -> "요일 표시줄 텍스트 색상이 어두운 배경화면과 대비가 부족하여 읽기 쉽도록 자동으로 밝게 조정했습니다(색조는 그대로 유지). \"시간표 페이지 → 텍스트 색상\"에서 색상을 변경하거나 기본값으로 재설정할 수 있습니다."
         else -> null
     }
     private fun lookupko11(key: String): String? = when (key) {
+        "weekdayInkContrastBodyDark" -> "요일 표시줄 텍스트 색상이 어두운 배경화면과 대비가 부족하여 읽기 쉽도록 자동으로 밝게 조정했습니다(색조는 그대로 유지). \"시간표 페이지 → 텍스트 색상\"에서 색상을 변경하거나 기본값으로 재설정할 수 있습니다."
         "weekdayInkContrastBodyLight" -> "요일 표시줄 텍스트 색상이 밝은 배경화면과 대비가 부족하여 읽기 쉽도록 자동으로 어둡게 조정했습니다(색조는 그대로 유지). \"시간표 페이지 → 텍스트 색상\"에서 색상을 변경하거나 기본값으로 재설정할 수 있습니다."
         "weekdayInkContrastTitle" -> "텍스트 대비 부족"
         "weekdayLabel" -> "요일"
@@ -9242,7 +9245,7 @@ object ArbCatalog {
         else -> null
     }
 
-    // ── zh（3037 条）──
+    // ── zh（3038 条）──
     private fun lookupzh(key: String): String? = lookupzh1(key) ?: lookupzh2(key) ?: lookupzh3(key) ?: lookupzh4(key) ?: lookupzh5(key) ?: lookupzh6(key) ?: lookupzh7(key) ?: lookupzh8(key) ?: lookupzh9(key) ?: lookupzh10(key) ?: lookupzh11(key)
     private fun lookupzh1(key: String): String? = when (key) {
         "aboutAdvancedOptionsTitle" -> "高级选项"
@@ -10362,6 +10365,7 @@ object ArbCatalog {
         "homeWidgetBindingSaveFailed" -> "保存卡片绑定失败，请稍后重试"
         "homeWidgetBindingSectionTitle" -> "各卡片绑定管理"
         "homeWidgetCornerRadiusTitle" -> "卡片圆角"
+        "homeWidgetCountdownBatteryHint" -> "开启后卡片每分钟重绘一次，上课日约增加几百次唤醒，待机耗电明显上升。"
         "homeWidgetCountdownLeadAlways" -> "始终显示"
         "homeWidgetCountdownLeadTitle" -> "倒计时提前量"
         "homeWidgetCourseAccentTitle" -> "课程颜色"
@@ -10384,7 +10388,7 @@ object ArbCatalog {
         "homeWidgetPreviewTitle" -> "效果预览"
         "homeWidgetPreviewUnavailable" -> "预览暂不可用"
         "homeWidgetSettingsTitle" -> "桌面小组件"
-        "homeWidgetShowCountdownSubtitle" -> "显示下节课倒计时"
+        "homeWidgetShowCountdownSubtitle" -> "开启后每分钟刷新"
         "homeWidgetShowCountdownTitle" -> "显示倒计时"
         "homeWidgetShowLocationSubtitle" -> "关闭后改显周次与课程数"
         "homeWidgetShowLocationTitle" -> "显示地点"
@@ -10453,10 +10457,10 @@ object ArbCatalog {
         "hyperosShowcaseSectionProgress" -> "进度与刷新"
         "hyperosShowcaseSectionShell" -> "页面壳层"
         "hyperosShowcaseSectionSummary" -> "概要卡片"
-        "hyperosShowcaseSectionSwitchRows" -> "列表行 · 开关、危险"
         else -> null
     }
     private fun lookupzh5(key: String): String? = when (key) {
+        "hyperosShowcaseSectionSwitchRows" -> "列表行 · 开关、危险"
         "hyperosShowcaseSectionTags" -> "标签、手风琴、提示"
         "hyperosShowcaseSegmentLeft" -> "左"
         "hyperosShowcaseSegmentRight" -> "右"
@@ -10756,10 +10760,10 @@ object ArbCatalog {
         "liveIslandPreviewStageBeforeEnd" -> "下课提醒"
         "liveIslandPreviewStageInClass" -> "上课中"
         "liveIslandPreviewTitle" -> "超级岛预览"
-        "liveIslandPreviewTitleBeforeClass" -> "即将上课：{course}"
         else -> null
     }
     private fun lookupzh6(key: String): String? = when (key) {
+        "liveIslandPreviewTitleBeforeClass" -> "即将上课：{course}"
         "liveIslandPreviewTitleBeforeEnd" -> "下课提醒：{course}"
         "liveIslandPreviewUntilClassEnd" -> "距下课 {time}"
         "liveIslandPreviewUntilClassStart" -> "距上课 {time}"
@@ -11059,10 +11063,10 @@ object ArbCatalog {
         "logFieldLiveHidePrefixText" -> "隐藏前缀文字"
         "logFieldLiveMiuiIslandExpandedIconMode" -> "展开图标模式"
         "logFieldLiveMiuiIslandLabelContent" -> "岛标签内容"
-        "logFieldLiveMiuiIslandLabelFontColor" -> "岛标签字体颜色"
         else -> null
     }
     private fun lookupzh7(key: String): String? = when (key) {
+        "logFieldLiveMiuiIslandLabelFontColor" -> "岛标签字体颜色"
         "logFieldLiveMiuiIslandLabelFontSize" -> "岛标签字号"
         "logFieldLiveMiuiIslandLabelFontWeight" -> "岛标签字重"
         "logFieldLiveMiuiIslandLabelOffsetX" -> "岛标签 X 偏移"
@@ -11362,10 +11366,10 @@ object ArbCatalog {
         "qrTransferSendCurrent" -> "二维码发送当前课表"
         "qrTransferSendHint" -> "请对方打开扫码接收并对准屏幕，保持直到传输完成"
         "qrTransferSessionExpired" -> "二维码传输已超时，请重新开始并只对准一台设备。"
-        "qrTransferSessionMismatch" -> "检测到不同传输内容，请确认只对准一份数据"
         else -> null
     }
     private fun lookupzh8(key: String): String? = when (key) {
+        "qrTransferSessionMismatch" -> "检测到不同传输内容，请确认只对准一份数据"
         "qrTransferShareSelectedCourses" -> "分享勾选的课程"
         "qrTransferShareTimeTemplate" -> "分享时间模板"
         "qrTransferShareWeek" -> "分享本周课表"
@@ -11665,10 +11669,10 @@ object ArbCatalog {
         "serviceMsgMacroManualInputDefault" -> "需要手动操作"
         "serviceMsgMacroNavigateUrlEmpty" -> "导航 URL 为空"
         "serviceMsgMacroNavigateUrlInvalid" -> "无效的 URL: {url}"
-        "serviceMsgMacroNoSteps" -> "没有录制的步骤"
         else -> null
     }
     private fun lookupzh9(key: String): String? = when (key) {
+        "serviceMsgMacroNoSteps" -> "没有录制的步骤"
         "serviceMsgMacroPollTimeout" -> "{stepLabel} 超时 {timeoutSeconds} 秒 {lastError}"
         "serviceMsgMacroReplayClick" -> "正在点击……"
         "serviceMsgMacroReplayDelay" -> "等待中……"
@@ -11968,10 +11972,10 @@ object ArbCatalog {
         "supportWeChatHint" -> "使用微信扫一扫支持作者"
         "supportedFilesImageHint" -> "课表截图请返回上一页使用识图导入"
         "supportedFilesSuffix" -> "文件后缀必须是 .ics"
-        "supportedFilesTitle" -> "支持的文件"
         else -> null
     }
     private fun lookupzh10(key: String): String? = when (key) {
+        "supportedFilesTitle" -> "支持的文件"
         "surfaceCourseCard" -> "课程卡片"
         "surfaceMaterialSectionTitle" -> "各表面当前材质"
         "surfaceSubpageHeader" -> "子页顶栏"
@@ -12271,10 +12275,10 @@ object ArbCatalog {
         "weekPickerCalendarTooltip" -> "使用日历选择"
         "weekPickerTitle" -> "选择上课周次"
         "weekdayFri" -> "周五"
-        "weekdayInkContrastBodyDark" -> "信息栏文字在深色背景下对比度不足，已自动提升亮度。可在 课表页面 文字颜色 中调整或恢复默认。"
         else -> null
     }
     private fun lookupzh11(key: String): String? = when (key) {
+        "weekdayInkContrastBodyDark" -> "信息栏文字在深色背景下对比度不足，已自动提升亮度。可在 课表页面 文字颜色 中调整或恢复默认。"
         "weekdayInkContrastBodyLight" -> "信息栏文字在浅色背景下对比度不足，已自动降低亮度。可在 课表页面 文字颜色 中调整或恢复默认。"
         "weekdayInkContrastTitle" -> "文字对比度不足"
         "weekdayLabel" -> "星期"
@@ -12315,7 +12319,7 @@ object ArbCatalog {
         else -> null
     }
 
-    // ── zh_HK（3037 条）──
+    // ── zh_HK（3038 条）──
     private fun lookupzhHK(key: String): String? = lookupzhHK1(key) ?: lookupzhHK2(key) ?: lookupzhHK3(key) ?: lookupzhHK4(key) ?: lookupzhHK5(key) ?: lookupzhHK6(key) ?: lookupzhHK7(key) ?: lookupzhHK8(key) ?: lookupzhHK9(key) ?: lookupzhHK10(key) ?: lookupzhHK11(key)
     private fun lookupzhHK1(key: String): String? = when (key) {
         "aboutAdvancedOptionsTitle" -> "高級選項"
@@ -13435,6 +13439,7 @@ object ArbCatalog {
         "homeWidgetBindingSaveFailed" -> "儲存卡片綁定失敗，請稍後重試"
         "homeWidgetBindingSectionTitle" -> "各卡片綁定管理"
         "homeWidgetCornerRadiusTitle" -> "卡片圓角"
+        "homeWidgetCountdownBatteryHint" -> "開啟後卡片每分鐘重繪一次，上課日約增加幾百次喚醒，待機耗電明顯上升。"
         "homeWidgetCountdownLeadAlways" -> "始終顯示"
         "homeWidgetCountdownLeadTitle" -> "倒計時提前量"
         "homeWidgetCourseAccentTitle" -> "課程顏色"
@@ -13457,7 +13462,7 @@ object ArbCatalog {
         "homeWidgetPreviewTitle" -> "效果預覽"
         "homeWidgetPreviewUnavailable" -> "預覽暫時無法使用"
         "homeWidgetSettingsTitle" -> "桌面小組件"
-        "homeWidgetShowCountdownSubtitle" -> "顯示下一節課倒計時"
+        "homeWidgetShowCountdownSubtitle" -> "開啟後每分鐘刷新"
         "homeWidgetShowCountdownTitle" -> "顯示倒計時"
         "homeWidgetShowLocationSubtitle" -> "關閉後改顯週次與課程數"
         "homeWidgetShowLocationTitle" -> "顯示地點"
@@ -13526,10 +13531,10 @@ object ArbCatalog {
         "hyperosShowcaseSectionProgress" -> "進度猶刷新"
         "hyperosShowcaseSectionShell" -> "頁面殼層"
         "hyperosShowcaseSectionSummary" -> "概要卡片"
-        "hyperosShowcaseSectionSwitchRows" -> "列表行 · 開關 / 危險"
         else -> null
     }
     private fun lookupzhHK5(key: String): String? = when (key) {
+        "hyperosShowcaseSectionSwitchRows" -> "列表行 · 開關 / 危險"
         "hyperosShowcaseSectionTags" -> "標簽 / 手風琴 / 提示"
         "hyperosShowcaseSegmentLeft" -> "左"
         "hyperosShowcaseSegmentRight" -> "右"
@@ -13829,10 +13834,10 @@ object ArbCatalog {
         "liveIslandPreviewStageBeforeEnd" -> "下課提醒"
         "liveIslandPreviewStageInClass" -> "上課中"
         "liveIslandPreviewTitle" -> "超級島預覽"
-        "liveIslandPreviewTitleBeforeClass" -> "即將上課: {course}"
         else -> null
     }
     private fun lookupzhHK6(key: String): String? = when (key) {
+        "liveIslandPreviewTitleBeforeClass" -> "即將上課: {course}"
         "liveIslandPreviewTitleBeforeEnd" -> "下課提醒: {course}"
         "liveIslandPreviewUntilClassEnd" -> "距下課{time}"
         "liveIslandPreviewUntilClassStart" -> "距上課{time}"
@@ -14132,10 +14137,10 @@ object ArbCatalog {
         "logFieldLiveHidePrefixText" -> "隱藏前綴文字"
         "logFieldLiveMiuiIslandExpandedIconMode" -> "展開圖標模式"
         "logFieldLiveMiuiIslandLabelContent" -> "島標簽內容"
-        "logFieldLiveMiuiIslandLabelFontColor" -> "島標簽字體顏色"
         else -> null
     }
     private fun lookupzhHK7(key: String): String? = when (key) {
+        "logFieldLiveMiuiIslandLabelFontColor" -> "島標簽字體顏色"
         "logFieldLiveMiuiIslandLabelFontSize" -> "島標簽字號"
         "logFieldLiveMiuiIslandLabelFontWeight" -> "島標簽字重"
         "logFieldLiveMiuiIslandLabelOffsetX" -> "島標簽 X 偏移"
@@ -14435,10 +14440,10 @@ object ArbCatalog {
         "qrTransferSendCurrent" -> "QR 碼發送目前課表"
         "qrTransferSendHint" -> "請對方打開掃碼接收並對準屏幕，保持直到傳輸完成"
         "qrTransferSessionExpired" -> "QR 碼傳輸已逾時，請重新開始並只對準一台裝置。"
-        "qrTransferSessionMismatch" -> "偵測到不同傳輸內容，請確認只對準一份資料"
         else -> null
     }
     private fun lookupzhHK8(key: String): String? = when (key) {
+        "qrTransferSessionMismatch" -> "偵測到不同傳輸內容，請確認只對準一份資料"
         "qrTransferShareSelectedCourses" -> "分享勾選的課程"
         "qrTransferShareTimeTemplate" -> "分享時間範本"
         "qrTransferShareWeek" -> "分享本週課表"
@@ -14738,10 +14743,10 @@ object ArbCatalog {
         "serviceMsgMacroManualInputDefault" -> "Manual action required."
         "serviceMsgMacroNavigateUrlEmpty" -> "Navigation URL is empty."
         "serviceMsgMacroNavigateUrlInvalid" -> "Invalid URL: {url}"
-        "serviceMsgMacroNoSteps" -> "No recorded steps."
         else -> null
     }
     private fun lookupzhHK9(key: String): String? = when (key) {
+        "serviceMsgMacroNoSteps" -> "No recorded steps."
         "serviceMsgMacroPollTimeout" -> "{stepLabel} 超時 {timeoutSeconds} 秒 {lastError}"
         "serviceMsgMacroReplayClick" -> "Clicking…"
         "serviceMsgMacroReplayDelay" -> "Waiting…"
@@ -15041,10 +15046,10 @@ object ArbCatalog {
         "supportWeChatHint" -> "使用微信掃一掃支持作者"
         "supportedFilesImageHint" -> "課表截圖請返回上一頁使用識圖導入"
         "supportedFilesSuffix" -> "檔案後綴必須是 .ics"
-        "supportedFilesTitle" -> "支持的檔案"
         else -> null
     }
     private fun lookupzhHK10(key: String): String? = when (key) {
+        "supportedFilesTitle" -> "支持的檔案"
         "surfaceCourseCard" -> "課程卡片"
         "surfaceMaterialSectionTitle" -> "各表面當前材質"
         "surfaceSubpageHeader" -> "子頁頂欄"
@@ -15344,10 +15349,10 @@ object ArbCatalog {
         "weekPickerCalendarTooltip" -> "使用日曆選擇"
         "weekPickerTitle" -> "選擇上課週次"
         "weekdayFri" -> "周五"
-        "weekdayInkContrastBodyDark" -> "信息欄文字在深色背景下對比度不足，已自動提升亮度。可在 課表頁面 文字顏色 中調整或恢復默認。"
         else -> null
     }
     private fun lookupzhHK11(key: String): String? = when (key) {
+        "weekdayInkContrastBodyDark" -> "信息欄文字在深色背景下對比度不足，已自動提升亮度。可在 課表頁面 文字顏色 中調整或恢復默認。"
         "weekdayInkContrastBodyLight" -> "信息欄文字在淺色背景下對比度不足，已自動降低亮度。可在 課表頁面 文字顏色 中調整或恢復默認。"
         "weekdayInkContrastTitle" -> "文字對比度不足"
         "weekdayLabel" -> "星期"
@@ -15388,7 +15393,7 @@ object ArbCatalog {
         else -> null
     }
 
-    // ── zh_TW（3037 条）──
+    // ── zh_TW（3038 条）──
     private fun lookupzhTW(key: String): String? = lookupzhTW1(key) ?: lookupzhTW2(key) ?: lookupzhTW3(key) ?: lookupzhTW4(key) ?: lookupzhTW5(key) ?: lookupzhTW6(key) ?: lookupzhTW7(key) ?: lookupzhTW8(key) ?: lookupzhTW9(key) ?: lookupzhTW10(key) ?: lookupzhTW11(key)
     private fun lookupzhTW1(key: String): String? = when (key) {
         "aboutAdvancedOptionsTitle" -> "高級選項"
@@ -16508,6 +16513,7 @@ object ArbCatalog {
         "homeWidgetBindingSaveFailed" -> "儲存卡片綁定失敗，請稍後重試"
         "homeWidgetBindingSectionTitle" -> "各卡片綁定管理"
         "homeWidgetCornerRadiusTitle" -> "卡片圓角"
+        "homeWidgetCountdownBatteryHint" -> "開啟後卡片每分鐘重繪一次，上課日約增加幾百次喚醒，待機耗電明顯上升。"
         "homeWidgetCountdownLeadAlways" -> "始終顯示"
         "homeWidgetCountdownLeadTitle" -> "倒計時提前量"
         "homeWidgetCourseAccentTitle" -> "課程顏色"
@@ -16530,7 +16536,7 @@ object ArbCatalog {
         "homeWidgetPreviewTitle" -> "效果預覽"
         "homeWidgetPreviewUnavailable" -> "預覽暫時無法使用"
         "homeWidgetSettingsTitle" -> "桌面小工具"
-        "homeWidgetShowCountdownSubtitle" -> "顯示下一節課倒計時"
+        "homeWidgetShowCountdownSubtitle" -> "開啟後每分鐘刷新"
         "homeWidgetShowCountdownTitle" -> "顯示倒計時"
         "homeWidgetShowLocationSubtitle" -> "關閉後改顯週次與課程數"
         "homeWidgetShowLocationTitle" -> "顯示地點"
@@ -16599,10 +16605,10 @@ object ArbCatalog {
         "hyperosShowcaseSectionProgress" -> "進度與重新整理"
         "hyperosShowcaseSectionShell" -> "頁面外框"
         "hyperosShowcaseSectionSummary" -> "概要卡片"
-        "hyperosShowcaseSectionSwitchRows" -> "清單列 · 開關 / 危險"
         else -> null
     }
     private fun lookupzhTW5(key: String): String? = when (key) {
+        "hyperosShowcaseSectionSwitchRows" -> "清單列 · 開關 / 危險"
         "hyperosShowcaseSectionTags" -> "標籤 / 手風琴 / 提示"
         "hyperosShowcaseSegmentLeft" -> "左"
         "hyperosShowcaseSegmentRight" -> "右"
@@ -16902,10 +16908,10 @@ object ArbCatalog {
         "liveIslandPreviewStageBeforeEnd" -> "下課提醒"
         "liveIslandPreviewStageInClass" -> "上課中"
         "liveIslandPreviewTitle" -> "超級島預覽"
-        "liveIslandPreviewTitleBeforeClass" -> "即將上課: {course}"
         else -> null
     }
     private fun lookupzhTW6(key: String): String? = when (key) {
+        "liveIslandPreviewTitleBeforeClass" -> "即將上課: {course}"
         "liveIslandPreviewTitleBeforeEnd" -> "下課提醒: {course}"
         "liveIslandPreviewUntilClassEnd" -> "距下課{time}"
         "liveIslandPreviewUntilClassStart" -> "距上課{time}"
@@ -17205,10 +17211,10 @@ object ArbCatalog {
         "logFieldLiveHidePrefixText" -> "隱藏前綴文字"
         "logFieldLiveMiuiIslandExpandedIconMode" -> "展開圖示模式"
         "logFieldLiveMiuiIslandLabelContent" -> "島標籤內容"
-        "logFieldLiveMiuiIslandLabelFontColor" -> "島標籤字體顏色"
         else -> null
     }
     private fun lookupzhTW7(key: String): String? = when (key) {
+        "logFieldLiveMiuiIslandLabelFontColor" -> "島標籤字體顏色"
         "logFieldLiveMiuiIslandLabelFontSize" -> "島標籤字號"
         "logFieldLiveMiuiIslandLabelFontWeight" -> "島標籤字重"
         "logFieldLiveMiuiIslandLabelOffsetX" -> "島標籤 X 偏移"
@@ -17508,10 +17514,10 @@ object ArbCatalog {
         "qrTransferSendCurrent" -> "QR 碼發送目前課表"
         "qrTransferSendHint" -> "請對方打開掃碼接收並對準屏幕，保持直到傳輸完成"
         "qrTransferSessionExpired" -> "QR 碼傳輸已逾時，請重新開始並只對準一台裝置。"
-        "qrTransferSessionMismatch" -> "偵測到不同傳輸內容，請確認只對準一份資料"
         else -> null
     }
     private fun lookupzhTW8(key: String): String? = when (key) {
+        "qrTransferSessionMismatch" -> "偵測到不同傳輸內容，請確認只對準一份資料"
         "qrTransferShareSelectedCourses" -> "分享勾選的課程"
         "qrTransferShareTimeTemplate" -> "分享時間範本"
         "qrTransferShareWeek" -> "分享本週課表"
@@ -17811,10 +17817,10 @@ object ArbCatalog {
         "serviceMsgMacroManualInputDefault" -> "Manual action required."
         "serviceMsgMacroNavigateUrlEmpty" -> "Navigation URL is empty."
         "serviceMsgMacroNavigateUrlInvalid" -> "Invalid URL: {url}"
-        "serviceMsgMacroNoSteps" -> "No recorded steps."
         else -> null
     }
     private fun lookupzhTW9(key: String): String? = when (key) {
+        "serviceMsgMacroNoSteps" -> "No recorded steps."
         "serviceMsgMacroPollTimeout" -> "{stepLabel} 超時 {timeoutSeconds} 秒 {lastError}"
         "serviceMsgMacroReplayClick" -> "Clicking…"
         "serviceMsgMacroReplayDelay" -> "Waiting…"
@@ -18114,10 +18120,10 @@ object ArbCatalog {
         "supportWeChatHint" -> "使用微信掃一掃支持作者"
         "supportedFilesImageHint" -> "課表截圖請返回上一頁使用識圖導入"
         "supportedFilesSuffix" -> "檔案後綴必須是 .ics"
-        "supportedFilesTitle" -> "支持的檔案"
         else -> null
     }
     private fun lookupzhTW10(key: String): String? = when (key) {
+        "supportedFilesTitle" -> "支持的檔案"
         "surfaceCourseCard" -> "課程卡片"
         "surfaceMaterialSectionTitle" -> "各表面當前材質"
         "surfaceSubpageHeader" -> "子頁頂欄"
@@ -18417,10 +18423,10 @@ object ArbCatalog {
         "weekPickerCalendarTooltip" -> "使用日曆選擇"
         "weekPickerTitle" -> "選擇上課週次"
         "weekdayFri" -> "周五"
-        "weekdayInkContrastBodyDark" -> "信息欄文字在深色背景下對比度不足，已自動提升亮度。可在 課表頁面 文字顏色 中調整或恢復默認。"
         else -> null
     }
     private fun lookupzhTW11(key: String): String? = when (key) {
+        "weekdayInkContrastBodyDark" -> "信息欄文字在深色背景下對比度不足，已自動提升亮度。可在 課表頁面 文字顏色 中調整或恢復默認。"
         "weekdayInkContrastBodyLight" -> "信息欄文字在淺色背景下對比度不足，已自動降低亮度。可在 課表頁面 文字顏色 中調整或恢復默認。"
         "weekdayInkContrastTitle" -> "文字對比度不足"
         "weekdayLabel" -> "星期"

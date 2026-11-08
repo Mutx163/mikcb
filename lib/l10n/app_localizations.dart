@@ -15694,6 +15694,12 @@ abstract class AppLocalizations {
   /// **'液态玻璃预设'**
   String get liquidGlassPresetLabel;
 
+  /// No description provided for @liquidGlassPresetCustom.
+  ///
+  /// In zh, this message translates to:
+  /// **'自定义'**
+  String get liquidGlassPresetCustom;
+
   /// No description provided for @liquidGlassRefractionLabel.
   ///
   /// In zh, this message translates to:

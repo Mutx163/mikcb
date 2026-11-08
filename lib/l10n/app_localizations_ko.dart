@@ -8926,6 +8926,9 @@ class AppLocalizationsKo extends AppLocalizations {
   String get liquidGlassPresetLabel => '리퀴드 글래스 프리셋';
 
   @override
+  String get liquidGlassPresetCustom => '사용자 지정';
+
+  @override
   String get liquidGlassRefractionLabel => '굴절 강도';
 
   @override

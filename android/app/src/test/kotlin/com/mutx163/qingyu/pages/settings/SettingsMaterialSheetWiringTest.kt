@@ -294,9 +294,37 @@ class SettingsMaterialSheetWiringTest {
 
     // ------------------------------------------------------------ 表面材质地图
 
+    /**
+     * 版式顺序（2026-11-07）：只读地图排在「高级材质」之前。
+     *
+     * 这条**不是**在断实现细节，而是在钉住那个决定：这块是「上面两处选择算出来的结果」，
+     * 用户打开面板就该看到；一旦有人出于「信息靠后不碍事」把它挪回整页末尾，这里会红。
+     * 同时断一次行 id 没被顺手改掉（改名会让分派器静默丢掉写入）。
+     */
     @Test
-    fun `表面地图与写回同口径变化`() {
-        // 默认（模糊开）：玻璃带 / 玻璃坞液态；课卡默认实体档。
+    fun `只读表面地图排在高级材质之前且行 id 不变`() {
+        val nodes = generalSpec().nodes
+        val surfacesLabel = nodes.indexOfFirst { it.id == "material.general.surfaces.label" }
+        val advancedLabel = nodes.indexOfFirst { it.id == "material.general.advanced.label" }
+        assertTrue("表面地图标题不在 spec 里", surfacesLabel >= 0)
+        assertTrue("高级材质标题不在 spec 里", advancedLabel >= 0)
+        assertTrue(
+            "只读地图应在高级材质之前（当前 $surfacesLabel vs $advancedLabel）",
+            surfacesLabel < advancedLabel,
+        )
+        // 上移不能改行 id：三行只读行仍是原 id、仍不带动作（不可点）。
+        val spec = generalSpec()
+        for (id in listOf(
+            "material.general.surface.homeBand",
+            "material.general.surface.dock",
+            "material.general.surface.courseCard",
+        )) {
+            assertEquals("$id 上移后行 id 变了", null, spec.row(id).action)
+        }
+    }
+
+    @Test
+    fun `表面地图与写回同口径变化`() {        // 默认（模糊开）：玻璃带 / 玻璃坞液态；课卡默认实体档。
         val liquid = written(write("material.general.glassMode.row", "liquidGlass"))
         val liquidSpec = generalSpec(AppearanceEditorBridge.toState(liquid).material)
         assertEquals(
@@ -347,5 +375,94 @@ class SettingsMaterialSheetWiringTest {
         val reRead = generalSpec(AppearanceEditorBridge.toState(reloaded).material)
             .row("material.general.homeBand.row")
         assertEquals("solid", reRead.selectedOptionId)
+    }
+
+    // ------------------------------------------------------------- 2026-11-07 版式
+
+    /**
+     * 八根旋钮拆成两张卡（2026-11-07）：行 id 与先后必须一个不变。
+     *
+     * 拆卡的收益全在“分组能被看见”，代价必须为零 —— 一旦这八根的 id 或顺序变了，
+     * 分派器、落盘、深色档同构那几处会静默出问题，所以在这里钉死。
+     */
+    @Test
+    fun materialTuningSplitIntoTwoCards() {
+        val groups = generalSpec().nodes.filterIsInstance<SettingsGroup>()
+        val optics = groups.firstOrNull { it.id == "material.general.tuning.optics" }
+        val surface = groups.firstOrNull { it.id == "material.general.tuning.surface" }
+        assertTrue("没有拆成两张卡", optics != null && surface != null)
+        assertEquals("第一张卡不是 4 根", 4, optics!!.children.size)
+        assertEquals("第二张卡不是 4 根", 4, surface!!.children.size)
+        assertEquals(
+            "八根的 id 或先后变了",
+            listOf(
+                "material.general.tuning.refraction",
+                "material.general.tuning.refractionBand",
+                "material.general.tuning.edgePow",
+                "material.general.tuning.dispersion",
+                "material.general.tuning.rimStrength",
+                "material.general.tuning.rimWidth",
+                "material.general.tuning.blurSigma",
+                "material.general.tuning.tint",
+            ),
+            (optics.children + surface.children).map { it.id },
+        )
+        // 两张卡之间要有一个分隔节点，否则视觉上仍是一张卡
+        val opticsIndex = generalSpec().nodes.indexOfFirst { it.id == "material.general.tuning.optics" }
+        val surfaceIndex = generalSpec().nodes.indexOfFirst { it.id == "material.general.tuning.surface" }
+        val between = generalSpec().nodes.subList(opticsIndex + 1, surfaceIndex)
+        assertTrue(
+            "两张卡之间没有分隔节点：${between.map { it.id }}",
+            between.any { it is SettingsGap },
+        )
+    }
+
+    /** 课程卡片页同一口径：两卡、4+4、上限与建议点位同参。 */
+    @Test
+    fun courseCardTuningSplitIntoTwoCards() {
+        val groups = cardSpec(style = CourseCardSurfaceStyle.LIQUID_GLASS)
+            .nodes.filterIsInstance<SettingsGroup>()
+        val optics = groups.firstOrNull { it.id == "material.courseCard.tuning.optics" }
+        val surface = groups.firstOrNull { it.id == "material.courseCard.tuning.surface" }
+        assertTrue("卡片页没拆成两张卡", optics != null && surface != null)
+        assertEquals(4, optics!!.children.size)
+        assertEquals(4, surface!!.children.size)
+        assertEquals(
+            "卡片页八根的 id 或先后变了",
+            listOf(
+                "material.courseCard.tuning.refraction",
+                "material.courseCard.tuning.refractionBand",
+                "material.courseCard.tuning.edgePow",
+                "material.courseCard.tuning.dispersion",
+                "material.courseCard.tuning.rimStrength",
+                "material.courseCard.tuning.rimWidth",
+                "material.courseCard.tuning.blurSigma",
+                "material.courseCard.tuning.tint",
+            ),
+            (optics.children + surface.children).map { it.id },
+        )
+    }
+
+    /**
+     * 自定义档读数必须说出来（2026-11-07）。
+     *
+     * 内置档仍只给数字（与原件一致）；动过任意一根旋钮后档位存的是 `custom`，
+     * 那时**不许**只显示一个格号 —— 屏上读起来就是“你还在第 7 格”。
+     */
+    @Test
+    fun presetReadoutMarksCustom() {
+        val standard = generalSpec().row("material.general.preset").value
+        assertEquals("内置档应只给数字", "7", standard)
+
+        val changed = written(write("material.general.tuning.tint", "0.5"))
+        assertEquals("custom", changed.liquidGlassPreset)
+        val custom = generalSpec(AppearanceEditorBridge.toState(changed).material)
+            .row("material.general.preset")
+            .value
+        assertTrue(
+            "自定义档读数没带标记：$custom",
+            custom?.endsWith(SettingsStringsExt1.liquidGlassPresetCustom.zh) == true,
+        )
+        assertNotEquals("自定义档不能只给数字", standard, custom)
     }
 }

@@ -5430,6 +5430,7 @@
   "frostedGlassModeSolid": "实体卡片",
   "advancedMaterialTitle": "高级材质",
   "liquidGlassPresetLabel": "液态玻璃预设",
+  "liquidGlassPresetCustom": "自定义",
   "liquidGlassRefractionLabel": "折射强度",
   "liquidGlassRefractionBandLabel": "作用带宽度",
   "liquidGlassRefractionEdgePowLabel": "边缘陡缓",

@@ -40,7 +40,12 @@ object SettingsStringsExt2 {
     val homeWidgetShowLocationTitle = ArbText("homeWidgetShowLocationTitle", "显示地点")
     val homeWidgetShowLocationSubtitle = ArbText("homeWidgetShowLocationSubtitle", "关闭后改显周次与课程数")
     val homeWidgetShowCountdownTitle = ArbText("homeWidgetShowCountdownTitle", "显示倒计时")
-    val homeWidgetShowCountdownSubtitle = ArbText("homeWidgetShowCountdownSubtitle", "显示下节课倒计时")
+    val homeWidgetShowCountdownSubtitle = ArbText("homeWidgetShowCountdownSubtitle", "开启后每分钟刷新")
+    /** 开关下方的整宽说明：把「实时」的电费明说（宽度不受单行口径约束）。 */
+    val homeWidgetCountdownBatteryHint = ArbText(
+        "homeWidgetCountdownBatteryHint",
+        "开启后卡片每分钟重绘一次，上课日约增加几百次唤醒，待机耗电明显上升。",
+    )
     val homeWidgetHideCompletedTitle = ArbText("homeWidgetHideCompletedTitle", "隐藏已上完课程")
     val homeWidgetHideCompletedSubtitle = ArbText("homeWidgetHideCompletedSubtitle", "只显示未结束的课程")
     val homeWidgetShowTomorrowTitle = ArbText("homeWidgetShowTomorrowTitle", "课后显示明日课程")
@@ -261,7 +266,7 @@ object SettingsStringsExt2 {
     fun all(): List<ArbText> = listOf(
         homeWidgetSettingsTitle, homeWidgetPreviewTitle, homeWidgetPreviewAddAction, homeWidgetPreviewUnavailable, homeWidgetTodayCourseTitle, homeWidgetBackgroundStyleLabel,
         widgetBackgroundStyleGlass, widgetBackgroundStyleSolid, widgetBackgroundStyleGradient, homeWidgetCourseAccentTitle, widgetCourseAccentModeOff, widgetCourseAccentModeBar,
-        widgetCourseAccentModeBarAndText, homeWidgetShowLocationTitle, homeWidgetShowLocationSubtitle, homeWidgetShowCountdownTitle, homeWidgetShowCountdownSubtitle, homeWidgetHideCompletedTitle,
+        widgetCourseAccentModeBarAndText, homeWidgetShowLocationTitle, homeWidgetShowLocationSubtitle, homeWidgetShowCountdownTitle, homeWidgetShowCountdownSubtitle, homeWidgetCountdownBatteryHint, homeWidgetHideCompletedTitle,
         homeWidgetHideCompletedSubtitle, homeWidgetShowTomorrowTitle, homeWidgetShowTomorrowSubtitle, homeWidgetCountdownLeadTitle, homeWidgetCountdownLeadAlways, beforeClassMinutesOption,
         widgetCountdownStyleTitle, liveCountdownTextStyleSmart, liveCountdownTextStyleSmartMinS, liveCountdownTextStyleMinuteSecondCn, liveCountdownTextStyleMinuteSecondColon, liveCountdownTextStyleMinuteSecondMinS,
         liveCountdownTextStyleMinuteSecondMinSlashS, liveCountdownTextStyleMinuteOnlyCn, liveCountdownTextStyleMinuteOnlyMin, liveCountdownTextStyleMinuteOnlySlash, liveCountdownTextStyleSecondOnlyCn, liveCountdownTextStyleSecondOnlyShort,

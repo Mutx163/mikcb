@@ -8,7 +8,11 @@ import kotlin.math.roundToInt
  *
  * ## 页内顺序（:921-924）
  *
- * 「观感明显的在前」：总闸 → 首页顶栏玻璃 → 液态预设与八根旋钮 → 只读总览。
+ * 「观感明显的在前」：总闸 → 首页顶栏玻璃 → 各面当前材质（只读结果）→ 高级材质。
+ *
+ * 2026-11-07 把「各面当前材质」从整页末尾移到高级材质之前：它展示的是上面两处**选择**的
+ * 结果（各面到底用的是实体还是玻璃），放在末尾时用户要先滚 4 屏半才看得到；上移后
+ * 打开面板即见，也把它后面的「恢复默认」从第 3.2 屏提前到第 2.6 屏。只动顺序，行 id 不变。
  *
  * ## 逐项对照
  *
@@ -35,6 +39,8 @@ import kotlin.math.roundToInt
  * 2. 「独立设置深色档」开关的**语义是「独立」**，而字段存的是「是否跟随」，
  *    所以取值要**取反**（:1106-1109）。
  */
+enum class GlassTuningGroup { OPTICS, SURFACE }
+
 object SettingsMaterialGeneralPage {
 
     const val ID = "settings-material-general"
@@ -99,14 +105,15 @@ object SettingsMaterialGeneralPage {
             ),
         )
 
-        // ── 高级材质整块只在液态档出现（:1019-1160）
-        if (displayed == GlassModeChoice.LIQUID_GLASS) {
-            nodes += advancedNodes(material, tuning)
-        }
-
         // ── 各表面当前材质地图（:1162-1191）：**不在条件里**，实体档照样显示。
         //    只列可调表面：锁死的（弹窗家族、子页顶栏）一律不显示——固定的东西
         //    不出现，用户就不会以为它可调（:1164-1167）。
+        //
+        //    2026-11-07 位置上移（原本排在整页末尾）：块位置是「总闸/顶栏这两处**选择** →
+        //    它们算出来的**结果** → 参数微调」。原顺序下它落在第 4.4 屏（按 393×852、
+        //    半屏面板推算），而它回答的恰好是「我刚选的那档到底生效在哪个面上」；
+        //    上移后随面板打开即见，同时把后面「恢复默认」的深度前移 0.6 屏。
+        //    行 id 一个没改（分派器 / 落盘 / 守卫都不受影响），只改节点顺序。
         nodes += SettingsGap("material.general.gap.surfaces")
         nodes += SettingsLabel(
             id = "material.general.surfaces.label",
@@ -117,6 +124,11 @@ object SettingsMaterialGeneralPage {
             id = "material.general.surfaces",
             children = surfaceRows(material),
         )
+
+        // ── 高级材质整块只在液态档出现（:1019-1160）
+        if (displayed == GlassModeChoice.LIQUID_GLASS) {
+            nodes += advancedNodes(material, tuning)
+        }
 
         return SettingsPageSpec(
             id = ID,
@@ -167,13 +179,29 @@ object SettingsMaterialGeneralPage {
         )
 
         // 八根旋钮：**一直显示**，动任何一根就把档位打成「自定义」（:1047-1052）
+        //
+        // 2026-11-07：拆成**两张同宽同轴的卡**（光学 4 根 / 表面 4 根）。原来一张卡
+        // 736dp、比内容视口（331dp）长两倍多，卡片边界永远出不了同一屏，分组等于没分。
+        // 行 id / 顺序 / 宽度全部不动：只把一张卡切成两张，中间隔一个标准 12dp。
+        // 不加分组标题（那要两个新文案键）；卡边本身已是最强的分组信号。
         nodes += SettingsGap("material.general.gap.tuning")
         nodes += SettingsGroup(
-            id = "material.general.tuning",
+            id = "material.general.tuning.optics",
             children = tuningRows(
                 idPrefix = "material.general.tuning",
                 tuning = tuning,
                 blurSigmaMax = LiquidGlassTuning.MAX_BLUR_SIGMA,
+                group = GlassTuningGroup.OPTICS,
+            ),
+        )
+        nodes += SettingsGap("material.general.gap.tuning.surface")
+        nodes += SettingsGroup(
+            id = "material.general.tuning.surface",
+            children = tuningRows(
+                idPrefix = "material.general.tuning",
+                tuning = tuning,
+                blurSigmaMax = LiquidGlassTuning.MAX_BLUR_SIGMA,
+                group = GlassTuningGroup.SURFACE,
             ),
         )
 
@@ -227,11 +255,22 @@ object SettingsMaterialGeneralPage {
         if (!material.linkLiquidGlassTuning) {
             nodes += SettingsGap("material.general.gap.darkTuning")
             nodes += SettingsGroup(
-                id = "material.general.darkTuning",
+                id = "material.general.darkTuning.optics",
                 children = tuningRows(
                     idPrefix = "material.general.darkTuning",
                     tuning = material.liquidGlassTuningDark ?: tuning,
                     blurSigmaMax = LiquidGlassTuning.MAX_BLUR_SIGMA,
+                    group = GlassTuningGroup.OPTICS,
+                ),
+            )
+            nodes += SettingsGap("material.general.gap.darkTuning.surface")
+            nodes += SettingsGroup(
+                id = "material.general.darkTuning.surface",
+                children = tuningRows(
+                    idPrefix = "material.general.darkTuning",
+                    tuning = material.liquidGlassTuningDark ?: tuning,
+                    blurSigmaMax = LiquidGlassTuning.MAX_BLUR_SIGMA,
+                    group = GlassTuningGroup.SURFACE,
                 ),
             )
         }
@@ -283,6 +322,8 @@ object SettingsMaterialGeneralPage {
         tuning: LiquidGlassTuning,
         blurSigmaMax: Double,
         showRecommendedKeyPoints: Boolean = false,
+        /** null = 全部八根（兼容旧调用）；否则只给该组那四根，顺序与总表一致。 */
+        group: GlassTuningGroup? = null,
     ): List<SettingsNode> {
         // 存量值可能高于本档上限（旧版卡片那根能拖到 40）：拇指与数字都夹到上限
         val blurSigma = LiquidGlassTuning.clampBlur(tuning.blurSigma, blurSigmaMax)
@@ -290,7 +331,7 @@ object SettingsMaterialGeneralPage {
         // 其余四根 Dart 传 `keyPoints: null`，轨道上不画点。
         fun keyPointOf(defaultValue: Double): List<Double>? =
             if (showRecommendedKeyPoints) listOf(defaultValue) else null
-        return listOf(
+        val rows = listOf(
             tuningRow(
                 id = "$idPrefix.refraction",
                 title = SettingsStringsExt1.liquidGlassRefractionLabel,
@@ -379,6 +420,12 @@ object SettingsMaterialGeneralPage {
                 keyPoints = keyPointOf(LiquidGlassTuning.DEFAULT_TINT_ALPHA),
             ),
         )
+        // 两张卡共用这一张总表，所以“哪四根在前”只有这一处判据。
+        return when (group) {
+            GlassTuningGroup.OPTICS -> rows.take(4)
+            GlassTuningGroup.SURFACE -> rows.drop(4)
+            null -> rows
+        }
     }
 
     private fun tuningRow(
@@ -445,12 +492,17 @@ object SettingsMaterialGeneralPage {
         action = null,
     )
 
-    /** 档位滑杆读数（:1430 `(preset.step ?? nearest.step) ?? 1`），只给数字。 */
+    /** 档位滑杆读数（:1430）。内置档只给数字；`custom` 档补「· 自定义」（2026-11-07）。 */
     fun presetStepLabel(
         material: MaterialPanelState,
         tuning: LiquidGlassTuning,
         preset: String,
-    ): String = SettingsMaterialModel.presetStep(material, tuning, preset).toString()
+    ): String {
+        val step = SettingsMaterialModel.presetStep(material, tuning, preset)
+        // 不在 10 格阶梯上（`custom` 或不认识的值）⇒ 补一句「自定义」，别让读数说谎
+        if (SettingsMaterialModel.presetStepOf(preset) != null) return step.toString()
+        return "$step · ${SettingsStringsExt1.liquidGlassPresetCustom.text}"
+    }
 
     /** `LiquidGlassPreset.std` 恢复作用域（`settings_reset.dart` 的课表页面作用域之外的那颗按钮）。 */
     const val RESET_SCOPE_LIQUID_GLASS = "liquidGlass"
@@ -573,8 +625,9 @@ object SettingsMaterialCourseCardPage {
                 ),
             )
             nodes += SettingsGap("material.courseCard.gap.tuning")
+            // 同通用页：八根拆两张同宽同轴的卡（行 id 与顺序不动）
             nodes += SettingsGroup(
-                id = "material.courseCard.tuning",
+                id = "material.courseCard.tuning.optics",
                 children = SettingsMaterialGeneralPage.tuningRows(
                     idPrefix = "material.courseCard.tuning",
                     tuning = tuning,
@@ -583,6 +636,19 @@ object SettingsMaterialCourseCardPage {
                     blurSigmaMax = LiquidGlassTuning.PREBLUR_MAX_SIGMA,
                     // 卡片档四根旋钮画建议点位（:1298 的 `showKeyPoints: true`）
                     showRecommendedKeyPoints = true,
+                    group = GlassTuningGroup.OPTICS,
+                ),
+            )
+            nodes += SettingsGap("material.courseCard.gap.tuning.surface")
+            nodes += SettingsGroup(
+                id = "material.courseCard.tuning.surface",
+                // 上限与建议点位同上一张卡（两卡必须同口径，否则同一根滑杆两处量程不同）
+                children = SettingsMaterialGeneralPage.tuningRows(
+                    idPrefix = "material.courseCard.tuning",
+                    tuning = tuning,
+                    blurSigmaMax = LiquidGlassTuning.PREBLUR_MAX_SIGMA,
+                    showRecommendedKeyPoints = true,
+                    group = GlassTuningGroup.SURFACE,
                 ),
             )
         }
