@@ -36,6 +36,11 @@ ALIAS = {
     "TimeSchemeManagementPage": "时间模板管理",
 }
 
+# 源码里标题重名、但实际是两个不同页面，强制区分
+FORCE = {
+    "LocationTimeGroupEditorPage": "地点时间组编辑",
+}
+
 GROUPS = [
     ("课表", "c", ["timetable"]),
     ("课程", "d1", ["course", "conflict"]),
@@ -133,25 +138,58 @@ def render(rows, prefix):
     out = []
     out.append("# 页面索引\n")
     out.append("**共 %d 个页面，`Ctrl+F` 搜中文，按住 `Ctrl` 点名字直接打开源码。**\n" % total)
-    out.append("排列顺序：课表 → 课程 → 日程与任务 → 时间与考试 → 统计 → 导入 → 迁移与导出 → "
-               "同步与备份 → 实时显示 → 设置 → 帮助与展示 → 诊断 → 关于。\n")
+    out.append("按功能分区成块排列：课表 → 课程 → 日程与任务 → 时间与考试 → 统计 → 导入 → "
+               "迁移与导出 → 同步与备份 → 实时显示 → 设置 → 帮助与展示 → 诊断 → 关于。\n")
     out.append("> 这个文件由 `python tool/page_index.py` 生成，别手改；"
                "新增/删除页面后重跑一次并随代码提交。\n")
 
-    defs = []
-    cells = []
-    for i, r in enumerate(rows, start=1):
-        ref = "p%d" % i
-        defs.append((ref, prefix + r["file"]))
-        cells.append("[%s][%s]" % (r["title"], ref))
+    by_domain = {}
+    for r in rows:
+        by_domain.setdefault(r["domain"], []).append(r)
 
-    out.append("| 页面 | 页面 | 页面 |")
-    out.append("|---|---|---|")
-    for i in range(0, len(cells), COLS):
-        chunk = cells[i:i + COLS]
-        while len(chunk) < COLS:
-            chunk.append(" ")
-        out.append("| " + " | ".join(chunk) + " |")
+    out.append("| 分区 | 页面 | 页面 | 页面 |")
+    out.append("|---|---|---|---|")
+
+    defs = []
+    n = 0
+    placed = set()
+    for title, _tag, domains in GROUPS:
+        group = []
+        for d in domains:
+            group.extend(by_domain.get(d, []))
+            placed.add(d)
+        if not group:
+            continue
+        group.sort(key=lambda r: (r["domain"], r["entry"]))
+        cells = []
+        for r in group:
+            n += 1
+            ref = "p%d" % n
+            defs.append((ref, prefix + r["file"]))
+            cells.append("[%s][%s]" % (r["title"], ref))
+        for i in range(0, len(cells), COLS):
+            chunk = cells[i:i + COLS]
+            while len(chunk) < COLS:
+                chunk.append(" ")
+            label = "**%s**" % title if i == 0 else " "
+            out.append("| %s | %s |" % (label, " | ".join(chunk)))
+        out.append("|  |  |  |  |")
+
+    rest = [r for r in rows if r["domain"] not in placed]
+    if rest:
+        rest.sort(key=lambda r: (r["domain"], r["entry"]))
+        cells = []
+        for r in rest:
+            n += 1
+            ref = "p%d" % n
+            defs.append((ref, prefix + r["file"]))
+            cells.append("[%s][%s]" % (r["title"], ref))
+        for i in range(0, len(cells), COLS):
+            chunk = cells[i:i + COLS]
+            while len(chunk) < COLS:
+                chunk.append(" ")
+            label = "**未归类**" if i == 0 else " "
+            out.append("| %s | %s |" % (label, " | ".join(chunk)))
     out.append("")
 
     # 数据写在独立 JSON，md 里不再放注释块（Studio 的 markdown 预览会把注释块当正文显示）
@@ -257,6 +295,9 @@ def main():
     if not rows:
         raise SystemExit("没读到数据，检查 %s" % SRC)
     rows = merge_with_source(rows)
+    for r in rows:
+        if r["entry"] in FORCE:
+            r["title"] = FORCE[r["entry"]]
     refresh_previews(rows)
     targets = [
         ("docs/reference/page-index.md", "../../android/app/src/" + PAGES_REL + "/"),

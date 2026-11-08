@@ -379,7 +379,7 @@
  },
  {
   "domain": "time_scheme",
-  "title": "地点作息匹配",
+  "title": "地点时间组编辑",
   "entry": "LocationTimeGroupEditorPage",
   "file": "time_scheme/LocationTimeGroupEditorPage.kt",
   "previews": 4
