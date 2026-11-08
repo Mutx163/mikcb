@@ -122,73 +122,88 @@ fun AboutUpdatePage(
     onCancelDownload: () -> Unit = {},
 ) {
     val phase = resolveAboutUpdatePagePhase(packageInfoAvailable, checking, result)
-    val dark = isSystemInDarkTheme()
-    val scrollBehavior = rememberQingyuScrollBehavior()
-    // 这一页**不画顶栏**：没有标题、没有栏底、没有毛玻璃。
-    // 只有两颗胶囊浮在状态栏下面，页面内容直接在它们下面开始——所以这里不用
-    // `QingyuPageScaffold`（它一定会画一条带底的栏），改成一个 Box + 一条胶囊行。
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(Color(QingyuTheme.scaffoldBackground(dark))),
-    ) {
-        Column(modifier = Modifier.fillMaxSize()) {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .windowInsetsPadding(WindowInsets.statusBars)
-                    .padding(start = 8.dp, top = 8.dp, end = 12.dp, bottom = 8.dp),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                UpdateBarCapsule(
-                    icon = MiuixIcons.Back,
-                    contentDescription = CommonUiStrings.back,
-                    onClick = onBack,
-                )
-                UpdateBarCapsule(
-                    icon = MiuixIcons.Tune,
-                    contentDescription = AboutUpdatePageStrings.advancedOptionsTitle,
-                    onClick = onOpenAdvancedOptions,
-                )
-            }
-
-            val contentInsets = PaddingValues(
-                bottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding(),
-            )
-            when (phase) {
-                AboutUpdatePagePhase.CHECKING -> AboutUpdateCheckingView(
-                    appName = appName,
-                    innerPadding = contentInsets,
-                )
-
-                AboutUpdatePagePhase.CHECK_FAILED -> AboutUpdateCheckFailedView(
-                    innerPadding = contentInsets,
-                    onRefresh = onRefresh,
-                )
-
-                AboutUpdatePagePhase.READY -> AboutUpdateReadyView(
-                    innerPadding = contentInsets,
-                    scrollBehavior = scrollBehavior,
-                    appName = appName,
-                    result = result!!,
-                    settings = settings,
-                    onRefresh = onRefresh,
-                    onOpenUrl = onOpenUrl,
-                    onInAppDownload = onInAppDownload,
-                    onSystemDownload = onSystemDownload,
-                    onSystemDownloadUnavailable = onSystemDownloadUnavailable,
-                )
-            }
-        }
-
-        if (download != null) {
+    QingyuPageTheme {
+        val dark = isSystemInDarkTheme()
+        val colors = MiuixTheme.colorScheme
+        val scrollBehavior = rememberQingyuScrollBehavior()
+        // 这一页**不画顶栏**：没有标题、没有栏底、没有毛玻璃。
+        // 只有两颗胶囊浮在状态栏下面，页面内容直接在它们下面开始。
+        // 背景的蓝白渐变画在**最底层、不随内容滚动**（之前它做了列表的第一项，
+        // 一滑就被推走，看起来就是“壁纸在跟着动”）。
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(Color(QingyuTheme.scaffoldBackground(dark))),
+        ) {
             Box(
                 modifier = Modifier
-                    .align(Alignment.BottomCenter)
-                    .windowInsetsPadding(WindowInsets.navigationBars),
-            ) {
-                DownloadProgressBar(download = download, onCancel = onCancelDownload)
+                    .fillMaxSize()
+                    .background(
+                        Brush.verticalGradient(
+                            0.0f to colors.primary.copy(alpha = 0.10f),
+                            0.28f to colors.primary.copy(alpha = 0.045f),
+                            0.65f to Color.Transparent,
+                        ),
+                    ),
+            )
+            Column(modifier = Modifier.fillMaxSize()) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .windowInsetsPadding(WindowInsets.statusBars)
+                        .padding(start = 8.dp, top = 8.dp, end = 12.dp, bottom = 8.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    UpdateBarCapsule(
+                        icon = MiuixIcons.Back,
+                        contentDescription = CommonUiStrings.back,
+                        onClick = onBack,
+                    )
+                    UpdateBarCapsule(
+                        icon = MiuixIcons.Tune,
+                        contentDescription = AboutUpdatePageStrings.advancedOptionsTitle,
+                        onClick = onOpenAdvancedOptions,
+                    )
+                }
+
+                val contentInsets = PaddingValues(
+                    bottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding(),
+                )
+                when (phase) {
+                    AboutUpdatePagePhase.CHECKING -> AboutUpdateCheckingView(
+                        appName = appName,
+                        innerPadding = contentInsets,
+                    )
+
+                    AboutUpdatePagePhase.CHECK_FAILED -> AboutUpdateCheckFailedView(
+                        innerPadding = contentInsets,
+                        onRefresh = onRefresh,
+                    )
+
+                    AboutUpdatePagePhase.READY -> AboutUpdateReadyView(
+                        innerPadding = contentInsets,
+                        scrollBehavior = scrollBehavior,
+                        appName = appName,
+                        result = result!!,
+                        settings = settings,
+                        onRefresh = onRefresh,
+                        onOpenUrl = onOpenUrl,
+                        onInAppDownload = onInAppDownload,
+                        onSystemDownload = onSystemDownload,
+                        onSystemDownloadUnavailable = onSystemDownloadUnavailable,
+                    )
+                }
+            }
+
+            if (download != null) {
+                Box(
+                    modifier = Modifier
+                        .align(Alignment.BottomCenter)
+                        .windowInsetsPadding(WindowInsets.navigationBars),
+                ) {
+                    DownloadProgressBar(download = download, onCancel = onCancelDownload)
+                }
             }
         }
     }
@@ -365,18 +380,6 @@ private fun AboutUpdateReadyView(
 private fun UpdateHeroBlock(appName: String, version: String) {
     val colors = MiuixTheme.colorScheme
     Box(modifier = Modifier.fillMaxWidth()) {
-        Box(
-            modifier = Modifier
-                .matchParentSize()
-                .background(
-                    Brush.verticalGradient(
-                        0.0f to Color.Transparent,
-                        0.22f to colors.primary.copy(alpha = 0.09f),
-                        0.62f to colors.primary.copy(alpha = 0.03f),
-                        1.0f to Color.Transparent,
-                    ),
-                ),
-        )
         Column(
             modifier = Modifier
                 .fillMaxWidth()
