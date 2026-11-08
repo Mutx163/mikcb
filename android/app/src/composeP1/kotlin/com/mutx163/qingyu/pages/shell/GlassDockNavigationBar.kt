@@ -267,7 +267,9 @@ fun GlassDockNavigationBar(
     val surfaceLuminance = HomeBackgroundModel.relativeLuminance(surfaceContainer.toArgb())
     val dockLuminance = DockInkRule.effectiveLuminance(
         surfaceLuminance = surfaceLuminance,
-        wallpaperLuminance = if (isBlurActive) wallpaperLuminance else null,
+        // 内嵌实色页（`overWallpaper=false`）底下不是壁纸，亮壁纸带不能参与：
+        // 壳现在会把页面量好的 `bands.dock` 传进来，不看这个门就会把实色页也按壁纸判。
+        wallpaperLuminance = if (isBlurActive && overWallpaper) wallpaperLuminance else null,
         tintAlpha = containerColor.alpha.toDouble(),
     )
     // 页面底色亮度：坞是半透明药丸，压在页面底色上。没有壁纸时，坞底下**真实露出的**

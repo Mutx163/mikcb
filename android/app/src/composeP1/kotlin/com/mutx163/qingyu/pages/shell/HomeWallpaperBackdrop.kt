@@ -27,6 +27,7 @@ import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.rememberGraphicsLayer
 import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
@@ -180,6 +181,8 @@ fun HomeWallpaperBackdrop(
     val viewportHeightPx = with(LocalDensity.current) {
         LocalConfiguration.current.screenHeightDp.dp.roundToPx()
     }
+    val appContext = LocalContext.current.applicationContext
+    val inkBandsStore = remember(appContext) { HomeInkBandsStore(appContext) }
     LaunchedEffect(wallpaper, wantsInkBands, viewportWidthPx, viewportHeightPx) {
         val callback = inkCallback.value ?: return@LaunchedEffect
         // ① 缓存命中就别再扫一遍（切换视图时位图与墨色带通常都在缓存里）。
@@ -191,8 +194,12 @@ fun HomeWallpaperBackdrop(
             scale = snapshot.scale,
             alignX = snapshot.alignX,
             alignY = snapshot.alignY,
+            store = inkBandsStore,
         )
         if (cached != null) {
+            // 同步路径（位图已在进程缓存里）会在 `cachedWallpaperInkBands` 里当场量完并写缓存；
+            // 这里如果不 bump，只读缓存的坞不会重组——用户看到的就是「必须切设置再回来才变黑」。
+            wallpaperInkBandsCacheVersionState.value++
             callback(cached)
             return@LaunchedEffect
         }
@@ -208,6 +215,7 @@ fun HomeWallpaperBackdrop(
                 scale = snapshot.scale,
                 alignX = snapshot.alignX,
                 alignY = snapshot.alignY,
+                store = inkBandsStore,
             )
         } else {
             withContext(Dispatchers.IO) {
@@ -222,18 +230,18 @@ fun HomeWallpaperBackdrop(
             }
         }
         if (bands != null && !path.isNullOrEmpty()) {
-            wallpaperInkBandsCache.put(
-                wallpaperInkBandsCacheKey(
-                    path = path,
-                    decodeWidthPx = snapshot.decodeWidthPx,
-                    viewportWidthPx = viewportWidthPx,
-                    viewportHeightPx = viewportHeightPx,
-                    scale = snapshot.scale,
-                    alignX = snapshot.alignX,
-                    alignY = snapshot.alignY,
-                ),
-                bands,
+            val key = wallpaperInkBandsCacheKey(
+                path = path,
+                decodeWidthPx = snapshot.decodeWidthPx,
+                viewportWidthPx = viewportWidthPx,
+                viewportHeightPx = viewportHeightPx,
+                scale = snapshot.scale,
+                alignX = snapshot.alignX,
+                alignY = snapshot.alignY,
             )
+            wallpaperInkBandsCache.put(key, bands)
+            // 落盘：冷启动首帧就能按同一张图 + 同一视口/取景回读到真值（免得坞先走白字兜底）。
+            inkBandsStore.write(key, bands)
             // 通知只读缓存的地方（玻璃坞）重组回读，别再停在首帧冷读的 null。
             wallpaperInkBandsCacheVersionState.value++
         }
@@ -406,6 +414,7 @@ fun cachedWallpaperInkBands(
     scale: Double,
     alignX: Double,
     alignY: Double,
+    store: HomeInkBandsStore? = null,
 ): HomeBackgroundModel.InkBands? {
     if (path.isNullOrEmpty() || decodeWidthPx <= 0) return null
     val key = wallpaperInkBandsCacheKey(
@@ -418,6 +427,11 @@ fun cachedWallpaperInkBands(
         alignY = alignY,
     )
     wallpaperInkBandsCache.get(key)?.let { return it }
+    // 冷启动：内存缓存是空的，先看磁盘。键包含路径 + 视口 + 取景，读到就是同一张图的真值。
+    store?.read(key)?.let { diskBands ->
+        wallpaperInkBandsCache.put(key, diskBands)
+        return diskBands
+    }
     val bitmap = wallpaperBitmapCache.get(wallpaperCacheKey(path, decodeWidthPx)) ?: return null
     val bands = measureInkBands(
         image = bitmap.asImageBitmap(),
@@ -428,6 +442,7 @@ fun cachedWallpaperInkBands(
         viewportHeightPx = viewportHeightPx,
     ) ?: return null
     wallpaperInkBandsCache.put(key, bands)
+    store?.write(key, bands)
     return bands
 }
 

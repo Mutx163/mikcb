@@ -63,8 +63,8 @@ import kotlin.math.roundToInt
  *   `LocalConfiguration.current.screenWidthDp.dp`）。
  * @param contentHeight 内容设计高（同上，整屏高）。
  * @param cornerRadius 窗口圆角；默认 16dp，与设置组卡片同族。
- * @param content 真实内容。内部交互与语义会被本组件整体关掉，调用方无需（也不应）
- *   再自己包一层禁交互。
+ * @param content 真实内容。默认会把内部交互与语义整体关掉（调用方无需、也不应再包一层
+ *   禁交互）；只有 [isolateGestures] = false 时手势才放给内容自己。
  */
 @Composable
 fun QingyuPreviewCutout(
@@ -73,13 +73,24 @@ fun QingyuPreviewCutout(
     modifier: Modifier = Modifier,
     cornerRadius: Dp = 16.dp,
     /**
-     * 按框自适应模式（2026-11-04 初版；**当前两个设置页已不用**，都走 1:1 裁窗 + 框内滚动）：
-     * 内容直接按窗口尺寸排版、不缩放、也不提供滚动；内容超出框会被裁掉且看不到。
-     * 只适合「内容本来就按框排版」的调用方；正常挖洞仍走 false。
+     * 按框自适应模式：内容直接按窗口尺寸排版、不缩放、也不提供本组件自带的滚动。
+     *
+     * 两个设置页（课程卡片 / 课表页面）走这一档（2026-11-08 起）：窗口内那块真组件自己
+     * 按首页口径排版、**自己滚网格**，星期栏钉在窗口顶部不跟着走（见 [isolateGestures]）。
+     * 想「整页当一条长纸带上下滚」的调用方才走 false（1:1 裁窗 + `offset{-scroll}`）。
      */
     fitToBox: Boolean = false,
     /** 框内初始滚动位置（px）。默认 0 ⇒ 每次进页都从顶部（星期栏）开始，不沿用上一次滚到的位置。 */
     initialScroll: Int = 0,
+    /**
+     * 要不要把内容的交互**整体关掉**（默认 true：点击 / 长按 / 内部滚动全死，读屏也不聚焦）。
+     *
+     * 传 false 只有一种场合：内容**自己就要能滚**（2026-11-08 两个设置页预览——星期栏钉住、
+     * 只有网格上下滑，与首页同一条口径）。这时「不可点」不能靠拦截手势，必须由调用方保证
+     * 内容里的每个回调都是空实现（`TimetableWeekPage` 用 `previewMode` 就地失效）。
+     * 语义树仍然会被清掉：预览不参与读屏焦点。
+     */
+    isolateGestures: Boolean = true,
     content: @Composable () -> Unit,
 ) {
     if (fitToBox) {
@@ -87,7 +98,7 @@ fun QingyuPreviewCutout(
             Box(
                 modifier = Modifier
                     .matchParentSize()
-                    .consumeAllPointerEvents()
+                    .then(if (isolateGestures) Modifier.consumeAllPointerEvents() else Modifier)
                     .clearAndSetSemantics { },
             ) {
                 content()

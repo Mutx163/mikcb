@@ -8,12 +8,14 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
 import com.mutx163.qingyu.pages.settings.HomeMaterialRenderSpec
 import com.mutx163.qingyu.pages.settings.SettingsMaterialModel
 import com.mutx163.qingyu.pages.shell.HomeBackdropSnapshot
 import com.mutx163.qingyu.pages.shell.HomeBackgroundModel
+import com.mutx163.qingyu.pages.shell.HomeInkBandsStore
 import com.mutx163.qingyu.pages.shell.HomeInkPolarity
 import com.mutx163.qingyu.pages.shell.HomeWallpaperBackdrop
 import com.mutx163.qingyu.pages.shell.cachedWallpaperInkBands
@@ -59,6 +61,8 @@ class HomeBackdropChrome(
 @Composable
 fun rememberHomeBackdropChrome(settingsModel: TimetableSettingsModel?): HomeBackdropChrome {
     val isDark = isSystemInDarkTheme()
+    val appContext = LocalContext.current.applicationContext
+    val inkBandsStore = remember(appContext) { HomeInkBandsStore(appContext) }
     val viewportWidthPx = with(LocalDensity.current) {
         LocalConfiguration.current.screenWidthDp.dp.roundToPx()
     }
@@ -113,6 +117,7 @@ fun rememberHomeBackdropChrome(settingsModel: TimetableSettingsModel?): HomeBack
                 scale = snapshot?.scale ?: 1.0,
                 alignX = snapshot?.alignX ?: 0.0,
                 alignY = snapshot?.alignY ?: 0.0,
+                store = inkBandsStore,
             ),
         )
     }

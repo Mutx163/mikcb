@@ -17,6 +17,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -121,8 +122,11 @@ fun HomeGlassDock(
         }
     }
     val isDark = isSystemInDarkTheme()
-    val hasBackdrop = !settingsModel.homePageWallpaperPath.isNullOrEmpty() ||
-        !settingsModel.homePageBackgroundImagePath.isNullOrEmpty()
+    // 壁纸存在性以快照为准：`snapshotOf` 会做文件存在性过滤 / 旧字段解析。
+    // 不能用原始路径字段——文件被删或只有旧字段时，页面按纯色底画，
+    // 坞却认为「有壁纸但亮度未知」⇒ 永久白字（2026-11-07 审核 P1）。
+    val chrome = rememberHomeBackdropChrome(settingsModel)
+    val hasBackdrop = chrome.hasBackdrop
     val material: HomeMaterialRenderSpec? = remember(settingsModel, isDark, hasBackdrop) {
         SettingsMaterialModel.renderSpecOf(
             model = settingsModel,
@@ -137,9 +141,10 @@ fun HomeGlassDock(
     // wallpaperLuminance 常为 null，退回纯白主题面判成深墨 → 黑字压黑药丸看不见（2026-11-04）。
     // 修法：读缓存版本作可观察信号，量完即回读 cachedWallpaperInkBands；调用方显式传入的
     // `wallpaperLuminance` 优先（壳后续可把页面同一份 bands 传进来）。
-    val chrome = rememberHomeBackdropChrome(settingsModel)
     val snap = chrome.snapshot
     val density = LocalDensity.current
+    val appContext = LocalContext.current.applicationContext
+    val inkBandsStore = remember(appContext) { HomeInkBandsStore(appContext) }
     val viewportWidthPx = with(density) { LocalConfiguration.current.screenWidthDp.dp.roundToPx() }
     val viewportHeightPx = with(density) { LocalConfiguration.current.screenHeightDp.dp.roundToPx() }
     val cacheVersion = wallpaperInkBandsCacheVersion()
@@ -158,6 +163,7 @@ fun HomeGlassDock(
                 scale = snap.scale,
                 alignX = snap.alignX,
                 alignY = snap.alignY,
+                store = inkBandsStore,
             )?.dock
         }
     }
@@ -215,8 +221,9 @@ fun HomeGlassDock(
 fun rememberHomeDockUsesBackdrop(settingsModel: TimetableSettingsModel): Boolean {
     if (!homeDockVisible(settingsModel)) return false
     val isDark = isSystemInDarkTheme()
-    val hasBackdrop = !settingsModel.homePageWallpaperPath.isNullOrEmpty() ||
-        !settingsModel.homePageBackgroundImagePath.isNullOrEmpty()
+    // 与坞本体同一把尺：快照口径（含文件存在性 / 旧字段解析）。
+    // 用原始路径字段会在文件被删时白挂一层全屏录制。
+    val hasBackdrop = rememberHomeBackdropChrome(settingsModel).hasBackdrop
     return remember(settingsModel, isDark, hasBackdrop) {
         val spec = SettingsMaterialModel.renderSpecOf(
             model = settingsModel,
