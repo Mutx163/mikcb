@@ -39,10 +39,10 @@ import top.yukonga.miuix.kmp.blur.Backdrop
  *
  * 对应 Flutter `lib/widgets/timetable/day_view/day_view_scroll_shell.dart`：
  * - 基于 [LazyColumn] 原生高效滚动容器；
- * - 顶部 [DayViewSummaryCard] 通过 [stickyHeader] 悬浮吸顶；
- * - 自带 12dp 下呼吸间隙（让列表向上滑动时自然钻入卡片底下，而不是死截断）；
+ * - 全天概览卡是**普通条目**（2026-11-08 起不再吸顶，理由见下方卡片处的注释）；
+ * - 自带 12dp 下呼吸间隙；
  * - 依次编排：
- *   1. 吸顶全天概览卡（SummaryCard）；
+ *   1. 全天概览卡（SummaryCard）；
  *   2. 全天待办折叠带（[DayViewTaskBandCard]，若有任务）；
  *   3. 议程列表（各卡片按时间严格稳定排序）；
  *   4. 空态卡片（[DayViewEmptyState]，在无课程且无日程且无待办时居中展示）。
@@ -109,7 +109,7 @@ fun DayViewScrollContent(
     /**
      * 真摘要卡的附加修饰器（首页展开态的飞行测量 + 飞行期间不画）。
      *
-     * 挂**卡本身**而不是外面的 stickyHeader 盒子：飞行终点要的是卡片四边，
+     * 挂**卡本身**而不是外面的条目盒子：飞行终点要的是卡片四边，
      * 盒子还含 12dp 下呼吸间距，量成盒子会让落点整体偏下 12dp。
      */
     summaryModifier: Modifier = Modifier,
@@ -118,9 +118,9 @@ fun DayViewScrollContent(
     contentPadding: PaddingValues = PaddingValues(
         start = 14.dp,
         end = 14.dp,
-        // top = 0：14dp 留缝改成列表首个 item（`day-top-seam`，2026-11-07），
-        // 不用 contentPadding —— stickyHeader 的钉住位是 `-beforeContentPadding`
-        //（foundation `LazyLayoutStickyItems`），padding 会把吸顶卡算到视口上方。
+        // top = 0：14dp 留缝改成列表首个 item（`day-top-seam`，2026-11-07）。
+        // 概览卡 2026-11-08 起不再吸顶，但留缝仍留在 item 里：底部补白（`day-scroll-tail`）
+        // 与可滚范围的算式都按 item 高度算，改成 padding 要把那套算式重推一遍。
         top = 0.dp,
         bottom = bottomInset,
     ),
@@ -137,6 +137,12 @@ fun DayViewScrollContent(
     var tailHeightPx by remember(lazyListState) { mutableIntStateOf(0) }
     val density = LocalDensity.current
     val bottomPaddingPx = with(density) { contentPadding.calculateBottomPadding().toPx() }
+    val topSeamPx = with(density) { DAY_VIEW_TOP_SEAM_DP.dp.roundToPx() }
+    // 概览卡的实测高（含它下面 12dp 呼吸间距）：空日的空白块要按「一屏 − 缝 − 概览卡」
+    // 算高，整串内容才能正好一屏（见空态那一段）。
+    var summaryHeightPx by remember { mutableIntStateOf(0) }
+    // 空日 = 无课程、无日程、无待办：列表只剩「顶缝 + 概览卡 + 空态块」。
+    val flatDay = agendaEntries.isEmpty() && (taskBandData == null || taskBandData.isEmpty)
 
     LaunchedEffect(lazyListState, viewportHeightPx, bottomPaddingPx) {
         if (viewportHeightPx <= 0) {
@@ -166,6 +172,44 @@ fun DayViewScrollContent(
         }
     }
 
+    // ── 短日：拖动跟手，松手回顶（2026-11-08，A 方案）──
+    // 短日的可滚距离全部来自末尾补白（`day-scroll-tail`）：滚下去看到的是空白，
+    // 而 Compose 的滚动默认不吸附 —— 只要位置还在范围内，松手就停在哪儿，
+    // 读作「概览卡被推上去、下面一片空、还不回弹」。
+    //
+    // 口径（2026-11-08 用户确认 A）：补白保留（短日仍要能上下滑出响应），但松手时
+    // 只要停在补白里就 `animateScrollToItem(0)` 回顶，补白当橡皮筋用、不作停留区。
+    //
+    // 「停在补白里」按**几何**判：真实末项下沿离「扣掉底部避让的底边」还有多远的空白。
+    // 留 [DAY_VIEW_TAIL_PARK_TOLERANCE_DP] 容差：
+    // - 正常滚到底 ⇒ 真实末项正好停在避让线上，空白 ≈ 0，不回顶（读下半屏不受影响；
+    //   这类日子的补白算式本来就是 0，也不会落到「只剩补白」那一支）；
+    // - 从底部往回滚 ⇒ 空白是负数，同样不回顶；
+    // - 短日滚进补白 / 屏幕只剩补白 ⇒ 空白 > 容差，回顶。
+    LaunchedEffect(lazyListState, flatDay, viewportHeightPx, bottomPaddingPx) {
+        val tolerancePx = with(density) { DAY_VIEW_TAIL_PARK_TOLERANCE_DP.dp.roundToPx() }
+        snapshotFlow { lazyListState.isScrollInProgress }
+            .collect { scrolling ->
+                if (scrolling) return@collect
+                val notAtTop = lazyListState.firstVisibleItemIndex > 0 ||
+                    lazyListState.firstVisibleItemScrollOffset > 0
+                if (!notAtTop) return@collect
+                val info = lazyListState.layoutInfo
+                val lastReal = info.visibleItemsInfo.lastOrNull { it.key != DayViewScrollTail.KEY }
+                val blankBelowPx = when {
+                    lastReal != null ->
+                        (viewportHeightPx - bottomPaddingPx).toInt() - (lastReal.offset + lastReal.size)
+                    // 真实末项整条滚出屏幕上方：只剩补白（补白为 0 的长日进不来这里）。
+                    lazyListState.firstVisibleItemIndex > info.totalItemsCount - 2 && tailHeightPx > 0 ->
+                        Int.MAX_VALUE
+                    else -> 0
+                }
+                if (flatDay || blankBelowPx > tolerancePx) {
+                    lazyListState.animateScrollToItem(0)
+                }
+            }
+    }
+
     LazyColumn(
         state = lazyListState,
         modifier = modifier
@@ -176,20 +220,29 @@ fun DayViewScrollContent(
         contentPadding = contentPadding,
         ) {
         // ── 顶部留缝（14dp，与 Dart `timetable_day_view_part.dart:37` 同数值）──
-        // 放在**列表里**而不是滚动区外面：静止时首卡离星期栏 14dp；上滑时这道缝
-        // 跟着滚走，摘要卡吸顶后紧贴星期栏底边——屏幕上不再有一条永远滚不走的空带
-        //（2026-11-07 用户口径：「吸顶卡不要贴住星期栏，但上滑时也不要留空隙」）。
+        // 放在**列表里**而不是滚动区外面：静止时首卡离星期栏 14dp，上滑时这道缝跟着
+        // 一起滚走，屏幕上不会留一条永远滚不走的空带。
         item(key = "day-top-seam") {
             Spacer(modifier = Modifier.height(DAY_VIEW_TOP_SEAM_DP.dp))
         }
 
-        // ── 吸顶全天概览卡 ──
-        // 12dp 的下内边距就是概览卡与议程列表之间的呼吸间距：
-        // 静止时间距优美，列表滑动时自然滑入概览卡底下。
-        stickyHeader(key = "day-summary-sticky-header") {
+        // ── 全天概览卡（普通条目，不吸顶）──
+        // 2026-11-08 用户口径：下拉时概览卡与课卡一起动，上滑却被钉住、只让下面的卡
+        // 一段段穿过去——同一屏两种手势两种行为，读作「很奇怪」。改成普通条目后上下
+        // 都是整体滚动，手势方向不再决定「谁在动」。
+        //
+        // 代价：上滑以后当天概览卡会跟着滚出屏幕（吸顶原本就是为让它常驻）。
+        // 键名保留 `day-summary-sticky-header`：它是这一条的保存状态身份，改名会让
+        // 已经记住的滚动位置失效。
+        //
+        // 12dp 的下内边距是概览卡与议程列表之间的呼吸间距。
+        item(key = "day-summary-sticky-header") {
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
+                    // 量的是**含 12dp 呼吸间距**的整条（修饰符在 `padding` 之前，报的是外层尺寸），
+                    // 空态块按它反推剩余高。
+                    .onSizeChanged { summaryHeightPx = it.height }
                     .padding(bottom = 12.dp),
             ) {
                 DayViewSummaryCard(
@@ -223,12 +276,36 @@ fun DayViewScrollContent(
         }
 
         // ── 空态卡片（无课程且无日程且无待办时展示） ──
-        if (agendaEntries.isEmpty() && (taskBandData == null || taskBandData.isEmpty)) {
+        if (flatDay) {
             item(key = "day-empty-state-item") {
                 // Dart 是 `SliverFillRemaining(hasScrollBody: false)` ⇒ 空态在可视区里垂直居中；
                 // 直接当普通 item 摆会贴在摘要卡下面（2026-10-31 审核 P2-7）。
+                //
+                // 2026-11-08：空日整串内容必须**正好一屏**。以前它是 item 的「一屏高」，
+                // 于是多出了「顶缝 + 概览卡」这一截可滚距离；概览卡不再吸顶以后，那截距离
+                // 就把概览卡推到星期栏下沿停住（在范围内，不会回弹）—— 用户报的现象。
+                // 这里按「一屏 − 顶缝 − 概览卡 − 底部避让」给空态块定高，可滚距离归零，
+                // 上滑只剩橡皮筋，松手自然弹回。
+                //
+                // 首帧还没量到（viewport / 概览卡为 0）时退回 `fillParentMaxHeight`：
+                // 与改前一致，下一帧纠正，不会漏画一屏。
+                val emptyHeightDp = if (viewportHeightPx > 0 && summaryHeightPx > 0) {
+                    with(density) {
+                        (viewportHeightPx - topSeamPx - summaryHeightPx - bottomPaddingPx.toInt())
+                            .coerceAtLeast(0)
+                            .toDp()
+                    }
+                } else {
+                    null
+                }
                 Box(
-                    modifier = Modifier.fillParentMaxHeight(),
+                    modifier = if (emptyHeightDp != null) {
+                        Modifier
+                            .fillMaxWidth()
+                            .height(emptyHeightDp)
+                    } else {
+                        Modifier.fillParentMaxHeight()
+                    },
                     contentAlignment = androidx.compose.ui.Alignment.Center,
                 ) {
                     DayViewEmptyState(
@@ -300,7 +377,15 @@ fun DayViewScrollContent(
         // 常驻是刻意的：高度为 0 时它也在树里，`totalItemsCount − 2` 这条「真实末项」
         // 的算法才恒定，不会因为补白忽隐忽现而漂。
         item(key = DayViewScrollTail.KEY) {
-            Spacer(modifier = Modifier.height(with(LocalDensity.current) { tailHeightPx.toDp() }))
+            Spacer(
+                modifier = Modifier.height(
+                    with(LocalDensity.current) {
+                        // 空日整串已经正好一屏：再补白就是把「概览卡能被推上去」还回来
+                        //（2026-11-08 用户口径）。补白只服务「有内容但不够一屏」的日子。
+                        (if (flatDay) 0 else tailHeightPx).toDp()
+                    },
+                ),
+            )
         }
     }
 }
@@ -309,6 +394,15 @@ fun DayViewScrollContent(
  * 顶部留缝（14dp，Dart `timetable_day_view_part.dart:37` 同数值）。
  *
  * 做成**列表首个 item** 而不是滚动区外的 Spacer：静止时首卡离星期栏 14dp，
- * 上滑时这道缝跟着滚走，摘要卡吸顶后紧贴星期栏底边，不会留一条滚不走的空带。
+ * 上滑时这道缝跟着内容一起滚走，不会变成一条永远滚不走的空带。
  */
 private const val DAY_VIEW_TOP_SEAM_DP = 14f
+
+/**
+ * 判定「停在补白里」的容差（dp）。
+ *
+ * 真实末项下沿离避让线的空白超过这个数，才算滚进了 `day-scroll-tail`。
+ * 之所以要容差：正常滚到底时两者理论上是同一条线（空白 = 0），差几个像素就会落进
+ * 判定里；没有容差，内容正好一屏出头的日子滚到底松手会被误判成「停在补白里」而弹回顶部。
+ */
+private const val DAY_VIEW_TAIL_PARK_TOLERANCE_DP = 8f
