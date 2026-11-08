@@ -561,11 +561,13 @@ private fun QrPreview(
  *
  * 现在按「说明 → 名单 → 元信息」三段收口：
  *
- * - **卡头**只剩一句副标题（`footnote1`，13sp）+ 一条内缩分隔线，回答「这张卡是什么」；
+ * - **卡头**只剩一句副标题（`footnote1`，13sp），与下面第一条名单靠**行内边距**分开：
+ *   官方 demo 同卡多行之间不画线（全仓守卫 `RowDividerGuardTest` 也钉着这一点）；
  * - **刷新**移到顶栏右上（见 [SupportCreatorPage] 的 `actions`）—— 名单是本页唯一的网络
  *   动作，放顶栏既不占卡内版面，也不用再跟卡头文字对齐；
  * - **更新时间与留言提示**降到卡尾（`footnote2`，11sp，内缩细线隔开）：日期是最不该第一个被
  *   读到的信息（版本更新页同一结论），提示句回到整宽、不再被图标挤成孤字行。
+ *   这条线是全卡唯一一条，作用是不让卡尾的浅灰小字被读成「最后一位支持者的备注」。
  */
 @Composable
 private fun DonorCard(
@@ -621,7 +623,7 @@ private fun DonorCard(
                             start = 16.dp,
                             end = 16.dp,
                             top = 14.dp,
-                            bottom = 12.dp,
+                            bottom = 6.dp,
                         ),
                         verticalArrangement = Arrangement.spacedBy(6.dp),
                     ) {
@@ -643,10 +645,6 @@ private fun DonorCard(
                             )
                         }
                     }
-                    HorizontalDivider(
-                        modifier = Modifier.padding(horizontal = 16.dp),
-                        color = MiuixTheme.colorScheme.dividerLine,
-                    )
                 }
                 if (donorData == null || donorData.donors.isEmpty()) {
                     Text(
@@ -675,7 +673,9 @@ private fun DonorCard(
  * - 两行都是 `footnote2`（11sp）弱色，与上面 `body1` 的名单名字拉开三个字阶；
  * - 不再带铅笔图标 —— `MiuixIcons.Edit` 的语义是「编辑」，文案说的却是同步时间；
  * - 提示句回到**整宽**（左右各 16dp，无图标占位），上一版被图标挤窄后折出「现。」孤字行；
- * - 名单行本身不带线，这条细线是把「名单」和「说明」分开的唯一分界（与卡头那条对称）。
+ * - 名单行本身不带线（行距由行内边距承担，全仓守卫 `RowDividerGuardTest` 钉这一条）；
+ *   卡尾这条是全卡**唯一**一条线，作用是不让两行浅灰小字被读成「最后一位支持者的备注」。
+ *   该文件在守卫里的白名单上限就是 1 条，不要再往卡头加线。
  */
 @Composable
 private fun DonorCardFooter(updatedAt: String?, note: String?) {

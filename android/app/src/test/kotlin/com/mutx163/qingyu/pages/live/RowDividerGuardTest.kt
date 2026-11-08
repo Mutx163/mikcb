@@ -68,7 +68,9 @@ class RowDividerGuardTest {
         // 版本更新页：发布说明正文 ↔ 计数/更新时间行、以及卡内各小节之间；用户明确要求
         // 「分类容器 + 分隔线」的卡内分节，不是设置卡里每两行都画线。
         "android/app/src/composeP1/kotlin/com/mutx163/qingyu/pages/about/AboutUpdatePage.kt" to 3,
-        // 赞助页：创作者卡 ↔ 底部操作行之间的一条分节线（块级分节）。
+        // 赞助页：鸣谢名单 ↔ 卡尾元信息（更新时间 / 同步说明）之间的一条分节线。
+        // 2026-11-08 版式重排后，卡头不再画线（副标题与首行名单靠行内边距分隔），
+        // 唯一这条线用来挡住「浅灰小字被读成最后一位支持者的备注」。
         "android/app/src/composeP1/kotlin/com/mutx163/qingyu/pages/about/SupportCreatorPage.kt" to 1,
         // 学习会话统计：会话明细是**表格语义**（每条一行、多列对齐），无行线不可读。
         "android/app/src/composeP1/kotlin/com/mutx163/qingyu/pages/statistics/StatisticsSessionPage.kt" to 1,
