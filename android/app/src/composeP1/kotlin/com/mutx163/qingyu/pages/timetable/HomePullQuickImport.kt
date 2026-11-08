@@ -1,6 +1,7 @@
 package com.mutx163.qingyu.pages.timetable
 
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -10,6 +11,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.dp
 import com.mutx163.qingyu.pages.import.ImportStrings
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -66,6 +69,12 @@ sealed interface HomePullQuickImportPrep {
  * 一定有表头（环 + 文案），松手要么收回、要么进 `Refreshing`，不再出现裸空白。
  *
  * @param enabled 关（设置里没开 / 日视图 / 预览）× 时**完全不装**这层，直接透传内容。
+ * @param contentTopInset 指示器要往下让多少（从本层顶边算）。
+ *
+ *   本层包在**整页**（含顶栏玻璃带）外面，所以顶边就是屏幕顶；指示器默认会画在
+ *   状态栏上（2026-11-07 用户实报）。muiix `PullToRefresh` 的 `contentPadding.top`
+ *   只下移指示器、不动内容，宿主把「状态栏 + 顶栏 + 星期栏」那条带的高度传进来，
+ *   指示器就落在星期栏底下。
  * @param onPrepare 拉过阈值松手后调用：读存档、判前置、备好交代（不跳页）。
  * @param onSettled 收拢动画跑完后调用：提示或跳页。
  */
@@ -75,6 +84,7 @@ fun HomePullQuickImportHost(
     onPrepare: suspend () -> HomePullQuickImportPrep,
     onSettled: (HomePullQuickImportPrep) -> Unit,
     modifier: Modifier = Modifier,
+    contentTopInset: Dp = 0.dp,
     content: @Composable () -> Unit,
 ) {
     if (!enabled) {
@@ -106,6 +116,8 @@ fun HomePullQuickImportHost(
         },
         modifier = modifier,
         pullToRefreshState = pullToRefreshState,
+        // 只下移指示器（官方语义）：正文仍从本层顶边开始，页内布局不受影响。
+        contentPadding = PaddingValues(top = contentTopInset),
         // 环色走主题强调色：白底、深底、壁纸上都看得见（R5：不写死色值）。
         color = MiuixTheme.colorScheme.primary,
         refreshTexts = PULL_REFRESH_TEXTS,

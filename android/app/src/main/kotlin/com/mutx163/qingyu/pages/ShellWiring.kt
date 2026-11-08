@@ -3,6 +3,9 @@ package com.mutx163.qingyu.pages
 import android.app.Activity
 import android.content.Context
 import android.widget.Toast
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.asPaddingValues
+import androidx.compose.foundation.layout.statusBars
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
@@ -11,6 +14,9 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.unit.dp
+import com.mutx163.qingyu.pages.timetable.TimetableTopBarMetrics
+import com.mutx163.qingyu.pages.timetable.WeekdayHeaderMetrics
 import com.mutx163.qingyu.app.CourseActionDispatcher
 import com.mutx163.qingyu.app.KeyValueStore
 import com.mutx163.qingyu.app.NativePrefReconcileLogic
@@ -53,6 +59,16 @@ import com.mutx163.qingyu.pages.shell.HomeNavIcons
 import com.mutx163.qingyu.pages.timetable.TimetableMenuItem
 import com.mutx163.qingyu.pages.timetable.TimetableStrings
 import com.mutx163.qingyu.pages.timetable.WeekAgendaKind
+import com.mutx163.qingyu.pages.timetable.HomePullQuickImportHost
+import com.mutx163.qingyu.pages.timetable.HomePullQuickImportPrep
+import com.mutx163.qingyu.pages.import.warehouse.WarehouseAdapterEntry
+import com.mutx163.qingyu.pages.import.warehouse.WarehouseImportHandoff
+import com.mutx163.qingyu.pages.import.warehouse.WarehouseImportPrefs
+import com.mutx163.qingyu.pages.import.warehouse.WarehouseMacroStore
+import com.mutx163.qingyu.pages.import.warehouse.WarehouseRoutes
+import com.mutx163.qingyu.pages.import.warehouse.WarehouseSchoolEntry
+import com.mutx163.qingyu.pages.import.warehouse.WarehouseStrings
+import com.mutx163.qingyu.pages.import.warehouse.resolveWarehouseWebLoginTarget
 import com.mutx163.qingyu.platform.AndroidWeatherLocationSource
 import com.mutx163.qingyu.platform.PrefsKeyValueStore
 import com.mutx163.qingyu.widgetdata.CoupleOverlaySource
@@ -67,6 +83,7 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
+import kotlinx.coroutines.withContext
 import java.time.LocalDateTime
 
 /**
@@ -861,6 +878,86 @@ fun TimetableWithCourseActions(
     // 目标 DAY = 1f（已展开）、否则 0f（周）。点星期栏某天不重建宿主，走页面内动画。
     val dayProgressSeed = if (wiring.homeViewMode == TimetableHomeViewMode.DAY) 1f else 0f
 
+    // ── 首页下拉快捷导入（2026-11-07 接线）────────────────────────────────
+    // 只接线，不改导入内核：宏回放仍走「仓库登录页 + `WarehouseImportHandoff`」那条，
+    // 与课程导入页的「快捷导入」按钮同一条（`WarehouseImportHosts.startQuickImport`）。
+    // Dart 原版把回放挂在 1×1 隐形 WebView 的 Overlay 里（后台跑、首页不动）；
+    // Compose 还没有后台执行器（见 `SettingsHost` 的「立即试一次」说明），
+    // 所以这里**如实**把用户送进可见的回放页——先让开关真的有效果，后台化另开一条。
+    //
+    // 前置判据：Dart `home_pull_quick_import.dart:130-200`
+    // ① 存档里一条宏都读不出 → 「暂无快捷导入记录」；
+    // ② 自定义地址与仓库地址都不合法 → 「没有可用登录地址」；
+    // 两条都只提示、不跳页（`HomePullQuickImportPrep.Blocked`）。
+    val pullImportPrefs = remember(context) {
+        WarehouseImportPrefs(PrefsKeyValueStore(context))
+    }
+    val pullImportEnabled = settingsModel.homePullQuickImportEnabled &&
+        wiring.homeViewMode != TimetableHomeViewMode.DAY
+    val onPullPrepare: suspend () -> HomePullQuickImportPrep = {
+        withContext(Dispatchers.IO) {
+            val macroStore = WarehouseMacroStore(PrefsKeyValueStore(context))
+            // 与 Dart 同口径：按存档顺序取**第一条还读得出的**宏（多宏不在首页弹选择器）。
+            val record = macroStore.getAllMacroEntries().firstNotNullOfOrNull { entry ->
+                macroStore.getMacro(entry.schoolId, entry.adapterId)
+            }
+            if (record == null) {
+                HomePullQuickImportPrep.Blocked(WarehouseStrings.noSavedQuickImportRecords.text)
+            } else {
+                val school = WarehouseSchoolEntry(
+                    id = record.schoolId,
+                    name = record.schoolName,
+                    resourceFolder = record.schoolResourceFolder,
+                )
+                val adapter = WarehouseAdapterEntry(
+                    id = record.adapterId,
+                    name = record.adapterName,
+                    script = record.adapterAssetJsPath,
+                    importUrl = record.importUrl,
+                )
+                // 地址合法性与登录页同一份判据（不再自己写一套 scheme 判断）。
+                val hasLoginUrl = resolveWarehouseWebLoginTarget(
+                    adapter = adapter,
+                    customImportUrl = pullImportPrefs.customImportUrl(record.adapterId),
+                ) != null
+                if (!hasLoginUrl) {
+                    HomePullQuickImportPrep.Blocked(WarehouseStrings.noValidWarehouseLoginUrl.text)
+                } else {
+                    // 收拢动画播完才执行（组件已等 220ms）：跳页/写交接件都在这一刻。
+                    HomePullQuickImportPrep.Ready {
+                        WarehouseImportHandoff.publish(
+                            school = school,
+                            adapter = adapter,
+                            playbackMacro = record,
+                        )
+                        onNavigate(WarehouseRoutes.WEB_LOGIN)
+                    }
+                }
+            }
+        }
+    }
+    val onPullSettled: (HomePullQuickImportPrep) -> Unit = { prep ->
+        when (prep) {
+            is HomePullQuickImportPrep.Blocked ->
+                Toast.makeText(context, prep.tip, Toast.LENGTH_SHORT).show()
+
+            is HomePullQuickImportPrep.Ready -> prep.commit()
+        }
+    }
+
+    HomePullQuickImportHost(
+        enabled = pullImportEnabled,
+        onPrepare = onPullPrepare,
+        onSettled = onPullSettled,
+        // 指示器要落在**星期栏底下**，不能画到状态栏上：本层包的是整页（含顶栏玻璃带），
+        // 顶边就是屏幕顶。带宽 = 状态栏留白 + 顶栏 56 + 星期栏 40 + 分割线 0.5，
+        // 与 `TimetableWeekPage` 里那条玻璃带的拼法同一组常量（muiix 的 contentPadding.top
+        // 只下移指示器、不动正文）。
+        contentTopInset = WindowInsets.statusBars.asPaddingValues().calculateTopPadding() +
+            TimetableTopBarMetrics.HEIGHT.dp +
+            WeekdayHeaderMetrics.HEIGHT_DP.dp +
+            WeekdayHeaderMetrics.DIVIDER_DP.dp,
+    ) {
     TimetableHost(
         repository = repository,
         // 情侣页改叠加色 / 周偏移只写键值存储、不碰课表仓储 ⇒ 宿主靠这个序号重读叠加数据
@@ -930,6 +1027,24 @@ fun TimetableWithCourseActions(
                 ),
             )
         },
+        // 月视图的**第三种页内态**（2026-11-07）：与日视图同一个宿主、同一张页面级
+        // 静态壁纸。`c2.month` 的数据/点击落点仍只有一份，这里只是让它在宿主顶栏
+        // 下方以「无壳模式」渲染（`monthEmbedded = true`），不再自己搭 Scaffold /
+        // 壁纸 / 顶栏——否则它作为另一页被 Pager 推入时，会带着自己那份壁纸一起滑。
+        monthMode = wiring.homeViewMode == TimetableHomeViewMode.MONTH,
+        monthContent = if (wiring.homeViewMode == TimetableHomeViewMode.MONTH) {
+            {
+                ShellPageContent(
+                    pageId = "c2.month",
+                    onBack = {},
+                    wiring = wiring,
+                    onOpenPage = onNavigate,
+                    monthEmbedded = true,
+                )
+            }
+        } else {
+            null
+        },
         // 周网格里的考试 / 日程卡：Dart 侧考试卡 → 考试页、日程卡 → 日程编辑页
         // （`week_grid_agenda_card.dart` 的 closedBuilder/openBuilder 同一条路）。
         // 这里按 id 找回实体再带进目标页；找不到就退到列表页，不让点击变哑。
@@ -975,6 +1090,7 @@ fun TimetableWithCourseActions(
             }
         },
     )
+    }
 
     /**
      * 「取消已设提醒」（Dart `removeClassReminder`）：从 classReminders 删掉
