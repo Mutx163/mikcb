@@ -17,11 +17,13 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.mutx163.qingyu.components.QingyuCard
 import com.mutx163.qingyu.components.QingyuPageCardMargin
 import com.mutx163.qingyu.components.QingyuPageList
+import com.mutx163.qingyu.components.QingyuPageTheme
 import com.mutx163.qingyu.components.QingyuSectionTitle
 import com.mutx163.qingyu.components.QingyuWeightDelta
 import com.mutx163.qingyu.components.shiftWeight
@@ -219,4 +221,160 @@ fun OpenSourceLicenseDetailPage(
             }
         }
     }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// IDE 预览（2026-11-08，照 ContributorsPage 样板铺）
+//
+// 只给实现阶段看效果，不进业务路径。本文件两个整页入口，各自铺：
+//
+// 【列表页 OpenSourceLicensesPage】四条分支都在同一个 `when` 里，容易只改其中一条：
+//   有数据 / 空态（搜索无匹配或注册表为空）/ 加载中 / 读取失败；再加暗色、大字号两档。
+//
+// 【详情页 OpenSourceLicenseDetailPage】无数据分支（一个包 + 一段全文），只铺外观三档：
+//   亮色 / 暗色 / 大字号——全文是长段落，大字号下折行与卡片高度变化最明显。
+//
+// 固定写法同 ContributorsPage：主题一律包 QingyuPageTheme(isDark = …)、字号走 textScale、
+// 宽度按 400dp。搜索框里的关键词属于页面内部状态，预览一律从空搜索开始。
+// ─────────────────────────────────────────────────────────────────────────────
+
+/** 预览用假数据：三包，包名与正文长度都照真注册表的形态写。 */
+private val previewOpenSourcePackages: List<OpenSourcePackageLicense> = listOf(
+    OpenSourcePackageLicense(
+        packageName = "androidx.compose.ui",
+        licenseBodies = listOf(
+            """
+                Apache License
+                Version 2.0, January 2004
+                http://www.apache.org/licenses/
+
+                Licensed under the Apache License, Version 2.0 (the "License");
+                you may not use this file except in compliance with the License.
+                You may obtain a copy of the License at
+
+                    http://www.apache.org/licenses/LICENSE-2.0
+            """.trimIndent(),
+        ),
+    ),
+    OpenSourcePackageLicense(
+        packageName = "miuix-kmp",
+        licenseBodies = listOf(
+            """
+                Copyright 2024 Yukonga
+
+                Licensed under the Apache License, Version 2.0 (the "License");
+                you may not use this file except in compliance with the License.
+            """.trimIndent(),
+            "本项目自带的图标与排版素材仅可在 GPL-3.0 范围内再分发。",
+        ),
+    ),
+    OpenSourcePackageLicense(
+        packageName = "okhttp",
+        licenseBodies = listOf(
+            """
+                MIT License
+
+                Permission is hereby granted, free of charge, to any person obtaining a copy
+                of this software and associated documentation files (the "Software").
+            """.trimIndent(),
+        ),
+    ),
+)
+
+/** 一档预览的公共身体：三态输入 + 外观档位。 */
+@Composable
+private fun PreviewOpenSourceLicensesPage(
+    packages: List<OpenSourcePackageLicense> = previewOpenSourcePackages,
+    isLoading: Boolean = false,
+    loadError: String? = null,
+    dark: Boolean = false,
+    textScale: Float = 1f,
+) {
+    QingyuPageTheme(isDark = dark, textScale = textScale) {
+        OpenSourceLicensesPage(
+            packages = packages,
+            onBack = {},
+            onOpenPackage = {},
+            isLoading = isLoading,
+            loadError = loadError,
+        )
+    }
+}
+
+@Suppress("unused")
+@Preview(name = "1 有数据", showBackground = true, widthDp = 400, heightDp = 900)
+@Composable
+private fun OpenSourceLicensesPagePreviewData() {
+    PreviewOpenSourceLicensesPage()
+}
+
+@Suppress("unused")
+@Preview(name = "2 空态", showBackground = true, widthDp = 400, heightDp = 900)
+@Composable
+private fun OpenSourceLicensesPagePreviewEmpty() {
+    PreviewOpenSourceLicensesPage(packages = emptyList())
+}
+
+@Suppress("unused")
+@Preview(name = "3 加载中", showBackground = true, widthDp = 400, heightDp = 900)
+@Composable
+private fun OpenSourceLicensesPagePreviewLoading() {
+    PreviewOpenSourceLicensesPage(packages = emptyList(), isLoading = true)
+}
+
+@Suppress("unused")
+@Preview(name = "4 读取失败", showBackground = true, widthDp = 400, heightDp = 900)
+@Composable
+private fun OpenSourceLicensesPagePreviewError() {
+    PreviewOpenSourceLicensesPage(
+        packages = emptyList(),
+        loadError = "licenses_registry_unavailable",
+    )
+}
+
+@Suppress("unused")
+@Preview(name = "5 暗色", showBackground = true, widthDp = 400, heightDp = 900)
+@Composable
+private fun OpenSourceLicensesPagePreviewDark() {
+    PreviewOpenSourceLicensesPage(dark = true)
+}
+
+@Suppress("unused")
+@Preview(name = "6 大字号 1.3", showBackground = true, widthDp = 400, heightDp = 900)
+@Composable
+private fun OpenSourceLicensesPagePreviewLargeText() {
+    PreviewOpenSourceLicensesPage(textScale = 1.3f)
+}
+
+/** 详情页一档预览的公共身体：同一个包 + 外观档位。 */
+@Composable
+private fun PreviewOpenSourceLicenseDetailPage(
+    pkg: OpenSourcePackageLicense = previewOpenSourcePackages[1],
+    dark: Boolean = false,
+    textScale: Float = 1f,
+) {
+    QingyuPageTheme(isDark = dark, textScale = textScale) {
+        OpenSourceLicenseDetailPage(pkg = pkg, onBack = {})
+    }
+}
+
+@Suppress("unused")
+@Preview(name = "7 详情·亮色", showBackground = true, widthDp = 400, heightDp = 900)
+@Composable
+private fun OpenSourceLicenseDetailPagePreviewLight() {
+    PreviewOpenSourceLicenseDetailPage()
+}
+
+@Suppress("unused")
+@Preview(name = "8 详情·暗色", showBackground = true, widthDp = 400, heightDp = 900)
+@Composable
+private fun OpenSourceLicenseDetailPagePreviewDark() {
+    PreviewOpenSourceLicenseDetailPage(dark = true)
+}
+
+@Suppress("unused")
+@Preview(name = "9 详情·大字号 1.3", showBackground = true, widthDp = 400, heightDp = 900)
+@Composable
+private fun OpenSourceLicenseDetailPagePreviewLargeText() {
+    PreviewOpenSourceLicenseDetailPage(textScale = 1.3f)
 }

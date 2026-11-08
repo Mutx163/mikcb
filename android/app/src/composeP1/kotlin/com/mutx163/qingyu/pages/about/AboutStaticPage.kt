@@ -31,12 +31,14 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.mutx163.qingyu.components.QingyuCard
 import com.mutx163.qingyu.components.QingyuCardDefaults
 import com.mutx163.qingyu.components.QingyuPageCardMargin
 import com.mutx163.qingyu.components.QingyuPageList
+import com.mutx163.qingyu.components.QingyuPageTheme
 import com.mutx163.qingyu.components.QingyuSectionTitle
 import com.mutx163.qingyu.components.QingyuSheet
 import com.mutx163.qingyu.components.QingyuWeightDelta
@@ -446,4 +448,53 @@ private fun openUrl(context: Context, url: String) {
 private fun copyToClipboard(context: Context, text: String) {
     val manager = context.getSystemService(Context.CLIPBOARD_SERVICE) as? ClipboardManager
     manager?.setPrimaryClip(ClipData.newPlainText("", text))
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// IDE 预览（2026-11-08，照 ContributorsPage 样板铺）
+//
+// 只给实现阶段看效果，不进业务路径。本页**没有可喂的数据状态**：三段入口由
+// `aboutInfoSections()` 现算、版本号由 PackageManager 现读，渲染层拿到的只有两个回调，
+// 所以只铺外观三档：
+//   · 亮色 / 暗色 —— 暗色档防「白字落在白卡片上」（壳用无参 MiuixTheme，页面取色却走
+//     isSystemInDarkTheme()，历史上真出现过）；
+//   · 大字号 —— 行内文案 11 / 17 字的折行点，只在字被放大后才暴露。
+//
+// 固定写法同 ContributorsPage：主题一律包 QingyuPageTheme(isDark = …)、字号走 textScale
+//（不用 @Preview(fontScale = …)）、宽度按 400dp。
+// ─────────────────────────────────────────────────────────────────────────────
+
+/** 一档预览的公共身体：只翻外观档位。 */
+@Composable
+private fun PreviewAboutStaticPage(
+    dark: Boolean = false,
+    textScale: Float = 1f,
+) {
+    QingyuPageTheme(isDark = dark, textScale = textScale) {
+        AboutStaticPage(
+            onBack = {},
+            onOpenPage = {},
+        )
+    }
+}
+
+@Suppress("unused")
+@Preview(name = "1 亮色", showBackground = true, widthDp = 400, heightDp = 900)
+@Composable
+private fun AboutStaticPagePreviewLight() {
+    PreviewAboutStaticPage()
+}
+
+@Suppress("unused")
+@Preview(name = "2 暗色", showBackground = true, widthDp = 400, heightDp = 900)
+@Composable
+private fun AboutStaticPagePreviewDark() {
+    PreviewAboutStaticPage(dark = true)
+}
+
+@Suppress("unused")
+@Preview(name = "3 大字号 1.3", showBackground = true, widthDp = 400, heightDp = 900)
+@Composable
+private fun AboutStaticPagePreviewLargeText() {
+    PreviewAboutStaticPage(textScale = 1.3f)
 }

@@ -42,6 +42,7 @@ import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.state.ToggleableState
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -1080,4 +1081,82 @@ private fun GuideSecondaryButton(
             style = MiuixTheme.textStyles.body2.shiftWeight(QingyuWeightDelta.MEDIUM),
         )
     }
+}
+
+// ── 预览：Android Studio 里免装机看效果（2026-11-08 加）────────────────────
+//
+// ⚠️ 静态预览只画得出**第 1 页（欢迎页）**：翻到第几页由页面内 `rememberPagerState`
+// 决定，外部没有入参能改。要直接看隐私 / 权限 / 个性化 / 提示四页，在 Studio 的
+// 交互式预览里左右滑，或装到真机走一遍首启流程。下面把后四页要用的数据照样填好，
+// 滑过去就能看到真实形态（权限全开、主题色豆有选中项）。
+
+/** 权限页要看的六项真实状态：全开（对齐「权限都给够了」的正常形态）。 */
+private val previewGuidePermissions = GuidePermissionState(
+    notification = true,
+    promotedIsland = true,
+    promotedDeclared = true,
+    autoStart = true,
+    batteryUnrestricted = true,
+    keepAliveAccessibility = true,
+    doNotDisturbAccess = true,
+)
+
+/** 个性化页的主题色豆（中文名 + 十六进制），与设置页同一批色语义。 */
+private val previewGuideSeedOptions = listOf(
+    GuideSeedOption(hex = "#3B82F6", label = "湖水蓝"),
+    GuideSeedOption(hex = "#22C55E", label = "竹林绿"),
+    GuideSeedOption(hex = "#F59E0B", label = "暖阳橙"),
+    GuideSeedOption(hex = "#8B5CF6", label = "藤萝紫"),
+    GuideSeedOption(hex = "#EF4444", label = "朱砂红"),
+)
+
+/** 一档预览的公共身体：模式（首启 / 复看）+ 外观档位。 */
+@Composable
+private fun PreviewUserGuidePage(
+    requirePrivacyConsent: Boolean = true,
+    dark: Boolean = false,
+    textScale: Float = 1f,
+) {
+    QingyuPageTheme(isDark = dark, textScale = textScale) {
+        UserGuidePage(
+            requirePrivacyConsent = requirePrivacyConsent,
+            permissionState = previewGuidePermissions,
+            settings = GuideSettingsSnapshot(
+                homeMenuGrid = true,
+                materialSolid = false,
+                themeMode = GuideThemeMode.SYSTEM,
+                seedHex = "#3B82F6",
+            ),
+            seedOptions = previewGuideSeedOptions,
+            onBack = {},
+        )
+    }
+}
+
+@Suppress("unused")
+@Preview(name = "1 首启·欢迎", showBackground = true, widthDp = 400, heightDp = 900)
+@Composable
+private fun UserGuidePagePreviewFirstRun() {
+    PreviewUserGuidePage(requirePrivacyConsent = true)
+}
+
+@Suppress("unused")
+@Preview(name = "2 复看·欢迎", showBackground = true, widthDp = 400, heightDp = 900)
+@Composable
+private fun UserGuidePagePreviewRevisit() {
+    PreviewUserGuidePage(requirePrivacyConsent = false)
+}
+
+@Suppress("unused")
+@Preview(name = "3 暗色", showBackground = true, widthDp = 400, heightDp = 900)
+@Composable
+private fun UserGuidePagePreviewDark() {
+    PreviewUserGuidePage(dark = true)
+}
+
+@Suppress("unused")
+@Preview(name = "4 大字号 1.3", showBackground = true, widthDp = 400, heightDp = 900)
+@Composable
+private fun UserGuidePagePreviewLargeText() {
+    PreviewUserGuidePage(textScale = 1.3f)
 }

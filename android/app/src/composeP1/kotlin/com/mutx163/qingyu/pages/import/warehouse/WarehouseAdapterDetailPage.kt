@@ -18,6 +18,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.mutx163.qingyu.components.QingyuCard
@@ -25,6 +26,7 @@ import com.mutx163.qingyu.components.QingyuCardDefaults
 import com.mutx163.qingyu.components.QingyuPageCardMargin
 import com.mutx163.qingyu.components.QingyuPageList
 import com.mutx163.qingyu.components.QingyuPageScaffold
+import com.mutx163.qingyu.components.QingyuPageTheme
 import com.mutx163.qingyu.components.QingyuSectionGap
 import com.mutx163.qingyu.components.QingyuSectionTitle
 import com.mutx163.qingyu.components.QingyuWeightDelta
@@ -346,4 +348,123 @@ private fun DetailMetaRow(label: String, value: String) {
             textAlign = TextAlign.End,
         )
     }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// IDE 预览（2026-11-08）——只给实现阶段看效果，不进业务路径。
+//
+// 固定写法（照 `about/ContributorsPage.kt` 的样板抄）：主题包 `QingyuPageTheme(isDark = …)`，
+// 字号用 `textScale = …`（不用 `@Preview(fontScale = …)`），宽度 400dp 是本仓折行实测口径。
+//
+// 本页两个维度：脚本状态四态（读取中 / 已读取 / 空 / 读不到）与自定义地址是否已生效
+// （生效后才多一颗「清除」）。四态文案各一句、颜色还不同，只测一态等于没测。
+// ─────────────────────────────────────────────────────────────────────────────
+
+/** 预览用：一所示例学校。 */
+private val previewDetailSchool = WarehouseSchoolEntry(
+    id = "example-university",
+    name = "示例大学",
+    initial = "S",
+    category = "本科教务",
+    code = "10001",
+    province = "示例省",
+)
+
+/** 预览用：一个描述较长、字段填满的适配器，专门看长取值会不会把标签挤走。 */
+private val previewDetailAdapter = WarehouseAdapterEntry(
+    id = "example-university-undergrad",
+    name = "本科教务系统",
+    script = "// 预览用占位脚本，不执行",
+    description = "登录教务处后依次点开「学生服务 → 我的课表」，脚本会把当学期课表拓成结构化数据；若学校改了登录页地址，请在下方自定义入口里改写。",
+    category = "本科教务（仅限在校生）",
+    maintainer = "张三",
+    importUrl = "https://jw.example.edu.cn/login",
+    schoolCode = "10001",
+)
+
+/** 一档预览的公共身体：脚本状态 + 自定义地址 + 外观档位。 */
+@Composable
+private fun PreviewWarehouseAdapterDetailPage(
+    scriptStatus: WarehouseScriptStatus = WarehouseScriptStatus.Loading,
+    customImportUrl: String? = null,
+    dark: Boolean = false,
+    textScale: Float = 1f,
+) {
+    QingyuPageTheme(isDark = dark, textScale = textScale) {
+        WarehouseAdapterDetailPage(
+            school = previewDetailSchool,
+            adapter = previewDetailAdapter,
+            customImportUrl = customImportUrl,
+            onBack = {},
+            onSaveCustomUrl = { _ -> },
+            onClearCustomUrl = {},
+            onCopyLoginUrl = {},
+            onCopyScriptUrl = {},
+            onOpenWebLogin = {},
+            scriptStatus = scriptStatus,
+        )
+    }
+}
+
+@Suppress("unused")
+@Preview(name = "1 脚本读取中", showBackground = true, widthDp = 400, heightDp = 900)
+@Composable
+private fun WarehouseAdapterDetailPagePreviewLoading() {
+    PreviewWarehouseAdapterDetailPage(scriptStatus = WarehouseScriptStatus.Loading)
+}
+
+@Suppress("unused")
+@Preview(name = "2 脚本已读取", showBackground = true, widthDp = 400, heightDp = 900)
+@Composable
+private fun WarehouseAdapterDetailPagePreviewLoaded() {
+    PreviewWarehouseAdapterDetailPage(scriptStatus = WarehouseScriptStatus.Loaded(length = 4820))
+}
+
+@Suppress("unused")
+@Preview(name = "3 脚本为空", showBackground = true, widthDp = 400, heightDp = 900)
+@Composable
+private fun WarehouseAdapterDetailPagePreviewEmptyScript() {
+    PreviewWarehouseAdapterDetailPage(scriptStatus = WarehouseScriptStatus.Empty)
+}
+
+@Suppress("unused")
+@Preview(name = "4 脚本读不到", showBackground = true, widthDp = 400, heightDp = 900)
+@Composable
+private fun WarehouseAdapterDetailPagePreviewScriptFailed() {
+    PreviewWarehouseAdapterDetailPage(
+        scriptStatus = WarehouseScriptStatus.Failed(
+            code = "script_fetch_failed",
+            issue = WarehouseLoadIssue.INVALID_FORMAT,
+        ),
+    )
+}
+
+@Suppress("unused")
+@Preview(name = "5 已自定义登录地址", showBackground = true, widthDp = 400, heightDp = 900)
+@Composable
+private fun WarehouseAdapterDetailPagePreviewCustomUrl() {
+    PreviewWarehouseAdapterDetailPage(
+        scriptStatus = WarehouseScriptStatus.Loaded(length = 4820),
+        customImportUrl = "https://jw.example.edu.cn/login",
+    )
+}
+
+@Suppress("unused")
+@Preview(name = "6 暗色", showBackground = true, widthDp = 400, heightDp = 900)
+@Composable
+private fun WarehouseAdapterDetailPagePreviewDark() {
+    PreviewWarehouseAdapterDetailPage(
+        scriptStatus = WarehouseScriptStatus.Loaded(length = 4820),
+        dark = true,
+    )
+}
+
+@Suppress("unused")
+@Preview(name = "7 大字号 1.3", showBackground = true, widthDp = 400, heightDp = 900)
+@Composable
+private fun WarehouseAdapterDetailPagePreviewLargeText() {
+    PreviewWarehouseAdapterDetailPage(
+        scriptStatus = WarehouseScriptStatus.Loaded(length = 4820),
+        textScale = 1.3f,
+    )
 }

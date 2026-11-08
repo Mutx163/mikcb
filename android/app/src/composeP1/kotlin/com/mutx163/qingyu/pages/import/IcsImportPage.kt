@@ -4,9 +4,11 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.mutx163.qingyu.components.QingyuPageCardMargin
 import com.mutx163.qingyu.components.QingyuPageList
+import com.mutx163.qingyu.components.QingyuPageTheme
 
 /**
  * ICS 日历导入页 · Compose 渲染层（P3-G1）。
@@ -67,4 +69,59 @@ fun IcsImportPage(
             }
         }
     }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// IDE 预览（2026-11-08）——只给实现阶段看效果，不进业务路径。
+//
+// 固定写法（照 `about/ContributorsPage.kt` 的样板抄）：主题包 `QingyuPageTheme(isDark = …)`，
+// 字号用 `textScale = …`（不用 `@Preview(fontScale = …)`，后者绕过 appTextScale 口径），
+// 宽度 400dp 是本仓折行实测口径。
+//
+// 本页只有一个数据分支：[IcsImportViewState.isImporting]，它同时换按钮文案、loading 位与禁点，
+// 所以三档外观都测它，另补一档「导入中」。
+// ─────────────────────────────────────────────────────────────────────────────
+
+/** 一档预览的公共身体：数据状态 + 外观档位。 */
+@Composable
+private fun PreviewIcsImportPage(
+    state: IcsImportViewState,
+    dark: Boolean = false,
+    textScale: Float = 1f,
+) {
+    QingyuPageTheme(isDark = dark, textScale = textScale) {
+        IcsImportPage(
+            viewState = state,
+            onBack = {},
+            onChooseFile = {},
+        )
+    }
+}
+
+@Suppress("unused")
+@Preview(name = "1 亮色", showBackground = true, widthDp = 400, heightDp = 900)
+@Composable
+private fun IcsImportPagePreviewLight() {
+    PreviewIcsImportPage(IcsImportViewState(isImporting = false), dark = false)
+}
+
+@Suppress("unused")
+@Preview(name = "2 暗色", showBackground = true, widthDp = 400, heightDp = 900)
+@Composable
+private fun IcsImportPagePreviewDark() {
+    PreviewIcsImportPage(IcsImportViewState(isImporting = false), dark = true)
+}
+
+@Suppress("unused")
+@Preview(name = "3 大字号 1.3", showBackground = true, widthDp = 400, heightDp = 900)
+@Composable
+private fun IcsImportPagePreviewLargeText() {
+    PreviewIcsImportPage(IcsImportViewState(isImporting = false), textScale = 1.3f)
+}
+
+@Suppress("unused")
+@Preview(name = "4 导入中", showBackground = true, widthDp = 400, heightDp = 900)
+@Composable
+private fun IcsImportPagePreviewImporting() {
+    PreviewIcsImportPage(IcsImportViewState(isImporting = true))
 }

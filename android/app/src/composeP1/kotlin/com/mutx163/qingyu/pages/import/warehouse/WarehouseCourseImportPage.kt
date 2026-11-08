@@ -27,11 +27,13 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.mutx163.qingyu.components.QingyuCard
 import com.mutx163.qingyu.components.QingyuPageCardMargin
 import com.mutx163.qingyu.components.QingyuPageList
 import com.mutx163.qingyu.components.QingyuPageScaffold
+import com.mutx163.qingyu.components.QingyuPageTheme
 import com.mutx163.qingyu.components.QingyuSectionTitle
 import com.mutx163.qingyu.components.QingyuWeightDelta
 import com.mutx163.qingyu.components.shiftWeight
@@ -335,4 +337,142 @@ fun WarehouseCourseImportPage(
             }
         }
     }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// IDE 预览（2026-11-08）——只给实现阶段看效果，不进业务路径。
+//
+// 固定写法（照 `about/ContributorsPage.kt` 的样板抄）：主题包 `QingyuPageTheme(isDark = …)`，
+// 字号用 `textScale = …`（不用 `@Preview(fontScale = …)`），宽度 400dp 是本仓折行实测口径。
+//
+// 本页空列表有三种含义（拉取中 / 拉取失败 / 真没有）、搜索空结果还有另一句话，
+// 四句都不同、按钮也不一样，所以逐档铺开；暗色与大字号以「学校列表」为基准。
+// ─────────────────────────────────────────────────────────────────────────────
+
+/** 预览用：七所学校，能同时撑出「★ 最近」「通 通用」「B / D / S」四类分组。 */
+private fun previewImportSchools(): List<WarehouseSchoolEntry> = listOf(
+    WarehouseSchoolEntry(
+        id = "example-university",
+        name = "示例大学",
+        initial = "S",
+        category = "本科教务",
+        code = "10001",
+        province = "示例省",
+    ),
+    WarehouseSchoolEntry(
+        id = "north-industry",
+        name = "北方工业大学",
+        initial = "B",
+        category = "本科教务",
+        province = "示例省",
+    ),
+    WarehouseSchoolEntry(
+        id = "donghai-vocational",
+        name = "东海职业技术学院",
+        initial = "D",
+        category = "专科教务",
+        province = "示例省",
+    ),
+    WarehouseSchoolEntry(
+        id = "generic-chaoxing",
+        name = "通用教务系统（超星）",
+        initial = "T",
+        category = "通用",
+    ),
+    WarehouseSchoolEntry(
+        id = "generic-zhengfang",
+        name = "通用教务系统（正方）",
+        initial = "T",
+        category = "通用",
+    ),
+)
+
+/** 一档预览的公共身体：学校数据 + 搜索词 + 相位 + 外观档位。 */
+@Composable
+private fun PreviewWarehouseCourseImportPage(
+    allSchools: List<WarehouseSchoolEntry> = previewImportSchools(),
+    searchQuery: String = "",
+    phase: WarehouseListPhase = WarehouseListPhase.Idle,
+    hasQuickImportMacro: Boolean = true,
+    dark: Boolean = false,
+    textScale: Float = 1f,
+) {
+    QingyuPageTheme(isDark = dark, textScale = textScale) {
+        WarehouseCourseImportPage(
+            allSchools = allSchools,
+            recentSchoolIds = listOf("example-university"),
+            adapterMatches = mapOf(
+                "north-industry" to listOf("本科教务系统", "研究生教务"),
+            ),
+            hasQuickImportMacro = hasQuickImportMacro,
+            quickImportMacroCount = 1,
+            searchQuery = searchQuery,
+            onSearchQueryChange = { _ -> },
+            onBack = {},
+            onSelectSchool = { _ -> },
+            onQuickImportClick = {},
+            onFeedbackClick = {},
+            onCustomDebugClick = {},
+            onExecutionLogClick = {},
+            phase = phase,
+            onRetry = {},
+        )
+    }
+}
+
+@Suppress("unused")
+@Preview(name = "1 学校列表", showBackground = true, widthDp = 400, heightDp = 900)
+@Composable
+private fun WarehouseCourseImportPagePreviewList() {
+    PreviewWarehouseCourseImportPage()
+}
+
+@Suppress("unused")
+@Preview(name = "2 搜索无结果", showBackground = true, widthDp = 400, heightDp = 900)
+@Composable
+private fun WarehouseCourseImportPagePreviewNoMatch() {
+    PreviewWarehouseCourseImportPage(allSchools = previewImportSchools(), searchQuery = "不存在的学校")
+}
+
+@Suppress("unused")
+@Preview(name = "3 空·加载中", showBackground = true, widthDp = 400, heightDp = 900)
+@Composable
+private fun WarehouseCourseImportPagePreviewLoading() {
+    PreviewWarehouseCourseImportPage(
+        allSchools = emptyList(),
+        phase = WarehouseListPhase.Loading,
+        hasQuickImportMacro = false,
+    )
+}
+
+@Suppress("unused")
+@Preview(name = "4 空·拉取失败", showBackground = true, widthDp = 400, heightDp = 900)
+@Composable
+private fun WarehouseCourseImportPagePreviewFailed() {
+    PreviewWarehouseCourseImportPage(
+        allSchools = emptyList(),
+        phase = WarehouseListPhase.Failed,
+        hasQuickImportMacro = false,
+    )
+}
+
+@Suppress("unused")
+@Preview(name = "5 空·确实没有学校", showBackground = true, widthDp = 400, heightDp = 900)
+@Composable
+private fun WarehouseCourseImportPagePreviewEmpty() {
+    PreviewWarehouseCourseImportPage(allSchools = emptyList(), hasQuickImportMacro = false)
+}
+
+@Suppress("unused")
+@Preview(name = "6 暗色", showBackground = true, widthDp = 400, heightDp = 900)
+@Composable
+private fun WarehouseCourseImportPagePreviewDark() {
+    PreviewWarehouseCourseImportPage(dark = true)
+}
+
+@Suppress("unused")
+@Preview(name = "7 大字号 1.3", showBackground = true, widthDp = 400, heightDp = 900)
+@Composable
+private fun WarehouseCourseImportPagePreviewLargeText() {
+    PreviewWarehouseCourseImportPage(textScale = 1.3f)
 }

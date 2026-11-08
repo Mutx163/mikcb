@@ -22,11 +22,13 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.mutx163.qingyu.components.QingyuCard
 import com.mutx163.qingyu.components.QingyuPageCardMargin
 import com.mutx163.qingyu.components.QingyuPageList
+import com.mutx163.qingyu.components.QingyuPageTheme
 import com.mutx163.qingyu.components.QingyuWeightDelta
 import com.mutx163.qingyu.components.shiftWeight
 import kotlinx.coroutines.Dispatchers
@@ -279,4 +281,106 @@ private fun ChangelogDigestView(digest: ReleaseNotesDigest) {
             ReleaseNotesGroupedEntries(digest)
         }
     }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// IDE 预览（2026-11-08，照 ContributorsPage 样板铺）
+//
+// 只给实现阶段看效果，不进业务路径。喂 `entries` 时页面**不碰资产**（LaunchedEffect 直接跳过），
+// 所以预览是确定的。覆盖：
+//
+//   · 有数据：三版，其中两版是「导语 + 分类分组」的新格式，一版是解析不出条目的纯段落旧版
+//     （`ChangelogCard` 的 Markdown 原文回退分支，最容易只改新格式忘了它）；
+//   · 空态：一版都读不到时只剩顶栏和空白，改列表间距时必看；
+//   · 暗色 / 大字号：同 ContributorsPage 的理由（白字落白卡片 / 行内文案折行）。
+//
+// 没铺「读取中」：那一档等于 `entries = null`，会真的去读 APK 资产，预览里结果不确定
+// （Studio 的假 Context 可能列不出目录），宁可不铺。
+// ─────────────────────────────────────────────────────────────────────────────
+
+/** 预览用假数据：新格式两版 + 旧纯段落一版。 */
+private val previewChangelogEntries: List<ChangelogEntry> = listOf(
+    ChangelogEntry(
+        version = "v2.1.5",
+        content = """
+            # v2.1.5
+
+            > 本次重点：周视图可拖动调课、导入自动识别表头、小组件刷新提速
+
+            ## 新增 · 2
+
+            - 周视图长按课表格子即可拖动换课，松手后按周次补到对应星期
+            - 课程详情支持直接改上课地点，不必再回编辑页
+
+            ## 优化 · 1
+
+            - 桌面小组件刷新从约 800ms 降到约 480ms
+
+            ## 修复 · 2
+
+            - 修复跨周次课程在节次重叠时颜色错位
+            - 修复夜间模式下课程卡片文字发灰
+        """.trimIndent(),
+    ),
+    ChangelogEntry(
+        version = "v2.1.4.1",
+        content = """
+            # v2.1.4.1
+
+            > 首个推荐版本。
+
+            ## 新增 · 1
+
+            - 课表支持按周次切换，考试周自动归档到末尾
+        """.trimIndent(),
+    ),
+    ChangelogEntry(
+        version = "v2.0.0",
+        content = """
+            # v2.0.0
+
+            本次重写了课表渲染，滑动更跟手，大课表也不再掉帧。
+            历史课程数据自动迁移，不需要手动导入。
+        """.trimIndent(),
+    ),
+)
+
+/** 一档预览的公共身体：条目集合 + 外观档位。 */
+@Composable
+private fun PreviewChangelogPage(
+    entries: List<ChangelogEntry>,
+    dark: Boolean = false,
+    textScale: Float = 1f,
+) {
+    QingyuPageTheme(isDark = dark, textScale = textScale) {
+        ChangelogPage(onBack = {}, entries = entries)
+    }
+}
+
+@Suppress("unused")
+@Preview(name = "1 有数据", showBackground = true, widthDp = 400, heightDp = 900)
+@Composable
+private fun ChangelogPagePreviewData() {
+    PreviewChangelogPage(previewChangelogEntries)
+}
+
+@Suppress("unused")
+@Preview(name = "2 空态", showBackground = true, widthDp = 400, heightDp = 900)
+@Composable
+private fun ChangelogPagePreviewEmpty() {
+    PreviewChangelogPage(emptyList())
+}
+
+@Suppress("unused")
+@Preview(name = "3 暗色", showBackground = true, widthDp = 400, heightDp = 900)
+@Composable
+private fun ChangelogPagePreviewDark() {
+    PreviewChangelogPage(previewChangelogEntries, dark = true)
+}
+
+@Suppress("unused")
+@Preview(name = "4 大字号 1.3", showBackground = true, widthDp = 400, heightDp = 900)
+@Composable
+private fun ChangelogPagePreviewLargeText() {
+    PreviewChangelogPage(previewChangelogEntries, textScale = 1.3f)
 }

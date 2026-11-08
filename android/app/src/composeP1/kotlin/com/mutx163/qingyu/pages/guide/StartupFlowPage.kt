@@ -8,6 +8,8 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.imePadding
@@ -26,11 +28,13 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.mutx163.qingyu.components.QingyuCard
 import com.mutx163.qingyu.components.QingyuPageList
 import com.mutx163.qingyu.components.QingyuPageScaffold
+import com.mutx163.qingyu.components.QingyuPageTheme
 import com.mutx163.qingyu.components.QingyuWeightDelta
 import com.mutx163.qingyu.components.shiftWeight
 import com.mutx163.qingyu.theme.QingyuTheme
@@ -506,6 +510,139 @@ private fun DateSetupContent(
                     color = Color.White,
                     style = MiuixTheme.textStyles.body1.shiftWeight(QingyuWeightDelta.SEMIBOLD)
                 )
+            }
+        }
+    }
+}
+
+// ── 预览：Android Studio 里免装机看效果（2026-11-08 加）────────────────────
+//
+// 本页只有两条**看得见**的主分支：
+// 1. 迁移检查（`StartupStep.MIGRATION_CHECK`）——检测到旧版包名时才会出现；
+// 2. 开学日期（`DATE_SETUP`）——`GUIDE_TOUR` / `COMPLETED` 渲染的是同一个
+//    `DateSetupContent`，差别只在顶栏标题，所以不重复铺档。
+
+/** 一档预览：状态名 + 初始状态快照。 */
+private data class PreviewStartupState(
+    /** 只用来给预览命名，不参与渲染。 */
+    val name: String,
+    val state: StartupFlowState,
+)
+
+private val previewStartupStates: List<PreviewStartupState> = listOf(
+    PreviewStartupState(
+        name = "迁移检查",
+        state = StartupFlowState(
+            currentStep = StartupStep.MIGRATION_CHECK,
+            legacyPackageName = "com.mutx163.timetable",
+        ),
+    ),
+    PreviewStartupState(
+        name = "迁移检查·打开旧版中",
+        state = StartupFlowState(
+            currentStep = StartupStep.MIGRATION_CHECK,
+            legacyPackageName = "com.mutx163.timetable",
+            isOpeningOldApp = true,
+        ),
+    ),
+    PreviewStartupState(
+        name = "开学日期·未填",
+        state = StartupFlowState(currentStep = StartupStep.DATE_SETUP),
+    ),
+    PreviewStartupState(
+        name = "开学日期·已填",
+        state = StartupFlowState(
+            currentStep = StartupStep.DATE_SETUP,
+            semesterStartDate = "2026-09-07",
+            totalWeeks = 18,
+            currentWeek = 10,
+        ),
+    ),
+)
+
+private fun previewStartupState(name: String): StartupFlowState =
+    previewStartupStates.first { it.name == name }.state
+
+/** 一档预览的公共身体：数据状态 + 外观档位。 */
+@Composable
+private fun PreviewStartupFlowPage(
+    state: StartupFlowState,
+    dark: Boolean = false,
+    textScale: Float = 1f,
+) {
+    QingyuPageTheme(isDark = dark, textScale = textScale) {
+        StartupFlowPage(
+            initialState = state,
+            onBack = {},
+        )
+    }
+}
+
+// ── 单档：四态 × 亮色 ────────────────────────────────────────────────────
+
+@Suppress("unused")
+@Preview(name = "1 迁移检查", showBackground = true, widthDp = 400, heightDp = 900)
+@Composable
+private fun StartupFlowPagePreviewMigration() {
+    PreviewStartupFlowPage(previewStartupState("迁移检查"))
+}
+
+@Suppress("unused")
+@Preview(name = "2 迁移检查·打开旧版中", showBackground = true, widthDp = 400, heightDp = 900)
+@Composable
+private fun StartupFlowPagePreviewOpeningOldApp() {
+    PreviewStartupFlowPage(previewStartupState("迁移检查·打开旧版中"))
+}
+
+@Suppress("unused")
+@Preview(name = "3 开学日期·未填", showBackground = true, widthDp = 400, heightDp = 900)
+@Composable
+private fun StartupFlowPagePreviewDateSetupEmpty() {
+    PreviewStartupFlowPage(previewStartupState("开学日期·未填"))
+}
+
+@Suppress("unused")
+@Preview(name = "4 开学日期·已填", showBackground = true, widthDp = 400, heightDp = 900)
+@Composable
+private fun StartupFlowPagePreviewDateSetupFilled() {
+    PreviewStartupFlowPage(previewStartupState("开学日期·已填"))
+}
+
+// ── 单档：外观两档（以「开学日期·已填」为基准，它内容最密）──────────────────
+
+@Suppress("unused")
+@Preview(name = "5 暗色", showBackground = true, widthDp = 400, heightDp = 900)
+@Composable
+private fun StartupFlowPagePreviewDark() {
+    PreviewStartupFlowPage(previewStartupState("开学日期·已填"), dark = true)
+}
+
+@Suppress("unused")
+@Preview(name = "6 大字号 1.3", showBackground = true, widthDp = 400, heightDp = 900)
+@Composable
+private fun StartupFlowPagePreviewLargeText() {
+    PreviewStartupFlowPage(previewStartupState("开学日期·已填"), textScale = 1.3f)
+}
+
+// ── 总览：四态并排，一屏看完 ─────────────────────────────────────────────
+
+/**
+ * 四态横排，用来一眼比结构差异。
+ *
+ * 4 × 400dp + 3 × 16dp 间距 = 1648dp，所以画布给 1700dp。Studio 会等比缩小显示，
+ * **缩放后字看不清是正常的**——要看细节点上面 1~6 的单档标签。
+ */
+@Suppress("unused")
+@Preview(name = "0 总览·四态并排", showBackground = true, widthDp = 1700, heightDp = 900)
+@Composable
+private fun StartupFlowPagePreviewOverview() {
+    Row(
+        modifier = Modifier.fillMaxSize(),
+        horizontalArrangement = Arrangement.spacedBy(16.dp),
+    ) {
+        for (preview in previewStartupStates) {
+            Box(Modifier.width(400.dp).fillMaxHeight()) {
+                PreviewStartupFlowPage(preview.state)
             }
         }
     }

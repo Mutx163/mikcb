@@ -6,9 +6,11 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.mutx163.qingyu.components.QingyuPageCardMargin
 import com.mutx163.qingyu.components.QingyuPageList
+import com.mutx163.qingyu.components.QingyuPageTheme
 
 /**
  * 表格导入页 · Compose 渲染层（P3-G1）。
@@ -77,4 +79,67 @@ fun SpreadsheetImportPage(
             }
         }
     }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// IDE 预览（2026-11-08）——只给实现阶段看效果，不进业务路径。
+//
+// 固定写法（照 `about/ContributorsPage.kt` 的样板抄）：主题包 `QingyuPageTheme(isDark = …)`，
+// 字号用 `textScale = …`（不用 `@Preview(fontScale = …)`，后者绕过 appTextScale 口径），
+// 宽度 400dp 是本仓折行实测口径。
+//
+// 本页两个独立的 loading 位：[isImporting] 换「选择文件」那颗，[isSharingTemplate] 换「下载模板」那颗，
+// 两颗各自会禁点，分开预览才看得出哪颗在转。
+// ─────────────────────────────────────────────────────────────────────────────
+
+/** 一档预览的公共身体：数据状态 + 外观档位。 */
+@Composable
+private fun PreviewSpreadsheetImportPage(
+    state: SpreadsheetImportViewState,
+    dark: Boolean = false,
+    textScale: Float = 1f,
+) {
+    QingyuPageTheme(isDark = dark, textScale = textScale) {
+        SpreadsheetImportPage(
+            viewState = state,
+            onBack = {},
+            onDownloadTemplate = {},
+            onChooseFile = {},
+        )
+    }
+}
+
+@Suppress("unused")
+@Preview(name = "1 亮色", showBackground = true, widthDp = 400, heightDp = 900)
+@Composable
+private fun SpreadsheetImportPagePreviewLight() {
+    PreviewSpreadsheetImportPage(SpreadsheetImportViewState())
+}
+
+@Suppress("unused")
+@Preview(name = "2 暗色", showBackground = true, widthDp = 400, heightDp = 900)
+@Composable
+private fun SpreadsheetImportPagePreviewDark() {
+    PreviewSpreadsheetImportPage(SpreadsheetImportViewState(), dark = true)
+}
+
+@Suppress("unused")
+@Preview(name = "3 大字号 1.3", showBackground = true, widthDp = 400, heightDp = 900)
+@Composable
+private fun SpreadsheetImportPagePreviewLargeText() {
+    PreviewSpreadsheetImportPage(SpreadsheetImportViewState(), textScale = 1.3f)
+}
+
+@Suppress("unused")
+@Preview(name = "4 导入中", showBackground = true, widthDp = 400, heightDp = 900)
+@Composable
+private fun SpreadsheetImportPagePreviewImporting() {
+    PreviewSpreadsheetImportPage(SpreadsheetImportViewState(isImporting = true))
+}
+
+@Suppress("unused")
+@Preview(name = "5 下载模板中", showBackground = true, widthDp = 400, heightDp = 900)
+@Composable
+private fun SpreadsheetImportPagePreviewSharingTemplate() {
+    PreviewSpreadsheetImportPage(SpreadsheetImportViewState(isSharingTemplate = true))
 }

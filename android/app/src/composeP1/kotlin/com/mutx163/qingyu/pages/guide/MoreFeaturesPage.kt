@@ -22,10 +22,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.mutx163.qingyu.components.QingyuCard
 import com.mutx163.qingyu.components.QingyuPageList
 import com.mutx163.qingyu.components.QingyuPageScaffold
+import com.mutx163.qingyu.components.QingyuPageTheme
 import com.mutx163.qingyu.components.QingyuWeightDelta
 import com.mutx163.qingyu.components.shiftWeight
 import com.mutx163.qingyu.theme.QingyuTheme
@@ -165,4 +167,56 @@ private fun FeatureItemRow(
             modifier = Modifier.size(16.dp)
         )
     }
+}
+
+// ── 预览：Android Studio 里免装机看效果（2026-11-08 加）────────────────────
+//
+// 本页只有**一个外部可变项**：首页菜单里当前选中的课表方案名 / 作息方案名，
+// 它们作为右侧尾随取值出现在行尾。因此铺「已选 / 未选」两档，再加外观两档。
+
+/** 一档预览的公共身体：方案名 + 外观档位。 */
+@Composable
+private fun PreviewMoreFeaturesPage(
+    activeProfileName: String? = "默认课表",
+    activeTimeSchemeName: String? = "秋冬作息",
+    dark: Boolean = false,
+    textScale: Float = 1f,
+) {
+    QingyuPageTheme(isDark = dark, textScale = textScale) {
+        MoreFeaturesPage(
+            activeProfileName = activeProfileName,
+            activeTimeSchemeName = activeTimeSchemeName,
+            onBack = {},
+            onOpenSearch = {},
+            onOpenFeature = {},
+        )
+    }
+}
+
+@Suppress("unused")
+@Preview(name = "1 已选方案", showBackground = true, widthDp = 400, heightDp = 900)
+@Composable
+private fun MoreFeaturesPagePreviewWithActiveSchemes() {
+    PreviewMoreFeaturesPage()
+}
+
+@Suppress("unused")
+@Preview(name = "2 未选方案", showBackground = true, widthDp = 400, heightDp = 900)
+@Composable
+private fun MoreFeaturesPagePreviewWithoutActiveSchemes() {
+    PreviewMoreFeaturesPage(activeProfileName = null, activeTimeSchemeName = null)
+}
+
+@Suppress("unused")
+@Preview(name = "3 暗色", showBackground = true, widthDp = 400, heightDp = 900)
+@Composable
+private fun MoreFeaturesPagePreviewDark() {
+    PreviewMoreFeaturesPage(dark = true)
+}
+
+@Suppress("unused")
+@Preview(name = "4 大字号 1.3", showBackground = true, widthDp = 400, heightDp = 900)
+@Composable
+private fun MoreFeaturesPagePreviewLargeText() {
+    PreviewMoreFeaturesPage(textScale = 1.3f)
 }

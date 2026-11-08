@@ -18,12 +18,14 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import com.mutx163.qingyu.components.QingyuCard
 import com.mutx163.qingyu.components.QingyuCardDefaults
 import com.mutx163.qingyu.components.QingyuPageCardMargin
 import com.mutx163.qingyu.components.QingyuPageList
+import com.mutx163.qingyu.components.QingyuPageTheme
 import com.mutx163.qingyu.components.QingyuSectionTitle
 import com.mutx163.qingyu.infra.AppUpdateCheckResult
 import com.mutx163.qingyu.infra.AppUpdateDownloadChannel
@@ -313,4 +315,118 @@ private fun ProbeChip(result: DownloadProbeResult) {
             .background(colors.secondaryContainer, RoundedCornerShape(999.dp))
             .padding(horizontal = 8.dp, vertical = 2.dp),
     )
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// IDE 预览（2026-11-08，照 ContributorsPage 样板铺）
+//
+// 只给实现阶段看效果，不进业务路径。本页的分支几乎全在设置值上：
+//
+//   · 渠道不是 GitHub、或下载来源不是镜像时，**整个镜像分组不出现**——少一块版面最容易漏看；
+//   · 测速结果胶囊（ms / 失败）与「· 推荐」后缀只在有探针结果时出现；
+//   · 测速进行中会把动作行换成「正在测速」。
+//
+// 所以铺三档数据 × 亮色 + 外观两档：默认渠道 / 镜像测速结果 / 测速中 / 暗色 / 大字号。
+//
+// 固定写法同 ContributorsPage：主题一律包 QingyuPageTheme(isDark = …)、字号走 textScale、
+// 宽度按 400dp。镜像地址输入弹窗（OverlayDialog）需要手动点击才会打开，不在预览覆盖内。
+// ─────────────────────────────────────────────────────────────────────────────
+
+/** 预览用假数据：GitHub 渠道 + 镜像来源，才会出现镜像分组。 */
+private val previewAdvancedOptionsMirrorSettings = AppUpdateSettings(
+    downloadSource = AppUpdateDownloadSource.MIRROR,
+    downloadChannel = AppUpdateDownloadChannel.GITHUB,
+    useSystemDownloader = false,
+    mirrorPreset = MirrorPreset.GHFAST,
+    includePrerelease = false,
+    mirrorUrlPrefix = "https://ghfast.top/",
+    promptEnabled = true,
+)
+
+/** 预览用假数据：两条成功、一条失败，足以同时看到「· 推荐」后缀与失败胶囊。 */
+private val previewAdvancedOptionsProbes = mapOf(
+    MirrorPreset.GHFAST to DownloadProbeResult(isSuccess = true, elapsedMillis = 128, statusCode = 200),
+    MirrorPreset.GH_LLKK to DownloadProbeResult(isSuccess = true, elapsedMillis = 356, statusCode = 200),
+    MirrorPreset.GH_PROXY_COM to DownloadProbeResult(isSuccess = false, elapsedMillis = 8000, statusCode = 504),
+)
+
+/** 一档预览的输入：设置快照 + 探针结果 + 是否正在测速。 */
+private data class PreviewAdvancedOptionsState(
+    /** 只用来给预览命名，不参与渲染。 */
+    val name: String,
+    val settings: AppUpdateSettings,
+    val probeStates: Map<MirrorPreset, DownloadProbeResult> = emptyMap(),
+    val probing: Boolean = false,
+)
+
+private val previewAdvancedOptionsStates: List<PreviewAdvancedOptionsState> = listOf(
+    PreviewAdvancedOptionsState(
+        name = "默认渠道",
+        settings = AppUpdateSettings(),
+    ),
+    PreviewAdvancedOptionsState(
+        name = "镜像测速结果",
+        settings = previewAdvancedOptionsMirrorSettings,
+        probeStates = previewAdvancedOptionsProbes,
+    ),
+    PreviewAdvancedOptionsState(
+        name = "测速中",
+        settings = previewAdvancedOptionsMirrorSettings,
+        probing = true,
+    ),
+)
+
+private fun previewAdvancedOptionsState(name: String): PreviewAdvancedOptionsState =
+    previewAdvancedOptionsStates.first { it.name == name }
+
+/** 一档预览的公共身体：设置状态 + 外观档位。 */
+@Composable
+private fun PreviewAdvancedOptionsPage(
+    state: PreviewAdvancedOptionsState,
+    dark: Boolean = false,
+    textScale: Float = 1f,
+) {
+    QingyuPageTheme(isDark = dark, textScale = textScale) {
+        AdvancedOptionsPage(
+            onBack = {},
+            settings = state.settings,
+            probeStates = state.probeStates,
+            probing = state.probing,
+        )
+    }
+}
+
+@Suppress("unused")
+@Preview(name = "1 默认渠道", showBackground = true, widthDp = 400, heightDp = 900)
+@Composable
+private fun AdvancedOptionsPagePreviewDefault() {
+    PreviewAdvancedOptionsPage(previewAdvancedOptionsState("默认渠道"))
+}
+
+@Suppress("unused")
+@Preview(name = "2 镜像测速结果", showBackground = true, widthDp = 400, heightDp = 900)
+@Composable
+private fun AdvancedOptionsPagePreviewMirrors() {
+    PreviewAdvancedOptionsPage(previewAdvancedOptionsState("镜像测速结果"))
+}
+
+@Suppress("unused")
+@Preview(name = "3 测速中", showBackground = true, widthDp = 400, heightDp = 900)
+@Composable
+private fun AdvancedOptionsPagePreviewProbing() {
+    PreviewAdvancedOptionsPage(previewAdvancedOptionsState("测速中"))
+}
+
+@Suppress("unused")
+@Preview(name = "4 暗色", showBackground = true, widthDp = 400, heightDp = 900)
+@Composable
+private fun AdvancedOptionsPagePreviewDark() {
+    PreviewAdvancedOptionsPage(previewAdvancedOptionsState("镜像测速结果"), dark = true)
+}
+
+@Suppress("unused")
+@Preview(name = "5 大字号 1.3", showBackground = true, widthDp = 400, heightDp = 900)
+@Composable
+private fun AdvancedOptionsPagePreviewLargeText() {
+    PreviewAdvancedOptionsPage(previewAdvancedOptionsState("镜像测速结果"), textScale = 1.3f)
 }

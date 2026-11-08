@@ -23,12 +23,14 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.mutx163.qingyu.components.QingyuCard
 import com.mutx163.qingyu.components.QingyuCardDefaults
 import com.mutx163.qingyu.components.QingyuPageCardMargin
 import com.mutx163.qingyu.components.QingyuPageList
 import com.mutx163.qingyu.components.QingyuPageScaffold
+import com.mutx163.qingyu.components.QingyuPageTheme
 import com.mutx163.qingyu.components.QingyuWeightDelta
 import com.mutx163.qingyu.components.shiftWeight
 import com.mutx163.qingyu.pages.import.parseImportAccentHex
@@ -421,4 +423,62 @@ fun AiImageCourseImportPage(
             }
         }
     }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// IDE 预览（2026-11-08）——只给实现阶段看效果，不进业务路径。
+//
+// 固定写法（照 `about/ContributorsPage.kt` 的样板抄）：主题包 `QingyuPageTheme(isDark = …)`，
+// 字号用 `textScale = …`（不用 `@Preview(fontScale = …)`，后者绕过 appTextScale 口径），
+// 宽度 400dp 是本仓折行实测口径。
+//
+// 局限：JSON 输入框的文本、解析结果与错误都在页面自己的 `remember` 里，
+// 从外面预置不了——所以这里只能看到「空输入框」那一帧，要看解析卡片请用真机 / 交互预览。
+// ─────────────────────────────────────────────────────────────────────────────
+
+/** 一档预览的公共身体：外观档位 + 导入中开关。 */
+@Composable
+private fun PreviewAiImageCourseImportPage(
+    dark: Boolean = false,
+    textScale: Float = 1f,
+    isImporting: Boolean = false,
+) {
+    QingyuPageTheme(isDark = dark, textScale = textScale) {
+        AiImageCourseImportPage(
+            onBack = {},
+            isImporting = isImporting,
+            onCopyPrompt = {},
+            onShowPromptSheet = {},
+            onPasteFromClipboard = { "" },
+            onConfirmImport = { _ -> },
+        )
+    }
+}
+
+@Suppress("unused")
+@Preview(name = "1 亮色", showBackground = true, widthDp = 400, heightDp = 900)
+@Composable
+private fun AiImageCourseImportPagePreviewLight() {
+    PreviewAiImageCourseImportPage()
+}
+
+@Suppress("unused")
+@Preview(name = "2 暗色", showBackground = true, widthDp = 400, heightDp = 900)
+@Composable
+private fun AiImageCourseImportPagePreviewDark() {
+    PreviewAiImageCourseImportPage(dark = true)
+}
+
+@Suppress("unused")
+@Preview(name = "3 大字号 1.3", showBackground = true, widthDp = 400, heightDp = 900)
+@Composable
+private fun AiImageCourseImportPagePreviewLargeText() {
+    PreviewAiImageCourseImportPage(textScale = 1.3f)
+}
+
+@Suppress("unused")
+@Preview(name = "4 导入中", showBackground = true, widthDp = 400, heightDp = 900)
+@Composable
+private fun AiImageCourseImportPagePreviewImporting() {
+    PreviewAiImageCourseImportPage(isImporting = true)
 }

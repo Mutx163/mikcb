@@ -14,6 +14,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.mutx163.qingyu.components.QingyuCard
@@ -21,6 +22,7 @@ import com.mutx163.qingyu.components.QingyuCardDefaults
 import com.mutx163.qingyu.components.QingyuPageCardMargin
 import com.mutx163.qingyu.components.QingyuPageList
 import com.mutx163.qingyu.components.QingyuPageScaffold
+import com.mutx163.qingyu.components.QingyuPageTheme
 import com.mutx163.qingyu.components.QingyuWeightDelta
 import com.mutx163.qingyu.components.shiftWeight
 import top.yukonga.miuix.kmp.basic.Button
@@ -272,4 +274,132 @@ fun WarehouseSchoolAdaptersPage(
             }
         }
     }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// IDE 预览（2026-11-08）——只给实现阶段看效果，不进业务路径。
+//
+// 固定写法（照 `about/ContributorsPage.kt` 的样板抄）：主题包 `QingyuPageTheme(isDark = …)`，
+// 字号用 `textScale = …`（不用 `@Preview(fontScale = …)`），宽度 400dp 是本仓折行实测口径。
+//
+// 本页分支最多，五档都是宿主真实会传的形态：
+//   有适配器（含宏→多一颗「一键导入」）/ 空·加载中 / 空·失败（带四档原因 + 重试）/ 有名单·刷新失败（轻提示）；
+// 空与失败长得一模一样又必须说不同话，所以各占一档。
+// ─────────────────────────────────────────────────────────────────────────────
+
+/** 预览用：一所示例学校。 */
+private val previewAdaptersSchool = WarehouseSchoolEntry(
+    id = "example-university",
+    name = "示例大学",
+    initial = "S",
+    category = "本科教务",
+    code = "10001",
+    province = "示例省",
+)
+
+/** 预览用：两个适配器，一个带宏（多渲染一颗「一键导入」）、一个没有维护者（走「社区」兜底）。 */
+private fun previewAdapters(): List<WarehouseAdapterEntry> = listOf(
+    WarehouseAdapterEntry(
+        id = "example-university-undergrad",
+        name = "本科教务系统",
+        script = "// 预览用占位脚本，不执行",
+        description = "登录教务处后依次点开「学生服务 → 我的课表」，脚本会把当学期课表拓成结构化数据。",
+        category = "本科教务",
+        maintainer = "张三",
+        importUrl = "https://jw.example.edu.cn/login",
+        schoolCode = "10001",
+    ),
+    WarehouseAdapterEntry(
+        id = "example-university-graduate",
+        name = "研究生教务",
+        script = "// 预览用占位脚本，不执行",
+        description = "",
+        category = "研究生教务",
+        maintainer = "",
+        importUrl = "https://yjs.example.edu.cn/",
+    ),
+)
+
+/** 一档预览的公共身体：数据状态 + 外观档位。 */
+@Composable
+private fun PreviewWarehouseSchoolAdaptersPage(
+    adapters: List<WarehouseAdapterEntry>,
+    phase: WarehouseListPhase = WarehouseListPhase.Idle,
+    failure: WarehouseLoadFailed? = null,
+    dark: Boolean = false,
+    textScale: Float = 1f,
+) {
+    QingyuPageTheme(isDark = dark, textScale = textScale) {
+        WarehouseSchoolAdaptersPage(
+            school = previewAdaptersSchool,
+            adapters = adapters,
+            macroMap = mapOf("example-university-undergrad" to true),
+            onBack = {},
+            onRefresh = {},
+            onImportAdapter = { _ -> },
+            onRecordAdapter = { _ -> },
+            onViewAdapterDetail = { _ -> },
+            onQuickImportAdapter = { _ -> },
+            phase = phase,
+            failure = failure,
+        )
+    }
+}
+
+@Suppress("unused")
+@Preview(name = "1 有适配器", showBackground = true, widthDp = 400, heightDp = 900)
+@Composable
+private fun WarehouseSchoolAdaptersPagePreviewList() {
+    PreviewWarehouseSchoolAdaptersPage(previewAdapters())
+}
+
+@Suppress("unused")
+@Preview(name = "2 空·加载中", showBackground = true, widthDp = 400, heightDp = 900)
+@Composable
+private fun WarehouseSchoolAdaptersPagePreviewLoading() {
+    PreviewWarehouseSchoolAdaptersPage(emptyList(), phase = WarehouseListPhase.Loading)
+}
+
+@Suppress("unused")
+@Preview(name = "3 空·失败", showBackground = true, widthDp = 400, heightDp = 900)
+@Composable
+private fun WarehouseSchoolAdaptersPagePreviewFailed() {
+    PreviewWarehouseSchoolAdaptersPage(
+        adapters = emptyList(),
+        phase = WarehouseListPhase.Failed,
+        failure = WarehouseLoadFailed(
+            code = "warehouse_fetch_failed",
+            attempts = 3,
+            issue = WarehouseLoadIssue.TIMEOUT,
+        ),
+    )
+}
+
+@Suppress("unused")
+@Preview(name = "4 有名单·刷新失败", showBackground = true, widthDp = 400, heightDp = 900)
+@Composable
+private fun WarehouseSchoolAdaptersPagePreviewCachedWithFailure() {
+    PreviewWarehouseSchoolAdaptersPage(
+        adapters = previewAdapters(),
+        phase = WarehouseListPhase.Idle,
+        failure = WarehouseLoadFailed(
+            code = "warehouse_fetch_failed",
+            attempts = 3,
+            issue = WarehouseLoadIssue.MIRRORS_FAILED,
+        ),
+    )
+}
+
+@Suppress("unused")
+@Preview(name = "5 暗色", showBackground = true, widthDp = 400, heightDp = 900)
+@Composable
+private fun WarehouseSchoolAdaptersPagePreviewDark() {
+    PreviewWarehouseSchoolAdaptersPage(previewAdapters(), dark = true)
+}
+
+@Suppress("unused")
+@Preview(name = "6 大字号 1.3", showBackground = true, widthDp = 400, heightDp = 900)
+@Composable
+private fun WarehouseSchoolAdaptersPagePreviewLargeText() {
+    PreviewWarehouseSchoolAdaptersPage(previewAdapters(), textScale = 1.3f)
 }

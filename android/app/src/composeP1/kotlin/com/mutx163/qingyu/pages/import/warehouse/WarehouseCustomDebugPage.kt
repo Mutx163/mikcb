@@ -18,12 +18,14 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.mutx163.qingyu.components.QingyuCard
 import com.mutx163.qingyu.components.QingyuCardDefaults
 import com.mutx163.qingyu.components.QingyuPageCardMargin
 import com.mutx163.qingyu.components.QingyuPageList
 import com.mutx163.qingyu.components.QingyuPageScaffold
+import com.mutx163.qingyu.components.QingyuPageTheme
 import com.mutx163.qingyu.components.QingyuWeightDelta
 import com.mutx163.qingyu.components.shiftWeight
 import top.yukonga.miuix.kmp.basic.Button
@@ -304,4 +306,82 @@ fun WarehouseCustomDebugPage(
             }
         }
     }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// IDE 预览（2026-11-08）——只给实现阶段看效果，不进业务路径。
+//
+// 固定写法（照 `about/ContributorsPage.kt` 的样板抄）：主题包 `QingyuPageTheme(isDark = …)`，
+// 字号用 `textScale = …`（不用 `@Preview(fontScale = …)`），宽度 400dp 是本仓折行实测口径。
+//
+// 本页只有「有记录 / 空态」两帧静态形态；编辑表单是页面内 `remember` 的开关，
+// 从外面顶不进去——要看表单与报错请用交互预览或真机。
+// ─────────────────────────────────────────────────────────────────────────────
+
+/**
+ * 预览用：两条调试记录。
+ *
+ * 第二条带自定义入口地址，用来确认「入口：https://…」那一行会出现、且长地址不把卡片撑爆。
+ */
+private fun previewDebugRecords(): List<WarehouseCustomDebugRecord> = listOf(
+    WarehouseCustomDebugRecord(
+        id = "preview-record-1",
+        name = "示例大学 · 本科教务",
+        script = "// 预览用占位脚本，不执行。真实脚本由用户从适配仓录制或粘贴。",
+        customUrl = "https://jw.example.edu.cn/login",
+    ),
+    WarehouseCustomDebugRecord(
+        id = "preview-record-2",
+        name = "示例学院 · 研究生教务",
+        script = "// 预览用占位脚本，不执行。",
+        customUrl = null,
+    ),
+)
+
+/** 一档预览的公共身体：记录数据 + 外观档位。 */
+@Composable
+private fun PreviewWarehouseCustomDebugPage(
+    records: List<WarehouseCustomDebugRecord>,
+    dark: Boolean = false,
+    textScale: Float = 1f,
+) {
+    QingyuPageTheme(isDark = dark, textScale = textScale) {
+        WarehouseCustomDebugPage(
+            records = records,
+            onBack = {},
+            onRunDebug = { _ -> },
+            onSaveRecord = { _ -> true },
+            onDeleteRecord = { _ -> },
+            // 「开始调试」默认不渲染（脚本引擎未移植，点了必失败），预览也按宿主的真实取值。
+            showRunButton = false,
+        )
+    }
+}
+
+@Suppress("unused")
+@Preview(name = "1 有记录", showBackground = true, widthDp = 400, heightDp = 900)
+@Composable
+private fun WarehouseCustomDebugPagePreviewRecords() {
+    PreviewWarehouseCustomDebugPage(previewDebugRecords())
+}
+
+@Suppress("unused")
+@Preview(name = "2 空态", showBackground = true, widthDp = 400, heightDp = 900)
+@Composable
+private fun WarehouseCustomDebugPagePreviewEmpty() {
+    PreviewWarehouseCustomDebugPage(emptyList())
+}
+
+@Suppress("unused")
+@Preview(name = "3 暗色", showBackground = true, widthDp = 400, heightDp = 900)
+@Composable
+private fun WarehouseCustomDebugPagePreviewDark() {
+    PreviewWarehouseCustomDebugPage(previewDebugRecords(), dark = true)
+}
+
+@Suppress("unused")
+@Preview(name = "4 大字号 1.3", showBackground = true, widthDp = 400, heightDp = 900)
+@Composable
+private fun WarehouseCustomDebugPagePreviewLargeText() {
+    PreviewWarehouseCustomDebugPage(previewDebugRecords(), textScale = 1.3f)
 }

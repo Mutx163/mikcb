@@ -35,11 +35,13 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.state.ToggleableState
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.mutx163.qingyu.components.QingyuCard
 import com.mutx163.qingyu.components.QingyuPageList
 import com.mutx163.qingyu.components.QingyuPageScaffold
+import com.mutx163.qingyu.components.QingyuPageTheme
 import com.mutx163.qingyu.components.QingyuSlider
 import com.mutx163.qingyu.components.QingyuWeightDelta
 import com.mutx163.qingyu.components.shiftWeight
@@ -467,4 +469,41 @@ private fun AccordionRow(
             )
         }
     }
+}
+
+// ── 预览：Android Studio 里免装机看效果（2026-11-08 加）────────────────────
+//
+// 本页**没有数据状态分支**：开关 / 单选 / 滑杆 / 输入框 / 手风琴的值全是页面内的
+// `remember` 初值，静态预览看到的就是默认形态。所以只铺外观三档。
+
+/** 一档预览的公共身体：外观档位。 */
+@Composable
+private fun PreviewHyperosShowcasePage(
+    dark: Boolean = false,
+    textScale: Float = 1f,
+) {
+    QingyuPageTheme(isDark = dark, textScale = textScale) {
+        HyperosShowcasePage(onBack = {})
+    }
+}
+
+@Suppress("unused")
+@Preview(name = "1 亮色", showBackground = true, widthDp = 400, heightDp = 900)
+@Composable
+private fun HyperosShowcasePagePreviewLight() {
+    PreviewHyperosShowcasePage()
+}
+
+@Suppress("unused")
+@Preview(name = "2 暗色", showBackground = true, widthDp = 400, heightDp = 900)
+@Composable
+private fun HyperosShowcasePagePreviewDark() {
+    PreviewHyperosShowcasePage(dark = true)
+}
+
+@Suppress("unused")
+@Preview(name = "3 大字号 1.3", showBackground = true, widthDp = 400, heightDp = 900)
+@Composable
+private fun HyperosShowcasePagePreviewLargeText() {
+    PreviewHyperosShowcasePage(textScale = 1.3f)
 }
