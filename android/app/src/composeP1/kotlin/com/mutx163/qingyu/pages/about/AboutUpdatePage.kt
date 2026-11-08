@@ -55,11 +55,13 @@ import com.mutx163.qingyu.theme.QingyuTheme
 import top.yukonga.miuix.kmp.basic.Button
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
 import top.yukonga.miuix.kmp.basic.CircularProgressIndicator
+import top.yukonga.miuix.kmp.basic.LinearProgressIndicator
 import top.yukonga.miuix.kmp.basic.ScrollBehavior
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TextButton
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.Tune
+import top.yukonga.miuix.kmp.overlay.OverlayDialog
 import top.yukonga.miuix.kmp.preference.ArrowPreference
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import java.util.Locale
@@ -197,13 +199,7 @@ fun AboutUpdatePage(
             }
 
             if (download != null) {
-                Box(
-                    modifier = Modifier
-                        .align(Alignment.BottomCenter)
-                        .windowInsetsPadding(WindowInsets.navigationBars),
-                ) {
-                    DownloadProgressBar(download = download, onCancel = onCancelDownload)
-                }
+                DownloadProgressDialog(download = download, onCancel = onCancelDownload)
             }
         }
     }
@@ -613,62 +609,58 @@ private fun ExpandedDigest(digest: ReleaseNotesDigest) {
     }
 }
 
-/** 底部下载进度条（Dart `_buildDownloadProgressBar`）。 */
+/** 下载进度弹窗：官方 `OverlayDialog` + 官方 `LinearProgressIndicator`。
+ *
+ * 2026-11-08：原先是一条钉在页底的进度条，切页/滑一半都还挂在那里，不像系统行为；
+ * 改成标准弹窗后：下载中弹、下完自动消失，不能点外面关（写盘还在继续），只能按“取消下载”。
+ */
 @Composable
-private fun DownloadProgressBar(download: AboutUpdateDownloadUi, onCancel: () -> Unit) {
+private fun DownloadProgressDialog(download: AboutUpdateDownloadUi, onCancel: () -> Unit) {
     val colors = MiuixTheme.colorScheme
     val progress = resolveDownloadProgress(download.downloadedBytes, download.totalBytes)
-    val text = when {
+    val fraction = progress.fraction?.toFloat()
+    val title = when {
         download.cancelling -> AboutUpdatePageStrings.downloadCancelling
         progress.fraction != null ->
             AboutUpdatePageStrings.downloadingPercent(String.format(Locale.US, "%.1f", progress.fraction * 100))
         else -> AboutUpdatePageStrings.downloadingBytes(formatBytes(download.downloadedBytes))
     }
 
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .background(colors.surface)
-            .padding(start = 16.dp, top = 12.dp, end = 16.dp, bottom = 16.dp),
+    OverlayDialog(
+        show = true,
+        title = title,
+        onDismissRequest = null,
+        // 本页不走页面骨架，没有根 Scaffold 可挂；直接投到自己的窗口里。
+        renderInRootScaffold = false,
     ) {
-        Text(text = text, style = MiuixTheme.textStyles.body2, color = colors.primary)
-        if (progress.fraction == null && download.downloadedBytes > 0) {
-            Spacer(Modifier.height(4.dp))
-            Text(
-                text = AboutUpdatePageStrings.mirrorUnknownSizeHint,
-                style = MiuixTheme.textStyles.footnote1,
-                color = colors.onSurfaceVariantSummary,
+        Column(modifier = Modifier.fillMaxWidth()) {
+            LinearProgressIndicator(
+                progress = fraction,
+                modifier = Modifier.fillMaxWidth(),
             )
-        }
-        Spacer(Modifier.height(8.dp))
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(8.dp)
-                .clip(RoundedCornerShape(999.dp))
-                .background(colors.secondaryContainer),
-        ) {
-            val fraction = progress.fraction
-            if (fraction != null) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth(fraction.toFloat())
-                        .height(8.dp)
-                        .background(colors.primary),
+            if (fraction == null && download.downloadedBytes > 0) {
+                Spacer(Modifier.height(8.dp))
+                Text(
+                    text = AboutUpdatePageStrings.mirrorUnknownSizeHint,
+                    style = MiuixTheme.textStyles.footnote1,
+                    color = colors.onSurfaceVariantSummary,
                 )
             }
-        }
-        Spacer(Modifier.height(10.dp))
-        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
-            TextButton(
-                text = if (download.cancelling) {
-                    AboutUpdatePageStrings.downloadCancelling
-                } else {
-                    AboutUpdatePageStrings.cancelDownloadAction
-                },
-                onClick = onCancel,
-                enabled = !download.cancelling,
-            )
+            Spacer(Modifier.height(4.dp))
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.End,
+            ) {
+                TextButton(
+                    text = if (download.cancelling) {
+                        AboutUpdatePageStrings.downloadCancelling
+                    } else {
+                        AboutUpdatePageStrings.cancelDownloadAction
+                    },
+                    onClick = onCancel,
+                    enabled = !download.cancelling,
+                )
+            }
         }
     }
 }
