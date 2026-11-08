@@ -9,6 +9,7 @@ import '../../models/timetable_settings.dart';
 import '../../providers/timetable_provider.dart';
 import '../../services/app_log_service.dart';
 import '../../utils/app_toast.dart';
+import '../../utils/full_date_format.dart';
 import '../../ui/hyperos/hyperos.dart';
 import '../../widgets/miuix_date_picker_sheet.dart';
 import '../../widgets/course_field_picker_sheet.dart';
@@ -166,7 +167,7 @@ class HolidaySettingsScreenState extends State<HolidaySettingsScreen> {
                       final startField = HyperosPickerField(
                         label: l10n.customHolidayStartDate,
                         value: startDate != null
-                            ? _formatFullDate(startDate!)
+                            ? formatFullDate(startDate!)
                             : '--',
                         isPlaceholder: startDate == null,
                         onTap: () async {
@@ -190,7 +191,7 @@ class HolidaySettingsScreenState extends State<HolidaySettingsScreen> {
                       final endField = HyperosPickerField(
                         label: l10n.customHolidayEndDate,
                         value: endDate != null
-                            ? _formatFullDate(endDate!)
+                            ? formatFullDate(endDate!)
                             : '--',
                         isPlaceholder: endDate == null,
                         onTap: () async {
@@ -657,13 +658,6 @@ class HolidaySettingsScreenState extends State<HolidaySettingsScreen> {
 
   bool _isSameDate(DateTime a, DateTime b) =>
       a.year == b.year && a.month == b.month && a.day == b.day;
-
-  String _formatFullDate(DateTime date) {
-    final y = date.year.toString().padLeft(4, '0');
-    final m = date.month.toString().padLeft(2, '0');
-    final d = date.day.toString().padLeft(2, '0');
-    return '$y-$m-$d';
-  }
 }
 
 /// Advanced holiday tools: manual refresh + update log (hidden from casual users).
