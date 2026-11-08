@@ -15,7 +15,7 @@ SRC = "docs/reference/page-index.md"
 DATA_JSON = "tool/page_index_data.json"
 PAGES_REL = "composeP1/kotlin/com/mutx163/qingyu/pages"
 SRC_ROOT = "android/app/src/composeP1/kotlin/com/mutx163/qingyu/pages"
-COLS = 3  # 一行放几个页面按钮
+COLS = 9  # 一行放几个页面按钮
 
 # 这些页面在代码里没有固定中文标题（标题由 spec / 日期 / 登录状态在运行期决定），
 # 按功能给一个人工确认过的中文名，避免表里混着英文入口名。
@@ -147,8 +147,8 @@ def render(rows, prefix):
     for r in rows:
         by_domain.setdefault(r["domain"], []).append(r)
 
-    out.append("| 分区 | 页面 | 页面 | 页面 |")
-    out.append("|---|---|---|---|")
+    out.append("| 分区 | " + " | ".join(["页面"] * COLS) + " |")
+    out.append("|---" * (COLS + 1) + "|")
 
     defs = []
     n = 0
@@ -173,7 +173,6 @@ def render(rows, prefix):
                 chunk.append(" ")
             label = "**%s**" % title if i == 0 else " "
             out.append("| %s | %s |" % (label, " | ".join(chunk)))
-        out.append("|  |  |  |  |")
 
     rest = [r for r in rows if r["domain"] not in placed]
     if rest:
