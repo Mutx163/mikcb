@@ -57,6 +57,11 @@ fun DayViewExamCard(
     glassBackdrop: Backdrop? = null,
     /** 这张卡背后壁纸的**正文带**亮度；玻璃 / 半透明档据此算卡面有效亮度定墨色。 */
     wallpaperLuminance: Double? = null,
+    /**
+     * 壁纸亮度未知时的**页底**亮度（无壁纸时卡实际压着的底色）：半透明档按
+     * 「卡色 × 真实 α + 页底 × (1−α)」合成判墨，避免按不透明卡色反判。
+     */
+    pageBackgroundLuminance: Double? = null,
     modifier: Modifier = Modifier,
 ) {
     val dark = isSystemInDarkTheme()
@@ -74,6 +79,7 @@ fun DayViewExamCard(
             fillArgb = errorColor.toArgb(),
             fillAlpha = cardColor.alpha,
             wallpaperLuminance = wallpaperLuminance,
+            pageBackgroundLuminance = pageBackgroundLuminance,
             showsWallpaper = glass != null || cardColor.alpha < 1f,
             // 实心档：按考试卡底色的真实亮度择优（多数考试红仍会拿到白字，
             // 但浅色主题下的亮红不再被写死成白字）。
@@ -83,7 +89,7 @@ fun DayViewExamCard(
     val shape = RoundedCornerShape(radius)
 
     val countdownText = if (entry.daysUntil == 0) {
-        DayViewStrings.examCountdownToday.zh
+        DayViewStrings.examCountdownToday.text
     } else {
         DayViewStrings.examCountdownDays(entry.daysUntil)
     }
@@ -126,7 +132,7 @@ fun DayViewExamCard(
                         )
                         Spacer(modifier = Modifier.width(4.dp))
                         Text(
-                            text = DayViewStrings.examBadgeLabel.zh,
+                            text = DayViewStrings.examBadgeLabel.text,
                             style = MiuixTheme.textStyles.footnote2.shiftWeight(QingyuWeightDelta.BOLD),
                             color = ink,
                         )

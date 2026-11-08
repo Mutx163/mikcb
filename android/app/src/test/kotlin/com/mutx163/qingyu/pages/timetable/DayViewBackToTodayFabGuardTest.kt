@@ -1,5 +1,6 @@
 package com.mutx163.qingyu.pages.timetable
 
+import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -29,6 +30,7 @@ import java.io.File
 class DayViewBackToTodayFabGuardTest {
 
     private val dayPageSource: String by lazy { stripKotlinComments(readAndroidSource(DAY_PAGE_PATH)) }
+    private val scrollContentSource: String by lazy { stripKotlinComments(readAndroidSource(SCROLL_CONTENT_PATH)) }
     private val weekPageSource: String by lazy { stripKotlinComments(readAndroidSource(WEEK_PAGE_PATH)) }
     private val fabSource: String by lazy { stripKotlinComments(readAndroidSource(FAB_PATH)) }
     private val stringsSource: String by lazy { stripKotlinComments(readAndroidSource(STRINGS_PATH)) }
@@ -226,10 +228,23 @@ class DayViewBackToTodayFabGuardTest {
     }
 
     @Test
-    fun `首卡顶缝必须在场`() {
+    fun `首卡顶缝必须在列表里而不是滚动区外`() {
+        // 2026-11-07 用户口径：静止时首卡不要贴住星期栏（留 14dp），但上滑时
+        // 这道缝要跟着滚走 —— 所以它必须是一个普通 item；挂在滚动区外面
+        // 就是一条永远滚不走的空带（用户报「上滑也留着空隙」）。
         assertTrue(
-            "DayViewPage 没有 DAY_VIEW_CONTENT_TOP_SEAM_DP——星期栏与滚动区之间的 14dp 缝" +
-                "（Dart timetable_day_view_part.dart:37）丢了，摘要卡吸顶会重新贴死星期栏。",
+            "DayViewScrollContent 没有 `day-top-seam` 列表项：14dp 留缝丢了，" +
+                "首卡会直接贴住星期栏。",
+            scrollContentSource.contains("day-top-seam"),
+        )
+        assertEquals(
+            "顶部留缝数值不是 14dp（Dart timetable_day_view_part.dart:37 同值）。",
+            14f,
+            constFloatValue(scrollContentSource, "DAY_VIEW_TOP_SEAM_DP"),
+        )
+        assertFalse(
+            "DayViewPage 又在滚动区外面加了留缝（DAY_VIEW_CONTENT_TOP_SEAM_DP）：" +
+                "那会变成一条永远滚不走的空带。",
             dayPageSource.contains("DAY_VIEW_CONTENT_TOP_SEAM_DP"),
         )
     }
@@ -425,6 +440,8 @@ class DayViewBackToTodayFabGuardTest {
 
         const val DAY_PAGE_PATH =
             "android/app/src/composeP1/kotlin/com/mutx163/qingyu/pages/timetable/day/DayViewPage.kt"
+        const val SCROLL_CONTENT_PATH =
+            "android/app/src/composeP1/kotlin/com/mutx163/qingyu/pages/timetable/day/DayViewScrollContent.kt"
         const val WEEK_PAGE_PATH =
             "android/app/src/composeP1/kotlin/com/mutx163/qingyu/pages/timetable/TimetableWeekPage.kt"
         const val FAB_PATH =

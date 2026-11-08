@@ -4,6 +4,7 @@ import com.mutx163.qingyu.core.CourseCardSurface
 import com.mutx163.qingyu.core.HomeMaterialRenderSpec
 import com.mutx163.qingyu.core.SurfaceMaterialState
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNull
 import org.junit.Test
 
 /**
@@ -108,6 +109,29 @@ class DayAgendaSurfaceLogicTest {
                 1f,
             ),
             0.0001f,
+        )
+    }
+
+    @Test
+    fun `有壁纸时页底亮度必须置空 等亮度测出来再判墨`() {
+        // 壁纸已上屏、`wallpaperBands` 还没量到：页底不是卡真正压着的背景。
+        assertNull(
+            "有壁纸时不许把页底交给卡片判墨",
+            dayAgendaPageFallbackLuminance(hasWallpaper = true, pageLuminance = 0.90),
+        )
+    }
+
+    @Test
+    fun `没有壁纸时页底亮度原样交给卡片`() {
+        assertEquals(
+            0.90,
+            dayAgendaPageFallbackLuminance(hasWallpaper = false, pageLuminance = 0.90)!!,
+            0.0,
+        )
+        assertEquals(
+            0.0,
+            dayAgendaPageFallbackLuminance(hasWallpaper = false, pageLuminance = 0.0)!!,
+            0.0,
         )
     }
 }

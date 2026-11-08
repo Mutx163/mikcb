@@ -278,6 +278,104 @@ class DayAgendaWallpaperInkWiringGuardTest {
     }
 
     /**
+     * 无壁纸（壁纸亮度 null）时，课程 / 日程 / 考试卡必须把**页底亮度**传进判据。
+     *
+     * 磨砂档卡面是卡色 0.55α，压在页底上；只按不透明卡色回退，中调课色会拿到
+     * 深字、深课色会拿到白字（2026-11-07 限制 1）。页底亮度由 `DayViewPage` 统一算：
+     * 自定义页底色优先，缺省用主题页底色。
+     */
+    @Test
+    fun `无壁纸时三张卡必须按页底亮度回退`() {
+        for (path in listOf(
+            "$dayDir/DayViewCourseCard.kt",
+            "$dayDir/DayViewScheduleCard.kt",
+            "$dayDir/DayViewExamCard.kt",
+        )) {
+            val source = readSource(path)
+            assertTrue(
+                "$path 没有把 `pageBackgroundLuminance = pageBackgroundLuminance` 传给共享判据：" +
+                    "磨砂档无壁纸时卡面是卡色 0.55α 压在页底上，只按不透明卡色回退会反判。",
+                source.contains("pageBackgroundLuminance = pageBackgroundLuminance"),
+            )
+            assertFalse(
+                "$path 把页底亮度写死成常数：必须由 `DayViewPage` 按真实页底色算。",
+                Regex("""pageBackgroundLuminance = 0\.\d""").containsMatchIn(source),
+            )
+        }
+
+        val scroll = readSource("$dayDir/DayViewScrollContent.kt")
+        for (marker in listOf("DayViewCourseCard(", "DayViewScheduleCard(", "DayViewExamCard(")) {
+            assertTrue(
+                "$marker 的调用没有把 `pageBackgroundLuminance = pageBackgroundLuminance` 传下去",
+                callBlock(scroll, marker).contains("pageBackgroundLuminance = pageBackgroundLuminance"),
+            )
+        }
+
+        val page = readSource("$dayDir/DayViewPage.kt")
+        assertTrue(
+            "DayViewPage 没有把页底亮度传给日视图滚动内容",
+            callBlock(page, "DayViewScrollContent(")
+                .contains("pageBackgroundLuminance = pageBackgroundLuminance"),
+        )
+        assertTrue(
+            "DayViewPage 没有用 `CourseCardInk.relativeLuminance(` 算页底亮度",
+            page.contains("CourseCardInk.relativeLuminance("),
+        )
+        assertTrue(
+            "DayViewPage 的页底亮度没有按「自定义页底色优先、缺省主题页底」取色",
+            page.contains("pageColorArgb ?: QingyuTheme.scaffoldBackground(dark)"),
+        )
+    }
+
+    /**
+     * 有壁纸、但亮度还没测出来时，页面必须把页底亮度置空（瞬态回归）。
+     *
+     * 屏幕上是壁纸、`wallpaperBands` 还是 null 的那一段，按页底判墨会闪一帧反极性：
+     * 浅色页底 + 深壁纸 ⇒ 深字压深底。信号必须是**纯**壁纸存在（`homeChrome.hasBackdrop`），
+     * 不能拿乘了材质开关的 `hasBackdrop` 代替，也不能直接传页底色。
+     */
+    @Test
+    fun `有壁纸时不许用页底亮度判墨`() {
+        val page = readSource("$dayDir/DayViewPage.kt")
+        assertTrue(
+            "DayViewPage 没有用 `dayAgendaPageFallbackLuminance(` 门控页底亮度：" +
+                "有壁纸但亮度未就绪时按页底判墨会闪一帧反极性。",
+            page.contains("dayAgendaPageFallbackLuminance("),
+        )
+        assertTrue(
+            "DayViewPage 没有把 `hasWallpaper = hasWallpaper` 传给门控（传错值等于没门控）",
+            page.contains("hasWallpaper = hasWallpaper"),
+        )
+
+        val shell =
+            readSource("android/app/src/main/kotlin/com/mutx163/qingyu/pages/ShellPageIndex.kt")
+        val shellCall = callBlock(shell, "DayViewPage(")
+        assertTrue(
+            "壳的 `c3.day` 没传纯 `hasWallpaper = homeChrome.hasBackdrop`：" +
+                "漏了这一行，独立日页/首页展开层仍会在亮度未就绪时按页底反判。",
+            shellCall.contains("hasWallpaper = homeChrome.hasBackdrop"),
+        )
+        assertFalse(
+            "壳把壁纸存在信号与材质开关相与了（`hasWallpaper = glassSurfacesEnabled && …`）：" +
+                "关掉玻璃时它会把「有壁纸」误报成没有。",
+            shellCall.contains("hasWallpaper = glassSurfacesEnabled &&"),
+        )
+
+        val editor = readSource(
+            "android/app/src/composeP1/kotlin/com/mutx163/qingyu/app/AppearanceEditorHost.kt",
+        )
+        val editorCall = callBlock(editor, "DayViewPage(")
+        assertTrue(
+            "外观预览没传纯 `hasWallpaper = homeChrome.hasBackdrop`",
+            editorCall.contains("hasWallpaper = homeChrome.hasBackdrop"),
+        )
+        assertFalse(
+            "外观预览把壁纸存在信号与材质开关相与了",
+            editorCall.contains("hasWallpaper = glassSurfacesEnabled &&"),
+        )
+    }
+
+    /**
      * 取出一个成员（函数 / 属性）的源码块：从 `marker` 起到下一个同层成员（KDoc 注释或 `fun`）前。
      *
      * 不用花括号配对 —— 表达式体函数（`fun f(...) = if (...) { ... } else { ... }`）里第一个

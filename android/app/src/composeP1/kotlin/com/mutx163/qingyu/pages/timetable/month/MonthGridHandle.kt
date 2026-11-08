@@ -3,6 +3,8 @@ package com.mutx163.qingyu.pages.timetable.month
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
+import androidx.compose.foundation.gestures.awaitVerticalTouchSlopOrCancellation
+import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.gestures.drag
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -65,8 +67,18 @@ object MonthGridHandleMetrics {
  * 不传 `DragUpdateDetails` / `DragEndDetails`：那两个对象里还带着位置、时间戳、
  * 指针类型，渲染层一旦开始从里面挑数字，判据就散回界面层了。
  *
+ * ## 触摸阈值与横向过路（2026-11-08）
+ *
+ * 旧实现按下即 `drag()`、每个 move 都 `consume()`：① 一碰拉杆就把正在跑的吸附动画
+ * 取消掉；② 从这条 26dp 带子起手横滑会被整段吃掉（而 pager 并不覆盖这里）——
+ * 手指停在卡底时左右划完全没反应。现在：
+ * * 与网格同一条纪律，越过纵向 touch slop 才接管，接管前的位移不消费；
+ * * 另挂一条横向手势：越过横向 slop 后按位移方向翻月（与 pager 同语义）。
+ *
  * @param barColor 细条颜色。它压在**卡片**上（不画在背景上），所以由调用方从
  *   卡片墨色取半透明档传入（[MonthInk.HAIRLINE]），与卡内文字同源。
+ * @param onSwipeLeft 在拉杆带上向左划（= 看下个月）。
+ * @param onSwipeRight 在拉杆带上向右划（= 看上个月）。
  */
 @Composable
 fun MonthGridHandle(
@@ -75,6 +87,8 @@ fun MonthGridHandle(
     onDragUpdate: (dy: Float) -> Unit,
     onDragEnd: (velocityDy: Float) -> Unit,
     modifier: Modifier = Modifier,
+    onSwipeLeft: () -> Unit = {},
+    onSwipeRight: () -> Unit = {},
 ) {
     val density = LocalDensity.current
     Box(
@@ -87,8 +101,18 @@ fun MonthGridHandle(
                     val down = awaitFirstDown(requireUnconsumed = false)
                     tracker.resetTracking()
                     tracker.addPosition(down.uptimeMillis, down.position)
+                    // 先过 slop 再接管：轻点拉杆不应该取消正在跑的吸附，也不应该夺走横向滑动。
+                    var overSlop = 0f
+                    val crossing = awaitVerticalTouchSlopOrCancellation(down.id) { change, over ->
+                        change.consume()
+                        overSlop = over
+                    }
+                    if (crossing == null) return@awaitEachGesture
+                    tracker.addPosition(crossing.uptimeMillis, crossing.position)
                     onDragStart()
-                    drag(down.id) { change ->
+                    // 阈值内的位移补上，避免「起手丢几像素」。
+                    if (overSlop != 0f) onDragUpdate(with(density) { overSlop.toDp().value })
+                    drag(crossing.id) { change ->
                         // 位移取「本次事件相对上次事件」的差，与 Dart 那份
                         // `_onPointerMove` 的 dy 口径一致（不是相对按下点的累计）。
                         val dyPx = change.position.y - change.previousPosition.y
@@ -104,6 +128,25 @@ fun MonthGridHandle(
                     }
                     onDragEnd(velocityDp)
                 }
+            }
+            // 拉杆带不在 pager 的覆盖范围内（pager 到卡底就结束了），所以横向滑动
+            // 需要自己转给翻月；否则手指落在卡底那 26dp 上左右划是彻底没反应的。
+            .pointerInput(Unit) {
+                var totalDx = 0f
+                detectHorizontalDragGestures(
+                    onDragStart = { totalDx = 0f },
+                    onHorizontalDrag = { change, dragAmount ->
+                        totalDx += dragAmount
+                        change.consume()
+                    },
+                    onDragEnd = {
+                        val threshold = 32.dp.toPx()
+                        when {
+                            totalDx <= -threshold -> onSwipeLeft()
+                            totalDx >= threshold -> onSwipeRight()
+                        }
+                    },
+                )
             },
         contentAlignment = Alignment.Center,
     ) {

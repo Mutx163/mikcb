@@ -67,8 +67,11 @@ class MonthPanelDragState {
  *
  * | 手势 | 第一优先 | 之后 |
  * |---|---|---|
- * | 向上拖（dy < 0，看下面） | 网格收起（进度 → 0） | 收到底后滚列表 |
- * | 向下拖（dy > 0，往回看） | 列表退回顶部 | 到顶后网格展开（进度 → 1） |
+ * | 向上拖（dy < 0，看下面） | 网格收起（进度 → 0） | 收到尾后滚列表 |
+ * | 向下拖（dy > 0，往回看） | 网格展开（进度 → 1） | 展满后回滚列表 |
+ *
+ * 两个方向都是「先动日历、再动列表」：向下拖若先让列表回顶，用户把日历往上拉
+ * 半天也拉不下来（2026-11-08 实报）。
  *
  * 判据在 [MonthPanelDragRouting.collapseTakesPriority]（纯函数、有单测），
  * 本组件只负责「取位移 → 问判据 → 分派 → 补惯性」。
@@ -120,14 +123,8 @@ fun MonthPanelDragArea(
                 val dyDp = with(density) { dyPx.toDp().value }
 
                 val list = state.listState
-                val listCanScroll = list != null && MonthPanelDragRouting.listCanScroll(
-                    dy = dyDp.toDouble(),
-                    canScrollForward = list.canScrollForward,
-                    canScrollBackward = list.canScrollBackward,
-                )
                 val toGrid = MonthPanelDragRouting.collapseTakesPriority(
                     dy = dyDp.toDouble(),
-                    listCanScroll = listCanScroll,
                     gridCanAbsorb = state.gridCanAbsorb(dyDp),
                 )
 

@@ -73,6 +73,14 @@ fun DayViewCourseCard(
     weatherInfo: String? = null,
     /** 「课卡显示冲突角标」开关（Dart `showConflictBadgeOnTimetable`）。关掉只藏角标，边框仍在。 */
     showConflictBadge: Boolean = true,
+    /**
+     * 冲突课程卡面透明度（设置 `timetableConflictCourseOpacity`，默认 0.70）。
+     *
+     * Dart 的卡面透明度由 `courseDisplayOpacity`（`day_course_display_logic.dart:54-63`）
+     * 统一给出：非本周恒 0.62（优先）、本周冲突跟这个设置、其余 1.0。
+     * 2026-11-07 之前这里只写死了非本周那档，**设置里的冲突透明度没读**。
+     */
+    conflictCourseOpacity: Float = 0.70f,
     radius: Dp = 16.dp,
     /**
      * 材质快照（`SettingsMaterialModel.renderSpecOf` 的唯一出口）。null = 老行为
@@ -89,6 +97,11 @@ fun DayViewCourseCard(
      * 玻璃 / 半透明档拿它算卡面有效亮度来定墨色；null = 没壁纸 / 还没采到 ⇒ 主题口径。
      */
     wallpaperLuminance: Double? = null,
+    /**
+     * 壁纸亮度未知时的**页底**亮度（无壁纸时卡实际压着的底色）：半透明档按
+     * 「卡色 × 真实 α + 页底 × (1−α)」合成判墨，避免按不透明卡色反判。
+     */
+    pageBackgroundLuminance: Double? = null,
     modifier: Modifier = Modifier,
 ) {
     val dark = isSystemInDarkTheme()
@@ -100,7 +113,18 @@ fun DayViewCourseCard(
     } else {
         rawColor
     }
-    val cardAlpha = if (isSuspended) 0.84f else if (!entry.isCurrentWeekCourse) 0.62f else 1f
+    val cardAlpha = if (isSuspended) {
+        // Dart `effectiveOpacity = isSuspended ? 0.84 : item.opacity`：停课压淡盖过
+        // 非本周 / 冲突两档。
+        0.84f
+    } else {
+        // 与周视图**同一份**判据（不另写一套数值）：非本周 0.62 优先，本周冲突读设置。
+        WeekGridCourseMapping.courseDisplayOpacity(
+            isCurrentWeek = entry.isCurrentWeekCourse,
+            isConflicting = entry.isConflicting,
+            conflictOpacity = conflictCourseOpacity,
+        )
+    }
     // 卡面档位（实体 / 高斯降级 / 液态染色）与周网格课卡同一条口径，见 [dayAgendaSurfaceAlpha]。
     val cardColor = baseCardColor.copy(
         alpha = dayAgendaSurfaceAlpha(material, cardAlpha).coerceIn(0.08f, 1f),
@@ -115,6 +139,7 @@ fun DayViewCourseCard(
             fillArgb = baseCardColor.toArgb(),
             fillAlpha = cardColor.alpha,
             wallpaperLuminance = wallpaperLuminance,
+            pageBackgroundLuminance = pageBackgroundLuminance,
             showsWallpaper = glass != null || cardColor.alpha < 1f,
             // 实心档（不露壁纸）：按**卡色自身的 WCAG 亮度**在白 / 近黑里择优，
             // 不再走 calculateCardInk 那套 gamma 0.55 阈值（#808080 会判成白字）。
@@ -229,7 +254,7 @@ fun DayViewCourseCard(
                                 DayViewStrings.dayAgendaInProgressStatus(progress.remainingMinutes)
                             }
                         } else {
-                            DayViewStrings.ongoingCourseBadge.zh
+                            DayViewStrings.ongoingCourseBadge.text
                         }
                         DayAgendaBadge(
                             text = statusText,
@@ -243,7 +268,7 @@ fun DayViewCourseCard(
                     // 关掉只藏角标，冲突边框仍保留）
                     if (entry.isConflicting && showConflictBadge) {
                         DayAgendaBadge(
-                            text = DayViewStrings.conflictLabel.zh,
+                            text = DayViewStrings.conflictLabel.text,
                             textColor = Color.White,
                             backgroundColor = Color(QingyuTheme.error(dark)),
                         )
@@ -252,7 +277,7 @@ fun DayViewCourseCard(
                     // 对方课程（情侣）徽标
                     if (entry.isPartnerCourse) {
                         DayAgendaBadge(
-                            text = DayViewStrings.coupleTimetableLegendPartner.zh,
+                            text = DayViewStrings.coupleTimetableLegendPartner.text,
                             textColor = Color.White,
                             backgroundColor = Color(0xFFE91E63),
                         )
@@ -261,7 +286,7 @@ fun DayViewCourseCard(
                     // 非本周徽标
                     if (!entry.isCurrentWeekCourse) {
                         DayAgendaBadge(
-                            text = DayViewStrings.nonCurrentWeekLabel.zh,
+                            text = DayViewStrings.nonCurrentWeekLabel.text,
                             textColor = ink,
                             backgroundColor = Color.White.copy(alpha = 0.14f),
                         )
@@ -270,7 +295,7 @@ fun DayViewCourseCard(
                     // 停课徽标
                     if (isSuspended) {
                         DayAgendaBadge(
-                            text = DayViewStrings.suspendedBadgeLabel.zh,
+                            text = DayViewStrings.suspendedBadgeLabel.text,
                             textColor = Color.White,
                             backgroundColor = Color(0xFFD32F2F),
                         )
@@ -333,7 +358,7 @@ fun DayViewCourseCard(
             Spacer(modifier = Modifier.height(8.dp))
 
             // 教师与节次
-            val teacher = entry.course.teacher.trim().ifEmpty { DayViewStrings.unknownTeacher.zh }
+            val teacher = entry.course.teacher.trim().ifEmpty { DayViewStrings.unknownTeacher.text }
             val section = DayViewStrings.sectionRangeLabel(entry.course.startSection, entry.course.endSection)
             val teacherLabel = "${DayViewStrings.teacherPrefix(teacher)} · $section"
             DayAgendaInfoRow(
@@ -350,7 +375,7 @@ fun DayViewCourseCard(
             )
 
             // 地点
-            val location = entry.course.location.trim().ifEmpty { DayViewStrings.unknownLocation.zh }
+            val location = entry.course.location.trim().ifEmpty { DayViewStrings.unknownLocation.text }
             val locationLabel = DayViewStrings.locationPrefix(location)
             Spacer(modifier = Modifier.height(4.dp))
             DayAgendaInfoRow(

@@ -108,6 +108,19 @@ object MonthCollapse {
     const val FLIP_TRAVEL: Double = 0.35
 
     /**
+     * 松手时「至少走过多少比例」才算有意翻面。
+     *
+     * 2026-11-08 从 [FLIP_TRAVEL]（0.35）降到 0.10：用户实报「往上滑松手就掉回去、
+     * 根本不收」。0.35 要求手指走完三分之一行程，轻划一下（尤其是行程按 6 行算的
+     * 月份）会被判成「没想收」，观感就是「滑了但不听话」。0.10 只挡真抖动，
+     * 方向一旦明确就落向那端。
+     *
+     * [FLIP_TRAVEL] 仍用于 [MonthPanelLevel] 的档位分界（那是在说「此刻看起来像
+     * 展开还是收起」），两者含义不同，不要合并。
+     */
+    const val SETTLE_TRAVEL: Double = 0.10
+
+    /**
      * 松手时判方向用的速度阈值（dp/s）。
      *
      * 比 Flutter 的 `kMinFlingVelocity`（50）严：手一抖就翻面会让「想看整月却
@@ -279,6 +292,8 @@ data class MonthAgendaRow(
  * 2. 「向下滑的时候应该是**先收起上面为一行**，**然后再是下面信息区域滚动**」；
  * 3. 「为什么现在滚动的时候，手拉下面信息区域，它可以直接下滑信息区域滚动，
  *    而不是先收起上面的东西，**这两个滚动没有一体化的效果**」。
+ * 4. 2026-11-08：「往下拉，拉半天，都下不下来，下拉自动又上去了」——议程滚过一段后
+ *    向下拖全被列表吃掉，日历不动。于是两个方向都改成「先动日历」。
  *
  * ## 为什么判据是纯函数
  *
@@ -287,12 +302,12 @@ data class MonthAgendaRow(
  * 当场判死）。最终形态是「列表的用户滚动整个关掉、位移由一处算好再 jump 进去」，
  * 于是**唯一容易改错的就是「这段位移归谁」**。抽成静态纯函数才钉得住。
  *
- * ## 顺序（用户口径那张表）
+ * ## 顺序
  *
  * | 手势 | 第一优先 | 之后 |
  * |---|---|---|
- * | 向上拖（dy < 0，看下面） | 网格收起（t → 0） | 收到底后滚列表 |
- * | 向下拖（dy > 0，往回看） | 列表退回顶部 | 到顶后网格展开（t → 1） |
+ * | 向上拖（dy < 0，看下面） | 网格收起（t → 0） | 收到尾后滚列表 |
+ * | 向下拖（dy > 0，拉回日历） | 网格展开（t → 1） | 展满后回滚列表 |
  */
 object MonthPanelDragRouting {
 
@@ -310,45 +325,20 @@ object MonthPanelDragRouting {
     /**
      * 这段位移该归网格（true）还是归列表（false）。
      *
+     * **两个方向都是「网格先走完，再轮到列表」**：
+     * * 向上拖（dy < 0）= 要看下面 → 网格先收起，收到底才滚列表；
+     * * 向下拖（dy > 0）= 要把日历拉回来 → **网格先展开**，展满才回滚列表。
+     *
+     * 2026-11-08 改：旧实现对向下拖采用「列表先退回顶部，到顶才展开网格」。
+     * 用户实报「往下拉，拉半天，都下不来，下拉自动又上去了」——议程滚过一段后
+     * 向下拖全被列表吃掉，日历根本不动。现在两个方向对称：手势先作用在日历上。
+     *
      * @param dy 本次指针位移（向上为负）。
-     * @param listCanScroll 列表此刻还能不能往这个方向滚（判据见 [listCanScroll]）。
      * @param gridCanAbsorb 网格此刻还能不能往这个方向收放。
      */
-    fun collapseTakesPriority(
-        dy: Double,
-        listCanScroll: Boolean,
-        gridCanAbsorb: Boolean,
-    ): Boolean {
+    fun collapseTakesPriority(dy: Double, gridCanAbsorb: Boolean): Boolean {
         if (dy == 0.0) return false
-        if (dy < 0) {
-            // 往上拖 = 要看下面：网格先让位，与列表当前位置无关。
-            return gridCanAbsorb
-        }
-        // 往下拖 = 往回看：列表先退回顶部，到顶了才轮到网格展开。
-        if (listCanScroll) return false
         return gridCanAbsorb
-    }
-
-    /**
-     * 列表此刻还能不能往 [dy] 方向滚。
-     *
-     * 判据直接吃 Compose 的 `canScrollForward` / `canScrollBackward`，**不再自己
-     * 用 pixels / min / max 判边界**：`LazyListState` 不暴露 maxScrollExtent（它要
-     * 靠已测量的项累加），而那两个 flag 已经把边界与亚像素余量都算进去了。自己
-     * 凑一个近似的 max，反而会在「滚到底差 0.5dp」时判错 —— 用户在那儿拖会觉得
-     * 第一下没反应。
-     *
-     * 两个 flag 都为 false（没有滚动视图、或内容没超过一屏）时恒 false：概览态
-     * 内容正好填满，本来就没有可滚的位移，那时位移应当**全部**交给网格收放。
-     */
-    fun listCanScroll(
-        dy: Double,
-        canScrollForward: Boolean,
-        canScrollBackward: Boolean,
-    ): Boolean = when {
-        dy < 0 -> canScrollForward
-        dy > 0 -> canScrollBackward
-        else -> false
     }
 
     /** 这一段抬手速度够不够触发惯性（列表的用户滚动被关掉了，惯性得自己补）。 */
@@ -452,18 +442,18 @@ object MonthPanelModel {
      *
      * 判据按优先级：
      * 1. 明确的甩动方向压倒一切（[velocityDy] 向上 = 收起、向下 = 展开）；
-     * 2. 没甩够速度就看**行程**：从 [startValue] 走过 [MonthCollapse.FLIP_TRAVEL]
-     *    的比例就吸附到对面；
-     * 3. 都不够 → 弹回起点状态（手指在临界点抖动不会翻面）。
+     * 2. 没甩够速度就看**方向与行程**：走过的部分 ≥ [MonthCollapse.SETTLE_TRAVEL]
+     *    就落向手指去的那端（不是「必须走满 35%」）；
+     * 3. 行程不到门槛 → 弹回起点状态（手指在临界点抖动不会翻面）。
      */
     fun settleTarget(startValue: Double, currentValue: Double, velocityDy: Double): Double {
         if (velocityDy <= -MonthCollapse.FLING_VELOCITY) return 0.0
         if (velocityDy >= MonthCollapse.FLING_VELOCITY) return 1.0
-        val traveled = abs(startValue - currentValue)
-        if (traveled >= MonthCollapse.FLIP_TRAVEL) {
-            return if (currentValue < startValue) 0.0 else 1.0
+        val traveled = currentValue - startValue
+        if (abs(traveled) < MonthCollapse.SETTLE_TRAVEL) {
+            return if (startValue >= 0.5) 1.0 else 0.0
         }
-        return if (startValue >= 0.5) 1.0 else 0.0
+        return if (traveled < 0.0) 0.0 else 1.0
     }
 
     /** 松手吸附到哪个档（[settleTarget] 的枚举版，供无障碍与拉杆外观使用）。 */

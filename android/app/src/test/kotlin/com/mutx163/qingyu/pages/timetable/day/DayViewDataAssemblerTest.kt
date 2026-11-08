@@ -472,6 +472,66 @@ class DayViewDataAssemblerTest {
         )
     }
 
+    @Test
+    fun `叠加时已结课的旧课不挂在后面周次`() {
+        // 1–8 周的课翻到第 12 周：关掉叠加时它早被剪掉；叠加开启后曾经只按 `dayOfWeek`
+        // 过滤，会把它一起塞进合并内核 ⇒ 第 12 周还画着第 8 周就结课的课。
+        // Dart `buildCoupleDayCourseDisplayItems`（`day_course_display_logic.dart:302-310`）
+        // 对 myCourses 先剪枝再进 items，这条钉的是那个口径。
+        val day = DayViewDataAssembler.build(
+            week = 12,
+            dayOfWeek = 3,
+            courses = listOf(
+                course("finished", startSection = 1, endSection = 2, startWeek = 1, endWeek = 8),
+            ),
+            settings = TimetableSettings(semesterWeekCount = 20),
+            currentWeek = 12,
+            now = now,
+            partnerOverlay = CoupleOverlay(
+                weekOffset = 0,
+                mineColorHex = "#111111",
+                partnerColorHex = "#222222",
+                togetherColorHex = "#333333",
+                partnerCourses = emptyList(),
+            ),
+        )
+        assertEquals(
+            "第 12 周不该再出现 1–8 周的课",
+            emptyList<String>(),
+            day.agendaEntries.filterIsInstance<DayAgendaEntry.CourseEntry>().map { it.course.id },
+        )
+    }
+
+    @Test
+    fun `叠加时被本周课压住的非本周课同样剪掉 与不叠加同口径`() {
+        // 本周课 A（1–16 周）与后面才开课的 B（15–18 周）同坑位。开着「显示非本周课程」时，
+        // 不叠加的分支会用 A 压掉 B（`visibleDayCourses`）；叠加分支曾经两张都画。
+        val courses = listOf(
+            course("A", startSection = 1, endSection = 2, startWeek = 1, endWeek = 16),
+            course("B", startSection = 1, endSection = 2, startWeek = 15, endWeek = 18),
+        )
+        fun ids(overlay: CoupleOverlay?) = DayViewDataAssembler.build(
+            week = 12,
+            dayOfWeek = 3,
+            courses = courses,
+            settings = TimetableSettings(semesterWeekCount = 20),
+            currentWeek = 12,
+            now = now,
+            showNonCurrentWeekCourses = true,
+            partnerOverlay = overlay,
+        ).agendaEntries.filterIsInstance<DayAgendaEntry.CourseEntry>().map { it.course.id }
+
+        val overlay = CoupleOverlay(
+            weekOffset = 0,
+            mineColorHex = "#111111",
+            partnerColorHex = "#222222",
+            togetherColorHex = "#333333",
+            partnerCourses = emptyList(),
+        )
+        assertEquals("不叠加时 B 被 A 压掉", listOf("A"), ids(null))
+        assertEquals("叠加后必须同口径", listOf("A"), ids(overlay))
+    }
+
     // ------------------------------------------------------------------ 夹具
 
     private fun course(

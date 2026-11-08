@@ -70,8 +70,11 @@ class DayViewOverlayPerfWiringGuardTest {
             "remember(target.week, target.dayOfWeek, dataVersion)" in day,
         )
         assertTrue(
-            "`c3.day` 调用 `DayViewPage` 时没有传 `dataVersion = snapshot`——仓储变了日视图不会跟着变。",
-            "dataVersion = snapshot" in shell,
+            "`c3.day` 调用 `DayViewPage` 时没有传包含 `snapshot` 的 `dataVersion`——仓储变了日视图不会跟着变。",
+            // 2026-11-08 加宽：c3.day 现在传 `Triple(snapshot, coupleOverlayRevision, weatherTick)`
+            // ——snapshot 仍在版本表达式里（且额外挂情侣叠加层与天气刻度），字面比对要认它，
+            // 否则会为了过守卫把 weatherTick 拆回去，天气会退化成「今天以后无天气」。
+            shell.contains("dataVersion = snapshot") || shell.contains("Triple(snapshot,"),
         )
     }
 

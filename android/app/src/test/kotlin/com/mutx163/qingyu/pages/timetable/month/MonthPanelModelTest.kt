@@ -84,16 +84,21 @@ class MonthPanelModelTest {
 
     @Test
     fun `松手吸附_没甩够就看行程`() {
-        // 从展开走了 0.40（≥ 0.35）→ 翻面收起。
+        // 从展开走了 0.40 → 翻面收起。
         assertEquals(0.0, MonthPanelModel.settleTarget(1.0, 0.60, 0.0), 1e-9)
-        // 从展开只走 0.30（< 0.35）→ 弹回展开。
-        assertEquals(1.0, MonthPanelModel.settleTarget(1.0, 0.70, 0.0), 1e-9)
-        // 边界正好 0.35 → 算翻面（>= 判据，不是 >）。
-        assertEquals(0.0, MonthPanelModel.settleTarget(1.0, 0.65, 0.0), 1e-9)
+        // 从展开只走 0.30 → 也算翻面（2026-11-08 从 0.35 降到 0.10）。
+        // 旧口径在这里弹回，「轻划一下不收」就是它造成的。
+        assertEquals(0.0, MonthPanelModel.settleTarget(1.0, 0.70, 0.0), 1e-9)
+        // 走过 0.12 → 翻面（0.10 的门槛）。
+        assertEquals(0.0, MonthPanelModel.settleTarget(1.0, 0.88, 0.0), 1e-9)
+        // 只走 0.05（真抖动）→ 弹回展开。
+        assertEquals(1.0, MonthPanelModel.settleTarget(1.0, 0.95, 0.0), 1e-9)
         // 从收起往下走 0.40 → 翻面展开。
         assertEquals(1.0, MonthPanelModel.settleTarget(0.0, 0.40, 0.0), 1e-9)
-        // 从收起只走 0.10 → 弹回收起。
-        assertEquals(0.0, MonthPanelModel.settleTarget(0.0, 0.10, 0.0), 1e-9)
+        // 从收起只走 0.05 → 弹回收起。
+        assertEquals(0.0, MonthPanelModel.settleTarget(0.0, 0.05, 0.0), 1e-9)
+        // 从收起走 0.12 → 展开（与收起方向对称）。
+        assertEquals(1.0, MonthPanelModel.settleTarget(0.0, 0.12, 0.0), 1e-9)
     }
 
     @Test
@@ -496,88 +501,30 @@ class MonthPanelModelTest {
     // ------------------------------------------------------------------
 
     @Test
-    fun `上滑总是先收起网格_与列表位置无关`() {
-        // 上滑（dy < 0）：网格只要还能收就先让它收，哪怕列表还能滚。
+    fun `两个方向都是先动网格_再动列表`() {
+        // 上滑（dy < 0）：网格只要还能收就先让它收。
         assertTrue(
-            MonthPanelDragRouting.collapseTakesPriority(
-                dy = -20.0,
-                listCanScroll = true,
-                gridCanAbsorb = true,
-            ),
+            MonthPanelDragRouting.collapseTakesPriority(dy = -20.0, gridCanAbsorb = true),
         )
         // 网格已经收到底：位移交给列表。
         assertFalse(
-            MonthPanelDragRouting.collapseTakesPriority(
-                dy = -20.0,
-                listCanScroll = true,
-                gridCanAbsorb = false,
-            ),
+            MonthPanelDragRouting.collapseTakesPriority(dy = -20.0, gridCanAbsorb = false),
         )
-    }
-
-    @Test
-    fun `下滑先让列表回顶_到顶才展开网格`() {
-        assertFalse(
-            MonthPanelDragRouting.collapseTakesPriority(
-                dy = 20.0,
-                listCanScroll = true,
-                gridCanAbsorb = true,
-            ),
-        )
+        // 下滑（dy > 0）：网格只要还能展开就先让它展开（2026-11-08 改）。
+        // 旧实现这里会被列表吃掉，用户看到的就是「往下拉半天日历都不下来」。
         assertTrue(
-            MonthPanelDragRouting.collapseTakesPriority(
-                dy = 20.0,
-                listCanScroll = false,
-                gridCanAbsorb = true,
-            ),
+            MonthPanelDragRouting.collapseTakesPriority(dy = 20.0, gridCanAbsorb = true),
         )
-        // 列表到顶且网格已全展开：谁都不接（手指下去画面不动，但这是诚实结果）。
+        // 网格已全展开：位移交给列表。
         assertFalse(
-            MonthPanelDragRouting.collapseTakesPriority(
-                dy = 20.0,
-                listCanScroll = false,
-                gridCanAbsorb = false,
-            ),
+            MonthPanelDragRouting.collapseTakesPriority(dy = 20.0, gridCanAbsorb = false),
         )
         // 零位移不归任何人（避免空转一顿开始/结束回调）。
         assertFalse(
-            MonthPanelDragRouting.collapseTakesPriority(
-                dy = 0.0,
-                listCanScroll = true,
-                gridCanAbsorb = true,
-            ),
+            MonthPanelDragRouting.collapseTakesPriority(dy = 0.0, gridCanAbsorb = true),
         )
     }
 
-    @Test
-    fun `列表可滚判定按方向取对应一侧的 flag`() {
-        // 内容没超过一屏：两个 flag 都 false，谁都不归列表。
-        assertFalse(
-            MonthPanelDragRouting.listCanScroll(
-                dy = -10.0,
-                canScrollForward = false,
-                canScrollBackward = false,
-            ),
-        )
-        // 上滑（dy < 0，想看下面）只看「还能往下滚」。
-        assertTrue(
-            MonthPanelDragRouting.listCanScroll(dy = -10.0, canScrollForward = true, canScrollBackward = false),
-        )
-        assertFalse(
-            MonthPanelDragRouting.listCanScroll(dy = -10.0, canScrollForward = false, canScrollBackward = true),
-        )
-        // 下滑（dy > 0，往回看）只看「还能往上滚」。
-        assertTrue(
-            MonthPanelDragRouting.listCanScroll(dy = 10.0, canScrollForward = false, canScrollBackward = true),
-        )
-        assertFalse(
-            MonthPanelDragRouting.listCanScroll(dy = 10.0, canScrollForward = true, canScrollBackward = false),
-        )
-        // 零位移不归列表（避免空转）。
-        assertFalse(
-            MonthPanelDragRouting.listCanScroll(dy = 0.0, canScrollForward = true, canScrollBackward = true),
-        )
-    }
 
     @Test
     fun `抬手惯性线性估算_与速度同号且轻甩不补`() {

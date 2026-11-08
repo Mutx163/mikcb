@@ -69,6 +69,10 @@ fun MonthCalendarCard(
     onDragStart: () -> Unit = {},
     onDragUpdate: (dy: Float) -> Unit = {},
     onDragEnd: (velocityDy: Float) -> Unit = {},
+    /** 在卡底拉杆带上向左划 = 看下个月。 */
+    onSwipeLeft: () -> Unit = {},
+    /** 在卡底拉杆带上向右划 = 看上个月。 */
+    onSwipeRight: () -> Unit = {},
     content: @Composable ColumnScope.() -> Unit,
 ) {
     val dark = isSystemInDarkTheme()
@@ -141,6 +145,8 @@ fun MonthCalendarCard(
                     onDragStart = onDragStart,
                     onDragUpdate = onDragUpdate,
                     onDragEnd = onDragEnd,
+                    onSwipeLeft = onSwipeLeft,
+                    onSwipeRight = onSwipeRight,
                     modifier = Modifier.fillMaxWidth(),
                 )
             }

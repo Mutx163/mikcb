@@ -2,9 +2,8 @@ package com.mutx163.qingyu.pages.timetable.month
 
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.core.CubicBezierEasing
-import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.animate
-import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.gestures.detectVerticalDragGestures
 import androidx.compose.foundation.layout.Box
@@ -60,6 +59,7 @@ import com.mutx163.qingyu.pages.settings.SettingsMaterialModel
 import com.mutx163.qingyu.pages.settings.SurfaceMaterialState
 import com.mutx163.qingyu.pages.shell.HomeInkPolarity
 import com.mutx163.qingyu.theme.QingyuTheme
+import kotlin.math.abs
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import top.yukonga.miuix.kmp.basic.Scaffold
@@ -68,6 +68,8 @@ import top.yukonga.miuix.kmp.blur.layerBackdrop
 import top.yukonga.miuix.kmp.blur.rememberLayerBackdrop
 import java.time.LocalDate
 import java.time.LocalDateTime
+import androidx.compose.ui.tooling.preview.Preview
+import com.mutx163.qingyu.components.QingyuPageTheme
 import java.util.LinkedHashMap
 
 /**
@@ -113,6 +115,16 @@ fun MonthViewPage(
     initialYear: Int = LocalDate.now().year,
     initialMonth: Int = LocalDate.now().monthValue,
     today: LocalDateTime = LocalDateTime.now(),
+    /**
+     * 初始选中的日期（null = 进页面不选中）。**只作初值**：之后由点格子 / 点预览行接管，
+     * 宿主换页不重设。预览靠它铺「当日议程」两档（静态预览点不了格子）。
+     */
+    initialSelectedDate: LocalDateTime? = null,
+    /**
+     * 初始展开进度：1 = 展开（默认，Dart 口径）、0 = 收起。同样**只作初值**，
+     * 之后由拖拽 / 吸附接管；预览靠它铺「日历收起」那一档版面。
+     */
+    initialExpandProgress: Float = 1f,
     dataRevision: Any? = null,
     showWeekNumbers: Boolean = true,
     onOpenAgendaRow: (MonthAgendaRow) -> Unit = {},
@@ -122,6 +134,8 @@ fun MonthViewPage(
     showTopBar: Boolean = true,
     /** 把当前聚焦月（只月份，不带年份）回传给宿主，供顶部角格显示。 */
     onMonthLabelChanged: (String) -> Unit = {},
+    /** 把月网格里选中的日期回传给宿主，供顶部星期栏显示“选中那一天所在周”的日期。 */
+    onSelectedDateChanged: (LocalDateTime?) -> Unit = {},
     /**
      * 非空 = 作为 `c1.week` 的**第三种页内态**渲染（2026-11-07）。
      *
@@ -172,12 +186,17 @@ fun MonthViewPage(
     val focused = MonthPagerModel.monthOfPage(appliedPage)
     val focusedYear = focused.first
     val focusedMonth = focused.second
-    var selectedDate by remember { mutableStateOf<LocalDateTime?>(null) }
+    var selectedDate by remember { mutableStateOf(initialSelectedDate) }
+    LaunchedEffect(selectedDate) {
+        onSelectedDateChanged(selectedDate)
+    }
     // 展开进度（1 = 展开、0 = 收起）。用普通 Float 状态而不是 `Animatable`：
     // 拖拽中每次指针事件**同步**写入（Compose 快照合并到每帧一次重组），
     // 不再为每个事件 `launch { snapTo() }`（那会排队/掉帧，是收起生硬的根因之一）；
     // 松手吸附用官方 `animate(...)` 一次性驱动（见 onDragEnd）。
-    var expandValue by remember { mutableFloatStateOf(1f) }
+    var expandValue by remember {
+        mutableFloatStateOf(initialExpandProgress.coerceIn(0f, 1f))
+    }
     // 进行中的吸附动画：新一次按下/松手先取消它，避免两条动画抢同一个值。
     var settleJob by remember { mutableStateOf<Job?>(null) }
     // 拖拽起点：松手判「翻面还是弹回」的基准（判据在 settleTarget）。
@@ -328,7 +347,7 @@ fun MonthViewPage(
                     rowCount = rowCount,
                 ).toFloat()
             },
-            onDragEnd = { velocityDy, velocityProgress ->
+            onDragEnd = { velocityDy ->
                 val target = MonthPanelModel.settleTarget(
                     startValue = dragStart.toDouble(),
                     currentValue = expandValue.toDouble(),
@@ -336,17 +355,19 @@ fun MonthViewPage(
                 )
                 settleJob?.cancel()
                 settleJob = scope.launch {
-                    // 吸附必须**接住手指速度**（2026-11-08）：旧实现固定 260ms tween，
-                    // 松手瞬间速度归零、前几帧几乎不动，观感是「掉一拍」。spring 的
-                    // initialVelocity 用进度/秒，距离与速度都由它自己决定，不再有
-                    // 「只差 2% 也走满 260ms」的过阻尼。
+                    // 吸附曲线：**时长跟着剩余距离走**（70~220ms），而不是固定 260ms。
+                    // 固定时长在两头都不对：快甩时前几帧近乎不动（掉一拍），只差
+                    // 2% 时又拖了一整拍（过阻尼）。距离越短动画越短，松手即到。
+                    val distance = abs(target.toFloat() - expandValue)
+                    val durationMs = (SNAP_MS_MIN + SNAP_MS_PER_UNIT * distance)
+                        .toInt()
+                        .coerceIn(SNAP_MS_MIN, SNAP_MS_MAX)
                     animate(
                         initialValue = expandValue,
                         targetValue = target.toFloat(),
-                        initialVelocity = velocityProgress,
-                        animationSpec = spring(
-                            dampingRatio = Spring.DampingRatioNoBouncy,
-                            stiffness = Spring.StiffnessMediumLow,
+                        animationSpec = tween(
+                            durationMillis = durationMs,
+                            easing = FastOutSlowInEasing,
                         ),
                     ) { value, _ -> expandValue = value }
                     // 落定后写死端点：避免浮点残差让「收起」停在 1.0001 行。
@@ -437,6 +458,11 @@ fun MonthViewPage(
     }
 }
 
+/** 吸附时长：基础 + 每单位剩余距离，钳在 [SNAP_MS_MIN]..[SNAP_MS_MAX]。 */
+private const val SNAP_MS_MIN = 70
+private const val SNAP_MS_PER_UNIT = 160
+private const val SNAP_MS_MAX = 220
+
 /** 卡顶导航行：只在这一层读页号，滑动时只重组标题。 */
 @Composable
 private fun MonthNavigatorForPage(
@@ -507,8 +533,7 @@ private fun MonthViewBody(
     onAddCourse: (LocalDateTime) -> Unit,
     onDragStart: () -> Unit,
     onDragUpdate: (dy: Float, rowHeightDp: Double, rowCount: Int) -> Unit,
-    /** [velocityProgress] = 进度/秒（已除过拖拽行程），吸附动画拿它当初速度。 */
-    onDragEnd: (velocityDy: Float, velocityProgress: Float) -> Unit,
+    onDragEnd: (velocityDy: Float) -> Unit,
 ) {
     androidx.compose.foundation.layout.BoxWithConstraints(
         modifier = Modifier.fillMaxSize(),
@@ -618,20 +643,12 @@ private fun MonthViewBody(
             val (height, rows) = dragMetrics()
             onDragUpdate(dy, height, rows)
         }
-        val dragEnd: (Float) -> Unit = { velocityDy ->
-            val (height, rows) = dragMetrics()
-            val extent = MonthPanelModel.dragExtent(height, rows)
-            onDragEnd(
-                velocityDy,
-                if (extent > 0.0) (velocityDy / extent).toFloat() else 0f,
-            )
-        }
         // 手势协程的 key 必须恒定：旧写法 `.pointerInput(rowHeightDp, cardRowCount)` 的两个
         // key 都会随翻月进度变 → 拖动中途协程被取消，onDragEnd / onDragCancel 都不跑，
         // 日历停在半收（看起来像“收起后还剩两行”）。现在改用 rememberUpdatedState 拿最新值。
         val latestDragStart = rememberUpdatedState(onDragStart)
         val latestDragUpdate = rememberUpdatedState(dragUpdate)
-        val latestDragEnd = rememberUpdatedState(dragEnd)
+        val latestDragEnd = rememberUpdatedState(onDragEnd)
 
         Column(modifier = Modifier.fillMaxSize()) {
             Box(
@@ -665,7 +682,7 @@ private fun MonthViewBody(
                     // 行程按**跨页口径**：拖拽行程用两页中较大的行数；卡高用连续行数，
                     // 两者取不同的量是有意的——行程要“走满”，卡高要“不跳”。
                     onDragUpdate = dragUpdate,
-                    onDragEnd = dragEnd,
+                    onDragEnd = onDragEnd,
                     // 卡底拉杆带不在 pager 里：横向手势在那里自己转成翻月。
                     onSwipeLeft = onNextMonth,
                     onSwipeRight = onPreviousMonth,
@@ -821,7 +838,7 @@ private fun MonthViewBody(
             dragState.onCollapseStart = onDragStart
             // 行程同样按跨页口径（与卡高、拉杆两处一致）。
             dragState.onCollapseUpdate = { dy -> dragUpdate(dy) }
-            dragState.onCollapseEnd = { velocity -> dragEnd(velocity) }
+            dragState.onCollapseEnd = onDragEnd
         }
     }
 }
@@ -908,4 +925,239 @@ private fun MonthPanelContent(
             )
         }
     }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// IDE 预览（@Preview）
+//
+// 一个 @Preview 一个状态，按「最常看 → 最少看」排：
+//
+//   1 有安排          网格圆点 + 本月概览统计 + 有安排的日子预览行
+//   2 空课表          整月没有任何安排（概览空态卡）
+//   3 选中日·有议程    课程 / 考试 / 日程三种行同屏（色条、钟点、箭头都在这）
+//   4 选中日·无安排    当天空态（说明 + 加课入口），与「整月空」不是同一段
+//   5 日历收起        网格只留一行、面板变高走的是另一套版面账
+//   6 暗色            卡面与墨色走主题的另一支
+//   7 大字号 1.3      最窄的「第 N 周」列与议程行先被挤掉，用议程态验折行
+//
+// 数据走**真链路**：`MonthViewDataSource` → `MonthGridModel` / `MonthDayAgendaModel`，
+// 42 格与议程行都由真模型算，不手写、也不在这里另写一份 provider 参数。
+// 学期固定 2026-09-07 开学、今天固定 2026-11-08（周日 · 第 9 周）。
+//
+// **看不到的**：翻月滑动与拖拽收放的**过程**（静态预览只给落点），要验靠 Studio
+// 交互模式或真机。主题一律 `QingyuPageTheme(isDark = …)`、字号一律 `textScale = …`，
+// 宽度 400dp，与本仓其它页面预览同口径。
+// ─────────────────────────────────────────────────────────────────────────────
+
+/** 预览用学期：2026-09-07（周一）开学 ⇒ 2026-11-08 落在第 9 周。 */
+private val previewSemesterStart: LocalDateTime = LocalDateTime.of(2026, 9, 7, 0, 0)
+
+/** 预览用「此刻」：2026-11-08（周日）10:00——今天高亮、「本月」药丸、考试过期都按它判。 */
+private val previewToday: LocalDateTime = LocalDateTime.of(2026, 11, 8, 10, 0)
+
+/** 预览用作息表：直接用内置模板，课程的起止钟点也从这份表里取，不另写一套时间。 */
+private val previewSections: List<com.mutx163.qingyu.core.SectionTime> =
+    com.mutx163.qingyu.core.TimetableSettings.DEFAULT_SECTIONS
+
+/** 预览用一门课：起止钟点由节次从 [previewSections] 取，保证「第几节 = 几点」与真机同源。 */
+private fun previewCourse(
+    name: String,
+    teacher: String,
+    location: String,
+    dayOfWeek: Int,
+    startSection: Int,
+    endSection: Int,
+    color: String,
+): com.mutx163.qingyu.core.Course = com.mutx163.qingyu.core.Course(
+    id = "preview-course-$dayOfWeek-$startSection",
+    name = name,
+    teacher = teacher,
+    location = location,
+    dayOfWeek = dayOfWeek,
+    startSection = startSection,
+    endSection = endSection,
+    startTime = previewSections[startSection - 1].startTime,
+    endTime = previewSections[endSection - 1].endTime,
+    color = color,
+    startWeek = 1,
+    endWeek = 18,
+)
+
+/** 预览用课程：周一到周五都有课，周四两段（含晚上），11 月每周都能看到圆点。 */
+private val previewCourses: List<com.mutx163.qingyu.core.Course> = listOf(
+    previewCourse("高等数学", "张明", "示例大学 A101", 1, 1, 2, "#3B82F6"),
+    previewCourse("大学英语", "李颖", "示例大学 B204", 1, 3, 4, "#F59E0B"),
+    previewCourse("大学物理", "李海", "示例大学 B203", 2, 3, 4, "#8B5CF6"),
+    previewCourse("线性代数", "王静", "示例大学 A108", 3, 1, 2, "#10B981"),
+    previewCourse("程序设计基础", "陈晨", "实验楼 C301", 4, 5, 6, "#F97316"),
+    previewCourse("数据结构", "陈晨", "实验楼 C302", 4, 9, 10, "#06B6D4"),
+)
+
+/** 预览用考试：两场都还没过期（今天 11-08），网格角标与议程的考试红都靠它。 */
+private val previewExams: List<com.mutx163.qingyu.core.Exam> = listOf(
+    com.mutx163.qingyu.core.Exam(
+        id = "preview-exam-math",
+        courseId = "preview-course-1-1",
+        name = "高等数学 · 期中考试",
+        dateTime = LocalDateTime.of(2026, 11, 12, 0, 0),
+        startTime = "10:00",
+        endTime = "11:40",
+        location = "教三 305",
+        createdAt = previewToday,
+        updatedAt = previewToday,
+    ),
+    com.mutx163.qingyu.core.Exam(
+        id = "preview-exam-physics",
+        courseId = "preview-course-2-3",
+        name = "大学物理 · 期中考试",
+        dateTime = LocalDateTime.of(2026, 11, 19, 0, 0),
+        startTime = "14:00",
+        endTime = "15:40",
+        location = "教二 201",
+        createdAt = previewToday,
+        updatedAt = previewToday,
+    ),
+)
+
+/** 预览用日程：一条每周重复（周四 19:00，和「数据结构」同钟点）+ 一条单次。 */
+private val previewScheduleItems: List<com.mutx163.qingyu.core.ScheduleItem> = listOf(
+    com.mutx163.qingyu.core.ScheduleItem(
+        id = "preview-schedule-meeting",
+        title = "实验室组会",
+        location = "实验楼 C305",
+        startDate = LocalDateTime.of(2026, 9, 17, 0, 0),
+        endDate = LocalDateTime.of(2026, 12, 31, 0, 0),
+        startTime = "19:00",
+        endTime = "20:00",
+        color = "#8E44AD",
+        createdAt = previewToday,
+        updatedAt = previewToday,
+        recurrence = com.mutx163.qingyu.core.ScheduleRecurrence.WEEKLY,
+    ),
+    com.mutx163.qingyu.core.ScheduleItem(
+        id = "preview-schedule-library",
+        title = "图书馆自习",
+        location = "图书馆 4 层",
+        startDate = LocalDateTime.of(2026, 11, 14, 0, 0),
+        endDate = LocalDateTime.of(2026, 11, 14, 0, 0),
+        startTime = "09:00",
+        endTime = "12:00",
+        color = "#0EA5E9",
+        createdAt = previewToday,
+        updatedAt = previewToday,
+    ),
+)
+
+/**
+ * 一档预览的公共身体：数据状态 + 选中日 + 展开进度 + 外观档位。
+ *
+ * 两个 provider 由 [MonthViewDataSource] 现造（开学日 / 节次表 / 考试过期的取法
+ * 与生产完全同一条路径），预览里不另写一份 `MonthGridModel.build(...)` 参数。
+ */
+@Composable
+private fun PreviewMonthViewPage(
+    courses: List<com.mutx163.qingyu.core.Course> = previewCourses,
+    exams: List<com.mutx163.qingyu.core.Exam> = previewExams,
+    scheduleItems: List<com.mutx163.qingyu.core.ScheduleItem> = previewScheduleItems,
+    selectedDate: LocalDateTime? = null,
+    expandProgress: Float = 1f,
+    dark: Boolean = false,
+    textScale: Float = 1f,
+) {
+    val source = remember(courses, exams, scheduleItems) {
+        MonthViewDataSource(
+            snapshot = com.mutx163.qingyu.app.TimetableSnapshot(
+                courses = courses,
+                scheduleItems = scheduleItems,
+                settings = com.mutx163.qingyu.core.TimetableSettings(
+                    sections = previewSections,
+                    semesterStartDate = previewSemesterStart,
+                ),
+                currentWeek = 9,
+                semesterStartEpochDay = previewSemesterStart.toLocalDate().toEpochDay(),
+            ),
+            now = previewToday,
+            exams = exams,
+        )
+    }
+    QingyuPageTheme(isDark = dark, textScale = textScale) {
+        MonthViewPage(
+            gridProvider = source::grid,
+            agendaProvider = source::agenda,
+            initialYear = 2026,
+            initialMonth = 11,
+            today = previewToday,
+            initialSelectedDate = selectedDate,
+            initialExpandProgress = expandProgress,
+            dataRevision = source.revision,
+            // 预览里点不了，但参数留着：不传就是默认空实现，这里显式写明不做去处。
+            onOpenAgendaRow = {},
+            onAddCourse = {},
+            onMonthLabelChanged = {},
+            onSelectedDateChanged = {},
+        )
+    }
+}
+
+// ── 单档：内容状态（亮色）──────────────────────────────────────────────────
+
+@Suppress("unused")
+@Preview(name = "1 有安排", showBackground = true, widthDp = 400, heightDp = 900)
+@Composable
+private fun MonthViewPagePreviewBusy() {
+    PreviewMonthViewPage()
+}
+
+@Suppress("unused")
+@Preview(name = "2 空课表", showBackground = true, widthDp = 400, heightDp = 900)
+@Composable
+private fun MonthViewPagePreviewEmpty() {
+    PreviewMonthViewPage(
+        courses = emptyList(),
+        exams = emptyList(),
+        scheduleItems = emptyList(),
+    )
+}
+
+@Suppress("unused")
+@Preview(name = "3 选中日·有议程", showBackground = true, widthDp = 400, heightDp = 900)
+@Composable
+private fun MonthViewPagePreviewAgenda() {
+    // 11-12（周四）：考试 + 下午课 + 晚上的课与组会（同钟点两行）。
+    PreviewMonthViewPage(selectedDate = LocalDateTime.of(2026, 11, 12, 0, 0))
+}
+
+@Suppress("unused")
+@Preview(name = "4 选中日·无安排", showBackground = true, widthDp = 400, heightDp = 900)
+@Composable
+private fun MonthViewPagePreviewAgendaEmpty() {
+    // 11-15（周日）：当天没有课 / 考试 / 日程 ⇒ 议程卡空态（说明 + 加课）。
+    PreviewMonthViewPage(selectedDate = LocalDateTime.of(2026, 11, 15, 0, 0))
+}
+
+@Suppress("unused")
+@Preview(name = "5 日历收起", showBackground = true, widthDp = 400, heightDp = 900)
+@Composable
+private fun MonthViewPagePreviewCollapsed() {
+    PreviewMonthViewPage(expandProgress = 0f)
+}
+
+// ── 单档：外观（以内容最全的两档为基准）──────────────────────────────────
+
+@Suppress("unused")
+@Preview(name = "6 暗色", showBackground = true, widthDp = 400, heightDp = 900)
+@Composable
+private fun MonthViewPagePreviewDark() {
+    PreviewMonthViewPage(dark = true)
+}
+
+@Suppress("unused")
+@Preview(name = "7 大字号 1.3", showBackground = true, widthDp = 400, heightDp = 900)
+@Composable
+private fun MonthViewPagePreviewLargeText() {
+    // 用议程态验折行：钟点列 + 标题/副行是这一页最窄的两段。
+    PreviewMonthViewPage(
+        selectedDate = LocalDateTime.of(2026, 11, 12, 0, 0),
+        textScale = 1.3f,
+    )
 }

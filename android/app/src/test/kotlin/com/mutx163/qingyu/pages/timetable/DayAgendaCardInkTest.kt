@@ -1,6 +1,8 @@
 package com.mutx163.qingyu.pages.timetable
 
+import com.mutx163.qingyu.pages.timetable.day.dayAgendaPageFallbackLuminance
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -236,6 +238,131 @@ class DayAgendaCardInkTest {
             lightInk,
             resolveWith(preferred = aboveThree, minContrast = measured * 1.0001),
         )
+    }
+
+    // ───────────── 无壁纸（亮度 null）：按页底 + 卡色真实 α 合成 ─────────────
+
+    @Test
+    fun `无壁纸时按页底与 0_55 卡面合成 —— 中调卡压在深页底要白字`() {
+        // #808080 的不透明卡色亮度≈0.216 ⇒ 实色档选近黑；但磨砂档 0.55α 压在
+        // 亮度 0.10 的页底上，卡面只剩 0.164 ⇒ 白字才是高对比那档。
+        val midCard = 0xFF808080.toInt()
+        assertEquals("前提：实色档 #808080 选近黑墨", darkInk, CourseCardInk.bestContrastInk(midCard))
+        val ink = CourseCardInk.resolveCardInkOverWallpaper(
+            fillArgb = midCard,
+            fillAlpha = 0.55f,
+            wallpaperLuminance = null,
+            showsWallpaper = true,
+            fallbackArgb = CourseCardInk.bestContrastInk(midCard),
+            pageBackgroundLuminance = 0.10,
+        )
+        assertEquals("中调卡 0.55α 压在深页底上，卡面≈0.164 ⇒ 白墨", lightInk, ink)
+        assertEquals(
+            "合成必须用真实 α（0.55），不是写死的卡色亮度",
+            0.164,
+            CourseCardInk.compositeLuminanceOverWallpaper(midCard, 0.55f, 0.10),
+            0.001,
+        )
+    }
+
+    @Test
+    fun `无壁纸时按页底与 0_55 卡面合成 —— 深卡压在亮页底要近黑字`() {
+        // #37474F 的不透明卡色亮度≈0.059 ⇒ 实色档选白；0.55α 压亮度 0.95 的页底
+        // 后卡面≈0.46 ⇒ 近黑字。
+        val deepCard = 0xFF37474F.toInt()
+        assertEquals("前提：实色档深蓝灰卡选白墨", lightInk, CourseCardInk.bestContrastInk(deepCard))
+        val ink = CourseCardInk.resolveCardInkOverWallpaper(
+            fillArgb = deepCard,
+            fillAlpha = 0.55f,
+            wallpaperLuminance = null,
+            showsWallpaper = true,
+            fallbackArgb = CourseCardInk.bestContrastInk(deepCard),
+            pageBackgroundLuminance = 0.95,
+        )
+        assertEquals("深卡 0.55α 压在亮页底上，卡面≈0.46 ⇒ 近黑墨", darkInk, ink)
+    }
+
+    @Test
+    fun `壁纸亮度已知时优先用壁纸 页底不参与`() {
+        val ink = CourseCardInk.resolveCardInkOverWallpaper(
+            fillArgb = 0xFF808080.toInt(),
+            fillAlpha = 0.55f,
+            wallpaperLuminance = 0.08,
+            showsWallpaper = true,
+            fallbackArgb = darkInk,
+            // 页底 0.95 单独会给出近黑墨；壁纸 0.08 必须赢。
+            pageBackgroundLuminance = 0.95,
+        )
+        assertEquals("壁纸亮度已知时必须优先用壁纸", lightInk, ink)
+    }
+
+    @Test
+    fun `页底也未知时保持旧回退`() {
+        val fallback = 0xFF00FF00.toInt()
+        val ink = CourseCardInk.resolveCardInkOverWallpaper(
+            fillArgb = 0xFF808080.toInt(),
+            fillAlpha = 0.55f,
+            wallpaperLuminance = null,
+            showsWallpaper = true,
+            fallbackArgb = fallback,
+            pageBackgroundLuminance = null,
+        )
+        assertEquals("壁纸与页底都不知道 ⇒ 原样回退，既有调用零影响", fallback, ink)
+    }
+
+    @Test
+    fun `实色档不看页底`() {
+        val fallback = 0xFF00FF00.toInt()
+        val ink = CourseCardInk.resolveCardInkOverWallpaper(
+            fillArgb = 0xFF808080.toInt(),
+            fillAlpha = 0.55f,
+            wallpaperLuminance = null,
+            showsWallpaper = false,
+            fallbackArgb = fallback,
+            pageBackgroundLuminance = 0.05,
+        )
+        assertEquals("不露壁纸/页底的实色档直接回退", fallback, ink)
+    }
+
+    @Test
+    fun `有壁纸但亮度未就绪时按旧回退 不许用页底反判`() {
+        // 浅色主题页底 0.95、真实壁纸约 0.05，深蓝灰卡 0.55α：
+        // 按页底合成 0.46 ⇒ 近黑字；屏幕上实际是深壁纸（合成 0.055）⇒ 应白字。
+        val deepCard = 0xFF37474F.toInt()
+        val fallback = CourseCardInk.bestContrastInk(deepCard)
+        val gated = dayAgendaPageFallbackLuminance(hasWallpaper = true, pageLuminance = 0.95)
+        assertNull("有壁纸时门控必须把页底亮度置空", gated)
+
+        val ink = CourseCardInk.resolveCardInkOverWallpaper(
+            fillArgb = deepCard,
+            fillAlpha = 0.55f,
+            wallpaperLuminance = null,
+            showsWallpaper = true,
+            fallbackArgb = fallback,
+            pageBackgroundLuminance = gated,
+        )
+        assertEquals("亮度未就绪时保持旧回退（白字），不许按页底反判", lightInk, ink)
+
+        // 反证：不门控、把页底直接传进去就会选近黑 —— 这正是瞬态要避免的那一帧。
+        val ungated = CourseCardInk.resolveCardInkOverWallpaper(
+            fillArgb = deepCard,
+            fillAlpha = 0.55f,
+            wallpaperLuminance = null,
+            showsWallpaper = true,
+            fallbackArgb = fallback,
+            pageBackgroundLuminance = 0.95,
+        )
+        assertEquals("反证：页底 0.95 会选近黑（与真实壁纸相反）", darkInk, ungated)
+
+        // 亮度测出来后按真壁纸判，仍是白字：门控不改变正常结果。
+        val measured = CourseCardInk.resolveCardInkOverWallpaper(
+            fillArgb = deepCard,
+            fillAlpha = 0.55f,
+            wallpaperLuminance = 0.05,
+            showsWallpaper = true,
+            fallbackArgb = fallback,
+        )
+        assertEquals("壁纸亮度 0.05 应白字", lightInk, measured)
     }
 
     /** 在固定的黑底卡（α=0.2、壁纸亮度 0.10 ⇒ 卡面 0.08）上解一次自定义字色。 */

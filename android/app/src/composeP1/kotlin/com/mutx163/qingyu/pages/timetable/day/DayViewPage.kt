@@ -37,12 +37,14 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.foundation.clickable
 import com.mutx163.qingyu.app.HomeMenuStyle
+import com.mutx163.qingyu.components.QingyuPageTheme
 import com.mutx163.qingyu.app.HomeTitleStyle
 import com.mutx163.qingyu.components.BackToTodayFab
 import com.mutx163.qingyu.components.FAB_SHADOW_REACH_DP
@@ -57,6 +59,7 @@ import com.mutx163.qingyu.pages.shell.HomeBackgroundModel
 import com.mutx163.qingyu.pages.shell.HomeFloatingMetrics
 import com.mutx163.qingyu.pages.shell.HomeInkPolarity
 import com.mutx163.qingyu.pages.timetable.ApplyChromeStatusBarInk
+import com.mutx163.qingyu.pages.timetable.CourseCardInk
 import com.mutx163.qingyu.pages.timetable.TimetableDateLogic
 import com.mutx163.qingyu.pages.timetable.TimetableMenuItem
 import com.mutx163.qingyu.pages.timetable.TimetableTopBar
@@ -217,6 +220,15 @@ fun DayViewPage(
     /** 「课卡显示冲突角标」开关（Dart `showConflictBadgeOnTimetable`；关掉只藏角标，保留冲突边框）。 */
     showConflictBadge: Boolean = true,
     /**
+     * 冲突课程卡面透明度（设置 `timetableConflictCourseOpacity`，默认 0.70，读侧已 clamp 0.2~1.0）。
+     *
+     * Dart 日视图与周视图共用 `courseDisplayOpacity` 一条判据（`day_course_display_logic.dart:54-63`）；
+     * 周视图走 `WeekViewStyle.conflictCourseOpacity`，日视图由宿主直接喂同一个设置值。
+     * 2026-11-07 之前这里没有这个参数：设置里拖「冲突课程透明度」，周视图跟着变、日视图不变。
+     * 默认值直接取 [weekdayStyle] 里的同一字段（同一份设置只留一条通路）。
+     */
+    conflictCourseOpacity: Float = weekdayStyle.conflictCourseOpacity,
+    /**
      * 是否显示顶部星期日期条。
      *
      * Dart 日视图是**叠在首页上**的面板，顶栏、星期条都还在（`timetable_day_view_part.dart:10-39`
@@ -317,6 +329,14 @@ fun DayViewPage(
      */
     material: HomeMaterialRenderSpec? = null,
     /**
+     * **纯**「当前有没有壁纸」信号（`homeChrome.hasBackdrop`，**不要**与材质开关相与）。
+     *
+     * 与 [hasBackdrop] 的区别：后者还要过「玻璃材质是否启用」，这里只回答屏幕上有没有壁纸。
+     * 卡片墨色的页底回退只认这个信号：有壁纸但亮度还没测出来时，页面底色是壁纸而不是
+     * 主题页底，按页底判墨会闪一帧反极性文字（见 [dayAgendaPageFallbackLuminance]）。
+     */
+    hasWallpaper: Boolean,
+    /**
      * 当前有没有可用壁纸。顶栏玻璃带与议程卡液态档都只有在壁纸之上才值得采样
      * （没有壁纸时 Dart 一律回落实体）。
      */
@@ -388,7 +408,11 @@ fun DayViewPage(
 
     // 首页嵌入时，把分页器的**实时选中**写给外层星期栏（经 CompositionLocal 桥）：
     // 只驱动高亮跟手 + 蓝条滑动，不落盘（落盘仍走下面「停稳后 onPageChanged」）。
+    // 独立日页（c3.day）/ 外观预览没有宿主桥：自己建一份，星期栏同样拿得到连续页号，
+    // 跨周时整条照样跟手平移（2026-11-08）。
     val selectionBridge = LocalDaySelectionBridge.current
+    val localSelectionBridge = remember { DaySelectionBridge() }
+    val headerSelectionBridge = selectionBridge ?: localSelectionBridge
 
     val scope = rememberCoroutineScope()
     var showWeekSelector by remember { mutableStateOf(false) }
@@ -476,14 +500,22 @@ fun DayViewPage(
 
     // 实时选中桥：每翻到新的一页（含甩动途中越过页中点）就更新一次，星期栏据此**即时跟手**，
     // 不等停稳。只写内存状态，不落盘 —— 快速连续切日不会每页重写整份设置 JSON。
-    LaunchedEffect(pagerState, visibleDays, selectionBridge) {
-        val bridge = selectionBridge ?: return@LaunchedEffect
+    LaunchedEffect(pagerState, visibleDays, headerSelectionBridge) {
         snapshotFlow { pagerState.currentPage }
             .distinctUntilChanged()
             .collect { page ->
                 val target = DayViewPaging.targetForGlobalPage(visibleDays, page) ?: return@collect
-                bridge.update(target.week, target.dayOfWeek)
+                headerSelectionBridge.update(target.week, target.dayOfWeek)
             }
+    }
+
+    // 连续页号（`currentPage + currentPageOffsetFraction`）→ 星期栏。
+    // 星期栏用它做两件事：同一周内选中条跟着手指走、跨周时整条跟着分页器平移
+    // （Dart `timetable_weekday_header.dart:400-463`）。只写内存状态，逐帧更新不下盘。
+    LaunchedEffect(pagerState, headerSelectionBridge) {
+        snapshotFlow { pagerState.currentPage + pagerState.currentPageOffsetFraction }
+            .distinctUntilChanged()
+            .collect { headerSelectionBridge.updatePagePosition(it) }
     }
 
     // ── 首页壁纸 + 顶栏玻璃带 + 课卡液态档（2026-11-01）──
@@ -495,6 +527,15 @@ fun DayViewPage(
     // 只有「液态档 + 真有壁纸 + 设备支持 RuntimeShader」三件事同时成立才真采样。
     val density = LocalDensity.current
     val scaffoldBg = Color(QingyuTheme.scaffoldBackground(dark))
+    // 卡面墨色的「无壁纸」回退：半透明卡实际压在页底上（自定义页底色优先，缺省用主题页底）。
+    // 有壁纸但亮度还没测出来时**必须置空**：屏幕上是壁纸，按页底判墨会闪一帧反极性文字
+    // （等 `wallpaperBands` 量出来再用真壁纸亮度；见 [dayAgendaPageFallbackLuminance]）。
+    val pageBackgroundLuminance = dayAgendaPageFallbackLuminance(
+        hasWallpaper = hasWallpaper,
+        pageLuminance = CourseCardInk.relativeLuminance(
+            pageColorArgb ?: QingyuTheme.scaffoldBackground(dark),
+        ),
+    )
     val pageBackdrop = rememberLayerBackdrop()
     val cardGlassBackdrop = rememberLayerBackdrop()
     // ── 「回今日」浮钮的**真实内容**录制层（B1，2026-11-04）──
@@ -670,9 +711,23 @@ fun DayViewPage(
                 // 左右吃安全区；顶部**刻意不吃**——玻璃带要从 y = 0（状态栏背后）开始，
                 // 由带子内部用等高的 Spacer 把标题行顶到状态栏下面。
                 // 底部也刻意不吃——滚动视口要铺到屏幕最底，卡片从手势条底下穿过去。
+                //
+                // 展开层（`embeddedInHomePanel`）**不能再吃一次**：宿主
+                // `TimetableWeekPage` 的正文容器已经按同一份窗口内边距缩过（同一个
+                // `innerPadding`），这里再缩一次，横屏（左右内边距不对称：提升到
+                // 内边距的那侧才是挖孔/侧边导航所在侧）会把正文整体往右推、右边变窄，
+                // 用户看到的就是「右边内容不在容器里居中」。
                 .padding(
-                    start = innerPadding.calculateStartPadding(LocalLayoutDirection.current),
-                    end = innerPadding.calculateEndPadding(LocalLayoutDirection.current),
+                    start = if (embeddedInHomePanel) {
+                        0.dp
+                    } else {
+                        innerPadding.calculateStartPadding(LocalLayoutDirection.current)
+                    },
+                    end = if (embeddedInHomePanel) {
+                        0.dp
+                    } else {
+                        innerPadding.calculateEndPadding(LocalLayoutDirection.current)
+                    },
                 ),
         ) {
             // 玻璃节点是带子盒子的孩子，而带子盒子被左右安全区内缩过（上面 Column 的
@@ -694,15 +749,10 @@ fun DayViewPage(
             // 已经在同一位置、同一材质上画好了，这里再画一遍会在界面交界处叠出
             // 第二份模糊/染色；正文按同一条带的高度下移即可。
             if (contentTopInset != null) {
-                // 展开层正文顶缝（2026-11-03 补齐）：Dart 面板在星期栏与滚动区之间有
-                // `SizedBox(height: 14)`（`timetable_day_view_part.dart:37`），缝在滚动区
-                // **外**，所以摘要卡吸顶（`PinnedHeaderSliver` 钉在滚动区顶）时也永远
-                // 离星期栏 14dp。Compose 版此前裸 `Spacer(contentTopInset)`、列表顶到
-                // 窗口顶：LazyColumn 的 stickyHeader 钉住位是 `-beforeContentPadding`
-                // （foundation `LazyLayoutStickyItems.calculateStickingItemOffset`），
-                // 滚过 2×contentPadding 后首卡永久贴死星期栏底边——用户真机口径
-                // 「第一个卡片插到星期栏下面，重叠了」就是这一条。
-                Spacer(modifier = Modifier.height(contentTopInset + DAY_VIEW_CONTENT_TOP_SEAM_DP.dp))
+                // 展开层：宿主已把面板铺到玻璃带下沿（传 0dp），正文从这条高度开始。
+                // 14dp 的「星期栏 → 首卡」留缝不再挂滚动区外面（那会成一条永远滚不走的
+                // 空带），改由列表首个 item 提供（`DayViewScrollContent` 的 `day-top-seam`）。
+                Spacer(modifier = Modifier.height(contentTopInset))
             } else {
             TimetableChromeBandGlass(
                 material = material,
@@ -746,6 +796,9 @@ fun DayViewPage(
                                 bandOverWallpaper
                             },
                             selectedDayOfWeek = currentTarget.dayOfWeek,
+                            // 连续页号桥：同一周内选中条跟手，跨周时整条跟手平移。
+                            selectionBridge = headerSelectionBridge,
+                            totalWeeks = totalWeeks,
                             hasExamOnDate = hasExamOnDate,
                             hasScheduleOnDate = hasScheduleOnDate,
                             onDayClick = { dayOfWeek ->
@@ -765,17 +818,11 @@ fun DayViewPage(
                 }
             }
             }
-            // ── 独立路由顶缝（2026-11-03 补齐）：与展开层同一条 14dp ──
-            // 只给独立路由 `c3.day`（`contentTopInset == null`，自己画顶栏/星期栏的那条）：
-            // 它的带子底边到 pager 首卡原本是 0dp，日期卡直接抵着顶栏下沿，用户口径
-            // 「日视图的卡片插到顶栏里面」。缝在滚动区**外**，吸顶时也不会被顶没。
-            //
-            // 展开层**不能**再加这一条：它在上面的 if 分支里已经加了
-            // `contentTopInset + 14dp`（现在宿主传 0dp），这里再无条件加一次会变成 28dp
-            //（2026-11-03 合并两边的改动时踩过，用户口径「缝突然变宽」）。
-            if (contentTopInset == null) {
-                Spacer(modifier = Modifier.height(DAY_VIEW_CONTENT_TOP_SEAM_DP.dp))
-            }
+            // ── 顶部留缝已移入列表（2026-11-07）──
+            // 独立路由与展开层同一条 14dp：现在由 `DayViewScrollContent` 的首个 item
+            //（`day-top-seam`）提供。静止时首卡离星期栏 14dp；上滑时这道缝跟着滚走、
+            // 吸顶后紧贴星期栏底边（用户口径：「吸顶卡不要贴住，但上滑也不要留空隙」）。
+            // 这里不再加任何 Spacer：加在滚动区外面就是一条永远滚不走的空带。
             // 下方内容：从玻璃带底部开始，占满剩余高度（底部仍铺到屏幕最底）。
             Box(
                 modifier = Modifier
@@ -838,8 +885,12 @@ fun DayViewPage(
                             onViewAllOverdue = onViewAllOverdue,
                             courseResolver = courseResolver,
                             showConflictBadge = showConflictBadge,
+                            // 冲突透明度：与周视图同一个设置键（Dart `courseDisplayOpacity` 共用判据）。
+                            conflictCourseOpacity = conflictCourseOpacity,
                             // 空态文字直接压在壁纸上：正文那档亮度决定字色。
                             wallpaperLuminance = wallpaperBands?.body,
+                            // 无壁纸 / 亮度未知时的页底亮度（半透明卡按页底合成判墨）。
+                            pageBackgroundLuminance = pageBackgroundLuminance,
                             // 摘要卡墨色：按壁纸**星期栏那档**亮度（发布版 `_weekdayInkLuminance` 口径）翻黑/白。
                             summaryWallpaperLuminance = wallpaperBands?.weekday,
                             // 摘要卡与星期栏**同一套自定义字色**（未配置/等于默认值时按亮度翻黑白）。
@@ -878,8 +929,8 @@ fun DayViewPage(
                     )
                 }
             },
-            label = DayViewStrings.backToTodayShort.zh,
-            contentDescription = DayViewStrings.backToTodayAction.zh,
+            label = DayViewStrings.backToTodayShort.text,
+            contentDescription = DayViewStrings.backToTodayAction.text,
             visible = showsBackToToday &&
                 (!embeddedInHomePanel || embeddedTransitionSettled),
             backdrop = when {
@@ -923,10 +974,102 @@ fun DayViewPage(
     )
 }
 
-/**
- * 展开层正文顶缝：星期栏底边与滚动区之间（Dart `timetable_day_view_part.dart:37`
- * 的 `SizedBox(height: 14)`）。缝在滚动区**外**，摘要卡吸顶时也保持这条距离。
- */
-private const val DAY_VIEW_CONTENT_TOP_SEAM_DP = 14f
+// ─────────────────────────────────────────────────────────────────────────────
+// IDE 预览（@Preview）
+//
+// 日视图这里只铺「能静态拍下来」的档位：渲染层入参都有默认值，传一个确定的
+// 周次 / 日期就能拍出稳定的一帧，不依赖仓储与时钟。
+// 交互（左右翻日、1Hz 进度心跳）在静态预览里看不到，要验靠 Studio 交互模式或真机。
+// ─────────────────────────────────────────────────────────────────────────────
+
+/** 预览用的一天：周三三门课，时段与配色按真实导入形态给。 */
+private val previewDayCourses: List<com.mutx163.qingyu.core.Course> = listOf(
+    com.mutx163.qingyu.core.Course(
+        id = "preview-1",
+        name = "高等数学（下）",
+        teacher = "王老师",
+        location = "三教 204",
+        dayOfWeek = 3,
+        startSection = 1,
+        endSection = 2,
+        startTime = "08:00",
+        endTime = "09:40",
+        color = "#3B82F6",
+    ),
+    com.mutx163.qingyu.core.Course(
+        id = "preview-2",
+        name = "大学物理",
+        teacher = "李老师",
+        location = "理科楼 302",
+        dayOfWeek = 3,
+        startSection = 3,
+        endSection = 4,
+        startTime = "10:00",
+        endTime = "11:40",
+        color = "#10B981",
+    ),
+    com.mutx163.qingyu.core.Course(
+        id = "preview-3",
+        name = "线性代数",
+        teacher = "张老师",
+        location = "二教 105",
+        dayOfWeek = 3,
+        startSection = 7,
+        endSection = 8,
+        startTime = "14:00",
+        endTime = "15:40",
+        color = "#F59E0B",
+    ),
+)
+
+/** 固定到「第 10 周 · 周三」，避开预览每次跑都跟着今天变。 */
+@Composable
+private fun PreviewDayViewPage(dark: Boolean = false, textScale: Float = 1f) {
+    QingyuPageTheme(isDark = dark, textScale = textScale) {
+        DayViewPage(
+            initialWeek = 10,
+            initialDayOfWeek = 3,
+            realCurrentWeek = 10,
+            todayDate = java.time.LocalDate.of(2026, 11, 8),
+            hasWallpaper = false,
+            onCloseToWeekView = {},
+            dataProvider = { week, dayOfWeek ->
+                dayViewPageDataOf(
+                    DayViewDataAssembler.build(
+                        week = week,
+                        dayOfWeek = dayOfWeek,
+                        courses = previewDayCourses,
+                        settings = com.mutx163.qingyu.core.TimetableSettings.defaults(),
+                        currentWeek = 10,
+                        now = java.time.LocalDateTime.of(2026, 11, 8, 10, 0),
+                    ),
+                )
+            },
+        )
+    }
+}
+
+@Suppress("unused")
+@Preview(name = "1 亮色", showBackground = true, widthDp = 400, heightDp = 900)
+@Composable
+private fun DayViewPagePreviewLight() {
+    PreviewDayViewPage()
+}
+
+@Suppress("unused")
+@Preview(name = "2 暗色", showBackground = true, widthDp = 400, heightDp = 900)
+@Composable
+private fun DayViewPagePreviewDark() {
+    PreviewDayViewPage(dark = true)
+}
+
+@Suppress("unused")
+@Preview(name = "3 大字号 1.3", showBackground = true, widthDp = 400, heightDp = 900)
+@Composable
+private fun DayViewPagePreviewLargeText() {
+    PreviewDayViewPage(textScale = 1.3f)
+}
+
+
 
 

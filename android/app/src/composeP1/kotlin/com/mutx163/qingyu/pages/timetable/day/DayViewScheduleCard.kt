@@ -64,6 +64,11 @@ fun DayViewScheduleCard(
     glassBackdrop: Backdrop? = null,
     /** 这张卡背后壁纸的**正文带**亮度；玻璃 / 半透明档据此算卡面有效亮度定墨色。 */
     wallpaperLuminance: Double? = null,
+    /**
+     * 壁纸亮度未知时的**页底**亮度（无壁纸时卡实际压着的底色）：半透明档按
+     * 「卡色 × 真实 α + 页底 × (1−α)」合成判墨，避免按不透明卡色反判。
+     */
+    pageBackgroundLuminance: Double? = null,
     modifier: Modifier = Modifier,
 ) {
     // 日程色是用户数据色；缺省/解析失败时退回主题 primary（不写死字面量，R5）。
@@ -81,6 +86,7 @@ fun DayViewScheduleCard(
             fillArgb = baseColor.toArgb(),
             fillAlpha = cardColor.alpha,
             wallpaperLuminance = wallpaperLuminance,
+            pageBackgroundLuminance = pageBackgroundLuminance,
             showsWallpaper = glass != null || cardColor.alpha < 1f,
             // 实心档：按卡色自身的 WCAG 亮度择优（同课程卡）。
             fallbackArgb = CourseCardInk.bestContrastInk(baseColor.toArgb()),
@@ -155,7 +161,7 @@ fun DayViewScheduleCard(
 
                 // 日程徽标
                 DayAgendaBadge(
-                    text = DayViewStrings.scheduleBadgeLabel.zh,
+                    text = DayViewStrings.scheduleBadgeLabel.text,
                     textColor = ink,
                     backgroundColor = dayAgendaInkWash(ink, 0.18f),
                 )
@@ -163,7 +169,7 @@ fun DayViewScheduleCard(
                 // 跨日徽标
                 if (isCrossDay) {
                     DayAgendaBadge(
-                        text = DayViewStrings.crossDayBadgeLabel.zh,
+                        text = DayViewStrings.crossDayBadgeLabel.text,
                         textColor = ink,
                         backgroundColor = dayAgendaInkWash(ink, 0.18f),
                     )

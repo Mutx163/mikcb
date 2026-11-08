@@ -122,6 +122,10 @@ object CourseCardInk {
      * @param preferredMinContrast 自定义色要保留所需的对比度（默认 [PREFERRED_INK_MIN_CONTRAST]
      *   = 3:1，与 `HomeBackgroundModel.MIN_INK_CONTRAST_RATIO` 同一条达标线；低于它一律
      *   回自动黑 / 白）。
+     * @param pageBackgroundLuminance 壁纸亮度未知（没壁纸 / 还没采到）时，卡实际压着的**页底**亮度。
+     *   半透明卡（磨砂 0.55α / 液态染色）在无壁纸时压的是页底色，不是不透明卡色：只按卡色判
+     *   会把「中调课色压深页底」判成深字、把「深课色压浅页底」判成白字。传了它就走
+     *   [compositeLuminanceOverWallpaper] 的合成，没传则保持旧回退 [fallbackArgb]。
      */
     fun resolveCardInkOverWallpaper(
         fillArgb: Int,
@@ -131,9 +135,14 @@ object CourseCardInk {
         fallbackArgb: Int,
         preferredArgb: Int? = null,
         preferredMinContrast: Double = PREFERRED_INK_MIN_CONTRAST,
+        pageBackgroundLuminance: Double? = null,
     ): Int {
-        if (!showsWallpaper || wallpaperLuminance == null) return fallbackArgb
-        val surfaceLuminance = compositeLuminanceOverWallpaper(fillArgb, fillAlpha, wallpaperLuminance)
+        if (!showsWallpaper) return fallbackArgb
+        // 优先级：真实壁纸亮度 > 页底亮度 > 旧回退（实色 / 全不知道）。
+        val backdropLuminance = wallpaperLuminance
+            ?: pageBackgroundLuminance
+            ?: return fallbackArgb
+        val surfaceLuminance = compositeLuminanceOverWallpaper(fillArgb, fillAlpha, backdropLuminance)
         if (preferredArgb != null &&
             contrastAgainstLuminance(preferredArgb, surfaceLuminance) >= preferredMinContrast
         ) {

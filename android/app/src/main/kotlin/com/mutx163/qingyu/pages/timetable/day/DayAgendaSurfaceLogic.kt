@@ -38,3 +38,21 @@ fun dayAgendaSurfaceAlpha(
     // SOLID / OFF / FROST_PROGRESSIVE / 没传材质：一律实体，旧行为不变。
     else -> solidAlpha
 }
+
+/**
+ * 「无壁纸」页底回退的有效背景亮度（2026-11-07 瞬态修复）。
+ *
+ * 卡片的 `wallpaperLuminance` 为 null 有两种含义：真没壁纸，或者壁纸已上屏但亮度还没测出来。
+ * 后者按页底判墨会闪出反极性文字：浅色主题页底（≈0.90）+ 深壁纸（≈0.05）时，中调卡按页底
+ * 合成 ≈0.52 会选近黑字，而屏幕上实际是壁纸（合成 ≈0.14，应选白字）。
+ *
+ * 所以只有 [hasWallpaper] 为 false 时才把页底亮度交给卡判墨；为 true 时返回 null，
+ * 卡片保持旧回退（按不透明卡色择优），等 `wallpaperBands` 量出来再用真壁纸亮度。
+ *
+ * @param hasWallpaper **纯**壁纸存在信号（`homeChrome.hasBackdrop`），不要与材质开关相与。
+ * @param pageLuminance 页底亮度（自定义页底色优先、缺省主题页底）。
+ */
+fun dayAgendaPageFallbackLuminance(
+    hasWallpaper: Boolean,
+    pageLuminance: Double,
+): Double? = if (hasWallpaper) null else pageLuminance

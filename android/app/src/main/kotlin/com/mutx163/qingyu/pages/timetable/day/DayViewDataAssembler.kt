@@ -144,8 +144,21 @@ object DayViewDataAssembler {
             // TA 课的周有效性，独立追加的 TA 课不过内核的周过滤，这里不滤就会
             // 把 TA 其它周的课全叠进来。
             val partnerWeek = CoupleTimetableData.partnerWeekForMyWeek(week, partnerOverlay.weekOffset)
+            // 我方课必须与「不叠加」时走**同一套筛选**（`coursesForDay` + `visibleDayCourses`）。
+            // 早先这里只按 `dayOfWeek` 过滤，等于跳过周次剪枝：半学期课（如 1–8 周）翻到
+            // 第 12 周仍挂在当天、同坑位两张都画，与关掉叠加时的口径分裂。
+            // Dart `buildCoupleDayCourseDisplayItems`（`day_course_display_logic.dart:302-310`）
+            // 对 myCourses 有两条 continue：被本周课压住的、非最近有效周的，都不进 items。
             coupleMergedDayCoursesTagged(
-                mineCourses = courses.filter { it.dayOfWeek == dayOfWeek },
+                mineCourses = WeekGridCourseMapping.visibleDayCourses(
+                    dayCourses = WeekGridCourseMapping.coursesForDay(
+                        allCourses = courses,
+                        week = week,
+                        dayOfWeek = dayOfWeek,
+                        showNonCurrentWeekCourses = showNonCurrentWeekCourses,
+                    ),
+                    week = week,
+                ),
                 partnerCourses = partnerOverlay.partnerCourses.filter {
                     it.dayOfWeek == dayOfWeek && it.isActiveInWeek(partnerWeek)
                 },
@@ -167,7 +180,10 @@ object DayViewDataAssembler {
                 course = course,
                 isCurrentWeekCourse = isCurrent,
                 isPartnerCourse = tagged.kind == CoupleCourseKind.PARTNER,
-                isConflicting = conflicts[course.id]?.isNotEmpty() == true,
+                // 冲突表只按**我方**课表算（`conflictMap(courses, week)`），键是我方课程 id；
+                // TA 课不过这一步判定（Dart 的 TA 条目同样不读冲突表），否则 id 撞车会误挂角标。
+                isConflicting = tagged.kind != CoupleCourseKind.PARTNER &&
+                    conflicts[course.id]?.isNotEmpty() == true,
                 isCurrentCourse = isToday && DayAgendaLogic.resolveProgress(
                     startTime = course.startTime,
                     endTime = course.endTime,
