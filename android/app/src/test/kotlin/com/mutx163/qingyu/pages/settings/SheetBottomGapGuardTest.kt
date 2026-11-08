@@ -263,6 +263,10 @@ class SheetBottomGapGuardTest {
             // 底部留白，否则滚到底时最后一行会被系统导航栏盖住（2026-11-07 用户截图）。
             // 它不是弹层正文，不存在「键盘弹起后多出一截」的问题。
             "pages/settings/SettingsPageRenderers.kt",
+            // 版本更新页：整页（无顶栏，自绘 Box/Column 直入），底部要补导航栏高度
+            // 否则内容会被系统导航栏盖住（2026-11-08 去 Flutter 化收尾时新增——
+            // 它不是弹层正文，不走 SheetContentBottomGap 的 IME 分流）。
+            "pages/about/AboutUpdatePage.kt",
         )
     }
 }
