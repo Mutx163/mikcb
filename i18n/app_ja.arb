@@ -1276,10 +1276,10 @@
   "manualInputLabel": "手動入力",
   "noTemplateCoursesHint": "現在の時間割に授業がありません，まず1つ手動で登録すると、以降の臨時追加で直接選択可能",
   "courseNameLabel": "授業名（必須）",
-  "courseNameHelper": "授業の一意識別子，同名の複数排課は同一授業に統合されます，正式名称を入力し、表示目的での略称は避けてください",
+  "courseNameHelper": "同名の授業は1つにまとめられます",
   "pleaseEnterCourseName": "授業名を入力してください",
   "courseShortNameOptional": "授業略称（任意）",
-  "courseShortNameHelper": "スーパーアイランド等での簡略表示に推奨，略称は自動生成されません，「授業略称を優先表示」を有効にした場合に反映，3 文字以内を推奨",
+  "courseShortNameHelper": "スーパーアイランドに表示、3文字以内",
   "courseShortNameAutoFillAction": "先頭2文字",
   "teacherLabel": "担当教師",
   "courseNatureLabel": "授業性質",
@@ -2767,7 +2767,6 @@
     }
   },
   "scheduleEntrySingleTitle": "授業スケジュール",
-  "scheduleEntryCardSubtitle": "曜日・週・場所を設定",
   "scheduleEntryWeeksSectionTitle": "どの週",
   "scheduleSectionNumberLabel": "{section}時限",
   "@scheduleSectionNumberLabel": {
@@ -5568,7 +5567,7 @@
       "max": { "type": "int" }
     }
   },
-  "homeGridEditorHintBody": "最大 {max} 個のボタンを配置できます。項目を長押ししてドラッグすると並べ替えられます。",
+  "homeGridEditorHintBody": "項目を長押しして並べ替え、最大 {max} 個まで。",
   "@homeGridEditorHintBody": {
     "placeholders": {
       "max": { "type": "int" }
@@ -5795,7 +5794,7 @@
       "count": { "type": "int" }
     }
   },
-  "sharedInfoInlineHint": "略称・色・性質・概要は同名の排課に同期されます",
+  "sharedInfoInlineHint": "変更は同名の授業に同期されます",
   "pickupCodeTitle": "受け取りコード",
   "pickupCodeEntryTitle": "受け取りコード",
   "pickupCodeLaunchFailed": "「{name}」を開けません：{reason}",

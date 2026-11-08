@@ -1,7 +1,7 @@
 package com.mutx163.qingyu.app
 
 /**
- * 由 `tool/gen_compose_arb_catalog.py` 从 `lib/l10n/app_*.arb` 生成，**不要手改**。
+ * 由 `tool/gen_compose_arb_catalog.py` 从 `i18n/app_*.arb` 生成，**不要手改**。
  *
  * 每条 ARB 的键值原样搬过来。`ArbCatalogTest` 会拿 6 份 ARB 逐键对拍；
  * 手改或 ARB 更新后忘记重跑脚本都会红。重新生成：
@@ -23,7 +23,7 @@ object ArbCatalog {
         else -> null
     }
 
-    // ── en（3039 条）──
+    // ── en（3038 条）──
     private fun lookupen(key: String): String? = lookupen1(key) ?: lookupen2(key) ?: lookupen3(key) ?: lookupen4(key) ?: lookupen5(key) ?: lookupen6(key) ?: lookupen7(key) ?: lookupen8(key) ?: lookupen9(key) ?: lookupen10(key) ?: lookupen11(key)
     private fun lookupen1(key: String): String? = when (key) {
         "aboutAdvancedOptionsTitle" -> "Advanced options"
@@ -612,7 +612,7 @@ object ArbCatalog {
         "courseImportUpdateRecommendedAction" -> "Update timetable (recommended)"
         "courseImportWeekNotProvided" -> "Weeks not provided"
         "courseNameDuplicatedHint" -> "Also shown on the left"
-        "courseNameHelper" -> "Serves as the unique course identifier. Entries with the same name are grouped as one course. Enter the full official name; do not abbreviate for display"
+        "courseNameHelper" -> "Courses with the same name merge into one"
         "courseNameLabel" -> "Course Name (Required)"
         "courseNatureElective" -> "Elective"
         "courseNatureLabel" -> "Course Nature"
@@ -649,7 +649,7 @@ object ArbCatalog {
         "courseRecolorTileTitle" -> "Recolor Timetable"
         "courseSectionCountValue" -> "{count}"
         "courseShortNameAutoFillAction" -> "First 2 chars"
-        "courseShortNameHelper" -> "Recommended for concise display in Super Island and similar surfaces. Short names are not generated automatically; enable Prefer course short name to apply. Limit to about 3 characters when possible"
+        "courseShortNameHelper" -> "Shown in Super Island, 3 characters max"
         "courseShortNameOptional" -> "Course short name (Optional)"
         "courseTaskAction" -> "Homework"
         "courseUpdatedSuccess" -> "Course updated successfully"
@@ -1074,7 +1074,7 @@ object ArbCatalog {
         "homeGridCustomizeDetails" -> "{count}/{max} enabled"
         "homeGridEditorAllAdded" -> "All entries are enabled"
         "homeGridEditorEnabledTitle" -> "Enabled"
-        "homeGridEditorHintBody" -> "Up to {max} buttons can be added; drag an item to reorder."
+        "homeGridEditorHintBody" -> "Drag to reorder, up to {max} buttons."
         "homeGridEditorMaxReached" -> "Limit reached"
         "homeGridEditorPinnedTooltip" -> "This entry reopens this page and cannot be removed"
         "homeGridEditorRemoveTooltip" -> "Remove"
@@ -2281,7 +2281,6 @@ object ArbCatalog {
         "scheduleEndDateLabel" -> "End Date"
         "scheduleEndGroupLabel" -> "End"
         "scheduleEndTimeLabel" -> "End Time"
-        "scheduleEntryCardSubtitle" -> "When, which weeks, and where"
         "scheduleEntrySingleTitle" -> "Class schedule"
         "scheduleEntryTitle" -> "Schedule entry {index}"
         "scheduleEntryWeeksSectionTitle" -> "Which weeks"
@@ -2447,10 +2446,10 @@ object ArbCatalog {
         "serviceMsgMacroFillSelectorEmpty" -> "Fill-field selector is empty."
         "serviceMsgMacroManualInputDefault" -> "Manual action required."
         "serviceMsgMacroNavigateUrlEmpty" -> "Navigation URL is empty."
+        "serviceMsgMacroNavigateUrlInvalid" -> "Invalid URL: {url}"
         else -> null
     }
     private fun lookupen9(key: String): String? = when (key) {
-        "serviceMsgMacroNavigateUrlInvalid" -> "Invalid URL: {url}"
         "serviceMsgMacroNoSteps" -> "No recorded steps."
         "serviceMsgMacroPollTimeout" -> "{stepLabel} timed out ({timeoutSeconds}s){lastError}"
         "serviceMsgMacroReplayClick" -> "Clicking…"
@@ -2559,7 +2558,7 @@ object ArbCatalog {
         "shareTimeSchemeTitle" -> "Share Time Template"
         "shareTimeSchemeViaQr" -> "Share via QR Code"
         "shareTimeSchemeViaSystem" -> "Share as File"
-        "sharedInfoInlineHint" -> "Short name, colour, nature and intro sync to classes with the same name"
+        "sharedInfoInlineHint" -> "Changes sync to same-name courses"
         "sharedInfoTitle" -> "Shared Info"
         "shortNamePrefix" -> "Short name: {value}"
         "showCountdownTitle" -> "Show Countdown"
@@ -2750,10 +2749,10 @@ object ArbCatalog {
         "supportTapQrHint" -> "Tap to enlarge"
         "supportWeChatHint" -> "Use WeChat to scan and support the creator"
         "supportedFilesImageHint" -> "If you only have screenshots, go back and choose Image Import instead"
+        "supportedFilesSuffix" -> "The file extension must be .ics."
         else -> null
     }
     private fun lookupen10(key: String): String? = when (key) {
-        "supportedFilesSuffix" -> "The file extension must be .ics."
         "supportedFilesTitle" -> "Supported Files"
         "surfaceCourseCard" -> "Course cards"
         "surfaceMaterialSectionTitle" -> "Current material per surface"
@@ -3053,10 +3052,10 @@ object ArbCatalog {
         "weekListSeparator" -> ", "
         "weekPickerCalendarTooltip" -> "Use calendar picker"
         "weekPickerTitle" -> "Select weeks"
+        "weekdayFri" -> "Fri"
         else -> null
     }
     private fun lookupen11(key: String): String? = when (key) {
-        "weekdayFri" -> "Fri"
         "weekdayInkContrastBodyDark" -> "Your weekday bar text color had too little contrast against the dark wallpaper, so it was lightened automatically to stay readable — your color is kept. You can change or reset it under \"Timetable Page → Text Colors\"."
         "weekdayInkContrastBodyLight" -> "Your weekday bar text color had too little contrast against the light wallpaper, so it was darkened automatically to stay readable — your color is kept. You can change or reset it under \"Timetable Page → Text Colors\"."
         "weekdayInkContrastTitle" -> "Low Text Contrast"
@@ -3098,7 +3097,7 @@ object ArbCatalog {
         else -> null
     }
 
-    // ── ja（3039 条）──
+    // ── ja（3038 条）──
     private fun lookupja(key: String): String? = lookupja1(key) ?: lookupja2(key) ?: lookupja3(key) ?: lookupja4(key) ?: lookupja5(key) ?: lookupja6(key) ?: lookupja7(key) ?: lookupja8(key) ?: lookupja9(key) ?: lookupja10(key) ?: lookupja11(key)
     private fun lookupja1(key: String): String? = when (key) {
         "aboutAdvancedOptionsTitle" -> "高度なオプション"
@@ -3687,7 +3686,7 @@ object ArbCatalog {
         "courseImportUpdateRecommendedAction" -> "Update timetable (recommended)"
         "courseImportWeekNotProvided" -> "Weeks not provided"
         "courseNameDuplicatedHint" -> "左側にも表示中"
-        "courseNameHelper" -> "授業の一意識別子，同名の複数排課は同一授業に統合されます，正式名称を入力し、表示目的での略称は避けてください"
+        "courseNameHelper" -> "同名の授業は1つにまとめられます"
         "courseNameLabel" -> "授業名（必須）"
         "courseNatureElective" -> "選択"
         "courseNatureLabel" -> "授業性質"
@@ -3724,7 +3723,7 @@ object ArbCatalog {
         "courseRecolorTileTitle" -> "時間割の配色を更新"
         "courseSectionCountValue" -> "{count}件"
         "courseShortNameAutoFillAction" -> "先頭2文字"
-        "courseShortNameHelper" -> "スーパーアイランド等での簡略表示に推奨，略称は自動生成されません，「授業略称を優先表示」を有効にした場合に反映，3 文字以内を推奨"
+        "courseShortNameHelper" -> "スーパーアイランドに表示、3文字以内"
         "courseShortNameOptional" -> "授業略称（任意）"
         "courseTaskAction" -> "宿題"
         "courseUpdatedSuccess" -> "授業更新成功"
@@ -4149,7 +4148,7 @@ object ArbCatalog {
         "homeGridCustomizeDetails" -> "{count}/{max} 個表示中"
         "homeGridEditorAllAdded" -> "すべての入口が表示中です"
         "homeGridEditorEnabledTitle" -> "表示中"
-        "homeGridEditorHintBody" -> "最大 {max} 個のボタンを配置できます。項目を長押ししてドラッグすると並べ替えられます。"
+        "homeGridEditorHintBody" -> "項目を長押しして並べ替え、最大 {max} 個まで。"
         "homeGridEditorMaxReached" -> "上限に達しました"
         "homeGridEditorPinnedTooltip" -> "この入口はこのページを再度開くためのもので、削除はできません"
         "homeGridEditorRemoveTooltip" -> "削除"
@@ -5356,7 +5355,6 @@ object ArbCatalog {
         "scheduleEndDateLabel" -> "終了日"
         "scheduleEndGroupLabel" -> "終了"
         "scheduleEndTimeLabel" -> "終了時間"
-        "scheduleEntryCardSubtitle" -> "曜日・週・場所を設定"
         "scheduleEntrySingleTitle" -> "授業スケジュール"
         "scheduleEntryTitle" -> "排課レコード{index}"
         "scheduleEntryWeeksSectionTitle" -> "どの週"
@@ -5522,10 +5520,10 @@ object ArbCatalog {
         "serviceMsgMacroFillSelectorEmpty" -> "Fill-field selector is empty."
         "serviceMsgMacroManualInputDefault" -> "Manual action required."
         "serviceMsgMacroNavigateUrlEmpty" -> "Navigation URL is empty."
+        "serviceMsgMacroNavigateUrlInvalid" -> "Invalid URL: {url}"
         else -> null
     }
     private fun lookupja9(key: String): String? = when (key) {
-        "serviceMsgMacroNavigateUrlInvalid" -> "Invalid URL: {url}"
         "serviceMsgMacroNoSteps" -> "No recorded steps."
         "serviceMsgMacroPollTimeout" -> "{stepLabel} timed out ({timeoutSeconds}s){lastError}"
         "serviceMsgMacroReplayClick" -> "Clicking…"
@@ -5634,7 +5632,7 @@ object ArbCatalog {
         "shareTimeSchemeTitle" -> "時間テンプレートを共有"
         "shareTimeSchemeViaQr" -> "QRコードで共有"
         "shareTimeSchemeViaSystem" -> "ファイルとして共有"
-        "sharedInfoInlineHint" -> "略称・色・性質・概要は同名の排課に同期されます"
+        "sharedInfoInlineHint" -> "変更は同名の授業に同期されます"
         "sharedInfoTitle" -> "共有情報"
         "shortNamePrefix" -> "略称：{value}"
         "showCountdownTitle" -> "カウントダウンを表示"
@@ -5825,10 +5823,10 @@ object ArbCatalog {
         "supportTapQrHint" -> "タップで拡大"
         "supportWeChatHint" -> "WeChatでQRコードをスキャンして作者を支援"
         "supportedFilesImageHint" -> "スクリーンショットしかない場合は、前のページに戻って「画像認識インポート」を選択してください"
+        "supportedFilesSuffix" -> "ファイル拡張子は.icsである必要があります。"
         else -> null
     }
     private fun lookupja10(key: String): String? = when (key) {
-        "supportedFilesSuffix" -> "ファイル拡張子は.icsである必要があります。"
         "supportedFilesTitle" -> "対応ファイル"
         "surfaceCourseCard" -> "時間割カード"
         "surfaceMaterialSectionTitle" -> "表面ごとの現在の素材"
@@ -6128,10 +6126,10 @@ object ArbCatalog {
         "weekListSeparator" -> "、"
         "weekPickerCalendarTooltip" -> "カレンダーで選択"
         "weekPickerTitle" -> "授業週次を選択"
+        "weekdayFri" -> "金曜"
         else -> null
     }
     private fun lookupja11(key: String): String? = when (key) {
-        "weekdayFri" -> "金曜"
         "weekdayInkContrastBodyDark" -> "曜日バーの文字色は濃い壁紙とのコントラストが不足していたため、読みやすいよう自動で明るくしました（色味はそのまま）。「時間割ページ → 文字色」で色を変更またはリセットできます。"
         "weekdayInkContrastBodyLight" -> "曜日バーの文字色は明るい壁紙とのコントラストが不足していたため、読みやすいよう自動で暗くしました（色味はそのまま）。「時間割ページ → 文字色」で色を変更またはリセットできます。"
         "weekdayInkContrastTitle" -> "文字のコントラスト不足"
@@ -6173,7 +6171,7 @@ object ArbCatalog {
         else -> null
     }
 
-    // ── ko（3039 条）──
+    // ── ko（3038 条）──
     private fun lookupko(key: String): String? = lookupko1(key) ?: lookupko2(key) ?: lookupko3(key) ?: lookupko4(key) ?: lookupko5(key) ?: lookupko6(key) ?: lookupko7(key) ?: lookupko8(key) ?: lookupko9(key) ?: lookupko10(key) ?: lookupko11(key)
     private fun lookupko1(key: String): String? = when (key) {
         "aboutAdvancedOptionsTitle" -> "고급 옵션"
@@ -6762,7 +6760,7 @@ object ArbCatalog {
         "courseImportUpdateRecommendedAction" -> "Update timetable (recommended)"
         "courseImportWeekNotProvided" -> "Weeks not provided"
         "courseNameDuplicatedHint" -> "왼쪽에도 표시 중"
-        "courseNameHelper" -> "수업 고유 식별자입니다. 동일한 이름의 배치는 하나의 수업으로 통합됩니다. 공식 전체 명칭을 입력하고, 표시 목적의 약칭은 사용하지 마세요"
+        "courseNameHelper" -> "같은 이름의 수업은 하나로 합쳐집니다"
         "courseNameLabel" -> "수업명 (필수)"
         "courseNatureElective" -> "선택"
         "courseNatureLabel" -> "수업 성격"
@@ -6799,7 +6797,7 @@ object ArbCatalog {
         "courseRecolorTileTitle" -> "시간표 다시 색칠"
         "courseSectionCountValue" -> "{count}건"
         "courseShortNameAutoFillAction" -> "앞 2자"
-        "courseShortNameHelper" -> "슈퍼아일랜드 등 간략 표시에 권장. 약칭은 자동 생성되지 않으며 수업 약칭 우선 표시 활성화 시 적용. 3자 이내 권장"
+        "courseShortNameHelper" -> "슈퍼아일랜드에 표시, 3자 이내"
         "courseShortNameOptional" -> "수업 약칭 (선택)"
         "courseTaskAction" -> "과제"
         "courseUpdatedSuccess" -> "수업 업데이트 성공"
@@ -7224,7 +7222,7 @@ object ArbCatalog {
         "homeGridCustomizeDetails" -> "{count}/{max}개 사용 중"
         "homeGridEditorAllAdded" -> "모든 항목이 사용 중입니다"
         "homeGridEditorEnabledTitle" -> "사용 중"
-        "homeGridEditorHintBody" -> "최대 {max}개의 버튼을 배치할 수 있으며, 항목을 길게 눌러 드래그하면 순서가 바뀝니다."
+        "homeGridEditorHintBody" -> "항목 길게 눌러 드래그해 순서 변경(최대 {max}개)."
         "homeGridEditorMaxReached" -> "한도 초과"
         "homeGridEditorPinnedTooltip" -> "이 항목은 이 페이지를 다시 여는 경로이므로 제거할 수 없습니다"
         "homeGridEditorRemoveTooltip" -> "제거"
@@ -8431,7 +8429,6 @@ object ArbCatalog {
         "scheduleEndDateLabel" -> "종료일"
         "scheduleEndGroupLabel" -> "종료"
         "scheduleEndTimeLabel" -> "종료 시간"
-        "scheduleEntryCardSubtitle" -> "요일, 주, 장소 설정"
         "scheduleEntrySingleTitle" -> "수업 일정"
         "scheduleEntryTitle" -> "배치 레코드 {index}"
         "scheduleEntryWeeksSectionTitle" -> "어떤 주"
@@ -8597,10 +8594,10 @@ object ArbCatalog {
         "serviceMsgMacroFillSelectorEmpty" -> "Fill-field selector is empty."
         "serviceMsgMacroManualInputDefault" -> "Manual action required."
         "serviceMsgMacroNavigateUrlEmpty" -> "Navigation URL is empty."
+        "serviceMsgMacroNavigateUrlInvalid" -> "Invalid URL: {url}"
         else -> null
     }
     private fun lookupko9(key: String): String? = when (key) {
-        "serviceMsgMacroNavigateUrlInvalid" -> "Invalid URL: {url}"
         "serviceMsgMacroNoSteps" -> "No recorded steps."
         "serviceMsgMacroPollTimeout" -> "{stepLabel} timed out ({timeoutSeconds}s){lastError}"
         "serviceMsgMacroReplayClick" -> "Clicking…"
@@ -8709,7 +8706,7 @@ object ArbCatalog {
         "shareTimeSchemeTitle" -> "시간 템플릿 공유"
         "shareTimeSchemeViaQr" -> "QR 코드로 공유"
         "shareTimeSchemeViaSystem" -> "파일로 공유"
-        "sharedInfoInlineHint" -> "약칭, 색상, 성격, 소개는 같은 이름의 수업에 동기화됩니다"
+        "sharedInfoInlineHint" -> "변경 내용은 같은 이름 수업에 동기화됩니다"
         "sharedInfoTitle" -> "공유 정보"
         "shortNamePrefix" -> "약칭: {value}"
         "showCountdownTitle" -> "카운트다운 표시"
@@ -8900,10 +8897,10 @@ object ArbCatalog {
         "supportTapQrHint" -> "탭하여 확대"
         "supportWeChatHint" -> "WeChat으로 QR 코드를 스캔하여 개발자 지원"
         "supportedFilesImageHint" -> "스크린샷만 있다면 이곳이 아닌 이전 페이지에서 '이미지 인식 가져오기'를 선택하세요"
+        "supportedFilesSuffix" -> "파일 확장자는 .ics여야 합니다."
         else -> null
     }
     private fun lookupko10(key: String): String? = when (key) {
-        "supportedFilesSuffix" -> "파일 확장자는 .ics여야 합니다."
         "supportedFilesTitle" -> "지원 파일"
         "surfaceCourseCard" -> "시간표 카드"
         "surfaceMaterialSectionTitle" -> "표면별 현재 재질"
@@ -9203,10 +9200,10 @@ object ArbCatalog {
         "weekListSeparator" -> ", "
         "weekPickerCalendarTooltip" -> "달력으로 선택"
         "weekPickerTitle" -> "수업 주차 선택"
+        "weekdayFri" -> "금요일"
         else -> null
     }
     private fun lookupko11(key: String): String? = when (key) {
-        "weekdayFri" -> "금요일"
         "weekdayInkContrastBodyDark" -> "요일 표시줄 텍스트 색상이 어두운 배경화면과 대비가 부족하여 읽기 쉽도록 자동으로 밝게 조정했습니다(색조는 그대로 유지). \"시간표 페이지 → 텍스트 색상\"에서 색상을 변경하거나 기본값으로 재설정할 수 있습니다."
         "weekdayInkContrastBodyLight" -> "요일 표시줄 텍스트 색상이 밝은 배경화면과 대비가 부족하여 읽기 쉽도록 자동으로 어둡게 조정했습니다(색조는 그대로 유지). \"시간표 페이지 → 텍스트 색상\"에서 색상을 변경하거나 기본값으로 재설정할 수 있습니다."
         "weekdayInkContrastTitle" -> "텍스트 대비 부족"
@@ -9248,7 +9245,7 @@ object ArbCatalog {
         else -> null
     }
 
-    // ── zh（3039 条）──
+    // ── zh（3038 条）──
     private fun lookupzh(key: String): String? = lookupzh1(key) ?: lookupzh2(key) ?: lookupzh3(key) ?: lookupzh4(key) ?: lookupzh5(key) ?: lookupzh6(key) ?: lookupzh7(key) ?: lookupzh8(key) ?: lookupzh9(key) ?: lookupzh10(key) ?: lookupzh11(key)
     private fun lookupzh1(key: String): String? = when (key) {
         "aboutAdvancedOptionsTitle" -> "高级选项"
@@ -9837,7 +9834,7 @@ object ArbCatalog {
         "courseImportUpdateRecommendedAction" -> "更新课表 推荐"
         "courseImportWeekNotProvided" -> "未提供周次"
         "courseNameDuplicatedHint" -> "左侧已显示课程名"
-        "courseNameHelper" -> "作为课程唯一标识；名称相同的多条排课将归为同一课程，请填写完整名称，请勿为界面显示而缩写"
+        "courseNameHelper" -> "同名课会合并成一门课"
         "courseNameLabel" -> "课程名称（必填）"
         "courseNatureElective" -> "选修"
         "courseNatureLabel" -> "课程性质"
@@ -9874,7 +9871,7 @@ object ArbCatalog {
         "courseRecolorTileTitle" -> "课表重新配色"
         "courseSectionCountValue" -> "{count} 节"
         "courseShortNameAutoFillAction" -> "取前两字"
-        "courseShortNameHelper" -> "用于超级岛等精简展示，开启优先显示简称后生效，建议 3 字以内"
+        "courseShortNameHelper" -> "超级岛显示，建议 3 字内"
         "courseShortNameOptional" -> "课程简称（可选）"
         "courseTaskAction" -> "作业"
         "courseUpdatedSuccess" -> "课程更新成功"
@@ -10299,7 +10296,7 @@ object ArbCatalog {
         "homeGridCustomizeDetails" -> "已启用 {count}/{max} 个"
         "homeGridEditorAllAdded" -> "所有入口都已启用"
         "homeGridEditorEnabledTitle" -> "已启用"
-        "homeGridEditorHintBody" -> "最多放置 {max} 个按钮；按住条目拖动即可排序。"
+        "homeGridEditorHintBody" -> "最多放 {max} 个，按住条目可排序"
         "homeGridEditorMaxReached" -> "已达上限"
         "homeGridEditorPinnedTooltip" -> "此入口用于重新打开本页，不能移除"
         "homeGridEditorRemoveTooltip" -> "移除"
@@ -11506,7 +11503,6 @@ object ArbCatalog {
         "scheduleEndDateLabel" -> "结束日期"
         "scheduleEndGroupLabel" -> "结束"
         "scheduleEndTimeLabel" -> "结束时间"
-        "scheduleEntryCardSubtitle" -> "何时、哪些周、在哪里"
         "scheduleEntrySingleTitle" -> "上课安排"
         "scheduleEntryTitle" -> "排课记录 {index}"
         "scheduleEntryWeeksSectionTitle" -> "哪些周上"
@@ -11672,10 +11668,10 @@ object ArbCatalog {
         "serviceMsgMacroFillSelectorEmpty" -> "填充字段的选择器为空"
         "serviceMsgMacroManualInputDefault" -> "需要手动操作"
         "serviceMsgMacroNavigateUrlEmpty" -> "导航 URL 为空"
+        "serviceMsgMacroNavigateUrlInvalid" -> "无效的 URL: {url}"
         else -> null
     }
     private fun lookupzh9(key: String): String? = when (key) {
-        "serviceMsgMacroNavigateUrlInvalid" -> "无效的 URL: {url}"
         "serviceMsgMacroNoSteps" -> "没有录制的步骤"
         "serviceMsgMacroPollTimeout" -> "{stepLabel} 超时 {timeoutSeconds} 秒 {lastError}"
         "serviceMsgMacroReplayClick" -> "正在点击……"
@@ -11784,7 +11780,7 @@ object ArbCatalog {
         "shareTimeSchemeTitle" -> "分享时间模板"
         "shareTimeSchemeViaQr" -> "二维码分享"
         "shareTimeSchemeViaSystem" -> "系统分享文件"
-        "sharedInfoInlineHint" -> "简称、颜色、性质、简介同步给同名排课"
+        "sharedInfoInlineHint" -> "改动同步到同名课"
         "sharedInfoTitle" -> "共享信息"
         "shortNamePrefix" -> "简称：{value}"
         "showCountdownTitle" -> "显示倒计时"
@@ -11975,10 +11971,10 @@ object ArbCatalog {
         "supportTapQrHint" -> "点击放大扫码"
         "supportWeChatHint" -> "使用微信扫一扫支持作者"
         "supportedFilesImageHint" -> "课表截图请返回上一页使用识图导入"
+        "supportedFilesSuffix" -> "文件后缀必须是 .ics"
         else -> null
     }
     private fun lookupzh10(key: String): String? = when (key) {
-        "supportedFilesSuffix" -> "文件后缀必须是 .ics"
         "supportedFilesTitle" -> "支持的文件"
         "surfaceCourseCard" -> "课程卡片"
         "surfaceMaterialSectionTitle" -> "各表面当前材质"
@@ -12278,10 +12274,10 @@ object ArbCatalog {
         "weekListSeparator" -> "、"
         "weekPickerCalendarTooltip" -> "使用日历选择"
         "weekPickerTitle" -> "选择上课周次"
+        "weekdayFri" -> "周五"
         else -> null
     }
     private fun lookupzh11(key: String): String? = when (key) {
-        "weekdayFri" -> "周五"
         "weekdayInkContrastBodyDark" -> "信息栏文字在深色背景下对比度不足，已自动提升亮度。可在 课表页面 文字颜色 中调整或恢复默认。"
         "weekdayInkContrastBodyLight" -> "信息栏文字在浅色背景下对比度不足，已自动降低亮度。可在 课表页面 文字颜色 中调整或恢复默认。"
         "weekdayInkContrastTitle" -> "文字对比度不足"
@@ -12323,7 +12319,7 @@ object ArbCatalog {
         else -> null
     }
 
-    // ── zh_HK（3039 条）──
+    // ── zh_HK（3038 条）──
     private fun lookupzhHK(key: String): String? = lookupzhHK1(key) ?: lookupzhHK2(key) ?: lookupzhHK3(key) ?: lookupzhHK4(key) ?: lookupzhHK5(key) ?: lookupzhHK6(key) ?: lookupzhHK7(key) ?: lookupzhHK8(key) ?: lookupzhHK9(key) ?: lookupzhHK10(key) ?: lookupzhHK11(key)
     private fun lookupzhHK1(key: String): String? = when (key) {
         "aboutAdvancedOptionsTitle" -> "高級選項"
@@ -12912,7 +12908,7 @@ object ArbCatalog {
         "courseImportUpdateRecommendedAction" -> "更新課表 推薦"
         "courseImportWeekNotProvided" -> "未提供周次"
         "courseNameDuplicatedHint" -> "左側已顯示課程名"
-        "courseNameHelper" -> "作為課程唯一標識；名稱相同的多條排課將歸為同一課程，請填寫完整名稱，請勿為介面顯示而縮寫"
+        "courseNameHelper" -> "同名課會合併成一門課"
         "courseNameLabel" -> "課程名稱（必填）"
         "courseNatureElective" -> "選修"
         "courseNatureLabel" -> "課程性質"
@@ -12949,7 +12945,7 @@ object ArbCatalog {
         "courseRecolorTileTitle" -> "課表重新配色"
         "courseSectionCountValue" -> "{count} 節"
         "courseShortNameAutoFillAction" -> "取前兩字"
-        "courseShortNameHelper" -> "用於超級島等精簡展示，開啓優先顯示簡稱後生效，建議 3 字以內"
+        "courseShortNameHelper" -> "超級島顯示，建議 3 字內"
         "courseShortNameOptional" -> "課程簡稱（可選）"
         "courseTaskAction" -> "作業"
         "courseUpdatedSuccess" -> "課程更新成功"
@@ -13374,7 +13370,7 @@ object ArbCatalog {
         "homeGridCustomizeDetails" -> "已啟用 {count}/{max} 個"
         "homeGridEditorAllAdded" -> "所有入口都已啟用"
         "homeGridEditorEnabledTitle" -> "已啟用"
-        "homeGridEditorHintBody" -> "最多放置 {max} 個按鈕；按住項目拖動即可排序。"
+        "homeGridEditorHintBody" -> "最多放 {max} 個，按住項目可排序"
         "homeGridEditorMaxReached" -> "已達上限"
         "homeGridEditorPinnedTooltip" -> "此入口用於重新開啟本頁，無法移除"
         "homeGridEditorRemoveTooltip" -> "移除"
@@ -14581,7 +14577,6 @@ object ArbCatalog {
         "scheduleEndDateLabel" -> "結束日期"
         "scheduleEndGroupLabel" -> "結束"
         "scheduleEndTimeLabel" -> "結束時間"
-        "scheduleEntryCardSubtitle" -> "何時、哪些週、在哪裡"
         "scheduleEntrySingleTitle" -> "上課安排"
         "scheduleEntryTitle" -> "排課記錄 {index}"
         "scheduleEntryWeeksSectionTitle" -> "哪些週上"
@@ -14747,10 +14742,10 @@ object ArbCatalog {
         "serviceMsgMacroFillSelectorEmpty" -> "Fill-field selector is empty."
         "serviceMsgMacroManualInputDefault" -> "Manual action required."
         "serviceMsgMacroNavigateUrlEmpty" -> "Navigation URL is empty."
+        "serviceMsgMacroNavigateUrlInvalid" -> "Invalid URL: {url}"
         else -> null
     }
     private fun lookupzhHK9(key: String): String? = when (key) {
-        "serviceMsgMacroNavigateUrlInvalid" -> "Invalid URL: {url}"
         "serviceMsgMacroNoSteps" -> "No recorded steps."
         "serviceMsgMacroPollTimeout" -> "{stepLabel} 超時 {timeoutSeconds} 秒 {lastError}"
         "serviceMsgMacroReplayClick" -> "Clicking…"
@@ -14859,7 +14854,7 @@ object ArbCatalog {
         "shareTimeSchemeTitle" -> "分享時間範本"
         "shareTimeSchemeViaQr" -> "二維碼分享"
         "shareTimeSchemeViaSystem" -> "系統分享檔案"
-        "sharedInfoInlineHint" -> "簡稱、顏色、性質、簡介同步給同名排課"
+        "sharedInfoInlineHint" -> "改動同步到同名課"
         "sharedInfoTitle" -> "共享資訊"
         "shortNamePrefix" -> "簡稱：{value}"
         "showCountdownTitle" -> "顯示倒計時"
@@ -15050,10 +15045,10 @@ object ArbCatalog {
         "supportTapQrHint" -> "點擊放大掃碼"
         "supportWeChatHint" -> "使用微信掃一掃支持作者"
         "supportedFilesImageHint" -> "課表截圖請返回上一頁使用識圖導入"
+        "supportedFilesSuffix" -> "檔案後綴必須是 .ics"
         else -> null
     }
     private fun lookupzhHK10(key: String): String? = when (key) {
-        "supportedFilesSuffix" -> "檔案後綴必須是 .ics"
         "supportedFilesTitle" -> "支持的檔案"
         "surfaceCourseCard" -> "課程卡片"
         "surfaceMaterialSectionTitle" -> "各表面當前材質"
@@ -15353,10 +15348,10 @@ object ArbCatalog {
         "weekListSeparator" -> "、"
         "weekPickerCalendarTooltip" -> "使用日曆選擇"
         "weekPickerTitle" -> "選擇上課週次"
+        "weekdayFri" -> "周五"
         else -> null
     }
     private fun lookupzhHK11(key: String): String? = when (key) {
-        "weekdayFri" -> "周五"
         "weekdayInkContrastBodyDark" -> "信息欄文字在深色背景下對比度不足，已自動提升亮度。可在 課表頁面 文字顏色 中調整或恢復默認。"
         "weekdayInkContrastBodyLight" -> "信息欄文字在淺色背景下對比度不足，已自動降低亮度。可在 課表頁面 文字顏色 中調整或恢復默認。"
         "weekdayInkContrastTitle" -> "文字對比度不足"
@@ -15398,7 +15393,7 @@ object ArbCatalog {
         else -> null
     }
 
-    // ── zh_TW（3039 条）──
+    // ── zh_TW（3038 条）──
     private fun lookupzhTW(key: String): String? = lookupzhTW1(key) ?: lookupzhTW2(key) ?: lookupzhTW3(key) ?: lookupzhTW4(key) ?: lookupzhTW5(key) ?: lookupzhTW6(key) ?: lookupzhTW7(key) ?: lookupzhTW8(key) ?: lookupzhTW9(key) ?: lookupzhTW10(key) ?: lookupzhTW11(key)
     private fun lookupzhTW1(key: String): String? = when (key) {
         "aboutAdvancedOptionsTitle" -> "高級選項"
@@ -15987,7 +15982,7 @@ object ArbCatalog {
         "courseImportUpdateRecommendedAction" -> "更新課表 推薦"
         "courseImportWeekNotProvided" -> "未提供周次"
         "courseNameDuplicatedHint" -> "左側已顯示課程名"
-        "courseNameHelper" -> "作為課程唯一標識；名稱相同的多條排課將歸為同一課程，請填寫完整名稱，請勿為介面顯示而縮寫"
+        "courseNameHelper" -> "同名課會合併成一門課"
         "courseNameLabel" -> "課程名稱（必填）"
         "courseNatureElective" -> "選修"
         "courseNatureLabel" -> "課程性質"
@@ -16024,7 +16019,7 @@ object ArbCatalog {
         "courseRecolorTileTitle" -> "課表重新配色"
         "courseSectionCountValue" -> "{count} 節"
         "courseShortNameAutoFillAction" -> "取前兩字"
-        "courseShortNameHelper" -> "用於超級島等精簡展示，開啟優先顯示簡稱後生效，建議 3 字以內"
+        "courseShortNameHelper" -> "超級島顯示，建議 3 字內"
         "courseShortNameOptional" -> "課程簡稱（可選）"
         "courseTaskAction" -> "作業"
         "courseUpdatedSuccess" -> "課程更新成功"
@@ -16449,7 +16444,7 @@ object ArbCatalog {
         "homeGridCustomizeDetails" -> "已啟用 {count}/{max} 個"
         "homeGridEditorAllAdded" -> "所有入口都已啟用"
         "homeGridEditorEnabledTitle" -> "已啟用"
-        "homeGridEditorHintBody" -> "最多放置 {max} 個按鈕；按住項目拖動即可排序。"
+        "homeGridEditorHintBody" -> "最多放 {max} 個，按住項目可排序"
         "homeGridEditorMaxReached" -> "已達上限"
         "homeGridEditorPinnedTooltip" -> "此入口用於重新開啟本頁，無法移除"
         "homeGridEditorRemoveTooltip" -> "移除"
@@ -17656,7 +17651,6 @@ object ArbCatalog {
         "scheduleEndDateLabel" -> "結束日期"
         "scheduleEndGroupLabel" -> "結束"
         "scheduleEndTimeLabel" -> "結束時間"
-        "scheduleEntryCardSubtitle" -> "何時、哪些週、在哪裡"
         "scheduleEntrySingleTitle" -> "上課安排"
         "scheduleEntryTitle" -> "排課紀錄 {index}"
         "scheduleEntryWeeksSectionTitle" -> "哪些週上"
@@ -17822,10 +17816,10 @@ object ArbCatalog {
         "serviceMsgMacroFillSelectorEmpty" -> "Fill-field selector is empty."
         "serviceMsgMacroManualInputDefault" -> "Manual action required."
         "serviceMsgMacroNavigateUrlEmpty" -> "Navigation URL is empty."
+        "serviceMsgMacroNavigateUrlInvalid" -> "Invalid URL: {url}"
         else -> null
     }
     private fun lookupzhTW9(key: String): String? = when (key) {
-        "serviceMsgMacroNavigateUrlInvalid" -> "Invalid URL: {url}"
         "serviceMsgMacroNoSteps" -> "No recorded steps."
         "serviceMsgMacroPollTimeout" -> "{stepLabel} 超時 {timeoutSeconds} 秒 {lastError}"
         "serviceMsgMacroReplayClick" -> "Clicking…"
@@ -17934,7 +17928,7 @@ object ArbCatalog {
         "shareTimeSchemeTitle" -> "分享時間範本"
         "shareTimeSchemeViaQr" -> "二維碼分享"
         "shareTimeSchemeViaSystem" -> "系統分享檔案"
-        "sharedInfoInlineHint" -> "簡稱、顏色、性質、簡介同步給同名排課"
+        "sharedInfoInlineHint" -> "改動同步到同名課"
         "sharedInfoTitle" -> "共享資訊"
         "shortNamePrefix" -> "簡稱：{value}"
         "showCountdownTitle" -> "顯示倒計時"
@@ -18125,10 +18119,10 @@ object ArbCatalog {
         "supportTapQrHint" -> "點擊放大掃碼"
         "supportWeChatHint" -> "使用微信掃一掃支持作者"
         "supportedFilesImageHint" -> "課表截圖請返回上一頁使用識圖導入"
+        "supportedFilesSuffix" -> "檔案後綴必須是 .ics"
         else -> null
     }
     private fun lookupzhTW10(key: String): String? = when (key) {
-        "supportedFilesSuffix" -> "檔案後綴必須是 .ics"
         "supportedFilesTitle" -> "支持的檔案"
         "surfaceCourseCard" -> "課程卡片"
         "surfaceMaterialSectionTitle" -> "各表面當前材質"
@@ -18428,10 +18422,10 @@ object ArbCatalog {
         "weekListSeparator" -> "、"
         "weekPickerCalendarTooltip" -> "使用日曆選擇"
         "weekPickerTitle" -> "選擇上課週次"
+        "weekdayFri" -> "周五"
         else -> null
     }
     private fun lookupzhTW11(key: String): String? = when (key) {
-        "weekdayFri" -> "周五"
         "weekdayInkContrastBodyDark" -> "信息欄文字在深色背景下對比度不足，已自動提升亮度。可在 課表頁面 文字顏色 中調整或恢復默認。"
         "weekdayInkContrastBodyLight" -> "信息欄文字在淺色背景下對比度不足，已自動降低亮度。可在 課表頁面 文字顏色 中調整或恢復默認。"
         "weekdayInkContrastTitle" -> "文字對比度不足"

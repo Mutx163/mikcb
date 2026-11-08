@@ -52,6 +52,7 @@ import top.yukonga.miuix.kmp.basic.IconButton
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
 import top.yukonga.miuix.kmp.basic.Scaffold
 import top.yukonga.miuix.kmp.basic.Text
+import top.yukonga.miuix.kmp.basic.TextButton
 import top.yukonga.miuix.kmp.basic.TextField
 import top.yukonga.miuix.kmp.basic.TopAppBar
 import top.yukonga.miuix.kmp.icon.MiuixIcons
@@ -290,11 +291,18 @@ fun AddCoursePage(
                         insideMargin = PaddingValues(horizontal = 14.dp, vertical = 12.dp),
                     ) {
                         Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                            Text(
-                                text = AddCourseStrings.sharedInfoTitle.text,
-                                style = MiuixTheme.textStyles.body2.shiftWeight(QingyuWeightDelta.MEDIUM),
-                                color = MiuixTheme.colorScheme.onSurfaceVariantActions,
-                            )
+                            Column {
+                                Text(
+                                    text = AddCourseStrings.sharedInfoTitle.text,
+                                    style = MiuixTheme.textStyles.body2.shiftWeight(QingyuWeightDelta.MEDIUM),
+                                    color = MiuixTheme.colorScheme.onSurfaceVariantActions,
+                                )
+                                Text(
+                                    text = AddCourseStrings.sharedInfoInlineHint.text,
+                                    style = MiuixTheme.textStyles.footnote1,
+                                    color = Color(QingyuTheme.secondaryText(dark)),
+                                )
+                            }
                             TextField(
                                 value = sharedName,
                                 onValueChange = {
@@ -327,19 +335,20 @@ fun AddCoursePage(
                                     modifier = Modifier.weight(1f),
                                 )
                                 Spacer(modifier = Modifier.width(8.dp))
-                                Text(
+                                // 官方 TextButton（非自绘按钮）：与输入框同级的小胶囊，自带 squircle 底、按压反馈与 Role.Button。
+                                TextButton(
                                     text = AddCourseStrings.courseShortNameAutoFillAction.text,
-                                    style = MiuixTheme.textStyles.body2,
-                                    color = Color(QingyuTheme.primary(dark = dark)),
-                                    modifier = Modifier
-                                        .clickable {
-                                            val auto = AddCourseFormLogic.autofillShortName(sharedName)
-                                            if (auto.isNotEmpty()) {
-                                                sharedShortName = auto
-                                                markDirty()
-                                            }
+                                    onClick = {
+                                        val auto = AddCourseFormLogic.autofillShortName(sharedName)
+                                        if (auto.isNotEmpty()) {
+                                            sharedShortName = auto
+                                            markDirty()
                                         }
-                                        .padding(horizontal = 6.dp, vertical = 8.dp),
+                                    },
+                                    minWidth = 0.dp,
+                                    minHeight = 0.dp,
+                                    insideMargin = PaddingValues(horizontal = 14.dp, vertical = 11.dp),
+                                    textStyle = MiuixTheme.textStyles.body2,
                                 )
                             }
                             Text(
@@ -430,11 +439,6 @@ fun AddCoursePage(
                                     )
                                 }
                             }
-                            Text(
-                                text = AddCourseStrings.sharedInfoInlineHint.text,
-                                style = MiuixTheme.textStyles.footnote1,
-                                color = Color(QingyuTheme.secondaryText(dark)),
-                            )
                         }
                     }
                 }
@@ -448,18 +452,11 @@ fun AddCoursePage(
                         insideMargin = PaddingValues(horizontal = 14.dp, vertical = 12.dp),
                     ) {
                         Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                            Column {
-                                Text(
-                                    text = AddCourseFormLogic.scheduleEntryCardTitle(entries.size),
-                                    style = MiuixTheme.textStyles.body2.shiftWeight(QingyuWeightDelta.MEDIUM),
-                                    color = MiuixTheme.colorScheme.onSurfaceVariantActions,
-                                )
-                                Text(
-                                    text = AddCourseStrings.scheduleEntryCardSubtitle.text,
-                                    style = MiuixTheme.textStyles.footnote1,
-                                    color = Color(QingyuTheme.secondaryText(dark)),
-                                )
-                            }
+                            Text(
+                                text = AddCourseFormLogic.scheduleEntryCardTitle(entries.size),
+                                style = MiuixTheme.textStyles.body2.shiftWeight(QingyuWeightDelta.MEDIUM),
+                                color = MiuixTheme.colorScheme.onSurfaceVariantActions,
+                            )
                             entries.forEachIndexed { index, entry ->
                                 AddCourseEntryFields(
                                     index = index,

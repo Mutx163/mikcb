@@ -1275,10 +1275,10 @@
   "manualInputLabel": "手動填寫",
   "noTemplateCoursesHint": "目前課表裡還沒有有現成課程，先手動錄入一門，後面臨時加課就能直接選了",
   "courseNameLabel": "課程名稱（必填）",
-  "courseNameHelper": "作為課程唯一標識；名稱相同的多條排課將歸為同一課程，請填寫完整名稱，請勿為介面顯示而縮寫",
+  "courseNameHelper": "同名課會合併成一門課",
   "pleaseEnterCourseName": "請輸入課程名稱",
   "courseShortNameOptional": "課程簡稱（可選）",
-  "courseShortNameHelper": "用於超級島等精簡展示，開啟優先顯示簡稱後生效，建議 3 字以內",
+  "courseShortNameHelper": "超級島顯示，建議 3 字內",
   "courseShortNameAutoFillAction": "取前兩字",
   "teacherLabel": "授課教師",
   "courseNatureLabel": "課程性質",
@@ -2771,7 +2771,6 @@
     }
   },
   "scheduleEntrySingleTitle": "上課安排",
-  "scheduleEntryCardSubtitle": "何時、哪些週、在哪裡",
   "scheduleEntryWeeksSectionTitle": "哪些週上",
   "scheduleSectionNumberLabel": "{section}節",
   "@scheduleSectionNumberLabel": {
@@ -5630,7 +5629,7 @@
       }
     }
   },
-  "homeGridEditorHintBody": "最多放置 {max} 個按鈕；按住項目拖動即可排序。",
+  "homeGridEditorHintBody": "最多放 {max} 個，按住項目可排序",
   "@homeGridEditorHintBody": {
     "placeholders": {
       "max": {
@@ -5954,7 +5953,7 @@
       }
     }
   },
-  "sharedInfoInlineHint": "簡稱、顏色、性質、簡介同步給同名排課",
+  "sharedInfoInlineHint": "改動同步到同名課",
   "pickupCodeTitle": "取件碼",
   "pickupCodeEntryTitle": "取件碼",
   "pickupCodeLaunchFailed": "打不開「{name}」：{reason}",

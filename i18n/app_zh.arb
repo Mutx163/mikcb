@@ -1425,10 +1425,10 @@
   "manualInputLabel": "手动填写",
   "noTemplateCoursesHint": "当前课表里还没有现成课程，先手动录入一门，后面临时加课就能直接选了",
   "courseNameLabel": "课程名称（必填）",
-  "courseNameHelper": "作为课程唯一标识；名称相同的多条排课将归为同一课程，请填写完整名称，请勿为界面显示而缩写",
+  "courseNameHelper": "同名课会合并成一门课",
   "pleaseEnterCourseName": "请输入课程名称",
   "courseShortNameOptional": "课程简称（可选）",
-  "courseShortNameHelper": "用于超级岛等精简展示，开启优先显示简称后生效，建议 3 字以内",
+  "courseShortNameHelper": "超级岛显示，建议 3 字内",
   "courseShortNameAutoFillAction": "取前两字",
   "teacherLabel": "授课教师",
   "courseNatureLabel": "课程性质",
@@ -3040,7 +3040,6 @@
     }
   },
   "scheduleEntrySingleTitle": "上课安排",
-  "scheduleEntryCardSubtitle": "何时、哪些周、在哪里",
   "scheduleEntryWeeksSectionTitle": "哪些周上",
   "scheduleSectionNumberLabel": "{section} 节",
   "@scheduleSectionNumberLabel": {
@@ -5726,7 +5725,7 @@
       }
     }
   },
-  "homeGridEditorHintBody": "最多放置 {max} 个按钮；按住条目拖动即可排序。",
+  "homeGridEditorHintBody": "最多放 {max} 个，按住条目可排序",
   "@homeGridEditorHintBody": {
     "placeholders": {
       "max": {
@@ -6092,7 +6091,7 @@
       }
     }
   },
-  "sharedInfoInlineHint": "简称、颜色、性质、简介同步给同名排课",
+  "sharedInfoInlineHint": "改动同步到同名课",
   "pickupCodeTitle": "取件码",
   "pickupCodeEntryTitle": "取件码",
   "pickupCodeLaunchFailed": "打不开「{name}」：{reason}",

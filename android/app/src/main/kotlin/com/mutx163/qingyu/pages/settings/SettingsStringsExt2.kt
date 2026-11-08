@@ -151,7 +151,7 @@ object SettingsStringsExt2 {
     // ------------------------------------------------------------ 八宫格编辑器（`lib/screens/settings/settings_home_menu_editor.dart`）
 
     val homeGridEditorEnabledTitle = ArbText("homeGridEditorEnabledTitle", "已启用")
-    val homeGridEditorHintBody = ArbText("homeGridEditorHintBody", "最多放置 {max} 个按钮；按住条目拖动即可排序。")
+    val homeGridEditorHintBody = ArbText("homeGridEditorHintBody", "最多放 {max} 个，按住条目可排序")
     val homeGridEditorAllAdded = ArbText("homeGridEditorAllAdded", "所有入口都已启用")
     val homeGridEditorMaxReached = ArbText("homeGridEditorMaxReached", "已达上限")
     val homeGridEditorPinnedTooltip = ArbText("homeGridEditorPinnedTooltip", "此入口用于重新打开本页，不能移除")

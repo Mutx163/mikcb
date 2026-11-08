@@ -69,8 +69,8 @@ class SettingsStringsExt4ParityTest {
     @Test
     fun `带占位符的模板按片段比对`() {
         // glassDock 的提示是唯一带占位符的一条：homeGridEditorHintBody {max}
-        assertEquals("最多放置 {max} 个按钮；按住条目拖动即可排序。", ArbZh.value("homeGridEditorHintBody"))
-        assertMatchesArb("homeGridEditorHintBody", "最多放置 5 个按钮；按住条目拖动即可排序。", ArbZh.value("homeGridEditorHintBody"))
+        assertEquals("最多放 {max} 个，按住条目可排序", ArbZh.value("homeGridEditorHintBody"))
+        assertMatchesArb("homeGridEditorHintBody", "最多放 5 个，按住条目可排序", ArbZh.value("homeGridEditorHintBody"))
         val failed = runCatching {
             assertMatchesArb("homeGridEditorHintBody", "最多能放 5 个按钮；按住条目拖动即可排序。", ArbZh.value("homeGridEditorHintBody"))
         }

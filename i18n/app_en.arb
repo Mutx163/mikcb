@@ -1393,10 +1393,10 @@
   "manualInputLabel": "Enter Manually",
   "noTemplateCoursesHint": "There are no existing courses yet. Add one manually first, then future temporary lessons can reuse it",
   "courseNameLabel": "Course Name (Required)",
-  "courseNameHelper": "Serves as the unique course identifier. Entries with the same name are grouped as one course. Enter the full official name; do not abbreviate for display",
+  "courseNameHelper": "Courses with the same name merge into one",
   "pleaseEnterCourseName": "Please enter the course name",
   "courseShortNameOptional": "Course short name (Optional)",
-  "courseShortNameHelper": "Recommended for concise display in Super Island and similar surfaces. Short names are not generated automatically; enable Prefer course short name to apply. Limit to about 3 characters when possible",
+  "courseShortNameHelper": "Shown in Super Island, 3 characters max",
   "courseShortNameAutoFillAction": "First 2 chars",
   "teacherLabel": "Teacher",
   "courseNatureLabel": "Course Nature",
@@ -2980,7 +2980,6 @@
     }
   },
   "scheduleEntrySingleTitle": "Class schedule",
-  "scheduleEntryCardSubtitle": "When, which weeks, and where",
   "scheduleEntryWeeksSectionTitle": "Which weeks",
   "scheduleSectionNumberLabel": "P{section}",
   "@scheduleSectionNumberLabel": {
@@ -5630,7 +5629,7 @@
       }
     }
   },
-  "homeGridEditorHintBody": "Up to {max} buttons can be added; drag an item to reorder.",
+  "homeGridEditorHintBody": "Drag to reorder, up to {max} buttons.",
   "@homeGridEditorHintBody": {
     "placeholders": {
       "max": {
@@ -5954,7 +5953,7 @@
       }
     }
   },
-  "sharedInfoInlineHint": "Short name, colour, nature and intro sync to classes with the same name",
+  "sharedInfoInlineHint": "Changes sync to same-name courses",
   "pickupCodeTitle": "Pickup code",
   "pickupCodeEntryTitle": "Pickup code",
   "pickupCodeLaunchFailed": "Can't open {name}: {reason}",

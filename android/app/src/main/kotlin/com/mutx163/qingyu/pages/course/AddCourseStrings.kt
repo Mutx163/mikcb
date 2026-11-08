@@ -49,14 +49,12 @@ object AddCourseStrings {
 
     // ── 共享信息卡 ──
     val sharedInfoTitle = ArbText("sharedInfoTitle", "共享信息")
-    val sharedInfoInlineHint = ArbText("sharedInfoInlineHint", "简称、颜色、性质、简介同步给同名排课")
+    val sharedInfoInlineHint = ArbText("sharedInfoInlineHint", "改动同步到同名课")
     val courseNameLabel = ArbText("courseNameLabel", "课程名称（必填）")
-    val courseNameHelper =
-        ArbText("courseNameHelper", "作为课程唯一标识；名称相同的多条排课将归为同一课程，请填写完整名称，请勿为界面显示而缩写")
+    val courseNameHelper = ArbText("courseNameHelper", "同名课会合并成一门课")
     val pleaseEnterCourseName = ArbText("pleaseEnterCourseName", "请输入课程名称")
     val courseShortNameOptional = ArbText("courseShortNameOptional", "课程简称（可选）")
-    val courseShortNameHelper =
-        ArbText("courseShortNameHelper", "用于超级岛等精简展示，开启优先显示简称后生效，建议 3 字以内")
+    val courseShortNameHelper = ArbText("courseShortNameHelper", "超级岛显示，建议 3 字内")
     val courseShortNameAutoFillAction = ArbText("courseShortNameAutoFillAction", "取前两字")
     val courseDescriptionOptional = ArbText("courseDescriptionOptional", "课程简介（可选）")
     val teacherLabel = ArbText("teacherLabel", "授课教师")
@@ -112,7 +110,6 @@ object AddCourseStrings {
     // ── 排课记录卡 ──
     val scheduleEntrySingleTitle = ArbText("scheduleEntrySingleTitle", "上课安排")
     val scheduleEntryTitle = ArbText("scheduleEntryTitle", "排课记录 {index}")
-    val scheduleEntryCardSubtitle = ArbText("scheduleEntryCardSubtitle", "何时、哪些周、在哪里")
     val addScheduleEntryAction = ArbText("addScheduleEntryAction", "添加排课时间")
     val conflictLabel = ArbText("conflictLabel", "冲突")
 
@@ -181,7 +178,6 @@ object AddCourseStrings {
             saveAction,
             saveFailed,
             savingAction,
-            scheduleEntryCardSubtitle,
             scheduleEntrySingleTitle,
             scheduleEntryTitle,
             scheduleEntryWeeksSectionTitle,

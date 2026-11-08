@@ -30,7 +30,7 @@ object SettingsStringsExt4 {
 
     val glassDockCustomizeTitle = ArbText("glassDockCustomizeTitle", "自定义底栏按钮")
     val homeGridEditorEnabledTitle = ArbText("homeGridEditorEnabledTitle", "已启用")
-    val homeGridEditorHintBody = ArbText("homeGridEditorHintBody", "最多放置 {max} 个按钮；按住条目拖动即可排序。")
+    val homeGridEditorHintBody = ArbText("homeGridEditorHintBody", "最多放 {max} 个，按住条目可排序")
     val homeDockEditorViewCategory = ArbText("homeDockEditorViewCategory", "视图切换")
     val homeGridEditorMaxReached = ArbText("homeGridEditorMaxReached", "已达上限")
     val homeGridEditorAllAdded = ArbText("homeGridEditorAllAdded", "所有入口都已启用")
