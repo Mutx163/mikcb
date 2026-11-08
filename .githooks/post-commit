@@ -166,7 +166,7 @@ if [ -n "$skipped_short" ]; then
   echo "" >&2
   echo "post-commit: 检测到未走 pre-commit 门禁的提交，已记入 .agents/no-verify-log.md：$skipped_short" >&2
   echo "post-commit: 留痕只是记账，**补跑仍要自己做**：" >&2
-  echo "             flutter test test/architecture/ && dart analyze --fatal-infos" >&2
+  echo "             Dart 守卫已随 P4-C 退役；Kotlin 侧补跑 L0/L1（命令见 .githooks/README.md）" >&2
   echo "" >&2
 fi
 
