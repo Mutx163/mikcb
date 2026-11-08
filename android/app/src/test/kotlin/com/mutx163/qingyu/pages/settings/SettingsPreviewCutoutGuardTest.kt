@@ -188,6 +188,63 @@ class SettingsPreviewCutoutGuardTest {
         )
     }
 
+    /**
+     * 2026-11-07 审读修正：预览必须与首页逐行同比例，且本页能调的视觉项都要有可看的目标。
+     *
+     * 钉四件事：
+     * 1. 自动充满的可用高要扣掉状态栏与首页顶栏（只扣星期栏会让每行比首页高一档）；
+     * 2. 天气 provider 必须从壳传进预览（否则课卡天气行永远不出现）；
+     * 3. 页面里的预览分支不许再用 `maxHeight / sectionCount` 覆盖节高（双重来源会静默变形）；
+     * 4. 「回本周」浮钮在预览里也要可见（本页的浮钮不透明度滑杆才有反馈）。
+     */
+    @Test
+    fun `预览自然高与首页同口径且天气浮钮都接进预览`() {
+        val shell = codeOf(sourceOf("main/kotlin/com/mutx163/qingyu/pages/ShellPageIndex.kt"))
+        val slotMarker =
+            "private fun SettingsTimetablePreviewSlot(wiring: ShellWiring, settingsModel: TimetableSettingsModel)"
+        val slotStart = shell.indexOf(slotMarker)
+        assertTrue("找不到预览槽声明：$slotMarker", slotStart >= 0)
+        val slot = shell.substring(slotStart).let { rest ->
+            val end = rest.indexOf("\nprivate fun ")
+            if (end > 0) rest.substring(0, end) else rest
+        }
+
+        assertTrue(
+            "预览的自动充满可用高必须扣掉状态栏（WindowInsets.statusBars）：" +
+                "首页网格盒子的 maxHeight 在状态栏下面",
+            slot.contains("WindowInsets.statusBars"),
+        )
+        assertTrue(
+            "预览的自动充满可用高必须扣掉首页顶栏（TimetableTopBarMetrics.HEIGHT）：" +
+                "只减星期栏会让预览每行比首页高一档",
+            slot.contains("TimetableTopBarMetrics.HEIGHT"),
+        )
+        assertTrue(
+            "预览必须接壳里的天气 provider（weatherProvider = wiring.weather）——" +
+                "否则「周课卡显示天气」开着时首页有天气行、预览没有",
+            slot.contains("weatherProvider = wiring.weather"),
+        )
+
+        val page = codeOf(
+            sourceOf("composeP1/kotlin/com/mutx163/qingyu/pages/timetable/TimetableWeekPage.kt"),
+        )
+        assertEquals(
+            "预览分支不许再用 maxHeight / sectionCount 覆盖节高（会静默拉伸行高、掩盖估值偏差）",
+            0,
+            Regex("""maxHeight\s*/\s*sectionCount""").findAll(page).count(),
+        )
+        assertEquals(
+            "节高只留 weekSectionHeight 一个来源：预览分支不许再传 sectionHeightOverride",
+            0,
+            Regex("""sectionHeightOverride\s*=""").findAll(page).count(),
+        )
+        assertTrue(
+            "预览里也要画「回本周」浮钮（visible 不能再带 !previewMode）——" +
+                "否则本页的浮钮不透明度滑杆永远没有可看的目标",
+            Regex("""visible\s*=\s*showBackToCurrentWeek\s*&&\s*!dayVisible""").containsMatchIn(page),
+        )
+    }
+
     @Test
     fun `禁交互拦截只有一份实现且使用面收敛在三个文件`() {
         val sources = allKotlinCode()
