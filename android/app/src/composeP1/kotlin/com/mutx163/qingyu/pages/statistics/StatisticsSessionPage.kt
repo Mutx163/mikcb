@@ -26,11 +26,13 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.mutx163.qingyu.components.QingyuCard
 import com.mutx163.qingyu.components.QingyuPageCardMargin
 import com.mutx163.qingyu.components.QingyuPageList
 import com.mutx163.qingyu.components.QingyuPageScaffold
+import com.mutx163.qingyu.components.QingyuPageTheme
 import com.mutx163.qingyu.components.QingyuSectionTitle
 import com.mutx163.qingyu.components.QingyuWeightDelta
 import com.mutx163.qingyu.components.shiftWeight
@@ -384,4 +386,124 @@ private fun SectionBlock(title: String, content: @Composable () -> Unit) {
             content()
         }
     }
+}
+
+// ── 预览 ──────────────────────────────────────────────────────────────────────
+//
+// 课次、四格汇总、覆盖三行都不手写：课次由 `CourseSessionStatsCalculator.build(...)`
+// 从真实课表 + 作息 + 开学日推导，汇总再由 `StatisticsSessionModel.viewState(...)` 装配。
+//
+// `Course` / `CourseSessionNote` / `TimetableSettings` 用全限定名：本文件的 import 块按
+// 预览约定只允许动三行（`Preview` / `QingyuPageTheme` / 总览布局件），不为预览扩大 import 面。
+
+/** 预览基准时刻：2026-11-08（第 8 周）周日 10:00。 */
+private val previewSessionNow: java.time.LocalDateTime = java.time.LocalDateTime.of(2026, 11, 8, 10, 0)
+
+/** 预览作息与开学日：20 周学期，2026-09-07 开学。 */
+private val previewSessionSettings = com.mutx163.qingyu.core.TimetableSettings(
+    semesterWeekCount = 20,
+    semesterStartDate = java.time.LocalDateTime.of(2026, 9, 7, 0, 0),
+)
+
+/** 预览课表：两门课，高等数学带第 1/2 周的备注与作业。 */
+private val previewSessionCourses = listOf(
+    com.mutx163.qingyu.core.Course(
+        id = "course-math",
+        name = "高等数学",
+        teacher = "张明",
+        location = "示例大学 A101",
+        dayOfWeek = 1,
+        startSection = 1,
+        endSection = 2,
+        startTime = "08:00",
+        endTime = "09:40",
+        endWeek = 20,
+        sessionNotes = mapOf(
+            1 to com.mutx163.qingyu.core.CourseSessionNote(text = "复习极限存在的定义"),
+            2 to com.mutx163.qingyu.core.CourseSessionNote(text = "习题 3.1 第 1~8 题", hasHomework = true),
+        ),
+    ),
+    com.mutx163.qingyu.core.Course(
+        id = "course-physics",
+        name = "大学物理",
+        teacher = "李海",
+        location = "示例大学 B203",
+        dayOfWeek = 2,
+        startSection = 3,
+        endSection = 4,
+        startTime = "10:00",
+        endTime = "11:40",
+        endWeek = 20,
+    ),
+)
+
+private fun previewSessionState(name: String): StatisticsSessionViewState {
+    val names = if (name == "空课表") emptyList() else listOf("高等数学", "大学物理")
+    return StatisticsSessionModel.viewState(
+        courseNames = names,
+        previousSelection = if (names.isEmpty()) null else "高等数学",
+        statsOf = { courseName ->
+            if (names.isEmpty()) {
+                null
+            } else {
+                com.mutx163.qingyu.core.CourseSessionStatsCalculator.build(
+                    courseName = courseName,
+                    courses = previewSessionCourses,
+                    settings = previewSessionSettings,
+                    now = previewSessionNow,
+                )
+            }
+        },
+        dateTextOf = { session ->
+            session.date?.let { date -> "${date.monthValue}月${date.dayOfMonth}日" }
+        },
+    )
+}
+
+/** 一档预览的公共身体：视图状态 + 外观档位。 */
+@Composable
+private fun PreviewSessionBody(
+    state: StatisticsSessionViewState,
+    dark: Boolean = false,
+    textScale: Float = 1f,
+) {
+    QingyuPageTheme(isDark = dark, textScale = textScale) {
+        StatisticsSessionPage(
+            viewState = state,
+            onBack = {},
+            onSelectCourse = {},
+        )
+    }
+}
+
+// ── 单档：两态 × 亮色 ─────────────────────────────────────────────────────────
+
+@Suppress("unused")
+@Preview(name = "1 有记录", showBackground = true, widthDp = 400, heightDp = 900)
+@Composable
+private fun PreviewSessionData() {
+    PreviewSessionBody(previewSessionState("有记录"))
+}
+
+@Suppress("unused")
+@Preview(name = "2 空课表", showBackground = true, widthDp = 400, heightDp = 900)
+@Composable
+private fun PreviewSessionEmpty() {
+    PreviewSessionBody(previewSessionState("空课表"))
+}
+
+// ── 单档：外观两档（以「有记录」为基准）──────────────────────────────────────
+
+@Suppress("unused")
+@Preview(name = "3 暗色", showBackground = true, widthDp = 400, heightDp = 900)
+@Composable
+private fun PreviewSessionDark() {
+    PreviewSessionBody(previewSessionState("有记录"), dark = true)
+}
+
+@Suppress("unused")
+@Preview(name = "4 大字号 1.3", showBackground = true, widthDp = 400, heightDp = 900)
+@Composable
+private fun PreviewSessionLargeText() {
+    PreviewSessionBody(previewSessionState("有记录"), textScale = 1.3f)
 }

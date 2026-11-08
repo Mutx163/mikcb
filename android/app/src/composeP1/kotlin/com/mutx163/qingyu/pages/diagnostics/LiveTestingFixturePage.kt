@@ -19,11 +19,13 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.mutx163.qingyu.components.QingyuCard
 import com.mutx163.qingyu.components.QingyuPageCardMargin
 import com.mutx163.qingyu.components.QingyuPageList
 import com.mutx163.qingyu.components.QingyuPageScaffold
+import com.mutx163.qingyu.components.QingyuPageTheme
 import com.mutx163.qingyu.components.QingyuSectionTitle
 import com.mutx163.qingyu.components.QingyuWeightDelta
 import com.mutx163.qingyu.components.shiftWeight
@@ -333,4 +335,105 @@ private fun SectionDescription(text: String, dark: Boolean) {
         // 与分组标题的 28dp 轴线对齐（Card 外边距 12 + 行内 16）。
         modifier = Modifier.padding(horizontal = QingyuPageCardMargin + 16.dp),
     )
+}
+
+// ── 预览 ──────────────────────────────────────────────────────────────────────
+//
+// 状态一律由同包的真装配函数 `buildLiveFixtureViewState` 算，节次表用
+// `LiveTestingFixtureData.buildHourlySections()`、测试课用 `buildSlotTemplate(...)`，
+// 所以「当前节 / 下一节 / 已装徽标」都是真算出来的，预览里不手写假节次。
+//
+// 远端类（`widgetdata`）用全限定名调用：本文件的 import 块按预览约定只允许动三行
+// （`Preview` / `QingyuPageTheme` / 总览布局件），不为预览扩大 import 面。
+
+/** 预览基准时刻：周日上午 9:10（第 10 节）。 */
+private val previewFixtureNow: java.time.LocalDateTime = java.time.LocalDateTime.of(2026, 11, 8, 9, 10)
+
+/** 24 小时快捷测试节次表（与页面「安装 24 时段测试课表」同一份）。 */
+private val previewFixtureSections = com.mutx163.qingyu.widgetdata.LiveTestingFixtureData.buildHourlySections()
+
+/** 已安装的测试课：第 1~3 节。 */
+private val previewFixtureCourses = (1..3).map { sectionNumber ->
+    com.mutx163.qingyu.widgetdata.LiveTestingFixtureData.buildSlotTemplate(
+        sectionNumber = sectionNumber,
+        section = previewFixtureSections[sectionNumber - 1],
+        dayOfWeek = 7,
+        semesterWeekCount = 20,
+    )
+}
+
+private fun previewFixtureState(name: String): LiveFixtureViewState = when (name) {
+    "未安装" -> buildLiveFixtureViewState(
+        sections = previewFixtureSections,
+        courses = emptyList(),
+        activeSchemeName = "标准作息",
+        now = previewFixtureNow,
+    )
+    "安装中" -> buildLiveFixtureViewState(
+        sections = previewFixtureSections,
+        courses = emptyList(),
+        activeSchemeName = "标准作息",
+        now = previewFixtureNow,
+        isInstalling = true,
+    )
+    else -> buildLiveFixtureViewState(
+        sections = previewFixtureSections,
+        courses = previewFixtureCourses,
+        activeSchemeName = "标准作息",
+        now = previewFixtureNow,
+    )
+}
+
+/** 一档预览的公共身体：视图状态 + 外观档位。 */
+@Composable
+private fun PreviewLiveFixtureBody(
+    state: LiveFixtureViewState,
+    dark: Boolean = false,
+    textScale: Float = 1f,
+) {
+    QingyuPageTheme(isDark = dark, textScale = textScale) {
+        LiveTestingFixturePage(
+            viewState = state,
+            onBack = {},
+            onInstall = {},
+            onClear = {},
+            onSelectLead = {},
+            onTriggerSection = { _, _ -> },
+        )
+    }
+}
+
+@Suppress("unused")
+@Preview(name = "1 已安装", showBackground = true, widthDp = 400, heightDp = 900)
+@Composable
+private fun PreviewLiveFixtureInstalled() {
+    PreviewLiveFixtureBody(previewFixtureState("已安装"))
+}
+
+@Suppress("unused")
+@Preview(name = "2 未安装", showBackground = true, widthDp = 400, heightDp = 900)
+@Composable
+private fun PreviewLiveFixtureNotInstalled() {
+    PreviewLiveFixtureBody(previewFixtureState("未安装"))
+}
+
+@Suppress("unused")
+@Preview(name = "3 安装中", showBackground = true, widthDp = 400, heightDp = 900)
+@Composable
+private fun PreviewLiveFixtureInstalling() {
+    PreviewLiveFixtureBody(previewFixtureState("安装中"))
+}
+
+@Suppress("unused")
+@Preview(name = "4 暗色", showBackground = true, widthDp = 400, heightDp = 900)
+@Composable
+private fun PreviewLiveFixtureDark() {
+    PreviewLiveFixtureBody(previewFixtureState("已安装"), dark = true)
+}
+
+@Suppress("unused")
+@Preview(name = "5 大字号 1.3", showBackground = true, widthDp = 400, heightDp = 900)
+@Composable
+private fun PreviewLiveFixtureLargeText() {
+    PreviewLiveFixtureBody(previewFixtureState("已安装"), textScale = 1.3f)
 }

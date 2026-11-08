@@ -14,11 +14,13 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.mutx163.qingyu.components.QingyuCard
 import com.mutx163.qingyu.components.QingyuPageCardMargin
 import com.mutx163.qingyu.components.QingyuPageList
 import com.mutx163.qingyu.components.QingyuPageScaffold
+import com.mutx163.qingyu.components.QingyuPageTheme
 import com.mutx163.qingyu.components.QingyuSectionGap
 import com.mutx163.qingyu.components.QingyuSectionTitle
 import com.mutx163.qingyu.theme.QingyuTheme
@@ -135,4 +137,66 @@ fun StatisticsSettingsPage(
             }
         }
     }
+}
+
+// ── 预览 ──────────────────────────────────────────────────────────────────────
+//
+// 副标题里的「下次推送 M月d日 HH:mm」是模型层算的（`WeeklyReportSchedule.nextFireAt`），
+// 所以预览也走真装配函数 `StatisticsSettingsLogic.buildViewState(...)`，不手写一份假日期。
+//
+// `LocalDateTime` 用全限定名：本文件的 import 块按预览约定只允许动三行
+// （`Preview` / `QingyuPageTheme` / 总览布局件），不为预览扩大 import 面。
+
+/** 预览基准时刻：2026-11-08 10:00（周日），下次推送落在下周一。 */
+private val previewSettingsNow: java.time.LocalDateTime = java.time.LocalDateTime.of(2026, 11, 8, 10, 0)
+
+private fun previewSettingsState(enabled: Boolean): StatisticsSettingsViewState =
+    StatisticsSettingsLogic.buildViewState(weeklyReportEnabled = enabled, now = previewSettingsNow)
+
+/** 一档预览的公共身体：视图状态 + 外观档位。 */
+@Composable
+private fun PreviewSettingsBody(
+    state: StatisticsSettingsViewState,
+    dark: Boolean = false,
+    textScale: Float = 1f,
+) {
+    QingyuPageTheme(isDark = dark, textScale = textScale) {
+        StatisticsSettingsPage(
+            viewState = state,
+            onBack = {},
+            onWeeklyReportToggle = {},
+        )
+    }
+}
+
+// ── 单档：开关两态 × 亮色 ───────────────────────────────────────────────────
+
+@Suppress("unused")
+@Preview(name = "1 周报已开启", showBackground = true, widthDp = 400, heightDp = 900)
+@Composable
+private fun PreviewSettingsEnabled() {
+    PreviewSettingsBody(previewSettingsState(enabled = true))
+}
+
+@Suppress("unused")
+@Preview(name = "2 周报已关闭", showBackground = true, widthDp = 400, heightDp = 900)
+@Composable
+private fun PreviewSettingsDisabled() {
+    PreviewSettingsBody(previewSettingsState(enabled = false))
+}
+
+// ── 单档：外观两档（以「已开启」为基准）────────────────────────────────────
+
+@Suppress("unused")
+@Preview(name = "3 暗色", showBackground = true, widthDp = 400, heightDp = 900)
+@Composable
+private fun PreviewSettingsDark() {
+    PreviewSettingsBody(previewSettingsState(enabled = true), dark = true)
+}
+
+@Suppress("unused")
+@Preview(name = "4 大字号 1.3", showBackground = true, widthDp = 400, heightDp = 900)
+@Composable
+private fun PreviewSettingsLargeText() {
+    PreviewSettingsBody(previewSettingsState(enabled = true), textScale = 1.3f)
 }

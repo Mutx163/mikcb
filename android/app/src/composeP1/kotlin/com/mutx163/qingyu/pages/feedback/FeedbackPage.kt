@@ -21,11 +21,13 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.mutx163.qingyu.components.QingyuCard
 import com.mutx163.qingyu.components.QingyuPageList
 import com.mutx163.qingyu.components.QingyuPageScaffold
+import com.mutx163.qingyu.components.QingyuPageTheme
 import com.mutx163.qingyu.components.QingyuWeightDelta
 import com.mutx163.qingyu.components.shiftWeight
 import top.yukonga.miuix.kmp.basic.Icon
@@ -176,4 +178,71 @@ private fun BrandBadge(channel: FeedbackChannel) {
             color = letterColor,
         )
     }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// IDE 预览（2026-11-08，照抄 about/ContributorsPage.kt 的样板）
+//
+// 只给实现阶段看效果，不进业务路径。本页是静态渠道清单，只有「有渠道 / 渠道为空」
+// 两种数据形态，所以铺：默认清单、空清单 + 亮色 / 暗色 / 大字号 1.3 三档外观。
+//
+// 固定写法（与样板一致，别自己改）：
+//   • 主题一律包 QingyuPageTheme(isDark = …)，不要直接 MiuixTheme { }：页面取色走
+//     isSystemInDarkTheme()，只有它会改写 LocalConfiguration 的 uiMode，预览才和真机同口径；
+//   • 字号用 QingyuPageTheme(textScale = …)，不要用 @Preview(fontScale = …)；
+//   • 宽度按 400dp（本仓折行实测口径），高度给一屏多。
+//
+// 注意：渠道徽标现在是品牌色方块 + 标题首字的占位（真图等 Phase 4），预览里看到的
+// 方块就是当前实现，不是渲染失败。
+// ─────────────────────────────────────────────────────────────────────────────
+
+/** 空清单：页面里那排渠道行整块消失，用来确认空态不会画出一张空卡片。 */
+private fun previewFeedbackEmptyView(): FeedbackPageView = FeedbackPageView(
+    title = FeedbackStrings.title,
+    channels = emptyList(),
+)
+
+/** 一档预览的公共身体：数据形态 + 外观档位。 */
+@Composable
+private fun PreviewFeedbackPage(
+    view: FeedbackPageView = buildFeedbackPageView(),
+    dark: Boolean = false,
+    textScale: Float = 1f,
+) {
+    QingyuPageTheme(isDark = dark, textScale = textScale) {
+        FeedbackPage(
+            view = view,
+            onBack = {},
+            onOpenChannel = {},
+            onCopyChannel = {},
+        )
+    }
+}
+
+@Suppress("unused")
+@Preview(name = "1 五个渠道", showBackground = true, widthDp = 400, heightDp = 900)
+@Composable
+private fun PreviewFeedbackChannels() {
+    PreviewFeedbackPage()
+}
+
+@Suppress("unused")
+@Preview(name = "2 渠道为空", showBackground = true, widthDp = 400, heightDp = 900)
+@Composable
+private fun PreviewFeedbackEmpty() {
+    PreviewFeedbackPage(previewFeedbackEmptyView())
+}
+
+@Suppress("unused")
+@Preview(name = "3 暗色", showBackground = true, widthDp = 400, heightDp = 900)
+@Composable
+private fun PreviewFeedbackDark() {
+    PreviewFeedbackPage(dark = true)
+}
+
+@Suppress("unused")
+@Preview(name = "4 大字号 1.3", showBackground = true, widthDp = 400, heightDp = 900)
+@Composable
+private fun PreviewFeedbackLargeText() {
+    PreviewFeedbackPage(textScale = 1.3f)
 }

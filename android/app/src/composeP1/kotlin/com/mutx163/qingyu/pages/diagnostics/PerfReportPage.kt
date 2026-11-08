@@ -8,9 +8,12 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.runtime.Composable
@@ -21,6 +24,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.mutx163.qingyu.components.QingyuCard
@@ -28,6 +32,7 @@ import com.mutx163.qingyu.components.QingyuGlassIconButton
 import com.mutx163.qingyu.components.QingyuPageCardMargin
 import com.mutx163.qingyu.components.QingyuPageList
 import com.mutx163.qingyu.components.QingyuPageScaffold
+import com.mutx163.qingyu.components.QingyuPageTheme
 import com.mutx163.qingyu.components.QingyuSectionTitle
 import com.mutx163.qingyu.components.QingyuWeightDelta
 import com.mutx163.qingyu.components.shiftWeight
@@ -443,4 +448,177 @@ private fun verdictIcon(verdict: PerfVerdict): ImageVector = when (verdict) {
     PerfVerdict.RASTER_BOUND -> MiuixIcons.Layers
     PerfVerdict.BOTH -> MiuixIcons.Replace
     PerfVerdict.UNKNOWN -> MiuixIcons.Help
+}
+
+// ── 预览 ──────────────────────────────────────────────────────────────────────
+//
+// 快照用手写的平台真实形状（`totals` / `pages` / `startup` / `probe` 都是探针下发的键），
+// 再交给同包真装配函数 `buildPerfReportViewState` 算：排序后的页排行、判据三栏、
+// 能量说明全部由模型层算出来，预览里不手写一份假的读数。
+
+/** 一份“刚跑完一轮”的 Perf 快照：3 个页 486 帧、跳帧 2.1%、60Hz 设备。 */
+private val previewPerfSnapshot: Map<String, Any?> = mapOf(
+    "refreshRateHz" to 60,
+    "totals" to mapOf("pages" to 3, "frames" to 486, "janky" to 11, "jankyPct" to "2.3"),
+    "probe" to mapOf("budgetMs" to 16.7, "nominalMs" to 16.6, "observedVsyncMs" to 16.6),
+    "startup" to listOf(
+        mapOf("phase" to "进程启动", "stepMs" to 186, "totalMs" to 186),
+        mapOf("phase" to "首帧", "stepMs" to 421, "totalMs" to 607),
+    ),
+    "pages" to listOf(
+        mapOf(
+            "page" to "课程总览",
+            "frames" to 212,
+            "janky" to 3,
+            "verdict" to "ui",
+            "fps" to 58.4,
+            "worstBuildMs" to 12.4,
+            "avgBuildMs" to 4.1,
+            "worstRasterMs" to 9.8,
+            "avgRasterMs" to 3.2,
+            "firstFrameMs" to 421,
+            "cpuMs" to 268.5,
+            "rssDeltaKb" to 12_480,
+        ),
+        mapOf(
+            "page" to "课程统计",
+            "frames" to 186,
+            "janky" to 7,
+            "verdict" to "raster",
+            "fps" to 56.1,
+            "worstBuildMs" to 8.6,
+            "avgBuildMs" to 3.4,
+            "worstRasterMs" to 21.7,
+            "avgRasterMs" to 6.8,
+            "firstFrameMs" to 312,
+            "cpuMs" to 210.2,
+            "rssDeltaKb" to 8_192,
+        ),
+        mapOf(
+            "page" to "课表主页",
+            "frames" to 88,
+            "janky" to 1,
+            "verdict" to "unknown",
+            "fps" to 59.2,
+            "worstBuildMs" to 6.1,
+            "avgBuildMs" to 2.8,
+            "worstRasterMs" to 7.4,
+            "avgRasterMs" to 2.1,
+            "firstFrameMs" to 268,
+            "cpuMs" to 96.4,
+            "rssDeltaKb" to 4_096,
+        ),
+    ),
+)
+
+/** 原文报告示例（页面「展开原文」后才出现）。 */
+private val previewPerfRawReport: String = """
+{
+  "totals": { "pages": 3, "frames": 486, "janky": 11 },
+  "refreshRateHz": 60,
+  "pages": [
+    { "page": "课程总览", "frames": 212, "janky": 3, "fps": 58.4 },
+    { "page": "课程统计", "frames": 186, "janky": 7, "fps": 56.1 }
+  ]
+}
+""".trimIndent()
+
+private fun previewPerfState(name: String): PerfReportViewState = when (name) {
+    "未安装" -> buildPerfReportViewState(snapshot = null)
+    "空数据" -> buildPerfReportViewState(snapshot = mapOf("totals" to emptyMap<String, Any>()))
+    "展开原文" -> buildPerfReportViewState(snapshot = previewPerfSnapshot, showRaw = true)
+    else -> buildPerfReportViewState(snapshot = previewPerfSnapshot)
+}
+
+/** 一档预览的公共身体：视图状态 + 外观档位。 */
+@Composable
+private fun PreviewPerfReportBody(
+    state: PerfReportViewState,
+    dark: Boolean = false,
+    textScale: Float = 1f,
+    rawReportText: String = "",
+) {
+    QingyuPageTheme(isDark = dark, textScale = textScale) {
+        PerfReportPage(
+            viewState = state,
+            onBack = {},
+            onRefresh = {},
+            onExport = {},
+            onClearLedger = {},
+            onToggleRaw = {},
+            onCopyTextReport = {},
+            onCopyJson = {},
+            rawReportText = rawReportText,
+        )
+    }
+}
+
+// ── 单档：三态 × 亮色 ─────────────────────────────────────────────────────────
+
+@Suppress("unused")
+@Preview(name = "1 有数据", showBackground = true, widthDp = 400, heightDp = 900)
+@Composable
+private fun PreviewPerfReportData() {
+    PreviewPerfReportBody(previewPerfState("有数据"))
+}
+
+@Suppress("unused")
+@Preview(name = "2 空数据", showBackground = true, widthDp = 400, heightDp = 900)
+@Composable
+private fun PreviewPerfReportEmpty() {
+    PreviewPerfReportBody(previewPerfState("空数据"))
+}
+
+@Suppress("unused")
+@Preview(name = "3 未安装探针", showBackground = true, widthDp = 400, heightDp = 900)
+@Composable
+private fun PreviewPerfReportNotInstalled() {
+    PreviewPerfReportBody(previewPerfState("未安装"))
+}
+
+@Suppress("unused")
+@Preview(name = "4 展开原文", showBackground = true, widthDp = 400, heightDp = 900)
+@Composable
+private fun PreviewPerfReportRaw() {
+    PreviewPerfReportBody(previewPerfState("展开原文"), rawReportText = previewPerfRawReport)
+}
+
+// ── 单档：外观两档（以「有数据」为基准）──────────────────────────────────────
+
+@Suppress("unused")
+@Preview(name = "5 暗色", showBackground = true, widthDp = 400, heightDp = 900)
+@Composable
+private fun PreviewPerfReportDark() {
+    PreviewPerfReportBody(previewPerfState("有数据"), dark = true)
+}
+
+@Suppress("unused")
+@Preview(name = "6 大字号 1.3", showBackground = true, widthDp = 400, heightDp = 900)
+@Composable
+private fun PreviewPerfReportLargeText() {
+    PreviewPerfReportBody(previewPerfState("有数据"), textScale = 1.3f)
+}
+
+// ── 总览：四态并排，一屏比结构差异 ───────────────────────────────────────────
+
+/**
+ * 一屏总览：四种状态横向并排，用来一眼比结构差异（谁多了 / 少了哪一块）。
+ *
+ * 4 × 400dp = 1600dp，画布给 1600dp；Studio 等比缩小显示，**缩放后字看不清是正常的**
+ * ——要看细节点上面 1~6 的单档标签。
+ */
+@Suppress("unused")
+@Preview(name = "0 总览·四态并排", showBackground = true, widthDp = 1600, heightDp = 900)
+@Composable
+private fun PreviewPerfReportOverview() {
+    Row(
+        modifier = Modifier.fillMaxSize(),
+        horizontalArrangement = Arrangement.spacedBy(16.dp),
+    ) {
+        for (name in listOf("有数据", "空数据", "未安装", "展开原文")) {
+            Box(Modifier.width(400.dp).fillMaxHeight()) {
+                PreviewPerfReportBody(previewPerfState(name), rawReportText = previewPerfRawReport)
+            }
+        }
+    }
 }

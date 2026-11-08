@@ -26,6 +26,7 @@ import androidx.compose.ui.state.ToggleableState
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
@@ -34,6 +35,7 @@ import com.mutx163.qingyu.components.QingyuGlassIconButton
 import com.mutx163.qingyu.components.QingyuPageCardMargin
 import com.mutx163.qingyu.components.QingyuPageList
 import com.mutx163.qingyu.components.QingyuPageScaffold
+import com.mutx163.qingyu.components.QingyuPageTheme
 import com.mutx163.qingyu.components.QingyuSectionTitle
 import com.mutx163.qingyu.core.CourseTask
 import com.mutx163.qingyu.theme.QingyuTheme
@@ -559,3 +561,155 @@ private val TaskSegmentGap: Dp = 10.dp
 
 /** Dart `task_list_screen.dart:66` / `:238` / `:154`：段与段之间 16dp。 */
 private val TaskSectionGap: Dp = 16.dp
+
+// ─────────────────────────────────────────────────────────────────────────────
+// IDE 预览（2026-11-08，照抄 about/ContributorsPage.kt 的样板）
+//
+// 只给实现阶段看效果，不进业务路径。本页数据形态由三个分组（已逾期 / 任务清单 /
+// 已完成）+ 整页空态组成，这里铺：三分组都有内容 / 整页空态，再叠亮色 / 暗色 /
+// 大字号 1.3 三档外观。
+//
+// 固定写法（与样板一致，别自己改）：
+//   • 主题一律包 QingyuPageTheme(isDark = …)，不要直接 MiuixTheme { }：页面取色走
+//     isSystemInDarkTheme()，只有它会改写 LocalConfiguration 的 uiMode，预览才和真机同口径；
+//   • 字号用 QingyuPageTheme(textScale = …)，不要用 @Preview(fontScale = …)；
+//   • 宽度按 400dp（本仓折行实测口径），高度给一屏多，避免列表被截断看不清。
+// ─────────────────────────────────────────────────────────────────────────────
+
+/** 预览用假数据：一条任务行。`detailText` 由模型层拼好，这里直接给成品的形状。 */
+private fun previewTaskItem(
+    id: String,
+    title: String,
+    detailText: String,
+    isCompleted: Boolean = false,
+    isOverdue: Boolean = false,
+    courseName: String? = null,
+): TaskItemView {
+    val stamp = java.time.LocalDateTime.of(2026, 11, 6, 9, 0)
+    return TaskItemView(
+        id = id,
+        title = title,
+        detailText = detailText,
+        note = null,
+        isCompleted = isCompleted,
+        isOverdue = isOverdue,
+        courseId = if (courseName != null) "course-gaoshu" else null,
+        hasCourse = courseName != null,
+        task = CourseTask(
+            id = id,
+            title = title,
+            createdAt = stamp,
+            updatedAt = stamp,
+        ),
+    )
+}
+
+/** 非空态：三个分组各给几行，覆盖「逾期红字 / 关联课程 / 已完成删除线」三种行样式。 */
+private fun previewTaskListState(): TaskListViewState = TaskListViewState(
+    dateFilter = TaskDateFilter.ALL,
+    courseFilter = null,
+    selectedCourseLabel = TaskStrings.taskAllCourses,
+    sections = listOf(
+        TaskSectionView(
+            title = "已逾期",
+            items = listOf(
+                previewTaskItem(
+                    id = "task-1",
+                    title = "交高数第三章习题",
+                    detailText = "昨天 21:00 · 高等数学",
+                    isOverdue = true,
+                    courseName = "高等数学",
+                ),
+            ),
+        ),
+        TaskSectionView(
+            title = "任务清单",
+            items = listOf(
+                previewTaskItem(
+                    id = "task-2",
+                    title = "背四级单词第 12 单元",
+                    detailText = "明天 08:00",
+                ),
+                previewTaskItem(
+                    id = "task-3",
+                    title = "整理实验报告数据",
+                    detailText = "11月12日 18:00 · 大学物理实验",
+                    courseName = "大学物理实验",
+                ),
+            ),
+        ),
+        TaskSectionView(
+            title = "已完成",
+            items = listOf(
+                previewTaskItem(
+                    id = "task-4",
+                    title = "打印课程表",
+                    detailText = "11月05日",
+                    isCompleted = true,
+                ),
+            ),
+        ),
+    ),
+    emptyTitle = "还没有任务",
+    undatedHiddenCount = 1,
+    totalTasksCount = 3,
+)
+
+/** 整页空态：`sections` 为空即走页面里的居中提示分支。 */
+private fun previewTaskListEmptyState(): TaskListViewState = TaskListViewState(
+    dateFilter = TaskDateFilter.ALL,
+    courseFilter = null,
+    selectedCourseLabel = TaskStrings.taskAllCourses,
+    sections = emptyList(),
+    emptyTitle = "还没有任务",
+    undatedHiddenCount = 0,
+    totalTasksCount = 0,
+)
+
+/** 一档预览的公共身体：数据形态 + 外观档位。 */
+@Composable
+private fun PreviewTaskListPage(
+    viewState: TaskListViewState,
+    dark: Boolean = false,
+    textScale: Float = 1f,
+) {
+    QingyuPageTheme(isDark = dark, textScale = textScale) {
+        TaskListPage(
+            viewState = viewState,
+            onBack = {},
+            onDateFilterChange = {},
+            onAddTask = {},
+            onEditTask = {},
+            onToggleTask = {},
+            onDeleteTask = {},
+        )
+    }
+}
+
+@Suppress("unused")
+@Preview(name = "1 三个分组", showBackground = true, widthDp = 400, heightDp = 900)
+@Composable
+private fun PreviewTaskListSections() {
+    PreviewTaskListPage(previewTaskListState())
+}
+
+@Suppress("unused")
+@Preview(name = "2 整页空态", showBackground = true, widthDp = 400, heightDp = 900)
+@Composable
+private fun PreviewTaskListEmpty() {
+    PreviewTaskListPage(previewTaskListEmptyState())
+}
+
+@Suppress("unused")
+@Preview(name = "3 暗色", showBackground = true, widthDp = 400, heightDp = 900)
+@Composable
+private fun PreviewTaskListDark() {
+    PreviewTaskListPage(previewTaskListState(), dark = true)
+}
+
+@Suppress("unused")
+@Preview(name = "4 大字号 1.3", showBackground = true, widthDp = 400, heightDp = 900)
+@Composable
+private fun PreviewTaskListLargeText() {
+    PreviewTaskListPage(previewTaskListState(), textScale = 1.3f)
+}

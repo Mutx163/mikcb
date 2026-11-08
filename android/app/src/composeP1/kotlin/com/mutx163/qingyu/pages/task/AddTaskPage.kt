@@ -23,6 +23,7 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import com.mutx163.qingyu.components.QingyuCard
@@ -30,6 +31,7 @@ import com.mutx163.qingyu.components.QingyuGlassIconButton
 import com.mutx163.qingyu.components.QingyuPageCardMargin
 import com.mutx163.qingyu.components.QingyuPageList
 import com.mutx163.qingyu.components.QingyuPageScaffold
+import com.mutx163.qingyu.components.QingyuPageTheme
 import com.mutx163.qingyu.theme.QingyuTheme
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TextButton
@@ -398,4 +400,108 @@ fun AddTaskPage(
             )
         }
     }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// IDE 预览（2026-11-08，照抄 about/ContributorsPage.kt 的样板）
+//
+// 只给实现阶段看效果，不进业务路径。表单页的数据形态由宿主 reducer 决定，这里铺三档：
+// 纯新建（空表 + 光标在标题）/ 编辑已有任务（带课程与截止日期）/ 标题校验失败；
+// 再叠亮色 / 暗色 / 大字号 1.3 三档外观。
+//
+// 固定写法（与样板一致，别自己改）：
+//   • 主题一律包 QingyuPageTheme(isDark = …)，不要直接 MiuixTheme { }：页面取色走
+//     isSystemInDarkTheme()，只有它会改写 LocalConfiguration 的 uiMode，预览才和真机同口径；
+//   • 字号用 QingyuPageTheme(textScale = …)，不要用 @Preview(fontScale = …)；
+//   • 宽度按 400dp（本仓折行实测口径），高度给一屏多。
+//
+// 注意：`shouldAutofocusTitle` 一律 false —— 预览不需要抢焦点弹键盘，
+// 那是给真机的行为，与画面对不对无关。
+// ─────────────────────────────────────────────────────────────────────────────
+
+/** 纯新建：空标题、无课程、无截止日期，与「点加号新建」进入时的形态一致。 */
+private fun previewAddTaskNewState(): AddTaskViewState = AddTaskViewState(
+    isEditing = false,
+    title = "",
+    note = "",
+    selectedCourseName = TaskStrings.taskNoCourse,
+    shouldAutofocusTitle = false,
+)
+
+/** 编辑态：有标题、备注、来源课程、截止日期，顶栏多一个删除按钮。 */
+private fun previewAddTaskEditState(): AddTaskViewState = AddTaskViewState(
+    isEditing = true,
+    title = "完成高数第三章习题",
+    note = "第 3 章 3.4 节后面的偶数题，周三上课前交",
+    courseId = "course-gaoshu",
+    selectedCourseName = "高等数学",
+    hasDueDate = true,
+    dueDate = java.time.LocalDateTime.of(2026, 11, 10, 21, 0),
+    dueDateFormatted = "11月10日 21:00",
+    isCompleted = false,
+)
+
+/** 校验失败：标题为空且带错误提示，保存按钮此刻不可用。 */
+private fun previewAddTaskErrorState(): AddTaskViewState = AddTaskViewState(
+    isEditing = false,
+    title = "",
+    titleError = "请先填写任务标题",
+    note = "",
+    selectedCourseName = TaskStrings.taskNoCourse,
+)
+
+/** 一档预览的公共身体：数据形态 + 外观档位。 */
+@Composable
+private fun PreviewAddTaskPage(
+    viewState: AddTaskViewState,
+    dark: Boolean = false,
+    textScale: Float = 1f,
+) {
+    QingyuPageTheme(isDark = dark, textScale = textScale) {
+        AddTaskPage(
+            viewState = viewState,
+            onBack = {},
+            onTitleChange = {},
+            onNoteChange = {},
+            onHasDueDateChange = {},
+            onCompletedChange = {},
+            onSave = {},
+            onDelete = {},
+        )
+    }
+}
+
+@Suppress("unused")
+@Preview(name = "1 新建空表", showBackground = true, widthDp = 400, heightDp = 900)
+@Composable
+private fun PreviewAddTaskNew() {
+    PreviewAddTaskPage(previewAddTaskNewState())
+}
+
+@Suppress("unused")
+@Preview(name = "2 编辑已有任务", showBackground = true, widthDp = 400, heightDp = 900)
+@Composable
+private fun PreviewAddTaskEditing() {
+    PreviewAddTaskPage(previewAddTaskEditState())
+}
+
+@Suppress("unused")
+@Preview(name = "3 标题校验失败", showBackground = true, widthDp = 400, heightDp = 900)
+@Composable
+private fun PreviewAddTaskTitleError() {
+    PreviewAddTaskPage(previewAddTaskErrorState())
+}
+
+@Suppress("unused")
+@Preview(name = "4 暗色", showBackground = true, widthDp = 400, heightDp = 900)
+@Composable
+private fun PreviewAddTaskDark() {
+    PreviewAddTaskPage(previewAddTaskEditState(), dark = true)
+}
+
+@Suppress("unused")
+@Preview(name = "5 大字号 1.3", showBackground = true, widthDp = 400, heightDp = 900)
+@Composable
+private fun PreviewAddTaskLargeText() {
+    PreviewAddTaskPage(previewAddTaskEditState(), textScale = 1.3f)
 }

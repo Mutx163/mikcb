@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -31,6 +32,7 @@ import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.IntRect
 import androidx.compose.ui.unit.IntSize
@@ -41,6 +43,7 @@ import com.mutx163.qingyu.components.QingyuGlassIconButton
 import com.mutx163.qingyu.components.QingyuPageCardMargin
 import com.mutx163.qingyu.components.QingyuPageList
 import com.mutx163.qingyu.components.QingyuPageScaffold
+import com.mutx163.qingyu.components.QingyuPageTheme
 import com.mutx163.qingyu.components.QingyuWeightDelta
 import com.mutx163.qingyu.components.shiftWeight
 import com.mutx163.qingyu.theme.QingyuIconColors
@@ -628,5 +631,158 @@ fun TimetableFormPageEntry(
         is TimetableFormPageRequest.TaskForm -> taskForm(request.payload)
         is TimetableFormPageRequest.TimeSchemeManagement -> timeSchemeManagement(request.payload)
         is TimetableFormPageRequest.AboutUpdate -> aboutUpdate(request.payload)
+    }
+}
+
+// ── 预览 ──────────────────────────────────────────────────────────────────────
+//
+// 分组、排序、冲突标记全部由真模型函数算：课程是普通 [com.mutx163.qingyu.core.Course]，
+// 装配走 `CourseOverviewLogic.buildViewState(...)`（内部再走 `CourseGroup.buildFrom`），
+// 预览里不手写一份假的组行。
+//
+// `Course` / `CourseNature` 用全限定名：本文件的 import 块按预览约定只允许动三行
+// （`Preview` / `QingyuPageTheme` / 总览布局件），不为预览扩大 import 面。
+
+/** 预览用课表：三门课（高数两个时段 + 物理 + 艺术）。 */
+private val previewOverviewCourses = listOf(
+    previewOverviewCourse("高等数学", "张明", "示例大学 A101", 1, 1, 2, "08:00", "09:40"),
+    previewOverviewCourse("高等数学", "张明", "示例大学 A101", 3, 3, 4, "10:00", "11:40"),
+    previewOverviewCourse("大学物理", "李海", "示例大学 B203", 2, 3, 4, "10:00", "11:40"),
+    previewOverviewCourse(
+        id = "course-art",
+        name = "艺术鉴赏",
+        teacher = "陈静",
+        location = "艺术楼 201",
+        dayOfWeek = 5,
+        startSection = 7,
+        endSection = 8,
+        startTime = "16:00",
+        endTime = "17:40",
+        elective = true,
+    ),
+)
+
+private fun previewOverviewCourse(
+    name: String,
+    teacher: String,
+    location: String,
+    dayOfWeek: Int,
+    startSection: Int,
+    endSection: Int,
+    startTime: String,
+    endTime: String,
+    id: String = "course-$name-$dayOfWeek-$startSection",
+    elective: Boolean = false,
+) = com.mutx163.qingyu.core.Course(
+    id = id,
+    name = name,
+    teacher = teacher,
+    location = location,
+    dayOfWeek = dayOfWeek,
+    startSection = startSection,
+    endSection = endSection,
+    startTime = startTime,
+    endTime = endTime,
+    endWeek = 20,
+    courseNature = if (elective) {
+        com.mutx163.qingyu.core.CourseNature.ELECTIVE
+    } else {
+        com.mutx163.qingyu.core.CourseNature.REQUIRED
+    },
+)
+
+private fun previewOverviewState(name: String): CourseOverviewViewState = when (name) {
+    "空课表" -> CourseOverviewLogic.buildViewState(courses = emptyList(), conflictMap = emptyMap())
+    "有冲突" -> CourseOverviewLogic.buildViewState(
+        courses = previewOverviewCourses,
+        conflictMap = mapOf("course-高等数学-1-1" to listOf(previewOverviewCourses[0])),
+        sortMode = CourseOverviewSortMode.NAME,
+    )
+    else -> CourseOverviewLogic.buildViewState(
+        courses = previewOverviewCourses,
+        conflictMap = emptyMap(),
+        sortMode = CourseOverviewSortMode.ADDED,
+    )
+}
+
+/** 一档预览的公共身体：视图状态 + 外观档位。 */
+@Composable
+private fun PreviewOverviewBody(
+    state: CourseOverviewViewState,
+    dark: Boolean = false,
+    textScale: Float = 1f,
+) {
+    QingyuPageTheme(isDark = dark, textScale = textScale) {
+        CourseOverviewPage(
+            viewState = state,
+            onBack = {},
+            onAddCourse = {},
+            onOpenGroup = {},
+            onOpenConflictDetail = {},
+            onSortModeSelected = {},
+        )
+    }
+}
+
+// ── 单档：三态 × 亮色 ─────────────────────────────────────────────────────────
+
+@Suppress("unused")
+@Preview(name = "1 有课", showBackground = true, widthDp = 400, heightDp = 900)
+@Composable
+private fun PreviewOverviewData() {
+    PreviewOverviewBody(previewOverviewState("有课"))
+}
+
+@Suppress("unused")
+@Preview(name = "2 空课表", showBackground = true, widthDp = 400, heightDp = 900)
+@Composable
+private fun PreviewOverviewEmpty() {
+    PreviewOverviewBody(previewOverviewState("空课表"))
+}
+
+@Suppress("unused")
+@Preview(name = "3 有冲突", showBackground = true, widthDp = 400, heightDp = 900)
+@Composable
+private fun PreviewOverviewConflict() {
+    PreviewOverviewBody(previewOverviewState("有冲突"))
+}
+
+// ── 单档：外观两档（以「有课」为基准）─────────────────────────────────────
+
+@Suppress("unused")
+@Preview(name = "4 暗色", showBackground = true, widthDp = 400, heightDp = 900)
+@Composable
+private fun PreviewOverviewDark() {
+    PreviewOverviewBody(previewOverviewState("有课"), dark = true)
+}
+
+@Suppress("unused")
+@Preview(name = "5 大字号 1.3", showBackground = true, widthDp = 400, heightDp = 900)
+@Composable
+private fun PreviewOverviewLargeText() {
+    PreviewOverviewBody(previewOverviewState("有课"), textScale = 1.3f)
+}
+
+// ── 总览：三态并排，一屏比结构差异 ───────────────────────────────────────────
+
+/**
+ * 一屏总览：三种状态横向并排，用来一眼比结构差异（谁多了 / 少了哪一块）。
+ *
+ * 3 × 400dp = 1200dp，画布给 1200dp；Studio 等比缩小显示，**缩放后字看不清是正常的**
+ * ——要看细节点上面 1~5 的单档标签。
+ */
+@Suppress("unused")
+@Preview(name = "0 总览·三态并排", showBackground = true, widthDp = 1200, heightDp = 900)
+@Composable
+private fun PreviewOverviewStates() {
+    Row(
+        modifier = Modifier.fillMaxSize(),
+        horizontalArrangement = Arrangement.spacedBy(16.dp),
+    ) {
+        for (name in listOf("有课", "空课表", "有冲突")) {
+            Box(Modifier.width(400.dp).fillMaxHeight()) {
+                PreviewOverviewBody(previewOverviewState(name))
+            }
+        }
     }
 }

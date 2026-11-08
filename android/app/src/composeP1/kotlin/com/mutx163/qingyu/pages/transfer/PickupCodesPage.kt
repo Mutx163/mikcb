@@ -258,7 +258,7 @@ private fun previewInstalledOf(preset: PickupCodesModel.Preset): Boolean =
 /** 一档预览的公共身体：安装判据 + 正在跳转的入口 + 外观档位。 */
 @Composable
 private fun PreviewPickupCodesPage(
-    installedOf: (PickupCodesModel.Preset) -> Boolean = previewInstalledOf,
+    installedOf: (PickupCodesModel.Preset) -> Boolean = ::previewInstalledOf,
     busyTitleKey: String? = null,
     dark: Boolean = false,
     textScale: Float = 1f,

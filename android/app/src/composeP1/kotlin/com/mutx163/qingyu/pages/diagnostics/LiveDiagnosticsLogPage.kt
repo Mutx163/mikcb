@@ -11,10 +11,12 @@ import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
@@ -33,6 +35,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import com.mutx163.qingyu.components.QingyuCard
@@ -40,6 +43,7 @@ import com.mutx163.qingyu.components.QingyuGlassIconButton
 import com.mutx163.qingyu.components.QingyuPageCardMargin
 import com.mutx163.qingyu.components.QingyuPageList
 import com.mutx163.qingyu.components.QingyuPageScaffold
+import com.mutx163.qingyu.components.QingyuPageTheme
 import com.mutx163.qingyu.components.QingyuSheet
 import com.mutx163.qingyu.components.QingyuWeightDelta
 import com.mutx163.qingyu.components.shiftWeight
@@ -925,4 +929,181 @@ private fun levelIcon(level: DiagnosticsLogLevel) = when (level) {
     DiagnosticsLogLevel.INFO -> MiuixIcons.Info
     DiagnosticsLogLevel.DEBUG -> MiuixIcons.Notes
     DiagnosticsLogLevel.VERBOSE -> MiuixIcons.File
+}
+
+// ── 预览 ──────────────────────────────────────────────────────────────────────
+//
+// 预览只做两件事：把「真实导出格式的原始日志」喂给真解析函数 `parseDiagnosticsLog`，
+// 再交给真装配函数 `buildDiagnosticsLogViewState`。等级推断、等级芯片计数、时间格式化
+// 全部由模型层算出来，预览里**不手写**一份假的计数或假的时间文本。
+//
+// 这两支函数在 `com.mutx163.qingyu.infra` / 同包模型文件里，本文件的 import 块按
+// 预览约定只允许动三行（`Preview` / `QingyuPageTheme` / 总览的布局件），因此这里用
+// 全限定名调用，避免为了预览而扩大 import 面。
+
+/** 预览用的原始日志文本：首行标题 → `----` 分隔 → 键值条目，空行分条（与导出文件同格式）。 */
+private val previewDiagnosticsRawLog: String = """
+应用日志
+----
+time=1762574400000
+category=live_update
+level=info
+message=超级岛已展开：高等数学 · 第 8 周 · 示例大学 A101
+
+time=1762574460000
+category=timetable
+level=warn
+message=课表快照缺少教室字段，已按空教室降级展示
+
+time=1762574520000
+category=live_update
+level=error
+message=超级岛通知投递失败：NoSuchElementException
+
+time=1762574580000
+category=diagnostics_log
+level=debug
+message=日志窗口重建：可见 4 条 / 总计 4 条
+""".trimIndent()
+
+/** 一档预览的视图状态；`name` 只用来给预览命名，不参与渲染。 */
+private data class PreviewLogState(
+    val name: String,
+    val viewState: DiagnosticsLogViewState,
+)
+
+private fun previewLogStates(): List<PreviewLogState> = listOf(
+    PreviewLogState(
+        name = "有数据",
+        viewState = com.mutx163.qingyu.infra.parseDiagnosticsLog(previewDiagnosticsRawLog).let { parsed ->
+            buildDiagnosticsLogViewState(
+                title = "应用日志",
+                parsed = parsed,
+                viewport = DiagnosticsLogViewport(),
+            )
+        },
+    ),
+    PreviewLogState(
+        name = "空日志",
+        viewState = buildDiagnosticsLogViewState(
+            title = "应用日志",
+            parsed = com.mutx163.qingyu.infra.parseDiagnosticsLog(""),
+            viewport = DiagnosticsLogViewport(),
+        ),
+    ),
+    PreviewLogState(
+        name = "加载中",
+        viewState = buildDiagnosticsLogViewState(
+            title = "应用日志",
+            parsed = com.mutx163.qingyu.infra.parseDiagnosticsLog(""),
+            viewport = DiagnosticsLogViewport(),
+            isInitializing = true,
+        ),
+    ),
+    PreviewLogState(
+        name = "失败",
+        viewState = buildDiagnosticsLogViewState(
+            title = "应用日志",
+            parsed = com.mutx163.qingyu.infra.parseDiagnosticsLog(""),
+            viewport = DiagnosticsLogViewport(),
+            loadError = "读取日志失败：文件已被系统清理",
+        ),
+    ),
+)
+
+private fun previewLogState(name: String): PreviewLogState =
+    previewLogStates().first { it.name == name }
+
+/** 一档预览的公共身体：视图状态 + 外观档位。 */
+@Composable
+private fun PreviewDiagnosticsLogBody(
+    state: PreviewLogState,
+    dark: Boolean = false,
+    textScale: Float = 1f,
+) {
+    QingyuPageTheme(isDark = dark, textScale = textScale) {
+        LiveDiagnosticsLogPage(
+            viewState = state.viewState,
+            onBack = {},
+            onSelectLevel = {},
+            onLoadEarlier = {},
+            onToggleEntry = {},
+            onToggleDeviceInfo = {},
+            onViewModeChange = {},
+            onTimeSortChange = {},
+            onCopy = {},
+            onExport = {},
+            onClear = {},
+        )
+    }
+}
+
+// ── 单档：四态 × 亮色 ─────────────────────────────────────────────────────────
+
+@Suppress("unused")
+@Preview(name = "1 有数据", showBackground = true, widthDp = 400, heightDp = 900)
+@Composable
+private fun PreviewDiagnosticsLogData() {
+    PreviewDiagnosticsLogBody(previewLogState("有数据"))
+}
+
+@Suppress("unused")
+@Preview(name = "2 空日志", showBackground = true, widthDp = 400, heightDp = 900)
+@Composable
+private fun PreviewDiagnosticsLogEmpty() {
+    PreviewDiagnosticsLogBody(previewLogState("空日志"))
+}
+
+@Suppress("unused")
+@Preview(name = "3 加载中", showBackground = true, widthDp = 400, heightDp = 900)
+@Composable
+private fun PreviewDiagnosticsLogLoading() {
+    PreviewDiagnosticsLogBody(previewLogState("加载中"))
+}
+
+@Suppress("unused")
+@Preview(name = "4 失败", showBackground = true, widthDp = 400, heightDp = 900)
+@Composable
+private fun PreviewDiagnosticsLogError() {
+    PreviewDiagnosticsLogBody(previewLogState("失败"))
+}
+
+// ── 单档：外观两档（以「有数据」为基准）──────────────────────────────────────
+
+@Suppress("unused")
+@Preview(name = "5 暗色", showBackground = true, widthDp = 400, heightDp = 900)
+@Composable
+private fun PreviewDiagnosticsLogDark() {
+    PreviewDiagnosticsLogBody(previewLogState("有数据"), dark = true)
+}
+
+@Suppress("unused")
+@Preview(name = "6 大字号 1.3", showBackground = true, widthDp = 400, heightDp = 900)
+@Composable
+private fun PreviewDiagnosticsLogLargeText() {
+    PreviewDiagnosticsLogBody(previewLogState("有数据"), textScale = 1.3f)
+}
+
+// ── 总览：四态并排，一屏比结构差异 ───────────────────────────────────────────
+
+/**
+ * 一屏总览：四种状态横向并排，用来一眼比结构差异（谁多了 / 少了哪一块）。
+ *
+ * 4 × 400dp = 1600dp，画布给 1600dp；Studio 等比缩小显示，**缩放后字看不清是正常的**
+ * ——要看细节点上面 1~6 的单档标签。
+ */
+@Suppress("unused")
+@Preview(name = "0 总览·四态并排", showBackground = true, widthDp = 1600, heightDp = 900)
+@Composable
+private fun PreviewDiagnosticsLogOverview() {
+    Row(
+        modifier = Modifier.fillMaxSize(),
+        horizontalArrangement = Arrangement.spacedBy(16.dp),
+    ) {
+        for (state in previewLogStates()) {
+            Box(Modifier.width(400.dp).fillMaxHeight()) {
+                PreviewDiagnosticsLogBody(state)
+            }
+        }
+    }
 }

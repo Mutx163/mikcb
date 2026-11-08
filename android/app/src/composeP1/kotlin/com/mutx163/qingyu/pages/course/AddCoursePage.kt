@@ -31,6 +31,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import com.mutx163.qingyu.components.QingyuCard
@@ -956,4 +957,92 @@ private fun <T : Any> rememberLastNonNull(current: T?): T? {
         shown = current
     }
     return shown
+}
+
+// ── 预览 ──────────────────────────────────────────────────────────────────────
+//
+// 新建/编辑两态的初值全部由页面自己的模型层现算：`AddCourseFormLogic.buildInitialState(...)`
+// 在页面内部被 remember 调用，预览不另写一份表单状态。
+// `clockResolver` 是必传项（壳层注入真实作息），预览里给一个不跑真实时钟的常量实现。
+//
+// `Course` / `AddCourseEntryClock` 用全限定名/同包名：本文件的 import 块按预览约定
+// 只允许动三行（`Preview` / `QingyuPageTheme` / 总览布局件），不为预览扩大 import 面。
+
+/** 预览用“已有课程”：高等数学，周一 1~2 节，第 1~16 周，已设自定义钟点。 */
+private val previewAddCourseInitial = com.mutx163.qingyu.core.Course(
+    id = "course-math",
+    name = "高等数学",
+    shortName = "高数",
+    teacher = "张明",
+    location = "示例大学 A101",
+    dayOfWeek = 1,
+    startSection = 1,
+    endSection = 2,
+    startTime = "08:00",
+    endTime = "09:40",
+    startWeek = 1,
+    endWeek = 16,
+    description = "微积分与级数基础，期中期末各一次考试。",
+)
+
+/** 预览用的钟点解析：取作息模板的第 1~2 节钟点，不随系统时间漂。 */
+private fun previewAddCourseClockResolver(entry: AddCourseScheduleEntryData): AddCourseEntryClock {
+    val start = if (entry.startSection <= 2) "08:00" else "10:00"
+    val end = if (entry.endSection <= 2) "09:40" else "11:40"
+    return AddCourseEntryClock(startTime = start, endTime = end)
+}
+
+/** 一档预览的公共身体：新建 / 编辑 + 外观档位。 */
+@Composable
+private fun PreviewAddCourseBody(
+    initialCourse: com.mutx163.qingyu.core.Course? = null,
+    dark: Boolean = false,
+    textScale: Float = 1f,
+) {
+    QingyuPageTheme(isDark = dark, textScale = textScale) {
+        AddCoursePage(
+            initialCourse = initialCourse,
+            initialWeek = 8,
+            initialDayOfWeek = 1,
+            initialStartSection = 1,
+            availableWeeks = (1..20).toList(),
+            globalSectionCount = 12,
+            clockResolver = ::previewAddCourseClockResolver,
+            onBack = {},
+            onSave = {},
+            onDelete = {},
+        )
+    }
+}
+
+// ── 单档：新建 / 编辑 × 亮色 ────────────────────────────────────────────────
+
+@Suppress("unused")
+@Preview(name = "1 新建课程", showBackground = true, widthDp = 400, heightDp = 900)
+@Composable
+private fun PreviewAddCourseCreate() {
+    PreviewAddCourseBody()
+}
+
+@Suppress("unused")
+@Preview(name = "2 编辑已有课程", showBackground = true, widthDp = 400, heightDp = 900)
+@Composable
+private fun PreviewAddCourseEdit() {
+    PreviewAddCourseBody(initialCourse = previewAddCourseInitial)
+}
+
+// ── 单档：外观两档（以「编辑」为基准，它内容最全）─────────────────────────
+
+@Suppress("unused")
+@Preview(name = "3 暗色", showBackground = true, widthDp = 400, heightDp = 900)
+@Composable
+private fun PreviewAddCourseDark() {
+    PreviewAddCourseBody(initialCourse = previewAddCourseInitial, dark = true)
+}
+
+@Suppress("unused")
+@Preview(name = "4 大字号 1.3", showBackground = true, widthDp = 400, heightDp = 900)
+@Composable
+private fun PreviewAddCourseLargeText() {
+    PreviewAddCourseBody(initialCourse = previewAddCourseInitial, textScale = 1.3f)
 }

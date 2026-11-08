@@ -33,10 +33,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.mutx163.qingyu.components.QingyuCard
 import com.mutx163.qingyu.components.QingyuPageList
 import com.mutx163.qingyu.components.QingyuPageScaffold
+import com.mutx163.qingyu.components.QingyuPageTheme
 import com.mutx163.qingyu.theme.QingyuTheme
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.IconButton
@@ -334,4 +336,52 @@ private fun ShowcaseEntryCard(
             )
         }
     }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// IDE 预览（2026-11-08，照抄 about/ContributorsPage.kt 的样板）
+//
+// 只给实现阶段看效果，不进业务路径。本页没有外部数据入参（目录、搜索历史都是页内
+// `remember`），所以只铺外观三档：亮色 / 暗色 / 大字号 1.3。
+//
+// 固定写法（与样板一致，别自己改）：
+//   • 主题一律包 QingyuPageTheme(isDark = …)，不要直接 MiuixTheme { }：页面取色走
+//     isSystemInDarkTheme()，只有它会改写 LocalConfiguration 的 uiMode，预览才和真机同口径；
+//   • 字号用 QingyuPageTheme(textScale = …)，不要用 @Preview(fontScale = …)；
+//   • 宽度按 400dp（本仓折行实测口径），高度给一屏多。
+//
+// 子分类详情页不在本页预览范围内：它由页面内 `activeCategory` 驱动，
+// 要单独看请点进预览里的某一类，或给 `MiuixShowcaseCategoryDetail` 另铺预览。
+// ─────────────────────────────────────────────────────────────────────────────
+
+/** 一档预览的公共身体：外观档位。 */
+@Composable
+private fun PreviewMiuixShowcasePage(
+    dark: Boolean = false,
+    textScale: Float = 1f,
+) {
+    QingyuPageTheme(isDark = dark, textScale = textScale) {
+        MiuixShowcasePage(onBack = {})
+    }
+}
+
+@Suppress("unused")
+@Preview(name = "1 亮色目录", showBackground = true, widthDp = 400, heightDp = 900)
+@Composable
+private fun PreviewMiuixShowcaseLight() {
+    PreviewMiuixShowcasePage()
+}
+
+@Suppress("unused")
+@Preview(name = "2 暗色", showBackground = true, widthDp = 400, heightDp = 900)
+@Composable
+private fun PreviewMiuixShowcaseDark() {
+    PreviewMiuixShowcasePage(dark = true)
+}
+
+@Suppress("unused")
+@Preview(name = "3 大字号 1.3", showBackground = true, widthDp = 400, heightDp = 900)
+@Composable
+private fun PreviewMiuixShowcaseLargeText() {
+    PreviewMiuixShowcasePage(textScale = 1.3f)
 }

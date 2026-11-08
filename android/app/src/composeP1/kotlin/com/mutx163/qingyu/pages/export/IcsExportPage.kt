@@ -17,6 +17,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import com.mutx163.qingyu.components.QingyuCard
@@ -24,6 +25,7 @@ import com.mutx163.qingyu.components.QingyuCardDefaults
 import com.mutx163.qingyu.components.QingyuPageCardMargin
 import com.mutx163.qingyu.components.QingyuPageList
 import com.mutx163.qingyu.components.QingyuPageScaffold
+import com.mutx163.qingyu.components.QingyuPageTheme
 import com.mutx163.qingyu.components.QingyuSectionTitle
 import com.mutx163.qingyu.components.QingyuSheet
 import com.mutx163.qingyu.components.QingyuWeightDelta
@@ -406,4 +408,126 @@ private fun showDatePicker(
         initial.monthValue - 1,
         initial.dayOfMonth,
     ).show()
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// IDE 预览（2026-11-08，照抄 about/ContributorsPage.kt 的样板）
+//
+// 只给实现阶段看效果，不进业务路径。本页是三个弹层 + 一张摘要卡的组合，铺四档：
+// 正常（两门课表可选） / 没有课表（`profiles` 为空，下拉退化成一行提示） /
+// 正在导出（按钮进加载态）/ 导出完成待二选一（分享还是保存）；再叠暗色与大字号。
+//
+// 固定写法（与样板一致，别自己改）：
+//   • 主题一律包 QingyuPageTheme(isDark = …)，不要直接 MiuixTheme { }：页面取色走
+//     isSystemInDarkTheme()，只有它会改写 LocalConfiguration 的 uiMode，预览才和真机同口径；
+//   • 字号用 QingyuPageTheme(textScale = …)，不要用 @Preview(fontScale = …)；
+//   • 宽度按 400dp（本仓折行实测口径），高度给一屏多。
+//
+// 弹层（同步说明 / 移除确认 / 导出后菜单）在预览里一律关着：那是交互中间态，
+// 点下去才出现，静态截图看不出真假。
+// ─────────────────────────────────────────────────────────────────────────────
+
+/** 预览用假数据：两门课表，日期范围按 2026 秋季学期给。 */
+private fun previewIcsExportView(): IcsExportViewState = IcsExportViewState(
+    profiles = listOf(
+        IcsExportProfile(
+            id = "profile-autumn",
+            name = "2026 秋季学期",
+            semesterStartDate = LocalDate.of(2026, 9, 1),
+            semesterWeekCount = 20,
+        ),
+        IcsExportProfile(
+            id = "profile-spring",
+            name = "2027 春季学期",
+            semesterStartDate = LocalDate.of(2027, 2, 23),
+            semesterWeekCount = 18,
+        ),
+    ),
+    selectedProfileId = "profile-autumn",
+    options = IcsExportOptions(
+        fromDate = LocalDate.of(2026, 9, 1),
+        toDate = LocalDate.of(2027, 1, 15),
+    ),
+)
+
+/** 没有课表：`profiles` 为空时下拉退化成一行提示，摘要卡也跟着空。 */
+private fun previewIcsExportNoProfileView(): IcsExportViewState = previewIcsExportView().copy(
+    profiles = emptyList(),
+    selectedProfileId = null,
+)
+
+/** 一档预览的公共身体：数据形态 + 外观档位。 */
+@Composable
+private fun PreviewIcsExportPage(
+    viewState: IcsExportViewState,
+    dark: Boolean = false,
+    textScale: Float = 1f,
+) {
+    QingyuPageTheme(isDark = dark, textScale = textScale) {
+        IcsExportPage(
+            viewState = viewState,
+            onBack = {},
+            onSelectProfile = {},
+            onFromDateChange = {},
+            onToDateChange = {},
+            onToggleEventKind = { _, _ -> },
+            onSkipHolidayCoursesChange = {},
+            onExport = {},
+            onShareExported = {},
+            onSaveExported = {},
+            onDismissExportMenu = {},
+            onSyncCalendar = {},
+            onRemoveCalendar = {},
+            syncNoticeVisible = false,
+            onConfirmSyncNotice = {},
+            onDismissSyncNotice = {},
+            removeConfirmVisible = false,
+            onConfirmRemove = {},
+            onDismissRemoveConfirm = {},
+        )
+    }
+}
+
+@Suppress("unused")
+@Preview(name = "1 正常", showBackground = true, widthDp = 400, heightDp = 900)
+@Composable
+private fun PreviewIcsExportNormal() {
+    PreviewIcsExportPage(previewIcsExportView())
+}
+
+@Suppress("unused")
+@Preview(name = "2 没有课表", showBackground = true, widthDp = 400, heightDp = 900)
+@Composable
+private fun PreviewIcsExportNoProfile() {
+    PreviewIcsExportPage(previewIcsExportNoProfileView())
+}
+
+@Suppress("unused")
+@Preview(name = "3 正在导出", showBackground = true, widthDp = 400, heightDp = 900)
+@Composable
+private fun PreviewIcsExportExporting() {
+    PreviewIcsExportPage(previewIcsExportView().copy(isExporting = true))
+}
+
+@Suppress("unused")
+@Preview(name = "4 导出后二选一", showBackground = true, widthDp = 400, heightDp = 900)
+@Composable
+private fun PreviewIcsExportMenu() {
+    PreviewIcsExportPage(
+        previewIcsExportView().copy(exportActionMenuVisible = true, pendingEventCount = 42),
+    )
+}
+
+@Suppress("unused")
+@Preview(name = "5 暗色", showBackground = true, widthDp = 400, heightDp = 900)
+@Composable
+private fun PreviewIcsExportDark() {
+    PreviewIcsExportPage(previewIcsExportView(), dark = true)
+}
+
+@Suppress("unused")
+@Preview(name = "6 大字号 1.3", showBackground = true, widthDp = 400, heightDp = 900)
+@Composable
+private fun PreviewIcsExportLargeText() {
+    PreviewIcsExportPage(previewIcsExportView(), textScale = 1.3f)
 }

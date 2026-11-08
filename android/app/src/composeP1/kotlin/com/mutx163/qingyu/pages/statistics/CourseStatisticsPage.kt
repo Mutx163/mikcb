@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -39,12 +40,14 @@ import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.mutx163.qingyu.components.QingyuCard
 import com.mutx163.qingyu.components.QingyuPageCardMargin
 import com.mutx163.qingyu.components.QingyuPageList
 import com.mutx163.qingyu.components.QingyuPageScaffold
+import com.mutx163.qingyu.components.QingyuPageTheme
 import com.mutx163.qingyu.components.QingyuSectionTitle
 import com.mutx163.qingyu.components.QingyuWeightDelta
 import com.mutx163.qingyu.components.shiftWeight
@@ -1012,3 +1015,183 @@ private fun WeekOverviewCard(
 // 图表语义色统一走 `charts/ChartPrimitives.kt` 的 `ChartPalette` / `ChartMath`：
 // 本页原先自己抄过一份 `QingyuIconColors` 常量，和周视图各写一套，
 // 于是同一个「必修/选修」在两处会取到不同来源。现在只保留一个出处。
+
+// ── 预览 ──────────────────────────────────────────────────────────────────────
+//
+// 状态全部由真模型函数算：课程是普通 [com.mutx163.qingyu.core.Course]，装配走
+// `CourseStatisticsLogic.buildViewState(...)`（内部又调 `StatisticsService` 算学期/周/成就/
+// 数据故事），预览里不手写一份假的读数。
+//
+// `Course` / `CourseNature` 与 `LocalDate` 用全限定名：本文件的 import 块按预览约定只允许
+// 动三行（`Preview` / `QingyuPageTheme` / 总览布局件），不为预览扩大 import 面。
+
+/** 预览基准时刻：2026-11-08（第 8 周）周日 10:00。 */
+private val previewStatsNow: java.time.LocalDateTime = java.time.LocalDateTime.of(2026, 11, 8, 10, 0)
+
+/** 预览用课表：五门课、含必修与选修、跨周一到周五。 */
+private val previewStatsCourses = listOf(
+    previewStatsCourse("高等数学", "张明", "示例大学 A101", 1, 1, 2, "08:00", "09:40"),
+    previewStatsCourse("大学物理", "李海", "示例大学 B203", 2, 3, 4, "10:00", "11:40"),
+    previewStatsCourse("线性代数", "王蓉", "示例大学 A305", 3, 1, 2, "08:00", "09:40"),
+    previewStatsCourse("程序设计", "赵磊", "实验楼 C402", 4, 5, 6, "14:00", "15:40"),
+    previewStatsCourse(
+        id = "course-art",
+        name = "艺术鉴赏",
+        teacher = "陈静",
+        location = "艺术楼 201",
+        dayOfWeek = 5,
+        startSection = 7,
+        endSection = 8,
+        startTime = "16:00",
+        endTime = "17:40",
+        elective = true,
+    ),
+)
+
+private fun previewStatsCourse(
+    name: String,
+    teacher: String,
+    location: String,
+    dayOfWeek: Int,
+    startSection: Int,
+    endSection: Int,
+    startTime: String,
+    endTime: String,
+    id: String = "course-$dayOfWeek-$startSection",
+    elective: Boolean = false,
+) = com.mutx163.qingyu.core.Course(
+    id = id,
+    name = name,
+    teacher = teacher,
+    location = location,
+    dayOfWeek = dayOfWeek,
+    startSection = startSection,
+    endSection = endSection,
+    startTime = startTime,
+    endTime = endTime,
+    endWeek = 20,
+    courseNature = if (elective) {
+        com.mutx163.qingyu.core.CourseNature.ELECTIVE
+    } else {
+        com.mutx163.qingyu.core.CourseNature.REQUIRED
+    },
+)
+
+private fun previewStatsState(name: String): CourseStatisticsViewState = when (name) {
+    "周视图" -> CourseStatisticsLogic.buildViewState(
+        courses = previewStatsCourses,
+        currentWeek = 8,
+        semesterWeekCount = 20,
+        semesterStartDate = java.time.LocalDate.of(2026, 9, 7),
+        selectedWeek = 8,
+        semesterView = false,
+        hasOtherProfiles = true,
+        now = previewStatsNow,
+        profileName = "默认课表",
+    )
+    "空课表" -> CourseStatisticsLogic.buildViewState(
+        courses = emptyList(),
+        currentWeek = 8,
+        semesterWeekCount = 20,
+        semesterStartDate = java.time.LocalDate.of(2026, 9, 7),
+        selectedWeek = 8,
+        semesterView = true,
+        hasOtherProfiles = false,
+        now = previewStatsNow,
+    )
+    else -> CourseStatisticsLogic.buildViewState(
+        courses = previewStatsCourses,
+        currentWeek = 8,
+        semesterWeekCount = 20,
+        semesterStartDate = java.time.LocalDate.of(2026, 9, 7),
+        selectedWeek = 8,
+        semesterView = true,
+        hasOtherProfiles = true,
+        now = previewStatsNow,
+        profileName = "默认课表",
+    )
+}
+
+/** 一档预览的公共身体：视图状态 + 外观档位。 */
+@Composable
+private fun PreviewCourseStatisticsBody(
+    state: CourseStatisticsViewState,
+    dark: Boolean = false,
+    textScale: Float = 1f,
+) {
+    QingyuPageTheme(isDark = dark, textScale = textScale) {
+        CourseStatisticsPage(
+            viewState = state,
+            onBack = {},
+            onTabSelected = {},
+            onOpenSettings = {},
+            onOpenShare = {},
+            onWeekChanged = {},
+            onOpenAnalysis = {},
+            onOpenSessions = {},
+        )
+    }
+}
+
+// ── 单档：三态 × 亮色 ─────────────────────────────────────────────────────────
+
+@Suppress("unused")
+@Preview(name = "1 学期视图", showBackground = true, widthDp = 400, heightDp = 900)
+@Composable
+private fun PreviewCourseStatisticsSemester() {
+    PreviewCourseStatisticsBody(previewStatsState("学期视图"))
+}
+
+@Suppress("unused")
+@Preview(name = "2 周视图", showBackground = true, widthDp = 400, heightDp = 900)
+@Composable
+private fun PreviewCourseStatisticsWeek() {
+    PreviewCourseStatisticsBody(previewStatsState("周视图"))
+}
+
+@Suppress("unused")
+@Preview(name = "3 空课表", showBackground = true, widthDp = 400, heightDp = 900)
+@Composable
+private fun PreviewCourseStatisticsEmpty() {
+    PreviewCourseStatisticsBody(previewStatsState("空课表"))
+}
+
+// ── 单档：外观两档（以「学期视图」为基准）────────────────────────────────────
+
+@Suppress("unused")
+@Preview(name = "4 暗色", showBackground = true, widthDp = 400, heightDp = 900)
+@Composable
+private fun PreviewCourseStatisticsDark() {
+    PreviewCourseStatisticsBody(previewStatsState("学期视图"), dark = true)
+}
+
+@Suppress("unused")
+@Preview(name = "5 大字号 1.3", showBackground = true, widthDp = 400, heightDp = 900)
+@Composable
+private fun PreviewCourseStatisticsLargeText() {
+    PreviewCourseStatisticsBody(previewStatsState("学期视图"), textScale = 1.3f)
+}
+
+// ── 总览：三态并排，一屏比结构差异 ───────────────────────────────────────────
+
+/**
+ * 一屏总览：三种状态横向并排，用来一眼比结构差异（谁多了 / 少了哪一块）。
+ *
+ * 3 × 400dp = 1200dp，画布给 1200dp；Studio 等比缩小显示，**缩放后字看不清是正常的**
+ * ——要看细节点上面 1~5 的单档标签。
+ */
+@Suppress("unused")
+@Preview(name = "0 总览·三态并排", showBackground = true, widthDp = 1200, heightDp = 900)
+@Composable
+private fun PreviewCourseStatisticsOverview() {
+    Row(
+        modifier = Modifier.fillMaxSize(),
+        horizontalArrangement = Arrangement.spacedBy(16.dp),
+    ) {
+        for (name in listOf("学期视图", "周视图", "空课表")) {
+            Box(Modifier.width(400.dp).fillMaxHeight()) {
+                PreviewCourseStatisticsBody(previewStatsState(name))
+            }
+        }
+    }
+}

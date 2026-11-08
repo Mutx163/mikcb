@@ -11,6 +11,8 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -31,6 +33,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.mutx163.qingyu.components.QingyuCard
@@ -39,6 +42,7 @@ import com.mutx163.qingyu.components.QingyuGlassIconButton
 import com.mutx163.qingyu.components.QingyuPageCardMargin
 import com.mutx163.qingyu.components.QingyuPageList
 import com.mutx163.qingyu.components.QingyuPageScaffold
+import com.mutx163.qingyu.components.QingyuPageTheme
 import com.mutx163.qingyu.components.QingyuSectionGap
 import com.mutx163.qingyu.components.QingyuSectionTitle
 import com.mutx163.qingyu.components.QingyuSheet
@@ -879,4 +883,158 @@ private fun iconOf(row: MemoryStatsRow): ImageVector = when (row) {
     MemoryStatsRow.MEMORY_STATS -> MiuixIcons.Notes
     MemoryStatsRow.RAW_JSON -> MiuixIcons.File
     MemoryStatsRow.FAIR_MEMORY -> MiuixIcons.Info
+}
+
+// ── 预览 ──────────────────────────────────────────────────────────────────────
+//
+// 快照用手写的平台真实形状（`app` / `javaHeap` / `processes` … 都是采集器下发的键），
+// 再交给同包真装配函数 `buildMemoryStatsViewState` 算：汇总文案、压力副标题、五行分类、
+// 弹层内容全部由模型层算出来，预览里不手写一份假的读数。
+
+/** 一份“已刷新”的内存快照：主进程 403 MB PSS，Java 堆 62%，超级岛在跑。 */
+private val previewMemorySnapshot: Map<String, Any?> = mapOf(
+    "pressureLevel" to "normal",
+    "pressureLabel" to "正常",
+    "appInForeground" to true,
+    "app" to mapOf(
+        "totalPssKb" to 412_680L,
+        "peakTotalPssKb" to 486_912L,
+        "processCount" to 5,
+    ),
+    "javaHeap" to mapOf("usageRatio" to 0.62, "nearOom" to false),
+    "debugMemory" to mapOf("totalPssKb" to 403_456L),
+    "imageCache" to mapOf("currentSizeBytes" to 18_874_368L),
+    "system" to mapOf("isLowMemory" to false),
+    "liveIsland" to mapOf("serviceRunning" to true),
+    "backgroundStats" to mapOf("currentlyBackground" to false),
+    "fairMemory" to mapOf("lastKillAtMillis" to 1_762_490_000_000L),
+    "processes" to listOf(
+        mapOf("name" to "com.mutx163.qingyu", "pssKb" to 268_400L),
+        mapOf("name" to "com.mutx163.qingyu:live", "pssKb" to 74_200L),
+        mapOf("name" to "com.mutx163.qingyu:widget", "pssKb" to 51_600L),
+    ),
+    "history" to listOf(
+        mapOf("timestampMillis" to 1_762_570_800_000L, "totalPssKb" to 402_100L),
+        mapOf("timestampMillis" to 1_762_566_000_000L, "totalPssKb" to 396_800L),
+    ),
+    "analysis" to mapOf("headline" to "近 24 小时无异常增长", "severityLabel" to "良好"),
+    "memoryStats" to mapOf("javaHeapMaxKb" to 512_000L),
+)
+
+private fun previewMemoryStatsState(name: String): MemoryStatsViewState = when (name) {
+    "空态" -> buildMemoryStatsViewState(
+        snapshot = null,
+        autoRefreshEnabled = true,
+        refreshIntervalSeconds = 5,
+        lastRefreshedAt = null,
+    )
+    "加载中" -> buildMemoryStatsViewState(
+        snapshot = null,
+        autoRefreshEnabled = true,
+        refreshIntervalSeconds = 5,
+        lastRefreshedAt = null,
+        isLoading = true,
+    )
+    "失败" -> buildMemoryStatsViewState(
+        snapshot = null,
+        autoRefreshEnabled = true,
+        refreshIntervalSeconds = 5,
+        lastRefreshedAt = null,
+        errorText = "读取内存快照失败：配额权限被拒绝",
+    )
+    else -> buildMemoryStatsViewState(
+        snapshot = previewMemorySnapshot,
+        autoRefreshEnabled = true,
+        refreshIntervalSeconds = 5,
+        lastRefreshedAt = java.time.LocalTime.of(10, 24),
+    )
+}
+
+/** 一档预览的公共身体：视图状态 + 外观档位。 */
+@Composable
+private fun PreviewMemoryStatsBody(
+    state: MemoryStatsViewState,
+    dark: Boolean = false,
+    textScale: Float = 1f,
+) {
+    QingyuPageTheme(isDark = dark, textScale = textScale) {
+        MemoryStatsPage(
+            viewState = state,
+            onBack = {},
+            onRefresh = {},
+            onCopyJson = {},
+            onToggleAutoRefresh = {},
+            onOpenPerfReport = {},
+        )
+    }
+}
+
+// ── 单档：四态 × 亮色 ─────────────────────────────────────────────────────────
+
+@Suppress("unused")
+@Preview(name = "1 有数据", showBackground = true, widthDp = 400, heightDp = 900)
+@Composable
+private fun PreviewMemoryStatsData() {
+    PreviewMemoryStatsBody(previewMemoryStatsState("有数据"))
+}
+
+@Suppress("unused")
+@Preview(name = "2 空态", showBackground = true, widthDp = 400, heightDp = 900)
+@Composable
+private fun PreviewMemoryStatsEmpty() {
+    PreviewMemoryStatsBody(previewMemoryStatsState("空态"))
+}
+
+@Suppress("unused")
+@Preview(name = "3 加载中", showBackground = true, widthDp = 400, heightDp = 900)
+@Composable
+private fun PreviewMemoryStatsLoading() {
+    PreviewMemoryStatsBody(previewMemoryStatsState("加载中"))
+}
+
+@Suppress("unused")
+@Preview(name = "4 失败", showBackground = true, widthDp = 400, heightDp = 900)
+@Composable
+private fun PreviewMemoryStatsError() {
+    PreviewMemoryStatsBody(previewMemoryStatsState("失败"))
+}
+
+// ── 单档：外观两档（以「有数据」为基准）──────────────────────────────────────
+
+@Suppress("unused")
+@Preview(name = "5 暗色", showBackground = true, widthDp = 400, heightDp = 900)
+@Composable
+private fun PreviewMemoryStatsDark() {
+    PreviewMemoryStatsBody(previewMemoryStatsState("有数据"), dark = true)
+}
+
+@Suppress("unused")
+@Preview(name = "6 大字号 1.3", showBackground = true, widthDp = 400, heightDp = 900)
+@Composable
+private fun PreviewMemoryStatsLargeText() {
+    PreviewMemoryStatsBody(previewMemoryStatsState("有数据"), textScale = 1.3f)
+}
+
+// ── 总览：四态并排，一屏比结构差异 ───────────────────────────────────────────
+
+/**
+ * 一屏总览：四种状态横向并排，用来一眼比结构差异（谁多了 / 少了哪一块）。
+ *
+ * 4 × 400dp = 1600dp，画布给 1600dp；Studio 等比缩小显示，**缩放后字看不清是正常的**
+ * ——要看细节点上面 1~6 的单档标签。
+ */
+@Suppress("unused")
+@Preview(name = "0 总览·四态并排", showBackground = true, widthDp = 1600, heightDp = 900)
+@Composable
+private fun PreviewMemoryStatsOverview() {
+    Row(
+        modifier = Modifier.fillMaxSize(),
+        horizontalArrangement = Arrangement.spacedBy(16.dp),
+    ) {
+        for (name in listOf("有数据", "空态", "加载中", "失败")) {
+            Box(Modifier.width(400.dp).fillMaxHeight()) {
+                PreviewMemoryStatsBody(previewMemoryStatsState(name))
+            }
+        }
+    }
 }

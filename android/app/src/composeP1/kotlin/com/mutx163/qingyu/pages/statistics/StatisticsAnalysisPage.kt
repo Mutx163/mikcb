@@ -21,6 +21,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.mutx163.qingyu.components.QingyuCard
 import com.mutx163.qingyu.components.QingyuWeightDelta
@@ -31,6 +32,7 @@ import com.mutx163.qingyu.pages.statistics.StatisticsAnalysisModel.StatisticsAna
 import com.mutx163.qingyu.components.QingyuPageCardMargin
 import com.mutx163.qingyu.components.QingyuPageList
 import com.mutx163.qingyu.components.QingyuPageScaffold
+import com.mutx163.qingyu.components.QingyuPageTheme
 import com.mutx163.qingyu.pages.statistics.charts.HeatmapModel
 import com.mutx163.qingyu.pages.statistics.charts.SemesterHeatmapCard
 import com.mutx163.qingyu.pages.statistics.charts.TrendChartCard
@@ -413,4 +415,132 @@ private fun EmptyState(title: String, subtitle: String, modifier: Modifier = Mod
             )
         }
     }
+}
+
+// ── 预览 ──────────────────────────────────────────────────────────────────────
+//
+// 六张卡的读数不手写：调 `StatisticsAnalysisModel.analysisViewState(...)`，它内部又走
+// `StatisticsService` 算趋势、热力图、时间利用、排行。预览里的课表是普通
+// [com.mutx163.qingyu.core.Course]，与真实课表同一形状。
+//
+// `Course` 用全限定名：本文件的 import 块按预览约定只允许动三行
+// （`Preview` / `QingyuPageTheme` / 总览布局件），不为预览扩大 import 面。
+
+/** 预览用课表：四门课、三个教师、三个教室（够排行与教师统计出多行）。 */
+private val previewAnalysisCourses = listOf(
+    previewAnalysisCourse("高等数学", "张明", "示例大学 A101", 1, 1, 2, "08:00", "09:40"),
+    previewAnalysisCourse("大学物理", "李海", "示例大学 B203", 2, 3, 4, "10:00", "11:40"),
+    previewAnalysisCourse("线性代数", "张明", "示例大学 A101", 3, 1, 2, "08:00", "09:40"),
+    previewAnalysisCourse("程序设计", "赵磊", "实验楼 C402", 4, 5, 6, "14:00", "15:40"),
+)
+
+private fun previewAnalysisCourse(
+    name: String,
+    teacher: String,
+    location: String,
+    dayOfWeek: Int,
+    startSection: Int,
+    endSection: Int,
+    startTime: String,
+    endTime: String,
+) = com.mutx163.qingyu.core.Course(
+    id = "course-$dayOfWeek-$startSection",
+    name = name,
+    teacher = teacher,
+    location = location,
+    dayOfWeek = dayOfWeek,
+    startSection = startSection,
+    endSection = endSection,
+    startTime = startTime,
+    endTime = endTime,
+    endWeek = 20,
+)
+
+private fun previewAnalysisState(name: String): StatisticsAnalysisViewState = when (name) {
+    "课程排行" -> StatisticsAnalysisModel.analysisViewState(
+        module = StatisticsAnalysisModule.RANKING,
+        courses = previewAnalysisCourses,
+        currentWeek = 8,
+        semesterWeekCount = 20,
+    )
+    "教师课时" -> StatisticsAnalysisModel.analysisViewState(
+        module = StatisticsAnalysisModule.TEACHER,
+        courses = previewAnalysisCourses,
+        currentWeek = 8,
+        semesterWeekCount = 20,
+    )
+    "空课表" -> StatisticsAnalysisModel.analysisViewState(
+        module = StatisticsAnalysisModule.TREND,
+        courses = emptyList(),
+        currentWeek = 8,
+        semesterWeekCount = 20,
+    )
+    else -> StatisticsAnalysisModel.analysisViewState(
+        module = StatisticsAnalysisModule.TREND,
+        courses = previewAnalysisCourses,
+        currentWeek = 8,
+        semesterWeekCount = 20,
+    )
+}
+
+/** 一档预览的公共身体：视图状态 + 外观档位。 */
+@Composable
+private fun PreviewAnalysisBody(
+    state: StatisticsAnalysisViewState,
+    dark: Boolean = false,
+    textScale: Float = 1f,
+) {
+    QingyuPageTheme(isDark = dark, textScale = textScale) {
+        StatisticsAnalysisPage(
+            viewState = state,
+            onBack = {},
+            onOpenCourse = {},
+        )
+    }
+}
+
+// ── 单档：四态 × 亮色 ─────────────────────────────────────────────────────────
+
+@Suppress("unused")
+@Preview(name = "1 趋势与热力图", showBackground = true, widthDp = 400, heightDp = 900)
+@Composable
+private fun PreviewAnalysisTrend() {
+    PreviewAnalysisBody(previewAnalysisState("趋势"))
+}
+
+@Suppress("unused")
+@Preview(name = "2 课程排行", showBackground = true, widthDp = 400, heightDp = 900)
+@Composable
+private fun PreviewAnalysisRanking() {
+    PreviewAnalysisBody(previewAnalysisState("课程排行"))
+}
+
+@Suppress("unused")
+@Preview(name = "3 教师课时", showBackground = true, widthDp = 400, heightDp = 900)
+@Composable
+private fun PreviewAnalysisTeacher() {
+    PreviewAnalysisBody(previewAnalysisState("教师课时"))
+}
+
+@Suppress("unused")
+@Preview(name = "4 空课表", showBackground = true, widthDp = 400, heightDp = 900)
+@Composable
+private fun PreviewAnalysisEmpty() {
+    PreviewAnalysisBody(previewAnalysisState("空课表"))
+}
+
+// ── 单档：外观两档（以「趋势」为基准）────────────────────────────────────────
+
+@Suppress("unused")
+@Preview(name = "5 暗色", showBackground = true, widthDp = 400, heightDp = 900)
+@Composable
+private fun PreviewAnalysisDark() {
+    PreviewAnalysisBody(previewAnalysisState("趋势"), dark = true)
+}
+
+@Suppress("unused")
+@Preview(name = "6 大字号 1.3", showBackground = true, widthDp = 400, heightDp = 900)
+@Composable
+private fun PreviewAnalysisLargeText() {
+    PreviewAnalysisBody(previewAnalysisState("趋势"), textScale = 1.3f)
 }

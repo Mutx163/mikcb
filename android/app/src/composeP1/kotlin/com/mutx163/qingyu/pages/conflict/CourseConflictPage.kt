@@ -13,11 +13,13 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.mutx163.qingyu.components.QingyuCard
 import com.mutx163.qingyu.components.QingyuPageCardMargin
 import com.mutx163.qingyu.components.QingyuPageList
 import com.mutx163.qingyu.components.QingyuPageScaffold
+import com.mutx163.qingyu.components.QingyuPageTheme
 import com.mutx163.qingyu.components.QingyuSectionTitle
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.Text
@@ -168,4 +170,112 @@ private fun CourseConflictRowView(
             modifier = Modifier.size(18.dp),
         )
     }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// IDE 预览（2026-11-08，照抄 about/ContributorsPage.kt 的样板）
+//
+// 只给实现阶段看效果，不进业务路径。本页只有两种数据形态（有冲突 / 没有冲突），
+// 所以铺：非空、空态两条数据档 + 亮色 / 暗色 / 大字号 1.3 三档外观。
+//
+// 固定写法（与样板一致，别自己改）：
+//   • 主题一律包 QingyuPageTheme(isDark = …)，不要直接 MiuixTheme { }：页面取色走
+//     isSystemInDarkTheme()，只有它会改写 LocalConfiguration 的 uiMode，预览才和真机同口径；
+//   • 字号用 QingyuPageTheme(textScale = …)，不要用 @Preview(fontScale = …)；
+//   • 宽度按 400dp（本仓折行实测口径），高度给一屏多，避免列表被截断看不清。
+// ─────────────────────────────────────────────────────────────────────────────
+
+/** 预览用假数据：两组冲突，每组两行，撑出「分组标题 + 卡片两行」的完整形态。 */
+private fun previewConflictView(): CourseConflictView = CourseConflictView(
+    title = CourseConflictStrings.title,
+    emptyText = CourseConflictStrings.emptyText,
+    pairs = listOf(
+        CourseConflictPairView(
+            index = 1,
+            sectionLabel = CourseConflictStrings.pairLabel(1),
+            rows = listOf(
+                CourseConflictRow(
+                    courseId = "course-gaoshu",
+                    title = "高等数学",
+                    scheduleLine = "周一 1～2 节 · 第 1 周-16",
+                    conflictLine = "与 线性代数 冲突",
+                ),
+                CourseConflictRow(
+                    courseId = "course-xiandai",
+                    title = "线性代数",
+                    scheduleLine = "周一 2～3 节 · 第 1 周-16",
+                    conflictLine = "与 高等数学 冲突",
+                ),
+            ),
+        ),
+        CourseConflictPairView(
+            index = 2,
+            sectionLabel = CourseConflictStrings.pairLabel(2),
+            rows = listOf(
+                CourseConflictRow(
+                    courseId = "course-daxuewuli",
+                    title = "大学物理",
+                    scheduleLine = "周三 5～6 节 · 第 1 周-8",
+                    conflictLine = "与 概率论与数理统计 冲突",
+                ),
+                CourseConflictRow(
+                    courseId = "course-gailvlun",
+                    title = "概率论与数理统计",
+                    scheduleLine = "周三 6～7 节 · 第 3 周-16",
+                    conflictLine = "与 大学物理 冲突",
+                ),
+            ),
+        ),
+    ),
+)
+
+/** 空态：同一份标题与空态文案，`pairs` 为空即走页面里的居中提示分支。 */
+private fun previewConflictEmptyView(): CourseConflictView = CourseConflictView(
+    title = CourseConflictStrings.title,
+    emptyText = CourseConflictStrings.emptyText,
+    pairs = emptyList(),
+)
+
+/** 一档预览的公共身体：数据形态 + 外观档位。 */
+@Composable
+private fun PreviewCourseConflictPage(
+    view: CourseConflictView,
+    dark: Boolean = false,
+    textScale: Float = 1f,
+) {
+    QingyuPageTheme(isDark = dark, textScale = textScale) {
+        CourseConflictPage(
+            view = view,
+            onBack = {},
+            onOpenCourse = {},
+        )
+    }
+}
+
+@Suppress("unused")
+@Preview(name = "1 有冲突", showBackground = true, widthDp = 400, heightDp = 900)
+@Composable
+private fun PreviewCourseConflictData() {
+    PreviewCourseConflictPage(previewConflictView())
+}
+
+@Suppress("unused")
+@Preview(name = "2 空态", showBackground = true, widthDp = 400, heightDp = 900)
+@Composable
+private fun PreviewCourseConflictEmpty() {
+    PreviewCourseConflictPage(previewConflictEmptyView())
+}
+
+@Suppress("unused")
+@Preview(name = "3 暗色", showBackground = true, widthDp = 400, heightDp = 900)
+@Composable
+private fun PreviewCourseConflictDark() {
+    PreviewCourseConflictPage(previewConflictView(), dark = true)
+}
+
+@Suppress("unused")
+@Preview(name = "4 大字号 1.3", showBackground = true, widthDp = 400, heightDp = 900)
+@Composable
+private fun PreviewCourseConflictLargeText() {
+    PreviewCourseConflictPage(previewConflictView(), textScale = 1.3f)
 }
