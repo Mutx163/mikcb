@@ -21,6 +21,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clipToBounds
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.layout
@@ -87,13 +89,32 @@ fun MonthGrid(
     // 锚点无关。现在统一用 SECONDARY（亮色约 5.7:1），11sp 小字也达标。
     val headerInk = Color(QingyuTheme.primaryText(dark))
         .copy(alpha = MonthInk.SECONDARY.toFloat())
+    // 周次轨是索引，不是内容：比表头再降一档（11sp 约 3.2:1），
+    // 并在它右侧画一条 12% 的细线，把“周次”与 7 列日期分开。
+    val railInk = Color(QingyuTheme.primaryText(dark))
+        .copy(alpha = MonthInk.TERTIARY.toFloat())
+    val railRule = headerInk.copy(alpha = 0.18f)
 
     // 周次行标列：只在真的能算出周次时占位（学期未配置时整列收起）。
     val weekNumberColumnVisible = showWeekNumbers && grid.days.any { it.weekIndex != null }
     val todayDay = dayOnly(today)
     val selectedDay = selectedDate?.let { dayOnly(it) }
 
-    Column(modifier = modifier.fillMaxWidth()) {
+    val rootModifier = if (weekNumberColumnVisible) {
+        modifier.fillMaxWidth().drawBehind {
+            val x = MonthGridMetrics.WEEK_LABEL_WIDTH.dp.toPx()
+            drawLine(
+                color = railRule,
+                start = Offset(x, 0f),
+                end = Offset(x, size.height),
+                strokeWidth = 1f,
+            )
+        }
+    } else {
+        modifier.fillMaxWidth()
+    }
+
+    Column(modifier = rootModifier) {
         // 表头：钉在固定高度（与页面行高预算、裁剪窗口上沿同一个数）。
         Row(
             modifier = Modifier
@@ -155,6 +176,7 @@ fun MonthGrid(
                         week = grid.weeks[row],
                         weekNumberColumnVisible = weekNumberColumnVisible,
                         headerInk = headerInk,
+                        railInk = railInk,
                         isDark = dark,
                         rowHeight = rowHeight,
                         today = todayDay,
@@ -173,6 +195,7 @@ private fun MonthWeekRow(
     week: MonthWeek,
     weekNumberColumnVisible: Boolean,
     headerInk: Color,
+    railInk: Color,
     isDark: Boolean,
     rowHeight: Dp,
     today: LocalDateTime,
@@ -198,7 +221,7 @@ private fun MonthWeekRow(
                 if (weekIndex != null) {
                     WeekRailLabel(
                         text = MonthText.weekRail(weekIndex.toInt()),
-                        color = headerInk,
+                        color = railInk,
                     )
                 }
             }

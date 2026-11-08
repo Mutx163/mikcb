@@ -64,7 +64,7 @@ class MonthMetricsTest {
         assertEquals(11.0, MonthType.CAPTION, 0.0)
         assertEquals(13.0, MonthType.BODY, 0.0)
         assertEquals(14.0, MonthType.TITLE, 0.0)
-        assertEquals(18.0, MonthType.DAY_NUMBER, 0.0)
+        assertEquals(16.0, MonthType.DAY_NUMBER, 0.0)
         assertEquals(20.0, MonthType.DISPLAY, 0.0)
     }
 
@@ -185,11 +185,11 @@ class MonthMetricsTest {
 
     @Test
     fun `日期格行高按宽度决定 目标是正方形`() {
-        // 393dp 屏、周次列 40：可用 393 − 2×20.5 − 40 = 312 → 格宽 44.571…
+        // 393dp 屏、周次列 40：可用 393 − 2×22 − 40 = 309 → 格宽 44.14…
         val width = 393.0
         val usable = width - 2 * MonthMetrics.GRID_HORIZONTAL_PADDING - 40.0
         assertEquals(usable / 7.0, MonthMetrics.gridRowHeight(width, 40.0), 1e-9)
-        assertEquals(312.0 / 7.0, MonthMetrics.gridRowHeight(width, 40.0), 1e-9)
+        assertEquals(309.0 / 7.0, MonthMetrics.gridRowHeight(width, 40.0), 1e-9)
     }
 
     @Test

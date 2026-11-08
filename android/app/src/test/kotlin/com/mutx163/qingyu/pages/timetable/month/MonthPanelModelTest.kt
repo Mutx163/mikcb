@@ -204,8 +204,10 @@ class MonthPanelModelTest {
         )
 
         // 行高由**宽度**决定（手机竖屏宽度更紧）：(400 − 左右内边距 − 周次列) / 7。
-        // 左右内边距 = AXIS_INSET − CELL_GAP = 22 − 1.5 = 20.5。
-        val expectedRowHeight = (400.0 - 2 * 20.5 - 40.0) / 7.0
+        // 左右内边距 = AXIS_INSET − CELL_GAP；2026-11-07 起 CELL_GAP = 0，
+        // 这里直接读常量，避免下次改格缝又硬编码一次。
+        val expectedRowHeight =
+            (400.0 - 2 * MonthMetrics.GRID_HORIZONTAL_PADDING - 40.0) / 7.0
         assertEquals(expectedRowHeight, layout.rowHeight, 1e-6)
 
         // 展开态窗口 = 上内边距 + 表头 + 6 行。

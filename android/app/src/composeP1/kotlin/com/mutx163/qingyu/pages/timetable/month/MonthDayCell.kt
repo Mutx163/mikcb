@@ -18,13 +18,11 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.mutx163.qingyu.components.QingyuWeightDelta
 import com.mutx163.qingyu.components.shiftWeight
@@ -40,24 +38,22 @@ import kotlin.math.min
  *
  * 移植自 `lib/widgets/timetable/month_view/month_day_cell.dart`（2026-10-27 快照）。
  *
- * ## 格子不是一张卡，而是「白卡里的一格」
+ * ## 连续网格，不是一排小方块（2026-11-07 重做）
  *
- * 底色由外层 [MonthCalendarCard] 那张白卡提供，本组件只画内容。所以判墨一律按
- * **主题**（卡是实底的，不透壁纸），不按壁纸亮度。
+ * 旧实现每格是一块带 1.5dp 缝、10dp 圆角的浅色小方块；放进整页「大圆角白卡 +
+ * 胶囊/圆形状态」的语言里，读起来像在卡片里又嵌了一张日期选择器。现在：
  *
  * | 状态 | 表达 |
  * |---|---|
- * | 选中 | primary 8% 淡底 + 1.5dp primary 描边 + primary 粗体数字 |
- * | 今天 | primary 12% 淡底 + primary 粗体数字（**不描边**，与选中差在描边） |
+ * | 今天 | 数字后面一颗 primary **实心圆**（直径 28），数字反白 |
+ * | 选中 | 数字后面一颗 primary 淡底圆 + 1.5dp primary 描边（今天选中时今天态优先） |
+ * | 普通 | 只有数字，没有格子底、没有缝 |
  * | 假期 | 暖红数字 + 右上角「休」 |
  * | 调休 | 右上角「班」（蓝） |
- * | 月外 | 按**对比度**弱化到看得清的极限（sRGB 合成后算，不乘裸 alpha） |
+ * | 月外 | 按对比度弱化到看得清的极限（sRGB 合成后算），不画角标/标记 |
  *
- * ## 选中态为什么不再铺满 primary（2026-11-07）
- *
- * 旧实现选中时整格铺 primary 实心、数字反白。但底边色带里的「日程」段也用
- * primary——选中那天，「有日程」的标记直接消失；考试红压在饱和底上也会发颤。
- * 改成「淡底 + 描边」后，选中仍然一眼可辨，标记的颜色也不再被背景吃掉。
+ * 7 列、周次轨、日期数字全部落在**同一张连续矩阵**里；分隔感由列宽、周次轨的
+ * 细索引线和每行 45dp 的节拍提供，不靠小方块。
  *
  * ## 标记槽位恒在（2026-10-25 的教训）
  *
@@ -65,7 +61,7 @@ import kotlin.math.min
  * 所以 [MonthMetrics.CELL_MARK_SLOT_HEIGHT] 无论有没有内容都占位，
  * 有内容时在槽位里画标记、没内容时留空。
  *
- * ## 标记为什么从「分段色带」改成「固定尺寸点」（2026-11-07）
+ * ## 标记为什么是固定尺寸（2026-11-07）
  *
  * 旧色带按格宽均分：段宽 = 1/段数。同一天「2 节课」在有日程时从 1/2 缩到 1/4，
  * 超过 4 节还会静默消失——同一个量在不同日子里长得不一样，编码不成立。
@@ -82,35 +78,32 @@ fun MonthDayCell(
     isSelected: Boolean,
     onTap: () -> Unit,
     modifier: Modifier = Modifier,
-    radius: Dp = MonthMetrics.CELL_RADIUS.dp,
     markBudget: Int = MonthDayCellDefaults.MARK_BUDGET,
 ) {
     val dark = isSystemInDarkTheme()
     val scheme = MiuixTheme.colorScheme
-    val shape = RoundedCornerShape(radius)
-
-    // 卡面墨色：白卡上就是主题墨。**不跟壁纸走**。
     val ink = Color(QingyuTheme.primaryText(dark))
     val primary = scheme.primary
+    val onPrimary = scheme.onPrimary
     // 卡片真正的底色是 surfaceContainer（亮色 #FFF），不是页底 surface（#F2F2F2）。
-    // 旧实现拿 surface 算月外日期的对比度，参照面本身就错了。
     val cardSurface = scheme.surfaceContainer
 
     val badge = when {
-        entry.isAdjustedWorkday -> MonthText.adjustedWorkdayBadge.text to scheme.primary
+        entry.isAdjustedWorkday -> MonthText.adjustedWorkdayBadge.text to primary
         entry.isHoliday -> MonthText.holidayBadge.text to scheme.error
         else -> null
     }
 
-    // ── 日号墨色：选中/今天 → 假期 → 普通 ──
+    // 今天/选中：数字后面的圆形状态。今天优先（实心圆、反白）；
+    // 选中但非今天：淡底圆 + 描边；两者都没有：裸数字。
+    val filled = isToday
+    val ringed = isSelected && !isToday
     val dayInk: Color = when {
-        isSelected || isToday -> primary
+        isToday -> onPrimary
+        isSelected -> primary
         entry.isHoliday -> scheme.error
         else -> ink
     }
-
-    // 月外日期：一律按月外墨与**卡面**的对比度弱化。旧实现把假期/今天排除在
-    // 弱化之外，邻月的「休」字会比本月还醒目；现在月外格连角标也不画。
     val resolvedDayInk = if (entry.isOutsideMonth) {
         dimInkToContrast(ink, cardSurface)
     } else {
@@ -129,45 +122,47 @@ fun MonthDayCell(
     val overflow = totalMarks > marks.size
     val moreInk = ink.copy(alpha = MonthInk.TERTIARY.toFloat())
 
-    // 今天与选中可以同时成立：今天选中时保留 12% 底，再加描边。
-    val selectedFill = when {
-        isSelected && isToday -> 0.12f
-        isSelected -> 0.08f
-        isToday -> 0.12f
-        else -> 0f
-    }
-
     val label = semanticsLabel(entry)
 
     Box(
         modifier = modifier
-            // 命中区吃满整个槽位（含 1.5dp 格缝），比只命中可见格大一圈。
             .clickable(onClick = onTap)
             .semantics { contentDescription = label },
     ) {
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(MonthMetrics.CELL_GAP.dp)
-                .clip(shape)
-                .then(
-                    if (selectedFill > 0f) {
-                        Modifier.background(primary.copy(alpha = selectedFill), shape)
-                    } else {
-                        Modifier
-                    },
-                ),
+        Column(
+            modifier = Modifier.fillMaxSize(),
+            verticalArrangement = Arrangement.Center,
+            horizontalAlignment = Alignment.CenterHorizontally,
         ) {
-            Column(
+            Box(
                 modifier = Modifier
-                    .fillMaxSize()
-                    .padding(horizontal = MonthMetrics.CELL_INNER_PADDING.dp),
-                verticalArrangement = Arrangement.Center,
-                horizontalAlignment = Alignment.CenterHorizontally,
+                    .size(MonthDayCellDefaults.STATE_CIRCLE.dp)
+                    .then(
+                        when {
+                            filled -> Modifier.background(primary, CircleShape)
+                            ringed -> Modifier.background(
+                                primary.copy(alpha = MonthDayCellDefaults.SELECTED_FILL),
+                                CircleShape,
+                            )
+                            else -> Modifier
+                        },
+                    )
+                    .then(
+                        if (ringed) {
+                            Modifier.border(
+                                MonthDayCellDefaults.SELECTED_BORDER.dp,
+                                primary,
+                                CircleShape,
+                            )
+                        } else {
+                            Modifier
+                        },
+                    ),
+                contentAlignment = Alignment.Center,
             ) {
                 Text(
                     text = entry.date.dayOfMonth.toString(),
-                    style = MiuixTheme.textStyles.title4.shiftWeight(
+                    style = MiuixTheme.textStyles.body1.shiftWeight(
                         if (isToday || isSelected) {
                             QingyuWeightDelta.EXTRABOLD
                         } else {
@@ -178,58 +173,47 @@ fun MonthDayCell(
                     maxLines = 1,
                     overflow = TextOverflow.Clip,
                 )
-                // 标记槽位：**恒在**（没内容时留空，高度不变），日号在每格里位置一致。
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(MonthMetrics.CELL_MARK_SLOT_HEIGHT.dp),
-                    contentAlignment = Alignment.Center,
-                ) {
-                    if (!entry.isOutsideMonth && (marks.isNotEmpty() || overflow)) {
-                        Row(
-                            horizontalArrangement = Arrangement.spacedBy(
-                                MonthDayCellDefaults.MARK_GAP.dp,
-                            ),
-                            verticalAlignment = Alignment.CenterVertically,
-                        ) {
-                            for (mark in marks) {
-                                DayMarkView(mark = mark)
-                            }
-                            if (overflow) {
-                                MoreMarkView(color = moreInk)
-                            }
+            }
+
+            // 标记槽位：**恒在**（没内容时留空，高度不变），数字在每格里位置一致。
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(MonthMetrics.CELL_MARK_SLOT_HEIGHT.dp),
+                contentAlignment = Alignment.Center,
+            ) {
+                if (!entry.isOutsideMonth && (marks.isNotEmpty() || overflow)) {
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(
+                            MonthDayCellDefaults.MARK_GAP.dp,
+                        ),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        for (mark in marks) {
+                            DayMarkView(mark = mark)
+                        }
+                        if (overflow) {
+                            MoreMarkView(color = moreInk)
                         }
                     }
                 }
             }
+        }
 
-            if (isSelected) {
-                // 描边画在内容之上，不被背景或标记盖住。
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .border(MonthDayCellDefaults.SELECTED_BORDER.dp, primary, shape),
+        if (badge != null && !entry.isOutsideMonth) {
+            Box(
+                modifier = Modifier
+                    .align(Alignment.TopEnd)
+                    .padding(top = 1.dp, end = 3.dp),
+            ) {
+                Text(
+                    text = badge.first,
+                    style = MiuixTheme.textStyles.footnote2.shiftWeight(
+                        QingyuWeightDelta.BOLD,
+                    ),
+                    color = badge.second,
+                    maxLines = 1,
                 )
-            }
-
-            if (badge != null && !entry.isOutsideMonth) {
-                Box(
-                    modifier = Modifier
-                        .align(Alignment.TopEnd)
-                        .padding(
-                            top = 1.dp,
-                            end = (MonthMetrics.CELL_INNER_PADDING + 1.0).dp,
-                        ),
-                ) {
-                    Text(
-                        text = badge.first,
-                        style = MiuixTheme.textStyles.footnote2.shiftWeight(
-                            QingyuWeightDelta.BOLD,
-                        ),
-                        color = badge.second,
-                        maxLines = 1,
-                    )
-                }
             }
         }
     }
@@ -330,14 +314,20 @@ private fun MoreMarkView(color: Color) {
 /** 日期格的默认值。 */
 object MonthDayCellDefaults {
 
+    /** 今天/选中状态圆的直径；比 45dp 的格子小一圈，像日历而不是色块。 */
+    const val STATE_CIRCLE = 28.0
+
+    /** 选中态（非今天）的淡底透明度。 */
+    const val SELECTED_FILL = 0.08f
+
+    /** 选中态描边宽度。 */
+    const val SELECTED_BORDER = 1.5
+
     /** 标记行最多画几个（考试 / 日程先占位，课程补剩余）。 */
     const val MARK_BUDGET = 3
 
     /** 课程 / 考试 / 日程标记之间的间距。 */
     const val MARK_GAP = 3.0
-
-    /** 选中态描边宽度。 */
-    const val SELECTED_BORDER = 1.5
 
     /** 兼容旧调用点：色带预算已更名为 [MARK_BUDGET]。 */
     @Deprecated("Use MARK_BUDGET", ReplaceWith("MARK_BUDGET"))
