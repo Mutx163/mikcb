@@ -1,0 +1,478 @@
+[
+ {
+  "domain": "about",
+  "title": "关于软件",
+  "entry": "AboutStaticPage",
+  "file": "about/AboutStaticPage.kt",
+  "previews": 4
+ },
+ {
+  "domain": "about",
+  "title": "版本更新",
+  "entry": "AboutUpdatePage",
+  "file": "about/AboutUpdatePage.kt",
+  "previews": 7
+ },
+ {
+  "domain": "about",
+  "title": "高级选项",
+  "entry": "AdvancedOptionsPage",
+  "file": "about/AdvancedOptionsPage.kt",
+  "previews": 5
+ },
+ {
+  "domain": "about",
+  "title": "更新日志",
+  "entry": "ChangelogPage",
+  "file": "about/ChangelogPage.kt",
+  "previews": 4
+ },
+ {
+  "domain": "about",
+  "title": "代码贡献者",
+  "entry": "ContributorsPage",
+  "file": "about/ContributorsPage.kt",
+  "previews": 9
+ },
+ {
+  "domain": "about",
+  "title": "开源许可详情",
+  "entry": "OpenSourceLicenseDetailPage",
+  "file": "about/OpenSourceLicensesPage.kt",
+  "previews": 3
+ },
+ {
+  "domain": "about",
+  "title": "开源许可",
+  "entry": "OpenSourceLicensesPage",
+  "file": "about/OpenSourceLicensesPage.kt",
+  "previews": 6
+ },
+ {
+  "domain": "about",
+  "title": "支持作者",
+  "entry": "SupportCreatorPage",
+  "file": "about/SupportCreatorPage.kt",
+  "previews": 7
+ },
+ {
+  "domain": "conflict",
+  "title": "冲突详情",
+  "entry": "CourseConflictPage",
+  "file": "conflict/CourseConflictPage.kt",
+  "previews": 5
+ },
+ {
+  "domain": "course",
+  "title": "添加 / 编辑课程",
+  "entry": "AddCoursePage",
+  "file": "course/AddCoursePage.kt",
+  "previews": 4
+ },
+ {
+  "domain": "course",
+  "title": "课程总览与编辑",
+  "entry": "CourseOverviewPage",
+  "file": "course/CourseOverviewPage.kt",
+  "previews": 6
+ },
+ {
+  "domain": "diagnostics",
+  "title": "诊断日志查看器",
+  "entry": "LiveDiagnosticsLogPage",
+  "file": "diagnostics/LiveDiagnosticsLogPage.kt",
+  "previews": 7
+ },
+ {
+  "domain": "diagnostics",
+  "title": "临时测试课程",
+  "entry": "LiveTestingFixturePage",
+  "file": "diagnostics/LiveTestingFixturePage.kt",
+  "previews": 5
+ },
+ {
+  "domain": "diagnostics",
+  "title": "内存统计",
+  "entry": "MemoryStatsPage",
+  "file": "diagnostics/MemoryStatsPage.kt",
+  "previews": 7
+ },
+ {
+  "domain": "diagnostics",
+  "title": "性能报告",
+  "entry": "PerfReportPage",
+  "file": "diagnostics/PerfReportPage.kt",
+  "previews": 7
+ },
+ {
+  "domain": "exam",
+  "title": "添加 / 编辑考试",
+  "entry": "AddExamPage",
+  "file": "exam/AddExamPage.kt",
+  "previews": 7
+ },
+ {
+  "domain": "exam",
+  "title": "考试安排",
+  "entry": "ExamListPage",
+  "file": "exam/ExamListPage.kt",
+  "previews": 7
+ },
+ {
+  "domain": "export",
+  "title": "导出日历",
+  "entry": "IcsExportPage",
+  "file": "export/IcsExportPage.kt",
+  "previews": 7
+ },
+ {
+  "domain": "feedback",
+  "title": "问题反馈",
+  "entry": "FeedbackPage",
+  "file": "feedback/FeedbackPage.kt",
+  "previews": 5
+ },
+ {
+  "domain": "guide",
+  "title": "澎湃 UI 组件库",
+  "entry": "HyperosShowcasePage",
+  "file": "guide/HyperosShowcasePage.kt",
+  "previews": 3
+ },
+ {
+  "domain": "guide",
+  "title": "全部功能目录全览",
+  "entry": "MoreFeaturesPage",
+  "file": "guide/MoreFeaturesPage.kt",
+  "previews": 4
+ },
+ {
+  "domain": "guide",
+  "title": "启动引导流程页面",
+  "entry": "StartupFlowPage",
+  "file": "guide/StartupFlowPage.kt",
+  "previews": 7
+ },
+ {
+  "domain": "guide",
+  "title": "用户指南 / 新手引导",
+  "entry": "UserGuidePage",
+  "file": "guide/UserGuidePage.kt",
+  "previews": 4
+ },
+ {
+  "domain": "import",
+  "title": ".ics 日历导入",
+  "entry": "IcsImportPage",
+  "file": "import/IcsImportPage.kt",
+  "previews": 5
+ },
+ {
+  "domain": "import",
+  "title": "导入课程",
+  "entry": "ImportEntryPage",
+  "file": "import/ImportEntryPage.kt",
+  "previews": 6
+ },
+ {
+  "domain": "import",
+  "title": "表格导入",
+  "entry": "SpreadsheetImportPage",
+  "file": "import/SpreadsheetImportPage.kt",
+  "previews": 6
+ },
+ {
+  "domain": "import",
+  "title": "AI 课表图片识别导入",
+  "entry": "AiImageCourseImportPage",
+  "file": "import/warehouse/AiImageCourseImportPage.kt",
+  "previews": 5
+ },
+ {
+  "domain": "import",
+  "title": "适配器详情",
+  "entry": "WarehouseAdapterDetailPage",
+  "file": "import/warehouse/WarehouseAdapterDetailPage.kt",
+  "previews": 8
+ },
+ {
+  "domain": "import",
+  "title": "教务系统导入",
+  "entry": "WarehouseCourseImportPage",
+  "file": "import/warehouse/WarehouseCourseImportPage.kt",
+  "previews": 8
+ },
+ {
+  "domain": "import",
+  "title": "自定义脚本调试记录管理",
+  "entry": "WarehouseCustomDebugPage",
+  "file": "import/warehouse/WarehouseCustomDebugPage.kt",
+  "previews": 5
+ },
+ {
+  "domain": "import",
+  "title": "学校适配器列表",
+  "entry": "WarehouseSchoolAdaptersPage",
+  "file": "import/warehouse/WarehouseSchoolAdaptersPage.kt",
+  "previews": 7
+ },
+ {
+  "domain": "import",
+  "title": "教务导入中转",
+  "entry": "WarehouseNoTargetPage",
+  "file": "import/warehouse/WarehouseWebLoginHost.kt",
+  "previews": 0
+ },
+ {
+  "domain": "import",
+  "title": "网页登录导入",
+  "entry": "WarehouseWebLoginPage",
+  "file": "import/warehouse/WarehouseWebLoginPage.kt",
+  "previews": 0
+ },
+ {
+  "domain": "live",
+  "title": "超级岛",
+  "entry": "DisplaySettingsPage",
+  "file": "live/DisplaySettingsPage.kt",
+  "previews": 8
+ },
+ {
+  "domain": "live",
+  "title": "后台保活子屏",
+  "entry": "LiveKeepAliveSettingsPage",
+  "file": "live/LiveKeepAliveSettingsPage.kt",
+  "previews": 6
+ },
+ {
+  "domain": "live",
+  "title": "提醒时间子屏",
+  "entry": "LiveReminderTimingPage",
+  "file": "live/ReminderTimingPage.kt",
+  "previews": 5
+ },
+ {
+  "domain": "schedule",
+  "title": "新增/编辑日程",
+  "entry": "AddScheduleItemPage",
+  "file": "schedule/AddScheduleItemPage.kt",
+  "previews": 7
+ },
+ {
+  "domain": "schedule",
+  "title": "日期作息规则",
+  "entry": "ScheduleDateRulePage",
+  "file": "schedule/ScheduleDateRulePage.kt",
+  "previews": 7
+ },
+ {
+  "domain": "schedule",
+  "title": "日程列表",
+  "entry": "ScheduleListPage",
+  "file": "schedule/ScheduleListPage.kt",
+  "previews": 7
+ },
+ {
+  "domain": "settings",
+  "title": "外观编辑",
+  "entry": "AppearanceEditorScreen",
+  "file": "settings/AppearanceEditorScreen.kt",
+  "previews": 5
+ },
+ {
+  "domain": "settings",
+  "title": "玻璃坞底栏按钮编辑器",
+  "entry": "GlassDockEditorScreen",
+  "file": "settings/DockMenuEditors.kt",
+  "previews": 5
+ },
+ {
+  "domain": "settings",
+  "title": "八宫格菜单按钮编辑器",
+  "entry": "HomeMenuEditorScreen",
+  "file": "settings/DockMenuEditors.kt",
+  "previews": 4
+ },
+ {
+  "domain": "settings",
+  "title": "坞站图标选择",
+  "entry": "GlassDockIconPickerScreen",
+  "file": "settings/GlassDockIconPickerScreen.kt",
+  "previews": 5
+ },
+ {
+  "domain": "settings",
+  "title": "设置（通用）",
+  "entry": "SettingsPageScreen",
+  "file": "settings/SettingsPageRenderers.kt",
+  "previews": 5
+ },
+ {
+  "domain": "showcase",
+  "title": "Miuix 展示册",
+  "entry": "MiuixShowcasePage",
+  "file": "showcase/MiuixShowcasePage.kt",
+  "previews": 4
+ },
+ {
+  "domain": "statistics",
+  "title": "深度分析",
+  "entry": "CourseStatisticsPage",
+  "file": "statistics/CourseStatisticsPage.kt",
+  "previews": 6
+ },
+ {
+  "domain": "statistics",
+  "title": "统计分析",
+  "entry": "StatisticsAnalysisPage",
+  "file": "statistics/StatisticsAnalysisPage.kt",
+  "previews": 6
+ },
+ {
+  "domain": "statistics",
+  "title": "单节课明细",
+  "entry": "StatisticsSessionPage",
+  "file": "statistics/StatisticsSessionPage.kt",
+  "previews": 4
+ },
+ {
+  "domain": "statistics",
+  "title": "统计设置",
+  "entry": "StatisticsSettingsPage",
+  "file": "statistics/StatisticsSettingsPage.kt",
+  "previews": 4
+ },
+ {
+  "domain": "sync",
+  "title": "云备份列表",
+  "entry": "CloudBackupListPage",
+  "file": "sync/CloudBackupListPage.kt",
+  "previews": 8
+ },
+ {
+  "domain": "sync",
+  "title": "云同步",
+  "entry": "CloudSyncPage",
+  "file": "sync/CloudSyncPage.kt",
+  "previews": 8
+ },
+ {
+  "domain": "sync",
+  "title": "情侣课表设置",
+  "entry": "CoupleTimetableSettingsPage",
+  "file": "sync/CoupleTimetableSettingsPage.kt",
+  "previews": 6
+ },
+ {
+  "domain": "task",
+  "title": "添加 / 编辑任务表单",
+  "entry": "AddTaskPage",
+  "file": "task/AddTaskPage.kt",
+  "previews": 6
+ },
+ {
+  "domain": "task",
+  "title": "任务清单",
+  "entry": "TaskListPage",
+  "file": "task/TaskListPage.kt",
+  "previews": 5
+ },
+ {
+  "domain": "time_scheme",
+  "title": "地点作息匹配",
+  "entry": "LocationTimeGroupEditorPage",
+  "file": "time_scheme/LocationTimeGroupEditorPage.kt",
+  "previews": 4
+ },
+ {
+  "domain": "time_scheme",
+  "title": "地点作息匹配",
+  "entry": "LocationTimeMatchPage",
+  "file": "time_scheme/LocationTimeMatchPage.kt",
+  "previews": 4
+ },
+ {
+  "domain": "time_scheme",
+  "title": "时间模板编辑节次",
+  "entry": "TimeSchemeEditorPage",
+  "file": "time_scheme/TimeSchemeEditorPage.kt",
+  "previews": 4
+ },
+ {
+  "domain": "time_scheme",
+  "title": "时间模板管理",
+  "entry": "TimeSchemeManagementPage",
+  "file": "time_scheme/TimeSchemeManagementPage.kt",
+  "previews": 5
+ },
+ {
+  "domain": "timetable",
+  "title": "多课表管理",
+  "entry": "TimetableProfilesPage",
+  "file": "timetable/TimetableProfilesPage.kt",
+  "previews": 7
+ },
+ {
+  "domain": "timetable",
+  "title": "周视图",
+  "entry": "TimetableWeekPage",
+  "file": "timetable/TimetableWeekPage.kt",
+  "previews": 3
+ },
+ {
+  "domain": "timetable",
+  "title": "日视图",
+  "entry": "DayViewPage",
+  "file": "timetable/day/DayViewPage.kt",
+  "previews": 3
+ },
+ {
+  "domain": "timetable",
+  "title": "月视图",
+  "entry": "MonthViewPage",
+  "file": "timetable/month/MonthViewPage.kt",
+  "previews": 3
+ },
+ {
+  "domain": "transfer",
+  "title": "数据备份与迁移",
+  "entry": "DataTransferPage",
+  "file": "transfer/DataTransferPage.kt",
+  "previews": 4
+ },
+ {
+  "domain": "transfer",
+  "title": "局域网编辑",
+  "entry": "LanEditPage",
+  "file": "transfer/LanEditPage.kt",
+  "previews": 5
+ },
+ {
+  "domain": "transfer",
+  "title": "取件码",
+  "entry": "PickupCodesPage",
+  "file": "transfer/PickupCodesPage.kt",
+  "previews": 5
+ },
+ {
+  "domain": "transfer",
+  "title": "二维码扫码接收",
+  "entry": "QrTransferScanPage",
+  "file": "transfer/QrTransferScanPage.kt",
+  "previews": 5
+ },
+ {
+  "domain": "transfer",
+  "title": "二维码发送",
+  "entry": "QrTransferSendPage",
+  "file": "transfer/QrTransferSendPage.kt",
+  "previews": 5
+ },
+ {
+  "domain": "weather",
+  "title": "选择城市",
+  "entry": "WeatherCityPickerPage",
+  "file": "weather/WeatherCityPickerPage.kt",
+  "previews": 9
+ }
+]

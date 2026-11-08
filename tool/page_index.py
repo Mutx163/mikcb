@@ -12,6 +12,7 @@ import os
 import re
 
 SRC = "docs/reference/page-index.md"
+DATA_JSON = "tool/page_index_data.json"
 PAGES_REL = "composeP1/kotlin/com/mutx163/qingyu/pages"
 SRC_ROOT = "android/app/src/composeP1/kotlin/com/mutx163/qingyu/pages"
 COLS = 3  # 一行放几个页面按钮
@@ -81,11 +82,18 @@ def read_data_block(lines):
 
 
 def load_rows():
+    # 1) 优先读独立的 JSON（md 里不再存数据）
+    if os.path.exists(DATA_JSON):
+        with open(DATA_JSON, encoding="utf-8") as f:
+            return json.load(f)
+
+    # 2) 旧版：md 里的 DATA 注释块
     lines = [l.rstrip("\n") for l in open(SRC, encoding="utf-8")]
     rows = read_data_block(lines)
     if rows:
         return rows
-    # 兼容老格式（表格里带入口/文件）
+
+    # 3) 更旧版：表格里带入口/文件
     rows = []
     for line in lines:
         line = line.strip()
@@ -146,13 +154,7 @@ def render(rows, prefix):
         out.append("| " + " | ".join(chunk) + " |")
     out.append("")
 
-    # 数据块：脚本重跑用，正文不显示
-    out.append("<!-- DATA｜脚本用，勿手改；每行：域|页名|入口|文件|预览 -->")
-    for r in rows:
-        out.append("%s|%s|%s|%s|%d" % (r["domain"], r["title"], r["entry"], r["file"], r["previews"]))
-    out.append(DATA_END)
-    out.append("")
-
+    # 数据写在独立 JSON，md 里不再放注释块（Studio 的 markdown 预览会把注释块当正文显示）
     out.append("<!-- 链接定义 -->")
     for ref, path in defs:
         out.append("[%s]: %s" % (ref, path))
@@ -266,6 +268,10 @@ def main():
         with open(path, "w", encoding="utf-8", newline="\n") as f:
             f.write(text)
         print("写入 %s（%d 行）" % (path, text.count("\n")))
+
+    with open(DATA_JSON, "w", encoding="utf-8", newline="\n") as f:
+        json.dump(rows, f, ensure_ascii=False, indent=1)
+    print("写入 %s（%d 条）" % (DATA_JSON, len(rows)))
 
 
 if __name__ == "__main__":
