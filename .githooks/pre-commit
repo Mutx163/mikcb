@@ -11,6 +11,15 @@
 # `flutter test`：全量要几分钟，一旦慢到让人养成 `--no-verify` 的习惯，
 # 这道门禁就等于不存在。
 #
+# 2026-11-07：`android/` 已由 Compose/Kotlin 接管，本道只守 **Dart 侧**
+# （`lib/` / `test/architecture/` / `pubspec.yaml`）。Kotlin 提交不再拉
+# `flutter test`——那套守卫读的是 Dart 源码，对 Kotlin 改动没有覆盖；
+# Kotlin 侧由 L0（`scripts/test-kotlin-module.ps1`）与 L1
+# （`scripts/safe-gradle.ps1 :app:compileDevDebugKotlin`）负责。
+# 以前把 `android/` 算进来，结果任何 Kotlin 提交都会撞上 Flutter 工具链故障
+# （`test_core` 的 `_globalConfigPath` 空指针），再被误报成「HEAD 基线红」，
+# 把全队提交都拦死。
+#
 # 守卫读的是**本次提交的快照**，不是工作区（2026-10-20 晚改）：先 `git
 # checkout-index` 把索引物化到临时目录、经 MIKCB_GUARD_SNAPSHOT 交给守卫。
 # 守卫套件也从**快照里的** test/architecture/ 跑（不是工作区那份）：工作区里
@@ -66,8 +75,9 @@ cd "$repo_root"
 
 staged=$(git diff --cached --name-only)
 
-# 架构守卫只认它自己的对象：lib/ 与 android/ 的源码与资源、守卫测试本身、pubspec。
-guard_relevant=$(printf '%s\n' "$staged" | grep -E '^(lib/|test/architecture/|android/|pubspec\.yaml)' || true)
+# 架构守卫只认它自己的对象：Dart 源码、守卫测试本身、pubspec。
+# `android/` 是 Kotlin/Compose，不进这一道（理由见文件头 2026-11-07 注）。
+guard_relevant=$(printf '%s\n' "$staged" | grep -E '^(lib/|test/architecture/|pubspec\.yaml)' || true)
 
 # analyze 门禁认所有暂存的 .dart（lib/ test/ integration_test/ tool/ 一视同仁）。
 dart_staged=$(printf '%s\n' "$staged" | grep -E '\.dart$' || true)
@@ -134,7 +144,7 @@ if [ -n "$guard_relevant" ]; then
       if [ "$rc" -ne 0 ]; then
         # 工具链起不来 ≠ 守卫不过。这两种失败必须分开，否则本机 Flutter 一出毛病
         # 就会拦住所有提交，而那报错与代码无关、也没法就地修。实测踩到过的签名见下。
-        if grep -qE 'Unable to determine engine version|Error: Unable to|Could not find a command named|Error: .*not found' "$out_file"; then
+        if grep -qE 'Unable to determine engine version|Error: Unable to|Could not find a command named|Error: .*not found|Oops; flutter has exited unexpectedly|environment variable not found' "$out_file"; then
           echo "" >&2
           echo "pre-commit: flutter 工具链自己没跑起来，跳过本次架构守卫（CI 仍会兜住）。" >&2
           echo "pre-commit: 下面这段是工具链的报错，不是守卫结论：" >&2
@@ -217,7 +227,7 @@ if [ -n "$dart_existing" ]; then
 
     if [ "$rc" -ne 0 ]; then
       # 与架构守卫同一条原则：工具链没跑起来就放行，别把人逼成 --no-verify。
-      if grep -qE 'Unable to determine engine version|Error: Unable to|Could not find a command named|Error: .*not found|dart: command not found|Failed to create server socket' "$out_file"; then
+      if grep -qE 'Unable to determine engine version|Error: Unable to|Could not find a command named|Error: .*not found|Oops; flutter has exited unexpectedly|environment variable not found|dart: command not found|Failed to create server socket' "$out_file"; then
         echo "pre-commit: dart 工具链没跑起来，跳过 analyze 门禁（CI 仍会兜住）。" >&2
         sed 's/^/    /' "$out_file" >&2
       else

@@ -31,8 +31,19 @@ git config core.hooksPath
    之后快；只分析暂存的文件，不碰其他 Agent 正在改的半成品。起因是 10-08 两个
    测试提交带进两条 info 级 lint，本地没人跑 analyze，CI 从 10-09 连红十几次。
 
-触发条件：暂存区动到 `lib/`、`test/architecture/`、`android/` 或 `pubspec.yaml`
-（Dart 文件才会触发 analyze；纯文档/站点提交不付这几秒）。
+触发条件：暂存区动到 `lib/`、`test/architecture/` 或 `pubspec.yaml`
+（Dart 文件才会触发 analyze；纯文档 / 站点 / **Kotlin/Compose** 提交不付这几秒）。
+
+## Compose/Kotlin 提交为什么不再跑 Flutter 守卫（2026-11-07）
+
+`android/` 已由 Compose/Kotlin 接管，而 `test/architecture/` 的守卫读的是 **Dart 源码**，
+对 Kotlin 改动没有覆盖。此前把 `android/` 算进 `guard_relevant`，任何 Kotlin 提交都会
+拉 `flutter test`；本机 Flutter test runner 坏掉时（`test_core` 的 `_globalConfigPath`
+空指针），钩子把工具链崩溃误判成“架构守卫红 / HEAD 基线红”，把全队提交都拦死。
+现在 Kotlin 侧由 L0（`scripts/test-kotlin-module.ps1`）与 L1
+（`scripts/safe-gradle.ps1 :app:compileDevDebugKotlin`）负责；
+Dart 侧（`lib/`）仍走本钩子。工具链崩溃签名也已加入“起不来就放行”分支
+（`Oops; flutter has exited unexpectedly` / `environment variable not found`）。
 
 ## 为什么不跑全量 `flutter test`
 
