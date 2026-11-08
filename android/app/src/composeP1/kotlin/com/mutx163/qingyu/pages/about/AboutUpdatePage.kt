@@ -32,6 +32,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.mutx163.qingyu.components.LocalQingyuBackButtonGlass
@@ -628,6 +629,8 @@ private fun DownloadProgressDialog(download: AboutUpdateDownloadUi, onCancel: ()
 
     OverlayDialog(
         show = true,
+        // 16dp 口径见 ComposeSheetGuardTest S1D（官方默认 24dp 与本仓不一致）：
+        insideMargin = DpSize(16.dp, 16.dp),
         title = title,
         onDismissRequest = null,
         // 本页不走页面骨架，没有根 Scaffold 可挂；直接投到自己的窗口里。
