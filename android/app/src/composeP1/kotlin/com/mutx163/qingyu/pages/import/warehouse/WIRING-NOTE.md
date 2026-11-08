@@ -146,7 +146,7 @@ Dart 顶栏第二个动作就是这个开关（`_toggleWebPageMode`）。Compose
                         onToggleDesktopMode()
                     }) {
                         Icon(
-                            imageVector = if (webViewController.isDesktopMode) MiuixIcons.Phone else MiuixIcons.GridView,
+                            imageVector = if (webViewController.isDesktopMode) MiuixIcons.Phone else MiuixIcons.ScreenMirroring,
                             contentDescription = if (webViewController.isDesktopMode) {
                                 WarehouseStrings.switchToMobileWebTooltip.zh
                             } else {
@@ -156,9 +156,12 @@ Dart 顶栏第二个动作就是这个开关（`_toggleWebPageMode`）。Compose
                     }
 ```
 
-⚠️ **图标要 Lead 拍板**：miuix-icons **0.9.4** 的扩展图标里**没有** desktop / monitor 一类
-（实测 157 个扩展图标，只有 `Phone`、`ScreenMirroring`、`GridView` 这类近邻），而 Dart 用的是
-Material 的 `smartphone_rounded` / `desktop_windows_rounded`。上面两个只是能编译的占位选择。
+⚠️ **图标口径（已定）**：miuix-icons **0.9.4** 的扩展图标里**没有** desktop / monitor / smartphone
+一类（157 个扩展图标全部离线渲染逐个比对过），所以：
+- 切电脑版 → `ScreenMirroring`（显示器 + 投射三角，唯一带屏幕形状的）；
+- 切手机版 → `Phone`（话筒，中文语境下「手机」的近邻）。
+
+早先用 `GridView`（四个小方块＝宫格）充当电脑版，缩到 24dp 读作「宫格/应用抽屉」，已换掉。
 文案键是对的（`switchToMobileWebTooltip` / `switchToDesktopWebTooltip`，语义与 Dart 一致：
 **按钮描述的是「点了会切到哪边」**）。
 

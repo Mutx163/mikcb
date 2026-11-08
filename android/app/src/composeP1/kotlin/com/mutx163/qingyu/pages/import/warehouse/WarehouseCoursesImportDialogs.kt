@@ -71,19 +71,19 @@ fun WarehouseReplaceExistingDialog(
     OverlayDialog(
         insideMargin = DpSize(16.dp, 16.dp),
         show = show,
-        title = WarehouseStrings.courseImportTitle.zh,
+        title = WarehouseStrings.courseImportTitle.text,
         summary = WarehouseStrings.importCourseCountPrompt.filled("count", courseCount.toString()),
         onDismissRequest = onCancel,
     ) {
         Column(modifier = Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(12.dp)) {
             TextButton(
                 modifier = Modifier.fillMaxWidth(),
-                text = WarehouseStrings.cancelAction.zh,
+                text = WarehouseStrings.cancelAction.text,
                 onClick = onCancel,
             )
             TextButton(
                 modifier = Modifier.fillMaxWidth(),
-                text = WarehouseStrings.courseImportUpdateRecommendedAction.zh,
+                text = WarehouseStrings.courseImportUpdateRecommendedAction.text,
                 onClick = { onPick(false) },
             )
             Button(
@@ -91,7 +91,7 @@ fun WarehouseReplaceExistingDialog(
                 modifier = Modifier.fillMaxWidth(),
                 colors = ButtonDefaults.buttonColorsPrimary(),
             ) {
-                Text(text = WarehouseStrings.courseImportOverwriteAction.zh)
+                Text(text = WarehouseStrings.courseImportOverwriteAction.text)
             }
         }
     }
@@ -115,7 +115,7 @@ fun WarehouseSectionExpansionDialog(
     OverlayDialog(
         insideMargin = DpSize(16.dp, 16.dp),
         show = show,
-        title = WarehouseStrings.courseImportSectionCountInsufficientTitle.zh,
+        title = WarehouseStrings.courseImportSectionCountInsufficientTitle.text,
         summary = WarehouseStrings.courseImportSectionCountInsufficientMessage.filled(
             "current" to currentSectionCount.toString(),
             "required" to requiredSectionCount.toString(),
@@ -125,7 +125,7 @@ fun WarehouseSectionExpansionDialog(
         Column(modifier = Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(12.dp)) {
             TextButton(
                 modifier = Modifier.fillMaxWidth(),
-                text = WarehouseStrings.cancelAction.zh,
+                text = WarehouseStrings.cancelAction.text,
                 onClick = onCancel,
             )
             Button(
@@ -133,7 +133,7 @@ fun WarehouseSectionExpansionDialog(
                 modifier = Modifier.fillMaxWidth(),
                 colors = ButtonDefaults.buttonColorsPrimary(),
             ) {
-                Text(text = WarehouseStrings.courseImportAutoFillAndImportAction.zh)
+                Text(text = WarehouseStrings.courseImportAutoFillAndImportAction.text)
             }
         }
     }
@@ -191,7 +191,7 @@ fun WarehouseSemesterMappingSheet(
 
     QingyuSheet(
         show = show,
-        title = WarehouseStrings.importConfirmSemesterMappingTitle.zh,
+        title = WarehouseStrings.importConfirmSemesterMappingTitle.text,
         onDismissRequest = onDismiss,
         maxHeightFraction = 0.75f,
         contentScrolls = true,
@@ -206,13 +206,13 @@ fun WarehouseSemesterMappingSheet(
                 verticalArrangement = Arrangement.spacedBy(12.dp),
             ) {
                 Text(
-                    text = WarehouseStrings.importConfirmSemesterMappingSubtitleWarehouse.zh,
+                    text = WarehouseStrings.importConfirmSemesterMappingSubtitleWarehouse.text,
                     style = MiuixTheme.textStyles.body2,
                     color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
                     lineHeight = 20.sp,
                 )
                 Text(
-                    text = WarehouseStrings.importSemesterStartDateTitle.zh,
+                    text = WarehouseStrings.importSemesterStartDateTitle.text,
                     style = MiuixTheme.textStyles.footnote1.shiftWeight(QingyuWeightDelta.MEDIUM),
                 )
                 Row(
@@ -249,12 +249,12 @@ fun WarehouseSemesterMappingSheet(
                     )
                 }
                 Text(
-                    text = WarehouseStrings.importSemesterStartDateSubtitle.zh,
+                    text = WarehouseStrings.importSemesterStartDateSubtitle.text,
                     style = MiuixTheme.textStyles.footnote2,
                     color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
                 )
                 Text(
-                    text = WarehouseStrings.importFirstCourseWeekMappingLabel.zh,
+                    text = WarehouseStrings.importFirstCourseWeekMappingLabel.text,
                     style = MiuixTheme.textStyles.footnote1.shiftWeight(QingyuWeightDelta.MEDIUM),
                 )
                 Row(
@@ -273,13 +273,13 @@ fun WarehouseSemesterMappingSheet(
                     )
                 }
                 Text(
-                    text = WarehouseStrings.importFirstCourseWeekMappingSubtitle.zh,
+                    text = WarehouseStrings.importFirstCourseWeekMappingSubtitle.text,
                     style = MiuixTheme.textStyles.footnote2,
                     color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
                 )
                 Text(
                     text = if (shiftedWeeks <= 0) {
-                        WarehouseStrings.importSemesterMappingNoShiftHint.zh
+                        WarehouseStrings.importSemesterMappingNoShiftHint.text
                     } else {
                         WarehouseStrings.importSemesterMappingShiftHint.filled(
                             "shiftedWeeks" to shiftedWeeks.toString(),
@@ -299,7 +299,7 @@ fun WarehouseSemesterMappingSheet(
             ) {
                 TextButton(
                     modifier = Modifier.weight(1f),
-                    text = WarehouseStrings.cancelAction.zh,
+                    text = WarehouseStrings.cancelAction.text,
                     onClick = onDismiss,
                 )
                 Button(
@@ -308,7 +308,7 @@ fun WarehouseSemesterMappingSheet(
                     colors = ButtonDefaults.buttonColorsPrimary(),
                 ) {
                     Text(
-                        text = WarehouseStrings.spreadsheetImportWarningsContinue.zh,
+                        text = WarehouseStrings.spreadsheetImportWarningsContinue.text,
                         textAlign = TextAlign.Center,
                     )
                 }

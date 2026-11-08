@@ -5,6 +5,7 @@ import android.content.ClipboardManager
 import android.content.Context
 import android.util.Log
 import android.widget.Toast
+import androidx.activity.compose.BackHandler
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -166,6 +167,9 @@ fun WarehouseImportPickerHost(
     //
     // 放在 LaunchedEffect 之前：已经进入适配器列表时不必再跑选校页的缓存/网络那一段。
     if (state.school != null) {
+        // 系统返回与左上角箭头同口径：这是本条目内换页，栈深度没变；
+        // 不拦的话 NavDisplay 会把整个教务导入弹掉，跳过选校列表。
+        BackHandler { state.school = null }
         WarehouseSchoolAdaptersHost(
             state = state,
             // 返回 = 回到选校列表：这是本条目内换页，栈深度没变，不能靠壳弹栈。
@@ -257,8 +261,9 @@ fun WarehouseImportPickerHost(
             script = record.adapterAssetJsPath,
             importUrl = record.importUrl,
         )
-        state.school = school
-        state.adapter = adapter
+        // 不写本条目的 state.school/adapter：本条目还停在选校列表，写 school 会让新加的
+        // 内联分支立刻组合适配器宿主；该宿主虽已改成只在 state.school == null 时 take，
+        // 但这里本来就不需要本条目状态——跨页目标只走下面的一次性交接件。
         state.autoRecordMacro = false
         state.playbackMacro = record
         // 跨页唯一通路：壳给每个路由条目独立的 WarehouseShellState（见 WarehouseImportHandoff）。
@@ -336,13 +341,17 @@ fun WarehouseSchoolAdaptersHost(
     val scope = rememberCoroutineScope()
     // 从选校页推进来时，学校经交接件带过来（壳给每个路由条目独立的 WarehouseShellState，
     // 见 WarehouseImportHandoff）；同一组合实例内（选校页 → 本页）则直接读 state。
-    val handoff = remember { WarehouseImportHandoff.take() }
+    // 只有壳层分流条目（state.school 为空）才有权消费交接件：本条目内换页时登录页/详情页
+    // 还要用这份一次性交接件，先 take 会把它们打成空态（2026-11-07 复核 P0）。
+    val handoff = remember {
+        if (state.school == null) WarehouseImportHandoff.take() else null
+    }
     val school = state.school ?: handoff?.school
     if (school == null) {
         // 直接从页面清单 / 全功能页进来时没有选中学校：给诚实空态 + 返回键，
         // **不再跳回选校页**——那会让人以为「点了没反应、被弹回去」。
         LaunchedEffect(Unit) { Log.w(LOG_TAG, "schoolAdapters opened without school") }
-        WarehouseNoTargetPage(WarehouseStrings.importMethodWarehouseTitle.zh, onBack)
+        WarehouseNoTargetPage(WarehouseStrings.importMethodWarehouseTitle.text, onBack)
         return
     }
     LaunchedEffect(Unit) { if (state.school == null) state.school = school }
@@ -508,7 +517,7 @@ fun WarehouseAdapterDetailHost(
         // 拿不到目标（只可能从页面清单直接点进来）：如实说一句 + 给返回键，
         // **不再静默跳回选校页**——「点进来又被打回列表」正是那一下静默跳转造成的。
         LaunchedEffect(Unit) { Log.w(LOG_TAG, "adapter detail opened without school/adapter") }
-        WarehouseNoTargetPage(WarehouseStrings.adapterInfoTitle.zh, onBack)
+        WarehouseNoTargetPage(WarehouseStrings.adapterInfoTitle.text, onBack)
         return
     }
 
@@ -565,22 +574,22 @@ fun WarehouseAdapterDetailHost(
             val text = customImportUrl ?: adapter.importUrl
             if (text.isBlank()) {
                 // 仓库条目本身没有 import_url 时不许「复制成功」骗用户。
-                Toast.makeText(context, SettingsStrings.aboutUnavailable.zh, Toast.LENGTH_SHORT).show()
+                Toast.makeText(context, SettingsStrings.aboutUnavailable.text, Toast.LENGTH_SHORT).show()
             } else {
                 copyTextToClipboard(context, "warehouse-login-url", text)
-                Toast.makeText(context, WarehouseStrings.copiedImportLoginUrl.zh, Toast.LENGTH_SHORT).show()
+                Toast.makeText(context, WarehouseStrings.copiedImportLoginUrl.text, Toast.LENGTH_SHORT).show()
             }
         },
         onCopyScriptUrl = {
             if (adapter.script.isBlank()) {
-                Toast.makeText(context, SettingsStrings.aboutUnavailable.zh, Toast.LENGTH_SHORT).show()
+                Toast.makeText(context, SettingsStrings.aboutUnavailable.text, Toast.LENGTH_SHORT).show()
             } else {
                 val rawUrl = WarehouseRepositoryUrls.rawGitHubUrl(
                     WarehouseRepositorySource.DEFAULT,
                     adapter.script,
                 )
                 copyTextToClipboard(context, "warehouse-script-url", rawUrl)
-                Toast.makeText(context, WarehouseStrings.copiedScriptRawUrl.zh, Toast.LENGTH_SHORT).show()
+                Toast.makeText(context, WarehouseStrings.copiedScriptRawUrl.text, Toast.LENGTH_SHORT).show()
             }
         },
         onOpenWebLogin = {
@@ -613,7 +622,7 @@ fun WarehouseAdapterDetailHost(
  */
 internal fun toastUnavailable(context: Context, reason: String) {
     Log.w(LOG_TAG, reason)
-    Toast.makeText(context, SettingsStrings.aboutUnavailable.zh, Toast.LENGTH_SHORT).show()
+    Toast.makeText(context, SettingsStrings.aboutUnavailable.text, Toast.LENGTH_SHORT).show()
 }
 
 internal fun copyTextToClipboard(context: Context, label: String, text: String) {

@@ -382,11 +382,12 @@ private fun WarehouseSchoolAdaptersPagePreviewCachedWithFailure() {
     PreviewWarehouseSchoolAdaptersPage(
         adapters = previewAdapters(),
         phase = WarehouseListPhase.Idle,
-        failure = WarehouseLoadFailed(
+        // 棱镜失败的 issue 值经 main 层工厂按既有映射推出（`warehouseLoadIssueOf`），
+        // 页面这里不能自己点枚举值——守卫 WarehouseLoadIssueRenderingGuardTest 会拦。
+        failure = WarehouseLoad.Failed(
             code = "warehouse_fetch_failed",
             attempts = 3,
-            issue = WarehouseLoadIssue.MIRRORS_FAILED,
-        ),
+        ).toLoadFailed(),
     )
 }
 
