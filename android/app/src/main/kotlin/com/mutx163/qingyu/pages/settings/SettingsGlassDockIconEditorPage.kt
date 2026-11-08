@@ -85,12 +85,13 @@ object SettingsGlassDockIconEditorPage {
 
         val nodes = mutableListOf<SettingsNode>()
 
-        // 0. 搜索卡：输入组件不裸放（:172-177 的注释：搜索框填充色对页面背景无对比）
+        // 0. 搜索框：官方 InputField 自带胶囊底色，不需要再垫一层卡片
         nodes += SettingsInline(
             id = "icon.search",
             kind = InlineKind.CONTROL_CARD,
-            note = "搜索卡（settings_glass_dock_icon_editor.dart:171-189）：Dart 侧垫一张白卡" +
-                "再放 HyperosSearchBar，官方没有「卡片内搜索框」这种组合件，由渲染层用 basic.TextField 拼",
+            note = "搜索框（settings_glass_dock_icon_editor.dart:171-189）：Dart 侧垫一张白卡" +
+                "再放 HyperosSearchBar；渲染层改用官方 basic.InputField（自带 45dp 胶囊底色与" +
+                "放大镜/清除键），不再套卡片",
             labelKey = SettingsStringsExt4.glassDockButtonIconSearchHint.key,
             label = SettingsStringsExt4.glassDockButtonIconSearchHint.text,
             // 当前过滤词（动态取值，不是 ARB 文案）

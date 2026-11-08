@@ -1,5 +1,9 @@
 package com.mutx163.qingyu.pages.settings
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
@@ -11,7 +15,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -21,6 +24,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
@@ -32,13 +36,13 @@ import com.mutx163.qingyu.components.QingyuPageScaffold
 import com.mutx163.qingyu.components.QingyuPageTheme
 import top.yukonga.miuix.kmp.basic.CardDefaults
 import top.yukonga.miuix.kmp.basic.Icon
-import top.yukonga.miuix.kmp.basic.IconButton
+import top.yukonga.miuix.kmp.basic.InputField
+import top.yukonga.miuix.kmp.basic.SearchBarDefaults
 import top.yukonga.miuix.kmp.basic.Text
-import top.yukonga.miuix.kmp.basic.TextField
 import top.yukonga.miuix.kmp.icon.MiuixIcons
+import top.yukonga.miuix.kmp.icon.basic.Search
+import top.yukonga.miuix.kmp.icon.basic.SearchCleanup
 import top.yukonga.miuix.kmp.icon.extended.Add
-import top.yukonga.miuix.kmp.icon.extended.Close
-import top.yukonga.miuix.kmp.icon.extended.Search
 import top.yukonga.miuix.kmp.squircle.squircleBackground
 import top.yukonga.miuix.kmp.squircle.squircleBorder
 import top.yukonga.miuix.kmp.theme.MiuixTheme
@@ -48,9 +52,10 @@ import top.yukonga.miuix.kmp.theme.MiuixTheme
  *
  * 页面只有两块，与 Dart 逐段对应：
  *
- * 1. 顶部搜索卡（Dart :171-189）：Dart 先垫一张白卡再放 `HyperosSearchBar`，原因是
- *    搜索框填充色对页面背景没有对比；这里照抄「卡内搜索框」的做法——官方
- *    `TextField` 放在 `QingyuCard` 里；
+ * 1. 顶部搜索框（Dart :171-189）：Dart 先垫一张白卡再放 `HyperosSearchBar`，原因是它自带的
+ *    填充色对页面背景没有对比。这里不再照抄那层卡——官方 `InputField`（`SearchBar.kt`）
+ *    本身就是 45dp 胶囊 + `surfaceContainerHigh` 填充，放大镜与清除键都在内部，
+ *    「卡里再套一个框」只会多出一圈白边和两层圆角；
  * 2. 图标网格（Dart :194-238）：首格固定「默认 加号」，其后是过滤结果。列数、格间距、
  *    行间距、最小格宽全部来自 [SettingsGlassDockIconEditorPage] 的常量/函数，本文件不另存
  *    一套几何数字。
@@ -109,7 +114,7 @@ fun GlassDockIconPickerScreen(
                 contentPadding = PaddingValues(top = 8.dp, bottom = 24.dp),
             ) {
                 item(key = "icon.search") {
-                    IconSearchCard(query = query, onQueryChange = { query = it })
+                    IconSearchField(query = query, onQueryChange = { query = it })
                 }
                 itemsIndexed(rows) { rowIndex, row ->
                     IconGridRow(
@@ -129,45 +134,71 @@ fun GlassDockIconPickerScreen(
     }
 }
 
-/** 搜索卡：官方 `TextField` + 前置放大镜 + 有文字时给清除按钮（Dart :171-189）。 */
+/**
+ * 搜索框：miuix 官方 `InputField`（`SearchBar.kt`）的**页内常驻**用法（Dart :171-189）。
+ *
+ * 45dp 胶囊、`surfaceContainerHigh` 填充、左右自带放大镜与清除键，全在组件内部；
+ * 外层只管左右边距（= [QingyuPageCardMargin]，与下方图标格同一条轴线）。
+ * `expanded` 恒 false：这一页是「边输边筛」，不展开成全屏搜索页。
+ */
 @Composable
-private fun IconSearchCard(
+private fun IconSearchField(
     query: String,
     onQueryChange: (String) -> Unit,
 ) {
-    QingyuCard(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(top = 4.dp, bottom = 12.dp),
-        insideMargin = PaddingValues(horizontal = 12.dp, vertical = 10.dp),
-    ) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
+    val focusManager = LocalFocusManager.current
+    InputField(
+        query = query,
+        onQueryChange = onQueryChange,
+        // 没有独立提交动作，回车只收键盘（过滤在输入时已经发生）。
+        onSearch = { focusManager.clearFocus() },
+        expanded = false,
+        onExpandedChange = { },
+        label = SettingsStringsExt4.glassDockButtonIconSearchHint.text,
+        // 官方默认放大镜的朗读文案是库里的英文 "Search"；这里是中文界面，且输入框
+        // 自身已有 label，图标纯装饰 ⇒ 交回正文朗读。
+        leadingIcon = {
             Icon(
-                imageVector = MiuixIcons.Search,
+                imageVector = MiuixIcons.Basic.Search,
                 contentDescription = null,
-                modifier = Modifier.size(20.dp),
-                tint = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                tint = MiuixTheme.colorScheme.onSurfaceContainerHigh,
+                modifier = Modifier.padding(
+                    start = SearchBarDefaults.LeadingIconStartPadding,
+                    end = SearchBarDefaults.LeadingIconEndPadding,
+                ),
             )
-            Spacer(modifier = Modifier.width(8.dp))
-            TextField(
-                value = query,
-                onValueChange = onQueryChange,
-                modifier = Modifier.weight(1f),
-                label = SettingsStringsExt4.glassDockButtonIconSearchHint.text,
-                useLabelAsPlaceholder = true,
-                singleLine = true,
-            )
-            if (query.isNotEmpty()) {
-                IconButton(onClick = { onQueryChange("") }) {
+        },
+        // 官方默认清除键朗读 "Search Cleanup"，换成「清空」；触区撑到 48×44，
+        // 无涟漪（写法同 import/warehouse/WarehouseCourseImportPage.kt 的搜索栏）。
+        trailingIcon = {
+            AnimatedVisibility(
+                visible = query.isNotEmpty(),
+                enter = fadeIn(),
+                exit = fadeOut(),
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(width = 48.dp, height = 44.dp)
+                        .clickable(interactionSource = null, indication = null) {
+                            focusManager.clearFocus()
+                            onQueryChange("")
+                        },
+                    contentAlignment = Alignment.Center,
+                ) {
                     Icon(
-                        imageVector = MiuixIcons.Close,
+                        imageVector = MiuixIcons.Basic.SearchCleanup,
                         contentDescription = SettingsStringsExt4.clearSearchAction.text,
-                        modifier = Modifier.size(18.dp),
+                        tint = MiuixTheme.colorScheme.onSurfaceContainerHigh,
+                        modifier = Modifier.size(20.dp),
                     )
                 }
             }
-        }
-    }
+        },
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = QingyuPageCardMargin)
+            .padding(top = 4.dp, bottom = 8.dp),
+    )
 }
 
 /**
@@ -175,7 +206,7 @@ private fun IconSearchCard(
  *
  * [row] 由模型保证长度 = [columns]（末行不足处是 null 占位）。首末格贴边，相邻格之间
  * 各留半个 [SettingsGlassDockIconEditorPage.CELL_SPACING_DP]（4 + 4 = 8），这样每行
- * 的左右总宽与上方搜索卡完全一致。
+ * 的左右总宽与上方搜索框完全一致。
  */
 @Composable
 private fun IconGridRow(
