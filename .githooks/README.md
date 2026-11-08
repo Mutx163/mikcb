@@ -45,6 +45,18 @@ git config core.hooksPath
 Dart 侧（`lib/`）仍走本钩子。工具链崩溃签名也已加入“起不来就放行”分支
 （`Oops; flutter has exited unexpectedly` / `environment variable not found`）。
 
+### 退役条件（当前未满足，别提前删）
+
+阶段 2 删除 `lib/` / `test/architecture/` / `pubspec.yaml`，并把发版命令从
+`flutter build apk --release --flavor prod` 换成 `assembleProdRelease` 之后，
+`guard_relevant` 自然再也匹配不到，这时才把第一道（Flutter 架构守卫）与
+`dart analyze` 门禁整段删掉，并同步 `AGENTS.md` 里“测试一律 flutter test”那条。
+
+2026-11-07 盘点：`lib/` 602 个 Dart、`test/` 578 个、`integration_test/` 13 个；
+`android/app/build.gradle` 的 `withFlutter` 默认 true，prod 仍走 Flutter 发版；
+阶段 2 施工单（`docs/plans/2026-11-07-deflutter-stage2-workorder.md`）尚未执行。
+**Dart 还是真源码，Flutter 守卫继续保留。**
+
 ## 为什么不跑全量 `flutter test`
 
 要几分钟。门禁一旦慢到让人习惯性敲 `--no-verify`，就等于没装。
