@@ -8,34 +8,43 @@ import org.junit.Test
 import java.io.File
 
 /**
- * 子页顶栏玻璃守卫（2026-11-02 建立；2026-11-04 随「换方案」改为**单档磨砂 + 两段线性白纱**）。
+ * 子页顶栏玻璃守卫（2026-11-02 建立；2026-11-07 晚改为**单次模糊 + 纵向渐变权重**，已登记自研例外）。
  *
- * ## 它钉住的是什么（新方案实质，不是放水）
+ * ## 它钉住的是什么（当前方案实质，不是放水）
  *
- * 用户口径：原来的 miuix 多级渐进 stack 观感廉价，要求换成更高级的通透做法。现方案 =
- * 单档均匀磨砂 + 两段线性白纱。本守卫钉住这五条实质，任一条被改回旧方案就红：
+ * 用户口径：顶部要“渐变模糊”——上面厚、向下连续变清、到底边自然消失；**不能整块均匀高斯，
+ * 不能滚动时闪，不能底部切一条硬线，也不能顶部变透明**。
  *
- * 1. 顶栏玻璃走共享件 `QingyuGlassSurface`，且 **单档**（`progressive = null`），不再有
- *    `ProgressiveBlur` 多级 stack / `progressiveTextureBlurEffect`；
- * 2. 白纱是**两段纯线性 `[顶边 tint → 带底 transparent]`**（旧的「前 62% 满浓度」实心段视为红）；
- * 3. 暗色用**亮白纱**（`Color.White.copy` + `DarkVeilAlpha`），退回灰 `#565656` 视为红；
- * 4. 玻璃面/带底与**内容起点对齐**（`bandHeightPx + contentGapPx` 且 `layout(width, height + contentGapPx)`），
- *    保证底部平滑归零、无硬线；
- * 5. 不用自研转场/动画（不出现 `textureBlur(` / `drawBackdrop(` / `progressiveTextureBlurEffect(`）。
+ * 三种做法已经过真机，本守卫把失败原因也钉进反向断言：
+ *
+ * 1. miuix 官方渐进档（多层合成）：滚动时两层采样错位 → 闪。⇒ 顶栏**不得**出现 `ProgressiveBlur`；
+ * 2. 均匀模糊 + 只变白纱：模糊本身是平的，仍是“整块高斯” ⇒ 必须有纵向权重乘在
+ *    **模糊输出**上（`fadeEndFraction` → `QingyuVerticalFade` 着色器，不是乘在玻璃面上）；
+ * 3. 只变白纱且顶部很淡：顶部不够“实” ⇒ 白纱顶边 0.60，且**跟着可见栏高收缩**
+ *    （固定几何会在收起时被裁成一条均匀白带——用户 2026-11-07 截图实报）。
+ *
+ * 具体钉住：
+ * - 顶栏走共享件 `QingyuGlassSurface`，`progressive = null`（单次模糊），纵向权重走 `fadeEndFraction`；
+ * - 权重按**当前可见栏高**归一化（`barHeightOffsetPx()` 在绘制期读），底边恒为 0；
+ * - 着色器坐标以 `y = 0` 为**顶**（Skia / AGSL 约定），并减掉 blur 图层的 padding；
+ * - 白纱是 `Brush.verticalGradient`：`0.00f to tint` 最浓，向下 55% → 18% → `1.00f * f` 透明；
+ *   末尾**不得**再压回不透明页底色（那会在栏底切一条硬边，用户 2026-11-08 截图实报）；
+ * - 模糊面高度 = 展开高度 + 内容间距，Layout 高度含内容间距。
  *
  * ## 为什么是文本守卫
  *
- * Compose 的绘制效果在纯 JVM 里跑不起来（`drawBackdrop` / `BackdropFilter` 依赖 RuntimeShader / 设备）。
- * 和 `PageScaffoldGuardTest` 同一套路：只钉「必须出现的最小集合」与关键数字，不规定书写格式。
+ * Compose 的绘制效果在纯 JVM 里跑不起来（`drawBackdrop` 依赖 RuntimeShader / 设备）。
+ * 和 `PageScaffoldGuardTest` 同一套路：只钉“必须出现的最小集合”与关键数字，不规定书写格式。
  * 找不到源文件时**失败而不是跳过**——跳过等于守卫不存在。
  *
  * ## 咬合探针（改这条测试或改接线时必须做）
  *
- * - 把 scrim 改回 `0.62f to tint`（实心段）→ 第 1 条必红；
- * - 把 `progressive = null` 改回 `progressive = QingyuTopBarGradient`（多级）→ 第 1 条必红；
- * - 把暗色改回 `Color(0xFF565656)` → 第 1 条必红；
- * - 把 `bandHeightPx + contentGapPx` 改回 `+ overhangPx` → 第 1 条必红；
- * - 把 `MaxRadiusDp` 49f 改成 25f → `numbers` 与 `49dp peak` 必红。
+ * - 把 `progressive = null` 改回 `progressive = QingyuTopBarGradient` → 渐进档断言必红；
+ * - 把 `fadeEndFraction = if (underHeader)` 删成 `fadeEndFraction = null` → 渐变断言必红；
+ * - 把 `barHeightOffsetPx()` 换回常量 → “跟随可见栏高”断言必红；
+ * - 把着色器的 `coord.y - in_topY` 改回 `1.0 - (coord.y / in_maxY)`（方向翻转）→ `weights from top` 断言必红；
+ * - 把末尾 `1.00f * f to Color.Transparent` 改回 `1.00f * f to pageBackground` → 收尾断言必红；
+ * - 把 `LightTintAlpha` 改回 0.62 / `DarkVeilAlpha` 改回 0.24 → `numbers` 必红。
  */
 class TopBarProgressiveBlurGuardTest {
 
@@ -64,7 +73,7 @@ class TopBarProgressiveBlurGuardTest {
     /**
      * 只留代码：先把块注释 / KDoc 和行注释剥掉。
      *
-     * 负向断言（不许出现 `.textureBlur(` 等）**必须**只看代码——注释里留一句历史说明
+     * 负向断言（不许出现 `bottomFadeBrush` 等）**必须**只看代码——注释里留一句历史说明
      * 不该把守卫判红。`PageScaffoldGuardTest` 也踩过同类假红。
      */
     private fun codeOnly(source: String): String = source
@@ -95,62 +104,101 @@ class TopBarProgressiveBlurGuardTest {
     }
 
     @Test
-    fun `top bar uses single-pass blur and two-stop linear veil`() {
+    fun `top bar uses one blur pass and a top-heavy veil`() {
         val code = codeOnly(scaffoldSource())
         assertTrue(
             "顶栏必须走全站唯一玻璃件：缺少 QingyuGlassSurface(",
             code.contains("QingyuGlassSurface("),
         )
         assertTrue(
-            "顶栏必须单档模糊（progressive = null）；改回多级渐进视为方案回退",
+            "顶栏必须保持单次均匀模糊（progressive = null）；官方多层渐进在真机滚动会闪",
             code.contains("progressive = null"),
         )
         assertFalse(
-            "顶栏退回了多级渐进 stack（出现 ProgressiveBlur）",
+            "顶栏不得接回 miuix 多层渐进合成（ProgressiveBlur）",
             code.contains("ProgressiveBlur"),
         )
         assertFalse(
-            "顶栏自己拼渐进模糊（出现 progressiveTextureBlurEffect）",
+            "顶栏不得自己拼渐进效果（progressiveTextureBlurEffect）",
             code.contains("progressiveTextureBlurEffect("),
         )
         assertFalse(
-            "顶栏不得绕过共享件自己拼玻璃链（drawBackdrop / blur / textureBlur 只许在 QingyuGlassSurface）",
-            code.contains("drawBackdrop(") ||
-                Regex("""\blur\s*\(""").containsMatchIn(code) ||
-                Regex("""(?<!progressive)\.textureBlur\s*\(""").containsMatchIn(code),
+            "不得再用给模糊乘 alpha 的掩膜（backdropMask）：真机上权重没生效，底边仍硬切",
+            code.contains("backdropMask"),
         )
-        assertTrue("白纱必须是 Brush.verticalGradient", code.contains("Brush.verticalGradient"))
-        assertTrue("白纱必须是两段线性：顶边满浓度（0.0f to tint）", code.contains("0.0f to tint"))
         assertTrue(
-            "白纱必须两段线性：带底全透明（1.0f to tint.copy(alpha = 0f)）",
-            code.contains("1.0f to tint.copy(alpha = 0f)"),
+            "顶栏骨架必须在绘制期传入当前 heightOffset",
+            code.contains("barHeightOffsetPx = { scrollBehavior.state.heightOffset }"),
+        )
+        assertTrue(
+            "必须把纵向权重交给模糊效果链（fadeEndFraction = if (underHeader) …）",
+            code.contains("fadeEndFraction = if (underHeader)"),
+        )
+        assertTrue(
+            "白纱必须自己成形且按可见栏高缩放（qingyuTopBarScrim(dark, visibleFraction, pageBackground)）",
+            code.contains("private fun qingyuTopBarScrim(") &&
+                code.contains("pageBackground: Color): Brush") &&
+                code.contains("Brush.verticalGradient") &&
+                code.contains("qingyuTopBarScrim(dark, visibleFraction, pageBackground)"),
+        )
+        assertTrue(
+            "白纱顶部必须满浓度（0.00f to tint）",
+            code.contains("0.00f to tint"),
+        )
+        assertTrue(
+            "底部必须自己收到全透（1.00f * f to Color.Transparent）；再压回页底色会在栏底切一条硬边",
+            code.contains("1.00f * f to Color.Transparent"),
         )
         assertFalse(
-            "白纱退回了旧的「前 62% 满浓度」实心段（0.62f to tint）",
-            code.contains("0.62f to tint"),
+            "白纱末尾不得压回不透明页底色（1.00f * f to pageBackground 就是那条硬边）",
+            code.contains("1.00f * f to pageBackground"),
         )
-        assertTrue("暗色必须用亮白纱：Color.White.copy(", code.contains("Color.White.copy("))
+        assertFalse(
+            "白纱不得再有 0.84f 全透那一档（和末尾收尾两档互揍 = 清晰文字从栏底漏出来）",
+            code.contains("0.84f * f to"),
+        )
+        assertTrue(
+            "顶栏叠色必须用页面底色（不能纯白：纯白会比页面亮一档，收起时成一条白带）",
+            code.contains("pageBackground.copy(") &&
+                code.contains("private fun qingyuTopBarTint(dark: Boolean, pageBackground: Color): Color"),
+        )
         assertTrue(
             "暗色亮白纱 alpha 必须取 QingyuTopBarBlur.DarkVeilAlpha",
             code.contains("QingyuTopBarBlur.DarkVeilAlpha"),
         )
         assertFalse("暗色退回了灰纱 #565656", code.contains("0xFF565656"))
         assertTrue(
-            "玻璃面高度必须对齐真实底边（bandHeightPx + contentGapPx）",
+            "模糊面高度必须对齐内容起点（bandHeightPx + contentGapPx）",
             code.contains("bandHeightPx + contentGapPx"),
         )
         assertTrue(
-            "顶栏 Layout 高度必须含内容间距（layout(width, height + contentGapPx)），保证无硬线",
+            "顶栏 Layout 高度必须含内容间距（layout(width, height + contentGapPx)）",
             code.contains("height + contentGapPx"),
         )
     }
 
     @Test
-    fun `shared glass surface owns the progressive wiring`() {
-        // 共享玻璃件仍保留“渐进档”能力供其它表面使用；顶栏只是不再传它。
+    fun `shared glass surface keeps the official chain only`() {
         val code = codeOnly(glassSurfaceSource())
+        assertFalse("共享件不得再带 backdropMask（已证伪）", code.contains("backdropMask"))
+        assertFalse("共享件不得自拼 DstIn 蒙版", code.contains("BlendMode.DstIn"))
         assertTrue(
-            "共享件必须仍能调官方渐进档（progressiveTextureBlurEffect）",
+            "权重必须接在模糊效果链上（runtimeShaderEffect + in_fadeEnd）",
+            code.contains("runtimeShaderEffect(") &&
+                code.contains("\"QingyuVerticalFade\"") &&
+                code.contains("in_fadeEnd"),
+        )
+        assertTrue(
+            "着色器坐标必须以 y=0 为顶（Skia/AGSL 约定）：in_topY 偏移 + clamp((coord.y - in_topY) / in_maxY)",
+            code.contains("coord.y - in_topY") &&
+                code.contains("setFloatUniform(\"in_topY\", padding / sf)"),
+        )
+        assertFalse(
+            "着色器不得再按“原点在底部”翻转（1 - coord.y / in_maxY 会把权重上下颠倒）",
+            code.contains("1.0 - (coord.y / in_maxY)"),
+        )
+        assertTrue(
+            "共享件必须仍能调官方渐进档（其它表面可用）",
             code.contains("progressiveTextureBlurEffect("),
         )
         assertTrue(
@@ -165,19 +213,22 @@ class TopBarProgressiveBlurGuardTest {
 
     @Test
     fun `numbers stay pinned to the approved scheme`() {
-        assertEquals("σ≈22 的模糊半径", 49f, QingyuTopBarBlur.MaxRadiusDp, 0f)
-        assertEquals("浅色白纱 alpha", 0.62f, QingyuTopBarBlur.LightTintAlpha, 0f)
-        assertEquals("暗色亮白纱 alpha", 0.24f, QingyuTopBarBlur.DarkVeilAlpha, 0f)
+        assertEquals("σ≈12 的模糊半径", 26f, QingyuTopBarBlur.MaxRadiusDp, 0f)
+        assertEquals("浅色顶边 alpha", 0.60f, QingyuTopBarBlur.LightTintAlpha, 0f)
+        assertEquals("暗色顶边 alpha", 0.60f, QingyuTopBarBlur.DarkVeilAlpha, 0f)
+        assertTrue(
+            "浅色顶边不能太厚（>0.7 会把模糊整个盖住，看上去只剩一条白带）",
+            QingyuTopBarBlur.LightTintAlpha <= 0.7f,
+        )
     }
 
     @Test
-    fun `49dp peak matches Flutter sigma 22`() {
-        // miuix: sigma = radius × 0.45（常量复用 HomeBackgroundModel，别再抄第二份）。
-        // Flutter 原版 sigma = 22 逻辑 px；49 × 0.45 = 22.05，所以 delta 放到 0.1。
+    fun `26dp peak keeps sigma near 12`() {
+        // miuix: sigma = radius × 0.45；σ22 会把内容抹成一块颜色，“上糊下清”看不出来。
         assertEquals(
-            22.0,
+            11.7,
             QingyuTopBarBlur.MaxRadiusDp.toDouble() * HomeBackgroundModel.MIUIX_BLUR_SIGMA_PER_RADIUS,
-            0.1,
+            0.2,
         )
     }
 

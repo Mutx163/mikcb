@@ -19,52 +19,41 @@ import java.io.File
  *
  * ## 守卫判据（源码级，与 `WarehouseWebLoginPageWiringGuardTest` 同款做法）
  *
- * 1. `WarehouseWebViewHost.kt`：常量值必须是 Dart 侧的通道名
- *    （`lib/screens/import/warehouse/warehouse_adapter_web_login_screen.dart` 的
- *    `addJavaScriptChannel("…")` 字面量，机械读出），且 `addJavascriptInterface` 只用常量；
+ * 1. `WarehouseWebViewHost.kt`：常量字面量必须等于**既定桥名**（`QingyuBridge`，
+ *    逐字钉死——改名即红，非三处同步地改名也会连带着把它改一条，测试能抓）；
+ *    且 `addJavascriptInterface` 只用常量；
  * 2. `WarehouseAdapterScript.kt`：垫片里每处 `.postMessage(` 前的对象名都必须等于常量值
  *    （配平括号取调用对象，注释里提到 postMessage 不算）；
  * 3. `WarehouseMacroRecorderScript.kt`：同 2（INJECT/DUMP 两段脚本一起扫）。
  *
- * ⚠️ 判据是**对拍**不是「存在性检查」：桥名漂移（三处不一致）必红；把 Dart 侧通道名改了
- * 而没同步 Kotlin，这里也红（防两端单向漂移）。
+ * ⚠️ 判据是**对拍**不是「存在性检查」：桥名漂移（三处不一致）必红。
+ *
+ * 去 Flutter 化（P4-C，2026-11-08）：原先还与 Dart 侧 `addJavaScriptChannel("…")`
+ * （`lib/screens/import/warehouse/warehouse_adapter_web_login_screen.dart`）逐字对拍，
+ * Dart 层删除后参照物不存在，那两条已删——Kotlin 常量与垫片/宏脚本三方对拍仍在。
  */
 class WarehouseBridgeNameGuardTest {
 
-    /** Dart 与 Kotlin 三处必须同时等于这个名字。 */
-    private val bridgeName: String by lazy { readDartBridgeName() }
+    /** 桥名钉死的既定字面量（去 Flutter 化前对应 Dart 侧 `addJavaScriptChannel` 的通道名）。 */
+    private val bridgeName = "QingyuBridge"
 
     private val hostSource: String by lazy { readSource("android/app/src/composeP1/kotlin/com/mutx163/qingyu/pages/import/warehouse/WarehouseWebViewHost.kt") }
     private val shimSource: String by lazy { readSource("android/app/src/main/kotlin/com/mutx163/qingyu/pages/import/warehouse/WarehouseAdapterScript.kt") }
     private val macroSource: String by lazy { readSource("android/app/src/main/kotlin/com/mutx163/qingyu/pages/import/warehouse/WarehouseMacroRecorderScript.kt") }
-    private val dartLoginSource: String by lazy { readSource("lib/screens/import/warehouse/warehouse_adapter_web_login_screen.dart") }
-    private val dartMacroSource: String by lazy { readSource("lib/widgets/warehouse_macro_recorder.dart") }
 
     // -----------------------------------------------------------------------
-    // 1. 注册端：Kotlin 常量 ↔ Dart addJavaScriptChannel
+    // 1. 注册端：常量字面量钉死 + 调用只用常量
     // -----------------------------------------------------------------------
 
     @Test
-    fun `Kotlin 常量值与 Dart 通道名逐字一致`() {
-        assertTrue(
-            "Dart 登录页里必须有一处 addJavaScriptChannel（找不到说明 Dart 侧结构变了，守卫判据失效）",
-            dartLoginSource.contains("addJavaScriptChannel("),
-        )
-        val registered = Regex("""addJavaScriptChannel\(\s*["']([^"']+)["']""")
-            .findAll(dartLoginSource)
-            .map { it.groupValues[1] }
-            .distinct()
-            .toList()
+    fun `桥名钉死为既定字面量`() {
+        val declared = Regex("""WAREHOUSE_WEBVIEW_BRIDGE_NAME[^=\n]*=\s*"([^"]+)"""")
+            .find(hostSource)?.groupValues?.get(1)
         assertEquals(
-            "Dart 登录页只应注册一个 JS 通道（多了说明结构变了，先改本守卫判据）",
-            1,
-            registered.size,
-        )
-        assertEquals(
-            "Kotlin 常量 WAREHOUSE_WEBVIEW_BRIDGE_NAME 与 Dart addJavaScriptChannel 的通道名不一致——" +
-                "桥会静默断链（脚本回不了话），必须同步改齐再提交",
-            registered.single(),
+            "桥名是跨三处（注册 + 垫片 + 宏脚本）的契约字面量：改值必须三处同步，" +
+                "且先改本守卫的既定值——直接改常量的值不会有人拦得住",
             bridgeName,
+            declared,
         )
     }
 
@@ -109,34 +98,8 @@ class WarehouseBridgeNameGuardTest {
         )
     }
 
-    /** Dart 侧宏录制脚本也走同一个通道名；两端对拍，防单向漂移。 */
-    @Test
-    fun `Dart 宏录制脚本与 Kotlin 宏录制脚本通道名一致`() {
-        val dartNames = Regex("""([A-Za-z_$][\w$]*)\s*\.\s*postMessage\s*\(""")
-            .findAll(dartMacroSource)
-            .map { it.groupValues[1] }
-            .distinct()
-            .toList()
-        assertTrue(
-            "Dart warehouse_macro_recorder.dart 里应有 postMessage 调用（找不到说明 Dart 侧结构变了）",
-            dartNames.isNotEmpty(),
-        )
-        assertEquals(
-            "Dart 宏录制脚本回传用的对象名与 Kotlin 常量不一致——桥会静默断链，必须同步改齐",
-            listOf(bridgeName),
-            dartNames,
-        )
-        val kotlinNames = postMessageReceivers(macroSource)
-        assertTrue(
-            "Kotlin 宏录制脚本里应有 postMessage 调用（找不到说明脚本被移走，守卫判据失效）",
-            kotlinNames.isNotEmpty(),
-        )
-        assertEquals(
-            "Kotlin 宏录制脚本回传用的对象名与常量不一致——桥会静默断链，必须同步改齐",
-            listOf(bridgeName),
-            kotlinNames,
-        )
-    }
+    // （原有「Dart 宏录制脚本与 Kotlin 通道名对拍」已随 Dart 层删除而退役——Kotlin 宏脚本
+    //   自身的一致性由上面的 receivers 断言覆盖。）
 
     // -----------------------------------------------------------------------
     // 工具
@@ -186,17 +149,6 @@ class WarehouseBridgeNameGuardTest {
             val idx = line.indexOf("//")
             if (idx >= 0) line.substring(0, idx) else line
         }
-
-    /** Dart 登录页 `addJavaScriptChannel("…")` 的通道名字面量（机械读出，不手抄）。 */
-    private fun readDartBridgeName(): String {
-        val registered = Regex("""addJavaScriptChannel\(\s*["']([^"']+)["']""")
-            .findAll(dartLoginSource)
-            .map { it.groupValues[1] }
-            .distinct()
-            .toList()
-        assertEquals("Dart 登录页只应注册一个 JS 通道", 1, registered.size)
-        return registered.single()
-    }
 
     /** 从当前目录向上找仓库根，再定位源文件（不依赖 cwd，与既有接线守卫同款）。 */
     private fun readSource(relative: String): String {

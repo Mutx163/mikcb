@@ -1,7 +1,6 @@
 package com.mutx163.qingyu.pages.guide
 
 import com.mutx163.qingyu.app.InMemoryKeyValueStore
-import java.io.File
 import java.time.LocalDate
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -23,13 +22,15 @@ import org.junit.Test
  *
  * 1. **写什么**：[planStartupSemesterWrite] 算出的开学日期 / 学期周数 / 当前周次，
  *    与 `b.semester`（学期设置页）写的是**同一对键**，没有第二套口径；
- * 2. **写哪个键**：「引导已完成」这类布尔标记的键名必须与 Dart `StorageService` 逐字一致
- *    （前缀 `flutter.` 由 store 实现统一加），否则 Dart 侧读不到 = 等于没写；
+ * 2. **写哪个键**：「引导已完成」这类布尔标记是盘上契约的物理键（`STARTUP_*` 那对，
+ *    前缀 `flutter.` 由 store 实现统一加）；写错键名重启读不到 = 等于没写。
  * 3. **非法输入不许写半截**：日期不合法 / 周数越界时返回 null，宿主据此给实话。
  *
- * 期望值来源（独立于实现）：`lib/services/storage_service.dart:29-32`、
- * `lib/services/app_migration_service.dart:5-7`、`lib/main.dart:1486`，
- * 以及 `SemesterDateCalculator` 已公开的周次口径（手推：2026-09-07 是周一）。
+ * 期望值来源（独立于实现）：**Kotlin 常量表 `StartupFlowModel.kt` 里逐字抄录的清单**
+ * （2026-11-07 去 Flutter 化前抄自 Dart `app_migration_service.dart:5-7` 与
+ * `storage_service.dart:29-32`，P4-C 删除后那些文件已不存在，清单本体由本测试钉死）。
+ * 另有 `lib/main.dart:1486` 出处说明已一并失效；周次口径以 `SemesterDateCalculator` 已公开口径为准
+ * （手推：2026-09-07 是周一）。
  */
 class StartupFlowWiringTest {
 
@@ -131,54 +132,15 @@ class StartupFlowWiringTest {
         assertFalse(StartupFlowPreferences(falseStore).isOnboardingCompleted())
     }
 
-    // ---------- 与 Dart 源码逐字对拍 ----------
-
-    @Test
-    fun `布尔标记的键名与DartStorageService逐字一致`() {
-        val text = dartSource("lib/services/storage_service.dart")
-        val completed = Regex("""_hasCompletedOnboardingKey\s*=\s*'([^']+)'""")
-            .find(text)?.groupValues?.get(1)
-        val migration = Regex("""_hasHandledPackageMigrationKey\s*=\s*'([^']+)'""")
-            .find(text)?.groupValues?.get(1)
-        assertNotNull("storage_service.dart 里没找到 _hasCompletedOnboardingKey（守卫不许静默跳过）", completed)
-        assertEquals(StartupFlowPreferences.KEY_COMPLETED_ONBOARDING, completed)
-        assertEquals(StartupFlowPreferences.KEY_HANDLED_PACKAGE_MIGRATION, migration)
-    }
-
-    @Test
-    fun `旧版包名清单与Dart迁移服务逐字一致`() {
-        val text = dartSource("lib/services/app_migration_service.dart")
-        val release = Regex("""oldReleasePackage\s*=\s*'([^']+)'""")
-            .find(text)?.groupValues?.get(1)
-        val debug = Regex("""oldDebugPackage\s*=\s*'([^']+)'""")
-            .find(text)?.groupValues?.get(1)
-        assertNotNull("app_migration_service.dart 里没找到 oldReleasePackage", release)
-        assertEquals(
-            "尝试顺序必须是「正式版在前、debug 在后」（两者可能同时装着）",
-            listOf(release, debug),
-            STARTUP_LEGACY_PACKAGE_CANDIDATES,
-        )
-    }
+    // 去 Flutter 化（P4-C，2026-11-08）：原先这里还有两条与 Dart 源逐字对拍的用例
+    // （`storage_service.dart` 的两个键名、`app_migration_service.dart` 的包名清单），
+    // 与 Dart 源已一并删除。键名/清单的护栏改由下面两条引用 Kotlin 常量表的断言承担：
+    // 一个是「写完后盘上键名」的行为断言，一个是「清单值与顺序」的显式钉死。
 
     @Test
     fun `守卫本身没有空转`() {
-        // 防空转：正则失配时上面几条会拿到 null 并直接红；这里再钉一次清单规模。
+        // 防空转：清单规模为 0 时「包名一致」之类的断言会空绿；这里再钉一次规模。
         assertTrue(STARTUP_LEGACY_PACKAGE_CANDIDATES.size >= 2)
         assertTrue(StartupFlowPreferences.KEY_COMPLETED_ONBOARDING.isNotBlank())
-    }
-
-    // ---------- 定位 ----------
-
-    /** 从工作目录向上找仓库根，再读 Dart 源文件；找不到判失败，不静默跳过。 */
-    private fun dartSource(relative: String): String {
-        var dir: File? = File("").absoluteFile
-        repeat(8) {
-            if (dir != null) {
-                val candidate = File(dir, relative)
-                if (candidate.isFile) return candidate.readText(Charsets.UTF_8)
-            }
-            dir = dir?.parentFile
-        }
-        error("找不到 $relative（工作目录 ${File("").absolutePath}）")
     }
 }

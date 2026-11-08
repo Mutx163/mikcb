@@ -167,6 +167,68 @@ class DayViewWiringGuardTest {
     }
 
     @Test
+    fun `冲突透明度必须从设置喂进日视图`() {
+        // 2026-11-07：日课卡原先只写死了非本周 0.62，**设置里的 conflict opacity 没读** ——
+        // 周视图跟着滑杆变、日视图不变。这条同时钉住壳与外观预览两个调用点：
+        // 少一处，那一边的日课卡就退回写死值（页面有默认值，编译不会报错）。
+        val branch = branchBody("c3.day")
+        assertTrue(
+            "`c3.day` 没有传 `conflictCourseOpacity`：日视图会退回默认 0.70，" +
+                "设置里的「冲突课程透明度」对它无效。",
+            "conflictCourseOpacity = appSettings.timetableConflictCourseOpacity.toFloat()" in branch,
+        )
+        val editor = readSource(
+            "android/app/src/composeP1/kotlin/com/mutx163/qingyu/app/AppearanceEditorHost.kt",
+        )
+        assertTrue(
+            "外观预览没有把草稿设置里的冲突透明度喂给日视图：拖滑杆卡片不会跟着变。",
+            "conflictCourseOpacity = settingsModel.timetableConflictCourseOpacity.toFloat()" in editor,
+        )
+    }
+
+    @Test
+    fun `预览必须共用真首页的天气数据源`() {
+        // 2026-11-07 用户实报：外观编辑页的预览里课卡没有天气行。壳里真首页喂的是
+        // `wiring.weather`，预览没接 ⇒ 首页有、预览没有，卡片高度也跟着不同。
+        val editor = readSource(
+            "android/app/src/composeP1/kotlin/com/mutx163/qingyu/app/AppearanceEditorHost.kt",
+        )
+        assertTrue(
+            "外观宿主没有 `weatherProvider` 参数：预览拿不到天气数据源。",
+            "weatherProvider: WeatherProvider?" in editor,
+        )
+        assertTrue(
+            "日视图预览没有用 `DayViewWeather.lineProvider` 拼天气行。",
+            "DayViewWeather.lineProvider(settingsModel, weatherProvider)" in editor,
+        )
+        assertTrue(
+            "周视图预览没有把 `weatherProvider` 交给 TimetableHost。",
+            "weatherProvider = weatherProvider" in editor,
+        )
+        val shell = readSource("android/app/src/main/kotlin/com/mutx163/qingyu/pages/ShellPageIndex.kt")
+        assertTrue(
+            "壳没有把设备级 weatherProvider 传给外观宿主。",
+            "weatherProvider = weatherProvider" in shell,
+        )
+        // 首页那一份也必须接：周课卡的天气行走 TimetableHost 自己的 weatherOf，
+        // 漏传就是「首页没有、外观预览有」（2026-11-07 用户实报）。
+        val wiringSrc = readSource("android/app/src/main/kotlin/com/mutx163/qingyu/pages/ShellWiring.kt")
+        // 日视图页面本身由 ShellPageIndex 按 pageId 分发（`ShellWiring` 只传 pageId="c3.day"），
+        // 所以两处要分开看：TimetableHost 在 ShellWiring，DayViewPage 在 ShellPageIndex。
+        assertTrue(
+            "ShellWiring 里没有把 `weatherProvider` 交给首页 TimetableHost：" +
+                "周课卡的天气行会读不到设备级数据源。",
+            "weatherProvider = weatherProvider" in wiringSrc,
+        )
+        assertTrue(
+            "ShellPageIndex 的 c3.day 分支调 `DayViewPage` 时没有传 `weatherProvider`：" +
+                "日视图课卡天气行会空着。",
+            Regex("""DayViewPage\([\s\S]{0,600}?weatherProvider\s*=\s*weatherProvider""")
+                .containsMatchIn(shell),
+        )
+    }
+
+    @Test
     fun `星期栏点击必须直接切到日视图展开态`() {
         // 2026-11-02：点星期栏某天**不再推 `c3.day` 路由**（推页会被 miuix 播成
         // 「从左侧滑入」，与原版「选中的列长成整屏」完全不同）。现在走首页的

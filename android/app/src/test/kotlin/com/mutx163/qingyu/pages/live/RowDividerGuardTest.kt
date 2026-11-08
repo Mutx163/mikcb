@@ -56,10 +56,24 @@ class RowDividerGuardTest {
         "android/app/src/composeP1/kotlin/com/mutx163/qingyu/pages/statistics/charts/ProfileCompareCard.kt" to 1,
         // 分享图品牌区上下边线（showTopDivider/showBottomDivider 设计参数，非页面列表）。
         "android/app/src/composeP1/kotlin/com/mutx163/qingyu/pages/statistics/charts/StatisticsExportCards.kt" to 2,
+        // 应用日志：**一批日志并进一张卡**，行间用一条细线分条（2026-11-08 用户明确要求
+        // 「同批日志并进一张卡加分隔线」）。这是日志流内部的条目分隔，不是被清掉的
+        // 「设置卡里每两行都画线」，已获用户同意后登记。
+        "android/app/src/composeP1/kotlin/com/mutx163/qingyu/pages/diagnostics/LiveDiagnosticsLogPage.kt" to 1,
         // ── 在途避让：warehouse 版面重排会话在改，其落地后清理并删掉这三行白名单 ──
         "android/app/src/composeP1/kotlin/com/mutx163/qingyu/pages/import/warehouse/AiImageCourseImportPage.kt" to 1,
         "android/app/src/composeP1/kotlin/com/mutx163/qingyu/pages/import/warehouse/WarehouseAdapterDetailPage.kt" to 1,
         "android/app/src/composeP1/kotlin/com/mutx163/qingyu/pages/import/warehouse/WarehouseCustomDebugPage.kt" to 1,
+        // ── 2026-11-08 三页版式重新设计后新增的块级分隔线（已按用户口径登记）──
+        // 版本更新页：发布说明正文 ↔ 计数/更新时间行、以及卡内各小节之间；用户明确要求
+        // 「分类容器 + 分隔线」的卡内分节，不是设置卡里每两行都画线。
+        "android/app/src/composeP1/kotlin/com/mutx163/qingyu/pages/about/AboutUpdatePage.kt" to 3,
+        // 赞助页：创作者卡 ↔ 底部操作行之间的一条分节线（块级分节）。
+        "android/app/src/composeP1/kotlin/com/mutx163/qingyu/pages/about/SupportCreatorPage.kt" to 1,
+        // 学习会话统计：会话明细是**表格语义**（每条一行、多列对齐），无行线不可读。
+        "android/app/src/composeP1/kotlin/com/mutx163/qingyu/pages/statistics/StatisticsSessionPage.kt" to 1,
+        // 数据迁移页：「当前可迁移内容」概览的堆叠行，与同卡「导出日历」可点行视觉统一。
+        "android/app/src/composeP1/kotlin/com/mutx163/qingyu/pages/transfer/DataTransferPage.kt" to 1,
     )
 
     private val scanRoot = "android/app/src/composeP1"

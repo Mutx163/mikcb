@@ -129,21 +129,22 @@ class SettingsPreviewCutoutGuardTest {
     }
 
     /**
-     * 2026-11-04 用户口径：两块设置页预览「和首页同比例 + 框内上下滑 + 完整显示星期栏 + 无圆角」。
-     * 钉住预览槽走**静态 1:1 裁窗 + 框内纵向滚动**：`contentWidth = 窗口宽`（scale 恒 1、整像素、
-     * 不缩放）、`contentHeight = 真实自然高`（星期栏高 + 节数 × 首页节高；2026-11-04 三修，不再取
-     * 整屏高，否则拉到底多出空白）、`fitToBox = false`（走滚动分支而非按框自适应）、
-     * `cornerRadius = 0.dp`（方角）、`previewMode = true`（不画状态栏/顶栏、星期栏当首行）、
-     * `initialScroll = 0`（初始从顶部/星期栏开始）。
-     * 改回 `fitToBox = true`（按框压扁）、圆角、内容高不再按自然高算、或初始滚动非 0 都会红。
+     * 2026-11-08 用户口径（实报「进页看不到星期栏、第一行是第 5 节」）：预览要像首页——
+     * **星期栏钉在窗口顶部、只有网格上下滑**，不再是「整页当一条长纸带滚」。
+     *
+     * 钉住预览槽的形态：`fitToBox = true`（窗口多大内容就多大，不缩放、不自带长条滚动）、
+     * `contentHeight = maxHeight`、`isolateGestures = false`（手势放给网格）、
+     * `previewSectionBasisDp = homeGridHeightDp`（行高仍按首页算）、`cornerRadius = 0.dp`、
+     * `previewMode = true`（不画状态栏/顶栏、星期栏当首行）。
+     * 改回长条滚动（fitToBox = false / contentHeight = 自然高）、圆角、或节高不再按首页基准都会红。
      */
     @Test
-    fun `两页预览槽走1比1静态裁窗加框内滚动且无圆角`() {
+    fun `两页预览槽星期栏钉住只有网格滚且无圆角`() {
         val shell = codeOf(sourceOf("main/kotlin/com/mutx163/qingyu/pages/ShellPageIndex.kt"))
         assertEquals(
-            "预览槽必须 fitToBox = false（走静态裁窗 + 框内滚动分支，不再按框自适应压扁）",
+            "预览槽必须 fitToBox = true（内容按窗口尺寸排版，星期栏才能钉在顶上）",
             1,
-            Regex("fitToBox = false").findAll(shell).count(),
+            Regex("fitToBox = true").findAll(shell).count(),
         )
         assertEquals(
             "预览槽 contentWidth 必须取窗口宽（=maxWidth，scale 恒 1、整像素不缩放）",
@@ -151,30 +152,36 @@ class SettingsPreviewCutoutGuardTest {
             Regex("contentWidth = maxWidth").findAll(shell).count(),
         )
         assertEquals(
-            "预览槽 contentHeight 必须取真实自然高（contentHeightDp），不再取整屏高——" +
-                "否则滚动总高比内容多，拉到底会多出空白",
+            "预览槽 contentHeight 必须取窗口高（内容按框排版、星期栏钉在顶上），" +
+                "不再把整页当一条长纸带",
             1,
-            Regex("contentHeight = contentHeightDp\\.dp").findAll(shell).count(),
+            Regex("contentHeight = maxHeight").findAll(shell).count(),
         )
         assertEquals(
-            "旧写法「contentHeight = 整屏高」必须删净（滚动总高比内容多会多出底部空白）",
+            "旧写法「contentHeight = 整屏高 / 自然长条」必须删净",
             0,
             Regex("contentHeight = configuration\\.screenHeightDp\\.dp").findAll(shell).count(),
         )
         assertEquals(
-            "预览槽必须用 weekSectionHeight 按首页节高算自然高（不强行拉满屏高）",
-            1,
-            Regex("weekSectionHeight\\(").findAll(shell).count(),
+            "旧写法「contentHeight = 自然长条」必须删净（长条滚会把星期栏顶出窗口）",
+            0,
+            Regex("contentHeight = contentHeightDp\\.dp").findAll(shell).count(),
         )
         assertEquals(
-            "预览槽必须用 WeekdayHeaderMetrics.HEIGHT_DP 当星期栏高参与自然高计算",
+            "预览槽必须把「首页网格可用高」当节高基准传下去（previewSectionBasisDp）——" +
+                "不然自动充满会在 4 行高的窗口里把 12 节压成 27dp 一行",
+            1,
+            Regex("previewSectionBasisDp = homeGridHeightDp").findAll(shell).count(),
+        )
+        assertEquals(
+            "预览槽必须用 WeekdayHeaderMetrics.HEIGHT_DP 当星期栏高（首页网格可用高要扣掉它）",
             1,
             Regex("WeekdayHeaderMetrics\\.HEIGHT_DP").findAll(shell).count(),
         )
         assertEquals(
-            "预览槽必须传 initialScroll = 0（初始从顶部/星期栏开始，不沿用上次滚动位）",
+            "预览槽必须 isolateGestures = false（手势放给网格，框内上下滑才能滚）",
             1,
-            Regex("initialScroll = 0").findAll(shell).count(),
+            Regex("isolateGestures = false").findAll(shell).count(),
         )
         assertEquals(
             "预览槽必须 cornerRadius = 0.dp（方角，对齐 Flutter 已发布版无圆角）",
@@ -195,7 +202,8 @@ class SettingsPreviewCutoutGuardTest {
      * 1. 自动充满的可用高要扣掉状态栏与首页顶栏（只扣星期栏会让每行比首页高一档）；
      * 2. 天气 provider 必须从壳传进预览（否则课卡天气行永远不出现）；
      * 3. 页面里的预览分支不许再用 `maxHeight / sectionCount` 覆盖节高（双重来源会静默变形）；
-     * 4. 「回本周」浮钮在预览里也要可见（本页的浮钮不透明度滑杆才有反馈）。
+     * 4. 「回本周」浮钮在预览里**不画**（2026-11-08 用户口径；此前 2026-11-07 为让浮钮不透明度滑杆
+     *    有可看目标而显过，现按用户口径收回）。
      */
     @Test
     fun `预览自然高与首页同口径且天气浮钮都接进预览`() {
@@ -239,9 +247,20 @@ class SettingsPreviewCutoutGuardTest {
             Regex("""sectionHeightOverride\s*=""").findAll(page).count(),
         )
         assertTrue(
-            "预览里也要画「回本周」浮钮（visible 不能再带 !previewMode）——" +
-                "否则本页的浮钮不透明度滑杆永远没有可看的目标",
-            Regex("""visible\s*=\s*showBackToCurrentWeek\s*&&\s*!dayVisible""").containsMatchIn(page),
+            "预览里**不画**「回本周」浮钮（2026-11-08 用户口径：「这个页面不要显示」）：" +
+                "它只写一个字「今」，存储周不是真实本周时会永久亮在预览框里，而预览不可点",
+            Regex("""visible\s*=\s*!previewMode\s*&&\s*showBackToCurrentWeek\s*&&\s*!dayVisible""")
+                .containsMatchIn(page),
+        )
+        assertTrue(
+            "预览分支要把壳给的首页节高基准转给 WeekPageContent（sectionHeightBasisDp）——" +
+                "4 行高的窗口里按自己盒子算会把 12 节压扁",
+            page.contains("sectionHeightBasisDp = previewSectionBasisDp"),
+        )
+        assertTrue(
+            "预览里点击必须就地失效（手势已放给网格，不能再靠挖洞件吃手势）：" +
+                "星期栏的点击要由 previewMode 分支挡掉（允许与 monthMode 合在同一个 when 分支）",
+            Regex("""\bpreviewMode\b[^\n]*->\s*Unit""").containsMatchIn(page),
         )
     }
 

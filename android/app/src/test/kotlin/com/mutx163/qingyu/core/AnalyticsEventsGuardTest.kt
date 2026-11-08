@@ -19,7 +19,8 @@ import java.io.File
  *    常量 ⇒ 红**（棘轮：不许只进不出）。
  *
  * 照抄 `ComposeSheetGuardTest.repoRoot()` 的仓库根定位口径（从工作目录向上找
- * `lib/screens` + `pubspec.yaml` 那一层）；「扫描器必须真的扫到」自检防空跑假绿。
+ * `i18n/app_zh.arb` + `android/app/build.gradle` 那一层；Dart 的 `lib/screens` + `pubspec.yaml`
+ * 在 P4-C 后已删，不可再当锚点）;「扫描器必须真的扫到」自检防空跑假绿。
  */
 class AnalyticsEventsGuardTest {
 
@@ -36,7 +37,7 @@ class AnalyticsEventsGuardTest {
             if (File(dir, "android/app/src").isDirectory) {
                 var up: File? = dir
                 while (up != null) {
-                    if (File(up, "lib/screens").isDirectory && File(up, "pubspec.yaml").isFile) {
+                    if (File(up, "i18n/app_zh.arb").isFile && File(up, "android/app/build.gradle").isFile) {
                         return up.path
                     }
                     up = up.parentFile

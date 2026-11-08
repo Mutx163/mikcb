@@ -31,7 +31,8 @@ class AboutStyleRatchetGuardTest {
     private fun repoRoot(): File {
         var dir: File? = File(System.getProperty("user.dir") ?: ".").absoluteFile
         while (dir != null) {
-            if (File(dir, "pubspec.yaml").isFile && File(dir, "android").isDirectory) return dir
+            // 锚点改 Kotlin 侧：Dart 已删（P4-C），不能再要求 pubspec 存在。
+            if (File(dir, "i18n/app_zh.arb").isFile && File(dir, "android/app/build.gradle").isFile) return dir
             dir = dir.parentFile
         }
         error("找不到仓库根（user.dir=${System.getProperty("user.dir")}）")

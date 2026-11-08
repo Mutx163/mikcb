@@ -67,6 +67,75 @@ class QingyuAdaptiveRulesTest {
         assertFalse(QingyuAdaptiveRules.shouldLimitContentWidth(0f))
     }
 
+    // ───────────── 2026-11-07 第 4 批：短窗口弹层限高 ─────────────
+
+    @Test
+    fun `高窗口的弹层限高原样返回`() {
+        // 手机竖屏 / 平板竖屏都在 600dp 以上 ⇒ 必须与改造前逐像素一致。
+        assertEquals(400f, QingyuAdaptiveRules.sheetMaxHeightDp(800f, 0.5f), 0.01f)
+        assertEquals(576f, QingyuAdaptiveRules.sheetMaxHeightDp(800f, 0.72f), 0.01f)
+        // 边界：高度正好 600 仍按原比例（不提前放宽）。
+        assertEquals(252f, QingyuAdaptiveRules.sheetMaxHeightDp(600f, 0.42f), 0.01f)
+    }
+
+    @Test
+    fun `矮窗口放宽但给标题与按钮留位置`() {
+        // 400dp 高（手机横屏 / 小窗）：0.5 只剩 200，抬到 400-180 = 220。
+        assertEquals(220f, QingyuAdaptiveRules.sheetMaxHeightDp(400f, 0.5f), 0.01f)
+        // 0.72 原本更大（288）：不能因为放宽反而变小，保持 288。
+        assertEquals(288f, QingyuAdaptiveRules.sheetMaxHeightDp(400f, 0.72f), 0.01f)
+        // 320dp 高：0.45 → 144，放宽上限 140 比它还小 ⇒ 仍是 144（只放大不缩小）。
+        assertEquals(144f, QingyuAdaptiveRules.sheetMaxHeightDp(320f, 0.45f), 0.01f)
+        // 500dp 高：0.55 → 275，放宽到 320。
+        assertEquals(320f, QingyuAdaptiveRules.sheetMaxHeightDp(500f, 0.55f), 0.01f)
+    }
+
+    @Test
+    fun `短窗口预留量固定为 180dp 且优先保按钮`() {
+        // 官方 DialogContentLayout 在非大屏时高度不设上限，预留不足会裁掉按钮。
+        assertEquals(180f, QingyuAdaptiveRules.SHORT_WINDOW_SHEET_RESERVED_DP, 0f)
+        // 放宽后恰好剩 180dp 给标题 / 动作行 / 系统栏。
+        assertEquals(220f, QingyuAdaptiveRules.sheetMaxHeightDp(400f, 0.5f), 0.01f)
+        assertEquals(320f, QingyuAdaptiveRules.sheetMaxHeightDp(500f, 0.55f), 0.01f)
+        // 极端矮窗（360dp）原比例已经比「屏高−180」大：保持原值，宁可不放大也不缩小。
+        assertEquals(198f, QingyuAdaptiveRules.sheetMaxHeightDp(360f, 0.55f), 0.01f)
+    }
+
+    @Test
+    fun `短窗口只放大不缩小 也不超过窗口高`() {
+        val tiny = QingyuAdaptiveRules.sheetMaxHeightDp(240f, 0.5f)
+        assertEquals(120f, tiny, 0.01f)
+        listOf(200f, 320f, 480f, 599f).forEach { height ->
+            listOf(0.42f, 0.5f, 0.72f).forEach { fraction ->
+                val result = QingyuAdaptiveRules.sheetMaxHeightDp(height, fraction)
+                assertTrue("${height}dp×$fraction 不得小于原比例", result >= height * fraction - 0.01f)
+                assertTrue("${height}dp×$fraction 不得超过窗口高", result <= height)
+            }
+        }
+    }
+
+    @Test
+    fun `非法入参返回零 调用方即不额外限高`() {
+        assertEquals(0f, QingyuAdaptiveRules.sheetMaxHeightDp(0f, 0.5f), 0f)
+        assertEquals(0f, QingyuAdaptiveRules.sheetMaxHeightDp(-10f, 0.5f), 0f)
+        assertEquals(0f, QingyuAdaptiveRules.sheetMaxHeightDp(800f, 0f), 0f)
+    }
+
+    @Test
+    fun `写死上限的弹层在矮窗被夹到可用高度`() {
+        // 高窗：原固定值不动（380/420/360 的现有观感不变）。
+        assertEquals(380f, QingyuAdaptiveRules.cappedSheetHeightDp(800f, 380f), 0.01f)
+        assertEquals(360f, QingyuAdaptiveRules.cappedSheetHeightDp(700f, 360f), 0.01f)
+        // 矮窗：夹到屏高 − 180。
+        assertEquals(220f, QingyuAdaptiveRules.cappedSheetHeightDp(400f, 380f), 0.01f)
+        assertEquals(419f, QingyuAdaptiveRules.cappedSheetHeightDp(599f, 420f), 0.01f)
+        // 原本就更小的上限保持不动。
+        assertEquals(100f, QingyuAdaptiveRules.cappedSheetHeightDp(400f, 100f), 0.01f)
+        // 非法入参：返回原值（导 0 会让 heightIn(max = 0.dp) 直接消失）。
+        assertEquals(380f, QingyuAdaptiveRules.cappedSheetHeightDp(0f, 380f), 0.01f)
+        assertEquals(0f, QingyuAdaptiveRules.cappedSheetHeightDp(400f, 0f), 0.01f)
+    }
+
     // ───────────── 2026-11-03 第 2 批：Rail 展开阈值与内容区宽 ─────────────
 
     @Test
@@ -169,6 +238,19 @@ class QingyuAdaptiveWiringGuardTest {
         assertTrue(
             "壳层注入 seam（QingyuLocalWindowAdaptive）不许被拆：Rail 批次要靠它在根部注入内容区宽度",
             adaptive.contains("staticCompositionLocalOf<QingyuWindowAdaptive?>"),
+        )
+    }
+
+    @Test
+    fun `列表组件也要消费自适应限宽`() {
+        val list = codeOnly(composeSource("QingyuPageList.kt"))
+        assertTrue(
+            "QingyuPageList 不再读取宽屏自适应取值：手拼 Scaffold 的页面会退回通栏",
+            list.contains("rememberQingyuWindowAdaptive()"),
+        )
+        assertTrue(
+            "QingyuPageList 的限宽分支缺少 widthIn(max = cap)",
+            list.contains("widthIn(max = cap)"),
         )
     }
 }

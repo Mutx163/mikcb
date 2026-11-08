@@ -5,37 +5,41 @@ import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
-import java.io.File
 
 /**
  * [WarehouseWebViewLogic] 的纯 JVM 单测（L0：
  * `pwsh -File scripts/test-kotlin-module.ps1 -Module "pages/import/warehouse"`）。
  *
- * 关键期望值不是「从实现里抄的」，而是**从参照物机械读出来的**：
- * - UA 两串：从 Dart `warehouse_adapter_web_login_screen.dart` 的常量定义里抽出来对拍；
- * - 导航白名单、UI 类桥接消息集合：从 Dart `lib/domain/warehouse_bridge_gate.dart` 里抽出来对拍；
- * - WebView 错误码数值：取自平台 `android.jar` 的 `javap -constants`（来源见
- *   「错误码常量与平台 android_jar 数值一致」那条测试的注释）。
+ * 关键期望值在 Kotlin 侧常量表里逐字钉死：UA 两串、导航白名单、UI 类桥接消息集合
+ * 改值必红（Dart 参照物已随 P4-C 删除，不再逐字对拍 Dart 源）；
+ * WebView 错误码数值取自平台 `android.jar` 的 `javap -constants`（来源见
+ * 「错误码常量与平台 android_jar 数值一致」那条测试的注释）。
  */
 class WarehouseWebViewLogicTest {
 
     // -----------------------------------------------------------------------
-    // 1. UA：与 Dart 逐字对拍
+    // 1. UA：两串字面量钉死
     // -----------------------------------------------------------------------
 
     @Test
-    fun `UA 两串与 Dart 参照物逐字一致`() {
-        val dart = readRepoFile("lib/screens/import/warehouse/warehouse_adapter_web_login_screen.dart")
-        val desktop = dartConcatStringLiteral(dart, "_desktopUserAgent")
-        val mobile = dartConcatStringLiteral(dart, "_mobileUserAgent")
+    fun `UA 两串钉死为既定字面量`() {
+        // 去 Flutter 化（P4-C）后 Dart 参照物已删，UA 以这两串字面量为准：
+        // 教务站（强智一类）按 UA 决定回哪个登录页，改值必红。
+        assertEquals(
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 " +
+                "(KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
+            WarehouseWebViewUserAgents.DESKTOP,
+        )
+        assertEquals(
+            "Mozilla/5.0 (Linux; Android 14; 25060RK16C) AppleWebKit/537.36 " +
+                "(KHTML, like Gecko) Chrome/131.0.0.0 Mobile Safari/537.36",
+            WarehouseWebViewUserAgents.MOBILE,
+        )
 
-        assertEquals("桌面版 UA 与 Dart 不一致", desktop, WarehouseWebViewUserAgents.DESKTOP)
-        assertEquals("移动版 UA 与 Dart 不一致", mobile, WarehouseWebViewUserAgents.MOBILE)
-
-        // 参照物里两串必须真的不同，否则上面两条断言等于空转
-        assertTrue("Dart 里桌面/移动 UA 竟然相同，参照物已经不可信", desktop != mobile)
-        assertTrue("移动版 UA 少了 Mobile 标记", mobile.contains("Mobile"))
-        assertFalse("桌面版 UA 不该带 Mobile 标记", desktop.contains("Mobile"))
+        // 两串必须真的不同，否则上面两条断言等于空转
+        assertTrue("桌面/移动 UA 竟然相同，钉死不成立", WarehouseWebViewUserAgents.DESKTOP != WarehouseWebViewUserAgents.MOBILE)
+        assertTrue("移动版 UA 少了 Mobile 标记", WarehouseWebViewUserAgents.MOBILE.contains("Mobile"))
+        assertFalse("桌面版 UA 不该带 Mobile 标记", WarehouseWebViewUserAgents.DESKTOP.contains("Mobile"))
     }
 
     @Test
@@ -81,15 +85,9 @@ class WarehouseWebViewLogicTest {
     // -----------------------------------------------------------------------
 
     @Test
-    fun `导航白名单与 Dart 门禁的 scheme 列表逐项一致`() {
-        val dart = readRepoFile("lib/domain/warehouse_bridge_gate.dart")
-        val start = dart.indexOf("bool warehouseAllowsMainFrameNavigation(")
-        assertTrue("Dart 门禁里找不到 warehouseAllowsMainFrameNavigation", start >= 0)
-        val end = dart.indexOf("\n}", start)
-        val body = dart.substring(start, end)
-        val dartAllowed = Regex("""scheme == '([^']*)'""").findAll(body).map { it.groupValues[1] }.toSet()
-        assertEquals("Dart 门禁的放行 scheme 列表变了，Kotlin 侧要同步", setOf("http", "https", "about"), dartAllowed)
-
+    fun `导航白名单逐项钉死`() {
+        // 放行 scheme 是安全面：SZW/教务登录页（http/https/about）才过主 frame，
+        // javascript/data/file/intent/ftp 一律拒绝。值由本测试钉死（前 Dart 门禁已删）。
         val samples = listOf(
             "https://jw.school.edu.cn/login" to true,
             "http://jw.school.edu.cn/login" to true,
@@ -106,7 +104,7 @@ class WarehouseWebViewLogicTest {
             "" to false,
         )
         for ((url, expected) in samples) {
-            assertEquals("URL `$url` 的放行判定与 Dart 门禁不一致", expected, warehouseAllowsMainFrameNavigation(url))
+            assertEquals("URL `$url` 的放行判定与钉死的白名单不一致", expected, warehouseAllowsMainFrameNavigation(url))
         }
         assertFalse("null 必须拒绝", warehouseAllowsMainFrameNavigation(null))
     }
@@ -327,23 +325,9 @@ class WarehouseWebViewLogicTest {
     // -----------------------------------------------------------------------
 
     @Test
-    fun `桥接 UI 类消息集合与 Dart 门禁逐项一致`() {
-        val dart = readRepoFile("lib/domain/warehouse_bridge_gate.dart")
-        val start = dart.indexOf("kWarehouseImportOnlyBridgeMessageTypes")
-        assertTrue("Dart 门禁里找不到 UI 类消息集合", start >= 0)
-        val braceStart = dart.indexOf('{', start)
-        val braceEnd = dart.indexOf('}', braceStart)
-        assertTrue("Dart 门禁里的集合字面量不完整", braceStart > 0 && braceEnd > braceStart)
-        val dartTypes = Regex("""'([^']*)'""")
-            .findAll(dart.substring(braceStart, braceEnd))
-            .map { it.groupValues[1] }
-            .toSet()
-
-        assertEquals(
-            "Dart 的 UI 类桥接消息集合变了，Kotlin 侧必须同步",
-            dartTypes,
-            WAREHOUSE_IMPORT_ONLY_BRIDGE_MESSAGE_TYPES,
-        )
+    fun `UI 类桥接消息集合钉死`() {
+        // P4-C 后那条「与 Dart warehouse_bridge_gate.dart 逐项一致」的对拍整段退役：
+        // Dart 侧已不存在，集合的唯一真源是 Kotlin 常量本身，这里的字面量集合即锁。
         assertEquals(
             setOf("toast", "confirm", "prompt", "singleSelection", "error"),
             WAREHOUSE_IMPORT_ONLY_BRIDGE_MESSAGE_TYPES,
@@ -538,60 +522,7 @@ class WarehouseWebViewLogicTest {
     // 工具
     // -----------------------------------------------------------------------
 
-    /** 从仓库根向上找文件（与 `WarehouseStringsParityTest` 同一套做法，不依赖 cwd）。 */
-    private fun repoFile(relativePath: String): File {
-        var dir: File? = File("").absoluteFile
-        repeat(8) {
-            val candidate = File(dir, relativePath)
-            if (candidate.isFile) return candidate
-            dir = dir?.parentFile
-        }
-        error("找不到参照物 $relativePath（当前目录 ${File("").absolutePath}）")
-    }
-
-    /** 读参照物：**显式 UTF-8**，不依赖 JVM 默认字符集。 */
-    private fun readRepoFile(relativePath: String): String =
-        repoFile(relativePath).readText(Charsets.UTF_8)
-
-    /**
-     * 抽出 Dart `static const String <name> = 'a' 'b';` 这种**多段拼接**的字符串常量。
-     * 直接读源码是为了让「逐字对齐 Dart」这条期望值不来自 Kotlin 实现本身。
-     *
-     * 逐字符扫描而不是 `indexOf(';')`：UA 字面量里**自带分号**
-     * （`Mozilla/5.0 (Windows NT 10.0; Win64; x64)`），按第一个分号截会把字面量截断，
-     * 于是「一个都没解析出来」——这条坑 2026-10-28 实际踩过一次。
-     */
-    private fun dartConcatStringLiteral(source: String, variableName: String): String {
-        val start = source.indexOf("$variableName =")
-        assertTrue("Dart 参照物里找不到常量 $variableName", start >= 0)
-        val literals = ArrayList<String>()
-        var i = start
-        var inQuote = false
-        val current = StringBuilder()
-        while (i < source.length) {
-            val c = source[i]
-            when {
-                !inQuote && c == ';' -> break
-                !inQuote && c == '\'' -> {
-                    inQuote = true
-                    current.setLength(0)
-                }
-                inQuote && c == '\\' -> {
-                    i++
-                    if (i < source.length) current.append(source[i])
-                }
-                inQuote && c == '\'' -> {
-                    inQuote = false
-                    literals.add(current.toString())
-                }
-                inQuote -> current.append(c)
-            }
-            i++
-        }
-        assertTrue(
-            "Dart 参照物里 $variableName 没有解析出字符串字面量（起点 $start）",
-            literals.isNotEmpty(),
-        )
-        return literals.joinToString("")
-    }
+    // 去 Flutter 化（P4-C，2026-11-08）残留清理：原先这里还有 `repoFile` / `readRepoFile` /
+    // `dartConcatStringLiteral` 三个读 Dart 参照物的小工具；那三条对拍已整段退役，
+    // 工具随之无引用，顺手清掉（File import 一并移除）。
 }

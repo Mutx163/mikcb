@@ -296,6 +296,61 @@ class WarehouseImportHandoffGuardTest {
         )
     }
 
+    @Test
+    fun `快捷导入不得写本条目的学校适配器 且适配器宿主只在没学校时消费交接件`() {
+        val host = stripKotlinComments(source("WarehouseImportHosts.kt").readText(Charsets.UTF_8))
+        val quickStart = host.indexOf("fun startQuickImport(")
+        assertTrue("找不到 startQuickImport（判据本身失效了）", quickStart >= 0)
+        val quickEnd = host.indexOf("onOpenPage(WarehouseRoutes.WEB_LOGIN)", quickStart)
+        assertTrue("找不到快捷导入的跳转边界（解析可能失效）", quickEnd > quickStart)
+        val quick = host.substring(quickStart, quickEnd)
+
+        assertFalse(
+            "快捷导入不许写本条目的 state.school：本条目还停在选校列表，写 school 会让新加的" +
+                "内联分支立刻组合适配器宿主，把要交给登录页的一次性交接件先 take 走" +
+                "（2026-11-07 复核 P0）。跨页目标只走 WarehouseImportHandoff.publish。",
+            quick.contains("state.school ="),
+        )
+        assertFalse(
+            "同上：快捷导入的适配器也只走交接件，不写本条目的 state.adapter。",
+            quick.contains("state.adapter ="),
+        )
+
+        val adapters = functionBody(host, "fun WarehouseSchoolAdaptersHost(")
+        assertTrue(
+            "适配器宿主只能在 state.school 为空（壳层分流条目）时 take 交接件；" +
+                "本条目内换页时 state.school 已有值，登录页/详情页还要用这份交接件。",
+            Regex("""if\s*\(\s*state\.school\s*==\s*null\s*\)\s*WarehouseImportHandoff\.take\(\)""")
+                .containsMatchIn(adapters),
+        )
+        assertFalse(
+            "不许再无条件 take：`remember { WarehouseImportHandoff.take() }` 会把登录页的交接件抢走。",
+            Regex("""val\s+handoff\s*=\s*remember\s*\{\s*WarehouseImportHandoff\.take\(\)""")
+                .containsMatchIn(adapters),
+        )
+    }
+
+    @Test
+    fun `适配器列表必须用 BackHandler 把系统返回改回选校列表`() {
+        val host = stripKotlinComments(source("WarehouseImportHosts.kt").readText(Charsets.UTF_8))
+        val body = functionBody(host, "fun WarehouseImportPickerHost(")
+        val start = body.indexOf("if (state.school != null)")
+        assertTrue("找不到本条目内换页的判据（判据本身失效了）", start >= 0)
+        val end = body.indexOf("LaunchedEffect(", start)
+        assertTrue("找不到早退分支的结尾 LaunchedEffect（解析可能失效）", end > start)
+        val branch = body.substring(start, end)
+
+        assertTrue(
+            "适配器列表是本条目内换页，栈深度没变；系统返回必须和左上角箭头一样回选校列表，" +
+                "不能让 NavDisplay 把整个教务导入弹掉。",
+            Regex("""BackHandler\s*\{\s*state\.school\s*=\s*null\s*\}""").containsMatchIn(branch),
+        )
+        assertTrue(
+            "BackHandler 必须来自 androidx.activity.compose，不能拿别的同名函数。",
+            host.contains("import androidx.activity.compose.BackHandler"),
+        )
+    }
+
     // -------------------------------------------------------------------
     // 工具
     // -------------------------------------------------------------------

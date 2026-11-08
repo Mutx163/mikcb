@@ -126,9 +126,13 @@ com/mutx163/qingyu/pages/settings/GlassDockIconPickerScreen.kt:4
 com/mutx163/qingyu/pages/statistics/StatisticsSettingsPage.kt:4
 # A @Preview 名
 com/mutx163/qingyu/pages/about/AboutStaticPage.kt:3
-# A @Preview 与预览样例
-com/mutx163/qingyu/pages/timetable/day/DayViewPage.kt:5
+# A @Preview 与预览样例（预览课样例 9 条 + @Preview 名 3 条）
+com/mutx163/qingyu/pages/timetable/day/DayViewPage.kt:12
 # C “取消”疑似正式文案，本轮仅登记，后续移 ARB
 com/mutx163/qingyu/pages/guide/MoreFeaturesSearchOverlay.kt:1
 # A 解析标记“步骤 ”（逻辑字面，非屏上文案）
 com/mutx163/qingyu/pages/import/ImportCommon.kt:1
+# A month-view preview fixtures / @Preview names
+com/mutx163/qingyu/pages/timetable/month/MonthViewPage.kt:33
+# A @Preview 名 + 周视图预览课样例（12 门课的课名 / 教师 / 地点、作业样例）
+com/mutx163/qingyu/pages/timetable/TimetableWeekPage.kt:32

@@ -95,11 +95,12 @@ class ComposePageStyleGuardTest {
     private fun repoRoot(): File {
         var dir: File? = androidSrc().absoluteFile
         while (dir != null) {
-            if (File(dir, "lib/screens").isDirectory && File(dir, "pubspec.yaml").isFile) return dir
+            // 锚点改 Kotlin 侧：Dart 已删（P4-C），不能再要求 lib/screens 或 pubspec 存在。
+            if (File(dir, "i18n/app_zh.arb").isFile && File(dir, "android/app/build.gradle").isFile) return dir
             dir = dir.parentFile
         }
         throw AssertionError(
-            "找不到仓库根（lib/screens 与 pubspec.yaml）—— 守卫无法验证，按失败处理。" +
+            "找不到仓库根（i18n/app_zh.arb 与 android/app/build.gradle）—— 守卫无法验证，按失败处理。" +
                 "当前工作目录：${System.getProperty("user.dir")}",
         )
     }

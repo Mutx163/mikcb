@@ -106,11 +106,12 @@ class PageScaffoldGuardTest {
     private fun repoRoot(): File {
         var dir: File? = androidSrc().absoluteFile
         while (dir != null) {
-            if (File(dir, "lib/screens").isDirectory && File(dir, "pubspec.yaml").isFile) return dir
+            // 锚点改 Kotlin 侧：Dart 已删（P4-C），不能再要求 lib/screens 或 pubspec 存在。
+            if (File(dir, "i18n/app_zh.arb").isFile && File(dir, "android/app/build.gradle").isFile) return dir
             dir = dir.parentFile
         }
         throw AssertionError(
-            "找不到仓库根（lib/screens 与 pubspec.yaml）—— 守卫无法验证，按失败处理。" +
+            "找不到仓库根（i18n/app_zh.arb 与 android/app/build.gradle）—— 守卫无法验证，按失败处理。" +
                 "当前工作目录：${System.getProperty("user.dir")}",
         )
     }
@@ -380,43 +381,34 @@ class PageScaffoldGuardTest {
     // ───────────── 1.5 Dart 变体一致性与判据覆盖自检（2026-10-28 独立复核新增） ─────────────
 
     /**
-     * Dart 侧明确关掉折叠大标题的页面，Compose 侧不许再出现大标题。
+     * 工具页必须固定小标题栏（不许出现大标题）。
      *
-     * 2026-10-28 独立复核抓到一例：`diagnostics/LiveDiagnosticsLogPage.kt` 的注释写着
-     * 「Dart 侧走 HyperosSubpage，collapsibleLargeTitle 默认 true ⇒ 可折叠大标题」，
-     * 于是照可折叠大标题接了线。但 Dart 那页是**显式**关掉的：
-     * `lib/screens/live_diagnostics_log_viewer_screen.dart` 里写着 false，
-     * 上面还留了一段说明——大标题收起后 body 顶部 inset 仍按展开态保持，长列表 delta=0 不重测，
-     * 大标题区会变成一条永久死区，筛选条底下跟一条空白。工具页要的是固定小标题栏。
+     * 起源（2026-10-28 独立复核）：Dart 原版显式关掉折叠大标题的两页
+     * （`live_diagnostics_log_viewer_screen.dart`、教务网页登录页）被照「可折叠大标题」接了线。
+     * 大标题收起后 body 顶部 inset 仍按展开态保持、长列表 delta=0 不重测，大标题区会变成
+     * 一条永久死区，筛选条底下跟一条空白。工具页要的是固定小标题栏。
      *
      * 这类错**原判据一条都拦不住**：只查「有 largeTitle + 有 scrollBehavior」的写法，
-     * 参数齐全、方向反了照样绿。所以这里把「Dart 说了 false」的页面逐个钉住，
-     * 并顺手盯住 Dart 那一行还在不在——前提变了要重新对照，不能默默放过。
+     * 参数齐全、方向反了照样绿。只有逐页钉住才拦得住。
+     *
+     * 去 Flutter 化（P4-C）后 Dart 原版已删；旧注释里「盯住 Dart 那一行还在不在」的前提
+     * 核对随之退役（那条判断已不存在），剩下的 Kotlin 侧断言（两页不许出现 `largeTitle`）
+     * 继续钉：需要换版式时改这条测试，不要静默删掉它——否则这页跌回大标题没人察觉。
      */
     @Test
-    fun `Dart 侧关掉折叠大标题的页面不许再出现大标题`() {
-        val entries = listOf(
-            "lib/screens/live_diagnostics_log_viewer_screen.dart" to
-                "diagnostics/LiveDiagnosticsLogPage.kt",
-            "lib/screens/import/warehouse/warehouse_adapter_web_login_screen.dart" to
-                "import/warehouse/WarehouseWebLoginPage.kt",
+    fun `工具页不许出现大标题（固定小标题栏）`() {
+        val pages = listOf(
+            "diagnostics/LiveDiagnosticsLogPage.kt",
+            "import/warehouse/WarehouseWebLoginPage.kt",
         )
-        val root = repoRoot()
-        entries.forEach { (dartRel, composeRel) ->
-            val dart = File(root, dartRel)
-            assertTrue("Dart 原版文件不存在：$dartRel", dart.isFile)
-            assertTrue(
-                "$dartRel 里已经不再写 collapsibleLargeTitle: false —— 前提变了，" +
-                    "请重新对照 Dart 与 Compose 的页面壳变体，再决定这条判据的去留。",
-                "collapsibleLargeTitle: false" in dart.readText(),
-            )
-            assertTrue(
-                "$composeRel 用了大标题，但 Dart 原版 $dartRel 明确写了 " +
-                    "collapsibleLargeTitle: false（这页不该有大标题）：请改用 SmallTopAppBar，" +
-                    "照 settings/SettingsPageRenderers.kt 的写法。",
-                "largeTitle" !in read(composeRel),
-            )
-        }
+        val offenders = pages.filter { "largeTitle" in read(it) }
+        assertTrue(
+            "以下页面出现了 `largeTitle`（大标题），但它们应是固定小标题栏——" +
+                "大标题收起后 body 顶部 inset 仍按展开态保持、长列表 delta=0 不重测，" +
+                "会变成一条永久死区，筛选条底下跟一条空白：\n" +
+                offenders.joinToString("\n") { "  $it" },
+            offenders.isEmpty(),
+        )
     }
 
     /**
