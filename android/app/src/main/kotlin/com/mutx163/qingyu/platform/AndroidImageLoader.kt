@@ -106,30 +106,33 @@ class AndroidImageLoader(
 
     private fun runLoad(key: String, url: String, targetWidthPx: Int, targetHeightPx: Int) {
         var bitmap: Bitmap? = null
-        var attempt = 1
-        while (true) {
-            bitmap = tryDownloadDecode(url, targetWidthPx, targetHeightPx)
-            if (bitmap != null) break
-            if (!ImageRetryBackoff.shouldRetry(attempt)) break
-            try {
-                Thread.sleep(ImageRetryBackoff.delayMillis(attempt))
-            } catch (e: InterruptedException) {
-                Thread.currentThread().interrupt()
-                break
+        try {
+            var attempt = 1
+            while (true) {
+                bitmap = tryDownloadDecode(url, targetWidthPx, targetHeightPx)
+                if (bitmap != null) break
+                if (!ImageRetryBackoff.shouldRetry(attempt)) break
+                try {
+                    Thread.sleep(ImageRetryBackoff.delayMillis(attempt))
+                } catch (e: InterruptedException) {
+                    Thread.currentThread().interrupt()
+                    break
+                }
+                attempt++
             }
-            attempt++
-        }
-        val result = bitmap
-        synchronized(listenersLock) {
-            if (result != null) {
-                cache.put(key, result)
-                dedup.complete(key)
-            } else {
-                dedup.fail(key)
-            }
-            val callbacks = listeners.remove(key)
-            if (callbacks != null && callbacks.isNotEmpty()) {
-                mainHandler.post { callbacks.forEach { it(result) } }
+        } finally {
+            val result = bitmap
+            synchronized(listenersLock) {
+                if (result != null) {
+                    cache.put(key, result)
+                    dedup.complete(key)
+                } else {
+                    dedup.fail(key)
+                }
+                val callbacks = listeners.remove(key)
+                if (callbacks != null && callbacks.isNotEmpty()) {
+                    mainHandler.post { callbacks.forEach { it(result) } }
+                }
             }
         }
     }
@@ -159,7 +162,7 @@ class AndroidImageLoader(
                     BitmapFactory.decodeByteArray(bytes, 0, bytes.size, opts)
                 }
             }
-        } catch (e: Exception) {
+        } catch (e: Throwable) {
             null
         } finally {
             conn?.disconnect()

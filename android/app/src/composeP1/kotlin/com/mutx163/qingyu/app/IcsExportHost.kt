@@ -230,10 +230,10 @@ fun IcsExportHost(
      */
     fun runAfterValidation(action: () -> Unit) {
         when (IcsExportLogic.validate(selectedProfile, effectiveOptions)) {
-            IcsExportBlocker.NO_PROFILES -> toast(ExportStrings.icsExportNoProfiles.zh)
-            IcsExportBlocker.NO_SELECTION -> toast(ExportStrings.icsExportNoSelection.zh)
+            IcsExportBlocker.NO_PROFILES -> toast(ExportStrings.icsExportNoProfiles.text)
+            IcsExportBlocker.NO_SELECTION -> toast(ExportStrings.icsExportNoSelection.text)
             IcsExportBlocker.SEMESTER_START_REQUIRED ->
-                toast(ExportStrings.icsExportSemesterStartRequired.zh)
+                toast(ExportStrings.icsExportSemesterStartRequired.text)
             null -> action()
         }
     }
@@ -247,7 +247,7 @@ fun IcsExportHost(
                 val collected = collectEvents()
                 if (collected.events.isEmpty()) {
                     // Dart 同口径：0 条事件不弹菜单，直接说清楚。
-                    toast(ExportStrings.icsExportNoEvents.zh)
+                    toast(ExportStrings.icsExportNoEvents.text)
                 } else {
                     val profileName = selectedSource?.profileName.orEmpty()
                     val request = IcsShareWiring.requestFromEvents(
@@ -270,7 +270,7 @@ fun IcsExportHost(
                     menuVisible = true
                 }
             } catch (e: Exception) {
-                toast(ExportStrings.icsExportFailed.zh)
+                toast(ExportStrings.icsExportFailed.text)
             } finally {
                 isExporting = false
             }
@@ -305,10 +305,10 @@ fun IcsExportHost(
         when (outcome) {
             IcsShareOutcome.Shared ->
                 toast(ExportStrings.icsExportShared.filled("count", pendingCount.toString()))
-            IcsShareOutcome.Cancelled -> toast(ExportStrings.icsExportCancelled.zh)
+            IcsShareOutcome.Cancelled -> toast(ExportStrings.icsExportCancelled.text)
             // 回执通道没接上（manifest 少一行接收器声明）：分不清取消与成功，宁可不说话。
             IcsShareOutcome.Unconfirmed -> Unit
-            is IcsShareOutcome.Failed -> toast(ExportStrings.icsExportFailed.zh)
+            is IcsShareOutcome.Failed -> toast(ExportStrings.icsExportFailed.text)
         }
     }
 
@@ -316,7 +316,7 @@ fun IcsExportHost(
         val content = pendingContent
         menuVisible = false
         if (content == null) {
-            toast(ExportStrings.icsExportFailed.zh)
+            toast(ExportStrings.icsExportFailed.text)
         } else {
             val profileName = selectedSource?.profileName.orEmpty()
             when (
@@ -330,7 +330,7 @@ fun IcsExportHost(
                 is IcsSharePreparation.Failed -> {
                     // 拉起之前就失败（写文件 / FileProvider / Uri 形状）：与「取消」不同，报失败。
                     pendingContent = null
-                    toast(ExportStrings.icsExportFailed.zh)
+                    toast(ExportStrings.icsExportFailed.text)
                 }
 
                 is IcsSharePreparation.Ready -> {
@@ -339,7 +339,7 @@ fun IcsExportHost(
                         // 没有能接 `text/calendar` 的应用 / 系统拒绝拉起：也报失败，不谎报取消。
                         shareRelayAvailable = false
                         pendingContent = null
-                        toast(ExportStrings.icsExportFailed.zh)
+                        toast(ExportStrings.icsExportFailed.text)
                     }
                 }
             }
@@ -354,11 +354,11 @@ fun IcsExportHost(
         pendingContent = null
         menuVisible = false
         if (uri == null || content == null) {
-            toast(ExportStrings.icsExportSaveCancelled.zh)
+            toast(ExportStrings.icsExportSaveCancelled.text)
         } else if (writeTextToUri(appContext, uri, content)) {
             toast(ExportStrings.icsExportSavedCount.filled("count", pendingCount.toString()))
         } else {
-            toast(ExportStrings.icsExportSaveFailed.zh)
+            toast(ExportStrings.icsExportSaveFailed.text)
         }
     }
 
@@ -367,7 +367,7 @@ fun IcsExportHost(
         // 同步与导出**共用同一份区间/勾选口径**（Dart `collectEvents` 也是两条链路同源）。
         val collected = collectEvents()
         if (collected.events.isEmpty()) {
-            toast(ExportStrings.icsExportNoEvents.zh)
+            toast(ExportStrings.icsExportNoEvents.text)
         } else {
             isSyncing = true
             val calendarName = IcsExportLogic.syncCalendarName(selectedSource?.profileName.orEmpty())
@@ -387,9 +387,9 @@ fun IcsExportHost(
                     isSyncing = false
                     toast(
                         if (code == PERMISSION_DENIED_CODE) {
-                            ExportStrings.icsExportSyncCalendarPermissionDenied.zh
+                            ExportStrings.icsExportSyncCalendarPermissionDenied.text
                         } else {
-                            ExportStrings.icsExportSyncCalendarFailed.zh
+                            ExportStrings.icsExportSyncCalendarFailed.text
                         },
                     )
                 },
@@ -408,10 +408,10 @@ fun IcsExportHost(
                 val deleted = value as? Boolean ?: false
                 toast(
                     if (deleted) {
-                        ExportStrings.icsExportRemoveCalendarSuccess.zh
+                        ExportStrings.icsExportRemoveCalendarSuccess.text
                     } else {
                         // 从没同步过：`deleteLocalCalendar` 返回 false。
-                        ExportStrings.icsExportRemoveCalendarNothing.zh
+                        ExportStrings.icsExportRemoveCalendarNothing.text
                     },
                 )
             },
@@ -419,9 +419,9 @@ fun IcsExportHost(
                 isRemoving = false
                 toast(
                     if (code == PERMISSION_DENIED_CODE) {
-                        ExportStrings.icsExportSyncCalendarPermissionDenied.zh
+                        ExportStrings.icsExportSyncCalendarPermissionDenied.text
                     } else {
-                        ExportStrings.icsExportRemoveCalendarFailed.zh
+                        ExportStrings.icsExportRemoveCalendarFailed.text
                     },
                 )
             },
@@ -434,7 +434,7 @@ fun IcsExportHost(
         if (grants.isNotEmpty() && grants.values.all { granted -> granted }) {
             runSync()
         } else {
-            toast(ExportStrings.icsExportSyncCalendarPermissionDenied.zh)
+            toast(ExportStrings.icsExportSyncCalendarPermissionDenied.text)
         }
     }
 
@@ -481,7 +481,7 @@ fun IcsExportHost(
             runRemove()
         } else {
             // 删除也要 READ+WRITE；没有权限时如实说，不去系统里乱删。
-            toast(ExportStrings.icsExportSyncCalendarPermissionDenied.zh)
+            toast(ExportStrings.icsExportSyncCalendarPermissionDenied.text)
         }
     }
 

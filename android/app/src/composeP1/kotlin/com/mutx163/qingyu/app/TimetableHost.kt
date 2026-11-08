@@ -128,6 +128,8 @@ fun TimetableHost(
     monthMode: Boolean = false,
     /** 月视图顶部角格显示哪个月（只月份，不带年份）。 */
     monthLabel: String? = null,
+    /** 月视图选中的日期（顶部星期栏据此显示选中周）。 */
+    monthSelectedDate: java.time.LocalDateTime? = null,
     /** 月视图正文（宿主注入；内层自己不再搭顶栏/壁纸/Scaffold）。 */
     monthContent: (@Composable () -> Unit)? = null,
     /** 周视图滚动体的可选外层（首页下拉快捷导入）：只包玻璃带下方那一块。 */
@@ -148,6 +150,15 @@ fun TimetableHost(
      * 与顶栏「轻屿课表」，星期栏当首行、网格按预览框高自适应。只给两个设置页挖洞预览用。
      */
     previewMode: Boolean = false,
+    /**
+     * 预览里的**节高基准**：首页网格的可用高（= 整屏 − 状态栏 − 首页顶栏 − 星期栏）。
+     *
+     * 只在 [previewMode] 下有意义（2026-11-08）：预览窗口只有 4 行高，但行高必须与首页
+     * 一致——所以「自动充满」这两档算节高时用这个基准，而不是拿窗口高去除节数
+     *（那会把 12 节压成 27dp 一行，正是 2026-11-04 被用户否掉的「逐节压扁」）。
+     * null = 以自己的盒子为基准（真页面的旧口径）。
+     */
+    previewSectionBasisDp: Dp? = null,
     /**
      * 玻璃 / backdrop 表面是否启用（默认 true，其它调用点行为不变）。
      *
@@ -438,6 +449,8 @@ fun TimetableHost(
         onCloseDay = onCloseDay,
         dayContent = dayContent,
         monthMode = monthMode,
+        monthLabel = monthLabel,
+        monthSelectedDate = monthSelectedDate,
         monthContent = monthContent,
         weekScrollWrapper = weekScrollWrapper,
         transitionSpeed = transitionSpeed,
@@ -447,7 +460,6 @@ fun TimetableHost(
         homeTitleStyle = settingsModel?.homeTitleStyle ?: HomeTitleStyle.CLASSIC,
         // 菜单形态取自用户存档（Dart `homeMenuStyle`，:1489 默认 list）；壳没传就走默认。
         homeMenuStyle = settingsModel?.homeMenuStyle ?: HomeMenuStyle.LIST,
-        monthLabel = monthLabel,
         homeMenuItems = menuItemsWithShare,
         // 顶栏菜单「分享课表图片」在宿主拦截（Dart timetable_screen.dart:966-968 同口径：
         // 分享要带「当前可见周」与周/日视图，只有首页这一层知道，不走壳的推页映射）。
@@ -486,5 +498,6 @@ fun TimetableHost(
         // 没有中间面板）。dayOfWeek = null ⇒ 周图。
         onShareScreenshot = { week, dayOfWeek -> shareCurrentView(week, dayOfWeek) },
         previewMode = previewMode,
+        previewSectionBasisDp = previewSectionBasisDp,
     )
 }

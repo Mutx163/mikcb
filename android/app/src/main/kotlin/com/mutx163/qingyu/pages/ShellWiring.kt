@@ -879,6 +879,8 @@ fun TimetableWithCourseActions(
     val dayProgressSeed = if (wiring.homeViewMode == TimetableHomeViewMode.DAY) 1f else 0f
     // 月视图顶部角格显示哪个月：由月页在翻月落定后回传（只月份，不带年份）。
     var monthLabel by remember { mutableStateOf("") }
+    // 月视图选中的日期：顶部星期栏要显示“选中那一天所在周”的 7 个日期。
+    var monthSelectedDate by remember { mutableStateOf<java.time.LocalDateTime?>(null) }
 
     // ── 首页下拉快捷导入（2026-11-07 接线）────────────────────────────────
     // 只接线，不改导入内核：宏回放仍走「仓库登录页 + `WarehouseImportHandoff`」那条，
@@ -953,6 +955,9 @@ fun TimetableWithCourseActions(
 
     TimetableHost(
         repository = repository,
+        // 首页周课卡的天气行：壳里唯一一份设备级 provider（与日视图 / 预览同一份）。
+        // 早先这条漏了，用户看到的差异就是「首页没有、外观预览有」（2026-11-07）。
+        weatherProvider = weatherProvider,
         // 下拉层只包「玻璃带下方的周视图滚动体」（2026-11-07 审核 P0-2）：包整页时
         // 指示器会被正文盖住（偏移后画在内容下面）、不偏移又压在状态栏上。
         // 日 / 月 / 预览分支不经过这个 lambda，天然不装。
@@ -1035,10 +1040,11 @@ fun TimetableWithCourseActions(
         // 下方以「无壳模式」渲染（`monthEmbedded = true`），不再自己搭 Scaffold /
         // 壁纸 / 顶栏——否则它作为另一页被 Pager 推入时，会带着自己那份壁纸一起滑。
         monthMode = wiring.homeViewMode == TimetableHomeViewMode.MONTH,
+        monthLabel = monthLabel,
+        monthSelectedDate = monthSelectedDate,
         // 始终给出月视图正文：`TimetableWeekPage` 只在 monthMounted 时组合它，
         // 退出动画期间还要靠它继续画；按 homeViewMode 置 null 会让月内容在滑出前
         // 突然消失（只剩壁纸）——这是“滑到一半没了”的根因。
-        monthLabel = monthLabel,
         monthContent = {
             ShellPageContent(
                 pageId = "c2.month",
@@ -1046,10 +1052,11 @@ fun TimetableWithCourseActions(
                 wiring = wiring,
                 onOpenPage = onNavigate,
                 monthEmbedded = true,
+                onMonthLabelChanged = { label -> monthLabel = label },
+                onMonthSelectedDateChanged = { date -> monthSelectedDate = date },
             )
         },
         // 周网格里的考试 / 日程卡：Dart 侧考试卡 → 考试页、日程卡 → 日程编辑页
-                onMonthLabelChanged = { label -> monthLabel = label },
         // （`week_grid_agenda_card.dart` 的 closedBuilder/openBuilder 同一条路）。
         // 这里按 id 找回实体再带进目标页；找不到就退到列表页，不让点击变哑。
         onAgendaClicked = { entry ->

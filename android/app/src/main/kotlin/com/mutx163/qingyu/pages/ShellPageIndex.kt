@@ -232,7 +232,6 @@ import com.mutx163.qingyu.pages.timetable.TimetableProfilesPage
 import com.mutx163.qingyu.pages.timetable.TimetableWeekPage
 import com.mutx163.qingyu.pages.timetable.WeekdayHeaderMetrics
 import com.mutx163.qingyu.pages.timetable.TimetableTopBarMetrics
-import com.mutx163.qingyu.pages.timetable.weekSectionHeight
 import com.mutx163.qingyu.pages.timetable.day.DayViewDataAssembler
 import com.mutx163.qingyu.pages.timetable.day.DayViewStrings
 import com.mutx163.qingyu.pages.timetable.day.DayViewWeather
@@ -374,9 +373,11 @@ fun ShellPageContent(
     /** 非空 = 本页正作为**首页的日视图展开层**渲染（见 [DayViewOverlayBinding]）。 */
     dayOverlay: DayViewOverlayBinding? = null,
     /** 非空 = 本页正作为**首页的月视图第三种页内态**渲染（见 `MonthViewPage.embedded`）。 */
+    monthEmbedded: Boolean = false,
     /** 月视图聚焦月（只月份）回传，供首页顶部角格显示。 */
     onMonthLabelChanged: ((String) -> Unit)? = null,
-    monthEmbedded: Boolean = false,
+    /** 月视图选中日期回传，供首页顶部星期栏显示选中周。 */
+    onMonthSelectedDateChanged: ((java.time.LocalDateTime?) -> Unit)? = null,
 ) {
     // 单一天气 provider（设备级状态：开关/城市/预报缓存）。2026-10-29 起实例住在
     // `ShellWiring.weather`（`by lazy`），不再在这里 `remember` 一份 —— 因为**底部坞**那条
@@ -496,6 +497,8 @@ fun ShellPageContent(
             homeViewMode = wiring.homeViewMode,
             homeSelectedWeek = wiring.homeSelectedWeek,
             homeSelectedDayOfWeek = wiring.homeSelectedDayOfWeek,
+            // 预览与真首页同一份天气数据源（设备级 provider）。
+            weatherProvider = weatherProvider,
         )
         // 「材质（通用 / 课程卡片）」在原版里**不是两页**，是外观编辑页那个底部弹层的
         // 两个页签（`settings_appearance_editor.dart:2253-2255`）。所以这两条路由直达同一
@@ -511,6 +514,7 @@ fun ShellPageContent(
             homeViewMode = wiring.homeViewMode,
             homeSelectedWeek = wiring.homeSelectedWeek,
             homeSelectedDayOfWeek = wiring.homeSelectedDayOfWeek,
+            weatherProvider = weatherProvider,
         )
         "b.materialCourseCard" -> AppearanceEditorHost(
             store = wiring.settingsModel,
@@ -522,6 +526,7 @@ fun ShellPageContent(
             homeViewMode = wiring.homeViewMode,
             homeSelectedWeek = wiring.homeSelectedWeek,
             homeSelectedDayOfWeek = wiring.homeSelectedDayOfWeek,
+            weatherProvider = weatherProvider,
         )
         // 壁纸面板只有一个入口（Dart `settings_home_backdrop_flow.dart:439-472`：第一页
         // 同时含选图行与「最近使用」缩略图条，没有独立的「最近使用」页）。原先
@@ -538,6 +543,7 @@ fun ShellPageContent(
             homeViewMode = wiring.homeViewMode,
             homeSelectedWeek = wiring.homeSelectedWeek,
             homeSelectedDayOfWeek = wiring.homeSelectedDayOfWeek,
+            weatherProvider = weatherProvider,
         )
         // 2026-10-30 F05 收尾：这一页原先走空 state（永远「加载中」、点哪都没下文），
         // 换成真宿主：拉 Bing 每日壁纸清单 + 缩略图 + 点一张下载落盘并写设置。
@@ -770,11 +776,12 @@ fun ShellPageContent(
                 ),
                 homeMenuItems = TimetableMenuDefaults.entries(),
                 embedded = monthEmbedded,
+                onMonthLabelChanged = onMonthLabelChanged ?: {},
+                onSelectedDateChanged = onMonthSelectedDateChanged ?: {},
                 // 「添加课程」要带当前浏览周与今天星期几（Dart `openCourseForm`，
                 // `timetable_screen.dart:1745-1752`）；其余项只按映射表推页。
                 onHomeMenuSelect = { id ->
                     shellTimetableMenuPageId(id)?.let { target ->
-                onMonthLabelChanged = onMonthLabelChanged ?: {},
                         if (target == "d1.addCourse") wiring.seedAddCourseFromMenu(snapshot.currentWeek)
                         onOpenPage(target)
                     }
@@ -970,12 +977,10 @@ fun ShellPageContent(
                     )
                 },
                 // 装配结果的失效信号：仓储快照变了才重跑 `dataProvider`。
-                // 不传的话，页面里每秒跳动的心跳会把整页装配（全量过滤 + 冲突表）
-                // 一起重跑一遍（见 DayViewPage `dataVersion` 的 KDoc）。
-                // 叠加序号也算进去：情侣页改颜色/周偏移只写键值存储、仓储快照不变，
-                // 不加这个键的话改完回日视图还是旧色（B1 · 2026-11-06）。
-                // Pair 的比较是按 equals 的：快照（data class）或序号任一变了都失效。
-                dataVersion = snapshot.let { Pair(it, coupleOverlayRevision) },
+                // ⚠ 2026-11-07：天气也必须算进来。`weatherTick` 不参与的话，页面首次组合时
+                // 预报还没到，`weatherLines` 就会一直空着（"今天那页刷过"、别的天永远没有，
+                // 用户看到的就是"只有今天有天气"）。
+                dataVersion = Triple(snapshot, coupleOverlayRevision, weatherTick),
                 onCloseToWeekView = dayOverlay?.onRequestClose ?: onBack,
                 // 待办带里「关联课程」的名字与颜色（Dart `provider.getCourseForTask`）。
                 courseResolver = { task ->
@@ -2391,14 +2396,17 @@ private fun SettingsScreen(
  * 2026-11-04 用户口径「完整显示星期栏 + 上/下不要圆角」）。
  *
  * 旧的自绘缩略图（星期栏 + Canvas 网格 + 色块）已被用户否掉，必须露出真实组件。
- * 2026-11-04（第二轮）用户口径：预览要**和首页同比例**（不被 40% 高预览框逐节压扁）+ **框内上下滑**。
- * 对齐发布版（v2.1.4.1 `settings_course_card.dart` 的 `SingleChildScrollView` 套真
- * `TimetableWeekPreview`）：走 [QingyuPreviewCutout] 的**静态 1:1 裁窗 + 框内滚动**分支
- * （`fitToBox = false`、`contentWidth = 窗口宽` ⇒ scale=1 整像素不缩放、`contentHeight = 真实自然高`
- * （星期栏高 + 节数 × 首页节高，2026-11-04 三修：不再用整屏高，避免拉到底多出空白）
- * ⇒ 按首页节高自然排版、`cornerRadius = 0.dp` 方角），[TimetableHost] 以 `previewMode = true`
- * 组合（不画状态栏留白与顶栏、[TimetableWeekdayHeader] 当首行）。点击 / 长按 / 内部滚动在组件里
- * 整体关掉、读屏聚焦不到内部控件；玻璃恒开、不做逐帧 graphicsLayer 缩放。
+ * 2026-11-08 用户口径（实报「进页看不到星期栏、第一行是第 5 节」）：预览要像首页那样
+ * **星期栏钉在窗口顶部、只有网格上下滑**，而不是把整页当一条长纸带滚（那样一滑就
+ * 把星期栏顶出窗口，第一行变成随手滑到的某一节）。
+ *
+ * 所以走 [QingyuPreviewCutout] 的**按框排版**分支（`fitToBox = true`）：窗口多大，真组件
+ * 就排多大，星期栏占顶上 40dp、网格自己滚动（滚动状态在 `TimetableWeekPage` 里）。
+ * `isolateGestures = false`：手势要放给网格（框内上下滑就是这个手势），而「预览不可点」
+ * 改由页面自己保证——预览分支里课卡 / 空白格 / 浮钮的回调本来就是空实现，星期栏那两处
+ * 点击也按 `previewMode` 就地作废。
+ * 节高**仍按首页算**：壳把「首页网格可用高」当基准传下去（自动充满档），窗口本身只露
+ * 4 行左右，但一行的高度和首页逐像素相同。
  *
  * 数据：课程随仓储快照订阅实时变；显示偏好取**宿主当前草稿**——两页宿主把 `model`
  * 顺着 `preview(model)` 传进来（唯一取用口径 `settingsPreviewDraft`），改开关 / 拖滑杆
@@ -2408,30 +2416,6 @@ private fun SettingsScreen(
 @Composable
 private fun SettingsTimetablePreviewSlot(wiring: ShellWiring, settingsModel: TimetableSettingsModel) {
     val configuration = LocalConfiguration.current
-    // 2026-11-04 用户口径：预览要**和首页同比例**（不被 40% 高的预览框压扁）+ **框内上下滑**。
-    // 对齐发布版（v2.1.4.1 `settings_course_card.dart` 的 `SingleChildScrollView` 套真
-    // `TimetableWeekPreview`）：按窗口宽 1:1 排版（scale = 窗口宽 / 内容宽 = 1，整像素、不缩放）
-    // + 框内纵向滚动，玻璃恒开、不做逐帧 graphicsLayer 缩放。
-    //
-    // 2026-11-04 三修（用户实报「顶部看不到星期栏、从第 4 节开始、拉到底多出半屏空白」）：
-    // 内容高**不再固定取「整屏高」**，改成**真实自然高 = 星期栏高 + 节数 × 首页节高**。
-    // 首页节高复用 `weekSectionHeight`（与真首页同一口径：自动充满档按可用高算、固定节高档用
-    // `style.sectionHeightDp`）。滚动总高（= contentHeight × scale）遂与内容实际高相等，
-    // 拉到底不再多出空白；初始滚动固定 0 ⇒ 顶部就是星期栏。
-    // 仓储快照订阅：预览的内容高（节数）与页面同源，活动作息在本页开着时被外部
-    // 改掉也要跟着变；课程变化由 TimetableHost 自己的订阅负责，这里只多用一条监听。
-    val repository = wiring.timetable
-    var snapshot by remember(repository) { mutableStateOf(repository.snapshot) }
-    DisposableEffect(repository) {
-        val subscription = repository.observe { updated -> snapshot = updated }
-        onDispose { subscription.close() }
-    }
-    val style = TimetableStyleMapping.weekViewStyle(settingsModel)
-    val sectionCount = TimetableHostLogic
-        .resolveActiveTimeScheme(snapshot.timeSchemes, snapshot.activeTimeSchemeId)
-        ?.sections?.takeIf { it.isNotEmpty() }
-        ?.size
-        ?: snapshot.settings.sections.size
     // 星期栏高：previewMode 下顶栏只剩星期栏，取其固定高度 40dp（`WeekdayHeaderMetrics.HEIGHT_DP`）。
     val weekbarHeightDp = WeekdayHeaderMetrics.HEIGHT_DP
     // 首页网格的可用高 = 整屏 − 状态栏 − 首页顶栏 − 星期栏。
@@ -2444,30 +2428,21 @@ private fun SettingsTimetablePreviewSlot(wiring: ShellWiring, settingsModel: Tim
         configuration.screenHeightDp.dp - statusBarTopDp -
             TimetableTopBarMetrics.HEIGHT.dp - weekbarHeightDp.dp
         ).coerceAtLeast(0.dp)
-    val contentHeightDp = weekbarHeightDp + sectionCount * weekSectionHeight(
-        style = style,
-        // 与真首页同一口径：传「星期栏以下的网格高」，星期栏高则传 0，不再二次扣除。
-        availableHeightDp = homeGridHeightDp.value,
-        weekdayHeaderHeightDp = 0f,
-        sectionCount = sectionCount,
-    )
     BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
         QingyuPreviewCutout(
-            // 内容宽 = 窗口宽 ⇒ scale 恒为 1（1:1、整像素、不缩放）。
+            // 按框排版：窗口多大内容就多大（scale 恒 1，不缩放）。
             contentWidth = maxWidth,
-            // 内容高 = 真实自然高（星期栏 + 节数 × 首页节高），滚动总高与内容一致、底部不出空白。
-            contentHeight = contentHeightDp.dp,
+            contentHeight = maxHeight,
             // 方角（对齐 Flutter 已发布版预览无圆角）。
             cornerRadius = 0.dp,
-            // 走「静态裁窗 + 框内滚动」分支（不再按框自适应压扁）。
-            fitToBox = false,
-            // 初始滚动固定从 0（顶部 / 星期栏）开始，不沿用上一次滚到的位置。
-            initialScroll = 0,
+            // 内容按窗口尺寸排版、不提供本组件自带的长条滚动。
+            fitToBox = true,
+            // 手势放给内容（框内上下滑 = 滚网格）；「不可点」由预览模式下的空回调保证。
+            isolateGestures = false,
         ) {
             TimetableHost(
                 repository = wiring.timetable,
-                // 点击在挖洞件的手势层就被关掉，这些回调永远不会被调用；给空实现让
-                // 「预览不可操作」这件事只有一处真源（外观编辑页同一口径）。
+                // 预览不可操作：所有入口给空实现（星期栏那两处点击在页面里按 previewMode 作废）。
                 onOpenAddCourse = { _, _ -> },
                 onOpenCourse = {},
                 settingsModel = settingsModel,
@@ -2477,8 +2452,10 @@ private fun SettingsTimetablePreviewSlot(wiring: ShellWiring, settingsModel: Tim
                 // 预览不接截屏监听：真首页那一份已经接上了，再来一份等于截一次屏
                 // 弹两次提示（Dart `_isPreview` 守卫，timetable_screen.dart:913-917）。
                 screenshotSharePromptEnabled = false,
-                // 预览模式：不画状态栏留白与顶栏，星期栏当首行。
+                // 预览模式：不画状态栏留白与顶栏，星期栏当首行、钉在窗口顶上。
                 previewMode = true,
+                // 节高基准 = 首页网格可用高：窗口只有 4 行高，但一行的高度与首页一致。
+                previewSectionBasisDp = homeGridHeightDp,
             )
         }
     }
