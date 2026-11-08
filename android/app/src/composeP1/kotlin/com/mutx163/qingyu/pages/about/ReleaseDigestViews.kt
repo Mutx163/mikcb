@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
@@ -20,6 +21,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -29,10 +31,15 @@ import com.mutx163.qingyu.components.shiftWeight
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.icon.MiuixIcons
-import top.yukonga.miuix.kmp.icon.extended.ExpandLess
-import top.yukonga.miuix.kmp.icon.extended.ExpandMore
+import top.yukonga.miuix.kmp.icon.extended.ChevronForward
 import top.yukonga.miuix.kmp.theme.Colors
 import top.yukonga.miuix.kmp.theme.MiuixTheme
+
+/**
+ * 分类胶囊左栏的最小宽度：11sp 两个汉字（22dp）+ 6dp×2 横向内边距 = 34dp。
+ * 没标签的行靠它占住同一栏，保证所有重点行的标题从同一条竖线开始。
+ */
+private val LabelChipMinWidth = 34.dp
 
 /**
  * 发布说明摘要的**共享渲染件**（2026-11-03 版面收口）。
@@ -86,17 +93,22 @@ internal fun ReleaseNotesHighlightRow(
         modifier = Modifier.fillMaxWidth().padding(bottom = 10.dp),
         verticalAlignment = Alignment.Top,
     ) {
-        if (useLabelChip && entry.label.isNotEmpty()) {
-            // 11sp 字 + 2dp 纵向内边距 = 19dp，与正文 14sp/19dp 的行高齐平。
-            Text(
-                text = entry.label,
-                style = MiuixTheme.textStyles.footnote2.shiftWeight(QingyuWeightDelta.MEDIUM),
-                color = accent,
-                maxLines = 1,
-                modifier = Modifier
-                    .background(accent.copy(alpha = 0.12f), RoundedCornerShape(6.dp))
-                    .padding(horizontal = 6.dp, vertical = 2.dp),
-            )
+        if (useLabelChip) {
+            // 固定最小宽度：没有分类标签的行（老格式，或声明的重点对不上正文）也占住同一栏，
+            // 否则左缘会排成「胶囊 / 圆点 / 胶囊」三档，整张卡看着像没对齐。
+            Row(modifier = Modifier.widthIn(min = LabelChipMinWidth)) {
+                if (entry.label.isNotEmpty()) {
+                    Text(
+                        text = entry.label,
+                        style = MiuixTheme.textStyles.footnote2.shiftWeight(QingyuWeightDelta.MEDIUM),
+                        color = accent,
+                        maxLines = 1,
+                        modifier = Modifier
+                            .background(accent.copy(alpha = 0.12f), RoundedCornerShape(6.dp))
+                            .padding(horizontal = 6.dp, vertical = 2.dp),
+                    )
+                }
+            }
             Spacer(Modifier.width(8.dp))
         } else {
             Spacer(
@@ -196,11 +208,13 @@ internal fun ReleaseNotesExpandToggle(
             color = colors.primary,
         )
         Spacer(Modifier.width(2.dp))
+        // 用真正的箭头（旋转 90°）：官方 `ExpandMore` 是一枚「方角展开」图标，
+        // 16dp 下看着像个空方框，会让人以为字形没加载出来。
         Icon(
-            imageVector = if (expanded) MiuixIcons.ExpandLess else MiuixIcons.ExpandMore,
+            imageVector = MiuixIcons.ChevronForward,
             contentDescription = null,
             tint = colors.primary,
-            modifier = Modifier.size(16.dp),
+            modifier = Modifier.size(14.dp).rotate(if (expanded) -90f else 90f),
         )
     }
 }
