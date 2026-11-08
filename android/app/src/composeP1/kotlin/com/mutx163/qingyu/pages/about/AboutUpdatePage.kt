@@ -56,6 +56,7 @@ import com.mutx163.qingyu.theme.QingyuTheme
 import top.yukonga.miuix.kmp.basic.Button
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
 import top.yukonga.miuix.kmp.basic.CircularProgressIndicator
+import top.yukonga.miuix.kmp.basic.HorizontalDivider
 import top.yukonga.miuix.kmp.basic.LinearProgressIndicator
 import top.yukonga.miuix.kmp.basic.ScrollBehavior
 import top.yukonga.miuix.kmp.basic.Text
@@ -428,26 +429,33 @@ private fun AboutUpdateStatusCardFull(
     ) {
         Column(modifier = Modifier.fillMaxWidth()) {
             // 有更新：最新版本单独一段（主题色）+ 本页唯一的主按钮；没有更新时这一段整体不出现。
+            // 版本号改成**右侧取值**（与下面两行 preference 的「标题左 / 取值右」同一语法），
+            // 不再堆成「小字标签 + 大字版本」两层——两层在小卡里会多出一条重量级字行。
             if (hasUpdate) {
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(start = 16.dp, top = 16.dp, end = 16.dp, bottom = 14.dp),
+                        .padding(start = 16.dp, top = 16.dp, end = 16.dp, bottom = 16.dp),
                 ) {
-                    Text(
-                        text = AboutUpdateStrings.latestVersionLabel,
-                        style = MiuixTheme.textStyles.footnote1,
-                        color = colors.onSurfaceVariantActions,
-                    )
-                    Spacer(Modifier.height(2.dp))
-                    Text(
-                        text = release?.version ?: AboutUpdatePageStrings.unreleasedLabel,
-                        style = MiuixTheme.textStyles.body1.shiftWeight(QingyuWeightDelta.SEMIBOLD),
-                        color = colors.primary,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                    )
-                    Spacer(Modifier.height(14.dp))
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Text(
+                            text = AboutUpdateStrings.latestVersionLabel,
+                            style = MiuixTheme.textStyles.footnote1,
+                            color = colors.onSurfaceVariantSummary,
+                            modifier = Modifier.weight(1f),
+                        )
+                        Text(
+                            text = release?.version ?: AboutUpdatePageStrings.unreleasedLabel,
+                            style = MiuixTheme.textStyles.body1.shiftWeight(QingyuWeightDelta.SEMIBOLD),
+                            color = colors.primary,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                        )
+                    }
+                    Spacer(Modifier.height(12.dp))
                     Button(
                         onClick = onPrimary,
                         modifier = Modifier.fillMaxWidth(),
@@ -456,11 +464,10 @@ private fun AboutUpdateStatusCardFull(
                         Text(primaryLabel)
                     }
                 }
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(1.dp)
-                        .background(colors.secondaryContainer),
+                // 细线内缩 16dp：继续贴到卡片圆角上会把一张卡看成上下两张。
+                HorizontalDivider(
+                    modifier = Modifier.padding(horizontal = 16.dp),
+                    color = colors.dividerLine,
                 )
             }
 
@@ -469,10 +476,16 @@ private fun AboutUpdateStatusCardFull(
                 title = AboutUpdateStrings.retryAction,
                 endActions = {
                     if (!hasUpdate) {
+                        // 「已是最新」是结论，不是取值：做成中性淡底小胶囊，
+                        // 跟右侧箭头分开层次，不再是一行灰字跟着箭头跑。
                         Text(
                             text = AboutUpdateStrings.alreadyLatestHeadline,
-                            style = MiuixTheme.textStyles.footnote1,
-                            color = colors.onSurfaceVariantSummary,
+                            style = MiuixTheme.textStyles.footnote2.shiftWeight(QingyuWeightDelta.MEDIUM),
+                            color = colors.onSurfaceSecondary,
+                            maxLines = 1,
+                            modifier = Modifier
+                                .background(colors.secondaryContainer, RoundedCornerShape(6.dp))
+                                .padding(horizontal = 6.dp, vertical = 2.dp),
                         )
                     }
                 },
@@ -516,12 +529,18 @@ private fun InlineTextAction(text: String, onClick: () -> Unit) {
  *
  * 2026-11-08：`更新于 {时间}` 从**卡首通栏**降到**卡尾弱色元信息**。日期放在最上面时，
  * 它是这张卡里最先被读到的内容，而它恰恰是最不重要的；通栏细线还把圆角卡切成两段。
- * 现在信息次序是「重点 → 计数 → 展开 → 时间」，时间作为出处收尾。
+ * 现在信息次序是「重点 → 展开 → 分类计数 / 时间」。
+ *
+ * 2026-11-08 第二轮：分类计数从正文尾巴（紧跟条目、看着像第四行内容）移到卡尾，
+ * 与更新时间并成一条元信息行（左计数 / 右时间，14dp 内边距、顶部内缩细线）。
+ * 一条卡尾同时收尾「这版改了多少」和「何时发布」，正文区就只剩真正要读的字。
  */
 @Composable
 private fun NotesSection(release: AppReleaseInfo?, modifier: Modifier = Modifier) {
     val colors = MiuixTheme.colorScheme
     val body = release?.body.orEmpty()
+    val digest = remember(body) { buildReleaseNotesDigest(body) }
+    val countsText = releaseChangeCounts(digest).joinToString(" · ") { "${it.first} ${it.second}" }
     val updatedText = release?.updatedAtMillis?.let {
         AboutUpdatePageStrings.updatedAt(formatUpdateDateTime(it))
     }
@@ -533,25 +552,37 @@ private fun NotesSection(release: AppReleaseInfo?, modifier: Modifier = Modifier
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(start = 16.dp, top = 16.dp, end = 16.dp, bottom = 16.dp),
+                    .padding(start = 16.dp, top = 16.dp, end = 16.dp, bottom = 14.dp),
             ) {
-                NotesBodyContent(body)
+                NotesBodyContent(body = body, digest = digest)
             }
-            if (updatedText != null) {
-                Box(
+            if (countsText.isNotEmpty() || updatedText != null) {
+                HorizontalDivider(
+                    modifier = Modifier.padding(horizontal = 16.dp),
+                    color = colors.dividerLine,
+                )
+                Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(1.dp)
-                        .background(colors.secondaryContainer),
-                )
-                Text(
-                    text = updatedText,
-                    style = MiuixTheme.textStyles.footnote1,
-                    color = colors.onSurfaceVariantSummary,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(start = 16.dp, top = 10.dp, end = 16.dp, bottom = 14.dp),
-                )
+                        .padding(start = 16.dp, top = 10.dp, end = 16.dp, bottom = 12.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    if (countsText.isNotEmpty()) {
+                        Text(
+                            text = countsText,
+                            style = MiuixTheme.textStyles.footnote1,
+                            color = colors.onSurfaceVariantSummary,
+                            modifier = Modifier.weight(1f),
+                        )
+                    }
+                    if (updatedText != null) {
+                        Text(
+                            text = updatedText,
+                            style = MiuixTheme.textStyles.footnote1,
+                            color = colors.onSurfaceVariantSummary,
+                        )
+                    }
+                }
             }
         }
     }
@@ -559,9 +590,8 @@ private fun NotesSection(release: AppReleaseInfo?, modifier: Modifier = Modifier
 
 /** Dart `_buildNotesDigest` / `_buildNotesBlock`：有可解析条目画摘要，否则退回原文分块纯文本。 */
 @Composable
-private fun NotesBodyContent(body: String) {
+private fun NotesBodyContent(body: String, digest: ReleaseNotesDigest) {
     val colors = MiuixTheme.colorScheme
-    val digest = remember(body) { buildReleaseNotesDigest(body) }
     val markdownBlocks = remember(body) {
         if (digest.isEmpty) buildReleaseNotesMarkdownBlocks(body, stripVersionHeading = true) else emptyList()
     }
@@ -589,24 +619,23 @@ private fun NotesBodyContent(body: String) {
  *  信息一条不少、首屏只给重点。
  *
  *  2026-11-08：删掉卡内的「更新重点」小标题——卡外已经有「更新说明」分组标题，
- *  再压一行灰字就是同一句话说两遍；重点直接以列表开场，计数字接在列表尾部。 */
+ *  再压一行灰字就是同一句话说两遍；重点直接以列表开场，计数字接在列表尾部。
+ *
+ *  2026-11-08 第二轮：重点行的分类标签改成淡色胶囊（[ReleaseNotesHighlightRow] 的
+ *  `useLabelChip`），并在「重点」与「展开入口」之间加一条内缩细线——把「读的内容」
+ *  和「可以展开」两个动作分开。计数行已上提到卡尾（见 [NotesSection]）。 */
 @Composable
 private fun ExpandedDigest(digest: ReleaseNotesDigest) {
     val colors = MiuixTheme.colorScheme
     Column(modifier = Modifier.fillMaxWidth()) {
         for (highlight in digest.highlights) {
-            ReleaseNotesHighlightRow(highlight)
+            ReleaseNotesHighlightRow(highlight, useLabelChip = true)
         }
-        val counts = releaseChangeCounts(digest)
-        if (counts.isNotEmpty()) {
-            Spacer(Modifier.height(2.dp))
-            Text(
-                text = counts.joinToString(" · ") { "${it.first} ${it.second}" },
-                style = MiuixTheme.textStyles.footnote1,
-                color = colors.onSurfaceVariantSummary,
-            )
+        if (digest.entries.isNotEmpty()) {
+            Spacer(Modifier.height(4.dp))
+            HorizontalDivider(color = colors.dividerLine)
+            ReleaseNotesExpandableBody(digest)
         }
-        ReleaseNotesExpandableBody(digest)
     }
 }
 

@@ -7,10 +7,12 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -65,29 +67,53 @@ internal fun releaseNotesKindColor(kind: ReleaseChangeKind, colors: Colors): Col
     ReleaseChangeKind.OTHER -> colors.onSurfaceVariantSummary
 }
 
-/** 一条「更新重点」：分类色点 + 分类标签（可选）+ 短标题（最多两行）。 */
+/**
+ * 一条「更新重点」：分类标签（可选）+ 短标题（最多两行）。
+ *
+ * @param useLabelChip 分类标签是否做成**淡色胶囊**（分类色 12% 底 + 分类色字），
+ *   默认 `false` 保持「圆点 + 彩色文字」的克制形态。更新页只展示一版内容、条目少，
+ *   胶囊能把「新增 / 优化」这两种语义分开；更新日志页一屏十几版，胶囊会变成噪声，
+ *   所以由调用页自己选，不统一改。
+ */
 @Composable
-internal fun ReleaseNotesHighlightRow(entry: ReleaseChangeEntry) {
+internal fun ReleaseNotesHighlightRow(
+    entry: ReleaseChangeEntry,
+    useLabelChip: Boolean = false,
+) {
     val colors = MiuixTheme.colorScheme
     val accent = releaseNotesKindColor(entry.kind, colors)
     Row(
-        modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp),
+        modifier = Modifier.fillMaxWidth().padding(bottom = 10.dp),
         verticalAlignment = Alignment.Top,
     ) {
-        Spacer(
-            modifier = Modifier
-                .padding(top = 7.dp)
-                .size(5.dp)
-                .background(accent, CircleShape),
-        )
-        Spacer(Modifier.width(8.dp))
-        if (entry.label.isNotEmpty()) {
+        if (useLabelChip && entry.label.isNotEmpty()) {
+            // 11sp 字 + 2dp 纵向内边距 = 19dp，与正文 14sp/19dp 的行高齐平。
             Text(
                 text = entry.label,
-                style = MiuixTheme.textStyles.footnote1.shiftWeight(QingyuWeightDelta.SEMIBOLD),
+                style = MiuixTheme.textStyles.footnote2.shiftWeight(QingyuWeightDelta.MEDIUM),
                 color = accent,
+                maxLines = 1,
+                modifier = Modifier
+                    .background(accent.copy(alpha = 0.12f), RoundedCornerShape(6.dp))
+                    .padding(horizontal = 6.dp, vertical = 2.dp),
             )
             Spacer(Modifier.width(8.dp))
+        } else {
+            Spacer(
+                modifier = Modifier
+                    .padding(top = 7.dp)
+                    .size(5.dp)
+                    .background(accent, CircleShape),
+            )
+            Spacer(Modifier.width(8.dp))
+            if (entry.label.isNotEmpty()) {
+                Text(
+                    text = entry.label,
+                    style = MiuixTheme.textStyles.footnote1.shiftWeight(QingyuWeightDelta.SEMIBOLD),
+                    color = accent,
+                )
+                Spacer(Modifier.width(8.dp))
+            }
         }
         Text(
             text = entry.headline,
@@ -160,7 +186,8 @@ internal fun ReleaseNotesExpandToggle(
     }
 
     Row(
-        modifier = Modifier.clickable { onToggle() }.padding(vertical = 4.dp),
+        // 视觉高度不变，靠 40dp 最小高度把热区补到可点尺度（原 26dp 手指按不准）。
+        modifier = Modifier.clickable { onToggle() }.heightIn(min = 40.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Text(
