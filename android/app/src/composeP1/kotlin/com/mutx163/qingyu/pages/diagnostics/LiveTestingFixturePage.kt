@@ -337,10 +337,13 @@ private fun FixtureSectionCell(
     dark: Boolean,
     modifier: Modifier = Modifier,
 ) {
+    // 普通格用「次一级容器」而不是 [QingyuTheme.card]：这张网格本身就在一张卡里，
+    // 卡片底色就是 `card`（亮 #FFFFFF / 暗 #2D2D2D），再拿同一个色画格子，格子会和卡
+    // 完全融在一起——亮暗两档都只剩字，看着像一坨文字而不是可点的格子。
     val background = if (cell.isCurrent) {
         Color(QingyuTheme.primary(dark = dark))
     } else {
-        Color(QingyuTheme.card(dark))
+        Color(QingyuTheme.secondary(dark))
     }
     val titleColor = if (cell.isCurrent) {
         Color(QingyuTheme.onAccent(dark))
