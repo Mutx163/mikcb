@@ -2,17 +2,16 @@ package com.mutx163.qingyu.pages.showcase
 
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
-import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
-import java.io.File
 
 /**
  * Miuix 展示册文案逐字对拍测试。
  *
  * 验证：
  * 1. 屏上文案不为空，键名唯一且符合规范；
- * 2. 13 个分类标题、说明、关键词与 Dart 源文件 `lib/screens/miuix_showcase_screen.dart` 逐字一致；
+ * 2. 13 个分类标题钉死为既定字面量（去 Flutter 化 P4-C 前对应 Dart 源文件
+ *    `lib/screens/miuix_showcase_screen.dart` 的 13 类标题）；
  * 3. 占位符插值函数按预期生成文案。
  */
 class ShowcaseStringsParityTest {
@@ -52,12 +51,10 @@ class ShowcaseStringsParityTest {
     }
 
     @Test
-    fun `13类分类标题与Dart源逐字对拍`() {
-        val dartFile = findDartSourceFile("lib/screens/miuix_showcase_screen.dart")
-        assertNotNull("未找到 miuix_showcase_screen.dart 源文件", dartFile)
-        val dartContent = dartFile!!.readText(Charsets.UTF_8)
-
-        // 对拍 13 类的标题
+    fun `13类分类标题钉死为既定字面量`() {
+        // 去 Flutter 化（P4-C，2026-11-08）后 Dart 参照物已删：原先这里是逐字对拍 Dart 源中
+        // `title: '…'` 13 条，现在按 Kotlin 文案表本身钉死——改标题必红，标题来源是
+        // 展示册分类目录（`ShowcaseStrings` 的 cat*Title）与目录条目数。
         val expectedTitles = listOf(
             "按钮 Button",
             "输入 Input",
@@ -71,25 +68,20 @@ class ShowcaseStringsParityTest {
             "实用 Utility",
             "主题 Theming",
             "模糊 Blur",
-            "基础 Foundation"
+            "基础 Foundation",
         )
 
-        for (title in expectedTitles) {
-            assertTrue("Dart 源中缺少标题: $title", dartContent.contains("title: '$title'"))
-        }
+        val actualTitles = ShowcaseStrings.allTexts.map { it.zh }
+            .filter { it in expectedTitles }
+        assertEquals(
+            "13 类标题应逐字在文案表里各出现一次",
+            expectedTitles.toSet(),
+            actualTitles.toSet(),
+        )
+        assertEquals("文案表里 13 类标题不应有重复", 13, actualTitles.size)
 
         // 对拍分类条目总数
         assertEquals(13, MiuixShowcaseCatalog.allEntries.size)
         assertEquals(13, ShowcaseCategoryId.values().size)
-    }
-
-    private fun findDartSourceFile(relativePath: String): File? {
-        var current: File? = File("").absoluteFile
-        repeat(8) {
-            val candidate = File(current, relativePath)
-            if (candidate.isFile) return candidate
-            current = current?.parentFile
-        }
-        return null
     }
 }

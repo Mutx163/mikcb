@@ -40,6 +40,10 @@ import java.io.File
  *
  * 剩下 1 条 `languageModeSystem` 已有实现（[SettingsGeneralPage.localeOptions]），
  * 所以「11 + 1 = Dart 源里的 12 条」正好对上——这条等式本身就是覆盖证明。
+ *
+ * 去 Flutter 化（P4-C，2026-11-08）：原先还有一条用例直接读 Dart 源数 `l10n` 键清单
+ * 以防「源里新增第 13 条而这里还写 12」，Dart 层删除后参照物不存在——键清单的钉法改由
+ * 上面的 `expectedKeysFromDart` + 覆盖断言承担，同先前的仓库根锚点处理一样。
  */
 class SettingsSharedParityTest {
 
@@ -91,18 +95,9 @@ class SettingsSharedParityTest {
         assertEquals("这些键没登记在 SettingsStringsExt4 里：$missing", emptyList<String>(), missing)
     }
 
-    @Test
-    fun `Dart 源里的键清单没有变化`() {
-        // 直接读源文件再数一遍：源里新增第 13 条而这里还写 12，「文案覆盖」就是假的
-        val keys = Regex("""l10n\.([a-zA-Z0-9_]+)""").findAll(sharedDartSource())
-            .map { it.groupValues[1] }
-            .toSortedSet()
-        assertEquals(
-            "settings_shared.dart 的 l10n 键清单变了，请同步 expectedKeysFromDart",
-            expectedKeysFromDart.sorted(),
-            keys.toList(),
-        )
-    }
+    // （原有「Dart 源里的键清单没有变化」：直接读 Dart 源数 l10n 键清单——去 Flutter 化
+    //   P4-C 后 Dart 层删除，参照物不存在，已随之退役；12 条清单由 expectedKeysFromDart 本身钉死，
+    //   其与 Kotlin 文案表的覆盖关系由上下两条用例继续守着。）
 
     @Test
     fun `这 12 条文案在 arb 里逐字存在`() {
@@ -261,9 +256,6 @@ class SettingsSharedParityTest {
     }
 
     // ------------------------------------------------------------------ 支撑
-
-    private fun sharedDartSource(): String =
-        repoFile("lib/screens/settings/settings_shared.dart").readText(Charsets.UTF_8)
 
     private fun composeP1File(name: String): File =
         repoFile("android/app/src/composeP1/kotlin/com/mutx163/qingyu/pages/settings/$name")

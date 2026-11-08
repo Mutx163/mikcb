@@ -188,13 +188,13 @@ class SettingsStringsExt3ParityTest {
      *
      * ## 为什么只删 Kotlin、ARB 六份必须留着
      *
-     * 这两个键**不是死键**：`lib/screens/settings/settings_live.dart:443-444` 仍在读
-     * `AppLocalizations.liveDiagnosticsCleared/ClearFailed`。删 ARB 会让 `gen-l10n`
-     * 少生成两个 getter，Flutter 侧直接编译失败。所以：
+     * 这两个键**不是死键**。删 ARB 会让 `gen-l10n` 少生成两个 getter。所以：
      * - Kotlin 文案表：不许再加回（第①段）；
      * - ARB 六份：**必须仍在**，少了就是有人误删（第②段）；
-     * - Dart 消费点：仍在引用才成立；哪天 Dart 侧删了，这条会红——那时才该按
-     *   `ExportStringsParityTest` 的先例把 ARB 一起删并改这里。
+     * - 原第③段「Dart 消费点自检」（读 `lib/screens/settings/settings_live.dart` 确认
+     *   Dart 侧仍在引用）已随去 Flutter 化 P4-C（2026-11-08）退役——Dart 层删除后
+     *   该文件不存在、AR 键是否还有活引用已不是本测试能判的事；ARB 保留口径不变，
+     *   日后若要按 ExportStringsParityTest 的先例连 ARB 一起清理，需另起 Decisions。
      *
      * 咬合探针（已实测）：把 `val liveDiagnosticsCleared = ArbText("liveDiagnosticsCleared", …)`
      * 加回 `SettingsStringsExt3` ⇒ 本测试红；删掉 ⇒ 绿。
@@ -212,7 +212,7 @@ class SettingsStringsExt3ParityTest {
             )
         }
 
-        // ② ARB 六份必须保留：Dart 侧还在消费，删了 gen-l10n 产物会缺 getter。
+        // ② ARB 六份必须保留：删了 gen-l10n 产物会缺 getter。
         val arbDir = File(repoRoot(), "i18n")
         val arbFiles = listOf(
             "app_zh.arb",
@@ -228,23 +228,14 @@ class SettingsStringsExt3ParityTest {
             val text = file.readText(Charsets.UTF_8)
             for (key in removed) {
                 assertTrue(
-                    "`$key` 从 $name 里消失了：Dart 侧 settings_live.dart 还在读它，" +
-                        "删了 `gen-l10n` 会缺 getter，Flutter 侧编译失败。",
+                    "`$key` 从 $name 里消失了：删了 `gen-l10n` 会缺 getter。",
                     text.contains("\"$key\""),
                 )
             }
         }
 
-        // ③ 消费点自检：Dart 侧确实还在用（换成「Dart 删了」时才该动 ARB）
-        val dartFile = File(repoRoot(), "lib/screens/settings/settings_live.dart")
-        assertTrue("找不到 Dart 消费点：${dartFile.absolutePath}", dartFile.isFile)
-        val dartText = dartFile.readText(Charsets.UTF_8)
-        for (key in removed) {
-            assertTrue(
-                "Dart 侧不再引用 `$key`：可以按 ExportStringsParityTest 的先例连 ARB 一起删，并同步改本测试。",
-                key in dartText,
-            )
-        }
+        // （原第③段「Dart 消费点自检」：P4-C 后 Dart 层删除，该文件已不存在，整段退役。
+        //   退役后本测试仍守①②两段——Kotlin 文案表不许加回、ARB 六份不许缺键。）
     }
 
     @Test

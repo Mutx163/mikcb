@@ -21,7 +21,6 @@ import org.junit.Assert.assertNotEquals
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
-import java.io.File
 
 /**
  * 外观编辑家族的数据层**契约**：
@@ -569,51 +568,9 @@ class AppearanceEditorDataContractTest {
         assertEquals("/data/current.jpg", recent.selectedKey)
     }
 
-    // ------------------------------------------------- 5. 与 Dart 原件对拍
-
-    @Test
-    fun `四个背景与时间列键在 Dart 原件里逐字存在`() {
-        val dart = dartModelSource()
-        listOf(
-            "'timetablePageBackgroundColor': timetablePageBackgroundColor",
-            "'homePageBackgroundFill': homePageBackgroundFill.value",
-            "'homePageBackgroundImagePath': homePageBackgroundImagePath",
-            "'homePageTimeColumnBlurEnabled': homePageTimeColumnBlurEnabled",
-        ).forEach { line ->
-            assertTrue("Dart 写侧缺少 $line", line in dart)
-        }
-        listOf(
-            "this.timetablePageBackgroundColor = '#F8FAFC'",
-            "this.homePageBackgroundFill = HomePageBackgroundFill.color",
-            "this.homePageTimeColumnBlurEnabled = false",
-        ).forEach { line ->
-            assertTrue("Dart 构造默认缺少 $line", line in dart)
-        }
-        assertTrue(
-            "Dart 读侧默认必须是 #F8FAFC",
-            "lenientString(json['timetablePageBackgroundColor']) ?? '#F8FAFC'" in dart,
-        )
-        assertTrue(
-            "homePageBackgroundScope 必须仍是下线口径（恒默认、不写键）",
-            "homePageBackgroundScope: HomePageBackgroundScope.defaultValue" in dart &&
-                "// homePageBackgroundScope 已下线（壁纸整体透出），不再写入。" in dart,
-        )
-    }
-
-    // ------------------------------------------------------------------ 工具
-
-    private fun dartModelSource(): String {
-        var dir: File? = File(System.getProperty("user.dir")).absoluteFile
-        while (dir != null) {
-            val candidate = File(dir, "lib/models/timetable_settings.dart")
-            if (candidate.isFile) return candidate.readText()
-            dir = dir.parentFile
-        }
-        throw AssertionError(
-            "找不到 lib/models/timetable_settings.dart —— 对拍无法进行，按失败处理。当前工作目录：" +
-                System.getProperty("user.dir"),
-        )
-    }
+    // （原 §5「四个背景与时间列键在 Dart 原件里逐字存在」：直接读 Dart `timetable_settings.dart`
+    //   子串比对——去 Flutter 化 P4-C 后参照物不存在已退役。它的 Kotlin 侧覆盖由 §1 的
+    //   「默认值/序列化名/读侧默认」与 §3 的「落盘往返 + 下线键不写」承担，见上方用例。）
 
     /**
      * 页面里写死的 id 字面量（页面对象没有导出常量的那两处）。
