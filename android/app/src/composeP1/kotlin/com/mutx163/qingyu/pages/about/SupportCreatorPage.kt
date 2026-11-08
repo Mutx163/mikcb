@@ -40,6 +40,7 @@ import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalInspectionMode
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
@@ -768,6 +769,15 @@ private fun DonorRow(donor: SupportDonorEntry) {
  *   用于竖版支付海报（1325×1806 / 1182×1772）。图标这类已知方形的图不传。
  * @param fallbackAspectRatio bitmap 解码出来之前的占位比例。不传则占位高度为 0，
  *   首帧会从 0 撑到海报高度，整页明显跳一下；传入素材已知比例可让首帧就占住位置。
+ *
+ * ## 预览（LocalInspectionMode）为什么不能走异步解码
+ *
+ * 2026-11-08 用户实报「Android Studio 预览里二维码变空白圆角框」。预览能读到模块 assets
+ * （旧截图里海报是渲出来的），但预览**不跑真实帧循环**：`produceState` 的解码协程常常赶不上
+ * 首帧快照，于是图片位置永远停在占位空框上 —— 看起来就是「二维码不显示了」。
+ *
+ * 所以预览里改成 `remember` **同步**解码（一次性、同帧出图）；装机路径仍走 `produceState`
+ * + `Dispatchers.IO`，不把 2.4MP 的海报解码塞回主线程。
  */
 @Composable
 private fun QingyuAssetImage(
@@ -778,14 +788,15 @@ private fun QingyuAssetImage(
     fallbackAspectRatio: Float? = null,
 ) {
     val context = LocalContext.current
-    val bitmap by produceState<ImageBitmap?>(initialValue = null, assetPath) {
-        value = withContext(Dispatchers.IO) {
-            runCatching {
-                context.assets.open(assetPath).use { BitmapFactory.decodeStream(it)?.asImageBitmap() }
-            }.getOrNull()
+    val inPreview = LocalInspectionMode.current
+    val image: ImageBitmap? = if (inPreview) {
+        remember(assetPath) { decodeAssetBitmap(context, assetPath) }
+    } else {
+        val async by produceState<ImageBitmap?>(initialValue = null, assetPath) {
+            value = withContext(Dispatchers.IO) { decodeAssetBitmap(context, assetPath) }
         }
+        async
     }
-    val image = bitmap
     if (image != null) {
         val naturalRatio = if (useNaturalAspectRatio && image.height > 0) {
             image.width.toFloat() / image.height.toFloat()
@@ -813,6 +824,11 @@ private fun QingyuAssetImage(
         )
     }
 }
+
+/** 从 assets 解一张图；读不到/解不开返回 null（调用方画占位，不画假图）。 */
+private fun decodeAssetBitmap(context: Context, assetPath: String): ImageBitmap? = runCatching {
+    context.assets.open(assetPath).use { BitmapFactory.decodeStream(it)?.asImageBitmap() }
+}.getOrNull()
 
 /** 保存二维码到相册并弹提示（保留原有的 Toast 反馈，不在本任务范围内改动）。 */
 private fun saveQrAndToast(context: Context, assetPath: String, fileName: String) {
