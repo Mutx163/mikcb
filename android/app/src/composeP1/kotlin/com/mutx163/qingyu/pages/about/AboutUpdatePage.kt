@@ -623,19 +623,38 @@ private fun NotesBodyContent(body: String, digest: ReleaseNotesDigest) {
  *
  *  2026-11-08 第二轮：重点行的分类标签改成淡色胶囊（[ReleaseNotesHighlightRow] 的
  *  `useLabelChip`），并在「重点」与「展开入口」之间加一条内缩细线——把「读的内容」
- *  和「可以展开」两个动作分开。计数行已上提到卡尾（见 [NotesSection]）。 */
+ *  和「可以展开」两个动作分开。计数行已上提到卡尾（见 [NotesSection]）。
+ *
+ *  2026-11-08 第三轮（用户贴「已是最新」截图说不好看）：**去掉胶囊/圆点混排**。
+ *  正文只给每组第一条挂分类词（「新增 2」下的第二条 label 是空串），直接按 label 判空
+ *  会让同一分类的第 1、3 行是胶囊（文字从 88 起）、第 2 行退成圆点（文字从 40 起），
+ *  左缘排成三档。现在用 [highlightsWithLabels] 把同分类的标签补齐，三行统一胶囊宽度；
+ *  同时**删掉展开入口上方那条细线**——它和卡尾细线只隔 44dp，把链接夹成一条“工具条”。 */
 @Composable
 private fun ExpandedDigest(digest: ReleaseNotesDigest) {
-    val colors = MiuixTheme.colorScheme
+    val highlights = remember(digest) { highlightsWithLabels(digest) }
     Column(modifier = Modifier.fillMaxWidth()) {
-        for (highlight in digest.highlights) {
+        for (highlight in highlights) {
             ReleaseNotesHighlightRow(highlight, useLabelChip = true)
         }
         if (digest.entries.isNotEmpty()) {
-            Spacer(Modifier.height(4.dp))
-            HorizontalDivider(color = colors.dividerLine)
             ReleaseNotesExpandableBody(digest)
         }
+    }
+}
+
+/**
+ * 给重点行补上分类标签：同分类的第一条带 label、其余为空串，直接渲染就变成
+ * 「胶囊 / 圆点 / 胶囊」的错位。这里按 kind 把同组的标签借过来——标签本来就取自正文
+ * 的分组标题（见 `ReleaseChangeEntry.label` 的注释），同一组共用同一个词是准确的，
+ * 不是另造文案。找不到标签的 kind（老版本无分组标题）继续走圆点回退。
+ */
+private fun highlightsWithLabels(digest: ReleaseNotesDigest): List<ReleaseChangeEntry> {
+    val labelByKind = digest.entries
+        .filter { it.label.isNotEmpty() }
+        .associate { it.kind to it.label }
+    return digest.highlights.map { entry ->
+        if (entry.label.isNotEmpty()) entry else entry.copy(label = labelByKind[entry.kind].orEmpty())
     }
 }
 

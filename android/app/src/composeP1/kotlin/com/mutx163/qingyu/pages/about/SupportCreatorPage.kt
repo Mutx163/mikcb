@@ -42,13 +42,16 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.mutx163.qingyu.components.QingyuCard
 import com.mutx163.qingyu.components.QingyuCardDefaults
+import com.mutx163.qingyu.components.QingyuGlassIconButton
 import com.mutx163.qingyu.components.QingyuPageCardMargin
 import com.mutx163.qingyu.components.QingyuPageList
+import com.mutx163.qingyu.components.QingyuPageTheme
 import com.mutx163.qingyu.components.QingyuSectionTitle
 import com.mutx163.qingyu.components.QingyuSheet
 import com.mutx163.qingyu.components.QingyuWeightDelta
@@ -60,14 +63,12 @@ import kotlinx.coroutines.withContext
 import top.yukonga.miuix.kmp.basic.Button
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
 import top.yukonga.miuix.kmp.basic.CircularProgressIndicator
+import top.yukonga.miuix.kmp.basic.HorizontalDivider
 import top.yukonga.miuix.kmp.basic.Icon
-import top.yukonga.miuix.kmp.basic.IconButton
 import top.yukonga.miuix.kmp.basic.TabRowDefaults
 import top.yukonga.miuix.kmp.basic.TabRowWithContour
 import top.yukonga.miuix.kmp.basic.Text
-import top.yukonga.miuix.kmp.basic.TextButton
 import top.yukonga.miuix.kmp.icon.MiuixIcons
-import top.yukonga.miuix.kmp.icon.extended.Edit
 import top.yukonga.miuix.kmp.icon.extended.Favorites
 import top.yukonga.miuix.kmp.icon.extended.Refresh
 import top.yukonga.miuix.kmp.icon.extended.Show
@@ -92,6 +93,13 @@ import top.yukonga.miuix.kmp.theme.MiuixTheme
  *    不再一人一张卡；卡片的 title / subtitle / subtitleNote 三个字段都渲染出来；
  * 6. 名单加载成功后也有手动刷新入口；刷新失败时保留旧名单。
  *
+ * ## 2026-11-08 第二轮：鸣谢卡收口
+ *
+ * 用户对着预览截图说「这块框选区域看着有点奇怪」。卡头原来把副标题 / 更新时间 / 留言提示三档字
+ * 和一颗刷新键堆在一起，铅笔图标还把文字推开一条锯齿边、挤出一个孤字行。现在改成
+ * 「说明 → 名单 → 元信息」三段：卡头只留一句副标题，刷新键上顶栏，时间与提示降卡尾。
+ * 逐条理由（含旧版挂在哪）见 [DonorCard] 与 [DonorCardFooter] 的头注。
+ *
  * ## 数据从哪来
  *
  * 鸣谢名单由宿主喂 [donorData] / [isLoading] / [loadError] / [onReload]。
@@ -113,11 +121,39 @@ fun SupportCreatorPage(
 ) {
     var method by remember { mutableStateOf(SupportMethod.WECHAT) }
     var previewOpen by remember { mutableStateOf(false) }
+    // 顶栏动作键的配色：骨架内部的 `QingyuPageTheme` 只影响它自己的子树，
+    // 这里取同一个来源（各页一致做法，如版本更新页 / 性能报告页）。
+    val dark = isSystemInDarkTheme()
 
     val assetPath = if (method == SupportMethod.WECHAT) wechatQrAsset else alipayQrAsset
     val fileName = if (method == SupportMethod.WECHAT) wechatQrFileName else alipayQrFileName
 
-    QingyuPageScaffold(title = SupportCreatorStrings.pageTitle, onBack = onBack) {
+    QingyuPageScaffold(
+        title = SupportCreatorStrings.pageTitle,
+        onBack = onBack,
+        // 名单是本页唯一的网络动作，刷新键放顶栏右上（与版本更新页同一处）：
+        // 原先它挂在鸣谢卡头右侧、跟两行说明字顶对齐，右边一大片空 —— 就是「浮在卡里」那颗 ↻。
+        // 刷新中把图标换成转圈（共享件的内容槽），按钮位置与尺寸不变，顶栏不会跳。
+        actions = {
+            QingyuGlassIconButton(
+                onClick = onReload,
+                contentDescription = SupportCreatorStrings.reloadAction,
+                icon = MiuixIcons.Refresh,
+                tint = Color(QingyuTheme.actionIcon(dark)),
+                enabled = !isLoading,
+                content = if (isLoading) {
+                    {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(18.dp),
+                            strokeWidth = 2.dp,
+                        )
+                    }
+                } else {
+                    null
+                },
+            )
+        },
+    ) {
         QingyuPageList(
             innerPadding = innerPadding,
             scrollBehavior = scrollBehavior,
@@ -353,11 +389,23 @@ private fun PaymentCard(
             },
             minWidth = 0.dp,
             maxWidth = Dp.Infinity,
+            // 配色必须自带对比，不能靠「容器色差一档」：
+            //
+            // 2026-11-08 用户实报「微信/支付宝切换器看不到，颜色和背景一样」。原先是
+            // 轨道 `secondaryVariant`(#E6E6E6) + 选中块 `surfaceContainerHighest`(#E8E8E8)，
+            // 两者只差 2/255，等于选中块隐形；暗色下选中块 `#2D2D2D` 又与本页卡片底色
+            // **完全同色**，同样看不见。根因是这排控件放在白/深卡片**内部**，而那两个槽
+            // 是给「页底 + 卡片」两层关系设计的，用在卡片里就没有台阶了。
+            //
+            // 现在改成三段彼此分得开：轨道 = `secondary`（亮 #E6E6E6 / 暗 #505050，压在
+            // 卡片上仍有轮廓）、选中块 = 主题色实底 + `onPrimary` 墨（与主按钮同一套，
+            // 选中态一眼可辨，深色模式也成立）、未选中墨 = `fieldLabel`（亮 #5A5A5A /
+            // 暗 #B8B8B8），比正文次墨 #999 在灰轨道上更清楚。
             colors = TabRowDefaults.tabRowColors(
-                backgroundColor = MiuixTheme.colorScheme.secondaryVariant,
-                contentColor = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-                selectedBackgroundColor = MiuixTheme.colorScheme.surfaceContainerHighest,
-                selectedContentColor = MiuixTheme.colorScheme.onBackground,
+                backgroundColor = MiuixTheme.colorScheme.secondary,
+                contentColor = Color(QingyuTheme.fieldLabel(dark)),
+                selectedBackgroundColor = MiuixTheme.colorScheme.primary,
+                selectedContentColor = MiuixTheme.colorScheme.onPrimary,
             ),
         )
         Box(
@@ -500,6 +548,24 @@ private fun QrPreview(
  * 鸣谢卡：加载 / 失败 / 空态 / 刷新失败但保留旧名单，四种状态都在这一张卡里。
  *
  * 分组标题在卡片外（`QingyuSectionTitle`），卡内不再重复写标题。
+ *
+ * ## 2026-11-08 版式重排（用户实报「这块框选区域看着有点奇怪」）
+ *
+ * 上一版把三档字全堆在卡头：副标题、更新时间、留言提示，右侧再挂一颗 40dp 刷新键。问题不是
+ * 字多，而是**三种不同性质的信息被摆成了同一档**：
+ *
+ * 1. 刷新键跟两行文字顶端对齐，右边留一大片空 —— 看着像一颗浮在卡里的 ↻；
+ * 2. 留言提示前面挂的是铅笔（`MiuixIcons.Edit`）—— 那是「编辑」的语义，文案却在讲同步；
+ * 3. 铅笔把第二行推到 35dp 起排，与上面 16dp 起排的正文错开一条锯齿边；
+ * 4. 提示句约 31 字，被铅笔和右侧热区挤窄后正好折出「现。」两个字**孤字成行**。
+ *
+ * 现在按「说明 → 名单 → 元信息」三段收口：
+ *
+ * - **卡头**只剩一句副标题（`footnote1`，13sp）+ 一条内缩分隔线，回答「这张卡是什么」；
+ * - **刷新**移到顶栏右上（见 [SupportCreatorPage] 的 `actions`）—— 名单是本页唯一的网络
+ *   动作，放顶栏既不占卡内版面，也不用再跟卡头文字对齐；
+ * - **更新时间与留言提示**降到卡尾（`footnote2`，11sp，内缩细线隔开）：日期是最不该第一个被
+ *   读到的信息（版本更新页同一结论），提示句回到整宽、不再被图标挤成孤字行。
  */
 @Composable
 private fun DonorCard(
@@ -544,119 +610,101 @@ private fun DonorCard(
             }
         }
 
-        else -> Column {
-            DonorCardHeader(
-                donorData = donorData,
-                isLoading = isLoading,
-                loadError = loadError,
-                onReload = onReload,
-            )
-            if (donorData == null || donorData.donors.isEmpty()) {
-                Text(
-                    text = SupportCreatorStrings.donorListEmpty,
-                    style = MiuixTheme.textStyles.footnote1,
-                    lineHeight = 19.sp,
-                    color = Color(QingyuTheme.secondaryText(dark)),
-                    modifier = Modifier.padding(16.dp),
-                )
-            } else {
-                donorData.donors.forEachIndexed { index, donor ->
-                    DonorRow(donor)
+        else -> {
+            val subtitle = donorData?.subtitle?.takeIf { it.isNotEmpty() }
+            val updatedAt = donorData?.updatedAt?.takeIf { it.isNotEmpty() }
+            val note = donorData?.subtitleNote?.takeIf { it.isNotEmpty() }
+            Column {
+                if (subtitle != null || loadError != null) {
+                    Column(
+                        modifier = Modifier.padding(
+                            start = 16.dp,
+                            end = 16.dp,
+                            top = 14.dp,
+                            bottom = 12.dp,
+                        ),
+                        verticalArrangement = Arrangement.spacedBy(6.dp),
+                    ) {
+                        subtitle?.let {
+                            Text(
+                                text = it,
+                                style = MiuixTheme.textStyles.footnote1,
+                                lineHeight = 19.sp,
+                                color = Color(QingyuTheme.secondaryText(dark)),
+                            )
+                        }
+                        // 已有旧名单但这轮刷新失败：只加一行错误提示，不把整份名单换掉。
+                        // 重试入口就是顶栏那颗刷新键（不再在卡头里多坐一个文字按钮）。
+                        if (loadError != null) {
+                            Text(
+                                text = SupportCreatorStrings.donorListLoadFailed,
+                                style = MiuixTheme.textStyles.footnote2,
+                                color = Color(QingyuTheme.error(dark)),
+                            )
+                        }
+                    }
+                    HorizontalDivider(
+                        modifier = Modifier.padding(horizontal = 16.dp),
+                        color = MiuixTheme.colorScheme.dividerLine,
+                    )
                 }
+                if (donorData == null || donorData.donors.isEmpty()) {
+                    Text(
+                        text = SupportCreatorStrings.donorListEmpty,
+                        style = MiuixTheme.textStyles.footnote1,
+                        lineHeight = 19.sp,
+                        color = Color(QingyuTheme.secondaryText(dark)),
+                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 14.dp),
+                    )
+                } else {
+                    donorData.donors.forEach { donor ->
+                        DonorRow(donor)
+                    }
+                }
+                DonorCardFooter(updatedAt = updatedAt, note = note)
             }
         }
     }
 }
 
-/** 鸣谢卡头部：副标题 / 更新时间 + 刷新入口 + 备注条（有旧数据时刷新失败仍保留名单）。 */
+/**
+ * 鸣谢卡尾部元信息：更新时间 + 同步说明，顶部一条内缩细线。
+ *
+ * 2026-11-08 从卡头降到卡尾（版式理由见 [DonorCard] 头注）：
+ *
+ * - 两行都是 `footnote2`（11sp）弱色，与上面 `body1` 的名单名字拉开三个字阶；
+ * - 不再带铅笔图标 —— `MiuixIcons.Edit` 的语义是「编辑」，文案说的却是同步时间；
+ * - 提示句回到**整宽**（左右各 16dp，无图标占位），上一版被图标挤窄后折出「现。」孤字行；
+ * - 名单行本身不带线，这条细线是把「名单」和「说明」分开的唯一分界（与卡头那条对称）。
+ */
 @Composable
-private fun DonorCardHeader(
-    donorData: SupportDonorData?,
-    isLoading: Boolean,
-    loadError: String?,
-    onReload: () -> Unit,
-) {
+private fun DonorCardFooter(updatedAt: String?, note: String?) {
+    if (updatedAt == null && note == null) return
     val dark = isSystemInDarkTheme()
-    Column(modifier = Modifier.padding(16.dp)) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Column(modifier = Modifier.weight(1f)) {
-                donorData?.subtitle?.takeIf { it.isNotEmpty() }?.let { subtitle ->
-                    Text(
-                        text = subtitle,
-                        style = MiuixTheme.textStyles.footnote1,
-                        lineHeight = 19.sp,
-                        color = Color(QingyuTheme.secondaryText(dark)),
-                    )
-                }
-                donorData?.updatedAt?.takeIf { it.isNotEmpty() }?.let { updatedAt ->
-                    Text(
-                        text = SupportCreatorStrings.updatedAtLabel(updatedAt),
-                        style = MiuixTheme.textStyles.footnote2,
-                        color = Color(QingyuTheme.secondaryText(dark)),
-                        modifier = Modifier.padding(top = 4.dp),
-                    )
-                }
-            }
-            if (isLoading) {
-                CircularProgressIndicator(
-                    modifier = Modifier.size(20.dp),
-                    strokeWidth = 2.dp,
-                )
-            } else {
-                IconButton(onClick = onReload) {
-                    Icon(
-                        imageVector = MiuixIcons.Refresh,
-                        contentDescription = SupportCreatorStrings.reloadAction,
-                        tint = Color(QingyuTheme.actionIcon(dark)),
-                        modifier = Modifier.size(20.dp),
-                    )
-                }
-            }
-        }
-        donorData?.subtitleNote?.takeIf { it.isNotEmpty() }?.let { note ->
-            Row(
-                modifier = Modifier
-                    .padding(top = 10.dp)
-                    .fillMaxWidth()
-                    .clip(RoundedCornerShape(10.dp))
-                    .background(MiuixTheme.colorScheme.surfaceContainerHighest)
-                    .border(
-                        width = 1.dp,
-                        color = MiuixTheme.colorScheme.outline.copy(alpha = 0.5f),
-                        shape = RoundedCornerShape(10.dp),
-                    )
-                    .padding(horizontal = 12.dp, vertical = 10.dp),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                verticalAlignment = Alignment.Top,
-            ) {
-                Icon(
-                    imageVector = MiuixIcons.Edit,
-                    contentDescription = null,
-                    tint = MiuixTheme.colorScheme.primary,
-                    modifier = Modifier.size(16.dp),
-                )
+    Column {
+        HorizontalDivider(
+            modifier = Modifier.padding(horizontal = 16.dp),
+            color = MiuixTheme.colorScheme.dividerLine,
+        )
+        Column(
+            modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 10.dp, bottom = 14.dp),
+            verticalArrangement = Arrangement.spacedBy(4.dp),
+        ) {
+            updatedAt?.let {
                 Text(
-                    text = note,
+                    text = SupportCreatorStrings.updatedAtLabel(it),
                     style = MiuixTheme.textStyles.footnote2,
-                    lineHeight = 19.sp,
-                    color = Color(QingyuTheme.primaryText(dark)),
+                    color = Color(QingyuTheme.secondaryText(dark)),
                 )
             }
-        }
-        // 已有旧数据但这次刷新失败：只加一行错误提示 + 重试，不把整份名单换掉。
-        if (loadError != null && donorData != null) {
-            Text(
-                text = SupportCreatorStrings.donorListLoadFailed,
-                style = MiuixTheme.textStyles.footnote2,
-                color = Color(QingyuTheme.error(dark)),
-                modifier = Modifier.padding(top = 8.dp),
-            )
-            TextButton(
-                text = SupportCreatorStrings.reloadAction,
-                onClick = onReload,
-                modifier = Modifier.padding(top = 2.dp),
-                colors = ButtonDefaults.textButtonColors(),
-            )
+            note?.let {
+                Text(
+                    text = it,
+                    style = MiuixTheme.textStyles.footnote2,
+                    lineHeight = 18.sp,
+                    color = Color(QingyuTheme.secondaryText(dark)),
+                )
+            }
         }
     }
 }
@@ -816,4 +864,163 @@ private val alipayQrAspectRatio = 1182f / 1772f
 private fun qrFallbackAspectRatio(method: SupportMethod): Float = when (method) {
     SupportMethod.WECHAT -> wechatQrAspectRatio
     SupportMethod.ALIPAY -> alipayQrAspectRatio
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// IDE 预览（2026-11-08，照 ContributorsPage 样板铺）
+//
+// 只给实现阶段看效果，不进业务路径。鸣谢卡自己分五档，都是同一张卡里最容易改漏的分支：
+//
+//   有名单 / 空名单 / 加载中 / 首次加载失败 / 刷新失败但保留旧名单；
+// 再加外观两档：暗色、大字号 1.3。
+//
+// 注意：二维码与图标是从 APK 资产现读的（`QingyuAssetImage`），预览里的假 Context 多半读不到，
+// 会显示按素材比例占位的空框。**这是预览环境限制，不是页面 bug**；要看真图仍需装机。
+//
+// 固定写法同 ContributorsPage：主题一律包 QingyuPageTheme(isDark = …)、字号走 textScale、
+// 宽度按 400dp。
+// ─────────────────────────────────────────────────────────────────────────────
+
+/** 预览用假数据：三位支持者，金额 / 日期 / 留言长度不一，看得出折行。 */
+private fun previewDonorData(): SupportDonorData = SupportDonorData(
+    title = "鸣谢名单",
+    subtitle = "感谢这些同学让课表更顺手",
+    subtitleNote = "名单每十分钟从仓库同步一次；刚支持过的可能要稍等片刻才会出现。",
+    updatedAt = "2026-11-08 10:24",
+    donors = listOf(
+        SupportDonorEntry(
+            name = "张三",
+            amount = "￥20",
+            date = "2026-11-02",
+            message = "希望周视图能拖动调课",
+        ),
+        SupportDonorEntry(name = "李四", amount = "￥66", date = "2026-10-28"),
+        SupportDonorEntry(
+            name = "王五",
+            amount = "￥9.9",
+            date = "2026-10-20",
+            message = "课表很干净，辛苦作者",
+        ),
+    ),
+)
+
+/**
+ * 鸣谢卡的分支输入组合，五档不多不少。
+ *
+ * 这五档就是 `SupportCreatorHostPage` 能传给 [SupportCreatorPage] 的所有形态：
+ * 有名单 / 空名单 / 加载中 / 首次加载失败 / 刷新失败但保留旧名单。
+ */
+private data class PreviewSupportCreatorState(
+    /** 只用来给预览命名，不参与渲染。 */
+    val name: String,
+    val donorData: SupportDonorData?,
+    val isLoading: Boolean,
+    val loadError: String?,
+)
+
+private val previewSupportCreatorStates: List<PreviewSupportCreatorState> = listOf(
+    PreviewSupportCreatorState(
+        name = "有名单",
+        donorData = previewDonorData(),
+        isLoading = false,
+        loadError = null,
+    ),
+    PreviewSupportCreatorState(
+        name = "空名单",
+        donorData = previewDonorData().copy(donors = emptyList()),
+        isLoading = false,
+        loadError = null,
+    ),
+    PreviewSupportCreatorState(
+        name = "加载中",
+        donorData = null,
+        isLoading = true,
+        loadError = null,
+    ),
+    PreviewSupportCreatorState(
+        name = "首次加载失败",
+        donorData = null,
+        isLoading = false,
+        loadError = "http_404",
+    ),
+    PreviewSupportCreatorState(
+        name = "刷新失败保留旧名单",
+        donorData = previewDonorData(),
+        isLoading = false,
+        loadError = "network_unreachable",
+    ),
+)
+
+private fun previewSupportCreatorState(name: String): PreviewSupportCreatorState =
+    previewSupportCreatorStates.first { it.name == name }
+
+/** 一档预览的公共身体：名单状态 + 外观档位。 */
+@Composable
+private fun PreviewSupportCreatorPage(
+    state: PreviewSupportCreatorState,
+    dark: Boolean = false,
+    textScale: Float = 1f,
+) {
+    QingyuPageTheme(isDark = dark, textScale = textScale) {
+        SupportCreatorPage(
+            donorData = state.donorData,
+            onBack = {},
+            onReload = {},
+            isLoading = state.isLoading,
+            loadError = state.loadError,
+        )
+    }
+}
+
+// ── 单档：五态 × 亮色 ──────────────────────────────────────────────────────
+
+@Suppress("unused")
+@Preview(name = "1 有名单", showBackground = true, widthDp = 400, heightDp = 900)
+@Composable
+private fun SupportCreatorPagePreviewDonors() {
+    PreviewSupportCreatorPage(previewSupportCreatorState("有名单"))
+}
+
+@Suppress("unused")
+@Preview(name = "2 空名单", showBackground = true, widthDp = 400, heightDp = 900)
+@Composable
+private fun SupportCreatorPagePreviewEmpty() {
+    PreviewSupportCreatorPage(previewSupportCreatorState("空名单"))
+}
+
+@Suppress("unused")
+@Preview(name = "3 加载中", showBackground = true, widthDp = 400, heightDp = 900)
+@Composable
+private fun SupportCreatorPagePreviewLoading() {
+    PreviewSupportCreatorPage(previewSupportCreatorState("加载中"))
+}
+
+@Suppress("unused")
+@Preview(name = "4 首次加载失败", showBackground = true, widthDp = 400, heightDp = 900)
+@Composable
+private fun SupportCreatorPagePreviewLoadFailed() {
+    PreviewSupportCreatorPage(previewSupportCreatorState("首次加载失败"))
+}
+
+@Suppress("unused")
+@Preview(name = "5 刷新失败保留旧名单", showBackground = true, widthDp = 400, heightDp = 900)
+@Composable
+private fun SupportCreatorPagePreviewRefreshFailed() {
+    PreviewSupportCreatorPage(previewSupportCreatorState("刷新失败保留旧名单"))
+}
+
+// ── 单档：外观两档（以「有名单」为基准）───────────────────────────────────
+
+@Suppress("unused")
+@Preview(name = "6 暗色", showBackground = true, widthDp = 400, heightDp = 900)
+@Composable
+private fun SupportCreatorPagePreviewDark() {
+    PreviewSupportCreatorPage(previewSupportCreatorState("有名单"), dark = true)
+}
+
+@Suppress("unused")
+@Preview(name = "7 大字号 1.3", showBackground = true, widthDp = 400, heightDp = 900)
+@Composable
+private fun SupportCreatorPagePreviewLargeText() {
+    PreviewSupportCreatorPage(previewSupportCreatorState("有名单"), textScale = 1.3f)
 }
