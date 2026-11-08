@@ -374,6 +374,8 @@ fun ShellPageContent(
     /** 非空 = 本页正作为**首页的日视图展开层**渲染（见 [DayViewOverlayBinding]）。 */
     dayOverlay: DayViewOverlayBinding? = null,
     /** 非空 = 本页正作为**首页的月视图第三种页内态**渲染（见 `MonthViewPage.embedded`）。 */
+    /** 月视图聚焦月（只月份）回传，供首页顶部角格显示。 */
+    onMonthLabelChanged: ((String) -> Unit)? = null,
     monthEmbedded: Boolean = false,
 ) {
     // 单一天气 provider（设备级状态：开关/城市/预报缓存）。2026-10-29 起实例住在
@@ -772,6 +774,7 @@ fun ShellPageContent(
                 // `timetable_screen.dart:1745-1752`）；其余项只按映射表推页。
                 onHomeMenuSelect = { id ->
                     shellTimetableMenuPageId(id)?.let { target ->
+                onMonthLabelChanged = onMonthLabelChanged ?: {},
                         if (target == "d1.addCourse") wiring.seedAddCourseFromMenu(snapshot.currentWeek)
                         onOpenPage(target)
                     }

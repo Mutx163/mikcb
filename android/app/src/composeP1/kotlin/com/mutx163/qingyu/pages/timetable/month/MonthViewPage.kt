@@ -1,8 +1,10 @@
 package com.mutx163.qingyu.pages.timetable.month
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.animation.core.CubicBezierEasing
-import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animate
+import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.gestures.detectVerticalDragGestures
 import androidx.compose.foundation.layout.Box
@@ -118,6 +120,8 @@ fun MonthViewPage(
     homeTitleStyle: HomeTitleStyle = HomeTitleStyle.CLASSIC,
     profileName: String? = null,
     showTopBar: Boolean = true,
+    /** 把当前聚焦月（只月份，不带年份）回传给宿主，供顶部角格显示。 */
+    onMonthLabelChanged: (String) -> Unit = {},
     /**
      * 非空 = 作为 `c1.week` 的**第三种页内态**渲染（2026-11-07）。
      *
@@ -246,6 +250,9 @@ fun MonthViewPage(
     }
 
     val isCurrentMonth = focusedYear == today.year && focusedMonth == today.monthValue
+    LaunchedEffect(focusedYear, focusedMonth) {
+        onMonthLabelChanged(MonthText.monthLabel(focusedMonth))
+    }
     // 翻月入口（箭头 / 补位格）统一走 pager：`animateScrollToPage` 会自己把
     // 标题的连续进度喂给工具栏，落定后再由上面的 effect 同步聚焦月。
     val slideToPage: (Int) -> Unit = { page ->
@@ -256,8 +263,12 @@ fun MonthViewPage(
             )
         }
     }
+    // 连点箭头必须**累加目标**，不能读 `currentPage`：动画前半程 currentPage 还没翻页，
+    // 第二下会算出同一个目标（用户口径：连点三下只走一个月）。`targetPage` 是动画的
+    // 目的地，进行中读它才是「上一跳之后该去的页」。
     val shiftMonth: (Int) -> Unit = { delta ->
-        slideToPage(pagerState.currentPage + delta)
+        val base = if (pagerState.isScrollInProgress) pagerState.targetPage else pagerState.currentPage
+        slideToPage(base + delta)
     }
 
     // 网格 + 面板的统一出口：正常页面把它放进 Scaffold 的内容区；embedded 模式
@@ -275,20 +286,27 @@ fun MonthViewPage(
             focusedMonth = focusedMonth,
             isCurrentMonth = isCurrentMonth,
             expandProgress = { expandValue },
+            // 小数页号也走 lambda：组合期读它会让整个 body（含两页 42 格）每帧重组，
+            // 见 MonthViewBody 里「卡高在测量阶段才取页号」那段。
+            pageValue = {
+                pagerState.currentPage.toDouble() +
+                    pagerState.currentPageOffsetFraction.toDouble()
+            },
             showWeekNumbers = showWeekNumbers,
+            showChrome = !embedded,
             innerBottomPadding = bottomInset,
             dragState = dragState,
             onPreviousMonth = { shiftMonth(-1) },
             onNextMonth = { shiftMonth(1) },
+            // 三条翻月入口都**只滑、不预置 appliedPage**：聚焦月由落定判据同步（见上面
+            // 的 snapshotFlow）。以前先把 appliedPage 写成目标月，于是面板 / 选中态 /
+            // 「本月」药丸当帧就换到目标月，卡片却还在旧页——观感是「内容先跳、卡片后到」。
             onBackToCurrentMonth = {
-                val target = MonthPagerModel.pageOf(today.year, today.monthValue)
-                appliedPage = target
-                slideToPage(target)
+                slideToPage(MonthPagerModel.pageOf(today.year, today.monthValue))
             },
             onDayTap = { date ->
                 val page = MonthPagerModel.pageOf(date.year, date.monthValue)
                 if (page != appliedPage) {
-                    appliedPage = page
                     selectedDate = date
                     slideToPage(page)
                 } else {
@@ -310,7 +328,7 @@ fun MonthViewPage(
                     rowCount = rowCount,
                 ).toFloat()
             },
-            onDragEnd = { velocityDy ->
+            onDragEnd = { velocityDy, velocityProgress ->
                 val target = MonthPanelModel.settleTarget(
                     startValue = dragStart.toDouble(),
                     currentValue = expandValue.toDouble(),
@@ -318,14 +336,21 @@ fun MonthViewPage(
                 )
                 settleJob?.cancel()
                 settleJob = scope.launch {
+                    // 吸附必须**接住手指速度**（2026-11-08）：旧实现固定 260ms tween，
+                    // 松手瞬间速度归零、前几帧几乎不动，观感是「掉一拍」。spring 的
+                    // initialVelocity 用进度/秒，距离与速度都由它自己决定，不再有
+                    // 「只差 2% 也走满 260ms」的过阻尼。
                     animate(
                         initialValue = expandValue,
                         targetValue = target.toFloat(),
-                        animationSpec = tween(
-                            durationMillis = GRID_COLLAPSE_MS,
-                            easing = FastOutSlowInEasing,
+                        initialVelocity = velocityProgress,
+                        animationSpec = spring(
+                            dampingRatio = Spring.DampingRatioNoBouncy,
+                            stiffness = Spring.StiffnessMediumLow,
                         ),
                     ) { value, _ -> expandValue = value }
+                    // 落定后写死端点：避免浮点残差让「收起」停在 1.0001 行。
+                    expandValue = target.toFloat()
                 }
             },
         )
@@ -334,6 +359,11 @@ fun MonthViewPage(
     if (embedded) {
         // 宿主已经画了状态栏 / 顶栏 / 壁纸；这里只铺网格与面板，底部避让交给
         // `LocalGlassDockScrollRelief`（坞的占位），不重复吃系统内边距。
+        //
+        // 系统返回：月视图是 c1.week 的第三种**页内态**，返回应该先回周视图，而不是
+        // 直接退出 App（宿主给 embedded 页传的 onBack 就是 selectRoot(ROOT_WEEK)）。
+        // 这里不画顶栏返回键（宿主顶栏已经有一条），只接管系统返回。
+        BackHandler { onBack() }
         renderBody(0.dp)
         return
     }
@@ -407,8 +437,28 @@ fun MonthViewPage(
     }
 }
 
-/** 吸附动画时长（Dart `_kGridCollapseBaseMs`）。 */
-private const val GRID_COLLAPSE_MS = 260
+/** 卡顶导航行：只在这一层读页号，滑动时只重组标题。 */
+@Composable
+private fun MonthNavigatorForPage(
+    pageValue: () -> Double,
+    isCurrentMonth: Boolean,
+    onPreviousMonth: () -> Unit,
+    onNextMonth: () -> Unit,
+    onBackToCurrentMonth: () -> Unit,
+) {
+    val page = pageValue()
+    val basePage = MonthPagerModel.pagerPage(page)
+    val (baseYear, baseMonth) = MonthPagerModel.monthOfPage(basePage)
+    MonthViewToolbar(
+        year = baseYear,
+        month = baseMonth,
+        isCurrentMonth = isCurrentMonth,
+        onPreviousMonth = onPreviousMonth,
+        onNextMonth = onNextMonth,
+        onBackToCurrentMonth = onBackToCurrentMonth,
+        pageFraction = MonthPagerModel.pageFraction(page).toFloat(),
+    )
+}
 
 /** 翻月动画时长（Dart `260.scaledMs`；本仓不做系统速度倍率，取同一基数）。 */
 private const val MONTH_SLIDE_MS = 260
@@ -422,10 +472,9 @@ private val MONTH_SLIDE_SPEC = tween<Float>(
 /** 翻月网格缓存页数（Dart `MonthViewDataCache` 只留三页）。 */
 private const val GRID_CACHE_PAGES = 3
 
-/**
- * 月份切换不需要额外节流：连续快速点箭头时 `PagerState.animateScrollToPage`
- * 会从当前位置接续（新的目标覆盖旧的动画），不会叠成一串排队动画。
- */
+// 月份切换不需要额外节流：连续快速点箭头时 `PagerState.animateScrollToPage`
+// 会从当前位置接续（新的目标覆盖旧的动画），不会叠成一串排队动画。
+// 但目标页必须从 `targetPage` 累加，不能读 `currentPage`（见 `shiftMonth`）。
 
 /** 页面主体：把「版面账」与「两半内容」放在同一个有界宽高里算。 */
 @Composable
@@ -441,7 +490,11 @@ private fun MonthViewBody(
     focusedMonth: Int,
     isCurrentMonth: Boolean,
     expandProgress: () -> Float,
+    /** 小数页号（`currentPage + offsetFraction`）。**只能是 lambda**：组合期读它会让整页逐帧重组。 */
+    pageValue: () -> Double,
     showWeekNumbers: Boolean,
+    /** 是否画卡内月份行/星期表头；嵌入 c1.week 时为 false（顶部带已经画了）。 */
+    showChrome: Boolean,
     /** Scaffold 的底部内边距（系统栏内边距）：与坞避让取 max 去重，不双计。 */
     innerBottomPadding: Dp,
     dragState: MonthPanelDragState,
@@ -454,21 +507,25 @@ private fun MonthViewBody(
     onAddCourse: (LocalDateTime) -> Unit,
     onDragStart: () -> Unit,
     onDragUpdate: (dy: Float, rowHeightDp: Double, rowCount: Int) -> Unit,
-    onDragEnd: (velocityDy: Float) -> Unit,
+    /** [velocityProgress] = 进度/秒（已除过拖拽行程），吸附动画拿它当初速度。 */
+    onDragEnd: (velocityDy: Float, velocityProgress: Float) -> Unit,
 ) {
     androidx.compose.foundation.layout.BoxWithConstraints(
         modifier = Modifier.fillMaxSize(),
     ) {
         val availableWidthDp = maxWidth.value.toDouble()
         val availableHeightDp = maxHeight.value.toDouble()
-        val density = LocalDensity.current
-        // 小数页号：`currentPage` 在滑过半页时跳，加上连续偏移才是「翻到几成」。
-        // 读它会让本层在滑动中逐帧重组 —— 卡高必须跟着跨着的两页走（Dart 的
-        // AnimatedBuilder 同一条账）。
-        val pageValue = pagerState.currentPage.toDouble() +
-            pagerState.currentPageOffsetFraction.toDouble()
-        // 学期没配置时周次列整列不画：判据与 MonthGrid 内部同源（全 null = 不占位）。
-        val weekNumberColumnVisible = showWeekNumbers && grid.days.any { it.weekIndex != null }
+        // 嵌入态：顶部带已经画了“月份 + 星期”，卡里不再画；周次轨的 40dp 竖槽仍保留，
+        // 给顶部角格的月份和网格的周次共用同一条列，列才能对齐。
+        val reserveRail = !showChrome
+        val weekNumberColumnVisible = reserveRail ||
+            (showWeekNumbers && grid.days.any { it.weekIndex != null })
+        val headerHeight = if (showChrome) MonthGridMetrics.HEADER_HEIGHT else 0.0
+        val cardChrome = if (showChrome) {
+            MonthCalendarChrome.CARD_CHROME
+        } else {
+            MonthCalendarChrome.HANDLE_AREA_HEIGHT
+        }
         val keptRow = MonthPanelModel.rowToKeep(
             dates = grid.days.map { it.date },
             year = focusedYear,
@@ -478,15 +535,9 @@ private fun MonthViewBody(
         )
         // 拖拽行程按**跨着的两页**里较多的行数算（判据在 `MonthPagerModel.cardRowCount`）：
         // 5 行月挨着 6 行月时行程若用聚焦月的行数，会走不满 / 走过头（差一整行）。
-        // 卡高本身用下面的 `cardRowsExact`，不再用这个整数。
-        val cardRowCount = MonthPagerModel.cardRowCount(pageValue) { page ->
-            gridForPage(page).rowsInMonth
-        }
-        // 卡高用的**连续**行数：在 4/5/6 行之间按页进度插值，避免“手指刚动 ε 就长高
-        // 一整行”与“落定瞬间缩回一整行”。见 MonthPagerModel.cardRows 的注释。
-        val cardRowsExact = MonthPagerModel.cardRows(pageValue) { page ->
-            gridForPage(page).rowsInMonth
-        }
+        //
+        // 行高与行数**不在组合期算**（也就不会读 pageValue）：拖拽事件发生时才算，
+        // 见下方 `dragMetrics()`。
 
         // ── 版面账：只读同一个函数，只有「读进度的时机」变了（2026-11-05）──
         //
@@ -503,14 +554,14 @@ private fun MonthViewBody(
                 progress = progress,
                 availableHeightDp = availableHeightDp,
                 availableWidthDp = availableWidthDp,
-                headerHeightDp = MonthGridMetrics.HEADER_HEIGHT,
+                headerHeightDp = headerHeight,
                 weekLabelWidthDp = MonthGridMetrics.WEEK_LABEL_WIDTH,
                 minRowHeightDp = MonthGridMetrics.MIN_ROW_HEIGHT,
                 maxRowHeightDp = MonthGridMetrics.MAX_ROW_HEIGHT,
                 keptRow = keptRow,
                 weekNumberColumnVisible = weekNumberVisible,
-                // 卡内非表格开销（导航 + 分隔线 + 拉杆）：与卡自己同一个常量，少扣就溢出。
-                handleHeightDp = MonthCalendarChrome.CARD_CHROME,
+                // 卡内非表格开销（导航 + 分隔线 + 拉杆）：嵌入态没有导航/分隔线，只剩拉杆。
+                handleHeightDp = cardChrome,
                 // 网格外面那层上内边距也算进窗口高度。
                 topPaddingDp = MonthMetrics.CARD_PADDING,
                 rowCount = rowCount,
@@ -524,37 +575,63 @@ private fun MonthViewBody(
             progress = progress,
             availableHeightDp = availableHeightDp,
             availableWidthDp = availableWidthDp,
-            headerHeightDp = MonthGridMetrics.HEADER_HEIGHT,
+            headerHeightDp = headerHeight,
             weekLabelWidthDp = MonthGridMetrics.WEEK_LABEL_WIDTH,
             minRowHeightDp = MonthGridMetrics.MIN_ROW_HEIGHT,
             maxRowHeightDp = MonthGridMetrics.MAX_ROW_HEIGHT,
             keptRow = keptRow,
             weekNumberColumnVisible = weekNumberVisible,
-            handleHeightDp = MonthCalendarChrome.CARD_CHROME,
+            handleHeightDp = cardChrome,
             topPaddingDp = MonthMetrics.CARD_PADDING,
             rowCount = rows,
         )
 
-        // 卡的那份版面账：**读它才取进度**（测量阶段读 → 只失效布局，不重组）。
+        // 卡的那份版面账：**读它才取页号 / 进度**（测量阶段读 → 只失效布局，不重组）。
+        //
+        // 卡高用**连续**行数：在 4/5/6 行之间按页进度插值，避免“手指刚动 ε 就长高
+        // 一整行”与“落定瞬间缩回一整行”。以前把 `cardRowsExact` 当 remember 的 key，
+        // 而它在滑动中每帧都变 → derivedStateOf 每帧被丢弃重建，同时把整页也带进重组。
+        // 现在页号在 derivedStateOf 内部读，组合期一个页号都不看。
         val cardLayout by remember(
-            availableHeightDp, availableWidthDp, keptRow, cardRowsExact, weekNumberColumnVisible,
+            availableHeightDp, availableWidthDp, keptRow, weekNumberColumnVisible,
         ) {
             derivedStateOf {
                 layoutCardAt(
                     progress = expandProgress().toDouble(),
-                    rows = cardRowsExact,
+                    rows = MonthPagerModel.cardRows(pageValue()) { page ->
+                        gridForPage(page).rowsInMonth
+                    },
                     weekNumberVisible = weekNumberColumnVisible,
                 )
             }
         }
-        // 行高与进度**无关**（模型里只由可用高、宽度、行数决定）：组合期取一次，
-        // 给拖拽判据与每页网格当固定值。这里传 progress = 1.0 只是为了复用同一个
-        // `layout(...)`，不参与任何观感。
-        val rowHeightDp = remember(
-            availableHeightDp, availableWidthDp, cardRowCount, weekNumberColumnVisible,
-        ) {
-            layoutAt(1.0, cardRowCount, weekNumberColumnVisible).rowHeight
+
+        // 拖拽用的行高 / 行数：在**事件发生时**按当前页号算（组合期不读页号）。
+        // 行程仍按跨页口径：两页行数取较大值，走满 / 不走过头。
+        fun dragMetrics(): Pair<Double, Int> {
+            val rows = MonthPagerModel.cardRowCount(pageValue()) { page ->
+                gridForPage(page).rowsInMonth
+            }
+            return layoutAt(1.0, rows, weekNumberColumnVisible).rowHeight to rows
         }
+        val dragUpdate: (Float) -> Unit = { dy ->
+            val (height, rows) = dragMetrics()
+            onDragUpdate(dy, height, rows)
+        }
+        val dragEnd: (Float) -> Unit = { velocityDy ->
+            val (height, rows) = dragMetrics()
+            val extent = MonthPanelModel.dragExtent(height, rows)
+            onDragEnd(
+                velocityDy,
+                if (extent > 0.0) (velocityDy / extent).toFloat() else 0f,
+            )
+        }
+        // 手势协程的 key 必须恒定：旧写法 `.pointerInput(rowHeightDp, cardRowCount)` 的两个
+        // key 都会随翻月进度变 → 拖动中途协程被取消，onDragEnd / onDragCancel 都不跑，
+        // 日历停在半收（看起来像“收起后还剩两行”）。现在改用 rememberUpdatedState 拿最新值。
+        val latestDragStart = rememberUpdatedState(onDragStart)
+        val latestDragUpdate = rememberUpdatedState(dragUpdate)
+        val latestDragEnd = rememberUpdatedState(dragEnd)
 
         Column(modifier = Modifier.fillMaxSize()) {
             Box(
@@ -566,28 +643,32 @@ private fun MonthViewBody(
                     // 卡高 = 表格窗口高 + 卡内非表格开销。两个量都在**测量阶段**才读进度
                     //（`heightDeferred`，等价 `Modifier.height` 的约束语义），拖拽时只重测这一层。
                     modifier = Modifier.heightDeferred {
-                        (cardLayout.gridHeight + MonthCalendarChrome.CARD_CHROME).dp
+                        (cardLayout.gridHeight + cardChrome).dp
                     },
-                    navigator = {
-                        // 标题跟手指连续滑动（Dart `month_view_toolbar.dart:235-266`
-                        // 读 `PageController.page` 的 floor + frac）。
-                        val basePage = MonthPagerModel.pagerPage(pageValue)
-                        val (baseYear, baseMonth) = MonthPagerModel.monthOfPage(basePage)
-                        MonthViewToolbar(
-                            year = baseYear,
-                            month = baseMonth,
-                            isCurrentMonth = isCurrentMonth,
-                            onPreviousMonth = onPreviousMonth,
-                            onNextMonth = onNextMonth,
-                            onBackToCurrentMonth = onBackToCurrentMonth,
-                            pageFraction = MonthPagerModel.pageFraction(pageValue).toFloat(),
-                        )
+                    navigator = if (showChrome) {
+                        {
+                            // 标题跟手指连续滑动（Dart `month_view_toolbar.dart:235-266`
+                            // 读 `PageController.page` 的 floor + frac）。读页号的作用域只在
+                            // 这个子组件里：滑动时只重组标题行，卡片与网格不跟着重组。
+                            MonthNavigatorForPage(
+                                pageValue = pageValue,
+                                isCurrentMonth = isCurrentMonth,
+                                onPreviousMonth = onPreviousMonth,
+                                onNextMonth = onNextMonth,
+                                onBackToCurrentMonth = onBackToCurrentMonth,
+                            )
+                        }
+                    } else {
+                        null
                     },
                     onDragStart = onDragStart,
                     // 行程按**跨页口径**：拖拽行程用两页中较大的行数；卡高用连续行数，
                     // 两者取不同的量是有意的——行程要“走满”，卡高要“不跳”。
-                    onDragUpdate = { dy -> onDragUpdate(dy, rowHeightDp, cardRowCount) },
-                    onDragEnd = onDragEnd,
+                    onDragUpdate = dragUpdate,
+                    onDragEnd = dragEnd,
+                    // 卡底拉杆带不在 pager 里：横向手势在那里自己转成翻月。
+                    onSwipeLeft = onNextMonth,
+                    onSwipeRight = onPreviousMonth,
                 ) {
                     // 窗口裁剪在我们这层：MonthGrid 画全部 4~6 行，窗口只露 visible 行，
                     // 超出的部分被裁掉 —— 正是「下面几行被面板盖住」那一半。
@@ -604,33 +685,34 @@ private fun MonthViewBody(
                             // 不是只挂 26dp 拉杆：在格子上上下滑同样能收放。用触摸斜率判据
                             // （`detectVerticalDragGestures`），点格选日期不会被拖拽抢走；
                             // 与 pager 的横向手势正交，同一手势不会互相抢。
-                            .pointerInput(rowHeightDp, cardRowCount) {
+                            .pointerInput(Unit) {
                                 val tracker = VelocityTracker()
                                 detectVerticalDragGestures(
                                     onDragStart = {
                                         tracker.resetTracking()
-                                        onDragStart()
+                                        latestDragStart.value()
                                     },
                                     onVerticalDrag = { change, dragAmount ->
                                         tracker.addPosition(change.uptimeMillis, change.position)
                                         change.consume()
-                                        onDragUpdate(
-                                            with(density) { dragAmount.toDp().value },
-                                            rowHeightDp,
-                                            cardRowCount,
-                                        )
+                                        // PointerInputScope 本身就是 Density，直接换 dp；
+                                        // 不再把 density / 行高捕获进协程（那会让 key 必须变）。
+                                        latestDragUpdate.value(dragAmount.toDp().value)
                                     },
                                     onDragEnd = {
-                                        onDragEnd(
-                                            with(density) { tracker.calculateVelocity().y.toDp().value },
+                                        latestDragEnd.value(
+                                            tracker.calculateVelocity().y.toDp().value,
                                         )
                                     },
-                                    onDragCancel = { onDragEnd(0f) },
+                                    onDragCancel = { latestDragEnd.value(0f) },
                                 )
                             },
                     ) {
                         HorizontalPager(
                             state = pagerState,
+                            // 预组合左右各一页（默认 0）：不预组合时，进页面后的**第一下**
+                            // 横滑要现组 42 格，最常见的「第一次滑顿一下」就在这里。
+                            beyondViewportPageCount = 1,
                             modifier = Modifier.fillMaxSize(),
                         ) { page ->
                             // 每页用**自己**的行数与保留行算版面：相邻月行数可能不同，
@@ -649,8 +731,8 @@ private fun MonthViewBody(
                                 today = today,
                             )
                             val pageRows = pageGrid.rowsInMonth
-                            val pageWeekNumberVisible = showWeekNumbers &&
-                                pageGrid.days.any { it.weekIndex != null }
+                            val pageWeekNumberVisible = reserveRail ||
+                                (showWeekNumbers && pageGrid.days.any { it.weekIndex != null })
                             // 这一页的版面账：同样「读它才取进度」（测量 / 绘制阶段），
                             // 几何仍是同一个 `layoutAt`，参数与改前逐项一致。
                             val pageLayout by remember(
@@ -689,6 +771,8 @@ private fun MonthViewBody(
                                     selectedDate = pageSelected,
                                     onDayTap = onDayTap,
                                     rowHeight = pageRowHeightDp,
+                                    showHeader = showChrome,
+                                    reserveRail = reserveRail,
                                     // 窗口行数（含小数）跟着展开进度走：收起只露 1 行，
                                     // 拖拽时连续变化；MonthGrid 内部据此裁剪、内容整体上移。
                                     // 两个都是 lambda：值在测量 / 绘制阶段才读（组合期不读进度）。
@@ -736,8 +820,8 @@ private fun MonthViewBody(
             }
             dragState.onCollapseStart = onDragStart
             // 行程同样按跨页口径（与卡高、拉杆两处一致）。
-            dragState.onCollapseUpdate = { dy -> onDragUpdate(dy, rowHeightDp, cardRowCount) }
-            dragState.onCollapseEnd = onDragEnd
+            dragState.onCollapseUpdate = { dy -> dragUpdate(dy) }
+            dragState.onCollapseEnd = { velocity -> dragEnd(velocity) }
         }
     }
 }

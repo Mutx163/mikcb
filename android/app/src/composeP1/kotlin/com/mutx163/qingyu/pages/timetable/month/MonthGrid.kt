@@ -78,6 +78,10 @@ fun MonthGrid(
      * 改成 lambda 后进度变化只让测量的那几层重新测量 / 重放绘图层，数值不变。
      */
     rowOffset: () -> Dp = { 0.dp },
+    /** 是否画 24dp 的星期表头；嵌入 c1.week 时为 false（顶部带已经画了）。 */
+    showHeader: Boolean = true,
+    /** 是否无论有没有周次都保留 40dp 竖槽（嵌入态给顶部角格的月份用同一条列）。 */
+    reserveRail: Boolean = false,
     showWeekNumbers: Boolean = true,
 ) {
     val dark = isSystemInDarkThemeSafe()
@@ -95,8 +99,10 @@ fun MonthGrid(
         .copy(alpha = MonthInk.TERTIARY.toFloat())
     val railRule = headerInk.copy(alpha = 0.18f)
 
-    // 周次行标列：只在真的能算出周次时占位（学期未配置时整列收起）。
-    val weekNumberColumnVisible = showWeekNumbers && grid.days.any { it.weekIndex != null }
+    // 周次行标列：嵌入态强制保留（顶部角格的月份与周次共用同一条列）；
+    // 普通页面仍按“有周次才占位”收列。
+    val weekNumberColumnVisible = reserveRail ||
+        (showWeekNumbers && grid.days.any { it.weekIndex != null })
     val todayDay = dayOnly(today)
     val selectedDay = selectedDate?.let { dayOnly(it) }
 
@@ -116,6 +122,7 @@ fun MonthGrid(
 
     Column(modifier = rootModifier) {
         // 表头：钉在固定高度（与页面行高预算、裁剪窗口上沿同一个数）。
+        if (showHeader) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -141,6 +148,7 @@ fun MonthGrid(
                     )
                 }
             }
+        }
         }
 
         // 行区：表头固定，只裁剪平移这一块。
@@ -175,6 +183,7 @@ fun MonthGrid(
                     MonthWeekRow(
                         week = grid.weeks[row],
                         weekNumberColumnVisible = weekNumberColumnVisible,
+                        showWeekNumbers = showWeekNumbers,
                         headerInk = headerInk,
                         railInk = railInk,
                         isDark = dark,
@@ -194,6 +203,7 @@ fun MonthGrid(
 private fun MonthWeekRow(
     week: MonthWeek,
     weekNumberColumnVisible: Boolean,
+    showWeekNumbers: Boolean,
     headerInk: Color,
     railInk: Color,
     isDark: Boolean,
@@ -218,7 +228,7 @@ private fun MonthWeekRow(
                 // 时取行首那天的周次，仍能标出「这行属于第几周」。
                 val anchor = week.days.firstOrNull { !it.isOutsideMonth } ?: week.days.firstOrNull()
                 val weekIndex = anchor?.weekIndex
-                if (weekIndex != null) {
+                if (showWeekNumbers && weekIndex != null) {
                     WeekRailLabel(
                         text = MonthText.weekRail(weekIndex.toInt()),
                         color = railInk,
@@ -290,6 +300,62 @@ private fun WeekRailLabel(
                     scaleY = scale
                 },
         )
+    }
+}
+
+/**
+ * 顶部玻璃带里的月视图星期栏：左侧 40dp 角格放**月份**（只月份、不带年份），
+ * 后面 7 列周一…周日；列宽与月网格的「40dp 周次槽 + 7 列」严格对齐。
+ *
+ * 它替代了月历卡里的「年月导航 + 星期表头」两层：月份在角格、星期在顶部带，
+ * 带下面直接就是网格，与周/日视图同一条玻璃带。
+ */
+@Composable
+fun MonthWeekdayHeader(
+    monthLabel: String?,
+    modifier: Modifier = Modifier,
+) {
+    val dark = isSystemInDarkThemeSafe()
+    val headerInk = Color(QingyuTheme.primaryText(dark))
+        .copy(alpha = MonthInk.SECONDARY.toFloat())
+    Row(
+        modifier = modifier
+            .fillMaxWidth()
+            .height(MonthMetrics.CALENDAR_NAV_HEIGHT.dp),
+    ) {
+        Box(
+            modifier = Modifier
+                .width(MonthGridMetrics.WEEK_LABEL_WIDTH.dp)
+                .fillMaxHeight(),
+            contentAlignment = Alignment.Center,
+        ) {
+            if (!monthLabel.isNullOrBlank()) {
+                Text(
+                    text = monthLabel,
+                    style = MiuixTheme.textStyles.body2.shiftWeight(QingyuWeightDelta.BOLD),
+                    color = headerInk,
+                    maxLines = 1,
+                )
+            }
+        }
+        for (dayOfWeek in 1..MonthGridModel.DAYS_PER_ROW) {
+            Box(
+                modifier = Modifier
+                    .weight(1f)
+                    .fillMaxHeight(),
+                contentAlignment = Alignment.Center,
+            ) {
+                Text(
+                    text = MonthText.weekday(dayOfWeek),
+                    style = MiuixTheme.textStyles.footnote2.shiftWeight(
+                        QingyuWeightDelta.SEMIBOLD,
+                    ),
+                    color = headerInk,
+                    maxLines = 1,
+                    textAlign = TextAlign.Center,
+                )
+            }
+        }
     }
 }
 

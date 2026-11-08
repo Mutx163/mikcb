@@ -126,6 +126,8 @@ fun TimetableHost(
     dayContent: (@Composable (contentTop: Dp, summaryModifier: Modifier) -> Unit)? = null,
     /** 月视图第三种页内态（与日视图互斥）。 */
     monthMode: Boolean = false,
+    /** 月视图顶部角格显示哪个月（只月份，不带年份）。 */
+    monthLabel: String? = null,
     /** 月视图正文（宿主注入；内层自己不再搭顶栏/壁纸/Scaffold）。 */
     monthContent: (@Composable () -> Unit)? = null,
     /** 周视图滚动体的可选外层（首页下拉快捷导入）：只包玻璃带下方那一块。 */
@@ -445,6 +447,7 @@ fun TimetableHost(
         homeTitleStyle = settingsModel?.homeTitleStyle ?: HomeTitleStyle.CLASSIC,
         // 菜单形态取自用户存档（Dart `homeMenuStyle`，:1489 默认 list）；壳没传就走默认。
         homeMenuStyle = settingsModel?.homeMenuStyle ?: HomeMenuStyle.LIST,
+        monthLabel = monthLabel,
         homeMenuItems = menuItemsWithShare,
         // 顶栏菜单「分享课表图片」在宿主拦截（Dart timetable_screen.dart:966-968 同口径：
         // 分享要带「当前可见周」与周/日视图，只有首页这一层知道，不走壳的推页映射）。

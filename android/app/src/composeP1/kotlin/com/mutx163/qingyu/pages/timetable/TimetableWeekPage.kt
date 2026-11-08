@@ -89,6 +89,8 @@ import com.mutx163.qingyu.pages.timetable.day.LocalEmbeddedDayTransitionSettled
 import com.mutx163.qingyu.pages.shell.HomeInkPolarity
 import com.mutx163.qingyu.core.Exam
 import com.mutx163.qingyu.core.ScheduleItem
+import com.mutx163.qingyu.pages.timetable.month.MonthMetrics
+import com.mutx163.qingyu.pages.timetable.month.MonthWeekdayHeader
 import com.mutx163.qingyu.core.SectionTime
 import com.mutx163.qingyu.core.TimeScheme
 import com.mutx163.qingyu.core.TimetableSettings
@@ -280,6 +282,8 @@ fun TimetableWeekPage(
     /** 月视图正文（由宿主注入 `ShellPageContent("c2.month", monthEmbedded = true)`）。 */
     monthContent: (@Composable () -> Unit)? = null,
     /**
+    /** 顶部角格显示的月份（只月份，不带年份；由月页翻月落定后回传）。 */
+    monthLabel: String? = null,
      * 周视图滚动体的可选外层（首页下拉快捷导入用）。
      *
      * 只包「玻璃带下方那一块」：指示器才会长在星期栏底下，而不是压到状态栏上
@@ -901,6 +905,16 @@ fun TimetableWeekPage(
                         .fillMaxSize()
                         // 2141：周网格按原始进度淡出（alpha = 1 - value，不缓动）。
                         // 只挂 pager 自己：外层还要画日面板与「回今日」浮钮。
+                    } else {
+                        // 月视图：同一条玻璃带里画“月份 + 星期”，下面直接是网格。
+                        MonthWeekdayHeader(
+                            monthLabel = monthLabel,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(
+                                    horizontal = (MonthMetrics.CARD_INSET + MonthMetrics.CARD_PADDING).dp,
+                                ),
+                        )
                         // ⚠️ 性能（R07）：仅在日视图可见/过渡（dayVisible）时才挂这层离屏 alpha；
                         // 普通周浏览（dayExpand 稳定 0、dayVisible=false）不挂任何 alpha 层，
                         // 否则整块 pager 每帧走离屏合成 → 周视图左右滑卡顿。
