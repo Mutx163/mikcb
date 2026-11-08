@@ -43,7 +43,7 @@ class SettingsHomeWidgetModelTest {
         assertEquals("solid", model.widgetBackgroundStyle) // :786
         assertEquals("bar_and_text", model.widgetCourseAccentMode) // :787
         assertTrue(model.widgetShowLocation) // :788
-        assertTrue(model.widgetShowCountdown) // :789
+        assertFalse(model.widgetShowCountdown) // :789（默认省电档，实时由用户显式打开）
         assertFalse(model.widgetHideCompletedCourses) // :790
         assertTrue(model.widgetShowTomorrowCourses) // :791
         assertEquals(-11.0, model.widgetHeightAdjustment, 0.0) // :792
@@ -129,7 +129,7 @@ class SettingsHomeWidgetModelTest {
         )
 
         assertTrue(model.widgetShowLocation)
-        assertTrue(model.widgetShowCountdown)
+        assertFalse(model.widgetShowCountdown) // 数值 1 不是 bool：宽松解析回落到默认（省电档）
         assertTrue(model.widgetHideCompletedCourses) // "true" 是字符串 true（Dart lenientBool 同口径）
         assertFalse(model.widgetShowTomorrowCourses)
     }

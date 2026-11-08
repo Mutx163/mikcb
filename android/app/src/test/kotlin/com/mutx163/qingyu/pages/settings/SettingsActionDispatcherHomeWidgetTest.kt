@@ -65,7 +65,7 @@ class SettingsActionDispatcherHomeWidgetTest {
 
     @Test
     fun `10 个 rowId 常量与页面 spec 的行 id 逐字一致`() {
-        val ids = SettingsHomeWidgetPage.spec(SettingsHomeWidgetState()).rows().map { it.id }
+        val ids = SettingsHomeWidgetPage.spec(SettingsHomeWidgetState(showCountdown = true)).rows().map { it.id }
 
         assertEquals(
             listOf(
@@ -322,7 +322,8 @@ class SettingsActionDispatcherHomeWidgetTest {
                 widgetBackgroundStyle = "solid",
                 widgetCourseAccentMode = "bar_and_text",
                 widgetShowLocation = true,
-                widgetShowCountdown = true,
+                // 重置回「省电」默认：实时倒计时必须由用户显式打开。
+                widgetShowCountdown = false,
                 widgetHideCompletedCourses = false,
                 widgetShowTomorrowCourses = true,
                 widgetCountdownLeadMinutes = 20,

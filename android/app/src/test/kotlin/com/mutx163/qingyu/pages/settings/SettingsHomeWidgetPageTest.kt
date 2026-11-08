@@ -45,13 +45,15 @@ class SettingsHomeWidgetPageTest {
      */
     @Test
     fun `区块顺序为预览-今日课程-倒计时-外观-绑定-重置`() {
-        val ids = spec().topLevelIds()
+        val ids = spec(SettingsHomeWidgetState(showCountdown = true)).topLevelIds()
         assertEquals(
             listOf(
                 "homeWidget.preview",
                 "homeWidget.gap.todayCourse",
                 "homeWidget.todayCourse.label",
                 "homeWidget.todayCourse",
+                // 开关下方的耗电说明（整宽段落）常驻，与倒计时区块开/关无关。
+                "homeWidget.countdownBatteryHint",
                 "homeWidget.gap.countdown",
                 "homeWidget.countdown.label",
                 "homeWidget.countdown",
@@ -153,8 +155,9 @@ class SettingsHomeWidgetPageTest {
 
         val countdown = page.row("homeWidget.showCountdown")
         assertEquals("显示倒计时", countdown.title)
-        assertEquals("显示下节课倒计时", countdown.subtitle)
-        assertEquals(true, countdown.switchValue)
+        // 默认省电档：开关关闭，副标题直接写清代价（开启后每分钟刷新）。
+        assertEquals("开启后每分钟刷新", countdown.subtitle)
+        assertEquals(false, countdown.switchValue)
 
         val hide = page.row("homeWidget.hideCompleted")
         assertEquals("隐藏已上完课程", hide.title)
@@ -186,7 +189,7 @@ class SettingsHomeWidgetPageTest {
     @Test
     fun `倒计时提前量区标题与两行`() {
         // settings_home_widget.dart:303-332
-        val page = spec()
+        val page = spec(SettingsHomeWidgetState(showCountdown = true))
         val labels = page.flatten().filterIsInstance<SettingsLabel>()
         assertEquals("homeWidgetCountdownLeadTitle", labels[1].textKey)
         assertEquals("倒计时提前量", labels[1].text)
@@ -199,7 +202,7 @@ class SettingsHomeWidgetPageTest {
     @Test
     fun `提前量下拉选项为零加九档分钟`() {
         // settings_home_widget.dart:306-319：始终显示 + [1,5,10,15,20,30,40,50,60]
-        val row = spec().row("homeWidget.countdownLead")
+        val row = spec(SettingsHomeWidgetState(showCountdown = true)).row("homeWidget.countdownLead")
         assertEquals(MiuixRowComponent.DROPDOWN, row.component)
         // 行标题复用区标题（Dart :307 label: l10n.homeWidgetCountdownLeadTitle）
         assertEquals("倒计时提前量", row.title)
@@ -220,7 +223,7 @@ class SettingsHomeWidgetPageTest {
 
     @Test
     fun `提前量选项名都来自 ARB`() {
-        val row = spec().row("homeWidget.countdownLead")
+        val row = spec(SettingsHomeWidgetState(showCountdown = true)).row("homeWidget.countdownLead")
         assertEquals("homeWidgetCountdownLeadAlways", row.options[0].labelKey)
         // 其后九项是 beforeClassMinutesOption 的模板渲染值
         row.options.drop(1).forEach { assertEquals("beforeClassMinutesOption", it.labelKey) }
@@ -229,7 +232,7 @@ class SettingsHomeWidgetPageTest {
     @Test
     fun `倒计时样式下拉十二档`() {
         // settings_home_widget.dart:320-332 + timetable_settings_enums.dart:244-257
-        val row = spec().row("homeWidget.countdownStyle")
+        val row = spec(SettingsHomeWidgetState(showCountdown = true)).row("homeWidget.countdownStyle")
         assertEquals(MiuixRowComponent.DROPDOWN, row.component)
         assertEquals("widgetCountdownStyleTitle", row.titleKey)
         assertEquals("倒计时样式", row.title)
@@ -551,8 +554,12 @@ class SettingsHomeWidgetPageTest {
     @Test
     fun `页尾恢复默认是危险行且作用于 homeWidget`() {
         // settings_reset.dart:175-189（scope）+ :205-218（自带 gap + 危险色）
-        val page = spec()
-        assertEquals("homeWidget.gap.reset", page.topLevelIds()[14])
+        val page = spec(SettingsHomeWidgetState(showCountdown = true))
+        // 末尾三块：外层 gap · 本块 gap · 恢复行（不钉绝对下标，避免插入说明段后误报）。
+        assertEquals(
+            listOf("homeWidget.gap.resetOuter", "homeWidget.gap.reset", "homeWidget.reset"),
+            page.topLevelIds().takeLast(3),
+        )
         val row = page.row("homeWidget.reset.row")
         assertEquals(MiuixRowComponent.ARROW, row.component)
         assertEquals("恢复默认设置", row.title)

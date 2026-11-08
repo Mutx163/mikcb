@@ -385,7 +385,7 @@ object TodayWidgetSupport {
             hasAnyCourseToday = todayCourses.isNotEmpty() || originalTodayCourseCount > 0,
             hasRemainingCourseToday = currentCourse != null || upcomingCourse != null,
         )
-        val widgetShowCountdown = settingsJson.optBoolean("widgetShowCountdown", true)
+        val widgetShowCountdown = settingsJson.optBoolean("widgetShowCountdown", false)
         val countdownLeadMinutes = settingsJson.optInt("widgetCountdownLeadMinutes", 20)
         val effectiveShowCountdown = when {
             !widgetShowCountdown -> false
@@ -822,19 +822,19 @@ internal fun findNextRefreshAtMillis(
         if (examEnd != null && examEnd > nowMillis) {
             triggers += examEnd + 1000L
         }
-        // 倒计时激活时每 60 秒刷新一次。
+        // 倒计时可见时每 60 秒刷新一次 —— 这是**用户打开「显示倒计时」之后**的档位。
         //
-        // 为什么**保留**（没有跟通知侧一起改用 chronometer 走字）：桌面小部件是
-        // RemoteViews，不吃 systemui 的通知走字能力；卡片上「还有 N 分钟上课」这类
-        // 文本倒计时只能靠定时重绘推进。**没有小部件实例时根本走不到这里** —— 上游
-        // HomeWidgetStorage.rescheduleRefresh 已加 WidgetRefreshGate 零实例门，配合
-        // BaseQingyuWidgetProvider.onDisabled，用户报的「0 实例却每分钟 RTC_WAKEUP」
-        // 已在那道门被掐断。有实例时保持每分钟一次，是为倒计时观感不倒退
-        //（用户口径：不许用砍功能换省电）。
+        // 为什么保留每分钟（而不是改用 chronometer 走字）：桌面小部件是 RemoteViews，
+        // 不吃 systemui 的通知走字能力；卡片上「还有 N 分钟上课」这类文本倒计时只能靠
+        // 定时重绘推进。**默认关闭**（缺键 false），所以不必为所有人付这份电；愿意要
+        // 实时的用户在设置页显式打开，并在那一行看到耗电提示。
+        // 没有实例时走不到这里：上游 rescheduleRefresh 已加 WidgetRefreshGate 零实例门。
         val snapshot = snapshotForExam
-        if (snapshot != null
-            && snapshot.showCountdown
-            && (snapshot.state == "ongoing" || snapshot.state == "upcoming")) {
+        // 每分钟心跳只在用户显式打开「显示倒计时」时才排（默认关闭 = 省电档）。
+        // 判据收在 [WidgetRefreshPolicy]，与设置页开关共用同一口径。
+        if (snapshot != null &&
+            WidgetRefreshPolicy.shouldScheduleMinuteHeartbeat(snapshot.showCountdown, snapshot.state)
+        ) {
             triggers += nowMillis + 60_000L
         }
         triggers += buildNextMidnightMillis(nowMillis) + 1000L

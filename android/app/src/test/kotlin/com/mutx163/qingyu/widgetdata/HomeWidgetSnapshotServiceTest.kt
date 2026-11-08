@@ -384,12 +384,21 @@ class HomeWidgetSnapshotServiceTest {
         // 与 Dart build(countdownLeadMinutes: host.settings.widgetCountdownLeadMinutes) 同形。
         val leadZero = service.build(
             profileId = "p", profileName = "n", currentWeek = 6,
-            settings = WidgetSettingsFace(),
+            settings = WidgetSettingsFace().copy(widgetShowCountdown = true),
             todayCourses = listOf(course("c", "高数", startTime = "08:00", endTime = "09:40")),
             now = LocalDateTime.of(2026, 3, 27, 6, 0),
             countdownLeadMinutes = 0,
         )
         assertTrue(leadZero.showCountdown)
+        // 默认省电档：开关没开，即使 lead=0 也不显示倒计时（实时必须用户显式选）。
+        val defaultOff = service.build(
+            profileId = "p", profileName = "n", currentWeek = 6,
+            settings = WidgetSettingsFace(),
+            todayCourses = listOf(course("c", "高数", startTime = "08:00", endTime = "09:40")),
+            now = LocalDateTime.of(2026, 3, 27, 6, 0),
+            countdownLeadMinutes = 0,
+        )
+        assertFalse(defaultOff.showCountdown)
     }
 
     @Test

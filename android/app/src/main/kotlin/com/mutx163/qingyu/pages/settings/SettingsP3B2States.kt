@@ -35,8 +35,8 @@ data class SettingsHomeWidgetState(
     val courseAccentMode: String = "bar_and_text",
     /** `widgetShowLocation`（:788）。 */
     val showLocation: Boolean = true,
-    /** `widgetShowCountdown`（:789）；false 时倒计时整块不渲染。 */
-    val showCountdown: Boolean = true,
+    /** `widgetShowCountdown`（Dart :789）；false 时倒计时整块不渲染，也不排每分钟心跳。 */
+    val showCountdown: Boolean = false,
     /** `widgetHideCompletedCourses`（:790）。 */
     val hideCompletedCourses: Boolean = false,
     /** `widgetShowTomorrowCourses`（:791）。 */

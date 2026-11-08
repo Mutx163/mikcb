@@ -196,8 +196,9 @@ data class TimetableSettingsModel(
     val widgetCourseAccentMode: String = DEFAULT_WIDGET_COURSE_ACCENT_MODE,
     /** `widgetShowLocation`（:788，缺键 true）。 */
     val widgetShowLocation: Boolean = true,
-    /** `widgetShowCountdown`（:789，缺键 true）；false 时倒计时整块连同提前量/样式两行一起消失。 */
-    val widgetShowCountdown: Boolean = true,
+    /** `widgetShowCountdown`（Dart :789，缺键 false）；false 时倒计时整块连同提前量/样式两行一起消失，
+     *  同时**不再排每分钟心跳闹钟**（[WidgetRefreshPolicy]）——实时刷新由用户显式开启并承担耗电。 */
+    val widgetShowCountdown: Boolean = false,
     /** `widgetHideCompletedCourses`（:790，缺键 false）。 */
     val widgetHideCompletedCourses: Boolean = false,
     /** `widgetShowTomorrowCourses`（:791，缺键 true）。 */
@@ -963,7 +964,7 @@ data class TimetableSettingsModel(
                     DEFAULT_WIDGET_COURSE_ACCENT_MODE,
                 ),
                 widgetShowLocation = LenientJson.bool(json["widgetShowLocation"]) ?: true,
-                widgetShowCountdown = LenientJson.bool(json["widgetShowCountdown"]) ?: true,
+                widgetShowCountdown = LenientJson.bool(json["widgetShowCountdown"]) ?: false,
                 widgetHideCompletedCourses =
                     LenientJson.bool(json["widgetHideCompletedCourses"]) ?: false,
                 widgetShowTomorrowCourses =

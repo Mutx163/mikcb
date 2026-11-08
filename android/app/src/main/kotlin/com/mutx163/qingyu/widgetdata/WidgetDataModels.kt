@@ -231,7 +231,7 @@ data class WidgetSettingsFace(
     val widgetBackgroundStyle: String = "solid",
     val widgetCourseAccentMode: WidgetCourseAccentModeData = WidgetCourseAccentModeData.BAR_AND_TEXT,
     val widgetShowLocation: Boolean = true,
-    val widgetShowCountdown: Boolean = true,
+    val widgetShowCountdown: Boolean = false,
     val widgetHideCompletedCourses: Boolean = false,
     val widgetShowTomorrowCourses: Boolean = true,
     val widgetHeightAdjustment: Double = -11.0,

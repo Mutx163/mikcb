@@ -595,7 +595,8 @@ object SettingsActionDispatcher {
                 widgetBackgroundStyle = TimetableSettingsModel.DEFAULT_WIDGET_BACKGROUND_STYLE,
                 widgetCourseAccentMode = TimetableSettingsModel.DEFAULT_WIDGET_COURSE_ACCENT_MODE,
                 widgetShowLocation = true,
-                widgetShowCountdown = true,
+                // 重置也回「省电」默认：实时倒计时是用户显式选择，不替用户重新打开。
+                widgetShowCountdown = false,
                 widgetHideCompletedCourses = false,
                 widgetShowTomorrowCourses = true,
                 widgetCountdownLeadMinutes =
