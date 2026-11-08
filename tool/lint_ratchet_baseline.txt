@@ -1,5 +1,0 @@
-# lint 棘轮基线：这两条 lint 暂时开着会全仓红，先把现存违规数钉住，只许降。
-# 生成：python tool/audit_lint_ratchet.py --update
-# 规则见 tool/audit_lint_ratchet.py；降下来就压基线，不许往上加。
-discarded_futures: 238
-cascade_invocations: 510

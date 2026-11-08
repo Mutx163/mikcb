@@ -6,8 +6,8 @@
 
 - `push` / `pull_request` 会触发 CI 质量门禁。
 - 只有推送 `v*` tag 才会自动构建正式 APK 并创建或更新 GitHub Release，并同步 GitCode 镜像（需一次性配置，见第一节）。
-- **GitHub 预发布或正式，唯一由 pubspec 的 `version:` 是否含 `-` 决定；commit message 里的 `prerelease` 无效。**
-- 三位数版本和四位数版本都可以是正式版，也都可以是预发布版；关键看 pubspec 有没有 `-`。
+- **GitHub 预发布或正式，唯一由 version.properties 的 `version:` 是否含 `-` 决定；commit message 里的 `prerelease` 无效。**
+- 三位数版本和四位数版本都可以是正式版，也都可以是预发布版；关键看 version.properties 有没有 `-`。
 - 四位数版本可以先作为预发布发出，后面再原地转成正式版。
 - **默认只升第 4 位（如 `2.0.4` → `2.0.4.1`）；不要因本地草稿就默认升第 3 位到 `2.0.5` 至 `2.0.9`。**
 - 应用里比较版本时，`1.1.10-6+36` 会按 `1.1.10.6` 去比较。
@@ -42,15 +42,15 @@
 ### 3. “合并草稿”≠“改已发版”
 
 - **正确**：多份**未 tag** 的 notes → 合并进**下一次要 cut** 的那一个 `v{next}.md`。
-- **错误**：把未推送代码的新能力写回**已经发过**的 `v2.0.5.md`（即使 pubspec 仍停在 `2.0.5-0`）。
+- **错误**：把未推送代码的新能力写回**已经发过**的 `v2.0.5.md`（即使 version.properties 仍停在 `2.0.5-0`）。
 
-`pubspec.yaml` 的 `version:` **不能**单独当作“这一版还没发”：发版后 pubspec 可能暂时仍停在旧号；以 **tag、latest.json** 为准。
+`android/version.properties` 的 `version:` **不能**单独当作“这一版还没发”：发版后 version.properties 可能暂时仍停在旧号；以 **tag、latest.json** 为准。
 
 ### 4. 与正常发版的关系
 
-- **正常 cut**：仍按第三节升第四位、写 `v{ship}.md`、改 pubspec、打 tag；本规则只禁止动**已经发过的** notes 文件。
+- **正常 cut**：仍按第三节升第四位、写 `v{ship}.md`、改 version.properties、打 tag；本规则只禁止动**已经发过的** notes 文件。
 - **预发布转正式**：仍可只改 GitHub Release 渠道，不必改写已发 notes 正文。
-- **可选习惯**（非强制）：tag 成功后把 pubspec 抬到下一预发布号（如 `2.0.5.1-0+…`），减少“代码已前进、版本号还像停在已发号”的误导；不抬号也不构成可以改已发 notes 的理由。
+- **可选习惯**（非强制）：tag 成功后把 version.properties 抬到下一预发布号（如 `2.0.5.1-0+…`），减少“代码已前进、版本号还像停在已发号”的误导；不抬号也不构成可以改已发 notes 的理由。
 
 ## 更新日志写法规则（强制）
 
@@ -105,7 +105,7 @@
   **但简写必须能认回条目**：优先直接抄条目里的原话（含其中几个字），自己另起一种
   说法（如条目写「转场更顺」而重点写「转场掉帧」）会让它认不回来——界面上那条会
   变成**没有分类标签的灰色重点**，而且「有没有写重点行」的检查查不出来。
-  发版前自检：`dart run tool/check_release_highlights.dart`（`release_preflight.sh`
+  发版前自检：`python3 tool/check_release_highlights.py`（`release_preflight.sh`
   已接这条，认不回来直接 FAIL；CI 的 `test/docs/release_notes_format_test.dart` 同时兜住）；
 - 历史版本（v2.1.3.4 及以前）仍是「扁平列表 + 条目类型前缀」。解析器、App 历史页、
   官网都同时兼容两种写法，**不需要重写历史**；历史版本只允许补一行摘要。
@@ -197,7 +197,7 @@ bash tool/release_preflight.sh
 
 它逐项给出 PASS / WARN / FAIL：
 
-- pubspec 的 `-` 段与目标渠道一致；目标 tag 由版本推导，不用手填；
+- version.properties 的 `-` 段与目标渠道一致；目标 tag 由版本推导，不用手填；
 - build number 比上一个 tag 大；版本号高于最后发布；
 - `docs/releases/v目标.md` 存在、首行标题匹配、有没有写「本次重点」；
 - 本地 / 远端是否已有同名 tag 或 Release（历史删过的同名 tag 也会被认出来）；
@@ -221,9 +221,9 @@ tag 工作流的检查与 CI 同源：main 红则 tag 必挂，失败 tag 要走
 
 ### Windows 相关
 
-`tool/verify_release_pubspec.sh` 已兼容 CRLF（2026-10-18）。如果你看到
+`tool/verify_release_version.sh` 已兼容 CRLF（2026-10-18）。如果你看到
 「prerelease cut requires '-'」而版本里明明有 `-`，多半是 CRLF 造成的误报：
-用 `git show HEAD:pubspec.yaml` 的内容再跑一次即可。
+用 `git show HEAD:android/version.properties` 的内容再跑一次即可。
 
 **GitCode 镜像**：Release 附件上传是异步的，GitHub Release 通过就算发布完成，
 不必等镜像同步。
@@ -248,7 +248,7 @@ tag 工作流的检查与 CI 同源：main 红则 tag 必挂，失败 tag 要走
 
 release workflow 还会做这些事：
 
-- 读取 [pubspec.yaml](../pubspec.yaml) 的 `version:`
+- 读取 [android/version.properties](../android/version.properties) 的 `version:`
 - 读取 `docs/releases/v版本号.md`
 - 用 tag 名覆盖 Android 最终产物的 `versionName`
 - 使用 `flutter build apk --release --flavor prod --target-platform android-arm64` 构建正式包
@@ -260,7 +260,7 @@ release workflow 还会做这些事：
 发版时 android-build.yml 会调用 [nvdacn/sync_to_gitcode](https://github.com/nvdacn/sync_to_gitcode) 的两个可复用工作流（已按 master HEAD `18b70112` SHA pin）：
 
 - `gitcode-push`：把 `main` 分支与全部 tag 同步到 GitCode 仓库；
-- `gitcode-release`：把本次构建产物 `mikcb-*.apk` 上传为 GitCode Release 附件，正文使用 `docs/releases/v版本号.md` 全文，预发布或正式状态沿用 pubspec `-` 判定（`pre` / `latest`）。
+- `gitcode-release`：把本次构建产物 `mikcb-*.apk` 上传为 GitCode Release 附件，正文使用 `docs/releases/v版本号.md` 全文，预发布或正式状态沿用 version.properties `-` 判定（`pre` / `latest`）。
 
 触发条件与发版一致：仅当推送 `v*` tag 且构建发布（publish job）成功后执行；两个 Job 都带 `vars.GITCODE_USERNAME` 存在性门禁，变量不存在时自动跳过，Fork 仓库不会因此失败。
 
@@ -284,7 +284,7 @@ release workflow 还会做这些事：
 
 ### 1. 包内版本
 
-写在 [pubspec.yaml](../pubspec.yaml) 里。
+写在 [android/version.properties](../android/version.properties) 里。
 
 例如：
 
@@ -387,9 +387,9 @@ version: 1.1.10-6+36
 
 这里不要混淆“版本号形态”“commit 文案”和“GitHub 渠道状态”这三个概念。
 
-### 1. 唯一判定源：pubspec + CI
+### 1. 唯一判定源：version.properties + CI
 
-[android-build.yml](../.github/workflows/android-build.yml) 在创建 GitHub Release 前读取 `pubspec.yaml` 的 `version:`：
+[android-build.yml](../.github/workflows/android-build.yml) 在创建 GitHub Release 前读取 `android/version.properties` 的 `version:`：
 
 ```bash
 if [[ "${APP_VERSION}" == *-* ]]; then
@@ -401,7 +401,7 @@ fi
 
 因此：
 
-| 用户意图 | pubspec 必须写成 | GitHub Release | 官网 `latest.json` |
+| 用户意图 | version.properties 必须写成 | GitHub Release | 官网 `latest.json` |
 |----------|------------------|----------------|---------------------|
 | **预发布** | 含 `-` 段，如 `1.3.2-0+109` 或 `1.1.10-7+37` | `prerelease: true` | 进 `prerelease` 栏 |
 | **正式版** | 不含 `-`，如 `1.3.2+109` 或 `1.1.11+37` | `prerelease: false` | 进 `stable` 栏 |
@@ -416,9 +416,9 @@ fi
 切版本前运行（把第二参数换成本次模式）：
 
 ```bash
-bash tool/verify_release_pubspec.sh pubspec.yaml prerelease
+bash tool/verify_release_version.sh prerelease
 # 或
-bash tool/verify_release_pubspec.sh pubspec.yaml release
+bash tool/verify_release_version.sh release
 ```
 
 ### 2. GitHub、官网和应用各自看什么
@@ -443,11 +443,11 @@ bash tool/verify_release_pubspec.sh pubspec.yaml release
 
 ### 3. 三位数 vs 四位数（形态 ≠ 渠道）
 
-- **四位数对外版本**（如 `v1.1.10.7`）：pubspec 写 `1.1.10-7+build`；`-7` 同时表示第四段编号，且触发预发布。
-- **三位数对外版本**（如 `v1.3.2`）：若要做**预发布**，pubspec 仍必须含 `-`，通常写 `1.3.2-0+build`（`-0` 仅用于触发 CI 预发布，对外 versionName 仍来自 tag `1.3.2`）。
-- **三位数正式基线**（如 `v1.1.11`）：pubspec 写 `1.1.11+build`，**不要**写 `-0`。
+- **四位数对外版本**（如 `v1.1.10.7`）：version.properties 写 `1.1.10-7+build`；`-7` 同时表示第四段编号，且触发预发布。
+- **三位数对外版本**（如 `v1.3.2`）：若要做**预发布**，version.properties 仍必须含 `-`，通常写 `1.3.2-0+build`（`-0` 仅用于触发 CI 预发布，对外 versionName 仍来自 tag `1.3.2`）。
+- **三位数正式基线**（如 `v1.1.11`）：version.properties 写 `1.1.11+build`，**不要**写 `-0`。
 
-> **反面教材（v1.3.1 / v1.3.2 事故）**：commit 写了 `chore: cut v1.3.2 prerelease`，但 pubspec 是 `1.3.2+109`（无 `-`），CI 必然建成正式版，官网也会显示正式版。
+> **反面教材（v1.3.1 / v1.3.2 事故）**：commit 写了 `chore: cut v1.3.2 prerelease`，但 version.properties 是 `1.3.2+109`（无 `-`），CI 必然建成正式版，官网也会显示正式版。
 
 ## 五、最短发布流程
 
@@ -455,7 +455,7 @@ bash tool/verify_release_pubspec.sh pubspec.yaml release
 
 假设目标是发布 `11107`：
 
-1. 修改 [pubspec.yaml](../pubspec.yaml)
+1. 修改 [android/version.properties](../android/version.properties)
 
 ```yaml
 version: 1.1.10-7+37
@@ -470,7 +470,7 @@ docs/releases/v1.1.10.7.md
 3. 提交：
 
 ```bash
-git add pubspec.yaml docs/releases/v1.1.10.7.md
+git add android/version.properties docs/releases/v1.1.10.7.md
 git commit -m "chore: cut v1.1.10.7 prerelease"
 ```
 
@@ -493,11 +493,11 @@ git push origin v1.1.10.7
 
 ### 1b. 发布一个新的三位数预发布（如 v1.3.2）
 
-与四位数预发布**渠道规则相同**：pubspec 必须含 `-`。
+与四位数预发布**渠道规则相同**：version.properties 必须含 `-`。
 
 假设目标是预发布 `v1.3.2`：
 
-1. 修改 [pubspec.yaml](../pubspec.yaml)
+1. 修改 [android/version.properties](../android/version.properties)
 
 ```yaml
 version: 1.3.2-0+109
@@ -512,13 +512,13 @@ docs/releases/v1.3.2.md
 3. 本地校验：
 
 ```bash
-bash tool/verify_release_pubspec.sh pubspec.yaml prerelease
+bash tool/verify_release_version.sh prerelease
 ```
 
 4. 提交、打 tag、推送：
 
 ```bash
-git add pubspec.yaml docs/releases/v1.3.2.md
+git add android/version.properties docs/releases/v1.3.2.md
 git commit -m "chore: cut v1.3.2 prerelease"
 git tag v1.3.2
 git push origin main
@@ -546,7 +546,7 @@ git push origin v1.3.2
 
 假设目标是发布 `1.1.11`：
 
-1. 修改 [pubspec.yaml](../pubspec.yaml)
+1. 修改 [android/version.properties](../android/version.properties)
 
 ```yaml
 version: 1.1.11+37
@@ -561,7 +561,7 @@ docs/releases/v1.1.11.md
 3. 提交：
 
 ```bash
-git add pubspec.yaml docs/releases/v1.1.11.md
+git add android/version.properties docs/releases/v1.1.11.md
 git commit -m "chore: cut v1.1.11 release"
 ```
 
@@ -598,10 +598,10 @@ git push origin v1.1.11
 
 ```bash
 # 预发布 cut
-bash tool/verify_release_pubspec.sh pubspec.yaml prerelease
+bash tool/verify_release_version.sh prerelease
 
 # 正式 cut
-bash tool/verify_release_pubspec.sh pubspec.yaml release
+bash tool/verify_release_version.sh release
 ```
 
 ### 不要用脆弱的 APK 选择方式
@@ -633,8 +633,8 @@ flutter build apk --release --flavor prod --target-platform android-arm64
 
 同时检查这几项：
 
-1. `bash tool/verify_release_pubspec.sh pubspec.yaml prerelease` 或 `… release`（与本次 cut 模式一致）
-2. `pubspec.yaml` 版本号是否改对（预发布必须含 `-`）
+1. `bash tool/verify_release_version.sh prerelease` 或 `… release`（与本次 cut 模式一致）
+2. `android/version.properties` 版本号是否改对（预发布必须含 `-`）
 3. `docs/releases/` 文件名是否和 tag 完全一致
 4. `build number` 是否比上一个版本大
 5. 工作区是否干净：`git status`
@@ -699,56 +699,56 @@ git push origin v你的版本号
 
 **不要**在本地用 `find` 猜路径上传。**必须**依赖仓库 workflow 内的显式路径、5 MB 门禁与 Post-tag 验证（见第六节）。若已发布坏资产，按第六节 Tag 恢复流程处理。
 
-### 6. pubspec.yaml 出现乱码或 description 异常
+### 6. android/version.properties 出现乱码或 description 异常
 
-写入 `pubspec.yaml` 时必须 **UTF-8 无 BOM**。带 BOM 会导致 `description` 等字段乱码；CI 与 `tool/verify_release_pubspec.sh` 会在 PR 与发布前拦截。
+写入 `android/version.properties` 时必须 **UTF-8 无 BOM**。带 BOM 会导致 `description` 等字段乱码；CI 与 `tool/verify_release_version.sh` 会在 PR 与发布前拦截。
 
 ### 7. 为什么 commit 写了 prerelease，官网却是正式版
 
-根因几乎总是 **pubspec 没写 `-` 段**。
+根因几乎总是 **version.properties 没写 `-` 段**。
 
 - `version: 1.3.2+109` → CI 建**正式** Release → 官网 `latest.json` 的 `stable` 指向它
 - `version: 1.3.2-0+109` → CI 建**预发布** Release → 官网 `latest.json` 的 `prerelease` 指向它
 
-修复已发布的错误渠道：在 GitHub Releases 编辑对应版本勾选或取消 Pre-release，然后触发 `Update Docs Releases JSON` workflow。下次 cut 务必先跑 `verify_release_pubspec.sh … prerelease`。
+修复已发布的错误渠道：在 GitHub Releases 编辑对应版本勾选或取消 Pre-release，然后触发 `Update Docs Releases JSON` workflow。下次 cut 务必先跑 `verify_release_version.sh … prerelease`。
 
 ## 九、最常用模板
 
 ### 新预发布模板（四位数，如 v1.1.10.7）
 
 ```bash
-git add pubspec.yaml docs/releases/v1.1.10.X.md
+git add android/version.properties docs/releases/v1.1.10.X.md
 git commit -m "chore: cut v1.1.10.X prerelease"
 git tag v1.1.10.X
 git push origin main
 git push origin v1.1.10.X
 ```
 
-`pubspec.yaml`：
+`android/version.properties`：
 
 ```yaml
 version: 1.1.10-X+递增编号
 ```
 
-切前校验：`bash tool/verify_release_pubspec.sh pubspec.yaml prerelease`
+切前校验：`bash tool/verify_release_version.sh prerelease`
 
 ### 新预发布模板（三位数，如 v1.3.2）
 
 ```bash
-git add pubspec.yaml docs/releases/v1.3.2.md
+git add android/version.properties docs/releases/v1.3.2.md
 git commit -m "chore: cut v1.3.2 prerelease"
 git tag v1.3.2
 git push origin main
 git push origin v1.3.2
 ```
 
-`pubspec.yaml`：
+`android/version.properties`：
 
 ```yaml
 version: 1.3.2-0+递增编号
 ```
 
-切前校验：`bash tool/verify_release_pubspec.sh pubspec.yaml prerelease`
+切前校验：`bash tool/verify_release_version.sh prerelease`
 
 > `-0` 仅用于满足 CI 预发布判定；Android `versionName` 仍来自 tag `v1.3.2`。
 
@@ -787,17 +787,17 @@ GitHub Releases 页面
 ### 新正式基线模板
 
 ```bash
-git add pubspec.yaml docs/releases/v1.1.11.md
+git add android/version.properties docs/releases/v1.1.11.md
 git commit -m "chore: cut v1.1.11 release"
 git tag v1.1.11
 git push origin main
 git push origin v1.1.11
 ```
 
-`pubspec.yaml`：
+`android/version.properties`：
 
 ```yaml
 version: 1.1.11+递增编号
 ```
 
-切前校验：`bash tool/verify_release_pubspec.sh pubspec.yaml release`
+切前校验：`bash tool/verify_release_version.sh release`

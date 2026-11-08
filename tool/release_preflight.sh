@@ -5,7 +5,7 @@
 #   FAIL → 别打 tag；WARN → 允许继续，但要先看一眼它说的那件事。
 #
 # 用法：
-#   bash tool/release_preflight.sh                     # 目标版本从 pubspec 推导
+#   bash tool/release_preflight.sh                     # 目标版本从 android/version.properties 推导
 #   bash tool/release_preflight.sh --mode prerelease   # 显式声明渠道（默认自动推导）
 #   bash tool/release_preflight.sh --target v2.1.3.4   # 显式指定目标 tag
 #   bash tool/release_preflight.sh --offline           # 跳过联网检查（tag 查重 / CI 状态）
@@ -57,8 +57,8 @@ warn() { WARNS=$((WARNS + 1)); printf 'WARN  %s\n' "$*"; }
 fail() { FAILS=$((FAILS + 1)); printf 'FAIL  %s\n' "$*"; }
 info() { printf 'INFO  %s\n' "$*"; }
 
-if [[ ! -f pubspec.yaml || ! -d docs/releases ]]; then
-  echo "ERROR: 请在仓库根目录运行（找不到 pubspec.yaml / docs/releases）" >&2
+if [[ ! -f android/version.properties || ! -d docs/releases ]]; then
+  echo "ERROR: 请在仓库根目录运行（找不到 android/version.properties / docs/releases）" >&2
   exit 2
 fi
 if ! command -v git >/dev/null 2>&1; then
@@ -69,7 +69,7 @@ fi
 TMP_PUBSPEC="$(mktemp)"
 TMP_NOTES="$(mktemp)"
 trap 'rm -f "${TMP_PUBSPEC}" "${TMP_NOTES}"' EXIT
-tr -d '\r' < pubspec.yaml > "${TMP_PUBSPEC}"
+tr -d '\r' < android/version.properties > "${TMP_PUBSPEC}"
 
 # gh 决定能不能查「同名 Release」与「CI 状态」。WSL 里通常没装 gh，
 # 这里必须**说一声**，否则跳过两项检查后仍然显示 0 FAIL，会让人误以为查过了。
@@ -83,7 +83,11 @@ if ((OFFLINE == 0)); then
 fi
 
 # ---------------------------------------------------------------- 1. 版本形态与渠道
-VERSION="$(awk '/^version:/{print $2; exit}' "${TMP_PUBSPEC}")"
+# 去 Flutter 化 P4：版本源是 android/version.properties（versionName / versionCodeBase），
+# 这里拼回与旧 pubspec `A.B.C-N+build` 等价的字符串，下面的正则与后续判定不用改。
+VERSION_NAME="$(sed -n 's/^versionName=//p' "${TMP_PUBSPEC}" | head -1)"
+VERSION_CODE="$(sed -n 's/^versionCodeBase=//p' "${TMP_PUBSPEC}" | head -1)"
+VERSION="${VERSION_NAME}+${VERSION_CODE}"
 BASE=""
 PRE_NUM=""
 BUILD=""
@@ -92,15 +96,15 @@ if [[ "${VERSION}" =~ ^([0-9]+(\.[0-9]+)*)(-([0-9]+))?\+([0-9]+)$ ]]; then
   PRE_NUM="${BASH_REMATCH[4]:-}"
   BUILD="${BASH_REMATCH[5]}"
 else
-  fail "pubspec version 不可解析：'${VERSION}'（期望形如 2.1.3-3+138 或 2.1.4+139）"
+  fail "android/version.properties 的版本不可解析：'${VERSION}'（期望 versionName=2.1.3-3、versionCodeBase=138）"
 fi
 
 DERIVED_MODE="release"
 [[ -n "${PRE_NUM}" ]] && DERIVED_MODE="prerelease"
 if [[ -n "${MODE}" && "${MODE}" != "${DERIVED_MODE}" ]]; then
-  fail "pubspec 渠道是 ${DERIVED_MODE}（'-' 段=${PRE_NUM:-无}），与声明的 ${MODE} 不一致"
+  fail "version.properties 的渠道是 ${DERIVED_MODE}（'-' 段=${PRE_NUM:-无}），与声明的 ${MODE} 不一致"
 else
-  pass "渠道 ${DERIVED_MODE}（pubspec ${VERSION}）"
+  pass "渠道 ${DERIVED_MODE}（version.properties ${VERSION}）"
 fi
 
 DERIVED_TARGET=""
@@ -113,7 +117,7 @@ if [[ -n "${BASE}" ]]; then
   if [[ -z "${TARGET}" ]]; then
     TARGET="${DERIVED_TARGET}"
   elif [[ "${TARGET}" != "${DERIVED_TARGET}" ]]; then
-    fail "目标 tag ${TARGET} 与 pubspec ${VERSION} 推导出的 ${DERIVED_TARGET} 不一致"
+    fail "目标 tag ${TARGET} 与 version.properties ${VERSION} 推导出的 ${DERIVED_TARGET} 不一致"
   else
     pass "目标 tag ${TARGET}"
   fi
@@ -130,13 +134,14 @@ else
     info "目标与最后发布同版本（${LAST_TAG}）：若是把预发布转正式，改 GitHub Release 的 Pre-release 勾选即可，不需要打 tag"
     info "若确需重打同名 tag（Tag recovery），先删远端 tag，再用 --retag 复查"
   fi
-  LAST_VERSION="$(git show "${LAST_TAG}:pubspec.yaml" 2>/dev/null | tr -d '\r' | awk '/^version:/{print $2; exit}')"
+  LAST_PROPS="$(git show "${LAST_TAG}:android/version.properties" 2>/dev/null | tr -d '\r')"
+  LAST_VERSION="$(printf '%s\n' "${LAST_PROPS}" | sed -n 's/^versionName=//p' | head -1)+$(printf '%s\n' "${LAST_PROPS}" | sed -n 's/^versionCodeBase=//p' | head -1)"
   LAST_BUILD="$(printf '%s' "${LAST_VERSION}" | sed -E 's/^.*\+([0-9]+)$/\1/')"
   if ((CONVERT == 1)); then
-    info "转换模式：pubspec 与 tag 都不改，build number 不递增是正常的"
+    info "转换模式：version.properties 与 tag 都不改，build number 不递增是正常的"
   elif [[ "${LAST_BUILD}" =~ ^[0-9]+$ ]]; then
     if ((BUILD <= LAST_BUILD)); then
-      fail "build number 没递增：pubspec +${BUILD}，而 ${LAST_TAG} 已经是 +${LAST_BUILD}"
+      fail "build number 没递增：version.properties +${BUILD}，而 ${LAST_TAG} 已经是 +${LAST_BUILD}"
     else
       pass "build number +${BUILD} > ${LAST_TAG} 的 +${LAST_BUILD}"
     fi
@@ -207,20 +212,23 @@ else
     # 2026-10-19：光「写了」不够。重点写的是条目里没有的说法时，解析器认不回来，
     # 会退化成 kind=other、没有分类标签的灰色重点——v2.1.4.1 就在这里踩过一次
     # （「转场掉帧」对条目「转场更顺」）。用 App 同一套解析器复核一遍，
-    # 认不回来直接 FAIL。dart 不在 PATH 时降级成 WARN（CI 的 test/docs 仍然会兜）。
-    if command -v dart >/dev/null 2>&1; then
+    # 认不回来直接 FAIL。python 不在 PATH 时降级成 WARN。
+    PY_BIN=""
+    for candidate in python3 python; do
+      if command -v "${candidate}" >/dev/null 2>&1; then PY_BIN="${candidate}"; break; fi
+    done
+    if [[ -n "${PY_BIN}" ]]; then
       # 先单独取退出码：接在管道后面 `$?` 会是 sed 的，永远 0，门禁就形同虚设。
-      RAW_OUT="$(dart run tool/check_release_highlights.dart "${TMP_NOTES}" 2>&1)"
-      DART_RC=$?
-      # `dart run` 会在 stderr 上刷一串「Running build hooks...」，先剥掉再展示。
-      HIGHLIGHT_OUT="$(printf '%s\n' "${RAW_OUT}" | sed 's/Running build hooks\.\.\.//g' | tr -s '[:space:]' ' ' | sed 's/^ //')"
-      if [[ "${DART_RC}" -eq 0 ]]; then
+      RAW_OUT="$("${PY_BIN}" tool/check_release_highlights.py "${TMP_NOTES}" 2>&1)"
+      PY_RC=$?
+      HIGHLIGHT_OUT="$(printf '%s\n' "${RAW_OUT}" | tr -s '[:space:]' ' ' | sed 's/^ //')"
+      if [[ "${PY_RC}" -eq 0 ]]; then
         pass "${HIGHLIGHT_OUT}"
       else
         fail "「本次重点」有认不回条目的说法：${HIGHLIGHT_OUT}"
       fi
     else
-      warn "没有 dart 命令，跳过「重点能否认回条目」复核（CI 的 test/docs 会兜住）"
+      warn "没有 python3/python，跳过「重点能否认回条目」复核"
     fi
   else
     warn "没有 '> 本次重点：…' 行：弹窗会退化成按「新增>优化>移除>修复」猜前 3 条"

@@ -15,14 +15,12 @@ permissions:
 
 jobs:
   quality:
-    name: Analyze and Test (Flutter ${{ matrix.flutter_version }})
+    # 去 Flutter 化 P4-D（2026-11-07）：Dart 层已删除，只留 Android/JVM 这一条链。
+    # 原矩阵里的两个 Flutter 版本、flutter pub get / analyze / test，以及
+    # HyperOS 审计、CJK 硬编码审计、lint 棘轮三项，输入（lib/、pubspec）都已不存在，
+    # 全部撤除；版本号改成校验 android/version.properties。
+    name: Android JVM Tests
     runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        flutter_version:
-          - '3.44.2'
-          - '3.44.8'
 
     steps:
       - name: Checkout
@@ -34,42 +32,15 @@ jobs:
           distribution: temurin
           java-version: '21'
 
-      - name: Set up Flutter
-        uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2 # v2
-        with:
-          flutter-version: ${{ matrix.flutter_version }}
-          cache: true
-
-      - name: Record toolchain
-        run: |
-          flutter --version
-          dart --version
-
-      - name: Get dependencies
-        run: flutter pub get
-
-      - name: Verify pubspec encoding
+      - name: Verify version.properties
         shell: bash
         run: |
           set -euo pipefail
-          if head -c 3 pubspec.yaml | od -An -tx1 | grep -q 'ef bb bf'; then
-            echo "ERROR: pubspec.yaml has UTF-8 BOM"
-            exit 1
+          f=android/version.properties
+          if [ "$(head -c 3 "$f" | od -An -tx1 | tr -d ' \n')" = "efbbbf" ]; then
+            echo "ERROR: $f 带 UTF-8 BOM"; exit 1
           fi
-          python3 - <<'PY'
-          import sys
-          text = open("pubspec.yaml", encoding="utf-8").read()
-          for key in ("version:", "description:"):
-              line = next((l for l in text.splitlines() if l.startswith(key) and not l[0:1].isspace()), None)
-              if line is None:
-                  print(f"ERROR: missing {key} line in pubspec.yaml", file=sys.stderr)
-                  sys.exit(1)
-              value = line.split(":", 1)[1].strip()
-              if not value:
-                  print(f"ERROR: empty value for {key} in pubspec.yaml", file=sys.stderr)
-                  sys.exit(1)
-          print("pubspec.yaml encoding OK")
-          PY
+          bash tool/verify_release_version.sh "$f"
 
       - name: Verify GitHub Actions pin SHAs
         shell: bash
@@ -77,45 +48,8 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: bash tool/verify_action_pins.sh
 
-      - name: Install HyperOS audit dependencies
-        run: pip install pyyaml
-
-      - name: HyperOS page compliance audit
-        run: python tool/hyperos_audit.py --strict
-
-      - name: CJK hardcode audit
-        run: python3 tool/audit_cjk_hardcode.py --baseline tool/cjk_hardcode_baseline.txt
-
-      - name: Lint ratchet (discarded_futures / cascade_invocations)
-        # 这两条 lint 因存量太多（2026-10-27 实测 238 / 510）故意没开在主配置里，
-        # 否则 --fatal-infos 会让全仓红、谁都提交不了。本步骤临时打开它们、
-        # 数一遍、与基线比对，保证**只降不升**。脚本动 analysis_options.yaml 之前
-        # 会先确认它干净；CI 是全新 checkout，天然安全。
-        run: python tool/audit_lint_ratchet.py
-
-      - name: Analyze
-        # --fatal-infos：info 级问题也视为失败（analysis_options.yaml 已启用
-        # strict-casts/strict-raw-types 与扩展 lint 集，需严格门禁防劣化）。
-        #
-        # 去 Flutter 化阶段 1（2026-11-07）：Dart 侧已不是交付路径，先**降为非阻塞**（阶段 2
-        # 删 lib/ 时再撤掉这两步）。continue-on-error 只让本步骤失败不拖垮 job；日志里仍能看到红。
-        continue-on-error: true
-        run: flutter analyze --fatal-infos
-
-      - name: Test
-        # 同上：阶段 1 起 flutter test 非阻塞，理由与撤除时机见上一步。
-        continue-on-error: true
-        run: flutter test
-
       # JVM 单测（android/app/src/test）：WidgetStatsLogicTest 等。
-      # 这些测试不依赖 org.json stub（见 WidgetHolidayLogicTest 注释），
-      # 但 Gradle 要先跑 flutter 的 gradle 脚本生成任务图，耗时较长，与
-      # flutter test 并行意义不大，放最后串行执行。
-      #
-      # 2026-10-29：原来这里还有一条「Compose 渲染层编译（composeUi 变体）」的独立步骤，
-      # 用来覆盖 `prod` 变体编不到的 Compose 页面（台账 §7.1 的覆盖盲区）。两个迁移期
-      # flavor（composeP1 / composeUi）删除、页面源码并入 `main` 源集之后，`prod` 本来就
-      # 会编译它们，这条独立步骤成了重复劳动，随之删除——覆盖没有减少，编译次数少一次。
+      # Flutter Gradle 插件已移除，这条链不再需要 Flutter SDK。
       - name: Android JVM unit tests
         run: |
           cd android
