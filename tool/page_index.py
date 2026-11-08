@@ -1,15 +1,12 @@
 #!/usr/bin/env python3
-"""按软件结构重排页面索引，并同时刷出两份（仓库 docs/ 与 android/docs/）。
+"""重排页面索引，并同时刷出两份（仓库 docs/ 与 android/docs/）。
 
 新增/删除页面后跑这一条即可：
     python tool/page_index.py
 
-读取 docs/reference/page-index.md 里的表格作为数据源，按 App 路由分区（a..j，
-见 main/pages/ShellPageIndex.kt）重排，输出：
-  - docs/reference/page-index.md         链接相对 android/
-  - android/docs/reference/page-index.md 链接相对 app/（Studio 工程内可直接点）
-
-表格用**引用式链接**（`[名字][p1]` + 文末 `[p1]: 路径`），避免长地址把表格撑宽。
+数据源是 docs/reference/page-index.md 的表格行；输出**一张表装全库**，
+按软件分区（a..j，见 main/pages/ShellPageIndex.kt）排序，分区作为第一列。
+链接用引用式（`[名字][pN]` + 文末 `[pN]: 路径`），避免长地址把表格撑宽。
 """
 import os
 import re
@@ -17,6 +14,7 @@ import re
 SRC = "docs/reference/page-index.md"
 PAGES_REL = "composeP1/kotlin/com/mutx163/qingyu/pages"
 
+# 分区顺序 = 打开 App 到设置的路径；tag 是官方路由前缀
 GROUPS = [
     ("课表", "c", ["timetable"]),
     ("课程", "d1", ["course", "conflict"]),
@@ -56,30 +54,79 @@ CELL = r"`([^`]+?\.kt)`"
 ROW_INLINE = re.compile(
     r"^\| ([a-z_]+) \| \[(.+?)\]\((.+?)\) \| `(\w+)` \| " + CELL + r" \| (\d+) \|$"
 )
+# 新格式多一列分区
 ROW_REF = re.compile(
+    r"^\| ([^|]+?) \| \[(.+?)\]\[[^\]]+\] \| `(\w+)` \| " + CELL + r" \| (\d+) \|$"
+)
+ROW_REF_OLD = re.compile(
     r"^\| ([a-z_]+) \| \[(.+?)\]\[[^\]]+\] \| `(\w+)` \| " + CELL + r" \| (\d+) \|$"
 )
 DEF = re.compile(r"^\[(\w+)\]: (\S+)$")
 
 
+SRC_ROOT = "android/app/src/composeP1/kotlin/com/mutx163/qingyu/pages"
+
+
+def _stem(name: str) -> str:
+    for s in ("Page", "Screen", "Body", "Content", "Sheet", "View"):
+        if name.endswith(s) and len(name) > len(s):
+            return name[: -len(s)]
+    return name
+
+
+def refresh_previews(rows) -> None:
+    """预览数直接数源码里的 @Preview，避免索引写完就跟代码脱节。"""
+    by_file = {}
+    for r in rows:
+        by_file.setdefault(r["file"], []).append(r)
+    for file, group in by_file.items():
+        path = os.path.join(SRC_ROOT, file)
+        if not os.path.exists(path):
+            continue
+        src = open(path, encoding="utf-8", errors="replace").read()
+        total = src.count("@Preview(")
+        if len(group) == 1:
+            group[0]["previews"] = total
+            continue
+        # 同文件多入口：按 @Preview 后调用的公共体名归到最像的入口
+        counted = {g["entry"]: 0 for g in group}
+        for m in re.finditer(r"@Preview\(", src):
+            tail = src[m.end(): m.end() + 900]
+            pm = re.search(r"\bPreview(\w+)\(", tail)
+            if not pm:
+                continue
+            bstem, best, best_len = _stem(pm.group(1)), None, 0
+            for g in group:
+                common = 0
+                for a, b in zip(bstem, _stem(g["entry"])):
+                    if a != b:
+                        break
+                    common += 1
+                if common > best_len:
+                    best, best_len = g["entry"], common
+            if best and best_len >= 4:
+                counted[best] += 1
+        for g in group:
+            g["previews"] = counted.get(g["entry"], 0)
+
+
 def load_rows():
-    """同时认 inline 与 reference 两种写法，保证重跑幂等。"""
-    defs = {}
+    """同时认三种写法（旧 inline / 旧按域 / 新按分区），保证重跑幂等。"""
     rows = []
     for line in open(SRC, encoding="utf-8"):
         line = line.strip()
-        m = DEF.match(line)
-        if m:
-            defs[m.group(1)] = m.group(2)
+        if DEF.match(line):
             continue
         m = ROW_INLINE.match(line)
         if m:
             domain, title, _url, entry, file, prev = m.groups()
         else:
-            m = ROW_REF.match(line)
+            m = ROW_REF_OLD.match(line) or ROW_REF.match(line)
             if not m:
                 continue
-            domain, title, entry, file, prev = m.groups()
+            _first, title, entry, file, prev = m.groups()
+            # 域从文件路径推断：pages/<域>/...
+            domain = file.split("/")[0]
         rows.append({
             "domain": domain,
             "title": title,
@@ -87,78 +134,70 @@ def load_rows():
             "file": file.replace("pages/", "", 1),
             "previews": int(prev),
         })
-    # 解析失败的格子回填人工别名
     for r in rows:
         if r["title"] == r["entry"] and r["entry"] in ALIAS:
             r["title"] = ALIAS[r["entry"]]
+    refresh_previews(rows)
     return rows
 
 
 def render(rows, prefix):
     total = sum(r["previews"] for r in rows)
-    by_domain = {}
-    for r in rows:
-        by_domain.setdefault(r["domain"], []).append(r)
+    order = {}
+    for i, (title, _tag, domains) in enumerate(GROUPS):
+        for d in domains:
+            order[d] = (i, title)
+
+    def rank(r):
+        idx, _ = order.get(r["domain"], (99, "未归类"))
+        return (idx, r["domain"], r["entry"])
+
+    rows_sorted = sorted(rows, key=rank)
 
     out = []
     out.append("# 页面索引\n")
-    out.append("按软件结构分区。找页面就找功能区，点名字直接打开源码。\n")
+    out.append("**一张表装全库，`Ctrl+F` 搜中文就能定位，不用按分区往下翻。**\n")
     out.append("共 **%d** 个整页入口、**%d** 个预览。\n" % (len(rows), total))
     out.append("## 怎么用\n")
-    out.append("1. **直接点**：按住 `Ctrl` 点名字（macOS 是 `Cmd`），打开对应源码文件。")
-    out.append("2. 不确定在哪就 `Ctrl+F` 搜中文。")
+    out.append("1. `Ctrl+F` 搜你记得的中文页名，直接跳到那一行。")
+    out.append("2. 按住 `Ctrl` 点名字（macOS 是 `Cmd`），打开对应源码文件。")
     out.append("3. 打开文件滚到底、右侧点 **Split / Preview**，就是这一页的全部档位。\n")
     out.append("> **这个文件是生成的，别手改。** 在 `pages/` 下新增、改名或删除整页入口后，")
     out.append("> 在仓库根跑 `python tool/page_index.py` 重新生成，并随代码一起提交。\n")
     out.append("## 口径\n")
-    out.append("- 分区对应 App 的路由编号（`ShellPageIndex.kt` 里的 `a.*` … `j.*`）；一页属于哪个区由它所在域决定。")
+    out.append("- 分区对应 App 的路由编号（`ShellPageIndex.kt` 里的 `a.*` … `j.*`），顺序按打开 App 到设置的路径。")
     out.append("- 入口 = 非 `private` 的 `fun XxxPage(` / `fun XxxScreen(`；`XxxHost` 是接线层，不收。")
     out.append("- 少数页面的标题由运行期决定（设置类的 `spec.title`、周/日/月视图、网页登录页），"
-               "表里用的是按功能确定的中文名，可能与运行时的顶栏文字不完全一致。")
+               "表里用的是按功能确定的中文名。")
     out.append("- 预览数按 `@Preview` 后调用的公共体归属，用来判断「这页铺没铺」，不是精确统计。\n")
+    out.append("## 全部页面\n")
+    out.append("| 分区 | 页面 | 入口 | 文件 | 预览 |")
+    out.append("|---|---|---|---|---|")
 
-    definitions = []
+    defs = []
     n = 0
-    placed = set()
-
-    def table(group_rows):
-        nonlocal n
-        out.append("| 域 | 页面 | 入口 | 文件 | 预览 |")
-        out.append("|---|---|---|---|---|")
-        for r in group_rows:
-            n += 1
-            ref = "p%d" % n
-            definitions.append((ref, prefix + r["file"]))
-            out.append("| %s | [%s][%s] | `%s` | `%s` | %d |"
-                       % (r["domain"], r["title"], ref, r["entry"], r["file"], r["previews"]))
-        out.append("")
-
-    for title, prefix_tag, domains in GROUPS:
-        group_rows = []
-        for d in domains:
-            group_rows.extend(by_domain.get(d, []))
-            placed.add(d)
-        if not group_rows:
-            continue
-        group_rows.sort(key=lambda r: (r["domain"], r["entry"]))
-        out.append("## %s（%s）\n" % (title, prefix_tag))
-        table(group_rows)
-
-    rest = [r for r in rows if r["domain"] not in placed]
-    if rest:
-        out.append("## 未归类\n")
-        table(sorted(rest, key=lambda r: (r["domain"], r["entry"])))
+    for r in rows_sorted:
+        n += 1
+        ref = "p%d" % n
+        defs.append((ref, prefix + r["file"]))
+        tag = order.get(r["domain"], (99, "未归类"))[1]
+        out.append("| %s | [%s][%s] | `%s` | `%s` | %d |"
+                   % (tag, r["title"], ref, r["entry"], r["file"], r["previews"]))
+    out.append("")
 
     out.append("## 按分区统计\n")
     out.append("| 分区 | 入口数 |\n|---|---|")
-    for title, prefix_tag, domains in GROUPS:
-        c = sum(len(by_domain.get(d, [])) for d in domains)
+    counts = {}
+    for r in rows:
+        counts[r["domain"]] = counts.get(r["domain"], 0) + 1
+    for title, _tag, domains in GROUPS:
+        c = sum(counts.get(d, 0) for d in domains)
         if c:
             out.append("| %s | %d |" % (title, c))
     out.append("")
 
-    out.append("<!-- 链接定义（表格里的 [名字][pN] 指到这里）-->")
-    for ref, path in definitions:
+    out.append("<!-- 链接定义：表格里的 [名字][pN] 指到这里 -->")
+    for ref, path in defs:
         out.append("[%s]: %s" % (ref, path))
     return "\n".join(out) + "\n"
 
