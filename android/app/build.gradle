@@ -373,6 +373,13 @@ dependencies {
     // 故 :app 的 Kotlin 目标必须是 21（见根 android/build.gradle 的 subprojects 特殊分支）。
     implementation "top.yukonga.miuix.kmp:miuix-nav-android:$miuixVersion"
 
+    // ── IDE 预览（2026-11-08）────────────────────────────────────────────────
+    // `@Preview` 注解在 ui-tooling-preview 里，源码已并入 main 源集 ⇒ 必须对所有变体可见；
+    // 真正负责渲染的 ui-tooling 只挂 debug 变体，不进正式包。
+    // 版本跟随 miuix 0.9.4 传递要求的 compose 1.12.x 同线，取本机已缓存的 1.12.1 patch。
+    implementation "androidx.compose.ui:ui-tooling-preview:1.12.1"
+    debugImplementation "androidx.compose.ui:ui-tooling:1.12.1"
+
     // 页面开发壳（PagesShellActivity）已搬进 main 源集，见上方依赖。
 
     // 相机扫码（Phase 3.5 · 能力缺口 B5，2026-10-28 Lead 拍板）。
