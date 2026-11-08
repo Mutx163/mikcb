@@ -279,7 +279,9 @@ private fun AboutUpdateReadyView(
 /**
  * 顶部身份区：图标 + 软件名 + 版本号，背后一层**主色渐变**向下淡出。
  *
- * 渐变只用主题主色推透明度（上 14% → 中 5% → 透明），不引第二套色板；
+ * 渐变只用主题主色推透明度（上 8% → 中 3% → 透明），不引第二套色板；
+ * 头一档压得低，是因为内容从顶栏下方开始，而顶栏那条是模糊后的页底色：
+ * 首档太重会在顶栏下沿留一道看得见的接缝。
  * 高度跟随内容（图标 80、名称一行、版本一行 + 上下留白 ≈ 190dp），不用固定高度硬撑。
  * 这一块是整页唯一的装饰，下面的卡片全部是白底/容器色 + 12dp 等间距——
  * 装饰只用来建立「这是谁」，不用来装饰每一个块。
@@ -294,8 +296,8 @@ private fun UpdateHeroBlock(appName: String, version: String) {
                 .background(
                     Brush.verticalGradient(
                         colors = listOf(
-                            colors.primary.copy(alpha = 0.14f),
-                            colors.primary.copy(alpha = 0.05f),
+                            colors.primary.copy(alpha = 0.08f),
+                            colors.primary.copy(alpha = 0.03f),
                             Color.Transparent,
                         ),
                     ),
