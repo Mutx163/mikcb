@@ -1,10 +1,8 @@
 package com.mutx163.qingyu.pages.import.warehouse
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -17,16 +15,16 @@ import androidx.compose.ui.unit.dp
 import com.mutx163.qingyu.components.QingyuPageScaffold
 import com.mutx163.qingyu.components.QingyuWeightDelta
 import com.mutx163.qingyu.components.shiftWeight
-import top.yukonga.miuix.kmp.basic.Button
+import com.mutx163.qingyu.pages.import.ImportActionButton
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.IconButton
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.icon.MiuixIcons
-import top.yukonga.miuix.kmp.icon.extended.GridView
+import top.yukonga.miuix.kmp.icon.extended.AppRecording
 import top.yukonga.miuix.kmp.icon.extended.More
 import top.yukonga.miuix.kmp.icon.extended.Phone
-import top.yukonga.miuix.kmp.icon.extended.RecordingTape
 import top.yukonga.miuix.kmp.icon.extended.Refresh
+import top.yukonga.miuix.kmp.icon.extended.ScreenMirroring
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 /**
@@ -92,13 +90,17 @@ fun WarehouseWebLoginPage(
             // 宏录制开关（对齐 Dart 顶栏 FHeaderAction：只有图标 + 无障碍文案，
             // 执行导入期间禁用 `_isExecutingImport ? null : _toggleMacroRecording`）。
             // 录制中换 error 色提示状态；P1 起接真实现，不再是「不可用」实话。
+            //
+            // 图标取 `AppRecording`（应用窗口 + 声波），语义是「录制这个窗口里的操作」。
+            // 换掉的是原来的 `RecordingTape`：那是一盘磁带（两个卷轴 + 外壳），
+            // 缩到 24dp 只剩一个圆角方块里两个圆点，读起来像「小机器人脸」，不像录制。
             val isRecording = sessionState.macroState == WarehouseMacroActionState.RECORDING
             IconButton(
                 onClick = onToggleMacroRecording,
                 enabled = sessionState.stage != WarehouseWebLoginStage.EXECUTING,
             ) {
                 Icon(
-                    imageVector = MiuixIcons.RecordingTape,
+                    imageVector = MiuixIcons.AppRecording,
                     contentDescription = if (isRecording) {
                         WarehouseStrings.stopRecordingTooltip.text
                     } else {
@@ -114,16 +116,17 @@ fun WarehouseWebLoginPage(
             // 桌面/移动切换（Dart `_toggleWebPageMode`）。换 UA 之外还会重载当前页
             // （`toggleDesktopMode` 内部做），因为教务站按 UA 决定回哪个登录页。
             //
-            // ⚠️ 图标是**临时选择**：miuix-icons 0.9.4 的 157 个扩展图标里没有
-            // desktop / monitor 一类（只有 `Phone` / `GridView` / `ScreenMirroring` 这些近邻），
-            // 而 Dart 用的是 Material 的 smartphone_rounded / desktop_windows_rounded。
-            // 语义按 Dart：**按钮描述的是「点了会切到哪边」**。
+            // 图标按 Dart 语义：**按钮描述的是「点了会切到哪边」**。
+            // - 切电脑版 → `ScreenMirroring`（显示器 + 投射三角）：miuix-icons 0.9.4 里
+            //   唯一带"屏幕/显示器"形状的图标，不再拿 `GridView`（四个小方块＝宫格）充当电脑；
+            // - 切手机版 → `Phone`（话筒）：图标集里没有任何手机/竖屏设备形状，
+            //   话筒是「手机」在中文语境下最不容易误读的近邻。
             IconButton(onClick = {
                 webViewController.toggleDesktopMode()
                 onToggleDesktopMode()
             }) {
                 Icon(
-                    imageVector = if (webViewController.isDesktopMode) MiuixIcons.Phone else MiuixIcons.GridView,
+                    imageVector = if (webViewController.isDesktopMode) MiuixIcons.Phone else MiuixIcons.ScreenMirroring,
                     contentDescription = if (webViewController.isDesktopMode) {
                         WarehouseStrings.switchToMobileWebTooltip.text
                     } else {
@@ -163,17 +166,16 @@ fun WarehouseWebLoginPage(
                         color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
                     )
                 }
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(10.dp)
-                ) {
-                    Button(
-                        onClick = onExecuteImport,
-                        modifier = Modifier.fillMaxWidth(),
-                        enabled = scriptReady,
-                        content = { Text(text = WarehouseStrings.executeImportScriptAction.text) }
-                    )
-                }
+                // 主操作走导入域统一的整宽主按钮（`ImportActionButton`，主色实心 = 官方
+                // `buttonColorsPrimary()`）：之前这里裸用官方 `Button(` 的**默认（次要）配色**，
+                // 浅色下底衬色与底栏一样是白的 ⇒ 整颗按钮读成「一行悬空白字」，看着像没有按钮
+                // （用户实报「下面的导入按钮这么奇怪」）。同域 ICS / 表格导入页底栏都是主色实心，
+                // 这里改成同一套，形态、配色、按压反馈、loading 位就全部对上了。
+                ImportActionButton(
+                    label = WarehouseStrings.executeImportScriptAction.text,
+                    onClick = onExecuteImport,
+                    enabled = scriptReady,
+                )
             }
         }
     ) {
