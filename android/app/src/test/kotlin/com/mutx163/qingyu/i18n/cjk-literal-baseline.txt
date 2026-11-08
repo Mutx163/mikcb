@@ -136,3 +136,5 @@ com/mutx163/qingyu/pages/import/ImportCommon.kt:1
 com/mutx163/qingyu/pages/timetable/month/MonthViewPage.kt:33
 # A @Preview 名 + 周视图预览课样例（12 门课的课名 / 教师 / 地点、作业样例）
 com/mutx163/qingyu/pages/timetable/TimetableWeekPage.kt:32
+# A home-shell preview fixtures / @Preview names
+com/mutx163/qingyu/pages/timetable/HomeShellPreviews.kt:32
