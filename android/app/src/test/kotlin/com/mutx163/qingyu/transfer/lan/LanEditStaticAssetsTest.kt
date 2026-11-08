@@ -10,24 +10,25 @@ import java.io.File
 /**
  * 局域网编辑控制台的静态资源分发测试。
  *
- * 期望值从 Dart 手推（`lib/services/lan_edit_server_service.dart`）：
- * - 路径表：`_mapAssetPath`（:225-253）九个键；
- * - `Content-Type`：`_contentTypeFor`（:256-272）；
- * - 响应头：`_serveStatic`（:200-217）——`no-store` / CSP / `nosniff`；
+ * 期望值钉 Kotlin 常量表（`LanEditStaticAssets`）本身：
+ * - 路径表：九个键；
+ * - `Content-Type`：按后缀；
+ * - 响应头：`no-store` / CSP / `nosniff`；
  * - 缺资源与未知路径都是 404。
+ *
+ * 去 Flutter 化（P4-C，2026-11-08）：原先§4 还与 Dart 源逐字对拍
+ * （`lib/services/lan_edit_server_service.dart` 的 `_mapAssetPath` / `_contentTypeFor` /
+ * `_serveStatic` / `_lanEditContentSecurityPolicy`），Dart 层删除后参照物不存在，
+ * 那两条已删——Kotlin 侧常量表仍由 §1-§3 的断言钉住，没有失去覆盖。
  *
  * **前缀口径（2026-11-03）**：Dart 的资源路径带 `assets/` 前缀（rootBundle 以 flutter
  * 资产目录为根）；Kotlin 侧 `AssetManager` 本就相对 APK assets 根，映射表**不带**
  * `assets/` 前缀——照抄会找成 `assets/assets/…`，整表 FileNotFound、控制台整个 404。
  *
- * 另外两条**与 Dart 源对照**的用例：映射表与 CSP 字符串改错在 Kotlin 侧完全看不出来，
+ * 另外一条**与网页端 JS 对照**的用例（§6）：映射表与 CSP 字符串改错在 Kotlin 侧完全看不出来，
  * 只有真机打开浏览器才知道（而真机对照归用户），所以用读源码做子串比对挡在提交前。
  */
 class LanEditStaticAssetsTest {
-
-    private val dartSource: String by lazy {
-        repoFile("lib/services/lan_edit_server_service.dart").readText()
-    }
 
     private val fallback = LanEditStaticAssets { null }
 
@@ -41,9 +42,14 @@ class LanEditStaticAssetsTest {
         throw AssertionError("从工作目录找不到 $relative")
     }
 
-    /** 主 assets 落点（打进 APK 的就是这份；仓库根 `assets/` 是删 Flutter 前的 Dart 原件，别拿它对拍）。 */
+    /**
+     * 主 assets 落点（打进 APK 的就是这份）。根锚点用仓库根的 `android/app/build.gradle`——
+     * 或是 `i18n/app_zh.arb` 都行，但传到根要三层 parent：
+     * `i18n/app_zh.arb` 的 parent 是 `i18n/`，不是仓库根，少一层就会解析出
+     * `i18n/android/app/...` 这种不存在的路径（2026-11-08 踩过）。
+     */
     private fun mainAssetFile(relative: String): File =
-        repoFile("pubspec.yaml").parentFile
+        repoFile("i18n/app_zh.arb").parentFile.parentFile
             .resolve("android/app/src/main/assets/$relative")
 
     // ── 1. 路径表 ──
@@ -147,41 +153,22 @@ class LanEditStaticAssetsTest {
         assertFalse(isStaticAssetRequest("OPTIONS", "/api/v1/courses"))
     }
 
-    // ── 4. 与 Dart 源对照 ──
+    // ── 4. （原与 Dart 源对照的两条：P4-C 后 Dart 层删除，参照物不存在——Kotlin 常量表已由
+    //         §1-§3 的断言钉住，故整段删除，CSP 改用下列逐字钉死，见类 KDoc。）
 
     @Test
-    fun `映射表每个资源路径都在 Dart 源里出现`() {
-        val assetPaths = listOf(
-            "/", "/index.html", "/assets/app.js", "/assets/i18n.js", "/assets/style.css",
-            "/assets/lan-timetable.css", "/assets/tabler-icons-subset.css",
-            "/assets/logo.png", "/favicon.ico",
+    fun `CSP 逐字为既定策略`() {
+        // Dart 时代该值用相邻字符串字面量跨行拼、Kotlin 侧是常量化——平铺写法改错在 Kotlin 侧
+        // 完全看不出来，只有真机打开浏览器才知道（真机归用户）。逐字钉死，值一变就红。
+        assertEquals(
+            "default-src 'self'; script-src 'self'; " +
+                "style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; " +
+                "font-src 'self' https://cdn.jsdelivr.net; " +
+                "img-src 'self' data:; connect-src 'self'; " +
+                "object-src 'none'; base-uri 'none'; " +
+                "frame-ancestors 'none'; form-action 'self'",
+            LanEditStaticAssets.CONTENT_SECURITY_POLICY,
         )
-        for (path in assetPaths) {
-            assertTrue("Dart 侧没有这个路径：$path", dartSource.contains("'$path'"))
-            assertTrue("Kotlin 侧没有这个路径：$path", fallback.mapAssetPath(path) != null)
-        }
-    }
-
-    @Test
-    fun `CSP 与 Dart 逐字一致`() {
-        assertEquals(dartContentSecurityPolicy(), LanEditStaticAssets.CONTENT_SECURITY_POLICY)
-    }
-
-    /**
-     * 把 Dart 里那条 CSP 拼回来：Dart 用相邻字符串字面量跨行拼一串，
-     * 所以取声明行之后**连续**以引号开头的那些行，剥掉引号与行尾分号再连起来。
-     */
-    private fun dartContentSecurityPolicy(): String {
-        val lines = dartSource.lines()
-        val start = lines.indexOfFirst { it.contains("_lanEditContentSecurityPolicy =") }
-        assertTrue("Dart 侧找不到 CSP 声明", start >= 0)
-        val fragment = StringBuilder()
-        for (i in start + 1 until lines.size) {
-            val trimmed = lines[i].trim()
-            if (!trimmed.startsWith("\"")) break
-            fragment.append(trimmed.removeSuffix(";").trim('"'))
-        }
-        return fragment.toString()
     }
 
     // ── 5. 表里指的资源必须真的在仓库里 ──

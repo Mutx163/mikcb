@@ -23,10 +23,10 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.mutx163.qingyu.components.QingyuSheet
+import com.mutx163.qingyu.components.rememberSheetMaxHeight
 import com.mutx163.qingyu.theme.QingyuTheme
 import top.yukonga.miuix.kmp.basic.Button
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
@@ -89,7 +89,7 @@ fun TaskCoursePickerSheet(
     // Dart `add_task_screen.dart:301-304`：选项区最高 = 屏高 × 0.64，课程多时列表内部滚动。
     // 没有这个上限，课多的课表会把弹层顶满整屏（缺口矩阵 C3）。
     // 同款写法见 `DataTransferPage.CoursePickerSheet`（`LazyColumn(heightIn(max = …))`）。
-    val maxListHeight = (LocalConfiguration.current.screenHeightDp * SHEET_MAX_HEIGHT_FRACTION).dp
+    val maxListHeight = rememberSheetMaxHeight(SHEET_MAX_HEIGHT_FRACTION)
 
     QingyuSheet(
         show = show,

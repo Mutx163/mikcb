@@ -22,6 +22,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import com.mutx163.qingyu.components.QingyuSheet
+import com.mutx163.qingyu.components.rememberCappedSheetHeight
 import com.mutx163.qingyu.theme.QingyuTheme
 import top.yukonga.miuix.kmp.basic.Button
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
@@ -111,7 +112,7 @@ fun CoupleWebdavConnectSheet(
                 modifier = Modifier
                     .weight(1f, fill = false)
                     .fillMaxWidth()
-                    .heightIn(max = 360.dp)
+                    .heightIn(max = rememberCappedSheetHeight(360.dp))
                     .scrollEndHaptic()
                     .overScrollVertical()
                     .padding(horizontal = 4.dp),

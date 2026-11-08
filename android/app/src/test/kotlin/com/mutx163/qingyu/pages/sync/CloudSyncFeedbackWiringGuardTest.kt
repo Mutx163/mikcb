@@ -224,7 +224,7 @@ class CloudSyncFeedbackWiringGuardTest {
             "app_zh.arb", "app_en.arb", "app_ja.arb", "app_ko.arb", "app_zh_TW.arb", "app_zh_HK.arb",
         )
         for (name in arbNames) {
-            val text = readSource("lib/l10n/$name")
+            val text = readSource("i18n/$name")
             assertTrue(
                 "$name 出现了断开结果提示键（cloudSyncDisconnected）：违反「已断开不补」裁决" +
                     "（发布版 _disconnectAccount 静默，界面状态翻转即反馈）。",
@@ -232,7 +232,7 @@ class CloudSyncFeedbackWiringGuardTest {
             )
         }
         for (name in listOf("app_zh.arb", "app_zh_TW.arb", "app_zh_HK.arb")) {
-            val text = readSource("lib/l10n/$name")
+            val text = readSource("i18n/$name")
             assertTrue(
                 "$name 出现了「已断开」类断开结果文案（cloudSync 前缀键）：违反「已断开不补」裁决。",
                 !Regex(""""cloudSync[A-Za-z]*":\s*"[^"]*已断开[^"]*"""").containsMatchIn(text),
