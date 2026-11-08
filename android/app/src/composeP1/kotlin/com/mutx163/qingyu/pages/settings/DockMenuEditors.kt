@@ -27,8 +27,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
@@ -66,13 +68,13 @@ import top.yukonga.miuix.kmp.icon.extended.Messages
 import top.yukonga.miuix.kmp.icon.extended.Months
 import top.yukonga.miuix.kmp.icon.extended.More
 import top.yukonga.miuix.kmp.icon.extended.Notes
+import top.yukonga.miuix.kmp.icon.extended.Promotions
 import top.yukonga.miuix.kmp.icon.extended.Refresh
 import top.yukonga.miuix.kmp.icon.extended.Remove
 import top.yukonga.miuix.kmp.icon.extended.Replace
 import top.yukonga.miuix.kmp.icon.extended.Report
 import top.yukonga.miuix.kmp.icon.extended.Settings
 import top.yukonga.miuix.kmp.icon.extended.Share
-import top.yukonga.miuix.kmp.icon.extended.Sort
 import top.yukonga.miuix.kmp.icon.extended.Stopwatch
 import top.yukonga.miuix.kmp.icon.extended.Store
 import top.yukonga.miuix.kmp.icon.extended.Tasks
@@ -100,8 +102,8 @@ import kotlin.math.roundToInt
  *   QingyuPageList(horizontalPadding = 12dp)     // 惰性列表 + 滚动三件套 + 滚动条
  *     item  预览卡            EditorPreviewCard  // 一排「圆角图标格 + 下方小字」
  *     item  分组标题           QingyuSectionTitle
- *     item  「已启用」可拖动列表 EnabledReorderList
  *     item  整宽提示句         EditorDescription
+ *     item  「已启用」可拖动列表 EnabledReorderList
  *     item  各分类标题 + 候选行 CandidateCard / EditorDescription
  *     item  「恢复默认排列」   ResetCard
  * ```
@@ -113,8 +115,10 @@ import kotlin.math.roundToInt
  *
  * 「已启用」是短列表（底栏 ≤5、八宫格 ≤8），所以**不用惰性列表**，直接用普通 [Column]，
  * 每行固定高 [DockSlotRowHeight]（56dp）+ [DockSlotRowGap]（8dp）间距，行距
- * `pitch = 64dp`。行首手柄上挂
- * [detectDragGesturesAfterLongPress]（长按后拖动，避免与页面纵向滚动抢手势）：
+ * `pitch = 64dp`。**整行卡片**上挂
+ * [detectDragGesturesAfterLongPress]（长按后拖动，避免与页面纵向滚动抢手势）。
+ * 行首**不再放拖动手柄图标**（用户看不懂那个「方框 + 外指箭头」，且它与行尾红色的
+ * 移除同族）：手势本来就落在整行上，提示句已经把「按住条目可排序」说清楚。
  *
  * 1. `onDragStart` 记录当前被拖的 index，并把该行标成 `isDragging`；
  * 2. `onDrag` 把每帧 `dragAmount.y` 累加到协程内的局部变量 `acc`（不依赖旧值，避免
@@ -334,6 +338,11 @@ private fun EditorPage(
             item(key = "editor.preview") {
                 EditorPreviewCard(enabledIds, labelOf, glyphOf)
             }
+            // 提示句排在「已启用」上方：先看到「按住条目可排序」，再看那一列图标。
+            // 原先压在该列表下面，用户得先把列表扫完才知道能拖。
+            item(key = "editor.hint") {
+                EditorDescription(hintText)
+            }
             item(key = "editor.enabled.title") {
                 QingyuSectionTitle(text = enabledTitle)
             }
@@ -349,9 +358,6 @@ private fun EditorPage(
                     onRemove = onRemove,
                     onMove = onMove,
                 )
-            }
-            item(key = "editor.hint") {
-                EditorDescription(hintText)
             }
             sections.forEachIndexed { index, section ->
                 item(key = "editor.section.$index.title") {
@@ -437,14 +443,29 @@ private fun EnabledReorderList(
 ) {
     val density = LocalDensity.current
     val pitchPx = with(density) { (DockSlotRowHeight + DockSlotRowGap).toPx() }
+    val hapticFeedback = LocalHapticFeedback.current
 
     var draggingIndex by remember { mutableStateOf(-1) }
     var dragOffsetY by remember { mutableStateOf(0f) }
+    // 拖动发力点的当前位置（最终下标）：与松手时的 to 同一算式提前一拍算出，
+    // 供不受拖动的行让位（指示应在哪里空出）。
+    val dragTargetIndex = if (draggingIndex >= 0) {
+        (draggingIndex + (dragOffsetY / pitchPx).roundToInt()).coerceIn(0, ids.size - 1)
+    } else {
+        -1
+    }
 
     Column(modifier = Modifier.fillMaxWidth()) {
         ids.forEachIndexed { index, id ->
             val pinned = id == pinnedId
             val rowCanRemove = canRemove && !pinned
+            // 让位位移：拖向下方的行让上方，拖向上的行让下方（无动画、跟手）。
+            val shiftPx = when {
+                draggingIndex < 0 || index == draggingIndex -> 0f
+                dragTargetIndex > draggingIndex && index in draggingIndex + 1..dragTargetIndex -> -pitchPx
+                dragTargetIndex < draggingIndex && index in dragTargetIndex until draggingIndex -> pitchPx
+                else -> 0f
+            }
             DockSlotRow(
                 index = index,
                 itemCount = ids.size,
@@ -455,10 +476,12 @@ private fun EnabledReorderList(
                 canRemove = rowCanRemove,
                 isDragging = draggingIndex == index,
                 dragOffsetY = dragOffsetY,
+                shiftPx = shiftPx,
                 onRemove = { onRemove(id) },
                 onDragStart = {
                     draggingIndex = index
                     dragOffsetY = 0f
+                    hapticFeedback.performHapticFeedback(HapticFeedbackType.LongPress)
                 },
                 onDragDelta = { dragOffsetY = it },
                 onDragEnd = { to ->
@@ -486,6 +509,7 @@ private fun DockSlotRow(
     canRemove: Boolean,
     isDragging: Boolean,
     dragOffsetY: Float,
+    shiftPx: Float,
     onRemove: () -> Unit,
     onDragStart: () -> Unit,
     onDragDelta: (Float) -> Unit,
@@ -498,61 +522,55 @@ private fun DockSlotRow(
     val currentOnDragDelta by rememberUpdatedState(onDragDelta)
     val currentOnDragEnd by rememberUpdatedState(onDragEnd)
     val currentOnDragCancel by rememberUpdatedState(onDragCancel)
+    // 本行拖动：长按整行后拖动排序（与提示句「按住条目可排序」一致；
+    // 移除按钮区由 IconButton 自己按压、quick tap 不受长按手势影响）。
     QingyuCard(
         modifier = Modifier
             .fillMaxWidth()
             .padding(bottom = DockSlotRowGap)
             .zIndex(if (isDragging) 1f else 0f)
+            .pointerInput(index, itemCount) {
+                var acc = 0f
+                detectDragGesturesAfterLongPress(
+                    onDragStart = {
+                        acc = 0f
+                        currentOnDragStart()
+                    },
+                    onDrag = { change, dragAmount ->
+                        change.consume()
+                        acc += dragAmount.y
+                        currentOnDragDelta(acc)
+                    },
+                    onDragEnd = {
+                        val to = (index + (acc / pitchPx).roundToInt())
+                            .coerceIn(0, itemCount - 1)
+                        currentOnDragEnd(to)
+                    },
+                    onDragCancel = { currentOnDragCancel() },
+                )
+            }
             .graphicsLayer {
                 if (isDragging) {
                     translationY = dragOffsetY
                     scaleX = 1.02f
                     scaleY = 1.02f
+                    shadowElevation = 8.dp.toPx()
+                } else if (shiftPx != 0f) {
+                    translationY = shiftPx
                 }
             },
     ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(DockSlotRowHeight),
+                .height(DockSlotRowHeight)
+                // 行首不再放拖动手柄图标：miuix-icons 里没有专用的手柄件（156 个官方图标
+                // 已核），能用的 Sort（≡）/ MoveFile 一个被用户否决、一个被读成「移出」，
+                // 都不该占着行首。拖动本来就靠长按整行（见上方卡片的 pointerInput），
+                // 这里只保留卡内 Preference 口径的 16dp 左缘，让图标徽章落在 28dp 轴线上。
+                .padding(start = 16.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            // 行首拖动手柄：长按后拖动该行排序。
-            Box(
-                modifier = Modifier
-                    .padding(start = 8.dp)
-                    .width(32.dp)
-                    .height(DockSlotRowHeight)
-                    .pointerInput(index, itemCount) {
-                        var acc = 0f
-                        detectDragGesturesAfterLongPress(
-                            onDragStart = {
-                                acc = 0f
-                                currentOnDragStart()
-                            },
-                            onDrag = { change, dragAmount ->
-                                change.consume()
-                                acc += dragAmount.y
-                                currentOnDragDelta(acc)
-                            },
-                            onDragEnd = {
-                                val to = (index + (acc / pitchPx).roundToInt())
-                                    .coerceIn(0, itemCount - 1)
-                                currentOnDragEnd(to)
-                            },
-                            onDragCancel = { currentOnDragCancel() },
-                        )
-                    },
-                contentAlignment = Alignment.Center,
-            ) {
-                Icon(
-                    imageVector = MiuixIcons.Sort,
-                    contentDescription = null,
-                    tint = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-                    modifier = Modifier.size(20.dp),
-                )
-            }
-            Spacer(modifier = Modifier.width(8.dp))
             DockIconBadge(glyph = glyph)
             Spacer(modifier = Modifier.width(12.dp))
             Text(
@@ -731,7 +749,7 @@ private fun dockGlyph(id: String): ImageVector = when (id) {
     "update" -> MiuixIcons.Update
     "pickupCode" -> MiuixIcons.Store
     "overview" -> MiuixIcons.ListView
-    "statistics" -> MiuixIcons.Sort
+    "statistics" -> MiuixIcons.Promotions
     "addCourse" -> MiuixIcons.Add
     "exams" -> MiuixIcons.Alarm
     "importCourses" -> MiuixIcons.Import
@@ -766,7 +784,7 @@ private fun dockGlyph(id: String): ImageVector = when (id) {
     "holidaySettings" -> MiuixIcons.Months
     "homeWidgetSettings" -> MiuixIcons.GridView
     "diagnosticsSettings" -> MiuixIcons.Report
-    "statisticsSettings" -> MiuixIcons.Sort
+    "statisticsSettings" -> MiuixIcons.Promotions
     "support" -> MiuixIcons.Email
     "aboutApp" -> MiuixIcons.Info
     "changelog" -> MiuixIcons.Notes

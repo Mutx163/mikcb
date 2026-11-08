@@ -12,9 +12,9 @@ package com.mutx163.qingyu.pages.settings
  * |---|---|---|
  * | `HyperosSubpage(title: glassDockCustomizeTitle)`（:87-89） | `titleKey/title` | `basic.TopAppBar` |
  * | 预览卡（:181-229） | `dock.preview`（CONTROL_CARD） | 官方无「图标坞预览」组件，见下 |
+ * | `HyperosSectionDescription(hint)`（:96-98） | `dock.hint` | 整宽脚注（不受 11/17 口径约束） |
  * | `HyperosSectionLabel(已启用)`（:94） | `dock.enabled.label` | preference category |
  * | `ReorderableListView` 每行（:231-268） | `dock.enabled` 的各行 | `extra.SuperArrow` + 行尾移除按钮 |
- * | `HyperosSectionDescription(hint)`（:96-98） | `dock.hint` | 整宽脚注（不受 11/17 口径约束） |
  * | 视图切换伪分组（:122-148） | `dock.viewSwitch.*` | preference category + `SuperArrow` |
  * | 四个目录分类（:101-107） | `dock.catalog.<cat>.*` | 同上 |
  * | `HyperosListTile(恢复默认排列)`（:108-116） | `dock.reset` | `extra.SuperArrow` |
@@ -26,6 +26,11 @@ package com.mutx163.qingyu.pages.settings
  * [InlineKind.CONTROL_CARD] 承载：标题位留空（Dart 侧这卡没有标题），
  * 内容位按当前排列逐个给出名称。渲染成什么形状由渲染层决定，模型只保证
  * **顺序与文案**正确。
+ *
+ * ## 提示句为什么排在「已启用」之上
+ *
+ * Dart 侧它压在启用列表下面（:96-98），用户得先把列表扫完才看到「按住条目可排序」。
+ * Compose 侧已按用户要求提到列表之前（先给规则，再看图标），模型跟着改以保持两边说法一致。
  *
  * ## 两处不写进模型的接线行为
  *
@@ -140,8 +145,15 @@ object SettingsGlassDockEditorPage {
             },
         )
 
-        // 1. 已启用（可拖动排序 + 逐个移除）
+        // 1. 整宽提示句（排在「已启用」之上：先给规则「按住条目可排序」，再看那一列图标）
         nodes += SettingsGap("dock.gap.afterPreview")
+        nodes += SettingsDescription(
+            id = "dock.hint",
+            textKey = SettingsStringsExt4.homeGridEditorHintBody.key,
+            text = SettingsStringsExt4.homeGridEditorHintBody.filled("max", MAX_SLOTS.toString()),
+        )
+
+        // 2. 已启用（可拖动排序 + 逐个移除）
         nodes += SettingsLabel(
             id = "dock.enabled.label",
             textKey = SettingsStringsExt4.homeGridEditorEnabledTitle.key,
@@ -165,13 +177,7 @@ object SettingsGlassDockEditorPage {
                 )
             },
         )
-        nodes += SettingsDescription(
-            id = "dock.hint",
-            textKey = SettingsStringsExt4.homeGridEditorHintBody.key,
-            text = SettingsStringsExt4.homeGridEditorHintBody.filled("max", MAX_SLOTS.toString()),
-        )
-
-        // 2. 视图切换伪分组（日/周是动作不是页面，排在目录分类之前；两个都启用时整组消失）
+        // 3. 视图切换伪分组（日/周是动作不是页面，排在目录分类之前；两个都启用时整组消失）
         val viewSwitch = VIEW_SWITCH_ACTIONS.filter { it.id !in enabled }
         if (viewSwitch.isNotEmpty()) {
             nodes += SettingsGap("dock.viewSwitch.gap")
@@ -186,7 +192,7 @@ object SettingsGlassDockEditorPage {
             )
         }
 
-        // 3. 四个目录分类
+        // 4. 四个目录分类
         DockCategory.entries.forEach { category ->
             val candidates = candidates(category, enabled, editor.debugBuild)
             nodes += SettingsGap("dock.catalog.${category.arg}.gap")
@@ -210,7 +216,7 @@ object SettingsGlassDockEditorPage {
             }
         }
 
-        // 4. 恢复默认排列
+        // 5. 恢复默认排列
         nodes += SettingsGap("dock.gap.reset")
         nodes += SettingsGroup(
             id = "dock.reset",

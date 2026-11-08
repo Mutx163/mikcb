@@ -52,6 +52,7 @@ import com.mutx163.qingyu.pages.settings.WallpaperAutoApplyLogic
 import com.mutx163.qingyu.pages.settings.WallpaperEvictionSources
 import com.mutx163.qingyu.pages.settings.WallpaperHistoryLedger
 import com.mutx163.qingyu.pages.settings.WallpaperSheetBody
+import com.mutx163.qingyu.pages.settings.WALLPAPER_SHEET_MAX_HEIGHT_FACTOR
 import com.mutx163.qingyu.pages.settings.WallpaperSheetIntent
 import com.mutx163.qingyu.pages.settings.WallpaperSheetPages
 import com.mutx163.qingyu.pages.settings.appearanceEditorResyncOnResume
@@ -70,12 +71,14 @@ import com.mutx163.qingyu.platform.PrefsKeyValueStore
 import com.mutx163.qingyu.pages.timetable.TimetableDateLogic
 import com.mutx163.qingyu.pages.timetable.TimetableStyleMapping
 import com.mutx163.qingyu.pages.timetable.day.DayViewDataAssembler
+import com.mutx163.qingyu.pages.timetable.day.DayViewWeather
 import com.mutx163.qingyu.pages.timetable.day.DayViewPage
 import com.mutx163.qingyu.pages.timetable.day.dayViewPageDataOf
 import com.mutx163.qingyu.weather.BingAutoApplyDecision
 import com.mutx163.qingyu.weather.DailyApplyOutcome
 import com.mutx163.qingyu.weather.DailyWallpaperMapper
 import com.mutx163.qingyu.weather.WallpaperTargetSize
+import com.mutx163.qingyu.weather.WeatherProvider
 import top.yukonga.miuix.kmp.blur.isRuntimeShaderSupported
 import top.yukonga.miuix.kmp.blur.layerBackdrop
 import top.yukonga.miuix.kmp.blur.rememberLayerBackdrop
@@ -204,6 +207,13 @@ fun AppearanceEditorHost(
     homeViewMode: TimetableHomeViewMode = TimetableHomeViewMode.WEEK,
     homeSelectedWeek: Int? = null,
     homeSelectedDayOfWeek: Int? = null,
+    /**
+     * 设备级天气 provider（壳里唯一一份 `wiring.weather`）。
+     *
+     * 预览卡片与真首页共用同一数据源：不传的话首页课卡有天气行、预览没有，
+     * 卡片高度与折行也会跟着不同（2026-11-07 用户实报）。
+     */
+    weatherProvider: WeatherProvider? = null,
 ) {
     // 草稿：一进页就从盘上读一份。
     var model by remember(store) { mutableStateOf(store.load()) }
@@ -832,6 +842,7 @@ fun AppearanceEditorHost(
                 settingsModel = model,
                 homeSelectedWeek = homeSelectedWeek,
                 homeSelectedDayOfWeek = homeSelectedDayOfWeek,
+                weatherProvider = weatherProvider,
             )
         },
     )
@@ -876,7 +887,10 @@ fun AppearanceEditorHost(
         onDismissRequest = { wallpaperSheet = false },
         // 同材质面板：壁纸面板正文也是 pager + 每页列表，`weight(1f)` 带自己的滚动。
         contentScrolls = true,
-        maxHeightFraction = APPEARANCE_EDITOR_SHEET_MAX_HEIGHT_FACTOR,
+        // ⚠️ 壁纸面板**独用 0.62**（材质面板仍是 0.5）：0.5 的列表视口只有 293dp，
+        // 第一页（预览 + 换图 + 最近使用）装不下，打开就会把缩略图条切成半张。
+        // 完整理由与回退方式见 `WALLPAPER_SHEET_MAX_HEIGHT_FACTOR` 的 KDoc。
+        maxHeightFraction = WALLPAPER_SHEET_MAX_HEIGHT_FACTOR,
     ) {
         key(wallpaperSheetGeneration) {
             WallpaperSheetBody(
@@ -917,6 +931,7 @@ private fun TimetablePreviewPage(
     settingsModel: TimetableSettingsModel,
     homeSelectedWeek: Int? = null,
     homeSelectedDayOfWeek: Int? = null,
+    weatherProvider: WeatherProvider? = null,
 ) {
     // 预览卡 = **整个首页**：课表页（周 / 日）+ 玻璃坞。
     //
@@ -944,10 +959,13 @@ private fun TimetablePreviewPage(
                     glassSurfacesEnabled = glassSurfacesEnabled,
                     homeSelectedWeek = homeSelectedWeek,
                     homeSelectedDayOfWeek = homeSelectedDayOfWeek,
+                    weatherProvider = weatherProvider,
                 )
             } else {
                 TimetableHost(
                     repository = repository,
+                    // 预览与真首页同一份天气数据源（周课卡天气行）。
+                    weatherProvider = weatherProvider,
                     // 点击在页面壳那一层就被全部吞掉（`Modifier.consumeAllPointerEvents`），
                     // 这两个回调永远不会被调用；给空实现是为了让「预览不可操作」这件事只有一处真源。
                     onOpenAddCourse = { _, _ -> },
@@ -999,6 +1017,7 @@ private fun DayViewPreview(
     glassSurfacesEnabled: Boolean = true,
     homeSelectedWeek: Int? = null,
     homeSelectedDayOfWeek: Int? = null,
+    weatherProvider: WeatherProvider? = null,
 ) {
     var snapshot by remember(repository) { mutableStateOf(repository.snapshot) }
     DisposableEffect(repository) {
@@ -1006,6 +1025,11 @@ private fun DayViewPreview(
         onDispose { subscription.close() }
     }
     val display = remember(settingsModel) { TimetableHostDisplayPrefs.fromSettings(settingsModel) }
+    // 天气行：与壳 `c3.day` 同一条推导（provider + 草稿设置 → 一行文本）。
+    // 预览不主动发请求，只读 provider 已有缓存；设置里关掉就整行不出现。
+    val previewWeatherOf = remember(settingsModel, weatherProvider) {
+        DayViewWeather.lineProvider(settingsModel, weatherProvider)
+    }
     val visibleDays = remember(display.hideWeekends) {
         TimetableHostLogic.visibleDayNumbers(display.hideWeekends)
     }
@@ -1038,6 +1062,8 @@ private fun DayViewPreview(
         ),
         weekdayStyle = TimetableStyleMapping.weekViewStyle(settingsModel),
         showConflictBadge = settingsModel.showConflictBadgeOnTimetable,
+        // 冲突压淡也读草稿设置：拖滑杆时预览卡当场跟着变（与周视图预览同一条口径）。
+        conflictCourseOpacity = settingsModel.timetableConflictCourseOpacity.toFloat(),
         hasExamOnDate = { date ->
             repository.exams.any { exam ->
                 CourseTask.dateOnly(exam.dateTime).toLocalDate() == date
@@ -1073,12 +1099,26 @@ private fun DayViewPreview(
                     exams = repository.exams,
                     tasks = repository.tasks,
                     showNonCurrentWeekCourses = settingsModel.timetableShowNonCurrentWeekCourses,
+                    // 周次取当前页（与壳同口径：天气按「这一周的这一节」查）。
+                    weatherOf = previewWeatherOf?.let { resolve ->
+                        { date, course -> resolve(week, date, course) }
+                    },
                 ),
             )
         },
         // 装配结果跟着仓储快照失效：预览也订了同一份仓储，课程/任务变了要跟着变。
         dataVersion = snapshot,
-        // 预览里点任何东西都会被吞掉，这几个回调不会被调用。
+        // ── 课卡右上角「记作业」「备注」两个胶囊：**空实现也必须传** ──
+        // 这两个参数在 `DayViewPage` 里是能力型可空回调，不传 = 页面认为「本页没有这项
+        // 能力」⇒ `DayViewCourseCard` 把整块操作区（两个胶囊）不渲染（审核 P0-1 的口径）。
+        // 预览只是不可操作，不是没有这个入口：真首页 `c3.day` 两个都接了，Dart 原版
+        // （`day_view_course_agenda_card.dart:159-182`）也是常驻画出来的。2026-11-07 用户
+        // 实报「预览里日视图卡片没有作业/备注胶囊」，就是这里没传导致的视觉缺块。
+        // 指针事件在预览舞台那层被 `consumeAllPointerEvents` 全吃掉，这两个 lambda 永远
+        // 不会被调用——给空实现只为让卡片与真页逐字同形（周预览给 `TimetableHost` 同款做法）。
+        onOpenCourseNotes = { _, _ -> },
+        onOpenCourseTask = { _, _ -> },
+        // 其余入口不画可见控件（日程/考试卡本身照常渲染），预览里点任何东西也都被吞掉。
         onCloseToWeekView = {},
         // 待办带里「关联课程」的名字与颜色（与壳同源）。
         courseResolver = { task -> snapshot.courses.firstOrNull { it.id == task.courseId } },

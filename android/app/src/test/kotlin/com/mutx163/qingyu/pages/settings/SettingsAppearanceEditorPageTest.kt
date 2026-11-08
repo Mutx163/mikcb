@@ -221,7 +221,9 @@ class SettingsAppearanceEditorPageTest {
             ),
         ).row("material.general.preset")
         // 模糊 18 / 染色 0.75 是第 8 格的推荐值 → 滑杆落在第 8 格
-        assertEquals("8", custom.value)
+        // 2026-11-07：格号仍是 8（滑杆停在最近那格），但读数必须带上「自定义」,
+        // 只给数字会读成「你还在第 8 格」
+        assertEquals("8 · 自定义", custom.value)
         assertEquals(8.0, custom.sliderValue!!, 0.0)
     }
 
@@ -240,7 +242,9 @@ class SettingsAppearanceEditorPageTest {
                 "material.general.tuning.blurSigma",
                 "material.general.tuning.tint",
             ),
-            spec.group("material.general.tuning").childRowIds(),
+            // 2026-11-07：八根拆成两张同宽同轴的卡（光学 4 / 表面 4），拼起来仍是原来那八根
+            spec.group("material.general.tuning.optics").childRowIds() +
+                spec.group("material.general.tuning.surface").childRowIds(),
         )
         assertEquals("折射强度", spec.row("material.general.tuning.refraction").title)
         assertEquals("作用带宽度", spec.row("material.general.tuning.refractionBand").title)

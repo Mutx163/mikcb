@@ -47,16 +47,17 @@ class SettingsGlassDockEditorPageTest {
     }
 
     @Test
-    fun `顶层骨架顺序 预览卡 已启用 提示 视图切换 目录分类 恢复默认`() {
+    fun `顶层骨架顺序 预览卡 提示 已启用 视图切换 目录分类 恢复默认`() {
         // settings_glass_dock_editor.dart:92-118 的完整节点顺序（含每个 12dp 空档）。
+        // 提示句已按用户要求从「已启用」之后提到它之前（先给「按住才排序」的规则再看图标）。
         // 用只启用 tasks 的状态：这样视图切换伪分组也在（日/周都还没启用）。
         assertEquals(
             listOf(
                 "dock.preview",
                 "dock.gap.afterPreview",
+                "dock.hint",
                 "dock.enabled.label",
                 "dock.enabled",
-                "dock.hint",
                 "dock.viewSwitch.gap",
                 "dock.viewSwitch.label",
                 "dock.viewSwitch",
@@ -143,10 +144,10 @@ class SettingsGlassDockEditorPageTest {
 
     @Test
     fun `提示文案把上限填进占位符`() {
-        // :96-98 `homeGridEditorHintBody(_maxSlots)`；ARB 模板「最多放置 {max} 个按钮；按住条目拖动即可排序。」
+        // :96-98 `homeGridEditorHintBody(_maxSlots)`；ARB 模板「最多放 {max} 个」。
         val hint = spec().flatten().filterIsInstance<SettingsDescription>().single { it.id == "dock.hint" }
         assertEquals("homeGridEditorHintBody", hint.textKey)
-        assertEquals("最多放置 5 个按钮；按住条目拖动即可排序。", hint.text)
+        assertEquals("最多放 5 个，按住条目可排序", hint.text)
     }
 
     // -------------------------------------------------------- 视图切换伪分组

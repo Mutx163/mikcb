@@ -142,7 +142,7 @@ class SettingsHomeMenuEditorPageTest {
         val hint = spec(defaultState()).flatten().filterIsInstance<SettingsDescription>()
             .first { it.id == "homeMenuEditor.hint" }
         assertEquals("homeGridEditorHintBody", hint.textKey)
-        assertEquals("最多放置 8 个按钮；按住条目拖动即可排序。", hint.text)
+        assertEquals("最多放 8 个，按住条目可排序", hint.text)
         assertEquals("homeGridEditorEnabledTitle", spec(defaultState()).flatten()
             .filterIsInstance<SettingsLabel>().first { it.id == "homeMenuEditor.enabled.label" }.textKey)
         assertEquals("已启用", spec(defaultState()).flatten()
