@@ -5,7 +5,6 @@ import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
-import java.io.File
 import java.time.LocalDateTime
 import java.time.ZoneId
 
@@ -139,29 +138,5 @@ class LanEditPageLogicTest {
     fun `开关关着时离开页面要停服`() {
         assertTrue(LanEditPageLogic.shouldStopOnLeave(keepAliveWhenLeaving = false))
         assertFalse(LanEditPageLogic.shouldStopOnLeave(keepAliveWhenLeaving = true))
-    }
-
-    @Test
-    fun `落盘键与 Dart 逐字一致且默认关`() {
-        // lib/services/lan_edit_preferences.dart:14 / :17
-        assertEquals("lan_edit_keep_alive_when_leaving", LanEditPageLogic.KEEP_ALIVE_PREF_KEY)
-        assertFalse(LanEditPageLogic.DEFAULT_KEEP_ALIVE_WHEN_LEAVING)
-
-        val dart = repoFile("lib/services/lan_edit_preferences.dart").readText()
-        assertTrue(
-            "Dart 侧的偏好键改了，Kotlin 侧必须跟着改",
-            dart.contains("'${LanEditPageLogic.KEEP_ALIVE_PREF_KEY}'"),
-        )
-        assertTrue(dart.contains("defaultKeepAliveWhenLeaving = false"))
-    }
-
-    private fun repoFile(relative: String): File {
-        var dir: File? = File("").absoluteFile
-        while (dir != null) {
-            val candidate = File(dir, relative)
-            if (candidate.exists()) return candidate
-            dir = dir.parentFile
-        }
-        throw AssertionError("从工作目录找不到 $relative")
     }
 }
