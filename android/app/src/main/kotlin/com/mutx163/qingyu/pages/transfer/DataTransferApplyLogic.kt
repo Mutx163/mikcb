@@ -778,6 +778,12 @@ data class TransferUndoSnapshot(
     val settings: TimetableSettings? = null,
     /** 导入前的完整 settings 原文；null = 快照不负责它。 */
     val settingsJson: Map<String, Any?>? = null,
+    /**
+     * 全量导入前的整机级设置（44 键）；撤销要把它们写回全局真源。
+     *
+     * 单课表导入不碰全局，所以这里只在 [TransferUndoScope.FULL_PROFILES] 下赋值。
+     */
+    val globalSettingsJson: Map<String, Any?>? = null,
     /** 全量导入前每份档案内嵌的完整 settings；撤销整份写回时铺底。 */
     val profileSettingsById: Map<String, Map<String, Any?>>? = null,
     val currentWeek: Int = 1,

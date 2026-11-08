@@ -1,5 +1,6 @@
 ﻿package com.mutx163.qingyu.pages.transfer
 
+import com.mutx163.qingyu.app.AppGlobalSettingsStore
 import com.mutx163.qingyu.app.TimetableSnapshot
 import com.mutx163.qingyu.core.Course
 import com.mutx163.qingyu.core.LocationTimeGroup
@@ -13,6 +14,7 @@ import com.mutx163.qingyu.share.TransferChannel
 import com.mutx163.qingyu.share.TransferScope
 import java.time.LocalDateTime
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -40,8 +42,9 @@ class DataTransferSettingsGoldenTest {
     // ── 1. 导出：完整 settings map 原样进包 ────────────────────────────
 
     @Test
-    fun `单课表包导出时 settings 保留全部偏好键`() {
+    fun `单课表包导出时只带随课表走的偏好，不带整机级键`() {
         val golden = goldenSettings()
+        val expected = AppGlobalSettingsStore.stripGlobalKeys(golden)
         val built = build(
             scope = TransferScope.CURRENT_TIMETABLE,
             settingsJson = golden,
@@ -49,10 +52,17 @@ class DataTransferSettingsGoldenTest {
 
         val settings = rootOf(built)["settings"] as Map<*, *>
         assertEquals(
-            "导出的 settings 必须与盘上完整文档逐字一致（不能只剩 core 6 键）",
-            MiniJson.encode(golden),
+            "非整机级的偏好必须逐字保留（不能只剩 core 6 键）",
+            MiniJson.encode(expected),
             MiniJson.encode(settings),
         )
+        for (key in listOf("appLocaleTag", "enableHaptics", "pageTransitionSpeed")) {
+            assertFalse(
+                "整机级键 $key 不得进单课表包（否则会把对方的主题/语言写进本机全局）",
+                settings.containsKey(key),
+            )
+        }
+        assertEquals("compact", settings["courseCardDensity"])
     }
 
     @Test
@@ -80,14 +90,15 @@ class DataTransferSettingsGoldenTest {
     // ── 2. 导入：原始键不丢，落盘计划原样携带 ─────────────────────────
 
     @Test
-    fun `导出再导入 settings 原文一个键都不少`() {
+    fun `导出再导入只保留随课表走的设置原文`() {
         val golden = goldenSettings()
+        val expected = AppGlobalSettingsStore.stripGlobalKeys(golden)
         val json = build(scope = TransferScope.CURRENT_TIMETABLE, settingsJson = golden).json
         val plan = parse(json)
 
         assertNotNull("包里的 settings 必须被保留为原文", plan.settingsJson)
         assertEquals(
-            MiniJson.encode(golden),
+            MiniJson.encode(expected),
             MiniJson.encode(plan.settingsJson),
         )
         // core 投影仍然可用（设置页/周次计算走它）。
@@ -109,7 +120,10 @@ class DataTransferSettingsGoldenTest {
         )
 
         assertNotNull("writes 必须带原文，宿主才能按键合并写", writes.settingsJson)
-        assertEquals(MiniJson.encode(golden), MiniJson.encode(writes.settingsJson))
+        assertEquals(
+            MiniJson.encode(AppGlobalSettingsStore.stripGlobalKeys(golden)),
+            MiniJson.encode(writes.settingsJson),
+        )
     }
 
     @Test
@@ -127,13 +141,14 @@ class DataTransferSettingsGoldenTest {
         )
 
         val written = writes.settingsJson!!
+        val expected = AppGlobalSettingsStore.stripGlobalKeys(golden)
         assertEquals("local-9", written["activeTimeSchemeId"])
         assertEquals(
             "除 activeTimeSchemeId 外，其余键（含 Dart 侧独有键）必须逐字保留",
-            golden.size,
+            expected.size,
             written.size,
         )
-        for ((key, value) in golden) {
+        for ((key, value) in expected) {
             if (key == "activeTimeSchemeId") continue
             assertEquals(
                 "键 $key 被改写或丢失",

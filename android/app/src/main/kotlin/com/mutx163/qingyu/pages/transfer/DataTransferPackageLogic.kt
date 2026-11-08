@@ -1,5 +1,6 @@
 package com.mutx163.qingyu.pages.transfer
 
+import com.mutx163.qingyu.app.AppGlobalSettingsStore
 import com.mutx163.qingyu.app.TimetableSnapshot
 import com.mutx163.qingyu.calendar.ScheduleDateRuleLogic
 import com.mutx163.qingyu.core.Course
@@ -254,8 +255,11 @@ object DataTransferPackageLogic {
 
         val metadata = selectScopedMetadata(snapshot, scope, courses, request.now)
 
+        // 单课表 / 周课表只带「跟着课表走」的设置：整机级 44 键（主题/语言/材质/玻璃坞）
+        // 一旦进包，接收端会把它写进全局真源，等于用别人的外观覆盖你的设备。
+        // 全量备份不在这里过滤——它的每份档案内嵌设置要原样保留，恢复时由宿主显式写回。
         val exportedSettingsJson = if (scope.carriesSettings && !isFullBackup) {
-            settingsJson ?: snapshot.settings.toJson()
+            AppGlobalSettingsStore.stripGlobalKeys(settingsJson ?: snapshot.settings.toJson())
         } else {
             null
         }

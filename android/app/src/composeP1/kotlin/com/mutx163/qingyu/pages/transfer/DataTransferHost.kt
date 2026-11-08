@@ -569,6 +569,8 @@ private fun applyImport(
             locationTimeGroups = before.locationTimeGroups,
             // 全量恢复会整份重写档案，撤销要把每份档案的完整内嵌设置一起还原。
             profileSettingsById = repository.embeddedSettingsById(),
+            // 全量恢复还会把备份里的整机偏好写回全局真源，撤销也必须还原它。
+            globalSettingsJson = AppGlobalSettingsStore.globalKeysOnly(repository.readRawSettings()),
             // 模板表在第一次改动（`reconcileTimeSchemes`）之前抓：导入会新建模板，
             // 不整份还原就会在本机留下多出来的一套、且救不回来（仓储无跨 key 事务）。
             timeSchemes = before.timeSchemes,
@@ -621,10 +623,21 @@ private fun applyImport(
                 activeProfileId = writes.activeProfileId,
                 preferredEmbeddedSettings = writes.profileSettingsById,
             )
-            // 全量包里的全局设置：优先写完整原文（按键合并），否则回落到 core 投影。
+            // 全量包里的全局设置：优先写完整原文（按键合并），否则从刚恢复的活动档案
+            // 内嵌设置里取 44 个整机级键，显式写回设备级真源。
+            // 不写这一步，本机原有的全局值会在读侧把内嵌值整组盖掉——同机恢复 / 换机
+            // 恢复后外观、语言、材质仍是本机的，备份里的那份永远读不到。
             if (writes.settingsJson != null) {
                 repository.updateSettingsPatch(writes.settingsJson)
             } else {
+                val restoredGlobals = AppGlobalSettingsStore.globalKeysOnly(
+                    repository.activeProfileSettingsJson().orEmpty(),
+                )
+                if (restoredGlobals.isNotEmpty() &&
+                    !repository.writeRawSettingsPatch(restoredGlobals)
+                ) {
+                    error("restore_global_settings_failed")
+                }
                 writes.settings?.let(repository::updateSettings)
             }
             // 全量包也要还原当前周（见 planWrites 全量分支：顶层没有时取档案自己那份）。
@@ -642,8 +655,11 @@ private fun applyImport(
             repository.scheduleItems = writes.scheduleItems
             // 设置：有完整原文就按键合并写（不丢包里的 250+ 键，也不删本机独有键）；
             // 只有旧包（无完整原文）时才回落到 core 投影。
-            if (writes.settingsJson != null) {
-                repository.updateSettingsPatch(writes.settingsJson)
+            // 整机级键一律剔除：本修复之前导出的旧包里仍带着对方的主题/语言/材质，
+            // 直接写进全局真源会改掉本机偏好且撤销回不来。
+            val settingsPatch = writes.settingsJson?.let(AppGlobalSettingsStore::stripGlobalKeys)
+            if (settingsPatch != null) {
+                repository.updateSettingsPatch(settingsPatch)
             } else {
                 writes.settings?.let(repository::updateSettings)
             }
@@ -783,7 +799,8 @@ private fun applyImportAsNew(
         // ⑤ 包里带了完整 settings 时，把非 core 键也铺进新档（core 键以解析后的
         //    模板/节次为准）。不这一步，「导入为新课表」只落 6 键、其余偏好回默认。
         plan.settingsJson?.let { raw ->
-            val merged = LinkedHashMap(raw)
+            // 同上：旧包可能带对方的整机偏好，别铺进本机档案镜像。
+            val merged = LinkedHashMap(AppGlobalSettingsStore.stripGlobalKeys(raw))
             merged.putAll(settings.toJson())
             repository.replaceActiveProfileSettingsJson(merged)
         }
@@ -916,6 +933,10 @@ private fun restoreFromSnapshot(
                 )
             }
             snapshot.settings?.let { settings -> step { repository.updateSettings(settings) } }
+            // 全量恢复写回过整机偏好（见 applyImport），撤销必须一起还原。
+            snapshot.globalSettingsJson?.let { globals ->
+                step { repository.writeRawSettingsPatch(globals) }
+            }
             // 全量导入现在会写当前周（见 applyImport），撤销必须一起还原。
             step { repository.setCurrentWeek(snapshot.currentWeek) }
         }

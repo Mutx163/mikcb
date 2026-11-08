@@ -104,6 +104,19 @@ class AppGlobalSettingsStore(
         )
 
         private val KEY_SET: Set<String> = KEYS.toSet()
+
+        /** 只保留整机级键；全量恢复要把「设备级真源」显式写回时用。 */
+        fun globalKeysOnly(patch: Map<String, Any?>): Map<String, Any?> =
+            patch.filterKeys { key -> key in KEY_SET }
+
+        /**
+         * 去掉整机级键，只留「跟着课表走」的设置。
+         *
+         * 单课表 / 周课表传输不得携带主题、语言、材质这类整机偏好：接收端一旦把它们
+         * 写进全局真源，对方设备的偏好会被静默替换，撤销也回不来（2026-11-08 审核 P0）。
+         */
+        fun stripGlobalKeys(patch: Map<String, Any?>): Map<String, Any?> =
+            patch.filterKeys { key -> key !in KEY_SET }
     }
 
     /** `key` 是否属于 44 个整机级键。 */
