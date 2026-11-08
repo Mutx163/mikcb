@@ -53,19 +53,20 @@ jobs:
             echo "ℹ️ 没有可复用的绿灯，照常执行 analyze/test"
           fi
 
-      # 无论是否复用都要现查：tag 与 pubspec 是否配套、发版说明在不在。
+      # 无论是否复用都要现查：tag 与版本号是否配套、发版说明在不在。
       # 这几项只要几秒，却是「tag 打错版本 / 忘写 notes」的最后一道闸。
+      # 去 Flutter 化 P4-D：版本源已从 pubspec.yaml 换到 android/version.properties。
       - name: Release metadata (fast)
         shell: bash
         run: |
           set -euo pipefail
           tag="${GITHUB_REF_NAME#v}"
           notes="docs/releases/v${tag}.md"
-          bytes=$(head -c 3 pubspec.yaml | od -An -tx1 | tr -d ' \n')
+          bytes=$(head -c 3 android/version.properties | od -An -tx1 | tr -d ' \n')
           if [ "${bytes}" = "efbbbf" ]; then
-            echo "ERROR: pubspec.yaml 带 UTF-8 BOM"; exit 1
+            echo "ERROR: android/version.properties 带 UTF-8 BOM"; exit 1
           fi
-          version=$(awk '/^version:/{print $2; exit}' pubspec.yaml | tr -d '\r')
+          version=$(sed -n 's/^versionName=//p' android/version.properties | tr -d '\r')
           expected=$(printf '%s' "${version}" | awk -F'+' '{print $1}' | sed -E 's/-0$//; s/-([0-9]+)$/.\1/')
           if [ "${expected}" != "${tag}" ]; then
             echo "ERROR: tag ${tag} 与 pubspec ${version} 不配套（按 pubspec 应打 v${expected}）"; exit 1
@@ -89,30 +90,11 @@ jobs:
           distribution: temurin
           java-version: '21'
 
-      # 测试要真跑，Flutter 工具链就不能跟着 reuse 跳过。
-      - name: Set up Flutter
-        uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2 # v2
-        with:
-          flutter-version: ${{ env.FLUTTER_STABLE_VERSION }}
-          cache: true
-
-      - name: Record toolchain
+      # 去 Flutter 化 P4-D：Dart 层已删除，检查项换成 Kotlin/JVM 单测（Gradle）。
+      # 复用绿灯时跳过，与原先 analyze 的口径一致。
+      - name: Unit tests (JVM)
         if: steps.reuse.outputs.reuse != 'true'
-        run: |
-          flutter --version
-          dart --version
-
-      - name: Get dependencies
-        run: flutter pub get
-
-      - name: Analyze
-        if: steps.reuse.outputs.reuse != 'true'
-        run: flutter analyze --fatal-infos
-
-      # 不复用：ci 的 Test 步骤失败不会让 job 变红（continue-on-error），
-      # 只按「job 绿」复用会让发版一次测试都不跑。Dart 测试是发版前的硬闸门。
-      - name: Test
-        run: flutter test
+        run: ./gradlew :app:testDevDebugUnitTest
 
   publish:
     name: Build and Publish Android APK
@@ -139,19 +121,8 @@ jobs:
           distribution: temurin
           java-version: '21'
 
-      - name: Set up Flutter
-        uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2 # v2
-        with:
-          flutter-version: ${{ env.FLUTTER_STABLE_VERSION }}
-          cache: true
-
-      - name: Record toolchain
-        run: |
-          flutter --version
-          dart --version
-
-      - name: Get dependencies
-        run: flutter pub get
+      # 去 Flutter 化 P4-D（2026-11-07）：Dart 层已删除，出包不再需要 Flutter SDK——
+      # 原先的 Set up Flutter / Record toolchain / Get dependencies 三步一并移除。
 
       - name: Read app version
         id: meta
