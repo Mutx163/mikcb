@@ -1,7 +1,7 @@
-# 为被剥空环境的 Agent PowerShell 补齐 flutter.bat 依赖的系统变量，再执行后续命令。
+# 为被剥空环境的 Agent PowerShell 补齐构建链依赖的系统变量（JDK/Gradle 与 pub 缓存），再执行后续命令。
 # 用法:
-#   pwsh -NoProfile -File scripts/with-win-env.ps1 flutter test --no-pub test/foo_test.dart
-#   powershell -NoProfile -File scripts/with-win-env.ps1 flutter analyze
+#   pwsh -NoProfile -File scripts/with-win-env.ps1 ./gradlew :app:compileDevDebugKotlin
+#   pwsh -NoProfile -File scripts/with-win-env.ps1 java -version
 param(
   [Parameter(ValueFromRemainingArguments = $true)]
   [string[]]$CommandArgs
