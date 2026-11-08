@@ -27,10 +27,6 @@ concurrency:
   group: gradle-cache-warm
   cancel-in-progress: true
 
-env:
-  # 与 android-build.yml 的 FLUTTER_STABLE_VERSION 保持一致，预热出的缓存才与发版构建同环境
-  FLUTTER_STABLE_VERSION: '3.44.8'
-
 jobs:
   warm:
     name: Warm Gradle cache on main
@@ -50,15 +46,9 @@ jobs:
           distribution: temurin
           java-version: '21'
 
-      - name: Set up Flutter
-        uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2 # v2
-        with:
-          flutter-version: ${{ env.FLUTTER_STABLE_VERSION }}
-          cache: true
-
-      - name: Get dependencies
-        run: flutter pub get
-
+      # 去 Flutter 化残件清理（2026-11-08）：原先这里还有 Set up Flutter + `flutter pub get`
+      # 两步（给已删除的 Dart 层拉依赖），P4-C 后 pubspec.yaml 已不存在，只会跑红/空转，故删除。
+      # 预热本体（Checkout → Java 21 → Gradle cache → assembleProdDebug）不变。
       - name: Gradle cache
         # key/restore-keys 必须与 android-build.yml 的 Restore Gradle cache 完全一致，
         # 发版构建才能精确命中；此处写在 main 作用域，tag 构建按「默认分支可见」规则读取

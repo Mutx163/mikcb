@@ -291,16 +291,12 @@ tasks.withType(Test).configureEach { test ->
 
 // 去 Flutter 化 P4-B（2026-11-07）：`MainActivity.kt` / `FairMemoryFlutterBridge.kt` /
 // `GeneratedPluginRegistrant.java` 已随 Dart 层一并删除，原先那两条 SourceTask/JavaCompile
-// exclude（阶段 1 用作“无 Flutter 构型”开关）不再需要。
-
-
-// Work around flutter/flutter#187553: merge*JniLibFolders may stay UP-TO-DATE while
-// Flutter jniLibs changed, packaging a stale libapp.so into flavor APKs.
-tasks.configureEach { task ->
-    if (task.name.startsWith("merge") && task.name.endsWith("JniLibFolders")) {
-        task.outputs.upToDateWhen { false }
-    }
-}
+// exclude（阶段 1 用作"无 Flutter 构型"开关）不再需要。
+//
+// 去 Flutter 化残件清理（2026-11-08）：原先的 `merge*JniLibFolders` workaround
+//（flutter/flutter#187553：Flutter jniLibs 变了但任务不重跑，打包进旧的 libapp.so）
+// 随 Flutter Gradle 插件一并移除——libapp.so 已不存在，残留的 MLKit 等原生库的
+// 打包不依赖这条强制重跑；若将来 AAR 原生库变更出现 stale 包裹再考虑加回。
 
 // 无签名配置时，仅当任务图真的包含 release 打包任务（assemble/bundle 前缀
 // + release 名）才报错；纯 JVM 测试/分析任务不被连坐。报错文案与原配置期

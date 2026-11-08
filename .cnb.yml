@@ -6,11 +6,11 @@
 #   3. v* 标签       → 构建发布签名 APK 并挂到 Release
 # ─────────────────────────────────────────────────────────────
 
-# ── Flutter 构建环境（YAML 锚点复用）────────────────────────
-# 使用仓库内 Dockerfile 构建自定义镜像：基于 cirruslabs/flutter:3.44.0
-# 将 Flutter 升级到 .fvmrc 指定的 3.44.8（Dart 3.12.8），
-# 满足 pubspec.yaml 的 sdk >=3.12.2 约束。
-.flutter-env: &flutter-env
+# ── 构建环境（YAML 锚点复用）────────────────────────
+# 镜像基于 cirruslabs/flutter（该镜像实质是含 JDK/Android SDK 的通用 Android 构建镜像；
+# 早期 Flutter 插件挂着它才要装 Flutter SDK，P4-B 后构建不再依赖 Flutter SDK，
+# 镜像保留只为继续提供 JDK 与 Android SDK）。
+.build-env: &build-env
   # 源分支又被推送时终止本次构建：同一分支连续 push 会排队多条内容相同的流水线，
   # 旧的那几条结果与最新 commit 无关，却照常按 5min 粒度冻结核时。开启后只有最新的
   # 那条继续跑，避免为过期的 commit 付费。
@@ -42,16 +42,14 @@
     script: cd android && ./gradlew :app:testDevDebugUnitTest
 
 # ── Android JVM 单测（Gradle）────────────────────────────────
-# 注意：flutter_tools included build 镜像注入必须与 gradle 调用同 stage
-# 内联执行——CNB 各 stage 是独立容器，跨 stage 改镜像内文件会丢失。
-# GitHub Actions 不执行本文件，不受任何影响。
+# 注意：Gradle 的仓库镜像/inject 必须与 gradle 调用同 stage 内联执行——CNB 各 stage
+# 是独立容器，跨 stage 改镜像内文件会丢失。GitHub Actions 不执行本文件，不受影响。
+# （去 Flutter 化残件清理 2026-11-08：原先这里还说明 flutter_tools included build 的镜像注入，
+#   P4-B 后该 included build 已不存在、注入已删，只剩下面的 Gradle wrapper 镜像替换一处。）
 #
-# 注入内容：
-# 1) includeBuild 的 flutter_tools/gradle 自带 settings.gradle.kts（仓库仅
-#    google+mavenCentral），主构建 settings 的镜像覆盖不到它；CNB 出口对
-#    Maven Central 限流（HTTP 429）。在 gradle 构建前为其注入国内镜像。
-# 2) Gradle wrapper distribution 从 services.gradle.org 下载时会因 SSL 握手
-#    失败，需替换为腾讯云镜像。
+# 注入内容（现只剩 1 项）：
+# Gradle wrapper distribution 从 services.gradle.org 下载时会因 SSL 握手
+# 失败，需替换为腾讯云镜像。
 # （幂等：已注入则跳过）。
 # 核时优化：本 stage 实测 635s，占整条流水线（818s）的 ~78%，且只覆盖
 # android/app/src/test 下的纯 JVM 单测（JUnit + java.util，不依赖 Dart/Flutter
@@ -78,15 +76,10 @@
     script: |
       set -eu
 
-      # flutter_tools included build 镜像注入（同 stage 内联，规避 429）
-      FTG_SETTINGS="$(cd "$(dirname "$(command -v flutter)")/.." && pwd)/packages/flutter_tools/gradle/settings.gradle.kts"
-      if [ -f "$FTG_SETTINGS" ] && ! grep -q 'mirrors.cloud.tencent.com' "$FTG_SETTINGS"; then
-        sed -i '1i pluginManagement {\n    repositories {\n        maven { url = uri("https://mirrors.cloud.tencent.com/nexus/repository/maven-public/") }\n        maven { url = uri("https://maven.aliyun.com/repository/public") }\n        gradlePluginPortal()\n    }\n}' "$FTG_SETTINGS"
-        sed -i 's|^        mavenCentral()$|        maven { url = uri("https://mirrors.cloud.tencent.com/nexus/repository/maven-public/") }\n        mavenCentral()|' "$FTG_SETTINGS"
-        echo "flutter_tools gradle 镜像已注入: $FTG_SETTINGS"
-      else
-        echo "flutter_tools gradle 镜像已存在或文件缺失，跳过注入"
-      fi
+      # 去 Flutter 化残件清理（2026-11-08）：原先这里还有针对 flutter_tools included build 的
+      # settings 镜像注入（给已删除的 Flutter Gradle 插件拉国内镜像）。P4-B 后该目录不存在，
+      # 注入分支只剩「缺失，跳过」——纯残件，已删除。CNB 仍需国内镜像的话，应改在主构建的
+      # settings.gradle 仓库级注入（已由 android/settings.gradle 的 CNB 块覆盖）。
 
       # Gradle wrapper distribution 换国内镜像（规避 services.gradle.org 不可达/SSL 失败）
       WRAPPER_PROP="android/gradle/wrapper/gradle-wrapper.properties"
@@ -108,13 +101,13 @@
 "**":
   push:
     - name: ci
-      <<: *flutter-env
+      <<: *build-env
       stages:
         - *quality-stages
         - *jvm-test-stages
   pull_request:
     - name: pr-check
-      <<: *flutter-env
+      <<: *build-env
       stages:
         - *quality-stages
         - *jvm-test-stages
@@ -179,7 +172,7 @@
 
   tag_push:
     - name: release-apk
-      <<: *flutter-env
+      <<: *build-env
       # 继承锚点的 8 核 16G。签名 APK 要跑 Gradle + Flutter AOT，内存需求与
       # gradle-jvm-tests 同量级，不能再往下压。tag_push 低频（实测 10 天内 13 次），
       # 为发布成功率保留规格是划算的；配额不足时它会失败，但这是发布动作，
@@ -232,17 +225,9 @@
             # 日志保留可读的逐步 trace。
             set -x
 
-            # ── flutter_tools included build 镜像注入（同 stage 内联，规避 429）──
-            # includeBuild 的 flutter_tools/gradle 自带 settings.gradle.kts（仓库仅
-            # google+mavenCentral），主构建 settings 的镜像覆盖不到它；CNB 出口对
-            # Maven Central 限流（HTTP 429）。必须在同 stage 内、Gradle 构建前
-            # 就地注入（跨 stage 容器隔离，单独 stage 改镜像文件会丢失）。
-            FTG_SETTINGS="$(cd "$(dirname "$(command -v flutter)")/.." && pwd)/packages/flutter_tools/gradle/settings.gradle.kts"
-            if [ -f "$FTG_SETTINGS" ] && ! grep -q 'mirrors.cloud.tencent.com' "$FTG_SETTINGS"; then
-              sed -i '1i pluginManagement {\n    repositories {\n        maven { url = uri("https://mirrors.cloud.tencent.com/nexus/repository/maven-public/") }\n        maven { url = uri("https://maven.aliyun.com/repository/public") }\n        gradlePluginPortal()\n    }\n}' "$FTG_SETTINGS"
-              sed -i 's|^        mavenCentral()$|        maven { url = uri("https://mirrors.cloud.tencent.com/nexus/repository/maven-public/") }\n        mavenCentral()|' "$FTG_SETTINGS"
-              echo "flutter_tools gradle 镜像已注入: $FTG_SETTINGS"
-            fi
+            # 去 Flutter 化残件清理（2026-11-08）：原先这里还有针对 flutter_tools included build 的
+            # settings 镜像注入（P4-B 后该目录已删，注入分支恒为 no-op）。CNB 仍需国内镜像的话，
+            # 应改在主构建的 settings.gradle 仓库级注入（已由 android/settings.gradle 的 CNB 块覆盖）。
 
             # Gradle wrapper distribution 换国内镜像（规避 services.gradle.org 不可达/SSL 失败）
             WRAPPER_PROP="android/gradle/wrapper/gradle-wrapper.properties"

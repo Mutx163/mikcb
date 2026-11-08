@@ -40,10 +40,10 @@ plugins {
 }
 
 // CNB 专用依赖仓库镜像（仅在 CNB 环境生效，GitHub Actions / 本地不受影响）。
-// PREFER_SETTINGS 会接管 flutter 插件注入的项目级仓库（FlutterPlugin.kt 向
-// rootProject.allprojects 注入 download.flutter.io），因此这里必须完整兜底：
-// google / mavenCentral / flutter 引擎仓库缺一不可。注意 settings 脚本里
-// plugins {} 必须紧随 pluginManagement {}，故本块只能放在 plugins 之后，
+// 去 Flutter 化残件清理（2026-11-08）：原本是给已删除的 Flutter Gradle 插件注入的
+// `download.flutter.io` 兜底仓库（见原注的 FlutterPlugin.kt 行为）；P4-B 后引擎 jar 已无消费方，
+// 该行与原注一并删除，剩下 google / mavenCentral 两份兜底。
+// 注意 settings 脚本里 plugins {} 必须紧随 pluginManagement {}，故本块只能放在 plugins 之后，
 // RepositoriesMode 用全限定名（settings 脚本 import 会挤掉 plugins 块位置）。
 if (System.getenv("CNB_BUILD_ID") != null || System.getenv("CNB_BRANCH") != null) {
     dependencyResolutionManagement {
@@ -53,7 +53,6 @@ if (System.getenv("CNB_BUILD_ID") != null || System.getenv("CNB_BRANCH") != null
             maven { url 'https://maven.aliyun.com/repository/public' }
             google()
             mavenCentral()
-            maven { url 'https://storage.googleapis.com/download.flutter.io' }
         }
     }
 }
