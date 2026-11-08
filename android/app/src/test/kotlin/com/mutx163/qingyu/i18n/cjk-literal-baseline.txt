@@ -2,15 +2,133 @@
 # 生成：python scripts/i18n-cjk-baseline.py --write
 # 规则见 CjkLiteralGateTest.kt；修复某文件后必须下调该行数字，不得上调。
 # 已排除：i18n 文案表（*Strings*.kt / *Arb*.kt / *ServiceMessages.kt / *LogMessages.kt / *Localizer.kt）与生成代码；Log.* 行整行跳过。
+# B 展示册示例文案
 com/mutx163/qingyu/pages/showcase/MiuixShowcaseSubpages.kt:73
-com/mutx163/qingyu/pages/guide/HyperosShowcasePage.kt:11
-com/mutx163/qingyu/pages/showcase/MiuixShowcasePage.kt:7
-com/mutx163/qingyu/pages/guide/StartupFlowPage.kt:5
-com/mutx163/qingyu/pages/import/warehouse/AiImageCourseImportPage.kt:5
-com/mutx163/qingyu/pages/import/warehouse/WarehouseAdapterDetailPage.kt:4
-com/mutx163/qingyu/pages/timetable/TimetableProfilesPage.kt:3
-com/mutx163/qingyu/pages/import/warehouse/WarehouseCourseImportPage.kt:2
-com/mutx163/qingyu/pages/import/warehouse/WarehouseCustomDebugPage.kt:2
-com/mutx163/qingyu/pages/feedback/FeedbackPage.kt:1
+# A 预览区样例行（NON_ARB_TEXT 预览假数据，文件内已标注）与 @Preview 名
+com/mutx163/qingyu/pages/settings/SettingsPageRenderers.kt:44
+# A 预览城市样例与状态标签
+com/mutx163/qingyu/pages/weather/WeatherCityPickerPage.kt:41
+# A previewStatsCourse 样例课与状态名
+com/mutx163/qingyu/pages/statistics/CourseStatisticsPage.kt:33
+# A previewOverviewCourse 样例课、状态名与 @Preview 名
+com/mutx163/qingyu/pages/course/CourseOverviewPage.kt:29
+# A 预览样例名单/留言（张三·李四等），含 subtitleNote 疑似正式文案，后续收口逐条裁决
+com/mutx163/qingyu/pages/about/SupportCreatorPage.kt:27
+# A 预览态与性能样例数值
+com/mutx163/qingyu/pages/diagnostics/PerfReportPage.kt:27
+# A 预览态标签
+com/mutx163/qingyu/pages/statistics/StatisticsAnalysisPage.kt:27
+# A 预览样例名单与状态
+com/mutx163/qingyu/pages/about/ContributorsPage.kt:26
+# A 示例学校样例与状态
+com/mutx163/qingyu/pages/import/warehouse/WarehouseCourseImportPage.kt:25
+# A 预览态与内存样例
+com/mutx163/qingyu/pages/diagnostics/MemoryStatsPage.kt:24
+# A 预览样例课与状态名
+com/mutx163/qingyu/pages/live/DisplaySettingsPage.kt:24
+# A 预览态与日志样例
+com/mutx163/qingyu/pages/diagnostics/LiveDiagnosticsLogPage.kt:22
+# A 预览态（迁移检查/开学日期样例），正文长句为引导页样例 copy
+com/mutx163/qingyu/pages/guide/StartupFlowPage.kt:22
+# A 预览更新状态样例
+com/mutx163/qingyu/pages/about/AboutUpdatePage.kt:21
+# A 预览样例课与作业样例
+com/mutx163/qingyu/pages/statistics/StatisticsSessionPage.kt:21
+# A 预览设备样例与状态名
+com/mutx163/qingyu/pages/sync/CloudSyncPage.kt:21
+# A 预览设备/备份样例与状态名
+com/mutx163/qingyu/pages/sync/CloudBackupListPage.kt:20
+# A 预览样例适配器，含使用说明/学校代码等疑似正式文案，后续逐条裁决
+com/mutx163/qingyu/pages/import/warehouse/WarehouseAdapterDetailPage.kt:19
+# A 预览任务样例
+com/mutx163/qingyu/pages/task/TaskListPage.kt:19
+# A 示例学校样例
+com/mutx163/qingyu/pages/import/warehouse/WarehouseSchoolAdaptersPage.kt:17
+# A 预览日程样例
+com/mutx163/qingyu/pages/schedule/ScheduleListPage.kt:17
+# A 预览样例课与冲突样例
+com/mutx163/qingyu/pages/conflict/CourseConflictPage.kt:16
+# A 预览样例考试与日期样例
+com/mutx163/qingyu/pages/exam/AddExamPage.kt:16
+# A 预览样例考试
+com/mutx163/qingyu/pages/exam/ExamListPage.kt:16
+# A 预览态
+com/mutx163/qingyu/pages/diagnostics/LiveTestingFixturePage.kt:15
+# A 预览地点样例
+com/mutx163/qingyu/pages/time_scheme/LocationTimeGroupEditorPage.kt:15
+# B 展示页示例文本
+com/mutx163/qingyu/pages/guide/HyperosShowcasePage.kt:14
+# A 预览样例名字与状态名
+com/mutx163/qingyu/pages/sync/CoupleTimetableSettingsPage.kt:14
+# A 预览状态名
+com/mutx163/qingyu/pages/about/AdvancedOptionsPage.kt:13
+# A 预览状态名
+com/mutx163/qingyu/pages/live/LiveKeepAliveSettingsPage.kt:13
+# A 预览课表名样例
+com/mutx163/qingyu/pages/timetable/TimetableProfilesPage.kt:13
+# A 预览作息样例
+com/mutx163/qingyu/pages/schedule/ScheduleDateRulePage.kt:12
+# A 预览地点样例
+com/mutx163/qingyu/pages/time_scheme/LocationTimeMatchPage.kt:12
+# C 含正式文案（GPL 说明句），本轮仅登记，后续移 ARB
+com/mutx163/qingyu/pages/about/OpenSourceLicensesPage.kt:10
+# A 预览样例，含入口 label 样例
+com/mutx163/qingyu/pages/import/warehouse/WarehouseCustomDebugPage.kt:10
+# B 展示页示例文本
+com/mutx163/qingyu/pages/showcase/MiuixShowcasePage.kt:10
+# A 预览样例任务，含“请先填写任务标题”疑似正式校验串，后续逐条裁决
+com/mutx163/qingyu/pages/task/AddTaskPage.kt:10
+# A 预览样例课
+com/mutx163/qingyu/pages/course/AddCoursePage.kt:9
+# C 指南页颜色选项标签为正式文案，本轮仅登记，后续移 ARB
+com/mutx163/qingyu/pages/guide/UserGuidePage.kt:9
+# A 预览样例，含“导入中...”疑似正式文案，后续逐条裁决
+com/mutx163/qingyu/pages/import/warehouse/AiImageCourseImportPage.kt:9
+# A 预览样例
+com/mutx163/qingyu/pages/schedule/AddScheduleItemPage.kt:9
+# A @Preview 与预览样例
+com/mutx163/qingyu/pages/settings/DockMenuEditors.kt:9
+# A 预览样例学期名
+com/mutx163/qingyu/pages/export/IcsExportPage.kt:8
+# A 预览作息样例与 @Preview 名
+com/mutx163/qingyu/pages/time_scheme/TimeSchemeManagementPage.kt:8
+# A 预览不渲染提示
+com/mutx163/qingyu/pages/settings/AppearanceEditorScreen.kt:7
+# A 预览占位与发送样例
+com/mutx163/qingyu/pages/transfer/QrTransferSendPage.kt:7
+# A 预览样例名
+com/mutx163/qingyu/pages/guide/MoreFeaturesPage.kt:6
+# A @Preview 与预览样例
+com/mutx163/qingyu/pages/time_scheme/TimeSchemeEditorPage.kt:6
+# A 预览 profileName 与 @Preview 名
+com/mutx163/qingyu/pages/transfer/DataTransferPage.kt:6
+# A 预览样例，含端口占用疑似正式提示串，后续逐条裁决
+com/mutx163/qingyu/pages/transfer/LanEditPage.kt:6
+# A 相机预览占位与 @Preview 名
+com/mutx163/qingyu/pages/transfer/QrTransferScanPage.kt:6
+# C 复制无障碍描述为正式文案嫌疑，本轮仅登记，后续移 ARB
+com/mutx163/qingyu/pages/feedback/FeedbackPage.kt:5
+# A @Preview 与预览样例
+com/mutx163/qingyu/pages/import/ImportEntryPage.kt:5
+# A @Preview 与预览样例
+com/mutx163/qingyu/pages/import/SpreadsheetImportPage.kt:5
+# A @Preview 名
+com/mutx163/qingyu/pages/transfer/PickupCodesPage.kt:5
+# A @Preview 与预览样例
+com/mutx163/qingyu/pages/about/ChangelogPage.kt:4
+# A @Preview 与预览样例
+com/mutx163/qingyu/pages/import/IcsImportPage.kt:4
+# A @Preview 与预览样例
+com/mutx163/qingyu/pages/live/ReminderTimingPage.kt:4
+# A @Preview 与预览样例
+com/mutx163/qingyu/pages/settings/GlassDockIconPickerScreen.kt:4
+# A @Preview 与预览样例
+com/mutx163/qingyu/pages/statistics/StatisticsSettingsPage.kt:4
+# A @Preview 名
+com/mutx163/qingyu/pages/about/AboutStaticPage.kt:3
+# A @Preview 与预览样例
+com/mutx163/qingyu/pages/timetable/day/DayViewPage.kt:5
+# C “取消”疑似正式文案，本轮仅登记，后续移 ARB
 com/mutx163/qingyu/pages/guide/MoreFeaturesSearchOverlay.kt:1
+# A 解析标记“步骤 ”（逻辑字面，非屏上文案）
 com/mutx163/qingyu/pages/import/ImportCommon.kt:1
