@@ -305,36 +305,10 @@ class FeedbackModelTest {
         assertEquals("https", FeedbackLaunchRules.schemeOf("HTTPS://github.com/a"))
     }
 
-    /**
-     * 与 `MainActivity` 的 `ALLOWED_LAUNCH_SCHEMES` 逐字对拍。
-     *
-     * 两条通道（Flutter 的 `launch_url` 与 Compose 宿主的直连 Intent）必须同口径：
-     * 一边放宽/收紧而另一边没跟上，用户看到的就是「点了没反应」或「白名单形同虚设」。
-     * 这条守卫读源码文本（反射拿不到 private const 的值语义上的同源关系）。
-     */
-    @Test
-    fun `白名单与MainActivity逐字一致`() {
-        val candidates = listOf(
-            File("android/app/src/main/kotlin/com/mutx163/qingyu/MainActivity.kt"),
-            File("app/src/main/kotlin/com/mutx163/qingyu/MainActivity.kt"),
-            File("../android/app/src/main/kotlin/com/mutx163/qingyu/MainActivity.kt"),
-            File("../../android/app/src/main/kotlin/com/mutx163/qingyu/MainActivity.kt"),
-        )
-        val file = candidates.firstOrNull { it.isFile }
-            ?: error("找不到 MainActivity.kt，工作目录=${File(".").absolutePath}")
-        val text = file.readText(Charsets.UTF_8)
-        val block = Regex(
-            """ALLOWED_LAUNCH_SCHEMES\s*=\s*setOf\(([^)]*)\)""",
-        ).find(text)?.groupValues?.get(1)
-            ?: error("MainActivity.kt 里没找到 ALLOWED_LAUNCH_SCHEMES（守卫不许静默跳过）")
-        val declared = Regex(""""([a-z]+)"""").findAll(block).map { it.groupValues[1] }.toSet()
-        assertTrue("MainActivity 的白名单解析为空，正则可能失效", declared.size >= 5)
-        assertEquals(
-            "MainActivity 的 ALLOWED_LAUNCH_SCHEMES 与 FeedbackLaunchRules.allowedSchemes 不一致",
-            declared,
-            FeedbackLaunchRules.allowedSchemes,
-        )
-    }
+    // 去 Flutter 化 P4-B（2026-11-07）：原先这里有一条「与 `MainActivity` 的
+    // `ALLOWED_LAUNCH_SCHEMES` 逐字对拍」的守卫。`MainActivity` 已随 Dart 层删除，
+    // 白名单只剩 `FeedbackLaunchRules.allowedSchemes` 这一份实现，「两份必须同值」
+    // 的前提消失，故守卫一并删除（保留它只会变成读写同一个常量的空转断言）。
 
     // ---------- ARB 逐字对拍 ----------
 

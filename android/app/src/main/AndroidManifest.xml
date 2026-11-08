@@ -166,12 +166,15 @@
 
              回退方式（不改代码，只动本文件）：把下面这段 MAIN/LAUNCHER intent-filter
              挪回 .MainActivity 即可，其余过滤规则本来就在 MainActivity 上。 -->
+        <!-- 2026-11-07 平板/横屏适配（第 R02 项）：两个 Activity 不再锁 `portrait`。
+             理由：`targetSdk = 36` 起，Android 16 在宽度 ≥600dp 的设备上本来就会忽略方向锁
+             （Android 17 起连 opt-out 都没有），锁住只让 Android 13–15 的平板拿不到宽屏布局。
+             回退 = 把 `android:screenOrientation="portrait"` 加回两个 <activity> 即可。 -->
         <activity
             android:name=".pages.PagesShellActivity"
             android:exported="true"
             android:launchMode="singleTop"
             android:theme="@style/ComposeShellTheme"
-            android:screenOrientation="portrait"
             android:configChanges="orientation|keyboardHidden|keyboard|screenSize|smallestScreenSize|locale|layoutDirection|fontScale|screenLayout|density|uiMode"
             android:hardwareAccelerated="true"
             android:windowSoftInputMode="adjustResize"
@@ -182,26 +185,9 @@
             </intent-filter>
         </activity>
 
-        <activity
-            android:name=".MainActivity"
-            android:exported="true"
-            android:launchMode="singleTop"
-            android:theme="@style/LaunchTheme"
-            android:screenOrientation="portrait"
-            android:configChanges="orientation|keyboardHidden|keyboard|screenSize|smallestScreenSize|locale|layoutDirection|fontScale|screenLayout|density|uiMode"
-            android:hardwareAccelerated="true"
-            android:windowSoftInputMode="adjustResize"
-            android:enableOnBackInvokedCallback="false">
-            <meta-data
-              android:name="io.flutter.embedding.android.NormalTheme"
-              android:resource="@style/NormalTheme"
-              />
-            <!-- 2026-11-02 起这里不再带 MAIN/LAUNCHER（启动页已换成 .pages.PagesShellActivity）。
-                 2026-11-02（R1 补口）起 VIEW/SEND 导入与 umeng scheme 的过滤规则也搬走了：
-                 全部挪到 .pages.ShellExternalEntryActivity（透明跳板，不依赖 Flutter），删掉
-                 Flutter 后那三条外部入口仍有落点。回退 = 把跳板上的 intent-filter 段
-                 挪回本 Activity（与 launcher intent-filter 的回退方式同构）。 -->
-        </activity>
+        <!-- 去 Flutter 化 P4-B（2026-11-07）：`.MainActivity`（FlutterActivity）已删除。
+             它的外部入口（VIEW/SEND 导入、umeng scheme、mikcb-debug 深链）自 2026-11-02 起
+             全挂在 .pages.ShellExternalEntryActivity 上，这里不再需要声明。 -->
 
         <!-- 外部入口跳板（R1 补口 2026-11-02）：VIEW/SEND 文件导入、umeng scheme、
              （debug overlay 的）mikcb-debug 深链都先落到这里。透明 + noHistory +

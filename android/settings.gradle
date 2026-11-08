@@ -8,23 +8,10 @@ pluginManagement {
     // allowed in plugins {} script block"），而 `apply plugin:` 又拿不到 includeBuild 里的插件类
     // （实测 "Plugin with id 'dev.flutter.flutter-plugin-loader' not found"）。
     // 所以插件请求保持原样，无 Flutter 构型下由仓库内的空实现同 id 顶替。
-    def withFlutter = !"false".equalsIgnoreCase(
-            (providers.gradleProperty("withFlutter").orNull ?: "true").toString(),
-    )
-    if (withFlutter) {
-        def flutterSdkPath = {
-            def properties = new Properties()
-            file("local.properties").withInputStream { properties.load(it) }
-            def flutterSdkPath = properties.getProperty("flutter.sdk")
-            assert flutterSdkPath != null, "flutter.sdk not set in local.properties"
-            return flutterSdkPath
-        }()
+    // 去 Flutter 化 P4-B（2026-11-07）：flutter_tools 的 composite build 已移除——Dart 层删除后
+    // 不再需要它的插件类，也不再要求 local.properties 里有 flutter.sdk。
+    // 没有 Flutter SDK 的机器现在可以直接配置 / 编译 / 出包。
 
-        includeBuild("$flutterSdkPath/packages/flutter_tools/gradle")
-    } else {
-        // 空实现，只负责让下面的 plugins{} 请求解析成功（apply 什么都不做）。
-        includeBuild("noflutter-flutter-loader-stub")
-    }
 
     repositories {
         // CNB 流水线专用镜像前置：CNB 出口 IP 对 Maven Central 限流（HTTP 429，
@@ -45,9 +32,6 @@ pluginManagement {
 }
 
 plugins {
-    // 去 Flutter 化阶段 1：这一行**照旧无条件**（plugins{} 无法条件化）。withFlutter=false 时
-    // 它由 `noflutter-flutter-loader-stub` 这个空实现满足，见上方 pluginManagement 的注释。
-    id "dev.flutter.flutter-plugin-loader" version "1.0.0"
     id "com.android.application" version "9.4.1" apply false
     id "org.jetbrains.kotlin.android" version "2.4.21" apply false
     // Compose 迁移（Phase 1）：仅 composeP1 flavor 启用 Compose 编译器。

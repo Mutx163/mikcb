@@ -1,23 +1,13 @@
 plugins {
     id "com.android.application"
     id "kotlin-android"
-    // 去 Flutter 化阶段 1（2026-11-07）：Flutter Gradle 插件从 plugins{} 挪到下方 apply
-    // （plugins{} 无法条件化）。仍然必须在 android / kotlin 之后应用——顺序不变。
-    // 默认 withFlutter=true ⇒ 与原先 `id "dev.flutter.flutter-gradle-plugin"` 完全等价。
+    // 去 Flutter 化 P4-B（2026-11-07）：Flutter Gradle 插件已彻底移除，不再条件 apply。
     // Compose 编译器插件：自 2026-10-29 起 Compose 页面源码全部挂在 `main` 源集
     // （迁移期的 composeP1 / composeUi 两个 flavor 已删除），插件对所有变体生效。
     // 插件在 Kotlin 2.x 起接管 Compose 编译器（不再需要 composeOptions.kotlinCompilerExtensionVersion）。
     id "org.jetbrains.kotlin.plugin.compose"
 }
 
-// 去 Flutter 化阶段 1：`-PwithFlutter=false` 时不加载 Flutter Gradle 插件，
-// 用于「无 Flutter 构型」编译早筛（不参与任何出包；阶段 2 才删源码）。
-def withFlutter = !"false".equalsIgnoreCase(
-        (project.findProperty("withFlutter") ?: "true").toString(),
-)
-if (withFlutter) {
-    apply plugin: "dev.flutter.flutter-gradle-plugin"
-}
 
 // 版本号源（去 Flutter 化 P4）：`android/version.properties` 是唯一事实源，
 // 与 pubspec 的 `version: <name>+<code>` 等价（见该文件头部注释）。
@@ -298,43 +288,11 @@ tasks.withType(Test).configureEach { test ->
     test.inputs.dir(project.file('src/composeP1/kotlin')).withPropertyName('i18nRenderSources')
 }
 
-// 去 Flutter 化阶段 1：无 Flutter 构型不声明 Dart 入口（`flutter {}` 扩展由 Flutter 插件提供）。
-if (withFlutter) {
-    flutter {
-        source = "../.."
-    }
-}
 
-// 去 Flutter 化阶段 1（2026-11-07）：无 Flutter 构型下，从 Kotlin 编译任务的源里剔除**仅剩的 2 个
-// Flutter 专有生产文件**（实测：main + composeP1 里 `import io.flutter` 的只剩它们；阶段 2 会连同
-// lib/ 删除）。
-//   1) MainActivity.kt            —— FlutterActivity 子类；prod/dev/perf 早已禁用
-//   2) FairMemoryFlutterBridge.kt —— MethodChannel 回执桥；无引擎时内存逻辑走 ENGINE_UNAVAILABLE
-//
-// 为什么挂在任务上，而不是源集上：2026-11-07 实测两条源集级写法**都不生效**——
-//   · `kotlin { sourceSets.main.kotlin.exclude(…) }`（KGP 源集）：配置期能看到 excludes 已写入，
-//     编译照样解析 MainActivity，报一堆 Unresolved reference；
-//   · `android { sourceSets.main.kotlin.exclude(…) }`（AGP 源目录集）：同样不生效。
-// 编译任务 `compileDevDebugKotlin`（由 kotlin-android 注册，KotlinCompile）的 `excludes` 一直是空的。
-// SourceTask 的 exclude 是编译器真正看的源集过滤，只有这一层可靠。
-if (!withFlutter) {
-    tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompile).configureEach { t ->
-        t.exclude(
-                "**/MainActivity.kt",
-                "**/FairMemoryFlutterBridge.kt",
-        )
-    }
-}
+// 去 Flutter 化 P4-B（2026-11-07）：`MainActivity.kt` / `FairMemoryFlutterBridge.kt` /
+// `GeneratedPluginRegistrant.java` 已随 Dart 层一并删除，原先那两条 SourceTask/JavaCompile
+// exclude（阶段 1 用作“无 Flutter 构型”开关）不再需要。
 
-// 同一个门（2026-11-07 审计补充）：`src/main/java/io/flutter/plugins/GeneratedPluginRegistrant.java`
-// 是 Flutter 工具链生成/维护的插件注册表（`import io.flutter.*` + 18 个插件类）。无 Flutter 构型下
-// 插件子工程根本不会 include，必须一并剔除，否则 `compileDevDebugJavaWithJavac` 报 Unresolved reference。
-// 它只挡 Java 编译任务，不影响 Kotlin 编译（Kotlin 只把 Java 源当符号解析，不做语义检查）。
-if (!withFlutter) {
-    tasks.withType(JavaCompile).configureEach { t ->
-        t.exclude("**/io/flutter/plugins/GeneratedPluginRegistrant.java")
-    }
-}
 
 // Work around flutter/flutter#187553: merge*JniLibFolders may stay UP-TO-DATE while
 // Flutter jniLibs changed, packaging a stale libapp.so into flavor APKs.

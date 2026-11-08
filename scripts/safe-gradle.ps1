@@ -129,7 +129,9 @@ try {
                 # 只有「flavor+构建类型」这种真变体才有 compileFlutterBuild* 任务；
                 # ProdDebugUnitTest 这类测试编译任务不加（加了同样指向不存在的任务）。
                 if ($variant -match '^(Dev|Perf|Prod|Itest)(Debug|Profile|Release)$') {
-                    $flutterAssetTasks += ":app:compileFlutterBuild$variant"
+                    # 去 Flutter 化 P4-B（2026-11-07）：Flutter Gradle 插件已移除，
+                    # `compileFlutterBuild<变体>` 任务不再存在，再追加 `-x` 会直接构
+                    # 建失败（"Cannot locate excluded tasks"）。故不再收集。
                 }
             }
             if ($onlyKotlinCompile -and $flutterAssetTasks.Count -gt 0 -and ($GradleArgs -notcontains '-x')) {
