@@ -235,7 +235,7 @@ fun WarehouseAdapterDetailPage(
                                     modifier = Modifier.weight(1f),
                                     content = { Text(text = WarehouseStrings.clearCustomLoginAddressAction.text) },
                                     colors = ButtonDefaults.buttonColors(
-                                        color = MiuixTheme.colorScheme.surfaceVariant,
+                                        color = MiuixTheme.colorScheme.secondary,
                                         contentColor = MiuixTheme.colorScheme.error,
                                     ),
                                 )
@@ -264,7 +264,7 @@ fun WarehouseAdapterDetailPage(
                             modifier = Modifier.weight(1f),
                             content = { Text(text = WarehouseStrings.copyLoginAddressAction.text) },
                             colors = ButtonDefaults.buttonColors(
-                                color = MiuixTheme.colorScheme.surfaceVariant,
+                                color = MiuixTheme.colorScheme.secondary,
                                 contentColor = MiuixTheme.colorScheme.primary,
                             ),
                         )
@@ -273,7 +273,7 @@ fun WarehouseAdapterDetailPage(
                             modifier = Modifier.weight(1f),
                             content = { Text(text = WarehouseStrings.copyScriptAddressAction.text) },
                             colors = ButtonDefaults.buttonColors(
-                                color = MiuixTheme.colorScheme.surfaceVariant,
+                                color = MiuixTheme.colorScheme.secondary,
                                 contentColor = MiuixTheme.colorScheme.primary,
                             ),
                         )

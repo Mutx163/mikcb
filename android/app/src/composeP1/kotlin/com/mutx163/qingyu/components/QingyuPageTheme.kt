@@ -207,6 +207,28 @@ private fun qingyuLightColors(seedHex: String?) = lightColorScheme(
     onSurfaceContainerVariant = Color(QingyuTheme.secondaryText(dark = false)),
     surfaceContainerHigh = Color(QingyuTheme.card(dark = false)),
     surfaceContainerHighest = Color(QingyuTheme.surfaceContainerHighest(dark = false)),
+    // ── 次要按钮的默认底色槽（2026-11-08 全库修复）────────────────────────────
+    //
+    // `ButtonDefaults.buttonColors()` 与 `textButtonColors()` 的 `color` 默认值都是
+    // `secondaryVariant`（miuix `Button.kt:181` / `:217`）——也就是说**不传 colors 的
+    // Button / TextButton 全部吃这一槽**。
+    //
+    // 官方值是 `#F0F0F0`，配它自己的纯白弹层底是 demo 里那块浅灰（对比比 ~1.14）。
+    // 本仓把页底与弹层底换成了设置页的 `#F2F2F2`（`scaffoldBackground`），槽位却一直留着
+    // 官方默认值 ⇒ 对比比塌到 **~1.02**，按钮整块融进背景：用户 2026-11-08 实报壁纸弹层的
+    // 「调整位置 / 清除图片 / Bing 每日壁纸」只剩一行字、看不出是可点的按钮。
+    //
+    // 修法是**把这一槽落回 demo 的台阶**，而不是逐个调用点传 colors：
+    // `secondary`（`#E6E6E6`）与页底 `#F2F2F2` 的对比比是 ~1.115，与 demo 在纯白上的 1.14
+    // 同一档，观感就是「demo 那块浅灰」。调用点继续按官方 demo 的写法用默认配色，
+    // 不再需要「记得传 colors」这种靠自觉的口径（历史上漏传过两处，见
+    // `HomeWidgetPreviewCarousel` / `SettingsPageRenderers` 的注释）。
+    secondaryVariant = Color(QingyuTheme.secondary(dark = false)),
+    // 禁用态：miuix 自己的做法就是「常态色降透明度叠在底上」
+    // （`MonetMapping.kt:99` 的 `ensureOpaqueOver(…copy(alpha = 0.6f), baseSurface)`）。
+    // 照搬：`#E6E6E6 @60%` 落在 `#F2F2F2` 上约 `#ECECEC`，比常态浅一档但仍看得出轮廓。
+    // 官方默认值是 `#F2F2F2` —— 与本仓弹层底**完全同色**，禁用按钮会彻底消失。
+    disabledSecondaryVariant = Color(QingyuTheme.secondary(dark = false)).copy(alpha = 0.6f),
     onSurfaceVariantSummary = Color(QingyuTheme.secondaryText(dark = false)),
     onSurfaceVariantActions = Color(QingyuTheme.actionIcon(dark = false)),
     primary = Color(QingyuTheme.primary(seedHex, dark = false)),

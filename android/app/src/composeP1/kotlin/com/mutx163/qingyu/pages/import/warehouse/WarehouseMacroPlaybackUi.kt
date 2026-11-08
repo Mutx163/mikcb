@@ -188,7 +188,7 @@ private fun PausedBottomCard(
                     onClick = onCancel,
                     modifier = Modifier.weight(1f),
                     colors = ButtonDefaults.buttonColors(
-                        color = MiuixTheme.colorScheme.surfaceVariant,
+                        color = MiuixTheme.colorScheme.secondary,
                         contentColor = MiuixTheme.colorScheme.onSurfaceVariantActions,
                     ),
                 ) {
@@ -262,7 +262,7 @@ private fun ErrorCard(
                 onClick = onDismiss,
                 modifier = Modifier.weight(1f),
                 colors = ButtonDefaults.buttonColors(
-                    color = MiuixTheme.colorScheme.surfaceVariant,
+                    color = MiuixTheme.colorScheme.secondary,
                     contentColor = MiuixTheme.colorScheme.onSurfaceVariantActions,
                 ),
             ) {

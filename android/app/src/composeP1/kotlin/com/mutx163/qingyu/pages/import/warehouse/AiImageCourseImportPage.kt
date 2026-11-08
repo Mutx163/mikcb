@@ -113,7 +113,7 @@ fun AiImageCourseImportPage(
                         modifier = Modifier.weight(1f),
                         content = { Text(text = WarehouseStrings.previewAction.text) },
                         colors = ButtonDefaults.buttonColors(
-                            color = MiuixTheme.colorScheme.surfaceVariant,
+                            color = MiuixTheme.colorScheme.secondary,
                             contentColor = MiuixTheme.colorScheme.primary
                         )
                     )
@@ -242,7 +242,7 @@ fun AiImageCourseImportPage(
                                 modifier = Modifier.weight(1f),
                                 content = { Text(text = WarehouseStrings.aiPromptShortAction.text) },
                                 colors = ButtonDefaults.buttonColors(
-                                    color = MiuixTheme.colorScheme.surfaceVariant,
+                                    color = MiuixTheme.colorScheme.secondary,
                                     contentColor = MiuixTheme.colorScheme.primary
                                 )
                             )
@@ -257,7 +257,7 @@ fun AiImageCourseImportPage(
                                 modifier = Modifier.weight(1f),
                                 content = { Text(text = WarehouseStrings.pasteAction.text) },
                                 colors = ButtonDefaults.buttonColors(
-                                    color = MiuixTheme.colorScheme.surfaceVariant,
+                                    color = MiuixTheme.colorScheme.secondary,
                                     contentColor = MiuixTheme.colorScheme.primary
                                 )
                             )
@@ -270,7 +270,7 @@ fun AiImageCourseImportPage(
                                 modifier = Modifier.weight(1f),
                                 content = { Text(text = WarehouseStrings.clearAction.text) },
                                 colors = ButtonDefaults.buttonColors(
-                                    color = MiuixTheme.colorScheme.surfaceVariant,
+                                    color = MiuixTheme.colorScheme.secondary,
                                     contentColor = MiuixTheme.colorScheme.onSurfaceVariantActions
                                 )
                             )

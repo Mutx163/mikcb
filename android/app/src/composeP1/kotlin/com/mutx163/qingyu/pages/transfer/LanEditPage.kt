@@ -133,7 +133,7 @@ fun LanEditPage(
                             modifier = Modifier.fillMaxWidth(),
                             colors = if (model.running) {
                                 ButtonDefaults.buttonColors(
-                                    color = MiuixTheme.colorScheme.surfaceVariant,
+                                    color = MiuixTheme.colorScheme.secondary,
                                     contentColor = MiuixTheme.colorScheme.onSurfaceVariantActions,
                                 )
                             } else {

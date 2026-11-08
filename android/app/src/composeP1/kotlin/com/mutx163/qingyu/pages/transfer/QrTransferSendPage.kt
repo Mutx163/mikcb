@@ -136,7 +136,7 @@ fun QrTransferSendPage(
                         onClick = onStop,
                         modifier = Modifier.fillMaxWidth(),
                         colors = ButtonDefaults.buttonColors(
-                            color = MiuixTheme.colorScheme.surfaceVariant,
+                            color = MiuixTheme.colorScheme.secondary,
                             contentColor = MiuixTheme.colorScheme.onSurfaceVariantActions,
                         ),
                         content = { Text(text = model.stopLabel) },

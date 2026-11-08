@@ -264,7 +264,7 @@ fun WarehouseCourseImportPage(
                                         onClick = onFeedbackClick,
                                         content = { Text(text = WarehouseStrings.warehouseFeedbackMissingSchoolTitle.text) },
                                         colors = ButtonDefaults.buttonColors(
-                                            color = MiuixTheme.colorScheme.surfaceVariant,
+                                            color = MiuixTheme.colorScheme.secondary,
                                             contentColor = MiuixTheme.colorScheme.primary,
                                         ),
                                     )

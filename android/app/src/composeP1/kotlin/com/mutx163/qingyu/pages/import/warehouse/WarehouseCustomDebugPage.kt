@@ -188,7 +188,7 @@ fun WarehouseCustomDebugPage(
                                     modifier = Modifier.weight(1f),
                                     content = { Text(text = WarehouseStrings.cancelAction.text) },
                                     colors = ButtonDefaults.buttonColors(
-                                        color = MiuixTheme.colorScheme.surfaceVariant,
+                                        color = MiuixTheme.colorScheme.secondary,
                                         contentColor = MiuixTheme.colorScheme.onSurfaceVariantActions,
                                     ),
                                 )
@@ -284,7 +284,7 @@ fun WarehouseCustomDebugPage(
                                     modifier = Modifier.weight(1f),
                                     content = { Text(text = WarehouseStrings.editAction.text) },
                                     colors = ButtonDefaults.buttonColors(
-                                        color = MiuixTheme.colorScheme.surfaceVariant,
+                                        color = MiuixTheme.colorScheme.secondary,
                                         contentColor = MiuixTheme.colorScheme.primary,
                                     ),
                                 )
@@ -293,7 +293,7 @@ fun WarehouseCustomDebugPage(
                                     modifier = Modifier.weight(1f),
                                     content = { Text(text = WarehouseStrings.deleteAction.text) },
                                     colors = ButtonDefaults.buttonColors(
-                                        color = MiuixTheme.colorScheme.surfaceVariant,
+                                        color = MiuixTheme.colorScheme.secondary,
                                         contentColor = MiuixTheme.colorScheme.error,
                                     ),
                                 )
