@@ -128,6 +128,8 @@ fun TimetableHost(
     monthMode: Boolean = false,
     /** 月视图正文（宿主注入；内层自己不再搭顶栏/壁纸/Scaffold）。 */
     monthContent: (@Composable () -> Unit)? = null,
+    /** 周视图滚动体的可选外层（首页下拉快捷导入）：只包玻璃带下方那一块。 */
+    weekScrollWrapper: (@Composable (content: @Composable () -> Unit) -> Unit)? = null,
     /** 用户「页面转场速度」，周→日展开按同一倍率缩放。 */
     transitionSpeed: Double = 1.0,
     /**
@@ -435,6 +437,7 @@ fun TimetableHost(
         dayContent = dayContent,
         monthMode = monthMode,
         monthContent = monthContent,
+        weekScrollWrapper = weekScrollWrapper,
         transitionSpeed = transitionSpeed,
         onSwitchProfileClick = onSwitchProfile,
         onWeekChanged = onWeekChanged,

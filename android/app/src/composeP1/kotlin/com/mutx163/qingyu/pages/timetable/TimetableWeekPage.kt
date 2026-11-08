@@ -279,6 +279,13 @@ fun TimetableWeekPage(
     monthMode: Boolean = false,
     /** 月视图正文（由宿主注入 `ShellPageContent("c2.month", monthEmbedded = true)`）。 */
     monthContent: (@Composable () -> Unit)? = null,
+    /**
+     * 周视图滚动体的可选外层（首页下拉快捷导入用）。
+     *
+     * 只包「玻璃带下方那一块」：指示器才会长在星期栏底下，而不是压到状态栏上
+     * （包整页时 miuix 的表头被正文盖住，等于隐形）。日/月/预览分支不经过它。
+     */
+    weekScrollWrapper: (@Composable (content: @Composable () -> Unit) -> Unit)? = null,
     /** 用户设置的页面转场速度（1.0 = 原速；周→日展开与其它转场同一口径缩放）。 */
     transitionSpeed: Double = 1.0,
     /**
@@ -669,13 +676,6 @@ fun TimetableWeekPage(
         hasBackdrop && isRuntimeShaderSupported() &&
         (materialSpec?.dock == SurfaceMaterialState.LIQUID_GLASS ||
             materialSpec?.dock == SurfaceMaterialState.FROST)
-    // ⚠️ 录制层用**配置**判定，不跟 `dayVisible` / `showBackToCurrentWeek` 走（2026-11-07）。
-    // 否则日↔周切换那一帧会现场挂上/摘掉 `layerBackdrop(...)`：这一帧的录制层还是空的，
-    // 顶栏玻璃带采到空层 ⇒ 星期栏整块闪一下（用户实报）。录制层一直挂着，切换就只是复用上一帧。
-    val floatingGlassConfigured = !previewMode &&
-        hasBackdrop && isRuntimeShaderSupported() &&
-        (materialSpec?.dock == SurfaceMaterialState.LIQUID_GLASS ||
-            materialSpec?.dock == SurfaceMaterialState.FROST)
 
     // pageBackdrop 只给顶栏带 / 课卡玻璃采样（只录壁纸）；「回本周」浮钮改用独立的
     // contentBackdrop（录真实内容），故这里不含 floatingGlassActive（否则浮钮一开就多录一层）。
@@ -684,12 +684,7 @@ fun TimetableWeekPage(
     val dayFabGlassActive = dayVisible && hasBackdrop && isRuntimeShaderSupported() &&
         (materialSpec?.dock == SurfaceMaterialState.LIQUID_GLASS ||
             materialSpec?.dock == SurfaceMaterialState.FROST)
-    // 同上：给 `pageBackdrop` 的录制开关只看配置。带子/课卡的采样层一旦随日↔周装卸，
-    // 切换那一帧顶栏就会采到空层——这正是「星期栏整体闪一下」的来源。
-    val dayFabGlassConfigured = hasBackdrop && isRuntimeShaderSupported() &&
-        (materialSpec?.dock == SurfaceMaterialState.LIQUID_GLASS ||
-            materialSpec?.dock == SurfaceMaterialState.FROST)
-    val pageBackdropActive = bandBlurActive || cardGlassActive || dayFabGlassConfigured
+    val pageBackdropActive = bandBlurActive || cardGlassActive || dayFabGlassActive
 
     Scaffold(
         // 有壁纸时底色必须透明，否则不透明主题底会把壁纸整张盖掉。
@@ -705,7 +700,7 @@ fun TimetableWeekPage(
             modifier = Modifier
                 .fillMaxSize()
                 .then(
-                    if (floatingGlassConfigured) {
+                    if (floatingGlassActive) {
                         Modifier.layerBackdrop(contentBackdrop)
                     } else {
                         Modifier
@@ -898,7 +893,9 @@ fun TimetableWeekPage(
                         modifier = Modifier.fillMaxSize(),
                         bottomClearanceDp = 0.dp,
                     )
-                } else HorizontalPager(
+                } else {
+                    val weekPager: @Composable () -> Unit = {
+                    HorizontalPager(
                     state = pagerState,
                     modifier = Modifier
                         .fillMaxSize()
@@ -976,6 +973,9 @@ fun TimetableWeekPage(
                             .fillMaxSize()
                             .then(if (dayVisible) Modifier.graphicsLayer { alpha = 1f } else Modifier),
                     )
+                }
+                    }
+                    if (weekScrollWrapper != null) weekScrollWrapper(weekPager) else weekPager()
                 }
 
                 // ── 日视图展开层（2026-11-04 用户口径：全宽 + 从上往下展开 + 壁纸页面级静态不动）──

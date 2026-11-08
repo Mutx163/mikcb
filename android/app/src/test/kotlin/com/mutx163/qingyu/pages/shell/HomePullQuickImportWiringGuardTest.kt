@@ -39,20 +39,14 @@ class HomePullQuickImportWiringGuardTest {
             "TimetableHomeViewMode.DAY" in source,
         )
         assertTrue(
-            "`HomePullQuickImportHost` 没有包住 `TimetableHost(" +
-                "（必须罩住首页滚动体，否则拉不到）。",
-            source.indexOf("HomePullQuickImportHost(") < source.indexOf("TimetableHost("),
+            "首页没有把下拉层挂到周视图滚动体上（`weekScrollWrapper`）：" +
+                "包整页时指示器会压状态栏或被正文盖住，且日/月视图会误触发。",
+            "weekScrollWrapper = { weekContent ->" in source && "HomePullQuickImportHost(" in source,
         )
-        // 2026-11-07 用户实报：指示器画到状态栏上了。本层包的是整页，必须把
-        // 「状态栏 + 顶栏 + 星期栏」那条带的高度交给它，muiix 才会把环下移到星期栏底下。
+        val enabledLine = source.lineSequence().firstOrNull { it.contains("val pullImportEnabled =") }.orEmpty()
         assertTrue(
-            "下拉指示器没有 contentTopInset：它会又画到状态栏/顶栏上面。",
-            "contentTopInset = WindowInsets.statusBars" in source,
-        )
-        assertTrue(
-            "contentTopInset 没算顶栏/星期栏高度：指示器会落在两者中间而不是星期栏底下。",
-            "TimetableTopBarMetrics.HEIGHT.dp" in source &&
-                "WeekdayHeaderMetrics.HEIGHT_DP.dp" in source,
+            "pullImportEnabled 又乘了视图态：`enabled` 翻转会把首页整棵销毁重建（日展开动画/滚动位置全丢）。",
+            "homeViewMode" !in enabledLine,
         )
     }
 

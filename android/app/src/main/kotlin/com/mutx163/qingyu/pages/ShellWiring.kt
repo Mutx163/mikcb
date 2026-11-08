@@ -892,8 +892,12 @@ fun TimetableWithCourseActions(
     val pullImportPrefs = remember(context) {
         WarehouseImportPrefs(PrefsKeyValueStore(context))
     }
-    val pullImportEnabled = settingsModel.homePullQuickImportEnabled &&
-        wiring.homeViewMode != TimetableHomeViewMode.DAY
+    // ⚠️ 这里**不许**再乘视图态（2026-11-07 审核 P0）：`HomePullQuickImportHost` 在
+    // `enabled=false` 时直接 `content()`，`true` 时套 `PullToRefresh`——两者组合位置不同，
+    // 一旦 `homeViewMode` 参与，每次周↔日切换都会把整个首页（含日展开动画的 seed、
+    // pager 滚动位置）销毁重建。日视图下不下拉由宿主层的滚动体结构决定（本层只包周视图
+    // 内容时天然不触达），不靠“把组件摘掉”。
+    val pullImportEnabled = settingsModel.homePullQuickImportEnabled
     val onPullPrepare: suspend () -> HomePullQuickImportPrep = {
         withContext(Dispatchers.IO) {
             val macroStore = WarehouseMacroStore(PrefsKeyValueStore(context))
@@ -945,21 +949,18 @@ fun TimetableWithCourseActions(
         }
     }
 
-    HomePullQuickImportHost(
-        enabled = pullImportEnabled,
-        onPrepare = onPullPrepare,
-        onSettled = onPullSettled,
-        // 指示器要落在**星期栏底下**，不能画到状态栏上：本层包的是整页（含顶栏玻璃带），
-        // 顶边就是屏幕顶。带宽 = 状态栏留白 + 顶栏 56 + 星期栏 40 + 分割线 0.5，
-        // 与 `TimetableWeekPage` 里那条玻璃带的拼法同一组常量（muiix 的 contentPadding.top
-        // 只下移指示器、不动正文）。
-        contentTopInset = WindowInsets.statusBars.asPaddingValues().calculateTopPadding() +
-            TimetableTopBarMetrics.HEIGHT.dp +
-            WeekdayHeaderMetrics.HEIGHT_DP.dp +
-            WeekdayHeaderMetrics.DIVIDER_DP.dp,
-    ) {
     TimetableHost(
         repository = repository,
+        // 下拉层只包「玻璃带下方的周视图滚动体」（2026-11-07 审核 P0-2）：包整页时
+        // 指示器会被正文盖住（偏移后画在内容下面）、不偏移又压在状态栏上。
+        // 日 / 月 / 预览分支不经过这个 lambda，天然不装。
+        weekScrollWrapper = { weekContent ->
+            HomePullQuickImportHost(
+                enabled = pullImportEnabled,
+                onPrepare = onPullPrepare,
+                onSettled = onPullSettled,
+            ) { weekContent() }
+        },
         // 情侣页改叠加色 / 周偏移只写键值存储、不碰课表仓储 ⇒ 宿主靠这个序号重读叠加数据
         // （周视图与日视图共用同一个序号；日视图在 c3.day 里读它算进 dataVersion）。
         coupleOverlayRevision = wiring.coupleOverlayRevision,
@@ -1089,7 +1090,6 @@ fun TimetableWithCourseActions(
             }
         },
     )
-    }
 
     /**
      * 「取消已设提醒」（Dart `removeClassReminder`）：从 classReminders 删掉
