@@ -2,21 +2,27 @@ package com.mutx163.qingyu.pages.about
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.asPaddingValues
+import androidx.compose.foundation.layout.calculateBottomPadding
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBars
+import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -31,13 +37,13 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.mutx163.qingyu.app.CommonUiStrings
-import com.mutx163.qingyu.components.LocalQingyuPageIsRootEntry
 import com.mutx163.qingyu.components.QingyuCard
 import com.mutx163.qingyu.components.QingyuPageCardMargin
 import com.mutx163.qingyu.components.QingyuPageList
 import com.mutx163.qingyu.components.QingyuPageTheme
 import com.mutx163.qingyu.components.QingyuSectionTitle
 import com.mutx163.qingyu.components.QingyuWeightDelta
+import com.mutx163.qingyu.components.rememberQingyuScrollBehavior
 import com.mutx163.qingyu.components.shiftWeight
 import com.mutx163.qingyu.infra.AppReleaseInfo
 import com.mutx163.qingyu.infra.AppUpdateCheckResult
@@ -45,6 +51,7 @@ import com.mutx163.qingyu.infra.AppUpdateDownloadChannel
 import com.mutx163.qingyu.infra.getEffectiveDownloadUrl
 import com.mutx163.qingyu.infra.getSystemDownloaderUrl
 import com.mutx163.qingyu.infra.releaseListUrlFor
+import com.mutx163.qingyu.theme.QingyuTheme
 import top.yukonga.miuix.kmp.basic.Button
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
 import top.yukonga.miuix.kmp.basic.CircularProgressIndicator
@@ -116,57 +123,53 @@ fun AboutUpdatePage(
     onCancelDownload: () -> Unit = {},
 ) {
     val phase = resolveAboutUpdatePagePhase(packageInfoAvailable, checking, result)
+    val dark = isSystemInDarkTheme()
+    val scrollBehavior = rememberQingyuScrollBehavior()
+    // 这一页**不画顶栏**：没有标题、没有栏底、没有毛玻璃。
+    // 只有两颗胶囊浮在状态栏下面，页面内容直接在它们下面开始——所以这里不用
+    // `QingyuPageScaffold`（它一定会画一条带底的栏），改成一个 Box + 一条胶囊行。
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Color(QingyuTheme.scaffoldBackground(dark))),
+    ) {
+        Column(modifier = Modifier.fillMaxSize()) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .windowInsetsPadding(WindowInsets.statusBars)
+                    .padding(start = 8.dp, top = 8.dp, end = 12.dp, bottom = 8.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                UpdateBarCapsule(
+                    icon = MiuixIcons.Back,
+                    contentDescription = CommonUiStrings.back,
+                    onClick = onBack,
+                )
+                UpdateBarCapsule(
+                    icon = MiuixIcons.Tune,
+                    contentDescription = AboutUpdatePageStrings.advancedOptionsTitle,
+                    onClick = onOpenAdvancedOptions,
+                )
+            }
 
-    // 顶栏：本页不要标题，只留左右两颗胶囊。
-    //
-    // 骨架的 actions 槽是个 RowScope，且被摆在整条栏的最右侧；这里让它铺满整栏，
-    // 用 SpaceBetween 把「返回」与「高级选项」分别顶到两端。
-    // 骨架自带的返回键必须关掉——否则它会在 x=0 再画一颗箭头，和左胶囊叠成两个返回。
-    // 关掉的方式沿用壳注入的同一个标记（本页自己 provide true，只影响这一棵子树）。
-    CompositionLocalProvider(LocalQingyuPageIsRootEntry provides true) {
-        QingyuPageScaffold(
-            title = "",
-            onBack = onBack,
-            smallTopBar = true,
-            actions = {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(start = 8.dp, end = 12.dp),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    UpdateBarCapsule(
-                        icon = MiuixIcons.Back,
-                        contentDescription = CommonUiStrings.back,
-                        onClick = onBack,
-                    )
-                    UpdateBarCapsule(
-                        icon = MiuixIcons.Tune,
-                        contentDescription = AboutUpdatePageStrings.advancedOptionsTitle,
-                        onClick = onOpenAdvancedOptions,
-                    )
-                }
-            },
-            bottomBar = {
-                if (download != null) {
-                    DownloadProgressBar(download = download, onCancel = onCancelDownload)
-                }
-            },
-        ) {
+            val contentInsets = PaddingValues(
+                bottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding(),
+            )
             when (phase) {
                 AboutUpdatePagePhase.CHECKING -> AboutUpdateCheckingView(
                     appName = appName,
-                    innerPadding = innerPadding,
+                    innerPadding = contentInsets,
                 )
 
                 AboutUpdatePagePhase.CHECK_FAILED -> AboutUpdateCheckFailedView(
-                    innerPadding = innerPadding,
+                    innerPadding = contentInsets,
                     onRefresh = onRefresh,
                 )
 
                 AboutUpdatePagePhase.READY -> AboutUpdateReadyView(
-                    innerPadding = innerPadding,
+                    innerPadding = contentInsets,
                     scrollBehavior = scrollBehavior,
                     appName = appName,
                     result = result!!,
@@ -177,6 +180,16 @@ fun AboutUpdatePage(
                     onSystemDownload = onSystemDownload,
                     onSystemDownloadUnavailable = onSystemDownloadUnavailable,
                 )
+            }
+        }
+
+        if (download != null) {
+            Box(
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .windowInsetsPadding(WindowInsets.navigationBars),
+            ) {
+                DownloadProgressBar(download = download, onCancel = onCancelDownload)
             }
         }
     }
