@@ -431,7 +431,7 @@
   "title": "月视图",
   "entry": "MonthViewPage",
   "file": "timetable/month/MonthViewPage.kt",
-  "previews": 3
+  "previews": 7
  },
  {
   "domain": "transfer",

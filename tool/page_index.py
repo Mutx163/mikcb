@@ -15,7 +15,11 @@ SRC = "docs/reference/page-index.md"
 DATA_JSON = "tool/page_index_data.json"
 PAGES_REL = "composeP1/kotlin/com/mutx163/qingyu/pages"
 SRC_ROOT = "android/app/src/composeP1/kotlin/com/mutx163/qingyu/pages"
-COLS = 9  # 一行放几个页面按钮
+LINE_W = 120  # 一行大约多宽（汉字记 2、ASCII 记 1），超了就换行
+
+
+def width_of(s):
+    return sum(2 if ord(ch) > 0x2E80 else 1 for ch in s)
 
 # 这些页面在代码里没有固定中文标题（标题由 spec / 日期 / 登录状态在运行期决定），
 # 按功能给一个人工确认过的中文名，避免表里混着英文入口名。
@@ -147,12 +151,31 @@ def render(rows, prefix):
     for r in rows:
         by_domain.setdefault(r["domain"], []).append(r)
 
-    out.append("| 分区 | " + " | ".join(["页面"] * COLS) + " |")
-    out.append("|---" * (COLS + 1) + "|")
-
     defs = []
     n = 0
     placed = set()
+
+    def emit(title, group):
+        nonlocal n
+        group.sort(key=lambda r: (r["domain"], r["entry"]))
+        cells = []
+        for r in group:
+            n += 1
+            ref = "p%d" % n
+            defs.append((ref, prefix + r["file"]))
+            cells.append((r["title"], "[%s][%s]" % (r["title"], ref)))
+        out.append("### %s\n" % title)
+        line, width = [], 0
+        for name, cell in cells:
+            w = width_of(name) + 6
+            if line and width + w > LINE_W:
+                out.append(" · ".join(line) + "\n")
+                line, width = [], 0
+            line.append(cell)
+            width += w
+        if line:
+            out.append(" · ".join(line) + "\n")
+
     for title, _tag, domains in GROUPS:
         group = []
         for d in domains:
@@ -160,39 +183,13 @@ def render(rows, prefix):
             placed.add(d)
         if not group:
             continue
-        group.sort(key=lambda r: (r["domain"], r["entry"]))
-        cells = []
-        for r in group:
-            n += 1
-            ref = "p%d" % n
-            defs.append((ref, prefix + r["file"]))
-            cells.append("[%s][%s]" % (r["title"], ref))
-        for i in range(0, len(cells), COLS):
-            chunk = cells[i:i + COLS]
-            while len(chunk) < COLS:
-                chunk.append(" ")
-            label = "**%s**" % title if i == 0 else " "
-            out.append("| %s | %s |" % (label, " | ".join(chunk)))
+        emit(title, group)
 
     rest = [r for r in rows if r["domain"] not in placed]
     if rest:
-        rest.sort(key=lambda r: (r["domain"], r["entry"]))
-        cells = []
-        for r in rest:
-            n += 1
-            ref = "p%d" % n
-            defs.append((ref, prefix + r["file"]))
-            cells.append("[%s][%s]" % (r["title"], ref))
-        for i in range(0, len(cells), COLS):
-            chunk = cells[i:i + COLS]
-            while len(chunk) < COLS:
-                chunk.append(" ")
-            label = "**未归类**" if i == 0 else " "
-            out.append("| %s | %s |" % (label, " | ".join(chunk)))
+        emit("未归类", rest)
     out.append("")
 
-    # 数据写在独立 JSON，md 里不再放注释块（Studio 的 markdown 预览会把注释块当正文显示）
-    out.append("<!-- 链接定义 -->")
     for ref, path in defs:
         out.append("[%s]: %s" % (ref, path))
     return "\n".join(out) + "\n"
