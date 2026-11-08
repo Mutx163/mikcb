@@ -24,6 +24,7 @@ import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.layout
 import androidx.compose.ui.text.style.TextAlign
@@ -32,6 +33,7 @@ import androidx.compose.ui.unit.dp
 import com.mutx163.qingyu.components.QingyuWeightDelta
 import com.mutx163.qingyu.components.shiftWeight
 import com.mutx163.qingyu.theme.QingyuTheme
+import com.mutx163.qingyu.pages.shell.HomeBackgroundModel
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import java.time.LocalDateTime
@@ -304,20 +306,27 @@ private fun WeekRailLabel(
 }
 
 /**
- * 顶部玻璃带里的月视图星期栏：左侧 40dp 角格放**月份**（只月份、不带年份），
- * 后面 7 列周一…周日；列宽与月网格的「40dp 周次槽 + 7 列」严格对齐。
+ * 顶部玻璃带里的月视图星期栏：只画 7 列周一…周日，左侧 40dp 角格留空，
+ * 与月网格的「40dp 周次槽 + 7 列」严格对齐。
  *
- * 它替代了月历卡里的「年月导航 + 星期表头」两层：月份在角格、星期在顶部带，
- * 带下面直接就是网格，与周/日视图同一条玻璃带。
+ * 月份标题已上提到顶栏（与「轻屿课表」同一位置），所以角格不再放月份；
+ * 这里只负责列头。字色按壁纸明暗自适应，避免深色壁纸上黑字看不见。
  */
 @Composable
 fun MonthWeekdayHeader(
-    monthLabel: String?,
+    wallpaperLuminance: Double? = null,
+    configuredInkArgb: Int? = null,
     modifier: Modifier = Modifier,
 ) {
     val dark = isSystemInDarkThemeSafe()
-    val headerInk = Color(QingyuTheme.primaryText(dark))
-        .copy(alpha = MonthInk.SECONDARY.toFloat())
+    val ink = Color(
+        HomeBackgroundModel.inkOverWallpaperArgb(
+            configuredArgb = configuredInkArgb,
+            fallbackArgb = MiuixTheme.colorScheme.onSurface.toArgb(),
+            wallpaperLuminance = wallpaperLuminance,
+            builtInDefaultArgb = if (dark) 0xFFFFFFFF.toInt() else 0xFF000000.toInt(),
+        ),
+    )
     Row(
         modifier = modifier
             .fillMaxWidth()
@@ -327,17 +336,7 @@ fun MonthWeekdayHeader(
             modifier = Modifier
                 .width(MonthGridMetrics.WEEK_LABEL_WIDTH.dp)
                 .fillMaxHeight(),
-            contentAlignment = Alignment.Center,
-        ) {
-            if (!monthLabel.isNullOrBlank()) {
-                Text(
-                    text = monthLabel,
-                    style = MiuixTheme.textStyles.body2.shiftWeight(QingyuWeightDelta.BOLD),
-                    color = headerInk,
-                    maxLines = 1,
-                )
-            }
-        }
+        )
         for (dayOfWeek in 1..MonthGridModel.DAYS_PER_ROW) {
             Box(
                 modifier = Modifier
@@ -350,7 +349,7 @@ fun MonthWeekdayHeader(
                     style = MiuixTheme.textStyles.footnote2.shiftWeight(
                         QingyuWeightDelta.SEMIBOLD,
                     ),
-                    color = headerInk,
+                    color = ink,
                     maxLines = 1,
                     textAlign = TextAlign.Center,
                 )

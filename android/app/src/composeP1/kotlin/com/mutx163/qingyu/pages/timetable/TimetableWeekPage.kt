@@ -1,4 +1,4 @@
-package com.mutx163.qingyu.pages.timetable
+﻿package com.mutx163.qingyu.pages.timetable
 
 import android.app.Activity
 import android.content.Context
@@ -797,10 +797,16 @@ fun TimetableWeekPage(
 
                         // ── 顶栏「轻屿课表」+ 右上角「更多」菜单（三视图共用一份）──
                         TimetableTopBar(
-                            brand = homeTitleStyle == HomeTitleStyle.BRAND,
+                            title = if (monthMode) {
+                                monthLabel?.takeIf { it.isNotBlank() }
+                                    ?: TimetableStrings.appTitle.text
+                            } else {
+                                TimetableStrings.appTitle.text
+                            },
+                            brand = if (monthMode) false else homeTitleStyle == HomeTitleStyle.BRAND,
                             inkPolarity = chromeInk,
-                            profileName = profileName,
-                            onTitleClick = onSwitchProfileClick,
+                            profileName = if (monthMode) null else profileName,
+                            onTitleClick = if (monthMode) null else onSwitchProfileClick,
                             homeMenuStyle = homeMenuStyle,
                             menuItems = homeMenuItems,
                             onMenuSelect = onHomeMenuSelect,
@@ -908,7 +914,12 @@ fun TimetableWeekPage(
                     } else {
                         // 月视图：同一条玻璃带里画“月份 + 星期”，下面直接是网格。
                         MonthWeekdayHeader(
-                            monthLabel = monthLabel,
+                            wallpaperLuminance = wallpaperBands?.weekday?.takeIf {
+                                bandOverWallpaper
+                            },
+                            configuredInkArgb = HomeBackgroundModel.parseInkArgb(
+                                if (dark) style.weekdayFontColorDark else style.weekdayFontColorLight,
+                            ),
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .padding(
