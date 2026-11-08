@@ -4,6 +4,8 @@ import com.mutx163.qingyu.core.CourseSession
 import com.mutx163.qingyu.core.CourseSessionPhase
 import com.mutx163.qingyu.core.CourseSessionStats
 import com.mutx163.qingyu.pages.statistics.charts.ChartsStrings
+import com.mutx163.qingyu.pages.statistics.charts.SessionCardsModel
+import com.mutx163.qingyu.pages.statistics.charts.SessionTone
 
 /**
  * 单节课明细页（`lib/screens/statistics_session_screen.dart`，147 行）模型层。
@@ -161,14 +163,16 @@ object StatisticsSessionModel {
      * - `title`：哪一次——`dateText`（调用方已拼好「9月16日 · 周X」），没有日期轴时
      *   回落「第 N 周 · 周X」；
      * - `subtitle`：节次区间 + 钟点 + 教室（Dart `_subtitle`，缺项跳过）；
-     * - `examBadge`：当天有考试时的角标（Dart `if (session.examCount > 0)`）。
-     *
-     * 之前这里把日期塞进 `subtitle`、用 ASCII 连字符写「第3-5节」、并丢掉钟点与
-     * 考试角标，与 Dart 行信息不一致（用户看不出是哪一天/哪一节）。
+     * - `examBadge`：当天有考试时的角标（Dart `if (session.examCount > 0)`）；
+     * - `tone`：阶段语义色（Dart `_phaseColor`）：已过绿 / 今天主题色 /
+     *   未到蓝 / 停课橙 / 假期紫 / 未定灰，与 `SessionCardsModel.tone` 同源——
+     *   渲染层据此取色，初版 Composition 移植时只留了文案、把六色压成灰，
+     *   真机扫读时连状态都要逐字看。
      */
     data class SessionRow(
         val title: String,
         val phaseLabel: String,
+        val tone: SessionTone,
         val subtitle: String,
         val noteText: String?,
         val examBadge: String?,
@@ -194,6 +198,7 @@ object StatisticsSessionModel {
         return SessionRow(
             title = resolvedDateText,
             phaseLabel = phaseLabel(session.phase),
+            tone = SessionCardsModel.tone(session.phase),
             subtitle = parts.joinToString(" · "),
             noteText = session.noteText?.takeIf { it.trim().isNotEmpty() },
             examBadge = if (session.examCount > 0) ChartsStrings.examBadgeLabel.text else null,

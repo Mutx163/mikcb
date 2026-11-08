@@ -8,7 +8,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -26,9 +26,11 @@ import com.mutx163.qingyu.components.QingyuPageCardMargin
 import com.mutx163.qingyu.components.QingyuPageList
 import com.mutx163.qingyu.components.QingyuPageScaffold
 import com.mutx163.qingyu.components.QingyuPageTheme
+import com.mutx163.qingyu.components.QingyuSectionGap
 import com.mutx163.qingyu.components.QingyuSectionTitle
 import com.mutx163.qingyu.components.QingyuWeightDelta
 import com.mutx163.qingyu.components.shiftWeight
+import com.mutx163.qingyu.theme.QingyuIconColors
 import com.mutx163.qingyu.theme.QingyuTheme
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.TabRow
@@ -49,6 +51,27 @@ import top.yukonga.miuix.kmp.theme.MiuixTheme
  *
  * 布局与取值来自 [LiveFixtureViewState]，点击一律回调出去（装课/清除/触发都是 IO，
  * 由页面壳接 `LiveTestingFixtureService`）；本层不做业务计算。
+ *
+ * ## 版面结构（2026-11-08 重排）
+ *
+ * 四组一律是「分组标题 + 内容 +（可选）整宽说明」，标题全走 [QingyuSectionTitle]：
+ *
+ * | 组 | 内容 | 说明 |
+ * |---|---|---|
+ * | 快捷测试课表 | 安装 / 清除 两行 | 当前方案 + 测试完先清除的后果 |
+ * | 课前提醒 | [TabRow] 分段控件（直接落在页底） | 提前多久进入课前态 |
+ * | 一键发送 | 当前节次 / 下一节次 两行 | 什么情况下提示无课 |
+ * | 按节次发送 | 四列节次格 | 没有节次表时的空态 |
+ *
+ * 重排前的两个毛病（2026-11-08 用户实报「很乱很奇怪」）：
+ *
+ * 1. 「课前提醒」「按节次发送」的标题写在**卡片里面**（body1 加粗），另两组标题在卡外
+ *    （[QingyuSectionTitle]，subtitle 14sp 次要色）⇒ 同一页两套标题，卡片还一层套一层。
+ * 2. 整宽说明（13sp 次要色）紧贴在下一张卡上方 8dp，跟下一组的卡标题糊成一团；
+ *    它和 [QingyuSectionTitle] 只差 1sp、同色，读起来像「又一个标题」。
+ *
+ * 所以：标题只留在卡外一处，说明一律挂在**它解释的那块内容下面**（组内），
+ * 组间由 [QingyuSectionGap] 拉开；说明与内容之间只留 6dp，说明不会飘到下一组头上。
  */
 @Composable
 fun LiveTestingFixturePage(
@@ -69,141 +92,144 @@ fun LiveTestingFixturePage(
         QingyuPageList(
             innerPadding = innerPadding,
             scrollBehavior = scrollBehavior,
-            contentPadding = PaddingValues(bottom = 32.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp),
+            contentPadding = PaddingValues(bottom = 24.dp),
         ) {
             // ── 快捷测试课表 ──
-            item(key = "quick-grid-title") { QingyuSectionTitle(LiveFixtureStrings.quickGridSection) }
-            item(key = "quick-grid-card") {
-                QingyuCard(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = QingyuPageCardMargin),
-                    insideMargin = PaddingValues(vertical = 4.dp),
+            item(key = "quick-grid") {
+                FixtureSection(
+                    title = LiveFixtureStrings.quickGridSection,
+                    description = viewState.schemeDescription,
+                    dark = dark,
                 ) {
-                    FixtureActionRow(
-                        icon = MiuixIcons.Download,
-                        title = viewState.installTitle,
-                        details = viewState.installDetails,
-                        enabled = viewState.installEnabled,
-                        onClick = onInstall,
-                        dark = dark,
-                    )
-                    FixtureActionRow(
-                        icon = MiuixIcons.Delete,
-                        title = viewState.clearTitle,
-                        details = viewState.clearDetails,
-                        enabled = viewState.clearEnabled,
-                        onClick = onClear,
-                        dark = dark,
-                    )
+                    QingyuCard(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = QingyuPageCardMargin),
+                        insideMargin = PaddingValues(vertical = 4.dp),
+                    ) {
+                        FixtureActionRow(
+                            icon = MiuixIcons.Download,
+                            // Dart `HyperosListTile(iconAccent: HyperosIconColors.indigo)`
+                            iconTint = Color(QingyuIconColors.INDIGO),
+                            title = viewState.installTitle,
+                            details = viewState.installDetails,
+                            enabled = viewState.installEnabled,
+                            onClick = onInstall,
+                            dark = dark,
+                        )
+                        FixtureActionRow(
+                            icon = MiuixIcons.Delete,
+                            iconTint = Color(QingyuIconColors.ORANGE),
+                            title = viewState.clearTitle,
+                            details = viewState.clearDetails,
+                            enabled = viewState.clearEnabled,
+                            onClick = onClear,
+                            dark = dark,
+                        )
+                    }
                 }
-            }
-            item(key = "scheme-desc") {
-                SectionDescription(text = viewState.schemeDescription, dark = dark)
             }
 
             // ── 课前提醒档位 ──
-            item(key = "lead-card") {
-                QingyuCard(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = QingyuPageCardMargin),
-                    insideMargin = PaddingValues(horizontal = 14.dp, vertical = 12.dp),
+            item(key = "lead") {
+                FixtureSection(
+                    title = LiveFixtureStrings.leadSection,
+                    description = LiveFixtureStrings.leadSubtitle,
+                    dark = dark,
                 ) {
-                    Text(
-                        text = LiveFixtureStrings.leadSection,
-                        style = MiuixTheme.textStyles.body1.shiftWeight(QingyuWeightDelta.MEDIUM),
-                        color = Color(QingyuTheme.primaryText(dark)),
-                    )
-                    Text(
-                        text = LiveFixtureStrings.leadSubtitle,
-                        style = MiuixTheme.textStyles.footnote1,
-                        color = Color(QingyuTheme.secondaryText(dark)),
-                        modifier = Modifier.padding(top = 2.dp, bottom = 8.dp),
-                    )
+                    // 分段控件直接落在页底上（官方 `TabRowDemo.kt:40-46` 就是这么用的）：
+                    // 塞进白卡会变成「灰底条 + 白卡」两层容器，而且卡内 14dp 内边距把每个
+                    // 档位挤到 56dp 文字宽——大字号下「1 分钟」会被截成「1 分…」。
+                    // 左右各让 12dp 与卡片同轴，宽度回到 376dp 后四个档位都放得下。
                     TabRow(
                         tabs = viewState.leadTabs,
                         selectedTabIndex = viewState.leadIndex,
                         onTabSelected = { index ->
                             viewState.leadOptions.getOrNull(index)?.let(onSelectLead)
                         },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = QingyuPageCardMargin),
                     )
                 }
             }
 
             // ── 一键发送 ──
-            item(key = "send-title") { QingyuSectionTitle(LiveFixtureStrings.sendSection) }
-            item(key = "send-card") {
-                QingyuCard(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = QingyuPageCardMargin),
-                    insideMargin = PaddingValues(vertical = 4.dp),
+            item(key = "send") {
+                FixtureSection(
+                    title = LiveFixtureStrings.sendSection,
+                    description = viewState.sendHint,
+                    dark = dark,
                 ) {
-                    viewState.sendRows.forEachIndexed { index, row ->
-                        FixtureActionRow(
-                            icon = if (index == 0) MiuixIcons.Play else MiuixIcons.Forward,
-                            title = row.title,
-                            details = row.details,
-                            enabled = row.enabled,
-                            onClick = { onTriggerSection(row.sectionNumber, row.source) },
-                            dark = dark,
-                        )
+                    QingyuCard(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = QingyuPageCardMargin),
+                        insideMargin = PaddingValues(vertical = 4.dp),
+                    ) {
+                        viewState.sendRows.forEachIndexed { index, row ->
+                            FixtureActionRow(
+                                icon = if (index == 0) MiuixIcons.Play else MiuixIcons.Forward,
+                                // Dart：play_circle_outline 蓝 / skip_next 紫
+                                iconTint = if (index == 0) {
+                                    Color(QingyuIconColors.BLUE)
+                                } else {
+                                    Color(QingyuIconColors.PURPLE)
+                                },
+                                title = row.title,
+                                details = row.details,
+                                enabled = row.enabled,
+                                onClick = { onTriggerSection(row.sectionNumber, row.source) },
+                                dark = dark,
+                            )
+                        }
                     }
                 }
             }
-            item(key = "send-hint") { SectionDescription(text = viewState.sendHint, dark = dark) }
 
             // ── 按节次发送 ──
-            item(key = "grid-card") {
-                QingyuCard(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = QingyuPageCardMargin),
-                    insideMargin = PaddingValues(horizontal = 14.dp, vertical = 12.dp),
+            item(key = "grid") {
+                val empty = viewState.gridCells.isEmpty()
+                FixtureSection(
+                    title = LiveFixtureStrings.gridSection,
+                    // 没有节次表时不留一张空卡：只有标题和这句说明。
+                    description = if (empty) viewState.gridEmptyText else null,
+                    dark = dark,
                 ) {
-                    Text(
-                        text = LiveFixtureStrings.gridSection,
-                        style = MiuixTheme.textStyles.body1.shiftWeight(QingyuWeightDelta.MEDIUM),
-                        color = Color(QingyuTheme.primaryText(dark)),
-                    )
-                    if (viewState.gridCells.isEmpty()) {
-                        Text(
-                            text = viewState.gridEmptyText,
-                            style = MiuixTheme.textStyles.footnote1,
-                            color = Color(QingyuTheme.secondaryText(dark)),
-                            modifier = Modifier.padding(top = 6.dp),
-                        )
-                    } else {
-                        Column(
+                    if (!empty) {
+                        QingyuCard(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .padding(top = 10.dp),
-                            verticalArrangement = Arrangement.spacedBy(10.dp),
+                                .padding(horizontal = QingyuPageCardMargin),
+                            insideMargin = PaddingValues(horizontal = 14.dp, vertical = 12.dp),
                         ) {
-                            // 每行 4 格（Dart `crossAxisCount: 4`）；不用嵌套滚动网格。
-                            viewState.gridCells.chunked(4).forEach { rowCells ->
-                                Row(
-                                    modifier = Modifier.fillMaxWidth(),
-                                    horizontalArrangement = Arrangement.spacedBy(10.dp),
-                                ) {
-                                    rowCells.forEach { cell ->
-                                        FixtureSectionCell(
-                                            cell = cell,
-                                            onClick = {
-                                                onTriggerSection(
-                                                    cell.sectionNumber,
-                                                    LiveFixtureStrings.sourceGrid,
-                                                )
-                                            },
-                                            dark = dark,
-                                            modifier = Modifier.weight(1f),
-                                        )
-                                    }
-                                    // 末行不足 4 格时补空位，保持等宽。
-                                    repeat(4 - rowCells.size) {
-                                        Column(modifier = Modifier.weight(1f)) {}
+                            Column(
+                                modifier = Modifier.fillMaxWidth(),
+                                verticalArrangement = Arrangement.spacedBy(10.dp),
+                            ) {
+                                // 每行 4 格（Dart `crossAxisCount: 4`）；不用嵌套滚动网格。
+                                viewState.gridCells.chunked(4).forEach { rowCells ->
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        horizontalArrangement = Arrangement.spacedBy(10.dp),
+                                    ) {
+                                        rowCells.forEach { cell ->
+                                            FixtureSectionCell(
+                                                cell = cell,
+                                                onClick = {
+                                                    onTriggerSection(
+                                                        cell.sectionNumber,
+                                                        LiveFixtureStrings.sourceGrid,
+                                                    )
+                                                },
+                                                dark = dark,
+                                                modifier = Modifier.weight(1f),
+                                            )
+                                        }
+                                        // 末行不足 4 格时补空位，保持等宽。
+                                        repeat(4 - rowCells.size) {
+                                            Column(modifier = Modifier.weight(1f)) {}
+                                        }
                                     }
                                 }
                             }
@@ -215,10 +241,39 @@ fun LiveTestingFixturePage(
     }
 }
 
+/**
+ * 一组 = 分组标题 + 内容 +（可选）整宽说明。
+ *
+ * 间距口径：标题自带 8dp 上下留白（官方 `SmallTitle` 的 `InsideMargin`），组末再留
+ * [QingyuSectionGap] ⇒「上一组末尾 → 下一组标题」= 8 + 12 = 20dp，组内「标题 → 内容」
+ * = 8dp。层级一眼能看出来，不会像重排前那样 Card 和下一段说明只隔 8dp。
+ *
+ * 说明固定挂在内容下面（6dp），因为它解释的正是上面那块；放到下一组头上就变成
+ * 「下一组没头没脑的一段灰字」。
+ */
+@Composable
+private fun FixtureSection(
+    title: String,
+    dark: Boolean,
+    description: String? = null,
+    content: @Composable () -> Unit,
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(bottom = QingyuSectionGap),
+    ) {
+        QingyuSectionTitle(title)
+        content()
+        description?.let { SectionDescription(text = it, dark = dark) }
+    }
+}
+
 /** 安装 / 清除 / 发送这类行（Dart `HyperosListTile`）。禁用态整行不响应点击、文字变淡。 */
 @Composable
 private fun FixtureActionRow(
     icon: androidx.compose.ui.graphics.vector.ImageVector,
+    iconTint: Color,
     title: String,
     details: String?,
     enabled: Boolean,
@@ -241,7 +296,8 @@ private fun FixtureActionRow(
         Icon(
             imageVector = icon,
             contentDescription = null,
-            tint = Color(QingyuTheme.actionIcon(dark)),
+            // 禁用整行变灰时图标跟着褪色，否则一行里只有图标还亮着。
+            tint = if (enabled) iconTint else Color(QingyuTheme.actionIcon(dark)),
             modifier = Modifier.size(20.dp),
         )
         Text(
@@ -264,7 +320,16 @@ private fun FixtureActionRow(
     }
 }
 
-/** 网格里的一节（Dart `_QuickFixtureSectionCell`）：当前节用主题色反白。 */
+/**
+ * 网格里的一节（Dart `_QuickFixtureSectionCell`）：当前节用主题色反白。
+ *
+ * 三行（节次 / 钟点 / 徽标）**每一格都占满**：没装也没到当前节时徽标位留空行。
+ * 重排前只有装了或当前节才有第三行，`Center` 居中后同一排里两行格子和三行格子
+ * 的钟点高低不一——一眼看过去整片格子在跳。留空行后六排的钟点全在一条线上。
+ *
+ * 高度给 `heightIn(min = 74.dp)`（Dart 是 `childAspectRatio: 1.15`，约 74dp）而不是
+ * 写死 64dp：写死时三行字加大字号必然超出，字号 1.3 档下钟点被压成「00…」。
+ */
 @Composable
 private fun FixtureSectionCell(
     cell: LiveFixtureSectionCell,
@@ -290,11 +355,11 @@ private fun FixtureSectionCell(
 
     Column(
         modifier = modifier
-            .height(64.dp)
+            .heightIn(min = 74.dp)
             .clip(RoundedCornerShape(10.dp))
             .background(background)
             .clickable(onClick = onClick)
-            .padding(horizontal = 6.dp, vertical = 8.dp),
+            .padding(horizontal = 4.dp, vertical = 8.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center,
     ) {
@@ -314,18 +379,18 @@ private fun FixtureSectionCell(
             maxLines = 1,
             textAlign = TextAlign.Center,
         )
-        cell.badgeLabel?.let { badge ->
-            Text(
-                text = badge,
-                style = MiuixTheme.textStyles.footnote2.shiftWeight(QingyuWeightDelta.MEDIUM),
-                color = captionColor,
-                maxLines = 1,
-            )
-        }
+        // 徽标位固定占一行：见上方注释，靠它把各格钟点压在同一条基线上。
+        Text(
+            text = cell.badgeLabel.orEmpty(),
+            style = MiuixTheme.textStyles.footnote2.shiftWeight(QingyuWeightDelta.MEDIUM),
+            color = captionColor,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+        )
     }
 }
 
-/** 灰字说明（Dart `HyperosSectionDescription`）。 */
+/** 灰字说明（Dart `HyperosSectionDescription`）：挂在所解释的内容下面 6dp。 */
 @Composable
 private fun SectionDescription(text: String, dark: Boolean) {
     Text(
@@ -333,7 +398,11 @@ private fun SectionDescription(text: String, dark: Boolean) {
         style = MiuixTheme.textStyles.footnote1,
         color = Color(QingyuTheme.secondaryText(dark)),
         // 与分组标题的 28dp 轴线对齐（Card 外边距 12 + 行内 16）。
-        modifier = Modifier.padding(horizontal = QingyuPageCardMargin + 16.dp),
+        modifier = Modifier.padding(
+            start = QingyuPageCardMargin + 16.dp,
+            top = 6.dp,
+            end = QingyuPageCardMargin + 16.dp,
+        ),
     )
 }
 

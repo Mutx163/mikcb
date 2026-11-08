@@ -220,6 +220,9 @@ private fun HeatmapCard(viewState: StatisticsAnalysisViewState) {
 @Composable
 private fun TimeUtilRows(viewState: StatisticsAnalysisViewState, standalone: Boolean) {
     val dark = isSystemInDarkTheme()
+    // 层级与同页 Venue/Teacher/Compare 行一致：左标签主色、右读数辅色加粗。
+    // 原先本行是反的（标签辅色、读数主色），四张卡的视觉重量各行一套，
+    // 横着看会觉得有的数在喊、有的数在躲（2026-11-08 全域理顺）。
     for ((label, value) in viewState.timeUtilRows) {
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -228,13 +231,13 @@ private fun TimeUtilRows(viewState: StatisticsAnalysisViewState, standalone: Boo
             Text(
                 text = label,
                 style = if (standalone) MiuixTheme.textStyles.main else MiuixTheme.textStyles.body2,
-                color = Color(QingyuTheme.secondaryText(dark)),
+                color = Color(QingyuTheme.primaryText(dark)),
             )
             Text(
                 text = value,
                 style = (if (standalone) MiuixTheme.textStyles.title4 else MiuixTheme.textStyles.main)
                     .shiftWeight(QingyuWeightDelta.SEMIBOLD),
-                color = Color(QingyuTheme.primaryText(dark)),
+                color = Color(QingyuTheme.secondaryText(dark)),
             )
         }
     }

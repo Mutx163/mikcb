@@ -4,8 +4,6 @@ import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.ExperimentalLayoutApi
-import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -13,6 +11,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -29,6 +28,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import com.mutx163.qingyu.components.QingyuCard
+import com.mutx163.qingyu.components.QingyuCardDefaults
 import com.mutx163.qingyu.components.QingyuSheet
 import com.mutx163.qingyu.components.QingyuPageCardMargin
 import com.mutx163.qingyu.components.rememberSheetMaxHeight
@@ -44,7 +44,11 @@ import com.mutx163.qingyu.theme.QingyuTheme
 import top.yukonga.miuix.kmp.basic.Button
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
 import top.yukonga.miuix.kmp.basic.CircularProgressIndicator
+import top.yukonga.miuix.kmp.basic.HorizontalDivider
+import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.Text
+import top.yukonga.miuix.kmp.icon.MiuixIcons
+import top.yukonga.miuix.kmp.icon.extended.Report
 import top.yukonga.miuix.kmp.overlay.OverlayDialog
 import top.yukonga.miuix.kmp.preference.ArrowPreference
 import top.yukonga.miuix.kmp.preference.CheckboxPreference
@@ -58,19 +62,23 @@ import top.yukonga.miuix.kmp.utils.scrollEndHaptic
  * 逐项对照 `lib/screens/data_transfer_screen.dart`（838 行）复刻，审核记录见
  * `docs/plans/2026-10-29-datatransfer-audit.md`。
  *
- * ## 页面骨架（Dart 出处）
+ * ## 页面骨架（Dart 出处，对排布做过**一次统一美化**）
  *
- * `HyperosSubpage`（可折叠大标题）→ `HyperosListView`，children 恰好 13 项
- * （`data_transfer_screen.dart:53-195`）：
+ * 章节与卡片顺序照抄 `HyperosSubpage` → `HyperosListView`（`data_transfer_screen.dart:53-195`）：
  *
- * 1. section「完整导出」+ 卡（3 个按钮，`Wrap spacing/runSpacing = 8`）
+ * 1. section「完整导出」+ 卡（3 个按钮，统一改**整宽竖排**：发布版原稿 `Wrap` 里的按钮
+ *    按文案长度换行，会 2+1 穿位；整宽后每键占满一行，大字号也不穿位）
  * 2. 日历组（**无 section label**，源码注释说标签已删）+ 单行导航
- * 3. section「完整导入」+ 卡（1 个通栏按钮）
- * 4. section「二维码面对面传输」+ 卡（说明句 → 红字警告 → 3 个按钮）
- * 5. section「当前可迁移内容」+ 卡（7 行概览，行距 10、末行 0）
+ * 3. section「完整导入」+ 卡（1 个通栏按钮，与上面同一套整宽按钮视觉）
+ * 4. section「二维码面对面传输」+ 卡（说明句 → 独立警告横幅卡 → 3 个整宽按钮；
+ *    红字警告不再挤在正文里，走全站既成的错误横幅形态：`MiuixIcons.Report` 图标 +
+ *    footnote1/error 文字，措辞一字未改）
+ * 5. section「当前可迁移内容」+ 卡（7 行概览，行距 10、末行 0，**行间加分割线**，
+ *    与日历导航行那种堆叠行视觉统一）
  *
- * **全页没有分割线、没有页面级空态、没有常驻「撤销」按钮**（撤销只在成功提示的尾部动作里），
- * 三条都是 2026-10-29 审核从 Dart 侧确认过的「不存在元素」，旧版 Compose 三样都自造了。
+ * 动作按钮三组一律整宽竖排，与同文件里二维码范围弹窗、导入预览弹窗的竖排动作
+ * 是同一套排布。**没有页面级空态、没有常驻「撤销」按钮**（撤销只在成功提示的尾部动作里）。
+ * 按钮的点按/忙碌/禁用判据、二维码收发分支、导入的三个动作（覆盖/合并/导入为新）都没动。
  *
  * ## 不持业务状态
  *
@@ -78,7 +86,6 @@ import top.yukonga.miuix.kmp.utils.scrollEndHaptic
  * 全在宿主（`DataTransferHost`）与模型层，这里只把回调抛上去。
  * 页面自持的只有两个弹层的可见性与选课集合——它们是纯界面状态，Dart 也是在 State 里。
  */
-@OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun DataTransferPage(
     viewState: DataTransferViewState,
@@ -117,28 +124,29 @@ fun DataTransferPage(
             item(key = "full-export") {
                 QingyuSectionTitle(TransferStrings.fullExportTitle.text)
                 QingyuCard(modifier = Modifier.fillMaxWidth(), insideMargin = TransferCardInsideMargin) {
-                    // Dart `Wrap(spacing: 8, runSpacing: 8)`：放不下就换行，不是固定两行。
-                    FlowRow(
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
-                        verticalArrangement = Arrangement.spacedBy(8.dp),
-                    ) {
+                    // 三键整宽竖排（同一套视觉、永不穿位）：原 Dart `Wrap` 按键面长度换行
+                    // 必然 2+1 错位；整宽后长短键面等宽对齐，而忙碌/禁用的替换规则不变。
+                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                         TransferButton(
                             label = TransferStrings.exportCurrentTimetable.text,
                             onClick = onExportCurrent,
                             primary = true,
                             loading = viewState.isExporting,
                             enabled = !viewState.isExporting,
+                            fillWidth = true,
                         )
                         TransferButton(
                             label = TransferStrings.exportAllData.text,
                             onClick = onExportAllData,
                             enabled = !viewState.isExporting,
+                            fillWidth = true,
                         )
                         // 没有时间模板时按钮**仍在**，只是禁用（Dart `:76-78` 的 enabled 判据）。
                         TransferButton(
                             label = TransferStrings.exportTimeTemplate.text,
                             onClick = onExportTimeTemplate,
                             enabled = !viewState.isExporting && viewState.canExportTimeTemplate,
+                            fillWidth = true,
                         )
                     }
                 }
@@ -178,51 +186,50 @@ fun DataTransferPage(
                         style = MiuixTheme.textStyles.body2,
                         color = Color(QingyuTheme.secondaryText(dark)),
                     )
-                    Spacer(modifier = Modifier.height(8.dp))
-                    // 明文警告：Dart 用 error 色（`data_transfer_screen.dart:120-125`）。
-                    Text(
-                        text = TransferStrings.qrTransferPlaintextWarning.text,
-                        style = MiuixTheme.textStyles.body2,
-                        color = Color(QingyuTheme.error(dark)),
-                    )
                     Spacer(modifier = Modifier.height(12.dp))
-                    FlowRow(
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
-                        verticalArrangement = Arrangement.spacedBy(8.dp),
-                    ) {
+                    // 三键整宽竖排，与「完整导出」同一套（原来挤在说明文字后紧跟 FlowRow，
+                    // 又窄又会换行，扫码接收更长还会穿到第二行）。
+                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                         TransferButton(
                             label = TransferStrings.qrTransferSendCurrent.text,
                             onClick = { qrScopeDialogVisible = true },
                             primary = true,
                             enabled = !viewState.isExporting,
+                            fillWidth = true,
                         )
                         TransferButton(
                             label = TransferStrings.qrTransferSendAll.text,
                             onClick = onQrSendAll,
                             enabled = !viewState.isExporting,
+                            fillWidth = true,
                         )
                         // 扫码只看 `_isImporting`，不看 `_isExporting`（Dart `:143`）。
                         TransferButton(
                             label = TransferStrings.qrTransferScanReceive.text,
                             onClick = onQrScan,
                             enabled = !viewState.isImporting,
+                            fillWidth = true,
                         )
                     }
                 }
+                Spacer(modifier = Modifier.height(8.dp))
+                // 明文警告拆成**独立横幅卡**（与正文彻底分层）：同页片段只换形态，
+                // 文辞、error 字色都在横幅里一字未改（Dart 是裸 error 色文本，`:120-125`）。
+                QrPlaintextWarningBanner(dark = dark)
             }
 
-            // ── 5. 当前可迁移内容（7 行，无分割线） ─────────────────────
+            // ── 5. 当前可迁移内容（7 行，行间带分割线） ─────────────────────
             item(key = "overview") {
                 QingyuSectionTitle(TransferStrings.transferOverviewTitle.text)
                 QingyuCard(modifier = Modifier.fillMaxWidth(), insideMargin = TransferCardInsideMargin) {
                     val rows = viewState.overviewRows
                     rows.forEachIndexed { index, row ->
+                        val isLast = index == rows.lastIndex
                         // Dart：普通行 marginBottom 10、末行 0（`data_transfer_screen.dart:227`）。
-                        val bottom = if (index == rows.lastIndex) 0.dp else 10.dp
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .padding(bottom = bottom),
+                                .padding(bottom = if (isLast) 0.dp else 10.dp),
                             verticalAlignment = Alignment.Top,
                         ) {
                             // 左右两栏**同一套**样式（listDetail = body2/14/次级灰），只有对齐方式不同。
@@ -239,6 +246,14 @@ fun DataTransferPage(
                                 color = Color(QingyuTheme.secondaryText(dark)),
                                 textAlign = TextAlign.End,
                                 modifier = Modifier.weight(1f),
+                            )
+                        }
+                        // 行间分割线：与上面「导出日历」的堆叠行视觉统一（箭头只属于可点的那行，
+                        // 这张只列内容、没有箭头，分割线就是两张的公共样子）。
+                        if (!isLast) {
+                            HorizontalDivider(
+                                modifier = Modifier.padding(bottom = 10.dp),
+                                color = Color(QingyuTheme.dividerLine(dark)),
                             )
                         }
                     }
@@ -288,6 +303,39 @@ fun DataTransferPage(
             }
         },
     )
+}
+
+/**
+ * 明文警告横幅（独立形态，不再挤在二维码说明正文里）。
+ *
+ * 全站既成错误横幅的排布（同 `MemoryStatsPage.MemoryHintBanner(isError)`）：
+ * 整幅卡片 + 18dp 警示图标（`MiuixIcons.Report`，error 色）+ 10dp 间距 + footnote1/error
+ * 文字；只换 Alert 的卡片底色那层——这里用同色卡片承载，字色与措辞与发布版逐字相同。
+ */
+@Composable
+private fun QrPlaintextWarningBanner(dark: Boolean) {
+    QingyuCard(
+        modifier = Modifier.fillMaxWidth(),
+        insideMargin = QingyuCardDefaults.ContentInsideMargin,
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(10.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Icon(
+                imageVector = MiuixIcons.Report,
+                contentDescription = null,
+                tint = Color(QingyuTheme.error(dark)),
+                modifier = Modifier.size(18.dp),
+            )
+            Text(
+                text = TransferStrings.qrTransferPlaintextWarning.text,
+                style = MiuixTheme.textStyles.footnote1,
+                color = Color(QingyuTheme.error(dark)),
+            )
+        }
+    }
 }
 
 /**

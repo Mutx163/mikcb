@@ -3,6 +3,8 @@ package com.mutx163.qingyu.pages.statistics
 import com.mutx163.qingyu.core.CourseSession
 import com.mutx163.qingyu.core.CourseSessionPhase
 import com.mutx163.qingyu.core.CourseSessionStats
+import com.mutx163.qingyu.pages.statistics.charts.SessionCardsModel
+import com.mutx163.qingyu.pages.statistics.charts.SessionTone
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
@@ -260,6 +262,25 @@ class StatisticsSessionModelTest {
             dateText = "10月27日 · 周二",
         )
         assertEquals("第 1～2 节 · 教三 201", row.subtitle)
+    }
+
+    @Test
+    fun `六种阶段的语义色与发布版 phaseColor 一致`() {
+        // Dart session_list_card.dart `_phaseColor`：绿 / 主题色 / 蓝 / 橙 / 紫 / 灰。
+        // 渲染层把 6 色直接取自 SessionCardsModel.tone —— 这条钉住「六色不许再被压回灰」。
+        assertEquals(SessionTone.GREEN, SessionCardsModel.tone(CourseSessionPhase.DONE))
+        assertEquals(SessionTone.PRIMARY, SessionCardsModel.tone(CourseSessionPhase.TODAY))
+        assertEquals(SessionTone.BLUE, SessionCardsModel.tone(CourseSessionPhase.UPCOMING))
+        assertEquals(SessionTone.ORANGE, SessionCardsModel.tone(CourseSessionPhase.SUSPENDED))
+        assertEquals(SessionTone.PURPLE, SessionCardsModel.tone(CourseSessionPhase.HOLIDAY))
+        assertEquals(SessionTone.SECONDARY, SessionCardsModel.tone(CourseSessionPhase.UNDATED))
+
+        // sessionRow 必须把 tone 带上，渲染层不能再用文案反推颜色。
+        val row = StatisticsSessionModel.sessionRow(
+            session(phase = CourseSessionPhase.UPCOMING),
+            dateText = "10月27日 · 周二",
+        )
+        assertEquals(SessionTone.BLUE, row.tone)
     }
 
     @Test

@@ -32,6 +32,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -49,9 +50,11 @@ import com.mutx163.qingyu.components.QingyuWeightDelta
 import com.mutx163.qingyu.components.shiftWeight
 import com.mutx163.qingyu.infra.DiagnosticsLogLevel
 import com.mutx163.qingyu.theme.QingyuTheme
+import top.yukonga.miuix.kmp.basic.BasicComponent
 import top.yukonga.miuix.kmp.basic.Button
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
 import top.yukonga.miuix.kmp.basic.CircularProgressIndicator
+import top.yukonga.miuix.kmp.basic.HorizontalDivider
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.ScrollBehavior
 import top.yukonga.miuix.kmp.basic.TabRow
@@ -473,13 +476,19 @@ private fun DiagnosticsLogList(
             }
         }
 
-        items(items = viewState.entries, key = { it.id }) { entry ->
-            if (viewState.viewMode == DiagnosticsLogViewMode.RAW) {
+        if (viewState.viewMode == DiagnosticsLogViewMode.RAW) {
+            // 原文模式：一条是一整块可换行的原始文本，仍各自成卡——合并成一张卡反而看不出
+            // 条目边界（原文里没有任何视觉锚点）。
+            items(items = viewState.entries, key = { it.id }) { entry ->
                 DiagnosticsRawEntryCard(entry = entry, dark = dark)
-            } else {
-                DiagnosticsEntryCard(
-                    entry = entry,
-                    onToggle = { onToggleEntry(entry.id) },
+            }
+        } else if (viewState.entries.isNotEmpty()) {
+            // 结构化模式：**当前这一批日志并进一张卡**，条目之间用细线分隔（2026-11-08 用户口径）。
+            // 一条一张卡时，8dp 的卡间缝把几条日志撑成几个独立胶囊，扫读时视线总被打断。
+            item(key = "entry-group") {
+                DiagnosticsEntryGroupCard(
+                    entries = viewState.entries,
+                    onToggleEntry = onToggleEntry,
                     dark = dark,
                 )
             }
@@ -628,114 +637,104 @@ private fun DiagnosticsRawEntryCard(entry: DiagnosticsLogEntryView, dark: Boolea
     }
 }
 
-/** 结构化模式：折叠一行 / 展开看详情（Dart `_DiagnosticsLogEntryTile`）。 */
+/**
+ * 一组日志 = 一张卡（官方「一张 Card 里放多行」的分组用法）——行与行之间一条细线。
+ *
+ * 分隔线只用在**卡内部、行与行之间**；卡与卡之间仍由 12dp 外边距 + 8dp 卡间距分开。
+ * 2026-11-08 用户口径：「同批日志并进一张卡加分隔线」——这里是给日志流补条目边界，
+ * 与 2026-11-03 清掉的「设置卡里每两行都画线」不是同一种写法（豁免已在行间横线守卫里登记）。
+ */
 @Composable
-private fun DiagnosticsEntryCard(
+private fun DiagnosticsEntryGroupCard(
+    entries: List<DiagnosticsLogEntryView>,
+    onToggleEntry: (String) -> Unit,
+    dark: Boolean,
+) {
+    QingyuCard(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = QingyuPageCardMargin),
+        // 每行自带 14dp 内边距（BasicComponent 的 insideMargin），卡本身不再叠加一层。
+        insideMargin = PaddingValues(0.dp),
+    ) {
+        entries.forEachIndexed { index, entry ->
+            if (index > 0) {
+                HorizontalDivider(
+                    // 左侧让出 14dp，与行内文字的起始内边距对齐（分隔线不顶到卡片边缘）。
+                    modifier = Modifier.padding(start = 14.dp),
+                    color = MiuixTheme.colorScheme.dividerLine,
+                )
+            }
+            DiagnosticsEntryRow(
+                entry = entry,
+                onToggle = { onToggleEntry(entry.id) },
+                dark = dark,
+            )
+        }
+    }
+}
+
+/**
+ * 结构化模式：一条日志一行（官方 [BasicComponent] 行：自带按护反馈 / 点击指示 / 读屏按钮语义）。
+ *
+ * 折叠态 = 两行主次结构：第一行消息（最多两行），第二行小字「时间 · 等级 · 类别」。
+ * 另写法把「时间 + 消息」拼成一行，400dp 屏上一半宽度被时间吃掉，消息只剩十几个字就省略。
+ * 展开态在同一行里补来源 / 推断等级标签与详情键值，不再重复画一遍时间。
+ */
+@Composable
+private fun DiagnosticsEntryRow(
     entry: DiagnosticsLogEntryView,
     onToggle: () -> Unit,
     dark: Boolean,
 ) {
     val levelColor = levelColor(entry.level, dark)
 
-    QingyuCard(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = QingyuPageCardMargin),
-        insideMargin = PaddingValues(horizontal = 14.dp, vertical = 12.dp),
+    BasicComponent(
+        // 等级色点：折叠态只保留「一眼分辨级别」的语义。
+        startAction = {
+            Box(
+                modifier = Modifier
+                    .size(8.dp)
+                    .clip(RoundedCornerShape(4.dp))
+                    .background(levelColor),
+            )
+        },
+        endActions = {
+            Icon(
+                imageVector = if (entry.isExpanded) MiuixIcons.ExpandLess else MiuixIcons.ChevronForward,
+                contentDescription = null,
+                tint = Color(QingyuTheme.actionIcon(dark)),
+                modifier = Modifier.size(20.dp),
+            )
+        },
+        insideMargin = PaddingValues(horizontal = 14.dp, vertical = 10.dp),
         onClick = onToggle,
+        role = Role.Button,
     ) {
-        if (!entry.isExpanded) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-            ) {
-                Box(
+        Text(
+            text = entry.message.ifEmpty { entry.rawText },
+            style = MiuixTheme.textStyles.footnote1,
+            color = Color(QingyuTheme.primaryText(dark)),
+            // 折叠态给两行：消息是主信息，不再和时间抢同一行的宽度。
+            maxLines = if (entry.isExpanded) Int.MAX_VALUE else 2,
+            overflow = TextOverflow.Ellipsis,
+        )
+        DiagnosticsEntryMetaLine(
+            entry = entry,
+            dark = dark,
+            modifier = Modifier.padding(top = 2.dp),
+        )
+        if (entry.isExpanded) {
+            DiagnosticsEntryBadgeRow(entry = entry, dark = dark)
+            if (entry.detailRows.isNotEmpty()) {
+                Column(
                     modifier = Modifier
-                        .size(6.dp)
-                        .clip(RoundedCornerShape(3.dp))
-                        .background(levelColor),
-                )
-                Text(
-                    text = entry.collapsedText,
-                    style = MiuixTheme.textStyles.footnote1,
-                    color = Color(QingyuTheme.primaryText(dark)),
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                    modifier = Modifier.weight(1f),
-                )
-                Icon(
-                    imageVector = MiuixIcons.ChevronForward,
-                    contentDescription = null,
-                    tint = Color(QingyuTheme.actionIcon(dark)),
-                )
-            }
-        } else {
-            Column(
-                modifier = Modifier.fillMaxWidth(),
-                verticalArrangement = Arrangement.spacedBy(4.dp),
-            ) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    // Dart 展开态顶部是 `CrossAxisAlignment.start`（1325-1326 行）：
-                    // 标签换行成两排时图标与箭头仍在第一排，不跟着居中。
-                    verticalAlignment = Alignment.Top,
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        .fillMaxWidth()
+                        .padding(top = 8.dp),
+                    verticalArrangement = Arrangement.spacedBy(6.dp),
                 ) {
-                    // 22dp 圆角方块 + 12% 透明度的等级底色 + 14dp 图标（Dart 1328-1338 行）。
-                    Box(
-                        modifier = Modifier
-                            .size(22.dp)
-                            .clip(RoundedCornerShape(6.dp))
-                            .background(levelColor.copy(alpha = 0.12f)),
-                        contentAlignment = Alignment.Center,
-                    ) {
-                        Icon(
-                            imageVector = levelIcon(entry.level),
-                            contentDescription = null,
-                            tint = levelColor,
-                            modifier = Modifier.size(14.dp),
-                        )
-                    }
-                    // 等级 / 来源 / 推断等级 / 类别挤在同一个换行流里（Dart 1341-1366 行）。
-                    // 用 Box 吃掉剩余宽度再放 FlowRow：FlowRowScope 的 weight 是较新
-                    // 才有的，包一层 Row 作用域的 Box 兼容性更稳。
-                    Box(modifier = Modifier.weight(1f)) {
-                        DiagnosticsEntryTagFlow(entry = entry, dark = dark)
-                    }
-                    Icon(
-                        imageVector = MiuixIcons.ExpandLess,
-                        contentDescription = null,
-                        tint = Color(QingyuTheme.actionIcon(dark)),
-                    )
-                }
-
-                entry.formattedTime?.let { time ->
-                    Text(
-                        text = time,
-                        style = MiuixTheme.textStyles.footnote1,
-                        color = Color(QingyuTheme.secondaryText(dark)),
-                        modifier = Modifier.padding(top = 4.dp),
-                    )
-                }
-                if (entry.message.isNotEmpty()) {
-                    Text(
-                        text = entry.message,
-                        style = MiuixTheme.textStyles.body2,
-                        color = Color(QingyuTheme.primaryText(dark)),
-                        modifier = Modifier.padding(top = 6.dp),
-                    )
-                }
-                if (entry.detailRows.isNotEmpty()) {
-                    Column(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(top = 6.dp),
-                        verticalArrangement = Arrangement.spacedBy(6.dp),
-                    ) {
-                        entry.detailRows.forEach { row ->
-                            DiagnosticsDetailBlock(label = row.label, value = row.value, dark = dark)
-                        }
+                    entry.detailRows.forEach { row ->
+                        DiagnosticsDetailBlock(label = row.label, value = row.value, dark = dark)
                     }
                 }
             }
@@ -743,31 +742,70 @@ private fun DiagnosticsEntryCard(
     }
 }
 
-/** 等级 / 来源 / 推断等级 / 类别（Dart 展开态的 `Wrap`，1341-1366 行）。 */
-@OptIn(ExperimentalLayoutApi::class)
+/** 行内副信息：时间 · 等级 · 类别（三段分开画，不在渲染层拼字符串）。 */
 @Composable
-private fun DiagnosticsEntryTagFlow(entry: DiagnosticsLogEntryView, dark: Boolean) {
-    FlowRow(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(end = 4.dp),
+private fun DiagnosticsEntryMetaLine(
+    entry: DiagnosticsLogEntryView,
+    dark: Boolean,
+    modifier: Modifier = Modifier,
+) {
+    Row(
+        modifier = modifier.fillMaxWidth(),
+        verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(6.dp),
-        verticalArrangement = Arrangement.spacedBy(4.dp),
     ) {
-        DiagnosticsTag(label = entry.levelLabel, outlined = true, dark = dark)
+        entry.formattedTime?.let { time ->
+            Text(
+                text = time,
+                style = MiuixTheme.textStyles.footnote2,
+                color = Color(QingyuTheme.secondaryText(dark)),
+                maxLines = 1,
+            )
+            DiagnosticsMetaDot(dark = dark)
+        }
+        Text(
+            text = entry.levelLabel,
+            style = MiuixTheme.textStyles.footnote2,
+            color = Color(QingyuTheme.secondaryText(dark)),
+            maxLines = 1,
+        )
+        if (entry.categoryLabel.isNotEmpty()) {
+            DiagnosticsMetaDot(dark = dark)
+            Text(
+                text = entry.categoryLabel,
+                style = MiuixTheme.textStyles.footnote2,
+                color = Color(QingyuTheme.secondaryText(dark)),
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.weight(1f, fill = false),
+            )
+        }
+    }
+}
+
+@Composable
+private fun DiagnosticsMetaDot(dark: Boolean) {
+    Text(
+        text = "·",
+        style = MiuixTheme.textStyles.footnote2,
+        color = Color(QingyuTheme.secondaryText(dark)),
+    )
+}
+
+/** 展开态补充标签：来源（原生 / 应用）与「推断等级」。等级、类别已在上面的副信息行。 */
+@Composable
+private fun DiagnosticsEntryBadgeRow(entry: DiagnosticsLogEntryView, dark: Boolean) {
+    Row(
+        modifier = Modifier.padding(top = 8.dp),
+        horizontalArrangement = Arrangement.spacedBy(6.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
         DiagnosticsTag(label = entry.sourceLabel, outlined = true, dark = dark)
         if (entry.isLevelInferred) {
             DiagnosticsTag(
                 label = DiagnosticsStrings.diagnosticsLevelInferred.text,
                 outlined = true,
                 dark = dark,
-            )
-        }
-        if (entry.categoryLabel.isNotEmpty()) {
-            Text(
-                text = entry.categoryLabel,
-                style = MiuixTheme.textStyles.footnote1.shiftWeight(QingyuWeightDelta.SEMIBOLD),
-                color = Color(QingyuTheme.secondaryText(dark)),
             )
         }
     }

@@ -40,10 +40,13 @@ import com.mutx163.qingyu.pages.statistics.StatisticsSessionModel.CoverageRow
 import com.mutx163.qingyu.pages.statistics.StatisticsSessionModel.SessionRow
 import com.mutx163.qingyu.pages.statistics.StatisticsSessionModel.StatisticsSessionViewState
 import com.mutx163.qingyu.pages.statistics.StatisticsSessionModel.SummaryMetric
+import com.mutx163.qingyu.pages.statistics.charts.ChartPalette
+import com.mutx163.qingyu.pages.statistics.charts.SessionTone
 import com.mutx163.qingyu.pages.timetable.day.DayViewStrings
 import com.mutx163.qingyu.theme.QingyuTheme
 import top.yukonga.miuix.kmp.preference.WindowDropdownPreference
 import top.yukonga.miuix.kmp.theme.MiuixTheme
+import top.yukonga.miuix.kmp.basic.HorizontalDivider
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.icon.MiuixIcons
@@ -186,18 +189,35 @@ fun StatisticsSessionPage(
                     }
 
                     // ── 课次列表 ──
-                    SectionBlock(title = StatisticsExtStrings.statisticsSessionListTitle.text) {
+                    // 版式对照（2026-11-08 真机点名「太乱」后理顺）：
+                    // 发布版 Dart `SessionListCard` = `HyperosListGroup` 单卡，
+                    // 行内边距 `settingsRowPadding(16, 13)` 恒定——靠「同一张卡 +
+                    // 均匀行边距」把几十行压成一条齐整的长列表；
+                    // miuix demo（SettingsPage/DropdownSection，`docs/reference/miuix-demo`）
+                    // 也是「Card 内多行直叠、无大段 Spacer」。原 Compose 移植只抄了壳，
+                    // 行与行之间只剩 12dp 空隙，没有行边距也没有细线，备注又比副标题
+                    // 更显眼，所以长列表看起来像一堵跳动的墙。
+                    // 这里回归：卡内边距为 0、每行自带 16/13 边距、行间 hairline 分隔；
+                    // 备注降到 footnote1 副信息字，不再与标题抢层级。
+                    SectionBlock(
+                        title = StatisticsExtStrings.statisticsSessionListTitle.text,
+                        insideMargin = PaddingValues(0.dp),
+                    ) {
                         if (viewState.sessionRows.isEmpty()) {
                             Text(
                                 text = viewState.coverageEmptyText,
                                 style = MiuixTheme.textStyles.body2,
                                 color = Color(QingyuTheme.secondaryText(dark)),
+                                modifier = Modifier.padding(horizontal = 16.dp, vertical = 14.dp),
                             )
                         } else {
                             for ((index, row) in viewState.sessionRows.withIndex()) {
                                 SessionLine(row)
                                 if (index < viewState.sessionRows.lastIndex) {
-                                    Spacer(Modifier.height(12.dp))
+                                    HorizontalDivider(
+                                        modifier = Modifier.padding(horizontal = 16.dp),
+                                        color = Color(QingyuTheme.dividerLine(dark)),
+                                    )
                                 }
                             }
                         }
@@ -298,12 +318,30 @@ private fun CoverageLine(row: CoverageRow) {
     }
 }
 
-/** 课次行（Dart `_SessionRow`：标题 + 考试/阶段徽标 + 副标题 + 备注）。 */
+/**
+ * 课次行（Dart `_SessionRow`：标题 + 考试/阶段徽标 + 副标题 + 备注）。
+ *
+ * 行边距 16/13 与发布版 `settingsRowPadding` 同口径（`hyperos_miuix_spec.dart:81`），
+ * 长列表就是碎了一地 12dp 空隙的「乱」——行高 1~3 行跳动，没有固定轨道。
+ *
+ * 徽标：顶齐标题首行（原为 CenterVertically，标题两行时徽标会下沉）；
+ * 相位底色按发布版 `_phaseColor` 六色走（绿/主题/蓝/橙/紫/灰），
+ * 与 `charts/SessionCards.kt` 的 `sessionToneColor` 同源映射。
+ *
+ * 备注：空备注由模型层直接给 `null`（`sessionRow`），渲染层只在非空时画，
+ * 空备注不占行（发布版 `if (_noteText(session) != null)` 同行为）。
+ * 字色降为 footnote1 副信息字——初版移植把备注写成 body2 主色，
+ * 结果备注比副标题还醒目、像大标题一样喊。
+ */
 @Composable
 private fun SessionLine(row: SessionRow) {
     val dark = isSystemInDarkTheme()
-    Column(modifier = Modifier.fillMaxWidth()) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 13.dp),
+    ) {
+        Row(verticalAlignment = Alignment.Top) {
             Text(
                 text = row.title,
                 modifier = Modifier.weight(1f),
@@ -317,16 +355,17 @@ private fun SessionLine(row: SessionRow) {
                 Spacer(Modifier.width(8.dp))
                 Badge(
                     text = examBadge,
-                    textColor = QingyuTheme.error(dark),
-                    backgroundColor = QingyuTheme.error(dark),
+                    textColor = Color(QingyuTheme.error(dark)),
+                    backgroundColor = Color(QingyuTheme.error(dark)),
                     backgroundAlpha = 0.12f,
                 )
             }
             Spacer(Modifier.width(6.dp))
             Badge(
                 text = row.phaseLabel,
-                textColor = QingyuTheme.primaryText(dark),
-                backgroundColor = QingyuTheme.rowHighlight(dark),
+                textColor = sessionToneColor(row.tone, dark),
+                backgroundColor = sessionToneColor(row.tone, dark),
+                backgroundAlpha = 0.12f,
             )
         }
         Spacer(Modifier.height(2.dp))
@@ -342,46 +381,66 @@ private fun SessionLine(row: SessionRow) {
             Spacer(Modifier.height(4.dp))
             Text(
                 text = note,
-                style = MiuixTheme.textStyles.body2,
+                style = MiuixTheme.textStyles.footnote1,
                 maxLines = 2,
                 overflow = TextOverflow.Ellipsis,
-                color = Color(QingyuTheme.primaryText(dark)),
+                color = Color(QingyuTheme.secondaryText(dark)),
             )
         }
     }
+}
+
+/** [SessionTone] → 实际颜色（Dart `_phaseColor` 六色；与 `charts/SessionCards.sessionToneColor` 同源）。 */
+private fun sessionToneColor(tone: SessionTone, dark: Boolean): Color = when (tone) {
+    SessionTone.GREEN -> ChartPalette.Green
+    SessionTone.PRIMARY -> Color(QingyuTheme.primary(dark = dark))
+    SessionTone.BLUE -> ChartPalette.Blue
+    SessionTone.ORANGE -> ChartPalette.Orange
+    SessionTone.PURPLE -> ChartPalette.Purple
+    SessionTone.SECONDARY -> Color(QingyuTheme.secondaryText(dark))
 }
 
 /** 行内小徽标（Dart `HyperosTag`：圆角底 + footnote2 + 中等字重）。 */
 @Composable
 private fun Badge(
     text: String,
-    textColor: Int,
-    backgroundColor: Int,
+    textColor: Color,
+    backgroundColor: Color,
     backgroundAlpha: Float = 1f,
 ) {
     Box(
         modifier = Modifier
             .clip(RoundedCornerShape(6.dp))
-            .background(Color(backgroundColor).copy(alpha = backgroundAlpha))
+            .background(backgroundColor.copy(alpha = backgroundAlpha))
             .padding(horizontal = 8.dp, vertical = 3.dp),
     ) {
         Text(
             text = text,
             style = MiuixTheme.textStyles.footnote1.shiftWeight(QingyuWeightDelta.MEDIUM),
-            color = Color(textColor),
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+            color = textColor,
         )
     }
 }
 
-/** 区块（Dart `HyperosSettingsBlock`：块头 + 卡内内容）。 */
+/**
+ * 区块（Dart `HyperosSettingsBlock`：块头 + 卡内内容）。
+ *
+ * @param insideMargin 卡内边距：记录覆盖块用默认 16/14；课次列表传 0，
+ *   行边距由每行自己承担（16/13），与发布版 `settingsRowPadding` 一致。
+ */
 @Composable
-private fun SectionBlock(title: String, content: @Composable () -> Unit) {
-    val dark = isSystemInDarkTheme()
+private fun SectionBlock(
+    title: String,
+    insideMargin: PaddingValues = PaddingValues(horizontal = 16.dp, vertical = 14.dp),
+    content: @Composable () -> Unit,
+) {
     Column(modifier = Modifier.fillMaxWidth()) {
         QingyuSectionTitle(text = title)
         QingyuCard(
             modifier = Modifier.fillMaxWidth(),
-            insideMargin = PaddingValues(horizontal = 16.dp, vertical = 14.dp),
+            insideMargin = insideMargin,
         ) {
             content()
         }
