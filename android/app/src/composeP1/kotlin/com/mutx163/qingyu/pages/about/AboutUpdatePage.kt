@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -25,10 +26,10 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.mutx163.qingyu.components.QingyuCard
-import com.mutx163.qingyu.components.QingyuCardDefaults
 import com.mutx163.qingyu.components.QingyuGlassIconButton
 import com.mutx163.qingyu.components.QingyuPageCardMargin
 import com.mutx163.qingyu.components.QingyuPageList
+import com.mutx163.qingyu.components.QingyuSectionTitle
 import com.mutx163.qingyu.components.QingyuWeightDelta
 import com.mutx163.qingyu.components.shiftWeight
 import com.mutx163.qingyu.infra.AppReleaseInfo
@@ -45,6 +46,7 @@ import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TextButton
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.Tune
+import top.yukonga.miuix.kmp.preference.ArrowPreference
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import java.util.Locale
 
@@ -60,8 +62,18 @@ import java.util.Locale
  * - "查看 Release" 改为**居中的文字动作**，不再与主按钮一样做成通栏按钮；
  * - 版本号用正文字阶（13sp）而非 11sp 等宽；检查中文案字号加大。
  *
+ * 2026-11-08 全面优化（对着官方 `miuix-demo` 的 `AboutPage` 找参照）：
+ * - 列表改**顶对齐**（去掉 `AboutPageListSpacingCentered`）：居中把约 165dp 空白搬到
+ *   标题栏下方，被读成「没加载出来」；demo 的身份块也是从顶部开始的。
+ * - 标题抬到 `title2 + SEMIBOLD`，图标 72 → 64dp：标题和版本号之间要有明显的字重落。
+ * - 动作从「两个等重蓝色文字链」改成官方 `ArrowPreference` 行（满行触控 + 右侧箭头），
+ *   与身份块用 1dp 细线分开：上面是「什么状态」，下面是「能做什么」。
+ * - 「更新说明」回到 `QingyuSectionTitle` 卡外分组标题（28dp 轴线）；卡内不再重复一行
+ *   「更新重点」小标题。
+ * - `更新于 {时间}` 从卡首通栏降到卡尾弱色元信息：日期不该是这张卡最先被读到的内容。
+ *
  * 判据与结构逐段对应 Dart `:605-1720`：顶栏标题 +「高级选项」入口 / 三态（检查中 /
- * 检查失败 / 就绪）/ 就绪=状态卡 + 更新说明卡 / 底部下载进度条。
+ * 检查失败 / 就绪）/ 就绪=状态卡 + 更新说明分组 + 说明卡 / 底部下载进度条。
  * 文案全部取自 [AboutUpdatePageStrings] / [AboutUpdateStrings]（ARB 逐字），本文件无中文字面量。
  */
 
@@ -222,9 +234,11 @@ private fun AboutUpdateReadyView(
         scrollBehavior = scrollBehavior,
         horizontalPadding = QingyuPageCardMargin,
         contentPadding = PaddingValues(bottom = AboutPageListBottomPadding),
-        // 内容不满一屏时整块**垂直居中**（消灭“全堆上半屏、下面空半屏”）；超过一屏时
-        // 照常从顶部排列并可滚动（居中只作用于有富余空间的情形）。间距走全族共享常量。
-        verticalArrangement = AboutPageListSpacingCentered,
+        // 2026-11-08 版面重排：改成**顶对齐**。原先的 `AboutPageListSpacingCentered` 把整组
+        // 内容垂直居中，结果标题栏下面空出约 165dp，被读成「内容没加载出来」；空白放在
+        // 视觉动线起点比放在底部更刺眼。现在内容从顶栏下 8dp 开始，空白只留在末尾。
+        extraTopPadding = 8.dp,
+        verticalArrangement = AboutPageListSpacing,
     ) {
         item(key = "status") {
             AboutUpdateStatusCardFull(
@@ -238,6 +252,15 @@ private fun AboutUpdateReadyView(
             )
         }
         if (!release?.body.isNullOrBlank()) {
+            // 分组标题走官方 SmallTitle 包装（28dp 轴线）。状态卡不再自称「这次更新」之后，
+            // 这里就是说明块唯一的入口，不会出现「一条信息说三遍」。列表已统一加 12dp
+            // 横向留白，所以标题内边距给 16dp 才能和卡内文字一起落在 28dp 轴线上。
+            item(key = "notes-title") {
+                QingyuSectionTitle(
+                    text = AboutUpdatePageStrings.releaseNotesTitle,
+                    insideMargin = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
+                )
+            }
             item(key = "notes") { NotesSection(release) }
         }
     }
@@ -286,26 +309,34 @@ private fun AboutUpdateStatusCardFull(
     }
     val openReleaseList: () -> Unit = { onOpenUrl(releaseListUrlFor(channel)) }
 
+    // 卡内不再放 16dp 统一内边距：上半是自排的身份块（居中、20/16），下半是官方
+    // ArrowPreference 行（自带 16dp），两者要各自控制内边距，否则行会缩进成 32dp。
     QingyuCard(
         modifier = Modifier.fillMaxWidth(),
-        insideMargin = QingyuCardDefaults.ContentInsideMargin,
+        insideMargin = PaddingValues(0.dp),
     ) {
         Column(
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(start = 16.dp, top = 20.dp, end = 16.dp, bottom = 16.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
-            AppIconBadge()
-            Spacer(Modifier.height(14.dp))
+            AppIconBadge(size = 64.dp)
+            Spacer(Modifier.height(12.dp))
             Text(
                 text = if (hasUpdate) {
                     AboutUpdateStrings.updateAvailableHeadline
                 } else {
                     AboutUpdateStrings.alreadyLatestHeadline
                 },
-                style = MiuixTheme.textStyles.main
-                    .shiftWeight(if (hasUpdate) QingyuWeightDelta.SEMIBOLD else 0),
+                // 标题抬到 title2 + 半粗：标题和版本号只差一级半粗度不够时，
+                // 全卡最宽的那行（版本号）会抢走视觉重心。
+                style = MiuixTheme.textStyles.title2
+                    .shiftWeight(QingyuWeightDelta.SEMIBOLD),
                 color = if (hasUpdate) colors.primary else colors.onSurface,
                 textAlign = TextAlign.Center,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
             )
             Spacer(Modifier.height(6.dp))
             if (hasUpdate) {
@@ -313,7 +344,7 @@ private fun AboutUpdateStatusCardFull(
                     currentVersion = result.currentVersion,
                     latestVersion = release?.version ?: AboutUpdatePageStrings.unreleasedLabel,
                 )
-                Spacer(Modifier.height(20.dp))
+                Spacer(Modifier.height(18.dp))
                 // 只有「有更新」才用醒目的主按钮下载——本页唯一的主操作。
                 Button(
                     onClick = onPrimary,
@@ -322,50 +353,63 @@ private fun AboutUpdateStatusCardFull(
                 ) {
                     Text(primaryLabel)
                 }
-                // 主按钮已经是「查看 Release」时不再重复给文字链接，避免两处同一动作。
-                if (primaryAction != AboutUpdatePrimaryAction.OPEN_RELEASE_PAGE) {
-                    Spacer(Modifier.height(4.dp))
-                    InlineTextAction(text = AboutUpdateStrings.viewReleaseAction, onClick = openReleaseList)
-                }
             } else {
-                // 已是最新：版本号降级成一行弱化小字；动作收成一行纯文字
-                //（不再是灰色通栏大按钮 + 灰色药丸两个叠着的块）。
+                // 已是最新：版本号降级成一行弱化小字（单行省略，技术串不许把卡撑宽）。
                 Text(
                     text = result.currentVersion,
                     style = MiuixTheme.textStyles.footnote1,
                     color = colors.onSurfaceVariantSummary,
                     textAlign = TextAlign.Center,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
                 )
-                Spacer(Modifier.height(10.dp))
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.Center,
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    InlineTextAction(text = AboutUpdateStrings.retryAction, onClick = onRefresh)
-                    Spacer(Modifier.width(4.dp))
-                    InlineTextAction(text = AboutUpdateStrings.viewReleaseAction, onClick = openReleaseList)
-                }
+            }
+        }
+
+        // 动作区：身份块陈述「现在是什么状态」，这一块才回答「我能做什么」。
+        // 用一根 1dp 细线分开，动作换成官方 ArrowPreference 行（自带 16dp 内边距、
+        // 满行触控高度与右侧箭头）——比两个等重的蓝色文字链挤在卡片中间清楚得多，
+        // 也不会再把 30dp 高的裸文字当按钮。
+        val showReleaseRow = !hasUpdate || primaryAction != AboutUpdatePrimaryAction.OPEN_RELEASE_PAGE
+        if (showReleaseRow) {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(1.dp)
+                    .background(colors.secondaryContainer),
+            )
+            if (hasUpdate) {
+                ArrowPreference(title = AboutUpdateStrings.viewReleaseAction, onClick = openReleaseList)
+            } else {
+                ArrowPreference(title = AboutUpdateStrings.retryAction, onClick = onRefresh)
+                ArrowPreference(title = AboutUpdateStrings.viewReleaseAction, onClick = openReleaseList)
             }
         }
     }
 }
 
 /**
- * 一行纯文字动作：主色可点、无底色、无药丸背景——用于「重新检查 / 查看 Release」这类次级出口，
- * 与「有更新」时那颗醒目的填充主按钮形成明确主次（避免再出现两个上下叠的灰色按钮块）。
+ * 一行纯文字动作：主色可点、无底色、无药丸背景——用于「检查失败 → 重新检查」这种唯一出口。
+ *
+ * 触控区最小 44dp（高）12dp（横向内边距）：之前是 30dp 高的裸文字，手指按不准；
+ * 视觉尺寸不变，靠透明热区把命中范围扩大。
  */
 @Composable
 private fun InlineTextAction(text: String, onClick: () -> Unit) {
-    Text(
-        text = text,
-        style = MiuixTheme.textStyles.footnote1.shiftWeight(QingyuWeightDelta.MEDIUM),
-        color = MiuixTheme.colorScheme.primary,
+    Box(
         modifier = Modifier
-            .clip(RoundedCornerShape(6.dp))
+            .clip(RoundedCornerShape(8.dp))
             .clickable(onClick = onClick)
-            .padding(horizontal = 8.dp, vertical = 4.dp),
-    )
+            .heightIn(min = 44.dp)
+            .padding(horizontal = 12.dp),
+        contentAlignment = Alignment.Center,
+    ) {
+        Text(
+            text = text,
+            style = MiuixTheme.textStyles.footnote1.shiftWeight(QingyuWeightDelta.MEDIUM),
+            color = MiuixTheme.colorScheme.primary,
+        )
+    }
 }
 
 /** Dart `_buildVersionTransition`：旧版本弱化 → 箭头 → 新版本强调（版本号走正文字阶，不用等宽）。 */
@@ -400,10 +444,12 @@ private fun VersionTransition(currentVersion: String, latestVersion: String) {
 }
 
 /**
- * 更新说明正文卡：**不再贴「更新说明」标题与装饰图标**——状态卡已经在陈述“这次更新”，
- * 卡片正文本身就是更新内容，再压一个章节标题属于重复的次要标签（用户原则：让布局自己说话、
- * 一条信息只出现一次）。这里只保留一行 `更新于 {时间}` 元信息，用一根 1dp 细线与正文分隔；
- * 没有更新时间时正文直接从卡片内边距开始。文案键仍复用既有 [AboutUpdatePageStrings]（与 ARB 逐字对拍）。
+ * 更新说明正文卡：**不再贴「更新说明」标题与装饰图标**——分组标题已经在卡外说明这是什么，
+ * 卡片正文直接就是更新内容（用户原则：让布局自己说话、一条信息只出现一次）。
+ *
+ * 2026-11-08：`更新于 {时间}` 从**卡首通栏**降到**卡尾弱色元信息**。日期放在最上面时，
+ * 它是这张卡里最先被读到的内容，而它恰恰是最不重要的；通栏细线还把圆角卡切成两段。
+ * 现在信息次序是「重点 → 计数 → 展开 → 时间」，时间作为出处收尾。
  */
 @Composable
 private fun NotesSection(release: AppReleaseInfo?) {
@@ -417,33 +463,28 @@ private fun NotesSection(release: AppReleaseInfo?) {
         insideMargin = PaddingValues(0.dp),
     ) {
         Column(modifier = Modifier.fillMaxWidth()) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(start = 16.dp, top = 16.dp, end = 16.dp, bottom = 16.dp),
+            ) {
+                NotesBodyContent(body)
+            }
             if (updatedText != null) {
-                Text(
-                    text = updatedText,
-                    style = MiuixTheme.textStyles.footnote1,
-                    color = colors.onSurfaceVariantSummary,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(start = 16.dp, top = 14.dp, end = 16.dp, bottom = 12.dp),
-                )
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(1.dp)
                         .background(colors.secondaryContainer),
                 )
-            }
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(
-                        start = 16.dp,
-                        top = if (updatedText != null) 12.dp else 16.dp,
-                        end = 16.dp,
-                        bottom = 16.dp,
-                    ),
-            ) {
-                NotesBodyContent(body)
+                Text(
+                    text = updatedText,
+                    style = MiuixTheme.textStyles.footnote1,
+                    color = colors.onSurfaceVariantSummary,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(start = 16.dp, top = 10.dp, end = 16.dp, bottom = 14.dp),
+                )
             }
         }
     }
@@ -477,18 +518,15 @@ private fun NotesBodyContent(body: String) {
 /** 更新重点 + 分类计数；完整条目默认收起、点开铺开（共享件，与更新日志页同一形态）。
  *
  *  与 Dart 的刻意分歧（Dart `initiallyExpanded: true`）：一版动辄几十条全部铺开会把
- *  状态卡挤出一整屏灰字；现在重点行 + 计数常显，全文在「查看全部 N 项」后面，
- *  信息一条不少、首屏只给重点。展开/收起文案复用更新日志页的既有 ARB 键。 */
+ *  文案堆成一整屏灰字；现在重点行 + 计数常显，全文在「查看全部 N 项」后面，
+ *  信息一条不少、首屏只给重点。
+ *
+ *  2026-11-08：删掉卡内的「更新重点」小标题——卡外已经有「更新说明」分组标题，
+ *  再压一行灰字就是同一句话说两遍；重点直接以列表开场，计数字接在列表尾部。 */
 @Composable
 private fun ExpandedDigest(digest: ReleaseNotesDigest) {
     val colors = MiuixTheme.colorScheme
     Column(modifier = Modifier.fillMaxWidth()) {
-        Text(
-            text = ChangelogStrings.highlightsTitle,
-            style = MiuixTheme.textStyles.footnote1.shiftWeight(QingyuWeightDelta.SEMIBOLD),
-            color = colors.onSurfaceVariantSummary,
-        )
-        Spacer(Modifier.height(8.dp))
         for (highlight in digest.highlights) {
             ReleaseNotesHighlightRow(highlight)
         }
