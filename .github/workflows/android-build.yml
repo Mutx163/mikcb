@@ -29,6 +29,10 @@ jobs:
       # analyze / test / 编码 / CJK / HyperOS / JVM 单测全跑过一遍（是下面检查项的
       # 超集）。同一 SHA 的绿灯直接复用，省掉这次重复的 7～8 分钟；查不到绿灯
       # （没推 main、CI 还在跑、刚失败）就照常跑完整检查，一步不少。
+      #
+      # ⚠️ 2026-11-08：阶段 1 起 ci.yml 的 Analyze / Test 是 continue-on-error，
+      # 「ci 绿」不再等于「Dart 测试通过」。所以发版这里**只复用 analyze**，
+      # `flutter test` 无论如何都要真跑（见下方 Test 步骤）。
       - name: Reuse green CI for this commit
         id: reuse
         shell: bash
@@ -85,8 +89,8 @@ jobs:
           distribution: temurin
           java-version: '21'
 
+      # 测试要真跑，Flutter 工具链就不能跟着 reuse 跳过。
       - name: Set up Flutter
-        if: steps.reuse.outputs.reuse != 'true'
         uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2 # v2
         with:
           flutter-version: ${{ env.FLUTTER_STABLE_VERSION }}
@@ -99,15 +103,15 @@ jobs:
           dart --version
 
       - name: Get dependencies
-        if: steps.reuse.outputs.reuse != 'true'
         run: flutter pub get
 
       - name: Analyze
         if: steps.reuse.outputs.reuse != 'true'
         run: flutter analyze --fatal-infos
 
+      # 不复用：ci 的 Test 步骤失败不会让 job 变红（continue-on-error），
+      # 只按「job 绿」复用会让发版一次测试都不跑。Dart 测试是发版前的硬闸门。
       - name: Test
-        if: steps.reuse.outputs.reuse != 'true'
         run: flutter test
 
   publish:
