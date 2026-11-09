@@ -8,11 +8,14 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
 import com.mutx163.qingyu.components.QingyuWeightDelta
 import com.mutx163.qingyu.components.shiftWeight
@@ -43,16 +46,22 @@ internal fun AddCourseWeekGridTile(
     Box(
         modifier = modifier
             .fillMaxWidth()
+            .clip(RoundedCornerShape(10.dp))
             .background(
-                if (isSelected) Color(QingyuTheme.primary(dark = dark)) else Color(QingyuTheme.card(dark)),
+                color = if (isSelected) Color(QingyuTheme.primary(dark = dark)) else Color(QingyuTheme.card(dark)),
+                shape = RoundedCornerShape(10.dp),
             )
             .border(
                 1.dp,
                 if (isSelected) Color.Transparent else Color(QingyuTheme.dividerLine(dark)),
-                RoundedCornerShape(8.dp),
+                RoundedCornerShape(10.dp),
             )
-            .clickable(onClick = onPress)
-            .padding(vertical = 10.dp),
+            .selectable(
+                selected = isSelected,
+                role = Role.Checkbox,
+                onClick = onPress,
+            )
+            .padding(vertical = 11.dp),
         contentAlignment = Alignment.Center,
     ) {
         // Dart 侧按钮文案是纯数字 `'$week'`，不带「第 N 周」整词。
@@ -145,16 +154,18 @@ internal fun AddCourseChoiceChip(
 ) {
     Box(
         modifier = modifier
+            .clip(RoundedCornerShape(10.dp))
             .background(
-                if (isSelected) Color(QingyuTheme.primary(dark = dark)) else Color(QingyuTheme.card(dark)),
+                color = if (isSelected) Color(QingyuTheme.primary(dark = dark)) else Color(QingyuTheme.card(dark)),
+                shape = RoundedCornerShape(10.dp),
             )
             .border(
                 1.dp,
                 if (isSelected) Color.Transparent else Color(QingyuTheme.dividerLine(dark)),
-                RoundedCornerShape(8.dp),
+                RoundedCornerShape(10.dp),
             )
             .clickable(onClick = onClick)
-            .padding(horizontal = 12.dp, vertical = 10.dp),
+            .padding(horizontal = 12.dp, vertical = 11.dp),
         contentAlignment = Alignment.Center,
     ) {
         Text(

@@ -3,7 +3,6 @@ package com.mutx163.qingyu.pages.course
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -19,6 +18,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
@@ -28,41 +28,46 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import com.mutx163.qingyu.components.QingyuCard
+import com.mutx163.qingyu.components.QingyuCardDefaults
 import com.mutx163.qingyu.components.QingyuGlassIconButton
 import com.mutx163.qingyu.components.QingyuPageCardMargin
-import com.mutx163.qingyu.components.rememberSheetMaxHeight
 import com.mutx163.qingyu.components.QingyuPageList
+import com.mutx163.qingyu.components.QingyuPageScaffold
 import com.mutx163.qingyu.components.QingyuPageTheme
+import com.mutx163.qingyu.components.QingyuSectionTitle
 import com.mutx163.qingyu.components.QingyuWeightDelta
 import com.mutx163.qingyu.components.glass.LocalQingyuPageBackdrop
+import com.mutx163.qingyu.components.rememberSheetMaxHeight
 import com.mutx163.qingyu.components.shiftWeight
 import com.mutx163.qingyu.core.Course
 import com.mutx163.qingyu.core.CourseNature
 import com.mutx163.qingyu.core.DialogGlassSpec
 import com.mutx163.qingyu.theme.QingyuTheme
+import top.yukonga.miuix.kmp.basic.HorizontalDivider
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.IconButton
-import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
-import top.yukonga.miuix.kmp.basic.Scaffold
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TextButton
 import top.yukonga.miuix.kmp.basic.TextField
-import top.yukonga.miuix.kmp.basic.TopAppBar
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.Add
-import top.yukonga.miuix.kmp.icon.extended.ChevronBackward
 import top.yukonga.miuix.kmp.icon.extended.Delete
+import top.yukonga.miuix.kmp.icon.extended.Info
+import top.yukonga.miuix.kmp.icon.extended.Notes
 import top.yukonga.miuix.kmp.icon.extended.Ok
 import top.yukonga.miuix.kmp.icon.extended.Remove
 import top.yukonga.miuix.kmp.layout.DialogGlass
 import top.yukonga.miuix.kmp.overlay.OverlayDialog
+import top.yukonga.miuix.kmp.preference.ArrowPreference
 import top.yukonga.miuix.kmp.preference.WindowDropdownPreference
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import top.yukonga.miuix.kmp.utils.overScrollVertical
@@ -209,70 +214,57 @@ fun AddCoursePage(
     }
 
     val pageTitle = if (isEditing) AddCourseStrings.editCourseTitle.text else AddCourseStrings.addCourseTitle.text
-    // 顶栏折叠行为：Dart 侧同一页面走 HyperosSubpage 默认参数
-    // （`collapsibleLargeTitle` 默认 true，见 `hyperos_page.dart:170`），标题是纯 Text ⇒ 有大标题。
-    // 一个页面实例一个：返回重新进入应从展开态开始。
-    val scrollBehavior = MiuixScrollBehavior()
 
-    QingyuPageTheme {
-        Scaffold(
-            containerColor = Color(QingyuTheme.scaffoldBackground(dark)),
-            topBar = {
-                TopAppBar(
-                    title = pageTitle,
-                    largeTitle = pageTitle,
-                    scrollBehavior = scrollBehavior,
-                    color = Color(QingyuTheme.scaffoldBackground(dark)),
-                    navigationIcon = {
-                        IconButton(onClick = ::requestBack) {
-                            Icon(
-                                imageVector = MiuixIcons.ChevronBackward,
-                                contentDescription = AddCourseStrings.cancelAction.text,
-                                tint = Color(QingyuTheme.actionIcon(dark)),
-                            )
-                        }
-                    },
-                    // 右上动作键与左上返回键同一套外观：共享玻璃圆底 + 细边 + 小外浮影。
-                    actions = {
-                        if (isEditing) {
-                            QingyuGlassIconButton(
-                                onClick = { confirmDelete = true },
-                                contentDescription = AddCourseStrings.deleteAction.text,
-                                icon = MiuixIcons.Delete,
-                                tint = Color(QingyuTheme.actionIcon(dark)),
-                            )
-                        }
-                        QingyuGlassIconButton(
-                            onClick = ::save,
-                            contentDescription = AddCourseStrings.saveAction.text,
-                            icon = MiuixIcons.Ok,
-                            tint = Color(QingyuTheme.actionIcon(dark)),
-                        )
-                    },
+    // 页面骨架走共享件（R1）：折叠大标题、顶栏玻璃、返回键与动作键的玻璃圆底、
+    // 动作键间距全由骨架统一注入；本页只保留业务动作，不再手拼 Scaffold + TopAppBar。
+    QingyuPageScaffold(
+        title = pageTitle,
+        onBack = ::requestBack,
+        actions = {
+            if (isEditing) {
+                QingyuGlassIconButton(
+                    onClick = { confirmDelete = true },
+                    contentDescription = AddCourseStrings.deleteAction.text,
+                    icon = MiuixIcons.Delete,
+                    tint = Color(QingyuTheme.actionIcon(dark)),
                 )
-            },
-        ) { innerPadding ->
-            // 主滚动统一走共享套件（R2）：内含官方三件套（末端轻震 + 过度滚动 + 顶栏联动）
-            // 与右侧滚动条；`innerPadding` 由套件自己吃掉，不再手写 Column + padding。
-            // 横向留白按配方由每个块自己带 12dp，**不**放进 contentPadding
-            //（放进去滚动条会跟着内缩、也偏离 28dp 轴线）。
-            QingyuPageList(
-                innerPadding = innerPadding,
-                modifier = Modifier.imePadding(),
-                scrollBehavior = scrollBehavior,
-                contentPadding = PaddingValues(top = 8.dp, bottom = 8.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp),
-            ) {
-                // ── 校验错误横幅（Dart 为 toast；同一份文案键）──
-                val pageError = nameError ?: entryError
-                if (!pageError.isNullOrEmpty()) {
-                    item(key = "error") {
-                        QingyuCard(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(horizontal = QingyuPageCardMargin),
-                            insideMargin = PaddingValues(horizontal = 14.dp, vertical = 10.dp),
-                        ) {
+            }
+            QingyuGlassIconButton(
+                onClick = ::save,
+                contentDescription = AddCourseStrings.saveAction.text,
+                icon = MiuixIcons.Ok,
+                tint = Color(QingyuTheme.actionIcon(dark)),
+            )
+        },
+    ) {
+        // 主滚动统一走共享套件（R2）；横向留白按配方由每个块自己带 12dp，
+        // 不放进 contentPadding（否则滚动条内缩、也偏离 28dp 文字轴线）。
+        QingyuPageList(
+            innerPadding = innerPadding,
+            modifier = Modifier.imePadding(),
+            scrollBehavior = scrollBehavior,
+            contentPadding = PaddingValues(top = 4.dp, bottom = 24.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            // ── 校验错误横幅：名称错误已经在字段下方就地提示，顶部只承接
+            // 可能滚出屏幕的「排课条目」错误（两条都挂会让同一句话出现两遍）──
+            val pageError = entryError
+            if (!pageError.isNullOrEmpty()) {
+                item(key = "error") {
+                    QingyuCard(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = QingyuPageCardMargin),
+                        insideMargin = PaddingValues(horizontal = 14.dp, vertical = 12.dp),
+                    ) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Icon(
+                                imageVector = MiuixIcons.Info,
+                                contentDescription = null,
+                                tint = Color(QingyuTheme.error(dark)),
+                                modifier = Modifier.size(18.dp),
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
                             Text(
                                 text = pageError,
                                 style = MiuixTheme.textStyles.body2,
@@ -281,81 +273,104 @@ fun AddCoursePage(
                         }
                     }
                 }
+            }
 
-                item(key = "shared_info") {
-                    // ── 共享信息卡 ──
-                    QingyuCard(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = QingyuPageCardMargin),
-                        insideMargin = PaddingValues(horizontal = 14.dp, vertical = 12.dp),
-                    ) {
-                        Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                            Column {
-                                Text(
-                                    text = AddCourseStrings.sharedInfoTitle.text,
-                                    style = MiuixTheme.textStyles.body2.shiftWeight(QingyuWeightDelta.MEDIUM),
-                                    color = MiuixTheme.colorScheme.onSurfaceVariantActions,
+            // ── 实时课程名片：名称 / 简称 / 教师 / 教室 / 性质 / 颜色 / 首条排课一变就跟着变 ──
+            item(key = "identity") {
+                AddCourseIdentityCard(
+                    name = sharedName,
+                    shortName = sharedShortName,
+                    teacher = sharedTeacher,
+                    location = sharedLocation,
+                    nature = courseNature,
+                    colorHex = selectedColor,
+                    firstEntry = entries.firstOrNull(),
+                    dark = dark,
+                )
+            }
+
+            // ── 共享信息：分组标题在卡外（官方 SmallTitle），卡内普通内容统一 16dp；
+            // 性质是官方 Preference 行（自带 16dp），所以卡片本身不再给 insideMargin。
+            item(key = "shared_info") {
+                QingyuSectionTitle(AddCourseStrings.sharedInfoTitle.text)
+                Text(
+                    text = AddCourseStrings.sharedInfoInlineHint.text,
+                    style = MiuixTheme.textStyles.footnote2,
+                    color = Color(QingyuTheme.secondaryText(dark)),
+                    modifier = Modifier.padding(start = 28.dp, end = 28.dp, bottom = 8.dp),
+                )
+                QingyuCard(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = QingyuPageCardMargin),
+                    insideMargin = PaddingValues(0.dp),
+                ) {
+                    Column(modifier = Modifier.fillMaxWidth()) {
+                        Column(
+                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 16.dp),
+                            verticalArrangement = Arrangement.spacedBy(14.dp),
+                        ) {
+                            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                                TextField(
+                                    value = sharedName,
+                                    onValueChange = {
+                                        sharedName = it
+                                        nameError = null
+                                        markDirty()
+                                    },
+                                    label = AddCourseStrings.courseNameLabel.text,
+                                    useLabelAsPlaceholder = true,
+                                    singleLine = true,
+                                    modifier = Modifier.fillMaxWidth(),
                                 )
                                 Text(
-                                    text = AddCourseStrings.sharedInfoInlineHint.text,
+                                    text = nameError ?: AddCourseStrings.courseNameHelper.text,
+                                    style = MiuixTheme.textStyles.footnote1,
+                                    color = Color(
+                                        if (nameError != null) {
+                                            QingyuTheme.error(dark)
+                                        } else {
+                                            QingyuTheme.secondaryText(dark)
+                                        },
+                                    ),
+                                )
+                            }
+                            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    TextField(
+                                        value = sharedShortName,
+                                        onValueChange = {
+                                            sharedShortName = it
+                                            markDirty()
+                                        },
+                                        label = AddCourseStrings.courseShortNameOptional.text,
+                                        useLabelAsPlaceholder = true,
+                                        singleLine = true,
+                                        modifier = Modifier.weight(1f),
+                                    )
+                                    Spacer(modifier = Modifier.width(8.dp))
+                                    // 官方 TextButton：自带 squircle 底、按压反馈与 Role.Button。
+                                    TextButton(
+                                        text = AddCourseStrings.courseShortNameAutoFillAction.text,
+                                        onClick = {
+                                            val auto = AddCourseFormLogic.autofillShortName(sharedName)
+                                            if (auto.isNotEmpty()) {
+                                                sharedShortName = auto
+                                                markDirty()
+                                            }
+                                        },
+                                        minWidth = 0.dp,
+                                        minHeight = 0.dp,
+                                        insideMargin = PaddingValues(horizontal = 14.dp, vertical = 11.dp),
+                                        textStyle = MiuixTheme.textStyles.body2,
+                                    )
+                                }
+                                Text(
+                                    text = AddCourseStrings.courseShortNameHelper.text,
                                     style = MiuixTheme.textStyles.footnote1,
                                     color = Color(QingyuTheme.secondaryText(dark)),
                                 )
                             }
-                            TextField(
-                                value = sharedName,
-                                onValueChange = {
-                                    sharedName = it
-                                    nameError = null
-                                    markDirty()
-                                },
-                                label = AddCourseStrings.courseNameLabel.text,
-                                useLabelAsPlaceholder = true,
-                                singleLine = true,
-                                modifier = Modifier.fillMaxWidth(),
-                            )
-                            Text(
-                                text = nameError ?: AddCourseStrings.courseNameHelper.text,
-                                style = MiuixTheme.textStyles.footnote1,
-                                color = Color(
-                                    if (nameError != null) QingyuTheme.error(dark) else QingyuTheme.secondaryText(dark),
-                                ),
-                            )
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                TextField(
-                                    value = sharedShortName,
-                                    onValueChange = {
-                                        sharedShortName = it
-                                        markDirty()
-                                    },
-                                    label = AddCourseStrings.courseShortNameOptional.text,
-                                    useLabelAsPlaceholder = true,
-                                    singleLine = true,
-                                    modifier = Modifier.weight(1f),
-                                )
-                                Spacer(modifier = Modifier.width(8.dp))
-                                // 官方 TextButton（非自绘按钮）：与输入框同级的小胶囊，自带 squircle 底、按压反馈与 Role.Button。
-                                TextButton(
-                                    text = AddCourseStrings.courseShortNameAutoFillAction.text,
-                                    onClick = {
-                                        val auto = AddCourseFormLogic.autofillShortName(sharedName)
-                                        if (auto.isNotEmpty()) {
-                                            sharedShortName = auto
-                                            markDirty()
-                                        }
-                                    },
-                                    minWidth = 0.dp,
-                                    minHeight = 0.dp,
-                                    insideMargin = PaddingValues(horizontal = 14.dp, vertical = 11.dp),
-                                    textStyle = MiuixTheme.textStyles.body2,
-                                )
-                            }
-                            Text(
-                                text = AddCourseStrings.courseShortNameHelper.text,
-                                style = MiuixTheme.textStyles.footnote1,
-                                color = Color(QingyuTheme.secondaryText(dark)),
-                            )
                             TextField(
                                 value = sharedTeacher,
                                 onValueChange = {
@@ -390,126 +405,127 @@ fun AddCoursePage(
                                 maxLines = 4,
                                 modifier = Modifier.fillMaxWidth(),
                             )
-                            val natureOptions = listOf(
-                                CourseNature.REQUIRED to AddCourseStrings.courseNatureRequired.text,
-                                CourseNature.ELECTIVE to AddCourseStrings.courseNatureElective.text,
-                            )
-                            WindowDropdownPreference(
-                                items = natureOptions.map { it.second },
-                                selectedIndex = natureOptions.indexOfFirst { it.first == courseNature },
-                                title = AddCourseStrings.courseNatureLabel.text,
-                                onSelectedIndexChange = { index ->
-                                    natureOptions.getOrNull(index)?.let { (nature, _) ->
-                                        courseNature = nature
-                                        markDirty()
-                                    }
-                                },
-                            )
+                        }
+                        HorizontalDivider(
+                            modifier = Modifier.padding(horizontal = 16.dp),
+                            color = MiuixTheme.colorScheme.dividerLine,
+                        )
+                        val natureOptions = listOf(
+                            CourseNature.REQUIRED to AddCourseStrings.courseNatureRequired.text,
+                            CourseNature.ELECTIVE to AddCourseStrings.courseNatureElective.text,
+                        )
+                        WindowDropdownPreference(
+                            items = natureOptions.map { it.second },
+                            selectedIndex = natureOptions.indexOfFirst { it.first == courseNature },
+                            title = AddCourseStrings.courseNatureLabel.text,
+                            onSelectedIndexChange = { index ->
+                                natureOptions.getOrNull(index)?.let { (nature, _) ->
+                                    courseNature = nature
+                                    markDirty()
+                                }
+                            },
+                        )
+                        HorizontalDivider(
+                            modifier = Modifier.padding(horizontal = 16.dp),
+                            color = MiuixTheme.colorScheme.dividerLine,
+                        )
+                        Column(
+                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 16.dp),
+                            verticalArrangement = Arrangement.spacedBy(12.dp),
+                        ) {
                             Text(
                                 text = AddCourseStrings.courseColorTitle.text,
-                                style = MiuixTheme.textStyles.body2,
-                                color = Color(QingyuTheme.primaryText(dark)),
-                            )
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                            ) {
-                                for (hex in kCourseColorPalette) {
-                                    val isChosen = selectedColor.equals(hex, ignoreCase = true)
-                                    Box(
-                                        modifier = Modifier
-                                            .size(28.dp)
-                                            .background(
-                                                color = Color(android.graphics.Color.parseColor(hex)),
-                                                shape = CircleShape,
-                                            )
-                                            .border(
-                                                width = if (isChosen) 2.dp else 1.dp,
-                                                color = if (isChosen) {
-                                                    Color(QingyuTheme.primaryText(dark))
-                                                } else {
-                                                    Color(QingyuTheme.dividerLine(dark))
-                                                },
-                                                shape = CircleShape,
-                                            )
-                                            .clickable {
-                                                selectedColor = hex
-                                                markDirty()
-                                            },
-                                    )
-                                }
-                            }
-                        }
-                    }
-                }
-
-                item(key = "schedule_entries") {
-                    // ── 排课记录卡 ──
-                    QingyuCard(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = QingyuPageCardMargin),
-                        insideMargin = PaddingValues(horizontal = 14.dp, vertical = 12.dp),
-                    ) {
-                        Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                            Text(
-                                text = AddCourseFormLogic.scheduleEntryCardTitle(entries.size),
                                 style = MiuixTheme.textStyles.body2.shiftWeight(QingyuWeightDelta.MEDIUM),
                                 color = MiuixTheme.colorScheme.onSurfaceVariantActions,
                             )
-                            entries.forEachIndexed { index, entry ->
-                                AddCourseEntryFields(
-                                    index = index,
-                                    entry = entry,
-                                    entryCount = entries.size,
-                                    dark = dark,
-                                    availableWeeks = availableWeeks,
-                                    globalSectionCount = globalSectionCount,
-                                    entrySchemeSectionCount = entrySchemeSectionCount,
-                                    onDayOfWeekChange = { day -> updateEntry(index) { it.copy(dayOfWeek = day) } },
-                                    onStartSectionChange = { section -> updateEntry(index) { it.copy(startSection = section) } },
-                                    onEndSectionChange = { section -> updateEntry(index) { it.copy(endSection = section) } },
-                                    onTeacherChange = { teacher -> updateEntry(index) { it.copy(teacher = teacher) } },
-                                    onLocationChange = { location -> updateEntry(index) { it.copy(location = location) } },
-                                    onOpenWeekPicker = {
-                                        weekDraftEntryId = entry.id
-                                        weekDraft = AddCourseWeekDraftLogic.fromEntry(entry)
-                                    },
-                                    onRemoveEntry = {
-                                        entries = entries.filterIndexed { i, _ -> i != index }
-                                        markDirty()
-                                    },
-                                )
-                            }
-                            Row(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .clickable {
-                                        val last = entries.lastOrNull()
-                                        entries = entries + AddCourseFormLogic.nextEntryAfter(
-                                            last = last,
-                                            sharedTeacher = sharedTeacher,
-                                            sharedLocation = sharedLocation,
-                                        )
-                                        markDirty()
-                                    }
-                                    .padding(vertical = 8.dp),
-                                verticalAlignment = Alignment.CenterVertically,
-                            ) {
-                                Icon(
-                                    imageVector = MiuixIcons.Add,
-                                    contentDescription = null,
-                                    tint = Color(QingyuTheme.primary(dark = dark)),
-                                    modifier = Modifier.size(17.dp),
-                                )
-                                Spacer(modifier = Modifier.width(8.dp))
-                                Text(
-                                    text = AddCourseStrings.addScheduleEntryAction.text,
-                                    style = MiuixTheme.textStyles.body2,
-                                    color = Color(QingyuTheme.primary(dark = dark)),
-                                )
-                            }
+                            AddCourseColorSwatches(
+                                selectedColor = selectedColor,
+                                dark = dark,
+                                onSelect = { hex ->
+                                    selectedColor = hex
+                                    markDirty()
+                                },
+                            )
                         }
+                    }
+                }
+            }
+
+            // ── 排课记录：一条一张独立卡片；序号徽标沿用课程颜色，卡片之间只留 12dp ──
+            item(key = "schedule_section_title") {
+                QingyuSectionTitle(AddCourseFormLogic.scheduleEntryCardTitle(entries.size))
+            }
+            entries.forEachIndexed { index, entry ->
+                item(key = "schedule_entry_${entry.id}") {
+                    AddCourseEntryFields(
+                        index = index,
+                        entry = entry,
+                        entryCount = entries.size,
+                        dark = dark,
+                        accentColor = selectedColor,
+                        modifier = Modifier.padding(horizontal = QingyuPageCardMargin),
+                        availableWeeks = availableWeeks,
+                        globalSectionCount = globalSectionCount,
+                        entrySchemeSectionCount = entrySchemeSectionCount,
+                        onDayOfWeekChange = { day -> updateEntry(index) { it.copy(dayOfWeek = day) } },
+                        onStartSectionChange = { section -> updateEntry(index) { it.copy(startSection = section) } },
+                        onEndSectionChange = { section -> updateEntry(index) { it.copy(endSection = section) } },
+                        onTeacherChange = { teacher -> updateEntry(index) { it.copy(teacher = teacher) } },
+                        onLocationChange = { location -> updateEntry(index) { it.copy(location = location) } },
+                        onOpenWeekPicker = {
+                            weekDraftEntryId = entry.id
+                            weekDraft = AddCourseWeekDraftLogic.fromEntry(entry)
+                        },
+                        onRemoveEntry = {
+                            entries = entries.filterIndexed { i, _ -> i != index }
+                            markDirty()
+                        },
+                    )
+                }
+            }
+            item(key = "add_entry") {
+                QingyuCard(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = QingyuPageCardMargin),
+                    insideMargin = PaddingValues(horizontal = 16.dp, vertical = 14.dp),
+                    onClick = {
+                        val last = entries.lastOrNull()
+                        entries = entries + AddCourseFormLogic.nextEntryAfter(
+                            last = last,
+                            sharedTeacher = sharedTeacher,
+                            sharedLocation = sharedLocation,
+                        )
+                        markDirty()
+                    },
+                ) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .size(30.dp)
+                                .background(
+                                    Color(QingyuTheme.primary(dark = dark))
+                                        .copy(alpha = if (dark) 0.22f else 0.10f),
+                                    CircleShape,
+                                ),
+                            contentAlignment = Alignment.Center,
+                        ) {
+                            Icon(
+                                imageVector = MiuixIcons.Add,
+                                contentDescription = null,
+                                tint = Color(QingyuTheme.primary(dark = dark)),
+                                modifier = Modifier.size(18.dp),
+                            )
+                        }
+                        Spacer(modifier = Modifier.width(12.dp))
+                        Text(
+                            text = AddCourseStrings.addScheduleEntryAction.text,
+                            style = MiuixTheme.textStyles.body1.shiftWeight(QingyuWeightDelta.MEDIUM),
+                            color = Color(QingyuTheme.primary(dark = dark)),
+                        )
                     }
                 }
             }
@@ -637,6 +653,192 @@ fun AddCoursePage(
     }
 }
 
+// ── 课程名片 / 十色盘 / 单条排课卡片 ────────────────────────────────────────
+
+/** 把课程色解析成 Compose 颜色；用户数据里的坏值回落主题主色，不让整页崩。 */
+private fun parseCourseColor(hex: String, fallback: Color): Color =
+    runCatching { Color(android.graphics.Color.parseColor(hex)) }.getOrDefault(fallback)
+
+/**
+ * 实时课程名片：填写过程中就能看到「这门课长什么样」。
+ * 纯展示，所有取值都来自当前表单草稿，不参与保存载荷。
+ */
+@Composable
+private fun AddCourseIdentityCard(
+    name: String,
+    shortName: String,
+    teacher: String,
+    location: String,
+    nature: CourseNature,
+    colorHex: String,
+    firstEntry: AddCourseScheduleEntryData?,
+    dark: Boolean,
+) {
+    val swatch = parseCourseColor(colorHex, Color(QingyuTheme.primary(dark = dark)))
+    // 文字用对比度修正后的同色相取值：浅色（黄 / 青）在亮底上也读得清；
+    // 色块本身仍用用户选的原色，所见即所得。
+    val accent = Color(QingyuTheme.primary(seedHex = colorHex, dark = dark))
+    val badgeText = shortName.trim()
+        .ifEmpty { AddCourseFormLogic.autofillShortName(name) }
+        .take(2)
+    val meta = listOf(teacher.trim(), location.trim())
+        .filter { it.isNotEmpty() }
+        .joinToString(" · ")
+
+    QingyuCard(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = QingyuPageCardMargin),
+        insideMargin = QingyuCardDefaults.ContentInsideMargin,
+    ) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Box(
+                modifier = Modifier
+                    .size(54.dp)
+                    .background(
+                        swatch.copy(alpha = if (dark) 0.26f else 0.14f),
+                        RoundedCornerShape(18.dp),
+                    )
+                    .border(
+                        width = 1.dp,
+                        color = swatch.copy(alpha = 0.32f),
+                        shape = RoundedCornerShape(18.dp),
+                    ),
+                contentAlignment = Alignment.Center,
+            ) {
+                if (badgeText.isEmpty()) {
+                    // 还没起名时不留空色块：放一张课程纸页图标当占位。
+                    Icon(
+                        imageVector = MiuixIcons.Notes,
+                        contentDescription = null,
+                        tint = accent,
+                        modifier = Modifier.size(22.dp),
+                    )
+                } else {
+                    Text(
+                        text = badgeText,
+                        style = MiuixTheme.textStyles.body1.shiftWeight(QingyuWeightDelta.SEMIBOLD),
+                        color = accent,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                }
+            }
+            Spacer(modifier = Modifier.width(14.dp))
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = name.trim().ifEmpty { AddCourseStrings.courseNameLabel.text },
+                    style = MiuixTheme.textStyles.title4,
+                    color = if (name.isBlank()) {
+                        Color(QingyuTheme.secondaryText(dark))
+                    } else {
+                        Color(QingyuTheme.primaryText(dark))
+                    },
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+                Spacer(modifier = Modifier.height(3.dp))
+                Text(
+                    text = meta.ifEmpty { AddCourseStrings.sharedInfoInlineHint.text },
+                    style = MiuixTheme.textStyles.footnote1,
+                    color = Color(QingyuTheme.secondaryText(dark)),
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                    AddCourseMetaPill(
+                        text = AddCourseStrings.courseNatureName(nature),
+                        tint = accent,
+                    )
+                    firstEntry?.let { entry ->
+                        AddCourseMetaPill(
+                            text = AddCourseStrings.weekdayName(entry.dayOfWeek) + " · " +
+                                AddCourseStrings.sectionRangeText(entry.startSection, entry.endSection),
+                            tint = Color(QingyuTheme.actionIcon(dark)),
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+/** 名片上的小胶囊：课程性质 / 首条排课摘要。 */
+@Composable
+private fun AddCourseMetaPill(text: String, tint: Color) {
+    Text(
+        text = text,
+        style = MiuixTheme.textStyles.footnote2.shiftWeight(QingyuWeightDelta.MEDIUM),
+        color = tint,
+        maxLines = 1,
+        overflow = TextOverflow.Ellipsis,
+        modifier = Modifier
+            .background(tint.copy(alpha = 0.12f), RoundedCornerShape(999.dp))
+            .padding(horizontal = 8.dp, vertical = 3.dp),
+    )
+}
+
+/**
+ * 十色盘：两行五列。
+ *
+ * 十个圆点原来挤在一行：400dp 屏卡内只剩 344dp，最后两颗会被裁掉。
+ * 改成两行五列后单行 224dp，任何字号档都不会溢出；选中态用 2dp 环 + 对勾，
+ * 不靠颜色本身区分（色弱用户也能看出选中）。
+ */
+@Composable
+private fun AddCourseColorSwatches(
+    selectedColor: String,
+    dark: Boolean,
+    onSelect: (String) -> Unit,
+) {
+    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+        kCourseColorPalette.chunked(5).forEach { rowColors ->
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                // 32dp 圆点 + 16dp 间距：Compose 的 48dp 最小触控区互不重叠，
+                // 既不会点错色，也仍然排得进 400dp 屏的卡内宽度。
+                horizontalArrangement = Arrangement.spacedBy(16.dp, Alignment.CenterHorizontally),
+            ) {
+                rowColors.forEach { hex ->
+                    val swatch = parseCourseColor(hex, Color(QingyuTheme.primary(dark = dark)))
+                    val isChosen = selectedColor.equals(hex, ignoreCase = true)
+                    Box(
+                        modifier = Modifier
+                            .size(32.dp)
+                            .clip(CircleShape)
+                            .background(swatch)
+                            .border(
+                                width = if (isChosen) 2.dp else 1.dp,
+                                color = if (isChosen) {
+                                    Color(QingyuTheme.primaryText(dark))
+                                } else {
+                                    Color(QingyuTheme.dividerLine(dark)).copy(alpha = 0.7f)
+                                },
+                                shape = CircleShape,
+                            )
+                            .selectable(
+                                selected = isChosen,
+                                role = Role.RadioButton,
+                                onClick = { onSelect(hex) },
+                            ),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        if (isChosen) {
+                            Icon(
+                                imageVector = MiuixIcons.Ok,
+                                contentDescription = null,
+                                tint = Color.White,
+                                modifier = Modifier.size(16.dp),
+                            )
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
 /** 单条排课记录的输入区（星期 / 起止节次 / 哪些周上 / 条目教师教室 / 删除）。 */
 @Composable
 private fun AddCourseEntryFields(
@@ -644,6 +846,8 @@ private fun AddCourseEntryFields(
     entry: AddCourseScheduleEntryData,
     entryCount: Int,
     dark: Boolean,
+    accentColor: String,
+    modifier: Modifier = Modifier,
     availableWeeks: List<Int>,
     globalSectionCount: Int,
     entrySchemeSectionCount: (AddCourseScheduleEntryData, String) -> Int?,
@@ -671,21 +875,43 @@ private fun AddCourseEntryFields(
         mode = entry.weekSelectionMode,
     )
     val weekdayNames = AddCourseStrings.weekdayNames()
+    val swatch = parseCourseColor(accentColor, Color(QingyuTheme.primary(dark = dark)))
+    val accent = Color(QingyuTheme.primary(seedHex = accentColor, dark = dark))
     QingyuCard(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = modifier.fillMaxWidth(),
         insideMargin = PaddingValues(0.dp),
     ) {
         Column(modifier = Modifier.fillMaxWidth()) {
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(start = 14.dp, top = 10.dp, end = 6.dp),
+                    .padding(start = 16.dp, top = 14.dp, end = 8.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
+                // 序号徽标：与错误文案里的「排课记录 N」同号，同时把课程色带进每张卡。
+                Box(
+                    modifier = Modifier
+                        .size(26.dp)
+                        .background(
+                            swatch.copy(alpha = if (dark) 0.24f else 0.12f),
+                            CircleShape,
+                        ),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Text(
+                        text = (index + 1).toString(),
+                        style = MiuixTheme.textStyles.footnote1.shiftWeight(QingyuWeightDelta.SEMIBOLD),
+                        color = accent,
+                    )
+                }
+                Spacer(modifier = Modifier.width(10.dp))
                 Text(
-                    text = AddCourseStrings.scheduleEntryIndexTitle(index + 1),
-                    style = MiuixTheme.textStyles.body2.shiftWeight(QingyuWeightDelta.MEDIUM),
+                    text = AddCourseStrings.weekdayName(entry.dayOfWeek) + " · " +
+                        AddCourseStrings.sectionRangeText(entry.startSection, entry.endSection),
+                    style = MiuixTheme.textStyles.body1.shiftWeight(QingyuWeightDelta.SEMIBOLD),
                     color = Color(QingyuTheme.primaryText(dark)),
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
                     modifier = Modifier.weight(1f),
                 )
                 if (entryCount > 1) {
@@ -723,51 +949,37 @@ private fun AddCourseEntryFields(
                     sectionNumbers.getOrNull(position)?.let(onEndSectionChange)
                 },
             )
-            // 「哪些周上」行：摘要即保存校验同一口径（selectedWeeksSummaryText）。
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clickable(onClick = onOpenWeekPicker)
-                    .padding(horizontal = 14.dp, vertical = 12.dp),
-                verticalAlignment = Alignment.CenterVertically,
+            // 「哪些周上」行：官方 ArrowPreference，摘要仍走保存校验同一口径。
+            ArrowPreference(
+                title = AddCourseStrings.scheduleEntryWeeksSectionTitle.text,
+                summary = weekSummary,
+                onClick = onOpenWeekPicker,
+            )
+            HorizontalDivider(
+                modifier = Modifier.padding(horizontal = 16.dp),
+                color = MiuixTheme.colorScheme.dividerLine,
+            )
+            Column(
+                modifier = Modifier.padding(horizontal = 16.dp, vertical = 14.dp),
+                verticalArrangement = Arrangement.spacedBy(10.dp),
             ) {
-                Text(
-                    text = AddCourseStrings.scheduleEntryWeeksSectionTitle.text,
-                    style = MiuixTheme.textStyles.body1,
-                    color = Color(QingyuTheme.primaryText(dark)),
+                TextField(
+                    value = entry.teacher,
+                    onValueChange = onTeacherChange,
+                    label = AddCourseStrings.teacherLabel.text,
+                    useLabelAsPlaceholder = true,
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth(),
                 )
-                Spacer(modifier = Modifier.weight(1f))
-                Text(
-                    text = weekSummary,
-                    style = MiuixTheme.textStyles.body2,
-                    color = Color(QingyuTheme.secondaryText(dark)),
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                    modifier = Modifier.weight(2f),
+                TextField(
+                    value = entry.location,
+                    onValueChange = onLocationChange,
+                    label = AddCourseStrings.locationLabel.text,
+                    useLabelAsPlaceholder = true,
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth(),
                 )
             }
-            TextField(
-                value = entry.teacher,
-                onValueChange = onTeacherChange,
-                label = AddCourseStrings.teacherLabel.text,
-                useLabelAsPlaceholder = true,
-                singleLine = true,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 14.dp),
-            )
-            Spacer(modifier = Modifier.height(8.dp))
-            TextField(
-                value = entry.location,
-                onValueChange = onLocationChange,
-                label = AddCourseStrings.locationLabel.text,
-                useLabelAsPlaceholder = true,
-                singleLine = true,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 14.dp),
-            )
-            Spacer(modifier = Modifier.height(12.dp))
         }
     }
 }
