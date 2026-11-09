@@ -169,7 +169,7 @@ class SettingsResetPageTest {
     // ---------------------------------------------------------- 作用域字段表
 
     @Test
-    fun `课程卡片作用域逐字段列出二十项`() {
+    fun `课程卡片作用域逐字段列出二十一项`() {
         // :50-73
         assertEquals(
             listOf(
@@ -186,6 +186,7 @@ class SettingsResetPageTest {
                 "compactFontSize",
                 "timetableUseUnifiedCardColor",
                 "timetableUnifiedCardColor",
+                "dayViewUseCourseColor",
                 "showConflictBadgeOnTimetable",
                 "timetableConflictCourseOpacity",
                 "linkCourseCardColors",

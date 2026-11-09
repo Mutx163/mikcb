@@ -177,6 +177,16 @@ object SettingsCourseCardPage {
             children = buildList {
                 add(
                     settingsRow(
+                        id = "courseCard.dayViewColor",
+                        component = MiuixRowComponent.SWITCH,
+                        title = SettingsStrings.dayViewCourseCardColorTitle,
+                        subtitle = SettingsStrings.dayViewCourseCardColorSubtitle,
+                        switchValue = state.dayViewUseCourseColor,
+                        action = SettingsAction.WRITE_SETTING,
+                    ),
+                )
+                add(
+                    settingsRow(
                         id = "courseCard.unifiedColor",
                         component = MiuixRowComponent.SWITCH,
                         title = SettingsStrings.unifiedCourseCardColorTitle,

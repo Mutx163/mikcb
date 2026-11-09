@@ -1064,6 +1064,8 @@ private fun DayViewPreview(
         showConflictBadge = settingsModel.showConflictBadgeOnTimetable,
         // 冲突压淡也读草稿设置：拖滑杆时预览卡当场跟着变（与周视图预览同一条口径）。
         conflictCourseOpacity = settingsModel.timetableConflictCourseOpacity.toFloat(),
+        // 日视图课程卡颜色同样读草稿设置：在设置页关掉后，预览当场变主题卡片底色。
+        useCourseColors = settingsModel.dayViewUseCourseColor,
         hasExamOnDate = { date ->
             repository.exams.any { exam ->
                 CourseTask.dateOnly(exam.dateTime).toLocalDate() == date

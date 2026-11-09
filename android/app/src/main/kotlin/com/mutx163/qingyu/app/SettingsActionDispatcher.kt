@@ -163,6 +163,7 @@ object SettingsActionDispatcher {
     const val ROW_CARD_FONT_SIZE = "courseCard.cardFontSize"
     const val ROW_CARD_COMPACT_FONT_SIZE = "courseCard.compactFontSize"
     const val ROW_CARD_UNIFIED_COLOR = "courseCard.unifiedColor"
+    const val ROW_CARD_DAY_VIEW_COLOR = "courseCard.dayViewColor"
     const val ROW_CARD_CONFLICT_BADGE = "courseCard.conflictBadge"
     const val ROW_CARD_CONFLICT_OPACITY = "courseCard.conflictOpacity"
     const val ROW_CARD_TEXT_LINK = "courseCard.textColors.link"
@@ -500,6 +501,7 @@ object SettingsActionDispatcher {
                 compactFontSize = 9.0,
                 timetableUseUnifiedCardColor = false,
                 timetableUnifiedCardColor = TimetableSettingsModel.DEFAULT_UNIFIED_CARD_COLOR,
+                dayViewUseCourseColor = true,
                 showConflictBadgeOnTimetable = true,
                 timetableConflictCourseOpacity = 0.70,
                 linkCourseCardColors = true,
@@ -700,6 +702,9 @@ object SettingsActionDispatcher {
 
             ROW_CARD_UNIFIED_COLOR ->
                 model.copy(timetableUseUnifiedCardColor = !model.timetableUseUnifiedCardColor)
+
+            ROW_CARD_DAY_VIEW_COLOR ->
+                model.copy(dayViewUseCourseColor = !model.dayViewUseCourseColor)
 
             ROW_CARD_CONFLICT_BADGE ->
                 model.copy(showConflictBadgeOnTimetable = !model.showConflictBadgeOnTimetable)

@@ -97,6 +97,14 @@ data class TimetableSettingsModel(
     val compactFontSize: Double = 9.0, // :1386
     val timetableUseUnifiedCardColor: Boolean = false, // :1726
     val timetableUnifiedCardColor: String = DEFAULT_UNIFIED_CARD_COLOR, // :1728
+    /**
+     * 日视图课程卡片是否按课程颜色上色（关掉改用主题卡片底色）。
+     *
+     * 周视图的「统一课程卡片颜色」只管周网格；日视图此前没有任何开关，
+     * 每张卡恒按 `course.color` 上色。这个键只影响日视图的课程卡，
+     * 日程卡 / 考试卡 / 摘要卡不受影响。
+     */
+    val dayViewUseCourseColor: Boolean = true,
     val showConflictBadgeOnTimetable: Boolean = true, // :1400
     /** `timetableConflictCourseOpacity`（:1402，clamp 0.2~1.0）。 */
     val timetableConflictCourseOpacity: Double = 0.70,
@@ -379,6 +387,7 @@ data class TimetableSettingsModel(
         "compactFontSize" to compactFontSize,
         "timetableUseUnifiedCardColor" to timetableUseUnifiedCardColor,
         "timetableUnifiedCardColor" to timetableUnifiedCardColor,
+        "dayViewUseCourseColor" to dayViewUseCourseColor,
         "showConflictBadgeOnTimetable" to showConflictBadgeOnTimetable,
         "timetableConflictCourseOpacity" to timetableConflictCourseOpacity,
         "linkCourseCardColors" to linkCourseCardColors,
@@ -674,6 +683,7 @@ data class TimetableSettingsModel(
             "compactFontSize",
             "timetableUseUnifiedCardColor",
             "timetableUnifiedCardColor",
+            "dayViewUseCourseColor",
             "showConflictBadgeOnTimetable",
             "timetableConflictCourseOpacity",
             "linkCourseCardColors",
@@ -839,6 +849,7 @@ data class TimetableSettingsModel(
                     LenientJson.bool(json["timetableUseUnifiedCardColor"]) ?: false,
                 timetableUnifiedCardColor = LenientJson.string(json["timetableUnifiedCardColor"])
                     ?: DEFAULT_UNIFIED_CARD_COLOR,
+                dayViewUseCourseColor = LenientJson.bool(json["dayViewUseCourseColor"]) ?: true,
                 showConflictBadgeOnTimetable =
                     LenientJson.bool(json["showConflictBadgeOnTimetable"]) ?: true,
                 timetableConflictCourseOpacity =

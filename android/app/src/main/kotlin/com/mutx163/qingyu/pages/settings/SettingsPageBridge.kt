@@ -392,6 +392,7 @@ object SettingsPageBridge {
             compactFontSize = model.compactFontSize,
             timetableUseUnifiedCardColor = model.timetableUseUnifiedCardColor,
             timetableUnifiedCardColor = model.timetableUnifiedCardColor,
+            dayViewUseCourseColor = model.dayViewUseCourseColor,
             showConflictBadgeOnTimetable = model.showConflictBadgeOnTimetable,
             timetableConflictCourseOpacity = model.timetableConflictCourseOpacity,
             linkCourseCardColors = model.linkCourseCardColors,

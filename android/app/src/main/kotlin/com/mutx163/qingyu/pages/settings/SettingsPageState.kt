@@ -54,6 +54,8 @@ data class SettingsPageState(
     val compactFontSize: Double = 9.0, // :755
     val timetableUseUnifiedCardColor: Boolean = false, // :901
     val timetableUnifiedCardColor: String = "#2563EB", // :902
+    /** 日视图课程卡是否按课程颜色上色（关掉用主题卡片底色）。 */
+    val dayViewUseCourseColor: Boolean = true,
     val showConflictBadgeOnTimetable: Boolean = true, // :763
     val timetableConflictCourseOpacity: Double = 0.70, // :764
     val linkCourseCardColors: Boolean = true, // :924

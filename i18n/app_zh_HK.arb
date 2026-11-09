@@ -283,6 +283,8 @@
   "selectSemesterWeekCountTitle": "選擇學期周數",
   "unifiedCourseCardColorTitle": "統一課程卡片顏色",
   "unifiedCourseCardColorSubtitle": "關閉後繼續使用每門課程自己的顏色",
+  "dayViewCourseCardColorTitle": "日檢視課程卡片顏色",
+  "dayViewCourseCardColorSubtitle": "關閉後改用主題卡片底色",
   "importRandomCourseColorTitle": "隨機課程顏色",
   "importRandomCourseColorSubtitle": "依課程名與教師自動分配預設色",
   "importRandomColorGroupTitle": "隨機配色組",

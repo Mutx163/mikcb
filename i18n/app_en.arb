@@ -403,6 +403,8 @@
   "selectSemesterWeekCountTitle": "Select Semester Week Count",
   "unifiedCourseCardColorTitle": "Unified card color",
   "unifiedCourseCardColorSubtitle": "Off: each keeps own color",
+  "dayViewCourseCardColorTitle": "Day view card color",
+  "dayViewCourseCardColorSubtitle": "Off: use theme card color",
   "importRandomCourseColorTitle": "Random colors",
   "importRandomCourseColorSubtitle": "Colors by name and teacher",
   "importRandomColorGroupTitle": "Random color group",

@@ -218,6 +218,7 @@ class SettingsCourseCardPageTest {
             .filterIsInstance<SettingsLabel>().first { it.id == "courseCard.color.label" }.textKey)
         assertEquals(
             listOf(
+                "courseCard.dayViewColor",
                 "courseCard.unifiedColor",
                 "courseCard.recolor",
                 "courseCard.conflictBadge",
@@ -227,6 +228,7 @@ class SettingsCourseCardPageTest {
         )
         assertEquals(
             listOf(
+                "courseCard.dayViewColor",
                 "courseCard.unifiedColor",
                 "courseCard.colorChips",
                 "courseCard.recolor",
@@ -234,6 +236,20 @@ class SettingsCourseCardPageTest {
                 "courseCard.conflictOpacity",
             ),
             spec(SettingsPageState(timetableUseUnifiedCardColor = true)).group("courseCard.color").childIds(),
+        )
+    }
+
+    @Test
+    fun `日视图课程卡片颜色开关文案与默认值`() {
+        val row = spec().row("courseCard.dayViewColor")
+        assertEquals("日视图课程卡片颜色", row.title)
+        assertEquals("dayViewCourseCardColorSubtitle", row.subtitleKey)
+        assertEquals("关闭后改用主题卡片底色", row.subtitle)
+        assertEquals(true, row.switchValue)
+        assertEquals(
+            false,
+            spec(SettingsPageState(dayViewUseCourseColor = false))
+                .row("courseCard.dayViewColor").switchValue,
         )
     }
 

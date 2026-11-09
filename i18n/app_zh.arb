@@ -403,6 +403,8 @@
   "selectSemesterWeekCountTitle": "选择学期周数",
   "unifiedCourseCardColorTitle": "统一课程卡片颜色",
   "unifiedCourseCardColorSubtitle": "关闭后继续使用每门课程自己的颜色",
+  "dayViewCourseCardColorTitle": "日视图课程卡片颜色",
+  "dayViewCourseCardColorSubtitle": "关闭后改用主题卡片底色",
   "importRandomCourseColorTitle": "随机课程颜色",
   "importRandomCourseColorSubtitle": "按课程名与教师自动分配预设色",
   "importRandomColorGroupTitle": "随机配色组",

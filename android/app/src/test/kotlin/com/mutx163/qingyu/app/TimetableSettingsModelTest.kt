@@ -62,6 +62,7 @@ class TimetableSettingsModelTest {
         assertEquals(9.0, model.compactFontSize, 0.0) // :1386
         assertFalse(model.timetableUseUnifiedCardColor) // :1726
         assertEquals("#2563EB", model.timetableUnifiedCardColor) // :1728
+        assertTrue(model.dayViewUseCourseColor)
         assertTrue(model.showConflictBadgeOnTimetable) // :1400
         assertEquals(0.70, model.timetableConflictCourseOpacity, 0.0) // :1402
         assertTrue(model.linkCourseCardColors) // :1296
@@ -743,6 +744,33 @@ class TimetableSettingsModelTest {
         assertTrue("键必须显式存在（值 null）", written.containsKey("themeCheckpointName"))
         assertNull(written["themeCheckpointName"])
         assertNull(store.load().themeCheckpointName)
+    }
+
+    @Test
+    fun dayViewCourseColorDefaultsOnAndRoundTripsThroughDisk() {
+        // 默认开 = 保持历史观感（日视图按课程色上色）；只有用户主动关掉才换主题卡底。
+        assertTrue(TimetableSettingsModel().dayViewUseCourseColor)
+        assertTrue(TimetableSettingsModel.fromJson(emptyMap()).dayViewUseCourseColor)
+        assertFalse(
+            TimetableSettingsModel.fromJson(mapOf("dayViewUseCourseColor" to false))
+                .dayViewUseCourseColor,
+        )
+        // 跨端类型漂移：字符串 'true' 也按真值收（LenientJson.bool 与 Dart lenientBool 同口径）。
+        assertTrue(
+            TimetableSettingsModel.fromJson(mapOf("dayViewUseCourseColor" to "true"))
+                .dayViewUseCourseColor,
+        )
+        assertTrue(TimetableSettingsModel.OWNED_KEYS.contains("dayViewUseCourseColor"))
+        assertEquals(
+            false,
+            TimetableSettingsModel(dayViewUseCourseColor = false)
+                .toJsonPatch()["dayViewUseCourseColor"],
+        )
+        assertEquals(
+            true,
+            TimetableSettingsModel(dayViewUseCourseColor = true)
+                .toJsonPatch()["dayViewUseCourseColor"],
+        )
     }
 
     @Test

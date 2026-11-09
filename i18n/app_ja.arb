@@ -283,6 +283,8 @@
   "selectSemesterWeekCountTitle": "学期週数を選択",
   "unifiedCourseCardColorTitle": "授業カードの色を統一",
   "unifiedCourseCardColorSubtitle": "オフで各授業の色を使用",
+  "dayViewCourseCardColorTitle": "日表示の授業カード色",
+  "dayViewCourseCardColorSubtitle": "オフでテーマのカード色",
   "importRandomCourseColorTitle": "授業カラーをランダム",
   "importRandomCourseColorSubtitle": "名前と教員で色を自動割り当て",
   "importRandomColorGroupTitle": "ランダム配色グループ",

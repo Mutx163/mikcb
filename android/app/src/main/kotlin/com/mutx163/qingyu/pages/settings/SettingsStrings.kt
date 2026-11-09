@@ -204,6 +204,10 @@ object SettingsStrings {
         ArbText("unifiedCourseCardColorTitle", "统一课程卡片颜色")
     val unifiedCourseCardColorSubtitle =
         ArbText("unifiedCourseCardColorSubtitle", "关闭后继续使用每门课程自己的颜色")
+    val dayViewCourseCardColorTitle =
+        ArbText("dayViewCourseCardColorTitle", "日视图课程卡片颜色")
+    val dayViewCourseCardColorSubtitle =
+        ArbText("dayViewCourseCardColorSubtitle", "关闭后改用主题卡片底色")
     val courseRecolorTileTitle = ArbText("courseRecolorTileTitle", "课表重新配色")
     val courseRecolorTileSubtitle = ArbText("courseRecolorTileSubtitle", "不用重新导入，可随时换色")
     val courseRecolorSheetTitle = ArbText("courseRecolorSheetTitle", "课表重新配色")

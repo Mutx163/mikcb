@@ -283,6 +283,8 @@
   "selectSemesterWeekCountTitle": "학기 주 수 선택",
   "unifiedCourseCardColorTitle": "수업 카드 색상 통일",
   "unifiedCourseCardColorSubtitle": "끄면 수업별 개별 색상 유지",
+  "dayViewCourseCardColorTitle": "일간 보기 수업 카드 색상",
+  "dayViewCourseCardColorSubtitle": "끄면 테마 카드 색상 사용",
   "importRandomCourseColorTitle": "수업 색상 무작위",
   "importRandomCourseColorSubtitle": "이름과 교수로 색 자동 배정",
   "importRandomColorGroupTitle": "랜덤 색상 그룹",

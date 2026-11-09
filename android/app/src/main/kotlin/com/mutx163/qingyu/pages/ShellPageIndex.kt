@@ -930,6 +930,8 @@ fun ShellPageContent(
                 // 冲突课卡压淡：与周视图共用一个设置键（`WeekViewStyle.conflictCourseOpacity`
                 // 从同一份存档映射），日视图此前没接这条。
                 conflictCourseOpacity = appSettings.timetableConflictCourseOpacity.toFloat(),
+                // 日视图课程卡是否按课程颜色上色（设置「日视图课程卡片颜色」）。
+                useCourseColors = appSettings.dayViewUseCourseColor,
                 // ── 作为首页展开层时：顶栏 / 星期栏由首页画（周视图那条共享玻璃带），
                 // 日视图只画正文；正文从 homePager 的顶栏高度开始，避免两套壳重叠。
                 showTopBar = dayOverlay == null,
@@ -997,6 +999,10 @@ fun ShellPageContent(
                             weatherOf = weatherOf?.let { resolve ->
                                 { date, course -> resolve(week, date, course) }
                             },
+                            // 预报还没到（开关开着 + 已选城市 + 未失败）：日卡先占住天气那一行的高度，
+                            // 到货后淡入。不这样的话数据到达那一刻整张卡会突然长高一行（用户实报）。
+                            weatherAwaiting = appSettings.weatherShowOnDayCard &&
+                                weatherProvider.isAwaitingData,
                             // 情侣课表叠加（B1 · 2026-11-06）：TA 课追加进当天议程并带
                             // 「TA的课」徽标（`DayViewCourseCard` 的渲染已就位）。null =
                             // 未绑定，装配层走旧路径。外观编辑页预览（独立调用点）不传它，

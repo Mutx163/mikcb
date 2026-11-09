@@ -139,6 +139,7 @@ enum class SettingsResetScope(
             "compactFontSize",
             "timetableUseUnifiedCardColor",
             "timetableUnifiedCardColor",
+            "dayViewUseCourseColor",
             "showConflictBadgeOnTimetable",
             "timetableConflictCourseOpacity",
             "linkCourseCardColors",

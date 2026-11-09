@@ -237,6 +237,7 @@ class SettingsActionDispatcherTest {
     @Test
     fun `统一色与冲突徽标开关 透明度钳制`() {
         assertTrue(write(SettingsActionDispatcher.ROW_CARD_UNIFIED_COLOR, null).timetableUseUnifiedCardColor)
+        assertFalse(write(SettingsActionDispatcher.ROW_CARD_DAY_VIEW_COLOR, null).dayViewUseCourseColor)
         assertFalse(write(SettingsActionDispatcher.ROW_CARD_CONFLICT_BADGE, null).showConflictBadgeOnTimetable)
         assertEquals(1.0, write(SettingsActionDispatcher.ROW_CARD_CONFLICT_OPACITY, "2").timetableConflictCourseOpacity, 0.0)
         assertEquals(0.2, write(SettingsActionDispatcher.ROW_CARD_CONFLICT_OPACITY, "0").timetableConflictCourseOpacity, 0.0)
@@ -338,6 +339,7 @@ class SettingsActionDispatcherTest {
             compactFontSize = 7.0,
             timetableUseUnifiedCardColor = true,
             timetableUnifiedCardColor = "#123456",
+            dayViewUseCourseColor = false,
             showConflictBadgeOnTimetable = false,
             timetableConflictCourseOpacity = 0.2,
             linkCourseCardColors = false,
@@ -359,6 +361,7 @@ class SettingsActionDispatcherTest {
         assertEquals(9.0, reset.compactFontSize, 0.0)
         assertEquals(false, reset.timetableUseUnifiedCardColor)
         assertEquals(TimetableSettingsModel.DEFAULT_UNIFIED_CARD_COLOR, reset.timetableUnifiedCardColor)
+        assertEquals(true, reset.dayViewUseCourseColor)
         assertEquals(true, reset.showConflictBadgeOnTimetable)
         assertEquals(0.70, reset.timetableConflictCourseOpacity, 0.0)
         assertEquals(true, reset.linkCourseCardColors)
