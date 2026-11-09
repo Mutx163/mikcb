@@ -52,7 +52,6 @@ import com.mutx163.qingyu.core.Course
 import com.mutx163.qingyu.core.CourseNature
 import com.mutx163.qingyu.core.DialogGlassSpec
 import com.mutx163.qingyu.theme.QingyuTheme
-import top.yukonga.miuix.kmp.basic.HorizontalDivider
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.IconButton
 import top.yukonga.miuix.kmp.basic.Text
@@ -406,10 +405,8 @@ fun AddCoursePage(
                                 modifier = Modifier.fillMaxWidth(),
                             )
                         }
-                        HorizontalDivider(
-                            modifier = Modifier.padding(horizontal = 16.dp),
-                            color = MiuixTheme.colorScheme.dividerLine,
-                        )
+                        // 官方 demo 同卡多行之间不画横线：分隔交给各行的内边距。
+                        Spacer(modifier = Modifier.height(4.dp))
                         val natureOptions = listOf(
                             CourseNature.REQUIRED to AddCourseStrings.courseNatureRequired.text,
                             CourseNature.ELECTIVE to AddCourseStrings.courseNatureElective.text,
@@ -425,10 +422,7 @@ fun AddCoursePage(
                                 }
                             },
                         )
-                        HorizontalDivider(
-                            modifier = Modifier.padding(horizontal = 16.dp),
-                            color = MiuixTheme.colorScheme.dividerLine,
-                        )
+                        Spacer(modifier = Modifier.height(4.dp))
                         Column(
                             modifier = Modifier.padding(horizontal = 16.dp, vertical = 16.dp),
                             verticalArrangement = Arrangement.spacedBy(12.dp),
@@ -955,10 +949,7 @@ private fun AddCourseEntryFields(
                 summary = weekSummary,
                 onClick = onOpenWeekPicker,
             )
-            HorizontalDivider(
-                modifier = Modifier.padding(horizontal = 16.dp),
-                color = MiuixTheme.colorScheme.dividerLine,
-            )
+            Spacer(modifier = Modifier.height(4.dp))
             Column(
                 modifier = Modifier.padding(horizontal = 16.dp, vertical = 14.dp),
                 verticalArrangement = Arrangement.spacedBy(10.dp),

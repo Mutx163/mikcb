@@ -36,9 +36,9 @@ com/mutx163/qingyu/transfer/lan/LanEditRepositoryHost.kt:7
 com/mutx163/qingyu/calendar/WeekExpressionParser.kt:6
 com/mutx163/qingyu/pages/ShellPageIndex.kt:6
 com/mutx163/qingyu/pages/live/DisplaySettingsModel.kt:6
+com/mutx163/qingyu/pages/settings/SettingsGlassDockIconEditorPage.kt:6
 com/mutx163/qingyu/pages/about/ChangelogModel.kt:5
 com/mutx163/qingyu/pages/settings/SettingsAppearancePage.kt:5
-com/mutx163/qingyu/pages/settings/SettingsGlassDockIconEditorPage.kt:5
 com/mutx163/qingyu/pages/settings/SettingsHomeWidgetPage.kt:5
 com/mutx163/qingyu/pages/transfer/QrFountainLt.kt:5
 com/mutx163/qingyu/share/qr/QrEncoder.kt:5

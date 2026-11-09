@@ -183,9 +183,8 @@ class TopBarActionGlassGuardTest {
     private val pendingNavigation: Map<String, Int> = mapOf(
         // 2026-11-05 批 1 迁走 AddTaskPage / ScheduleDateRulePage / TaskListPage；
         // 批 2 迁走 CourseOverviewPage / QrTransferScanPage / QrTransferSendPage；
-        // 批 3 迁走 ScheduleListPage。余下三页等各自的迁移批统一换 QingyuBackIconButton
-        // （AddCoursePage 随课程表单批、AddScheduleItemPage 与 TimetableProfilesPage 随外观批）。
-        "pages/course/AddCoursePage.kt" to 1,
+        // 批 3 迁走 ScheduleListPage；课程表单批迁走 AddCoursePage。
+        // 余下两页等外观批统一换 QingyuBackIconButton（AddScheduleItemPage 与 TimetableProfilesPage）。
         "pages/schedule/AddScheduleItemPage.kt" to 1,
         "pages/timetable/TimetableProfilesPage.kt" to 1,
         // 同样是手拼顶栏的页（不属这批，先登记以免新漂移没人看见）。
