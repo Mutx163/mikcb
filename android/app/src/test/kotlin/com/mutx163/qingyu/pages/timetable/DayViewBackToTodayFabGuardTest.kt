@@ -21,8 +21,10 @@ import java.io.File
  *    且不许出现 CircleShape；
  * 4. **投影与亮棱同时在**（任一项被删即红）；
  * 5. **触摸区**：`heightIn(min = BACK_TO_TODAY_FAB_MIN_HEIGHT_DP.dp)`，且 ≥48dp；
- * 6. **读屏完整语义**：contentDescription 接各自域的既有键，可见字只是单字「今」；
- * 7. **可见字短键**：两处都必须用 `DayViewStrings.backToTodayShort`；
+ * 6. **读屏完整语义**：contentDescription 接各自域的既有键；
+ * 7. **可见字对齐发布版**：日「回今日」（`backToTodayAction`）、周「回本周」
+ *    （`backToCurrentWeekAction`）——迁移期自造的单字「今」在 2026-11-09 迁移
+ *    退化审计里被判为退化并改回发布口径，本守卫钉住不许回流；
  * 8. **颜色**：共用件与两个调用点都禁写死 `Color(0xFF`。
  *
  * 沿用仓库源码文本守卫做法（判据先整篇剥注释，字符串感知、块注释按 Kotlin 语义可嵌套）。
@@ -48,9 +50,19 @@ class DayViewBackToTodayFabGuardTest {
                     "自己画一份等于两颗钮开始漂移（用户口径：周视图也用同一个按钮）。",
                 STATEMENT_RAW_FAB_CALL.containsMatchIn(source),
             )
-            assertTrue(
-                "$name 的可见字没有用 DayViewStrings.backToTodayShort——两处必须是同一个单字「今」。",
+            assertFalse(
+                "$name 的可见字还是迁移期自造的单字「今」（DayViewStrings.backToTodayShort）——" +
+                    "发布版 v2.1.4.1 的悬浮钮是完整动作文案（日「回今日」/ 周「回本周」）。",
                 source.contains("DayViewStrings.backToTodayShort.text"),
+            )
+            val releaseLabelKey = if (name == "DayViewPage") {
+                "DayViewStrings.backToTodayAction.text"
+            } else {
+                "TimetableStrings.backToCurrentWeekAction.text"
+            }
+            assertTrue(
+                "$name 的可见字没有接发布版动作文案（$releaseLabelKey）。",
+                source.contains(releaseLabelKey),
             )
             assertFalse(
                 "$name 又出现 monthViewBackToCurrentMonthShort——那是月视图的键，不得借用。",

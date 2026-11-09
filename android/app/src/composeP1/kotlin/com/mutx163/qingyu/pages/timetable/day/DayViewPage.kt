@@ -17,10 +17,12 @@ import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableDoubleStateOf
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -452,6 +454,34 @@ fun DayViewPage(
 
     val scope = rememberCoroutineScope()
     var showWeekSelector by remember { mutableStateOf(false) }
+
+    // ── 星期栏横向刮擦换日（Dart `timetable_screen.dart:3996-4004`）──
+    // 星期栏只负责把「滑过了几天」发出来（经 `DaySelectionBridge.onScrubShift`），
+    // 这里翻成目标页滚过去：连续滑就连续翻，跨周由全局页号天然处理。
+    // 累计目标页在停稳后归位，下一次刮擦从真实页接着算。
+    val scrubTargetPage = remember { mutableIntStateOf(-1) }
+    val scrubShift: (Int) -> Unit = remember(pagerState, pageCount, visibleDays) {
+        { deltaDays ->
+            val base = if (scrubTargetPage.intValue >= 0) {
+                scrubTargetPage.intValue
+            } else {
+                pagerState.currentPage
+            }
+            val target = (base + deltaDays).coerceIn(0, pageCount - 1)
+            if (target != base) {
+                scrubTargetPage.intValue = target
+                scope.launch { pagerState.animateScrollToPage(target) }
+            }
+        }
+    }
+    DisposableEffect(headerSelectionBridge, scrubShift) {
+        headerSelectionBridge.onScrubShift = scrubShift
+        onDispose { headerSelectionBridge.onScrubShift = null }
+    }
+    LaunchedEffect(pagerState) {
+        snapshotFlow { pagerState.isScrollInProgress }
+            .collect { scrolling -> if (!scrolling) scrubTargetPage.intValue = -1 }
+    }
 
     // 跨零点：`todayDate` 只是注入种子（测试可给固定日期），运行期按真实日历平移。
     // 只读参数的话，首页常驻不复位时「今天」高亮 / 回今日入口会停在昨天
@@ -983,7 +1013,9 @@ fun DayViewPage(
                     )
                 }
             },
-            label = DayViewStrings.backToTodayShort.text,
+            // 文案对齐发布版 `timetable_screen.dart:6090-6200`：屏上是完整「回今日」
+            //（ARB `backToTodayAction`），不是迁移期新造的单个「今」。
+            label = DayViewStrings.backToTodayAction.text,
             contentDescription = DayViewStrings.backToTodayAction.text,
             visible = showsBackToToday &&
                 (!embeddedInHomePanel || embeddedTransitionSettled),

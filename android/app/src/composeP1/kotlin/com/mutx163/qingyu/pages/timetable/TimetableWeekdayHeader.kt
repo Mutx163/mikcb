@@ -2,6 +2,7 @@ package com.mutx163.qingyu.pages.timetable
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -24,6 +25,7 @@ import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -37,6 +39,9 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.graphics.toArgb
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -176,6 +181,19 @@ class DaySelectionBridge {
     fun updatePagePosition(pagePosition: Float) {
         this.pagePosition = pagePosition
     }
+
+    /**
+     * 日视图「横向拖星期栏换日」的出口（Dart `timetable_screen.dart:3996-4004`
+     * `day-view-weekday-bar-swipe-area`：整条栏盖一块刮擦层，位移按可见天数放大后
+     * 注入日分页器，一根栏宽 = 一整周）。
+     *
+     * 由真正持有分页器的日页写入（`DayViewPage`）；`null` = 周视图 / 预览 / 没有
+     * 分页器 ⇒ 星期栏不装刮擦手势、只保留点选。必须是 Compose 状态：日页在星期栏
+     * **之后**组合，普通 var 改了不会让已经画出来的栏重新装手势。
+     *
+     * 参数单位是「天」，正数 = 往后一天。
+     */
+    var onScrubShift: ((deltaDays: Int) -> Unit)? by mutableStateOf(null)
 }
 
 /** `null` = 不是首页嵌入的日视图（周视图 / 独立日页 / 预览），星期栏用传入的参数值。 */
@@ -328,7 +346,48 @@ fun TimetableWeekdayHeader(
     fun selectedOnRow(rowWeek: Int): Int? =
         effectiveSelectedDayOfWeek?.takeIf { rowWeek == effectiveWeek }
 
-    Column(modifier = modifier.fillMaxWidth()) {
+    // ── 日视图：横向拖星期栏 = 跟手换日（Dart `timetable_screen.dart:3996-4004`）──
+    // 只有日页把回调写进桥时才装手势（周视图 / 预览没有分页器 ⇒ 不装，点选不受影响）。
+    // 换算口径与 Dart 的放大一致：一根栏宽 = 一整周，滑过一格宽就换一天。
+    val scrubShift = selectionBridge?.onScrubShift
+    val haptic = LocalHapticFeedback.current
+    val scrubModifier = if (scrubShift == null) {
+        Modifier
+    } else {
+        Modifier.pointerInput(scrubShift, visibleDays) {
+            var accumulated = 0f
+            detectHorizontalDragGestures(
+                onDragStart = { accumulated = 0f },
+                onHorizontalDrag = { change, dragAmount ->
+                    change.consume()
+                    accumulated += dragAmount
+                    val dayCount = visibleDays.size.coerceAtLeast(1)
+                    val stepWidth = size.width / dayCount.toFloat()
+                    if (stepWidth > 0f) {
+                        // 往右拖 = 上一天；往左拖 = 下一天（内容跟手）。
+                        // 一次手势跨多格就连翻多天，每翻一天保留一次「切日」触感
+                        //（Dart：整段拖动只保留日切换点击震感）。
+                        while (accumulated <= -stepWidth) {
+                            accumulated += stepWidth
+                            scrubShift(1)
+                            haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                        }
+                        while (accumulated >= stepWidth) {
+                            accumulated -= stepWidth
+                            scrubShift(-1)
+                            haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                        }
+                    }
+                },
+            )
+        }
+    }
+
+    Column(
+        modifier = modifier
+            .fillMaxWidth()
+            .then(scrubModifier),
+    ) {
         if (slide != null && slide.crossing) {
             // ── 跨周：整条（周次 + 七天 + 选中条）跟着分页器平移 ──
             // 同一周内整条不动，只有选中条跟手；只有这一格过渡段才把上一周整行滑出、
