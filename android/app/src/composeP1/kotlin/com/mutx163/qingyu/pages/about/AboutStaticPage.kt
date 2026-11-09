@@ -10,6 +10,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -28,8 +29,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -46,7 +47,19 @@ import com.mutx163.qingyu.components.shiftWeight
 import com.mutx163.qingyu.theme.QingyuTheme
 import top.yukonga.miuix.kmp.basic.Button
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
+import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.Text
+import top.yukonga.miuix.kmp.icon.MiuixIcons
+import top.yukonga.miuix.kmp.icon.extended.Community
+import top.yukonga.miuix.kmp.icon.extended.Favorites
+import top.yukonga.miuix.kmp.icon.extended.Import
+import top.yukonga.miuix.kmp.icon.extended.Info
+import top.yukonga.miuix.kmp.icon.extended.Link
+import top.yukonga.miuix.kmp.icon.extended.Messages
+import top.yukonga.miuix.kmp.icon.extended.Notes
+import top.yukonga.miuix.kmp.icon.extended.Recent
+import top.yukonga.miuix.kmp.icon.extended.Report
+import top.yukonga.miuix.kmp.icon.extended.Update
 import top.yukonga.miuix.kmp.preference.ArrowPreference
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
@@ -54,11 +67,14 @@ import top.yukonga.miuix.kmp.theme.MiuixTheme
  * 关于页「静态信息区 + 头部信息卡 + 说明/仓库弹层」· Compose 渲染层（Phase 3，2026-10-28 补全）。
  *
  * 对照 Flutter `lib/screens/about_screen.dart` 的 `AboutScreen`（:234-603）：
- * 1. **头部信息卡**：应用图标 + 应用名 + 版本号 + 一句定位 + 三格元信息条 + 第三方免责声明
+ * 1. **头部信息卡**：应用图标 + 应用名 + 版本号 + 一句定位 + 三格元信息条
  *    （Dart :252-294）。此前 Compose 版**整块缺失**，这是与老版本最直观的差异。
- * 2. **三段列表**：支持与更新 / 产品 / 社区，行走 [QingyuRow]，顺序由 [aboutInfoSections] 钉住。
+ * 2. **三段列表**：支持与更新 / 产品 / 社区，一组一个 item（标题 + 官方 [ArrowPreference] 卡），
+ *    顺序由 [aboutInfoSections] 钉住；行首图标取自模型层的 `AboutRowIcon`，配色统一走官方
+ *    demo 的 `onBackground` 单色（2026-11-09 A 方案；`accentArgb` 仍留在模型层供 Dart 对拍）。
  * 3. **10 个入口全部接线**：导航类转成壳页面 id 交给 [onOpenPage]；说明类（项目定位 / 导入迁移）
  *    弹 [AboutInfoSheet]；开源仓库弹 [AboutRepositorySheet]。
+ * 4. **页尾免责声明**：第三方声明从头部卡移到三段列表之后，12sp 左对齐（2026-11-09）。
  *
  * ## 为什么头部卡在这里画而不是壳
  *
@@ -69,11 +85,15 @@ import top.yukonga.miuix.kmp.theme.MiuixTheme
  *
  * 本文件**不含任何中文字面量**（i18n 棘轮 `CjkLiteralGateTest` 管着渲染层）：屏上文案全部取自
  * main 层 [AboutInfoStrings] / [AboutRepositoryStrings]，与 `app_zh.arb` 逐字一致。
+ *
+ * @param versionOverride 仅 IDE 预览用：注入假版本号，避开 Preview 里 PackageManager 读不到
+ *   真实值导致版本行整行不画；生产调用不传。
  */
 @Composable
 fun AboutStaticPage(
     onBack: () -> Unit,
     onOpenPage: (String) -> Unit,
+    versionOverride: String? = null,
 ) {
     val sections = aboutInfoSections()
     var infoSheetEntry by remember { mutableStateOf<AboutInfoEntry?>(null) }
@@ -96,25 +116,30 @@ fun AboutStaticPage(
         ) {
             // ── 头部信息卡 ──
             item(key = "about-hero") {
-                AboutHeroCard()
+                AboutHeroCard(versionOverride = versionOverride)
             }
 
             // ── 三段列表：一段一张设置组卡（圆角 24），行走官方 ArrowPreference ──
             // （2026-11-03 版面收口：原先一行一张自拼卡、行内 Row+箭头手拼，
             //   与高级选项页的官方 preference 形态不一致。）
             for (section in sections) {
-                item(key = "section-${section.label}") {
-                    QingyuSectionTitle(section.label)
-                }
+                // 一组 = 一个 item（官方配方）：标题与卡片之间不再夹一层 12dp 列表间距，
+                // 标题到卡片顶只剩 SmallTitle 自带的 8dp，与 demo 的「段首贴合」一致。
                 item(key = "group-${section.label}") {
+                    QingyuSectionTitle(
+                        text = section.label,
+                        // 列表已统一加 12dp（horizontalPadding = QingyuPageCardMargin），标题这里
+                        // 必须只让 16dp，才能和卡内 Preference 的 16dp 落在同一条 28dp 轴线；
+                        // 继续用默认 28 ⇒ 12 + 28 = 40，标题比整张卡缩进一格（2026-11-08 修）。
+                        insideMargin = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
+                    )
                     QingyuCard(
                         modifier = Modifier.fillMaxWidth(),
                         cornerRadius = QingyuCardDefaults.SettingsGroupCorner,
                     ) {
                         section.entries.forEach { entry ->
-                            ArrowPreference(
-                                title = entry.title,
-                                summary = entry.subtitle.takeIf { it.isNotEmpty() },
+                            AboutEntryRow(
+                                entry = entry,
                                 onClick = {
                                     when (entry.kind) {
                                         // 说明层：页内弹层，不外跳。
@@ -130,6 +155,11 @@ fun AboutStaticPage(
                         }
                     }
                 }
+            }
+
+            // ── 页尾免责声明（2026-11-09 从头部卡移出）──
+            item(key = "about-legal") {
+                AboutLegalFooter()
             }
         }
     }
@@ -178,29 +208,89 @@ private fun routeOf(kind: AboutEntryKind): String = when (kind) {
     AboutEntryKind.REPOSITORY -> "a.about"
 }
 
+/**
+ * 一行入口：官方 [ArrowPreference] + 行首单色图标。
+ *
+ * 图标语义仍由模型层给（[AboutInfoEntry.icon]），渲染层只负责翻译成官方矢量；**配色统一**
+ * 走官方 demo 的 `onBackground` 单色（`ArrowSection.kt:49-70`），不再逐行取彩豆色
+ * （2026-11-09 A 方案：彩豆色亮暗差异过大，五色并排也压不住）。图标外面那圈 8dp 是同一
+ * 官方配方的固定间距（不包的话图标贴住标题）。
+ */
+@Composable
+private fun AboutEntryRow(entry: AboutInfoEntry, onClick: () -> Unit) {
+    ArrowPreference(
+        title = entry.title,
+        summary = entry.subtitle.takeIf { it.isNotEmpty() },
+        startAction = {
+            Box(modifier = Modifier.padding(end = 8.dp)) {
+                Icon(
+                    imageVector = entry.icon.toMiuixIcon(),
+                    // 标题已经把这一行说清楚了，图标只是装饰，读屏不再重复念一遍。
+                    contentDescription = null,
+                    tint = MiuixTheme.colorScheme.onBackground,
+                )
+            }
+        },
+        onClick = onClick,
+    )
+}
+
+/** 模型层的语义图标 → 官方图标包里的矢量（模型层不依赖 Compose，翻译只能在渲染层做）。 */
+private fun AboutRowIcon.toMiuixIcon(): ImageVector = when (this) {
+    AboutRowIcon.FAVORITES -> MiuixIcons.Favorites
+    AboutRowIcon.MESSAGES -> MiuixIcons.Messages
+    AboutRowIcon.UPDATE -> MiuixIcons.Update
+    AboutRowIcon.RECENT -> MiuixIcons.Recent
+    AboutRowIcon.NOTES -> MiuixIcons.Notes
+    AboutRowIcon.INFO -> MiuixIcons.Info
+    AboutRowIcon.IMPORT -> MiuixIcons.Import
+    AboutRowIcon.COMMUNITY -> MiuixIcons.Community
+    AboutRowIcon.LINK -> MiuixIcons.Link
+    AboutRowIcon.REPORT -> MiuixIcons.Report
+}
+
+/** 读本机安装版本；读不到返回 null（IDE 预览 / 包信息异常时不画假版本行）。 */
+private fun readInstalledVersion(context: Context): String? = runCatching {
+    @Suppress("DEPRECATION")
+    val info = context.packageManager.getPackageInfo(context.packageName, 0)
+    val name = info.versionName.orEmpty().trim()
+    val code = if (android.os.Build.VERSION.SDK_INT >= 28) {
+        info.longVersionCode
+    } else {
+        @Suppress("DEPRECATION")
+        info.versionCode.toLong()
+    }
+    when {
+        name.isNotEmpty() && code > 0 -> AboutInfoStrings.versionLabel("$name ($code)")
+        name.isNotEmpty() -> AboutInfoStrings.versionLabel(name)
+        code > 0 -> AboutInfoStrings.versionLabel("$code")
+        else -> null
+    }
+}.getOrNull()
+
 /** 头部信息卡：对照 `AboutScreen.build` 的第一张卡（Dart :252-294）。
  *
  *  2026-11-03 版面收口：内边距收 [QingyuCardDefaults.ContentInsideMargin]（16dp，与全族一致）；
- *  图标换共享 [AboutAppIconBadge]（单层干净图标，与更新页同一身份块）；版本号等宽字体，
- *  与「当前版本 / 最新版本」的更新页口径一致。 */
+ *  图标换共享 [AboutAppIconBadge]（单层干净图标，与更新页同一身份块）。
+ *
+ *  2026-11-08 整体重排：版本行不再整串套等宽字体（汉字落进等宽 fallback，字距发飘），
+ *  定位句从 footnote1 提到 body2（13→14sp，行高 20）；读不到真实版本号时整行不画，不再拼出「版本 0」。
+ *
+ *  2026-11-09：第三方免责声明移出本卡，改由页尾 [AboutLegalFooter] 承载（12sp 左对齐），
+ *  卡片只留身份 + 一句定位 + 三格元信息条。 */
 @Composable
-private fun AboutHeroCard() {
+private fun AboutHeroCard(versionOverride: String? = null) {
     val dark = isSystemInDarkTheme()
     val context = LocalContext.current
-    // 版本号：与 Dart `PackageInfo.fromPlatform()` 同源（PackageManager），格式 `版本 x.y.z (code)`。
-    val versionText = remember {
-        runCatching {
-            @Suppress("DEPRECATION")
-            val info = context.packageManager.getPackageInfo(context.packageName, 0)
-            val name = info.versionName.orEmpty()
-            val code = if (android.os.Build.VERSION.SDK_INT >= 28) {
-                info.longVersionCode
-            } else {
-                @Suppress("DEPRECATION")
-                info.versionCode.toLong()
-            }
-            AboutInfoStrings.versionLabel(if (name.isEmpty()) "$code" else "$name ($code)")
-        }.getOrDefault(AboutInfoStrings.loadingText)
+    // 版本号：生产环境与 Dart `PackageInfo.fromPlatform()` 同源（PackageManager），形如
+    // 「版本 2.1.4-1 (100140)」。Preview 里 PackageManager 读不到真值，由 [versionOverride]
+    // 注入；两边都读不到就返回 null，整行不画，避免拼出「版本 0」。
+    val versionText: String? = remember(versionOverride) {
+        if (versionOverride != null) {
+            AboutInfoStrings.versionLabel(versionOverride)
+        } else {
+            readInstalledVersion(context)
+        }
     }
 
     QingyuCard(
@@ -215,31 +305,54 @@ private fun AboutHeroCard() {
                 style = MiuixTheme.textStyles.title2,
                 color = Color(QingyuTheme.primaryText(dark)),
             )
-            Spacer(Modifier.height(6.dp))
-            Text(
-                text = versionText,
-                style = MiuixTheme.textStyles.footnote1.copy(fontFamily = FontFamily.Monospace),
-                color = Color(QingyuTheme.secondaryText(dark)),
-            )
-            Spacer(Modifier.height(12.dp))
+            if (versionText != null) {
+                Spacer(Modifier.height(6.dp))
+                // 不再套 FontFamily.Monospace：「版本」两个汉字会落到等宽字体的 fallback，
+                // 字距比正文宽一挡，整行看着发虚；单行居中也用不上等宽对齐。
+                Text(
+                    text = versionText,
+                    style = MiuixTheme.textStyles.footnote1,
+                    color = Color(QingyuTheme.secondaryText(dark)),
+                )
+            }
+            // 版本行有 / 无时，标题到正文都是 10dp（有版本 = 6 + 行高；无版本 = 10）。
+            Spacer(Modifier.height(10.dp))
             Text(
                 text = AboutInfoStrings.heroSubtitle,
-                style = MiuixTheme.textStyles.footnote1,
-                lineHeight = 19.sp,
+                // 定位句是「正文」，不是脚注：13 → 14sp，行高 20 让两行之间不挤。
+                style = MiuixTheme.textStyles.body2,
+                lineHeight = 20.sp,
                 textAlign = TextAlign.Center,
                 color = Color(QingyuTheme.secondaryText(dark)),
             )
             Spacer(Modifier.height(16.dp))
             HeroMetaStrip(updateValue = AboutInfoStrings.stableOnly)
-            Spacer(Modifier.height(16.dp))
-            Text(
-                text = AboutInfoStrings.thirdPartyDisclaimer,
-                style = MiuixTheme.textStyles.footnote2,
-                textAlign = TextAlign.Center,
-                color = Color(QingyuTheme.secondaryText(dark)),
-            )
         }
     }
+}
+
+/**
+ * 页尾第三方免责声明（2026-11-09 从头部卡移出）。
+ *
+ * 12sp 是设计指定值：字阶只有 footnote2 11 / footnote1 13 两档，所以从 footnote1 派生并只改
+ * 字号——保留用户字重、字族与 appTextScale 的缩放；这一处已在
+ * `tool/compose_style_exceptions/about.txt` 登记 R4 例外。左对齐、整宽折行，按法律文本读，
+ * 不再居中造成右侧参差。
+ */
+@Composable
+private fun AboutLegalFooter() {
+    val dark = isSystemInDarkTheme()
+    Text(
+        text = AboutInfoStrings.thirdPartyDisclaimer,
+        style = MiuixTheme.textStyles.footnote1.copy(fontSize = 12.sp),
+        lineHeight = 18.sp,
+        textAlign = TextAlign.Start,
+        color = Color(QingyuTheme.secondaryText(dark)),
+        modifier = Modifier
+            .fillMaxWidth()
+            // 列表已带 12dp 页边；再加 16dp 落到卡内文字同一条 28dp 轴线。
+            .padding(horizontal = 16.dp, vertical = 4.dp),
+    )
 }
 
 /** 三格元信息条（Dart `_buildHeroMetaStrip`，:528-572）：平台 / 重点 / 更新。
@@ -247,8 +360,11 @@ private fun AboutHeroCard() {
 @Composable
 private fun HeroMetaStrip(updateValue: String) {
     val dark = isSystemInDarkTheme()
+    // 凹槽底色要比卡片**深一档**（亮 #E8E8E8 / 暗 #242424）。
+    // 旧写法是 `if (dark) 最高级容器 else surfaceContainer`：亮色取到 #FFFFFF、暗色取到
+    // #2D2D2D——正好等于卡片底色，整条三格条在两种模式下都是隐形的（2026-11-08 修）。
     val inset = Color(
-        if (dark) QingyuTheme.surfaceContainerHighest(dark) else QingyuTheme.surfaceContainer(dark),
+        if (dark) QingyuTheme.scaffoldBackground(dark) else QingyuTheme.surfaceContainerHighest(dark),
     )
     Row(
         modifier = Modifier
@@ -453,9 +569,9 @@ private fun copyToClipboard(context: Context, text: String) {
 // ─────────────────────────────────────────────────────────────────────────────
 // IDE 预览（2026-11-08，照 ContributorsPage 样板铺）
 //
-// 只给实现阶段看效果，不进业务路径。本页**没有可喂的数据状态**：三段入口由
-// `aboutInfoSections()` 现算、版本号由 PackageManager 现读，渲染层拿到的只有两个回调，
-// 所以只铺外观三档：
+// 只给实现阶段看效果，不进业务路径。三段入口由 `aboutInfoSections()` 现算；版本号生产环境
+// 由 PackageManager 现读，Preview 读不到真值，统一用 [PreviewVersion] 注入（否则版本行整行不画，
+// 评审看不到真实高度）。渲染层拿到的只有两个回调，所以只铺外观三档：
 //   · 亮色 / 暗色 —— 暗色档防「白字落在白卡片上」（壳用无参 MiuixTheme，页面取色却走
 //     isSystemInDarkTheme()，历史上真出现过）；
 //   · 大字号 —— 行内文案 11 / 17 字的折行点，只在字被放大后才暴露。
@@ -463,6 +579,12 @@ private fun copyToClipboard(context: Context, text: String) {
 // 固定写法同 ContributorsPage：主题一律包 QingyuPageTheme(isDark = …)、字号走 textScale
 //（不用 @Preview(fontScale = …)）、宽度按 400dp。
 // ─────────────────────────────────────────────────────────────────────────────
+
+/**
+ * 预览用假版本号：Preview 里 PackageManager 读不到真实包信息，不注入就会把版本行整行省掉，
+ * 评审时看不到真实高度。取一个真实长度的版本串，三档共用。
+ */
+private const val PreviewVersion = "2.1.4-1 (100140)"
 
 /** 一档预览的公共身体：只翻外观档位。 */
 @Composable
@@ -474,6 +596,7 @@ private fun PreviewAboutStaticPage(
         AboutStaticPage(
             onBack = {},
             onOpenPage = {},
+            versionOverride = PreviewVersion,
         )
     }
 }
