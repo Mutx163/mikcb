@@ -48,6 +48,28 @@ object HomeMenuNavModel {
         "support",
     )
 
+    // ── 「弹层动作」型目录条目（不是一个页面）──────────────────────────────
+    //
+    // Dart 的目录项只要能查到就保留，点下来 `HomeMenuEntry.open` 自己决定是推页
+    // 还是当场弹层（`home_menu_catalog.dart:92-100` 的 courseRecolor 弹重配色面板、
+    // `:101-118` 的 shareTimetable 直接分享）。Compose 侧曾经把「有没有页面」当成
+    // 唯一判据，于是这两个合法条目在渲染时被静默丢掉 —— 用户排列里排了它们时，
+    // 8 个槽位只画 7 格（2026-11-09 用户报的「只显示 7 格」同源判据）。
+    //
+    // 有去处 = 页面映射里有，**或**在本白名单里。八宫格与底栏必须共用这一条判据。
+
+    /** 「课表重新配色」：点了当场弹配色面板，不是一个页面。 */
+    const val ACTION_COURSE_RECOLOR = "courseRecolor"
+
+    /** 「分享课表图片」：点了当场分享当前视图，不是一个页面。 */
+    const val ACTION_SHARE_TIMETABLE = "shareTimetable"
+
+    /** 弹层动作白名单（见上面的常量注释）。 */
+    val MENU_ACTION_IDS: Set<String> = setOf(ACTION_COURSE_RECOLOR, ACTION_SHARE_TIMETABLE)
+
+    /** 该 id 是「弹层动作」而不是页面。 */
+    fun isMenuAction(id: String): Boolean = id in MENU_ACTION_IDS
+
     /**
      * 解析「更多」菜单排列。
      *

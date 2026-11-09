@@ -3,9 +3,20 @@ package com.mutx163.qingyu.pages
 import android.app.Activity
 import android.content.Context
 import android.widget.Toast
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.asPaddingValues
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBars
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
@@ -13,7 +24,12 @@ import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.mutx163.qingyu.pages.timetable.TimetableTopBarMetrics
 import com.mutx163.qingyu.pages.timetable.WeekdayHeaderMetrics
@@ -29,6 +45,19 @@ import com.mutx163.qingyu.app.TimetableSaveDispatcher
 import com.mutx163.qingyu.app.TimetableSettingsModel
 import com.mutx163.qingyu.app.TimetableSettingsModelStore
 import com.mutx163.qingyu.app.TimetableStore
+import com.mutx163.qingyu.app.CourseRecolorSheetHost
+import com.mutx163.qingyu.app.TimetableHostDisplayPrefs
+import com.mutx163.qingyu.app.TimetableHostLogic
+import com.mutx163.qingyu.components.QingyuCard
+import com.mutx163.qingyu.components.QingyuCardDefaults
+import com.mutx163.qingyu.components.QingyuSheet
+import com.mutx163.qingyu.pages.import.CourseRecolorHistoryStore
+import com.mutx163.qingyu.pages.import.ImportRandomColorStore
+import com.mutx163.qingyu.pages.timetable.TimetableMenuDefaults
+import com.mutx163.qingyu.pages.timetable.TimetableShareImageModel
+import com.mutx163.qingyu.pages.timetable.TimetableShareRequests
+import com.mutx163.qingyu.pages.timetable.TimetableStyleMapping
+import com.mutx163.qingyu.pages.timetable.shareTimetableImage
 import com.mutx163.qingyu.calendar.HolidayPreferences
 import com.mutx163.qingyu.calendar.HolidayProvider
 import com.mutx163.qingyu.calendar.HolidayService
@@ -85,6 +114,13 @@ import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import java.time.LocalDateTime
+import top.yukonga.miuix.kmp.basic.Icon
+import top.yukonga.miuix.kmp.basic.Text
+import top.yukonga.miuix.kmp.icon.MiuixIcons
+import top.yukonga.miuix.kmp.icon.extended.Months
+import top.yukonga.miuix.kmp.icon.extended.Notes
+import top.yukonga.miuix.kmp.icon.extended.Weeks
+import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 /**
  * 壳的**接线层**（Phase 3.5 · L5，Lead 专属写作用域）。
@@ -617,6 +653,40 @@ class ShellWiring(context: Context) {
     }
 
     /**
+     * 底栏「分享课表图片」的宿主侧实现（Dart `home_menu_catalog.dart:101-118`）。
+     *
+     * 底栏在任何主屏页都能被点（不在课表页也一样），而「正看着哪一周」只有课表页自己知道；
+     * Dart 的兜底口径正是 `provider.currentWeek` + 周视图。这里同一口径：周次取仓储
+     * `currentWeek`，图取周图。课表页顶栏的分享仍走页面自己的
+     * `TimetableHost.shareCurrentView`（能带日视图那一天的上下文），两条入口共用
+     * [TimetableShareRequests] 同一份组装，不各写一套导图逻辑。
+     */
+    fun shareCurrentWeekImage(context: Context) {
+        val snapshot = timetable.snapshot
+        val model = settingsModel.load()
+        val style = TimetableStyleMapping.weekViewStyle(model)
+        val visibleDays = TimetableHostLogic.visibleDayNumbers(
+            TimetableHostDisplayPrefs.fromSettings(model).hideWeekends,
+        )
+        shareTimetableImage(
+            context = context.applicationContext,
+            doc = TimetableShareRequests.weekDocument(
+                courses = snapshot.courses,
+                week = snapshot.currentWeek,
+                settings = snapshot.settings,
+                style = style,
+                visibleDays = visibleDays,
+                today = LocalDate.now(),
+            ),
+            // 与 `TimetableHost.shareCurrentView` 同一份导出宽度算式（屏宽 dp）。
+            exportWidthDp = TimetableShareImageModel.exportWidthDp(
+                context.resources.displayMetrics.widthPixels /
+                    context.resources.displayMetrics.density,
+            ),
+        )
+    }
+
+    /**
      * 加课页的保存载荷 → 仓储。
      *
      * `AddCoursePage` 的 KDoc 明确写着「保存载荷交给壳层落盘，由壳层按 mode 分派」，
@@ -770,6 +840,19 @@ fun TimetableWithCourseActions(
     var actionTarget by remember { mutableStateOf<Course?>(null) }
     val context = LocalContext.current
     val week = snapshot.currentWeek
+
+    // ── 八宫格「弹层动作」的两个落点（Dart `HomeMenuEntry.open`）────────────────
+    // 这两个 id 不是一个页面，点下来当场弹层/分享；判据在
+    // [HomeMenuNavModel.isMenuAction]，渲染层只回传 id，不认「弹层 / 推页」的差别。
+    // 2026-11-09 之前它们被「有没有页面」的判据丢掉，用户排列里排了就是 8 格画 7 格。
+    var showRecolorSheet by remember { mutableStateOf(false) }
+    var showAddSheet by remember { mutableStateOf(false) }
+    val recolorColorStore = remember(context) {
+        ImportRandomColorStore(PrefsKeyValueStore(context))
+    }
+    val recolorHistoryStore = remember(context) {
+        CourseRecolorHistoryStore(PrefsKeyValueStore(context))
+    }
     // 设置模型：首页材质 / 壁纸 + 弹层里的天气四开关都读它。
     // ⚠️ `settingsModel.load()` 是**普通函数调用**，不是可观察状态：必须把
     // [ShellWiring.settingsRevision] 读进组合才会在「返回首页」时重读一次盘。
@@ -1113,15 +1196,54 @@ fun TimetableWithCourseActions(
         // `shellTimetableMenuPageId`。2026-10-31 之前这里喂的是固定八项，
         // 「自定义八宫格按钮」改了没有任何效果。
         homeMenuItems = homeTopMenuItems(settingsModel),
-        // 「添加课程」这一项要带当前浏览周与今天星期几（Dart `openCourseForm`，见
-        // [ShellWiring.seedAddCourseFromMenu]）；其余项只按映射表推页。
+        // 八宫格的点击分流：页面 → 推页；弹层动作 → 当场执行（Dart `HomeMenuEntry.open`）。
+        // 「添加」是发布版的三选弹层（`timetable_screen.dart:6481-6537`），不是一个推页动作。
         onHomeMenuSelect = { id ->
-            shellTimetableMenuPageId(id)?.let { target ->
-                if (target == "d1.addCourse") wiring.seedAddCourseFromMenu(week)
-                onNavigate(target)
+            when {
+                id == HomeMenuNavModel.ACTION_COURSE_RECOLOR -> showRecolorSheet = true
+                id == TimetableMenuDefaults.ADD_COURSE_ID -> showAddSheet = true
+                else -> shellTimetableMenuPageId(id)?.let { target ->
+                    // 「添加课程」这一项要带当前浏览周与今天星期几（Dart `openCourseForm`，
+                    // 见 [ShellWiring.seedAddCourseFromMenu]）；其余项只按映射表推页。
+                    if (target == "d1.addCourse") wiring.seedAddCourseFromMenu(week)
+                    onNavigate(target)
+                }
             }
         },
     )
+
+    // 「添加」三选弹层（Dart `_showAddCourseSheet`，`timetable_screen.dart:6481-6537`）：
+    // 课程 / 日程 / 考试三格，标题复用既有 ARB 键 `addCourseSheetTitle`，不另拟说法。
+    AddCourseActionSheet(
+        show = showAddSheet,
+        onDismiss = { showAddSheet = false },
+        onAddCourse = {
+            showAddSheet = false
+            // 与直接点「添加」格同一条种子：当前浏览周 + 今天星期几。
+            wiring.seedAddCourseFromMenu(week)
+            onNavigate("d1.addCourse")
+        },
+        onAddSchedule = {
+            showAddSheet = false
+            onNavigate("d2.addSchedule")
+        },
+        onAddExam = {
+            showAddSheet = false
+            onNavigate("d3.addExam")
+        },
+    )
+
+    // 「课表重新配色」：直接弹面板（Dart `home_menu_catalog.dart:92-100`），不推页。
+    // 空课表的 toast 由面板自己给（Dart 同口径）。
+    if (showRecolorSheet) {
+        CourseRecolorSheetHost(
+            repository = wiring.timetable,
+            colorStore = recolorColorStore,
+            historyStore = recolorHistoryStore,
+            onDismiss = { showRecolorSheet = false },
+            onToast = { message -> Toast.makeText(context, message, Toast.LENGTH_SHORT).show() },
+        )
+    }
 
     /**
      * 「取消已设提醒」（Dart `removeClassReminder`）：从 classReminders 删掉
@@ -1392,8 +1514,22 @@ fun shellPageIdForRoute(route: String?): String? = when (route) {
  */
 fun homeTopMenuItems(settings: TimetableSettingsModel): List<TimetableMenuItem> =
     HomeMenuNavModel.resolveIds(settings.homeGridMenuActions) { id ->
-        shellTimetableMenuPageId(id) != null
+        shellTimetableMenuSupported(id)
     }.map { HomeNavIcons.menuItem(it) }
+
+/**
+ * 「这个目录条目有没有去处」的**唯一判据**：页面映射 ∪ 弹层动作白名单。
+ *
+ * 2026-11-09 之前这里只有前半句（`shellTimetableMenuPageId(id) != null`），于是
+ * `courseRecolor`（Dart `home_menu_catalog.dart:92-100`，点了弹配色面板）这种
+ * 「目录里有、但不是一个页面」的条目在渲染层被静默丢掉：编辑器里排得下 8 格，
+ * 首页只画 7 格 —— 与用户报的「只显示 7 格」同一个源码位置。
+ *
+ * 八宫格（[homeTopMenuItems]）与底栏（`PagesShellActivity` 的 `rootPageIdFor` 入口谓词）
+ * 必须共用本函数，否则同一个 id 会出现「一边能显示、另一边被丢」。
+ */
+fun shellTimetableMenuSupported(id: String): Boolean =
+    shellTimetableMenuPageId(id) != null || HomeMenuNavModel.isMenuAction(id)
 
 /**
  * 菜单/索引条目 id → 壳页面 id。
@@ -1489,5 +1625,111 @@ fun shellTimetableMenuPageId(id: String): String? = when (id) {
     "openSourceLicenses" -> "a.licenses"
     "memoryStats" -> "h.memory"
     else -> null
+}
+
+// ─────────────────────────────────────────────── 八宫格「添加」三选弹层
+
+/**
+ * 八宫格「添加」格的三选弹层（Dart `_showAddCourseSheet`，
+ * `lib/screens/timetable_screen.dart:6481-6537`）：`HyperosSheet(title: 添加)` + 三格
+ * （添加课程 / 添加日程 / 添加考试）。
+ *
+ * ## 为什么补这一层
+ *
+ * 重构版把「添加」格直接接到了加课页（`ShellWiring.shellTimetableMenuPageId` 的
+ * `"addCourse" -> "d1.addCourse"`），而发布版先弹三选 —— 用户想加日程/考试得先绕进
+ * 加课页再退出。这里按发布版把三格并排还原；三格文案全复用 [TimetableStrings]
+ * 里已有的 ARB 键（`addCourseTitle` / `addScheduleAction` / `addExam`），不新增文案。
+ *
+ * 图标按发布版语义挑 miuix 最接近的一枚（发布版是 view_week / event_note / school）：
+ * 课程 = 周课表、日程 = 月历、考试 = 便签。
+ */
+@Composable
+private fun AddCourseActionSheet(
+    show: Boolean,
+    onDismiss: () -> Unit,
+    onAddCourse: () -> Unit,
+    onAddSchedule: () -> Unit,
+    onAddExam: () -> Unit,
+) {
+    QingyuSheet(
+        show = show,
+        onDismissRequest = onDismiss,
+        title = TimetableStrings.addCourseSheetTitle.text,
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            AddSheetTile(
+                icon = MiuixIcons.Weeks,
+                label = TimetableStrings.addCourseTitle.text,
+                modifier = Modifier.weight(1f),
+                onClick = onAddCourse,
+            )
+            AddSheetTile(
+                icon = MiuixIcons.Months,
+                label = TimetableStrings.addScheduleAction.text,
+                modifier = Modifier.weight(1f),
+                onClick = onAddSchedule,
+            )
+            AddSheetTile(
+                icon = MiuixIcons.Notes,
+                label = TimetableStrings.addExam.text,
+                modifier = Modifier.weight(1f),
+                onClick = onAddExam,
+            )
+        }
+    }
+}
+
+/**
+ * 三选弹层里的一格：图标井 + 文案，视觉与八宫格瓷贴同族
+ * （`TimetableTopBar` 的 `TimetableMenuTile`：46dp 井 / 圆角 14 / 强调色 12% 底 / 图标 24）。
+ * 井与文字的间距 7dp、文字居中最多两行，均与瓷贴同一口径。
+ */
+@Composable
+private fun AddSheetTile(
+    icon: ImageVector,
+    label: String,
+    modifier: Modifier = Modifier,
+    onClick: () -> Unit,
+) {
+    val accent = MiuixTheme.colorScheme.primary
+    QingyuCard(
+        modifier = modifier,
+        cornerRadius = QingyuCardDefaults.SettingsGroupCorner,
+        insideMargin = PaddingValues(horizontal = 7.dp, vertical = 13.dp),
+        onClick = onClick,
+    ) {
+        Column(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalAlignment = Alignment.CenterHorizontally,
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(46.dp)
+                    .clip(RoundedCornerShape(14.dp))
+                    .background(accent.copy(alpha = 0.12f)),
+                contentAlignment = Alignment.Center,
+            ) {
+                Icon(
+                    imageVector = icon,
+                    contentDescription = label,
+                    tint = accent,
+                    modifier = Modifier.size(24.dp),
+                )
+            }
+            Spacer(modifier = Modifier.height(7.dp))
+            Text(
+                text = label,
+                style = MiuixTheme.textStyles.footnote2,
+                color = MiuixTheme.colorScheme.onSurface,
+                modifier = Modifier.fillMaxWidth(),
+                textAlign = TextAlign.Center,
+                maxLines = 2,
+            )
+        }
+    }
 }
 

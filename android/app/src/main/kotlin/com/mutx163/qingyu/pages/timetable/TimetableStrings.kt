@@ -97,6 +97,19 @@ object TimetableStrings {
     val addScheduleAction = ArbText("addScheduleAction", "添加日程")
     val addExam = ArbText("addExam", "添加考试")
 
+    /**
+     * 八宫格「添加」三选弹层的标题（Dart `l10n.addCourseSheetTitle`，发布版
+     * `timetable_screen.dart:6481-6537`）。
+     *
+     * 放在这里而不是用它的 `ShellWiring.kt`：中文字面量棘轮门禁
+     * （`CjkLiteralGateTest`）按文件名整文件跳过 `*Strings.kt`，普通模型/壳文件里
+     * 新增带中文实参的 ArbText 会被判「新增未登记文件」。
+     *
+     * ⚠️ 本文件里不要写「ArbText + 括号 + 引号」形状的示例：`ArbCatalogTest`
+     * 扫的是原始源码文本（不看注释），会把示例当成真的键声明去 ARB 里找。
+     */
+    val addCourseSheetTitle = ArbText("addCourseSheetTitle", "添加")
+
     // ── 星期几名称 ──
     val weekdayMon = ArbText("weekdayMon", "周一")
     val weekdayTue = ArbText("weekdayTue", "周二")

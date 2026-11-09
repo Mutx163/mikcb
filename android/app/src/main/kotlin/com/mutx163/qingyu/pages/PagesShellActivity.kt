@@ -12,6 +12,7 @@ import android.provider.Settings
 import android.view.Choreographer
 import android.view.View
 import android.view.WindowManager
+import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.SystemBarStyle
 import androidx.activity.compose.BackHandler
@@ -75,7 +76,11 @@ import com.mutx163.qingyu.pages.live.LiveSnapshotSyncer
 import com.mutx163.qingyu.platform.PrefsKeyValueStore
 import com.mutx163.qingyu.platform.PerfProbe
 import com.mutx163.qingyu.platform.ScreenCaptureWatcher
+import com.mutx163.qingyu.app.CourseRecolorSheetHost
+import com.mutx163.qingyu.pages.import.CourseRecolorHistoryStore
+import com.mutx163.qingyu.pages.import.ImportRandomColorStore
 import com.mutx163.qingyu.pages.shell.HomeDockNavModel
+import com.mutx163.qingyu.pages.shell.HomeMenuNavModel
 import com.mutx163.qingyu.pages.shell.DockPagerMotion
 import com.mutx163.qingyu.pages.shell.HomeGlassDock
 import com.mutx163.qingyu.pages.shell.ShellNavigationRail
@@ -622,6 +627,19 @@ private fun PagesShell(
     // 避免旧协程追上新的点击结果。与 pushSeq 同一手法，只是这里比的是「谁最新」。
     val pagerAnimSeq = remember { java.util.concurrent.atomic.AtomicLong(0L) }
 
+    // ── 底栏「弹层动作」通道（Dart `HomeMenuEntry.open`，2026-11-09）──────────────
+    // `courseRecolor`（弹重配色面板）与 `shareTimetable`（分享本周课表图）是目录里的
+    // **合法条目**，但都不是页面。底栏/八宫格必须共用 [shellTimetableMenuSupported]
+    // 这一条判据，否则「编辑器里加得进去、底栏上不出现」（用户报的整格消失同源）。
+    // 这两个 id 点下来在这里落地：配色弹面板、分享直接发起。
+    var pendingMenuAction by remember { mutableStateOf<String?>(null) }
+    val recolorColorStore = remember(context) {
+        ImportRandomColorStore(PrefsKeyValueStore(context))
+    }
+    val recolorHistoryStore = remember(context) {
+        CourseRecolorHistoryStore(PrefsKeyValueStore(context))
+    }
+
     /**
      * 把 [currentRootId] 对齐到 Pager **真正停着的那一页**（高亮 / 坞墨色的事实源）。
      *
@@ -771,6 +789,26 @@ private fun PagesShell(
     // 深链由透明跳板 ShellExternalEntryActivity 解析后 post 到 hub，这里一行消费推页。
     ShellExternalEntryEffect(onOpenPage = { target -> pushPage(target) })
 
+    // 底栏「弹层动作」的落地：与八宫格共用同一份白名单
+    // （[HomeMenuNavModel.MENU_ACTION_IDS]）。之前在底栏解析里被「没有页面」丢掉，
+    // 现在条目能出现在坞上，点下来在这里执行。
+    if (pendingMenuAction == HomeMenuNavModel.ACTION_COURSE_RECOLOR) {
+        CourseRecolorSheetHost(
+            repository = wiring.timetable,
+            colorStore = recolorColorStore,
+            historyStore = recolorHistoryStore,
+            onDismiss = { pendingMenuAction = null },
+            onToast = { message -> Toast.makeText(context, message, Toast.LENGTH_SHORT).show() },
+        )
+    }
+    // 分享是「一次性动作」：定位到本周周图、发起系统分享，然后把待办动作清掉。
+    LaunchedEffect(pendingMenuAction) {
+        if (pendingMenuAction == HomeMenuNavModel.ACTION_SHARE_TIMETABLE) {
+            wiring.shareCurrentWeekImage(context)
+            pendingMenuAction = null
+        }
+    }
+
     // 视图档落盘（`timetableHomeViewMode` / `timetableLastViewedDayOfWeek`）已搬进
     // `ShellWiring.switchHomeViewMode` / `setHomeSelection`：周 / 日是页内展开态，
     // 写入口不止底栏一处（星期栏点某天、日视图翻页也要写），放到壳里会变成多份
@@ -781,6 +819,12 @@ private fun PagesShell(
         // 推入转场期间栈底条目仍在屏幕上（被滑入的页盖住一部分），坞会露出一条可点的边。
         // 这时改主屏内容既看不到效果，还会把「没到过的视图」写进存档（2026-11-01 审计）。
         if (backStack.size > 1) return
+        // 弹层动作（课表重新配色 / 分享课表图片）：不是页面，当场执行；
+        // 不参与 Pager 页列表与高亮（判据见 [HomeMenuNavModel.MENU_ACTION_IDS]）。
+        if (HomeMenuNavModel.isMenuAction(itemId)) {
+            pendingMenuAction = itemId
+            return
+        }
         // 目录页（外观编辑器 / 统计 / 考试…）不是主屏内容：**推一层**，底栏随之让位。
         // 以前这里不分流，任何条目都替换栈底，于是把「外观编辑器」排进底栏后底栏一直压在
         // 它上面（`atRoot` 恒 true）：既不参与页面的入场动画，页面上也多一条不属于它的坞
@@ -873,6 +917,12 @@ private fun PagesShell(
     /** 圆钮（右侧独立按钮）：Dart `handleRoundButtonTap`（`home_menu_controller.dart:306-333`）。 */
     fun handleRoundButton() {
         val action = HomeDockNavModel.roundButtonAction(settingsModel.glassDockButtonEntryId)
+        // 圆钮绑到弹层动作时同样当场执行。少了这一条会落到下面的
+        // 「target == null ⇒ 开加课」分支：绑了「分享课表」却弹出加课页。
+        if (HomeMenuNavModel.isMenuAction(action)) {
+            pendingMenuAction = action
+            return
+        }
         val target = if (action == HomeDockNavModel.ACTION_ADD_COURSE) null else rootPageIdFor(action)
         if (target == null) {
             // 加课：清掉可能残留的「编辑目标」，否则会把上一门课载进新建表单。
@@ -998,7 +1048,7 @@ private fun PagesShell(
                         settingsModel = settingsModel,
                         selectedId = railSelectedId,
                         // 条目 → 壳页面：与坞同一张表（视图动作另有分支）。
-                        isNavigable = { id -> rootPageIdFor(id) != null },
+                        isNavigable = { id -> shellTimetableMenuSupported(id) },
                         // Rail 常驻可点：先弹回主屏再切换（`selectRoot` 的栈守卫会把
                         // 压着页面时的点击吞掉，见 [railSelectRoot] 注释）。
                         onSelect = { id -> railSelectRoot(id) },
@@ -1114,7 +1164,7 @@ private fun PagesShell(
                                 // 宽屏档整块不组合，由左侧 Rail 接管导航（方案第 2 批口径）。
                                 replacedByRail = shellRail.railVisible,
                                 // 底栏条目 → 壳页面：与「有没有去处」同一张表（视图动作另有分支）。
-                                isNavigable = { id -> rootPageIdFor(id) != null },
+                                isNavigable = { id -> shellTimetableMenuSupported(id) },
                                 onSelect = { id -> selectRoot(id) },
                                 onRoundButton = { handleRoundButton() },
                                 // 设备不支持 runtime shader 时别把 backdrop 传进去：
