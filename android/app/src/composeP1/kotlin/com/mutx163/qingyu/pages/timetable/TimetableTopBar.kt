@@ -27,6 +27,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.mutx163.qingyu.app.HomeMenuStyle
@@ -266,7 +267,6 @@ fun TimetableTopBar(
             show = showMenu,
             entries = menuItems,
             accent = accent,
-            primaryText = primaryText,
             onDismiss = { showMenu = false },
             onSelect = { id ->
                 showMenu = false
@@ -390,16 +390,24 @@ object TimetableMenuDefaults {
  *
  * 容器与课程操作弹层同口径（`QingyuSheet`：16dp 侧边距 + 底部让出手势区）——同一 App 的
  * 底部弹层都长这样，用户不需要为不同弹层重新建立预期。
+ *
+ * 文字色**只看面板自己的明暗**，不接顶栏的壁纸墨色：壁纸墨色是给压在壁纸上的顶栏用的，
+ * 带进不透明弹层会变成白字白底。尾行不满 4 格时居中，不在右下留一个「缺一格」的洞。
  */
 @Composable
 private fun TimetableHomeMenuSheet(
     show: Boolean,
     entries: List<TimetableMenuItem>,
     accent: Color,
-    primaryText: Color,
     onDismiss: () -> Unit,
     onSelect: (String) -> Unit,
 ) {
+    // 文字色跟**面板自己的表面**走，不接顶栏的壁纸墨色。
+    //
+    // 顶栏压在壁纸上：深色壁纸 ⇒ 浅墨（白字），那是给壁纸用的。弹层是不透明表面
+    // （浅色近白 / 暗色近黑），把白字带进来就变成「白字白卡」——从 Flutter 版升级的
+    // 用户壁纸都还在，7 个标签会全部隐形，只剩图标井（2026-11-09 用户报）。
+    val sheetInk = Color(QingyuTheme.primaryText(isSystemInDarkTheme()))
     QingyuSheet(
         show = show,
         // 八宫格档**不显示顶部标题**（用户口径：显示「更多」标题很怪）。
@@ -432,15 +440,22 @@ private fun TimetableHomeMenuSheet(
                 verticalArrangement = Arrangement.spacedBy(spacing),
             ) {
                 entries.chunked(columns).forEach { rowItems ->
+                    // 满行按 4 列均分（宽屏时 itemGap 已经把余量摊开）；
+                    // 尾行不满 4 格时居中收拢，不在右下角留一个「缺了一格」的洞。
+                    val fullRow = rowItems.size == columns
                     Row(
                         modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(itemGap),
+                        horizontalArrangement = if (fullRow) {
+                            Arrangement.spacedBy(itemGap)
+                        } else {
+                            Arrangement.spacedBy(spacing, Alignment.CenterHorizontally)
+                        },
                     ) {
                         rowItems.forEach { item ->
                             TimetableMenuTile(
                                 item = item,
                                 accent = accent,
-                                primaryText = primaryText,
+                                textColor = sheetInk,
                                 modifier = Modifier.width(itemWidth),
                                 onClick = { onSelect(item.id) },
                             )
@@ -459,13 +474,14 @@ private fun TimetableHomeMenuSheet(
  * 每格是一块圆角 24dp 的卡片底（`HyperosFrostedSurface(borderRadius: cardBorderRadius)`，
  * 卡半径 = `HyperosMiuixSpec.settingsGroupRadius` 24），内边距 横 7 / 纵 13；
  * 卡片**无描边**（Flutter 侧无 BorderSide），底色用 [QingyuCard] 默认主题色。
- * 图标井保留原样：46dp / 圆角 14 / accent 12% / 图标 24；井到文字 7dp；文字最多 2 行。
+ * 图标井保留原样：46dp / 圆角 14 / accent 12% / 图标 24；井到文字 7dp；文字最多 2 行，
+ * 居中排（Flutter 同款 `textAlign: center`），颜色由弹层表面决定。
  */
 @Composable
 private fun TimetableMenuTile(
     item: TimetableMenuItem,
     accent: Color,
-    primaryText: Color,
+    textColor: Color,
     modifier: Modifier = Modifier,
     onClick: () -> Unit,
 ) {
@@ -497,7 +513,9 @@ private fun TimetableMenuTile(
             Text(
                 text = item.label,
                 style = MiuixTheme.textStyles.footnote2,
-                color = primaryText,
+                color = textColor,
+                modifier = Modifier.fillMaxWidth(),
+                textAlign = TextAlign.Center,
                 maxLines = 2,
                 overflow = TextOverflow.Ellipsis,
             )

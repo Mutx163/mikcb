@@ -43,20 +43,47 @@ class TimetableHomeMenuTileGuardTest {
         )
     }
 
+    @Test
+    fun `八宫格文字必须用面板表面色，不能接顶栏的壁纸墨色`() {
+        val sheet = bodyOf("private fun TimetableHomeMenuSheet(")
+        assertTrue(
+            "TimetableHomeMenuSheet 又接回了 primaryText（顶栏按壁纸算出的墨色）。" +
+                "深色壁纸下它是白字，落到白色瓷贴卡上会全部隐形——从 Flutter 版升级的用户必现。",
+            !sheet.contains("primaryText: Color") && !sheet.contains("textColor = primaryText"),
+        )
+        assertTrue(
+            "面板文字没有按面板自己的明暗取色（找不到 " +
+                "QingyuTheme.primaryText(isSystemInDarkTheme())）——弹层表面和壁纸是两回事。",
+            sheet.contains("QingyuTheme.primaryText(isSystemInDarkTheme())"),
+        )
+    }
+
+    @Test
+    fun `八宫格尾行不满时居中，不在右下留洞`() {
+        val sheet = bodyOf("private fun TimetableHomeMenuSheet(")
+        assertTrue(
+            "尾行没有居中排（找不到 Alignment.CenterHorizontally）——" +
+                "用户只启用 7 项时，右下会空出一格，看着像丢了一项。",
+            sheet.contains("Alignment.CenterHorizontally"),
+        )
+    }
+
     // ------------------------------------------------------------------
     // 判据工具
     // ------------------------------------------------------------------
 
     /** 取 `private fun TimetableMenuTile(` 到其配套右花括号之间的函数体（剥注释后）。 */
-    private fun tileBody(): String {
-        val marker = "private fun TimetableMenuTile("
+    private fun tileBody(): String = bodyOf("private fun TimetableMenuTile(")
+
+    /** 取 `marker` 开头那个函数（从函数体左花括号到配对右花括号）的正文，已剥注释。 */
+    private fun bodyOf(marker: String): String {
         val start = source.indexOf(marker)
         if (start < 0) {
             throw AssertionError("找不到 $marker —— 守卫无法验证，按失败处理")
         }
         val braceStart = source.indexOf('{', start)
         if (braceStart < 0) {
-            throw AssertionError("TimetableMenuTile 没有函数体左花括号 —— 守卫无法验证，按失败处理")
+            throw AssertionError("$marker 没有函数体左花括号 —— 守卫无法验证，按失败处理")
         }
         var depth = 0
         var i = braceStart
@@ -70,7 +97,7 @@ class TimetableHomeMenuTileGuardTest {
             }
             i++
         }
-        throw AssertionError("TimetableMenuTile 的函数体花括号不配平 —— 源文件可能被截断")
+        throw AssertionError("$marker 的函数体花括号不配平 —— 源文件可能被截断")
     }
 
     /** 剥掉 `//` 与块注释（可嵌套），字符串/字符字面量感知；块注释里的换行保留。 */
