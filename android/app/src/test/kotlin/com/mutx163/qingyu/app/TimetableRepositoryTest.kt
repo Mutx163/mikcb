@@ -117,6 +117,52 @@ class TimetableRepositoryTest {
         assertFalse(raw.getString("timetable_profiles")!!.contains("\"c1\""))
     }
 
+    // ---------- 重新配色批量写色 ----------
+
+    @Test
+    fun applyCourseRecolorsOnlyTouchesColorsAndNotifiesOnce() {
+        val raw = InMemoryKeyValueStore()
+        val repository = TimetableRepository(TimetableStore(raw))
+        repository.addCourse(course("c1", name = "数学"))
+        repository.addCourse(course("c2", name = "物理"))
+        val seen = mutableListOf<TimetableSnapshot>()
+        repository.observe { seen.add(it) }
+
+        val changed = repository.applyCourseRecolors(
+            repository.snapshot.courses.mapIndexed { index, current ->
+                // 故意连名字一起改：本入口只认 color/textColor，其余字段必须保持原样。
+                current.copy(
+                    name = "改名$index",
+                    color = "#12345$index",
+                    textColor = "#FFFFFF",
+                )
+            },
+        )
+
+        assertEquals(2, changed)
+        assertEquals(1, seen.size)
+        assertEquals(listOf("数学", "物理"), repository.snapshot.courses.map { it.name })
+        assertEquals(listOf("#123450", "#123451"), repository.snapshot.courses.map { it.color })
+        assertTrue(repository.snapshot.courses.all { it.textColor == "#FFFFFF" })
+        assertTrue(raw.getString("timetable_profiles")!!.contains("#123450"))
+    }
+
+    @Test
+    fun applyCourseRecolorsWithNoChangeSkipsPersistAndNotify() {
+        val raw = InMemoryKeyValueStore()
+        val repository = TimetableRepository(TimetableStore(raw))
+        repository.addCourse(course("c1", name = "数学"))
+        val before = raw.rawSnapshot()
+        val seen = mutableListOf<TimetableSnapshot>()
+        repository.observe { seen.add(it) }
+
+        val changed = repository.applyCourseRecolors(repository.snapshot.courses)
+
+        assertEquals(0, changed)
+        assertTrue(seen.isEmpty())
+        assertEquals(before, raw.rawSnapshot())
+    }
+
     // ---------- 档案切换 ----------
 
     @Test

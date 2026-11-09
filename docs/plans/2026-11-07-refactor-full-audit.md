@@ -81,7 +81,7 @@
 | 编号 | 级别 | 位置 | 现象 → 修法 | 状态 |
 |---|---|---|---|---|
 | **3-1** | P1 | `composeP1/.../app/AppearanceEditorHost.kt:216`（`openedWith`）、`:626-634`（`rollbackDraftToOpenedWith`）、`:753-770`（ON_RESUME resync） | 从壁纸面板进 Bing 图库/取景页，「应用/完成」已落盘并返回；回页只把 `model` 对齐盘上真值，`openedWith` 仍是进页快照 ⇒ 再点「取消」会把那次已确认的壁纸一起回滚。→ resync 时同步推进 `openedWith`（或另存外部基线），取消只回滚本页拥有的键。 | ✅ |
-| **3-2** | P1 | `composeP1/.../app/SettingsHost.kt:466-469` | 课卡「重新配色」无实现，`ShowRecolorSheet` 只弹「不可用」；入口仍可见可点。→ 未实现前按 `general.homePullImport` 先例藏掉入口。 | ✅ |
+| **3-2** | P1 | `composeP1/.../app/SettingsHost.kt`；`composeP1/.../app/CourseRecolorSheet.kt`；`main/.../pages/import/CourseRecolorLogic.kt` | 课卡「重新配色」原先只弹「不可用」。→ 2026-11-09 已补全：种子重放 + 导入原色快照 + 上一套/下一套（历史按 profile 隔离、上限 20），课程批量写色一次落盘/一次通知。 | ✅（2026-11-09 实现） |
 | **3-3** | P1 | `composeP1/.../pages/timetable/day/DayViewDataAssembler.kt:148` | 情侣叠加开启时，我方课程只做 `dayOfWeek` 过滤、**不做周次剪枝**：半学期课（1–8 周）在第 12 周仍出现，重叠课两张都画；Dart 同函数有两条 `continue`（`hasCurrentWeekOverlap` / `isPreferredNonCurrentCourse`）。→ 合并前先 `visibleDayCourses(coursesForDay(...))`，或补那两条判据。一行级改动 + 一条模型用例。 | ✅ |
 | **3-4** | P1 | `pages/ShellPageIndex.kt:1733`（读）、`:1784`（写）；`main/.../app/TimetableRepository.kt`（恢复事务） | 周报开关读的是 `WeeklyReportScheduler.isEnabled(context)`（prefs），写的是 `writeRawSettingsPatch("weeklyReportEnabled")`；云端恢复只重排考试提醒、不重建周报闹钟 ⇒ 换机后「设置里 true、界面显示关、闹钟不存在」。→ 恢复事务末尾按 settings 值调 `WeeklyReportToggleLogic.applyToggle`，或把真源统一到 settings。 | ✅（双真源）；△（恢复不重建） |
 | **3-5** | P2 | `main/.../pages/schedule/ScheduleReminderScheduler.kt:325` | 日程提醒点击绕过 `NotificationLaunchTarget` 合约，硬写 `PagesShellActivity` 且不带落点 extra ⇒ 点提醒只回壳上次主屏，不进日程页。→ 改走 `NotificationLaunchTarget.intent()`，封闭映射表加 `/schedule`，并补契约测试。 | △ |

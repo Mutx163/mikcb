@@ -152,6 +152,13 @@ fun SettingsHost(
     /** 传 null 时宿主自带一个 RGB 选色弹窗；壳想接官方选色器时再传实现。 */
     onRequestColor: ((rowId: String, currentHex: String, commit: (String) -> Unit) -> Unit)? = null,
     /**
+     * 课卡「课表重新配色」的弹层落点。
+     *
+     * 本宿主拿不到课程数据（只持有显示设置），所以真弹层由壳接线后回调这里打开。
+     * 不传 = 保持旧口径「给一句不可用」，不假装能跑。
+     */
+    onRecolorRequested: (() -> Unit)? = null,
+    /**
      * 顶部预览槽（课程卡片 / 课表页面两页的 4:6 分栏用）；null = 该页无预览。
      *
      * 入参是**本宿主当前草稿**（不是盘上存档）：开关 / 滑杆一改，宿主换草稿就当场重组预览，
@@ -460,13 +467,19 @@ fun SettingsHost(
                 }
             }
 
-            // 课表重新配色：完整复刻要 Dart 那 479 行弹层 + 配色历史服务 + 调色板
-            // （`lib/widgets/course_recolor_sheet.dart` / `course_recolor_history_service.dart`），
-            // 属独立批次。这里**不假装能跑**：给一句「不可用」，而不是点了没反应。
-            is SettingsDispatch.ShowRecolorSheet -> notice = SettingsNotice(
-                title = SettingsStrings.courseRecolorTileTitle.text,
-                body = SettingsStrings.aboutUnavailable.text,
-            )
+            // 课表重新配色：真弹层需要课程数据与仓储，由壳接线后经 [onRecolorRequested] 打开。
+            // 没接线时不假装能跑：给一句「不可用」，而不是点了没反应。
+            is SettingsDispatch.ShowRecolorSheet -> {
+                val open = onRecolorRequested
+                if (open != null) {
+                    open()
+                } else {
+                    notice = SettingsNotice(
+                        title = SettingsStrings.courseRecolorTileTitle.text,
+                        body = SettingsStrings.aboutUnavailable.text,
+                    )
+                }
+            }
 
             is SettingsDispatch.Ignored -> Log.w(
                 LOG_TAG,

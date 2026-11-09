@@ -42,6 +42,7 @@ import androidx.lifecycle.compose.LocalLifecycleOwner
 import com.mutx163.qingyu.KeepAliveAccessibilityStatus
 import com.mutx163.qingyu.app.AddTaskFormReducer
 import com.mutx163.qingyu.app.CourseActionDispatcher
+import com.mutx163.qingyu.app.CourseRecolorSheetHost
 import com.mutx163.qingyu.app.TimetableHostDisplayPrefs
 import com.mutx163.qingyu.app.TimetableHost
 import com.mutx163.qingyu.app.AppearanceEditorHost
@@ -157,6 +158,8 @@ import com.mutx163.qingyu.pages.settings.RecentWallpaperState
 import com.mutx163.qingyu.pages.settings.SettingsAppearanceEditorPage
 import com.mutx163.qingyu.pages.settings.SettingsAppearancePage
 import com.mutx163.qingyu.pages.settings.SettingsBackdropFlowPage
+import com.mutx163.qingyu.pages.import.ImportRandomColorStore
+import com.mutx163.qingyu.pages.import.CourseRecolorHistoryStore
 import com.mutx163.qingyu.pages.settings.SettingsCourseCardPage
 import com.mutx163.qingyu.pages.settings.SettingsDiagnosticsPage
 import com.mutx163.qingyu.pages.settings.SettingsGeneralPage
@@ -405,6 +408,15 @@ fun ShellPageContent(
     val warehousePrefs = remember(warehouseContext) {
         WarehouseImportPrefs(PrefsKeyValueStore(warehouseContext))
     }
+    // 「课表重新配色」弹层的数据侧：课程来自仓储，颜色组偏好与配色历史都走键值存储。
+    // 两个 store 只包着同一个 prefs，按 context 记住即可；弹层每次打开都重读历史。
+    val recolorContext = LocalContext.current
+    val recolorColorStore = remember(recolorContext) {
+        ImportRandomColorStore(PrefsKeyValueStore(recolorContext))
+    }
+    val recolorHistoryStore = remember(recolorContext) {
+        CourseRecolorHistoryStore(PrefsKeyValueStore(recolorContext))
+    }
     when (pageId) {
         // ── P3-A 关于与说明 ────────────────────────────────────────────
         // 2026-10-28 补全：此前 onEntryClick 是空 lambda，10 个入口全部点了没反应；
@@ -571,14 +583,31 @@ fun ShellPageContent(
             onNavigate = { route -> shellPageIdForRoute(route)?.let(onOpenPage) },
         )
         "b.homeMenuEditor" -> HomeMenuEditorHost(store = wiring.settingsModel, onBack = onBack)
-        "b.courseCard" -> SettingsHost(
-            pageId = SettingsCourseCardPage.ID,
-            store = wiring.settingsModel,
-            onBack = onBack,
-            onNavigate = { route -> shellPageIdForRoute(route)?.let(onOpenPage) },
-            // 两页同一份回推接线：宿主草稿 → 预览槽（改开关 / 拖滑杆当场跟着变）。
-            preview = { SettingsTimetablePreviewSlot(wiring, it) },
-        )
+        "b.courseCard" -> {
+            // 「课表重新配色」：设置宿主拿不到课程数据，真弹层由壳在这里接线。
+            // 空课表的提示由弹层自己给（Dart 只 toast、不弹层）。
+            var showRecolorSheet by remember { mutableStateOf(false) }
+            SettingsHost(
+                pageId = SettingsCourseCardPage.ID,
+                store = wiring.settingsModel,
+                onBack = onBack,
+                onNavigate = { route -> shellPageIdForRoute(route)?.let(onOpenPage) },
+                // 两页同一份回推接线：宿主草稿 → 预览槽（改开关 / 拖滑杆当场跟着变）。
+                preview = { SettingsTimetablePreviewSlot(wiring, it) },
+                onRecolorRequested = { showRecolorSheet = true },
+            )
+            if (showRecolorSheet) {
+                CourseRecolorSheetHost(
+                    repository = wiring.timetable,
+                    colorStore = recolorColorStore,
+                    historyStore = recolorHistoryStore,
+                    onDismiss = { showRecolorSheet = false },
+                    onToast = { message ->
+                        Toast.makeText(recolorContext, message, Toast.LENGTH_SHORT).show()
+                    },
+                )
+            }
+        }
         // 2026-10-28 补口：这一屏原先只有入口行没有落点（台账虚标三处之一）。
         // S2 第二批：改真宿主——密度/浮钮不透明度读模型并合并落盘；背景/材质/字色待扩模型。
         "b.timetablePage" -> TimetablePageSettingsHost(

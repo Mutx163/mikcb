@@ -244,6 +244,59 @@ class TimetableRepository(
     }
 
     /**
+     * 「课表重新配色」批量写色：按 id 对位只改 `color` / `textColor`，其余字段一律不动。
+     *
+     * 为什么要单开一个入口，而不是循环调 [updateCourse]：后者每次都要整份档案落盘 +
+     * 一次通知，一次重刷几十门课就是几十次写、几十帧中间态闪动。这里**一次落盘、一次通知**。
+     *
+     * - 没有任何颜色变化时返回 0，且**不落盘、不通知**（重复点「换一批」不会打空转）；
+     * - 落盘失败时内存与监听者都不动（先写盘、成功后才改内存，抛给调用方处理）；
+     * - 不碰考试提醒 / 日程：换色不影响任何提醒。
+     *
+     * @param recolored 目标课程列表（可来自 [Course.copy] 过的整份列表；不在当前档案里的 id 忽略）。
+     * @return 真正改了颜色的课程条数。
+     */
+    fun applyCourseRecolors(recolored: List<Course>): Int {
+        val changed = applyCourseRecolorsLocked(recolored)
+        drainPendingNotify()
+        return changed
+    }
+
+    @Synchronized
+    private fun applyCourseRecolorsLocked(recolored: List<Course>): Int {
+        val byId = recolored.associateBy { it.id }
+        var changed = 0
+        val nextCourses = activeProfile.courses.map { current ->
+            val updated = byId[current.id]
+            when {
+                updated == null -> current
+                updated.color == current.color && updated.textColor == current.textColor -> current
+                else -> {
+                    changed += 1
+                    current.copy(color = updated.color, textColor = updated.textColor)
+                }
+            }
+        }
+        if (changed == 0) return 0
+
+        val week = resolvedCurrentWeek()
+        val profile = activeProfile.copy(
+            courses = nextCourses,
+            settings = loadedSettings,
+            currentWeek = week.toLong(),
+            lastUsedAt = LocalDateTime.now(),
+        )
+        val nextProfiles = upsertProfile(profile)
+        // 先落盘：失败直接抛，内存与监听者都不动。
+        store.saveProfiles(nextProfiles)
+        store.saveActiveProfileId(profile.id)
+        loadedProfiles = nextProfiles
+        loadedActiveProfileId = profile.id
+        pendingNotify = true
+        return changed
+    }
+
+    /**
      * 切换激活档案。
      * @return true 表示真的切了（目标存在且与当前不同）；否则 false 且**不通知**。
      */

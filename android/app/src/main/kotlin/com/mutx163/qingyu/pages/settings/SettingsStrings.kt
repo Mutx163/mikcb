@@ -206,6 +206,19 @@ object SettingsStrings {
         ArbText("unifiedCourseCardColorSubtitle", "关闭后继续使用每门课程自己的颜色")
     val courseRecolorTileTitle = ArbText("courseRecolorTileTitle", "课表重新配色")
     val courseRecolorTileSubtitle = ArbText("courseRecolorTileSubtitle", "不用重新导入，可随时换色")
+    val courseRecolorSheetTitle = ArbText("courseRecolorSheetTitle", "课表重新配色")
+    val courseRecolorSheetDescription = ArbText(
+        "courseRecolorSheetDescription",
+        "为全部课程生成一套配色。可随时撤销回上一套配色，或恢复初始颜色。",
+    )
+    val courseRecolorNewBatchButton = ArbText("courseRecolorNewBatchButton", "换一批颜色")
+    val courseRecolorPrevious = ArbText("courseRecolorPrevious", "上一套")
+    val courseRecolorNext = ArbText("courseRecolorNext", "下一套")
+    val courseRecolorSchemePosition = ArbText("courseRecolorSchemePosition", "第 {index}/{total} 套")
+    val courseRecolorNoCoursesToast = ArbText(
+        "courseRecolorNoCoursesToast",
+        "暂无课程，先导入或添加课程再换颜色",
+    )
     val layoutShowConflictBadgeTitle =
         ArbText("layoutShowConflictBadgeTitle", "首页显示冲突小胶囊")
     val layoutConflictOpacityTitle = ArbText("layoutConflictOpacityTitle", "冲突课程透明度")
