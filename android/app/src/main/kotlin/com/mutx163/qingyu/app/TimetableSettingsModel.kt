@@ -29,7 +29,8 @@ import java.util.Locale
  * ## 三个「看着像默认值其实不是」的坑（都已按 Dart 读侧取）
  *
  * 1. `themeSeedColor`：**构造默认值是 `#3482FF`，而 `fromJson` 缺键默认是 `#2563EB`**
- *    （:889 vs :1696）。读侧口径取 `#2563EB`——用户从没改过种子色时，读出来就是它。
+ *    （发布 tag `v2.1.4.1`：`:877` vs `:1665`）。两条路径分开取：单字段缺键 → `#2563EB`；
+ *    整份缺失/坏盘（`defaults()`）→ `#3482FF`，与同一路径上 `foruiTheme = miui` 的种子色一致。
  * 2. `courseCardDetailColorLight/Dark`：`linkCourseCardColors` 为真（默认真）时
  *    **详情字色被标题字色覆盖**（:1304-1311），存档里那个值是脏的也不读。
  * 3. `appFontWeight` / `appTextScale` / `pageTransitionSpeed` /
@@ -507,6 +508,16 @@ data class TimetableSettingsModel(
         /** `themeSeedColor` 的**读侧**缺键默认（:1696，注意不是构造默认的 `#3482FF`）。 */
         const val DEFAULT_SEED_COLOR_FROM_JSON = "#2563EB"
 
+        /**
+         * `themeSeedColor` 的**构造默认**（发布 tag `v2.1.4.1` `:877`）。
+         *
+         * 整份缺失 / 坏盘 → Dart `TimetableSettings.defaults()`（发布 tag
+         * `storage_service.dart:756-767`），走的是构造默认而不是 `fromJson` 缺键默认；
+         * 首装时它必须与同一路径的 `foruiTheme = miui`（种子色 #3482FF）一致，
+         * 否则会得到「miui 主题 + 非 miui 种子色」。
+         */
+        const val DEFAULT_SEED_COLOR_FROM_DEFAULTS = "#3482FF"
+
         /** `timetablePageBackgroundColor` 的构造默认与读侧缺键默认（`:891` / `:1699`）。 */
         const val DEFAULT_TIMETABLE_PAGE_BACKGROUND_COLOR = "#F8FAFC"
 
@@ -774,19 +785,22 @@ data class TimetableSettingsModel(
         /**
          * 按 Dart `TimetableSettings.fromJson` 的读口径解析（缺键/类型不符/坏值一律回落默认）。
          *
-         * [foruiThemeWhenKeyMissing] 只在 **`foruiTheme` 键本身不存在/非字符串** 时生效；
-         * 键存在但是未知值时仍按 Dart `ForuiThemeX.fromValue` 的 `orElse` 回落 blue。
+         * [foruiThemeWhenKeyMissing] / [themeSeedColorWhenKeyMissing] 分别只在 **对应键本身
+         * 不存在/类型不符** 时生效；键存在但是未知值时，`foruiTheme` 仍按 Dart
+         * `ForuiThemeX.fromValue` 的 `orElse` 回落 blue。
          *
-         * 为什么需要这个参数：Dart 有两条真值不同的路径——整份缺失/坏盘走
-         * `defaults()`（构造默认 `foruiTheme = miui`，`storage_service.dart:806-814` +
-         * `timetable_settings.dart:890`）；JSON 合法但单字段缺 key 走
-         * `ForuiThemeX.fromValue(null)` 的 `orElse = blue`（`timetable_settings.dart:1697`，
-         * `settings/timetable_settings_enums.dart:87-92`）。默认值保持 blue（即 `fromJson` 口径），
-         * 只有 [TimetableSettingsModelStore.load] 的「整份缺失/坏盘」分支显式传 [ForuiTheme.MIUI]。
+         * 为什么需要这两个参数：Dart 有两条真值不同的路径（行号按发布 tag `v2.1.4.1`）——
+         * 整份缺失/坏盘走 `defaults()`（构造默认 `foruiTheme = miui`、`themeSeedColor = #3482FF`，
+         * `storage_service.dart:756-767` + `timetable_settings.dart:877-878`）；JSON 合法但
+         * 单字段缺 key 走 `fromJson` 的缺键默认（`foruiTheme` → blue、`themeSeedColor` →
+         * `#2563EB`，`timetable_settings.dart:1665-1666`）。参数默认值保持「单字段缺键」口径，
+         * 只有 [TimetableSettingsModelStore.load] 的「整份缺失/坏盘」分支显式传
+         * MIUI / `#3482FF`——两个键必须同一判据，否则首装会得到「miui 主题 + 非 miui 种子色」。
          */
         fun fromJson(
             json: Map<String, Any?>,
             foruiThemeWhenKeyMissing: ForuiTheme = ForuiTheme.BLUE,
+            themeSeedColorWhenKeyMissing: String = DEFAULT_SEED_COLOR_FROM_JSON,
         ): TimetableSettingsModel {
             val linked = LenientJson.bool(json["linkCourseCardColors"]) ?: true
             val titleLight = LenientJson.string(json["courseCardTitleColorLight"])
@@ -820,8 +834,9 @@ data class TimetableSettingsModel(
                 foruiTheme = LenientJson.string(json["foruiTheme"])
                     ?.let { ForuiTheme.fromValue(it) }
                     ?: foruiThemeWhenKeyMissing,
+                // 与 foruiTheme 同一判据：单字段缺键 → #2563EB；整份缺失/坏盘 → #3482FF。
                 themeSeedColor = LenientJson.string(json["themeSeedColor"])
-                    ?: DEFAULT_SEED_COLOR_FROM_JSON,
+                    ?: themeSeedColorWhenKeyMissing,
                 themeCheckpointName = LenientJson.string(json["themeCheckpointName"]),
                 themeCheckpointConfig = asMap(json["themeCheckpointConfig"]),
                 savedThemes = asMapList(json["savedThemes"]),
@@ -1156,19 +1171,33 @@ class TimetableSettingsModelStore(private val store: TimetableStore) {
     /** 读；盘上不是 JSON 对象时由 [TimetableStore.loadSettingsJson] 留档 + 删 key，返回默认值。 */
     fun load(): TimetableSettingsModel {
         val json = store.loadSettingsJson()
+        // 两条路径的「键缺」真值不同，且必须成对：整份缺失/坏盘 → miui + #3482FF
+        // （Dart `defaults()`）；合法对象但单键缺 → blue + #2563EB（`fromJson` 缺键默认）。
+        val defaultsPath = isDefaultsPath()
         return TimetableSettingsModel.fromJson(
             json,
             foruiThemeWhenKeyMissing =
-                if (isDefaultsPath()) ForuiTheme.MIUI else ForuiTheme.BLUE,
+                if (defaultsPath) ForuiTheme.MIUI else ForuiTheme.BLUE,
+            themeSeedColorWhenKeyMissing =
+                if (defaultsPath) {
+                    // 引用点在另一个类里，companion 常量必须带类名限定（L1 残错修复）。
+                    TimetableSettingsModel.DEFAULT_SEED_COLOR_FROM_DEFAULTS
+                } else {
+                    TimetableSettingsModel.DEFAULT_SEED_COLOR_FROM_JSON
+                },
         )
     }
 
     /**
-     * 是否落在 Dart 的「整份缺失 / 坏盘 → `defaults()`」路径（`storage_service.dart:806-814`）。
+     * 是否落在 Dart 的「整份缺失 / 坏盘 → `defaults()`」路径（发布 tag `v2.1.4.1`
+     * `storage_service.dart:756-767`）。
      *
-     * 该路径的 `foruiTheme` 取构造默认 `miui`（`timetable_settings.dart:890`）；
-     * 只要 JSON 是**合法对象**（哪怕缺 key），就走 `fromValue` 的 `orElse = blue`
-     * （`timetable_settings.dart:1697`），两条路径真值不同，所以必须显式分辨。
+     * 该路径上两个键都取**构造默认**：`foruiTheme = miui`（`:878`）、
+     * `themeSeedColor = #3482FF`（`:877`）；只要 JSON 是**合法对象**（哪怕缺 key），就走
+     * `fromValue`/缺键默认：`foruiTheme` → blue（`:1666`，`orElse` 见
+     * `settings/timetable_settings_enums.dart:87-92`）、`themeSeedColor` → `#2563EB`
+     * （`:1665`）。两条路径真值不同，所以必须显式分辨——只分辨其中一个就会得到
+     * 「miui 主题 + 非 miui 种子色」的首装配色。
      *
      * 判据只看**原始盘面**：有合法档案数组 → 内嵌 settings 的口径归 `fromJson`；
      * 没有档案时，顶层 `timetable_settings` 不存在/为空/解析不成对象才算坏盘。

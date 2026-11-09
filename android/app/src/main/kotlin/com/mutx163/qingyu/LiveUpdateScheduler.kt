@@ -1572,7 +1572,10 @@ object LiveUpdateScheduler {
             liveShowDuringClassNotification =
                 settingsJson.optBoolean("liveShowDuringClassNotification", true),
             liveUseShortName = settingsJson.optBoolean("liveUseShortName", true),
-            liveHidePrefixText = settingsJson.optBoolean("liveHidePrefixText", false),
+            // 缺键默认 **true**（发布 tag `v2.1.4.1` 的 `timetable_settings.dart:1530` 是
+            // `?? true`；构造默认也是 true，:824）。设置页 `LiveDisplayStore.kt:168` 同样按
+            // true 显示——这里若落 false，新装/快照缺键时会出现「开关显示开、实况却仍带前缀」两套真值。
+            liveHidePrefixText = settingsJson.optBoolean("liveHidePrefixText", true),
             liveDuringClassTimeDisplayMode =
                 settingsJson.optString("liveDuringClassTimeDisplayMode", "nearest"),
             liveEnableMiuiIslandLabelImage =
@@ -1607,10 +1610,11 @@ object LiveUpdateScheduler {
                     "liveDuringEndUseShortName",
                     settingsJson.optBoolean("liveUseShortName", true),
                 ),
+            // 下课段回退同发布 tag `:1555-1557`：本键缺 → 用上课段的值；上课段也缺 → true。
             liveDuringEndHidePrefixText =
                 settingsJson.optBoolean(
                     "liveDuringEndHidePrefixText",
-                    settingsJson.optBoolean("liveHidePrefixText", false),
+                    settingsJson.optBoolean("liveHidePrefixText", true),
                 ),
             liveDuringEndFollowBeforeClass =
                 settingsJson.optBoolean("liveDuringEndFollowBeforeClass", true),

@@ -13,7 +13,8 @@ import org.junit.Test
  *
  * 期望值全部来自 Dart `lib/models/timetable_settings.dart` 的 `fromJson`（行号写在断言旁），
  * 不是从实现里抄的。三条最容易错的：
- * - `themeSeedColor` 缺键回落 **`#2563EB`**（:1696），不是构造默认 `#3482FF`（:889）；
+ * - `themeSeedColor` **两条路径真值不同**：单键缺键回落 `#2563EB`，整份缺失/坏盘走
+ *   `defaults()` 是 `#3482FF`（发布 tag `v2.1.4.1`：`timetable_settings.dart:1665` vs `:877`）；
  * - `linkCourseCardColors` 为真时**详情字色被标题字色覆盖**（:1304-1311）；
  * - `appFontWeight` / `appTextScale` / `pageTransitionSpeed` / 冲突透明度读侧都有 **clamp / 规范化**。
  */
@@ -839,12 +840,20 @@ class TimetableSettingsModelTest {
         // 推导出 ['day','week']（:1492-1499），而构造默认是空表；`homeGridMenuActions`
         // 缺 key 是空表（非 List → 空表），但**显式空数组**读回来会补上钉住项 ['settings']。
         assertEquals(
-            TimetableSettingsModel(glassDockActions = listOf("day", "week")),
+            // 期望值必须显式带上 defaults() 的种子色：数据类默认是读侧 #2563EB
+            // （发布 tag `:1665`），与「整份坏盘 → defaults() → #3482FF」（`:877`）不同。
+            TimetableSettingsModel(
+                glassDockActions = listOf("day", "week"),
+                themeSeedColor = "#3482FF",
+            ),
             model,
         )
-        // 坏盘 = Dart `storage_service.dart:806-814` → `TimetableSettings.defaults()`，
-        // 构造默认 foruiTheme 是 miui（`timetable_settings.dart:890`），**不是** blue。
+        // 坏盘 = Dart `storage_service.dart:756-767` → `TimetableSettings.defaults()`（发布 tag
+        // `v2.1.4.1`），构造默认 foruiTheme 是 miui（`timetable_settings.dart:878`），**不是** blue。
         assertEquals(ForuiTheme.MIUI, model.foruiTheme)
+        // 同一条 defaults() 路径上，种子色也必须取构造默认 #3482FF（`:877`）：
+        // 只分辨 foruiTheme 会得到「miui 主题 + 非 miui 种子色」的首装配色。
+        assertEquals("#3482FF", model.themeSeedColor)
         assertEquals("[1,2,3]", raw.rawSnapshot()["flutter.timetable_settings_corrupt_backup_999"])
         assertFalse(raw.contains("timetable_settings"))
     }
@@ -852,7 +861,8 @@ class TimetableSettingsModelTest {
     @Test
     fun validSettingsJsonWithoutForuiThemeUsesDartOrElseBlue() {
         // JSON 合法、只是缺 key / 值未知 → Dart `ForuiThemeX.fromValue` 的 orElse = blue
-        // （`timetable_settings.dart:1697` / `settings/timetable_settings_enums.dart:87-92`）。
+        // （发布 tag `v2.1.4.1`：`timetable_settings.dart:1666` /
+        // `settings/timetable_settings_enums.dart:87-92`）。
         // 与「整份坏盘 → defaults() → miui」真值不同，两条路径必须分开。
         val missingKey = TimetableSettingsModelStore(
             TimetableStore(
@@ -862,6 +872,9 @@ class TimetableSettingsModelTest {
             ),
         ).load()
         assertEquals(ForuiTheme.BLUE, missingKey.foruiTheme)
+        // 同一路径上种子色走 fromJson 缺键默认 #2563EB（`:1665`），**不是** defaults() 的
+        // #3482FF——两个键必须成对区分，各错一半都会串色。
+        assertEquals("#2563EB", missingKey.themeSeedColor)
         assertEquals(AppThemeMode.DARK, missingKey.appThemeMode)
 
         val unknownValue = TimetableSettingsModelStore(
