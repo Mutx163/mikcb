@@ -81,7 +81,7 @@ com/mutx163/qingyu/pages/task/AddTaskPage.kt:10
 # A 预览样例课
 com/mutx163/qingyu/pages/course/AddCoursePage.kt:9
 # C 指南页颜色选项标签为正式文案，本轮仅登记，后续移 ARB
-com/mutx163/qingyu/pages/guide/UserGuidePage.kt:9
+com/mutx163/qingyu/pages/guide/UserGuidePage.kt:22
 # A 预览样例，含“导入中...”疑似正式文案，后续逐条裁决
 com/mutx163/qingyu/pages/import/warehouse/AiImageCourseImportPage.kt:9
 # A 预览样例

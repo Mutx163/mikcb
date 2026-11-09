@@ -89,11 +89,16 @@ import top.yukonga.miuix.kmp.theme.MiuixTheme
  * 行为真相仍是 `lib/screens/user_guide_screen.dart`；本层不探测系统、不写设置：六项权限真实状态
  * 经 [permissionState] 传入，个性化改动经 [onSettingsPatch] 交宿主落盘，权限行点击经
  * [onPermissionAction] 交宿主拉起系统页。契约类型见 GuideRuntimeTypes（Lead 冻结）。
+ *
+ * [initialPage] 只作为首次组合的起始页（0 起），之后仍由滑动 / 底栏按钮决定；宿主不传，
+ * 静态预览用它直达隐私 / 权限 / 个性化 / 技巧页。首启模式未勾选隐私时会被收在第 2 页，
+ * 不能靠传参绕过同意流程。
  */
 @Composable
 fun UserGuidePage(
     requirePrivacyConsent: Boolean = false,
     initialPrivacyChecked: Boolean = false,
+    initialPage: Int = 0,
     permissionState: GuidePermissionState = GuidePermissionState(),
     settings: GuideSettingsSnapshot = GuideSettingsSnapshot(),
     seedOptions: List<GuideSeedOption> = emptyList(),
@@ -112,7 +117,16 @@ fun UserGuidePage(
     var privacyChecked by remember { mutableStateOf(initialPrivacyChecked) }
     val gatedToPrivacy = requirePrivacyConsent && !privacyChecked
 
-    val pagerState = rememberPagerState(pageCount = { TOTAL_GUIDE_PAGES })
+    // 首启模式没勾选隐私就不能跳过第 2 页：预览用的 initialPage 也走同一道闸。
+    val startPage = if (requirePrivacyConsent && !initialPrivacyChecked) {
+        initialPage.coerceIn(0, 1)
+    } else {
+        initialPage
+    }
+    val pagerState = rememberPagerState(
+        initialPage = startPage.coerceIn(0, TOTAL_GUIDE_PAGES - 1),
+        pageCount = { TOTAL_GUIDE_PAGES },
+    )
     val currentPage = pagerState.currentPage
 
     val pageTitles = listOf(
@@ -1083,12 +1097,20 @@ private fun GuideSecondaryButton(
     }
 }
 
-// ── 预览：Android Studio 里免装机看效果（2026-11-08 加）────────────────────
+// ── 预览：Android Studio 里免装机看效果（2026-11-08 加，2026-11-09 补全状态）────────
 //
-// ⚠️ 静态预览只画得出**第 1 页（欢迎页）**：翻到第几页由页面内 `rememberPagerState`
-// 决定，外部没有入参能改。要直接看隐私 / 权限 / 个性化 / 提示四页，在 Studio 的
-// 交互式预览里左右滑，或装到真机走一遍首启流程。下面把后四页要用的数据照样填好，
-// 滑过去就能看到真实形态（权限全开、主题色豆有选中项）。
+// 一条预览 = 一个真实状态，覆盖「五页 × 首启 / 复看 × 明暗 × 大字号」以及页内分支：
+//   · 欢迎页：首启（无返回、底栏只有「下一步」）/ 复看（右上返回）/ 暗色；
+//   · 隐私页：待勾选（「下一步」禁用、次按钮变「退出」）/ 已勾选 / 复看（不显示勾选卡）/ 大字号；
+//   · 权限页：探测中（转圈）/ 3 of 6（含「已开启待生效」）/ 0 of 6（含「建议检查」）/ 全开 / 暗色；
+//   · 个性化页：默认档（宫格 + 液态玻璃 + 跟随系统 + 湖水蓝）/ 实体 + 暗色 + 竹林绿 / 大字号；
+//   · 技巧页：首启末页（同意并开始）/ 复看末页（知道了）。
+//
+// 静态预览能落到指定页，靠 `UserGuidePage(initialPage = …)`——它只给 `rememberPagerState`
+// 一个初值；首启未勾选隐私时仍被收在第 2 页，绕不过同意流程。
+//
+// 预览名用中文，和 WeatherCityPickerPage 等页一致。它们会计入 `CjkLiteralGateTest`
+// 的文件计数：这是**预览样例**，不是屏上文案，基线里按文件登记，别当成 i18n 回归。
 
 /** 权限页要看的六项真实状态：全开（对齐「权限都给够了」的正常形态）。 */
 private val previewGuidePermissions = GuidePermissionState(
@@ -1101,6 +1123,44 @@ private val previewGuidePermissions = GuidePermissionState(
     doNotDisturbAccess = true,
 )
 
+/** 权限页 3 / 6：超级岛未开、清单已声明，未开文案走「已开启待生效」。 */
+private val previewGuidePermissionsPartial = GuidePermissionState(
+    notification = true,
+    promotedIsland = false,
+    promotedDeclared = true,
+    autoStart = true,
+    batteryUnrestricted = false,
+    keepAliveAccessibility = true,
+    doNotDisturbAccess = false,
+)
+
+/** 权限页 0 / 6：六项都探测过且都没开，清单未声明超级岛，未开文案走「建议检查」。 */
+private val previewGuidePermissionsNone = GuidePermissionState(
+    notification = false,
+    promotedIsland = false,
+    promotedDeclared = false,
+    autoStart = false,
+    batteryUnrestricted = false,
+    keepAliveAccessibility = false,
+    doNotDisturbAccess = false,
+)
+
+/** 个性化页默认档：宫格菜单 + 液态玻璃 + 跟随系统 + 湖水蓝。 */
+private val previewGuideSettings = GuideSettingsSnapshot(
+    homeMenuGrid = true,
+    materialSolid = false,
+    themeMode = GuideThemeMode.SYSTEM,
+    seedHex = "#3B82F6",
+)
+
+/** 个性化页另一档：列表菜单 + 实体材质 + 暗色档 + 竹林绿（壁纸提示随实体材质隐藏）。 */
+private val previewGuideSettingsSolid = GuideSettingsSnapshot(
+    homeMenuGrid = false,
+    materialSolid = true,
+    themeMode = GuideThemeMode.DARK,
+    seedHex = "#22C55E",
+)
+
 /** 个性化页的主题色豆（中文名 + 十六进制），与设置页同一批色语义。 */
 private val previewGuideSeedOptions = listOf(
     GuideSeedOption(hex = "#3B82F6", label = "湖水蓝"),
@@ -1110,53 +1170,172 @@ private val previewGuideSeedOptions = listOf(
     GuideSeedOption(hex = "#EF4444", label = "朱砂红"),
 )
 
-/** 一档预览的公共身体：模式（首启 / 复看）+ 外观档位。 */
+/** 一档预览的公共身体：起始页 + 模式 + 页内数据 + 外观档位。 */
 @Composable
 private fun PreviewUserGuidePage(
+    initialPage: Int = 0,
     requirePrivacyConsent: Boolean = true,
+    privacyChecked: Boolean = false,
+    permissionState: GuidePermissionState = previewGuidePermissions,
+    settings: GuideSettingsSnapshot = previewGuideSettings,
     dark: Boolean = false,
     textScale: Float = 1f,
 ) {
     QingyuPageTheme(isDark = dark, textScale = textScale) {
         UserGuidePage(
             requirePrivacyConsent = requirePrivacyConsent,
-            permissionState = previewGuidePermissions,
-            settings = GuideSettingsSnapshot(
-                homeMenuGrid = true,
-                materialSolid = false,
-                themeMode = GuideThemeMode.SYSTEM,
-                seedHex = "#3B82F6",
-            ),
+            initialPrivacyChecked = privacyChecked,
+            initialPage = initialPage,
+            permissionState = permissionState,
+            settings = settings,
             seedOptions = previewGuideSeedOptions,
             onBack = {},
         )
     }
 }
 
+// ── 第 1 页 · 欢迎 ──
+
 @Suppress("unused")
-@Preview(name = "1 首启·欢迎", showBackground = true, widthDp = 400, heightDp = 900)
+@Preview(name = "1/5 欢迎·首启", showBackground = true, widthDp = 400, heightDp = 900)
 @Composable
-private fun UserGuidePagePreviewFirstRun() {
-    PreviewUserGuidePage(requirePrivacyConsent = true)
+private fun UserGuidePagePreviewWelcomeFirstRun() {
+    PreviewUserGuidePage(initialPage = 0)
 }
 
 @Suppress("unused")
-@Preview(name = "2 复看·欢迎", showBackground = true, widthDp = 400, heightDp = 900)
+@Preview(name = "1/5 欢迎·复看", showBackground = true, widthDp = 400, heightDp = 900)
 @Composable
-private fun UserGuidePagePreviewRevisit() {
-    PreviewUserGuidePage(requirePrivacyConsent = false)
+private fun UserGuidePagePreviewWelcomeRevisit() {
+    PreviewUserGuidePage(initialPage = 0, requirePrivacyConsent = false)
 }
 
 @Suppress("unused")
-@Preview(name = "3 暗色", showBackground = true, widthDp = 400, heightDp = 900)
+@Preview(name = "1/5 欢迎·暗色", showBackground = true, widthDp = 400, heightDp = 900)
 @Composable
-private fun UserGuidePagePreviewDark() {
-    PreviewUserGuidePage(dark = true)
+private fun UserGuidePagePreviewWelcomeDark() {
+    PreviewUserGuidePage(initialPage = 0, dark = true)
+}
+
+// ── 第 2 页 · 隐私 ──
+
+@Suppress("unused")
+@Preview(name = "2/5 隐私·待勾选", showBackground = true, widthDp = 400, heightDp = 900)
+@Composable
+private fun UserGuidePagePreviewPrivacyPending() {
+    PreviewUserGuidePage(initialPage = 1)
 }
 
 @Suppress("unused")
-@Preview(name = "4 大字号 1.3", showBackground = true, widthDp = 400, heightDp = 900)
+@Preview(name = "2/5 隐私·已勾选", showBackground = true, widthDp = 400, heightDp = 900)
 @Composable
-private fun UserGuidePagePreviewLargeText() {
-    PreviewUserGuidePage(textScale = 1.3f)
+private fun UserGuidePagePreviewPrivacyChecked() {
+    PreviewUserGuidePage(initialPage = 1, privacyChecked = true)
+}
+
+@Suppress("unused")
+@Preview(name = "2/5 隐私·复看", showBackground = true, widthDp = 400, heightDp = 900)
+@Composable
+private fun UserGuidePagePreviewPrivacyRevisit() {
+    PreviewUserGuidePage(initialPage = 1, requirePrivacyConsent = false)
+}
+
+@Suppress("unused")
+@Preview(name = "2/5 隐私·大字号 1.3", showBackground = true, widthDp = 400, heightDp = 900)
+@Composable
+private fun UserGuidePagePreviewPrivacyLargeText() {
+    PreviewUserGuidePage(initialPage = 1, textScale = 1.3f)
+}
+
+// ── 第 3 页 · 系统权限 ──
+
+@Suppress("unused")
+@Preview(name = "3/5 权限·探测中", showBackground = true, widthDp = 400, heightDp = 900)
+@Composable
+private fun UserGuidePagePreviewPermissionsLoading() {
+    PreviewUserGuidePage(
+        initialPage = 2,
+        privacyChecked = true,
+        permissionState = GuidePermissionState(),
+    )
+}
+
+@Suppress("unused")
+@Preview(name = "3/5 权限·3/6", showBackground = true, widthDp = 400, heightDp = 900)
+@Composable
+private fun UserGuidePagePreviewPermissionsPartial() {
+    PreviewUserGuidePage(
+        initialPage = 2,
+        privacyChecked = true,
+        permissionState = previewGuidePermissionsPartial,
+    )
+}
+
+@Suppress("unused")
+@Preview(name = "3/5 权限·0/6", showBackground = true, widthDp = 400, heightDp = 900)
+@Composable
+private fun UserGuidePagePreviewPermissionsNone() {
+    PreviewUserGuidePage(
+        initialPage = 2,
+        privacyChecked = true,
+        permissionState = previewGuidePermissionsNone,
+    )
+}
+
+@Suppress("unused")
+@Preview(name = "3/5 权限·6/6", showBackground = true, widthDp = 400, heightDp = 900)
+@Composable
+private fun UserGuidePagePreviewPermissionsAllGranted() {
+    PreviewUserGuidePage(initialPage = 2, privacyChecked = true)
+}
+
+@Suppress("unused")
+@Preview(name = "3/5 权限·暗色", showBackground = true, widthDp = 400, heightDp = 900)
+@Composable
+private fun UserGuidePagePreviewPermissionsDark() {
+    PreviewUserGuidePage(initialPage = 2, privacyChecked = true, dark = true)
+}
+
+// ── 第 4 页 · 个性化 ──
+
+@Suppress("unused")
+@Preview(name = "4/5 个性化·默认", showBackground = true, widthDp = 400, heightDp = 900)
+@Composable
+private fun UserGuidePagePreviewPersonalizeDefault() {
+    PreviewUserGuidePage(initialPage = 3, privacyChecked = true)
+}
+
+@Suppress("unused")
+@Preview(name = "4/5 个性化·实体+暗色", showBackground = true, widthDp = 400, heightDp = 900)
+@Composable
+private fun UserGuidePagePreviewPersonalizeSolidDark() {
+    PreviewUserGuidePage(
+        initialPage = 3,
+        privacyChecked = true,
+        settings = previewGuideSettingsSolid,
+        dark = true,
+    )
+}
+
+@Suppress("unused")
+@Preview(name = "4/5 个性化·大字号 1.3", showBackground = true, widthDp = 400, heightDp = 900)
+@Composable
+private fun UserGuidePagePreviewPersonalizeLargeText() {
+    PreviewUserGuidePage(initialPage = 3, privacyChecked = true, textScale = 1.3f)
+}
+
+// ── 第 5 页 · 使用技巧 ──
+
+@Suppress("unused")
+@Preview(name = "5/5 技巧·首启末页", showBackground = true, widthDp = 400, heightDp = 900)
+@Composable
+private fun UserGuidePagePreviewTipsFirstRun() {
+    PreviewUserGuidePage(initialPage = 4, privacyChecked = true)
+}
+
+@Suppress("unused")
+@Preview(name = "5/5 技巧·复看末页", showBackground = true, widthDp = 400, heightDp = 900)
+@Composable
+private fun UserGuidePagePreviewTipsRevisit() {
+    PreviewUserGuidePage(initialPage = 4, requirePrivacyConsent = false)
 }
