@@ -118,7 +118,9 @@ fun buildFeedbackPageView(): FeedbackPageView = FeedbackPageView(
             badge = FeedbackBadge(
                 assetPath = "assets/branding/github.svg",
                 isSvg = true,
-                tintHex = "#FF181717",
+                // 占位阶段统一成「品牌色底 + 白字」：GitHub 黑底白标；换真图时 tint 也保持白色。
+                tintHex = "#FFFFFFFF",
+                backgroundColorHex = "#FF181717",
             ),
         ),
         FeedbackChannel(
@@ -169,7 +171,9 @@ fun buildFeedbackPageView(): FeedbackPageView = FeedbackPageView(
             badge = FeedbackBadge(
                 assetPath = "assets/branding/qq.svg",
                 isSvg = true,
-                tintHex = "#FF12B7F5",
+                // 与 GitHub 同口径：QQ 蓝底白标，不再用透明底 + 蓝色字形。
+                tintHex = "#FFFFFFFF",
+                backgroundColorHex = "#FF12B7F5",
             ),
         ),
         FeedbackChannel(
@@ -185,6 +189,8 @@ fun buildFeedbackPageView(): FeedbackPageView = FeedbackPageView(
             preCopy = FeedbackContact.wechatOaName,
             badge = FeedbackBadge(
                 assetPath = "assets/branding/launcher_icon.png",
+                // 微信品牌绿；占位字「微」按亮度自动取白。
+                backgroundColorHex = "#FF07C160",
             ),
         ),
     ),
