@@ -118,9 +118,9 @@ fun buildFeedbackPageView(): FeedbackPageView = FeedbackPageView(
             badge = FeedbackBadge(
                 assetPath = "assets/branding/github.svg",
                 isSvg = true,
-                // 占位阶段统一成「品牌色底 + 白字」：GitHub 黑底白标；换真图时 tint 也保持白色。
-                tintHex = "#FFFFFFFF",
-                backgroundColorHex = "#FF181717",
+                // Flutter 原样：白底 + GitHub 黑标。深色下也保持白底，避免黑标压在深色卡面上。
+                tintHex = "#FF181717",
+                backgroundColorHex = "#FFFFFFFF",
             ),
         ),
         FeedbackChannel(
@@ -171,9 +171,9 @@ fun buildFeedbackPageView(): FeedbackPageView = FeedbackPageView(
             badge = FeedbackBadge(
                 assetPath = "assets/branding/qq.svg",
                 isSvg = true,
-                // 与 GitHub 同口径：QQ 蓝底白标，不再用透明底 + 蓝色字形。
-                tintHex = "#FFFFFFFF",
-                backgroundColorHex = "#FF12B7F5",
+                // Flutter 原样：白底 + QQ 蓝标；深色下也保持白底。
+                tintHex = "#FF12B7F5",
+                backgroundColorHex = "#FFFFFFFF",
             ),
         ),
         FeedbackChannel(
@@ -189,8 +189,8 @@ fun buildFeedbackPageView(): FeedbackPageView = FeedbackPageView(
             preCopy = FeedbackContact.wechatOaName,
             badge = FeedbackBadge(
                 assetPath = "assets/branding/launcher_icon.png",
-                // 微信品牌绿；占位字「微」按亮度自动取白。
-                backgroundColorHex = "#FF07C160",
+                // Flutter 原样：白底 + App 图标（公众号头像就是这张）；绿底会被浅色图标盖住。
+                backgroundColorHex = "#FFFFFFFF",
             ),
         ),
     ),

@@ -1,7 +1,10 @@
 package com.mutx163.qingyu.pages.feedback
 
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -20,10 +23,13 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.luminance
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.mutx163.qingyu.R
 import com.mutx163.qingyu.components.QingyuCard
 import com.mutx163.qingyu.components.QingyuPageList
 import com.mutx163.qingyu.components.QingyuPageScaffold
@@ -51,13 +57,14 @@ import top.yukonga.miuix.kmp.theme.MiuixTheme
  *
  * ## 组件与已知差异
  *
- * - Scaffold / Card / Text / Icon / IconButton 全部官方 Miuix；
+ * - Scaffold / Card / Text / Icon / IconButton 走官方 Miuix；两张多色 PNG 徽标用
+ *   Compose 官方 `Image`（Miuix `Icon` 的 KDoc 明确建议多色图用 `Image`，避免被染色）；
  * - 返回键由共享骨架 `QingyuPageScaffold` 提供；复制用官方图标 `MiuixIcons.Copy`
  *   （依赖 `miuix-icons-android:0.8.8`，用户 2026-10-26 批准）；
- * - **品牌徽标暂用占位**：原图是 Flutter 资产（github/xiaohongshu/qq 是 SVG），
- *   Compose 侧没有 SVG 渲染器、也不应读 `assets/flutter_assets`（Phase 5 会删），
- *   这里画同尺寸品牌色圆角方块 + 标题首字，等 Phase 4 换真图。资产路径已记录在
- *   [FeedbackBadge.assetPath]，换图时按图索骥。
+ * - **品牌徽标用 Flutter 真图**：github/xiaohongshu/qq 三张 SVG 已转成
+ *   `res/drawable/ic_brand_*.xml` 单色 vector，coolapk/launcher_icon 两张 PNG 放在
+ *   `res/drawable-nodpi/`；`BrandBadge` 用 `painterResource` 画，并按 Dart 原版补 1dp 描边。
+ *   不再画首字占位，也不读 `assets/flutter_assets`。
  * - Toast/剪贴板/拉起外部应用属宿主能力：本页只回调
  *   [onCopyChannel] / [onOpenChannel]，宿主用 `channel.copyToast` 与
  *   `runFeedbackOpenPlan` 决定提示与回落。
@@ -150,34 +157,69 @@ private fun FeedbackChannelRow(
 }
 
 /**
- * 品牌徽标占位：26dp 圆角方块（7dp 圆角 = `HyperosTokens.iconBadgeRadius` 比例）。
+ * 品牌徽标：26dp 圆角方块（7dp 圆角 = `HyperosTokens.iconBadgeRadius` 比例）。
  *
- * 有品牌底色时用它并自动选黑白字；没有时跟随主题卡面。字母取标题首字
- * （GitHub→G、小红书→小、酷安→酷、QQ→Q、微信公众号→微），仅为占位可读，
- * **不是最终视觉**——Phase 4 换回 `assets/branding/…` 真图。
+ * 内容用 Flutter 那套真图：GitHub / QQ / 小红书是单色 SVG 转的 vector，用 [Icon] 染色；
+ * 酷安、微信公众号是 PNG，用 [Image] 原样画。底色按 Flutter 原样：
+ * GitHub / QQ / 微信公众号白底 + 品牌色标，小红书红底白标，酷安绿底白标；
+ * 深色下白底也保持白色，避免 GitHub 黑标落在深色卡面上看不见。
+ * 1dp 描边（浅色黑 8% / 深色白 12%）补齐 Dart `_FeedbackBrandBadge` 的边。
  */
 @Composable
 private fun BrandBadge(channel: FeedbackChannel) {
     val colors = MiuixTheme.colorScheme
-    val background = channel.badge.backgroundColorHex
+    val badge = channel.badge
+    val background = badge.backgroundColorHex
         ?.let { runCatching { Color(android.graphics.Color.parseColor(it)) }.getOrNull() }
         ?: colors.surfaceContainer
-    val letterColor = if (background.luminance() > 0.5f) Color.Black else Color.White
+    val tint = badge.tintHex
+        ?.let { runCatching { Color(android.graphics.Color.parseColor(it)) }.getOrNull() }
+        ?: Color.Unspecified
+    val shape = RoundedCornerShape(7.dp)
+    val borderColor = colors.onSurface.copy(
+        alpha = if (isSystemInDarkTheme()) 0.12f else 0.08f,
+    )
+    val drawable = brandDrawableFor(badge.assetPath)
 
     Box(
         modifier = Modifier
             .size(26.dp)
-            .clip(RoundedCornerShape(7.dp))
-            .background(background),
+            .clip(shape)
+            .background(background)
+            .border(1.dp, borderColor, shape),
         contentAlignment = Alignment.Center,
     ) {
-        Text(
-            text = channel.title.take(1),
-            style = MiuixTheme.textStyles.footnote1
-                .shiftWeight(QingyuWeightDelta.SEMIBOLD),
-            color = letterColor,
-        )
+        when {
+            drawable == null -> Text(
+                text = channel.title.take(1),
+                style = MiuixTheme.textStyles.footnote1
+                    .shiftWeight(QingyuWeightDelta.SEMIBOLD),
+                color = if (background.luminance() > 0.5f) Color.Black else Color.White,
+            )
+            badge.isSvg -> Icon(
+                painter = painterResource(drawable),
+                contentDescription = null,
+                tint = tint,
+                modifier = Modifier.size(14.dp),
+            )
+            else -> Image(
+                painter = painterResource(drawable),
+                contentDescription = null,
+                modifier = Modifier.size(18.dp),
+                contentScale = ContentScale.Fit,
+            )
+        }
     }
+}
+
+/** Flutter `assets/branding/…` 到 Compose drawable 的映射；未登记的新渠道回落首字。 */
+private fun brandDrawableFor(assetPath: String): Int? = when (assetPath) {
+    "assets/branding/github.svg" -> R.drawable.ic_brand_github
+    "assets/branding/xiaohongshu.svg" -> R.drawable.ic_brand_xiaohongshu
+    "assets/branding/coolapk.png" -> R.drawable.brand_coolapk
+    "assets/branding/qq.svg" -> R.drawable.ic_brand_qq
+    "assets/branding/launcher_icon.png" -> R.drawable.brand_launcher_icon
+    else -> null
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
