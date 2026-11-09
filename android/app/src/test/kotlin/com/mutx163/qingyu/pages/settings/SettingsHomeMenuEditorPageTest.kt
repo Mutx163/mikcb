@@ -1,5 +1,9 @@
 package com.mutx163.qingyu.pages.settings
 
+import com.mutx163.qingyu.app.SettingsActionDispatcher
+import com.mutx163.qingyu.app.SettingsActionKind
+import com.mutx163.qingyu.app.SettingsDispatch
+import com.mutx163.qingyu.app.TimetableSettingsModel
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
@@ -286,6 +290,29 @@ class SettingsHomeMenuEditorPageTest {
                 diagnosticsBuild = true,
             ),
         )
+    }
+
+    @Test
+    fun `写入基准先清掉未知 id 再加一项得到八项`() {
+        val raw = listOf(
+            "overview", "statistics", "addCourse", "exams",
+            "tasks", "importCourses", "settings",
+            // 旧版本目录里存在、现已下线的入口：不能继续占槽位。
+            "advancedMaterialSettings",
+        )
+        val seed = SettingsHomeMenuEditorPage.editorSeed(raw)
+        assertEquals("界面只应看到清洗后的 7 项", 7, seed.size)
+
+        val result = SettingsActionDispatcher.dispatch(
+            SettingsActionKind.WRITE_SETTING,
+            "support",
+            SettingsActionDispatcher.ROW_MENU_ADD,
+            TimetableSettingsModel(homeGridMenuActions = seed),
+        ) as SettingsDispatch.Write
+
+        assertEquals(8, result.model.homeGridMenuActions.size)
+        assertTrue("support" in result.model.homeGridMenuActions)
+        assertFalse("advancedMaterialSettings" in result.model.homeGridMenuActions)
     }
 
     @Test

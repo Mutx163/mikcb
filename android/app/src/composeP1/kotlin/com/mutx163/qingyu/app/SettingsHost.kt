@@ -1473,11 +1473,7 @@ private fun dockEditorSeed(raw: List<String>): List<String> =
     }
 
 private fun menuEditorSeed(raw: List<String>): List<String> =
-    if (raw.isEmpty()) {
-        SettingsHomeMenuEditorPage.DEFAULT_ACTIONS
-    } else {
-        SettingsHomeMenuEditorPage.sanitizeSeed(raw, diagnosticsBuild = false)
-    }
+    SettingsHomeMenuEditorPage.editorSeed(raw)
 
 /** 课表页「背景图片」行与「最近使用」行共同的目标页：壁纸面板第一页（R13 合并）。 */
 private const val ROUTE_BACKDROP_FLOW = "b.backdropFlow"
@@ -1559,11 +1555,9 @@ fun HomeMenuEditorHost(
     // 同底栏编辑器：菜单编辑器也没有错误通道，写盘失败在宿主这里给一句 toast。
     val context = LocalContext.current
     fun write(rowId: String, target: String?) {
-        val base = if (model.homeGridMenuActions.isEmpty()) {
-            model.copy(homeGridMenuActions = SettingsHomeMenuEditorPage.DEFAULT_ACTIONS)
-        } else {
-            model
-        }
+        // 以界面上那份清洗后的列表为基准：旧版本残留的未知 id 不能继续占槽位，
+        // 否则界面 7 项、原始 8 项，添加会被满格判断直接拒绝。
+        val base = model.copy(homeGridMenuActions = menuEditorSeed(model.homeGridMenuActions))
         val result = SettingsActionDispatcher.dispatch(
             SettingsActionKind.WRITE_SETTING,
             target,

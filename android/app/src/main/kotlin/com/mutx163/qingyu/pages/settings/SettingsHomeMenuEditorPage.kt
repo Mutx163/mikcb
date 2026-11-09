@@ -213,6 +213,15 @@ object SettingsHomeMenuEditorPage {
         return out
     }
 
+    /**
+     * 编辑器显示与写回共用的种子：空表回退出厂默认，否则清洗未知 / 当前构建不可见的 id。
+     *
+     * 写回必须用同一份种子，否则旧版本残留的 id 会继续占槽位：界面只画 7 行，
+     * 原始列表却是 8 项，添加时会被满格判断直接拒绝（表现为点候选没反应）。
+     */
+    fun editorSeed(raw: List<String>, diagnosticsBuild: Boolean = false): List<String> =
+        if (raw.isEmpty()) DEFAULT_ACTIONS else sanitizeSeed(raw, diagnosticsBuild)
+
     /** 某分类下**尚未启用**的候选（:123-130）。 */
     fun candidatesFor(
         category: String,
