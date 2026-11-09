@@ -1,6 +1,5 @@
 package com.mutx163.qingyu.pages.timetable.day
 
-import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.calculateEndPadding
@@ -15,12 +14,10 @@ import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalDensity
@@ -38,7 +35,9 @@ import top.yukonga.miuix.kmp.blur.Backdrop
  * 单日内容滚动壳（Day View Scroll Content）。
  *
  * 对应 Flutter `lib/widgets/timetable/day_view/day_view_scroll_shell.dart`：
- * - 基于 [LazyColumn] 原生高效滚动容器；
+ * - 基于 [LazyColumn] 原生高效滚动容器；列表里**没有**任何补白 / 吸附条目 ——
+ *   短日内容不足一屏时可滚范围天然是 0，到边界的手感全部交给 miuix `overScrollVertical()`
+ *   （和下拉走同一条路，见下方「短日不做补白」注释）；
  * - 全天概览卡是**普通条目**（2026-11-08 起不再吸顶，理由见下方卡片处的注释）；
  * - 自带 12dp 下呼吸间隙；
  * - 依次编排：
@@ -47,7 +46,6 @@ import top.yukonga.miuix.kmp.blur.Backdrop
  *   3. 议程列表（各卡片按时间严格稳定排序）；
  *   4. 空态卡片（[DayViewEmptyState]，在无课程且无日程且无待办时居中展示）。
  */
-@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun DayViewScrollContent(
     summaryState: DayViewSummaryState,
@@ -119,22 +117,13 @@ fun DayViewScrollContent(
         start = 14.dp,
         end = 14.dp,
         // top = 0：14dp 留缝改成列表首个 item（`day-top-seam`，2026-11-07）。
-        // 概览卡 2026-11-08 起不再吸顶，但留缝仍留在 item 里：底部补白（`day-scroll-tail`）
-        // 与可滚范围的算式都按 item 高度算，改成 padding 要把那套算式重推一遍。
+        // 概览卡 2026-11-08 起不再吸顶，但留缝仍留在 item 里：空日那块「正好一屏」的
+        // 定高算式按 item 高度推（视口 − 缝 − 概览卡 − 避让），改成 padding 要重推一遍。
         top = 0.dp,
         bottom = bottomInset,
     ),
 ) {
-    // ── 短日补白：让「一节课 / 没课」这种不足一屏的日子也有纵向响应（2026-11-08）──
-    // 纵向可滚范围 = 内容高 − 视口高。内容比视口矮的那几天范围是 0，上下滑一动不动
-    // （用户报的「日视图有时候上下滑完全没反应」）；只高一点的那几天范围几十 dp，
-    // 一次上滑就见底 ⇒「只能下滑，下滑回来又能上滑」。
-    //
-    // 这里在列表末尾挂一条 `day-scroll-tail` 空白，把**可滚范围的下限**抬到视口的
-    // [DayViewScrollTail.MIN_RANGE_FRACTION]：短日滑得动、每天手感一致；内容本来就
-    // 更长的日子算式给 0，等于没有这一项，行为一点没变。
     var viewportHeightPx by remember { mutableIntStateOf(0) }
-    var tailHeightPx by remember(lazyListState) { mutableIntStateOf(0) }
     val density = LocalDensity.current
     val bottomPaddingPx = with(density) { contentPadding.calculateBottomPadding().toPx() }
     val topSeamPx = with(density) { DAY_VIEW_TOP_SEAM_DP.dp.roundToPx() }
@@ -144,71 +133,16 @@ fun DayViewScrollContent(
     // 空日 = 无课程、无日程、无待办：列表只剩「顶缝 + 概览卡 + 空态块」。
     val flatDay = agendaEntries.isEmpty() && (taskBandData == null || taskBandData.isEmpty)
 
-    LaunchedEffect(lazyListState, viewportHeightPx, bottomPaddingPx) {
-        if (viewportHeightPx <= 0) {
-            tailHeightPx = 0
-            return@LaunchedEffect
-        }
-        snapshotFlow {
-            val info = lazyListState.layoutInfo
-            val lastReal = info.visibleItemsInfo.lastOrNull { it.key != DayViewScrollTail.KEY }
-            DayViewScrollTail.naturalContentPx(
-                // 顶部判据读**状态**：布局信息里没有「第一个可见项的下标」这一项。
-                firstVisibleItemIndex = lazyListState.firstVisibleItemIndex,
-                totalItemsCount = info.totalItemsCount,
-                lastRealVisibleIndex = lastReal?.index,
-                lastRealVisibleBottomPx = lastReal?.let { it.offset + it.size } ?: 0,
-            )
-        }.collect { naturalPx ->
-            // null = 这一刻读不到可信的内容高度（滚到中途 / 内容超一屏）：
-            // **保持上一次的补白**，撤掉会让滚动位置被夹回去、页面跳一下。
-            if (naturalPx != null) {
-                tailHeightPx = DayViewScrollTail.tailHeightPx(
-                    viewportHeightPx = viewportHeightPx,
-                    // 真实内容 + 底部避让：避让本来就占可滚范围。
-                    contentHeightPx = naturalPx + bottomPaddingPx.toInt(),
-                )
-            }
-        }
-    }
-
-    // ── 短日：拖动跟手，松手回顶（2026-11-08，A 方案）──
-    // 短日的可滚距离全部来自末尾补白（`day-scroll-tail`）：滚下去看到的是空白，
-    // 而 Compose 的滚动默认不吸附 —— 只要位置还在范围内，松手就停在哪儿，
-    // 读作「概览卡被推上去、下面一片空、还不回弹」。
+    // ── 短日不做补白（2026-11-08 撤掉）──
+    // 这里曾经在列表末尾挂一条 `day-scroll-tail`（把可滚范围的下限抬到视口 1/5），
+    // 再在松手停在补白里时 `animateScrollToItem(0)` 回顶。那条路是自研橡皮筋：
+    // 上滑变成「真的把内容滚走 + 程序化滚回」，下拉却还是 miuix `overScrollVertical()`
+    // 的阻尼拉伸 + 临界阻尼弹簧，两个方向两套运动模型，手感必然对不上。
     //
-    // 口径（2026-11-08 用户确认 A）：补白保留（短日仍要能上下滑出响应），但松手时
-    // 只要停在补白里就 `animateScrollToItem(0)` 回顶，补白当橡皮筋用、不作停留区。
-    //
-    // 「停在补白里」按**几何**判：真实末项下沿离「扣掉底部避让的底边」还有多远的空白。
-    // 留 [DAY_VIEW_TAIL_PARK_TOLERANCE_DP] 容差：
-    // - 正常滚到底 ⇒ 真实末项正好停在避让线上，空白 ≈ 0，不回顶（读下半屏不受影响；
-    //   这类日子的补白算式本来就是 0，也不会落到「只剩补白」那一支）；
-    // - 从底部往回滚 ⇒ 空白是负数，同样不回顶；
-    // - 短日滚进补白 / 屏幕只剩补白 ⇒ 空白 > 容差，回顶。
-    LaunchedEffect(lazyListState, flatDay, viewportHeightPx, bottomPaddingPx) {
-        val tolerancePx = with(density) { DAY_VIEW_TAIL_PARK_TOLERANCE_DP.dp.roundToPx() }
-        snapshotFlow { lazyListState.isScrollInProgress }
-            .collect { scrolling ->
-                if (scrolling) return@collect
-                val notAtTop = lazyListState.firstVisibleItemIndex > 0 ||
-                    lazyListState.firstVisibleItemScrollOffset > 0
-                if (!notAtTop) return@collect
-                val info = lazyListState.layoutInfo
-                val lastReal = info.visibleItemsInfo.lastOrNull { it.key != DayViewScrollTail.KEY }
-                val blankBelowPx = when {
-                    lastReal != null ->
-                        (viewportHeightPx - bottomPaddingPx).toInt() - (lastReal.offset + lastReal.size)
-                    // 真实末项整条滚出屏幕上方：只剩补白（补白为 0 的长日进不来这里）。
-                    lazyListState.firstVisibleItemIndex > info.totalItemsCount - 2 && tailHeightPx > 0 ->
-                        Int.MAX_VALUE
-                    else -> 0
-                }
-                if (flatDay || blankBelowPx > tolerancePx) {
-                    lazyListState.animateScrollToItem(0)
-                }
-            }
-    }
+    // 现在的口径：**短日不补可滚余量**。内容不足一屏时列表本来就没有可滚范围，
+    // 上滑与下拉落在同一个边界上，都由 `overScrollVertical()` 接管（同一段阻尼曲线、
+    // 同一个弹簧、同样的速度衰减）。内容真的超过一屏时，上滑就是滚内容、到边界才拉伸，
+    // 这也是正确行为。因此下面不再有「补白 / 内容高探测 / 松手回顶」的状态与副作用。
 
     LazyColumn(
         state = lazyListState,
@@ -372,21 +306,6 @@ fun DayViewScrollContent(
                 Spacer(modifier = Modifier.height(8.dp))
             }
         }
-
-        // ── 短日补白（长度见函数上方说明）：长日算出来是 0，等价于没有这一项。──
-        // 常驻是刻意的：高度为 0 时它也在树里，`totalItemsCount − 2` 这条「真实末项」
-        // 的算法才恒定，不会因为补白忽隐忽现而漂。
-        item(key = DayViewScrollTail.KEY) {
-            Spacer(
-                modifier = Modifier.height(
-                    with(LocalDensity.current) {
-                        // 空日整串已经正好一屏：再补白就是把「概览卡能被推上去」还回来
-                        //（2026-11-08 用户口径）。补白只服务「有内容但不够一屏」的日子。
-                        (if (flatDay) 0 else tailHeightPx).toDp()
-                    },
-                ),
-            )
-        }
     }
 }
 
@@ -397,12 +316,3 @@ fun DayViewScrollContent(
  * 上滑时这道缝跟着内容一起滚走，不会变成一条永远滚不走的空带。
  */
 private const val DAY_VIEW_TOP_SEAM_DP = 14f
-
-/**
- * 判定「停在补白里」的容差（dp）。
- *
- * 真实末项下沿离避让线的空白超过这个数，才算滚进了 `day-scroll-tail`。
- * 之所以要容差：正常滚到底时两者理论上是同一条线（空白 = 0），差几个像素就会落进
- * 判定里；没有容差，内容正好一屏出头的日子滚到底松手会被误判成「停在补白里」而弹回顶部。
- */
-private const val DAY_VIEW_TAIL_PARK_TOLERANCE_DP = 8f
