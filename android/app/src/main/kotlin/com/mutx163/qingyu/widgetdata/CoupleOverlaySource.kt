@@ -3,6 +3,9 @@ package com.mutx163.qingyu.widgetdata
 import com.mutx163.qingyu.app.TimetableRepository
 import com.mutx163.qingyu.core.Course
 import com.mutx163.qingyu.core.MiniJson
+import java.time.LocalDateTime
+import java.time.OffsetDateTime
+import java.time.ZoneId
 
 /**
  * 日视图「情侣课表叠加」的数据源（B1 第一阶段，2026-11-06）。
@@ -41,10 +44,21 @@ object CoupleOverlaySource {
     /**
      * 从仓储装配叠加数据。
      *
-     * @return null = 不叠加：没有绑定、绑定 JSON 解不开、没有 `partner-imported` 档案，
+     * @return null = 不叠加：用户把**叠加开关关着**（`coupleTimetableOverlayEnabled`，
+     *   默认 false）、没有绑定、绑定 JSON 解不开、没有 `partner-imported` 档案，
      *   或那份档案里一门课都没有（叠加空表没有意义，走了也是旧渲染）。
+     *
+     * ## 开关为什么在这里判（2026-11-10 补）
+     *
+     * 发布版叠加的渲染判据是 `_isCoupleOverlayActive = _coupleOverlayEnabled && hasPartnerBinding`
+     *（`lib/screens/timetable_screen.dart:517`），开关默认关（`timetable_settings.dart:805`）。
+     * 修前本函数只看绑定，于是升级用户「绑了就叠、关不掉」——顶栏爱心开关也整条没有。
+     * 开关真值放在这一层而不是各调用点：首页渲染（`TimetableHost`）与课程操作弹层的
+     * 对方课预览（`ShellWiring` 的 `coupleOverlayForSheet`）读的都是本函数，一处判、
+     * 两处一致；否则会出现「课表不叠了、点开课程还列着 TA 的课」。
      */
     fun load(repository: TimetableRepository): CoupleOverlay? {
+        if (!isOverlayEnabled(repository)) return null
         val binding = parseBinding(repository.rawStoredJson(BINDING_KEY)) ?: return null
         val snapshot = repository.snapshot
         val partnerCourses = snapshot.profiles
@@ -58,7 +72,24 @@ object CoupleOverlaySource {
             partnerColorHex = binding.partnerColorHex,
             togetherColorHex = binding.togetherColorHex,
             partnerCourses = partnerCourses,
+            partnerImportedAtMillis = binding.partnerImportedAtMillis,
         )
+    }
+
+    /**
+     * 叠加开关真值：存档键 `coupleTimetableOverlayEnabled`（Dart `timetable_settings.dart:805`
+     * 默认 `false`，读侧 `?? false` 同口径）。缺键 / 坏值 = 关。
+     *
+     * 走 `repository.settingsJson()`（盘上原始 JSON 的只读视图）而不是 `snapshot.settings`：
+     * 后者只有时间/周次五键，没有这个开关。
+     */
+    private fun isOverlayEnabled(repository: TimetableRepository): Boolean {
+        val raw = runCatching { repository.settingsJson()["coupleTimetableOverlayEnabled"] }.getOrNull()
+        return when (raw) {
+            is Boolean -> raw
+            is String -> raw.equals("true", ignoreCase = true)
+            else -> false
+        }
     }
 
     /**
@@ -83,7 +114,29 @@ object CoupleOverlaySource {
             mineColorHex = readStr("mineColorHex", PartnerTimetableBinding.MINE_COLOR_DEFAULT),
             partnerColorHex = readStr("partnerColorHex", PartnerTimetableBinding.PARTNER_COLOR_DEFAULT),
             togetherColorHex = readStr("togetherColorHex", PartnerTimetableBinding.TOGETHER_COLOR_DEFAULT),
+            // 摘要卡「共同空闲」的过期提示要用它（Dart `provider.partnerBinding?.lastImportedAt`）。
+            partnerImportedAtMillis = parseIsoEpochMillis(decoded["lastImportedAt"] as? String),
         )
+    }
+
+    /**
+     * 绑定里的 `lastImportedAt`（ISO 字符串，`CoupleStores.kt:120` 写入）→ epoch 毫秒。
+     *
+     * 宽进：带时区（`2026-11-07T20:15:00+08:00` / `Z`）走 [OffsetDateTime]，不带时区
+     * 按本机时区补。解析不出来返回 null —— 调用方把 null 当「可能过期」（Dart 同口径：
+     * `importedAt == null` 直接判 stale）。
+     */
+    private fun parseIsoEpochMillis(raw: String?): Long? {
+        val text = raw?.trim().orEmpty()
+        if (text.isEmpty()) return null
+        return runCatching { OffsetDateTime.parse(text).toInstant().toEpochMilli() }
+            .recoverCatching {
+                LocalDateTime.parse(text)
+                    .atZone(ZoneId.systemDefault())
+                    .toInstant()
+                    .toEpochMilli()
+            }
+            .getOrNull()
     }
 }
 
@@ -93,6 +146,7 @@ internal data class CoupleOverlayBinding(
     val mineColorHex: String,
     val partnerColorHex: String,
     val togetherColorHex: String,
+    val partnerImportedAtMillis: Long? = null,
 )
 
 /**
@@ -109,4 +163,11 @@ data class CoupleOverlay(
     val togetherColorHex: String,
     /** `partner-imported` 档案里的全部课程（按周过滤仍由合并内核做）。 */
     val partnerCourses: List<Course>,
+    /**
+     * 对方课表**上次导入**的时间（epoch 毫秒；绑定里没写就是 null）。
+     *
+     * 摘要卡「共同空闲」用它判过期（Dart `_isPartnerScheduleStale`：超过 7 天或
+     * 时间为空 ⇒ 提示「对方课表可能不是最新」）。
+     */
+    val partnerImportedAtMillis: Long? = null,
 )

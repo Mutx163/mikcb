@@ -22,7 +22,11 @@ import org.junit.Test
  * 2. 三种「不叠加」 ⇒ null：没绑定、绑定坏值、没有对方档 / 对方档没课；
  * 3. 解码宽松口径与 `CoupleBindingCodec.fromJson` 同款（坏项回落默认，不抛）；
  * 4. 绑定 JSON **本身**坏（不是 JSON 对象）⇒ null，**不动盘**（对比
- *    `platform/CouplePartnerPortImpl.loadBinding` 的 archive+remove 写副作用）。
+ *    `platform/CouplePartnerPortImpl.loadBinding` 的 archive+remove 写副作用）；
+ * 5. 叠加开关（`coupleTimetableOverlayEnabled`，发布版默认关、顶栏爱心按钮切换）
+ *    关着时即使绑定与对方档都在也返回 null —— 发布版判据是
+ *    `_isCoupleOverlayActive = _coupleOverlayEnabled && hasPartnerBinding`
+ *    （`lib/screens/timetable_screen.dart:517`）。
  *
  * 夹具照 `pages/sync/TimetableSnapshotBridgeTest` 同一套：`InMemoryKeyValueStore`
  * 直接播种 → `TimetableStore` → `TimetableRepository`（`replaceAllProfiles` 落盘）。
@@ -57,6 +61,8 @@ class CoupleOverlaySourceTest {
     private fun repository(
         partnerCourses: List<Course>?,
         bindingJson: String?,
+        /** 叠加开关（`coupleTimetableOverlayEnabled`）；默认 true = 开着，验叠加本体。 */
+        overlayEnabled: Boolean = true,
     ): TimetableRepository {
         val raw = InMemoryKeyValueStore()
         val profiles = buildList {
@@ -87,6 +93,9 @@ class CoupleOverlaySourceTest {
         val store = TimetableStore(raw)
         store.saveProfiles(profiles)
         store.saveActiveProfileId("p1")
+        // 叠加开关（存档键，发布版 `timetable_settings.dart:805` 默认 false）。夹具显式落盘，
+        // 免得「缺键 = 关」把要验叠加本体的用例全变成 null。
+        store.saveSettingsPatch(mapOf("coupleTimetableOverlayEnabled" to overlayEnabled))
         if (bindingJson != null) {
             raw.putString(CoupleOverlaySource.BINDING_KEY, bindingJson)
         }
@@ -114,6 +123,19 @@ class CoupleOverlaySourceTest {
     fun `没有绑定键返回null`() {
         val repo = repository(partnerCourses = listOf(course("p1", "高数")), bindingJson = null)
         assertNull(CoupleOverlaySource.load(repo))
+    }
+
+    @Test
+    fun `叠加开关关着时即使绑定与对方档都在也返回null`() {
+        val repo = repository(
+            partnerCourses = listOf(course("p1", "高数")),
+            bindingJson = """{"weekOffset":1}""",
+            overlayEnabled = false,
+        )
+        assertNull(
+            "开关关着（发布版默认）时不能叠对方课——修前这里是「绑了就叠、关不掉」",
+            CoupleOverlaySource.load(repo),
+        )
     }
 
     @Test

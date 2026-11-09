@@ -2,7 +2,9 @@ package com.mutx163.qingyu.app
 
 import android.content.Context
 import android.content.SharedPreferences
+import android.widget.Toast
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.mutableIntStateOf
@@ -16,12 +18,16 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.Dp
 import com.mutx163.qingyu.pages.shell.HomeNavIcons
 import com.mutx163.qingyu.pages.shell.rememberHomeFloatingInsets
+import com.mutx163.qingyu.pages.about.rememberHomeUpdateAvailability
+import com.mutx163.qingyu.pages.settings.SettingsStringsExt2
 import com.mutx163.qingyu.platform.PrefsKeyValueStore
 import com.mutx163.qingyu.calendar.HolidayData
 import com.mutx163.qingyu.calendar.HolidayPreferences
 import com.mutx163.qingyu.core.Course
 import com.mutx163.qingyu.core.clampCurrentWeekToSettings
 import com.mutx163.qingyu.pages.timetable.TimetableMenuItem
+import com.mutx163.qingyu.pages.timetable.TimetableHomeTopBarState
+import com.mutx163.qingyu.pages.timetable.LocalTimetableHomeTopBarState
 import com.mutx163.qingyu.pages.timetable.TimetableShareImageModel
 import com.mutx163.qingyu.pages.timetable.TimetableShareRequests
 import com.mutx163.qingyu.pages.timetable.TimetableStyleMapping
@@ -66,6 +72,11 @@ import java.time.LocalDateTime
  *
  * @param repository 课表仓储（task-7 交付）。
  * @param onOpenAddCourse **长按**空白格加课（带星期几与节次预填）。
+ * @param onOpenAddCourseSpan 同上，但带上**起止节次**（两步式长按拖出来的多节跨度）。
+ *   发布版 `_openAddCourseFromEmptySlot(week, day, startSection, endSection)`
+ *   （`timetable_screen.dart:4854-4858`）同一口径；给后续「预填起止节次」用。
+ *   本轮先留宿主入口（页面 / 网格的三参贯通在 `TimetableWeekPage` / `TimetableWeekGrid`，
+ *   不在本文件），null = 退回 [onOpenAddCourse] 的两参行为。
  * @param onOpenCourse 点课程卡片：由壳决定先去操作层还是编辑页。
  * @param onSwitchProfile 点标题区：切换课表（Dart 标题触发器口径）。
  * @param onWeekChanged 翻周/选周后回调，壳写回 `currentWeek`（Dart `commitPendingWeek`）。
@@ -78,6 +89,16 @@ fun TimetableHost(
     repository: TimetableRepository,
     onOpenAddCourse: (dayOfWeek: Int, section: Int) -> Unit,
     onOpenCourse: (Course) -> Unit,
+    /**
+     * 长按空档的**多节跨度**回调（起止节次，1 基、含两端）。
+     *
+     * 发布版两步式长按：虚线框可跟手换格、拖上下边拉长到多节，点框才进加课
+     * （`timetable_screen.dart:4751-4810` 手势 + `:4854-4858` 带起止节次）。
+     * 本轮网格/页面侧的贯通由 `TimetableWeekGrid` / `TimetableWeekPage` 负责，宿主这里
+     * 先把入口开出来；null = 回退两参 [onOpenAddCourse]（end 视作 start），
+     * 现有壳调用点不用改签名。
+     */
+    onOpenAddCourseSpan: ((dayOfWeek: Int, startSection: Int, endSection: Int) -> Unit)? = null,
     onSwitchProfile: () -> Unit = {},
     onWeekChanged: (week: Int) -> Unit = {},
     onAgendaClicked: (WeekAgendaCardModel) -> Unit = {},
@@ -187,7 +208,13 @@ fun TimetableHost(
     val loadedCoupleOverlay = remember(coupleOverlayRevision, snapshot) {
         CoupleOverlaySource.load(repository)
     }
-    val coupleOverlay = if (previewMode) null else loadedCoupleOverlay
+    // 绑定态判据 = 存档里有 `partner_timetable_binding`（发布版 `provider.hasPartnerBinding`
+    // 同口径）。不能用 `loadedCoupleOverlay != null` 代替：那只表示「绑定且对方档有课」，
+    // 对方档空了爱心就会消失（发布版不会）。
+    val hasPartnerBinding = remember(coupleOverlayRevision, snapshot) {
+        runCatching { !repository.rawStoredJson(CoupleOverlaySource.BINDING_KEY).isNullOrBlank() }
+            .getOrDefault(false)
+    }
 
     val settings = snapshot.settings
     // 显示偏好解析（S1）：注入点优先 → 用户存档推导 → Dart 默认。
@@ -245,6 +272,39 @@ fun TimetableHost(
     // Dart 周网格每列都问 `provider.isHoliday(date)`（`timetable_day_column.dart:76`）。
     // 数据在 HolidayPreferences（官方年度缓存 + 自定义条目），与 IcsExportHost 同一来源。
     val appContext = LocalContext.current.applicationContext
+
+    // ── 情侣课表叠加开关（发布版顶栏爱心，`timetable_screen.dart:1036-1059`）────────
+    // 存档键 `coupleTimetableOverlayEnabled`（默认 false，`timetable_settings.dart:805`）：
+    // 默认关，点一下爱心才把对方课叠进来，再点关掉。渲染判据与发布版同一条
+    // `_isCoupleOverlayActive = _coupleOverlayEnabled && hasPartnerBinding`（`:517`），
+    // 存档开关在这里**真正生效**——修前 `CoupleOverlaySource` 只按绑定判断，
+    // 绑了就一直叠、页面里也没有开关。
+    //
+    // 本地状态先翻（乐观），落盘失败 toast「保存失败」并翻回去：发布版是乐观不回退
+    //（`_persistCoupleOverlayEnabled`，`:1574-1600` 只 toast）；这里多退一步，避免界面
+    // 停在一个「看着开了、其实没存上」的假态。
+    val storedOverlayEnabled = settingsModel?.coupleTimetableOverlayEnabled ?: false
+    var coupleOverlayEnabled by remember(settingsModel) { mutableStateOf(storedOverlayEnabled) }
+    fun setCoupleOverlayEnabled(enabled: Boolean) {
+        coupleOverlayEnabled = enabled
+        runCatching {
+            // 合并写：只覆盖这一个键，盘上 Dart 侧 250+ 键与活动档案内嵌投影都保留。
+            repository.updateSettingsPatch(mapOf("coupleTimetableOverlayEnabled" to enabled))
+        }.onFailure {
+            coupleOverlayEnabled = !enabled
+            Toast.makeText(appContext, SettingsStringsExt2.saveFailed.text, Toast.LENGTH_SHORT).show()
+        }
+    }
+    val coupleOverlay = if (previewMode || !coupleOverlayEnabled || !hasPartnerBinding) {
+        null
+    } else {
+        loadedCoupleOverlay
+    }
+
+    // ── 首页「待更新」检查（发布版 `_scheduleUpdateCheckIfNeeded`/`_runUpdateCheck`）──
+    // 结果驱动三处提示：顶栏「更多」红点、八宫格「更新」瓷贴角标、列表档「更新」行提示。
+    // 预览（外观编辑页缩尺预览）不跑网络检查。
+    val hasAvailableUpdate = rememberHomeUpdateAvailability(enabled = !previewMode)
     val holidayPrefs = remember(appContext) { HolidayPreferences(PrefsKeyValueStore(appContext)) }
 
     // ⚠️ 假期这块必须**跟着变**（2026-11-05 修）：节假日两个设置页是**另一个宿主**
@@ -409,6 +469,17 @@ fun TimetableHost(
         }
     }
 
+    // 顶栏附加状态（爱心 / 待更新）用 CompositionLocal 注入给所有共用
+    // [TimetableTopBar] 的视图：周 / 日 / 月三处调用点不必各自加参数转发
+    //（漏一处就漂），页面层也不认识仓储与设置。
+    CompositionLocalProvider(
+        LocalTimetableHomeTopBarState provides TimetableHomeTopBarState(
+            hasAvailableUpdate = hasAvailableUpdate,
+            coupleOverlayAvailable = hasPartnerBinding,
+            coupleOverlayEnabled = coupleOverlayEnabled,
+            onToggleCoupleOverlay = { setCoupleOverlayEnabled(!coupleOverlayEnabled) },
+        ),
+    ) {
     TimetableWeekPage(
         courses = snapshot.courses,
         // 情侣叠加（B1 第二阶段）：绑定且对方档有课时非空，周视图据此把 TA 课叠进来。
@@ -436,6 +507,12 @@ fun TimetableHost(
         // 长按空白格加课：Dart 判据是「开关打开 + 这一格要有跨度」
         // （`timetable_empty_slot_layer.dart:46`），开关本身由 style 下传，页面只在
         // 开关开着时才装长按手势。
+        //
+        // 三参跨度（[onOpenAddCourseSpan] 的 end）本轮**还不从页面回传**：
+        // `TimetableWeekPage` 的签名本周由成员十四改、网格手势由成员八改，宿主这里
+        // 先把两参行为保持住（end = start）；等页面暴露 span 回调后改成
+        // `{ d, s, e -> (onOpenAddCourseSpan ?: { d2, s2, _ -> onOpenAddCourse(d2, s2) })(d, s, e) }`，
+        // 一行接通、壳调用点不用动。
         onLongPressEmptySlot = { dayOfWeek, section -> onOpenAddCourse(dayOfWeek, section) },
         onAgendaClick = onAgendaClicked,
         // 首页「周 ↔ 日」展开态（2026-11-02）：不再把日视图当成一页推出去。
@@ -500,4 +577,5 @@ fun TimetableHost(
         previewMode = previewMode,
         previewSectionBasisDp = previewSectionBasisDp,
     )
+    }
 }

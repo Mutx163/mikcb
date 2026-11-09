@@ -3,6 +3,7 @@ package com.mutx163.qingyu.pages.about
 import android.app.DownloadManager
 import android.content.Context
 import android.content.Intent
+import android.content.pm.ApplicationInfo
 import android.net.Uri
 import android.os.Environment
 import android.widget.Toast
@@ -20,6 +21,7 @@ import com.mutx163.qingyu.app.DiagnosticsLogHost
 import com.mutx163.qingyu.app.TimetableStore
 import com.mutx163.qingyu.infra.AppLogStore
 import com.mutx163.qingyu.infra.AppUpdateCheckResult
+import com.mutx163.qingyu.infra.AppUpdateDotShare
 import com.mutx163.qingyu.infra.buildDownloadUrl
 import com.mutx163.qingyu.infra.recordingEnabledFromPrefs
 import com.mutx163.qingyu.infra.releasesApiUrl
@@ -370,6 +372,69 @@ fun AboutUpdateHostPage(
         )
     }
 }
+
+/**
+ * 首页顶栏「待更新」状态（发布版 `_scheduleUpdateCheckIfNeeded` / `_runUpdateCheck`，
+ * `lib/screens/timetable_screen.dart:7467-7517`；调度在
+ * `timetable_update_download_part.dart:36-50`）。
+ *
+ * 只做三件事：
+ * 1. **查一次**：进首页时按存档的「检测测试版」开关拉一次 GitHub releases，并按当前
+ *    安装版本判定有没有新版——与 [AboutUpdateHostPage] 共用同一份
+ *    [fetchReleasesJson] / [parseGithubResponses]，没有第二套检查逻辑；
+ * 2. **登记**：结果写 [AppUpdateDotShare]（跨页面共享的「有更新」登记，未查过读
+ *    false）。首页三处提示都读它：「更多」按钮红点、八宫格「更新」瓷贴角标、
+ *    列表档「更新」行提示；
+ * 3. **调试构建**：与发布版一致——`!kReleaseMode` 直接把「有更新」置真
+ *    （`timetable_screen.dart:7467-7475`），开发包不必真发一版就能验红点/角标；
+ *    正式包走真检查，检查失败静默（不打扰用户，版本页自己有失败态）。
+ *
+ * @param enabled `false` = 完全不查（外观编辑页的缩尺预览：[TimetableHost] 传
+ *   `!previewMode`）。
+ */
+@Composable
+fun rememberHomeUpdateAvailability(enabled: Boolean = true): Boolean {
+    val context = LocalContext.current
+    val store = remember(context) { TimetableStore(PrefsKeyValueStore(context)) }
+    // 与版本更新页同一份读侧口径（`appUpdateIncludePrerelease` 等 7 键）；首页只读一次。
+    val updateSettings = remember { AppUpdateSettings.fromJson(store.loadSettingsJson()) }
+    val packageInfo = remember(context) { readHostPackageInfo(context) }
+    var hasUpdate by remember { mutableStateOf(AppUpdateDotShare.hasUpdate) }
+
+    LaunchedEffect(enabled, updateSettings.includePrerelease, packageInfo?.version) {
+        if (!enabled) return@LaunchedEffect
+        if (!isDebuggableBuild(context)) {
+            val info = packageInfo
+            val latest = if (info == null) {
+                false
+            } else {
+                val text = withContext(Dispatchers.IO) { fetchReleasesJson() }
+                parseGithubResponses(
+                    currentVersion = info.version,
+                    jsonText = text,
+                    includePrerelease = updateSettings.includePrerelease,
+                )?.hasUpdate == true
+            }
+            AppUpdateDotShare.publish(latest)
+            hasUpdate = latest
+        } else {
+            // 发布版同口径：非 release 构建把「有更新」当作真，供人工验红点/角标。
+            AppUpdateDotShare.publish(true)
+            hasUpdate = true
+        }
+    }
+    return hasUpdate
+}
+
+/**
+ * 调试/性能包判据（发布版 `!kReleaseMode` 的等价物）：debuggable 包 = 调试/性能包。
+ *
+ * 用运行时 `ApplicationInfo.FLAG_DEBUGGABLE` 而不是 `BuildConfig.DEBUG`：`BuildConfig`
+ * 是 AGP 生成的变体类，composeP1 的免 Gradle 类型检查通道（`scripts/typecheck-compose.ps1`）
+ * 看不到它，会把新引用记成 unresolved（假错，还得往基线里加行——纪律不许）。
+ */
+private fun isDebuggableBuild(context: Context): Boolean =
+    (context.applicationInfo.flags and ApplicationInfo.FLAG_DEBUGGABLE) != 0
 
 /**
  * 更新链路落盘用的分类与消息（Dart `home_update_check_failed` 等事件的等价物）。
