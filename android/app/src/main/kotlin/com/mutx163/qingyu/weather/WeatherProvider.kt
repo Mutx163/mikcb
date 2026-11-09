@@ -97,6 +97,8 @@ class WeatherProvider(
     }
 
     private var initialized = false
+    /** [loadCached] 是否已跑过（网络刷新开关与「本地已读」是两件事）。 */
+    private var loaded = false
     private var nextRetryNotBefore: LocalDateTime? = null
     private var refreshing = false
 
@@ -109,8 +111,26 @@ class WeatherProvider(
 
     /** 读本地配置进内存，然后补一次「过期就刷」。幂等。 */
     fun initialize() {
+        // 先同步读盘（冷启动首帧前会先单独调一次 [loadCached]），再补网。
+        loadCached()
         if (initialized) return
         initialized = true
+        ensureFresh()
+    }
+
+    /**
+     * **只读本地配置与上次的预报**进内存：同步、不发网、可重复调用。
+     *
+     * 冷启动时在首帧前调用一次（`ShellWiring` 构造）：日卡 / 周卡的天气行按
+     * [forecast] 现算，缓存命中时首帧就带着天气，不会再出现「卡片先画好、过一会儿
+     * 突然多出一行天气」的跳变。没有缓存时 [isAwaitingData] 立刻为真，界面据此
+     * 先占住那一行的高度。
+     *
+     * 网络刷新仍然只走 [initialize] / [ensureFresh]（本方法一行网络代码都没有）。
+     */
+    fun loadCached() {
+        if (loaded) return
+        loaded = true
         enabled = preferences.isEnabled()
         // 与出网/落盘同一精度：缓存按取整坐标存，读回也取整，否则换城判定会被取整误差骗。
         location = preferences.loadLocation()?.coarsened()
@@ -118,7 +138,6 @@ class WeatherProvider(
         val current = location
         forecast = if (cached != null && current != null && cached.matchesLocation(current)) cached else null
         notifyChanged()
-        ensureFresh()
     }
 
     /** 过期就刷新。[force] 跳过 TTL 判定（设置页「重试」用）。 */

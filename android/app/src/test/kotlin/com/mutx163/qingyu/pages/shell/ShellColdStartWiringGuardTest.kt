@@ -108,6 +108,40 @@ class ShellColdStartWiringGuardTest {
         )
     }
 
+    // ------------------------------------------------ 冷启动首帧：天气缓存 / 启动对账
+
+    @Test
+    fun `天气缓存必须在首帧前同步进内存`() {
+        val wiring = readSource("${MAIN}/pages/ShellWiring.kt")
+        assertTrue(
+            "ShellWiring 构造时必须调 weather.loadCached()：只在页面里 LaunchedEffect 调 " +
+                "initialize() 的话，首帧没有天气行，数据到了才突然多出一行（用户实报）。",
+            "weather.loadCached()" in wiring,
+        )
+        assertTrue(
+            "weather.loadCached() 必须写在 `val weather: WeatherProvider by lazy` 之后：" +
+                "Kotlin 的 init 块按书写顺序执行，写在前面时 by lazy 的委托还没初始化，会 NPE。",
+            wiring.indexOf("val weather: WeatherProvider by lazy") in
+                0 until wiring.indexOf("weather.loadCached()"),
+        )
+    }
+
+    @Test
+    fun `启动对账必须搬到首帧之后`() {
+        val wiring = readSource("${MAIN}/pages/ShellWiring.kt")
+        val shell = readSource("${MAIN}/pages/PagesShellActivity.kt")
+        assertTrue(
+            "ShellWiring 构造函数里不允许再调 reconcileNativePrefsFromSettings()：" +
+                "它要读整份设置 JSON、还可能排一次 AlarmManager（binder）。" +
+                "改成首帧后由 reconcileStartupPrefs() 在 IO 块里调。",
+            "fun reconcileStartupPrefs()" in wiring,
+        )
+        assertTrue(
+            "首帧之后的 IO 副作用块必须调 wiring.reconcileStartupPrefs()，否则对账永远不跑。",
+            "wiring.reconcileStartupPrefs()" in shell,
+        )
+    }
+
     @Test
     fun `守卫本身没有空转`() {
         // 防空转：解析器坏了会让上面几条全部变绿 —— 那比没有守卫更糟。

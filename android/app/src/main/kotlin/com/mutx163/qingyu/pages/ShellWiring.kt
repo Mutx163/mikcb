@@ -158,8 +158,13 @@ class ShellWiring(context: Context) {
      * - 「缺键 ⇒ NO_CHANGE」是 `:74` 的**硬分支**（真实存在，不是"必然唯一结局"之外的路）；
      * - 对账中途失败（store 抛）走的是**启动崩溃**路径，不是决策分支。
      * 别把「写失败」直接等价于「键缺失」，也别把 NO_CHANGE 当唯一结局去依赖。
+     *
+     * 2026-11-09：从构造函数搬到**首帧之后**的执行入口（[reconcileStartupPrefs]）。
+     * 它要读整份 `timetable_settings` JSON，还可能在「周报开着」时排一次
+     * AlarmManager（跨进程 binder）——两件都与首帧渲染无关，留在构造函数里就是
+     * 白让用户多等一截。
      */
-    init {
+    fun reconcileStartupPrefs() {
         reconcileNativePrefsFromSettings()
     }
 
@@ -441,6 +446,22 @@ class ShellWiring(context: Context) {
                 networkGeocode = { service.networkGeocode() },
             ),
         )
+    }
+
+    /**
+     * 冷启动首帧前把「上次的天气」同步读进内存（只读盘、不发网，见
+     * [WeatherProvider.loadCached]）。
+     *
+     * 必须在这里（而不是页面里的 `LaunchedEffect`）：首帧组合时天气行是按
+     * `forecast` 现算的，等 IO 协程跑完 `initialize()` 才填充，用户看到的就是
+     * 「卡片先画好，过一会儿突然多出一行天气」。缓存命中时首帧就带着天气；
+     * 没缓存时 `isAwaitingData` 立刻为真，日卡先占住那一行的高度。
+     *
+     * 放在 `weather` 声明**之后**：Kotlin 的 `init` 块与属性初始化按书写顺序执行，
+     * 写在前面的 init 里碰 `by lazy` 的委托会 NPE。
+     */
+    init {
+        weather.loadCached()
     }
 
     /**

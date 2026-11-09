@@ -205,7 +205,9 @@ class PagesShellActivity : ComponentActivity() {
         // 在每次显示设置 / 提醒时段落盘后调用（见 pages/live/LiveDisplayStore.kt）。
         installLiveSnapshotSync(applicationContext)
 
-        requestNotificationPermissionOnce()
+        // 通知权限弹窗**不**在这里申请（2026-11-09）：它是系统弹窗，冷启动一开就盖在
+        // 启动画面上，用户还没看到首页就先被问一句；且第一次申请要走权限服务的 binder。
+        // 改成首帧画完之后再问（见文件末尾的 Choreographer 回调），两不耽误。
 
         // 系统栏这件事有两层，缺任一层都会在屏幕上留黑条（2026-10-28 第二轮查清）：
         //
@@ -273,6 +275,10 @@ class PagesShellActivity : ComponentActivity() {
             val schedulePrefs = remember { PrefsKeyValueStore(applicationContext) }
             LaunchedEffect(wiring) {
                 withContext(Dispatchers.IO) {
+                    // 启动对账（settings → native pref）从 ShellWiring 构造函数搬到首帧之后：
+                    // 它要读整份设置 JSON，还可能排一次 AlarmManager（binder），
+                    // 都不属于首帧渲染所需。见 `ShellWiring.reconcileStartupPrefs`。
+                    wiring.reconcileStartupPrefs()
                     ScheduleReminderCoordinator.install(applicationContext, wiring.timetable)
                     // 考试提醒：考试 / 课程 / 日程增删改与冷启动、恢复备份后整表重排
                     //（对位上面日程提醒的安装；开机 / 换时区补排走 ExamReminderReceiver，无需在此装）。
@@ -340,6 +346,8 @@ class PagesShellActivity : ComponentActivity() {
         // mainEnter（进程进入 Application）→ shellAttach（壳挂载）→ firstFrame（首帧）。
         Choreographer.getInstance().postFrameCallback {
             PerfProbe.markStartup("firstFrame")
+            // 通知权限：首帧已经上屏，此时再弹系统弹窗不会遮住启动过程（见 onCreate 里的注释）。
+            requestNotificationPermissionOnce()
         }
     }
 

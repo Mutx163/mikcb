@@ -205,6 +205,82 @@ class WeatherProviderTest {
         assertFalse(provider.isAwaitingData)
     }
 
+    // ── 冷启动首帧：loadCached 只读盘、不发网（2026-11-09）────────────────────────
+    //
+    // 壳在首帧组合前调一次 loadCached：缓存命中时天气行首帧就在（不会「过一会儿
+    // 突然冒出一行」），没缓存时 isAwaitingData 立刻为真（日卡先占住那一行的高度）。
+
+    @Test
+    fun load_cached_reads_prefs_without_network() {
+        val store = InMemoryKeyValueStore()
+        WeatherPreferences(store).apply {
+            setEnabled(true)
+            saveLocation(hangzhou)
+            saveForecast(forecastAt(LocalDateTime.of(2026, 10, 28, 8, 0)))
+        }
+        val gateway = FakeGateway()
+        val provider = WeatherProvider(
+            gateway,
+            WeatherPreferences(store),
+            FakeLocationSource(DeviceLocationOutcome.failure(DeviceLocationFailure.TIMEOUT)),
+        ) { LocalDateTime.of(2026, 10, 28, 8, 5) }
+
+        provider.loadCached()
+
+        assertTrue(provider.enabled)
+        assertEquals("杭州", provider.location?.name)
+        assertNotNull("缓存命中时首帧就该有预报", provider.forecast)
+        assertFalse(provider.isAwaitingData)
+        assertEquals("loadCached 不允许发网", 0, gateway.fetchCount)
+    }
+
+    @Test
+    fun load_cached_without_forecast_marks_awaiting_for_placeholder() {
+        val store = InMemoryKeyValueStore()
+        WeatherPreferences(store).apply {
+            setEnabled(true)
+            saveLocation(hangzhou)
+        }
+        val gateway = FakeGateway()
+        val provider = WeatherProvider(
+            gateway,
+            WeatherPreferences(store),
+            FakeLocationSource(DeviceLocationOutcome.failure(DeviceLocationFailure.TIMEOUT)),
+        ) { LocalDateTime.of(2026, 10, 28, 8, 5) }
+
+        provider.loadCached()
+
+        assertNull(provider.forecast)
+        assertTrue("没缓存 + 有城市 ⇒ 界面必须先占住天气那一行", provider.isAwaitingData)
+        assertEquals(0, gateway.fetchCount)
+    }
+
+    @Test
+    fun initialize_after_load_cached_refreshes_exactly_once() {
+        val store = InMemoryKeyValueStore()
+        WeatherPreferences(store).apply {
+            setEnabled(true)
+            saveLocation(hangzhou)
+        }
+        val now = LocalDateTime.of(2026, 10, 28, 8, 0)
+        val gateway = FakeGateway().apply { forecast = forecastAt(now) }
+        val provider = WeatherProvider(
+            gateway,
+            WeatherPreferences(store),
+            FakeLocationSource(DeviceLocationOutcome.failure(DeviceLocationFailure.TIMEOUT)),
+        ) { now }
+
+        provider.loadCached()
+        assertEquals(0, gateway.fetchCount)
+
+        provider.initialize()
+        assertEquals(1, gateway.fetchCount)
+
+        // initialize 的幂等语义不变：第二次不会再刷一次。
+        provider.initialize()
+        assertEquals(1, gateway.fetchCount)
+    }
+
     @Test
     fun search_delegates_to_gateway() {
         val gateway = FakeGateway().apply { searchResult = listOf(hangzhou) }
