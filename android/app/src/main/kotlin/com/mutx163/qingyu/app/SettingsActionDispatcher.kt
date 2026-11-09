@@ -792,6 +792,9 @@ object SettingsActionDispatcher {
             ROW_DOCK_ADD -> {
                 val id = target?.takeIf { it.isNotBlank() }
                     ?: return ignored(kind, target, rowId, "底栏添加缺少入口 id")
+                // 满格按**清洗后**的表算：宿主传进来的 base 已过 `dockEditorSeed`
+                // （`SettingsHost.kt` 的 GlassDockEditorHost），与界面可见项数一致；
+                // 否则旧版残留 id 会让「界面 4 项、原始 5 项」时添加被误拒。
                 if (model.glassDockActions.size >= TimetableSettingsModel.HOME_DOCK_MENU_MAX_SLOTS ||
                     id in model.glassDockActions
                 ) {
@@ -1298,6 +1301,17 @@ object SettingsActionDispatcher {
 
     /** 已存主题行的行 id 前缀（[com.mutx163.qingyu.pages.settings.SettingsThemeManagePage] 的 `theme.saved.<id>`）。 */
     const val ROW_SAVED_THEME_PREFIX = "theme.saved."
+
+    /**
+     * 已存主题行尾「更多操作」的**页内动作 target**（不是路由串）。
+     *
+     * 发布版把两件事分成两个热区：点行 = 预览弹层（`theme_manage_sheets.dart:118-179`），
+     * 点行尾 `more_horiz` 图标 = 动作表（`:72-116`）。Compose 的行点击与行尾点击
+     * 产生的是同一个 `SHEET` 动作，宿主只能靠 `target` 区分——所以行尾那次点击
+     * 带本常量，行点击 target 为 null（= 预览）。改这里要同步
+     * `SettingsPageRenderers.kt:trailingTargetOf` 与 `SettingsHost.handleIntent`。
+     */
+    const val SAVED_THEME_ACTIONS_TARGET = "theme.saved.actionsTarget"
 
     /** 已存主题条目的四个键（Dart `SavedTheme.toJson`，`timetable_settings.dart:39-44`）。 */
     const val SAVED_THEME_KEY_ID = "id"

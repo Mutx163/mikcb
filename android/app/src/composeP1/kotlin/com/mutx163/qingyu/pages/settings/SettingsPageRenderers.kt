@@ -78,6 +78,7 @@ import top.yukonga.miuix.kmp.basic.TextField
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.basic.ArrowRight
 import top.yukonga.miuix.kmp.icon.extended.Alarm
+import top.yukonga.miuix.kmp.icon.extended.All
 import top.yukonga.miuix.kmp.icon.extended.Background
 import top.yukonga.miuix.kmp.icon.extended.Backup
 import top.yukonga.miuix.kmp.icon.extended.ChevronForward
@@ -515,7 +516,24 @@ private fun SettingsRowView(
                 } else {
                     null
                 },
-                endActions = { row.trailingAction?.let { TrailingActionHint(it) } },
+                endActions = {
+                    // 行尾动作（发布版已存主题行的 `more_horiz` IconButton + tooltip，
+                    // `theme_manage_sheets.dart:585-599`）：必须**真能点**。用官方
+                    // `TextButton` 承载文案，target 走页内动作 id，宿主据此把
+                    // 「点行 = 预览」和「点行尾 = 动作表」分成两条路。
+                    row.trailingAction?.let { label ->
+                        val kind = row.trailingActionKind
+                        if (kind != null) {
+                            TextButton(
+                                modifier = Modifier,
+                                text = label,
+                                onClick = { onAction(kind, trailingTargetOf(row), row.id) },
+                            )
+                        } else {
+                            TrailingActionHint(label)
+                        }
+                    }
+                },
                 // 已存主题的四枚预览色点（发布版 `subtitle: ThemePreviewDots(previewColors)`）。
                 // 官方行的 `summary` 只收文本，所以走同一个组件的 `bottomAction` —— 它就是
                 // 标题/摘要下方那一行（`BasicComponent` 里 8dp 间隔后渲染），位置与摘要一致。
@@ -545,8 +563,8 @@ private fun SettingsRowView(
             endActions = { ColorSwatch(hex = row.value) },
         )
     }
-    // 行尾附加按钮（已存主题的「更多操作」）只渲染提示文案，点击由宿主按
-    // trailingActionKind 接（见 SettingsRowRenderTable 的契约断言）。
+    // 行尾附加按钮（已存主题的「更多操作」）在 RADIO 分支里由官方 TextButton 承载并
+    // 真接点击；target 经 trailingTargetOf 换成页内动作 id，宿主据此与「点行=预览」分流。
 }
 
 /**
@@ -814,6 +832,9 @@ private fun miuixIconByName(name: String): ImageVector = when (name) {
     "background" -> MiuixIcons.Background
     "stopwatch" -> MiuixIcons.Stopwatch
     "listView" -> MiuixIcons.ListView
+    // 「HyperOS 组件展示」入口行（开发者选项，调试构建可见）：与坞图标表
+    // `GlassDockIconVectors.kt:184` 的 `"all" to MiuixIcons.All` 同源，别用别的字形。
+    "all" -> MiuixIcons.All
     "show" -> MiuixIcons.Show
     else -> MiuixIcons.Info
 }
@@ -1085,6 +1106,21 @@ private fun RowScope.TrailingActionHint(text: String) {
         style = MiuixTheme.textStyles.footnote1,
     )
 }
+
+/**
+ * 行尾动作的 target：`SHEET` 专指「已存主题的更多操作」。
+ *
+ * 该行的行点击也是 `SHEET`（发布版点行进预览弹层），所以行尾这次必须带一个
+ * 能区分的页内 target（[SettingsActionDispatcher.SAVED_THEME_ACTIONS_TARGET]），
+ * 否则宿主会把两次点击都当成同一个动作。其余动作（编辑器里的 `DIALOG` /
+ * `WRITE_SETTING`）沿用行自己的 `actionTarget`。
+ */
+private fun trailingTargetOf(row: SettingsRow): String? =
+    if (row.trailingActionKind == SettingsAction.SHEET) {
+        SettingsActionDispatcher.SAVED_THEME_ACTIONS_TARGET
+    } else {
+        row.actionTarget
+    }
 
 /** 行尾色块（`timetable_text_color_settings.dart:320-334`：36dp、圆角 10、1px 描边）。 */
 @Composable

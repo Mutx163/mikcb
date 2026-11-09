@@ -1,6 +1,8 @@
 package com.mutx163.qingyu.app
 
 import android.util.Log
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
@@ -14,6 +16,8 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
@@ -25,6 +29,7 @@ import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -395,6 +400,42 @@ fun SettingsHost(
             .firstOrNull { it[SettingsActionDispatcher.SAVED_THEME_KEY_ID] == id }
             ?.get(SettingsActionDispatcher.SAVED_THEME_KEY_NAME) as? String ?: ""
 
+    /**
+     * 已存主题的预览数据（Dart `ThemeConfig.previewColors` + 档名/主题色）。
+     *
+     * `themeData` 存的是 `ThemeConfig.toJson` 的**短键**（`lib/models/timetable_settings.dart:142-155`）：
+     * `seed` / `mode` / `ccl` / `cdl` / `wbl` / `wal`。色板口径逐字照
+     * `ThemeConfig.previewColors`（同文件 `:283-300`）：seed → ccl → cdl → wbl → wal，`take(4)`。
+     */
+    fun savedThemePreview(id: String): SavedThemePreview {
+        val raw = model.savedThemes
+            .firstOrNull { it[SettingsActionDispatcher.SAVED_THEME_KEY_ID] == id }
+            ?: return SavedThemePreview()
+        val themeData = raw[SettingsActionDispatcher.SAVED_THEME_KEY_THEME_DATA] as? Map<*, *>
+            ?: return SavedThemePreview()
+        fun color(key: String): String? = (themeData[key] as? String)?.takeIf { it.isNotBlank() }
+        val colors = listOfNotNull(
+            color("seed"),
+            color("ccl"),
+            color("cdl"),
+            color("wbl"),
+            color("wal"),
+        ).take(4)
+        val modeLabel = (themeData["mode"] as? String)?.let { value ->
+            // ⚠️ 全限定：`app` 包里另有一个只带 value 的同名枚举（`TimetableSettingsModel.kt:1281`，
+            // 磁盘值），带档名文案的是 `pages/settings` 这个（`SettingsPageState.kt:101`）。
+            com.mutx163.qingyu.pages.settings.AppThemeMode.entries
+                .firstOrNull { it.value == value }
+                ?.label
+                ?.text
+        }
+        return SavedThemePreview(
+            colors = colors,
+            modeLabel = modeLabel,
+            seedHex = color("seed"),
+        )
+    }
+
     /** 已存主题的四种动作（Dart `showSavedThemeActionSheet` + 四个 handler，`:612-700`）。 */
     fun runSavedThemeAction(action: ThemeRowAction, id: String) {
         val name = savedThemeName(id)
@@ -459,11 +500,30 @@ fun SettingsHost(
 
             is SettingsDispatch.ShowSheet -> {
                 val id = SettingsActionDispatcher.savedThemeIdOf(dispatch.rowId)
-                if (id != null) {
-                    themeDialog = ThemeDialogState(ThemeDialogMode.ACTIONS, id, savedThemeName(id))
-                } else {
-                    Log.w(LOG_TAG, "unhandled sheet: rowId=${dispatch.rowId}")
-                    toast(SettingsStrings.aboutUnavailable.text)
+                when {
+                    id == null -> {
+                        Log.w(LOG_TAG, "unhandled sheet: rowId=${dispatch.rowId}")
+                        toast(SettingsStrings.aboutUnavailable.text)
+                    }
+                    // 行尾「更多操作」：动作表（发布版 `showSavedThemeActionSheet`）。
+                    dispatch.target == SettingsActionDispatcher.SAVED_THEME_ACTIONS_TARGET ->
+                        themeDialog = ThemeDialogState(
+                            mode = ThemeDialogMode.ACTIONS,
+                            themeId = id,
+                            themeName = savedThemeName(id),
+                        )
+                    // 点行：预览弹层（发布版 `showSavedThemePreviewSheet`）。
+                    else -> {
+                        val preview = savedThemePreview(id)
+                        themeDialog = ThemeDialogState(
+                            mode = ThemeDialogMode.PREVIEW,
+                            themeId = id,
+                            themeName = savedThemeName(id),
+                            previewColors = preview.colors,
+                            previewModeLabel = preview.modeLabel,
+                            previewSeedHex = preview.seedHex,
+                        )
+                    }
                 }
             }
 
@@ -1510,12 +1570,12 @@ fun GlassDockEditorHost(
     // 宿主持有 Context 就在这里补一句 toast —— 与设置页其它行同一条口径、同一个键。
     val context = LocalContext.current
     fun write(rowId: String, target: String?) {
-        // 空表（从没存过）先回退出厂排列：否则「加一个」以空表为底会把 day/week 一起丢掉。
-        val base = if (model.glassDockActions.isEmpty()) {
-            model.copy(glassDockActions = SettingsGlassDockEditorPage.DEFAULT_ACTIONS)
-        } else {
-            model
-        }
+        // 以界面上那份**清洗后的列表**为基准（与 HomeMenuEditorHost 同一口径）：
+        // 旧版本残留的未知 / 当前构建不可见 id 不能继续占槽位。否则界面只画得出 N-1 项，
+        // 而分派器按原始表 size 判满格（`SettingsActionDispatcher.ROW_DOCK_ADD`），
+        // 点候选被直接拒、没有任何反应——与用户报的「八宫格 8 变 7」同一种病。
+        // 空表仍在 dockEditorSeed 里回退出厂排列。
+        val base = model.copy(glassDockActions = dockEditorSeed(model.glassDockActions))
         val result = SettingsActionDispatcher.dispatch(
             SettingsActionKind.WRITE_SETTING,
             target,
@@ -1607,7 +1667,23 @@ internal enum class ThemeDialogMode {
 
     /** 已存主题的动作表：应用 / 重命名 / 复制 / 删除（Dart `showSavedThemeActionSheet`）。 */
     ACTIONS,
+
+    /**
+     * 已存主题的预览（Dart `showSavedThemePreviewSheet`，`theme_manage_sheets.dart:118-179`）。
+     *
+     * 发布版点「我的主题」那一行先看预览（色板 + 主题模式 + 主题色），弹层底部才是
+     * 「应用」。Compose 之前把行点击直接接到动作表、预览整块没有——用户点行看不到
+     * 这套主题长什么样。行尾「更多操作」仍走 [ACTIONS]（见 `SAVED_THEME_ACTIONS_TARGET`）。
+     */
+    PREVIEW,
 }
+
+/** 已存主题预览弹层要用的数据（[SettingsHost.savedThemePreview] 的返回值）。 */
+internal data class SavedThemePreview(
+    val colors: List<String> = emptyList(),
+    val modeLabel: String? = null,
+    val seedHex: String? = null,
+)
 
 /** 已存主题动作表里的四项。 */
 internal enum class ThemeRowAction { APPLY, RENAME, DUPLICATE, DELETE }
@@ -1618,6 +1694,14 @@ internal data class ThemeDialogState(
     val themeId: String? = null,
     /** 已存主题的名字（弹层标题/删除正文要用）。 */
     val themeName: String = "",
+    /**
+     * 预览弹层要展示的三样（只在 [ThemeDialogMode.PREVIEW] 用）：
+     * 色板最多 4 块（Dart `ThemeConfig.previewColors` 的 `take(4)`）、
+     * 主题模式档名、主题色 hex（`ThemeConfig` 的 `seed`/`mode` 短键）。
+     */
+    val previewColors: List<String> = emptyList(),
+    val previewModeLabel: String? = null,
+    val previewSeedHex: String? = null,
 )
 
 /**
@@ -1740,12 +1824,59 @@ internal fun SettingsThemeDialogHost(
             }
         }
 
+        // 点「我的主题」那一行 → 预览（Dart `showSavedThemePreviewSheet`，
+        // `theme_manage_sheets.dart:118-179`）：色板（44dp 方块）+ 主题模式 / 主题色两行 + 「应用」。
+        // 行尾「更多操作」走下面的动作表（宿主按 `SAVED_THEME_ACTIONS_TARGET` 分流）。
+        ThemeDialogMode.PREVIEW -> QingyuSheet(
+            show = state != null,
+            // 标题是用户数据（主题名），不来自 ARB。
+            title = current.themeName,
+            contentPadsHorizontally = true,
+            onDismissRequest = onDismiss,
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 8.dp),
+                verticalArrangement = Arrangement.spacedBy(16.dp),
+            ) {
+                if (current.previewColors.isNotEmpty()) {
+                    // Dart `ThemePreviewSwatches`：Wrap(spacing: 10) 的 44dp 圆角色块。
+                    Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                        current.previewColors.forEach { hex -> ThemePreviewSwatch(hex) }
+                    }
+                }
+                val modeLabel = current.previewModeLabel
+                if (modeLabel != null) {
+                    ThemePreviewInfoRow(
+                        label = SettingsStrings.themeModeLabel.text,
+                        value = modeLabel,
+                    )
+                }
+                val seedHex = current.previewSeedHex
+                if (seedHex != null) {
+                    ThemePreviewInfoRow(
+                        label = SettingsStrings.themeSeedSectionTitle.text,
+                        value = seedHex,
+                        dotHex = seedHex,
+                    )
+                }
+                Button(
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = ButtonDefaults.buttonColorsPrimary(),
+                    onClick = { current.themeId?.let { onAction(ThemeRowAction.APPLY, it) } },
+                ) {
+                    Text(text = SettingsStrings.themeApply.text)
+                }
+            }
+        }
+
         // 内容根是 `Column(padding(horizontal = 16.dp, …))` ⇒ 框架侧横向归零（单边仍是 16）。
         // 行形态对齐 Dart `showSavedThemeActionSheet`（theme_manage_sheets.dart:86-112）：
         // HyperosChoiceTile 是「图标 + 文案」列表行，不是实心按钮（2026-11-03 弹层审计：
         // 原先四颗整宽灰实心钮，主次读不出来、也没有 Dart 的图标身份）。
-        // 与 Dart 的一处刻意不同：Compose 版把「应用」并进了这张表（Dart 的应用入口在
-        // 预览弹层里，Compose 没有预览弹层），动作集合按拍板保持现状，只改行的形态。
+        // 与 Dart 的一处刻意不同：动作表里保留「应用」一行（发布版入口在预览弹层里；
+        // 这里并进动作表当快捷方式，动作集合是超集，不改变行为）。
         ThemeDialogMode.ACTIONS -> QingyuSheet(
             show = state != null,
             // 标题是用户数据（主题名），不来自 ARB。
@@ -1813,6 +1944,58 @@ private fun ThemeActionRow(
             text = label,
             style = MiuixTheme.textStyles.body1.shiftWeight(QingyuWeightDelta.MEDIUM),
             color = textColor,
+        )
+    }
+}
+
+/**
+ * 预览弹层的色块（Dart `ThemePreviewSwatches`，`theme_manage_sheets.dart:205-236`）：
+ * 44dp、圆角 10、1px 描边，颜色解析口径同设置行的色块（`SettingsRowRenderTable`）。
+ */
+@Composable
+private fun ThemePreviewSwatch(hex: String) {
+    val fallback = MiuixTheme.colorScheme.primary
+    val swatch = Color(SettingsRowRenderTable.parseArgbOrFallback(hex, fallback.toArgb()))
+    Box(
+        modifier = Modifier
+            .size(44.dp)
+            .clip(RoundedCornerShape(10.dp))
+            .background(swatch)
+            .border(1.dp, MiuixTheme.colorScheme.outline, RoundedCornerShape(10.dp)),
+    )
+}
+
+/**
+ * 预览弹层的信息行（Dart `_ThemePreviewInfoRow`，`theme_manage_sheets.dart:260-280`）：
+ * 左标签用次要色、右侧取值；[dotHex] 非空时在取值前加一颗 16dp 圆点（主题色行）。
+ */
+@Composable
+private fun ThemePreviewInfoRow(label: String, value: String, dotHex: String? = null) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Text(
+            text = label,
+            style = MiuixTheme.textStyles.body2,
+            color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+            modifier = Modifier.weight(1f),
+        )
+        if (dotHex != null) {
+            val fallback = MiuixTheme.colorScheme.primary
+            Box(
+                modifier = Modifier
+                    .size(16.dp)
+                    .clip(CircleShape)
+                    .background(Color(SettingsRowRenderTable.parseArgbOrFallback(dotHex, fallback.toArgb())))
+                    .border(0.5.dp, MiuixTheme.colorScheme.outline, CircleShape),
+            )
+            Spacer(modifier = Modifier.width(8.dp))
+        }
+        Text(
+            text = value,
+            style = MiuixTheme.textStyles.body2,
+            color = MiuixTheme.colorScheme.onBackground,
         )
     }
 }
