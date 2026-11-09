@@ -72,4 +72,4 @@ jobs:
           ANDROID_KEY_PASSWORD: dummy
         # 去 Flutter 化 P4-D（2026-11-07）：预热改用 Gradle 原生任务，
         # 不再经 `flutter build apk`（Flutter 插件已移除）。
-        run: cd android && ./gradlew :app:assembleProdDebug
+        run: cd android && ./gradlew :app:assembleProdDebug --no-daemon

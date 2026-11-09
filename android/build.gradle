@@ -2,9 +2,6 @@ allprojects {
     repositories {
         google()
         mavenCentral()
-        maven {
-            url "https://storage.googleapis.com/download.flutter.io"
-        }
         maven { url 'https://maven.aliyun.com/repository/google' }
         maven { url 'https://maven.aliyun.com/repository/public' }
         maven { url 'https://maven.aliyun.com/repository/gradle-plugin' }
@@ -30,87 +27,16 @@ allprojects {
 
 rootProject.buildDir = "../build"
 subprojects {
-    // 只有**工程目录内**的模块才把产物集中到 Flutter 的 build/ 下。
-    //
-    // 为什么不能一律重定向（2026-10-27 实证）：本机 Pub 缓存在 D:\Cache\Pub，
-    // Flutter SDK 在 D:\Flutter，而工程在 C:\cursor\mikcb。把这些外部模块的
-    // buildDir 指到 C:\cursor\mikcb\build\<name> 后，AGP 创建任务时要在
-    // 项目目录（D:）与产物目录（C:）之间算相对路径，直接抛
-    // "this and base files have different roots"，Android Studio 同步报
-    // "Could not create task ':xxx:generateDebugUnitTestConfig'"。
-    // 让外部模块用各自的默认 buildDir（与自身同盘）即可，Flutter 工具只依赖
-    // :app 的产物位置，不受影响。CI（Linux，全部在同一个根下）行为不变。
-    def flutterProjectRoot = rootProject.projectDir.parentFile.toPath()
-    if (project.projectDir.toPath().startsWith(flutterProjectRoot)) {
+    // 工程内模块的产物统一到仓库根 build/；工程外模块保留各自 buildDir，
+    // 避免跨盘相对路径报 "this and base files have different roots"。
+    def projectRoot = rootProject.projectDir.parentFile.toPath()
+    if (project.projectDir.toPath().startsWith(projectRoot)) {
         project.buildDir = "${rootProject.buildDir}/${project.name}"
     }
 }
-subprojects {
-    // integration_test 模块（build.gradle 在 Flutter SDK 里）声明的是动态版本
-    // androidx.test:runner:1.2+：每次构建都要联网拉 maven-metadata.xml 做版本列举，
-    // 而本机到 Maven Central 的 TLS 握手间歇性失败，会把与本次改动无关的任何
-    // 构建挂掉（2026-10-26 composeP1 编译连挂两次；本地缓存已有 1.2.0）。
-    // 这里显式钉到动态版本实际解析出的 1.2.0，构建从此离线可复现。
-    // 复核时机：升级 Flutter SDK 时（integration_test 的声明跟着 SDK 走）。
-    project.configurations.all { configuration ->
-        configuration.resolutionStrategy.eachDependency { details ->
-            def requested = details.requested
-            if (requested.group == 'androidx.test' &&
-                    requested.name == 'runner' &&
-                    requested.version == '1.2+') {
-                details.useVersion('1.2.0')
-            }
-        }
-    }
-    project.evaluationDependsOn(":app")
-}
 
-subprojects { subproject ->
-    // AGP 9 兼容补丁（2026-10-27）：
-    // file_picker 11.0.3 与 mobile_scanner 7.4.0 检测到 AGP >= 9 后**不再自行应用**
-    // org.jetbrains.kotlin.android，因为 AGP 9 自带 Kotlin 编译。但本工程还有约 20 个
-    // Flutter 插件仍自带该插件，一旦打开 AGP 内置 Kotlin 它们会直接报错
-    // （"plugin is no longer required since AGP 9.0"），因此全局只能维持
-    // android.builtInKotlin=false；代价就是这两个模块的 Kotlin 源码没人编，
-    // 表现为 :app:compileXxxJavaWithJavac 找不到 FilePickerPlugin 之类的类。
-    // 这里在它们身上补回插件，等价于 AGP 8 下的行为。
-    // 移除时机：这两个依赖升到不再跳过 Kotlin 的版本，或全仓 Flutter 插件都迁到内置 Kotlin。
-    if (subproject.name == 'file_picker' || subproject.name == 'mobile_scanner') {
-        subproject.plugins.withId('com.android.library') {
-            subproject.pluginManager.apply('org.jetbrains.kotlin.android')
-        }
-    }
-}
-
-// bench 变体的 minify 会被 Flutter **拷进每个插件库**，导致 app 打包时整批插件类「消失」
-//（2026-10-30 定位：devBench 打包卡在 :app:minifyDevBenchWithR8）。
-//
-// 机制：Flutter Gradle 插件的 PluginHandler.addEmbeddingDependencyToPlugin 对「插件项目里
-// 还不存在的构建类型」会 create(name) { isDebuggable = …; isMinifyEnabled = … } —— 把 app 的
-// bench（initWith release ⇒ minify=true）原样复制进 pub 缓存里的每个插件库。
-// 库模块自己跑 R8 没有「消费者」这个概念：除清单里被 aapt 规则钉住的类，公开 API 全被裁掉
-// 或改名。实测 geolocator_android 的 bench AAR 只剩 2 个类（GeolocatorLocationService
-// + 一个被混淆成 a/a 的内部类），而 app 的 GeneratedPluginRegistrant 还在
-// new GeolocatorPlugin() ⇒ R8 报 "Missing class com.baseflow.geolocator.GeolocatorPlugin"，
-// 18 个插件全中。此时**不要**照 missing_rules.txt 加 -dontwarn：类是真的没了，加完编译能过、
-// 装上去启动就崩（GeneratedPluginRegistrant 抛 NoClassDefFoundError）。
-//
-// 注意 :app:compileDevBenchJavaWithJavac 仍然是绿的：库的编译 classpath 走 minify 之前的
-// compile jar（bundleLibCompileToJarBench/classes.jar，138 KB，类齐全），所以这个坑只在
-// dex / 打包那一步炸，前面所有编译步骤都不会报警。
-//
-// 正确做法与 release 一致：**库不自己 minify**，裁剪与混淆统一交给 app 的 R8。
-//
-// 落地方式：抢在 Flutter 之前，先给每个插件库建一个**默认配置**的 `bench` 构建类型。
-// Flutter 的复制逻辑是 `if (findByName(name) == null) create(...)` —— 类型已存在就整段跳过，
-// 于是 app 的 minify=true 传不进来，库的 bench 变体拿到 AGP 默认值（非 debuggable、
-// minify=false），与 release 下的库行为完全一致。
-//
-// 为什么不能「后置改回来」（都实测过、都不生效）：
-//   · `buildTypes.whenObjectAdded/configureEach`：Gradle 的 `create(name, action)` 是
-//     「先入容器、再执行配置块」，回调抢在配置块之前跑，随即被 `isMinifyEnabled=…` 覆盖；
-//   · `gradle.projectsEvaluated` 里改：跑的时候 AGP 已经按 minify=true 建好变体与
-//     `:xxx:minifyBenchWithR8` 任务（dry-run 仍列出全部 18 个），改 flag 不会回收任务。
+// app 有 bench 变体；库模块也补一个同名、默认配置的 bench 变体，
+// 让 :app 的 bench 变体有可匹配的库变体（库自身不 minify，裁剪交给 app 的 R8）。
 subprojects { subproject ->
     subproject.plugins.withId('com.android.library') {
         def androidExt = subproject.extensions.getByName('android')
@@ -120,22 +46,15 @@ subprojects { subproject ->
     }
 }
 
-// Kotlin 编译目标兜底（2026-10-27）：
-// AGP 9.4 的 Java 目标是 17（compileOptions 与 AGP 默认一致），但 KGP 在未显式
-// 指定时会让 jvmTarget 跟随**跑 Gradle 的 JVM**。本机 Android Studio 内置 JBR 是
-// 25，一旦 IDE 用自带 JVM 跑构建，file_picker 这类同时含 Java 与 Kotlin 源码的
-// 模块就会报 "Inconsistent JVM-target compatibility ... (17) and ... (25)"，
-// 且 25 字节码 D8 也未必吃得下。
-// 这里对**所有**应用了 kotlin-android 的子项目（含 pub 缓存里的第三方插件）统一钉到 17，
-// 与 AGP 的 Java 17 baseline 一致。注意 CI 的 setup-java 与
-// android/gradle/gradle-daemon-jvm.properties 的 toolchainVersion 都是 21——那是
-// **跑 Gradle 的 JVM**，不是子项目的字节码目标，两者不冲突。
+// Kotlin 编译目标兜底：
+// KGP 未显式指定时会让 jvmTarget 跟随跑 Gradle 的 JVM；这里对应用了
+// kotlin-android 的子项目统一钉住，避免 Java/Kotlin target 不一致。
+// :app 需要 JVM21（miuix-nav 的 inline entry<T> 是 Java21 字节码），
+// 其余子项目保持 17，与 AGP 的 Java 17 baseline 一致。
 subprojects { subproject ->
     subproject.plugins.withId('org.jetbrains.kotlin.android') {
         subproject.tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompile).configureEach { task ->
-            // 2026-10-28：:app 需要 JVM21 —— miuix-nav 的 inline `entry<T>` 是 Java21 字节码，
-            // 17 目标下无法内联。只把 :app 抬到 21；其余子项目（含 pub 缓存里同时有
-            // Java+Kotlin 的 file_picker 等插件）继续钉 17，避免它们 Java17/Kotlin21 不一致。
+            // 只把 :app 抬到 21；其余子项目继续钉 17，避免 Java/Kotlin target 不一致。
             task.compilerOptions.jvmTarget.set(
                 subproject.name == 'app'
                     ? org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_21

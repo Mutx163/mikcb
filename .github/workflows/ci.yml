@@ -53,4 +53,4 @@ jobs:
       - name: Android JVM unit tests
         run: |
           cd android
-          ./gradlew :app:testProdDebugUnitTest --stacktrace --quiet
+          ./gradlew :app:testProdDebugUnitTest --stacktrace --quiet --no-daemon

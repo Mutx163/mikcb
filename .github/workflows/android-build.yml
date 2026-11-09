@@ -94,7 +94,7 @@ jobs:
       # 复用绿灯时跳过，与原先 analyze 的口径一致。
       - name: Unit tests (JVM)
         if: steps.reuse.outputs.reuse != 'true'
-        run: ./gradlew :app:testDevDebugUnitTest
+        run: cd android && ./gradlew :app:testDevDebugUnitTest --no-daemon
 
   publish:
     name: Build and Publish Android APK
@@ -199,7 +199,7 @@ jobs:
           ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
           ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
           OVERRIDE_VERSION_NAME: ${{ steps.meta.outputs.version_name }}
-        run: ./gradlew :app:assembleProdRelease
+        run: cd android && ./gradlew :app:assembleProdRelease --no-daemon
 
       - name: Prepare artifact
         shell: bash

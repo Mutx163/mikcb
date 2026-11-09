@@ -39,7 +39,7 @@
   # analyze / flutter test 全部失效（它们的输入 lib/ 与 pubspec.yaml 已不存在），
   # 统一换成 Gradle 的 JVM 单测（与本地 L2、GitHub Actions 新口径一致）。
   - name: jvm-unit-test
-    script: cd android && ./gradlew :app:testDevDebugUnitTest
+    script: cd android && ./gradlew :app:testDevDebugUnitTest --no-daemon
 
 # ── Android JVM 单测（Gradle）────────────────────────────────
 # 注意：Gradle 的仓库镜像/inject 必须与 gradle 调用同 stage 内联执行——CNB 各 stage
@@ -92,7 +92,7 @@
 
       cd android
       echo "Using Gradle distribution: $(grep '^distributionUrl' gradle/wrapper/gradle-wrapper.properties)"
-      ./gradlew :app:testProdDebugUnitTest --stacktrace --quiet
+      ./gradlew :app:testProdDebugUnitTest --stacktrace --quiet --no-daemon
 
 # ═════════════════════════════════════════════════════════════
 # 1. 任意分支推送 → 质量门禁
@@ -241,7 +241,7 @@
             VERSION_NAME="${CNB_BRANCH#v}"
             # 去 Flutter 化阶段 2 · P2：出包改走 Gradle 原生任务（ARM64 由 app/build.gradle
             # 的 abiFilters 限定），版本号仍通过 OVERRIDE_VERSION_NAME 注入，语义不变。
-            OVERRIDE_VERSION_NAME="$VERSION_NAME" ./gradlew :app:assembleProdRelease
+            (cd android && OVERRIDE_VERSION_NAME="$VERSION_NAME" ./gradlew :app:assembleProdRelease --no-daemon)
 
             mkdir -p dist
             APK_PATH=""
