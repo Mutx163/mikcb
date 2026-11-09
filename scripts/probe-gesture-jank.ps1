@@ -168,14 +168,24 @@ if (-not $Serial -and $devices.Count -gt 1) {
 }
 if (-not $Serial) { $Serial = $devices[0].Split()[0] }
 
+$focus = (Invoke-Adb @('shell', 'dumpsys', 'window')) | Select-String -Pattern 'mCurrentFocus' | Select-Object -First 1
+
 if (-not $Package) {
     $installed = @(Invoke-Adb @('shell', 'pm', 'list', 'packages'))
     $candidates = @('com.mutx163.qingyu.debug', 'com.mutx163.qingyu.profile', 'com.mutx163.qingyu', 'com.mutx163.qingyu.itest')
-    $Package = $candidates | Where-Object { $installed -match "package:$([regex]::Escape($_))$" } | Select-Object -First 1
+    # 前台包优先：四个包可能同时装着（dev / perf / prod / itest），只有前台那个有帧数据。
+    $foregroundPkg = if ($focus -match '(com\.mutx163\.qingyu(?:\.[a-z]+)?)/') { $Matches[1] } else { '' }
+    if ($foregroundPkg -and ($installed -match "package:$([regex]::Escape($foregroundPkg))$")) {
+        $Package = $foregroundPkg
+    } else {
+        $Package = $candidates | Where-Object { $installed -match "package:$([regex]::Escape($_))$" } | Select-Object -First 1
+    }
     if (-not $Package) {
         Write-Host '设备上没找到轻屿课表的四个包名，请用 -Package 指定。' -ForegroundColor Yellow
         exit 3
     }
+} elseif ($focus -match '(com\.mutx163\.qingyu(?:\.[a-z]+)?)/' -and $Matches[1] -ne $Package) {
+    Write-Host "注意：前台是 $($Matches[1])，你指定的是 $Package —— 拿不到前台的帧数据。" -ForegroundColor Yellow
 }
 
 if (-not $OutDir) {
@@ -191,7 +201,6 @@ if ($rateLine -and $rateLine.Line -match '([0-9]+\.?[0-9]*)\s*$') {
     $hz = [double]$Matches[1]
     if ($hz -ge 30 -and $hz -le 165) { $budgetMs = 1000.0 / $hz }
 }
-$focus = (Invoke-Adb @('shell', 'dumpsys', 'window')) | Select-String -Pattern 'mCurrentFocus' | Select-Object -First 1
 
 $meta = @(
     "时间: $(Get-Date -Format 'yyyy-MM-dd HH:mm:ss')",
