@@ -187,6 +187,8 @@ import com.mutx163.qingyu.pages.showcase.MiuixShowcasePage
 import com.mutx163.qingyu.WeeklyReportScheduler
 import com.mutx163.qingyu.pages.statistics.CourseStatisticsLogic
 import com.mutx163.qingyu.pages.statistics.CourseStatisticsPage
+import com.mutx163.qingyu.pages.statistics.charts.StatisticsExportContent
+import com.mutx163.qingyu.pages.statistics.charts.StatisticsExportSheet
 import com.mutx163.qingyu.pages.statistics.StatisticsAnalysisModel
 import com.mutx163.qingyu.pages.statistics.StatisticsAnalysisModule
 import com.mutx163.qingyu.pages.statistics.StatisticsAnalysisPage
@@ -198,7 +200,7 @@ import com.mutx163.qingyu.pages.statistics.StatisticsSettingsLogic
 import com.mutx163.qingyu.pages.statistics.StatisticsSettingsPage
 import com.mutx163.qingyu.pages.statistics.StatisticsShareText
 import com.mutx163.qingyu.pages.statistics.WeeklyReportToggleLogic
-import com.mutx163.qingyu.pages.statistics.shareStatisticsText
+import com.mutx163.qingyu.pages.statistics.shareStatisticsExport
 import com.mutx163.qingyu.pages.sync.CloudBackupDetailHost
 import com.mutx163.qingyu.pages.sync.CloudBackupListPage
 import com.mutx163.qingyu.pages.sync.CloudBackupListViewState
@@ -1742,13 +1744,18 @@ fun ShellPageContent(
             // 壳内局部状态：分段（学期/周）与周视图选中的周。
             var semesterView by remember { mutableStateOf(true) }
             var selectedWeek by remember { mutableStateOf<Int?>(null) }
+            // 导出模块选择弹层开关（2026-11-10 审核项 #6）：点分享先选模块、再按勾选渲染长图，
+            // 与发布版 `course_statistics_screen.dart:37-70` 的「先弹 export sheet 再导出」同流程。
+            var showExportSheet by remember { mutableStateOf(false) }
             // P0-a（切页首帧减负）：统计主页**只用 home**，不再调 `StatisticsFeed.feed(...)`
             // ——feed 会连 `session` 一起装配（`StatisticsFeed.kt:289-315`，对每门课跑
             // `CourseSessionStatsCalculator` 遍历整学期），对主页纯属白算；session 明细是
             // `e.session` 页才用。这里只算 home，首帧不再背那坨同步 CPU。行为不变（同源）。
-            val homeState = remember(snapshot, semesterView, selectedWeek) {
+            // 入参只换装一次：homeState 与导出时的排行读数共用同一份 `Input`，两处不会各算一套。
+            val feedInput = remember(snapshot) { StatisticsFeed.Input.fromSnapshot(snapshot) }
+            val homeState = remember(feedInput, semesterView, selectedWeek) {
                 StatisticsFeed.homeViewState(
-                    input = StatisticsFeed.Input.fromSnapshot(snapshot),
+                    input = feedInput,
                     now = LocalDateTime.now(),
                     selectedWeek = selectedWeek,
                     semesterView = semesterView,
@@ -1760,22 +1767,10 @@ fun ShellPageContent(
                 // tab 0 = 学期视图（`CourseStatisticsPage.kt:170` `selectedTabIndex == 0 && semester != null`）
                 onTabSelected = { index -> semesterView = index == 0 },
                 onOpenSettings = { onOpenPage("e.statisticsSettings") },
-                // 2026-10-30（F12）：此前这里是空 lambda ⇒ 分享图标点了没反应。
-                // F15 起 `shareStatisticsText` 是**成果图优先、发不出图退回纯文本**：
-                //   · 图：离屏光栅化成 PNG → 写进 cacheDir/transfer-share/
-                //     （已在 `res/xml/file_paths.xml` 登记）→ FileProvider 分享；
-                //   · 文：正文由 `StatisticsShareText` 用真统计快照拼，走系统分享面板。
-                // 空正文 / 光栅化失败 / 落盘失败 / provider 不可用，任一失败都退回纯文本，
-                // **不生成空图冒充「已导出图片」**。
-                onOpenShare = {
-                    shareStatisticsText(
-                        context = context,
-                        // `StatisticsShareText.build` 要的是页面视图状态（`CourseStatisticsViewState`）；
-                        // 与本分支 `viewState = homeState` 同源，直接用同一份 home。
-                        text = StatisticsShareText.build(homeState),
-                        subject = StatisticsShareText.subject(),
-                    )
-                },
+                // 2026-11-10（审核项 #6）：分享先弹「导出模块」弹层，选完再按勾选渲染长图
+                // （发布版 `course_statistics_screen.dart:37-70` → `showStatisticsExportSheet`）。
+                // 弹层显隐与确认都在本分支内，页面签名不动。
+                onOpenShare = { showExportSheet = true },
                 onWeekChanged = { week -> selectedWeek = week },
                 onOpenAnalysis = { module ->
                     wiring.pendingAnalysisModule = module
@@ -1783,6 +1778,46 @@ fun ShellPageContent(
                 },
                 onOpenSessions = { onOpenPage("e.session") },
             )
+
+            // 导出模块选择弹层（常驻组合：show 只驱动显隐，关闭时官方退场动画才能播完）。
+            // 学期内容为空（无课/空态）时分享按钮本来就不出现，这里再判一次是为了
+            // 类型上拿到非空 `SemesterContent`，不靠 `!!`。
+            val exportSemester = homeState.semester
+            if (exportSemester != null) {
+                StatisticsExportSheet(
+                    show = showExportSheet,
+                    hasAchievements = exportSemester.achievements.isNotEmpty(),
+                    hasStories = exportSemester.stories.isNotEmpty(),
+                    dark = isSystemInDarkTheme(),
+                    onDismissRequest = { showExportSheet = false },
+                    onConfirm = { options ->
+                        showExportSheet = false
+                        // 排行不在主页的学期内容块里（那是深度分析页的内容），按同一份
+                        // `feedInput` 现算：行序、课时都出自同一条统计口径
+                        // （`StatisticsAnalysisModel.analysisViewState(RANKING, …)`）。
+                        val rankingRows = StatisticsAnalysisModel.analysisViewState(
+                            module = StatisticsAnalysisModule.RANKING,
+                            courses = feedInput.courses,
+                            currentWeek = homeState.currentWeek,
+                            semesterWeekCount = homeState.semesterWeekCount,
+                            hasOtherProfiles = feedInput.hasOtherProfiles,
+                            activeProfileName = feedInput.activeProfileName,
+                        ).rankingRows
+                        shareStatisticsExport(
+                            context = context,
+                            options = options,
+                            content = StatisticsExportContent(
+                                semester = exportSemester,
+                                rankingRows = rankingRows,
+                            ),
+                            // 正文仍由 `StatisticsShareText` 用同一份 homeState 拼：
+                            // 图与文本降级路径的字同源，不会出现「图里一套、文字里一套」。
+                            text = StatisticsShareText.build(homeState),
+                            subject = StatisticsShareText.subject(),
+                        )
+                    },
+                )
+            }
         }
         "e.statisticsSettings" -> {
             StatisticsSettingsPage(

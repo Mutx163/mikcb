@@ -31,6 +31,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
+import com.mutx163.qingyu.app.AppLocaleRuntime
 import com.mutx163.qingyu.components.QingyuCard
 import com.mutx163.qingyu.components.QingyuGlassIconButton
 import com.mutx163.qingyu.components.QingyuPageCardMargin
@@ -40,8 +41,11 @@ import com.mutx163.qingyu.components.QingyuPageTheme
 import com.mutx163.qingyu.components.QingyuSectionTitle
 import com.mutx163.qingyu.components.QingyuWeightDelta
 import com.mutx163.qingyu.components.shiftWeight
+import com.mutx163.qingyu.pages.task.TaskStrings
 import com.mutx163.qingyu.theme.QingyuIconColors
 import com.mutx163.qingyu.theme.QingyuTheme
+import java.time.format.DateTimeFormatter
+import java.util.Locale
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TextButton
@@ -50,6 +54,7 @@ import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.ChevronForward
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import top.yukonga.miuix.kmp.icon.extended.Add
+import top.yukonga.miuix.kmp.icon.extended.Months
 
 /**
  * 日程列表页 · Compose 渲染层（Phase 3）。
@@ -110,26 +115,34 @@ fun ScheduleListPage(
                             .padding(24.dp),
                         contentAlignment = Alignment.Center,
                     ) {
-                        QingyuCard(
+                        // 口径 = 发布版 `schedule_list_screen.dart:85-98` 的
+                        // `HyperosEmptyState(icon: event_available_outlined, title, action)`：
+                        // 居中图标(48) + 16dp + 标题 + 20dp + 主操作按钮，**不套卡片**
+                        // （考试页 `ExamEmptyState`、待办页 `TaskEmptyState` 同版式）。
+                        // 图标语义取官方 `Months`（月历=「有日期/有安排」），与
+                        // `event_available_outlined` 最近；miuix 0.9.4 无「带勾日历」字形。
+                        Column(
                             modifier = Modifier.fillMaxWidth(),
-                            insideMargin = PaddingValues(24.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally,
                         ) {
-                            Column(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalAlignment = Alignment.CenterHorizontally,
-                                verticalArrangement = Arrangement.spacedBy(16.dp),
-                            ) {
-                                Text(
-                                    text = ScheduleStrings.scheduleListEmptyTitle.text,
-                                    style = MiuixTheme.textStyles.body1,
-                                    color = Color(QingyuTheme.secondaryText(dark)),
-                                )
-                                ScheduleActionButton(
-                                    text = ScheduleStrings.addScheduleAction.text,
-                                    onClick = onAddSchedule,
-                                    primary = true,
-                                )
-                            }
+                            Icon(
+                                imageVector = MiuixIcons.Months,
+                                contentDescription = null,
+                                tint = Color(QingyuTheme.secondaryText(dark)),
+                                modifier = Modifier.size(48.dp),
+                            )
+                            Spacer(modifier = Modifier.height(16.dp))
+                            Text(
+                                text = ScheduleStrings.scheduleListEmptyTitle.text,
+                                style = MiuixTheme.textStyles.headline1,
+                                color = Color(QingyuTheme.primaryText(dark)),
+                            )
+                            Spacer(modifier = Modifier.height(20.dp))
+                            ScheduleActionButton(
+                                text = ScheduleStrings.addScheduleAction.text,
+                                onClick = onAddSchedule,
+                                primary = true,
+                            )
                         }
                     }
                 }
@@ -379,17 +392,47 @@ private fun recurrenceBadgeLabel(item: ScheduleItemData): String? {
 
 private fun formatScheduleMeta(entry: ScheduleListEntry): String {
     val item = entry.item
-    val timeSpan = ScheduleStrings.scheduleTimeRange
-        .filled("start" to item.startTime, "end" to item.endTime)
 
+    // 跨天单次日程：发布版 `schedule_list_screen.dart:317-322` 的 `_timeLabel`
+    // 会退到 `scheduleTimeRange`，两端各写成「M月d日 + 时刻」（`:396-405`）。
+    // Kotlin 这一支原先借用了编辑表单的 `scheduleCrossDaySpanHint`（「从 … 持续到 …」）
+    // 且直接拼 ISO 日期，列表行与发布版对不上；这里改回区间模板。
     if (ScheduleDateUtils.isCrossDayRange(item)) {
-        return ScheduleStrings.scheduleCrossDaySpanHint
-            .filled("start" to "${item.startDate} ${item.startTime}", "end" to "${item.endDate} ${item.endTime}")
+        return ScheduleStrings.scheduleTimeRange.filled(
+            "start" to "${formatMonthDay(item.startDate)} ${item.startTime}",
+            "end" to "${formatMonthDay(item.endDate)} ${item.endTime}",
+        )
     }
 
     val date = entry.nextDate ?: item.endDate
     val weekday = ScheduleStrings.weekdayLabel(ScheduleDateUtils.dayOfWeek(date))
-    return "$date $weekday · $timeSpan"
+    val timeSpan = ScheduleStrings.scheduleTimeRange
+        .filled("start" to item.startTime, "end" to item.endTime)
+    // 发布版同日口径（`:407-421`）：日期「M月d日」+ 星期，再接「· 时刻区间」。
+    return "${formatMonthDay(date)} $weekday · $timeSpan"
+}
+
+/**
+ * 「M月d日」日期显示（对齐发布版 `schedule_list_screen.dart:400/409` 的 `DateFormat.MMMd`）。
+ *
+ * 单位词取 ARB 既有键（`datePickerMonth` / `datePickerDay`），与日程表单
+ * `AddScheduleItemPage.formatScheduleDateDisplay`（`:1105-1113`）同一口径——
+ * 不新造中文字面量（`CjkLiteralGateTest` 对 composeP1 是棘轮门禁）。
+ * 解析不出 ISO 日期时原样回显，不吞掉行。
+ */
+private fun formatMonthDay(iso: String): String {
+    val date = ScheduleDateUtils.parseDate(iso) ?: return iso
+    // 与发布版 `DateFormat.MMMd(l10n.localeName)` 同口径：受支持的中日韩语言
+    // 「M月d日」口径由 ARB 已有的 `datePickerMonth`/`datePickerDay` 拼出
+    // （en 的这两个键是单词 Month/Day，不能当后缀用）；英文按默认 Locale 的短月名 + 日。
+    // `AppLocaleRuntime.set` 会把 `Locale.setDefault` 一并改成当前 App 语言，
+    // 所以读默认 Locale 就是界面语言；未初始化（纯 JVM / 首帧前）按简体中文出字。
+    val language = AppLocaleRuntime.language ?: "zh"
+    if (language == "en") {
+        return date.format(DateTimeFormatter.ofPattern("MMMd", Locale.getDefault()))
+    }
+    return "${date.monthValue}${TaskStrings.datePickerMonth}" +
+        "${date.dayOfMonth}${TaskStrings.datePickerDay}"
 }
 
 private fun parseHexColor(hex: String?, fallback: Color): Color {

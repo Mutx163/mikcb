@@ -1,5 +1,6 @@
 package com.mutx163.qingyu.pages.statistics.charts
 
+import android.widget.Toast
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -27,14 +28,17 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.mutx163.qingyu.R
 import com.mutx163.qingyu.components.QingyuCard
+import com.mutx163.qingyu.components.QingyuSheet
 import com.mutx163.qingyu.components.QingyuWeightDelta
 import com.mutx163.qingyu.components.shiftWeight
+import com.mutx163.qingyu.pages.statistics.SemesterContent
 import com.mutx163.qingyu.statistics.Achievement
 import com.mutx163.qingyu.statistics.CourseSemesterStat
 import com.mutx163.qingyu.statistics.DataStory
@@ -528,5 +532,63 @@ fun StatisticsExportSheetContent(
         ) {
             Text(text = ExportSheetModel.actionLabel)
         }
+    }
+}
+
+// ══════════════════════ 导出文档的渲染输入 / 弹层入口 ══════════════════════
+
+/**
+ * 导出长图的渲染输入：屏上**已经算好**的学期内容 + 课程排行行。
+ *
+ * 为什么不直接要 `SemesterStats`：壳（`ShellPageIndex` 的 `e.statistics` 分支）
+ * 手里只有 `CourseStatisticsViewState`，原始统计对象在 `CourseStatisticsLogic`
+ * 内部就被折叠成这些视图模型了。把屏上同一份数据交给导出，天然不会出现
+ * 「屏上一套数、导出图另一套数」。
+ *
+ * 排行单独给：主页的学期内容块里没有排行（那是深度分析页的内容），
+ * 壳按 `StatisticsAnalysisModel.analysisViewState(RANKING, …)` 现算后传进来。
+ */
+data class StatisticsExportContent(
+    val semester: SemesterContent,
+    val rankingRows: List<Pair<String, String>>,
+)
+
+/**
+ * 导出模块选择弹层（Dart `showStatisticsExportSheet` 的外壳 + `_StatisticsExportSheet` 内容）。
+ *
+ * 外壳走共享 [QingyuSheet]（S1/S2 两条口径由套件统一给）；内容仍是
+ * [StatisticsExportSheetContent]（模块复选 + 开始导出，勾选项与发布版 `sheet:96-105` 同序）。
+ * 一个都没勾时**不关闭弹层**，弹一条警告 toast（Dart `sheet:68-74` 同款）。
+ *
+ * 弹层常驻组合：`show` 只驱动显隐，关闭时官方退场动画才能播完（与本仓弹层债收口同口径）。
+ */
+@Composable
+fun StatisticsExportSheet(
+    show: Boolean,
+    hasAchievements: Boolean,
+    hasStories: Boolean,
+    dark: Boolean,
+    onDismissRequest: () -> Unit,
+    onConfirm: (StatisticsExportOptions) -> Unit,
+) {
+    val context = LocalContext.current
+    QingyuSheet(
+        show = show,
+        onDismissRequest = onDismissRequest,
+        title = ExportSheetModel.sheetTitle,
+    ) {
+        StatisticsExportSheetContent(
+            hasAchievements = hasAchievements,
+            hasStories = hasStories,
+            dark = dark,
+            onConfirm = onConfirm,
+            onEmptySelection = {
+                Toast.makeText(
+                    context,
+                    ExportSheetModel.submitHintOrNull(emptySet()).orEmpty(),
+                    Toast.LENGTH_SHORT,
+                ).show()
+            },
+        )
     }
 }
