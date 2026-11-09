@@ -120,18 +120,107 @@ class DayAgendaWallpaperInkWiringGuardTest {
         // 只看发给日视图滚动内容的那次调用（页面里别的组件按自己的区域取带子）。
         val scrollCall = callBlock(page, "DayViewScrollContent(")
         assertTrue(
-            "DayViewPage 没有把**正文带**亮度传给议程列表（`wallpaperLuminance = wallpaperBands?.body`）",
-            scrollCall.contains("wallpaperLuminance = wallpaperBands?.body"),
+            "DayViewPage 没有把**正文带**亮度传给议程列表（`wallpaperLuminance = effectiveWallpaperBands?.body`）",
+            scrollCall.contains("wallpaperLuminance = effectiveWallpaperBands?.body"),
         )
         assertTrue(
             "DayViewPage 没有把**星期栏带**亮度传给摘要卡" +
-                "（`summaryWallpaperLuminance = wallpaperBands?.weekday`）",
-            scrollCall.contains("summaryWallpaperLuminance = wallpaperBands?.weekday"),
+                "（`summaryWallpaperLuminance = effectiveWallpaperBands?.weekday`）",
+            scrollCall.contains("summaryWallpaperLuminance = effectiveWallpaperBands?.weekday"),
         )
         // 反着传的形态直接判红（这正是复核复现过的假绿绕过面）。
         assertFalse(
-            "摘要卡拿成了正文带：`summaryWallpaperLuminance = wallpaperBands?.body`",
-            scrollCall.contains("summaryWallpaperLuminance = wallpaperBands?.body"),
+            "摘要卡拿成了正文带：`summaryWallpaperLuminance = …?.body`",
+            scrollCall.contains("summaryWallpaperLuminance = effectiveWallpaperBands?.body") ||
+                scrollCall.contains("summaryWallpaperLuminance = wallpaperBands?.body"),
+        )
+        // 亮度带必须来自「嵌入时先借宿主那份」的单一变量，不能直接裸用参数。
+        assertFalse(
+            "DayViewPage 又绕开 `effectiveWallpaperBands` 直接用 `wallpaperBands`：" +
+                "嵌入首页时那份是 null（本页不画壁纸 → 量不到），空态 / 卡片会退回主题墨色。",
+            scrollCall.contains("wallpaperLuminance = wallpaperBands?") ||
+                scrollCall.contains("summaryWallpaperLuminance = wallpaperBands?"),
+        )
+    }
+
+    /**
+     * 嵌入首页的日页拿不到壁纸亮度（2026-11-09 用户报「暂无课程 / 第 N 周不跟壁纸翻黑白」）。
+     *
+     * 日页在展开层里**不画壁纸**（壁纸由页面级静态底画）⇒ 它自己的
+     * `HomeWallpaperBackdrop` / `onInkBands` 永远不会跑，`wallpaperBands` 只能靠缓存撞运气。
+     * 宿主 `TimetableWeekPage` 手上有量好的带子，必须经 `LocalEmbeddedDayInkBands` 交下去。
+     */
+    @Test
+    fun `嵌入首页的日页必须借宿主的壁纸亮度带`() {
+        val page = readSource("$dayDir/DayViewPage.kt")
+        assertTrue(
+            "DayViewPage 没有定义 `LocalEmbeddedDayInkBands`：嵌入日页永远拿不到亮度带，" +
+                "深壁纸上的空态与卡片会退回主题 / 不透明卡色墨（深底深字）。",
+            page.contains("val LocalEmbeddedDayInkBands ="),
+        )
+        assertTrue(
+            "DayViewPage 没有「嵌入时优先用宿主那份」的取值" +
+                "（缺 `LocalEmbeddedDayInkBands.current ?: wallpaperBands`）",
+            page.contains("LocalEmbeddedDayInkBands.current ?: wallpaperBands"),
+        )
+
+        val weekPage = readSource(
+            "android/app/src/composeP1/kotlin/com/mutx163/qingyu/pages/timetable/TimetableWeekPage.kt",
+        )
+        val provideCount = Regex("LocalEmbeddedDayInkBands provides wallpaperBands")
+            .findAll(weekPage)
+            .count()
+        assertTrue(
+            "TimetableWeekPage 没有把 `wallpaperBands` 交给展开层里的日页" +
+                "（实际 `LocalEmbeddedDayInkBands provides wallpaperBands` 出现 $provideCount 次）：" +
+                "横滑支与上下翻支两条进日视图的路都要提供，漏一条那条路上的日页就没有亮度带。",
+            provideCount >= 2,
+        )
+    }
+
+    /**
+     * 空态的字色必须接**同一条**「亮 / 暗两档星期栏字色」设置（Dart `day_view_empty_state.dart`）。
+     *
+     * 2026-11-09 之前这里写死 `configuredArgb = null`：设置里改星期栏字色、切换黑白主题，
+     * 空态「暂无课程 / 第 N 周」一个字都不变——用户报的「没适配黑白」就是这一条。
+     */
+    @Test
+    fun `空态必须接星期栏的亮暗两档字色`() {
+        val empty = readSource("$dayDir/DayViewEmptyState.kt")
+        assertTrue(
+            "DayViewEmptyState 没有把配置字色传进 `inkOverWallpaperArgb`" +
+                "（`configuredArgb = HomeBackgroundModel.parseInkArgb(configuredArgbHex)`）",
+            empty.contains("configuredArgb = HomeBackgroundModel.parseInkArgb(configuredArgbHex)"),
+        )
+        assertTrue(
+            "DayViewEmptyState 没有传「内置默认值」给翻黑白判据（`builtInDefaultArgb`）：" +
+                "不分「没改过」与「用户选中白色」，深壁纸上的默认字会被当成自定义色保留。",
+            empty.contains("builtInDefaultArgb = HomeBackgroundModel.parseInkArgb(defaultInkHex)"),
+        )
+        assertTrue(
+            "DayViewEmptyState 的副标题没有压淡标题墨（Dart `homePageOverWallpaperMutedInk(titleColor)`）：" +
+                "自定义字色 / 壁纸翻面时主句与副句会分成两套冷暖。",
+            empty.contains("mutedInkOverWallpaperArgb(titleArgb)"),
+        )
+
+        val scroll = readSource("$dayDir/DayViewScrollContent.kt")
+        val emptyCall = callBlock(scroll, "DayViewEmptyState(")
+        assertTrue(
+            "DayViewScrollContent 没有把星期栏字色传给空态（`configuredArgbHex`）",
+            emptyCall.contains("configuredArgbHex = summaryWeekdayFontColorHex"),
+        )
+        assertTrue(
+            "DayViewScrollContent 没有把字色的内置默认值传给空态（`defaultInkHex`）",
+            emptyCall.contains("defaultInkHex = summaryWeekdayFontDefaultHex"),
+        )
+
+        val page = readSource("$dayDir/DayViewPage.kt")
+        val scrollCall = callBlock(page, "DayViewScrollContent(")
+        assertTrue(
+            "DayViewPage 没有按明暗档把星期栏字色传给滚动内容" +
+                "（`summaryWeekdayFontColorHex = if (dark) weekdayStyle.weekdayFontColorDark else …`）",
+            scrollCall.contains("weekdayStyle.weekdayFontColorDark") &&
+                scrollCall.contains("weekdayStyle.weekdayFontColorLight"),
         )
     }
 
@@ -218,9 +307,11 @@ class DayAgendaWallpaperInkWiringGuardTest {
         )) {
             val source = readSource(path)
             assertTrue(
-                "$path 的 `fallbackArgb` 没有走 `CourseCardInk.bestContrastInk(`：" +
-                    "实心档不露壁纸，但仍要按卡色自身的 WCAG 亮度择优。",
-                source.contains("fallbackArgb = CourseCardInk.bestContrastInk("),
+                "$path 的实心档没有走 `CourseCardInk.bestContrastInk(`：" +
+                    "实心档不露壁纸，但仍要按卡色自身的 WCAG 亮度择优。" +
+                    "（课程卡关掉「课程颜色」时走主题前景色是另一支：那里卡面就是主题 surface，" +
+                    "与摘要卡同口径；非本周灰、其余三张卡仍必须按卡色亮度算。）",
+                source.contains("CourseCardInk.bestContrastInk("),
             )
             assertFalse(
                 "$path 又用回 `calculateCardInk(` / 写死白字：实心档墨色必须按卡色亮度算。",
@@ -372,6 +463,80 @@ class DayAgendaWallpaperInkWiringGuardTest {
         assertFalse(
             "外观预览把壁纸存在信号与材质开关相与了",
             editorCall.contains("hasWallpaper = glassSurfacesEnabled &&"),
+        )
+    }
+
+    /**
+     * 空态必须**钉在页面上**，不许跟着手指滑（2026-11-09 用户口径）。
+     *
+     * 以前它是 `LazyColumn` 里的一个 item，高度按「一屏 − 缝 − 概览卡 − 避让」算；
+     * 下拉橡皮筋 / 上滑时整块跟着走。现在拆成列表**下面**的固定层：静止时位置不变，
+     * 拖动时只有列表（概览卡）动，文字不动。
+     */
+    @Test
+    fun `空态必须固定，不进滚动列表`() {
+        val scroll = readSource("$dayDir/DayViewScrollContent.kt")
+        assertFalse(
+            "`day-empty-state-item` 又回到列表里了：空态一旦是 LazyColumn 的 item，" +
+                "上下滑时就会跟着手走（用户 2026-11-09 明要求固定）。",
+            scroll.contains("day-empty-state-item"),
+        )
+        val emptyIndex = scroll.indexOf("DayViewEmptyState(")
+        val listIndex = scroll.indexOf("LazyColumn(")
+        assertTrue(
+            "源码里找不到 `DayViewEmptyState(` 的调用",
+            emptyIndex >= 0,
+        )
+        assertTrue(
+            "源码里找不到 `LazyColumn(` 的调用",
+            listIndex >= 0,
+        )
+        assertTrue(
+            "`DayViewEmptyState(` 不得出现在 `LazyColumn(` 之后（那样又变成列表里的滚动项）",
+            emptyIndex < listIndex,
+        )
+        assertTrue(
+            "空态没有包在固定层里：外层应该是 `Box(modifier = modifier.fillMaxSize())`",
+            scroll.contains("Box(modifier = modifier.fillMaxSize()) {"),
+        )
+    }
+
+    /**
+     * 空态也要认**页底亮度**（2026-11-09 用户报「暂无课程位置背景是黑的，字也是黑的」）。
+     *
+     * 没壁纸时 `wallpaperLuminance` 恒为 null：只认它的空态会退回主题墨色（亮色主题 `#333`），
+     * 压在纯黑页底色上直接看不见。四张议程卡从 2026-11-07 起就接了 `pageBackgroundLuminance`，
+     * 空态漏了这一层 —— 这里同时钉住「取值的组合」与「逐层下传」。
+     */
+    @Test
+    fun `空态必须按页底亮度兜底`() {
+        val empty = readSource("$dayDir/DayViewEmptyState.kt")
+        assertTrue(
+            "DayViewEmptyState 没有把页底亮度纳入判墨（缺 `wallpaperLuminance ?: pageBackgroundLuminance`）：" +
+                "没壁纸 + 深页底色时会给深字，深底深字看不见。",
+            empty.contains("val backdropLuminance = wallpaperLuminance ?: pageBackgroundLuminance"),
+        )
+        assertTrue(
+            "DayViewEmptyState 没有把组合后的亮度交给 `inkOverWallpaperArgb`",
+            empty.contains("wallpaperLuminance = backdropLuminance,"),
+        )
+
+        val scroll = readSource("$dayDir/DayViewScrollContent.kt")
+        assertTrue(
+            "DayViewScrollContent 调用空态时没传 `pageBackgroundLuminance = pageBackgroundLuminance`",
+            callBlock(scroll, "DayViewEmptyState(")
+                .contains("pageBackgroundLuminance = pageBackgroundLuminance"),
+        )
+
+        val page = readSource("$dayDir/DayViewPage.kt")
+        assertTrue(
+            "DayViewPage 没有把页底亮度传给日视图滚动内容",
+            callBlock(page, "DayViewScrollContent(")
+                .contains("pageBackgroundLuminance = pageBackgroundLuminance"),
+        )
+        assertTrue(
+            "DayViewPage 的页底亮度不再走门控（有壁纸但亮度未就绪时会把页底当壁纸判墨）",
+            page.contains("dayAgendaPageFallbackLuminance("),
         )
     }
 

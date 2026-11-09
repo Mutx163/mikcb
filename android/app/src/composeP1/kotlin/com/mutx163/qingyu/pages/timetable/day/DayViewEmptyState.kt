@@ -37,31 +37,46 @@ fun DayViewEmptyState(
      * 深壁纸上的「暂无课程」以前是深色主题字 ⇒ 黑字压黑底看不见（2026-11-01 用户报）。
      */
     wallpaperLuminance: Double? = null,
+    /**
+     * 没壁纸时文字实际压着的**页底**亮度（自定义页底色优先，缺省主题页底）。
+     *
+     * 低了这一步就会出现「壁纸/页底是黑的、字也是黑的」：空态只认 [wallpaperLuminance]，
+     * 没壁纸时它恒为 null，于是退回主题墨色（亮色主题 `#333`），压在纯黑页底上直接看不见。
+     * 四张议程卡从 2026-11-07 起就认这个值，空态一直没接（2026-11-09 用户实报）。
+     *
+     * 有壁纸但亮度还没量到时这个值由页面**门控成 null**（见 `dayAgendaPageFallbackLuminance`），
+     * 不会把页底当成壁纸来判墨。
+     */
+    pageBackgroundLuminance: Double? = null,
+    /**
+     * 用户自定义的**星期栏字色**（hex，`WeekViewStyle.weekdayFontColorLight/Dark`）。
+     *
+     * 空态与星期栏 / 摘要卡用同一组设置（Dart `day_view_empty_state.dart:44-52` 传的就是
+     * `settings.weekdayBarFontColorLight/Dark`）。2026-11-09 之前这里写死 `configuredArgb = null`，
+     * 于是这组「亮暗两档字色」在空态上完全不生效：改设置、切黑白主题，空态一个字都不变。
+     */
+    configuredArgbHex: String? = null,
+    /**
+     * 上面那组设置的**内置默认值**（hex）：等于它时视作「没改过」⇒ 按壁纸亮度翻黑 / 白。
+     * null = 没有默认值可比 ⇒ 自定义色永远优先（不走进自动翻面）。
+     */
+    defaultInkHex: String? = null,
     modifier: Modifier = Modifier,
 ) {
     val dark = isSystemInDarkTheme()
-    val titleColor = Color(
-        HomeBackgroundModel.inkOverWallpaperArgb(
-            configuredArgb = null,
-            fallbackArgb = QingyuTheme.primaryText(dark),
-            wallpaperLuminance = wallpaperLuminance,
-        ),
+    // 判墨的底：壁纸优先（真压在照片上），没壁纸用页底（自定义深/浅页底色也能翻对）。
+    val backdropLuminance = wallpaperLuminance ?: pageBackgroundLuminance
+    val titleArgb = HomeBackgroundModel.inkOverWallpaperArgb(
+        configuredArgb = HomeBackgroundModel.parseInkArgb(configuredArgbHex),
+        fallbackArgb = QingyuTheme.primaryText(dark),
+        wallpaperLuminance = backdropLuminance,
+        builtInDefaultArgb = HomeBackgroundModel.parseInkArgb(defaultInkHex),
     )
-    // 次级墨色只在**压在壁纸上**时压淡（Dart `homePageOverWallpaperMutedInk`）；
-    // 没壁纸保持原来的主题次级色，不无端多压一层 alpha。
-    val subtitleColor = if (wallpaperLuminance == null) {
-        Color(QingyuTheme.secondaryText(dark))
-    } else {
-        Color(
-            HomeBackgroundModel.mutedInkOverWallpaperArgb(
-                HomeBackgroundModel.inkOverWallpaperArgb(
-                    configuredArgb = null,
-                    fallbackArgb = QingyuTheme.secondaryText(dark),
-                    wallpaperLuminance = wallpaperLuminance,
-                ),
-            ),
-        )
-    }
+    val titleColor = Color(titleArgb)
+    // 副标题是标题墨压淡一档（Dart `day_view_empty_state.dart:53` 无条件
+    // `homePageOverWallpaperMutedInk(titleColor)`）：两行永远同一套冷暖，
+    // 自定义字色 / 壁纸翻面时不会出现「主句白了、副句还留着主题灰」。
+    val subtitleColor = Color(HomeBackgroundModel.mutedInkOverWallpaperArgb(titleArgb))
 
     // Dart `day_view_empty_state.dart:64-66`：副标题只有「第 N 周」一条。
     // 2026-10-31 审核：这里曾拼成「第 N 周 · 周X」，而上一行的摘要卡已经写着日期与星期，

@@ -18,6 +18,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalDensity
@@ -44,7 +45,8 @@ import top.yukonga.miuix.kmp.blur.Backdrop
  *   1. 全天概览卡（SummaryCard）；
  *   2. 全天待办折叠带（[DayViewTaskBandCard]，若有任务）；
  *   3. 议程列表（各卡片按时间严格稳定排序）；
- *   4. 空态卡片（[DayViewEmptyState]，在无课程且无日程且无待办时居中展示）。
+ *   4. 空态（[DayViewEmptyState]）：无课程且无日程且无待办时**固定在视口里居中**，
+ *      不进 [`LazyColumn`]（2026-11-09 用户口径：上下滑时「暂无课程 / 第 N 周」不许跟着手走）。
  */
 @Composable
 fun DayViewScrollContent(
@@ -67,10 +69,17 @@ fun DayViewScrollContent(
     onViewAllOverdue: (() -> Unit)? = null,
     courseResolver: (CourseTask) -> Course? = { null },
     weatherLines: Map<String, String> = emptyMap(),
+    /**
+     * 天气预报「该有、但还没到」：课程卡先占住天气行的高度（不可见），到货后淡入。
+     * 装配层已按「开关 + 城市 + 未失败」门控过（`DayViewDay.weatherAwaiting`）。
+     */
+    weatherAwaiting: Boolean = false,
     /** 「课卡显示冲突角标」开关（Dart `showConflictBadgeOnTimetable`）。 */
     showConflictBadge: Boolean = true,
     /** 冲突课程卡面透明度（设置 `timetableConflictCourseOpacity`，默认 0.70）。见 [DayViewCourseCard]。 */
     conflictCourseOpacity: Float = 0.70f,
+    /** 课程卡是否按课程颜色上色（设置 `dayViewUseCourseColor`）。见 [DayViewCourseCard]。 */
+    useCourseColors: Boolean = true,
     /**
      * 材质快照（`SettingsMaterialModel.renderSpecOf`）。整页一份，逐卡下传。
      * null = 老行为（各卡原有的实体填充）。
@@ -101,7 +110,14 @@ fun DayViewScrollContent(
      * null = 没壁纸 / 亮度未知 ⇒ 摘要卡用主题前景色。
      */
     summaryWallpaperLuminance: Double? = null,
-    /** 摘要卡用的自定义星期栏字色（hex）与默认值（hex，用于识别"没改过=按亮度翻"）。 */
+    /**
+     * 自定义**星期栏字色**（hex）与它的内置默认值（hex，用于识别「没改过 = 按亮度翻黑白」）。
+     *
+     * 摘要卡与空态共用这一对：Dart 两处读的是同一组设置
+     * （`day_view_summary_card.dart` 与 `day_view_empty_state.dart:44-52` 都取
+     * `weekdayBarFontColorLight/Dark`）。空态原先没接，于是「亮/暗两档字色」只在摘要卡上生效，
+     * 空态的「暂无课程 / 第 N 周」两档永远按主题硬走（2026-11-09 用户报）。
+     */
     summaryWeekdayFontColorHex: String? = null,
     summaryWeekdayFontDefaultHex: String? = null,
     /**
@@ -111,6 +127,13 @@ fun DayViewScrollContent(
      * 盒子还含 12dp 下呼吸间距，量成盒子会让落点整体偏下 12dp。
      */
     summaryModifier: Modifier = Modifier,
+    /**
+     * 列表顶部要额外补的**下穿留白**（dp，= 首页顶栏玻璃带的高度）。
+     *
+     * 非 0 时列表视口已被宿主向上接到屏幕顶，这里补一个等高 item，第 1 张卡仍停在
+     * 带子下沿；上滑时卡片才能滑进玻璃带底下（2026-11-08）。独立日页 / 预览传 0。
+     */
+    topUnderlap: Dp = 0.dp,
     modifier: Modifier = Modifier,
     lazyListState: LazyListState = rememberLazyListState(),
     contentPadding: PaddingValues = PaddingValues(
@@ -123,14 +146,13 @@ fun DayViewScrollContent(
         bottom = bottomInset,
     ),
 ) {
-    var viewportHeightPx by remember { mutableIntStateOf(0) }
     val density = LocalDensity.current
-    val bottomPaddingPx = with(density) { contentPadding.calculateBottomPadding().toPx() }
     val topSeamPx = with(density) { DAY_VIEW_TOP_SEAM_DP.dp.roundToPx() }
-    // 概览卡的实测高（含它下面 12dp 呼吸间距）：空日的空白块要按「一屏 − 缝 − 概览卡」
-    // 算高，整串内容才能正好一屏（见空态那一段）。
+    val topUnderlapPx = with(density) { topUnderlap.roundToPx() }
+    // 概览卡的实测高（含它下面 12dp 呼吸间距）：空态固定层按它把文字推到卡片下方，
+    // 静止时与「跟在概览卡后面」逐像素一致（见下方空态那一段）。
     var summaryHeightPx by remember { mutableIntStateOf(0) }
-    // 空日 = 无课程、无日程、无待办：列表只剩「顶缝 + 概览卡 + 空态块」。
+    // 空日 = 无课程、无日程、无待办：正文只剩「顶缝 + 概览卡」，空态走固定层。
     val flatDay = agendaEntries.isEmpty() && (taskBandData == null || taskBandData.isEmpty)
 
     // ── 短日不做补白（2026-11-08 撤掉）──
@@ -144,112 +166,106 @@ fun DayViewScrollContent(
     // 同一个弹簧、同样的速度衰减）。内容真的超过一屏时，上滑就是滚内容、到边界才拉伸，
     // 这也是正确行为。因此下面不再有「补白 / 内容高探测 / 松手回顶」的状态与副作用。
 
-    LazyColumn(
-        state = lazyListState,
-        modifier = modifier
-            .fillMaxSize()
-            .onSizeChanged { viewportHeightPx = it.height }
-            .scrollEndHaptic()
-            .overScrollVertical(),
-        contentPadding = contentPadding,
-        ) {
-        // ── 顶部留缝（14dp，与 Dart `timetable_day_view_part.dart:37` 同数值）──
-        // 放在**列表里**而不是滚动区外面：静止时首卡离星期栏 14dp，上滑时这道缝跟着
-        // 一起滚走，屏幕上不会留一条永远滚不走的空带。
-        item(key = "day-top-seam") {
-            Spacer(modifier = Modifier.height(DAY_VIEW_TOP_SEAM_DP.dp))
-        }
-
-        // ── 全天概览卡（普通条目，不吸顶）──
-        // 2026-11-08 用户口径：下拉时概览卡与课卡一起动，上滑却被钉住、只让下面的卡
-        // 一段段穿过去——同一屏两种手势两种行为，读作「很奇怪」。改成普通条目后上下
-        // 都是整体滚动，手势方向不再决定「谁在动」。
-        //
-        // 代价：上滑以后当天概览卡会跟着滚出屏幕（吸顶原本就是为让它常驻）。
-        // 键名保留 `day-summary-sticky-header`：它是这一条的保存状态身份，改名会让
-        // 已经记住的滚动位置失效。
-        //
-        // 12dp 的下内边距是概览卡与议程列表之间的呼吸间距。
-        item(key = "day-summary-sticky-header") {
+    Box(modifier = modifier.fillMaxSize()) {
+        // ── 空态：**固定层**，不随列表滚动（2026-11-09）──
+        if (flatDay) {
             Box(
                 modifier = Modifier
-                    .fillMaxWidth()
-                    // 量的是**含 12dp 呼吸间距**的整条（修饰符在 `padding` 之前，报的是外层尺寸），
-                    // 空态块按它反推剩余高。
-                    .onSizeChanged { summaryHeightPx = it.height }
-                    .padding(bottom = 12.dp),
+                    .fillMaxSize()
+                    .padding(contentPadding)
+                    .padding(
+                        top = with(density) {
+                            (topUnderlapPx + topSeamPx + summaryHeightPx).toDp()
+                        },
+                    ),
+                contentAlignment = Alignment.Center,
             ) {
-                DayViewSummaryCard(
-                    state = summaryState,
-                    onClose = onCloseToWeekView,
-                    material = material,
-                    glassBackdrop = glassBackdrop,
-                    wallpaperLuminance = summaryWallpaperLuminance,
-                    weekdayFontColorHex = summaryWeekdayFontColorHex,
-                    weekdayFontColorDefaultHex = summaryWeekdayFontDefaultHex,
-                    modifier = summaryModifier,
-                )
-            }
-        }
-
-        // ── 全天待办带（有任务时展示，折叠或展开） ──
-        if (taskBandData != null && taskBandData.isNotEmpty) {
-            item(key = "day-task-band-item") {
-                DayViewTaskBandCard(
-                    data = taskBandData,
-                    onToggleTask = onToggleTask,
-                    onEditTask = onOpenTask,
-                    onViewAllOverdue = onViewAllOverdue,
-                    courseResolver = courseResolver,
-                    material = material,
-                    glassBackdrop = glassBackdrop,
+                DayViewEmptyState(
+                    week = summaryState.week,
+                    dayOfWeek = dayOfWeek,
                     wallpaperLuminance = wallpaperLuminance,
+                    // 没壁纸时按页底亮度判墨：纯黑页底色 + 主题深灰字 = 看不见（2026-11-09 用户报）。
+                    pageBackgroundLuminance = pageBackgroundLuminance,
+                    configuredArgbHex = summaryWeekdayFontColorHex,
+                    defaultInkHex = summaryWeekdayFontDefaultHex,
                 )
-                Spacer(modifier = Modifier.height(8.dp))
             }
         }
 
-        // ── 空态卡片（无课程且无日程且无待办时展示） ──
-        if (flatDay) {
-            item(key = "day-empty-state-item") {
-                // Dart 是 `SliverFillRemaining(hasScrollBody: false)` ⇒ 空态在可视区里垂直居中；
-                // 直接当普通 item 摆会贴在摘要卡下面（2026-10-31 审核 P2-7）。
-                //
-                // 2026-11-08：空日整串内容必须**正好一屏**。以前它是 item 的「一屏高」，
-                // 于是多出了「顶缝 + 概览卡」这一截可滚距离；概览卡不再吸顶以后，那截距离
-                // 就把概览卡推到星期栏下沿停住（在范围内，不会回弹）—— 用户报的现象。
-                // 这里按「一屏 − 顶缝 − 概览卡 − 底部避让」给空态块定高，可滚距离归零，
-                // 上滑只剩橡皮筋，松手自然弹回。
-                //
-                // 首帧还没量到（viewport / 概览卡为 0）时退回 `fillParentMaxHeight`：
-                // 与改前一致，下一帧纠正，不会漏画一屏。
-                val emptyHeightDp = if (viewportHeightPx > 0 && summaryHeightPx > 0) {
-                    with(density) {
-                        (viewportHeightPx - topSeamPx - summaryHeightPx - bottomPaddingPx.toInt())
-                            .coerceAtLeast(0)
-                            .toDp()
-                    }
-                } else {
-                    null
+        LazyColumn(
+            state = lazyListState,
+            // `modifier` 已经挂在外层 Box 上，这里不能再用一次（padding 之类会被算两遍）。
+            modifier = Modifier
+                .fillMaxSize()
+                .scrollEndHaptic()
+                .overScrollVertical(),
+            contentPadding = contentPadding,
+        ) {
+            // —— 下穿留白（首页展开层）：列表视口已接到屏幕顶，这截把第 1 张卡顶回带子下沿。
+            // 它必须是一个 item（不能是 contentPadding）：滑动时要跟着滚走，卡片才能真的
+            // 钻进带子底下。键位固定，不因 create/destroy 改变列表位置身份。
+            if (topUnderlapPx > 0) {
+                item(key = "day-top-underlap") {
+                    Spacer(modifier = Modifier.height(topUnderlap))
                 }
+            }
+
+            // ── 顶部留缝（14dp，与 Dart `timetable_day_view_part.dart:37` 同数值）──
+            // 放在**列表里**而不是滚动区外面：静止时首卡离星期栏 14dp，上滑时这道缝跟着
+            // 一起滚走，屏幕上不会留一条永远滚不走的空带。
+            item(key = "day-top-seam") {
+                Spacer(modifier = Modifier.height(DAY_VIEW_TOP_SEAM_DP.dp))
+            }
+
+            // ── 全天概览卡（普通条目，不吸顶）──
+            // 2026-11-08 用户口径：下拉时概览卡与课卡一起动，上滑却被钉住、只让下面的卡
+            // 一段段穿过去——同一屏两种手势两种行为，读作「很奇怪」。改成普通条目后上下
+            // 都是整体滚动，手势方向不再决定「谁在动」。
+            //
+            // 代价：上滑以后当天概览卡会跟着滚出屏幕（吸顶原本就是为让它常驻）。
+            // 键名保留 `day-summary-sticky-header`：它是这一条的保存状态身份，改名会让
+            // 已经记住的滚动位置失效。
+            //
+            // 12dp 的下内边距是概览卡与议程列表之间的呼吸间距。
+            item(key = "day-summary-sticky-header") {
                 Box(
-                    modifier = if (emptyHeightDp != null) {
-                        Modifier
-                            .fillMaxWidth()
-                            .height(emptyHeightDp)
-                    } else {
-                        Modifier.fillParentMaxHeight()
-                    },
-                    contentAlignment = androidx.compose.ui.Alignment.Center,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        // 量的是**含 12dp 呼吸间距**的整条（修饰符在 `padding` 之前，报的是外层尺寸），
+                        // 空态块按它反推剩余高。
+                        .onSizeChanged { summaryHeightPx = it.height }
+                        .padding(bottom = 12.dp),
                 ) {
-                    DayViewEmptyState(
-                        week = summaryState.week,
-                        dayOfWeek = dayOfWeek,
-                        wallpaperLuminance = wallpaperLuminance,
+                    DayViewSummaryCard(
+                        state = summaryState,
+                        onClose = onCloseToWeekView,
+                        material = material,
+                        glassBackdrop = glassBackdrop,
+                        wallpaperLuminance = summaryWallpaperLuminance,
+                        weekdayFontColorHex = summaryWeekdayFontColorHex,
+                        weekdayFontColorDefaultHex = summaryWeekdayFontDefaultHex,
+                        modifier = summaryModifier,
                     )
                 }
             }
-        } else {
+
+            // ── 全天待办带（有任务时展示，折叠或展开） ──
+            if (taskBandData != null && taskBandData.isNotEmpty) {
+                item(key = "day-task-band-item") {
+                    DayViewTaskBandCard(
+                        data = taskBandData,
+                        onToggleTask = onToggleTask,
+                        onEditTask = onOpenTask,
+                        onViewAllOverdue = onViewAllOverdue,
+                        courseResolver = courseResolver,
+                        material = material,
+                        glassBackdrop = glassBackdrop,
+                        wallpaperLuminance = wallpaperLuminance,
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                }
+            }
+
             // ── 议程列表（各卡片按时间稳定排序） ──
             items(
                 items = agendaEntries,
@@ -269,8 +285,10 @@ fun DayViewScrollContent(
                             onOpenTask = onOpenCourseTask?.let { open -> { open(entry.course.id, viewedWeek) } },
                             hasTask = courseTaskPresenceMap[entry.course.id] == true,
                             weatherInfo = weatherLines[entry.id],
+                            weatherAwaiting = weatherAwaiting,
                             showConflictBadge = showConflictBadge,
                             conflictCourseOpacity = conflictCourseOpacity,
+                            useCourseColor = useCourseColors,
                             material = material,
                             glassBackdrop = glassBackdrop,
                             wallpaperLuminance = wallpaperLuminance,

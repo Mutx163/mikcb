@@ -85,7 +85,9 @@ class DockSwitchNoDayReplayGuardTest {
         assertTrue("TimetableWeekPage 缺 daySwitchHorizontal 分支参数。", weekPage.contains("daySwitchHorizontal: Boolean = false"))
         // 上下翻几何仍在（点星期栏用），且默认 animate=true 时仍 animateTo。
         assertTrue("TimetableWeekPage 丢了 dayExpand.animateTo（会变成纯 snap）。", weekPage.contains("dayExpand.animateTo("))
-        assertTrue("TimetableWeekPage 的 top-down 几何（max(0.04f, progress)）不见了", weekPage.contains("max(0.04f, progress)"))
+        // 2026-11-09：高度公式挪进 `dayPanelHeightPx`（日页下穿带高），这里钉调用；
+        // 公式本体由 TimetableBandUnderlapTest 的纯函数用例覆盖。
+        assertTrue("TimetableWeekPage 的 top-down 几何（dayPanelHeightPx）不见了", weekPage.contains("dayPanelHeightPx("))
         assertTrue("TimetableWeekPage 的 top-down 几何（Alignment.TopCenter）不见了", weekPage.contains("Alignment.TopCenter"))
     }
 

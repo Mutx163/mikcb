@@ -57,9 +57,24 @@ class TimetableBandUnderlapGuardTest {
     fun `带子必须采第二遍玻璃`() {
         assertTrue(
             "周页面没有把录制层交给带子的 underlayBackdrop —— 玻璃只看得到壁纸，看不到课卡。",
-            weekPageSource.contains(
-                Regex("""underlayBackdrop\s*=\s*bandStripBackdrop\.takeIf"""),
-            ),
+            weekPageSource.contains(Regex("""underlayBackdrop\s*=""")) &&
+                weekPageSource.contains("bandStripBackdrop.takeIf"),
+        )
+        assertTrue(
+            "日视图没有自己的条带录制层（dayStripBackdrop）—— 日卡滑进星期栏也看不到玻璃。",
+            weekPageSource.contains("dayStripBackdrop") &&
+                weekPageSource.contains("dayStripBackdrop.takeIf"),
+        )
+        assertTrue(
+            "日页没有接到带子底下（bandUnderlap / LocalEmbeddedDayUnderlapBand 缺一）—— " +
+                "日视图上滑仍会在带子下沿硬切。",
+            weekPageSource.contains("LocalEmbeddedDayUnderlapBand") &&
+                weekPageSource.contains(".bandUnderlap {"),
+        )
+        assertTrue(
+            "时间列没有被排除出第二遍条带（clipRect 左边界仍从 0 起）—— 节次时间表会糊成黑柱。",
+            weekPageSource.contains("timeColumnWidthPx") &&
+                weekPageSource.contains("clipRect(left, 0f, right, strip.toFloat())"),
         )
         assertTrue(
             "录制层没有按带子高度夹住（clipRect / timetableBandStripPx 不在场）—— " +

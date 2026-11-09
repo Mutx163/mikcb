@@ -44,6 +44,12 @@ data class DayViewDay(
     val courseTaskPresence: Map<String, Boolean>,
     /** 议程条目 id → 该条目的天气一行（无数据/未开启时为空）。 */
     val weatherLines: Map<String, String> = emptyMap(),
+    /**
+     * 天气「该有、但还没拿到」：日卡据此先占住天气那一行的高度（不可见），
+     * 数据到了再淡入 —— 否则整张卡会突然长高一行，下方内容跟着往下跳。
+     * 仅在「天气开关开着 + 已选城市 + 预报未到 / 未失败」时为真。
+     */
+    val weatherAwaiting: Boolean = false,
 )
 
 /**
@@ -102,6 +108,8 @@ object DayViewDataAssembler {
         now: LocalDateTime = LocalDateTime.now(),
         showNonCurrentWeekCourses: Boolean = false,
         weatherOf: ((date: LocalDate?, course: Course) -> String?)? = null,
+        /** 天气还没到手（见 [DayViewDay.weatherAwaiting]）；只影响日卡那一行是否预留高度。 */
+        weatherAwaiting: Boolean = false,
         partnerOverlay: CoupleOverlay? = null,
     ): DayViewDay {
         val today = now.toLocalDate()
@@ -290,6 +298,7 @@ object DayViewDataAssembler {
             taskBandData = taskBand,
             courseTaskPresence = presence,
             weatherLines = weatherLines,
+            weatherAwaiting = weatherAwaiting && weatherOf != null,
         )
     }
 

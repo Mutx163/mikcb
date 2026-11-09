@@ -122,6 +122,33 @@ val LocalEmbeddedDayWallpaperBackdrop = compositionLocalOf<Backdrop?> { null }
 val LocalEmbeddedDayTransitionSettled = compositionLocalOf { true }
 
 /**
+ * 首页展开层里，日页需要向下穿进顶栏玻璃带的**带高**（0 = 不下穿）。
+ *
+ * 由 `TimetableWeekPage` 在渲染 `dayContent` 时提供：日页自己拿不到顶栏真实高度，
+ * 而列表顶部要补一个等高留白，第 1 张卡才仍停在带子下沿；上滑时卡片才能滑进
+ * 玻璃带底下被第二遍玻璃糊住（2026-11-08）。
+ *
+ * 非展开层（独立日页 `c3.day` / 设置页预览）默认 0，行为与旧版一致。
+ */
+val LocalEmbeddedDayUnderlapBand = compositionLocalOf { 0.dp }
+
+/**
+ * 首页展开层里，宿主**已经量好**的壁纸亮度带（顶栏 / 星期栏 / 正文）。
+ *
+ * 为什么必须有这一槽（2026-11-09 用户报「空态与卡片的黑白不跟着壁纸翻」）：
+ * 嵌入首页的日页**自己不画壁纸**（壁纸由页面级静态底画，见 [LocalEmbeddedDayGlassBackdrop]），
+ * 于是它自己的 `rememberHomeBackdropChrome` 里那个 `HomeWallpaperBackdrop` 永远不会组合、
+ * `onInkBands` 永远不回调——本页拿到的 `wallpaperBands` 只能靠进程 / 磁盘缓存撞运气。
+ * 冷启动首开、刚换完壁纸这两段就是 null：空态退回主题墨色（亮色主题的 #333 压深壁纸）、
+ * 卡片退回「按不透明卡色判墨」（浅课色半透明压在深壁纸上变成深底深字）。
+ * 宿主 `TimetableWeekPage` 手上有量好的那一份，经这个槽交进来即可。
+ *
+ * 独立日页 / 设置页预览为 null（那些场景本页自己画壁纸、自己量）。
+ */
+val LocalEmbeddedDayInkBands =
+    compositionLocalOf<HomeBackgroundModel.InkBands?> { null }
+
+/**
  * 单日页面全量数据载体。
  *
  * 聚合全天概览卡状态、当日议程列表、当日待办带数据以及课程关联作业的存在性映射。
@@ -133,6 +160,11 @@ data class DayViewPageData(
     val courseTaskPresenceMap: Map<String, Boolean> = emptyMap(),
     /** 议程条目 id → 该节次的天气一行（无数据时为空；Dart `day_course_weather_row.dart`）。 */
     val weatherLines: Map<String, String> = emptyMap(),
+    /**
+     * 天气「该有、但还没拿到」：日卡先占住那一行的高度（不可见），数据到了再淡入。
+     * 仅「天气开关开着 + 已选城市 + 预报未到且未失败」时为真（见 `WeatherProvider.isAwaitingData`）。
+     */
+    val weatherAwaiting: Boolean = false,
 )
 
 /**
@@ -148,6 +180,7 @@ fun dayViewPageDataOf(day: DayViewDay): DayViewPageData = DayViewPageData(
     taskBandData = day.taskBandData,
     courseTaskPresenceMap = day.courseTaskPresence,
     weatherLines = day.weatherLines,
+    weatherAwaiting = day.weatherAwaiting,
 )
 
 /**
@@ -219,6 +252,8 @@ fun DayViewPage(
     weekdayStyle: WeekViewStyle = WeekViewStyle(),
     /** 「课卡显示冲突角标」开关（Dart `showConflictBadgeOnTimetable`；关掉只藏角标，保留冲突边框）。 */
     showConflictBadge: Boolean = true,
+    /** 日视图课程卡是否按课程颜色上色（设置 `dayViewUseCourseColor`，默认开）。 */
+    useCourseColors: Boolean = true,
     /**
      * 冲突课程卡面透明度（设置 `timetableConflictCourseOpacity`，默认 0.70，读侧已 clamp 0.2~1.0）。
      *
@@ -288,8 +323,9 @@ fun DayViewPage(
      * 作为**首页的日视图展开层**渲染时，顶栏玻璃带的高度（含状态栏 + 标题行 + 星期栏）。
      *
      * 非空 = 本页**不画自己的顶栏 / 星期栏 / 玻璃带**（那一条带由首页统一画，周视图
-     * 也在用），正文从这条高度往下开始。这样展开窗口里只有一个正文，不会出现
-     * 「首页顶栏 + 日视图顶栏」两套壳叠在一起、也不会在动画中露出一截重复标题。
+     * 也在用）。2026-11-08 起宿主会把这个值传给 `LocalEmbeddedDayUnderlapBand`，
+     * 日页自己把面板向上接到屏幕顶、列表首个 item 补等高留白；本参数只作「是否嵌入」
+     * 的判据（嵌入时为 0.dp）。
      */
     contentTopInset: Dp? = null,
     /**
@@ -605,6 +641,14 @@ fun DayViewPage(
     // 判据：c3.day 展开层由宿主传 0.dp（contentTopInset 非空）；独立日页 / 设置页预览为 null。
     val embeddedInHomePanel = contentTopInset != null
     val embeddedGlass = LocalEmbeddedDayGlassBackdrop.current
+    // 壁纸亮度带：嵌入首页时优先用宿主量好的那一份（本页不画壁纸 ⇒ 自己的量测永远不会跑，
+    // 见 [LocalEmbeddedDayInkBands]）；宿主还没量出来才退回自己缓存的 / 调用方传入的。
+    val effectiveWallpaperBands =
+        if (embeddedInHomePanel) LocalEmbeddedDayInkBands.current ?: wallpaperBands else wallpaperBands
+    // 首页展开层里日页下穿顶栏的带高（0 = 不下穿）。宿主在 `TimetableWeekPage` 里
+    // 用同一个 band 高度把日页面板向上接了一截；这里只负责给列表顶部补等高留白，
+    // 第 1 张卡仍停在带子下沿（2026-11-08）。
+    val embeddedUnderlapBand = LocalEmbeddedDayUnderlapBand.current
     // 「回今日」浮钮补壁纸用的窗口坐标全屏壁纸层（sharp），仅嵌入日程由宿主提供。
     val embeddedWallpaper = LocalEmbeddedDayWallpaperBackdrop.current
     // 展开过渡是否已落定（见 [LocalEmbeddedDayTransitionSettled]）：独立页/预览恒 true。
@@ -749,9 +793,9 @@ fun DayViewPage(
             // 已经在同一位置、同一材质上画好了，这里再画一遍会在界面交界处叠出
             // 第二份模糊/染色；正文按同一条带的高度下移即可。
             if (contentTopInset != null) {
-                // 展开层：宿主已把面板铺到玻璃带下沿（传 0dp），正文从这条高度开始。
-                // 14dp 的「星期栏 → 首卡」留缝不再挂滚动区外面（那会成一条永远滚不走的
-                // 空带），改由列表首个 item 提供（`DayViewScrollContent` 的 `day-top-seam`）。
+                // 展开层：面板已由宿主向上接到屏幕顶（下穿一截带高），正文从面板顶开始；
+                // 列表首个 item 补带高留白（`DayViewScrollContent.topUnderlap`），
+                // 所以第 1 张卡仍停在带子下沿。这里不再加任何高度。
                 Spacer(modifier = Modifier.height(contentTopInset))
             } else {
             TimetableChromeBandGlass(
@@ -792,7 +836,7 @@ fun DayViewPage(
                             style = weekdayStyle,
                             // 星期条压在**壁纸**上才谈壁纸墨色：实体档的带子是不透明的
                             // 页底色条，底下没有壁纸（Dart `homePageWeekdayBarOverWallpaper`）。
-                            wallpaperLuminance = wallpaperBands?.weekday?.takeIf {
+                            wallpaperLuminance = effectiveWallpaperBands?.weekday?.takeIf {
                                 bandOverWallpaper
                             },
                             selectedDayOfWeek = currentTarget.dayOfWeek,
@@ -869,6 +913,8 @@ fun DayViewPage(
                         DayViewScrollContent(
                             summaryState = pageData.summaryState,
                             summaryModifier = summaryModifier,
+                            // 首页展开层：列表顶部先补一条带高留白，卡才能滑进顶栏玻璃带。
+                            topUnderlap = if (embeddedInHomePanel) embeddedUnderlapBand else 0.dp,
                             agendaEntries = pageData.agendaEntries,
                             dayOfWeek = target.dayOfWeek,
                             taskBandData = pageData.taskBandData,
@@ -887,18 +933,26 @@ fun DayViewPage(
                             showConflictBadge = showConflictBadge,
                             // 冲突透明度：与周视图同一个设置键（Dart `courseDisplayOpacity` 共用判据）。
                             conflictCourseOpacity = conflictCourseOpacity,
+                            // 日视图课程卡是否按课程颜色上色（关闭后改用主题卡片底色）。
+                            useCourseColors = useCourseColors,
                             // 空态文字直接压在壁纸上：正文那档亮度决定字色。
-                            wallpaperLuminance = wallpaperBands?.body,
+                            // Dart `day_view_empty_state.dart:50-51` 是 `body ?? top`：
+                            // 正文带没量到（极端取景 / 老缓存）时也不是直接回主题墨色。
+                            wallpaperLuminance = effectiveWallpaperBands?.body
+                                ?: effectiveWallpaperBands?.weekday
+                                ?: effectiveWallpaperBands?.top,
                             // 无壁纸 / 亮度未知时的页底亮度（半透明卡按页底合成判墨）。
                             pageBackgroundLuminance = pageBackgroundLuminance,
                             // 摘要卡墨色：按壁纸**星期栏那档**亮度（发布版 `_weekdayInkLuminance` 口径）翻黑/白。
-                            summaryWallpaperLuminance = wallpaperBands?.weekday,
+                            summaryWallpaperLuminance = effectiveWallpaperBands?.weekday,
                             // 摘要卡与星期栏**同一套自定义字色**（未配置/等于默认值时按亮度翻黑白）。
                             summaryWeekdayFontColorHex = if (dark) weekdayStyle.weekdayFontColorDark else weekdayStyle.weekdayFontColorLight,
                             summaryWeekdayFontDefaultHex = if (dark) WeekViewStyle().weekdayFontColorDark else WeekViewStyle().weekdayFontColorLight,
                             // 天气行：装配器按课程 id 算好的「一行文本」，不传就永远不显示
                             //（2026-10-29 二轮审核 P1-12 的病根就在这一行缺失）。
                             weatherLines = pageData.weatherLines,
+                            // 预报还没到：先占住天气那一行的高度，到货后淡入（不跳版）。
+                            weatherAwaiting = pageData.weatherAwaiting,
                             // 材质与整页共享采样层（见本函数上方那三段接线）。
                             material = material,
                             glassBackdrop = cardGlassSource,

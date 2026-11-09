@@ -187,6 +187,26 @@ class DayViewWiringGuardTest {
     }
 
     @Test
+    fun `日视图课程卡颜色开关必须从设置喂进日视图`() {
+        // 2026-11-09：日课卡此前恒按 `course.color` 上色，设置页没有开关。
+        // 这条同时钉住壳与外观预览两个调用点：少一处，那一边的开关就静默失效
+        // （页面参数有默认值 true，编译不会报错）。
+        val branch = branchBody("c3.day")
+        assertTrue(
+            "`c3.day` 没有传 `useCourseColors`：日视图会退回默认「按课程色上色」，" +
+                "设置里的「日视图课程卡片颜色」对它无效。",
+            "useCourseColors = appSettings.dayViewUseCourseColor" in branch,
+        )
+        val editor = readSource(
+            "android/app/src/composeP1/kotlin/com/mutx163/qingyu/app/AppearanceEditorHost.kt",
+        )
+        assertTrue(
+            "外观预览没有把草稿设置里的日视图课卡颜色喂给日视图：开关切了预览不变。",
+            "useCourseColors = settingsModel.dayViewUseCourseColor" in editor,
+        )
+    }
+
+    @Test
     fun `预览必须共用真首页的天气数据源`() {
         // 2026-11-07 用户实报：外观编辑页的预览里课卡没有天气行。壳里真首页喂的是
         // `wiring.weather`，预览没接 ⇒ 首页有、预览没有，卡片高度也跟着不同。

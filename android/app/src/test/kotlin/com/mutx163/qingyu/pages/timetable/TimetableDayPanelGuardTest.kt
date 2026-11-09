@@ -17,11 +17,18 @@ class TimetableDayPanelGuardTest {
     private val weekPage: String by lazy { strip(read(WEEK_PAGE)) }
     private val motion: String by lazy { strip(read(MOTION)) }
     private val dayPage: String by lazy { strip(read(DAY_PAGE)) }
+    private val bandUnderlap: String by lazy { strip(read(BAND_UNDERLAP)) }
 
     @Test
     fun `面板公式在场`() {
         val s = weekPage
-        assertTrue("缺 heightFactor = max(0.04, progress)", s.contains("max(0.04f, progress)"))
+        // 2026-11-09：高度公式挪进 `dayPanelHeightPx`（日页下穿带高），这里钉调用；
+        // 公式本体在 TimetableBandUnderlap.kt，下面单独钉。
+        assertTrue("缺 dayPanelHeightPx 调用", s.contains("dayPanelHeightPx("))
+        assertTrue(
+            "dayPanelHeightPx 缺 heightFactor = max(0.04, progress)",
+            bandUnderlap.contains("content * max(0.04f, progress) + overlap"),
+        )
         assertTrue("缺 opacity = easeOutCubic(progress)", s.contains("homeViewEaseOutCubic(progress)"))
         assertTrue("缺面板曲线 easeInOutCubicEmphasized", s.contains("homeViewEaseInOutCubicEmphasized"))
         assertTrue("周网格缺 alpha = 1 - value", s.contains("1f - dayExpand.value"))
@@ -67,7 +74,7 @@ class TimetableDayPanelGuardTest {
     @Test
     fun `负例自测_改回列锚点或缩放或旧飞行或裁切会被判红`() {
         fun ok(s: String): Boolean =
-            s.contains("max(0.04f, progress)") &&
+            s.contains("dayPanelHeightPx(") &&
                 s.contains("Alignment.TopCenter") &&
                 !s.contains("scaleX") &&
                 !s.contains("scaleY") &&
@@ -87,7 +94,7 @@ class TimetableDayPanelGuardTest {
         assertFalse("日面板垂直位移（会带动壁纸上下动）应判红", ok(weekPage + "\n val translateY = 5f"))
         assertFalse(
             "heightFactor 退化应判红",
-            ok(weekPage.replace("max(0.04f, progress)", "progress")),
+            ok(weekPage.replace("dayPanelHeightPx(", "dayPanelHeightOld(")),
         )
     }
 
@@ -159,8 +166,9 @@ class TimetableDayPanelGuardTest {
     fun `展开层读数时机后移到测量与绘制期`() {
         fun ok(s: String): Boolean =
             s.contains("private fun Modifier.expandPanelGeometry(") &&
-                // 高度：在 layout 的 measure 块里读进度
-                s.contains("val heightPx = (maxHeight * max(0.04f, progress)).roundToPx()") &&
+                // 高度：在 layout 的 measure 块里把缓动进度交给纯函数（公式本体在
+                // TimetableBandUnderlap.kt，仍受上面的 `bandUnderlap` 断言约束）。
+                s.contains("val heightPx = dayPanelHeightPx(") &&
                 // 圆角：在 graphicsLayer 的 shape 里读进度
                 s.contains("shape = RoundedCornerShape((28f * homeViewExpandCornerRadiusFactor(progress)).dp)") &&
                 // alpha：derivedStateOf 委托 + 只在绘制层取值
@@ -184,7 +192,7 @@ class TimetableDayPanelGuardTest {
         )
         assertFalse(
             "高度不再在测量期读进度应判红",
-            ok(weekPage.replace("(maxHeight * max(0.04f, progress)).roundToPx()", "maxHeight.roundToPx()")),
+            ok(weekPage.replace("val heightPx = dayPanelHeightPx(", "val heightPx = maxHeight.roundToPx(")),
         )
         assertFalse(
             "alpha 脱离绘制层应判红",
@@ -213,5 +221,7 @@ class TimetableDayPanelGuardTest {
             "android/app/src/main/kotlin/com/mutx163/qingyu/pages/timetable/HomeViewExpandMotion.kt"
         const val DAY_PAGE =
             "android/app/src/composeP1/kotlin/com/mutx163/qingyu/pages/timetable/day/DayViewPage.kt"
+        const val BAND_UNDERLAP =
+            "android/app/src/main/kotlin/com/mutx163/qingyu/pages/timetable/TimetableBandUnderlap.kt"
     }
 }

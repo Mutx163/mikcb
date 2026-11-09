@@ -3,6 +3,8 @@ package com.mutx163.qingyu.pages.timetable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.layout
 import androidx.compose.ui.unit.Constraints
+import kotlin.math.max
+import kotlin.math.roundToInt
 
 /**
  * 周网格「钻进顶栏玻璃带底下」的两件几何夹具（2026-11-08）。
@@ -50,6 +52,31 @@ fun timetableBandStripPx(
     if (bandHeightPx <= 0) return 0
     val wanted = bandHeightPx.toLong() + marginPx.coerceAtLeast(0).toLong()
     return wanted.coerceAtMost(contentHeightPx.coerceAtLeast(0).toLong()).toInt()
+}
+
+/**
+ * 日视图展开面板高度的纯函数（px），**日页下穿**用。
+ *
+ * - `totalHeightPx` = 可视内容高 + 下穿带高；
+ * - `underlapPx` = 下穿带高（面板顶部伸进顶栏的那一截）；
+ * - `progress` = 缓动后的展开进度。
+ *
+ * 高度 = (总高 − 下穿) × max(0.04, 进度) + 下穿。
+ *
+ * 这样面板下沿 = 内容区顶 + 内容高 × 进度，与未下穿时**逐像素一致**；多出来的下穿只在
+ * 顶部带子里，被玻璃盖住。若不减掉下穿再乘进度，日页会先空一截再长出来。
+ */
+fun dayPanelHeightPx(
+    totalHeightPx: Float,
+    underlapPx: Float,
+    progress: Float,
+): Int {
+    val total = totalHeightPx.coerceAtLeast(0f)
+    val overlap = underlapPx.coerceIn(0f, total)
+    val content = total - overlap
+    return (content * max(0.04f, progress) + overlap)
+        .roundToInt()
+        .coerceIn(0, total.roundToInt())
 }
 
 /**

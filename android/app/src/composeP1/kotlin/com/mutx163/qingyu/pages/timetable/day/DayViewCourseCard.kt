@@ -25,6 +25,7 @@ import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.graphics.Color
@@ -71,8 +72,21 @@ fun DayViewCourseCard(
     onOpenTask: (() -> Unit)? = null,
     hasTask: Boolean = false,
     weatherInfo: String? = null,
+    /**
+     * 天气预报「该有、但还没到」：先占住天气那一行的高度（图标 / 文字都不可见），
+     * 到货后淡入。不加这一项时卡片会在数据到达那一刻突然长高一行，
+     * 下方所有卡片跟着往下跳 —— 用户读到的就是「突然冒出一个天气字段」。
+     */
+    weatherAwaiting: Boolean = false,
     /** 「课卡显示冲突角标」开关（Dart `showConflictBadgeOnTimetable`）。关掉只藏角标，边框仍在。 */
     showConflictBadge: Boolean = true,
+    /**
+     * 是否按课程颜色上色（设置 `dayViewUseCourseColor`，默认开）。
+     *
+     * 关掉后卡面改用主题卡片底色（与顶部摘要卡同一种 `surface`），不再随
+     * `course.color` 变色；停课 / 冲突 / 非本周的压淡与徽标仍照旧。
+     */
+    useCourseColor: Boolean = true,
     /**
      * 冲突课程卡面透明度（设置 `timetableConflictCourseOpacity`，默认 0.70）。
      *
@@ -108,10 +122,15 @@ fun DayViewCourseCard(
     val rawColor = parseHexColorOrFallback(entry.course.color, fallback = Color(0xFF2196F3))
     val isSuspended = entry.course.isSuspendedInWeek(week)
     // 非本周灰改用域内唯一 token（Dart `kNonCurrentWeekCourseColorHex`），不再写第二份字面量。
-    val baseCardColor = if (!entry.isCurrentWeekCourse) {
-        parseHexColorOrFallback(WeekGridCourseMapping.NON_CURRENT_WEEK_COLOR_HEX)
-    } else {
-        rawColor
+    // 关掉课程颜色后，本周卡改用主题卡片底色（与摘要卡同一份 `surface`）；
+    // 非本周灰是「周次状态」而不是课程颜色，仍优先保留。
+    val baseCardColor = when {
+        !entry.isCurrentWeekCourse ->
+            parseHexColorOrFallback(WeekGridCourseMapping.NON_CURRENT_WEEK_COLOR_HEX)
+        useCourseColor -> rawColor
+        // 主题卡底用 `surfaceContainer`（亮色 #FFFFFF / 暗色 #2D2D2D），不是页底色
+        // `surface`（亮色 #F2F2F2）——后者会让卡片和页底同色、卡界直接消失。
+        else -> MiuixTheme.colorScheme.surfaceContainer
     }
     val cardAlpha = if (isSuspended) {
         // Dart `effectiveOpacity = isSuspended ? 0.84 : item.opacity`：停课压淡盖过
@@ -143,7 +162,13 @@ fun DayViewCourseCard(
             showsWallpaper = glass != null || cardColor.alpha < 1f,
             // 实心档（不露壁纸）：按**卡色自身的 WCAG 亮度**在白 / 近黑里择优，
             // 不再走 calculateCardInk 那套 gamma 0.55 阈值（#808080 会判成白字）。
-            fallbackArgb = CourseCardInk.bestContrastInk(baseCardColor.toArgb()),
+            // 关掉课程颜色后卡面是主题 surface，墨色跟主题前景走（与摘要卡一致）；
+            // 非本周灰仍按灰底自身亮度择优，避免深色主题下白字压浅灰。
+            fallbackArgb = if (!useCourseColor && entry.isCurrentWeekCourse) {
+                MiuixTheme.colorScheme.onSurfaceContainer.toArgb()
+            } else {
+                CourseCardInk.bestContrastInk(baseCardColor.toArgb())
+            },
         ),
     )
 
@@ -392,20 +417,35 @@ fun DayViewCourseCard(
             )
 
             // 天气
-            if (!weatherInfo.isNullOrBlank()) {
+            // 「该有但还没拿到」时用一行等高的不可见占位把位置占住，文字到了才淡入：
+            // 既不跳版（卡片不会突然长高一行），也不会硬生生弹出一行字。
+            val weatherText = weatherInfo?.takeIf { it.isNotBlank() }
+            if (weatherText != null || weatherAwaiting) {
                 Spacer(modifier = Modifier.height(4.dp))
-                DayAgendaInfoRow(
-                    icon = MiuixIcons.Background,
-                    text = weatherInfo,
-                    ink = ink,
-                    textModifier = flightAnchor(
-                        "weather",
-                        weatherInfo,
-                        infoFontSize,
-                        FontWeight.Normal,
-                        ink.copy(alpha = 0.85f),
-                    ),
+                val weatherAlpha by animateFloatAsState(
+                    targetValue = if (weatherText != null) 1f else 0f,
+                    animationSpec = tween(durationMillis = WEATHER_ROW_FADE_MS),
+                    label = "weatherRowFade",
                 )
+                Box(modifier = Modifier.alpha(weatherAlpha)) {
+                    DayAgendaInfoRow(
+                        icon = MiuixIcons.Background,
+                        // 占位时给空串：整行高度由图标与字号决定，与真文字一致。
+                        text = weatherText.orEmpty(),
+                        ink = ink,
+                        textModifier = if (weatherText != null) {
+                            flightAnchor(
+                                "weather",
+                                weatherText,
+                                infoFontSize,
+                                FontWeight.Normal,
+                                ink.copy(alpha = 0.85f),
+                            )
+                        } else {
+                            Modifier
+                        },
+                    )
+                }
             }
 
             // 单周备注预览
@@ -428,3 +468,6 @@ fun DayViewCourseCard(
         }
     }
 }
+
+/** 日卡天气行的淡入时长（ms）：短一点，只为了让「一行字出现」不显突然。 */
+private const val WEATHER_ROW_FADE_MS = 180
