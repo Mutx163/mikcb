@@ -13,8 +13,11 @@ import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
@@ -25,6 +28,7 @@ import androidx.compose.ui.draw.dropShadow
 import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.shadow.Shadow
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
@@ -41,12 +45,15 @@ import kotlin.math.atan2
 import kotlin.math.cos
 import kotlin.math.sin
 import kotlin.math.tanh
+import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.blur.Backdrop
 import top.yukonga.miuix.kmp.blur.blur
 import top.yukonga.miuix.kmp.blur.drawBackdrop
 import top.yukonga.miuix.kmp.blur.highlight.Highlight
 import top.yukonga.miuix.kmp.blur.isRuntimeShaderSupported
+import top.yukonga.miuix.kmp.icon.MiuixIcons
+import top.yukonga.miuix.kmp.icon.extended.Location
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 /**
@@ -100,6 +107,12 @@ fun BackToTodayFab(
     material: HomeMaterialRenderSpec? = null,
     hasBackdrop: Boolean = false,
     alpha: Float = 1f,
+    /**
+     * 钮首的定位图标（发布版「回本周」浮钮带 `Icons.my_location_rounded`，
+     * `timetable_screen.dart:5873-5877`）。默认给 miuix 同语义图标 —— 两处调用点
+     * 都拿同一颗，不需要各自再传一遍。
+     */
+    icon: ImageVector = MiuixIcons.Location,
     modifier: Modifier = Modifier,
 ) {
     val shape = remember { RoundedCornerShape(percent = 50) }
@@ -263,6 +276,16 @@ fun BackToTodayFab(
                     ),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
+                // 定位图标：发布版「回本周」浮钮 = `Icons.my_location_rounded`(15dp) + 文案
+                //（`timetable_screen.dart:5873-5887`）。这里是 miuix 的同语义图标，
+                // 尺寸取 18dp（比 15 略大，配合 20sp 标题字与 48dp 命中区）。
+                Icon(
+                    imageVector = icon,
+                    contentDescription = null,
+                    tint = MiuixTheme.colorScheme.onPrimary.copy(alpha = opacity),
+                    modifier = Modifier.size(FAB_ICON_DP.dp),
+                )
+                Spacer(modifier = Modifier.width(FAB_ICON_GAP_DP.dp))
                 Text(
                     text = label,
                     style = MiuixTheme.textStyles.title3.shiftWeight(QingyuWeightDelta.MEDIUM),
@@ -288,6 +311,13 @@ const val FAB_SHADOW_REACH_DP = 14f
 
 /** 文字左右呼吸（dp）：单字居中后胶囊仍有足够的横向体量。 */
 const val BACK_TO_TODAY_FAB_HORIZONTAL_PADDING_DP = 30f
+
+/** 钮首定位图标的尺寸（dp）：发布版「回本周」是 15dp，这里配 20sp 标题字取 18dp。 */
+const val FAB_ICON_DP = 18f
+
+/** 图标与文字的间隙（dp）：发布版 `SizedBox(width: 4)`（`timetable_screen.dart:5878`），
+ * 这里随字号放大到 6。 */
+const val FAB_ICON_GAP_DP = 6f
 
 /** 文字上下呼吸（dp）。 */
 const val BACK_TO_TODAY_FAB_VERTICAL_PADDING_DP = 8f

@@ -20,11 +20,14 @@ object DayViewStrings {
     val backToTodayAction = ArbText("backToTodayAction", "回今日")
 
     /**
-     * 「回今日」悬浮按钮的**可见短字**（ARB `timetableBackToTodayShort` = 「今」）。
+     * 迁移期自造的**单字「今」**（ARB `timetableBackToTodayShort`）。
      *
-     * 只用于这颗 FAB 的屏上文字（一个字）；无障碍仍念 [backToTodayAction] 完整语义。
-     * 2026-11-03 用户拍板新增：此前可见字借了月视图的 `monthViewBackToCurrentMonthShort`
-     * （「今天」两字），用户要单字。
+     * ⚠️ 2026-11-10 起**两颗浮钮都不再用它**：日视图「回今日」、周视图「回本周」已回到
+     * 发布版口径（`timetable_screen.dart:6090-6200` 的 `backToTodayAction`；
+     * 周钮 `:5880` 的 `backToCurrentWeekAction`），见 `DayViewBackToTodayFabGuardTest`。
+     *
+     * 键**保留不删**：六份 ARB 与那条守卫仍引用它（守卫断言它存在且值 ≤2 字，
+     * 防止有人拿它去顶替全称文案）。本文件其余地方不得再把它用到屏上文案。
      */
     val backToTodayShort = ArbText("timetableBackToTodayShort", "今")
     val weekLabel = ArbText("weekLabel", "第 {week} 周")
@@ -42,6 +45,22 @@ object DayViewStrings {
     val suspendedBadgeLabel = ArbText("suspendedBadgeLabel", "停")
     val coupleTimetableLegendTogether = ArbText("coupleTimetableLegendTogether", "一起上课")
     val coupleTimetableLegendPartner = ArbText("coupleTimetableLegendPartner", "TA的课")
+
+    // ── 摘要卡「共同空闲」模块（Dart `timetable_screen.dart:4310-4442`）──
+    //
+    // 七条键**发布版就已存在**（v2.1.4.1 ARB），Compose 侧一直没人渲染 ⇒ 死键。
+    // 本轮把模块补回摘要卡，这七条才第一次上屏。
+    val coupleTimetableSharedFreeTitle = ArbText("coupleTimetableSharedFreeTitle", "今日共同空闲")
+    val coupleTimetableSharedFreeTitleOtherDay =
+        ArbText("coupleTimetableSharedFreeTitleOtherDay", "该日共同空闲")
+    val coupleTimetableNoSharedFree = ArbText("coupleTimetableNoSharedFree", "今天没有共同空闲时段")
+    val coupleTimetableNoSharedFreeOtherDay =
+        ArbText("coupleTimetableNoSharedFreeOtherDay", "该日没有共同空闲时段")
+    val coupleTimetableSharedFreeMeta = ArbText("coupleTimetableSharedFreeMeta", "共 {count} 段")
+    val coupleTimetableSharedFreeMoreCount =
+        ArbText("coupleTimetableSharedFreeMoreCount", "还有 {count} 段")
+    val coupleTimetableSharedFreeStaleHint =
+        ArbText("coupleTimetableSharedFreeStaleHint", "对方课表可能不是最新")
     val courseNoteAction = ArbText("courseNoteAction", "备注")
     val courseTaskAction = ArbText("courseTaskAction", "作业")
     val sectionRangeLabel = ArbText("sectionRangeLabel", "第 {startSection}～{endSection} 节")
@@ -198,6 +217,13 @@ object DayViewStrings {
             suspendedBadgeLabel,
             coupleTimetableLegendTogether,
             coupleTimetableLegendPartner,
+            coupleTimetableSharedFreeTitle,
+            coupleTimetableSharedFreeTitleOtherDay,
+            coupleTimetableNoSharedFree,
+            coupleTimetableNoSharedFreeOtherDay,
+            coupleTimetableSharedFreeMeta,
+            coupleTimetableSharedFreeMoreCount,
+            coupleTimetableSharedFreeStaleHint,
             courseNoteAction,
             courseTaskAction,
             sectionRangeLabel,

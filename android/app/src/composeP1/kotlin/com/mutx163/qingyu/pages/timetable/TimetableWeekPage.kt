@@ -87,7 +87,8 @@ import com.mutx163.qingyu.pages.settings.SettingsMaterialModel
 import com.mutx163.qingyu.pages.settings.SurfaceMaterialState
 import com.mutx163.qingyu.pages.shell.HomeBackgroundModel
 import com.mutx163.qingyu.pages.timetable.day.DayViewDataAssembler
-import com.mutx163.qingyu.pages.timetable.day.DayViewStrings
+import com.mutx163.qingyu.pages.timetable.day.DayViewSharedFreeSource
+import com.mutx163.qingyu.pages.timetable.day.LocalDayViewSharedFree
 import com.mutx163.qingyu.pages.timetable.day.LocalEmbeddedDayGlassBackdrop
 import com.mutx163.qingyu.pages.timetable.day.LocalEmbeddedDayInkBands
 import com.mutx163.qingyu.pages.timetable.day.LocalEmbeddedDayWallpaperBackdrop
@@ -980,6 +981,26 @@ fun TimetableWeekPage(
                 }
             }
 
+            // ── 情侣「共同空闲」数据源（日视图摘要卡消费）──────────────────────────
+            //
+            // 摘要卡在 `DayViewPage` → `DayViewScrollContent` 深处，拿不到我的课 / 对方课 /
+            // 周偏移 / 节次表，所以由本页（唯一同时握有这四样的地方）装配好、经
+            // `LocalDayViewSharedFree` 交下去，卡里按「周次 + 星期 + 是否今天」现算。
+            //
+            // null = 不渲染模块：没绑定 / 没开叠加 / 预览（预览本就不叠情侣课，见上面
+            // `coupleOverlay = null`）—— 与发布版 `_isCoupleOverlayActive` 同口径。
+            val sharedFreeSource = remember(courses, coupleOverlay, sectionTimes) {
+                coupleOverlay?.let { overlay ->
+                    DayViewSharedFreeSource(
+                        myCourses = courses,
+                        partnerCourses = overlay.partnerCourses,
+                        partnerWeekOffset = overlay.weekOffset,
+                        sections = sectionTimes,
+                        partnerImportedAtMillis = overlay.partnerImportedAtMillis,
+                    )
+                }
+            }
+
             // 下方内容：从玻璃带底部开始，占满剩余高度（底部仍铺到屏幕最底）。
             Box(
                 modifier = Modifier
@@ -1194,6 +1215,7 @@ fun TimetableWeekPage(
                                 .then(hitGate),
                         ) {
                             CompositionLocalProvider(
+                                LocalDayViewSharedFree provides sharedFreeSource,
                                 LocalEmbeddedDayGlassBackdrop provides cardGlassSource,
                                 // 壁纸亮度带：嵌入的日页自己不画壁纸，量不到亮度（2026-11-09）——
                                 // 把本页已经量好的那一份交给它，空态 / 卡片才能按壁纸翻黑白。
@@ -1271,6 +1293,7 @@ fun TimetableWeekPage(
                                     // 壁纸由本页最底层静态画；把**页面级预糊层**经 CompositionLocal 交给
                                     // 嵌入的日视图做卡片玻璃采样——它自己不再画壁纸，壁纸因此不随展开层移动。
                                     CompositionLocalProvider(
+                                        LocalDayViewSharedFree provides sharedFreeSource,
                                         LocalEmbeddedDayGlassBackdrop provides cardGlassSource,
                                         // 同横滑支：日页不画壁纸 ⇒ 用本页量好的亮度带。
                                         LocalEmbeddedDayInkBands provides wallpaperBands,
@@ -1349,7 +1372,7 @@ fun TimetableWeekPage(
                     }
                 }
             },
-            label = DayViewStrings.backToTodayShort.text,
+            label = TimetableStrings.backToCurrentWeekAction.text,
             contentDescription = TimetableStrings.backToCurrentWeekAction.text,
             visible = !previewMode && showBackToCurrentWeek && !dayVisible,
             backdrop = when {

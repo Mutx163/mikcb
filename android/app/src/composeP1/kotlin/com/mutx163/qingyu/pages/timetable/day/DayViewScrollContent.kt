@@ -244,6 +244,16 @@ fun DayViewScrollContent(
                         wallpaperLuminance = summaryWallpaperLuminance,
                         weekdayFontColorHex = summaryWeekdayFontColorHex,
                         weekdayFontColorDefaultHex = summaryWeekdayFontDefaultHex,
+                        // 情侣叠加时的「共同空闲」模块：数据源由首页周视图经
+                        // `LocalDayViewSharedFree` 交下来（没绑定 / 没开叠加 = null ⇒ 不画）。
+                        // 这一天是哪天只有这里知道，所以在这里按 (周次, 星期) 取快照。
+                        sharedFree = dayOfWeek?.let { day ->
+                            LocalDayViewSharedFree.current?.uiFor(
+                                week = summaryState.week,
+                                dayOfWeek = day,
+                                isToday = summaryState.isToday,
+                            )
+                        },
                         modifier = summaryModifier,
                     )
                 }
