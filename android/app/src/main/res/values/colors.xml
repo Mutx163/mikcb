@@ -1,6 +1,18 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="splash_background">#FFFFFFFF</color>
+    <!--
+      启动窗口（Android 12+ 系统 SplashScreen / 12 以下的 staring window）的底色。
+
+      **必须与 compose_shell_background 同值**（= 页面底色 #F2F2F2）。此前这里是纯白
+      #FFFFFF，而壳首个组合画出来的是 #F2F2F2：用户点开图标先看到一整块纯白，
+      再「降一档」变成页面底色，读起来就是「白屏闪一下」。两处同值后，启动画面到
+      首页首帧是同一个颜色，没有可见的换色（2026-11-09）。
+
+      注意：这里只能是纯色。用户自己设的壁纸进不了系统启动窗口（系统在进程启动前
+      就按清单主题画好了），壁纸的首帧由 `HomeWallpaperBackdrop` 的同步缩略图负责。
+      夜间档见 values-night/colors.xml。
+    -->
+    <color name="splash_background">#FFF2F2F2</color>
 
     <!--
       Compose 壳（composeUi / composeP1）的窗口底色，也是那两条系统栏在「窗口仍内缩」时

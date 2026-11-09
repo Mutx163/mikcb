@@ -5,6 +5,8 @@ import android.graphics.BitmapFactory
 import android.graphics.Matrix
 import android.media.ExifInterface
 import android.util.LruCache
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
@@ -113,6 +115,18 @@ import kotlin.math.roundToInt
  */
 private const val WALLPAPER_CACHE_BYTES = 48 * 1024 * 1024
 
+/**
+ * 冷启动首帧缩略图的解码宽（px）。
+ *
+ * 只为了「第一帧就有壁纸的颜色与构图」：一张 4000px 的照片按 [HomeBackgroundModel.decodePlan]
+ * 的 2 的幂采样直接解成 ~100px，主线程上是 1~3ms 量级（不是先解原图再缩）。
+ * 再大就只是多花时间——它马上会被高清图替掉。
+ */
+private const val WALLPAPER_PREVIEW_WIDTH_PX = 96
+
+/** 缩略图 → 高清图的淡入时长（ms）。同一张照片只差清晰度，短一点就够。 */
+private const val WALLPAPER_HIGH_RES_FADE_MS = 160
+
 /** 壁纸位图缓存（进程内、按字节淘汰；只放最终要画的那一版，不含旋转前的临时图）。 */
 private val wallpaperBitmapCache: LruCache<String, Bitmap> =
     object : LruCache<String, Bitmap>(WALLPAPER_CACHE_BYTES) {
@@ -156,8 +170,16 @@ fun HomeWallpaperBackdrop(
     val cachedWallpaper = remember(path, snapshot.decodeWidthPx) {
         wallpaperFromCache(path, snapshot.decodeWidthPx)
     }
+    // 冷启动首帧底图（2026-11-09）：进程刚起来时位图缓存必然是空的，按原来的写法首帧画的是
+    // [HomeBackdropSnapshot.pageColorArgb]（浅色主题下就是近白），要等一次 IO 解码才变成壁纸。
+    // 用户读到的就是「进首页先白一下 / 壁纸后出来」。这里同步解一张几十像素的缩略图当
+    // `produceState` 初值：首帧就是壁纸的颜色与构图，高清图到了再淡入覆盖。
+    // 只在缓存未命中时才解，且结果按路径 remember。
+    val previewWallpaper = remember(path, cachedWallpaper) {
+        if (cachedWallpaper == null) wallpaperPreview(path) else null
+    }
     val wallpaper: ImageBitmap? by produceState<ImageBitmap?>(
-        initialValue = cachedWallpaper,
+        initialValue = cachedWallpaper ?: previewWallpaper,
         key1 = path,
         key2 = snapshot.decodeWidthPx,
     ) {
@@ -167,6 +189,15 @@ fun HomeWallpaperBackdrop(
             withContext(Dispatchers.IO) { decodeWallpaper(path, snapshot.decodeWidthPx) }
         }
     }
+
+    // 高清图是否已经盖在缩略图上面（同一张图、不同清晰度）。缓存命中时没有缩略图，
+    // 这一支恒为 1，不新增任何动画开销。
+    val highResWallpaper = wallpaper?.takeIf { it !== previewWallpaper }
+    val highResAlpha by animateFloatAsState(
+        targetValue = if (highResWallpaper != null) 1f else 0f,
+        animationSpec = tween(durationMillis = WALLPAPER_HIGH_RES_FADE_MS),
+        label = "wallpaperHighResFade",
+    )
 
     // 墨色带只在「解码结果变了」时算一次（路径 / 解码宽 / 取景变了才会变），
     // **不进每帧绘制路径**；回调为 null 时整段直接返回，一个像素都不扫。
@@ -183,6 +214,24 @@ fun HomeWallpaperBackdrop(
     }
     val appContext = LocalContext.current.applicationContext
     val inkBandsStore = remember(appContext) { HomeInkBandsStore(appContext) }
+    // ── 主色兜底（2026-11-09）─────────────────────────────────────────────────
+    // 首帧壁纸三层：主色 → 缩略图 → 高清图。缩略图解不出来（文件坏了 / 存储卡住 /
+    // 格式不支持）时，至少铺的是「近似壁纸的颜色」，而不是页面近白。
+    // 主色从缩略图现算（9k 像素，微秒级），算完写盘；下次冷启动直接读，不需要解码。
+    val colorStore = remember(appContext) { HomeWallpaperColorStore(appContext) }
+    val storedWallpaperColor = remember(path) { colorStore.read(path) }
+    val previewWallpaperColor = remember(previewWallpaper) {
+        previewWallpaper?.let { image -> averageColorOf(image) }
+    }
+    val baseColorArgb = previewWallpaperColor ?: storedWallpaperColor ?: snapshot.pageColorArgb
+    LaunchedEffect(path, previewWallpaperColor) {
+        // apply() 本身就是异步落盘，不用再切 IO；路径 / 颜色没变就不重写。
+        if (!path.isNullOrEmpty() && previewWallpaperColor != null &&
+            previewWallpaperColor != storedWallpaperColor
+        ) {
+            colorStore.write(path, previewWallpaperColor)
+        }
+    }
     LaunchedEffect(wallpaper, wantsInkBands, viewportWidthPx, viewportHeightPx) {
         val callback = inkCallback.value ?: return@LaunchedEffect
         // ① 缓存命中就别再扫一遍（切换视图时位图与墨色带通常都在缓存里）。
@@ -204,6 +253,10 @@ fun HomeWallpaperBackdrop(
             return@LaunchedEffect
         }
         val image = wallpaper
+        // 缩略图不当真：它只负责首帧铺色。拿它去量三档亮度会把这组值当成「这张图」的
+        // 真值写进内存 / 磁盘缓存，之后高清图到位反而读不到重算（亮度差一档就会翻错墨色）。
+        // 高清图到了 `wallpaper` 会变，本 effect 随之重跑。
+        if (image === previewWallpaper) return@LaunchedEffect
         // ② 位图被 48MB 缓存淘汰、但墨色带还在时，**不能**拿 null 去覆盖已量好的值
         //（否则又会先翻一次面再等解码，正是本次要修的那一闪）。
         val bands = if (image == null) {
@@ -251,9 +304,12 @@ fun HomeWallpaperBackdrop(
     Box(
         modifier = modifier
             .fillMaxSize()
-            .background(color = Color(color = snapshot.pageColorArgb)),
+            .background(color = Color(color = baseColorArgb)),
     ) {
         val image = wallpaper
+        // 首帧 / 高清图淡入期间：缩略图先铺底，高清图按 [highResAlpha] 叠上去。
+        // 两者是同一张照片、同一套取景，所以只是「由糊到清」，不会看到换图。
+        val underlay = previewWallpaper?.takeIf { it !== image }
         if (image != null) {
             // 跟周翻页滑动时，左右各补一份同一张图：只平移不补画，滑到一半会露底色
             // （Dart `:657-707` 把整屏壁纸当一条长条平移，每页画同一张）。
@@ -263,6 +319,16 @@ fun HomeWallpaperBackdrop(
             // 直接算成 px，**不**乘取景倍数——用户把缩放拖到 4 倍也不会跟着变糊。
             val blurRadiusPx =
                 HomeBackgroundModel.blurRadiusPxForSigma(snapshot.blurSigma, LocalDensity.current.density)
+            // 高清图没到（或在淡入）时，缩略图就是屏幕上的底图；到了且 alpha=1 时不画它，省一次贴图。
+            val drawUnderlay = underlay != null && highResAlpha < 1f
+            // 淡入只允许发生在「下面已经有一张不透明的图」时（缩略图）。
+            // 没有垫底（缓存命中 / 缩略图没解出来）时直接不透明贴上去：
+            // 否则就是「从全透明淡入」——壁纸会以半透明状态在白底上停 160ms，
+            // 真机上读起来就是「白屏之后冒出一个奇怪的影子」（2026-11-09 用户实报）。
+            val imageAlpha = HomeBackgroundModel.wallpaperOverlayAlpha(
+                highResAlpha = highResAlpha,
+                hasOpaqueUnderlay = underlay != null,
+            )
             if (blurRadiusPx > 0.0) {
                 // 模糊走 **miuix-blur**（MIUIX-FIRST 铁律：模糊用官方能力，不自己造效果）。
                 // 官方管线是两件套：
@@ -272,7 +338,10 @@ fun HomeWallpaperBackdrop(
                 // 底栏玻璃（`GlassDockNavigationBar`）用的是同一条管线。
                 val sampleLayer = rememberGraphicsLayer()
                 val sampleBackdrop = rememberLayerBackdrop(graphicsLayer = sampleLayer) {
-                    drawWallpaperStrip(image, snapshot, pageOffsets)
+                    if (drawUnderlay) {
+                        drawWallpaperStrip(underlay, snapshot, pageOffsets)
+                    }
+                    drawWallpaperStrip(image, snapshot, pageOffsets, alpha = imageAlpha)
                 }
                 Box(modifier = Modifier.fillMaxSize().layerBackdrop(sampleBackdrop))
                 Box(
@@ -287,7 +356,10 @@ fun HomeWallpaperBackdrop(
             } else {
                 // 0 档 = 不模糊：原图直出，别让 miuix 白跑一趟采样 + 高斯链。
                 Canvas(modifier = Modifier.fillMaxSize()) {
-                    drawWallpaperStrip(image, snapshot, pageOffsets)
+                    if (drawUnderlay) {
+                        drawWallpaperStrip(underlay, snapshot, pageOffsets)
+                    }
+                    drawWallpaperStrip(image, snapshot, pageOffsets, alpha = imageAlpha)
                 }
             }
         }
@@ -308,6 +380,7 @@ private fun DrawScope.drawWallpaperStrip(
     image: ImageBitmap,
     snapshot: HomeBackdropSnapshot,
     pageOffsets: List<Float>,
+    alpha: Float = 1f,
 ) {
     val viewportWidth = size.width.roundToInt()
     val viewportHeight = size.height.roundToInt()
@@ -334,6 +407,7 @@ private fun DrawScope.drawWallpaperStrip(
                 y = baseTop,
             ),
             dstSize = dstSize,
+            alpha = alpha,
             filterQuality = FilterQuality.Medium,
         )
     }
@@ -358,6 +432,55 @@ private fun wallpaperFromCache(path: String?, decodeWidthPx: Int): ImageBitmap? 
     if (path.isNullOrEmpty()) return null
     return wallpaperBitmapCache.get(wallpaperCacheKey(path, decodeWidthPx))?.asImageBitmap()
 }
+
+/**
+ * 冷启动首帧用的**低分辨率缩略图**（同步解码，1~3ms 量级）。
+ *
+ * 只给 `produceState` 当首帧初值：进程刚起来时 [wallpaperBitmapCache] 一定是空的，
+ * 同步解一张 ~100px 的图就能让第一帧拥有壁纸的颜色与构图，而不是先画一帧页底色。
+ * 它**不进** [wallpaperBitmapCache]（那是高清图的位置，混进去会让之后的「是否已解码」
+ * 判断失真），单独放 [wallpaperPreviewCache]（4 张，几十 kb 级）。
+ *
+ * 解码宽固定 [WALLPAPER_PREVIEW_WIDTH_PX]：与最终解码宽无关，只看图片本身的宽高比，
+ * 所以 `drawRect` 算出的 cover 矩形与高清图完全一致。
+ */
+private fun wallpaperPreview(path: String?): ImageBitmap? = runCatching {
+    if (path.isNullOrEmpty()) return@runCatching null
+    wallpaperPreviewCache.get(path)?.let { return@runCatching it.asImageBitmap() }
+
+    val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
+    BitmapFactory.decodeFile(path, bounds)
+    val plan = HomeBackgroundModel.decodePlan(bounds.outWidth, bounds.outHeight, WALLPAPER_PREVIEW_WIDTH_PX)
+        ?: return@runCatching null
+    val options = BitmapFactory.Options().apply { inSampleSize = plan.inSampleSize }
+    val decoded = BitmapFactory.decodeFile(path, options) ?: return@runCatching null
+
+    // EXIF 方向与高清路径同口径（旋转档 3/6/8；镜像档本来就没处理，见类注释）。
+    val rotation = HomeBackgroundModel.exifRotationDegrees(readExifOrientation(path))
+    val oriented = if (rotation == 0) decoded else decoded.rotated(rotation)
+    wallpaperPreviewCache.put(path, oriented)
+    oriented.asImageBitmap()
+}.getOrNull()
+
+/** 缩略图缓存：按张数淘汰（每张只有几十 KB，4 张足够覆盖「换壁纸 → 杀进程 → 重开」）。 */
+private val wallpaperPreviewCache = LruCache<String, Bitmap>(4)
+
+/**
+ * 缩略图的平均色（= 壁纸主色）。
+ *
+ * 直接 `getPixels` 整张 ~96px 缩略图（万来个像素），在组合线程上是微秒量级。
+ * 结果交给 `HomeWallpaperColorStore` 落盘：下次冷启动即使缩略图解不出来，
+ * 首帧也能用这个颜色铺底（见 [HomeWallpaperBackdrop] 里的「主色 → 缩略图 → 高清图」）。
+ */
+private fun averageColorOf(image: ImageBitmap): Int? = runCatching {
+    val bitmap = image.asAndroidBitmap()
+    val width = bitmap.width
+    val height = bitmap.height
+    if (width <= 0 || height <= 0) return@runCatching null
+    val pixels = IntArray(width * height)
+    bitmap.getPixels(pixels, 0, width, 0, 0, width, height)
+    HomeBackgroundModel.averageColorArgb(pixels)
+}.getOrNull()
 
 /**
  * 壁纸三档亮度带的缓存。键 = 路径 + 解码宽 + 视口 + 取景（倍数 / 对齐）

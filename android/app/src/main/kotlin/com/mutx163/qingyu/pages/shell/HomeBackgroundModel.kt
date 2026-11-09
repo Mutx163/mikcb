@@ -710,6 +710,55 @@ object HomeBackgroundModel {
     }
 
     /**
+     * 一组 ARGB 像素的**平均色**（按 alpha 加权，全透明像素不计入）。
+     *
+     * 冷启动首帧的壁纸主色就用它算：壁纸还没解出来（文件损坏 / 存储卡住）时，先用这坨
+     * 颜色铺满背景，用户看到的是「近似壁纸的底色」而不是页面近白色。
+     *
+     * 为什么按 alpha 加权：壁纸文件理论上不透明，但 PNG / 带透明边的截图会有 alpha=0 的
+     * 边，直接平均会把它们当成黑色拉低结果。返回的色值自身是**不透明**的（背景不能透底）。
+     *
+     * @param argbPixels 行优先的 ARGB 像素（`Bitmap.getPixels` 直接产出）；
+     *   空数组 / 全透明返回 `null`，调用方据此回落到页面底色。
+     */
+    fun averageColorArgb(argbPixels: IntArray): Int? {
+        if (argbPixels.isEmpty()) return null
+        var sumR = 0L
+        var sumG = 0L
+        var sumB = 0L
+        var sumA = 0L
+        var count = 0L
+        for (argb in argbPixels) {
+            val alpha = (argb ushr 24) and 0xFF
+            if (alpha == 0) continue
+            sumR += ((argb shr 16) and 0xFF).toLong() * alpha
+            sumG += ((argb shr 8) and 0xFF).toLong() * alpha
+            sumB += (argb and 0xFF).toLong() * alpha
+            sumA += alpha.toLong()
+            count++
+        }
+        if (count == 0L || sumA == 0L) return null
+        val r = (sumR / sumA).toInt().coerceIn(0, 255)
+        val g = (sumG / sumA).toInt().coerceIn(0, 255)
+        val b = (sumB / sumA).toInt().coerceIn(0, 255)
+        return (0xFF shl 24) or (r shl 16) or (g shl 8) or b
+    }
+
+    /**
+     * 壁纸叠层的绘制 alpha：**只有在下面已经垫着一张不透明的图时**才允许淡入。
+     *
+     * 这条规则是 2026-11-09 真机问题（「白屏之后冒出一个奇怪的影子」）的根因修正：
+     * 高清图从「全透明」淡入到空白背景上时，会有 100~200ms 停在半透明状态——
+     * 一层半透明的壁纸压在白底上，看起来就是一块残影。没有垫底（缓存命中 / 缩略图
+     * 解不出来）时直接不透明贴上，不做淡入。
+     *
+     * @param highResAlpha 淡入动画当前值（0…1）
+     * @param hasOpaqueUnderlay 下面是否已有一张不透明底图（缩略图）
+     */
+    fun wallpaperOverlayAlpha(highResAlpha: Float, hasOpaqueUnderlay: Boolean): Float =
+        if (hasOpaqueUnderlay) highResAlpha.coerceIn(0f, 1f) else 1f
+
+    /**
      * 竖直比例区间 → 行下标区间 `[fromRow, toRow)`（Dart `:1330-1333` 的 floor/ceil 取整）。
      *
      * 取整公式必须一致：Dart 的 `top` 带（0…0.09）与逐行剖面靠这套 floor/ceil 对齐，

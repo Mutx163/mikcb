@@ -357,6 +357,52 @@ class HomeBackgroundModelTest {
         assertEquals(1.0, HomeBackgroundModel.relativeLuminance(0x00FFFFFF), 1e-9)
     }
 
+    // ─────────────────────── 壁纸主色（冷启动首帧兼底） ───────────────────────
+
+    @Test
+    fun `averageColorArgb 取通道均值并输出不透明色`() {
+        val pixels = intArrayOf(
+            0xFF000000.toInt(),
+            0xFFFFFFFF.toInt(),
+        )
+        // (0+255)/2 = 127.5 ⇒ 整数除法 127。
+        assertEquals(0xFF7F7F7F.toInt(), HomeBackgroundModel.averageColorArgb(pixels))
+    }
+
+    @Test
+    fun `averageColorArgb 忽略全透明像素并按 alpha 加权`() {
+        val pixels = intArrayOf(
+            0x00FF0000, // 全透明红：不算
+            0xFFFF0000.toInt(), // 不透明红
+            0x80FF0000.toInt(), // 半透明红，权重也小
+        )
+        // 红色通道恒为 255，结果必须是纯红且不透明。
+        assertEquals(0xFFFF0000.toInt(), HomeBackgroundModel.averageColorArgb(pixels))
+    }
+
+    @Test
+    fun `averageColorArgb 在空数组与全透明时返回 null`() {
+        assertNull(HomeBackgroundModel.averageColorArgb(IntArray(0)))
+        assertNull(HomeBackgroundModel.averageColorArgb(intArrayOf(0x00000000, 0x00FFFFFF)))
+    }
+
+    // ─────────────────────── 壁纸叠层 alpha（残影回归钉） ───────────────────────
+
+    @Test
+    fun `没有不透明底图时壁纸必须直接不透明`() {
+        // 2026-11-09 真机：高清图从 0 淡入到白底上，160ms 内是一层半透明壁纸 = 残影。
+        // 没有缩略图垫底时 alpha 必须是 1，不管动画当前值是多少。
+        assertEquals(1f, HomeBackgroundModel.wallpaperOverlayAlpha(0f, hasOpaqueUnderlay = false))
+        assertEquals(1f, HomeBackgroundModel.wallpaperOverlayAlpha(0.3f, hasOpaqueUnderlay = false))
+    }
+
+    @Test
+    fun `有不透明底图时才按动画值淡入并夹到 0 到 1`() {
+        assertEquals(0.4f, HomeBackgroundModel.wallpaperOverlayAlpha(0.4f, hasOpaqueUnderlay = true))
+        assertEquals(1f, HomeBackgroundModel.wallpaperOverlayAlpha(1.7f, hasOpaqueUnderlay = true))
+        assertEquals(0f, HomeBackgroundModel.wallpaperOverlayAlpha(-0.2f, hasOpaqueUnderlay = true))
+    }
+
     @Test
     fun `bandRows 用 floor 与 ceil，顶栏带是顶部 9 个百分点`() {
         // 1000 高：0…0.09 ⇒ 行 [0, 90)。
