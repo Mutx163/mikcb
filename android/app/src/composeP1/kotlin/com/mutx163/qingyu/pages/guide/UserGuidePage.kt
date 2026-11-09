@@ -61,6 +61,7 @@ import kotlinx.coroutines.launch
 import top.yukonga.miuix.kmp.basic.BasicComponent
 import top.yukonga.miuix.kmp.basic.Button
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
+import top.yukonga.miuix.kmp.basic.CardDefaults
 import top.yukonga.miuix.kmp.basic.Checkbox
 import top.yukonga.miuix.kmp.basic.CircularProgressIndicator
 import top.yukonga.miuix.kmp.basic.Icon
@@ -85,6 +86,11 @@ import top.yukonga.miuix.kmp.theme.MiuixTheme
  * - **不放彩色图标徽章**：操作行只有「文字 + 细箭头」，权限状态用「小圆点 + 颜色」；
  * - 交互控件一律走 Miuix（[QingyuPageList] / [QingyuCard] / [Text] / [Button] / [TabRow] / [Checkbox]）；
  * - 文字保持最少：删掉复述性副标题，隐私页法律正文除外。
+ *
+ * 2026-11-09 美学复核：
+ * - 标题、眉标、说明统一落到 **28dp 文字左缘**（页面 12 + 卡内 16），不再和卡片内容错开；
+ * - 欢迎页标题升到 `title1`，并把「开始使用」拆成主题浅色主卡，与两项「已有课表」分层；
+ * - 操作行改走官方 `BasicComponent`，行高与按压反馈不再自己拼 `clickable`。
  *
  * 行为真相仍是 `lib/screens/user_guide_screen.dart`；本层不探测系统、不写设置：六项权限真实状态
  * 经 [permissionState] 传入，个性化改动经 [onSettingsPatch] 交宿主落盘，权限行点击经
@@ -237,6 +243,7 @@ private fun GuideHeader(
     onBack: (() -> Unit)?,
     eyebrow: String? = null,
     action: (@Composable () -> Unit)? = null,
+    largeTitle: Boolean = false,
 ) {
     val dark = isSystemInDarkTheme()
     Column(Modifier.fillMaxWidth()) {
@@ -254,33 +261,47 @@ private fun GuideHeader(
             if (action != null) Spacer(Modifier.width(4.dp))
             Text(
                 text = "${pageIndex + 1} / $TOTAL_GUIDE_PAGES",
-                style = MiuixTheme.textStyles.footnote2,
-                color = Color(QingyuTheme.secondaryText(dark)),
-            )
-        }
-        if (eyebrow != null) {
-            Spacer(Modifier.height(6.dp))
-            Text(
-                text = eyebrow,
                 style = MiuixTheme.textStyles.footnote1,
                 color = Color(QingyuTheme.secondaryText(dark)),
             )
         }
-        Spacer(Modifier.height(8.dp))
-        Text(
-            text = title,
-            style = MiuixTheme.textStyles.title2.shiftWeight(QingyuWeightDelta.BOLD),
-            color = Color(QingyuTheme.primaryText(dark)),
-        )
+        // 正文左缘落在 28dp 轴线（页面 12 + 卡内 16）：标题、眉标与卡片里的文字
+        // 同一列，扫读时不会来回跳。页码和返回键仍贴 12dp 页边。
+        Column(Modifier.padding(horizontal = 16.dp)) {
+            if (eyebrow != null) {
+                Spacer(Modifier.height(20.dp))
+                Text(
+                    text = eyebrow,
+                    style = MiuixTheme.textStyles.footnote1
+                        .shiftWeight(QingyuWeightDelta.MEDIUM)
+                        .copy(letterSpacing = 0.6.sp),
+                    color = Color(QingyuTheme.secondaryText(dark)),
+                )
+            }
+            Spacer(Modifier.height(if (eyebrow != null) 10.dp else 8.dp))
+            Text(
+                text = title,
+                style = (if (largeTitle) {
+                    MiuixTheme.textStyles.title1
+                } else {
+                    MiuixTheme.textStyles.title2
+                }).shiftWeight(QingyuWeightDelta.BOLD),
+                color = Color(QingyuTheme.primaryText(dark)),
+            )
+        }
+        // 标题与首张卡片之间多留 4dp：12dp 的分段间距读起来太挤，标题像贴在卡片上。
+        Spacer(Modifier.height(4.dp))
     }
 }
 
 @Composable
 private fun GuideGroupTitle(text: String, dark: Boolean) {
+    // 卡片标题提一档：13sp 灰色加粗和正文几乎同级，三张卡看起来像三坨灰字。
+    // 16sp 主文字色 + 半粗，先立标题再读说明，页面的层次才出来。
     Text(
         text = text,
-        style = MiuixTheme.textStyles.footnote1.shiftWeight(QingyuWeightDelta.BOLD),
-        color = Color(QingyuTheme.secondaryText(dark)),
+        style = MiuixTheme.textStyles.body1.shiftWeight(QingyuWeightDelta.SEMIBOLD),
+        color = Color(QingyuTheme.primaryText(dark)),
     )
 }
 
@@ -331,38 +352,53 @@ private fun GuideHintBanner(text: String, dark: Boolean) {
  *
  * [subtitle] 对应发布版 `_GuideActionTile(subtitle:)`——挂在「导入课表」「从备份恢复」两行，
  * 「开始使用」行发布版就没有副标题（原副标题与实际行为不符，已被删掉）。
+ *
+ * 布局、56dp 最小行高、整行点击与按压反馈都由官方 [BasicComponent] 给：
+ * 以前自己拼 `Row` + 裸 `.clickable`，按下没有反馈，截图里还会留下半截灰块。
+ * 卡片外层已给 16dp 横向内边距，这里 `insideMargin` 传 0 免得叠成 32dp。
  */
 @Composable
-private fun GuideNavRow(title: String, onClick: () -> Unit, subtitle: String? = null) {
+private fun GuideActionRow(
+    title: String,
+    onClick: () -> Unit,
+    subtitle: String? = null,
+    emphasized: Boolean = false,
+) {
     val dark = isSystemInDarkTheme()
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable(onClick = onClick)
-            .heightIn(min = 56.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Column(modifier = Modifier.weight(1f)) {
-            Text(
-                text = title,
-                style = MiuixTheme.textStyles.body1.shiftWeight(QingyuWeightDelta.MEDIUM),
-                color = Color(QingyuTheme.primaryText(dark)),
+    val accent = Color(QingyuTheme.primary(dark = dark))
+    BasicComponent(
+        modifier = Modifier.fillMaxWidth(),
+        insideMargin = PaddingValues(0.dp),
+        endActions = {
+            Icon(
+                imageVector = MiuixIcons.ChevronForward,
+                contentDescription = null,
+                tint = if (emphasized) {
+                    accent.copy(alpha = 0.85f)
+                } else {
+                    Color(QingyuTheme.secondaryText(dark)).copy(alpha = 0.42f)
+                },
+                modifier = Modifier.size(if (emphasized) 18.dp else 16.dp),
             )
-            if (subtitle != null) {
-                Spacer(Modifier.height(2.dp))
-                Text(
-                    text = subtitle,
-                    style = MiuixTheme.textStyles.footnote1,
-                    color = Color(QingyuTheme.secondaryText(dark)),
-                )
-            }
-        }
-        Icon(
-            imageVector = MiuixIcons.ChevronForward,
-            contentDescription = null,
-            tint = Color(QingyuTheme.secondaryText(dark)).copy(alpha = 0.5f),
-            modifier = Modifier.size(16.dp),
+        },
+        onClick = onClick,
+    ) {
+        Text(
+            text = title,
+            style = MiuixTheme.textStyles.body1.shiftWeight(
+                if (emphasized) QingyuWeightDelta.BOLD else QingyuWeightDelta.MEDIUM,
+            ),
+            // 主行动靠「浅色卡 + 加粗 + 主色箭头」分层，不用主色字：
+            // 蓝字压在浅蓝底上对比度只有 3 出头，而且会和底栏那颗实心蓝按钮抢眼神。
+            color = Color(QingyuTheme.primaryText(dark)),
         )
+        if (subtitle != null) {
+            Text(
+                text = subtitle,
+                style = MiuixTheme.textStyles.footnote1,
+                color = Color(QingyuTheme.secondaryText(dark)),
+            )
+        }
     }
 }
 
@@ -379,40 +415,74 @@ private fun WelcomePage(
     onRestore: () -> Unit,
 ) {
     val dark = isSystemInDarkTheme()
+    val accent = Color(QingyuTheme.primary(dark = dark))
     QingyuPageList(
         innerPadding = innerPadding,
         horizontalPadding = QingyuPageCardMargin,
         contentPadding = PaddingValues(top = 4.dp, bottom = 16.dp),
-        verticalArrangement = Arrangement.spacedBy(QingyuSectionGap),
+        // 欢迎页只有两块内容：留白靠 24dp 的分段间距和页头内部节奏撑开，
+        // 不用魔法数字把卡片硬推到屏幕中间。
+        verticalArrangement = Arrangement.spacedBy(24.dp),
     ) {
-        item(key = "header") {
-            GuideHeader(title, pageIndex, onBack, eyebrow = GuideStrings.welcomeAppName.text)
-        }
-        item(key = "subtitle") {
-            Text(
-                text = GuideStrings.welcomeSubtitle.text,
-                style = MiuixTheme.textStyles.footnote1,
-                color = Color(QingyuTheme.secondaryText(dark)),
-                modifier = Modifier.padding(horizontal = 4.dp),
-            )
+        item(key = "hero") {
+            Column(Modifier.fillMaxWidth()) {
+                GuideHeader(
+                    title = title,
+                    pageIndex = pageIndex,
+                    onBack = onBack,
+                    eyebrow = GuideStrings.welcomeAppName.text,
+                    largeTitle = true,
+                )
+                // GuideHeader 末尾自带 4dp（标题到卡片的默认呼吸），这里再补 12dp，
+                // 标题与说明之间留 16dp，说明和第一张卡之间才是 24dp 的分段间距。
+                Spacer(Modifier.height(12.dp))
+                Text(
+                    text = GuideStrings.welcomeSubtitle.text,
+                    style = MiuixTheme.textStyles.body2,
+                    color = Color(QingyuTheme.secondaryText(dark)),
+                    lineHeight = 21.sp,
+                    modifier = Modifier.padding(horizontal = 16.dp),
+                )
+            }
         }
         item(key = "actions") {
-            QingyuCard(
+            Column(
                 modifier = Modifier.fillMaxWidth(),
-                insideMargin = PaddingValues(horizontal = 16.dp, vertical = 4.dp),
+                verticalArrangement = Arrangement.spacedBy(QingyuSectionGap),
             ) {
-                Column {
-                    GuideNavRow(GuideStrings.startUsingTitle.text, onStart)
-                    GuideNavRow(
-                        title = GuideStrings.importTimetableTitle.text,
-                        onClick = onImport,
-                        subtitle = GuideStrings.importTimetableSubtitle.text,
+                // 主路径单独一张浅色主题卡：和下面两项「已有课表」不是同一档，
+                // 不靠图标也能一眼看出先点哪个。
+                QingyuCard(
+                    modifier = Modifier.fillMaxWidth(),
+                    insideMargin = PaddingValues(horizontal = 16.dp, vertical = 4.dp),
+                    colors = CardDefaults.defaultColors(
+                        color = accent.copy(alpha = if (dark) 0.20f else 0.10f),
+                    ),
+                ) {
+                    GuideActionRow(
+                        title = GuideStrings.startUsingTitle.text,
+                        onClick = onStart,
+                        emphasized = true,
                     )
-                    GuideNavRow(
-                        title = GuideStrings.restoreBackupTitle.text,
-                        onClick = onRestore,
-                        subtitle = GuideStrings.restoreBackupSubtitle.text,
-                    )
+                }
+                QingyuCard(
+                    modifier = Modifier.fillMaxWidth(),
+                    insideMargin = PaddingValues(horizontal = 16.dp, vertical = 4.dp),
+                ) {
+                    Column {
+                        GuideActionRow(
+                            title = GuideStrings.importTimetableTitle.text,
+                            onClick = onImport,
+                            subtitle = GuideStrings.importTimetableSubtitle.text,
+                        )
+                        // 行间不画横线：官方 demo 同卡多行之间一处都没有，行距由
+                        // BasicComponent 自带内边距承担（RowDividerGuardTest 也会拦）。
+                        GuideActionRow(
+                            title = GuideStrings.restoreBackupTitle.text,
+                            onClick = onRestore,
+                            subtitle = GuideStrings.restoreBackupSubtitle.text,
+                        )
+                    }
                 }
             }
         }
@@ -897,23 +967,27 @@ private fun TipsPage(
             ) {
                 Column {
                     GuideGroupTitle(GuideStrings.guideShortNameAdviceTitle.text, dark)
-                    Spacer(Modifier.height(8.dp))
+                    Spacer(Modifier.height(6.dp))
                     // 发布版卡片首句：先说「为什么简称值得填」，再给推荐 / 不推荐两行示例。
                     GuideParagraph(GuideStrings.guideShortNameAdviceSubtitle.text, dark)
-                    Spacer(Modifier.height(8.dp))
+                    Spacer(Modifier.height(16.dp))
                     ExampleRow(ok = true, label = GuideStrings.guideShortNameRecommended.text, example = GuideStrings.guideShortNameRecommendedExample.text, dark = dark)
-                    Spacer(Modifier.height(6.dp))
+                    Spacer(Modifier.height(12.dp))
                     ExampleRow(ok = false, label = GuideStrings.guideShortNameNotRecommended.text, example = GuideStrings.guideShortNameNotRecommendedExample.text, dark = dark)
-                    Spacer(Modifier.height(14.dp))
+                    Spacer(Modifier.height(18.dp))
+                    // 卡片内按钮是「次要动作」，不跟底栏主按钮抢视觉：主色 12% 的浅底 + 主色字。
+                    // 原来用卡片同色做底，在白卡上等于隐形，只剩一行飘着的文字。
                     Button(
                         onClick = onOpenCourseOverview,
-                        colors = ButtonDefaults.buttonColors(Color(QingyuTheme.card(dark))),
+                        colors = ButtonDefaults.buttonColors(
+                            Color(QingyuTheme.primary(dark = dark)).copy(alpha = 0.12f),
+                        ),
                         modifier = Modifier.fillMaxWidth(),
                     ) {
                         Text(
                             text = GuideStrings.guideSetCourseShortNameAction.text,
-                            style = MiuixTheme.textStyles.body2,
-                            color = Color(QingyuTheme.primaryText(dark)),
+                            style = MiuixTheme.textStyles.body2.shiftWeight(QingyuWeightDelta.MEDIUM),
+                            color = Color(QingyuTheme.primary(dark = dark)),
                         )
                     }
                 }
@@ -925,14 +999,21 @@ private fun TipsPage(
                 modifier = Modifier.fillMaxWidth(),
                 insideMargin = QingyuCardDefaults.ContentInsideMargin,
             ) {
-                Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                Column {
                     GuideGroupTitle(GuideStrings.guideImportMethodsTitle.text, dark)
+                    Spacer(Modifier.height(6.dp))
                     // 发布版卡片首句：先说整体有什么方式，再列 3 条步骤。
                     GuideParagraph(GuideStrings.guideImportMethodsSubtitle.text, dark)
+                    Spacer(Modifier.height(16.dp))
                     StepRow("1", GuideStrings.guideImportMethodStep1.text, dark)
+                    Spacer(Modifier.height(12.dp))
                     StepRow("2", GuideStrings.guideImportMethodStep2.text, dark)
+                    Spacer(Modifier.height(12.dp))
                     StepRow("3", GuideStrings.guideImportMethodStep3.text, dark)
                     // 发布版在 3 条步骤之后补一句「也可以参与适配」的次要说明（mutedBody）。
+                    // 只靠 18dp 留白分层：守卫（RowDividerGuardTest）不允许在同一张卡的
+                    // 内容之间插 HorizontalDivider，官方 demo 也是用行距而不是横线。
+                    Spacer(Modifier.height(18.dp))
                     GuideParagraph(GuideStrings.guideImportMethodExtra.text, dark)
                 }
             }
@@ -943,11 +1024,14 @@ private fun TipsPage(
                 modifier = Modifier.fillMaxWidth(),
                 insideMargin = QingyuCardDefaults.ContentInsideMargin,
             ) {
-                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Column {
                     GuideGroupTitle(GuideStrings.guideFinalTipsTitle.text, dark)
-                    GuideParagraph(GuideStrings.guideFinalTip1.text, dark)
-                    GuideParagraph(GuideStrings.guideFinalTip2.text, dark)
-                    GuideParagraph(GuideStrings.guideFinalTip3.text, dark)
+                    Spacer(Modifier.height(10.dp))
+                    NumberedTip(GuideStrings.guideFinalTip1.text, dark)
+                    Spacer(Modifier.height(10.dp))
+                    NumberedTip(GuideStrings.guideFinalTip2.text, dark)
+                    Spacer(Modifier.height(10.dp))
+                    NumberedTip(GuideStrings.guideFinalTip3.text, dark)
                 }
             }
         }
@@ -956,42 +1040,95 @@ private fun TipsPage(
 
 @Composable
 private fun ExampleRow(ok: Boolean, label: String, example: String, dark: Boolean) {
-    val markColor = if (ok) Color(QingyuTheme.success(dark)) else Color(QingyuTheme.secondaryText(dark)).copy(alpha = 0.6f)
-    Row(verticalAlignment = Alignment.CenterVertically) {
-        Text(
-            text = if (ok) "✓" else "✗",
-            style = MiuixTheme.textStyles.body2.shiftWeight(QingyuWeightDelta.BOLD),
-            color = markColor,
-        )
-        Spacer(Modifier.width(8.dp))
-        Text(
-            text = label,
-            style = MiuixTheme.textStyles.footnote1,
-            color = Color(QingyuTheme.secondaryText(dark)),
-            modifier = Modifier.width(56.dp),
-        )
+    // 两行结构：第一行「对 / 错 + 结论」，第二行才是示例本身。
+    //
+    // 原来把结论和示例塞在同一行、给结论固定 56dp：中文「推荐示例」正好 52dp 勉强挤下，
+    // 英文 “Not recommended” 却要 90dp 左右，只能折行或把示例顶歪；示例列也永远对不齐。
+    // 改成上下两行后，结论宽度随语言自然撑开，示例统一从 20dp 缩进起步，哪种语言都齐。
+    val markColor = if (ok) {
+        Color(QingyuTheme.success(dark))
+    } else {
+        Color(QingyuTheme.secondaryText(dark)).copy(alpha = 0.55f)
+    }
+    Column {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text(
+                text = if (ok) "✓" else "✗",
+                style = MiuixTheme.textStyles.body2.shiftWeight(QingyuWeightDelta.BOLD),
+                color = markColor,
+                modifier = Modifier.width(20.dp),
+            )
+            Text(
+                text = label,
+                style = MiuixTheme.textStyles.footnote1.shiftWeight(QingyuWeightDelta.MEDIUM),
+                color = Color(QingyuTheme.secondaryText(dark)),
+            )
+        }
+        Spacer(Modifier.height(3.dp))
         Text(
             text = example,
-            style = MiuixTheme.textStyles.footnote1,
-            color = Color(QingyuTheme.primaryText(dark)),
-            modifier = Modifier.weight(1f),
+            style = MiuixTheme.textStyles.body2,
+            // 不推荐的那条压成次要色：不是「看不清」，而是明确降一级，眼睛先看到推荐写法。
+            color = if (ok) {
+                Color(QingyuTheme.primaryText(dark))
+            } else {
+                Color(QingyuTheme.secondaryText(dark))
+            },
+            lineHeight = 21.sp,
+            modifier = Modifier.padding(start = 20.dp),
         )
     }
 }
 
 @Composable
 private fun StepRow(step: String, text: String, dark: Boolean) {
-    Row(verticalAlignment = Alignment.CenterVertically) {
+    // 顶对齐：一条步骤经常两行以上，序号垂直居中会飘到段落中间（原来就是这样）。
+    Row(verticalAlignment = Alignment.Top) {
         Text(
             text = step,
-            style = MiuixTheme.textStyles.footnote1.shiftWeight(QingyuWeightDelta.BOLD),
+            style = MiuixTheme.textStyles.footnote1.shiftWeight(QingyuWeightDelta.SEMIBOLD),
             color = Color(QingyuTheme.primary(dark = dark)),
-            modifier = Modifier.width(18.dp),
+            modifier = Modifier.width(20.dp),
         )
         Text(
             text = text,
             style = MiuixTheme.textStyles.footnote1,
             color = Color(QingyuTheme.primaryText(dark)),
+            lineHeight = 20.sp,
+            modifier = Modifier.weight(1f),
+        )
+    }
+}
+
+/** 匹配「1. 」「2、」这类写在文案里的序号（六份 ARB 都是同一格式）。 */
+private val orderedTipPrefix = Regex("""^[\s\u3000]*(\d+)[.、][\s\u3000]*""")
+
+/**
+ * 把 ARB 里自带「1. 」的提醒拆成「序号列 + 正文」两段渲染。
+ *
+ * 只改排版、不改字：序号和正文仍然逐字上屏，只是正文折行后能对齐到 20dp 缩进，
+ * 不会像整段 `1. …` 那样第二行顶回最左边。遇到没有序号的译文就原样交给 [GuideParagraph]，
+ * 不为「格式」赌一条文案一定长什么样。
+ */
+@Composable
+private fun NumberedTip(text: String, dark: Boolean) {
+    val prefix = orderedTipPrefix.find(text)
+    if (prefix == null) {
+        GuideParagraph(text, dark)
+        return
+    }
+    Row(verticalAlignment = Alignment.Top) {
+        Text(
+            text = prefix.groupValues[1],
+            style = MiuixTheme.textStyles.footnote1.shiftWeight(QingyuWeightDelta.SEMIBOLD),
+            color = Color(QingyuTheme.primary(dark = dark)),
+            modifier = Modifier.width(20.dp),
+        )
+        Text(
+            text = text.substring(prefix.range.last + 1),
+            style = MiuixTheme.textStyles.footnote1,
+            color = Color(QingyuTheme.secondaryText(dark)),
+            lineHeight = 20.sp,
             modifier = Modifier.weight(1f),
         )
     }
@@ -1027,17 +1164,17 @@ private fun GuideBottomBar(
             modifier = Modifier.fillMaxWidth().clearAndSetSemantics {
                 contentDescription = "${currentPage + 1} / $TOTAL_GUIDE_PAGES"
             },
-            horizontalArrangement = Arrangement.spacedBy(4.dp),
+            horizontalArrangement = Arrangement.spacedBy(6.dp),
         ) {
             for (i in 0 until TOTAL_GUIDE_PAGES) {
                 Box(
                     modifier = Modifier
                         .weight(1f)
-                        .height(4.dp)
-                        .clip(RoundedCornerShape(2.dp))
+                        .height(3.dp)
+                        .clip(RoundedCornerShape(1.5.dp))
                         .background(
                             if (i <= currentPage) primary
-                            else Color(QingyuTheme.secondaryText(dark)).copy(alpha = 0.25f),
+                            else Color(QingyuTheme.dividerLine(dark)),
                         ),
                 )
             }
