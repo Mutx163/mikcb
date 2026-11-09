@@ -312,6 +312,12 @@ object SettingsLiveSelfCheckPage {
                 max = TIME_CORRECTION_MAX,
                 divisions = TIME_CORRECTION_DIVISIONS,
                 defaultValue = 0.0,
+                // Flutter `live_settings_subpages.dart:260-266`：这根滑杆带
+                // `dialogTitle: timeCorrectionTitle` + `dialogHelper: timeCorrectionHelp`，
+                // 点行/点读数会弹数值输入框。重构版此前只给了值、没给 helper，
+                // 于是行尾没有箭头、点行没反应，`timeCorrectionHelp` 成了孤儿键。
+                dialogHelperKey = s.timeCorrectionHelp.key,
+                dialogHelper = s.timeCorrectionHelp.text,
             ),
             // :1001 `seconds.toDouble().clamp(-30, 30)`
             sliderValue = seconds.toDouble().coerceIn(TIME_CORRECTION_MIN, TIME_CORRECTION_MAX),

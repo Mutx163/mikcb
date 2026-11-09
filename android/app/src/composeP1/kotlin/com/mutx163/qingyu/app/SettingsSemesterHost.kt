@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -19,11 +20,17 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
+import androidx.core.app.NotificationManagerCompat
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import com.mutx163.qingyu.BuildConfig
 import com.mutx163.qingyu.MemoryStatsCollector
 import com.mutx163.qingyu.components.QingyuSheet
 import com.mutx163.qingyu.components.QingyuWeightDelta
 import com.mutx163.qingyu.components.shiftWeight
+import com.mutx163.qingyu.core.MiniJson
+import com.mutx163.qingyu.pages.live.LiveDisplayStore
 import com.mutx163.qingyu.pages.settings.SettingsTimetableHubLogic
 import com.mutx163.qingyu.pages.settings.SemesterSettingsLogic
 import com.mutx163.qingyu.pages.settings.SettingsAction
@@ -34,6 +41,7 @@ import com.mutx163.qingyu.pages.sync.CouplePartnerPort
 import com.mutx163.qingyu.pages.task.TaskStrings
 import com.mutx163.qingyu.platform.CouplePartnerPortImpl
 import com.mutx163.qingyu.platform.PrefsKeyValueStore
+import com.mutx163.qingyu.sync.WebdavSyncConfig
 import com.mutx163.qingyu.weather.WeatherProvider
 import top.yukonga.miuix.kmp.basic.Button
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
@@ -479,11 +487,53 @@ fun SettingsTimetableHubHost(
 
     // 开发者工具整组的可见性（Dart `timetable_settings_screen.dart:1052-1070`）：
     //   诊断构建（包名 .debug / .profile）⇒ 六行（含「内存状态」「实时活动夹具」）；
-    //   正式发布包 ⇒ 整组隐藏；其余（debug 包但非 dev flavor）⇒ 只留组件展示 / 调试叠层。
+    //   正式发布包 ⇒ 整组隐藏；其余（debug 包但非 dev flavor）⇒ 只留两组组件展示。
     // 壳里原来这两处都用默认 false ⇒ 永远走「其余」分支，**内存状态与夹具入口在壳里从未出现过**，
     // 而这两行正是诊断族的两个真实入口。Kotlin 侧判定是同步的，不必像 Dart 那样等 FutureBuilder。
     val diagnosticsBuild = MemoryStatsCollector.isDiagnosticsPackage(context)
     val releaseBuild = !BuildConfig.DEBUG
+
+    // ---- 两项「异步查 + 回前台重查」的行尾真值 ----------------------------------
+    //
+    // 1) 超级岛行尾（Flutter `timetable_settings_screen.dart:900-926`，`_LiveEntryTileState`）：
+    //    通知权限 null = 还没查到（行尾留白，避免首帧闪「缺权限」），查到后按
+    //    「缺权限优先于开关状态」显示；三个提醒开关任一开着算「已开启」。
+    //    权限判据与 Dart 的 `MiuiLiveActivitiesService().checkNotificationPermission()` 同源：
+    //    系统层面本应用通知是否可用（未授予 POST_NOTIFICATIONS、或用户在系统设置里
+    //    关掉应用通知，都会是 false）。
+    // 2) 云同步行尾（`:995-1007`，`_CloudSyncEntryTileState`）：见
+    //    [readCloudSyncTrailingState] 的 KDoc——只取已落盘的「已开启 / 已关闭」。
+    var notificationPermissionGranted by remember { mutableStateOf<Boolean?>(null) }
+    var liveReminderEnabled by remember { mutableStateOf(true) }
+    var cloudSyncState by remember { mutableStateOf("loading") }
+
+    val liveStore = remember(sharedPrefs) { LiveDisplayStore(TimetableStore(sharedPrefs)) }
+
+    fun readAsyncTrailingValues() {
+        notificationPermissionGranted = runCatching {
+            NotificationManagerCompat.from(context).areNotificationsEnabled()
+        }.getOrNull()
+        // 读不到就按出厂默认（三个开关都开）显示：不能拿 false 冒充「用户关过」。
+        liveReminderEnabled = runCatching {
+            val timing = liveStore.loadReminderTiming()
+            timing.liveEnableBeforeClass || timing.liveEnableDuringClass || timing.liveEnableBeforeEnd
+        }.getOrDefault(true)
+        cloudSyncState = runCatching { readCloudSyncTrailingState(sharedPrefs) }
+            .getOrDefault("loading")
+    }
+    LaunchedEffect(liveStore) { readAsyncTrailingValues() }
+    // 回前台重查（Dart `didChangeAppLifecycleState`，`timetable_settings_screen.dart:156-170`）：
+    // 用户可能刚在系统设置里开了通知、或在实时活动子页改了提醒开关；云同步的开关也
+    // 在别的页里改，回本页时要跟着变。
+    val lifecycleOwner = LocalLifecycleOwner.current
+    DisposableEffect(lifecycleOwner, liveStore) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_RESUME) readAsyncTrailingValues()
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
+    }
+
     val state = SettingsTimetableHubLogic.stateOf(
         snapshot = snapshot,
         settings = settings,
@@ -492,6 +542,9 @@ fun SettingsTimetableHubHost(
     ).copy(
         releaseBuild = releaseBuild,
         diagnosticsBuild = diagnosticsBuild,
+        notificationPermissionGranted = notificationPermissionGranted,
+        liveReminderEnabled = liveReminderEnabled,
+        cloudSyncState = cloudSyncState,
     )
 
     SettingsPageScreen(
@@ -502,4 +555,37 @@ fun SettingsTimetableHubHost(
             if (action == SettingsAction.NAVIGATE) target?.let(onNavigate)
         },
     )
+}
+
+/**
+ * 云同步行尾的**已落盘**状态串（`enabled` / `disabled`）。
+ *
+ * ## 口径
+ *
+ * 发布版行尾五态（`_CloudSyncEntryTileState.build`，`timetable_settings_screen.dart:995-1007`）：
+ * 未读完留白 / 已关闭 / 同步中 / 上次失败 / 已开启。其中「同步中」「上次失败」来自
+ * `provider.cloudSyncStatus`——那是**内存态**，进程重启就没了。
+ *
+ * 重构版的运行时状态活在 `CloudSyncController` 实例里（`pages/sync/CloudSyncController.kt`
+ * 的 `status.lastErrorCode`；云同步页与备份列表页各自 `new` 一份，没有进程级共享件），
+ * 设置首页拿不到 ⇒ 这里只给**已落盘的两态**，其余时间显示「已开启 / 已关闭」，
+ * 不拿假值冒充「同步中 / 上次失败」。缺的那份共享状态已作为待办报给 Chief（需要同步泳道
+ * 提供进程级状态持有者），不在本文件造。
+ *
+ * ## 读法
+ *
+ * 键与 [WebdavSyncConfig.PREFS_KEY] 同源（`webdav_sync_config_v1` 的 `enabled`）；
+ * 读不到 / 坏值按出厂默认（未启用）算——与 `WebdavConfigStoreImpl.loadConfig()` 的
+ * 兜底一致，也与 Dart 侧 `cloudSyncConfig.enabled` 的默认一致。
+ */
+private fun readCloudSyncTrailingState(prefs: PrefsKeyValueStore): String {
+    val raw = prefs.getString(WebdavSyncConfig.PREFS_KEY)
+    if (raw.isNullOrEmpty()) return "disabled"
+    val decoded = MiniJson.tryParse(raw) as? Map<*, *> ?: return "disabled"
+    val map = LinkedHashMap<String, Any?>()
+    for ((key, value) in decoded) {
+        if (key is String) map[key] = value
+    }
+    val enabled = runCatching { WebdavSyncConfig.fromJson(map).enabled }.getOrDefault(false)
+    return if (enabled) "enabled" else "disabled"
 }

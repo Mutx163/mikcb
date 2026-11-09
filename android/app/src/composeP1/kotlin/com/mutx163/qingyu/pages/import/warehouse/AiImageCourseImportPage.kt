@@ -42,6 +42,16 @@ import top.yukonga.miuix.kmp.basic.TextField
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 /**
+ * 预览列表最多铺几门课。
+ *
+ * Flutter v2.1.4.1 `lib/screens/import/ai_image_course_import_screen.dart:747`：
+ * `...result.courses.take(6)`；超过 6 门在列表下方补一句
+ * `aiPreviewRemainingCourses(length - 6)`（`:748-755`）。重构版以前铺 8 门且没有余量提示，
+ * 两处都与发布版不一致。
+ */
+private const val AI_PREVIEW_COURSE_LIMIT = 6
+
+/**
  * AI 课表图片识别导入页 · Compose 渲染层（P3-G2）。
  * 对应 Flutter `lib/screens/import/ai_image_course_import_screen.dart`：
  * 1. 顶部栏返回导航；
@@ -398,7 +408,10 @@ fun AiImageCourseImportPage(
                     }
                 }
 
-                items(res.courses.take(8)) { course ->
+                // 对齐 Flutter v2.1.4.1 `ai_image_course_import_screen.dart:740-753`：
+                // 预览只列**前 6 门**，超过 6 门在列表下方补一句「其余 N 条将在导入后写入」，
+                // 不能把 8 门全铺出来（那样既没有余量提示，也比发布版多铺两门）。
+                items(res.courses.take(AI_PREVIEW_COURSE_LIMIT)) { course ->
                     QingyuCard(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -418,6 +431,24 @@ fun AiImageCourseImportPage(
                                 color = MiuixTheme.colorScheme.onSurfaceVariantSummary
                             )
                         }
+                    }
+                }
+
+                // 「还有 N 门」余量提示（Dart `:748-755`）：只有超过预览上限才出现。
+                if (res.courses.size > AI_PREVIEW_COURSE_LIMIT) {
+                    item(key = "parse_remaining") {
+                        Text(
+                            text = WarehouseStrings.aiPreviewRemainingCourses.filled(
+                                "count",
+                                (res.courses.size - AI_PREVIEW_COURSE_LIMIT).toString(),
+                            ),
+                            style = MiuixTheme.textStyles.footnote1,
+                            color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = QingyuPageCardMargin)
+                                .padding(top = 6.dp),
+                        )
                     }
                 }
             }

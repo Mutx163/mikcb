@@ -337,18 +337,23 @@ class SettingsTimetablePageTest {
     // ------------------------------------------------------ 开发者 section
 
     @Test
-    fun `调试版只留组件展示与调试叠层`() {
+    fun `调试版只留两组组件展示`() {
         // :1065-1144：非诊断构建 + kReleaseMode → 整块不渲染；
-        // 非诊断构建 + 非 release（即调试版）→ 组件展示（Miuix demo）+ 调试叠层两行。
-        // 2026-10-28：HyperOS 自研组件库已不存在，设置页底部只保留 Miuix 官方 demo。
+        // 非诊断构建 + 非 release（即调试版）→ 两组「组件展示」（HyperOS / Miuix）。
+        //
+        // 2026-11-10：HyperOS 组件展示行补回。迁移时（10-27 建本页）展示页还没移植，
+        // 于是整行漏掉；`HyperosShowcasePage` 后来落地（路由 `i.hyperosShowcase`），
+        // 但设置页没人指向它 = 死页面。发布版 `timetable_settings_screen.dart:1216-1229`
+        // 也正是「HyperOS 展示 + Miuix 展示」两行。
+        // 同批把「调试 UI 叠层」「调试面板」两行藏起：重构版两者都没有实现
+        // （无 `BlackBoxOverlayPreferences`、无面板落点），留着就是点了必无效的入口。
         val debug = spec(
             SettingsTimetableState(releaseBuild = false, diagnosticsBuild = false),
         )
         assertEquals(
             listOf(
+                "timetable.hyperosShowcase",
                 "timetable.miuixShowcase",
-                "timetable.debugOverlay",
-                "timetable.debugPanel",
             ),
             debug.group("timetable.section.developer").childRowIds(),
         )
@@ -364,9 +369,8 @@ class SettingsTimetablePageTest {
             listOf(
                 "timetable.memoryStats",
                 "timetable.liveTestingFixture",
+                "timetable.hyperosShowcase",
                 "timetable.miuixShowcase",
-                "timetable.debugOverlay",
-                "timetable.debugPanel",
             ),
             diagnostics.group("timetable.section.developer").childRowIds(),
         )
@@ -383,18 +387,6 @@ class SettingsTimetablePageTest {
         assertFalse(release.topLevelIds().contains("timetable.section.developer.label"))
         // 底部空档照旧在最后（忠实搬运：Dart 里它在 shrink 之外）
         assertEquals("timetable.gap.bottom", release.topLevelIds().last())
-    }
-
-    @Test
-    fun `调试叠层开关与面板行`() {
-        val page = spec(SettingsTimetableState(releaseBuild = false, debugOverlayVisible = true))
-        val toggle = page.row("timetable.debugOverlay")
-        assertEquals(MiuixRowComponent.SWITCH, toggle.component)
-        assertEquals("调试 UI 叠层", toggle.title)
-        assertEquals(true, toggle.switchValue)
-        val panel = page.row("timetable.debugPanel")
-        assertEquals("打开调试面板", panel.title)
-        assertEquals(SettingsAction.DIALOG, panel.action)
     }
 
     // ------------------------------------------------------- 学期设置子页

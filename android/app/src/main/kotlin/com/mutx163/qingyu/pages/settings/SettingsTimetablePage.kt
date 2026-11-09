@@ -551,6 +551,20 @@ object SettingsTimetablePage {
                 actionTarget = ROUTE_LIVE_FIXTURE,
             )
         }
+        // 发布版顺序（`timetable_settings_screen.dart:1216-1245`）：HyperOS 组件展示在前、
+        // Miuix 组件展示在后。重构版此前只有后者，前者整行缺失（`hyperosShowcaseEntryTitle`
+        // / `hyperosShowcaseEntrySubtitle` 两个键在 ARB 里有、界面上无处渲染）。
+        // 落点已就绪：`ROUTE_HYPEROS_SHOWCASE` → 壳映射 `"i.hyperosShowcase"`
+        // （`ShellWiring.kt` 的设置路由表）→ `HyperosShowcasePage`。
+        rows += settingsRow(
+            id = "timetable.hyperosShowcase",
+            icon = SettingsRowIcon("all", "#8B5CF6"),
+            component = MiuixRowComponent.ARROW,
+            title = SettingsStringsExt2.hyperosShowcaseEntryTitle,
+            details = SettingsStringsExt2.hyperosShowcaseEntrySubtitle,
+            action = SettingsAction.NAVIGATE,
+            actionTarget = ROUTE_HYPEROS_SHOWCASE,
+        )
         rows += settingsRow(
             id = "timetable.miuixShowcase",
             icon = SettingsRowIcon("listView", "#06B6D4"),
@@ -560,21 +574,11 @@ object SettingsTimetablePage {
             action = SettingsAction.NAVIGATE,
             actionTarget = ROUTE_MIUIX_SHOWCASE,
         )
-        rows += settingsRow(
-            id = "timetable.debugOverlay",
-            icon = SettingsRowIcon("show", "#FA382E"),
-            component = MiuixRowComponent.SWITCH,
-            title = SettingsStringsExt2.debugUiOverlayToggleTitle,
-            switchValue = state.debugOverlayVisible,
-            action = SettingsAction.WRITE_SETTING,
-        )
-        rows += settingsRow(
-            id = "timetable.debugPanel",
-            icon = SettingsRowIcon("notes", "#FF6B00"),
-            component = MiuixRowComponent.ARROW,
-            title = SettingsStringsExt2.debugUiOverlayOpenPanelTitle,
-            action = SettingsAction.DIALOG,
-        )
+        // 发布版这里还有「调试 UI 叠层」开关与「调试面板」两行
+        // （`timetable_settings_screen.dart:1248-1265`）。重构版**没有任何实现**：
+        // `BlackBoxOverlayPreferences` 不存在、面板也没有落点，宿主只处理 NAVIGATE，
+        // 开关值恒 false 且没有写入点。按仓内「不留点了必无效的入口」口径先整行藏起，
+        // 等叠层/面板真移植回来再一起放出来（文案键保留在 ARB 里，不删）。
         nodes += SettingsGroup(id = "timetable.section.developer", children = rows)
     }
 }
