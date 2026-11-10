@@ -14,6 +14,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -43,6 +44,18 @@ import com.mutx163.qingyu.pages.time_scheme.TimeSchemeUsageIndexFactory
 import com.mutx163.qingyu.pages.time_scheme.TimeSchemeUsageSheet
 import com.mutx163.qingyu.pages.time_scheme.TimeSchemeUsageView
 import com.mutx163.qingyu.pages.time_scheme.TimeSchemeSectionEdit
+import com.mutx163.qingyu.pages.time_scheme.TimeSchemeShareSheet
+import com.mutx163.qingyu.pages.time_scheme.TimeSchemeShareSheetDialog
+import com.mutx163.qingyu.pages.transfer.DataTransferPackageLogic
+import com.mutx163.qingyu.pages.transfer.QrTransferSendSession
+import com.mutx163.qingyu.pages.transfer.TransferPackageRequest
+import com.mutx163.qingyu.pages.transfer.TransferPackageResult
+import com.mutx163.qingyu.pages.transfer.TransferServiceMessages
+import com.mutx163.qingyu.pages.transfer.TransferShellBridge
+import com.mutx163.qingyu.platform.AndroidTransferShareAdapter
+import com.mutx163.qingyu.share.TransferChannel
+import com.mutx163.qingyu.share.TransferEnvelope
+import com.mutx163.qingyu.share.TransferScope
 import top.yukonga.miuix.kmp.basic.Button
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
 import top.yukonga.miuix.kmp.basic.NumberPicker
@@ -52,6 +65,7 @@ import top.yukonga.miuix.kmp.theme.MiuixTheme
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
 /**
@@ -79,7 +93,7 @@ import kotlinx.coroutines.withContext
  *
  * | 差异 | Dart | 本层 | 原因 |
  * |---|---|---|---|
- * | 分享（系统文件 / 二维码） | 打包成只含该模板的 `.mikcb` 再走 `SharePlus` / `QrTransferSendScreen` | **菜单里不出现该项** | 传输包构建与 `FileProvider` 属 I3/C2 批次，全仓 `FileProvider` 仍为 0；摆一个点了没反应的「分享」比少一项更糟（与本仓 `CourseActionSheet` 既有先例同口径） |
+ * | 分享（系统文件 / 二维码） | 打包成只含该模板的 `.mikcb` 再走 `SharePlus` / `QrTransferSendScreen` | **已接上**（2026-11-10）：打包复用 `pages/transfer/DataTransferPackageLogic` 的 `TIME_TEMPLATE` 分支（只带被点名的模板），系统分享复用 `platform/AndroidTransferShareAdapter`（写缓存 → FileProvider → 选择器），二维码复用 `TransferShellBridge` + 现成的 `g3.qrSend`。壳没给 `onRequestQrSend` 时**二维码那一项不显示**——宁可少一项，也不摆一个点了没反应的按钮 |
  * | 地点作息匹配 / 日期作息规则两页 | 各自是完整实现 | **只保证入口点得动**（跳 `d3.locationMatch` / `d2.dateRule`） | 那两页属 `P35-B2` 与 `ScheduleDateRuleHost` 各自的批次 |
  * | 编辑节次的「是否有未保存改动」 | 无（返回即丢弃） | 同样无 | 与 Dart 一致，不新增行为 |
  *
@@ -98,6 +112,9 @@ import kotlinx.coroutines.withContext
  * @param onOpenEditor 打开某套模板的编辑节次页（壳负责推 `d3.timeSchemeEditor` 并带上 id）。
  * @param onOpenLocationEntry 进「地点作息匹配」。
  * @param onOpenDateRules 进「日期作息规则」。
+ * @param onRequestQrSend 打开壳的二维码发送页（`g3.qrSend`）。载荷由本宿主先写进
+ *   [TransferShellBridge] 再调它；**为 null 表示壳还没接这条路**（路由表那一行归 Lead），
+ *   此时分享弹层里不显示「二维码分享」，避免点上去没反应。
  */
 @Composable
 fun TimeSchemeManagementHost(
@@ -106,6 +123,7 @@ fun TimeSchemeManagementHost(
     onOpenEditor: (schemeId: String) -> Unit,
     onOpenLocationEntry: () -> Unit,
     onOpenDateRules: () -> Unit,
+    onRequestQrSend: (() -> Unit)? = null,
 ) {
     var snapshot by remember(repository) { mutableStateOf<TimetableSnapshot?>(null) }
     var model by remember(repository) { mutableStateOf<TimeSchemeManagementModel?>(null) }
@@ -151,6 +169,10 @@ fun TimeSchemeManagementHost(
 
     val context = LocalContext.current
     val currentModel = model ?: TimeSchemeManagementModel()
+    val coroutineScope = rememberCoroutineScope()
+    val shareAdapter = remember(context) { AndroidTransferShareAdapter(context) }
+    // 分享是「打包 + 写缓存 + 拉面板」一整串，连点两次会各拉一次面板；一个进行中的标记就够。
+    var isSharing by remember { mutableStateOf(false) }
 
     var dialog by remember { mutableStateOf<TimeSchemeDialog>(TimeSchemeDialog.None) }
     // 新建成功后要直接进编辑器（Dart `_createScheme` 末尾 `_openEditor(scheme.id)`），
@@ -159,8 +181,111 @@ fun TimeSchemeManagementHost(
         Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
     }
 
+    /** 打包 / 分享失败 → 提示。码经 [TransferServiceMessages] 翻成人话（与数据备份页同口径）。 */
+    fun showShareFailure(code: String) {
+        toast(
+            currentModel.sendFailedMessage(
+                TransferServiceMessages.localize("transfer_send_${code.lowercase()}"),
+            ),
+        )
+    }
+
+    /** 单套模板的打包请求：scope 固定 TIME_TEMPLATE + 只点名这一套（Dart 同名参数）。 */
+    fun shareRequest(schemeId: String, channel: TransferChannel): TransferPackageRequest =
+        TransferPackageRequest(
+            scope = TransferScope.TIME_TEMPLATE,
+            channel = channel,
+            packageId = TransferEnvelope.newPackageId(),
+            now = LocalDateTime.now(),
+            selectedTimeSchemeIds = setOf(schemeId),
+        )
+
+    /**
+     * 系统分享单套模板（Dart `_shareTimeSchemeAsFile:896-940`）。
+     *
+     * 分享正文/主题取**本页自己的** ARB（`timeSchemeShareText(name)` /
+     * `timeSchemeShareSubject`），不是数据备份页那两句：发布版这里就是模板页的文案，
+     * 拼包结果 [TransferPackageResult.Success.shareText] 只服务备份页。
+     */
+    fun shareAsFile(schemeId: String) {
+        val sheet = currentModel.shareSheet(schemeId) ?: return
+        if (isSharing) return
+        isSharing = true
+        val snap = snapshot ?: repository.snapshot
+        coroutineScope.launch {
+            val failure = withContext(Dispatchers.IO) {
+                when (
+                    val built = DataTransferPackageLogic.build(
+                        snapshot = snap,
+                        request = shareRequest(schemeId, TransferChannel.FILE),
+                    )
+                ) {
+                    is TransferPackageResult.Failure -> built.code
+                    is TransferPackageResult.Success -> when (
+                        val outcome = shareAdapter.share(
+                            fileName = built.fileName,
+                            content = built.json,
+                            shareText = sheet.shareText,
+                            shareSubject = sheet.shareSubject,
+                        )
+                    ) {
+                        is AndroidTransferShareAdapter.Outcome.Launched -> null
+                        is AndroidTransferShareAdapter.Outcome.Failed -> outcome.failure.name
+                    }
+                }
+            }
+            isSharing = false
+            failure?.let(::showShareFailure)
+        }
+    }
+
+    /**
+     * 二维码分享单套模板（Dart `_shareTimeSchemeAsQr:943-989`）。
+     *
+     * 与数据备份页的二维码发送同一条路：打包 → `QrTransferSendSession.prepare` 预检资源上限
+     * → 字节与标题写进 [TransferShellBridge] → 让壳跳 `g3.qrSend`。超限时**不跳页**，
+     * 原地提示（Dart 同样是 preflight 抛 `QrTransferLimitException` 后只弹 toast）。
+     */
+    fun shareAsQr(schemeId: String) {
+        val sheet = currentModel.shareSheet(schemeId) ?: return
+        val requestQr = onRequestQrSend ?: return
+        if (isSharing) return
+        isSharing = true
+        val snap = snapshot ?: repository.snapshot
+        coroutineScope.launch {
+            val result = withContext(Dispatchers.IO) {
+                when (
+                    val built = DataTransferPackageLogic.build(
+                        snapshot = snap,
+                        request = shareRequest(schemeId, TransferChannel.QR),
+                    )
+                ) {
+                    is TransferPackageResult.Failure -> QrShareResult.Failure(built.code)
+                    is TransferPackageResult.Success -> {
+                        val bytes = built.json.toByteArray(Charsets.UTF_8)
+                        if (QrTransferSendSession.prepare(bytes).overResourceLimit) {
+                            QrShareResult.OverLimit
+                        } else {
+                            QrShareResult.Ready(bytes)
+                        }
+                    }
+                }
+            }
+            isSharing = false
+            when (result) {
+                is QrShareResult.Failure -> showShareFailure(result.code)
+                QrShareResult.OverLimit -> toast(currentModel.qrResourceLimitMessage)
+                is QrShareResult.Ready -> {
+                    TransferShellBridge.publishOutbound(result.bytes, sheet.title)
+                    requestQr()
+                }
+            }
+        }
+    }
+
     fun openMenu(schemeId: String) {
-        val items = currentModel.menu(schemeId).filter { it.action != TimeSchemeAction.SHARE }
+        // 2026-11-10：分享项不再被过滤掉（打包器与分享适配器都已就绪，见文件头差异表）。
+        val items = currentModel.menu(schemeId)
         if (items.isEmpty()) return
         val name = currentModel.row(schemeId)?.title.orEmpty()
         dialog = TimeSchemeDialog.Menu(TimeSchemeMenuState(schemeId = schemeId, schemeName = name, items = items))
@@ -216,9 +341,13 @@ fun TimeSchemeManagementHost(
                 }
             }
 
-            // 分享不在菜单里（见文件头差异表）；这里保留分支只为枚举穷尽，
-            // 一旦将来接上传输包，落点就在这一行。
-            TimeSchemeAction.SHARE -> Unit
+            // 分享：先弹三选一（取消 / 二维码 / 系统文件），选定后才真打包
+            // （Dart `_shareTimeScheme:851-893`；2026-11-10 接上，之前菜单里把这项剪掉了）。
+            TimeSchemeAction.SHARE -> {
+                currentModel.shareSheet(schemeId)?.let { sheet ->
+                    dialog = TimeSchemeDialog.Share(sheet)
+                }
+            }
         }
     }
 
@@ -331,6 +460,25 @@ fun TimeSchemeManagementHost(
         view = usageDialog?.view,
         onClose = { dialog = TimeSchemeDialog.None },
     )
+
+    val shareDialog = dialog as? TimeSchemeDialog.Share
+    TimeSchemeShareSheetDialog(
+        sheet = shareDialog?.sheet,
+        // 壳没给 `onRequestQrSend`（路由表那一行属 Lead）时，二维码入口不出现；
+        // 系统分享那条走本文件 + 现成适配器，壳零改动就能用。
+        qrEnabled = onRequestQrSend != null,
+        onDismiss = { dialog = TimeSchemeDialog.None },
+        onShareSystem = {
+            val schemeId = shareDialog?.sheet?.schemeId ?: return@TimeSchemeShareSheetDialog
+            dialog = TimeSchemeDialog.None
+            shareAsFile(schemeId)
+        },
+        onShareQr = {
+            val schemeId = shareDialog?.sheet?.schemeId ?: return@TimeSchemeShareSheetDialog
+            dialog = TimeSchemeDialog.None
+            shareAsQr(schemeId)
+        },
+    )
 }
 
 /** 列表页宿主的渲染转接：把 `TimeSchemeManagementPage` 的入参一次性摊开，避免宿主里出现长参数块。 */
@@ -372,6 +520,16 @@ private sealed interface TimeSchemeDialog {
     data class Delete(val check: TimeSchemeDeleteCheck) : TimeSchemeDialog
     data class DeleteBlocked(val check: TimeSchemeDeleteCheck) : TimeSchemeDialog
     data class Usage(val view: TimeSchemeUsageView) : TimeSchemeDialog
+
+    /** 分享三选一（取消 / 二维码 / 系统文件）。 */
+    data class Share(val sheet: TimeSchemeShareSheet) : TimeSchemeDialog
+}
+
+/** 二维码分享的预检结果（超限时不动页面，原地提示）。 */
+private sealed interface QrShareResult {
+    data class Ready(val bytes: ByteArray) : QrShareResult
+    data object OverLimit : QrShareResult
+    data class Failure(val code: String) : QrShareResult
 }
 
 /** 输入弹层的两个用途：新建（提交后进编辑器）与重命名（提交后只提示）。 */

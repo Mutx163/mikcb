@@ -151,8 +151,13 @@ object TransferShareContract {
         WRITE_FAILED,
 
         /**
-         * `FileProvider.getUriForFile` 抛 `IllegalArgumentException`：manifest 里没注册 provider
-         * （**本仓当前状态**，注册属 Lead），或 `file_paths.xml` 没覆盖 [CACHE_DIR_NAME]。
+         * `FileProvider.getUriForFile` 抛 `IllegalArgumentException`：`file_paths.xml` 没覆盖
+         * [CACHE_DIR_NAME]（本文件顶部「跨层必须逐字一致」第 2 条），或运行期 authority 与
+         * manifest 的 `${applicationId}.fileprovider` 对不上（换包名后缀 / 换变体 / provider 被摘掉）。
+         *
+         * ⚠️ **不是「本仓还没注册 provider」**：`AndroidManifest.xml:145-153` 2026-10-29 已注册、
+         * `res/xml/file_paths.xml:40` 也覆盖了 `transfer-share/`，正常变体上不会走到这里。
+         * 这条留在枚举里是给运行期事故的分类与文案（`failureMessageKey` 落到 `saveFailed`）。
          */
         PROVIDER_UNAVAILABLE,
 
