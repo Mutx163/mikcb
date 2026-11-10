@@ -2,6 +2,7 @@ package com.mutx163.qingyu.pages.sync
 
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import com.mutx163.qingyu.testutil.readSourceNormalized
 import java.io.File
 
 /**
@@ -251,8 +252,10 @@ class CloudSyncFeedbackWiringGuardTest {
         )
         // 断开确认按钮的执行段必须保持静默（无提示胶囊）：从确认按钮的 onClick 起到
         // 按钮样式声明为止，中间不许出现 cloudToast。
-        val confirmStart = page.indexOf("showDisconnectConfirm = false\n                        scope.launch {")
-        assertTrue("找不到断开确认按钮的执行段（页面结构变了，守卫要跟着改）", confirmStart >= 0)
+        // 2026-11-10：原锚点是「24 空格缩进 + 跨行」的整串，缩进一重排就误伤；拆成两个单行锚点。
+        val confirmStart = page.indexOf("showDisconnectConfirm = false")
+        val confirmLaunch = page.indexOf("scope.launch {", maxOf(confirmStart, 0))
+        assertTrue("找不到断开确认按钮的执行段（页面结构变了，守卫要跟着改）", confirmStart >= 0 && confirmLaunch > confirmStart)
         val confirmEnd = page.indexOf("colors = ButtonDefaults.buttonColors(", confirmStart)
         assertTrue("找不到断开确认按钮的样式声明（页面结构变了）", confirmEnd > confirmStart)
         val confirmBody = page.substring(confirmStart, confirmEnd)
