@@ -245,6 +245,13 @@ if (Test-Path $testDir) {
     }
 }
 
+# 公共测试工具（testutil/）：跨模块复用的测试侧工具（如 readSourceNormalized 行尾归一化）。
+# 它不属于任何页面模块，按模块取源时收不到 ⇒ 这里整目录并入，保证 `-Module pages/<域>` 也能引用。
+# 该目录必须保持纯 JVM（只用 java.io），与上面对 main 源集的 Compose 过滤同一纪律。
+$testUtilDir = Join-Path $repoRoot "android/app/src/test/kotlin/com/mutx163/qingyu/testutil"
+if (Test-Path $testUtilDir) {
+    $sources += (Get-ChildItem -Path $testUtilDir -Filter "*.kt" -Recurse).FullName
+}
 # 默认带上公共模型层：绝大多页面模型都依赖 core 里的 Course / Exam / CourseTask /
 # TimetableSettings 等值类型，以及 statistics / share / transfer / sync / infra /
 # widgetdata / theme（色板与形状等 Int ARGB / 数值常量）等纯 Kotlin 数据层，
