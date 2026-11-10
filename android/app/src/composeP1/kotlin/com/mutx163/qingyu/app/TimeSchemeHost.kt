@@ -40,6 +40,7 @@ import com.mutx163.qingyu.pages.time_scheme.TimeSchemeMenuSheet
 import com.mutx163.qingyu.pages.time_scheme.TimeSchemeQuickGenerateSheet
 import com.mutx163.qingyu.pages.time_scheme.TimeSchemeServiceMessages
 import com.mutx163.qingyu.pages.time_scheme.TimeSchemeSheet
+import com.mutx163.qingyu.pages.time_scheme.TimeSchemeUsageIndex
 import com.mutx163.qingyu.pages.time_scheme.TimeSchemeUsageIndexFactory
 import com.mutx163.qingyu.pages.time_scheme.TimeSchemeUsageSheet
 import com.mutx163.qingyu.pages.time_scheme.TimeSchemeUsageView
@@ -125,24 +126,26 @@ fun TimeSchemeManagementHost(
     onOpenDateRules: () -> Unit,
     onRequestQrSend: (() -> Unit)? = null,
 ) {
-    var snapshot by remember(repository) { mutableStateOf<TimetableSnapshot?>(null) }
-    var model by remember(repository) { mutableStateOf<TimeSchemeManagementModel?>(null) }
+    // 2026-11-10（A2/A3）：**不再有加载门**。三处改动一起把「进页转圈」拆掉：
+    // 1. 首帧直接用内存快照（`repository.snapshot` 是纯内存 getter，不读盘）——
+    //    原先还 `withContext(Dispatchers.IO)` 绕一圈去读它，纯属多一次主线程挂起（A3）；
+    // 2. 首帧同步装配**轻模型**：模板清单 / 当前模板 / 入口计数都在快照里，
+    //    只有「引用索引」需要扫描全部档案的课程（A2），先给 `TimeSchemeUsageIndex.EMPTY`，
+    //    卡片上的用量数字后台补齐；
+    // 3. 索引仍在后台算，算完只换模型、**不**再遮页面。
+    // 发布版同样没有这个门：`time_scheme_management_screen.dart` 的 `_syncUsageSnapshot`
+    // 注释写明「按卡片首次 build 才填，让路由首帧不扫描每份档案」。
+    var snapshot by remember(repository) { mutableStateOf(repository.snapshot) }
+    var model by remember(repository) {
+        mutableStateOf(buildManagementModel(repository.snapshot, TimeSchemeUsageIndex.EMPTY))
+    }
     DisposableEffect(repository) {
         val subscription = repository.observe { updated -> snapshot = updated }
         onDispose { subscription.close() }
     }
 
-    // 首装载全部挪到后台线程：旧实现把 `repository.snapshot` 读、引用索引
-    // (`TimeSchemeUsageIndexFactory.build`) 与模型构造全塞在**组合期**同步执行——
-    // 课程/档案一多就把主线程按住数秒，首帧画不出来，用户看到的是「空页干等，数据回来猛一下弹出」。
-    LaunchedEffect(repository) {
-        // 后台读一次；读回来的途中若仓储已经推了新快照（`observe` 回调先到），
-        // 不要把新的盖成这次读到的旧值 —— 只在仍然为空时落盘。
-        val loaded = withContext(Dispatchers.IO) { repository.snapshot }
-        if (snapshot == null) snapshot = loaded
-    }
     LaunchedEffect(snapshot) {
-        val current = snapshot ?: return@LaunchedEffect
+        val current = snapshot
         val next = withContext(Dispatchers.Default) {
             val usage = TimeSchemeUsageIndexFactory.build(
                 schemes = current.timeSchemes,
@@ -150,25 +153,13 @@ fun TimeSchemeManagementHost(
                 locationGroups = current.locationTimeGroups,
                 dateRules = current.scheduleDateRules,
             )
-            // Dart 每次 build 都拿 `DateTime.now()` 去 match（`:127-128`），这里也现算，
-            // 「今天在区间内」那句话本来就该随日期变。
-            TimeSchemeManagementModel(
-                schemes = current.timeSchemes,
-                usage = usage,
-                activeSchemeId = current.activeTimeSchemeId,
-                locationGroupCount = current.locationTimeGroups.size,
-                dateRuleCount = current.scheduleDateRules.size,
-                hasActiveDateRule = ScheduleDateRuleLogic.match(
-                    LocalDateTime.now(),
-                    current.scheduleDateRules.map { it.toCalendarRule() },
-                ) != null,
-            )
+            buildManagementModel(current, usage)
         }
         model = next
     }
 
     val context = LocalContext.current
-    val currentModel = model ?: TimeSchemeManagementModel()
+    val currentModel = model
     val coroutineScope = rememberCoroutineScope()
     val shareAdapter = remember(context) { AndroidTransferShareAdapter(context) }
     // 分享是「打包 + 写缓存 + 拉面板」一整串，连点两次会各拉一次面板；一个进行中的标记就够。
@@ -353,7 +344,9 @@ fun TimeSchemeManagementHost(
 
     TimeSchemeManagementPageHost(
         model = currentModel,
-        isLoading = model == null,
+        // A2（2026-11-10）：门拆了——首帧就有轻模型，页面不再有「进页转圈」这一段。
+        // `isLoading` 参数保留给预览档与将来的真慢加载点，真实路径恒 false。
+        isLoading = false,
         onBack = onBack,
         onCreate = {
             dialog = TimeSchemeDialog.Name(
@@ -481,6 +474,24 @@ fun TimeSchemeManagementHost(
     )
 }
 
+/** 列表页模型装配（首帧用 EMPTY 引用索引，后台算完再换一份，见 [TimeSchemeManagementHost]）。 */
+private fun buildManagementModel(
+    snapshot: TimetableSnapshot,
+    usage: TimeSchemeUsageIndex,
+): TimeSchemeManagementModel = TimeSchemeManagementModel(
+    schemes = snapshot.timeSchemes,
+    usage = usage,
+    activeSchemeId = snapshot.activeTimeSchemeId,
+    locationGroupCount = snapshot.locationTimeGroups.size,
+    dateRuleCount = snapshot.scheduleDateRules.size,
+    // Dart 每次 build 都拿 `DateTime.now()` 去 match（`:127-128`），这里也现算，
+    // 「今天在区间内」那句话本来就该随日期变。
+    hasActiveDateRule = ScheduleDateRuleLogic.match(
+        LocalDateTime.now(),
+        snapshot.scheduleDateRules.map { it.toCalendarRule() },
+    ) != null,
+)
+
 /** 列表页宿主的渲染转接：把 `TimeSchemeManagementPage` 的入参一次性摊开，避免宿主里出现长参数块。 */
 @Composable
 private fun TimeSchemeManagementPageHost(
@@ -565,13 +576,23 @@ fun TimeSchemeEditorHost(
     }
 
     val context = LocalContext.current
-    val usage = remember(snapshot) {
-        TimeSchemeUsageIndexFactory.build(
-            schemes = snapshot.timeSchemes,
-            profiles = snapshot.profiles,
-            locationGroups = snapshot.locationTimeGroups,
-            dateRules = snapshot.scheduleDateRules,
-        )
+    // 2026-11-10（A2）：编辑页**首帧不同步算引用索引**。
+    //
+    // 原先这里是 `remember(snapshot) { factory.build(...) }`：它在**组合期、主线程**跑
+    // 「档案 × 课程 × 关键词」的全量扫描，用户点完「新建 → 确定」后页面迟迟不出来、
+    // 进来那一下也顿（正则还每次新建，见 `LocationTimeMatchLogic` 的常量注释）。
+    // 现在首帧先给 EMPTY（卡片上的用量计数短暂为 0），后台算完再 `withUsage` 换进来。
+    var usage by remember(schemeId) { mutableStateOf(TimeSchemeUsageIndex.EMPTY) }
+    LaunchedEffect(schemeId, snapshot.timeSchemes, snapshot.profiles) {
+        val loaded = withContext(Dispatchers.Default) {
+            TimeSchemeUsageIndexFactory.build(
+                schemes = snapshot.timeSchemes,
+                profiles = snapshot.profiles,
+                locationGroups = snapshot.locationTimeGroups,
+                dateRules = snapshot.scheduleDateRules,
+            )
+        }
+        usage = loaded
     }
 
     // 只初始化一次：`schemeId` 变了（换一套模板）才重建，仓储通知不重建。
@@ -580,7 +601,7 @@ fun TimeSchemeEditorHost(
             TimeSchemeEditorModel.from(
                 schemes = repository.snapshot.timeSchemes,
                 activeSchemeId = repository.snapshot.activeTimeSchemeId,
-                usage = usage,
+                usage = TimeSchemeUsageIndex.EMPTY,
                 schemeId = schemeId,
             ),
         )
@@ -605,9 +626,13 @@ fun TimeSchemeEditorHost(
 
     var pickPhase by remember { mutableStateOf<SectionPickPhase>(SectionPickPhase.None) }
     var quickGenerateVisible by remember { mutableStateOf(false) }
+    // 编辑期的**非阻塞**提示（2026-11-10 用户口径）：重叠不再拦编辑，只在这一行里说清楚；
+    // 真正的硬校验在 `onSave` → `validateForSave()`。
+    var sectionHint by remember(schemeId) { mutableStateOf<String?>(null) }
 
     TimeSchemeEditorPage(
         model = current,
+        sectionHint = sectionHint,
         onBack = onBack,
         onNameChange = { value -> model = model?.withName(value) },
         onSave = {
@@ -637,7 +662,12 @@ fun TimeSchemeEditorHost(
         },
         onAddSection = { model = model?.addSection() },
         onRemoveLastSection = { model = model?.removeLastSection() },
-        onResetSections = { model = model?.resetSections() },
+        // 恢复默认 / 快捷生成都是「整表换掉」：提示行按新表重算，别留上一轮的旧话。
+        onResetSections = {
+            val next = model?.resetSections()
+            model = next
+            sectionHint = next?.overlapHint()
+        },
         onOpenQuickGenerate = { quickGenerateVisible = true },
     )
 
@@ -648,7 +678,13 @@ fun TimeSchemeEditorHost(
         onConfirm = { preset ->
             quickGenerateVisible = false
             runCatching { preset.toSections() }
-                .onSuccess { sections -> model = model?.withSections(sections) }
+                .onSuccess { sections ->
+                    val next = model?.withSections(sections)
+                    model = next
+                    // 生成出来一般是顺序的；万一参数本身造出重叠（例如三段时间倒挂），
+                    // 也照编辑期口径只提示、不拦。
+                    sectionHint = next?.overlapHint()
+                }
                 .onFailure { error ->
                     // `buildQuickSectionTimes` 抛的是 DartFormatException（消息就是服务消息码）。
                     toast(TimeSchemeServiceMessages.localize(error.message))
@@ -691,7 +727,10 @@ fun TimeSchemeEditorHost(
             val outcome = model?.withSectionTime(phase.index, phase.start, end)
             if (outcome != null) {
                 model = outcome.model
-                outcome.message?.let { toast(it) }
+                // 2026-11-10：`message` 现在是**非阻塞**提示（重叠），改成页面内联展示；
+                // 只有「单节结束早于开始」这类没法落地的输入仍原样返回并提示（同样内联）。
+                // 保存时才由 `validateForSave()` 硬拦并 toast。
+                sectionHint = outcome.message
             }
         },
     )

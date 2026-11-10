@@ -119,13 +119,49 @@ data class LocationTimeMatchResult(
     val matchedKeyword: LocationKeyword,
 )
 
+/**
+ * 一条候选关键词。
+ *
+ * [normalizedPattern] / [patternLength] 在**构造时算一次**：`match()` 原先在
+ * 「候选构造 + 排序比较器 + 命中循环」里反复调 `normalizePattern`，而排序比较器是
+ * O(k·log k) 次——等于每门课、每套模板都重算几十次同一个归一化串（2026-11-10 定位
+ * 为「时间模板页转圈很久 / 新建模板点确定卡住」的主要开销之一）。归一化结果只取决于
+ * 关键词本身，预计算不改变任何匹配结果。
+ */
 private data class CandidateKeyword(
     val group: LocationTimeGroup,
     val keyword: LocationKeyword,
+    val normalizedPattern: String,
+    val patternLength: Int,
 )
 
 /** 纯地点 → 作息路由（location_time_match_logic.dart:26-263）。 */
 object LocationTimeMatchLogic {
+
+    /**
+     * 「（…）」括号内容保留、括号剔除（1..12 字）。
+     *
+     * 提成文件级常量：原先在 [normalizeForMatch] 里**每次调用都 `Regex(...)` 新建**，
+     * 而匹配路径（`TimeSchemeLogic.getCourseUsages` → 每门课一次）的调用量级是
+     * 「课程数 × 模板数 × 关键词数」，一次索引构建就是上万次正则编译
+     * （2026-11-10 定位的根因）。
+     */
+    private val BRACKETED_CONTENT = Regex("""[（(]([^）)]{1,12})[）)]""")
+
+    /** 归一化缓存容量：地点串在同一份数据里高度重复，几百条足够覆盖。 */
+    private const val NORMALIZE_CACHE_LIMIT = 1024
+
+    /**
+     * 归一化结果缓存（有界 LRU）。
+     *
+     * 只影响速度、不改变返回值：命中即返回上次算出的同一个串。加锁是因为调用方既有
+     * 后台线程（引用索引 / 拼包），也有主线程（编辑器页）。
+     */
+    private val normalizeCache = object : java.util.LinkedHashMap<String, String>(64, 0.75f, true) {
+        override fun removeEldestEntry(
+            eldest: MutableMap.MutableEntry<String, String>?,
+        ): Boolean = size > NORMALIZE_CACHE_LIMIT
+    }
 
     fun normalizeLocation(location: String?): String = normalizeForMatch(location)
 
@@ -134,6 +170,7 @@ object LocationTimeMatchLogic {
     private fun normalizeForMatch(text: String?): String {
         val raw = (text ?: "").trim()
         if (raw.isEmpty()) return ""
+        synchronized(normalizeCache) { normalizeCache[raw] }?.let { return it }
         val buffer = StringBuilder()
         for (unit in raw.codePoints()) {
             when {
@@ -149,10 +186,12 @@ object LocationTimeMatchLogic {
         }
         var normalized = buffer.toString()
         // 「（…）」括号内容保留、括号剔除（1..12 字），与楼栋聚类归一同步。
-        normalized = normalized.replace(Regex("""[（(]([^）)]{1,12})[）)]""")) { m ->
+        normalized = normalized.replace(BRACKETED_CONTENT) { m ->
             m.groupValues[1]
         }
-        return normalized.lowercase()
+        normalized = normalized.lowercase()
+        synchronized(normalizeCache) { normalizeCache[raw] = normalized }
+        return normalized
     }
 
     /**
@@ -169,15 +208,20 @@ object LocationTimeMatchLogic {
             for (keyword in group.keywords) {
                 val pattern = normalizePattern(keyword.pattern)
                 if (pattern.isEmpty()) continue
-                candidates.add(CandidateKeyword(group, keyword))
+                candidates.add(
+                    CandidateKeyword(
+                        group = group,
+                        keyword = keyword,
+                        normalizedPattern = pattern,
+                        patternLength = pattern.length,
+                    ),
+                )
             }
         }
         if (candidates.isEmpty()) return null
 
         candidates.sortWith { left, right ->
-            val leftLength = normalizePattern(left.keyword.pattern).length
-            val rightLength = normalizePattern(right.keyword.pattern).length
-            val lengthCompare = rightLength.compareTo(leftLength)
+            val lengthCompare = right.patternLength.compareTo(left.patternLength)
             if (lengthCompare != 0) return@sortWith lengthCompare
             val priorityCompare = right.group.priority.compareTo(left.group.priority)
             if (priorityCompare != 0) return@sortWith priorityCompare
@@ -187,8 +231,7 @@ object LocationTimeMatchLogic {
         }
 
         for (candidate in candidates) {
-            val pattern = normalizePattern(candidate.keyword.pattern)
-            if (matchesMode(normalizedLocation, pattern, candidate.keyword.mode)) {
+            if (matchesMode(normalizedLocation, candidate.normalizedPattern, candidate.keyword.mode)) {
                 return LocationTimeMatchResult(
                     groupId = candidate.group.id,
                     groupName = candidate.group.name,
