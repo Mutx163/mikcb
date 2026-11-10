@@ -39,6 +39,8 @@ import androidx.compose.ui.unit.dp
 import com.mutx163.qingyu.components.QingyuCard
 import com.mutx163.qingyu.components.QingyuCardDefaults
 import com.mutx163.qingyu.components.QingyuGlassIconButton
+import com.mutx163.qingyu.components.QingyuLoadingInline
+import com.mutx163.qingyu.components.QingyuLoadingSlot
 import com.mutx163.qingyu.components.QingyuPageCardMargin
 import com.mutx163.qingyu.components.QingyuPageList
 import com.mutx163.qingyu.components.QingyuPageScaffold
@@ -51,7 +53,6 @@ import com.mutx163.qingyu.components.shiftWeight
 import com.mutx163.qingyu.theme.QingyuIconColors
 import com.mutx163.qingyu.theme.QingyuTheme
 import top.yukonga.miuix.kmp.basic.BasicComponent
-import top.yukonga.miuix.kmp.basic.CircularProgressIndicator
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.icon.MiuixIcons
@@ -144,7 +145,9 @@ fun MemoryStatsPage(
                 enabled = !viewState.isLoading,
             ) {
                 if (viewState.isLoading) {
-                    CircularProgressIndicator(modifier = Modifier.size(18.dp), strokeWidth = 2.dp)
+                    // 档 B2（D1 统一）：图标位替换 18dp / 2dp，**不传 tint**——发布版这里是裸
+                    // `HyperosCircularProgress(18, 2)`，走 miuix 默认主色。
+                    QingyuLoadingInline(slot = QingyuLoadingSlot.IconSlot)
                 } else {
                     Icon(
                         imageVector = MiuixIcons.Refresh,
@@ -545,7 +548,8 @@ private fun MemoryHintBanner(
             horizontalArrangement = Arrangement.spacedBy(10.dp),
         ) {
             if (showProgress) {
-                CircularProgressIndicator(modifier = Modifier.size(18.dp), strokeWidth = 2.dp)
+                // 档 B2（D1 统一）：与下面 18dp 的状态图标同槽同尺寸，**不传 tint**（发布版裸圈）。
+                QingyuLoadingInline(slot = QingyuLoadingSlot.IconSlot)
             } else if (isError) {
                 Icon(
                     imageVector = MiuixIcons.Report,
@@ -1013,6 +1017,15 @@ private fun PreviewMemoryStatsDark() {
 @Composable
 private fun PreviewMemoryStatsLargeText() {
     PreviewMemoryStatsBody(previewMemoryStatsState("有数据"), textScale = 1.3f)
+}
+
+// ── 整页档：一屏（900）放不下，验采样/组成/环境/tools 各卡与长内容不被裁 ────────
+
+@Suppress("unused")
+@Preview(name = "7 整页 1600", showBackground = true, widthDp = 400, heightDp = 1600)
+@Composable
+private fun PreviewMemoryStatsFullPage() {
+    PreviewMemoryStatsBody(previewMemoryStatsState("有数据"))
 }
 
 // ── 总览：四态并排，一屏比结构差异 ───────────────────────────────────────────

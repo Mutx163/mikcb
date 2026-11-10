@@ -40,7 +40,12 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import com.mutx163.qingyu.components.QingyuCard
+import com.mutx163.qingyu.components.QingyuCardDefaults
+import com.mutx163.qingyu.components.QingyuEmptyState
 import com.mutx163.qingyu.components.QingyuGlassIconButton
+import com.mutx163.qingyu.components.QingyuLoadingCenter
+import com.mutx163.qingyu.components.QingyuLoadingInline
+import com.mutx163.qingyu.components.QingyuLoadingSlot
 import com.mutx163.qingyu.components.QingyuPageCardMargin
 import com.mutx163.qingyu.components.QingyuPageList
 import com.mutx163.qingyu.components.QingyuPageScaffold
@@ -53,7 +58,6 @@ import com.mutx163.qingyu.theme.QingyuTheme
 import top.yukonga.miuix.kmp.basic.BasicComponent
 import top.yukonga.miuix.kmp.basic.Button
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
-import top.yukonga.miuix.kmp.basic.CircularProgressIndicator
 import top.yukonga.miuix.kmp.basic.HorizontalDivider
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.ScrollBehavior
@@ -157,10 +161,9 @@ fun LiveDiagnosticsLogPage(
                     // 导出中换成进度圈（Dart `_buildHeaderActions` 516-525 行：
                     // `_exporting ? HyperosCircularProgress(18) : Icon(ios_share)`）。
                     if (viewState.isExporting) {
-                        CircularProgressIndicator(
-                            modifier = Modifier.size(18.dp),
-                            strokeWidth = 2.dp,
-                        )
+                        // 档 B2（D1 统一）：图标位替换 18dp / 2dp，**不传 tint**——发布版这里是裸
+                        // `HyperosCircularProgress(18, 2)`，走 miuix 默认主色；套件 KDoc 口径同此。
+                        QingyuLoadingInline(slot = QingyuLoadingSlot.IconSlot)
                     } else {
                         Icon(
                             imageVector = MiuixIcons.Share,
@@ -178,10 +181,8 @@ fun LiveDiagnosticsLogPage(
                 ) {
                     // 清空中同样换进度圈（Dart 526-532 行）。
                     if (viewState.isClearing) {
-                        CircularProgressIndicator(
-                            modifier = Modifier.size(18.dp),
-                            strokeWidth = 2.dp,
-                        )
+                        // 档 B2（D1 统一）：同上。
+                        QingyuLoadingInline(slot = QingyuLoadingSlot.IconSlot)
                     } else {
                         Icon(
                             imageVector = MiuixIcons.Delete,
@@ -209,18 +210,11 @@ fun LiveDiagnosticsLogPage(
                     dark = dark,
                 )
 
-                viewState.isLoading -> Column(
-                    modifier = Modifier.fillMaxSize(),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.Center,
-                ) {
-                    CircularProgressIndicator()
-                }
+                viewState.isLoading -> QingyuLoadingCenter()
 
-                viewState.isEmpty -> DiagnosticsCenteredState(
+                viewState.isEmpty -> QingyuEmptyState(
                     icon = MiuixIcons.File,
                     title = DiagnosticsStrings.diagnosticsEmptyTitle.text,
-                    dark = dark,
                 )
 
                 else -> {
@@ -243,10 +237,9 @@ fun LiveDiagnosticsLogPage(
                     }
 
                     if (viewState.showNoMatching) {
-                        DiagnosticsCenteredState(
+                        QingyuEmptyState(
                             icon = MiuixIcons.Filter,
                             title = DiagnosticsStrings.diagnosticsNoMatchingTitle.text,
-                            dark = dark,
                         )
                     } else {
                         // 主滚动容器走官方配方的 QingyuPageList：三件套 + 右侧滚动条。
@@ -385,7 +378,8 @@ private fun DiagnosticsLevelFilterBar(
             }
         }
         if (isParsing) {
-            CircularProgressIndicator(modifier = Modifier.size(14.dp), strokeWidth = 2.dp)
+            // 档 B3（D1 统一）：行尾极小角标 14dp / 2dp。
+            QingyuLoadingInline(slot = QingyuLoadingSlot.Badge)
         }
     }
 }
@@ -520,6 +514,9 @@ private fun DiagnosticsDeviceInfoCard(
             .fillMaxWidth()
             .padding(horizontal = QingyuPageCardMargin),
         insideMargin = PaddingValues(horizontal = 14.dp, vertical = 12.dp),
+        // P6-2（2026-11-10 评审）：本页四张卡圆角统一 24，对齐同域内存统计页
+        // （`MemoryStatsPage` 的卡走 SettingsGroupCorner）；默认 16 在同域里会显得薄一档。
+        cornerRadius = QingyuCardDefaults.SettingsGroupCorner,
         onClick = onToggle,
     ) {
         Row(
@@ -587,6 +584,7 @@ private fun DiagnosticsLoadEarlierRow(
             .fillMaxWidth()
             .padding(horizontal = QingyuPageCardMargin),
         insideMargin = PaddingValues(horizontal = 14.dp, vertical = 12.dp),
+        cornerRadius = QingyuCardDefaults.SettingsGroupCorner,
         onClick = onClick,
     ) {
         Row(
@@ -625,6 +623,7 @@ private fun DiagnosticsRawEntryCard(entry: DiagnosticsLogEntryView, dark: Boolea
             .fillMaxWidth()
             .padding(horizontal = QingyuPageCardMargin),
         insideMargin = PaddingValues(horizontal = 14.dp, vertical = 12.dp),
+        cornerRadius = QingyuCardDefaults.SettingsGroupCorner,
     ) {
         Text(
             text = entry.rawText,
@@ -656,6 +655,7 @@ private fun DiagnosticsEntryGroupCard(
             .padding(horizontal = QingyuPageCardMargin),
         // 每行自带 14dp 内边距（BasicComponent 的 insideMargin），卡本身不再叠加一层。
         insideMargin = PaddingValues(0.dp),
+        cornerRadius = QingyuCardDefaults.SettingsGroupCorner,
     ) {
         entries.forEachIndexed { index, entry ->
             if (index > 0) {
@@ -908,35 +908,7 @@ private fun DiagnosticsLoadErrorBody(
     }
 }
 
-/** 居中空态 / 无匹配态。 */
-@Composable
-private fun DiagnosticsCenteredState(
-    icon: ImageVector,
-    title: String,
-    dark: Boolean,
-) {
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(24.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center,
-    ) {
-        Icon(
-            imageVector = icon,
-            contentDescription = null,
-            tint = Color(QingyuTheme.secondaryText(dark)),
-            modifier = Modifier.size(40.dp),
-        )
-        Text(
-            text = title,
-            style = MiuixTheme.textStyles.body1.shiftWeight(QingyuWeightDelta.MEDIUM),
-            color = Color(QingyuTheme.primaryText(dark)),
-            textAlign = TextAlign.Center,
-            modifier = Modifier.padding(top = 12.dp),
-        )
-    }
-}
+/** 中间空态（`viewState.isEmpty`）与「筛选后无匹配」共用 [QingyuEmptyState]（C 区统一，2026-11-10）。 */
 
 /**
  * 警告档的固定琥珀色（0xFFFF9F0A）。
@@ -1120,6 +1092,15 @@ private fun PreviewDiagnosticsLogDark() {
 @Composable
 private fun PreviewDiagnosticsLogLargeText() {
     PreviewDiagnosticsLogBody(previewLogState("有数据"), textScale = 1.3f)
+}
+
+// ── 整页档：一屏（900）放不下，验日志正文条目与各块不被裁 ─────────────────────
+
+@Suppress("unused")
+@Preview(name = "7 整页 1400", showBackground = true, widthDp = 400, heightDp = 1400)
+@Composable
+private fun PreviewDiagnosticsLogFullPage() {
+    PreviewDiagnosticsLogBody(previewLogState("有数据"))
 }
 
 // ── 总览：四态并排，一屏比结构差异 ───────────────────────────────────────────
