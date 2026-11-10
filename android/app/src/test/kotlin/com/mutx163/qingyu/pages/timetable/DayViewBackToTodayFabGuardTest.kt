@@ -22,9 +22,11 @@ import java.io.File
  * 4. **投影与亮棱同时在**（任一项被删即红）；
  * 5. **触摸区**：`heightIn(min = BACK_TO_TODAY_FAB_MIN_HEIGHT_DP.dp)`，且 ≥48dp；
  * 6. **读屏完整语义**：contentDescription 接各自域的既有键；
- * 7. **可见字对齐发布版**：日「回今日」（`backToTodayAction`）、周「回本周」
- *    （`backToCurrentWeekAction`）——迁移期自造的单字「今」在 2026-11-09 迁移
- *    退化审计里被判为退化并改回发布口径，本守卫钉住不许回流；
+ * 7. **可见字是用户设计的单字「今」**：日、周两处都必须用
+ *    `DayViewStrings.backToTodayShort`（=「今」）。2026-11-09 迁移退化审计曾按
+ *    「对齐发布版」把可见字换成全称并加定位图标，2026-11-10 用户报坏
+ *    （「我特意设计的，今字」）——用户对本颗钮的设计意图优先于「对齐发布版」，
+ *    本守卫钉住：**不许全称文字、不许定位图标**。
  * 8. **颜色**：共用件与两个调用点都禁写死 `Color(0xFF`。
  *
  * 沿用仓库源码文本守卫做法（判据先整篇剥注释，字符串感知、块注释按 Kotlin 语义可嵌套）。
@@ -50,19 +52,19 @@ class DayViewBackToTodayFabGuardTest {
                     "自己画一份等于两颗钮开始漂移（用户口径：周视图也用同一个按钮）。",
                 STATEMENT_RAW_FAB_CALL.containsMatchIn(source),
             )
-            assertFalse(
-                "$name 的可见字还是迁移期自造的单字「今」（DayViewStrings.backToTodayShort）——" +
-                    "发布版 v2.1.4.1 的悬浮钮是完整动作文案（日「回今日」/ 周「回本周」）。",
-                source.contains("DayViewStrings.backToTodayShort.text"),
-            )
-            val releaseLabelKey = if (name == "DayViewPage") {
-                "DayViewStrings.backToTodayAction.text"
-            } else {
-                "TimetableStrings.backToCurrentWeekAction.text"
-            }
             assertTrue(
-                "$name 的可见字没有接发布版动作文案（$releaseLabelKey）。",
-                source.contains(releaseLabelKey),
+                "$name 的可见字不是用户设计的单字「今」（label = DayViewStrings.backToTodayShort.text）——" +
+                    "2026-11-10 用户报坏「回今日 / 回本周」全文字后回退到单字，不许再漂。",
+                source.contains("label = DayViewStrings.backToTodayShort.text"),
+            )
+            assertFalse(
+                "$name 的可见字又接回全称动作文案（label = …Action.text）——" +
+                    "那是发布版那颗宽条钮，不是用户特意设计的「今」。",
+                LABEL_FULL_ACTION_TEXT.containsMatchIn(source),
+            )
+            assertFalse(
+                "$name 给浮钮传了定位图标（icon = …）——用户要的是单字胶囊，发布版的图标钮不是这颗。",
+                LABEL_ICON_ARG.containsMatchIn(source),
             )
             assertFalse(
                 "$name 又出现 monthViewBackToCurrentMonthShort——那是月视图的键，不得借用。",
@@ -151,6 +153,33 @@ class DayViewBackToTodayFabGuardTest {
         assertFalse(
             "共用件里出现 CircleShape——形状被改回圆球（用户已否）。",
             fabSource.contains("CircleShape"),
+        )
+    }
+
+    @Test
+    fun `浮钮里只许有一个字_定位图标不得回流`() {
+        // 2026-11-10 用户报坏的另一半：审计给这颗钮加了定位图标（发布版「回本周」那颗的形态）。
+        // 用户的「今」是单个字，图标一挂就不再是那个设计。
+        assertFalse(
+            "共用件又出现 Icon(——定位图标回流了，这是发布版宽条钮的形态。",
+            fabSource.contains("Icon("),
+        )
+        assertFalse(
+            "共用件又出现 ImageVector——icon 参数回流了（只该有 label 一个可见字）。",
+            fabSource.contains("ImageVector"),
+        )
+        assertFalse(
+            "共用件又出现 MiuixIcons.Location——定位图标回流了。",
+            fabSource.contains("MiuixIcons.Location"),
+        )
+        assertFalse(
+            "共用件又出现 FAB_ICON_DP / FAB_ICON_GAP_DP——图标尺寸常量回流了。",
+            fabSource.contains("FAB_ICON_DP") || fabSource.contains("FAB_ICON_GAP_DP"),
+        )
+        assertEquals(
+            "共用件里可见字 Text( 必须恰好一处（一颗钮、一个字）。",
+            1,
+            Regex("""\bText\(""").findAll(fabSource).count(),
         )
     }
 
@@ -448,6 +477,15 @@ class DayViewBackToTodayFabGuardTest {
         /** 语句位置的调用：行首到调用名之间只有空白。 */
         val STATEMENT_FAB_CALL = Regex("""(?m)^[ \t]*BackToTodayFab\(""")
         val STATEMENT_RAW_FAB_CALL = Regex("""(?m)^[ \t]*FloatingActionButton\(""")
+
+        /** `label = …Action.text`：发布版那种全称动作文案（用户设计里不该出现在屏上）。 */
+        val LABEL_FULL_ACTION_TEXT = Regex(
+            """(?m)^[ \t]*label\s*=\s*(DayViewStrings\.backToTodayAction|TimetableStrings\.backToCurrentWeekAction)\.text""",
+        )
+
+        /** `icon = …`：定位图标参数（已从共用件删除，调用点不得再传）。 */
+        val LABEL_ICON_ARG = Regex("""(?m)^[ \t]*icon\s*=""")
+
         val HARDCODED_COLOR = Regex("""Color\(0xFF""")
 
         const val DAY_PAGE_PATH =

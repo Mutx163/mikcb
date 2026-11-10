@@ -1013,9 +1013,10 @@ fun DayViewPage(
                     )
                 }
             },
-            // 文案对齐发布版 `timetable_screen.dart:6090-6200`：屏上是完整「回今日」
-            //（ARB `backToTodayAction`），不是迁移期新造的单个「今」。
-            label = DayViewStrings.backToTodayAction.text,
+            // 屏上就是用户设计的单个「今」字（ARB `timetableBackToTodayShort`）：
+            // 2026-11-10 用户报坏「回今日」全文字——这颗钮是他特意设计的短字形态，
+            // 有意偏离发布版（发布版日钮是「回今日」14sp）。读屏语义仍走完整动作。
+            label = DayViewStrings.backToTodayShort.text,
             contentDescription = DayViewStrings.backToTodayAction.text,
             visible = showsBackToToday &&
                 (!embeddedInHomePanel || embeddedTransitionSettled),

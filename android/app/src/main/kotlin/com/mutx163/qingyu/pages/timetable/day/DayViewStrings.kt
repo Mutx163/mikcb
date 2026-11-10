@@ -20,14 +20,18 @@ object DayViewStrings {
     val backToTodayAction = ArbText("backToTodayAction", "回今日")
 
     /**
-     * 迁移期自造的**单字「今」**（ARB `timetableBackToTodayShort`）。
+     * 浮钮屏上可见的**单字「今」**（ARB `timetableBackToTodayShort`）。
      *
-     * ⚠️ 2026-11-10 起**两颗浮钮都不再用它**：日视图「回今日」、周视图「回本周」已回到
-     * 发布版口径（`timetable_screen.dart:6090-6200` 的 `backToTodayAction`；
-     * 周钮 `:5880` 的 `backToCurrentWeekAction`），见 `DayViewBackToTodayFabGuardTest`。
+     * 用户特意设计的形态（原话「我特意设计的，今字」）：日视图「回今日」与周视图
+     * 「回本周」两颗浮钮**都**用它当可见字，胶囊里只放这一个字。
      *
-     * 键**保留不删**：六份 ARB 与那条守卫仍引用它（守卫断言它存在且值 ≤2 字，
-     * 防止有人拿它去顶替全称文案）。本文件其余地方不得再把它用到屏上文案。
+     * 2026-11-09 迁移退化审计曾按「对齐发布版」把可见字改成全称（`backToTodayAction`
+     * / `backToCurrentWeekAction`）并加定位图标；2026-11-10 用户报坏后回退——
+     * 发布版基准让位于用户对这颗钮的设计意图。`DayViewBackToTodayFabGuardTest`
+     * 钉住不许回流。
+     *
+     * 读屏语义**不是**它：调用点仍把完整动作（「回今日」/「回本周」）传给
+     * `contentDescription`，本键只负责屏上那一个字。
      */
     val backToTodayShort = ArbText("timetableBackToTodayShort", "今")
     val weekLabel = ArbText("weekLabel", "第 {week} 周")

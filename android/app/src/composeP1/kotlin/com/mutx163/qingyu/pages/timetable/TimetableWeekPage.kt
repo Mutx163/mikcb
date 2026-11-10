@@ -88,6 +88,7 @@ import com.mutx163.qingyu.pages.settings.SurfaceMaterialState
 import com.mutx163.qingyu.pages.shell.HomeBackgroundModel
 import com.mutx163.qingyu.pages.timetable.day.DayViewDataAssembler
 import com.mutx163.qingyu.pages.timetable.day.DayViewSharedFreeSource
+import com.mutx163.qingyu.pages.timetable.day.DayViewStrings
 import com.mutx163.qingyu.pages.timetable.day.LocalDayViewSharedFree
 import com.mutx163.qingyu.pages.timetable.day.LocalEmbeddedDayGlassBackdrop
 import com.mutx163.qingyu.pages.timetable.day.LocalEmbeddedDayInkBands
@@ -1372,7 +1373,9 @@ fun TimetableWeekPage(
                     }
                 }
             },
-            label = TimetableStrings.backToCurrentWeekAction.text,
+            // 单字「今」（用户设计意图：日/周共用同一个短字胶囊）。
+            // 2026-11-10 用户报坏「回本周」全文字后恢复；读屏语义仍走完整动作。
+            label = DayViewStrings.backToTodayShort.text,
             contentDescription = TimetableStrings.backToCurrentWeekAction.text,
             visible = !previewMode && showBackToCurrentWeek && !dayVisible,
             backdrop = when {
