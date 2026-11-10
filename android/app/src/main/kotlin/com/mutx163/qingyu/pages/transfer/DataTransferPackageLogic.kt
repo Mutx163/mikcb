@@ -95,6 +95,15 @@ data class TransferPackageRequest(
     val now: LocalDateTime,
     /** 仅 SELECTED_COURSES / SELECTED_COURSE 用；其它 scope 为空即「全带」。 */
     val selectedCourseIds: Set<String> = emptySet(),
+    /**
+     * 仅 TIME_TEMPLATE 用：要打进包的模板 id；**空集合 = 全带**（数据备份页那条路原样）。
+     *
+     * 单套模板分享（`time_scheme_management_screen.dart` `_shareTimeSchemeAsFile` /
+     * `_shareTimeSchemeAsQr`）走的就是这个收窄：Dart 那边是同名参数
+     * `selectedTimeSchemeIds: [scheme.id]`。不给它的话，从模板页分享一套作息会把
+     * 用户**所有**作息一起发出去，接收端多出一堆他没分享过的模板。
+     */
+    val selectedTimeSchemeIds: Set<String> = emptySet(),
 )
 
 sealed interface TransferPackageResult {
@@ -172,6 +181,8 @@ object DataTransferPackageLogic {
      *
      * 失败一律走 [TransferPackageResult.Failure]（不抛异常）：
      * - `no_time_schemes`：`TIME_TEMPLATE` 但一条时间模板都没有；
+     * - `no_selected_time_schemes`：`TIME_TEMPLATE` 点名了模板、但快照里一条都对不上
+     *   （单套分享途中那一套被别处删掉；本仓新增码，与 `no_selected_courses` 同口径）；
      * - `no_active_profile`：需要课表却没有活动档案；
      * - `transfer_package_empty`（及校验器其它错误码）：打出来的包自己不合法。
      *
@@ -203,6 +214,14 @@ object DataTransferPackageLogic {
 
         if (scope == TransferScope.TIME_TEMPLATE && snapshot.timeSchemes.isEmpty()) {
             return TransferPackageResult.Failure("no_time_schemes")
+        }
+        // 选了具体模板、但快照里一个都对不上（分享途中的那一套被别处删了）：提前拒，
+        // 不产出一个「只有信封、模板为空」的包让接收端报 `transfer_package_empty`。
+        val selectedSchemeIds = request.selectedTimeSchemeIds
+        if (scope == TransferScope.TIME_TEMPLATE && selectedSchemeIds.isNotEmpty() &&
+            snapshot.timeSchemes.none { selectedSchemeIds.contains(it.id) }
+        ) {
+            return TransferPackageResult.Failure("no_selected_time_schemes")
         }
         if (scope in SCOPES_NEEDING_TIMETABLE && activeProfile == null) {
             return TransferPackageResult.Failure("no_active_profile")
@@ -253,7 +272,13 @@ object DataTransferPackageLogic {
             else -> allExams.filter { courseIds.contains(it.courseId) }
         }
 
-        val metadata = selectScopedMetadata(snapshot, scope, courses, request.now)
+        val metadata = selectScopedMetadata(
+            snapshot = snapshot,
+            scope = scope,
+            courses = courses,
+            now = request.now,
+            selectedTimeSchemeIds = selectedSchemeIds,
+        )
 
         // 单课表 / 周课表只带「跟着课表走」的设置：整机级 44 键（主题/语言/材质/玻璃坞）
         // 一旦进包，接收端会把它写进全局真源，等于用别人的外观覆盖你的设备。
@@ -366,7 +391,8 @@ object DataTransferPackageLogic {
     /**
      * 附属元数据选材（Dart `_selectScopedMetadata`）。
      *
-     * - `TIME_TEMPLATE`：只放时间模板，日程/规则全清（作息可以单独发给别人）；
+     * - `TIME_TEMPLATE`：只放时间模板（给了 [TransferPackageRequest.selectedTimeSchemeIds] 时
+     *   只放被点名的那些），日程/规则全清（作息可以单独发给别人）；
      * - 非局部范围（当前课表 / 全量）：全带；
      * - 局部范围（本周 / 选课）：日程按时间窗口相交、日期规则按区间重叠，
      *   时间模板只带「被用到」的（课程覆盖 id / 默认作息 id / 日期规则引用 id）。
@@ -376,12 +402,19 @@ object DataTransferPackageLogic {
         scope: TransferScope,
         courses: List<Course>,
         now: LocalDateTime,
+        selectedTimeSchemeIds: Set<String>,
     ): ScopedMetadata {
         if (scope == TransferScope.TIME_TEMPLATE) {
+            // 空集合 = 数据备份页的「导出时间模板」全带；非空 = 模板页单套分享的收窄。
+            val schemes = if (selectedTimeSchemeIds.isEmpty()) {
+                snapshot.timeSchemes
+            } else {
+                snapshot.timeSchemes.filter { selectedTimeSchemeIds.contains(it.id) }
+            }
             return ScopedMetadata(
                 scheduleItems = emptyList(),
                 scheduleDateRules = emptyList(),
-                timeSchemes = snapshot.timeSchemes,
+                timeSchemes = schemes,
             )
         }
 
