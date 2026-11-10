@@ -37,19 +37,18 @@ import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.mutx163.qingyu.components.QingyuCard
-import com.mutx163.qingyu.components.QingyuCardDefaults
+import com.mutx163.qingyu.components.QingyuColorPreviewDotGap
+import com.mutx163.qingyu.components.QingyuColorPreviewDotSize
+import com.mutx163.qingyu.components.QingyuLoadingInButton
 import com.mutx163.qingyu.components.rememberSheetMaxHeight
 import com.mutx163.qingyu.components.QingyuPageScaffold as SharedPageScaffold
 import com.mutx163.qingyu.components.QingyuPageTheme
 import com.mutx163.qingyu.components.QingyuSheet
-import com.mutx163.qingyu.components.QingyuWeightDelta
-import com.mutx163.qingyu.components.shiftWeight
 import com.mutx163.qingyu.pages.timetable.day.parseHexColorOrFallback
 import com.mutx163.qingyu.theme.QingyuTheme
 import top.yukonga.miuix.kmp.basic.Button
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
 import top.yukonga.miuix.kmp.basic.Card
-import top.yukonga.miuix.kmp.basic.CircularProgressIndicator
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.IconButton
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
@@ -138,15 +137,40 @@ fun ImportNavRow(
     accentHex: String,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
+    inGroup: Boolean = false,
 ) {
     val accent = Color(parseImportAccentHex(accentHex))
-    QingyuCard(modifier = modifier.fillMaxWidth()) {
+    ImportRowCard(modifier = modifier, inGroup = inGroup) {
         ArrowPreference(
             title = title,
             summary = subtitle,
             startAction = { ImportIconBadge(icon = icon, accent = accent) },
             onClick = onClick,
         )
+    }
+}
+
+/**
+ * 行卡容器：默认「一行一张官方 [QingyuCard]」；[inGroup] = true 时只吐行本体，
+ * 由页面的分组卡统一承载。
+ *
+ * 为什么要这个开关：Dart 侧入口页的两组行各自在一个 `HyperosListGroup` 里
+ * （`course_import_entry_screen.dart` 四种导入方式一张卡、
+ * `import_random_color_toggle.dart` 开关 + 选组行一张卡），而「一行一张卡」是迁移期
+ * 的近似做法（六张卡摊开，看着像一排按钮，不像设置组）。卡里再套卡会出现双重底色，
+ * 所以只能由外卡承载、行本体重用。
+ */
+@Composable
+private fun ImportRowCard(
+    modifier: Modifier,
+    inGroup: Boolean,
+    content: @Composable () -> Unit,
+) {
+    if (inGroup) {
+        // 分组态：外层 Card 已经给了 12dp 横向留白，这里不要再套卡、也不要再吃 modifier。
+        content()
+    } else {
+        QingyuCard(modifier = modifier.fillMaxWidth()) { content() }
     }
 }
 
@@ -165,9 +189,10 @@ fun ImportSwitchRow(
     enabled: Boolean,
     onCheckedChange: (Boolean) -> Unit,
     modifier: Modifier = Modifier,
+    inGroup: Boolean = false,
 ) {
     val accent = Color(parseImportAccentHex(accentHex))
-    QingyuCard(modifier = modifier.fillMaxWidth()) {
+    ImportRowCard(modifier = modifier, inGroup = inGroup) {
         SwitchPreference(
             title = title,
             summary = subtitle,
@@ -191,9 +216,10 @@ fun ImportValueRow(
     enabled: Boolean,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
+    inGroup: Boolean = false,
 ) {
     val dark = isSystemInDarkTheme()
-    QingyuCard(modifier = modifier.fillMaxWidth()) {
+    ImportRowCard(modifier = modifier, inGroup = inGroup) {
         ArrowPreference(
             title = title,
             enabled = enabled,
@@ -246,23 +272,27 @@ fun ImportGuidePanel(
     Column(modifier = modifier.fillMaxWidth()) {
         QingyuCard(
             modifier = Modifier.fillMaxWidth(),
-            // 普通内容（非 Preference 行）必须给内边距，否则贴卡片边。
-            insideMargin = QingyuCardDefaults.ContentInsideMargin,
+            // 卡内刻度照发布版 `HyperosControlCardScope`：左右 16 / 上 16 / 下 12
+            //（底部比常规少 4dp，否则最后一行下面会多一条「下厚上薄」的死白）。
+            insideMargin = ImportGuideCardInsideMargin,
         ) {
             Column(modifier = Modifier.fillMaxWidth()) {
                 Text(
                     text = ImportStrings.applicableScenarioTitle.text,
-                    style = MiuixTheme.textStyles.body1.shiftWeight(QingyuWeightDelta.MEDIUM),
+                    // Dart `HyperosTypography.title`（= listTitle）= 17sp / w400 → textStyles.main。
+                    style = MiuixTheme.textStyles.main,
                     color = Color(QingyuTheme.primaryText(dark)),
                 )
                 Text(
                     text = scenarioIntro,
                     style = MiuixTheme.textStyles.footnote1,
-                    lineHeight = 18.sp,
+                    lineHeight = ImportGuideCaptionLineHeight,
                     color = Color(QingyuTheme.secondaryText(dark)),
-                    modifier = Modifier.padding(top = 4.dp),
+                    // Dart `HyperosTokens.titleCaptionGap` = 3dp。
+                    modifier = Modifier.padding(top = 3.dp),
                 )
-                Spacer(modifier = Modifier.height(14.dp))
+                // Dart `HyperosControlCard`：头部（标题 + 副标题）与正文之间 12dp。
+                Spacer(modifier = Modifier.height(12.dp))
                 ImportGuideLine(ImportStrings.stepLabel.filled("step", "1"), step1Subtitle)
                 Spacer(modifier = Modifier.height(10.dp))
                 ImportGuideLine(ImportStrings.stepLabel.filled("step", "2"), step2Subtitle)
@@ -270,29 +300,31 @@ fun ImportGuidePanel(
                 ImportGuideLine(ImportStrings.stepLabel.filled("step", "3"), step3Subtitle)
             }
         }
+        // Dart 两张卡之间是 `HyperosSectionGap`（12dp）。
         Spacer(modifier = Modifier.height(12.dp))
         QingyuCard(
             modifier = Modifier.fillMaxWidth(),
-            insideMargin = QingyuCardDefaults.ContentInsideMargin,
+            insideMargin = ImportGuideCardInsideMargin,
         ) {
             Column(modifier = Modifier.fillMaxWidth()) {
                 Text(
                     text = ImportStrings.supportedFilesTitle.text,
-                    style = MiuixTheme.textStyles.body1.shiftWeight(QingyuWeightDelta.MEDIUM),
+                    style = MiuixTheme.textStyles.main,
                     color = Color(QingyuTheme.primaryText(dark)),
                 )
                 Text(
                     text = supportedFilesSuffix,
                     style = MiuixTheme.textStyles.footnote1,
-                    lineHeight = 18.sp,
+                    lineHeight = ImportGuideCaptionLineHeight,
                     color = Color(QingyuTheme.secondaryText(dark)),
-                    modifier = Modifier.padding(top = 6.dp),
+                    // 头部 ↔ 正文同样 12dp（发布版这一卡没有副标题，直接接正文）。
+                    modifier = Modifier.padding(top = 12.dp),
                 )
                 if (supportedFilesExtra != null) {
                     Text(
                         text = supportedFilesExtra,
                         style = MiuixTheme.textStyles.footnote1,
-                        lineHeight = 18.sp,
+                        lineHeight = ImportGuideCaptionLineHeight,
                         color = Color(QingyuTheme.secondaryText(dark)),
                         modifier = Modifier.padding(top = 4.dp),
                     )
@@ -301,6 +333,17 @@ fun ImportGuidePanel(
         }
     }
 }
+
+/** 引导卡内边距：左右 16 / 上 16 / 下 12（Dart `HyperosControlCardScope` 的三个默认值）。 */
+private val ImportGuideCardInsideMargin = PaddingValues(
+    start = 16.dp,
+    top = 16.dp,
+    end = 16.dp,
+    bottom = 12.dp,
+)
+
+/** 卡内说明句行高：Dart `sectionDescription` 是 13sp × 1.5 ≈ 20sp（原 18 偏挤）。 */
+private val ImportGuideCaptionLineHeight = 20.sp
 
 /** 引导行（Dart `ImportGuideLine`）：28dp 主色圆徽标 + 步骤标题 + 说明。 */
 @Composable
@@ -321,20 +364,23 @@ private fun ImportGuideLine(title: String, subtitle: String) {
             Text(
                 // Dart: title.replaceAll('步骤 ', '')——徽标里只留数字。
                 text = title.replaceFirst("步骤 ", ""),
-                style = MiuixTheme.textStyles.footnote1,
+                // Dart listDetail = 14sp（textStyles.body2）；原来 13sp 比徽标小一圈。
+                style = MiuixTheme.textStyles.body2,
                 color = primary,
             )
         }
         Column(modifier = Modifier.weight(1f)) {
             Text(
                 text = title,
-                style = MiuixTheme.textStyles.body2.shiftWeight(QingyuWeightDelta.MEDIUM),
+                // Dart listTitle = 17sp / w400：与卡标题同阶（原 14sp + MEDIUM 小一号又偏粗）。
+                style = MiuixTheme.textStyles.main,
                 color = Color(QingyuTheme.primaryText(dark)),
             )
             Text(
                 text = subtitle,
-                style = MiuixTheme.textStyles.footnote1,
-                lineHeight = 18.sp,
+                // Dart listDetail = 14sp，行高 1.4 ≈ 20sp（原 13sp / 18sp 偏小偏挤）。
+                style = MiuixTheme.textStyles.body2,
+                lineHeight = ImportGuideCaptionLineHeight,
                 color = Color(QingyuTheme.secondaryText(dark)),
                 modifier = Modifier.padding(top = 2.dp),
             )
@@ -362,7 +408,12 @@ fun ImportActionButton(
             horizontalArrangement = Arrangement.spacedBy(8.dp),
         ) {
             if (loading) {
-                CircularProgressIndicator(size = 18.dp)
+                // D1 加载态统一（规格：美化一 `2026-11-10-loading-state-unification.md` 第 14 行
+                // 本文件 :365 → B1）：发布版按钮内是 16dp / 线宽 2，颜色取按钮自己的
+                // contentColor（禁用态即 disabledContentColor）。原来 18dp 且吃默认主色，
+                // 在 primary 蓝底按钮上是「蓝底蓝圈」，等于看不见。
+                // 颜色取按钮自己的 contentColor（主色按钮上即 onPrimary 白；禁用态跟着降）。
+                QingyuLoadingInButton()
             }
             Text(label)
         }
@@ -858,12 +909,14 @@ private fun ImportColorDotsPreview(hexes: List<String>) {
     val stride = if (hexes.size > 10) (hexes.size + 9) / 10 else 1
     Row(
         modifier = Modifier.padding(top = 6.dp),
-        horizontalArrangement = Arrangement.spacedBy(4.dp),
+        // 只读色点的直径 / 间距走共享刻度（发布版 `import_random_color_toggle.dart`：
+        // `width/height: 14` + `SizedBox(width: 4)`），与可选色块（42/40/36/32）不是一套。
+        horizontalArrangement = Arrangement.spacedBy(QingyuColorPreviewDotGap),
     ) {
         (hexes.indices step stride).take(10).forEach { index ->
             Box(
                 modifier = Modifier
-                    .size(14.dp)
+                    .size(QingyuColorPreviewDotSize)
                     .clip(CircleShape)
                     .background(parseHexColorOrFallback(hexes[index])),
             )

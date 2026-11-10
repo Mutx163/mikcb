@@ -65,7 +65,8 @@ fun SpreadsheetImportPage(
         QingyuPageList(
             innerPadding = innerPadding,
             scrollBehavior = scrollBehavior,
-            contentPadding = PaddingValues(bottom = 12.dp),
+            // 底部 24dp 与 ICS 页同口径（发布版 `HyperosTokens.listPadding` 的 bottom）。
+            contentPadding = PaddingValues(bottom = 24.dp),
         ) {
             item(key = "guide") {
                 ImportGuidePanel(

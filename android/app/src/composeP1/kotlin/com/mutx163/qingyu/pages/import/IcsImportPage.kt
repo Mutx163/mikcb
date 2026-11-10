@@ -54,7 +54,9 @@ fun IcsImportPage(
         QingyuPageList(
             innerPadding = innerPadding,
             scrollBehavior = scrollBehavior,
-            contentPadding = PaddingValues(bottom = 12.dp),
+            // 底部 24dp 照发布版（`HyperosTokens.listPadding` 的 bottom = 24）；
+            // 顶部的「标题→正文」8dp 由骨架的 innerPadding.top 已经让出来，不要重复加。
+            contentPadding = PaddingValues(bottom = 24.dp),
         ) {
             item(key = "guide") {
                 ImportGuidePanel(
