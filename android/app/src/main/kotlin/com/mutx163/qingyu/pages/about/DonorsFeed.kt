@@ -38,11 +38,20 @@ sealed interface DonorsFetchOutcome {
     data class Failure(val reason: String) : DonorsFetchOutcome
 }
 
-/** 鸣谢名单取数（构造不做 IO，[fetch] 才会真的发请求）。 */
-class SupportDonorsFeed(private val http: AboutHttp) {
+/**
+ * 鸣谢名单取数（构造不做 IO，[fetch] 才会真的发请求）。
+ *
+ * @param preferGitCode 渠道联动（发布版 `_fetchDonorData` 的 `preferGitCode`）：下载渠道
+ *   选 GitCode 时把 GitCode 直连排到第一位——国内网络里官方 raw 常被丢包。信任根不变：
+ *   仍然只有这两条官方直连，镜像永不进候选池（名单内容可被镜像整份替换）。
+ */
+class SupportDonorsFeed(
+    private val http: AboutHttp,
+    private val preferGitCode: Boolean = false,
+) {
 
     /**
-     * 依次尝试 [candidateUrls]，第一个 200 即返回。
+     * 依次尝试 [donorCandidateUrls]，第一个 200 即返回。
      *
      * 全部候选都失败时：见过 304 就回 [DonorsFetchOutcome.NotModified]，
      * 否则回 [DonorsFetchOutcome.Failure]，原因取**最后一个**候选的（那是最终卡住用户的那条）。
@@ -50,7 +59,7 @@ class SupportDonorsFeed(private val http: AboutHttp) {
     fun fetch(): DonorsFetchOutcome {
         var sawNotModified = false
         var lastReason = "network_unreachable"
-        for (url in candidateUrls) {
+        for (url in donorCandidateUrls(preferGitCode)) {
             when (val outcome = attempt(url)) {
                 is DonorsFetchOutcome.Success -> return outcome
                 DonorsFetchOutcome.NotModified -> sawNotModified = true
@@ -92,7 +101,20 @@ class SupportDonorsFeed(private val http: AboutHttp) {
         const val GITCODE_DONORS_URL =
             "https://api.gitcode.com/api/v5/repos/mutx/qingyu/contents/docs/donors.json?ref=main"
 
-        /** 候选顺序：官方直连优先，失败才回退国内直连。 */
-        val candidateUrls: List<String> = listOf(DONORS_URL, GITCODE_DONORS_URL)
+        /**
+         * 候选顺序（渠道联动）：GitCode 渠道 → GitCode 在前；其余渠道 → 官方 raw 在前。
+         *
+         * 纯函数、可单测：顺序本身就是「国内网络能不能读到名单」的判据，
+         * 别让渠道联动在渲染层各写一套。
+         */
+        fun donorCandidateUrls(preferGitCode: Boolean): List<String> =
+            if (preferGitCode) {
+                listOf(GITCODE_DONORS_URL, DONORS_URL)
+            } else {
+                listOf(DONORS_URL, GITCODE_DONORS_URL)
+            }
+
+        /** 默认顺序（官方 raw 优先）；兼容既有调用点/测试。 */
+        val candidateUrls: List<String> get() = donorCandidateUrls(preferGitCode = false)
     }
 }

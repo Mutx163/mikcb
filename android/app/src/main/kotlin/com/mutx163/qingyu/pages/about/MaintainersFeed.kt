@@ -2,9 +2,12 @@ package com.mutx163.qingyu.pages.about
 
 import com.mutx163.qingyu.app.KeyValueStore
 import com.mutx163.qingyu.infra.MaintainerGroup
+import com.mutx163.qingyu.infra.WarehouseRepositoryHost
 import com.mutx163.qingyu.infra.WarehouseRepositorySource
 import com.mutx163.qingyu.infra.buildMaintainerLabel
+import com.mutx163.qingyu.infra.buildMirrorCandidateUrls
 import com.mutx163.qingyu.infra.decodeMaintainersCache
+import com.mutx163.qingyu.infra.defaultMirrorUrlPrefix
 import com.mutx163.qingyu.infra.defaultQingyuWarehouseSource
 import com.mutx163.qingyu.infra.encodeMaintainersCache
 import com.mutx163.qingyu.infra.groupMaintainerLabels
@@ -212,18 +215,25 @@ class WarehouseMaintainersFeed(
     private val http: AboutHttp,
     private val source: WarehouseRepositorySource = defaultQingyuWarehouseSource,
     private val parallelism: Int = DEFAULT_PARALLELISM,
+    /**
+     * 镜像前缀（重建候选链用）。默认与仓库索引同值；传 `null` = 只走直连。
+     *
+     * 2026-11-10 联网审计：此前 `uri()` 只构造**一个**地址——`defaultQingyuWarehouseSource`
+     * 是 GitHub 宿主，国内网络里 `raw.githubusercontent.com` 被丢包时整份名单直接失败；
+     * 现在与仓库索引同链（主地址 → GitCode 宿主时的 GitHub raw 回退 → 镜像）。
+     */
+    private val mirrorUrlPrefix: String? = defaultMirrorUrlPrefix,
 ) {
 
     fun fetch(): MaintainersFetchOutcome {
-        val rootUrl = uri(ROOT_INDEX_PATH)
-        val rootResponse = runCatching { http.get(rootUrl) }.getOrNull()
-            ?: return MaintainersFetchOutcome.Failure(REASON_NETWORK_UNAVAILABLE)
-        if (rootResponse.statusCode != 200) {
-            // 根索引没有本地缓存可退：304/404/5xx 都只能如实报错。
-            return MaintainersFetchOutcome.Failure("http_${rootResponse.statusCode}")
-        }
-        val rootText = decodeBody(rootUrl, rootResponse)
-            ?: return MaintainersFetchOutcome.Failure(REASON_ROOT_INDEX_DECODE_FAILED)
+        val rootFetch = fetchText(ROOT_INDEX_PATH)
+        val rootText = rootFetch.text ?: return MaintainersFetchOutcome.Failure(
+            when {
+                rootFetch.sawDecodeFailure -> REASON_ROOT_INDEX_DECODE_FAILED
+                rootFetch.lastStatus != null -> "http_${rootFetch.lastStatus}"
+                else -> REASON_NETWORK_UNAVAILABLE
+            },
+        )
         val schools = parseWarehouseRootIndexYaml(rootText)
         if (schools.isEmpty()) {
             return MaintainersFetchOutcome.Failure(REASON_NO_SCHOOLS)
@@ -249,13 +259,7 @@ class WarehouseMaintainersFeed(
     }
 
     private fun fetchSchool(school: WarehouseSchoolRow): SchoolFetch {
-        val path = "resources/${school.resourceFolder}/adapters.yaml"
-        val url = uri(path)
-        val response = runCatching { http.get(url) }.getOrNull()
-        if (response == null || response.statusCode != 200) {
-            return SchoolFetch(emptyList(), failed = true)
-        }
-        val text = decodeBody(url, response)
+        val text = fetchText("resources/${school.resourceFolder}/adapters.yaml").text
             ?: return SchoolFetch(emptyList(), failed = true)
         val adapters = parseWarehouseAdaptersYaml(text)
         if (adapters.isEmpty()) {
@@ -270,7 +274,54 @@ class WarehouseMaintainersFeed(
         )
     }
 
-    private fun uri(relativePath: String): String = source.buildFileUri(relativePath).toString()
+    /**
+     * 按候选链逐个拉取，第一个 200 且能解码的胜出（与仓库索引同一条链、同一套顺序）。
+     *
+     * 顺序：主地址（GitHub 宿主 = GitHub raw / GitCode 宿主 = GitCode contents API）
+     * → GitCode 宿主时的 GitHub raw 回退 → 镜像前缀候选。
+     *
+     * 为什么在这里重建而不是直接调 `WarehouseRepositoryUrls.candidateUrls`：那个对象住在
+     * `pages/import/warehouse`，仓库的「域边界守卫」禁止本域 import 另一页面域的类型
+     *（会把本域 L0 的独立编译打破）。顺序语义由 `MaintainerCandidateChainTest` 钉住，
+     * 仓库侧由 `WarehouseRepositoryFeedTest` 钉住，两边同一条链。
+     */
+    private fun candidateUrls(relativePath: String): List<String> {
+        val primary = source.buildFileUri(relativePath).toString()
+        val githubRaw = source.buildRawFileUri(relativePath).toString()
+        val candidates = linkedSetOf(primary)
+        if (source.host == WarehouseRepositoryHost.GITCODE) {
+            candidates.add(githubRaw)
+        }
+        if (!mirrorUrlPrefix.isNullOrEmpty()) {
+            candidates.addAll(buildMirrorCandidateUrls(githubRaw, mirrorUrlPrefix))
+        }
+        return candidates.toList()
+    }
+
+    private data class CandidateTextFetch(
+        val text: String?,
+        val lastStatus: Int?,
+        val sawDecodeFailure: Boolean = false,
+    )
+
+    private fun fetchText(relativePath: String): CandidateTextFetch {
+        var lastStatus: Int? = null
+        var sawDecodeFailure = false
+        for (url in candidateUrls(relativePath)) {
+            val response = runCatching { http.get(url) }.getOrNull() ?: continue
+            if (response.statusCode != 200) {
+                lastStatus = response.statusCode
+                continue
+            }
+            val text = decodeBody(url, response)
+            if (text == null) {
+                sawDecodeFailure = true
+                continue
+            }
+            return CandidateTextFetch(text = text, lastStatus = lastStatus)
+        }
+        return CandidateTextFetch(text = null, lastStatus = lastStatus, sawDecodeFailure = sawDecodeFailure)
+    }
 
     private fun decodeBody(url: String, response: AboutHttpResponse): String? =
         if (isGitCodeContentsUrl(url)) decodeGitCodeContentsBody(response.body) else response.body

@@ -6,6 +6,10 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.platform.LocalContext
+import com.mutx163.qingyu.app.TimetableStore
+import com.mutx163.qingyu.infra.AppUpdateDownloadChannel
+import com.mutx163.qingyu.platform.PrefsKeyValueStore
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
@@ -27,13 +31,23 @@ import kotlinx.coroutines.withContext
  * - 本页**不做缓存**（与 Flutter 一致）：每次进页都重新拉。所以不存在「把上次缓存当新数据」，
  *   代价是断网时名单不可见——此时显示的是错误 + 重试，不冒充「名单是空的」。
  * - 镜像竞速池没移植（理由见 [SupportDonorsFeed] 的注释）；下载渠道联动（`preferGitCode`）
- *   等 F05/F06 把设置读出来再补。
+ *   2026-11-10 已接：读与版本更新页同一把设置键（`appUpdateDownloadChannel`）。
  * - 只声明「编译通过 / JVM 单测通过」，真机联网路径归用户验收。
  */
 @Composable
 fun SupportCreatorHostPage(onBack: () -> Unit) {
+    val context = LocalContext.current
     val http = remember { JdkAboutHttp() }
-    val feed = remember(http) { SupportDonorsFeed(http) }
+    // 渠道联动（发布版 `preferGitCode`）：与版本更新页读**同一把**设置键
+    //（`appUpdateDownloadChannel`），不在本页另立一套「国内/海外」判断。
+    val store = remember(context) { TimetableStore(PrefsKeyValueStore(context)) }
+    val preferGitCode = remember {
+        AppUpdateSettings.fromJson(store.loadSettingsJson()).downloadChannel ==
+            AppUpdateDownloadChannel.GITCODE
+    }
+    val feed = remember(http, preferGitCode) {
+        SupportDonorsFeed(http, preferGitCode = preferGitCode)
+    }
 
     var donorData by remember { mutableStateOf<SupportDonorData?>(null) }
     var isLoading by remember { mutableStateOf(true) }
