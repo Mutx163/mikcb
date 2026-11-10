@@ -1,10 +1,10 @@
 {
-  "updatedAt": "2026-11-09T08:33:08+00:00",
+  "updatedAt": "2026-11-10T08:44:54+00:00",
   "source": "https://github.com/Mutx163/qingyu_warehouse",
   "sourceRef": "main",
   "counts": {
-    "total": 275,
-    "schools": 270,
+    "total": 277,
+    "schools": 272,
     "generic": 5
   },
   "schools": [
@@ -1409,6 +1409,13 @@
       "category": "school"
     },
     {
+      "id": "SDU",
+      "name": "山东大学",
+      "initial": "S",
+      "resourceFolder": "SDU",
+      "category": "school"
+    },
+    {
       "id": "SDNU",
       "name": "山东师范大学",
       "initial": "S",
@@ -1574,6 +1581,13 @@
       "name": "武汉商学院",
       "initial": "W",
       "resourceFolder": "WBU",
+      "category": "school"
+    },
+    {
+      "id": "WIT",
+      "name": "武汉工程大学",
+      "initial": "W",
+      "resourceFolder": "WIT",
       "category": "school"
     },
     {
