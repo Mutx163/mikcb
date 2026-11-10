@@ -80,6 +80,26 @@ class HomeNavModelTest {
         )
     }
 
+    // -------------------------------------------- 「页面索引」保留并可编辑（2026-11-10 用户拍板）
+
+    @Test
+    fun `空排列回退默认并在末尾保留页面索引`() {
+        // 「设置 → 恢复默认（底栏与首页标题）」会把 glassDockActions 清空。
+        // 用户拿「页面索引」当预览导航，要保留、要可达 ⇒ 空表时解析层追加到末尾。
+        val ids = HomeDockNavModel.resolveDockIds(emptyList()) { true }
+        assertEquals(listOf("day", "week", HomeDockNavModel.DEV_INDEX_ID), ids)
+    }
+
+    @Test
+    fun `用户加进存档的页面索引不会被谓词丢掉`() {
+        // 编辑器候选里已登记 index；它不在页面映射表里（谓词为 false），
+        // 但 `resolveIds` 必须放行 —— 否则用户加进底栏、屏上却不显示。
+        val ids = HomeDockNavModel.resolveDockIds(
+            listOf("day", HomeDockNavModel.DEV_INDEX_ID, "week"),
+        ) { it != HomeDockNavModel.DEV_INDEX_ID }
+        assertEquals(listOf("day", HomeDockNavModel.DEV_INDEX_ID, "week"), ids)
+    }
+
     // ---------------------------------------------------------------- 高亮下标
 
     @Test

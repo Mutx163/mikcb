@@ -54,7 +54,9 @@ class HomeMenuEntryDestinationGuardTest {
     @Test
     fun `底栏候选目录每一条都有去处`() {
         // 底栏多两种视图动作（day / week / monthView），它们由首页自己处理，不走页面映射。
-        val allowed = supportedIds() + HomeDockNavModel.VIEW_ACTION_IDS
+        // 「页面索引」同样是开发壳专属条目：`PagesShellActivity` 有专门渲染分支
+        // （`ShellPageIndexScreen`），不在 `shellTimetableMenuPageId` 表里，但它确实点得开。
+        val allowed = supportedIds() + HomeDockNavModel.VIEW_ACTION_IDS + HomeDockNavModel.DEV_INDEX_ID
         val missing = catalogIds(DockCatalog).filterNot { it in allowed }
         assertEquals(
             "以下底栏候选在渲染层没有去处（加了不出现在坞上）：\n" +

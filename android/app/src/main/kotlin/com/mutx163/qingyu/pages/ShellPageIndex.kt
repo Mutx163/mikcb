@@ -178,6 +178,7 @@ import com.mutx163.qingyu.pages.settings.WallpaperPositionPickerHost
 import com.mutx163.qingyu.pages.settings.WallpaperSheetPages
 import com.mutx163.qingyu.pages.settings.SettingsWeatherPage
 import com.mutx163.qingyu.pages.shell.ShellPageCatalog
+import com.mutx163.qingyu.pages.shell.HomeMenuNavModel
 import com.mutx163.qingyu.pages.showcase.MiuixShowcasePage
 import com.mutx163.qingyu.WeeklyReportScheduler
 import com.mutx163.qingyu.pages.statistics.CourseStatisticsLogic
@@ -225,7 +226,6 @@ import com.mutx163.qingyu.pages.time_scheme.LocationTimeApplyLogic
 import com.mutx163.qingyu.pages.time_scheme.LocationTimeMatchHost
 import com.mutx163.qingyu.pages.timetable.TimetableProfilesController
 import com.mutx163.qingyu.pages.timetable.TimetableStyleMapping
-import com.mutx163.qingyu.pages.timetable.TimetableMenuDefaults
 import com.mutx163.qingyu.pages.timetable.TimetableDateLogic
 import com.mutx163.qingyu.pages.timetable.toastOrNull
 import com.mutx163.qingyu.pages.timetable.TimetableProfilesPage
@@ -739,6 +739,22 @@ fun ShellPageContent(
             val homeChrome = rememberHomeBackdropChrome(appSettings)
             // 2026-11-01 F26：节假日三路数据（provider 在 IO 线程初始化，失败退空态）。
             val holidayState = rememberMonthHolidayState(wiring.holiday)
+            // 八宫格里的「弹层动作」：与周视图同一判别（`HomeMenuNavModel.isMenuAction`）。
+            // 只查页面映射的话，用户把「课程重新配色 / 分享课表」排进菜单后，切到月视图
+            // 点它们会没反应（2026-11-10 评审尾巴）。配色用与课程卡片页同一份颜色仓储；
+            // 分享按本周周图，与发布版从非首页入口进入时的兜底口径一致。
+            var showRecolorSheet by remember { mutableStateOf(false) }
+            if (showRecolorSheet) {
+                CourseRecolorSheetHost(
+                    repository = wiring.timetable,
+                    colorStore = recolorColorStore,
+                    historyStore = recolorHistoryStore,
+                    onDismiss = { showRecolorSheet = false },
+                    onToast = { message ->
+                        Toast.makeText(recolorContext, message, Toast.LENGTH_SHORT).show()
+                    },
+                )
+            }
             MonthViewHost(
                 snapshot = snapshot,
                 // 2026-11-01 F24：月网格的考试 / 日程落格与当日议程都靠这两份。
@@ -807,16 +823,27 @@ fun ShellPageContent(
                     profiles = snapshot.profiles,
                     activeProfileId = snapshot.activeProfileId,
                 ),
-                homeMenuItems = TimetableMenuDefaults.entries(),
+                // 月视图「更多」菜单与周/日视图同源：读用户存档的 homeGridMenuActions
+                // （`homeTopMenuItems` 会做清洗 + 动作白名单 + 空表回退默认八项）。
+                // 2026-11-10 前这里传的是死表 `TimetableMenuDefaults.entries()`，
+                // 于是用户自定义的八宫格在月视图不生效、三个首页视图出现两套菜单。
+                homeMenuItems = homeTopMenuItems(appSettings),
                 embedded = monthEmbedded,
                 onMonthLabelChanged = onMonthLabelChanged ?: {},
                 onSelectedDateChanged = onMonthSelectedDateChanged ?: {},
                 // 「添加课程」要带当前浏览周与今天星期几（Dart `openCourseForm`，
-                // `timetable_screen.dart:1745-1752`）；其余项只按映射表推页。
+                // `timetable_screen.dart:1745-1752`）；其余项按「页面映射 ∪ 弹层动作」分流。
+                // 2026-11-10：月/日视图补上动作通道，与周视图同一判别 —— 只查页面映射会让
+                // 用户排进八宫格的「课程重新配色 / 分享课表」在这里点了没反应。
                 onHomeMenuSelect = { id ->
-                    shellTimetableMenuPageId(id)?.let { target ->
-                        if (target == "d1.addCourse") wiring.seedAddCourseFromMenu(snapshot.currentWeek)
-                        onOpenPage(target)
+                    when {
+                        id == HomeMenuNavModel.ACTION_COURSE_RECOLOR -> showRecolorSheet = true
+                        id == HomeMenuNavModel.ACTION_SHARE_TIMETABLE ->
+                            wiring.shareCurrentWeekImage(recolorContext)
+                        else -> shellTimetableMenuPageId(id)?.let { target ->
+                            if (target == "d1.addCourse") wiring.seedAddCourseFromMenu(snapshot.currentWeek)
+                            onOpenPage(target)
+                        }
                     }
                 },
             )
@@ -839,6 +866,19 @@ fun ShellPageContent(
             // 独立页面 / 页面索引进入时没有宿主可借，仍按旧路径自己 load()。
             val appSettings = dayOverlay?.settingsModel
                 ?: remember(wiring.settingsRevision) { wiring.settingsModel.load() }
+            // 八宫格里的「弹层动作」：与月/周视图同一判别（见上面月视图同一段注释）。
+            var showRecolorSheet by remember { mutableStateOf(false) }
+            if (showRecolorSheet) {
+                CourseRecolorSheetHost(
+                    repository = wiring.timetable,
+                    colorStore = recolorColorStore,
+                    historyStore = recolorHistoryStore,
+                    onDismiss = { showRecolorSheet = false },
+                    onToast = { message ->
+                        Toast.makeText(recolorContext, message, Toast.LENGTH_SHORT).show()
+                    },
+                )
+            }
             // ── 首页壁纸 / 材质 / 顶栏墨色（2026-11-01）──
             // 与周视图同一条推导（`rememberHomeBackdropChrome` 是唯一出口）：
             // 不接这一层时，日视图是一块不透明主题底 —— 用户在周视图看到的壁纸与玻璃
@@ -960,11 +1000,18 @@ fun ShellPageContent(
                 ),
                 homeMenuItems = homeTopMenuItems(appSettings),
                 // 「添加课程」要带当前浏览周与今天星期几（Dart `openCourseForm`，
-                // `timetable_screen.dart:1745-1752`）；其余项只按映射表推页。
+                // `timetable_screen.dart:1745-1752`）；其余项按「页面映射 ∪ 弹层动作」分流。
+                // 2026-11-10：月/日视图补上动作通道，与周视图同一判别 —— 只查页面映射会让
+                // 用户排进八宫格的「课程重新配色 / 分享课表」在这里点了没反应。
                 onHomeMenuSelect = { id ->
-                    shellTimetableMenuPageId(id)?.let { target ->
-                        if (target == "d1.addCourse") wiring.seedAddCourseFromMenu(snapshot.currentWeek)
-                        onOpenPage(target)
+                    when {
+                        id == HomeMenuNavModel.ACTION_COURSE_RECOLOR -> showRecolorSheet = true
+                        id == HomeMenuNavModel.ACTION_SHARE_TIMETABLE ->
+                            wiring.shareCurrentWeekImage(recolorContext)
+                        else -> shellTimetableMenuPageId(id)?.let { target ->
+                            if (target == "d1.addCourse") wiring.seedAddCourseFromMenu(snapshot.currentWeek)
+                            onOpenPage(target)
+                        }
                     }
                 },
                 // 壁纸层 + 材质快照 + 顶栏墨色（与周视图同一个推导出口）。
