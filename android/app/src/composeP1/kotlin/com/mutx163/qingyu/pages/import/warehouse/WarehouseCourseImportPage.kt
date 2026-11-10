@@ -32,6 +32,8 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.mutx163.qingyu.components.QingyuCard
+import com.mutx163.qingyu.components.QingyuEmptyState
+import com.mutx163.qingyu.components.QingyuLoadingCenter
 import com.mutx163.qingyu.components.QingyuPageCardMargin
 import com.mutx163.qingyu.components.QingyuPageList
 import com.mutx163.qingyu.components.QingyuPageScaffold
@@ -41,7 +43,6 @@ import com.mutx163.qingyu.components.QingyuWeightDelta
 import com.mutx163.qingyu.components.shiftWeight
 import top.yukonga.miuix.kmp.basic.Button
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
-import top.yukonga.miuix.kmp.basic.CircularProgressIndicator
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.IconButton
 import top.yukonga.miuix.kmp.basic.InputField
@@ -50,6 +51,7 @@ import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.basic.SearchCleanup
 import top.yukonga.miuix.kmp.icon.extended.ChevronForward
 import top.yukonga.miuix.kmp.icon.extended.More
+import top.yukonga.miuix.kmp.icon.extended.Search
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 /**
@@ -233,58 +235,54 @@ fun WarehouseCourseImportPage(
 
             // 搜索结果或按字母分组的学校列表
             if (sections.isEmpty()) {
-                // 空状态：三种相位说三句不同的话（拉取中 / 拉取失败 / 真没有）
+                // 空状态：三种相位分开——拉取中用 D1 档 A2 转圈，失败/无结果走统一空态组件
+                // （C18：`components/QingyuEmptyState.kt`，发布版 `HyperosEmptyState` 的逐字几何）。
                 item(key = "empty") {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(vertical = 48.dp),
-                        contentAlignment = Alignment.Center,
-                    ) {
-                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                            if (phase == WarehouseListPhase.Loading) {
-                                CircularProgressIndicator()
+                    if (phase == WarehouseListPhase.Loading) {
+                        QingyuLoadingCenter(fillPage = false)
+                    } else {
+                        QingyuEmptyState(
+                            icon = MiuixIcons.Search,
+                            title = if (phase == WarehouseListPhase.Failed) {
+                                WarehouseStrings.warehouseRootLoadFailedTitle.text
+                            } else if (isSearching) {
+                                WarehouseStrings.noMatchingSchools.text
                             } else {
-                                Text(
-                                    text = when {
-                                        phase == WarehouseListPhase.Failed ->
-                                            WarehouseStrings.warehouseRootLoadFailedTitle.text
-
-                                        isSearching -> WarehouseStrings.noMatchingSchools.text
-                                        else -> WarehouseStrings.noAvailableSchools.text
-                                    },
-                                    style = MiuixTheme.textStyles.body1.shiftWeight(QingyuWeightDelta.MEDIUM),
-                                    color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-                                )
-                                if (phase == WarehouseListPhase.Failed) {
-                                    Spacer(modifier = Modifier.height(16.dp))
-                                    Button(
-                                        onClick = onRetry,
-                                        content = { Text(text = WarehouseStrings.reloadAction.text) },
-                                        colors = ButtonDefaults.buttonColors(
-                                            color = MiuixTheme.colorScheme.primary.copy(alpha = 0.12f),
-                                            contentColor = MiuixTheme.colorScheme.primary,
-                                        ),
-                                    )
-                                } else if (isSearching) {
-                                    Spacer(modifier = Modifier.height(6.dp))
-                                    Text(
-                                        text = WarehouseStrings.searchSchoolSuggestion.text,
-                                        style = MiuixTheme.textStyles.footnote1,
-                                        color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-                                    )
-                                    Spacer(modifier = Modifier.height(16.dp))
-                                    Button(
-                                        onClick = onFeedbackClick,
-                                        content = { Text(text = WarehouseStrings.warehouseFeedbackMissingSchoolTitle.text) },
-                                        colors = ButtonDefaults.buttonColors(
-                                            color = MiuixTheme.colorScheme.secondary,
-                                            contentColor = MiuixTheme.colorScheme.primary,
-                                        ),
-                                    )
+                                WarehouseStrings.noAvailableSchools.text
+                            },
+                            description = if (isSearching && phase != WarehouseListPhase.Failed) {
+                                WarehouseStrings.searchSchoolSuggestion.text
+                            } else {
+                                null
+                            },
+                            action = when {
+                                phase == WarehouseListPhase.Failed -> {
+                                    {
+                                        Button(
+                                            onClick = onRetry,
+                                            content = { Text(text = WarehouseStrings.reloadAction.text) },
+                                            colors = ButtonDefaults.buttonColors(
+                                                color = MiuixTheme.colorScheme.primary.copy(alpha = 0.12f),
+                                                contentColor = MiuixTheme.colorScheme.primary,
+                                            ),
+                                        )
+                                    }
                                 }
-                            }
-                        }
+                                isSearching -> {
+                                    {
+                                        Button(
+                                            onClick = onFeedbackClick,
+                                            content = { Text(text = WarehouseStrings.warehouseFeedbackMissingSchoolTitle.text) },
+                                            colors = ButtonDefaults.buttonColors(
+                                                color = MiuixTheme.colorScheme.secondary,
+                                                contentColor = MiuixTheme.colorScheme.primary,
+                                            ),
+                                        )
+                                    }
+                                }
+                                else -> null
+                            },
+                        )
                     }
                 }
             } else {
