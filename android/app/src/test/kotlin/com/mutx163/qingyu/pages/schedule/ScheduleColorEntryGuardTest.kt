@@ -63,6 +63,19 @@ class ScheduleColorEntryGuardTest {
         )
     }
 
+    @Test
+    fun `快捷模板在编辑态也展示 不再按 isEditing 门控`() {
+        val source = pageSource()
+        assertTrue(
+            "快捷模板条目必须还在（有意保留的超出发布版能力）",
+            source.contains("item(key = \"presets\")"),
+        )
+        assertFalse(
+            "快捷模板不许再被 `if (!isEditing)` 门控——用户在预览验收时要求编辑态也能用",
+            source.contains("if (!isEditing)"),
+        )
+    }
+
     private fun pageSource(): String {
         val file = File(
             androidSrc(),
