@@ -1,7 +1,10 @@
 package com.mutx163.qingyu.pages.export
 
+import com.mutx163.qingyu.app.AppLocaleRuntime
 import com.mutx163.qingyu.transfer.IcsExportEventKind
 import java.time.LocalDate
+import java.time.format.DateTimeFormatter
+import java.util.Locale
 
 /**
  * ICS 导出页模型层（移植自 `lib/screens/ics_export_screen.dart` 的纯逻辑部分）。
@@ -232,11 +235,47 @@ object IcsExportLogic {
     }
 
     /**
-     * 日期显示（Dart 用 `DateFormat.yMMMd(localeName)`，zh 下即「2026年3月2日」）。
-     * 与 `pages/task` 的到期日格式同口径。
+     * 六种界面语言的日期格式 = ICU `yMMMd`（Dart `DateFormat.yMMMd` 的等价实现）。
+     *
+     * 为什么用固定 pattern 而不是 `DateTimeFormatter.ofLocalizedDate(FormatStyle.MEDIUM)`：
+     * JDK 的 CLDR 里 `MEDIUM` 对 ja / ko 出的是 `2026/09/01`、`2026. 9. 1.`，与发布版的
+     * `yMMMd` 不一致；固定 pattern 也不随 JDK 的 CLDR 版本漂。中文四个标签同一条 pattern。
      */
-    fun formatDate(date: LocalDate): String =
-        "${date.year}年${date.monthValue}月${date.dayOfMonth}日"
+    private val EXPORT_DATE_FORMATTERS: Map<String, DateTimeFormatter> = mapOf(
+        "en" to DateTimeFormatter.ofPattern("MMM d, y", Locale.US),
+        "ja" to DateTimeFormatter.ofPattern("y年M月d日", Locale.JAPAN),
+        "ko" to DateTimeFormatter.ofPattern("y년 M월 d일", Locale.KOREA),
+        "zh" to DateTimeFormatter.ofPattern("y年M月d日", Locale.SIMPLIFIED_CHINESE),
+        "zh_HK" to DateTimeFormatter.ofPattern("y年M月d日", Locale.TRADITIONAL_CHINESE),
+        "zh_TW" to DateTimeFormatter.ofPattern("y年M月d日", Locale.TRADITIONAL_CHINESE),
+    )
+
+    /** 兜底语言：未初始化（L0 单测 / 纯 JVM）与不认识的语言标签都按简体中文出字。 */
+    private const val ZH_LANGUAGE_TAG: String = "zh"
+
+    /**
+     * 日期显示（Dart `_formatDate` = `DateFormat.yMMMd(localeName)`，`ics_export_screen.dart:835-841`）。
+     *
+     * 六种支持语言各给一条与 ICU `yMMMd` 逐字等价的 pattern：
+     * - `en` → `Sep 1, 2026`
+     * - `zh` / `zh_HK` / `zh_TW` / `ja` → `2026年9月1日`
+     * - `ko` → `2026년 9월 1일`
+     *
+     * **回归修复（2026-11-10）**：3.0 版本曾把「年月日」写死，英文界面下仍出中文日期；
+     * 发布版是按 `AppLocalizations.localeName` 本地化的。
+     *
+     * 语言取 [AppLocaleRuntime.language]（界面语言，与文案同源；`AppLocaleRuntime.set` 还会
+     * 同步 `Locale.setDefault`）；未初始化（L0 单测 / 纯 JVM 调用）回落简体中文，
+     * 与 [ArbText.text] 的兜底口径一致。不认识的语言标签同样回落中文——中文四种标签的
+     * pattern 本来就相同，猜测比回落更危险。
+     *
+     * @param language 语言标签 `en` / `ja` / `ko` / `zh` / `zh_HK` / `zh_TW`。
+     */
+    fun formatDate(date: LocalDate, language: String? = AppLocaleRuntime.language): String {
+        val formatter = language?.let { EXPORT_DATE_FORMATTERS[it] }
+            ?: EXPORT_DATE_FORMATTERS.getValue(ZH_LANGUAGE_TAG)
+        return date.format(formatter)
+    }
 
     /**
      * 导出文件名（Dart `IcsExportService.buildFileName`：ics_export_service.dart:272-281）。

@@ -42,6 +42,13 @@ com/mutx163/qingyu/pages/settings/SettingsAppearancePage.kt:5
 com/mutx163/qingyu/pages/settings/SettingsHomeWidgetPage.kt:5
 com/mutx163/qingyu/pages/transfer/QrFountainLt.kt:5
 com/mutx163/qingyu/share/qr/QrEncoder.kt:5
+# 2026-11-10 导出线登记（1→4）：`IcsExportModel.kt` 这 4 条是 `formatDate` 的日期格式 pattern
+# `y年M月d日`（ja / zh / zh_HK / zh_TW 四个标签共用同一条），**不是屏上可翻译文案**：
+# 它交给 `DateTimeFormatter.ofPattern` 消费，产出的是数字，语言差异只体现在 pattern 上。
+# 发布版是 `DateFormat.yMMMd(localeName)`（pattern 由 ICU 按语言取，同样不进文案表；
+# ics_export_screen.dart:835-841）。改走 ArbText 需新增六语 pattern 键，另开 i18n 工单；
+# 本波按 Chief 口径只登记、不迁（2026-11-10）。
+com/mutx163/qingyu/pages/export/IcsExportModel.kt:4
 com/mutx163/qingyu/pages/import/ImportTemplateModel.kt:4
 com/mutx163/qingyu/pages/import/warehouse/AiImageImportModel.kt:4
 com/mutx163/qingyu/pages/import/warehouse/WarehouseRepositoryModels.kt:4
@@ -78,7 +85,6 @@ com/mutx163/qingyu/calendar/HolidayConversion.kt:1
 com/mutx163/qingyu/core/EventSink.kt:1
 com/mutx163/qingyu/core/TimeScheme.kt:1
 com/mutx163/qingyu/pages/exam/ExamListModel.kt:1
-com/mutx163/qingyu/pages/export/IcsExportModel.kt:1
 com/mutx163/qingyu/pages/export/IcsShareModel.kt:1
 com/mutx163/qingyu/pages/export/IcsShareWiring.kt:1
 com/mutx163/qingyu/pages/import/warehouse/WarehouseRepositoryParsers.kt:1

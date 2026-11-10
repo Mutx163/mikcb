@@ -1,8 +1,10 @@
 package com.mutx163.qingyu.pages.export
 
+import com.mutx163.qingyu.app.AppLocaleRuntime
 import com.mutx163.qingyu.transfer.IcsExportEventKind
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNotEquals
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -316,9 +318,37 @@ class IcsExportModelTest {
     }
 
     @Test
-    fun `日期按中文年月日渲染`() {
-        assertEquals("2026年3月2日", IcsExportLogic.formatDate(LocalDate.of(2026, 3, 2)))
-        assertEquals("2026年12月31日", IcsExportLogic.formatDate(LocalDate.of(2026, 12, 31)))
+    fun `日期按界面语言渲染，六种语言与发布版 yMMMd 一致`() {
+        val date = LocalDate.of(2026, 9, 1)
+        // 发布版 Dart `_formatDate` = DateFormat.yMMMd(localeName)（ics_export_screen.dart:835-841）。
+        assertEquals("2026年9月1日", IcsExportLogic.formatDate(date, language = "zh"))
+        assertEquals("2026年9月1日", IcsExportLogic.formatDate(date, language = "zh_HK"))
+        assertEquals("2026年9月1日", IcsExportLogic.formatDate(date, language = "zh_TW"))
+        assertEquals("2026年9月1日", IcsExportLogic.formatDate(date, language = "ja"))
+        assertEquals("2026년 9월 1일", IcsExportLogic.formatDate(date, language = "ko"))
+        assertEquals("Sep 1, 2026", IcsExportLogic.formatDate(date, language = "en"))
+        // 回归守护：3.0 曾把「年月日」写死，中英必须真的不同。
+        assertNotEquals(
+            IcsExportLogic.formatDate(date, language = "zh"),
+            IcsExportLogic.formatDate(date, language = "en"),
+        )
+    }
+
+    @Test
+    fun `语言未初始化或不认识时回落简体中文`() {
+        // L0 / 纯 JVM 没走宿主 ⇒ AppLocaleRuntime 是 UNSET，默认参数按中文出字
+        // （与 ArbText.text 的兜底同口径）。先复位，避免同 JVM 里别的用例留下的语言标签串味。
+        AppLocaleRuntime.resetForTest()
+        try {
+            val date = LocalDate.of(2026, 3, 2)
+            assertEquals("2026年3月2日", IcsExportLogic.formatDate(date))
+            assertEquals("2026年3月2日", IcsExportLogic.formatDate(date, language = null))
+            // 不认识的语言标签不猜格式，回落中文（中文四种标签本来就同一条 pattern）。
+            assertEquals("2026年3月2日", IcsExportLogic.formatDate(date, language = "fr"))
+            assertEquals("2026年12月31日", IcsExportLogic.formatDate(LocalDate.of(2026, 12, 31)))
+        } finally {
+            AppLocaleRuntime.resetForTest()
+        }
     }
 
     // ── 文件名 ──
