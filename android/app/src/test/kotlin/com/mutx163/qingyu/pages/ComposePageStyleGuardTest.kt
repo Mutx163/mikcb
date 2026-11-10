@@ -89,8 +89,9 @@ class ComposePageStyleGuardTest {
     }
 
     /**
-     * 仓库根：从 `android/app/src` 往上找到同时有 `lib/screens` 与 `pubspec.yaml` 的那层。
+     * 仓库根：从 `android/app/src` 往上找到同时有 `i18n/app_zh.arb` 与 `android/app/build.gradle` 的那层。
      * 例外清单与规则文档都挂在仓库根下，找不到就失败，不静默跳过。
+     * （Dart 层已由 P4-C `303220db1` 删除，锚点不再用 `lib/screens` / `pubspec.yaml`。）
      */
     private fun repoRoot(): File {
         var dir: File? = androidSrc().absoluteFile

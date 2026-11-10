@@ -31,8 +31,21 @@
 
 ---
 
+## 配套方案与清单（计划类，按需查阅）
+
+- [Phase 3 L4 真机逐页对照清单](2026-10-27-compose-phase3-l4-checklist.md)｜R01 的必验项来源；清单仍写 `.ui` 包名与已删 flavor，按 `dev` 变体走
+- [Phase 3.5 批次表](2026-10-28-compose-phase35-batches.md)｜批次划分与认领口径
+- [全仓体检与收口计划](2026-10-28-full-software-audit-and-completion-plan.md)｜F 系列任务的来源
+- [宽屏适配方案](2026-11-03-compose-widescreen-adaptive-plan.md)｜三档断点与 Rail 接入设计（对应进度账 R17 的剩余面）
+
+---
+
 ## 历史计划（按时间倒序）
 
+- [2026-11-07 去 Flutter 化阶段 2 施工单](2026-11-07-deflutter-stage2-workorder.md)（已执行：删 Dart / pubspec / CI 的 Flutter 步骤）
+- [2026-11-07 去 Flutter 化 P4 四刀删除顺序](2026-11-07-deflutter-stage2-p4-deletion-order.md)（已执行：P4-A~P4-D，唯一未完成是 P2 真出包）
+- [2026-11-07 插件迁移账（18 个 Android 插件）](2026-11-07-deflutter-stage2-plugin-ledger.md)（账本：摘除难度与替代件）
+- [2026-11-07 全仓重构复核](2026-11-07-refactor-full-audit.md)（时点复核：基线 `3cf8d910b`）
 - [2026-09-09 玻璃 UX 认知成本](2026-09-09-glass-ux-cognitive-cost-plan.md)
 - [2026-08-24 UI 设计审计与重做](2026-08-24-ui-design-audit-and-redesign.md)
 - [2026-08-23 上游 v2 桥接兼容](2026-08-23-upstream-v2-bridge-compat-plan.md)
@@ -54,5 +67,9 @@
 
 - 新计划按 `yyyy-mm-dd-主题.md` 命名；**做完的不要删**，它是后来者理解既有取舍的唯一线索。
 - 计划被新方案取代时：新文档里写清「取代了哪一份、为什么」，并在旧文档顶部加一行指向新文档。
+- **审核 / 复核类文档不进本索引**（`*-audit.md`、`*-census.md`、`*-quality-*.md`、`*-tasklist.md`、`*-log.md`
+  这类时点快照，如 `2026-11-02-compose-dialog-full-audit.md`）：它们是某一天的证据留存，不维护「当前状态」，
+  挂进索引反而让人当成现行口径。要查现状看[唯一进度账](2026-11-03-compose-status.md)，要查某次结论按文件名或
+  `git log -- docs/plans/` 找。
 - 页面级任务的分工与进度**不放这里**（高频变化，放仓库会天天冲突）：统一放
   [Compose 迁移 · 唯一进度账](2026-11-03-compose-status.md)。

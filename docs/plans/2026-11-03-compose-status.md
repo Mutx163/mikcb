@@ -14,12 +14,12 @@
 | 指标 | 当前值 | 定义与出处 |
 |---|---|---|
 | 壳路由目录 | **88 总 / 87 可进入 / 0 暂不可用 / 1 常驻** | `ShellPageCatalogTest` 实测 `openable=87` / `UNAVAILABLE=0` / `ALWAYS_VISIBLE=1`（2026-11-08 复核，HEAD `7f8395776`）；这是用户点得到的入口数 |
-| 页面文件 | **63 个 `*Page.kt` / 183 个 `.kt`** | HEAD `7f8395776`，`composeP1/.../pages/`；只说明代码规模（工作区另有 1 个未跟踪文件，计入为 184） |
+| 页面文件 | **63 个 `*Page.kt` / 186 个 `.kt`** | HEAD `29dbc4ae2`，`composeP1/.../pages/`；只说明代码规模（工作区另有 2 个未跟踪文件「首启隐私门」，计入为 188） |
 | Phase 3 页面单元 | **78**（历史口径） | 旧目录 82 − 暂不可用 3 − 常驻 1；只描述 2026-10-27 的搬运完成度，**不是现在的入口数** |
 | 剩余页任务 | **39 页 / 12 批**（历史任务） | 2026-10-30 复核时 28 已落地、11 未完成；后续批次均已交付，本清单只作历史 |
 | 弹层审核 | **138 条：126 已不成立 / 11 仍成立 / 1 部分成立** | `2026-11-02-compose-dialog-full-audit.md`（2026-11-03 第四批收尾口径） |
-| 文案三本账 | **清零** | 超宽、死键、复述三份基线只剩注释头 |
-| 样式例外 | **7 条**（timetable 4 + import 2 + showcase 1） | `tool/compose_style_exceptions/<域>.txt`；timetable = 3×R5 数据色 + 1×R2 结构性，import = 2×R2 弹层内局部滚动，showcase = 1×R5，均注明原因；`-Domain all` 实测待修 0 / 过期 0 |
+| 文案三本账 | **清零** | 超宽、死键、复述三份基线文件已由 `02cb22f39`（去 Flutter 化收尾，2026-11-08 12:53）删除，不是只剩注释头；结论不变，当前无自动文案门禁 |
+| 样式例外 | **8 条**（timetable 4 + import 2 + showcase 1 + about 1） | `tool/compose_style_exceptions/<域>.txt`；timetable = 3×R5 数据色 + 1×R2 结构性，import = 2×R2 弹层内局部滚动，showcase = 1×R5，about = 1×R4 页尾免责声明 12sp，均注明原因；`-Domain all` 实测待修 0 / 过期 0（2026-11-10 复核） |
 
 > 旧文档里的 82 / 78 / 87 / 88 / 165 都是不同日期、不同口径的快照。引用前先看上表，
 > 不要把历史页面单元数当成今天可进入的路由数。
@@ -31,8 +31,8 @@
 | 门 | 结果 | 证据 | 是否过期 |
 |---|---|---|---|
 | **L0 模块单测** | 各域随批交付时绿；`pages/timetable` 的跨域引用已由 `4517d938`（材质契约下沉 `core/`）治理 | 提交 `4517d938`（2026-11-03）；本域 L0 需复跑取证 | 需复跑 |
-| **L1 编译** | **通过**：`BUILD SUCCESSFUL in 57s`（4 执行 / 187 复用） | 2026-11-08 11:20，`scripts/safe-gradle.ps1 :app:compileDevDebugKotlin`，HEAD `cb8f14d1f` + 工作区在途改动。首次尝试红是他人未提交的 `ShellWiring.kt` / `DataTransferHost.kt` 半成品，其提交后转绿 | 当次有效；此后有新提交需再跑 |
-| **L2 全量单测** | **7584 例 / 1 失败**：`ArbCatalogTest`「六份 ARB 的每一条都在文案表里」报 `en 的 liquidGlassPresetCustom 与 ARB 不一致 expected:<Custom> but was:<null>`。原因是 `ArbCatalog.kt` 未随 ARB 新键重新生成（`python tool/gen_compose_arb_catalog.py --check` 报过期），不是逻辑回归 | 2026-11-08 11:21，`scripts/safe-gradle.ps1 :app:testDevDebugUnitTest`（本地快速变体，非 CI 的 `testProdDebugUnitTest`） | 生成物刷新后需复跑 |
+| **L1 编译** | **通过**（UP-TO-DATE 复用）：`scripts/safe-gradle.ps1 :app:compileDevDebugKotlin` | 2026-11-09 23:17，HEAD `4a21d0ae4`（`build/app/tmp/kotlin-classes/devDebug` 类文件 mtime 23:17:10–23:18:43）；复核员用 `javap` 在 `SettingsHomeMenuEditorPage.class` 里读到该提交新增的 `editorSeed`，证实产物就是这份源码编出来的 | 当次有效；`4a21d0ae4` 之后的新提交此后只在 L2 轮里编过，未单独留 L1 记录 |
+| **L2 全量单测** | **7667 例 / 0 失败 / 0 错误 / 0 跳过**（来源：编译员 00:40 全量轮；产物已被 00:43 单类重跑覆盖、无法独立复现，仅 `+10 个 @Test` 旁证 7657+10=7667；待修复波次后全量 L2 回填） | 2026-11-10 00:40，`scripts/safe-gradle.ps1 :app:testDevDebugUnitTest`（本地快速变体，非 CI 的 `testProdDebugUnitTest`）。跑测时记作 HEAD `33c20a37a`，但该提交时间 00:46:46 晚于跑测，只能算同一棵工作树推定（2026-11-10 复核员核对） | 该轮数字无法从产物复现；等修复波次后全量 L2 定案 |
 | **L4 真机逐页对照** | **0 页** | 仓库内无任何真机截图/录屏/回填记录 | 仍归用户 |
 
 **声明纪律**：agent 只能声明「编译通过」（L1）或「JVM 单测通过」（L2）；不得声明「能跑 / 能装上 / 已验证」。
@@ -49,7 +49,7 @@ CI 权威变体是 `:app:testProdDebugUnitTest`（`.github/workflows/ci.yml:116`
 |---|---|---|
 | **R01** | **L4 真机逐页对照** | 0 页，是当前最大产品缺口。按 `2026-10-27-compose-phase3-l4-checklist.md` 在 `dev` 变体壳里逐页走；必验：相机取景/解码、WebDAV 上传→下载→冲突→恢复两步确认、通知点击落页、键盘不顶按钮、矮屏弹窗不裁切、课卡铃铛与「已设提醒+取消」、宽屏 Rail、弹窗玻璃试点、桌面小组件刷新。**注意**：该清单仍写 `.ui` 包名与已删除的 flavor，按 `dev` 变体走；`dev` 的 applicationId 带 `.debug` 后缀，**不能代替正式包的「覆盖安装后数据一条不丢」**，后者要另用 `prod` 包验 |
 | **R02** | **横屏/平板解锁** | `AndroidManifest.xml:166`、`:182` 两个 Activity 仍锁 `screenOrientation="portrait"`；解锁是产品决定，解锁后还要验矮屏弹层、返回手势与 Rail 冲突、配置变更重建 |
-| **R03** | **R2：删 Flutter、出正式包** | 前置未满足：L4 未走、Phase 4 未收、回退窗口到 Phase 5 才关，`lib/**` 现在仍是只读对照物。正式包出包归用户跑 |
+| **R03** | **R2：删 Flutter、出正式包** | `lib/**` 已由 `303220db1`（P4-C）整层删除，回退只能走 git 历史；唯一未完成项是 **P2 真出包未由用户执行**（见 `2026-11-07-deflutter-stage2-p4-deletion-order.md:8`）。L4 真机对照与原正式包仍归用户跑 |
 
 ### B. 等 Lead 拍板
 
