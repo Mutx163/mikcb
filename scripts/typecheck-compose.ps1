@@ -21,14 +21,32 @@
 
     ## 资源纪律（多人并行时）
 
-    每次运行约 **1 GB** 内存（kotlinc JVM），耗时热跑 ~1.5 分钟。它**不占** `safe-gradle.ps1`
-    的全机互斥锁，所以可以并行——但**同刻建议不超过 2~3 个实例**，否则会把 32 GB 的机器压满、
-    连带把别人正在跑的 gradle/L0 拖死。
+    每次运行约 **1 GB** 内存（kotlinc JVM），耗时热跑 1~3 分钟。它**不占** `safe-gradle.ps1`
+    的全机互斥锁。2026-11-10 起**每次运行用独立临时目录**（pid + guid，含解出的 AAR jar 与
+    `sources.txt` / `out/` / `stubs/` / `kotlinc-raw.txt`）⇒ 并发实例之间零共享写盘点，
+    结果不会互相踩；但每个实例约 1 GB 内存，**同刻仍建议不超过 2~3 个**，否则会把机器压满、
+    连带把别人正在跑的 gradle/L0 拖死。运行结束的目录不自动删（raw 日志是排查证据），路径在
+    每次输出首行打印。
+
+    ## 2026-11-10 修复：把「假错」从源头消掉（数字：657 → 1 条已知类别）
+
+    旧版早筛被大面积假错淹没（不容错的口径下无法当门禁信号）。这次逐类修在源头：
+    - **包根顶层 `.kt` 纳入源集**：去 Flutter 化后那层已无 `io.flutter` 依赖，不纳入会让
+      compose 页面引用 `WeeklyReportScheduler` / `LiveUpdateScheduler` 等宿主件被报 unresolved；
+    - **R / BuildConfig 生成桩**：AGP 构建期才有的类，从真实 `res/` 与 `build.gradle` 生成
+      （新增资源/字段不会漏），消掉旧基线里 R/BuildConfig 两类假错；
+    - **classpath 补齐**：`ui-tooling-preview`（`@Preview`，实测 422 条假错）、CameraX + ML Kit
+      （扫码页整页）、WorkManager / 友盟（纳入包根后）、`org.jspecify`（ML Kit 签名注解）、
+      `androidx.core` 抬到 app 实际解析口径（1.19.1，缺 `PictureInPictureProvider` 会连锁报）；
+    - **宿主 Activity 重新纳入**（`$SkipFiles` 清空）：它们已不依赖 Flutter/资源，而且包根
+      `NotificationLaunchTarget` / `ScheduleReminderScheduler` 会引用 `PagesShellActivity`。
+    剩余的**结构上消不掉**的缺口登记在 `scripts/typecheck-compose-known.txt`（每条必须写原因）。
 
     ## 基线（棘轮）怎么用
 
     基线文件：`scripts/typecheck-compose-baseline.txt`（进 git，一行一条：
     `相对路径|<error 消息>`，**不含行列号**——这样上面的行位移不会让基线整片漂）。
+    修复后基线目标**长期保持 0 条**：已知类别进 `known.txt`，基线只收「还没修的真错」。
 
     ```powershell
     pwsh -File scripts/typecheck-compose.ps1              # 只报新增/消失；新增则以 exit 1 结束
@@ -48,20 +66,24 @@
     - `2` = **kotlinc 自己崩了**（OOM / 栈溢出），本次结果不可信：既不写基线、也不当通过。
       崩掉的输出里 often 一条 error 都没有，**不要当成全绿**。崩了就调大 `$env:JAVA_OPTS` 的 `-Xmx`
       （脚本默认已设 `-Xmx4096m`；注意 `-J-Xmx…` 写在 argfile 里不生效，只能走环境变量）。
-    - 每次运行的原始 kotlinc 输出落在 `$env:TEMP\mikcb-compose-typecheck\kotlinc-raw.txt`，怀疑漏报就去翻它。
+    - 每次运行的原始 kotlinc 输出落在**本次实例的临时目录**（`$env:TEMP\mikcb-compose-typecheck-<pid>-<guid>\kotlinc-raw.txt`，
+      首行会打印完整路径），怀疑漏报就去翻它。实例目录结束**不自动删**（raw 是排查证据）；
+      会随运行次数累积，嫌占空间可手动清理 `%TEMP%\mikcb-compose-typecheck-*`。
     - 基线里出现 `<raw>|…` 行 = 有含 `error:` 但解析不出文件位置的输出（说明解析正则要更新），**不是噪音**。
 
     ## 已知缺口（会产出「假错」，别当成真 bug）
 
-    - 未挂的第三方库（datastore / okhttp / flutter embedding 等）会报 unresolved；
+    - 未挂的第三方库 / 生成件：先补 classpath 或桩（`$wanted` / `$plainWanted` / 生成桩），
+      不要再走「把文件踢出编译面」的老路（2026-11-10 有人的无主改动正是这么做的，已定性坏做法）；
     - 未挂的源码目录同理——所以 `$SourceRoots` 里必须包含**被扫文件所引用的域**；
-      查不住就补 `-ExtraSources`，不要改脚本里的写死部分。
+      查不住就补 `-ExtraSources`，不要改脚本里的写死部分；
+    - 结构上确实消不掉的才登记到 `scripts/typecheck-compose-known.txt`（格式见文件头，必须写原因）。
 
 .PARAMETER ExtraSources
     额外的源码根或单个 .kt（相对仓库根，可多个）。用来把某个域临时纳入扫描。
 
 .PARAMETER Write
-    把本次的 error 全集写回基线（棘轮收编）。
+    把本次的**待处理** error 写回基线（棘轮收编；显式登记的已知类别不进基线）。
 
 .PARAMETER Full
     除了差量，还把「未变化」的 error 全打出来（排查用）。
@@ -83,11 +105,19 @@ if ($PSVersionTable.PSVersion.Major -lt 7) {
 }
 
 $repo = Split-Path -Parent $PSScriptRoot
-$libDir = Join-Path $env:TEMP "mikcb-compose-typecheck-lib"
-$workDir = Join-Path $env:TEMP "mikcb-compose-typecheck"
+# 并发隔离（2026-11-10 复核必修）：旧版 workDir / libDir 是固定路径，两个实例同时跑会互相
+# 覆盖 `sources.txt` / `out/` / `stubs/` / `kotlinc-raw.txt`（复核员 实跑被踩过一次）。
+# 现在每次运行开一个带 pid + guid 的独立临时目录，**实例之间零共享写盘点**：
+#   - 解出的 AAR jar 也放本实例目录（多花几秒解包，换掉整个竞态面，值得）；
+#   - 结束不删：`kotlinc-raw.txt` 是排查证据，路径随每次输出打印（临时目录由系统清理）。
+$runId = "{0}-{1}" -f $PID, ([guid]::NewGuid().ToString("N").Substring(0, 8))
+$libDir = Join-Path $env:TEMP "mikcb-compose-typecheck-lib-$runId"
+$workDir = Join-Path $env:TEMP "mikcb-compose-typecheck-$runId"
 foreach ($d in @($libDir, $workDir)) {
-    if (-not (Test-Path $d)) { New-Item -ItemType Directory -Path $d -Force | Out-Null }
+    if (Test-Path $d) { Remove-Item -Recurse -Force $d }
+    New-Item -ItemType Directory -Path $d -Force | Out-Null
 }
+Write-Host ">>> 本次运行临时目录（并发隔离，互不覆盖）：$workDir" -ForegroundColor DarkCyan
 if (-not $BaselinePath) { $BaselinePath = Join-Path $repo "scripts/typecheck-compose-baseline.txt" }
 
 $mainRoot = Join-Path $repo "android/app/src/main/kotlin/com/mutx163/qingyu"
@@ -103,7 +133,7 @@ $composeRoot = Join-Path $repo "android/app/src/composeP1/kotlin/com/mutx163/qin
 #    结果 `composeP1/.../pages/timetable` 根目录的文件（首页下拉等）**一次都没被扫到**。
 $SourceRoots = @()
 foreach ($shared in @(
-        "app", "core", "calendar", "course", "infrastructure", "infra", "statistics",
+        "app", "core", "calendar", "course", "infra", "statistics",
         "share", "transfer", "sync", "weather", "widgetdata", "theme", "platform"
     )) {
     $SourceRoots += (Join-Path $mainRoot $shared)
@@ -115,24 +145,26 @@ $SourceRoots += @(
     (Join-Path $composeRoot "pages")
 )
 
-# 包根的顶层 .kt **不纳入**：那一层是宿主胶水（`MainActivity`、各 `*WidgetProvider`、
-# `LiveUpdateService`…），普遍引用 `R.*`（构建期由 AGP 生成，这里永远没有）和 Flutter 桥
-# （`MethodChannel` / `dartExecutor`），实测一纳入就多出约 900 条纯假错（705 条是 `R`）。
-# 唯一例外是下面这个纯 Kotlin 的偏好编解码，引用方在 app/ 里。
+# 包根顶层 .kt：去 Flutter 化后由下方「包根顶层 .kt 纳入」一段统一纳入（含 R/BuildConfig 桩）；
+# 这里只放**必须显式加入**的单个文件（当前：纯 Kotlin 的偏好编解码 + miuix fork 的 DialogGlass）。
 $Files = @(
-    "android/app/src/main/kotlin/com/mutx163/qingyu/FlutterPrefsCodec.kt"
+    "android/app/src/main/kotlin/com/mutx163/qingyu/FlutterPrefsCodec.kt",
+    # 本仓 fork 的 miuix 新增件（上游 0.9.4 AAR 里没有）：纯 Kotlin data class，不带
+    # @Composable，能直接进早筛源集；否则 `AddCoursePage.kt` 的两处 `DialogGlass(...)`
+    # 会被报 unresolved（同族的 `glass =` 具名参数仍解不了，见已知类别）。
+    "android/third_party/miuix-ui/src/main/kotlin/top/yukonga/miuix/kmp/layout/DialogGlass.kt"
 )
 
-# 显式排除：**需要生成资源 / Flutter embedding 的宿主壳文件**。
-# 它们不是页面渲染层，改它们的是 Lead（Activity / manifest 链路），而且在这里必然报假错
-# （`FlutterActivity` 父类、`R.*`、`GeneratedPluginRegistrant` 都不在 classpath 里）。
-# 要放宽就先确认上面那几类依赖能从 jar 补上，别为了「扫得全」把假错灌进基线。
-$SkipFiles = @(
-    "android/app/src/main/kotlin/com/mutx163/qingyu/pages/PagesShellActivity.kt",
-    "android/app/src/main/kotlin/com/mutx163/qingyu/pages/ShellExternalEntryActivity.kt",
-    "android/app/src/main/kotlin/com/mutx163/qingyu/PagesShellActivity.kt",
-    "android/app/src/main/kotlin/com/mutx163/qingyu/MainActivity.kt"
-)
+# 排除表：**需要生成资源 / 外部 embedding 的宿主壳文件**。
+#
+# 2026-11-10 早筛修复后这里清空：去 Flutter 化 P4-B/P4-C 已把 `FlutterActivity` 父类、
+# `GeneratedPluginRegistrant`、Dart 资源链全部移走，两个现存 Activity
+# （`pages/PagesShellActivity.kt` / `pages/ShellExternalEntryActivity.kt`）已不 import
+# `io.flutter`，也不引用 `R.*`；而且包根纯 Kotlin 件（`NotificationLaunchTarget` /
+# `ScheduleReminderScheduler`）会 `Intent(context, PagesShellActivity::class.java)`，
+# 不纳入它们反而制造 unresolved 假错（2026-11-10 实测 7 条）。
+# 将来若有 Activity 重新依赖生成资源/外部 SDK，把路径加回这里并在回报里写原因。
+$SkipFiles = @()
 
 $cache = Join-Path $env:USERPROFILE ".gradle/caches/modules-2/files-2.1"
 $wanted = @(
@@ -166,12 +198,41 @@ $wanted = @(
     @{ g = "androidx.lifecycle"; a = "lifecycle-runtime-android"; v = "2.9.4" },
     # 宿主 Activity / ComponentActivity 的父类链：缺一个就会连锁报
     # 「cannot access 'androidx.core.app.ComponentActivity' which is a supertype of …」几十条。
-    @{ g = "androidx.core"; a = "core"; v = "1.15.0" },
-    @{ g = "androidx.core"; a = "core-ktx"; v = "1.15.0" },
+    # 版本跟 app 实际解析口径（activity-compose 1.13.0 拉的是 core 1.18+）：
+    # 1.15.0 缺 `PictureInPictureProvider`，会连锁报「cannot access … supertype」
+    # （2026-11-10 实测：纳入宿主 Activity 后 44 条）。
+    @{ g = "androidx.core"; a = "core"; v = "1.19.1" },
+    @{ g = "androidx.core"; a = "core-ktx"; v = "1.19.1" },
     @{ g = "androidx.lifecycle"; a = "lifecycle-viewmodel-android"; v = "2.9.4" },
     @{ g = "androidx.lifecycle"; a = "lifecycle-viewmodel-savedstate-android"; v = "2.9.4" },
     @{ g = "androidx.savedstate"; a = "savedstate-android"; v = "1.3.3" },
-    @{ g = "androidx.navigationevent"; a = "navigationevent-android"; v = "1.1.2" }
+    @{ g = "androidx.navigationevent"; a = "navigationevent-android"; v = "1.1.2" },
+    # ---- 2026-11-10 早筛修复（用户/Chief 派工）----
+    # `@Preview` 注解与 `androidx.compose.ui.tooling.*` 在页面里大量使用（main 源集里的
+    # 预览批 2026-11-08 铺开），缺这个 AAR 时每条 import + 每个 @Preview 都报
+    # unresolved（实测 422 条假错，占全部报错 64%）。
+    @{ g = "androidx.compose.ui"; a = "ui-tooling-preview-android"; v = "1.12.1" },
+    # 扫码页（`pages/transfer/QrCameraHost.kt`）：CameraX + ML Kit 条码扫描。
+    # 这些都是 app 真实 implementation 依赖（`android/app/build.gradle`），缓存里是 AAR；
+    # 不挂就会把整页 63 条报成 unresolved（含 `camera` / `Barcode` / `google` 包）。
+    @{ g = "androidx.camera"; a = "camera-core"; v = "1.6.1" },
+    @{ g = "androidx.camera"; a = "camera-camera2"; v = "1.6.1" },
+    @{ g = "androidx.camera"; a = "camera-lifecycle"; v = "1.6.1" },
+    @{ g = "androidx.camera"; a = "camera-view"; v = "1.6.1" },
+    @{ g = "com.google.mlkit"; a = "barcode-scanning"; v = "17.3.0" },
+    @{ g = "com.google.mlkit"; a = "barcode-scanning-common"; v = "17.0.0" },
+    @{ g = "com.google.mlkit"; a = "common"; v = "18.11.0" },
+    @{ g = "com.google.mlkit"; a = "vision-common"; v = "17.3.0" },
+    @{ g = "com.google.mlkit"; a = "vision-interfaces"; v = "16.3.0" },
+    @{ g = "com.google.android.gms"; a = "play-services-mlkit-barcode-scanning"; v = "18.3.1" },
+    @{ g = "com.google.android.gms"; a = "play-services-tasks"; v = "18.2.0" },
+    @{ g = "com.google.android.gms"; a = "play-services-base"; v = "18.5.0" },
+    @{ g = "com.google.android.gms"; a = "play-services-basement"; v = "18.4.0" },
+    # 包根顶层 .kt 纳入后才需要的宿主依赖：WorkManager（`*Worker.kt`）、友盟 SDK
+    # （`UmengApplication.kt` 的 `UMConfigure`）。不挂就是「挂源根换一批新假错」。
+    @{ g = "androidx.work"; a = "work-runtime-ktx"; v = "2.10.1" },
+    @{ g = "androidx.work"; a = "work-runtime"; v = "2.10.1" },
+    @{ g = "com.umeng.umsdk"; a = "common"; v = "9.6.3" }
 )
 
 foreach ($w in $wanted) {
@@ -193,7 +254,15 @@ foreach ($w in $wanted) {
         }
         Remove-Item -Recurse -Force $tmp
     } else {
-        Write-Host "MISSING aar: $($w.g):$($w.a):$($w.v)" -ForegroundColor DarkYellow
+        # 部分构件是纯 jar（不是 AAR）：直接拷进 lib 目录，同一条通道处理。
+        $jar = Get-ChildItem -Path $dir -Filter "*.jar" -Recurse |
+            Where-Object { $_.Name -notlike "*sources*" -and $_.Name -notlike "*javadoc*" } |
+            Select-Object -First 1
+        if ($jar) {
+            Copy-Item $jar.FullName $out -Force
+        } else {
+            Write-Host "MISSING aar/jar: $($w.g):$($w.a):$($w.v)" -ForegroundColor DarkYellow
+        }
     }
 }
 
@@ -229,12 +298,21 @@ $plainWanted = @(
     @{ g = "org.jetbrains.kotlinx"; a = "kotlinx-coroutines-android" },
     @{ g = "androidx.annotation"; a = "annotation-jvm" },
     @{ g = "androidx.collection"; a = "collection-jvm" },
-    @{ g = "androidx.lifecycle"; a = "lifecycle-common-jvm" }
+    @{ g = "androidx.lifecycle"; a = "lifecycle-common-jvm" },
+    # WorkManager 的 `ListenableWorker` 父类型是 guava 的 `ListenableFuture`；
+    # 缓存里 9999.0-empty 那个 jar 是空壳（只用来压依赖冲突），要钉 1.0 那个真实现。
+    @{ g = "com.google.guava"; a = "listenablefuture"; v = "1.0" },
+    # ML Kit 的 API 签名带 `org.jspecify.annotations.NonNull`：缺这个注解 jar 时
+    # `QrCameraHost` 会报「type annotation ... is inaccessible」。
+    @{ g = "org.jspecify"; a = "jspecify"; v = "1.0.0" }
 )
 foreach ($w in $plainWanted) {
     $dir = Join-Path $cache $w.g
     if (-not (Test-Path $dir)) { continue }
-    $hit = Get-ChildItem -Path (Join-Path $dir $w.a) -Filter "*.jar" -Recurse -ErrorAction SilentlyContinue |
+    $artifactDir = Join-Path $dir $w.a
+    if (-not (Test-Path $artifactDir)) { Write-Host "no plain artifact dir for $($w.a)" -ForegroundColor DarkYellow; continue }
+    $searchDir = if ($w.v) { Join-Path $artifactDir $w.v } else { $artifactDir }
+    $hit = Get-ChildItem -Path $searchDir -Filter "*.jar" -Recurse -ErrorAction SilentlyContinue |
         Where-Object { $_.Name -notlike "*sources*" -and $_.Name -notlike "*javadoc*" } |
         Sort-Object FullName -Descending | Select-Object -First 1
     if ($hit) { $jarList.Add($hit.FullName) } else { Write-Host "no plain jar for $($w.a)" -ForegroundColor DarkYellow }
@@ -265,6 +343,163 @@ if ($skipFull.Count -gt 0) {
     $skipped = $before - $fileList.Count
     if ($skipped -gt 0) { Write-Host ">>> 已排除 $skipped 个宿主壳文件（需生成资源/Flutter embedding，见脚本注释）" -ForegroundColor DarkCyan }
 }
+# ── 包根顶层 .kt 纳入（2026-11-10 早筛修复，用户派工）─────────────────────────
+#
+# 旧版整层不纳入（原因见上方注释）：那时候包根是 Flutter 宿主胶水，普遍引用 `R.*` 与
+# Flutter 桥，一纳入就多出约 900 条纯假错。去 Flutter 化 P4 之后前提变了：
+#   - 包根顶层已无 `import io.flutter.*`（2026-11-10 逐个核对；仍是 Flutter 依赖的会走
+#     下面的运行时跳过并打印，不会静默吞掉）；
+#   - R / BuildConfig 改由下方**生成桩**提供（`$stubDir`），不再是「没有 R 就全红」。
+# 不纳入的后果是反的：compose 页面引用包根的纯 Kotlin 宿主件
+# （`WeeklyReportScheduler` / `LiveUpdateScheduler` / `WidgetSystemActions` …）会被报成
+# unresolved，看着像真悬空——2026-11-10 用户实报的 `ShellPageIndex.kt` 就是这类。
+# 宿主 Activity 也已纳入（`$SkipFiles` 现为空）；只有仍 import `io.flutter` 的文件会被运行时跳过并打印。
+$pkgRootFiles = New-Object System.Collections.Generic.List[string]
+foreach ($f in Get-ChildItem -Path $mainRoot -Filter *.kt) {
+    if ($skipFull.ContainsKey($f.FullName)) { continue }
+    $text = [IO.File]::ReadAllText($f.FullName)
+    if ($text -match '(?m)^\s*import\s+io\.flutter') {
+        Write-Host ">>> 跳过引用 Flutter embedding 的包根文件：$($f.Name)（classpath 不含 embedding，属已登记盲区）" -ForegroundColor DarkYellow
+        continue
+    }
+    $fileList.Add($f.FullName)
+    $pkgRootFiles.Add($f.Name)
+}
+Write-Host ">>> 包根顶层 .kt 纳入 $($pkgRootFiles.Count) 个（宿主 Activity 与 Flutter 依赖除外，见上）" -ForegroundColor DarkCyan
+
+# ── R / BuildConfig 生成桩（2026-11-10 早筛修复）──────────────────────────────
+#
+# 为什么是生成而不是挂 classpath：R 与 BuildConfig 由 AGP **构建期生成**，早筛不跑 AGP，
+# 原本根本没有这两个类——旧基线里的 `R` 17 条 / `BuildConfig` 13 条假错就是这么来的。
+# 数据源取**真实资源目录与 build.gradle**，所以新增资源/字段不会漏：
+#   - `R.string/drawable/layout/mipmap/xml/raw/color/attr/id/style` ← `android/app/src/main/res`
+#   - `BuildConfig.UMENG_*` ← `build.gradle` 的 `buildConfigField`
+#   - 固定几个 AGP 必生成项（DEBUG / BUILD_TYPE / FLAVOR / APPLICATION_ID / VERSION_*）
+# 桩只有常量、不参与行为；早筛只做类型检查，常量值不影响判定。
+$stubDir = Join-Path $workDir "stubs"
+if (Test-Path $stubDir) { Remove-Item -Recurse -Force $stubDir }
+New-Item -ItemType Directory -Path $stubDir -Force | Out-Null
+$resRoot = Join-Path $repo "android/app/src/main/res"
+$resNames = @{}
+foreach ($kind in @('string', 'drawable', 'layout', 'mipmap', 'xml', 'raw', 'color', 'attr', 'id', 'style')) {
+    $resNames[$kind] = New-Object System.Collections.Generic.List[string]
+}
+if (Test-Path $resRoot) {
+    foreach ($f in (Get-ChildItem -Path $resRoot -Recurse -Filter *.xml)) {
+        $t = [IO.File]::ReadAllText($f.FullName)
+        foreach ($m in [regex]::Matches($t, '<string\s+name="([^"]+)"')) { $resNames['string'].Add($m.Groups[1].Value) }
+        foreach ($m in [regex]::Matches($t, '<color\s+name="([^"]+)"')) { $resNames['color'].Add($m.Groups[1].Value) }
+        foreach ($m in [regex]::Matches($t, '<attr\s+name="([^"]+)"')) { $resNames['attr'].Add($m.Groups[1].Value) }
+        foreach ($m in [regex]::Matches($t, '<style\s+name="([^"]+)"')) { $resNames['style'].Add($m.Groups[1].Value) }
+        foreach ($m in [regex]::Matches($t, '@\+id/([A-Za-z_][A-Za-z0-9_]*)')) { $resNames['id'].Add($m.Groups[1].Value) }
+        foreach ($m in [regex]::Matches($t, '<item\b[^>]*\btype="id"[^>]*>')) {
+            $nm = [regex]::Match($m.Value, 'name="([^"]+)"')
+            if ($nm.Success) { $resNames['id'].Add($nm.Groups[1].Value) }
+        }
+    }
+    # 文件型资源：drawable*/layout*/mipmap*/xml*/raw*（`.9.png` 去掉 .9 后缀才是资源名）
+    foreach ($dir in (Get-ChildItem -Path $resRoot -Directory)) {
+        $kind = $null
+        switch -Regex ($dir.Name) {
+            '^drawable' { $kind = 'drawable' }
+            '^layout' { $kind = 'layout' }
+            '^mipmap' { $kind = 'mipmap' }
+            '^xml' { $kind = 'xml' }
+            '^raw' { $kind = 'raw' }
+        }
+        if (-not $kind) { continue }
+        foreach ($f in (Get-ChildItem -Path $dir.FullName -File)) {
+            $name = $f.Name -replace '\.9\.png$', '' -replace '\.[^.]+$', ''
+            if ($name) { $resNames[$kind].Add($name) }
+        }
+    }
+}
+$rSb = New-Object System.Text.StringBuilder
+[void]$rSb.AppendLine("// 由 scripts/typecheck-compose.ps1 生成（早筛桩），不提交、不入包。")
+[void]$rSb.AppendLine("package com.mutx163.qingyu")
+[void]$rSb.AppendLine()
+[void]$rSb.AppendLine("object R {")
+foreach ($kind in @('string', 'drawable', 'layout', 'mipmap', 'xml', 'raw', 'color', 'attr', 'id', 'style')) {
+    $names = @($resNames[$kind] | Sort-Object -Unique)
+    if ($names.Count -eq 0) { continue }
+    [void]$rSb.AppendLine("    object $kind {")
+    foreach ($n in $names) { [void]$rSb.AppendLine("        const val ${n}: Int = 0") }
+    [void]$rSb.AppendLine("    }")
+}
+[void]$rSb.AppendLine("}")
+$rStubPath = Join-Path $stubDir "RStub.kt"
+[IO.File]::WriteAllText($rStubPath, $rSb.ToString(), (New-Object Text.UTF8Encoding($false)))
+$fileList.Add($rStubPath)
+
+# Gradle 的 `buildConfigField "String", "X", "\"v\""` 第三参是 **Java 表达式**：外层是
+# 字符串字面量、内层 `\"` 才是值里的引号。直接抄进 Kotlin 桩会生成 `= "\"v\""`（值带引号），
+# 与真实 BuildConfig 的 `v` 不一致（2026-11-10 复核必修）。这里统一归一化成 Kotlin 字面量。
+function ConvertTo-KotlinLiteral {
+    param([string]$KtType, [string]$Raw)
+    $value = $Raw.Trim()
+    # 第一层：build.gradle 里的 **Groovy 字符串字面量** → Java 表达式
+    # （`"\"official\""` 的表达式是 `"official"`）。
+    if ($value -match '^"(.*)"$') {
+        $expr = $matches[1] -replace '\\"', '"' -replace '\\\\', '\'
+    } else {
+        $expr = $value
+    }
+    if ($KtType -eq 'String') {
+        # 第二层：Java 字符串表达式 → 真实值，再写成 Kotlin 字面量。
+        if ($expr -match '^"(.*)"$') {
+            $inner = $matches[1] -replace '\\"', '"' -replace '\\\\', '\'
+        } else {
+            $inner = $expr
+        }
+        $escaped = $inner -replace '\\', '\\' -replace '"', '\"'
+        return "`"$escaped`""
+    }
+    if ($KtType -eq 'Boolean') {
+        if ($expr -eq 'true' -or $expr -eq 'false') { return $expr }
+        return 'false'
+    }
+    if ($KtType -eq 'Int' -or $KtType -eq 'Long') {
+        if ($expr -match '^-?\d+[lL]?$') { return $expr.TrimEnd('l', 'L') }
+        return '0'
+    }
+    return $expr
+}
+
+$bcFields = [ordered]@{
+    DEBUG            = @{ type = 'Boolean'; value = 'false' }
+    BUILD_TYPE       = @{ type = 'String'; value = '"debug"' }
+    FLAVOR           = @{ type = 'String'; value = '""' }
+    APPLICATION_ID   = @{ type = 'String'; value = '"com.mutx163.qingyu"' }
+    VERSION_CODE     = @{ type = 'Int'; value = '0' }
+    VERSION_NAME     = @{ type = 'String'; value = '"0.0.0"' }
+}
+$gradleFile = Get-ChildItem -Path (Join-Path $repo "android/app") -Filter "build.gradle*" -File |
+    Select-Object -First 1
+if ($gradleFile) {
+    $gText = [IO.File]::ReadAllText($gradleFile.FullName)
+    foreach ($m in [regex]::Matches($gText, 'buildConfigField\s+"([^"]+)"\s*,\s*"([^"]+)"\s*,\s*("(?:[^"\\]|\\.)*"|[^\r\n]+)')) {
+        $type = $m.Groups[1].Value.Trim()
+        $name = $m.Groups[2].Value.Trim()
+        $value = $m.Groups[3].Value.Trim()
+        $ktType = switch ($type) { 'String' { 'String' } 'Boolean' { 'Boolean' } 'int' { 'Int' } 'long' { 'Long' } default { $type } }
+        $literal = ConvertTo-KotlinLiteral -KtType $ktType -Raw $value
+        if (-not $bcFields.Contains($name)) { $bcFields[$name] = @{ type = $ktType; value = $literal } }
+    }
+}
+$bcSb = New-Object System.Text.StringBuilder
+[void]$bcSb.AppendLine("// 由 scripts/typecheck-compose.ps1 生成（早筛桩），不提交、不入包。")
+[void]$bcSb.AppendLine("package com.mutx163.qingyu")
+[void]$bcSb.AppendLine()
+[void]$bcSb.AppendLine("object BuildConfig {")
+foreach ($k in $bcFields.Keys) {
+    [void]$bcSb.AppendLine("    const val ${k}: $($bcFields[$k].type) = $($bcFields[$k].value)")
+}
+[void]$bcSb.AppendLine("}")
+$bcStubPath = Join-Path $stubDir "BuildConfigStub.kt"
+[IO.File]::WriteAllText($bcStubPath, $bcSb.ToString(), (New-Object Text.UTF8Encoding($false)))
+$fileList.Add($bcStubPath)
+Write-Host ">>> R/BuildConfig 桩已生成（R 去重后 $(($resNames.Values | ForEach-Object { @($_ | Sort-Object -Unique).Count } | Measure-Object -Sum).Sum) 个名字 / BuildConfig $($bcFields.Count) 个字段）" -ForegroundColor DarkCyan
+
 # `-ExtraSources`：相对仓库根的目录或单个 .kt（真正的生效点——旧版声明了却没用）。
 foreach ($extra in $ExtraSources) {
     $abs = (Resolve-Path (Join-Path $repo $extra)).Path
@@ -376,8 +611,65 @@ function Compare-Multiset {
 $added = @(Compare-Multiset -Left $current -Right $baseline)
 $removed = @(Compare-Multiset -Left $baseline -Right $current)
 
-Write-Host (">>> [typecheck-compose] 编译完成：{0} 个源文件，耗时 {1:N1}s，error 去重后 {2} 条（基线 {3} 条）" -f `
-        $uniqueSources.Count, $sw.Elapsed.TotalSeconds, $current.Count, $baseline.Count) -ForegroundColor DarkCyan
+# ── 显式登记的已知类别（2026-11-10 早筛修复）─────────────────────────────────
+# 验收口径：「每条报错要么是真错、要么是**显式登记的已知类别**」。已知类别单独放一个
+# 数据文件（`scripts/typecheck-compose-known.txt`，一行 `路径|消息|原因`），而不是混进基线：
+#   1) 每条都必须写原因，脚本会原样打印——不是「看不见就绿」；
+#   2) 条目一旦不再复现会提示删行（与 compose 样式例外的「只进不出」纪律同款）；
+#   3) 基线保持干净（0 条），新增真错立刻显形。
+# 多重集语义：同一 `路径|消息` 可以重复登记多次（同一条 error 在多处重复出现的场景）。
+$KnownGapsPath = Join-Path $repo "scripts/typecheck-compose-known.txt"
+$knownGaps = New-Object System.Collections.Generic.List[string]
+$knownReasons = @{}
+if (Test-Path $KnownGapsPath) {
+    foreach ($line in (Get-Content -Path $KnownGapsPath)) {
+        $trim = $line.Trim()
+        if ($trim -eq "" -or $trim.StartsWith("#")) { continue }
+        $parts = $trim -split '\|', 3
+        if ($parts.Count -lt 3) {
+            Write-Host ">>> 已知类别文件行格式不对（要 `路径|消息|原因`）：$trim" -ForegroundColor DarkYellow
+            continue
+        }
+        $entry = "$($parts[0].Trim())|$($parts[1].Trim())"
+        $knownGaps.Add($entry)
+        $knownReasons[$entry] = $parts[2].Trim()
+    }
+}
+$knownRemaining = @{}
+foreach ($g in $knownGaps) {
+    if ($knownRemaining.ContainsKey($g)) { $knownRemaining[$g]++ } else { $knownRemaining[$g] = 1 }
+}
+$knownHit = New-Object System.Collections.Generic.List[string]
+$unexplained = New-Object System.Collections.Generic.List[string]
+foreach ($item in $current) {
+    if ($knownRemaining.ContainsKey($item) -and $knownRemaining[$item] -gt 0) {
+        $knownRemaining[$item]--
+        $knownHit.Add($item)
+    } else {
+        $unexplained.Add($item)
+    }
+}
+$unexplained = @($unexplained | Sort-Object)
+$staleKnown = @($knownRemaining.Keys | Where-Object { $knownRemaining[$_] -gt 0 } | Sort-Object)
+
+$added = @(Compare-Multiset -Left $unexplained -Right $baseline)
+$removed = @(Compare-Multiset -Left $baseline -Right $unexplained)
+
+Write-Host (">>> [typecheck-compose] 编译完成：{0} 个源文件，耗时 {1:N1}s，error 去重后 {2} 条" -f `
+        $uniqueSources.Count, $sw.Elapsed.TotalSeconds, $current.Count) -ForegroundColor DarkCyan
+Write-Host (">>> 其中：显式登记的已知类别 {0} 条 / 基线（历史遗留）{1} 条 / **待处理 {2} 条**" -f `
+        $knownHit.Count, $baseline.Count, $unexplained.Count) -ForegroundColor DarkCyan
+if ($knownHit.Count -gt 0) {
+    Write-Host ">>> 已知类别明细（每条都带原因；要动它们先读原因）：" -ForegroundColor DarkCyan
+    foreach ($g in ($knownHit | Sort-Object -Unique)) {
+        Write-Host "    · $g" -ForegroundColor DarkGray
+        Write-Host "      原因：$($knownReasons[$g])" -ForegroundColor DarkGray
+    }
+}
+if ($staleKnown.Count -gt 0) {
+    Write-Host ">>> 有 $($staleKnown.Count) 条已知类别**不再复现**（顺手删掉 known 文件里的对应行，别只进不出）：" -ForegroundColor Yellow
+    $staleKnown | ForEach-Object { Write-Host "    - $_" -ForegroundColor Yellow }
+}
 if ($unparsed.Count -gt 0) {
     Write-Host ">>> 其中 $($unparsed.Count) 条是**没有文件位置**的 error（多半是 classpath / 插件级问题），已记为 <no-file>：" -ForegroundColor DarkYellow
     $unparsed | Select-Object -Unique | Select-Object -First 5 | ForEach-Object { Write-Host "    $_" -ForegroundColor DarkYellow }
@@ -399,19 +691,20 @@ function Write-BaselineFile {
 }
 
 if ($Write) {
-    Write-BaselineFile -Entries $current
+    # 基线只收**待处理**（已知类别已单独登记、不再进基线）：目标是把基线长期保持 0 条。
+    Write-BaselineFile -Entries $unexplained
     exit 0
 }
 
 if (-not (Test-Path $BaselinePath)) {
     Write-Host ">>> 基线不存在，先落一份（等同于 -Write）" -ForegroundColor DarkYellow
-    Write-BaselineFile -Entries $current
+    Write-BaselineFile -Entries $unexplained
     Write-Host ">>> 重跑一次即可看到干净的差量。" -ForegroundColor Green
     exit 0
 }
 
 if ($Full) {
-    Write-Host ">>> 全部 error（含未变化）：" -ForegroundColor DarkCyan
+    Write-Host ">>> 全部 error（含未变化、含已知类别）：" -ForegroundColor DarkCyan
     $current | ForEach-Object { Write-Host "    $_" }
 }
 
@@ -425,7 +718,7 @@ if ($added.Count -eq 0) {
     exit 0
 }
 
-Write-Host ">>> 新增 $($added.Count) 条 error（基线 $($baseline.Count) 条 → 现在 $($current.Count) 条）：" -ForegroundColor Red
+Write-Host ">>> 待处理里新增 $($added.Count) 条 error（基线 $($baseline.Count) 条 → 待处理 $($unexplained.Count) 条）：" -ForegroundColor Red
 $added | ForEach-Object { Write-Host "    + $_" -ForegroundColor Red }
-Write-Host ">>> 提示：确认是你引入的就修；若是别人半成品/未挂的库，先别往基线里加，找 Chief 报备。" -ForegroundColor DarkYellow
+Write-Host ">>> 提示：先确认是不是你引入的真错；是 classpath/生成件缺口就补脚本（桩或 jar），实在消不掉的才登记到 scripts/typecheck-compose-known.txt（必须写原因），不许往基线里塞。" -ForegroundColor DarkYellow
 exit 1

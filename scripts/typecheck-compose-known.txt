@@ -1,0 +1,17 @@
+# composeP1 早筛「显式登记的已知类别」（scripts/typecheck-compose.ps1 读取）
+#
+# 规矩（2026-11-10 建文件时定）：
+# 1. 一行一条：`相对路径|error 消息|原因`，用 `|` 分隔，原因必填；
+# 2. 只登记**早筛结构上不可能消掉**的缺口（classpath 只能拿到上游依赖、AGP 生成物、
+#    编译器插件能力差异），不许拿它藏真错；
+# 3. 条目不再复现时脚本会提示，**必须删行**——与 compose 样式例外的「只进不出」纪律同款；
+# 4. 新增条目要写清「为什么消不掉 + 什么条件下去掉」，随提交说明一起进 review。
+#
+# 当前全部条目（1 条）：
+# - `glass` 具名参数：miuix 本仓 fork 在 `OverlayDialog`（顶栏玻璃试点）上新增了
+#   `glass: DialogGlass?` 参数（`android/third_party/miuix-ui/.../overlay/OverlayDialog.kt`），
+#   而早筛的 classpath 只能取 gradle 缓存里的**上游** `miuix-ui-android:0.9.4` AAR（L1 才走
+#   本地 fork 工程）。同族的 `DialogGlass` 类已用源文件挂进早筛（见脚本 `$Files`），
+#   只剩这个具名参数解不了。去掉条件：上游发布带 glass 的版本（0.9.5+）或 fork 改为
+#   本地 maven 产物后，删掉本行并复跑。
+android/app/src/composeP1/kotlin/com/mutx163/qingyu/pages/course/AddCoursePage.kt|no parameter with name 'glass' found.|miuix 本仓 fork 新增的 OverlayDialog(glass=) 不在 gradle 缓存的上游 0.9.4 AAR 里；L1 用本地 fork 工程编译，早筛只能对着上游 AAR 比。上游 0.9.5+ 或 fork 改发布形式后删行。
