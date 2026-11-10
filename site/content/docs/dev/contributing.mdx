@@ -5,44 +5,41 @@ description: 开发环境、构建命令、代码约定与提交流程。
 
 ## 环境准备
 
-版本真源是仓库根的 `.fvmrc`。当前稳定版 Flutter **3.44.8**，最低支持 3.44.2 / Dart 3.12.2。
+工具链版本以仓库为准（`android/gradle/wrapper`、`android/settings.gradle`、`android/app/build.gradle`），不要照官方模板抄版本：
 
 | 工具 | 版本 |
 | --- | --- |
-| Flutter | 3.44.8 |
-| Dart SDK | `>=3.12.2 <4.0.0` |
-| JDK | 17 |
-| Android SDK | compileSdk 36 / targetSdk 36 / minSdk 26 |
-| Gradle | 8.14 |
-| Kotlin | 2.2.20 |
+| JDK | 21 |
+| Gradle | 9.8.2（wrapper 锁定） |
+| AGP | 9.4.1 |
+| Kotlin | 2.4.21 |
+| Android SDK | compileSdk 37 / targetSdk 36 / minSdk 33 |
 
 ## 常用命令
 
-```bash
-flutter pub get
-flutter run -d android --flavor dev      # 本地开发
-flutter test                              # 测试
-flutter analyze --fatal-infos            # 静态分析（CI 同款）
-flutter build apk --release --flavor prod --target-platform android-arm64
+```powershell
+# L0：单模块 JVM 单测（改哪个域跑哪个）
+pwsh -File scripts/test-kotlin-module.ps1 -Module "pages/<域>"
+
+# L1：编译验证（全机互斥闸门）
+pwsh -File scripts/safe-gradle.ps1 :app:compileDevDebugKotlin
+
+# L2：全量 JVM 单测
+pwsh -File scripts/safe-gradle.ps1 :app:testDevDebugUnitTest
 ```
 
 <Callout type="warn">
-  在本仓库跑 `flutter test` 需要绕开本地代理，否则 flutter_tester 的本机 WebSocket 会被拦截，报 `Invalid WebSocket upgrade request`。这与代码无关，官方模板同样会失败。
+  L1 / L2 必须走 `scripts/safe-gradle.ps1`：闸门内置全机互斥锁，裸跑 `./gradlew` 会和并行任务抢锁。出包（`assemble*` / `bundle*`）与真机验证由维护者执行，不交给自动化脚本。
 </Callout>
 
 ## 代码约定
 
-- 静态分析基线为 0 error、0 warning、0 info（CI 跑 `--fatal-infos`，
-  info 也算失败，本地务必用同一条命令）
-- 界面文案统一走 l10n（ARB 文件），新增文案需同步各语言。
-  同步工具在 `tool/` 下（`sync_arb.dart`、`merge_l10n_batch.py` 等），
-  **但 `tool/` 里同时有几份会写坏文件的脚本，跑之前先确认它是否已修好**：
-  `fix_arb_placeholder_commas.py` 曾把必需的分隔逗号当多余逗号删掉，
-  一跑就让 6 份 ARB 变成非法 JSON、`gen-l10n` 失败、App 编不过
-  （2026-10-27 已改为只删真多余尾逗号 + 写盘前强制 JSON 校验）。
-  拿不准就**手工逐语言改**，别赌脚本
+- 页面结构、卡片、字号、颜色只用共享套件（`QingyuPageScaffold` / `QingyuPageList` / `QingyuCard` / `MiuixTheme.textStyles.*`），源码守卫 `ComposePageStyleGuardTest` 会判；需要保留的写法登记在 `tool/compose_style_exceptions/<域>.txt`，且只进不出会被判红
+- JVM 单测写在 `android/app/src/test/kotlin/`；说「已验证」必须写明真机验证了哪条路径，写不出来就标「未验」
+- 界面文案统一走 ARB（`i18n/` 六份），改完跑 `python tool/gen_compose_arb_catalog.py` 重新生成 `ArbCatalog.kt`
 - 应用支持简体中文、繁体中文（台湾 / 香港）、英文、日文、韩文
 - 修改超级岛规则时，需同步原生实现、预览组件与对应测试
+- 编译 / 测试分工与提交纪律见仓库 [AGENTS.md](https://github.com/Mutx163/mikcb/blob/main/AGENTS.md)
 
 ## 提交与 PR
 

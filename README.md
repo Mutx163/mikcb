@@ -9,8 +9,9 @@
 </p>
 
 <p align="center">
-  <a href="https://flutter.dev"><img src="https://img.shields.io/badge/Flutter-3.44.8-02569B?logo=flutter&logoColor=white" alt="Flutter"></a>
-  <img src="https://img.shields.io/badge/Platform-Android%208.0%2B-34A853?logo=android&logoColor=white" alt="Android">
+  <a href="https://kotlinlang.org"><img src="https://img.shields.io/badge/Kotlin-2.4.21-7F52FF?logo=kotlin&logoColor=white" alt="Kotlin"></a>
+  <a href="https://developer.android.com/jetpack/compose"><img src="https://img.shields.io/badge/Jetpack%20Compose-1.12-4285F4?logo=jetpackcompose&logoColor=white" alt="Jetpack Compose"></a>
+  <img src="https://img.shields.io/badge/Platform-Android%2013%2B-34A853?logo=android&logoColor=white" alt="Android">
   <img src="https://img.shields.io/badge/Focus-HyperOS%20%E8%B6%85%E7%BA%A7%E5%B2%9B-FF6A00" alt="HyperOS">
   <a href="https://github.com/Mutx163/mikcb/releases"><img src="https://img.shields.io/github/v/release/Mutx163/mikcb?display_name=tag" alt="Release"></a>
   <a href="./LICENSE"><img src="https://img.shields.io/badge/License-GPL--3.0-blue.svg" alt="License"></a>
@@ -62,7 +63,7 @@
 * **系统闹钟批量编排**：基于真实节次作息，通过系统时钟服务一键编排并批量注册早八上课闹钟。
 
 ### 2. 液态美学与视觉呈现
-* **多层次玻璃拟态**：内置实体卡片、高斯磨砂、柔光玻璃与基于 Impeller Fragment Shader 自研的液态玻璃材质。
+* **两档全局材质**：实体卡片与液态玻璃；液态玻璃走 miuix-blur 的 RuntimeShader 效果链（背景捕获 + 模糊 + 染色 + 边缘高光），不是截图缩放出来的假玻璃。
 * **界面结构自适应**：支持经典布局与液态玻璃底部导航（玻璃坞）双重形态自由切换。
 * **壁纸系统独立布局**：支持自定义壁纸位置拖拽微调与历史壁纸缓存管理，切换课表不破坏当前视觉方案。
 * **多语言环境支持**：原生支持简体中文、繁体中文（台湾 / 香港）、英语、日语、韩语。
@@ -82,7 +83,7 @@
 
 ## 获取与安装
 
-当前安装包主要针对 `arm64-v8a` 架构进行编译优化，最低兼容 Android 8.0（API Level 26）。
+当前安装包只提供 `arm64-v8a`，最低兼容 Android 13（API Level 33）。
 
 | 发布渠道 | 渠道类型 | 说明 |
 | :--- | :--- | :--- |
@@ -120,61 +121,60 @@
 
 ### 环境依赖矩阵
 
-| 运行环境 / 工具链 | 推荐版本 | 最低兼容版本 |
-| :--- | :--- | :--- |
-| **Flutter SDK** | 3.44.8 | 3.44.2 |
-| **Dart SDK** | 3.12.2+ | >= 3.12.2 < 4.0.0 |
-| **JDK** | 17 | 17 |
-| **Android SDK** | API 36 (compileSdk / targetSdk) | API 26 (minSdk) |
-| **Android NDK** | 28.2.13676358 | 28.x |
-| **Gradle** | 8.14 | 8.10+ |
-| **AGP** | 8.11.1 | 8.10+ |
+| 运行环境 / 工具链 | 版本 |
+| :--- | :--- |
+| **JDK** | 21（`:app` 的 Java / Kotlin 目标为 21） |
+| **Android SDK** | compileSdk 37 / targetSdk 36 / minSdk 33 |
+| **Android NDK** | 28.2.13676358 |
+| **Gradle** | 9.8.2（由 `android/gradle/wrapper` 锁定） |
+| **AGP** | 9.4.1 |
+| **Kotlin** | 2.4.21（Compose 编译器由 Kotlin 插件接管） |
+| **Compose / miuix** | Compose 1.12 · miuix 0.9.4（本地 fork：`android/third_party/miuix-ui`） |
 
-### 本地初始化与运行
+### 编译与测试（统一走仓库脚本）
 
-```bash
-# 获取项目依赖
-flutter pub get
+```powershell
+# L0：单模块 JVM 单测（最快，改哪个域就跑哪个）
+pwsh -File scripts/test-kotlin-module.ps1 -Module "pages/<域>"
 
-# 启动开发环境调试（使用 dev flavor）
-flutter run -d android --flavor dev
-```
+# L1：编译验证（全机互斥闸门，同一时刻只允许一个 Gradle）
+pwsh -File scripts/safe-gradle.ps1 :app:compileDevDebugKotlin
 
-### 质量保证与测试
+# L2：全量 JVM 单测
+pwsh -File scripts/safe-gradle.ps1 :app:testDevDebugUnitTest
 
-```bash
-# 执行单元测试与架构守卫测试
-flutter test
-
-# 执行静态代码分析
-flutter analyze --no-fatal-infos
+# 页面样式守卫（只跑自己域；-Write 只删过期例外，绝不新增）
+pwsh -NoProfile -File scripts/compose-style-lint.ps1 -Domain <域>
 ```
 
 ### 生产环境构建
 
 ```bash
-# 构建正式版 release APK (arm64-v8a)
-flutter build apk --release --flavor prod --target-platform android-arm64
+# 正式包：arm64-v8a，release 变体（R8 混淆 + 资源压缩）
+./gradlew :app:assembleProdRelease
 ```
+
+> `assemble*` / `bundle*` 属于 L3 出包，与真机安装一样**由维护者在 Windows 侧执行**；自动化 agent 不跑这两类任务、不碰设备。
 
 ### 工程命名规范与架构映射
 
 | 命名标识 | 作用域与类型 | 规范说明 |
 | :--- | :--- | :--- |
 | `mikcb` | GitHub 仓库命名 | 项目主代码仓库标识 |
-| `university_timetable` | Dart Package Name | 项目基础业务包名（`pubspec.yaml` 标识符） |
-| `com.mutx163.qingyu` | Android Application ID | Android 原生包名及应用系统唯一标识 |
+| `com.mutx163.qingyu` | Android Application ID | Android 包名及应用系统唯一标识 |
+| `composeP1` | 源集目录 | Compose 页面整树（`android/app/src/composeP1/kotlin`，随 `main` 源集一起编译） |
 | **轻屿课表** | 产品可见名称 | 面向终端用户的正式产品名称 |
 
 ---
 
 ## 技术架构
 
-* **UI 框架**：Flutter (Material 3 + [flutter_miuix](https://github.com/w568w/flutter_miuix) HyperOS 风格组件套件)
-* **状态管理**：Provider
-* **图形渲染**：自研 Liquid Glass Fragment Shader（运行于 Impeller 渲染后端）
+* **UI 框架**：Jetpack Compose（Kotlin 2.4.21）+ [miuix](https://github.com/compose-miuix-ui/miuix) 0.9.4 组件库（其中 `miuix-ui` 为本地 fork：`android/third_party/miuix-ui`）
+* **状态与数据**：`TimetableRepository` + 不可变设置模型（`TimetableSettingsModel`）+ Compose 状态提升；落盘用 SharedPreferences
+* **升级兼容**：设置存储键沿用旧版的 `flutter.*` 前缀，覆盖安装不会清空课表与设置
+* **图形渲染**：miuix-blur（Android 13+ `RuntimeShader`）实现背景捕获与液态玻璃效果链；设备不支持或系统关闭动画时自动降级为实体卡片
 * **系统底层集成**：Android Notification / Ongoing Promoted Activity / Foreground Service / AlarmClock
-* **数据离线传输**：`fountain_codes` + `mobile_scanner`
+* **数据离线传输**：自研多帧喷泉码二维码（`QrFountainLt`）+ ML Kit 扫码
 * **工程集成与监控**：GitHub Actions CI/CD · 友盟移动统计 (U-APM)
 
 ---

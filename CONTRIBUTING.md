@@ -14,29 +14,37 @@
 | 名称 | 含义 |
 |------|------|
 | GitHub 仓库 `mikcb` | 对外仓库名 |
-| pubspec `university_timetable` | 历史 Dart 包名，暂未更名 |
 | Android 包名 `com.mutx163.qingyu` | 应用 ID |
 | 产品名「轻屿课表」 | 用户可见名称 |
 
 ## 开发环境
 
-**版本以 CI 与 [.fvmrc](./.fvmrc) 为准**（当前稳定 Flutter **3.44.8**；最低支持 Flutter **3.44.2** / Dart **3.12.2**）。
+工具链版本以 `android/gradle/wrapper`、`android/settings.gradle` 与 `android/app/build.gradle` 为准：
+Gradle **9.8.2**、AGP **9.4.1**、Kotlin **2.4.21**、JDK **21**、compileSdk **37** / targetSdk **36** / minSdk **33**。
 
-```bash
-# 可选：fvm use 3.44.8
-flutter pub get
-flutter run -d android --flavor dev
+```powershell
+# L0：单模块 JVM 单测（改哪个域跑哪个，最快）
+pwsh -File scripts/test-kotlin-module.ps1 -Module "pages/<域>"
+
+# L1：编译验证（全机互斥闸门，同一时刻只允许一个 Gradle）
+pwsh -File scripts/safe-gradle.ps1 :app:compileDevDebugKotlin
+
+# L2：全量 JVM 单测
+pwsh -File scripts/safe-gradle.ps1 :app:testDevDebugUnitTest
+
+# 页面样式守卫（只跑自己域）
+pwsh -NoProfile -File scripts/compose-style-lint.ps1 -Domain <域>
 ```
 
-### 发版前必跑（与 CI / Release 一致）
+`assemble*` / `bundle*` 出包与真机安装由维护者在 Windows 侧执行，agent 不跑这两类任务、不碰设备。
 
-```bash
-dart format .      # 含文件末尾换行；勿用脚本手改 .dart 格式
-flutter analyze --no-fatal-infos  # error/warning 失败，info 仅记录
-flutter test
-```
+### 提交前必跑（与 CI / Release 一致）
 
-AI / 协作者约定见 [.cursor/rules/dart-source-editing.mdc](./.cursor/rules/dart-source-editing.mdc)（Cursor 会自动注入）。
+- L1 编译通过、L2 单测全绿（命令见上）
+- 改动涉及页面布局 / 卡片 / 字号 / 颜色时，自己域的 `compose-style-lint.ps1` 必须 0 违规
+- 新增、改名或删除整页入口时跑 `python tool/page_index.py`，两份页面索引随代码一起提交
+
+AI / 协作者约定见 [AGENTS.md](./AGENTS.md)：设备红线、共享工作区、编译分工与提交纪律都在里面。
 
 ### 本地 AI / 协作者主线交付
 
@@ -47,11 +55,7 @@ AI / 协作者约定见 [.cursor/rules/dart-source-editing.mdc](./.cursor/rules/
 - 目标文件已有改动、主线基线发生变化或出现冲突时，停止自动合并并报告提交哈希与阻塞原因，禁止强行覆盖。
 - 合并成功后，在 `main` 上重新确认提交、工作区状态并运行必要的聚焦验证；只在用户明确要求时推送远程。
 
-可选本地集成测试：
-
-```bash
-flutter test test_integration/
-```
+真机行为（小组件、通知、超级岛、教务 WebView）只能用 `prod` / `bench` 变体手测，不在 JVM 单测覆盖范围内；交付时请写明真机验证了哪条路径。
 
 Android 签名：`android/key.properties` 与 keystore **不要提交**；CI 使用 Secrets。
 
@@ -79,7 +83,7 @@ Android 签名：`android/key.properties` 与 keystore **不要提交**；CI 使
 
 - UI / HyperOS 体验
 - 课表逻辑、提醒、导入、云同步
-- 多语言（`lib/l10n/*.arb`）
+- 多语言（`i18n/*.arb`，改完跑 `python tool/gen_compose_arb_catalog.py` 重新生成 `ArbCatalog.kt`）
 - 文档与官网（`docs/`）
 
 ### 教务系统适配（独立仓库）

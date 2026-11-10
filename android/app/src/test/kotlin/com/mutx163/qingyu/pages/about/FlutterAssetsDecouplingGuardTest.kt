@@ -66,12 +66,20 @@ class FlutterAssetsDecouplingGuardTest {
 
     // ---- 1. 迁移后的资产内容钉死 ----
 
-    /** 二进制资产（png / gz）：钉原始字节哈希。哈希取自迁移当日与仓库原件逐字节比对的结果。 */
+    /**
+     * 二进制资产（png / gz）：钉原始字节哈希。哈希取自迁移当日与仓库原件逐字节比对的结果。
+     *
+     * 2026-11-10 `licenses/NOTICES.gz` 重生成（去 Flutter 化后首次）：旧快照是 Flutter 时代的
+     * Dart 包与引擎第三方（flutter_miuix / skia / angle / icu…），androidx / Compose / 友盟 /
+     * ML Kit 一条都没有。新快照由 `tool/license_notices/generate_notices.py` 从
+     * `prodReleaseRuntimeClasspath` 生成，234 条、gzip 38,752 B。哈希换成重生成后的新值：
+     * 再漂移就说明有人换了资产却没重跑生成器（或没同步这里的钉值）。
+     */
     private val binaryPins = mapOf(
         "branding/launcher_icon.png" to "01671df7bb8f058496089cb50f5041ac6016453ae11629d16130fc02b8d73bfb",
         "donate/wechatpay.png" to "c011931ca9e5f1eb171e6f6d1c47ebddf8fc6e8a9b7f6e0c3ff291d13571ffc9",
         "donate/alipay.png" to "7b307a7e926a4b672594faac1b10266285de0a8f0893142a159a0ac9a401b387",
-        "licenses/NOTICES.gz" to "2cd0a6d59033bb94180d038b4aad6a78bf40e69e13ac22d05a531b7c4a0a134e",
+        "licenses/NOTICES.gz" to "41de0ee219f29cfc6ed46f1058336495de85d33341c943ea5c63be1415a977bb",
     )
 
     /**
