@@ -224,9 +224,18 @@ fun SettingsPageScreen(
     // 顶栏 action 槽由 [QingyuPageScaffold] 的 `actions` 承载，底栏由它的 `bottomBar` 承载。
     // 见 `settings_holiday.dart:466-478`（齿轮进高级页）与 `:792-812`（固定的检查更新按钮）。
     val dark = isSystemInDarkTheme()
-    // 底部系统栏留白：设置页是边到边（壳开了 edge-to-edge），Scaffold 的 innerPadding
-    // 只含顶栏，不含导航栏。不补这一段，滚到底时最后一行（「恢复默认设置」）会被
-    // 白色导航栏盖住半行，看起来像被一条灰线切开（用户 2026-11-07 截图就是这个）。
+    // 导航栏高度：**只给固定底栏自己垫**，不要再加进列表底距（2026-11-10 修双算）。
+    //
+    // 为什么不能再补进列表：`Scaffold` 的 `innerPadding.bottom` 本来就等于「底栏高度」
+    // 或「导航栏高度」（M3 `ScaffoldLayout`：`bottom = bottomBarHeight ?: insets.bottom`），
+    // 列表底距只需补发布版 `HyperosTokens.listPadding` 的 24dp。此前这里再加一次
+    // `navBottom`，滚到底就多出「24 + 导航栏」一截空白（手势条约 24dp、三键约 48dp）。
+    //
+    // 历史账（别再纠结）：2026-11-07 那次「最后一行被导航栏盖住半行」补 `navBottom`
+    // **当时是对的**——旧底栏是 `ControlCard`，自身不含导航栏内边距，底栏高度里没有 nav。
+    // A1 换成 `FooterBar` 后（该函数自己 `bottom = 12.dp + navBottom`），底栏高度已含 nav，
+    // 同一行就变成纯多算：A1 不是引入者，但它是触发者。
+    // 守卫 `SettingsListBottomInsetGuardTest` 钉住「两处 contentPadding 不许再出现 navBottom」。
     val navBottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
     val topAction = spec.topBarAction
     val footer = spec.footerNode
@@ -294,7 +303,7 @@ fun SettingsPageScreen(
                     // 顶部同样补 4dp：这两页（课程卡片 / 课表页面）虽然上面有预览区，
                     // 列表本身仍按发布版 `HyperosTokens.listPadding = (16, 4, 16, 24)`
                     // 起排（评审 三-13；无预览那一支见下方同名注释）。
-                    contentPadding = PaddingValues(top = 4.dp, bottom = 24.dp + navBottom),
+                    contentPadding = PaddingValues(top = 4.dp, bottom = 24.dp),
                 ) {
                     items(items = spec.nodes, key = { it.id }) { node ->
                         SliderEditFinishedScope(onSliderEditFinished) {
@@ -321,7 +330,7 @@ fun SettingsPageScreen(
                 // 观感上「第一块顶着标题栏」。（2026-11-10 B4，Chief 批；已 grep 确认
                 // 没有任何页自己补过 top padding，不会双重补偿。预览分栏那支另计，
                 // 因为它上面还有一块预览区，4dp 由谁来给要单看那两页。）
-                contentPadding = PaddingValues(top = 4.dp, bottom = 24.dp + navBottom),
+                contentPadding = PaddingValues(top = 4.dp, bottom = 24.dp),
             ) {
                 items(items = spec.nodes, key = { it.id }) { node ->
                     SliderEditFinishedScope(onSliderEditFinished) {
