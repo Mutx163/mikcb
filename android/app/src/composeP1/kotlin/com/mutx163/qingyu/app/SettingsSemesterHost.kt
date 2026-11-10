@@ -1,6 +1,7 @@
 package com.mutx163.qingyu.app
 
 import android.widget.Toast
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -18,6 +19,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.core.app.NotificationManagerCompat
@@ -42,12 +44,12 @@ import com.mutx163.qingyu.pages.task.TaskStrings
 import com.mutx163.qingyu.platform.CouplePartnerPortImpl
 import com.mutx163.qingyu.platform.PrefsKeyValueStore
 import com.mutx163.qingyu.sync.WebdavSyncConfig
+import com.mutx163.qingyu.theme.QingyuTheme
 import com.mutx163.qingyu.weather.WeatherProvider
 import top.yukonga.miuix.kmp.basic.Button
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
 import top.yukonga.miuix.kmp.basic.NumberPicker
 import top.yukonga.miuix.kmp.basic.Text
-import top.yukonga.miuix.kmp.basic.TextButton
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import java.time.LocalDate
 import java.time.LocalDateTime
@@ -238,6 +240,7 @@ private fun SemesterStartDateSheet(
     onConfirm: (LocalDate) -> Unit,
     onDismiss: () -> Unit,
 ) {
+    val dark = isSystemInDarkTheme()
     var year by remember(show, initial) { mutableIntStateOf(initial.year) }
     var month by remember(show, initial) { mutableIntStateOf(initial.monthValue) }
     var day by remember(show, initial) { mutableIntStateOf(initial.dayOfMonth) }
@@ -296,11 +299,19 @@ private fun SemesterStartDateSheet(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
             ) {
-                TextButton(
+                // E2：滚轮弹层的「取消」= 发布版 `HyperosButtonVariant.secondary`
+                //（浅灰实心 + 主文本字，`hyperos_controls.dart:657-818`），不再是 ghost TextButton。
+                // 与 IcsExportPage 那三颗滚轮同口径；弹窗（OverlayDialog）里的取消不动。
+                Button(
                     modifier = Modifier.weight(1f),
-                    text = TaskStrings.cancelAction,
                     onClick = onDismiss,
-                )
+                    colors = ButtonDefaults.buttonColors(
+                        color = Color(QingyuTheme.secondary(dark)),
+                        contentColor = Color(QingyuTheme.primaryText(dark)),
+                    ),
+                ) {
+                    Text(text = TaskStrings.cancelAction)
+                }
                 Button(
                     modifier = Modifier.weight(1f),
                     onClick = { onConfirm(LocalDate.of(year, month, safeDay)) },
@@ -328,6 +339,7 @@ private fun SemesterWeekCountSheet(
     onConfirm: (Int) -> Unit,
     onDismiss: () -> Unit,
 ) {
+    val dark = isSystemInDarkTheme()
     var count by remember(show, initial) { mutableIntStateOf(initial) }
 
     QingyuSheet(
@@ -360,11 +372,17 @@ private fun SemesterWeekCountSheet(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
             ) {
-                TextButton(
+                // E2：同上一条（滚轮弹层取消 = secondary 实心）。
+                Button(
                     modifier = Modifier.weight(1f),
-                    text = TaskStrings.cancelAction,
                     onClick = onDismiss,
-                )
+                    colors = ButtonDefaults.buttonColors(
+                        color = Color(QingyuTheme.secondary(dark)),
+                        contentColor = Color(QingyuTheme.primaryText(dark)),
+                    ),
+                ) {
+                    Text(text = TaskStrings.cancelAction)
+                }
                 Button(
                     modifier = Modifier.weight(1f),
                     onClick = { onConfirm(count) },

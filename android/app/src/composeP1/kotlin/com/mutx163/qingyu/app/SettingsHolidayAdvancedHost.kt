@@ -6,6 +6,7 @@ import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
@@ -62,6 +63,10 @@ fun SettingsHolidayAdvancedHost(
     val scope = rememberCoroutineScope()
     val context = LocalContext.current
     var version by remember { mutableIntStateOf(0) }
+    // 首屏加载态：`initialize()` 结束前屏上不该出现「暂无日志」（详见 [buildData] 的 loading 参数）。
+    // 这个完成信号只有拉起初始化的这一处知道——provider 的 snapshot 里没有 loading 位
+    // （`initialize()` 走 `load(refreshing = false)`，`refreshing` 全程不亮）。
+    var initialLoadDone by remember(provider) { mutableStateOf(false) }
 
     // 订阅 provider：刷新进度（refreshing）与新增日志都要立刻反映到界面。
     DisposableEffect(provider) {
@@ -70,8 +75,13 @@ fun SettingsHolidayAdvancedHost(
         onDispose { provider.removeListener(listener) }
     }
     // 深链直接进本页时 provider 可能还没加载过；幂等，不会多打一次网络。
+    // `finally` 保证异常路径也会摘掉加载态（provider 约定不外抛，但别把界面吊在半空）。
     LaunchedEffect(provider) {
-        withContext(Dispatchers.IO) { provider.initialize() }
+        try {
+            withContext(Dispatchers.IO) { provider.initialize() }
+        } finally {
+            initialLoadDone = true
+        }
     }
     // 读取 version 建立快照订阅（值本身不参与渲染）。
     @Suppress("UNUSED_EXPRESSION")
@@ -115,6 +125,7 @@ fun SettingsHolidayAdvancedHost(
     val data = SettingsHolidayAdvancedPage.buildData(
         logs = provider.logs,
         refreshing = snapshot.refreshing,
+        loading = !initialLoadDone,
     )
 
     SettingsPageScreen(
