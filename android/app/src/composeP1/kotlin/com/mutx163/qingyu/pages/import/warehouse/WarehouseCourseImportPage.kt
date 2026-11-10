@@ -19,7 +19,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -28,6 +28,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -41,6 +42,7 @@ import com.mutx163.qingyu.components.QingyuPageTheme
 import com.mutx163.qingyu.components.QingyuSectionTitle
 import com.mutx163.qingyu.components.QingyuWeightDelta
 import com.mutx163.qingyu.components.shiftWeight
+import com.mutx163.qingyu.theme.QingyuIconColors
 import top.yukonga.miuix.kmp.basic.Button
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
 import top.yukonga.miuix.kmp.basic.Icon
@@ -51,7 +53,9 @@ import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.basic.SearchCleanup
 import top.yukonga.miuix.kmp.icon.extended.ChevronForward
 import top.yukonga.miuix.kmp.icon.extended.More
+import top.yukonga.miuix.kmp.icon.extended.Play
 import top.yukonga.miuix.kmp.icon.extended.Search
+import top.yukonga.miuix.kmp.preference.ArrowPreference
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 /**
@@ -184,51 +188,24 @@ fun WarehouseCourseImportPage(
             }
 
             // 快捷导入卡片
+            //
+            // 2026-11-10 用户拍板 B 方案：行本体交官方 `ArrowPreference`（与入口页四种导入方式
+            // 同一个官方行），只在行首槽位放一块导入族的软底徽标。迁移期那版是自拼 Row +
+            // 「emoji ⚡ + 主题色正圆」——emoji 不可跟主题着色、正圆是全站唯一一颗、
+            // 主题蓝还和「教务系统导入」的教务绿打架（三处都不协调，用户实报「不好看」）。
             if (!isSearching && hasQuickImportMacro) {
                 item(key = "quick_import") {
                     QingyuCard(
                         modifier = Modifier
                             .fillMaxWidth()
                             .padding(horizontal = QingyuPageCardMargin, vertical = 4.dp),
-                        onClick = onQuickImportClick,
                     ) {
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(16.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                        ) {
-                            Box(
-                                modifier = Modifier
-                                    .size(36.dp)
-                                    .clip(CircleShape)
-                                    .background(MiuixTheme.colorScheme.primary.copy(alpha = 0.12f)),
-                                contentAlignment = Alignment.Center,
-                            ) {
-                                Text(
-                                    text = "⚡",
-                                    style = MiuixTheme.textStyles.title4,
-                                )
-                            }
-                            Spacer(modifier = Modifier.width(12.dp))
-                            Column(modifier = Modifier.weight(1f)) {
-                                Text(
-                                    text = WarehouseStrings.quickImportAction.text,
-                                    style = MiuixTheme.textStyles.body1.shiftWeight(QingyuWeightDelta.SEMIBOLD),
-                                )
-                                Spacer(modifier = Modifier.height(2.dp))
-                                Text(
-                                    text = WarehouseStrings.selectQuickImportTitle.text,
-                                    style = MiuixTheme.textStyles.footnote1,
-                                    color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-                                )
-                            }
-                            Icon(
-                                imageVector = MiuixIcons.ChevronForward,
-                                contentDescription = null,
-                                tint = MiuixTheme.colorScheme.onSurfaceVariantActions,
-                            )
-                        }
+                        ArrowPreference(
+                            title = WarehouseStrings.quickImportAction.text,
+                            summary = WarehouseStrings.quickImportRowSubtitle.text,
+                            startAction = { QuickImportIconBadge() },
+                            onClick = onQuickImportClick,
+                        )
                     }
                 }
             }
@@ -346,6 +323,39 @@ fun WarehouseCourseImportPage(
                 }
             }
         }
+    }
+}
+
+/**
+ * 快捷导入行的图标徽标（2026-11-10 用户拍板 B 方案）。
+ *
+ * 为什么是这个形态：
+ * - **位置**：发布版这颗入口是顶栏一颗纯图标动作（`Icons.flash_on_rounded`，
+ *   `warehouse_course_import_screen.dart:547-551`），页内并不存在这张卡；迁移期把它
+ *   改成页内行是可用的增强，但当时画成了「emoji ⚡ + 主题色正圆」，全站只此一颗。
+ * - **形状/材质**：36dp / 圆角 12 / 12% 淡底 + 18dp 同色矢量图标，与导入入口页四种方式、
+ *   首页八宫格瓷贴同一族（emoji 是系统彩字，既不可跟主题着色，也会随系统字体换字形）。
+ * - **配色**：教务绿 `QingyuIconColors.GREEN`（与入口页「教务系统导入」那一行的色槽呼应），
+ *   不再是主题蓝——原来「黄 emoji 压在蓝底上」是撞色。
+ * - **字形**：官方图标集没有闪电（`miuix-icons` 全表无 Flash/Bolt/Zap），
+ *   回放语义取官方 `Play`。
+ */
+@Composable
+private fun QuickImportIconBadge() {
+    val accent = Color(QingyuIconColors.GREEN)
+    Box(
+        modifier = Modifier
+            .size(36.dp)
+            .clip(RoundedCornerShape(12.dp))
+            .background(accent.copy(alpha = 0.12f)),
+        contentAlignment = Alignment.Center,
+    ) {
+        Icon(
+            imageVector = MiuixIcons.Play,
+            contentDescription = null,
+            tint = accent,
+            modifier = Modifier.size(18.dp),
+        )
     }
 }
 

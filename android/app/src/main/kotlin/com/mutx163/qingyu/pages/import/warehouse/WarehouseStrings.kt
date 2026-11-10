@@ -194,6 +194,13 @@ object WarehouseStrings {
     val quickImportPlaybackStepProgress = WarehouseArbText("quickImportPlaybackStepProgress", "步骤 {current} / {total}")
     val quickImportPlayingTitle = WarehouseArbText("quickImportPlayingTitle", "自动导入中……")
     val quickImportRetryAction = WarehouseArbText("quickImportRetryAction", "重试")
+    /**
+     * 快捷导入行的副标题（2026-11-10 用户拍板 B 方案）。
+     *
+     * 原来这一行借的是 `selectQuickImportTitle`（「选择快捷导入」）——那是多宏时
+     * 选择弹层的标题，摆在行里读着像一句提示，不像功能说明。
+     */
+    val quickImportRowSubtitle = WarehouseArbText("quickImportRowSubtitle", "回放已录制的导入脚本")
     val quickImportTitle = WarehouseArbText("quickImportTitle", "快捷导入 - {name}")
     val quickImportTooltip = WarehouseArbText("quickImportTooltip", "快捷导入")
     val quickImportUnknownError = WarehouseArbText("quickImportUnknownError", "发生未知错误")
@@ -297,7 +304,22 @@ object WarehouseStrings {
     val warehouseSchoolTapHint = WarehouseArbText("warehouseSchoolTapHint", "点击进入，选择适配器导入")
     /** 详情页「脚本状态」失败态：脚本正文拉不回来。 */
     val warehouseScriptLoadFailed = WarehouseArbText("warehouseScriptLoadFailed", "无法读取适配器脚本")
+
+    /**
+     * 脚本加载失败 + **试过哪些源**（2026-11-10 用户报「失败后不知道选了哪个」）。
+     *
+     * `{sources}` 由 [warehouseScriptLoadFailedMessage] 拼：渠道名 + 真试过的镜像条数。
+     */
+    val warehouseScriptLoadFailedWithSources = WarehouseArbText(
+        "warehouseScriptLoadFailedWithSources",
+        "无法读取适配器脚本：已尝试 {sources}",
+    )
     val warehouseSessionAlreadyActive = WarehouseArbText("warehouseSessionAlreadyActive", "教务仍处于登录状态，可直接导入")
+
+    /** 失败提示里的「源」名（GitCode 渠道 / GitHub 直连），与「+ N 个镜像」拼成一句。 */
+    val warehouseSourceGitCode = WarehouseArbText("warehouseSourceGitCode", "GitCode 渠道")
+    val warehouseSourceGitHubRaw = WarehouseArbText("warehouseSourceGitHubRaw", "GitHub 直连")
+    val warehouseSourceWithMirrors = WarehouseArbText("warehouseSourceWithMirrors", "{source} + {mirrorCount} 个镜像")
     val webAddressHint = WarehouseArbText("webAddressHint", "输入网页地址")
     val webLoginImport = WarehouseArbText("webLoginImport", "网页登录导入")
     val weekListSeparator = WarehouseArbText("weekListSeparator", "、")
@@ -472,6 +494,7 @@ object WarehouseStrings {
         quickImportPlaybackStepProgress,
         quickImportPlayingTitle,
         quickImportRetryAction,
+        quickImportRowSubtitle,
         quickImportTitle,
         quickImportTooltip,
         quickImportUnknownError,
@@ -545,7 +568,11 @@ object WarehouseStrings {
         warehouseRootLoadFailedTitle,
         warehouseSchoolTapHint,
         warehouseScriptLoadFailed,
+        warehouseScriptLoadFailedWithSources,
         warehouseSessionAlreadyActive,
+        warehouseSourceGitCode,
+        warehouseSourceGitHubRaw,
+        warehouseSourceWithMirrors,
         webAddressHint,
         webLoginImport,
         weekListSeparator,
