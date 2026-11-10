@@ -1163,6 +1163,17 @@
   "noLargeBreakRulesHint": "未设置大课间规则，将全部使用小课间时长",
   "deleteRuleTooltip": "删除规则",
   "generateAction": "生成",
+  "quickGeneratePreviewSummary": "共 {sections} 节 · 最后一节 {endTime} 结束",
+  "@quickGeneratePreviewSummary": {
+    "placeholders": {
+      "sections": {
+        "type": "int"
+      },
+      "endTime": {
+        "type": "String"
+      }
+    }
+  },
   "liveActivitySettingsTitle": "实时活动设置",
   "liveActivityEnableSubtitle": "在锁屏和状态栏胶囊中实时展示课程信息与倒计时",
   "liveIslandStyleTitle": "实时活动样式",
@@ -3919,6 +3930,14 @@
   },
   "serviceMsgSectionStartBeforePreviousEnd": "第 {sectionNumber} 节开始时间不能早于上一节的结束时间",
   "@serviceMsgSectionStartBeforePreviousEnd": {
+    "placeholders": {
+      "sectionNumber": {
+        "type": "int"
+      }
+    }
+  },
+  "serviceMsgSectionTimeOverlap": "第 {sectionNumber} 节时间与上一节重叠，保存前请调整",
+  "@serviceMsgSectionTimeOverlap": {
     "placeholders": {
       "sectionNumber": {
         "type": "int"

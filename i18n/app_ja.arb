@@ -1023,6 +1023,17 @@
   "noLargeBreakRulesHint": "大休憩ルール未設定，全て小休憩時間が使用されます",
   "deleteRuleTooltip": "ルール削除",
   "generateAction": "生成",
+  "quickGeneratePreviewSummary": "全 {sections} 限 · 最終限は {endTime} に終了",
+  "@quickGeneratePreviewSummary": {
+    "placeholders": {
+      "sections": {
+        "type": "int"
+      },
+      "endTime": {
+        "type": "String"
+      }
+    }
+  },
   "liveActivitySettingsTitle": "ライブアクティビティ設定",
   "liveActivityEnableSubtitle": "ロック画面とステータスバーのカプセルに授業情報とカウントダウンを表示",
   "liveIslandStyleTitle": "ライブアクティビティのスタイル",
@@ -3552,6 +3563,14 @@
   },
   "serviceMsgSectionStartBeforePreviousEnd": "Section {sectionNumber} start time cannot be earlier than the previous section end time",
   "@serviceMsgSectionStartBeforePreviousEnd": {
+    "placeholders": {
+      "sectionNumber": {
+        "type": "int"
+      }
+    }
+  },
+  "serviceMsgSectionTimeOverlap": "第 {sectionNumber} 限目の時間が前の限目と重なっています。保存前に調整してください",
+  "@serviceMsgSectionTimeOverlap": {
     "placeholders": {
       "sectionNumber": {
         "type": "int"

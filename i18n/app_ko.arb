@@ -1023,6 +1023,17 @@
   "noLargeBreakRulesHint": "대휴식 규칙 미설정. 모두 소휴식 시간이 사용됩니다",
   "deleteRuleTooltip": "규칙 삭제",
   "generateAction": "생성",
+  "quickGeneratePreviewSummary": "총 {sections}교시 · 마지막 교시 {endTime} 종료",
+  "@quickGeneratePreviewSummary": {
+    "placeholders": {
+      "sections": {
+        "type": "int"
+      },
+      "endTime": {
+        "type": "String"
+      }
+    }
+  },
   "liveActivitySettingsTitle": "라이브 액티비티 설정",
   "liveActivityEnableSubtitle": "잠금 화면과 상태 표시줄 캡슐에 수업 정보와 카운트다운을 표시",
   "liveIslandStyleTitle": "라이브 액티비티 스타일",
@@ -3600,6 +3611,14 @@
   },
   "serviceMsgSectionStartBeforePreviousEnd": "Section {sectionNumber} start time cannot be earlier than the previous section end time",
   "@serviceMsgSectionStartBeforePreviousEnd": {
+    "placeholders": {
+      "sectionNumber": {
+        "type": "int"
+      }
+    }
+  },
+  "serviceMsgSectionTimeOverlap": "{sectionNumber}교시 시간이 이전 교시와 겹칩니다. 저장 전에 조정하세요",
+  "@serviceMsgSectionTimeOverlap": {
     "placeholders": {
       "sectionNumber": {
         "type": "int"

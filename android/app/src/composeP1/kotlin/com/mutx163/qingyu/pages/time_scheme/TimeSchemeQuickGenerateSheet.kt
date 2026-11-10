@@ -2,6 +2,7 @@ package com.mutx163.qingyu.pages.time_scheme
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -20,6 +21,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
+import com.mutx163.qingyu.components.QingyuCard
+import com.mutx163.qingyu.components.QingyuCardDefaults
 import com.mutx163.qingyu.components.QingyuSheet
 import com.mutx163.qingyu.components.QingyuWeightDelta
 import com.mutx163.qingyu.components.rememberCappedSheetHeight
@@ -32,7 +35,6 @@ import top.yukonga.miuix.kmp.basic.IconButton
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.NumberPicker
 import top.yukonga.miuix.kmp.basic.Text
-import top.yukonga.miuix.kmp.basic.TextButton
 import top.yukonga.miuix.kmp.basic.TextField
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.Delete
@@ -51,8 +53,9 @@ import top.yukonga.miuix.kmp.utils.scrollEndHaptic
  * | 五个数字输入框（上午/下午/晚上节数、单节课时长、小课间时长）`:164-229`、`_buildNumberField` `:278-284` | [NumberField]：miuix `TextField` + 数字键盘（**不改成滚轮**：Dart 就是文本输入框，滚轮会把 6 个字段摊成 6 个 180dp 高的滚轮） |
  * | 三个起始时间 `HyperosPickerField` `:169-219`、`_buildTimeTile` `:286-299` + `showMiuixTimePickerSheet` | [TimePickerField]（行样式）+ 本弹层内**第二页**「时 0-23 / 分 0-59 步长 5」两列官方 `NumberPicker` |
  * | 「大课间规则」标题 + 增删行 `:231-247`、`_buildBreakOverrideRows` `:301-347`、`_addBreakOverride` `:430-436` | 同一套：每行「第几节后 / 休息时长 分钟 / 删除」，空态给 `noLargeBreakRulesHint` |
- * | 取消 / 生成 两个按钮 `:253-272` | 同左（官方 `TextButton` + `Button`） |
- * | `_submit` 的两条校验 `:365-412` | [submit]：先「数字没填全」→ `fillNumbersValidationMessage`；再逐条查大课间规则 → `breakOverrideInvalidMessage`。**就地显示在字段下方**（`MiuixTheme.colorScheme.error`），不弹系统 Toast（弹层里 Toast 会被面板挡视线） |
+ * | 取消 / 生成 两个按钮 `:253-272` | 两颗**实心块钮**（secondary / primary）——2026-11-10 起与对话框动作同一口径，不再「文字钮 + 实心钮」混搭 |
+ * | （无）| **2026-11-10 重做新增**：四张卡分组（上午 / 下午 / 晚上 / 课堂节奏+大课间）、卡上方的实时预览 `quickGeneratePreviewSummary`、错误挂在出错的那张卡里 |
+ * | `_submit` 的两条校验 `:365-412` | [submit]：先「数字没填全」→ `fillNumbersValidationMessage`；再逐条查大课间规则 → `breakOverrideInvalidMessage`。**就地显示在出错的那张卡内**（`MiuixTheme.colorScheme.error`），不弹系统 Toast（弹层里 Toast 会被面板挡视线） |
  * | `_pickTime` 里 `showMiuixTimePickerSheet` 的 `initialTime = 当前值` | 进第二页时按当前 `HH:mm` 定位两列滚轮 |
  *
  * ## 为什么时间选择不叠第二个 Overlay
@@ -71,9 +74,18 @@ import top.yukonga.miuix.kmp.utils.scrollEndHaptic
  *
  * ## 两条 Dart 校验分支：**保留，而且真的可达**
  *
- * 用 `TextField` 就意味着能输空、能输非数字；大课间「新增一行」的默认值 `第几节后 = 0`
- * （Dart `:433`）本身就非法。所以 `fillNumbersValidationMessage` 与 `breakOverrideInvalidMessage`
- * 这两条提示在 Compose 侧**不是死代码**——只是呈现方式从 toast 换成字段下方就地提示。
+ * 用 `TextField` 就意味着能输空、能输非数字；大课间「新增一行」在 Dart 里的默认值是
+ * `第几节后 = 0`（`:433`）——那个值本身非法。所以 `fillNumbersValidationMessage` 与
+ * `breakOverrideInvalidMessage` 这两条提示在 Compose 侧**不是死代码**。
+ *
+ * 2026-11-10 重做后：错误**挂到出错的那张卡里**（[QuickErrorSlot]），并且大课间新行
+ * 默认改成「最后一节之后 + 20 分钟」（一个真能用的值，不再逼用户先改错再报错）。
+ *
+ * ## 重做说明（2026-11-10，用户报「丑、不实用」）
+ *
+ * 发布版这一屏就是「9 个控件平铺 + 底部一句通用校验」，没有可抄的更好形态，所以按本仓
+ * 套件规格重排：控件分组进卡、加一行**实时预览**（改节数/时间的同时就能看到「共 N 节 ·
+ * 最后一节几点结束」）、错误就地指格、两个按钮同形制。字段与语义一个没少，只改信息层级。
  *
  * ## 滚动说明（给后来者）
  *
@@ -133,6 +145,8 @@ fun TimeSchemeQuickGenerateSheet(
     }
     // 本地校验提示（就地显示）：null = 没有错。
     var validationError by remember(visible) { mutableStateOf<String?>(null) }
+    // 提示挂在**哪一张卡**上（2026-11-10 重做：原来只有底部一句通用话，用户不知道是哪一格错）。
+    var errorSlot by remember(visible) { mutableStateOf<QuickErrorSlot?>(null) }
 
     // null = 表单页；非 null = 「时/分」滚轮页，正在改这一个字段。
     var timeField by remember(visible) { mutableStateOf<QuickTimeField?>(null) }
@@ -174,14 +188,22 @@ fun TimeSchemeQuickGenerateSheet(
     /** Dart `_submit` `:365-412`：先查五个数字，再逐条查大课间规则。 */
     fun submit() {
         validationError = null
+        errorSlot = null
         val morning = morningCount.trim().toIntOrNull()
         val afternoon = afternoonCount.trim().toIntOrNull()
         val evening = eveningCount.trim().toIntOrNull()
         val duration = classDuration.trim().toIntOrNull()
         val breakMinutes = breakDuration.trim().toIntOrNull()
-        if (morning == null || afternoon == null || evening == null ||
-            duration == null || breakMinutes == null
-        ) {
+        // 逐格判：先定位**第一格**没填好的，把提示挂在它所在的那张卡上。
+        val firstBadSlot = when {
+            morning == null -> QuickErrorSlot.MORNING
+            afternoon == null -> QuickErrorSlot.AFTERNOON
+            evening == null -> QuickErrorSlot.EVENING
+            duration == null || breakMinutes == null -> QuickErrorSlot.RHYTHM
+            else -> null
+        }
+        if (firstBadSlot != null) {
+            errorSlot = firstBadSlot
             validationError = TimeSchemeManagementStrings.fillNumbersValidationMessage.text
             return
         }
@@ -193,6 +215,7 @@ fun TimeSchemeQuickGenerateSheet(
             // Dart 同口径：解析失败（空/非数字）与越界（节次 < 1、时长 < 0）一并阻断，
             // 不再像 2026-10-20 之前那样 `.where(...)` 把填错的规则一声不吭滤掉。
             if (afterSection == null || afterSection < 1 || minutes == null || minutes < 0) {
+                errorSlot = QuickErrorSlot.BREAK_RULES
                 validationError = TimeSchemeManagementStrings.breakOverrideInvalidMessage.text
                 return
             }
@@ -201,17 +224,56 @@ fun TimeSchemeQuickGenerateSheet(
 
         onConfirm(
             TimeSchemeQuickGeneratePreset(
-                morningCount = morning,
-                afternoonCount = afternoon,
-                eveningCount = evening,
+                morningCount = morning!!,
+                afternoonCount = afternoon!!,
+                eveningCount = evening!!,
                 morningStartTime = morningStart,
                 afternoonStartTime = afternoonStart,
                 eveningStartTime = eveningStart,
-                classDurationMinutes = duration,
-                breakDurationMinutes = breakMinutes,
+                classDurationMinutes = duration!!,
+                breakDurationMinutes = breakMinutes!!,
                 breakOverrideRules = rules,
             ),
         )
+    }
+
+    /**
+     * 当前输入能不能拼成一个合法 preset：能就返回它（供实时预览用），不能返回 null。
+     *
+     * 与 [submit] 的判据同源但**不产生错误提示**——预览行在参数不全时单纯不显示。
+     */
+    fun parsedPresetOrNull(): TimeSchemeQuickGeneratePreset? {
+        val morning = morningCount.trim().toIntOrNull() ?: return null
+        val afternoon = afternoonCount.trim().toIntOrNull() ?: return null
+        val evening = eveningCount.trim().toIntOrNull() ?: return null
+        val duration = classDuration.trim().toIntOrNull() ?: return null
+        val breakMinutes = breakDuration.trim().toIntOrNull() ?: return null
+        val rules = mutableListOf<BreakOverrideRule>()
+        for (draft in breakRules) {
+            val afterSection = draft.afterSection.trim().toIntOrNull() ?: return null
+            val minutes = draft.duration.trim().toIntOrNull() ?: return null
+            if (afterSection < 1 || minutes < 0) return null
+            rules += BreakOverrideRule(afterSection = afterSection, breakDurationMinutes = minutes)
+        }
+        return TimeSchemeQuickGeneratePreset(
+            morningCount = morning,
+            afternoonCount = afternoon,
+            eveningCount = evening,
+            morningStartTime = morningStart,
+            afternoonStartTime = afternoonStart,
+            eveningStartTime = eveningStart,
+            classDurationMinutes = duration,
+            breakDurationMinutes = breakMinutes,
+            breakOverrideRules = rules,
+        )
+    }
+
+    /** 现有三个时段的总节数（新增规则时用来算「最后一节之后」）。全空时退回 1。 */
+    fun totalSectionCount(): Int {
+        val morning = morningCount.trim().toIntOrNull() ?: 0
+        val afternoon = afternoonCount.trim().toIntOrNull() ?: 0
+        val evening = eveningCount.trim().toIntOrNull() ?: 0
+        return (morning + afternoon + evening).coerceAtLeast(1)
     }
 
     val title = timeField?.let { timeFieldLabel(it) }
@@ -254,11 +316,15 @@ fun TimeSchemeQuickGenerateSheet(
                     breakRules = breakRules.toMutableList().also { it.removeAt(index) }
                 },
                 onAddBreakRule = {
-                    // Dart `_addBreakOverride` `:430-436`：新行默认「第几节后 = 0、20 分钟」，
-                    // 0 本身非法 ⇒ 用户不改就点生成会被上面的校验挡住（这是 Dart 的原始行为）。
-                    breakRules = breakRules + QuickBreakRuleDraft("0", "20")
+                    // 2026-11-10 重做：新行默认「**最后一节之后** + 20 分钟」。
+                    // Dart `_addBreakOverride` 给的是「第几节后 = 0」——0 本身非法，
+                    // 用户不改就点生成必被挡；默认值改成一个真能用的。
+                    breakRules = breakRules +
+                        QuickBreakRuleDraft(totalSectionCount().toString(), "20")
                 },
                 validationError = validationError,
+                errorSlot = errorSlot,
+                previewSummary = parsedPresetOrNull()?.previewSummary(),
                 onCancel = onDismiss,
                 onConfirm = ::submit,
             )
@@ -278,13 +344,6 @@ fun TimeSchemeQuickGenerateSheet(
     }
 }
 
-/**
- * 表单页：五个数字 + 三个起始时间 + 大课间规则 + 取消/生成。
- *
- * 横向不留统一内边距，是为了让「输入框里的字」与「时间行/规则行的标题」一起落在同一条 16dp 竖线上：
- * `TextField` 自带 16dp 内边距、`BasicComponent` 默认也自带 16dp，两边都不额外加外层 padding。
- * 需要左右留白的（分区标题、按钮行、错误提示）各自补。
- */
 @Composable
 private fun QuickGenerateForm(
     morningCount: String,
@@ -308,27 +367,27 @@ private fun QuickGenerateForm(
     onRemoveBreakRule: (index: Int) -> Unit,
     onAddBreakRule: () -> Unit,
     validationError: String?,
+    errorSlot: QuickErrorSlot?,
+    previewSummary: String?,
     onCancel: () -> Unit,
     onConfirm: () -> Unit,
 ) {
     Column(modifier = Modifier.fillMaxWidth()) {
-        // 弹层内部滚动（见文件头「滚动说明」）：字段区最多吃 380dp 高度，超出在内部滚，
-        // 「取消/生成」留在外面固定。
-        // `weight(fill = false)`（2026-11-02 弹层债 #12）：键盘弹起时 sheet 给内容的可用
-        // 高度变小（sheet 外壳自己已有 imePadding，问题只在内容怎么分高度）——字段区
-        // 先收缩、转内部滚动，保证按钮行始终在屏内。不用 imePadding 配方：那会让整个
-        // 内容列顶到键盘上方，矮屏上按钮照样被挤出去。
+        // 弹层内部滚动（见文件头「滚动说明」）：四张卡最多吃 420dp，超出在内部滚，
+        // 「取消 / 生成」与预览行留在外面固定。
+        // `weight(fill = false)`（2026-11-02 弹层债 #12）：键盘弹起时字段区先收缩、
+        // 转内部滚动，按钮行始终在屏内。
         LazyColumn(
             modifier = Modifier
                 .weight(1f, fill = false)
                 .fillMaxWidth()
-                .heightIn(max = rememberCappedSheetHeight(380.dp))
+                .heightIn(max = rememberCappedSheetHeight(420.dp))
                 .scrollEndHaptic()
                 .overScrollVertical(),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            item(key = "fields") {
-                Column(modifier = Modifier.fillMaxWidth()) {
-                    // ── 上午 ──
+            item(key = "morning") {
+                QuickSectionCard(error = validationError.takeIf { errorSlot == QuickErrorSlot.MORNING }) {
                     NumberField(
                         value = morningCount,
                         onValueChange = onMorningCountChange,
@@ -340,8 +399,10 @@ private fun QuickGenerateForm(
                         value = morningStart,
                         onClick = onPickMorningStart,
                     )
-                    Spacer(Modifier.height(12.dp))
-                    // ── 下午 ──
+                }
+            }
+            item(key = "afternoon") {
+                QuickSectionCard(error = validationError.takeIf { errorSlot == QuickErrorSlot.AFTERNOON }) {
                     NumberField(
                         value = afternoonCount,
                         onValueChange = onAfternoonCountChange,
@@ -353,8 +414,10 @@ private fun QuickGenerateForm(
                         value = afternoonStart,
                         onClick = onPickAfternoonStart,
                     )
-                    Spacer(Modifier.height(12.dp))
-                    // ── 晚上 ──
+                }
+            }
+            item(key = "evening") {
+                QuickSectionCard(error = validationError.takeIf { errorSlot == QuickErrorSlot.EVENING }) {
                     NumberField(
                         value = eveningCount,
                         onValueChange = onEveningCountChange,
@@ -366,8 +429,10 @@ private fun QuickGenerateForm(
                         value = eveningStart,
                         onClick = onPickEveningStart,
                     )
-                    Spacer(Modifier.height(12.dp))
-                    // ── 时长 ──
+                }
+            }
+            item(key = "rhythm") {
+                QuickSectionCard(error = validationError.takeIf { errorSlot == QuickErrorSlot.RHYTHM }) {
                     NumberField(
                         value = classDuration,
                         onValueChange = onClassDurationChange,
@@ -379,13 +444,13 @@ private fun QuickGenerateForm(
                         onValueChange = onBreakDurationChange,
                         label = TimeSchemeManagementStrings.smallBreakDurationMinutesLabel.text,
                     )
-                    Spacer(Modifier.height(12.dp))
-
-                    // ── 大课间规则（Dart `:231-247`）──
+                }
+            }
+            item(key = "breakRules") {
+                QuickSectionCard(error = validationError.takeIf { errorSlot == QuickErrorSlot.BREAK_RULES }) {
                     Text(
                         text = TimeSchemeManagementStrings.largeBreakRulesTitle.text,
                         style = MiuixTheme.textStyles.main,
-                        modifier = Modifier.padding(horizontal = 16.dp),
                     )
                     Spacer(Modifier.height(8.dp))
                     if (breakRules.isEmpty()) {
@@ -394,7 +459,6 @@ private fun QuickGenerateForm(
                             text = TimeSchemeManagementStrings.noLargeBreakRulesHint.text,
                             style = MiuixTheme.textStyles.footnote1,
                             color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-                            modifier = Modifier.padding(horizontal = 16.dp),
                         )
                     } else {
                         for ((index, draft) in breakRules.withIndex()) {
@@ -409,43 +473,42 @@ private fun QuickGenerateForm(
                         }
                     }
                     Spacer(Modifier.height(8.dp))
-                    Row(modifier = Modifier.padding(horizontal = 16.dp)) {
-                        Button(
-                            onClick = onAddBreakRule,
-                            colors = ButtonDefaults.buttonColors(),
-                        ) {
-                            Text(text = TimeSchemeManagementStrings.addBreakRuleAction.text)
-                        }
-                    }
-                    Spacer(Modifier.height(8.dp))
+                    // 行内「新增一行」的文字行（原来是整颗实心按钮，压在大课间卡底下很重）。
+                    BasicComponent(
+                        title = TimeSchemeManagementStrings.addBreakRuleAction.text,
+                        onClick = onAddBreakRule,
+                    )
                 }
             }
         }
 
-        // ── 校验提示：就地显示（见文件头）──
-        if (validationError != null) {
-            Spacer(Modifier.height(8.dp))
+        // 实时预览：参数不全时整行不画（错误提示由上面的卡承担，不在这里重复一句）。
+        if (!previewSummary.isNullOrBlank()) {
+            Spacer(Modifier.height(12.dp))
             Text(
-                text = validationError,
+                text = previewSummary,
                 style = MiuixTheme.textStyles.footnote1,
-                color = MiuixTheme.colorScheme.error,
+                color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
                 modifier = Modifier.padding(horizontal = 16.dp),
             )
         }
 
         Spacer(Modifier.height(20.dp))
-        // Dart `:253-272`：左取消、右生成，平分宽度。
+        // 取消 / 生成两颗**实心块钮**（secondary / primary）：与对话框动作同一口径，
+        // 不再一轻一重（原来取消是文字钮）。
         Row(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(horizontal = 16.dp),
             horizontalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            TextButton(
+            Button(
                 modifier = Modifier.weight(1f),
-                text = TimeSchemeManagementStrings.cancelAction.text,
                 onClick = onCancel,
-            )
+                colors = ButtonDefaults.buttonColors(),
+            ) {
+                Text(text = TimeSchemeManagementStrings.cancelAction.text)
+            }
             Button(
                 modifier = Modifier.weight(1f),
                 onClick = onConfirm,
@@ -456,6 +519,37 @@ private fun QuickGenerateForm(
         }
     }
 }
+
+/**
+ * 一张分组卡：里面是这一组的行，[error] 非 null 时在卡内底部挂一行红字。
+ *
+ * 为什么错误挂在卡内而不是底部：卡本身就在说「这几个字段是一组」，
+ * 提示落在同一张卡里，用户不用回读整张表单找是哪一格。
+ */
+@Composable
+private fun QuickSectionCard(
+    error: String?,
+    content: @Composable ColumnScope.() -> Unit,
+) {
+    QingyuCard(
+        modifier = Modifier.fillMaxWidth(),
+        insideMargin = QingyuCardDefaults.ContentInsideMargin,
+    ) {
+        Column(modifier = Modifier.fillMaxWidth(), content = content)
+        if (!error.isNullOrBlank()) {
+            Spacer(Modifier.height(8.dp))
+            Text(
+                text = error,
+                style = MiuixTheme.textStyles.footnote1,
+                color = MiuixTheme.colorScheme.error,
+            )
+        }
+    }
+}
+
+/** 校验错误挂在哪张卡上（重做新增；见 [QuickGenerateForm] KDoc 第 3 条）。 */
+private enum class QuickErrorSlot { MORNING, AFTERNOON, EVENING, RHYTHM, BREAK_RULES }
+
 
 /**
  * 时间滚轮页：「时 0-23」「分 0-59 步长 5」两列官方 `NumberPicker` + 取消 / 确认。
@@ -513,11 +607,14 @@ private fun QuickGenerateTimePickerPage(
             horizontalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             // 取消 = 只退回表单页，**不关整个弹层**（用户填了一半不该被清掉）。
-            TextButton(
+            // 两颗都是实心块钮（secondary / primary），与表单页、对话框动作同一口径。
+            Button(
                 modifier = Modifier.weight(1f),
-                text = TimeSchemeManagementStrings.cancelAction.text,
                 onClick = onCancel,
-            )
+                colors = ButtonDefaults.buttonColors(),
+            ) {
+                Text(text = TimeSchemeManagementStrings.cancelAction.text)
+            }
             Button(
                 modifier = Modifier.weight(1f),
                 onClick = onConfirm,

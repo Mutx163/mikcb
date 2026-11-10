@@ -1022,6 +1022,17 @@
   "noLargeBreakRulesHint": "未設定大課間規則，將全部使用小課間時長",
   "deleteRuleTooltip": "刪除規則",
   "generateAction": "生成",
+  "quickGeneratePreviewSummary": "共 {sections} 節 · 最後一節 {endTime} 結束",
+  "@quickGeneratePreviewSummary": {
+    "placeholders": {
+      "sections": {
+        "type": "int"
+      },
+      "endTime": {
+        "type": "String"
+      }
+    }
+  },
   "liveActivitySettingsTitle": "即時活動設定",
   "liveActivityEnableSubtitle": "在鎖定畫面與狀態列膠囊中即時顯示課程資訊與倒數",
   "liveIslandStyleTitle": "即時活動樣式",
@@ -3600,6 +3611,14 @@
   },
   "serviceMsgSectionStartBeforePreviousEnd": "Section {sectionNumber} start time cannot be earlier than the previous section end time.",
   "@serviceMsgSectionStartBeforePreviousEnd": {
+    "placeholders": {
+      "sectionNumber": {
+        "type": "int"
+      }
+    }
+  },
+  "serviceMsgSectionTimeOverlap": "第 {sectionNumber} 節時間與上一節重疊，儲存前請調整",
+  "@serviceMsgSectionTimeOverlap": {
     "placeholders": {
       "sectionNumber": {
         "type": "int"

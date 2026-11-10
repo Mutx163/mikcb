@@ -1139,6 +1139,17 @@
   "noLargeBreakRulesHint": "No long break rule has been set. The short break duration will be used everywhere",
   "deleteRuleTooltip": "Delete Rule",
   "generateAction": "Generate",
+  "quickGeneratePreviewSummary": "{sections} sections · last one ends at {endTime}",
+  "@quickGeneratePreviewSummary": {
+    "placeholders": {
+      "sections": {
+        "type": "int"
+      },
+      "endTime": {
+        "type": "String"
+      }
+    }
+  },
   "liveIslandVisualTitle": "Capsule Left Icon",
   "liveExpandedIconSectionTitle": "Expanded Card Large Icon",
   "liveMiuiLabelImageTitle": "Island left icon",
@@ -3857,6 +3868,14 @@
   },
   "serviceMsgSectionStartBeforePreviousEnd": "Section {sectionNumber} start time cannot be earlier than the previous section end time",
   "@serviceMsgSectionStartBeforePreviousEnd": {
+    "placeholders": {
+      "sectionNumber": {
+        "type": "int"
+      }
+    }
+  },
+  "serviceMsgSectionTimeOverlap": "Section {sectionNumber} overlaps the previous section. Adjust it before saving",
+  "@serviceMsgSectionTimeOverlap": {
     "placeholders": {
       "sectionNumber": {
         "type": "int"
