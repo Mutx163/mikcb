@@ -89,8 +89,8 @@ class CloudSyncFeedbackWiringGuardTest {
         // `Box(`，而是 `viewState.isEmpty -> if (errorText != null) { QingyuEmptyState(...) }
         // else { QingyuEmptyState(...) }`。这里钉「分支起点 + 统一组件调用」，**不钉行号、
         // 不钉旧 Box 形态**；意图不变：空态与列表两个状态下「重试出口」都必须可见。
-        val emptyBranchStart = page.indexOf("viewState.isEmpty -> if (")
-        val listBranchStart = page.indexOf("else -> QingyuPageList(")
+        val emptyBranchStart = page.indexOf("viewState.isEmpty -> item(")
+        val listBranchStart = page.indexOf("else -> {", maxOf(emptyBranchStart, 0))
         assertTrue(
             "找不到空态分支 / 列表分支的分界（页面结构变了，守卫要跟着改）。",
             emptyBranchStart >= 0 && listBranchStart > emptyBranchStart,

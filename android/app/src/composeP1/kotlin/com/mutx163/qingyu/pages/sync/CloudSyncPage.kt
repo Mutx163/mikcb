@@ -93,11 +93,10 @@ fun CloudSyncPage(
     val dark = isSystemInDarkTheme()
 
     QingyuPageScaffold(title = viewState.title, onBack = onBack, smallTopBar = true) {
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(innerPadding),
-        ) {
+        // 2026-11-10 顶栏渐变模糊修正：innerPadding 必须交给 QingyuPageList（当 contentPadding 用），
+        // 内容才能滚进顶栏带、模糊采样到真实像素；吃在外层 Column 上会让列表视口整体落在栏下方，
+        // 顶栏带只剩一片纯背景（用户真机日报：云同步页顶栏和其他页不一样）。
+        Column(modifier = Modifier.fillMaxSize()) {
 
             if (viewState.isLoading) {
                 // 档 A（D1 统一）：居中 24dp 裸圈，位置由整页内容区承担。
@@ -106,7 +105,7 @@ fun CloudSyncPage(
             }
 
             QingyuPageList(
-                innerPadding = PaddingValues(0.dp),
+                innerPadding = innerPadding,
                 horizontalPadding = 16.dp,
                 contentPadding = PaddingValues(top = 4.dp, bottom = 28.dp),
                 verticalArrangement = Arrangement.spacedBy(14.dp),

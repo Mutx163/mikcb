@@ -80,57 +80,65 @@ fun CloudBackupListPage(
     val dark = isSystemInDarkTheme()
 
     QingyuPageScaffold(title = viewState.title, onBack = onBack, smallTopBar = true) {
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(innerPadding),
+        // 2026-11-10 顶栏渐变模糊修正：内容统一进 QingyuPageList 并吃 innerPadding，才能滚进顶栏带、
+        // 让模糊采样到真实像素（此前 innerPadding 吃在外层 Column 上，列表视口整体落在栏下方，
+        // 顶栏带只剩一片纯背景 —— 用户真机日报「云同步页顶栏和其他页不一样」）。
+        //
+        // 撤销恢复卡改列表首项：发布版它本来就在列表流里（`cloud_sync_screen.dart` 备份组同区），
+        // 空态 / 加载中同样能看到（不再像旧的列表外常驻条那样挡住顶栏采样）。
+        QingyuPageList(
+            innerPadding = innerPadding,
+            horizontalPadding = 16.dp,
+            contentPadding = PaddingValues(top = 4.dp, bottom = 24.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            // 撤销入口放在列表外：列表为空 / 加载中时也要能撤回上一次恢复。
             if (viewState.canUndoRestore) {
-                CloudRestoreUndoCard(
-                    title = viewState.undoRestoreTitle,
-                    summary = viewState.undoRestoreSummary,
-                    actionLabel = viewState.undoRestoreActionLabel,
-                    onUndo = onUndoRestore,
-                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
-                )
+                item(key = "undo_restore") {
+                    CloudRestoreUndoCard(
+                        title = viewState.undoRestoreTitle,
+                        summary = viewState.undoRestoreSummary,
+                        actionLabel = viewState.undoRestoreActionLabel,
+                        onUndo = onUndoRestore,
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                }
             }
 
             when {
-                viewState.isLoading -> QingyuLoadingCenter()
-
-                viewState.isEmpty -> if (viewState.errorText != null) {
-                    // 拉取失败时换成「为什么空」（断网 / 密码失效），不把失败说成「还没有备份」。
-                    // 2026-11-06 第三轮返工①后的模型口径：errorText **有 errorCode 即透出**、
-                    // 不再按「列表是否为空」过滤——空态与非空列表都要有可见出口。空态分支
-                    // 的出口 = 失败原因 + 显式「重试」（cloudBackupRetryAction）；纯空态
-                    // 仍是静态文字；非空列表的出口见下方错误条窗口。
-                    val error = viewState.errorText
-                    QingyuEmptyState(
-                        icon = MiuixIcons.Info,
-                        title = error,
-                        action = {
-                            Button(
-                                onClick = onRetryRefresh,
-                                colors = ButtonDefaults.buttonColors(),
-                            ) {
-                                Text(text = SyncStrings.cloudBackupRetryAction.text)
-                            }
-                        },
-                    )
-                } else {
-                    QingyuEmptyState(
-                        icon = MiuixIcons.Backup,
-                        title = viewState.emptyText,
-                    )
+                viewState.isLoading -> item(key = "loading") {
+                    // 档 A2：块内居中转圈（列表里不能 fillMaxSize）。
+                    QingyuLoadingCenter(fillPage = false)
                 }
 
-                else -> QingyuPageList(
-                    innerPadding = PaddingValues(0.dp),
-                    horizontalPadding = 16.dp,
-                    contentPadding = PaddingValues(top = 4.dp, bottom = 24.dp),
-                    verticalArrangement = Arrangement.spacedBy(12.dp),
-                ) {
+                viewState.isEmpty -> item(key = "empty") {
+                    if (viewState.errorText != null) {
+                        // 拉取失败时换成「为什么空」（断网 / 密码失效），不把失败说成「还没有备份」。
+                        // 2026-11-06 第三轮返工①后的模型口径：errorText **有 errorCode 即透出**、
+                        // 不再按「列表是否为空」过滤——空态与非空列表都要有可见出口。空态分支
+                        // 的出口 = 失败原因 + 显式「重试」（cloudBackupRetryAction）；纯空态
+                        // 仍是静态文字；非空列表的出口见下方错误条窗口。
+                        val error = viewState.errorText
+                        QingyuEmptyState(
+                            icon = MiuixIcons.Info,
+                            title = error,
+                            action = {
+                                Button(
+                                    onClick = onRetryRefresh,
+                                    colors = ButtonDefaults.buttonColors(),
+                                ) {
+                                    Text(text = SyncStrings.cloudBackupRetryAction.text)
+                                }
+                            },
+                        )
+                    } else {
+                        QingyuEmptyState(
+                            icon = MiuixIcons.Backup,
+                            title = viewState.emptyText,
+                        )
+                    }
+                }
+
+                else -> {
                     // 刷新失败可见（2026-11-06 第三轮返工①）：errorText 有值 = 本次刷新
                     // 失败，列表是**上次拉到的缓存**——顶部轻量错误条 + 重试，列表照常
                     // 展示。「有缓存就静默用缓存」被 hy1 推翻：那正是最初审核的 S2 原病
