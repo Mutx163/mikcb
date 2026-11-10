@@ -170,10 +170,14 @@ class AccessibilitySemanticsGuardTest {
 
     @Test
     fun `三处触摸区不小于48dp`() {
+        // 第三条 2026-11-10 从 `pages/live/DisplaySettingsPage.kt` 改指共享色板组件：
+        // 显示设置那 6 颗色点迁进 `QingyuColorChips` 后，页内已没有可点区代码，
+        // 48dp 命中盒由组件里的 `sizeIn(minWidth = 48.dp, ...)` 负责（视觉仍 40dp）。
+        // 判据不变：只要共享件哪天把命中盒缩回去，这条照样红。
         val files = listOf(
             "android/app/src/composeP1/kotlin/com/mutx163/qingyu/pages/exam/AddExamPage.kt",
             "android/app/src/composeP1/kotlin/com/mutx163/qingyu/pages/guide/UserGuidePage.kt",
-            "android/app/src/composeP1/kotlin/com/mutx163/qingyu/pages/live/DisplaySettingsPage.kt",
+            "android/app/src/composeP1/kotlin/com/mutx163/qingyu/components/QingyuColorChips.kt",
         )
         files.forEach { path ->
             val source = read(path)

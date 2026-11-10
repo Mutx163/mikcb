@@ -47,7 +47,13 @@ class FirstRunPrivacyWiringGuardTest {
         )
 
         assertTrue("找不到 FirstRunPrivacyGate( —— 首启闸没接进冷启动路径", "FirstRunPrivacyGate(" in code)
-        assertTrue("找不到 isFirstRunComplete() —— 冷启动没读两枚契约键", "isFirstRunComplete()" in code)
+        // 5-1（评审组 2026-11-10）：只断言「出现过 isFirstRunComplete()」会被
+        // `mutableStateOf(true)` 绕过（守卫仍绿、未同意直接见首页）。这里钉初值原文。
+        assertTrue(
+            "firstRunDone 的初值必须来自 privacyPrefs.isFirstRunComplete()" +
+                "（改成 mutableStateOf(true) 会让未同意用户直接进首页）",
+            Regex("""mutableStateOf\(\s*privacyPrefs\.isFirstRunComplete\(\)\s*\)""").containsMatchIn(code),
+        )
     }
 
     @Test
@@ -65,16 +71,35 @@ class FirstRunPrivacyWiringGuardTest {
     }
 
     @Test
-    fun `通知权限申请必须排在首启门之后`() {
+    fun `通知权限申请只允许在首启门块内一次`() {
         val code = codeOf(source(ACTIVITY))
-        val gateAt = code.indexOf("LaunchedEffect(firstRunDone)")
-        val permissionAt = code.indexOf("requestNotificationPermissionOnce()")
 
-        assertTrue("找不到 LaunchedEffect(firstRunDone)", gateAt >= 0)
-        assertTrue("找不到 requestNotificationPermissionOnce() 调用", permissionAt >= 0)
+        val gateAt = code.indexOf("LaunchedEffect(firstRunDone) {")
+        assertTrue("找不到 LaunchedEffect(firstRunDone) 块", gateAt >= 0)
+        val gateEnd = matchingBrace(code, code.indexOf('{', gateAt))
+
+        // 5-2（评审组 2026-11-10）：只比「首次出现下标」会被两种改法绕过——
+        // postFrameCallback 里再加一次调用（权限框提前弹）、或删掉唯一那次（永不弹）。
+        // 这里钉「全文件恰好 1 个调用点，且落在 LaunchedEffect(firstRunDone) 块内」。
+        val definitionAt = code.indexOf("private fun requestNotificationPermissionOnce(")
+        assertTrue("找不到 requestNotificationPermissionOnce 定义", definitionAt >= 0)
+        val definitionCallAt = code.indexOf("requestNotificationPermissionOnce()", definitionAt)
+        val calls = Regex("""requestNotificationPermissionOnce\s*\(\)""")
+            .findAll(code)
+            .map { it.range.first }
+            .filter { it != definitionCallAt }
+            .toList()
+
+        assertEquals(
+            "requestNotificationPermissionOnce() 全文件只允许 1 个调用点" +
+                "（多一处就会在首启门打开前再弹一次系统权限框）",
+            1,
+            calls.size,
+        )
         assertTrue(
-            "通知权限申请出现在首启门之前（隐私同意前就会弹系统权限框）",
-            permissionAt > gateAt,
+            "通知权限申请不在 LaunchedEffect(firstRunDone) 块内" +
+                "——冷启第一帧就会把系统权限框盖在隐私页前面",
+            calls[0] in gateAt..gateEnd,
         )
     }
 

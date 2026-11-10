@@ -72,7 +72,7 @@ class FlutterAssetsDecouplingGuardTest {
      * 2026-11-10 `licenses/NOTICES.gz` 重生成（去 Flutter 化后首次）：旧快照是 Flutter 时代的
      * Dart 包与引擎第三方（flutter_miuix / skia / angle / icu…），androidx / Compose / 友盟 /
      * ML Kit 一条都没有。新快照由 `tool/license_notices/generate_notices.py` 从
-     * `prodReleaseRuntimeClasspath` 生成，234 条、gzip 38,752 B。哈希换成重生成后的新值：
+     * `prodReleaseRuntimeClasspath` 生成，234 条、gzip 38,837 B。哈希换成重生成后的新值：
      * 再漂移就说明有人换了资产却没重跑生成器（或没同步这里的钉值）。
      */
     private val binaryPins = mapOf(

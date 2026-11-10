@@ -34,14 +34,14 @@ class DataTransferQrImportWiringGuardTest {
     @Test
     fun `扫码字节消费必须用 snapshotFlow 而不是以 inboundBytes 为 key`() {
         assertTrue(
-            "DataTransferHost.kt 没有 snapshotFlow { bridge.inboundBytes }——" +
+            "DataTransferHost.kt 没有 snapshotFlow { TransferShellBridge.inboundBytes }——" +
                 "扫码收齐后清空字段会取消正在解码的协程，预览可能永远不弹",
-            source.contains("snapshotFlow { bridge.inboundBytes }"),
+            source.contains("snapshotFlow { TransferShellBridge.inboundBytes }"),
         )
         assertFalse(
-            "DataTransferHost.kt 仍有 LaunchedEffect(bridge.inboundBytes)——" +
+            "DataTransferHost.kt 仍有 LaunchedEffect(TransferShellBridge.inboundBytes)——" +
                 "key 会在函数内被清空，协程自取消；改用 LaunchedEffect(Unit) + snapshotFlow",
-            source.contains("LaunchedEffect(bridge.inboundBytes)"),
+            source.contains("LaunchedEffect(TransferShellBridge.inboundBytes)"),
         )
     }
 
