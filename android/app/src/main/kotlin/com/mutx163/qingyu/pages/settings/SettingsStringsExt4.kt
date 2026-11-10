@@ -40,6 +40,15 @@ object SettingsStringsExt4 {
     // ------------------------------------------------------------ 底栏的两个视图切换动作（widgets/home_menu_catalog.dart:560-570）
 
     val glassDockTabDay = ArbText("glassDockTabDay", "日课表")
+
+    /**
+     * 开发壳「页面索引」页的展示名（**非 ARB**，空键即不进逐字对拍）。
+     *
+     * 这页是开发壳专属（本体 `ShellPageIndexScreen`，屏幕标题就是硬编码的
+     * `SHELL_PAGE_INDEX_TITLE`），底栏卡片历来也只写中文。这里照抄同一口径，
+     * 供底栏编辑器的候选入口显示，不新开 ARB 键。
+     */
+    val glassDockPageIndexTitle = ArbText(NON_ARB_TEXT, "页面索引")
     val glassDockTabWeek = ArbText("glassDockTabWeek", "周课表")
 
     // ------------------------------------------------------------ 首页入口目录的四个分类名（widgets/home_top_menu.dart:12-20）
