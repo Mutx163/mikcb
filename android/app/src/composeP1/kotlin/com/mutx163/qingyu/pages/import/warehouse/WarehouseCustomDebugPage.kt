@@ -16,12 +16,12 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.mutx163.qingyu.components.QingyuCard
 import com.mutx163.qingyu.components.QingyuCardDefaults
+import com.mutx163.qingyu.components.QingyuEmptyState
 import com.mutx163.qingyu.components.QingyuPageCardMargin
 import com.mutx163.qingyu.components.QingyuPageList
 import com.mutx163.qingyu.components.QingyuPageScaffold
@@ -208,31 +208,19 @@ fun WarehouseCustomDebugPage(
             // 调试记录列表
             if (records.isEmpty() && !isAddingNew && editingRecord == null) {
                 item(key = "empty") {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(vertical = 48.dp),
-                        contentAlignment = Alignment.Center,
-                    ) {
-                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                            Text(
-                                text = WarehouseStrings.noSavedDebugRecords.text,
-                                style = MiuixTheme.textStyles.body1.shiftWeight(QingyuWeightDelta.MEDIUM),
-                                color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-                            )
-                            Spacer(modifier = Modifier.height(6.dp))
-                            Text(
-                                text = WarehouseStrings.noSavedDebugRecordsHint.text,
-                                style = MiuixTheme.textStyles.footnote1,
-                                color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-                            )
-                            Spacer(modifier = Modifier.height(16.dp))
+                    // C20：统一空态组件（发布版 `HyperosEmptyState` 几何：图标 48dp、标题 17sp、
+                    // 说明 14sp、外边距 32/48，不再自拼 Box + 两行不同字阶的 Text）。
+                    QingyuEmptyState(
+                        icon = MiuixIcons.Add,
+                        title = WarehouseStrings.noSavedDebugRecords.text,
+                        description = WarehouseStrings.noSavedDebugRecordsHint.text,
+                        action = {
                             Button(
                                 onClick = { openEditor(null) },
                                 content = { Text(text = WarehouseStrings.addDebugRecordAction.text) },
                             )
-                        }
-                    }
+                        },
+                    )
                 }
             } else {
                 items(records, key = { it.id }) { record ->
@@ -294,9 +282,13 @@ fun WarehouseCustomDebugPage(
                                     onClick = { onDeleteRecord(record.id) },
                                     modifier = Modifier.weight(1f),
                                     content = { Text(text = WarehouseStrings.deleteAction.text) },
+                                    // 发布版这一颗是 `HyperosButtonVariant.destructive`，即
+                                    // `error` 底 + `onError` 字（实心红，`hyperos_controls.dart`
+                                    // 的 HyperosButton destructive 分支）；红字 + 淡红水洗是首页
+                                    // 磨砂面板那条 `HyperosFrostedSheetButton` 的形制，不适用于此。
                                     colors = ButtonDefaults.buttonColors(
-                                        color = MiuixTheme.colorScheme.secondary,
-                                        contentColor = MiuixTheme.colorScheme.error,
+                                        color = MiuixTheme.colorScheme.error,
+                                        contentColor = MiuixTheme.colorScheme.onError,
                                     ),
                                 )
                             }
