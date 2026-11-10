@@ -100,14 +100,14 @@ com/mutx163/qingyu/pages/settings/DockMenuEditors.kt:11
 #   3 按钮内 / 4 按钮内大号 / 5 行首方块位 / 6 局部遮罩 / 7 确定进度）的预览名 7 条；私有实现
 #   `QingyuLoadingIndicator` 不做预览（内部拼装件，经七个入口已可见）。
 #   理由：`@Preview(name = …)` 是 IDE 里的标签，不上屏、不进 l10n；屏上文案仍一律走 ArbText。
-components/QingyuLoading.kt:7
+com/mutx163/qingyu/components/QingyuLoading.kt:7
 # 2026-11-10 全仓预览补齐批（空态共享件，美化二）新增登记：
 # `components/QingyuEmptyState.kt` 0→8 —— 三档预览「1 页面级空态 / 2 行内提示两档 / 3 判墨三档」的
 #   预览名 3 条 + 预览假数据 5 条（标题、说明、主操作、两档提示句）；该文件此前零中文字面量。
 # 理由：`@Preview(name = …)` 与预览假数据都是 **IDE 里的标签/样例**，不上屏、不进 l10n；
 #   屏上文案仍一律走 ArbText。空态守卫「断言 4」同步收窄：豁免范围**只有** `@Preview(...)` 参数
 #   与被它标注的函数体，其余代码零中文照旧（探针见 `pages/emptyguard` 守卫文件头第 3 条）。
-components/QingyuEmptyState.kt:8
+com/mutx163/qingyu/components/QingyuEmptyState.kt:8
 com/mutx163/qingyu/pages/export/IcsExportPage.kt:8
 com/mutx163/qingyu/pages/time_scheme/TimeSchemeManagementPage.kt:8
 com/mutx163/qingyu/pages/settings/AppearanceEditorScreen.kt:7
