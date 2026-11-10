@@ -77,7 +77,7 @@ QingyuCard(cornerRadius = QingyuCardDefaults.SettingsGroupCorner, onClick = …)
 
 - **判定**：出现 `Card(`（前面不是 `Qingyu`）→ 违规。
 - **为什么**：官方 `Card` 的 `pressFeedbackType` 默认 `None`、`showIndication` 默认 `false`
-  ⇒ 能点的卡片按下去**什么都不发生**；圆角默认 16，而设置组在 Dart 侧是 24。
+  ⇒ 能点的卡片按下去**什么都不发生**；圆角默认 16，而设置组要用 `QingyuCardDefaults.SettingsGroupCorner`（24）。
   `QingyuCard` 把「可点就自动 `Sink` 反馈 + 开指示」设成默认。
 - **内边距**：包 `*Preference` 行时**不要**传 `insideMargin`（Preference 自带 16）；
   包普通内容时传 `QingyuCardDefaults.ContentInsideMargin`（否则贴边）。
@@ -216,7 +216,7 @@ tool/compose_style_exceptions/
 
 一行 = 一处**永久例外**，格式 `<相对路径>|<规则>|<原因>`。**不是待还的债**：
 债已经清完，守卫要求待修违规 = 0；这里只放「确实不能走主题/共享套件」的写法。
-原因必须写实（为什么不能走主题、Dart 是哪个值），空原因会被守卫拒绝。
+原因必须写实（为什么不能走主题、发布版对应的是哪个值），空原因会被守卫拒绝。
 
 > 2026-11-03 之前是每域一份 `tool/compose_style_baseline/<域>.txt`。清到 0 以后，
 > 21 份里有 19 份只剩注释头，2 份合计 10 行有效内容；继续保留会让「修一处」变成
@@ -259,7 +259,7 @@ pwsh -File scripts/safe-gradle.ps1 :app:testDevDebugUnitTest
 | `pages/showcase/`（组件展厅） | 豁免 R1/R3/R7——**它故意逐个展示官方裸组件与字重**，这正是它的用途 |
 | 弹层/抽屉内部的短列表 | 豁免 R2（不承载页面级滚动） |
 | 确实需要的固定语义色 | 允许，但要在例外清单里写明原因 |
-| 与 Dart 原版行为冲突 | **Dart 是行为真相、demo 是样式真相**；冲突时行为从 Dart、样式从 demo，并在 KDoc 写明 |
+| 与发布版行为冲突 | **已发布 Flutter 版的行为是真相、miuix demo 是样式真相**；冲突时行为照发布版（以真机实测为准，源码对照可查 git 历史）、样式照 demo，并在 KDoc 写明 |
 
 ---
 
