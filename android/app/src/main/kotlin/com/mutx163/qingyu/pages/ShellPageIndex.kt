@@ -1,6 +1,7 @@
 package com.mutx163.qingyu.pages
 
 import android.content.ActivityNotFoundException
+import android.os.Build
 import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
@@ -205,6 +206,7 @@ import com.mutx163.qingyu.pages.sync.CloudSyncController
 import com.mutx163.qingyu.pages.sync.CloudSyncLogic
 import com.mutx163.qingyu.pages.sync.CloudSyncPage
 import com.mutx163.qingyu.pages.sync.CloudSyncStatusSource
+import com.mutx163.qingyu.pages.sync.DeviceLabelResolver
 import com.mutx163.qingyu.pages.sync.CoupleTimetableSettingsHost
 import com.mutx163.qingyu.pages.sync.CoupleTimetableSettingsLogic
 import com.mutx163.qingyu.pages.sync.CoupleTimetableSettingsPage
@@ -2038,11 +2040,20 @@ fun ShellPageContent(
                     cipher = KeystoreSecretCipher(),
                 )
             }
+            // 设备名取值：用户存过的名字 > 设备型号 > 现成兜底「本机」；旧占位名视同未设置。
+            val deviceModel = "${Build.MANUFACTURER} ${Build.MODEL}".trim()
+            val deviceLabel = DeviceLabelResolver.resolveDeviceLabel(
+                stored = configStore.readDeviceLabel(),
+                deviceModel = deviceModel,
+                fallback = SyncStrings.cloudBackupDefaultDeviceLabel.text,
+            )
             val controller = remember(configStore) {
                 CloudSyncController(
                     store = configStore,
                     snapshotStore = AppLocalSnapshotStore(context),
-                    deviceLabel = configStore.readDeviceLabel() ?: "Compose 壳",
+                    deviceLabel = deviceLabel,
+                    // 改名必须落盘（以前只改草稿 ⇒ 下次进页面又读回占位名）。
+                    persistDeviceLabel = configStore::writeDeviceLabel,
                     repository = wiring.timetable,
                     passwordProvider = { configStore.readPassword() },
                 )
@@ -2123,11 +2134,20 @@ fun ShellPageContent(
                     cipher = KeystoreSecretCipher(),
                 )
             }
+            // 设备名取值：用户存过的名字 > 设备型号 > 现成兜底「本机」；旧占位名视同未设置。
+            val deviceModel = "${Build.MANUFACTURER} ${Build.MODEL}".trim()
+            val deviceLabel = DeviceLabelResolver.resolveDeviceLabel(
+                stored = configStore.readDeviceLabel(),
+                deviceModel = deviceModel,
+                fallback = SyncStrings.cloudBackupDefaultDeviceLabel.text,
+            )
             val controller = remember(configStore) {
                 CloudSyncController(
                     store = configStore,
                     snapshotStore = AppLocalSnapshotStore(context),
-                    deviceLabel = configStore.readDeviceLabel() ?: "Compose 壳",
+                    deviceLabel = deviceLabel,
+                    // 改名必须落盘（以前只改草稿 ⇒ 下次进页面又读回占位名）。
+                    persistDeviceLabel = configStore::writeDeviceLabel,
                     repository = wiring.timetable,
                     passwordProvider = { configStore.readPassword() },
                 )
