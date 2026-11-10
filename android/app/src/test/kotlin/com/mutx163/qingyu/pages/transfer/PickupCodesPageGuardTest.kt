@@ -48,7 +48,27 @@ class PickupCodesPageGuardTest {
     @Test
     fun `忙碌状态真的传到渲染层`() {
         assertTrue("页面没有 busyTitleKey 入参", pageSource.contains("busyTitleKey"))
-        assertTrue("忙碌态没有进度圈", pageSource.contains("CircularProgressIndicator("))
+        // D1（2026-11-10）：裸圈统一收进 components/QingyuLoading.kt，这里改钉新入口。
+        // 取件码这一格是 22dp / 2.2 线宽 / 该行 accent，对应 QingyuLoadingAccentGlyph（不是 16 的按钮档）。
+        assertTrue(
+            "忙碌态没有走 D1 加载态新入口 QingyuLoadingAccentGlyph（22/2.2，颜色随该行 accent）",
+            pageSource.contains("QingyuLoadingAccentGlyph("),
+        )
+        // D1-6（2026-11-10 评审）：只钉「用了哪个入口」不够——颜色也能被写死成主色/常量而观感照样错。
+        // 这里把色源一起钉住：accent 必须来自模型层的 accentFor（该行/该平台的品牌色），
+        // 且真的作为参数交给 AccentGlyph，不许在渲染层另造颜色。
+        assertTrue(
+            "忙碌圈的颜色源不是模型层 accentFor —— 取件码的品牌色被绕过了",
+            pageSource.contains("accentFor("),
+        )
+        assertTrue(
+            "AccentGlyph 没有收到该行 accent 参数（写死颜色 = 观感退回单色圈）",
+            Regex("""QingyuLoadingAccentGlyph\(\s*accent\s*=""").containsMatchIn(pageSource),
+        )
+        assertFalse(
+            "取件码页又直接调官方 CircularProgressIndicator 了——裸圈回退，守卫与套件都白做",
+            Regex("""(?<!\w)CircularProgressIndicator\s*\(""").containsMatchIn(pageSource),
+        )
         assertTrue("其余行没有做淡化", pageSource.contains("animateFloatAsState("))
         assertTrue(
             "宿主没有把正在跳的入口键传给页面 —— 跳转中屏幕仍然毫无变化",

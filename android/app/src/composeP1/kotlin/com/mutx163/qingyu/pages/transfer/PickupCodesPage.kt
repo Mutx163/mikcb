@@ -27,6 +27,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.mutx163.qingyu.components.QingyuCard
 import com.mutx163.qingyu.components.QingyuCardDefaults
+import com.mutx163.qingyu.components.QingyuLoadingAccentGlyph
 import com.mutx163.qingyu.components.QingyuPageCardMargin
 import com.mutx163.qingyu.components.QingyuPageList
 import com.mutx163.qingyu.components.QingyuPageScaffold
@@ -35,8 +36,6 @@ import com.mutx163.qingyu.components.QingyuSectionTitle
 import com.mutx163.qingyu.components.QingyuWeightDelta
 import com.mutx163.qingyu.components.shiftWeight
 import com.mutx163.qingyu.theme.QingyuTheme
-import top.yukonga.miuix.kmp.basic.CircularProgressIndicator
-import top.yukonga.miuix.kmp.basic.ProgressIndicatorDefaults
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.preference.ArrowPreference
 import top.yukonga.miuix.kmp.theme.MiuixTheme
@@ -234,15 +233,8 @@ private fun BusyIndicator(accent: Color) {
             .size(40.dp),
         contentAlignment = Alignment.Center,
     ) {
-        CircularProgressIndicator(
-            colors = ProgressIndicatorDefaults.progressIndicatorColors(
-                foregroundColor = accent,
-                // Dart 只有一圈前景色；miuix 默认还画底环，这里抹掉才与之一致。
-                backgroundColor = Color.Transparent,
-            ),
-            strokeWidth = 2.2.dp,
-            size = 22.dp,
-        )
+        // D1 档 B′：22 / 2.2 + 透明底环，颜色随该行 accent（发布版 pickup_codes_screen.dart 同款）。
+        QingyuLoadingAccentGlyph(accent = accent)
     }
 }
 
