@@ -57,6 +57,20 @@ warn() { WARNS=$((WARNS + 1)); printf 'WARN  %s\n' "$*"; }
 fail() { FAILS=$((FAILS + 1)); printf 'FAIL  %s\n' "$*"; }
 info() { printf 'INFO  %s\n' "$*"; }
 
+# 挑一个「真能跑」的 Python：Windows 上 python3 可能只是应用商店占位符，
+# command -v 找得到、一执行就 exit 9009（2026-11-09 实测）。
+pick_python() {
+  local candidate
+  for candidate in python3 python; do
+    if command -v "${candidate}" >/dev/null 2>&1 \
+       && "${candidate}" -c 'print(1)' >/dev/null 2>&1; then
+      printf '%s' "${candidate}"
+      return 0
+    fi
+  done
+  return 1
+}
+
 if [[ ! -f android/version.properties || ! -d docs/releases ]]; then
   echo "ERROR: 请在仓库根目录运行（找不到 android/version.properties / docs/releases）" >&2
   exit 2
@@ -213,13 +227,12 @@ else
     # 会退化成 kind=other、没有分类标签的灰色重点——v2.1.4.1 就在这里踩过一次
     # （「转场掉帧」对条目「转场更顺」）。用 App 同一套解析器复核一遍，
     # 认不回来直接 FAIL。python 不在 PATH 时降级成 WARN。
-    PY_BIN=""
-    for candidate in python3 python; do
-      if command -v "${candidate}" >/dev/null 2>&1; then PY_BIN="${candidate}"; break; fi
-    done
+    # 解释器选择统一走 pick_python：Windows 的 python3 可能只是应用商店占位符。
+    PY_BIN="$(pick_python || true)"
     if [[ -n "${PY_BIN}" ]]; then
       # 先单独取退出码：接在管道后面 `$?` 会是 sed 的，永远 0，门禁就形同虚设。
-      RAW_OUT="$("${PY_BIN}" tool/check_release_highlights.py "${TMP_NOTES}" 2>&1)"
+      # PYTHONIOENCODING：Windows 的 Python 往管道写中文会按 cp936 编码，日志整行乱码。
+      RAW_OUT="$(PYTHONIOENCODING=utf-8 "${PY_BIN}" tool/check_release_highlights.py "${TMP_NOTES}" 2>&1)"
       PY_RC=$?
       HIGHLIGHT_OUT="$(printf '%s\n' "${RAW_OUT}" | tr -s '[:space:]' ' ' | sed 's/^ //')"
       if [[ "${PY_RC}" -eq 0 ]]; then
@@ -316,6 +329,41 @@ if ((OFFLINE == 0)) && ((HAS_GH == 1)); then
       pass "当前 HEAD 的 CI 已全绿：tag 会复用这次结果，省掉重复的 7～8 分钟"
     else
       fail "当前 HEAD 的 CI 是 ${CI_CONC}：先修红再发版（tag 的检查与 CI 同源，必挂）"
+    fi
+  fi
+fi
+
+# ---------------------------------------------------------------- 9. 开源许可快照（合规阻塞项）
+# 两件事都查：
+#   1) 能解析（generate_notices.py --verify）；
+#   2) 不是 Flutter 时代的旧快照 —— --verify 只证明「文件能解析」，不证明内容
+#      对应 Android 依赖（generate_notices.py:558-573），旧快照照样能通过它。
+# 新快照的条目名是 Maven 坐标（androidx.core:core:…），老的 Dart 包名（flutter_*）
+# 不可能以 androidx. 开头，所以用「有没有 androidx 条目」判是否已重生成。
+LICENSE_ASSET="android/app/src/main/assets/licenses/NOTICES.gz"
+NOTICES_TOOL="tool/license_notices/generate_notices.py"
+if [[ ! -f "${LICENSE_ASSET}" ]]; then
+  fail "缺少开源许可快照 ${LICENSE_ASSET}（release 包会缺许可页）"
+elif [[ ! -f "${NOTICES_TOOL}" ]]; then
+  warn "找不到 ${NOTICES_TOOL}，跳过开源许可快照校验"
+else
+  PY_LIC="$(pick_python || true)"
+  if [[ -z "${PY_LIC}" ]]; then
+    warn "没有可用的 python3/python，跳过开源许可快照校验"
+  else
+    LICENSE_OUT="$(PYTHONIOENCODING=utf-8 "${PY_LIC}" "${NOTICES_TOOL}" --verify 2>&1)"
+    LICENSE_RC=$?
+    if [[ "${LICENSE_RC}" -eq 0 ]]; then
+      pass "许可快照可解析：$(printf '%s\n' "${LICENSE_OUT}" | head -n1)"
+    else
+      fail "许可快照解析失败：$(printf '%s\n' "${LICENSE_OUT}" | tr -s '[:space:]' ' ')"
+    fi
+    ANDROIDX_HITS="$(gzip -dc "${LICENSE_ASSET}" 2>/dev/null | grep -c '^androidx\.' || true)"
+    ANDROIDX_HITS="${ANDROIDX_HITS:-0}"
+    if [[ "${ANDROIDX_HITS}" -eq 0 ]]; then
+      fail "许可快照里没有 androidx 条目：仍是 Flutter 时代的旧快照，先跑 ${NOTICES_TOOL} --write 重生成"
+    else
+      pass "许可快照含 ${ANDROIDX_HITS} 条 androidx 条目（已按 Android 依赖重生成）"
     fi
   fi
 fi
