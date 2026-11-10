@@ -55,9 +55,22 @@ import top.yukonga.miuix.kmp.theme.MiuixTheme
  * | 次按钮 | 40，等宽并排，间距 12 |
  *
  * 按钮一律是官方 [Button] / [TextButton]：主操作用 `buttonColorsPrimary()`，
- * 调整位置用 `buttonColors()`（`secondaryVariant`），清除图片用
- * `textButtonColors(textColor = error)` ——「危险色只染字」是本仓对 destructive 的唯一口径
- * （同 `TaskListPage` 的删除、`TimeSchemeManagementDialogs` 的删除）。不自绘任何形状 / 按压反馈。
+ * 调整位置与清除图片都用 `buttonColors()`（`secondaryVariant`）——发布版把这两颗当同一档
+ * （`settings_home_backdrop_flow.dart:883-896`：「调整位置」「清除图片」同为
+ * `HyperosButtonVariant.secondary`）。不自绘任何形状 / 按压反馈。
+ *
+ * ## 本仓 destructive 口径（2026-11-10 修正，旧注释写错过）
+ *
+ * 破坏性动作＝**红字 + 淡红水洗底**：底 `error @ 亮 .10 / 暗 .14`、禁用底 `.06`、禁用字 `.45`，
+ * 字色 `error`（样板 `CourseActionSheet.kt:785-800`，源头是发布版
+ * `hyperos_controls.dart:851-872` 的 `destructive` 分支）。
+ *
+ * **「危险色只染字」不是本仓口径**：上一版注释这么写、还引了 `TaskListPage` 的删除当例子，
+ * 而那一处早已改成水洗，引用本身就把它推翻了。
+ *
+ * 「清除图片」**不属** destructive：发布版那颗就是 `secondary`（`settings_home_backdrop_flow.dart:890-896`），
+ * 且清掉之后图还在「最近使用」里能点回来，够不上不可逆 —— 所以它与「调整位置」同款中性按钮，
+ * 不染红、不加淡红底。
  *
  * ## 文件丢失警示
  *
@@ -132,16 +145,18 @@ internal fun WallpaperImageBlock(
                 ) {
                     Text(text = adjustLabel, maxLines = 1)
                 }
-                // 清除是**破坏性**动作：底色与「调整位置」同档，只用危险色染字
-                // （`textButtonColors(color = …)` 是底色位，传错就是「红底 + 灰字」）。
-                TextButton(
-                    text = clearLabel,
+                // 清除与「调整位置」**同档同款**：发布版两颗都是 `HyperosButtonVariant.secondary`
+                // （`settings_home_backdrop_flow.dart:883-896`），所以这里用同一个 [Button] +
+                // `buttonColors()`，而不是 `TextButton` 那档更轻的控件。
+                // 它不是破坏性动作（清掉的图仍在「最近使用」里可点回来），因此不走
+                // `textButtonColors(textColor = error)` —— 那会把字染红，是发布版没有的样式。
+                Button(
                     onClick = onClear,
                     modifier = Modifier.weight(1f),
-                    colors = ButtonDefaults.textButtonColors(
-                        textColor = MiuixTheme.colorScheme.error,
-                    ),
-                )
+                    colors = ButtonDefaults.buttonColors(),
+                ) {
+                    Text(text = clearLabel, maxLines = 1)
+                }
             }
         }
     }

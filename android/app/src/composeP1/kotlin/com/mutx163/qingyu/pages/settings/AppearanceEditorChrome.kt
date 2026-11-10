@@ -36,11 +36,10 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.em
 import androidx.compose.ui.unit.sp
+import com.mutx163.qingyu.components.QingyuLoadingScrim
 import com.mutx163.qingyu.components.QingyuWeightDelta
 import com.mutx163.qingyu.components.shiftWeight
-import top.yukonga.miuix.kmp.basic.CircularProgressIndicator
 import top.yukonga.miuix.kmp.basic.Icon
-import top.yukonga.miuix.kmp.basic.ProgressIndicatorDefaults
 import top.yukonga.miuix.kmp.basic.Surface
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.icon.MiuixIcons
@@ -436,16 +435,10 @@ internal fun AppearanceEditorLoadingCover(
             contentAlignment = Alignment.Center,
         ) {
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                // 不可测进度时官方 `CircularProgressIndicator(progress = null)` 就是无限转圈。
-                // 尺寸 28 / 间距 14 / 墨色白 92%：Dart `:2629-2638`。
-                CircularProgressIndicator(
-                    progress = null,
-                    size = 28.dp,
-                    colors = ProgressIndicatorDefaults.progressIndicatorColors(
-                        foregroundColor = Color.White.copy(alpha = 0.92f),
-                        backgroundColor = Color.White.copy(alpha = 0.12f),
-                    ),
-                )
+                // 档 C（D1 统一）：发布版这里是「细环 + 绕行小圆点」（`HyperosInfiniteProgress`，
+                // `settings_appearance_editor.dart:2581-2583`），尺寸 28、墨色白 92%；
+                // 扫弧那种转圈在暗底加载罩上读起来像「进度条在跳」（`hyperos_progress.dart:41-44`）。
+                QingyuLoadingScrim(color = Color.White.copy(alpha = 0.92f))
                 Spacer(modifier = Modifier.height(14.dp))
                 // 14sp / w400 / 行高 1.4 / 白 92%（Dart `:2636-2638`）；行高来自主题 14sp 档。
                 Text(

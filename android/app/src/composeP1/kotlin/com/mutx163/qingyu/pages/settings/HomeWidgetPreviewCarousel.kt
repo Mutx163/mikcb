@@ -43,6 +43,9 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.mutx163.qingyu.WidgetPreviewRenderer
+import com.mutx163.qingyu.components.QingyuLoadingInButton
+import com.mutx163.qingyu.components.QingyuLoadingInline
+import com.mutx163.qingyu.components.QingyuLoadingSlot
 import com.mutx163.qingyu.theme.QingyuShapes
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
@@ -52,7 +55,6 @@ import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeoutOrNull
 import top.yukonga.miuix.kmp.basic.Button
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
-import top.yukonga.miuix.kmp.basic.CircularProgressIndicator
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import kotlin.math.absoluteValue
@@ -247,7 +249,10 @@ fun WidgetPreviewSection(node: SettingsInline) {
                             modifier = Modifier.size(cellWidthDp.dp, cellHeightDp.dp),
                             contentAlignment = Alignment.Center,
                         ) {
-                            CircularProgressIndicator(modifier = Modifier.size(18.dp))
+                            // 档 B2（D1 统一）：发布版这颗就是扫弧 18 / 线宽 2
+                            // （`settings_home_widget.dart` 的 `SizedBox(18×18) + CircularProgressIndicator(strokeWidth: 2)`），
+                            // 不是「不可测进度」那种细环+绕行点，别套 C 档。
+                            QingyuLoadingInline(slot = QingyuLoadingSlot.IconSlot)
                         }
                     }
                 }
@@ -315,7 +320,8 @@ fun WidgetPreviewSection(node: SettingsInline) {
             ),
         ) {
             if (host.checkingPin) {
-                CircularProgressIndicator(modifier = Modifier.size(16.dp))
+                // 档 B1（D1 统一）：按钮内 16dp，颜色吃按钮 contentColor。
+                QingyuLoadingInButton()
                 Spacer(modifier = Modifier.width(8.dp))
             }
             Text(
