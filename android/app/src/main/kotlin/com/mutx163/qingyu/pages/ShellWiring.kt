@@ -75,6 +75,7 @@ import com.mutx163.qingyu.pages.course.CourseActionEvent
 import com.mutx163.qingyu.pages.course.CourseActionSheet
 import com.mutx163.qingyu.pages.course.CourseActionSheetModel
 import com.mutx163.qingyu.pages.course.CourseDeleteScope
+import com.mutx163.qingyu.pages.course.CourseFieldSuggestionLogic
 import com.mutx163.qingyu.pages.course.CourseGroup
 import com.mutx163.qingyu.pages.course.CourseSheetWeatherInfo
 import com.mutx163.qingyu.pages.course.CourseSheetWeatherPrefs
@@ -1286,6 +1287,9 @@ fun TimetableWithCourseActions(
         details = details,
         leadMinutes = classAlarmLeadMinutes,
         skipUi = classAlarmSkipUi,
+        // 调课子弹层的地点候选（发布版 `course_followup_sheets.dart:421` 的 locationSuggestions；
+        // 日程地点拍平成 List<String?> 交给纯函数，与加课页同一份）。
+        locationSuggestions = CourseFieldSuggestionLogic.build(snapshot.courses, snapshot.scheduleItems.map { it.location }).locations,
         existingReminderMinuteOfDay = existingReminderMinuteOfDay,
         onRemoveReminder = { removeTargetClassReminder() },
         onDismiss = { actionTarget = null },

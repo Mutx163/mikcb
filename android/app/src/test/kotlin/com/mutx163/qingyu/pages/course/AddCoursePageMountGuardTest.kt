@@ -75,6 +75,32 @@ class AddCoursePageMountGuardTest {
     private fun conditionalMount(condition: String): Regex =
         Regex("""^\s*if \(${Regex.escape(condition)}\) \{""", RegexOption.MULTILINE)
 
+    @Test
+    fun `壳必须把沿用课程与教师地点候选传进加课页`() {
+        val source = shellIndexSource()
+        assertTrue(
+            "壳必须传 courseTemplates（不传的话「沿用已有课程」按钮会退化成死按钮）",
+            source.contains("courseTemplates = snapshot.courses"),
+        )
+        assertTrue("教师候选必须接线", source.contains("teacherSuggestions = courseFieldSuggestions.teachers"))
+        assertTrue("地点候选必须接线", source.contains("locationSuggestions = courseFieldSuggestions.locations"))
+        assertTrue(
+            "候选必须由 CourseFieldSuggestionLogic 从课程 + 日程算出，不许写死",
+            source.contains("CourseFieldSuggestionLogic.build("),
+        )
+        assertFalse("不许把候选写成空表冒充接线", source.contains("teacherSuggestions = emptyList()"))
+    }
+
+    /** 壳页索引：`ShellPageIndex.kt`（课程域宿主接线，读源码判，不上编译单元）。 */
+    private fun shellIndexSource(): String {
+        val file = File(
+            androidSrc(),
+            "main/kotlin/com/mutx163/qingyu/pages/ShellPageIndex.kt",
+        )
+        assertTrue("${file.path} 不存在", file.isFile)
+        return file.readText().replace("\r\n", "\n")
+    }
+
     private fun pageSource(): String {
         val file = File(
             androidSrc(),

@@ -103,6 +103,7 @@ import com.mutx163.qingyu.pages.conflict.buildCourseConflictView
 import com.mutx163.qingyu.pages.course.AddCourseEntryClock
 import com.mutx163.qingyu.pages.course.AddCoursePage
 import com.mutx163.qingyu.pages.course.AddCourseStrings
+import com.mutx163.qingyu.pages.course.CourseFieldSuggestionLogic
 import com.mutx163.qingyu.pages.course.CourseNoteSheet
 import com.mutx163.qingyu.pages.exam.AddExamFormReducer
 import com.mutx163.qingyu.pages.exam.AddExamLogic
@@ -1221,6 +1222,12 @@ fun ShellPageContent(
         "d1.addCourse" -> {
             val snapshot = wiring.timetable.snapshot
             val shellContext = LocalContext.current
+            // 「沿用已有课程」候选 + 教师/地点候选：发布版 provider.courseGroups /
+            // uniqueTeachers / uniqueLocations 的拍平视图；同一个纯函数算一份，三处共用。
+            val courseFieldSuggestions = CourseFieldSuggestionLogic.build(
+                courses = snapshot.courses,
+                scheduleLocations = snapshot.scheduleItems.map { it.location },
+            )
             AddCoursePage(
                 initialCourse = wiring.pendingEditCourse,
                 // 组编辑：课程总览点某个课程组进来时带整组（Dart `AddCourseScreen(courseGroup:)`），
@@ -1233,6 +1240,13 @@ fun ShellPageContent(
                 initialStartSection = wiring.pendingAddCourseSeed?.second,
                 availableWeeks = (1..snapshot.settings.semesterWeekCount.coerceAtLeast(1)).toList(),
                 globalSectionCount = snapshot.settings.sections.size,
+                // 「沿用已有课程」候选（发布版 `provider.courseGroups` 的拍平视图）。
+                courseTemplates = snapshot.courses,
+                teacherSuggestions = courseFieldSuggestions.teachers,
+                locationSuggestions = courseFieldSuggestions.locations,
+                // 时间模板：候选 + 当前生效模板名（null = 没有生效模板，显示「跟随当前课表」）。
+                timeSchemes = snapshot.timeSchemes,
+                activeTimeSchemeName = snapshot.timeSchemes.firstOrNull { it.id == snapshot.activeTimeSchemeId }?.name,
                 // 表单要一个「节次 → 起止时间」的解析器；优先用**用户自己的作息表**，
                 // 拿不到才退回壳里的线性示例（08:00 起每节 45+10 分）。
                 clockResolver = { entry ->
