@@ -48,6 +48,25 @@ object SettingsWeatherPage {
     /** 城市选择页的具名路由（:115-118）。 */
     const val ROUTE_CITY_PICKER = "/settings/weather/city"
 
+    /**
+     * 三枚行首徽章的底色，逐字取发布版 `HyperosIconColors`
+     * （`lib/ui/hyperos/hyperos_tokens.dart:125-135`）。
+     *
+     * 2026-11-10 美学盘点的校正：此前这页写的是另一套近似色
+     * （`#2F7CF6` / `#12B5A5` / `#F5A623`），其中 refresh 那枚直接错成了
+     * 官方色板里的**黄**（`HyperosIconColors.yellow`）而不是橙——屏上「重试」
+     * 的徽章和其余设置页的橙徽章（如 `alarm`）不同色，属于看得出的偏差。
+     * 设置族其余页的徽章色都按这套官方值写（`grep SettingsRowIcon` 可验），
+     * 所以这里只把本页三处改回官方值，不另立新色。
+     *
+     * 为什么用常量而不是就地写字符串：Dart 侧三处引用的是同一族常量
+     * （`_settingsIconBadge(..., HyperosIconColors.blue/teal/orange)`），
+     * 命名保留「蓝 / 青 / 橙」的语义，改色时不会在三个字面量之间漏改一个。
+     */
+    const val WEATHER_ICON_BLUE = "#3482FF"
+    const val WEATHER_ICON_TEAL = "#14B8A6"
+    const val WEATHER_ICON_ORANGE = "#FF6B00"
+
     fun spec(
         state: SettingsPageState,
         data: WeatherPageData = WeatherPageData(),
@@ -121,9 +140,12 @@ object SettingsWeatherPage {
             id = "weather.useCurrentLocation",
             component = MiuixRowComponent.ARROW,
             title = s.weatherUseCurrentLocation,
-            icon = SettingsRowIcon("pin", "#2F7CF6"),
+            icon = SettingsRowIcon("pin", WEATHER_ICON_BLUE),
             // :93 定位中、或 provider 缺席 → onClick 为 null
             enabled = data.providerAvailable && !data.locating,
+            // :72-78 定位中在行尾给一颗 16dp 转圈——只有禁用没有转圈的话，
+            // 用户点一下只看到「行变灰了」，会以为按坏了。
+            trailingSpinner = data.locating,
             action = SettingsAction.RUN_NOW,
         )
 
@@ -133,7 +155,7 @@ object SettingsWeatherPage {
             id = "weather.city",
             component = MiuixRowComponent.ARROW,
             title = s.weatherCityLabel,
-            icon = SettingsRowIcon("location", "#12B5A5"),
+            icon = SettingsRowIcon("location", WEATHER_ICON_TEAL),
             // 有城市名时它是**运行时数据**（Dart `String?`），不来自 ARB：
             // 这里必须是 null 而不是空串——空串会被当成「有个键但键名是空的」，
             // 语义与 `null`（没有键）不是一回事，测试按 null 钉住了它。
@@ -150,7 +172,7 @@ object SettingsWeatherPage {
                 id = "weather.retry",
                 component = MiuixRowComponent.ARROW,
                 title = s.weatherStatusFailed,
-                icon = SettingsRowIcon("refresh", "#F5A623"),
+                icon = SettingsRowIcon("refresh", WEATHER_ICON_ORANGE),
                 valueKey = s.weatherRetryAction.key,
                 value = s.weatherRetryAction.text,
                 action = SettingsAction.RUN_NOW,

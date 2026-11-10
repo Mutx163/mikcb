@@ -89,6 +89,26 @@ class SettingsWeatherPageTest {
     }
 
     @Test
+    fun `定位中行尾给转圈 不定位时不给`() {
+        // settings_weather.dart:71-78 `endActions: [if (isLocating) SizedBox(16×16,
+        // CircularProgressIndicator(strokeWidth: 2))]`——只有禁用没有转圈时，
+        // 用户点一下只看到「行变灰了」，会以为按坏了。
+        assertTrue(page(WeatherPageData(locating = true)).row("weather.useCurrentLocation").trailingSpinner)
+        assertFalse(page(WeatherPageData(locating = false)).row("weather.useCurrentLocation").trailingSpinner)
+    }
+
+    @Test
+    fun `三枚行首徽章用发布版官方色板`() {
+        // settings_weather.dart:76-137 三处 `_settingsIconBadge(…, HyperosIconColors.blue/teal/orange)`；
+        // 官方值见 hyperos_tokens.dart（blue #3482FF / teal #14B8A6 / orange #FF6B00）。
+        // 旧值 #2F7CF6 / #12B5A5 / #F5A623 是近似色，其中 refresh 那枚错成了官方色板里的黄。
+        val spec = page(WeatherPageData(status = WeatherStatus.FAILED))
+        assertEquals("#3482FF", spec.row("weather.useCurrentLocation").icon?.tintHex)
+        assertEquals("#14B8A6", spec.row("weather.city").icon?.tintHex)
+        assertEquals("#FF6B00", spec.row("weather.retry").icon?.tintHex)
+    }
+
+    @Test
     fun `天气 provider 缺席时定位行也禁用`() {
         // settings_weather.dart:41 `enabled = weather?.enabled ?? false`；:93 weather == null → null
         assertFalse(page(WeatherPageData(providerAvailable = false)).row("weather.useCurrentLocation").enabled)

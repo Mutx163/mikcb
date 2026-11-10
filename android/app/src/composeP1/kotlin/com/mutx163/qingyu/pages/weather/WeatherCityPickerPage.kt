@@ -16,16 +16,20 @@ import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import com.mutx163.qingyu.components.EmptyStateHintEmphasis
 import com.mutx163.qingyu.components.QingyuCard
+import com.mutx163.qingyu.components.QingyuEmptyHint
+import com.mutx163.qingyu.components.QingyuLoadingAccentGlyph
 import com.mutx163.qingyu.components.QingyuPageCardMargin
 import com.mutx163.qingyu.components.QingyuPageList
 import com.mutx163.qingyu.components.QingyuPageScaffold
@@ -33,19 +37,28 @@ import com.mutx163.qingyu.components.QingyuPageTheme
 import com.mutx163.qingyu.components.QingyuSectionTitle
 import com.mutx163.qingyu.components.QingyuWeightDelta
 import com.mutx163.qingyu.components.shiftWeight
+import com.mutx163.qingyu.pages.settings.SettingsIconBadge
+import com.mutx163.qingyu.pages.settings.SettingsStringsExt4
 import com.mutx163.qingyu.weather.WeatherLocation
-import top.yukonga.miuix.kmp.basic.CircularProgressIndicator
 import top.yukonga.miuix.kmp.basic.Icon
-import top.yukonga.miuix.kmp.basic.IconButton
+import top.yukonga.miuix.kmp.basic.InputField
+import top.yukonga.miuix.kmp.basic.SearchBarDefaults
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TextButton
-import top.yukonga.miuix.kmp.basic.TextField
 import top.yukonga.miuix.kmp.icon.MiuixIcons
+import top.yukonga.miuix.kmp.icon.basic.Search
+import top.yukonga.miuix.kmp.icon.basic.SearchCleanup
 import top.yukonga.miuix.kmp.icon.extended.Location
 import top.yukonga.miuix.kmp.icon.extended.Ok
-import top.yukonga.miuix.kmp.icon.extended.Refresh
-import top.yukonga.miuix.kmp.icon.extended.Search
 import top.yukonga.miuix.kmp.theme.MiuixTheme
+
+/**
+ * 行首徽章的底色：发布版 `HyperosIconColors.blue`（`hyperos_tokens.dart`，`0xFF3482FF`）。
+ *
+ * 写死而不是跟主题主色：发布版这颗 accent 是**常量**，暗色主题下也保持同一个蓝；
+ * 参数走 `SettingsIconBadge(tintHex = …)` 的既有取值口，不在页内另造色板。
+ */
+private const val ICON_BADGE_BLUE = "#3482FF"
 
 /**
  * 天气选城市页 · Compose 渲染层（1:1 对齐 Flutter `weather_city_picker_screen.dart`）。
@@ -109,62 +122,54 @@ fun WeatherCityPickerPage(
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(horizontal = QingyuPageCardMargin, vertical = 4.dp),
-                    insideMargin = PaddingValues(14.dp),
+                    // 行内边距：发布版是 `hyperosListRowShell(padding: 16/13/16/13)`
+                    // （`HyperosMiuixSpec.settingsRowPadding`，`hyperos_miuix_spec.dart:88`）。
+                    // 旧写法是四边 14，比发布版左右各窄 2、上下各多 1。
+                    insideMargin = PaddingValues(horizontal = 16.dp, vertical = 13.dp),
                     onClick = if (state.locating) null else onRelocate,
                 ) {
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
-                        Box(
-                            modifier = Modifier
-                                .size(38.dp)
-                                .clip(RoundedCornerShape(8.dp))
-                                .background(colors.primary.copy(alpha = 0.12f)),
-                            contentAlignment = Alignment.Center,
-                        ) {
-                            Icon(
-                                imageVector = MiuixIcons.Location,
-                                contentDescription = null,
-                                modifier = Modifier.size(20.dp),
-                                tint = colors.primary,
-                            )
-                        }
+                        // 行首徽章：发布版 `HyperosListTile(icon:)` 画的不是裸图标，而是
+                        // `HyperosIconBadge(icon, accent: HyperosIconColors.blue)`——
+                        // 26dp 实心蓝 #3482FF 方块 + 7dp 圆角 + 白色 14dp 字形
+                        // （`tiles.dart:310-316`、`indicators.dart:142-163`、`hyperos_tokens.dart:63-65`）。
+                        // 直接复用设置族的同一块 `SettingsIconBadge`（几何逐字对齐、白字形写死），
+                        // 不在这页另抄一份 26/7/14——抄两份迟早分叉。
+                        SettingsIconBadge(glyph = MiuixIcons.Location, tintHex = ICON_BADGE_BLUE)
                         Spacer(modifier = Modifier.width(12.dp))
                         Column(modifier = Modifier.weight(1f)) {
+                            // 标题：发布版 `listTitle` = 17sp w400（`hyperos_theme.dart:497-505`
+                            // → `HyperosMiuixSpec.preferenceTitleSize = 17`）；旧写法是 16sp Medium。
                             Text(
                                 text = WeatherStrings.weatherUseCurrentLocation.text,
-                                style = MiuixTheme.textStyles.body1
-                                    .shiftWeight(QingyuWeightDelta.MEDIUM),
+                                style = MiuixTheme.textStyles.headline1,
                                 color = colors.onSurface,
                             )
-                            Spacer(modifier = Modifier.height(2.dp))
+                            // 标题→副标题 3dp：发布版 `HyperosTokens.titleCaptionGap`（旧写法 2dp）。
+                            Spacer(modifier = Modifier.height(3.dp))
                             val subtitle = when {
                                 state.locating -> WeatherStrings.weatherLocating.text
                                 state.error != null -> state.error
                                 state.currentCity != null -> state.currentCity.displayName
                                 else -> WeatherStrings.weatherCityNotSet.text
                             }
+                            // 副标题：发布版 `listDetail` = body2 14sp w400（旧写法 13sp footnote1）。
                             Text(
                                 text = subtitle,
-                                style = MiuixTheme.textStyles.footnote1,
+                                style = MiuixTheme.textStyles.body2,
                                 color = if (state.error != null) colors.error else colors.onSurfaceVariantSummary,
                                 maxLines = 1,
                                 overflow = TextOverflow.Ellipsis,
                             )
                         }
-                        if (state.locating) {
-                            CircularProgressIndicator(modifier = Modifier.size(20.dp))
-                        } else {
-                            IconButton(onClick = onRelocate, backgroundColor = Color.Transparent) {
-                                Icon(
-                                    imageVector = MiuixIcons.Refresh,
-                                    contentDescription = WeatherStrings.relocateAction,
-                                    modifier = Modifier.size(18.dp),
-                                    tint = colors.primary,
-                                )
-                            }
-                        }
+                        // 行尾**不画任何东西**（2026-11-10 裁决：撤除超出发布版的增强）。
+                        // 发布版这一行就是「图标 + 标题 + 副标题（定位中是「正在定位……」）
+                        // + 整行 onTap:null」（`weather_city_picker_screen.dart:139-146`）——
+                        // 既没有行尾刷新图标、也没有转圈；重定位本来就是**点整行**触发的
+                        // （上面的 `onClick = if (state.locating) null else onRelocate`）。
                     }
                 }
             }
@@ -174,48 +179,41 @@ fun WeatherCityPickerPage(
                 QingyuSectionTitle(WeatherStrings.weatherSectionSearchCity.text)
             }
             item(key = "search") {
-                QingyuCard(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = QingyuPageCardMargin, vertical = 4.dp),
-                    insideMargin = PaddingValues(horizontal = 12.dp, vertical = 4.dp),
-                ) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    ) {
-                        Icon(
-                            imageVector = MiuixIcons.Search,
-                            contentDescription = null,
-                            modifier = Modifier.size(20.dp),
-                            tint = colors.onSurfaceVariantSummary,
-                        )
-                        TextField(
-                            value = state.query,
-                            onValueChange = onQueryChange,
-                            modifier = Modifier.fillMaxWidth(),
-                            label = WeatherStrings.weatherCitySearchHint.text,
-                            singleLine = true,
-                        )
-                    }
-                }
+                // 搜索框：miuix 官方 `InputField`（`SearchBar.kt:158`）的**页内常驻**用法
+                // ——45dp 胶囊、`surfaceContainerHigh` 填充、放大镜与清除键都在组件内部。
+                // 旧写法是「`QingyuCard` 里再套 `Row(Icon + TextField)`」，卡里套框两层底、
+                // 高度与发布版对不上（发布版 `weather_city_picker_screen.dart:171-189` 是
+                // 一颗 `HyperosSearchBar`）。配方与先例逐条一致：`2ecfbe15b`（坞图标选择器）、
+                // `2cf97759b`（教务导入选校页）。
+                WeatherSearchField(
+                    query = state.query,
+                    onQueryChange = onQueryChange,
+                )
             }
 
             // ── 3. 结果区 ──
             when {
                 state.searching -> item(key = "searching") {
+                    // 搜索中：发布版是「28dp 上留白 + 居中的 22dp 细环」
+                    // （`weather_city_picker_screen.dart:175-179`：`SizedBox(height: 28)` +
+                    //  `SizedBox(22×22, CircularProgressIndicator(strokeWidth: 2.2))`）。
+                    // 档 A 是 24 / 2.5，比发布版粗一档；套件里尺寸正好对得上的是 B′ 入口
+                    // `QingyuLoadingAccentGlyph`（22 / 2.2、单圈无底环），颜色跟主题主色
+                    // ——发布版这颗圈不传色，本来就是 primary。
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
                             .padding(vertical = 28.dp),
                         contentAlignment = Alignment.Center,
                     ) {
-                        CircularProgressIndicator(modifier = Modifier.size(22.dp))
+                        QingyuLoadingAccentGlyph(accent = colors.primary)
                     }
                 }
 
                 state.searchFailed -> item(key = "search-failed") {
+                    // **失败态不并进空态**（方案 C36 注：空说「没有」、失败说「为什么」）。
+                    // 这里保留「红字 + 重试」的卡片形态：`QingyuEmptyHint` 只有次级墨，
+                    // 把这句话刷成灰色反而丢掉「这次没搜到、是出错了」的区别。
                     QingyuCard(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -241,17 +239,14 @@ fun WeatherCityPickerPage(
                 }
 
                 state.settled && state.results.isEmpty() -> item(key = "search-empty") {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = QingyuPageCardMargin, vertical = 16.dp),
-                    ) {
-                        Text(
-                            text = WeatherStrings.weatherCitySearchEmpty.text,
-                            style = MiuixTheme.textStyles.body2,
-                            color = colors.onSurfaceVariantSummary,
-                        )
-                    }
+                    // 真·空态：换共享行内提示（`QingyuEmptyHint`，14sp 正文档 + 次级墨），
+                    // 字号与灰阶从此跟全站其它「没有结果」一致；位置与留白保持原样
+                    // （方案 §4.1 C36 / §7.3 白名单：只换口径、不动布局）。
+                    QingyuEmptyHint(
+                        text = WeatherStrings.weatherCitySearchEmpty.text,
+                        emphasis = EmptyStateHintEmphasis.Body,
+                        modifier = Modifier.padding(horizontal = QingyuPageCardMargin, vertical = 16.dp),
+                    )
                 }
 
                 state.results.isNotEmpty() -> item(key = "search-results") {
@@ -419,6 +414,70 @@ private fun PreviewWeatherCityPickerPage(
 @Composable
 private fun WeatherCityPickerPagePreviewResults() {
     PreviewWeatherCityPickerPage(previewWeatherCityState("有结果"))
+}
+
+/**
+ * 搜索框：miuix 官方 `InputField`（`SearchBar.kt:158`）的**页内常驻**用法。
+ *
+ * 45dp 胶囊、`surfaceContainerHigh` 填充、放大镜与清除键都在组件内部；不再外套卡片、
+ * 不自拼 `Row(Icon + TextField)`（那样两层底色 + 高度对不上发布版 `HyperosSearchBar`）。
+ * 两颗图标的朗读文案照仓库先例自己画：放大镜纯装饰（输入框自带 label）⇒ `null`；
+ * 清除键用 `clearSearchAction`（官方默认是库里的英文「Search Cleanup」）。
+ */
+@Composable
+private fun WeatherSearchField(
+    query: String,
+    onQueryChange: (String) -> Unit,
+) {
+    val focusManager = LocalFocusManager.current
+    InputField(
+        query = query,
+        onQueryChange = onQueryChange,
+        // 没有独立提交动作：过滤随输入发生，回车只收键盘。
+        onSearch = { focusManager.clearFocus() },
+        expanded = false,
+        onExpandedChange = { },
+        label = WeatherStrings.weatherCitySearchHint.text,
+        leadingIcon = {
+            Icon(
+                imageVector = MiuixIcons.Basic.Search,
+                contentDescription = null,
+                tint = MiuixTheme.colorScheme.onSurfaceContainerHigh,
+                modifier = Modifier.padding(
+                    start = SearchBarDefaults.LeadingIconStartPadding,
+                    end = SearchBarDefaults.LeadingIconEndPadding,
+                ),
+            )
+        },
+        trailingIcon = {
+            AnimatedVisibility(
+                visible = query.isNotEmpty(),
+                enter = fadeIn(),
+                exit = fadeOut(),
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(width = 48.dp, height = 44.dp)
+                        .clickable(interactionSource = null, indication = null) {
+                            focusManager.clearFocus()
+                            onQueryChange("")
+                        },
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Icon(
+                        imageVector = MiuixIcons.Basic.SearchCleanup,
+                        contentDescription = SettingsStringsExt4.clearSearchAction.text,
+                        tint = MiuixTheme.colorScheme.onSurfaceContainerHigh,
+                        modifier = Modifier.size(20.dp),
+                    )
+                }
+            }
+        },
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = QingyuPageCardMargin)
+            .padding(top = 4.dp, bottom = 8.dp),
+    )
 }
 
 @Suppress("unused")
