@@ -2,34 +2,80 @@
 # 生成：python scripts/i18n-cjk-baseline.py --write
 # 规则见 CjkLiteralGateTest.kt；修复某文件后必须下调该行数字，不得上调。
 # 已排除：i18n 文案表（*Strings*.kt / *Arb*.kt / *ServiceMessages.kt / *LogMessages.kt / *Localizer.kt）与生成代码；Log.* 行整行跳过。
+#
+# 2026-11-10 美学波（统计域两页各加一档「整页 1600」预览）登记两处 +1 增量：
+#   statistics/CourseStatisticsPage.kt 33→34、statistics/StatisticsAnalysisPage.kt 27→28。
+#   理由：`@Preview(name = …)` 上的中文是 **IDE 里的标签、不是屏上文案**；全仓既有 356 处
+#   预览名都是中文（Chief 2026-11-10 定口径），为两档预览单独改用 ASCII 反而成孤例。
+#   口径：预览名照中文写，增量在此登记；屏上文案仍一律走 ArbText。
+#
+# 2026-11-10 美学波（about/diagnostics/showcase 五页各加一档「整页」预览）登记增量：
+#   about/ContributorsPage.kt 26→28、about/OpenSourceLicensesPage.kt 10→11、
+#   about/SupportCreatorPage.kt 27→29、diagnostics/PerfReportPage.kt 27→29。
+#   （showcase/MiuixShowcasePage.kt 维持 10：整页档 +1、同时删掉自拼搜索框里的「清空」
+#    字面量改用共享 ARB 键 -1，净额为零。）
+#
+# 2026-11-10 美学波（预览整页档，弹窗/课表两域）登记增量（美化十三）：
+#   timetable/TimetableProfilesPage.kt 13→14（「6 整页」1200）、
+#   time_scheme/TimeSchemeEditorPage.kt 6→7（「5 整页」1600）、
+#   settings/DockMenuEditors.kt 9→11（「10 玻璃坞·整页」「11 八宫格·整页」各 1200）。
+#   理由同上：`@Preview(name = …)` 是 **IDE 里的标签、不是屏上文案**（全仓预览名统一中文，
+#   Chief 2026-11-10 定口径）；本次只加注解、不改页面代码。咬合探针见回报：把其中一档
+#   预览名改成 ASCII → 该文件计数 -1，棘轮报「未下调」应红。
+#   理由同上：`@Preview(name = …)` 的中文是 **IDE 标签、不是屏上文案**；其中两处
+#   +2 是因为预览函数还复用了状态名（「有数据」「有名单」）作参数，同样是 IDE 可见字符串。
+# 2026-11-10 美学波（设置族渲染层补三档「整页 1600」预览）登记一处 +3 增量：
+#   settings/SettingsPageRenderers.kt 44→47（「5 整页 1600」「6 整页 1600 暗色」「7 整页 1600 大字号 1.3」）。
+#   理由同上：@Preview(name = …) 是 IDE 标签、不是屏上文案；本次只加三个注解函数，页面代码未变。
+#
+# 2026-11-10 美学波（预览整页档，评审六终检补登记 5 处增量理由）：
+#   diagnostics/MemoryStatsPage.kt 24→26 ——「7 整页 1600」预览名 + `previewMemoryStatsState("有数据")` 预览样例；
+#   diagnostics/LiveDiagnosticsLogPage.kt 22→24 ——「7 整页 1400」+ `previewLogState("有数据")` 预览样例；
+#   exam/AddExamPage.kt 16→17 ——「6 整页 1200」预览名；
+#   course/AddCoursePage.kt 9→10 ——预览套件重排净 +1（删 4 个旧名、加 4 个新名 +「5 整页 1400」）；
+#   schedule/AddScheduleItemPage.kt 9→10 ——「6 整页 1300」预览名。
+#   理由：`@Preview(name = …)` 的中文是 **IDE 里的标签**，预览样例字符串同样是 IDE 可见样例；
+#   都不上屏、不进 l10n，屏上文案仍一律走 ArbText。数值层与实测 0 差异，本次只补理由行。
 com/mutx163/qingyu/pages/showcase/MiuixShowcaseSubpages.kt:73
-com/mutx163/qingyu/pages/settings/SettingsPageRenderers.kt:44
+com/mutx163/qingyu/pages/settings/SettingsPageRenderers.kt:47
 com/mutx163/qingyu/pages/weather/WeatherCityPickerPage.kt:41
-com/mutx163/qingyu/pages/statistics/CourseStatisticsPage.kt:33
+com/mutx163/qingyu/pages/statistics/CourseStatisticsPage.kt:34
 com/mutx163/qingyu/pages/timetable/month/MonthViewPage.kt:33
 com/mutx163/qingyu/pages/timetable/HomeShellPreviews.kt:32
 com/mutx163/qingyu/pages/timetable/TimetableWeekPage.kt:32
 com/mutx163/qingyu/pages/course/CourseOverviewPage.kt:29
-com/mutx163/qingyu/pages/about/SupportCreatorPage.kt:27
-com/mutx163/qingyu/pages/diagnostics/PerfReportPage.kt:27
-com/mutx163/qingyu/pages/statistics/StatisticsAnalysisPage.kt:27
-com/mutx163/qingyu/pages/about/ContributorsPage.kt:26
+com/mutx163/qingyu/pages/statistics/StatisticsAnalysisPage.kt:28
+# 2026-11-10 鸣谢名单条目重排（美化四）登记 about/SupportCreatorPage.kt 29→33：
+#   +1 = 一屏条目档预览名「9 名单条目·一屏」；+3 = 该档预览假数据里新增的两位支持者
+#   中文昵称与一条中文留言（用于覆盖「长留言折行」「带时分秒的日期」两种真实名单形态）。
+#   理由：@Preview 名与预览假数据都是 IDE 里给评审看的标签/样例，不上屏、不进 l10n；
+#   屏上文案仍一律走 ArbText，名单数据来自线上 docs/donors.json（本次一字未改）。
+com/mutx163/qingyu/pages/about/SupportCreatorPage.kt:33
+com/mutx163/qingyu/pages/diagnostics/PerfReportPage.kt:29
+com/mutx163/qingyu/pages/about/ContributorsPage.kt:28
 com/mutx163/qingyu/pages/import/warehouse/WarehouseCourseImportPage.kt:25
-com/mutx163/qingyu/pages/diagnostics/MemoryStatsPage.kt:24
-com/mutx163/qingyu/pages/live/DisplaySettingsPage.kt:24
-com/mutx163/qingyu/pages/diagnostics/LiveDiagnosticsLogPage.kt:22
+com/mutx163/qingyu/pages/diagnostics/MemoryStatsPage.kt:26
+# 2026-11-10 收波登记（Chief 授权：无主合规收编，美化十代登记）：
+# `DisplaySettingsPage.kt` 24→26 —— 点对点整页预览批落的「7 整页 1400」预览名
+# + 预览状态标注 `"课前页"`；收波时仍无主（原写入方未认领）。
+# 理由：@Preview 名 / 预览状态标注是 IDE 标签，非屏上文案（不上屏、不进 l10n）。
+com/mutx163/qingyu/pages/live/DisplaySettingsPage.kt:26
+com/mutx163/qingyu/pages/diagnostics/LiveDiagnosticsLogPage.kt:24
 com/mutx163/qingyu/pages/guide/StartupFlowPage.kt:22
 com/mutx163/qingyu/pages/guide/UserGuidePage.kt:22
 com/mutx163/qingyu/pages/about/AboutUpdatePage.kt:21
 com/mutx163/qingyu/pages/statistics/StatisticsSessionPage.kt:21
 com/mutx163/qingyu/pages/sync/CloudSyncPage.kt:21
 com/mutx163/qingyu/pages/sync/CloudBackupListPage.kt:20
-com/mutx163/qingyu/pages/import/warehouse/WarehouseAdapterDetailPage.kt:19
+# 2026-11-10 收波登记（Chief 授权：无主合规收编，美化一执行）：
+# `WarehouseAdapterDetailPage.kt` 19→20 —— 文件末尾「8 整页 1200」预览名。
+# 理由：@Preview 名为 IDE 标签，非屏上文案（不上屏、不进 l10n）；原写入方未认领。
+com/mutx163/qingyu/pages/import/warehouse/WarehouseAdapterDetailPage.kt:20
 com/mutx163/qingyu/pages/task/TaskListPage.kt:19
 com/mutx163/qingyu/pages/import/warehouse/WarehouseSchoolAdaptersPage.kt:17
 com/mutx163/qingyu/pages/schedule/ScheduleListPage.kt:17
 com/mutx163/qingyu/pages/conflict/CourseConflictPage.kt:16
-com/mutx163/qingyu/pages/exam/AddExamPage.kt:16
+com/mutx163/qingyu/pages/exam/AddExamPage.kt:17
 com/mutx163/qingyu/pages/exam/ExamListPage.kt:16
 com/mutx163/qingyu/pages/diagnostics/LiveTestingFixturePage.kt:15
 com/mutx163/qingyu/pages/time_scheme/LocationTimeGroupEditorPage.kt:15
@@ -37,24 +83,24 @@ com/mutx163/qingyu/pages/guide/HyperosShowcasePage.kt:14
 com/mutx163/qingyu/pages/sync/CoupleTimetableSettingsPage.kt:14
 com/mutx163/qingyu/pages/about/AdvancedOptionsPage.kt:13
 com/mutx163/qingyu/pages/live/LiveKeepAliveSettingsPage.kt:13
-com/mutx163/qingyu/pages/timetable/TimetableProfilesPage.kt:13
+com/mutx163/qingyu/pages/timetable/TimetableProfilesPage.kt:14
 com/mutx163/qingyu/pages/schedule/ScheduleDateRulePage.kt:12
 com/mutx163/qingyu/pages/time_scheme/LocationTimeMatchPage.kt:12
 com/mutx163/qingyu/pages/timetable/day/DayViewPage.kt:12
-com/mutx163/qingyu/pages/about/OpenSourceLicensesPage.kt:10
+com/mutx163/qingyu/pages/about/OpenSourceLicensesPage.kt:11
 com/mutx163/qingyu/pages/import/warehouse/WarehouseCustomDebugPage.kt:10
 com/mutx163/qingyu/pages/showcase/MiuixShowcasePage.kt:10
 com/mutx163/qingyu/pages/task/AddTaskPage.kt:10
-com/mutx163/qingyu/pages/course/AddCoursePage.kt:9
+com/mutx163/qingyu/pages/course/AddCoursePage.kt:10
 com/mutx163/qingyu/pages/import/warehouse/AiImageCourseImportPage.kt:9
-com/mutx163/qingyu/pages/schedule/AddScheduleItemPage.kt:9
-com/mutx163/qingyu/pages/settings/DockMenuEditors.kt:9
+com/mutx163/qingyu/pages/schedule/AddScheduleItemPage.kt:10
+com/mutx163/qingyu/pages/settings/DockMenuEditors.kt:11
 com/mutx163/qingyu/pages/export/IcsExportPage.kt:8
 com/mutx163/qingyu/pages/time_scheme/TimeSchemeManagementPage.kt:8
 com/mutx163/qingyu/pages/settings/AppearanceEditorScreen.kt:7
 com/mutx163/qingyu/pages/transfer/QrTransferSendPage.kt:7
 com/mutx163/qingyu/pages/guide/MoreFeaturesPage.kt:6
-com/mutx163/qingyu/pages/time_scheme/TimeSchemeEditorPage.kt:6
+com/mutx163/qingyu/pages/time_scheme/TimeSchemeEditorPage.kt:7
 com/mutx163/qingyu/pages/transfer/DataTransferPage.kt:6
 com/mutx163/qingyu/pages/transfer/LanEditPage.kt:6
 com/mutx163/qingyu/pages/transfer/QrTransferScanPage.kt:6
