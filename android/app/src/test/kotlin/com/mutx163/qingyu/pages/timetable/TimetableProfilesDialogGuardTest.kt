@@ -83,8 +83,36 @@ class TimetableProfilesDialogGuardTest {
                 "$marker 的输入框不应再挂 focusRequester",
                 "focusRequester(" in block,
             )
+            // 2026-11-10 评审 E2-01：取消键不再是透明 TextButton，而是 secondary 实心
+            // （发布版 `hyperos_dialog.dart:127-177` 两颗动作都是 HyperosButton）。
+            assertFalse(
+                "$marker 的取消键又回到透明 TextButton（发布版两动作都是实心 HyperosButton）",
+                "TextButton(" in block,
+            )
             assertTrue(
-                "$marker 的取消键应为 TextButton",
+                "$marker 的取消键缺 secondary 实心配色（`colors = ButtonDefaults.buttonColors()`）",
+                "colors = ButtonDefaults.buttonColors()" in block,
+            )
+        }
+    }
+
+    /**
+     * 四个「确认 / 编辑」弹窗的取消键必须都是 secondary 实心按钮（评审 E2-01，2026-11-10）。
+     *
+     * 发布版这两颗动作都走 `HyperosButton`（`hyperos_dialog.dart:127-177` 两动作分支）：
+     * 取消 = secondary（灰底深字）、确认 = primary / destructive。原来取消用透明
+     * `TextButton`，一轻一重，读起来像「取消」是链接而不是按钮。
+     */
+    @Test
+    fun `四个确认弹窗的取消键都是 secondary 实心按钮`() {
+        listOf(CREATE, RENAME, CLEAR, DELETE).forEach { marker ->
+            val block = functionBlock(pageSource(), marker)
+            assertTrue(
+                "$marker 缺 secondary 实心的取消键（`colors = ButtonDefaults.buttonColors()`）",
+                "colors = ButtonDefaults.buttonColors()" in block,
+            )
+            assertFalse(
+                "$marker 仍在用透明 TextButton 当取消键",
                 "TextButton(" in block,
             )
         }
@@ -153,23 +181,45 @@ class TimetableProfilesDialogGuardTest {
         }
     }
 
+    /**
+     * 清空 / 删除两颗确认键的配色（2026-11-10 按发布版校正）。
+     *
+     * 发布版里这两个动作**不是一个颜色**：
+     * - 清空：`_clearActiveProfileCourses`（`timetable_profiles_screen.dart:236-242`）调
+     *   `showHyperosConfirmDialog` 时**没传** `destructive` ⇒ 确认键是 primary 变体（主色实心）；
+     * - 删除：同一文件 `:288-293` 明确 `destructive: true` ⇒ 危险色实心。
+     *
+     * 旧断言把两颗都钉成危险色，与发布版不符（当时以为「清空也算危险动作」，属于自定口径）。
+     */
     @Test
-    fun `清空与删除使用危险色实心按钮`() {
-        listOf(CLEAR, DELETE).forEach { marker ->
-            val block = functionBlock(pageSource(), marker)
-            assertTrue(
-                "$marker 的危险确认按钮缺 error 底色",
-                "color = MiuixTheme.colorScheme.error" in block,
-            )
-            assertTrue(
-                "$marker 的危险确认按钮缺 onError 前景色（红底灰字不可读）",
-                "contentColor = MiuixTheme.colorScheme.onError" in block,
-            )
-            assertFalse(
-                "$marker 的正文写成了两处（summary 与自绘 Text 只能二选一）",
-                "summary =" in block && "style = MiuixTheme.textStyles.body2" in block,
-            )
-        }
+    fun `清空用主色实心 删除用危险色实心`() {
+        val clearBlock = functionBlock(pageSource(), CLEAR)
+        assertTrue(
+            "$CLEAR 的确认键缺 `buttonColorsPrimary()`（发布版没传 destructive，是主色实心）",
+            "ButtonDefaults.buttonColorsPrimary()" in clearBlock,
+        )
+        assertFalse(
+            "$CLEAR 的确认键还在用危险色（发布版只有删除传 destructive）",
+            "MiuixTheme.colorScheme.error" in clearBlock,
+        )
+        assertFalse(
+            "$CLEAR 的正文写成了两处（summary 与自绘 Text 只能二选一）",
+            "summary =" in clearBlock && "style = MiuixTheme.textStyles.body2" in clearBlock,
+        )
+
+        val deleteBlock = functionBlock(pageSource(), DELETE)
+        assertTrue(
+            "$DELETE 的危险确认按钮缺 error 底色",
+            "color = MiuixTheme.colorScheme.error" in deleteBlock,
+        )
+        assertTrue(
+            "$DELETE 的危险确认按钮缺 onError 前景色（红底灰字不可读）",
+            "contentColor = MiuixTheme.colorScheme.onError" in deleteBlock,
+        )
+        assertFalse(
+            "$DELETE 的正文写成了两处（summary 与自绘 Text 只能二选一）",
+            "summary =" in deleteBlock && "style = MiuixTheme.textStyles.body2" in deleteBlock,
+        )
     }
 
     // ------------------------------------------------------------ 工具

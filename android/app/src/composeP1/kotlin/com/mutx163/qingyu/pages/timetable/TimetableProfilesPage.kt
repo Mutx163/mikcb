@@ -61,7 +61,6 @@ import top.yukonga.miuix.kmp.basic.IconButton
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
 import top.yukonga.miuix.kmp.basic.Scaffold
 import top.yukonga.miuix.kmp.basic.Text
-import top.yukonga.miuix.kmp.basic.TextButton
 import top.yukonga.miuix.kmp.basic.TextField
 import top.yukonga.miuix.kmp.basic.TopAppBar
 import top.yukonga.miuix.kmp.icon.MiuixIcons
@@ -550,6 +549,11 @@ private fun CreateProfileDialog(
                 value = nameInput,
                 onValueChange = { nameInput = it },
                 label = TimetableStrings.timetableNameHint.text,
+                // 发布版这两个弹窗传的是 `hint:`（`hyperos_text_field.dart:47-48`：
+                // 只有 hint 时 `useLabelAsPlaceholder = true`）⇒ 文案在框里当占位、输入后消失。
+                // miuix 默认是浮动标签（`TextField.kt:89` 默认 false），会让「例如：大二下」
+                // 变成常驻的小标题浮在行上方——与本页其余文案的占位口径也不同。
+                useLabelAsPlaceholder = true,
                 modifier = Modifier.fillMaxWidth(),
             )
 
@@ -558,11 +562,17 @@ private fun CreateProfileDialog(
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                TextButton(
+                // 取消键用 miuix 官方 secondary 实心按钮（`buttonColors()` = secondaryVariant 底 +
+                // onSecondaryVariant 字），与确认键同一形制、同 12dp 间距：发布版这两颗都是
+                // `HyperosButton`（`hyperos_dialog.dart:127-177` 的两动作分支），不是文字链。
+                // 原来用透明 `TextButton`，与右侧实心确认键一轻一重，读起来像「取消」是链接。
+                Button(
                     modifier = Modifier.weight(1f),
-                    text = TimetableStrings.cancelAction.text,
                     onClick = onDismiss,
-                )
+                    colors = ButtonDefaults.buttonColors(),
+                ) {
+                    Text(text = TimetableStrings.cancelAction.text)
+                }
                 Button(
                     enabled = nameInput.isNotBlank(),
                     onClick = {
@@ -614,6 +624,11 @@ private fun RenameProfileDialog(
                 value = nameInput,
                 onValueChange = { nameInput = it },
                 label = TimetableStrings.timetableNameHint.text,
+                // 发布版这两个弹窗传的是 `hint:`（`hyperos_text_field.dart:47-48`：
+                // 只有 hint 时 `useLabelAsPlaceholder = true`）⇒ 文案在框里当占位、输入后消失。
+                // miuix 默认是浮动标签（`TextField.kt:89` 默认 false），会让「例如：大二下」
+                // 变成常驻的小标题浮在行上方——与本页其余文案的占位口径也不同。
+                useLabelAsPlaceholder = true,
                 modifier = Modifier.fillMaxWidth(),
             )
 
@@ -622,11 +637,17 @@ private fun RenameProfileDialog(
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                TextButton(
+                // 取消键用 miuix 官方 secondary 实心按钮（`buttonColors()` = secondaryVariant 底 +
+                // onSecondaryVariant 字），与确认键同一形制、同 12dp 间距：发布版这两颗都是
+                // `HyperosButton`（`hyperos_dialog.dart:127-177` 的两动作分支），不是文字链。
+                // 原来用透明 `TextButton`，与右侧实心确认键一轻一重，读起来像「取消」是链接。
+                Button(
                     modifier = Modifier.weight(1f),
-                    text = TimetableStrings.cancelAction.text,
                     onClick = onDismiss,
-                )
+                    colors = ButtonDefaults.buttonColors(),
+                ) {
+                    Text(text = TimetableStrings.cancelAction.text)
+                }
                 Button(
                     enabled = nameInput.isNotBlank() && nameInput.trim() != profile.name,
                     onClick = {
@@ -669,19 +690,22 @@ private fun ClearCoursesConfirmDialog(
             horizontalArrangement = Arrangement.spacedBy(12.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            TextButton(
+            // 取消键：官方 secondary 实心按钮（发布版两颗动作都是 HyperosButton，
+            // 见清空/删除确认的两处调用 `showHyperosConfirmDialog`）。
+            Button(
                 modifier = Modifier.weight(1f),
-                text = TimetableStrings.cancelAction.text,
                 onClick = onDismiss,
-            )
-            // 清空是危险动作：红底 + onError 字，不再是「灰底红字」。
+                colors = ButtonDefaults.buttonColors(),
+            ) {
+                Text(text = TimetableStrings.cancelAction.text)
+            }
+            // 清空确认键是**主色实心**：发布版 `_clearActiveProfileCourses`（`timetable_profiles_screen.dart:236-242`）
+            // 调 `showHyperosConfirmDialog` 时**没有**传 `destructive` ⇒ 确认键走 primary 变体。
+            // 危险色只留给「删除课表」那一条（同一文件 `:288-293` 明确 `destructive: true`）。
             Button(
                 onClick = onConfirm,
                 modifier = Modifier.weight(1f),
-                colors = ButtonDefaults.buttonColors(
-                    color = MiuixTheme.colorScheme.error,
-                    contentColor = MiuixTheme.colorScheme.onError,
-                ),
+                colors = ButtonDefaults.buttonColorsPrimary(),
             ) {
                 Text(text = TimetableStrings.clearAction.text)
             }
@@ -713,11 +737,14 @@ private fun DeleteProfileConfirmDialog(
             horizontalArrangement = Arrangement.spacedBy(12.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            TextButton(
+            // 取消键：官方 secondary 实心按钮，与右侧危险色确认键同一形制（发布版 HyperosButton 两动作）。
+            Button(
                 modifier = Modifier.weight(1f),
-                text = TimetableStrings.cancelAction.text,
                 onClick = onDismiss,
-            )
+                colors = ButtonDefaults.buttonColors(),
+            ) {
+                Text(text = TimetableStrings.cancelAction.text)
+            }
             // 删除是危险动作：红底 + onError 字。
             Button(
                 onClick = onConfirm,
@@ -1004,6 +1031,18 @@ private fun TimetableProfilesPagePreviewDark() {
 @Composable
 private fun TimetableProfilesPagePreviewLargeText() {
     PreviewTimetableProfilesPage(profiles = previewProfileItems(), textScale = 1.3f)
+}
+
+/**
+ * 「整页」档（2026-11-10 评审：全仓预览一律 900 高，整页被接口截断）。
+ *
+ * 纯注释、不动页面代码：高度 1200，档案多/暗色下也能一屏看完；上面 1~5 档保留。
+ */
+@Suppress("unused")
+@Preview(name = "6 整页", showBackground = true, widthDp = 400, heightDp = 1200)
+@Composable
+private fun TimetableProfilesPagePreviewFullPage() {
+    PreviewTimetableProfilesPage(profiles = previewProfileItems())
 }
 
 // ── 总览：三态并排，一屏看完 ─────────────────────────────────────────────────
