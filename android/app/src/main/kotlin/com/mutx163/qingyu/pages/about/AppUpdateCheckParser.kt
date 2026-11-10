@@ -4,6 +4,8 @@ import com.mutx163.qingyu.core.MiniJson
 import com.mutx163.qingyu.infra.AppUpdateCheckResult
 import com.mutx163.qingyu.infra.buildCheckResult
 import com.mutx163.qingyu.infra.pickLatestEligibleRelease
+import com.mutx163.qingyu.infra.pickLatestEligibleReleaseFromHtml
+import com.mutx163.qingyu.infra.releaseFromGitCodeJson
 import com.mutx163.qingyu.infra.releaseFromGitHubJson
 
 /**
@@ -56,3 +58,58 @@ fun parseGithubReleasesResponse(
     val release = releaseFromGitHubJson(picked, digestFromDirectChannel = true)
     return AppUpdateCheckOutcome.Success(buildCheckResult(currentVersion, release))
 }
+
+/**
+ * 解析 GitCode releases API 响应体（同样 `[{...}]`）→ 检查结果。
+ *
+ * 与 GitHub 路共用的部分：挑版本走 [pickLatestEligibleRelease]；
+ * 构造模型走 [releaseFromGitCodeJson]（附件只认 `gitcode.com` 主机、拿不到时按命名规律兜底，
+ * 摘要取发行版正文里 CI 写入的 SHA-256）。
+ */
+fun parseGitCodeReleasesResponse(
+    currentVersion: String,
+    jsonText: String?,
+    includePrerelease: Boolean,
+): AppUpdateCheckOutcome {
+    if (jsonText.isNullOrBlank()) return AppUpdateCheckOutcome.Malformed
+    val decoded = MiniJson.tryParse(jsonText) ?: return AppUpdateCheckOutcome.Malformed
+    if (decoded !is List<*>) return AppUpdateCheckOutcome.Malformed
+
+    val rawList = ArrayList<Any?>(decoded.size)
+    for (item in decoded) rawList.add(item)
+
+    val picked = pickLatestEligibleRelease(rawList, includePrerelease)
+        ?: return AppUpdateCheckOutcome.Success(emptyCheckResult(currentVersion))
+    @Suppress("UNCHECKED_CAST")
+    val pickedMap = picked as? Map<String, Any?>
+        ?: return AppUpdateCheckOutcome.Malformed
+    val release = releaseFromGitCodeJson(pickedMap, includePrerelease)
+        ?: return AppUpdateCheckOutcome.Success(emptyCheckResult(currentVersion))
+    return AppUpdateCheckOutcome.Success(buildCheckResult(currentVersion, release))
+}
+
+/**
+ * 解析 Release 页面 HTML → 检查结果（第三条清单来源；国内 GitHub API 被丢包时它常常还通）。
+ *
+ * 页面里没有 asset 级摘要，摘要只能靠正文里 CI 写入的 SHA-256；这里不补，
+ * 由宿主在竞速胜出后从兄弟策略回填（与发布版 `_mergeDigestFromOtherStrategies` 同口径）。
+ */
+fun parseReleasesPageHtml(
+    currentVersion: String,
+    html: String?,
+    includePrerelease: Boolean,
+): AppUpdateCheckOutcome {
+    if (html.isNullOrBlank()) return AppUpdateCheckOutcome.Malformed
+    val release = pickLatestEligibleReleaseFromHtml(html, includePrerelease)
+        ?: return AppUpdateCheckOutcome.Success(emptyCheckResult(currentVersion))
+    return AppUpdateCheckOutcome.Success(buildCheckResult(currentVersion, release))
+}
+
+/** 「响应合法但没有任何可用版本」：页面据此画「检查更新失败」，与三条路的空结果同一形状。 */
+private fun emptyCheckResult(currentVersion: String): AppUpdateCheckResult = AppUpdateCheckResult(
+    hasRelease = false,
+    hasUpdate = false,
+    currentVersion = currentVersion,
+    latestRelease = null,
+    message = null,
+)

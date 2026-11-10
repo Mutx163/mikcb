@@ -22,13 +22,20 @@ import com.mutx163.qingyu.app.TimetableStore
 import com.mutx163.qingyu.infra.AppLogStore
 import com.mutx163.qingyu.infra.AppUpdateCheckResult
 import com.mutx163.qingyu.infra.AppUpdateDotShare
+import com.mutx163.qingyu.infra.AppUpdateDownloadChannel
+import com.mutx163.qingyu.infra.AppUpdateManifestCandidate
+import com.mutx163.qingyu.infra.AppUpdateManifestSource
+import com.mutx163.qingyu.infra.appUpdateManifestCandidates
+import com.mutx163.qingyu.infra.buildCheckResult
 import com.mutx163.qingyu.infra.buildDownloadUrl
+import com.mutx163.qingyu.infra.isTrustedManifestUrl
 import com.mutx163.qingyu.infra.recordingEnabledFromPrefs
-import com.mutx163.qingyu.infra.releasesApiUrl
 import com.mutx163.qingyu.pages.settings.SettingsStringsExt2
 import com.mutx163.qingyu.platform.PrefsKeyValueStore
 import com.mutx163.qingyu.isTrustedSystemDownloadUrl
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -125,8 +132,11 @@ fun AboutUpdateHostPage(
         val info = packageInfo ?: run { checking = false; return }
         checking = true
         scope.launch {
-            val text = withContext(Dispatchers.IO) { fetchReleasesJson() }
-            val outcome = parseGithubResponses(info.version, text, settings.includePrerelease)
+            val outcome = checkForUpdatesAcrossManifestSources(
+                currentVersion = info.version,
+                channel = settings.downloadChannel,
+                includePrerelease = settings.includePrerelease,
+            )
             result = outcome
             checking = false
             if (outcome == null) {
@@ -379,9 +389,10 @@ fun AboutUpdateHostPage(
  * `timetable_update_download_part.dart:36-50`）。
  *
  * 只做三件事：
- * 1. **查一次**：进首页时按存档的「检测测试版」开关拉一次 GitHub releases，并按当前
- *    安装版本判定有没有新版——与 [AboutUpdateHostPage] 共用同一份
- *    [fetchReleasesJson] / [parseGithubResponses]，没有第二套检查逻辑；
+ * 1. **查一次**：进首页时按存档的「检测测试版」开关拉一次清单（与版本更新页同一条
+ *    三路竞速链路：[checkForUpdatesAcrossManifestSources] + [parseGithubResponses] /
+ *    [parseGitCodeReleasesResponse] / [parseReleasesPageHtml]，没有第二套检查逻辑），
+ *    并按当前安装版本判定有没有新版；
  * 2. **登记**：结果写 [AppUpdateDotShare]（跨页面共享的「有更新」登记，未查过读
  *    false）。首页三处提示都读它：「更多」按钮红点、八宫格「更新」瓷贴角标、
  *    列表档「更新」行提示；
@@ -408,12 +419,13 @@ fun rememberHomeUpdateAvailability(enabled: Boolean = true): Boolean {
             val latest = if (info == null) {
                 false
             } else {
-                val text = withContext(Dispatchers.IO) { fetchReleasesJson() }
-                parseGithubResponses(
+                // 与版本更新页同一条竞速链路（渠道取同一份设置），首页红点不再单独写一套。
+                val check = checkForUpdatesAcrossManifestSources(
                     currentVersion = info.version,
-                    jsonText = text,
+                    channel = updateSettings.downloadChannel,
                     includePrerelease = updateSettings.includePrerelease,
-                )?.hasUpdate == true
+                )
+                check?.hasUpdate == true
             }
             AppUpdateDotShare.publish(latest)
             hasUpdate = latest
@@ -462,14 +474,113 @@ private fun readHostPackageInfo(context: Context): HostPackageInfo? = runCatchin
     HostPackageInfo(appName = name, version = version)
 }.getOrNull()
 
-/** GitHub releases API（匿名）→ 响应体；失败返回 null（页面按检查失败画）。 */
-private fun fetchReleasesJson(): String? = runCatching {
-    val conn = (URL(releasesApiUrl).openConnection() as HttpURLConnection).apply {
+/**
+ * 三路清单竞速（发布版 `app_update_service.dart:256-307` 的 `raceFutures` + `:396-434`
+ * 的摘要回填）。
+ *
+ * ## 为什么必须三路
+ *
+ * 2026-11-10 联网审计：此前只接了 GitHub API 一条（4s 连接 / 6s 读超时），国内网络下
+ * `api.github.com` 常被丢包 ⇒ 「检查更新」基本必挂。发布版是 **GitHub API + Release 页 HTML
+ * + GitCode API** 三路并行，谁先拿到可用版本用谁；渠道只决定顺序（见
+ * [appUpdateManifestCandidates]），**不裁源**。
+ *
+ * ## 摘要回填
+ *
+ * Release 页 HTML 拿不到 asset 级摘要；若胜者没有摘要，按发布版同口径在
+ * [DIGEST_BACKFILL_DEADLINE_MS] 内轮询兄弟策略的结果，找到**同版本 + 直连渠道**的摘要就补上
+ *（安装闸门据此决定「直接装」还是「引导去 Release 页」）。
+ */
+private suspend fun checkForUpdatesAcrossManifestSources(
+    currentVersion: String,
+    channel: AppUpdateDownloadChannel,
+    includePrerelease: Boolean,
+): AppUpdateCheckResult? = coroutineScope {
+    val candidates = appUpdateManifestCandidates(channel)
+    // 只要成功的结果（ConcurrentHashMap 不存 null）。
+    val successes = java.util.concurrent.ConcurrentHashMap<AppUpdateManifestSource, AppUpdateCheckResult>()
+    val arrivals = Channel<AppUpdateCheckResult?>(Channel.UNLIMITED)
+
+    val jobs = candidates.map { candidate ->
+        launch(Dispatchers.IO) {
+            val outcome = runCatching {
+                fetchManifestBody(candidate)?.let { body ->
+                    parseManifestBody(candidate, currentVersion, body, includePrerelease)
+                }
+            }.getOrNull()
+            if (outcome != null && outcome.hasRelease) {
+                successes[candidate.source] = outcome
+            }
+            arrivals.send(outcome)
+        }
+    }
+
+    var remaining = jobs.size
+    var winner: AppUpdateCheckResult? = null
+    while (remaining > 0) {
+        val outcome = arrivals.receive()
+        remaining -= 1
+        if (outcome != null && outcome.hasRelease) {
+            winner = outcome
+            break
+        }
+    }
+
+    val merged = winner?.let { mergeDigestFromSiblings(it, successes) }
+    jobs.forEach { it.cancel() }
+    arrivals.close()
+    merged
+}
+
+/**
+ * 胜者没有摘要时，从兄弟策略回填（同版本 + 直连渠道才有资格）。
+ *
+ * 与发布版一致：120ms 轮询、最多等 1600ms —— 不为摘要把「检查更新」拖成十几秒。
+ */
+private suspend fun mergeDigestFromSiblings(
+    winner: AppUpdateCheckResult,
+    successes: java.util.concurrent.ConcurrentHashMap<AppUpdateManifestSource, AppUpdateCheckResult>,
+): AppUpdateCheckResult {
+    val release = winner.latestRelease ?: return winner
+    if (release.expectedApkSha256 != null) return winner
+
+    val deadline = System.currentTimeMillis() + DIGEST_BACKFILL_DEADLINE_MS
+    while (System.currentTimeMillis() < deadline) {
+        val sibling = successes.values.firstNotNullOfOrNull { other ->
+            other.latestRelease?.takeIf {
+                it.version == release.version &&
+                    it.digestFromDirectChannel &&
+                    it.expectedApkSha256 != null
+            }
+        }
+        if (sibling != null) {
+            return buildCheckResult(
+                currentVersion = winner.currentVersion,
+                release = release.copy(
+                    expectedApkSha256 = sibling.expectedApkSha256,
+                    digestFromDirectChannel = true,
+                ),
+            )
+        }
+        delay(DIGEST_BACKFILL_POLL_MS)
+    }
+    return winner
+}
+
+/** 拉一条清单候选；非 2xx / 传输失败 / 非信任根一律返回 null。 */
+private fun fetchManifestBody(candidate: AppUpdateManifestCandidate): String? = runCatching {
+    // 信任根兜底：清单只认官方直连（镜像候选永远不该出现在这条链里）。
+    if (!isTrustedManifestUrl(candidate.url)) return null
+    val conn = (URL(candidate.url).openConnection() as HttpURLConnection).apply {
         requestMethod = "GET"
         connectTimeout = 4000
         readTimeout = 6000
         setRequestProperty("User-Agent", "mikcb-android")
-        setRequestProperty("Accept", "application/vnd.github+json")
+        when (candidate.source) {
+            AppUpdateManifestSource.GITHUB_API -> setRequestProperty("Accept", "application/vnd.github+json")
+            AppUpdateManifestSource.GITCODE_API -> setRequestProperty("Accept", "application/json")
+            AppUpdateManifestSource.RELEASES_PAGE_HTML -> setRequestProperty("Accept", "text/html")
+        }
     }
     try {
         if (conn.responseCode !in 200..299) return null
@@ -478,6 +589,35 @@ private fun fetchReleasesJson(): String? = runCatching {
         conn.disconnect()
     }
 }.getOrNull()
+
+/** 按来源分派到对应的纯解析核；解析不出来返回 null（该路让位给兄弟策略）。 */
+private fun parseManifestBody(
+    candidate: AppUpdateManifestCandidate,
+    currentVersion: String,
+    body: String,
+    includePrerelease: Boolean,
+): AppUpdateCheckResult? = when (candidate.source) {
+    AppUpdateManifestSource.GITHUB_API ->
+        parseGithubResponses(currentVersion, body, includePrerelease)
+
+    AppUpdateManifestSource.GITCODE_API ->
+        when (val outcome = parseGitCodeReleasesResponse(currentVersion, body, includePrerelease)) {
+            is AppUpdateCheckOutcome.Success -> outcome.result
+            AppUpdateCheckOutcome.Malformed -> null
+        }
+
+    AppUpdateManifestSource.RELEASES_PAGE_HTML ->
+        when (val outcome = parseReleasesPageHtml(currentVersion, body, includePrerelease)) {
+            is AppUpdateCheckOutcome.Success -> outcome.result
+            AppUpdateCheckOutcome.Malformed -> null
+        }
+}
+
+/** 摘要回填轮询间隔（发布版 `_mergeDigestFromOtherStrategies` 同值）。 */
+private const val DIGEST_BACKFILL_POLL_MS = 120L
+
+/** 摘要回填最多等多久（发布版同值；超过就按「无摘要」交出，安装闸门照常拒装）。 */
+private const val DIGEST_BACKFILL_DEADLINE_MS = 1600L
 
 /** 解析检查结果：Malformed → null（检查失败）。 */
 private fun parseGithubResponses(

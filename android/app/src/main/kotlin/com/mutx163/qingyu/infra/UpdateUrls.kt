@@ -46,6 +46,43 @@ enum class AppUpdateDownloadSource { ORIGINAL, MIRROR }
 
 enum class AppUpdateDownloadChannel { PGYER, GITHUB, GITCODE }
 
+/**
+ * 更新清单的三种**直连**来源（发布版 `app_update_service.dart:256-307` 的三路竞速）。
+ *
+ * 三者都是官方直连，镜像**永不**进清单候选池（2026-10-19 信任根收紧：镜像对清单有
+ * 完全控制权，不该让它回答「有没有新版本」）。
+ */
+enum class AppUpdateManifestSource { GITHUB_API, RELEASES_PAGE_HTML, GITCODE_API }
+
+/** 一条清单候选：来源 + 直连 URL。 */
+data class AppUpdateManifestCandidate(
+    val source: AppUpdateManifestSource,
+    val url: String,
+)
+
+/**
+ * 按下载渠道推导清单候选链（顺序 = 起跑顺序，也是同时完成时的优先级）。
+ *
+ * - **GitCode 渠道**：国内网络里 GitCode 通常最先通，把它排在第一位
+ *   （`gitcodeReleasesApiUrl` 此前在 `UpdateUrls.kt` 里现成未用）；
+ * - **GitHub / PGYER 渠道**：GitHub API 优先、Release 页 HTML 次之。
+ *
+ * 三条**永远都在**：发布版是三路并行竞速，渠道只决定顺序，不裁掉任何一路
+ *（裁掉哪一路都会让对应网络环境退回到「单体超时」的老毛病）。
+ */
+fun appUpdateManifestCandidates(
+    channel: AppUpdateDownloadChannel,
+): List<AppUpdateManifestCandidate> {
+    val gitCode = AppUpdateManifestCandidate(AppUpdateManifestSource.GITCODE_API, gitcodeReleasesApiUrl)
+    val gitHubApi = AppUpdateManifestCandidate(AppUpdateManifestSource.GITHUB_API, releasesApiUrl)
+    val releasesPage = AppUpdateManifestCandidate(AppUpdateManifestSource.RELEASES_PAGE_HTML, releasesPageUrl)
+    return if (channel == AppUpdateDownloadChannel.GITCODE) {
+        listOf(gitCode, gitHubApi, releasesPage)
+    } else {
+        listOf(gitHubApi, releasesPage, gitCode)
+    }
+}
+
 data class AppReleaseInfo(
     val version: String,
     val title: String,
