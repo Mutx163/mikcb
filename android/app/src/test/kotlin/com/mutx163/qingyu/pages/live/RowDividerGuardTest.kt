@@ -33,6 +33,10 @@ import java.io.File
  * - 语义内容：ReleaseNotesMarkdownView（markdown `---` 语法渲染）；
  * - 表格语义：ProfileCompareCard（双档案对比表，无行线不可读）；
  * - 分享图设计参数：StatisticsExportCards（品牌区上下边线，`showTopDivider/showBottomDivider`）；
+ * - 发布版自带的条目分隔（2026-11-10 登记）：时间模板动作表 `TimeSchemeManagementDialogs`
+ *   （`HyperosChoiceTile(showDivider = true)`）、课程重新配色选组页 `CourseRecolorSheet`
+ *   （`HyperosChoiceGroup` 的 0.5dp 缩进行间线）——两处都是 ChoiceTile/ChoiceGroup 的形态，
+ *   不是设置卡里的 Preference 行；
  * - 在途避让：import/warehouse 三页（版面重排会话在改，待其落地后清理并删白名单）。
  *
  * ⚠️ 文本判据对格式敏感；文件改名/移动后必须同步 [ALLOWANCE]，否则空跑假绿
@@ -76,6 +80,15 @@ class RowDividerGuardTest {
         "android/app/src/composeP1/kotlin/com/mutx163/qingyu/pages/statistics/StatisticsSessionPage.kt" to 1,
         // 数据迁移页：「当前可迁移内容」概览的堆叠行，与同卡「导出日历」可点行视觉统一。
         "android/app/src/composeP1/kotlin/com/mutx163/qingyu/pages/transfer/DataTransferPage.kt" to 1,
+        // ── 2026-11-10 两处「发布版自带的行间线」动作表 / 选组卡（Chief 当日批登记）──
+        // 时间模板动作表：发布版 `_openSchemeMenu` 用
+        // `HyperosChoiceTile(variant: dialog, showDivider: true)`，行间线来自
+        // `HyperosInsetDivider(indent: settingsRowPadding.left)`（`tiles.dart`）。
+        // 这是**动作表条目分隔**（ChoiceTile 自带的形态），不是被清掉的「设置卡里每两行都画线」。
+        "android/app/src/composeP1/kotlin/com/mutx163/qingyu/pages/time_scheme/TimeSchemeManagementDialogs.kt" to 1,
+        // 课程重新配色·选组页：发布版 `HyperosChoiceGroup` 里的选项行之间就是 0.5dp 缩进分隔线
+        // （左缩进 16，`hyperos_select.dart` / S04 选组弹层）。选组卡要的是勾选行组，不是设置卡行组。
+        "android/app/src/composeP1/kotlin/com/mutx163/qingyu/app/CourseRecolorSheet.kt" to 1,
     )
 
     private val scanRoot = "android/app/src/composeP1"
