@@ -3,6 +3,7 @@ package com.mutx163.qingyu.components
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -23,6 +24,7 @@ import androidx.compose.ui.input.pointer.PointerInputChange
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalLayoutDirection
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
@@ -290,4 +292,70 @@ private fun RowScope.QingyuSliderPreferenceArrowIcon(
         contentDescription = null,
         colorFilter = tintFilter,
     )
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// IDE 预览（2026-11-10 组件预览补齐批）
+//
+// 一屏档 400×900、预览名中文；只给实现/评审在 IDE 里看形态，不进业务路径。
+// 三段分别覆盖：基础连续滑杆 / 关键点与磁吸 / 设置行（标题 + 读数 + 箭头）。
+// ─────────────────────────────────────────────────────────────────────────────
+
+@Suppress("unused")
+@Preview(name = "1 基础滑杆", showBackground = true, widthDp = 400, heightDp = 900)
+@Composable
+private fun QingyuSliderPreviewBasic() {
+    QingyuPageTheme {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(24.dp),
+            verticalArrangement = Arrangement.spacedBy(24.dp),
+        ) {
+            QingyuSlider(value = 0.35f, onValueChange = {}, modifier = Modifier.fillMaxWidth())
+        }
+    }
+}
+
+@Suppress("unused")
+@Preview(name = "2 关键点与磁吸", showBackground = true, widthDp = 400, heightDp = 900)
+@Composable
+private fun QingyuSliderPreviewKeyPoints() {
+    QingyuPageTheme {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(24.dp),
+            verticalArrangement = Arrangement.spacedBy(24.dp),
+        ) {
+            QingyuSlider(
+                value = 40f,
+                onValueChange = {},
+                modifier = Modifier.fillMaxWidth(),
+                valueRange = 0f..100f,
+                steps = 3,
+                showKeyPoints = true,
+                keyPoints = listOf(0f, 25f, 50f, 75f, 100f),
+            )
+        }
+    }
+}
+
+@Suppress("unused")
+@Preview(name = "3 设置行滑杆", showBackground = true, widthDp = 400, heightDp = 900)
+@Composable
+private fun QingyuSliderPreviewRow() {
+    QingyuPageTheme {
+        Column(modifier = Modifier.fillMaxWidth()) {
+            QingyuSliderPreference(
+                value = 18f,
+                onValueChange = {},
+                title = "左侧文字大小 18",
+                valueText = "18",
+                valueRange = 1f..32f,
+                steps = 30,
+                onClick = {},
+            )
+        }
+    }
 }

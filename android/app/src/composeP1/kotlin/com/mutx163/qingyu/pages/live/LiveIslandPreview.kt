@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -26,9 +27,11 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.mutx163.qingyu.components.QingyuEmptyHint
+import com.mutx163.qingyu.components.QingyuPageTheme
 import com.mutx163.qingyu.components.QingyuWeightDelta
 import com.mutx163.qingyu.components.shiftWeight
 import com.mutx163.qingyu.theme.QingyuTheme
@@ -445,5 +448,55 @@ private fun parseHexColorOrFallback(hex: String?, fallback: Color): Color {
         }
     } catch (_: NumberFormatException) {
         fallback
+    }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// IDE 预览（2026-11-10 组件预览补齐批）：专项档 400×900、预览名中文。
+// 两张岛卡吃同一份样例课程 + 默认显示设置（开关全开），只给 IDE 看形态与折行，
+// 不进业务路径；生产预览由页面喂真实当前/下一节课程。
+// ─────────────────────────────────────────────────────────────────────────────
+
+private val previewIslandInfo: LiveIslandPreviewInfo = LiveIslandPreviewInfo(
+    courseName = "高等数学（下）",
+    courseShortName = "高数",
+    location = "理科楼 302",
+    teacher = "王老师",
+    startTime = "08:00",
+    endTime = "09:40",
+    note = "带计算器",
+    nextCourseName = "大学物理",
+    moment = LivePreviewMoment.BETWEEN_CLASSES,
+)
+
+@Suppress("unused")
+@Preview(name = "1 摘要态岛卡", showBackground = true, widthDp = 400, heightDp = 900)
+@Composable
+private fun LiveIslandPreviewCardPreview() {
+    QingyuPageTheme {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(16.dp),
+            contentAlignment = Alignment.TopCenter,
+        ) {
+            LiveIslandPreviewCard(state = LiveDisplayState(), previewInfo = previewIslandInfo)
+        }
+    }
+}
+
+@Suppress("unused")
+@Preview(name = "2 展开态岛卡", showBackground = true, widthDp = 400, heightDp = 900)
+@Composable
+private fun LiveIslandExpandedPreviewCardPreview() {
+    QingyuPageTheme {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(16.dp),
+            contentAlignment = Alignment.TopCenter,
+        ) {
+            LiveIslandExpandedPreviewCard(state = LiveDisplayState(), previewInfo = previewIslandInfo)
+        }
     }
 }

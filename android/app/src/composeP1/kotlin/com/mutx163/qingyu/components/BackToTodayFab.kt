@@ -13,6 +13,7 @@ import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -29,6 +30,7 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.unit.dp
 import com.mutx163.qingyu.components.liquid.InteractiveHighlight
@@ -322,3 +324,23 @@ private const val FAB_SHADOW_ALPHA = 0.4f
 private const val FAB_NARROW_REFRACTION_RATIO = 0.28f
 private const val FAB_NARROW_REFRACTION_MIN_DP = 8f
 private const val FAB_NARROW_REFRACTION_MAX_DP = 14f
+
+// ─────────────────────────────────────────────────────────────────────────────
+// IDE 预览（2026-11-10 组件预览补齐批）：一屏档 400×900、预览名中文。
+// 这里走**无采样源**的实心回落分支（预览里没有真实壁纸层）；玻璃档由页内宿主提供 backdrop。
+// ─────────────────────────────────────────────────────────────────────────────
+
+@Suppress("unused")
+@Preview(name = "1 回到今天浮钮", showBackground = true, widthDp = 400, heightDp = 900)
+@Composable
+private fun BackToTodayFabPreview() {
+    QingyuPageTheme {
+        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+            BackToTodayFab(
+                onClick = {},
+                label = "回到今天",
+                contentDescription = "回到今天",
+            )
+        }
+    }
+}

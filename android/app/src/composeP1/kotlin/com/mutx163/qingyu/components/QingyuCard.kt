@@ -1,18 +1,24 @@
 package com.mutx163.qingyu.components
 
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.mutx163.qingyu.theme.QingyuShapes
 import top.yukonga.miuix.kmp.basic.Card
 import top.yukonga.miuix.kmp.basic.CardColors
 import top.yukonga.miuix.kmp.basic.CardDefaults
+import top.yukonga.miuix.kmp.basic.Text
+import top.yukonga.miuix.kmp.theme.MiuixTheme
 import top.yukonga.miuix.kmp.utils.PressFeedbackType
 
 /**
@@ -119,4 +125,39 @@ object QingyuCardDefaults {
      * 包 `*Preference` 行时**不要**用这个值——那些组件自带 16dp，再给会变成 32dp。
      */
     val ContentInsideMargin: PaddingValues = PaddingValues(16.dp)
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// IDE 预览（2026-11-10 组件预览补齐批）：一屏档 400×900、预览名中文。
+// 只给 IDE 看「设置组白卡 + 行内边距」的默认形态，不进业务路径。
+// ─────────────────────────────────────────────────────────────────────────────
+
+@Suppress("unused")
+@Preview(name = "1 设置组卡片", showBackground = true, widthDp = 400, heightDp = 900)
+@Composable
+private fun QingyuCardPreviewGroup() {
+    QingyuPageTheme {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+        ) {
+            QingyuCard(
+                modifier = Modifier.fillMaxWidth(),
+                cornerRadius = QingyuCardDefaults.SettingsGroupCorner,
+                insideMargin = PaddingValues(0.dp),
+            ) {
+                Text(
+                    text = "课程名",
+                    modifier = Modifier.padding(16.dp),
+                    style = MiuixTheme.textStyles.body2,
+                )
+                Text(
+                    text = "上课时间 08:00–09:40",
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
+                    style = MiuixTheme.textStyles.footnote1,
+                )
+            }
+        }
+    }
 }

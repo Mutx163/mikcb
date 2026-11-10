@@ -1,16 +1,33 @@
 package com.mutx163.qingyu.components.glass
 
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import com.mutx163.qingyu.components.QingyuPageTheme
 import com.mutx163.qingyu.components.liquid.lens
 import com.mutx163.qingyu.core.HomeMaterialRenderSpec
 import com.mutx163.qingyu.core.SurfaceMaterialState
+import com.mutx163.qingyu.theme.QingyuTheme
+import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.blur.Backdrop
 import top.yukonga.miuix.kmp.blur.drawBackdrop
+import top.yukonga.miuix.kmp.blur.layerBackdrop
+import top.yukonga.miuix.kmp.blur.rememberLayerBackdrop
 
 /**
  * 课程卡「液态玻璃面」的**唯一画法**（2026-11-04 抽出）。
@@ -90,4 +107,59 @@ fun Modifier.courseCardGlassSurface(
         },
         onDrawSurface = { drawRect(fill) },
     )
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// IDE 预览（2026-11-10 组件预览补齐批）：一屏档 400×900、预览名中文。
+// 采样源用一层 layer backdrop（全站「页面内容合成层」的对位），材质走液态玻璃档；
+// 只给 IDE 看卡面折射/边光/染色，不进业务路径。
+// ─────────────────────────────────────────────────────────────────────────────
+
+private val PreviewCourseCardMaterial: HomeMaterialRenderSpec =
+    HomeMaterialRenderSpec(courseCard = SurfaceMaterialState.LIQUID_GLASS)
+
+@Suppress("unused")
+@Preview(name = "1 课程卡玻璃面", showBackground = true, widthDp = 400, heightDp = 900)
+@Composable
+private fun CourseCardGlassSurfacePreview() {
+    QingyuPageTheme {
+        val pageBackground = Color(QingyuTheme.scaffoldBackground(false))
+        val backdrop = rememberLayerBackdrop {
+            drawRect(pageBackground)
+            drawContent()
+        }
+        Box(modifier = Modifier.fillMaxSize()) {
+            Column(
+                modifier = Modifier
+                    .matchParentSize()
+                    .layerBackdrop(backdrop)
+                    .padding(24.dp),
+                verticalArrangement = Arrangement.spacedBy(16.dp),
+            ) {
+                repeat(5) { index ->
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(88.dp)
+                            .background(
+                                Color(QingyuTheme.primary(dark = false)).copy(alpha = 0.15f + index * 0.06f),
+                            ),
+                    )
+                }
+            }
+            Box(
+                modifier = Modifier
+                    .align(Alignment.Center)
+                    .size(width = 320.dp, height = 168.dp)
+                    .courseCardGlassSurface(
+                        backdrop = backdrop,
+                        shape = RoundedCornerShape(16.dp),
+                        fill = Color(QingyuTheme.primary(dark = false)).copy(alpha = 0.45f),
+                        material = PreviewCourseCardMaterial,
+                    ),
+            ) {
+                Text(text = "课程卡玻璃", modifier = Modifier.padding(16.dp))
+            }
+        }
+    }
 }

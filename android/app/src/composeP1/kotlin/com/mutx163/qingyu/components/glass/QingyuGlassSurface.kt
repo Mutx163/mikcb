@@ -1,25 +1,46 @@
 package com.mutx163.qingyu.components.glass
 
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.graphics.Shape
+import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import com.mutx163.qingyu.components.QingyuPageTheme
 import com.mutx163.qingyu.components.liquid.lens
 import com.mutx163.qingyu.components.liquid.vibrancy
 import com.mutx163.qingyu.core.GlassSpec
+import com.mutx163.qingyu.core.GlassSpecResolver
+import com.mutx163.qingyu.core.HomeMaterialRenderSpec
+import com.mutx163.qingyu.core.dockGlassTuning
+import com.mutx163.qingyu.theme.QingyuTheme
+import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.blur.Backdrop
 import top.yukonga.miuix.kmp.blur.BlurColors
 import top.yukonga.miuix.kmp.blur.drawBackdrop
 import top.yukonga.miuix.kmp.blur.blur
 import top.yukonga.miuix.kmp.blur.highlight.Highlight
+import top.yukonga.miuix.kmp.blur.layerBackdrop
 import top.yukonga.miuix.kmp.blur.progressiveTextureBlurEffect
+import top.yukonga.miuix.kmp.blur.rememberLayerBackdrop
 import top.yukonga.miuix.kmp.blur.runtimeShaderEffect
 import top.yukonga.miuix.kmp.blur.ProgressiveBlur
+import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 /**
  * 全站玻璃面的**唯一渲染实现**（2026-11-03）。
@@ -170,5 +191,63 @@ fun QingyuGlassSurface(
         ),
     ) {
         content()
+    }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// IDE 预览（2026-11-10 组件预览补齐批）：一屏档 400×900、预览名中文。
+// 采样源用一层 layer backdrop（全站「页面内容合成层」的对位），只给 IDE 看玻璃面形态，
+// 不进业务路径；真机由调用方按设备 shader 能力决定是否走玻璃。
+// ─────────────────────────────────────────────────────────────────────────────
+
+private val PreviewGlassSpec: GlassSpec =
+    GlassSpecResolver.resolve(HomeMaterialRenderSpec().dockGlassTuning())
+
+@Suppress("unused")
+@Preview(name = "1 玻璃面", showBackground = true, widthDp = 400, heightDp = 900)
+@Composable
+private fun QingyuGlassSurfacePreview() {
+    QingyuPageTheme {
+        val pageBackground = Color(QingyuTheme.scaffoldBackground(false))
+        val backdrop = rememberLayerBackdrop {
+            drawRect(pageBackground)
+            drawContent()
+        }
+        Box(modifier = Modifier.fillMaxSize()) {
+            Column(
+                modifier = Modifier
+                    .matchParentSize()
+                    .layerBackdrop(backdrop)
+                    .padding(24.dp),
+                verticalArrangement = Arrangement.spacedBy(16.dp),
+            ) {
+                repeat(5) { index ->
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(88.dp)
+                            .background(
+                                Color(QingyuTheme.primary(dark = false)).copy(alpha = 0.15f + index * 0.06f),
+                            ),
+                    )
+                }
+            }
+            QingyuGlassSurface(
+                backdrop = backdrop,
+                spec = PreviewGlassSpec,
+                modifier = Modifier
+                    .align(Alignment.Center)
+                    .fillMaxWidth()
+                    .padding(horizontal = 32.dp)
+                    .height(160.dp),
+                shape = RoundedCornerShape(24.dp),
+                tintBrush = SolidColor(Color.White.copy(alpha = 0.25f)),
+                highlight = GlassDockSpecular,
+            ) {
+                Box(modifier = Modifier.padding(16.dp)) {
+                    Text(text = "玻璃面", style = MiuixTheme.textStyles.body2)
+                }
+            }
+        }
     }
 }

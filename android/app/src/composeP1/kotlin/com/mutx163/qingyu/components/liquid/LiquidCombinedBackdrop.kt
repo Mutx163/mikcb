@@ -7,14 +7,40 @@ package com.mutx163.qingyu.components.liquid
 //
 // 同 [lens]：miuix 0.9.4 发布物里没有 `CombinedBackdrop`，只在官方 demo 里。
 
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.remember
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.GraphicsLayerScope
+import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.layout.LayoutCoordinates
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Density
+import androidx.compose.ui.unit.dp
+import com.mutx163.qingyu.components.QingyuPageTheme
+import com.mutx163.qingyu.components.glass.QingyuGlassSurface
+import com.mutx163.qingyu.core.GlassSpec
+import com.mutx163.qingyu.core.GlassSpecResolver
+import com.mutx163.qingyu.core.HomeMaterialRenderSpec
+import com.mutx163.qingyu.core.dockGlassTuning
+import com.mutx163.qingyu.theme.QingyuTheme
+import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.blur.Backdrop
+import top.yukonga.miuix.kmp.blur.layerBackdrop
+import top.yukonga.miuix.kmp.blur.rememberLayerBackdrop
+import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 /**
  * 把两个 [Backdrop] 按顺序叠成一个采样源：先画 [first]，再画 [second]。
@@ -60,3 +86,71 @@ class CombinedBackdrop(
 @Composable
 fun rememberCombinedBackdrop(first: Backdrop, second: Backdrop): Backdrop =
     remember(first, second) { CombinedBackdrop(first, second) }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// IDE 预览（2026-11-10 组件预览补齐批）：一屏档 400×900、预览名中文。
+// 两块采样源各录一层（页面内容 / 栏底色），合成后交给玻璃面采样——只给 IDE 看形态。
+// ─────────────────────────────────────────────────────────────────────────────
+
+private val PreviewCombinedGlassSpec: GlassSpec =
+    GlassSpecResolver.resolve(HomeMaterialRenderSpec().dockGlassTuning())
+
+@Suppress("unused")
+@Preview(name = "1 双层合成采样", showBackground = true, widthDp = 400, heightDp = 900)
+@Composable
+private fun LiquidCombinedBackdropPreview() {
+    QingyuPageTheme {
+        val pageBackground = Color(QingyuTheme.scaffoldBackground(false))
+        val pageLayer = rememberLayerBackdrop {
+            drawRect(pageBackground)
+            drawContent()
+        }
+        val tintLayer = rememberLayerBackdrop { drawContent() }
+        val combined = rememberCombinedBackdrop(pageLayer, tintLayer)
+        Box(modifier = Modifier.fillMaxSize()) {
+            Column(
+                modifier = Modifier
+                    .matchParentSize()
+                    .layerBackdrop(pageLayer)
+                    .padding(24.dp),
+                verticalArrangement = Arrangement.spacedBy(16.dp),
+            ) {
+                repeat(4) { index ->
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(96.dp)
+                            .background(
+                                Color(QingyuTheme.primary(dark = false)).copy(alpha = 0.16f + index * 0.07f),
+                            ),
+                    )
+                }
+            }
+            Box(
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .fillMaxWidth()
+                    .height(72.dp)
+                    .layerBackdrop(tintLayer)
+                    .background(
+                        Color(QingyuTheme.surfaceContainerHighest(false)).copy(alpha = 0.6f),
+                    ),
+            )
+            QingyuGlassSurface(
+                backdrop = combined,
+                spec = PreviewCombinedGlassSpec,
+                modifier = Modifier
+                    .align(Alignment.Center)
+                    .fillMaxWidth()
+                    .padding(horizontal = 32.dp)
+                    .height(140.dp),
+                shape = RoundedCornerShape(24.dp),
+                tintBrush = SolidColor(Color.White.copy(alpha = 0.2f)),
+            ) {
+                Box(modifier = Modifier.padding(16.dp)) {
+                    Text(text = "双层合成采样", style = MiuixTheme.textStyles.body2)
+                }
+            }
+        }
+    }
+}
