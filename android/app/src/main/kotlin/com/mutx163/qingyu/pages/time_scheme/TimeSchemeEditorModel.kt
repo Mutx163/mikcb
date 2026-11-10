@@ -191,11 +191,18 @@ data class TimeSchemeEditorModel(
     )
 
     /**
-     * 改第 [index] 节的时间：先判单节跨度，再整表校验。
+     * 改第 [index] 节的时间。
      *
-     * 两道判据的顺序与 Dart `_pickSectionTime:1400-1443` 完全一致，不能合并：
-     * 1. `isSectionTimeSpanValid`（同口径放行 `24:00`）→ 失败提示「结束必须晚于开始」；
-     * 2. `validateSectionTimes(新表)` → 失败**整表拒绝**、原样返回并带提示。
+     * ## 2026-11-10 口径变更（用户指令）：编辑期允许乱序/重叠
+     *
+     * 原先这里跑 `validateSectionTimes(新表)`，不通过就**整表拒绝**——用户想先把「下午
+     * 提到上午」这类结构调整到一半，会被即时拦回来。现在：
+     *
+     * 1. **只保留**「单节结束必须晚于开始」这条硬规则（跨天表达不了，`24:00` 除外）——
+     *    失败时原样返回 + 提示，与之前一致；
+     * 2. 顺序/重叠**不再拒绝编辑**：新表照常落地，[TimeSchemeEditOutcome.message] 换成
+     *    非阻塞提示（[overlapHint]），由页面内联展示；
+     * 3. 硬校验留给 [validateForSave]——重叠的节次表保存时仍会被拒（服务消息逐条不变）。
      *
      * 结束时间这一跳额外过一遍 [resolveSectionEndTimeEdit]：时间选择器的小时上限是 23，
      * 表达不了 `24:00`，把「原本是 24:00 且选回 00:00」认回 `24:00`，否则只想改开始
@@ -216,12 +223,33 @@ data class TimeSchemeEditorModel(
         }
         val next = sections.toMutableList()
         next[index] = SectionTime(start, editedEnd)
-        val validationMessage = validateSectionTimes(next)
-        if (validationMessage != null) {
-            // 整表拒绝：半套生效会让用户看到「改了一节、另一节莫名回退」。
-            return TimeSchemeEditOutcome(this, TimeSchemeServiceMessages.localize(validationMessage))
+        return TimeSchemeEditOutcome(copy(sections = next), overlapHint(next))
+    }
+
+    /**
+     * 编辑期的**非阻塞**重叠提示：第 n 节的开始早于上一节的结束就算重叠。
+     *
+     * 只服务编辑器页那行提示（`TimeSchemeServiceMessages.sectionTimeOverlap`，六语），
+     * **不是**保存判据——保存仍走 [validateForSave] → `validateSectionTimes`。
+     *
+     * 逐条跳过「两格都空」的补位行（那是本仓认可的占位形状，不参与排序判定）；
+     * 解析不出来的坏值也跳过（畸形存量值不在提示层猜语义）。
+     */
+    fun overlapHint(sections: List<SectionTime> = this.sections): String? {
+        var previousEnd = -1
+        for ((index, section) in sections.withIndex()) {
+            if (section.startTime.trim().isEmpty() && section.endTime.trim().isEmpty()) continue
+            val start = tryParseClockMinutes(section.startTime, allowEndOfDay = true) ?: continue
+            val end = tryParseClockMinutes(section.endTime, allowEndOfDay = true) ?: continue
+            if (previousEnd >= 0 && start < previousEnd) {
+                return TimeSchemeServiceMessages.sectionTimeOverlap.filled(
+                    "sectionNumber",
+                    (index + 1).toString(),
+                )
+            }
+            previousEnd = end
         }
-        return TimeSchemeEditOutcome(copy(sections = next), null)
+        return null
     }
 
     /** 追加一节（末节不可追加时**原样返回**，不造幽灵节次）。 */
@@ -325,6 +353,30 @@ data class TimeSchemeEditorHeader(
 data class TimeSchemeChip(val label: String, val value: String)
 
 /** 改一节时间的结果：新状态 + 要弹的提示（null = 静默成功）。 */
+/**
+ * 快捷生成弹层的**实时预览**一行（2026-11-10 重做新增）。
+ *
+ * 「共 N 节 · 最后一节 HH:MM 结束」——用户改节数/起始时间/时长时直接看到结果，
+ * 不必先点「生成」再回来看节次表。参数非法时返回 null（预览行整行不画，
+ * 字段级校验提示照常显示），**不抛异常**。
+ */
+fun TimeSchemeQuickGeneratePreset.previewSummary(): String? = runCatching { toSections() }
+    .getOrNull()
+    ?.takeIf { it.isNotEmpty() }
+    ?.let { sections ->
+        TimeSchemeManagementStrings.quickGeneratePreviewSummary.filled(
+            "sections" to sections.size.toString(),
+            "endTime" to sections.last().endTime,
+        )
+    }
+
+/**
+ * 一次编辑的结果。
+ *
+ * [message] 现在是**非阻塞提示**（2026-11-10 起可能是「时间重叠」那句）：页面把它渲染成
+ * 内联提示行，而不是 toast 之后拦下编辑。真正会拦住保存的判据在
+ * [TimeSchemeEditorModel.validateForSave]。
+ */
 data class TimeSchemeEditOutcome(
     val model: TimeSchemeEditorModel,
     val message: String?,

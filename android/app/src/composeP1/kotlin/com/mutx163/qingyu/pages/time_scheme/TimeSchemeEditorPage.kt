@@ -84,6 +84,8 @@ import top.yukonga.miuix.kmp.theme.MiuixTheme
  * @param onRemoveLastSection 删除末节
  * @param onResetSections 恢复默认作息
  * @param onOpenQuickGenerate 打开快捷生成弹层（[TimeSchemeQuickGenerateSheet]）
+ * @param sectionHint 编辑期的**非阻塞**提示（例如「第 3 节时间与上一节重叠，保存前请调整」）。
+ *   注意它不是保存判据：允许带着这条提示继续编辑，保存时才由宿主校验并拦。
  */
 @Composable
 fun TimeSchemeEditorPage(
@@ -96,6 +98,7 @@ fun TimeSchemeEditorPage(
     onRemoveLastSection: () -> Unit,
     onResetSections: () -> Unit,
     onOpenQuickGenerate: () -> Unit,
+    sectionHint: String? = null,
 ) {
     QingyuPageScaffold(
         title = model.sheet.title,
@@ -130,6 +133,7 @@ fun TimeSchemeEditorPage(
                     onRemoveLastSection = onRemoveLastSection,
                     onResetSections = onResetSections,
                     onOpenQuickGenerate = onOpenQuickGenerate,
+                    sectionHint = sectionHint,
                 )
             }
         }
@@ -237,6 +241,7 @@ private fun SectionsCard(
     onRemoveLastSection: () -> Unit,
     onResetSections: () -> Unit,
     onOpenQuickGenerate: () -> Unit,
+    sectionHint: String? = null,
 ) {
     val dark = isSystemInDarkTheme()
     val sheet = model.sheet
@@ -308,6 +313,18 @@ private fun SectionsCard(
                     },
                     // 点这一行 → 宿主弹「开始 → 结束」两跳时间选择器（单节落地判据在模型层）。
                     onClick = { onPickSectionTime(row.index) },
+                )
+            }
+
+            // 编辑期的非阻塞重叠提示（2026-11-10 用户口径：允许乱序/重叠，只提示）：
+            // 放在节次行**下面**，眼睛正好落在刚改的那几行旁边；红色表示「保存会被拦」，
+            // 但这一行本身不拦任何编辑动作。
+            if (!sectionHint.isNullOrBlank()) {
+                Text(
+                    text = sectionHint,
+                    style = MiuixTheme.textStyles.footnote1,
+                    color = MiuixTheme.colorScheme.error,
+                    modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 12.dp),
                 )
             }
         }

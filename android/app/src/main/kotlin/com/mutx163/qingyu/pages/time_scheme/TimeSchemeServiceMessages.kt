@@ -50,6 +50,18 @@ object TimeSchemeServiceMessages {
         "serviceMsgSectionStartBeforePreviousEnd",
         "第 {sectionNumber} 节开始时间不能早于上一节的结束时间",
     )
+
+    /**
+     * 编辑期的**非阻塞**重叠提示（2026-11-10 新增，用户口径）。
+     *
+     * 与上面那条的区别是语义而不是措辞：上面是「服务层校验失败的码」，出现即代表这次编辑
+     * 被拒；这一条只挂在编辑器页的提示行上——**允许先把时间改乱、保存时才拦**。
+     * 因此句子里必须有「保存前请调整」这层意思，不能读成「不能这么改」。
+     */
+    val sectionTimeOverlap = TimeSchemeManagementText(
+        "serviceMsgSectionTimeOverlap",
+        "第 {sectionNumber} 节时间与上一节重叠，保存前请调整",
+    )
     val sectionCrossesMidnight = TimeSchemeManagementText(
         "serviceMsgSectionCrossesMidnight",
         "第 {sectionNumber} 节会跨到次日，当前暂不支持跨 0 点课程",
@@ -80,6 +92,7 @@ object TimeSchemeServiceMessages {
             atLeastOneSectionRequired,
             sectionEndMustAfterStart,
             sectionStartBeforePreviousEnd,
+            sectionTimeOverlap,
             sectionCrossesMidnight,
             invalidTimeFormat,
             classDurationMustPositive,

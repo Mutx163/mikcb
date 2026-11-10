@@ -211,6 +211,17 @@ object TimeSchemeManagementStrings {
     val breakDurationMinutesLabel = TimeSchemeManagementText("breakDurationMinutesLabel", "休息时长 分钟")
     val deleteRuleTooltip = TimeSchemeManagementText("deleteRuleTooltip", "删除规则")
     val generateAction = TimeSchemeManagementText("generateAction", "生成")
+
+    /**
+     * 快捷生成弹层的**结果预览**一行（2026-11-10 重做新增）。
+     *
+     * 用户改完「几节 / 几点开始 / 多长」之后最想知道的是「生成出来几点放学」；原来要
+     * 先点生成、看完节次表才知道（不满意就再回来重填）。这条把它实时摆出来。
+     */
+    val quickGeneratePreviewSummary = TimeSchemeManagementText(
+        "quickGeneratePreviewSummary",
+        "共 {sections} 节 · 最后一节 {endTime} 结束",
+    )
     val fillNumbersValidationMessage =
         TimeSchemeManagementText("fillNumbersValidationMessage", "请把节数和时长填写为数字")
     val breakOverrideInvalidMessage = TimeSchemeManagementText(
@@ -343,6 +354,7 @@ object TimeSchemeManagementStrings {
             breakDurationMinutesLabel,
             deleteRuleTooltip,
             generateAction,
+            quickGeneratePreviewSummary,
             fillNumbersValidationMessage,
             breakOverrideInvalidMessage,
             confirmAction,

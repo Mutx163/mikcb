@@ -5,6 +5,7 @@ import com.mutx163.qingyu.core.SectionTime
 import com.mutx163.qingyu.core.TimeScheme
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertSame
 import org.junit.Assert.assertTrue
@@ -114,14 +115,15 @@ class TimeSchemeEditorModelTest {
     }
 
     @Test
-    fun `与上一节重叠时整表拒绝并弹服务消息`() {
+    fun `与上一节重叠时允许编辑但带非阻塞提示（2026-11-10 口径）`() {
         val model = editor(listOf(SectionTime("08:00", "08:45"), SectionTime("08:55", "09:40")))
         val outcome = model.withSectionTime(1, "08:30", "09:40")
-        assertEquals("第 2 节开始时间不能早于上一节的结束时间", outcome.message)
-        assertSame(model, outcome.model)
-        // 整表拒绝：第一节没有被顺手改掉，也没有留下半套生效的节次。
+        // 用户指令：编辑期允许乱序/重叠，所以这次修改**要真的落地**，只挂一句提示。
+        assertEquals("第 2 节时间与上一节重叠，保存前请调整", outcome.message)
         assertEquals(SectionTime("08:00", "08:45"), outcome.model.sections[0])
-        assertEquals(SectionTime("08:55", "09:40"), outcome.model.sections[1])
+        assertEquals(SectionTime("08:30", "09:40"), outcome.model.sections[1])
+        // 硬校验仍在保存那一步：重叠的表存不下去。
+        assertNotNull("重叠必须拦住保存", outcome.model.validateForSave())
     }
 
     @Test
