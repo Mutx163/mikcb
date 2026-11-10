@@ -1,6 +1,5 @@
 package com.mutx163.qingyu.pages.time_scheme
 
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -31,10 +30,10 @@ import com.mutx163.qingyu.components.QingyuPageList
 import com.mutx163.qingyu.components.QingyuPageScaffold
 import com.mutx163.qingyu.components.QingyuPageTheme
 import com.mutx163.qingyu.components.QingyuSectionTitle
-import com.mutx163.qingyu.components.QingyuWeightDelta
-import com.mutx163.qingyu.components.shiftWeight
 import com.mutx163.qingyu.theme.QingyuTheme
 import top.yukonga.miuix.kmp.theme.MiuixTheme
+import top.yukonga.miuix.kmp.basic.Button
+import top.yukonga.miuix.kmp.basic.ButtonDefaults
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TextField
 import top.yukonga.miuix.kmp.icon.MiuixIcons
@@ -202,8 +201,6 @@ private fun GroupCardView(
     onEdit: () -> Unit,
     onDelete: () -> Unit,
 ) {
-    val dark = isSystemInDarkTheme()
-
     // 混装 SwitchPreference 与自绘操作行：不传 insideMargin（各自带 16dp 横向）
     QingyuCard(modifier = Modifier.fillMaxWidth()) {
         Column {
@@ -214,36 +211,40 @@ private fun GroupCardView(
                 title = card.title,
                 summary = card.subtitle,
             )
-            // 下面两行：编辑 / 删除（Dart `_buildGroupCard` 用 `editAction` / `deleteAction`
-            // 两个通用动作词，不是分区标题 `editGroup` / `deleteTitle`；且都要能点）。
+            // 动作区（发布版 `_buildGroupCard`）：两颗 **secondary 实心块钮**——
+            // 「编辑」`expand: true` 占满剩余宽度，间隔 8dp，「删除」按文字宽度自然排；
+            // **删除不染红**（发布版这里是 `variant: secondary`，红色只出现在点开后的
+            // `showAppConfirmDialog(destructiveConfirm: true)` 确认框里）。
+            // 原先是两段裸 `Text` + `clickable`（蓝字/红字），没有按钮形态、热区只有文字、
+            // 红字还读成「点了就删」与真实行为冲突（2026-11-10 用户报）。
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(horizontal = 16.dp, vertical = 10.dp),
-                horizontalArrangement = Arrangement.spacedBy(24.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                Text(
-                    text = LocationTimeMatchStrings.editAction.text,
-                    style = MiuixTheme.textStyles.body2.shiftWeight(QingyuWeightDelta.MEDIUM),
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                    color = Color(QingyuTheme.primary(dark = dark)),
-                    modifier = Modifier
-                        .weight(1f)
-                        .clickable(onClick = onEdit)
-                        .padding(vertical = 2.dp),
-                )
-                Text(
-                    text = LocationTimeMatchStrings.deleteAction.text,
-                    style = MiuixTheme.textStyles.body2,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                    color = Color(QingyuTheme.error(dark)),
-                    modifier = Modifier
-                        .clickable(onClick = onDelete)
-                        .padding(horizontal = 8.dp, vertical = 2.dp),
-                )
+                Button(
+                    modifier = Modifier.weight(1f),
+                    onClick = onEdit,
+                    colors = ButtonDefaults.buttonColors(),
+                ) {
+                    Text(
+                        text = LocationTimeMatchStrings.editAction.text,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                }
+                Button(
+                    onClick = onDelete,
+                    colors = ButtonDefaults.buttonColors(),
+                ) {
+                    Text(
+                        text = LocationTimeMatchStrings.deleteAction.text,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                }
             }
         }
     }

@@ -18,8 +18,15 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Rect
+import androidx.compose.ui.layout.boundsInWindow
+import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -99,7 +106,8 @@ import top.yukonga.miuix.kmp.theme.MiuixTheme
  * @param model 已算好的页面模型（空态判据、入口行行尾、卡片行、使用中判据）
  * @param onBack 返回
  * @param onCreate 顶栏「新建模板」
- * @param onOpenMenu 卡片右上「更多」→ 宿主弹菜单
+ * @param onOpenMenu 卡片右上「更多」→ 宿主弹**锚点菜单**；`anchor` 是该按钮的窗口矩形
+ *   （渲染层现量、宿主据此定位，贴发布版 `HyperosAnchorMenuPopup`）
  * @param onApply 卡片底部「应用到当前课表」
  * @param onEditSections 卡片底部「编辑节次」
  * @param onOpenLocationEntry 进「地点作息匹配」
@@ -110,7 +118,7 @@ fun TimeSchemeManagementPage(
     model: TimeSchemeManagementModel,
     onBack: () -> Unit,
     onCreate: () -> Unit,
-    onOpenMenu: (schemeId: String) -> Unit,
+    onOpenMenu: (schemeId: String, anchor: Rect?) -> Unit,
     onApply: (schemeId: String) -> Unit,
     onEditSections: (schemeId: String) -> Unit,
     onOpenLocationEntry: () -> Unit,
@@ -184,7 +192,7 @@ fun TimeSchemeManagementPage(
                         items(items = model.rows, key = { row -> row.scheme.id }) { row ->
                             SchemeCard(
                                 row = row,
-                                onOpenMenu = { onOpenMenu(row.scheme.id) },
+                                onOpenMenu = { anchor -> onOpenMenu(row.scheme.id, anchor) },
                                 onApply = { onApply(row.scheme.id) },
                                 onEditSections = { onEditSections(row.scheme.id) },
                             )
@@ -288,7 +296,7 @@ private fun EmptyStateRow() {
 @Composable
 private fun SchemeCard(
     row: TimeSchemeRow,
-    onOpenMenu: () -> Unit,
+    onOpenMenu: (Rect?) -> Unit,
     onApply: () -> Unit,
     onEditSections: () -> Unit,
 ) {
@@ -337,7 +345,12 @@ private fun SchemeCard(
                     color = secondaryText,
                 )
             }
-            IconButton(onClick = onOpenMenu) {
+            // 量一下按钮的窗口矩形再打开菜单：发布版 `HyperosAnchorMenuPopup` 就锚在它下面。
+            var menuAnchor by remember { mutableStateOf<Rect?>(null) }
+            IconButton(
+                modifier = Modifier.onGloballyPositioned { menuAnchor = it.boundsInWindow() },
+                onClick = { onOpenMenu(menuAnchor) },
+            ) {
                 Icon(
                     imageVector = MiuixIcons.More,
                     contentDescription = TimeSchemeManagementStrings.moreActionsTooltip.text,
@@ -526,7 +539,7 @@ private fun PreviewTimeSchemeManagementPage(
             model = model,
             onBack = {},
             onCreate = {},
-            onOpenMenu = {},
+            onOpenMenu = { _, _ -> },
             onApply = {},
             onEditSections = {},
             onOpenLocationEntry = {},

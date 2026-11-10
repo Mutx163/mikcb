@@ -18,6 +18,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import com.mutx163.qingyu.calendar.ScheduleDateRuleLogic
@@ -36,7 +37,7 @@ import com.mutx163.qingyu.pages.time_scheme.TimeSchemeNameSheet
 import com.mutx163.qingyu.pages.time_scheme.TimeSchemeDeleteBlockedSheet
 import com.mutx163.qingyu.pages.time_scheme.TimeSchemeDeleteSheet
 import com.mutx163.qingyu.pages.time_scheme.TimeSchemeEditorPage
-import com.mutx163.qingyu.pages.time_scheme.TimeSchemeMenuSheet
+import com.mutx163.qingyu.pages.time_scheme.TimeSchemeMenuPopup
 import com.mutx163.qingyu.pages.time_scheme.TimeSchemeQuickGenerateSheet
 import com.mutx163.qingyu.pages.time_scheme.TimeSchemeServiceMessages
 import com.mutx163.qingyu.pages.time_scheme.TimeSchemeSheet
@@ -274,12 +275,19 @@ fun TimeSchemeManagementHost(
         }
     }
 
-    fun openMenu(schemeId: String) {
+    // 锚点菜单的会话：条目 + 触发按钮的窗口矩形（退场期两者都要留着）。
+    // 发布版 `_schemeMenuSession` 同口径（见 `time_scheme_management_screen.dart` 注释）。
+    var menuSession by remember { mutableStateOf<MenuSession?>(null) }
+
+    fun openMenu(schemeId: String, anchor: Rect?) {
         // 2026-11-10：分享项不再被过滤掉（打包器与分享适配器都已就绪，见文件头差异表）。
         val items = currentModel.menu(schemeId)
         if (items.isEmpty()) return
         val name = currentModel.row(schemeId)?.title.orEmpty()
-        dialog = TimeSchemeDialog.Menu(TimeSchemeMenuState(schemeId = schemeId, schemeName = name, items = items))
+        menuSession = MenuSession(
+            anchor = anchor,
+            state = TimeSchemeMenuState(schemeId = schemeId, schemeName = name, items = items),
+        )
     }
 
     fun dispatch(schemeId: String, action: TimeSchemeAction) {
@@ -355,7 +363,7 @@ fun TimeSchemeManagementHost(
                 schemeId = null,
             )
         },
-        onOpenMenu = { schemeId -> openMenu(schemeId) },
+        onOpenMenu = { schemeId, anchor -> openMenu(schemeId, anchor) },
         onApply = { schemeId -> dispatch(schemeId, TimeSchemeAction.APPLY_TO_CURRENT) },
         onEditSections = { schemeId -> onOpenEditor(schemeId) },
         onOpenLocationEntry = onOpenLocationEntry,
@@ -366,12 +374,14 @@ fun TimeSchemeManagementHost(
     // 父级一翻 false 整棵弹层就离开组合，官方 260ms 退场动画一次都播不出来。
     // 可见性只交给各弹层内部的 `show`；退场期间的标题/正文由各弹层用 remember 保留的
     // 最后一份非空状态渲染，不会闪成空板（同 settings 弹窗常驻组合配方）。----
-    val menuDialog = dialog as? TimeSchemeDialog.Menu
-    TimeSchemeMenuSheet(
-        state = menuDialog?.state,
-        onDismiss = { dialog = TimeSchemeDialog.None },
+    TimeSchemeMenuPopup(
+        state = menuSession?.state,
+        anchor = menuSession?.anchor,
+        onDismiss = { menuSession = null },
         onAction = { action ->
-            menuDialog?.let { dispatch(it.state.schemeId, action) }
+            val schemeId = menuSession?.state?.schemeId
+            menuSession = null
+            if (schemeId != null) dispatch(schemeId, action)
         },
     )
 
@@ -499,7 +509,7 @@ private fun TimeSchemeManagementPageHost(
     isLoading: Boolean,
     onBack: () -> Unit,
     onCreate: () -> Unit,
-    onOpenMenu: (String) -> Unit,
+    onOpenMenu: (String, Rect?) -> Unit,
     onApply: (String) -> Unit,
     onEditSections: (String) -> Unit,
     onOpenLocationEntry: () -> Unit,
@@ -519,9 +529,19 @@ private fun TimeSchemeManagementPageHost(
 }
 
 /** 列表页当前打开的弹层。`None` 与「弹层自己关掉」区分开，避免渲染层拿 null 猜语义。 */
+/**
+ * 锚点菜单会话：条目 + 触发按钮的窗口矩形。
+ *
+ * 两个字段在退场期都要保留（宿主先置空 → 面板还要播完退场动画）：发布版
+ * `_schemeMenuSession` 的注释写明「现算会随 provider 通知变化」，这里冻结一份。
+ */
+private data class MenuSession(
+    val state: TimeSchemeMenuState,
+    val anchor: Rect?,
+)
+
 private sealed interface TimeSchemeDialog {
     data object None : TimeSchemeDialog
-    data class Menu(val state: TimeSchemeMenuState) : TimeSchemeDialog
     data class Name(
         val sheet: TimeSchemeSheet,
         val mode: TimeSchemeNameMode,

@@ -27,6 +27,12 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Rect
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.unit.IntOffset
+import androidx.compose.ui.unit.IntRect
+import androidx.compose.ui.unit.IntSize
+import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextAlign
@@ -39,14 +45,21 @@ import com.mutx163.qingyu.components.QingyuWeightDelta
 import com.mutx163.qingyu.components.rememberSheetMaxHeight
 import com.mutx163.qingyu.components.shiftWeight
 import com.mutx163.qingyu.theme.QingyuTheme
+import kotlin.math.roundToInt
+
 import top.yukonga.miuix.kmp.basic.BasicComponent
 import top.yukonga.miuix.kmp.basic.Button
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
+import top.yukonga.miuix.kmp.basic.DropdownDefaults
+import top.yukonga.miuix.kmp.basic.DropdownImpl
+import top.yukonga.miuix.kmp.basic.ListPopupColumn
+import top.yukonga.miuix.kmp.basic.PopupPositionProvider
 import top.yukonga.miuix.kmp.basic.HorizontalDivider
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TextButton
 import top.yukonga.miuix.kmp.basic.TextField
 import top.yukonga.miuix.kmp.overlay.OverlayDialog
+import top.yukonga.miuix.kmp.overlay.OverlayListPopup
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import top.yukonga.miuix.kmp.utils.overScrollVertical
 import top.yukonga.miuix.kmp.utils.scrollEndHaptic
@@ -100,87 +113,95 @@ data class TimeSchemeMenuState(
     val items: List<TimeSchemeMenuItem>,
 )
 
-/** 卡片右上「更多」→ 动作表（Dart `_openSchemeMenu` 的 7 项，顺序由模型决定）。 */
+/**
+ * 模板行内「更多」的**锚点菜单**（Dart `_openSchemeMenu` → `HyperosAnchorMenuPopup`）。
+ *
+ * ## 形态：贴 ⋮ 弹出的小面板，不是底部弹层
+ *
+ * 发布版 `time_scheme_management_screen.dart:286-345` 用 `HyperosAnchorMenuPopup`：
+ * 锚在行内「三个点」的窗口矩形上弹出，默认宽 200（`os4GlassPopupStandardSizing`，
+ * 源码注明「全软件统一口径，别为单个菜单私开数字」），条目纯文字、删除项红字、
+ * **没有「取消」条目**（点空白/返回键收起）。
+ *
+ * 2026-11-10 用户报「整版直接列动作、难看、不直观」——那是旧的底部动作表形态；本组件
+ * 换回发布版形态。配方与 `CourseOverviewPage` 的排序弹层同一套：官方 [OverlayListPopup]
+ * + [ListPopupColumn] + [DropdownImpl]，遮罩 / 进出场 / 返回键 / 点空白关闭全部官方自带；
+ * 定位走官方 [PopupPositionProvider] 扩展点，锚点由行内 ⋮ 的 `boundsInWindow()` 实测。
+ *
+ * 常驻组合、按 `state != null` 切显隐：退场动画期间沿用最后一份条目与锚点（发布版同口径，
+ * 见其 `_schemeMenuSession` 注释）。
+ */
 @Composable
-fun TimeSchemeMenuSheet(
+fun TimeSchemeMenuPopup(
     state: TimeSchemeMenuState?,
+    anchor: Rect?,
     onDismiss: () -> Unit,
     onAction: (TimeSchemeAction) -> Unit,
 ) {
     val dark = isSystemInDarkTheme()
     val current = rememberLastNonNull(state)
-    QingyuSheet(
-        show = state != null,
-        // 用模板名当弹层标题：菜单里 7 个动作都作用于这一套模板，标题是唯一的上下文。
-        title = current?.schemeName,
-        onDismissRequest = onDismiss,
-        // 横向内边距由框架侧统一给 16dp（2026-11-02 弹层债 #5）：原来「内容自带 16 +
-        // 框架侧归零」的写法把标题行一起归零，长模板名会顶到面板边。内容自己的 16dp
-        // 内边距一并去掉，避免叠成 32。
-        contentPadsHorizontally = false,
-    ) {
-        val items = current?.items.orEmpty()
-        Column(modifier = Modifier.fillMaxWidth()) {
-            items.forEachIndexed { index, item ->
-                // 行间细分隔线（Dart `HyperosChoiceTile(showDivider = true)`，除最后一项每条都有）。
-                // 分隔线在内容区里铺满=左缘正好与文字左缘对齐，与发布版的
-                // `HyperosInsetDivider(indent: settingsRowPadding.left)` 同一条线。
-                if (index > 0) {
-                    HorizontalDivider(
-                        thickness = Dp.Hairline,
-                        color = Color(QingyuTheme.dividerLine(dark)),
-                    )
-                }
-                TimeSchemeMenuRow(
-                    item = item,
-                    dark = dark,
-                    onClick = { onAction(item.action) },
+    // 退场期 anchor 会被宿主置空：钉住最后一份，面板不会先跳回屏幕角上再消失。
+    var lastAnchor by remember { mutableStateOf<Rect?>(anchor) }
+    if (anchor != null) lastAnchor = anchor
+
+    val items = current?.items.orEmpty()
+    val density = LocalDensity.current
+    val positionProvider = remember(lastAnchor, density) {
+        val gapPx = with(density) { 4.dp.roundToPx() }
+        object : PopupPositionProvider {
+            override fun calculatePosition(
+                anchorBounds: IntRect,
+                windowBounds: IntRect,
+                layoutDirection: LayoutDirection,
+                popupContentSize: IntSize,
+                popupMargin: IntRect,
+                alignment: PopupPositionProvider.Align,
+            ): IntOffset {
+                // 右对齐到 ⋮ 的右缘、贴其下方 4dp；锚点还没量到时退回窗口右上角。
+                val x = (lastAnchor?.right?.roundToInt() ?: windowBounds.right) - popupContentSize.width
+                val y = (lastAnchor?.bottom?.roundToInt() ?: windowBounds.top) + gapPx
+                return IntOffset(
+                    x = x.coerceIn(
+                        windowBounds.left,
+                        (windowBounds.right - popupContentSize.width).coerceAtLeast(windowBounds.left),
+                    ),
+                    y = y.coerceIn(
+                        windowBounds.top,
+                        (windowBounds.bottom - popupContentSize.height).coerceAtLeast(windowBounds.top),
+                    ),
                 )
             }
-            Spacer(modifier = Modifier.height(8.dp))
-            TextButton(
-                modifier = Modifier.fillMaxWidth(),
-                text = TimeSchemeManagementStrings.cancelAction.text,
-                onClick = onDismiss,
-            )
+
+            override fun getMargins(): PaddingValues = PaddingValues(0.dp)
         }
     }
-}
 
-/**
- * 动作表的一行（Dart `HyperosChoiceTile(variant: dialog)` 的排版）。
- *
- * 发布版这里是**左对齐的列表行**：标题 17sp 常规字重、行高 56dp、左右 16dp
- * （`tiles.dart` 的 `_paddingForVariant` → `hyperosChevronRowPadding` = 16/13，
- * 行壳 `hyperosListRowShell` 给 `listRowMinHeight`＝56）。原来用等宽 `TextButton`，
- * 标签被按钮的 `Arrangement.Center` 居中成一列「居中的文字链」——和发布版的
- * 动作表不是同一个形状，也和同页「课表档案」动作表（`TimetableProfilesPage`）左右错位。
- *
- * 危险项只染**字**、照常可点（Dart `destructive: true` 且无 disabled 语义）：
- * 点它只会开对话框（有引用时说明是什么挡住了），禁掉会读成「红字却点不动」。
- * 底色一律透明——弹层是毛玻璃，行底不该再压一块实心色。
- */
-@Composable
-private fun TimeSchemeMenuRow(
-    item: TimeSchemeMenuItem,
-    dark: Boolean,
-    onClick: () -> Unit,
-) {
-    BasicComponent(
-        modifier = Modifier.fillMaxWidth(),
-        // 左右 16dp 已由 `QingyuSheet` 给（`contentPadsHorizontally = false`），这里只补行高节奏。
-        insideMargin = PaddingValues(horizontal = 0.dp, vertical = 13.dp),
-        onClick = onClick,
+    // 常驻组合、按 show 切显示：进出场由官方组件内部驱动，退场动画能播完。
+    OverlayListPopup(
+        show = state != null,
+        popupPositionProvider = positionProvider,
+        alignment = PopupPositionProvider.Align.End,
+        onDismissRequest = onDismiss,
     ) {
-        Text(
-            text = item.label,
-            style = MiuixTheme.textStyles.main,
-            color = if (item.action == TimeSchemeAction.DELETE) {
-                Color(QingyuTheme.error(dark))
-            } else {
-                Color(QingyuTheme.primaryText(dark))
-            },
-        )
+        ListPopupColumn {
+            items.forEachIndexed { index, item ->
+                val destructive = item.action == TimeSchemeAction.DELETE
+                DropdownImpl(
+                    text = item.label,
+                    optionSize = items.size,
+                    isSelected = false,
+                    index = index,
+                    // 删除项只染**字**（发布版 destructive），照常可点：点它只会开对话框
+                    //（有引用时说明是什么挡住了删除）。
+                    dropdownColors = if (destructive) {
+                        DropdownDefaults.dropdownColors(contentColor = Color(QingyuTheme.error(dark)))
+                    } else {
+                        DropdownDefaults.dropdownColors()
+                    },
+                    onSelectedIndexChange = { onAction(item.action) },
+                )
+            }
+        }
     }
 }
 
