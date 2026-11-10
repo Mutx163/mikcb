@@ -152,6 +152,10 @@ object CloudBackupListLogic {
     /** 设备名空白回落「本机」（Dart `resolveBackupDeviceLabel`）。 */
     fun resolveBackupDeviceLabel(rawDeviceLabel: String): String {
         val trimmed = rawDeviceLabel.trim()
+        // 旧占位名不是用户起的名字：按「本机」显示（不批量改云端文件，纯展示侧等价映射）。
+        if (trimmed == DeviceLabelResolver.LEGACY_PLACEHOLDER) {
+            return SyncStrings.cloudBackupDefaultDeviceLabel.text
+        }
         return trimmed.ifEmpty { SyncStrings.cloudBackupDefaultDeviceLabel.text }
     }
 

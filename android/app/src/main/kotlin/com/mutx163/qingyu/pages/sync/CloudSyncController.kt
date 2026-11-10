@@ -47,6 +47,13 @@ class CloudSyncController(
     private val transportFactory: (WebdavSyncConfig, String) -> WebdavRemoteTransport? =
         { config, password -> createWebdavRemoteTransport(config, password) },
     private val deviceLabel: String = "",
+    /**
+     * 设备名落盘缝（宿主注入 `configStore.writeDeviceLabel`）。
+     *
+     * 2026-11-10 用户报「设备名叫 Compose 壳」时查实：改名以前只写进 [deviceLabelDraft]，
+     * 从未落盘 ⇒ 下次进页面读回来还是空。这里必须落盘，才能读到用户起的名字。
+     */
+    private val persistDeviceLabel: ((String) -> Unit)? = null,
     private val clock: () -> String = { OffsetDateTime.now().toString() },
     /**
      * 课表仓储（宿主注入）。注入了它，「立即备份 / 立即同步」才拿得到**当前课表的实时快照**，
@@ -270,6 +277,8 @@ class CloudSyncController(
 
     fun onDeviceLabelChanged(value: String) {
         deviceLabelDraft = value
+        // 只改草稿不落盘 = 下次进页面又读回占位名（用户报的「为什么叫 Compose 壳」根因之一）。
+        persistDeviceLabel?.invoke(value.trim())
         notifyChanged()
     }
 
