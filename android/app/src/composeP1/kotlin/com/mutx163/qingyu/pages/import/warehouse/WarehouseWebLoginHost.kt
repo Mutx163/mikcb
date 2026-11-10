@@ -494,7 +494,38 @@ fun WarehouseWebLoginHost(
     // executeImportScript），由后部 LaunchedEffect 消费（延迟 500ms，Dart 同款）。
     var autoExecuteRequested by remember { mutableStateOf(false) }
 
-    fun isMacroReplaying(): Boolean = playbackJob?.isActive == true
+    /**
+     * 宏会话是否还在进行——**不是**「回放协程是否还在跑」。
+     *
+     * 为什么不能只判 [playbackJob]：脚本跑完后协程就结束了，但宏会话还要往下走——自动
+     * 执行导入脚本、等课程回传、写盘确认。这整段里页面的 `foregroundReplayActive` 必须
+     * 继续为真，否则顶栏的「录制」「桌面/移动切换」会重新出现：桌面切换会 reload 直接
+     * 打断正在跑的导入，录制会把脚本自己的操作录成新宏并覆盖用户原来那份。
+     *
+     * 同一判据还管着三件事，都要求「整场」而不是「协程」：脚本执行期的 confirm / prompt
+     * 继续按录制应答直接回答（发布版判据是 `widget.macroRecord != null`，覆盖整场）、
+     * 成功/进度类脚本 toast 继续抑制、`complete` 的处置判定。
+     *
+     * 收口：FINISHED（写盘完成）/ ERROR（失败）/ 取消或关闭覆盖层（uiState 清空）之后
+     * 立刻回 false——那之后按钮就该还给用户。
+     */
+    fun isMacroReplaying(): Boolean {
+        // 回放协程在跑：PLAYING / PAUSED_FOR_INPUT 两态都由它驱动，必然在宏会话里。
+        if (playbackJob?.isActive == true) return true
+        // 脚本跑完、自动执行导入脚本 → 等课程回传：协程已结束，会话还没完。
+        if (playbackWaitingForCourses) return true
+        return when (playbackUiState) {
+            WarehousePlaybackUiState.PLAYING,
+            WarehousePlaybackUiState.PAUSED_FOR_INPUT,
+            WarehousePlaybackUiState.EXECUTING_IMPORT,
+            -> true
+
+            WarehousePlaybackUiState.FINISHED,
+            WarehousePlaybackUiState.ERROR,
+            null,
+            -> false
+        }
+    }
 
     /** 求值 JS 并归一化结果（suspend 桥：`evaluateJavascript` 是回调；结果已解引号转义）。 */
     suspend fun evalJsNormalized(script: String): String? =

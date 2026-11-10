@@ -77,6 +77,12 @@ class WarehouseWebLoginUiGuardTest {
             "「导入中……」文案键必须是 ARB 已有的 importingAction",
             pageSource.contains("WarehouseStrings.importingAction.text"),
         )
+        // 上一版 KDoc 把契约写成「宿主目前没有写盘中状态」，Host 接线后成了误导
+        // （Review 会照着它判断实现没做）。这行注解决定别人怎么读这份契约，钉住别再回来。
+        assertFalse(
+            "KDoc 不许再写「宿主目前没有写盘中状态」——Host 已在 finalize 置 true、finally 清 false",
+            pageSource.contains("宿主目前没有"),
+        )
     }
 
     @Test

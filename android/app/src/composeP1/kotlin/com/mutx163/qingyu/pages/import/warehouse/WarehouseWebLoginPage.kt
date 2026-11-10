@@ -69,8 +69,9 @@ fun WarehouseWebLoginPage(
      * 在写盘窗口里被再点一次（发布版 `_isExecutingImport` 一直保持到写成功，见
      * `warehouse_adapter_web_login_screen.dart` 的 handleCourses 收尾）。
      *
-     * ⚠️ 宿主目前没有「写盘中」这个状态（`finalizeCoursesImport` 一进来就 endScriptWindow）；
-     * 页面这边先把契约和禁用行为做好，接线由 Host 主人补一行（已报 Chief）。
+     * 宿主接线（`WarehouseWebLoginHost.finalizeCoursesImport`）：写盘协程启动前置 true、
+     * `finally` 收 false，成败都清——写盘期间按钮不会回到可点态。Host 侧契约由
+     * `WarehouseWebLoginHostWiringGuardTest` 钉着（置位 / finally 清零 / 调用点传参）。
      */
     importWriting: Boolean = false,
     onBack: () -> Unit = {},

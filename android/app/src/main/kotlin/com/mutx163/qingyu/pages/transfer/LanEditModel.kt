@@ -65,9 +65,9 @@ class LanEditModel(
      * 访问地址（二维码与「复制地址」都用它）。
      *
      * 没 IP / 没端口时**必须**显示那句提示，不能拼出 `http://:8080`：用户拿这个地址去浏览器
-     * 打不开，会误以为是 App 坏了。有 PIN 时按发布版 `encodeLanEditUrl(host, port, pin)` 的
-     * 口径把 `?pin=` 带上——电脑扫二维码打开网页后会自动登录；不发这条查询参数，用户就得
-     * 从手机上再抄 6 位 PIN（发布版不需要）。
+     * 打不开，会误以为是 App 坏了。基形与发布版 `encodeLanEditUrl` 逐字一致：**端口后带尾斜杠**
+     * （`http://host:port/`），有 PIN 时再接 `?pin=`——电脑扫二维码打开网页后会自动登录；
+     * 不发这条查询参数，用户就得从手机上再抄 6 位 PIN（发布版不需要）。
      */
     val addressText: String
         get() {
@@ -76,7 +76,8 @@ class LanEditModel(
             if (ip.isEmpty() || p <= 0) {
                 return TransferExtStrings.lanEditAddressUnavailable.text
             }
-            val base = "http://$ip:$p"
+            // 发布版 encodeLanEditUrl：final base = 'http://$host:$port/'; 查询串接在尾斜杠后。
+            val base = "http://$ip:$p/"
             val pinValue = pin?.trim().orEmpty()
             if (pinValue.isEmpty()) {
                 return base

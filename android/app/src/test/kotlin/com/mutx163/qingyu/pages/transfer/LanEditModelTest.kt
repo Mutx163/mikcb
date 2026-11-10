@@ -22,7 +22,7 @@ class LanEditModelTest {
     @Test
     fun `有 IP 和端口时拼出完整地址`() {
         val model = LanEditModel(running = true, ipAddress = "192.168.1.23", port = 8080)
-        assertEquals("http://192.168.1.23:8080", model.addressText)
+        assertEquals("http://192.168.1.23:8080/", model.addressText)
         assertTrue(model.hasAddress)
     }
 
@@ -36,10 +36,10 @@ class LanEditModelTest {
             port = 8080,
             pin = "123456",
         )
-        assertEquals("http://192.168.1.23:8080?pin=123456", model.addressText)
+        assertEquals("http://192.168.1.23:8080/?pin=123456", model.addressText)
         assertEquals(
             "复制地址与二维码必须同源（都带 pin）",
-            "http://192.168.1.23:8080?pin=123456",
+            "http://192.168.1.23:8080/?pin=123456",
             LanEditPageLogic.addressToCopy(model),
         )
     }
@@ -52,7 +52,7 @@ class LanEditModelTest {
             port = 9000,
             pin = "12 34&56",
         )
-        assertEquals("http://10.0.0.7:9000?pin=12+34%2656", model.addressText)
+        assertEquals("http://10.0.0.7:9000/?pin=12+34%2656", model.addressText)
     }
 
     @Test

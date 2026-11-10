@@ -500,6 +500,35 @@ class WarehouseWebLoginHostWiringGuardTest {
         )
     }
 
+    /**
+     * 2026-11-10 第二波 Lane B：`isMacroReplaying` 的语义是**整场宏会话**，不是「回放协程
+     * 在跑」。脚本跑完后协程结束，但会话还要自动执行导入脚本、等课程、写盘——这段里顶栏
+     * 的「录制 / 桌面/移动切换」（页面的 `foregroundReplayActive`）必须继续藏着：桌面切换
+     * 会 reload 打断导入、录制会把回放本身录成新宏。发布版判据是 `macroRecord != null`，
+     * 覆盖整场；这里只许放宽到会话级，不许退回只判协程。
+     */
+    @Test
+    fun `宏会话在执行导入期间仍算回放中_顶栏按钮全程不重现`() {
+        val block = blockAfter(hostSource, "fun isMacroReplaying(")
+        assertTrue("取不到 isMacroReplaying（守卫自身失效，先修守卫）", block.isNotEmpty())
+        assertTrue(
+            "回放协程在跑时必须算回放中",
+            block.contains("playbackJob?.isActive == true"),
+        )
+        assertTrue(
+            "回放跑完、等脚本回课程期间必须仍算回放中（否则顶栏两颗按钮重现）",
+            block.contains("playbackWaitingForCourses"),
+        )
+        assertTrue(
+            "自动执行导入脚本期间（EXECUTING_IMPORT）必须仍算回放中：脚本窗口里点「桌面切换」= reload 打断导入",
+            block.contains("WarehousePlaybackUiState.EXECUTING_IMPORT"),
+        )
+        assertFalse(
+            "不许退回「只判 playbackJob.isActive」：那正是本轮要修的洞（协程结束 → 按钮重现）",
+            hostSource.contains("fun isMacroReplaying(): Boolean = playbackJob?.isActive == true"),
+        )
+    }
+
     private fun readHostSource(): String =
         readSource("android/app/src/composeP1/kotlin/com/mutx163/qingyu/pages/import/warehouse/WarehouseWebLoginHost.kt")
 

@@ -62,8 +62,8 @@ class LanEditPageLogicTest {
             shanghai,
         )
 
-        // 发布版 encodeLanEditUrl(host, port, pin) 同口径：扫码/粘贴后网页端自动登录。
-        assertEquals("http://192.168.1.5:8080?pin=123456", model.addressText)
+        // 发布版 encodeLanEditUrl(host, port, pin) 同口径：端口后带尾斜杠，再接 ?pin=。
+        assertEquals("http://192.168.1.5:8080/?pin=123456", model.addressText)
         assertEquals("123456", model.pinText)
         assertEquals("8080", model.portText)
         assertEquals("2 台", model.clientsText)
@@ -100,7 +100,7 @@ class LanEditPageLogicTest {
     @Test
     fun `有地址时复制的就是浏览器能打开的那条`() {
         val model = LanEditModel(running = true, ipAddress = "10.0.0.7", port = 9000)
-        assertEquals("http://10.0.0.7:9000", LanEditPageLogic.addressToCopy(model))
+        assertEquals("http://10.0.0.7:9000/", LanEditPageLogic.addressToCopy(model))
     }
 
     @Test
