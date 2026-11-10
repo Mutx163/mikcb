@@ -58,7 +58,7 @@ class QingyuLoadingUsageGuardTest {
             files.any { it.relativePath == SUITE_PATH },
         )
         // 判据 1 依赖「有文件 import 套件」；不足则说明套件被架空，判据变空跑。
-        val importers = files.count { importsSuite(it.file.readText()) }
+        val importers = files.count { importsSuite(readSource(it.file)) }
         assertTrue(
             "只有 $importers 个文件 import 了加载态套件（预期 >= $MIN_EXPECTED_IMPORTERS）——" +
                 "套件被架空或批量回退，判据 1 会静默失效。",
@@ -71,7 +71,7 @@ class QingyuLoadingUsageGuardTest {
         val offenders = linkedMapOf<String, List<Int>>()
         for (source in sourceFiles()) {
             if (source.relativePath == SUITE_PATH) continue
-            if (!importsSuite(source.file.readText())) continue
+            if (!importsSuite(readSource(source.file))) continue
             val lines = directCalls(source.file)
             if (lines.isNotEmpty()) offenders[source.relativePath] = lines
         }
@@ -131,7 +131,7 @@ class QingyuLoadingUsageGuardTest {
         val offenders = linkedMapOf<String, List<Int>>()
         for (source in sourceFiles()) {
             if (source.relativePath == SUITE_PATH) continue
-            val stripped = stripCommentsAndStrings(source.file.readText())
+            val stripped = stripCommentsAndStrings(readSource(source.file))
             val lines = callArguments(stripped, "QingyuLoadingInline(")
                 .filter { (_, args) -> TOP_LEVEL_TINT.containsMatchIn(args) }
                 .map { (line, _) -> line }
@@ -150,7 +150,7 @@ class QingyuLoadingUsageGuardTest {
 
     @Test
     fun `套件口径与发布版 v2_1_4_1 对齐`() {
-        val text = File(repoRoot(), SUITE_PATH).readText()
+        val text = readSource(File(repoRoot(), SUITE_PATH))
         val essential = linkedMapOf(
             "档 A 入口" to "fun QingyuLoadingCenter(",
             "档 B 入口" to "fun QingyuLoadingInline(",
@@ -210,6 +210,14 @@ class QingyuLoadingUsageGuardTest {
         )
     }
 
+
+    /**
+     * 读源码并**归一行尾**（`\r\n`→`\n`）：本仓 `core.autocrlf=true` + `* text=auto`，索引是 LF、
+     * 工作区是 CRLF（`git ls-files --eol` 显示 `i/lf w/crlf` 属正常，**不许手工整文件改回 LF**）。
+     * 判据里有跨行字面量（如 `fun QingyuLoadingScrim(` 后紧跟参数行），不归一会假红。
+     */
+    private fun readSource(file: File): String = file.readText().replace("\r\n", "\n")
+
     private fun sourceFiles(): List<SourceFile> {
         val root = repoRoot()
         val bases = listOf(
@@ -231,7 +239,7 @@ class QingyuLoadingUsageGuardTest {
 
     /** 一个文件里直接调用官方加载组件的行号。 */
     private fun directCalls(file: File): List<Int> {
-        val stripped = stripCommentsAndStrings(file.readText())
+        val stripped = stripCommentsAndStrings(readSource(file))
         return INDICATOR_CALL.findAll(stripped)
             .map { stripped.take(it.range.first).count { ch -> ch == '\n' } + 1 }
             .toList()
