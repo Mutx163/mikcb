@@ -33,11 +33,17 @@ THRESHOLD = 0.34
 
 
 def tag_for_version(version: str) -> str:
-    """A.B.C-N+build → vA.B.C.N；A.B.C+build → vA.B.C（与 Dart 版同口径）。"""
+    """A.B.C-N+build → vA.B.C.N；A.B.C-0+build → vA.B.C；A.B.C+build → vA.B.C。
+
+    `-0` 分支与 CI 同口径（`android-build.yml:70` 的 `sed -E 's/-0$//; ...'`：
+    三位数预发布 `1.3.2-0` 的对外 tag 是 `v1.3.2`，不是 `v1.3.2.0`）。
+    """
     without_build = version.split("+")[0]
     if "-" not in without_build:
         return "v" + without_build
     base, fourth = without_build.rsplit("-", 1)
+    if fourth == "0":
+        return "v" + base
     return f"v{base}.{fourth}"
 
 
