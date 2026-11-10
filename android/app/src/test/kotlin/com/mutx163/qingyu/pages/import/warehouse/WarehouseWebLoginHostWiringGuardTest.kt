@@ -138,7 +138,13 @@ class WarehouseWebLoginHostWiringGuardTest {
             endWindow.contains("WarehouseWebLoginStage.LOADED"),
         )
         assertTrue("endScriptWindow 必须清掉执行期标志 scriptActive", endWindow.contains("scriptActive = false"))
-        assertTrue("endScriptWindow 必须停掉 30 秒计时", endWindow.contains("cancelImportTimeout()"))
+        // 2026-11-10 W1（P0-1 第 3 条）：回放等课程期间**不许**停表——脚本窗口先结束
+        // （导航换页等）而课程还没回来时，这颗 30 秒兜底是唯一还能把「正在执行导入脚本」
+        // 收掉的东西。正常写盘在 finalizeCoursesImport 里显式停表。
+        assertTrue(
+            "endScriptWindow 只能在「没在等课程」时停表：回放等课程期间必须留着 30 秒兜底",
+            endWindow.contains("if (!playbackWaitingForCourses) cancelImportTimeout()"),
+        )
 
         // 出口：complete→FINALIZE、error、落盘完成、用户取消、取消回放、重试回放。
         val exits = listOf(
@@ -193,10 +199,48 @@ class WarehouseWebLoginHostWiringGuardTest {
         )
         // 2026-11-05 DeepSeek成员1 复核发现：超时落在「回放等课程」那段时，覆盖层会停在
         // EXECUTING_IMPORT 永不结束，用户只能点覆盖层的取消才逃得出来。
+        // 2026-11-10 W1：ERROR 收口收进统一助手 `finishPlaybackWaitingWithError`（三条失败
+        // 出口共用），判据跟着搬到助手，并钉住超时确实走它——只查本函数里有没有那个字面量
+        // 会在「助手实现坏掉」时假绿。
+        val playbackErrorExit = blockAfter(hostSource, "fun finishPlaybackWaitingWithError(")
         assertTrue(
-            "超时收尾必须把回放覆盖层切成 ERROR（否则「正在执行导入脚本」永不结束）",
-            timeout.contains("WarehousePlaybackUiState.ERROR"),
+            "必须有回放等课程阶段的统一错误出口（否则各出口各写一遍必漏）",
+            playbackErrorExit.isNotEmpty(),
         )
+        assertTrue(
+            "统一错误出口必须把覆盖层切成 ERROR（否则「正在执行导入脚本」永不结束）",
+            playbackErrorExit.contains("WarehousePlaybackUiState.ERROR"),
+        )
+        assertTrue(
+            "超时收尾必须走统一错误出口",
+            timeout.contains("finishPlaybackWaitingWithError("),
+        )
+    }
+
+    /**
+     * 2026-11-10 W1 / P0-1：回放完成后「等脚本回课程」阶段的**每一条失败出口**都必须把
+     * 覆盖层收掉。以前它们只弹 toast / 只复位 stage，覆盖层永远停在「回放完成，正在执行
+     * 导入脚本……」，而执行态没有取消按钮 ⇒ 用户只能杀 App。发布版这些出口一律走
+     * `_showMacroReplayImportError(message)`（切 error + 给原因）。
+     */
+    @Test
+    fun `回放等课程的失败出口都必须走统一错误出口`() {
+        val playbackErrorExit = blockAfter(hostSource, "fun finishPlaybackWaitingWithError(")
+        assertTrue("取不到统一错误出口（守卫自身失效，先修守卫）", playbackErrorExit.isNotEmpty())
+        listOf(
+            "执行闸门被挡" to "is WarehouseScriptExecutionPlan.Blocked ->",
+            "适配脚本拉取失败" to "is WarehouseLoad.Failed ->",
+            "脚本自报 error" to "\"error\" ->",
+            "上一轮脚本还在跑" to "WAREHOUSE_IMPORT_RUNNING_PROBE_JS",
+            "两步确认取消" to "fun cancelCoursesImport(",
+        ).forEach { (label, marker) ->
+            val block = blockAfter(hostSource, marker)
+            assertTrue("取不到 $label 的代码块（守卫自身失效，先修守卫）", block.isNotEmpty())
+            assertTrue(
+                "$label 必须走 finishPlaybackWaitingWithError：只弹 toast 的出口会让覆盖层永远停在「正在执行导入脚本」",
+                block.contains("finishPlaybackWaitingWithError("),
+            )
+        }
     }
 
     /**
@@ -420,6 +464,39 @@ class WarehouseWebLoginHostWiringGuardTest {
         assertTrue(
             "壳必须把 onImported 接到「回栈底」，否则只退一层、停在上一个导入页",
             webLogin.contains("onImported = onBackToRoot"),
+        )
+    }
+
+    /**
+     * 2026-11-10 W1 追加接线（Chief 派单）：两条「只在 Host 里」的收尾接线，UI 侧已就绪、
+     * 不接就等于「只到 UI 面」。守卫钉死落点，防以后被改回去：
+     *
+     * 1. 导入成功（课已落库）才记「最近使用」——发布版 `Dart:2504` 在 `importedCount`
+     *    判定之前调 `addRecentSchool`；点学校即记会让 ★ 组从「最近导入」变成「最近点过」。
+     * 2. 写盘窗口把页面主按钮切「导入中……」并禁用（发布版 `_isExecutingImport` 一直保持
+     *    到写成功），**成败都要在 finally 清**，否则一次失败会把按钮永久锁死。
+     */
+    @Test
+    fun `导入成功记最近使用与写盘窗口必须接在宿主上`() {
+        val finalize = blockAfter(hostSource, "fun finalizeCoursesImport(")
+        assertTrue("取不到 finalizeCoursesImport（守卫自身失效，先修守卫）", finalize.isNotEmpty())
+        assertTrue(
+            "写盘窗口必须置位：页面的 importWriting 契约靠它换「导入中……」并禁用主按钮",
+            finalize.contains("importWriting = true"),
+        )
+        assertTrue(
+            "写盘窗口必须成败都清（finally）：失败一次就把主按钮永久锁死",
+            finalize.contains("finally") && finalize.contains("importWriting = false"),
+        )
+        val done = blockAfter(hostSource, "is WarehouseCoursesImportApply.Result.Done ->")
+        assertTrue("取不到 Done 分支（守卫自身失效，先修守卫）", done.isNotEmpty())
+        assertTrue(
+            "导入成功必须记「最近使用」（发布版 Dart:2504 同位）：点学校不记，这里才记",
+            done.contains("prefs.recordRecentSchool(school.id)"),
+        )
+        assertTrue(
+            "页面必须收到宿主算出的写盘窗口状态（否则页面按钮永不进入「导入中……」）",
+            hostSource.contains("importWriting = importWriting,"),
         )
     }
 

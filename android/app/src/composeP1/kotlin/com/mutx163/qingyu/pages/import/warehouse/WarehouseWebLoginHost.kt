@@ -2,7 +2,9 @@ package com.mutx163.qingyu.pages.import.warehouse
 
 import android.util.Log
 import android.widget.Toast
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -16,6 +18,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import com.mutx163.qingyu.app.TimetableRepository
 import com.mutx163.qingyu.components.QingyuCard
@@ -38,6 +41,8 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import top.yukonga.miuix.kmp.basic.Text
+import top.yukonga.miuix.kmp.basic.TextButton
+import top.yukonga.miuix.kmp.overlay.OverlayDialog
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import java.time.LocalDate
 import java.time.LocalDateTime
@@ -204,6 +209,10 @@ fun WarehouseWebLoginHost(
         mutableStateOf(initialWarehouseWebLoginSession(target))
     }
     var isExecuting by remember { mutableStateOf(false) }
+    // 课程落库（写盘）窗口：交给页面禁掉主按钮 + 换「导入中……」（`importWriting` 契约）。
+    // 发布版 `_isExecutingImport` 一直保持到写成功——不接的话写盘期间还能再点一次，
+    // 同一份课程会被并发写两遍。
+    var importWriting by remember { mutableStateOf(false) }
     // 脚本执行期窗口：注入成功到 complete/error/网页跳转之间。
     // 回传的 courses 与对话框回答只在这个窗口内处理——不然任意网页都能塞一份假课表。
     var scriptActive by remember(target.loginUrl) { mutableStateOf(false) }
@@ -239,6 +248,9 @@ fun WarehouseWebLoginHost(
      * 避免把学号写进搜索框 / 个人中心表单。
      */
     var savePromptDocumentKey by remember(adapter.id) { mutableStateOf<String?>(null) }
+    // 「更多」菜单（发布版 `HyperosAnchorMenuPopup` 的 Compose 等价形态）：顶栏那颗
+    // 图标只回调 `onMoreOptions`，菜单本体与动作都落在宿主（页面不碰凭据）。
+    var showMoreMenu by remember { mutableStateOf(false) }
     // 受信 host（适配器登记地址 + 自定义覆盖地址）：凭据**没绑 host**（老数据）时只认这几个站。
     val trustedLoginHosts = remember(adapter.importUrl, customUrl) {
         warehouseTrustedLoginHosts(adapter.importUrl, customUrl)
@@ -536,7 +548,11 @@ fun WarehouseWebLoginHost(
      * @param errorMessage 本轮结束时的错误文案（失败路径传；成功/取消传 null 清掉旧错误）。
      */
     fun endScriptWindow(errorMessage: String? = null) {
-        cancelImportTimeout()
+        // 回放等课程期间**不许**把 30 秒兜底拆掉：脚本窗口可能先结束（页面导航换页、
+        // 文档被重建……）而课程还没回来，此时这个计时是唯一还能把「正在执行导入脚本」
+        // 收掉的东西（2026-11-10 W1 / P0-1）。正常写盘在 finalizeCoursesImport 里显式
+        // 停表——那一步有自己的成败收尾，不该被「脚本没回课程」的文案误伤。
+        if (!playbackWaitingForCourses) cancelImportTimeout()
         scriptActive = false
         // 导航进行中 → 只落 LOADING：闸门据此关着，等新文档加载完再开（见 [pageNavigating]）。
         val stage = if (pageNavigating) {
@@ -552,9 +568,43 @@ fun WarehouseWebLoginHost(
         playbackProgress = null
     }
 
+    /**
+     * 回放「等脚本回课程」阶段结束在失败上：把覆盖层从 EXECUTING_IMPORT 收到 ERROR。
+     *
+     * 为什么必须有这个统一出口：脚本窗口的几条异常分支（执行闸门被挡 / 适配脚本拉
+     * 不下来 / 脚本自报 error / 上一轮脚本还活着 / 用户在两步确认里点取消 / 脚本只回了
+     * 空课程）以前只弹一句 toast（或什么都不弹），覆盖层却永远停在「回放完成，正在
+     * 执行导入脚本……」，而执行态没有取消按钮——用户只能杀 App（2026-11-10 审核 P0-1）。
+     * 发布版在这些出口统一走 `_showMacroReplayImportError(message)`：切 error + 把原因
+     * 写进进度行，这里按同一语义收口。
+     *
+     * 只处理「回放正在等课程」的那一轮：普通手动导入没有覆盖层，这里直接返回、不碰
+     * 任何状态量（否则会把用户从正在跑的脚本窗口里踢出去）。
+     */
+    fun finishPlaybackWaitingWithError(message: String) {
+        if (!playbackWaitingForCourses &&
+            playbackUiState != WarehousePlaybackUiState.EXECUTING_IMPORT
+        ) {
+            return
+        }
+        playbackWaitingForCourses = false
+        // 回放完成后的「自动执行导入」请求可能还排着：本轮已定局，别让它再起一次。
+        autoExecuteRequested = false
+        // 结果已由这里报出：30 秒兜底到此为止，否则同一轮晚期会再报一次 timeout。
+        cancelImportTimeout()
+        playbackUiState = WarehousePlaybackUiState.ERROR
+        playbackProgress = playbackProgress?.copy(
+            status = ReplayStepStatus.FAILED,
+            errorMessage = message,
+        )
+    }
+
     fun cancelMacroPlayback() {
         playbackJob?.cancel()
         playbackJob = null
+        // 先放掉等待标志：`endScriptWindow` 会按「还在等课程」把 30 秒兜底留着
+        // （见它的注释），用户主动取消时不该留一颗迟到的 timeout 在后台。
+        playbackWaitingForCourses = false
         // 取消回放也要收掉**脚本执行窗口**：回放完成后 `executeImportScript` 可能已经起了
         // 30 秒预算，不并入同一条收尾的话，用户取消之后超时仍会跑——屏上冒一条
         // 「导入失败：timeout」，而 stage 还挂在 EXECUTING 让重试被拒。
@@ -563,7 +613,6 @@ fun WarehouseWebLoginHost(
         // 但闸要清空，避免泄漏旧闭包）。
         pauseGate?.invoke(false)
         pauseGate = null
-        playbackWaitingForCourses = false
         resetPlaybackUi()
     }
 
@@ -650,8 +699,10 @@ fun WarehouseWebLoginHost(
         val record = playbackMacroRecord ?: return
         playbackJob?.cancel()
         playbackJob = null
-        // 重试 = 上一轮作废：同样的收尾语义（停 30 秒预算、stage 回 LOADED），
-        // 否则旧一轮的计时会在新一轮中途误报超时。
+        // 重试 = 上一轮作废：先放掉等待标志（理由同 cancelMacroPlayback），再走同样的
+        // 收尾语义（停 30 秒预算、stage 回 LOADED），否则旧一轮的计时会在新一轮中途
+        // 误报超时。
+        playbackWaitingForCourses = false
         endScriptWindow()
         // Dart _retryPlayback：重载入口地址后从头回放（从干净页面起步）。
         controller.loadUrl(target.loginUrl)
@@ -686,7 +737,10 @@ fun WarehouseWebLoginHost(
 
     /** 超时收尾：文案按 Dart 的两个分叉，然后统一走 [endScriptWindow]。 */
     fun onScriptExecutionTimeout() {
-        if (!scriptActive) return
+        // 回放等课程期间脚本窗口可能已由 endScriptWindow 收掉（scriptActive 已 false），
+        // 但覆盖层还停在 EXECUTING_IMPORT——这时计时器仍必须能报出失败，否则又回到
+        // 「永远停在正在执行导入脚本」那个洞（W1 / P0-1 第 3 条）。
+        if (!scriptActive && !playbackWaitingForCourses) return
         // 回放完成后在等课程：Dart 用 `courseImportScriptNoCourses`（脚本没回课程数据），
         // 其余（脚本卡死）用 `executeFailedWithError('timeout')`。
         val waitingForCourses = playbackWaitingForCourses
@@ -702,20 +756,9 @@ fun WarehouseWebLoginHost(
         )
         cancelPendingDialog("timeout")
         endScriptWindow(errorMessage = message)
-        // 回放覆盖层也要收干净：超时落在「回放等课程」那段时，覆盖层会停在
-        // EXECUTING_IMPORT（「正在执行导入脚本」）永远不结束，用户只能去点覆盖层的
-        // 取消才逃得出来——成功路径有 FINISHED sheet 兜底，超时没有。
-        // 与回放失败的其它出口同形（切 ERROR + 把原因写进进度行），不新造状态。
-        if (playbackUiState != null) {
-            playbackUiState = WarehousePlaybackUiState.ERROR
-            playbackProgress = playbackProgress?.copy(
-                status = ReplayStepStatus.FAILED,
-                errorMessage = message,
-            )
-        }
-        playbackWaitingForCourses = false
-        // 回放完成后的「自动执行导入」请求可能还在排队：本轮已超时收尾，别让它再起一次。
-        autoExecuteRequested = false
+        // 回放覆盖层收干净：与其它失败出口走同一个助手（切 ERROR + 把原因写进进度行、
+        // 复位等待与自动执行标志）。手动导入没有覆盖层时它是 no-op。
+        finishPlaybackWaitingWithError(message)
         Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
     }
 
@@ -744,15 +787,16 @@ fun WarehouseWebLoginHost(
                 // 「点了没反应」（审核 G1 的根因之一）。两类原因分开说，各自可行动：
                 // - 没有脚本 = 这所学校确实导不了，去反馈/换学校；
                 // - 页面没加载完 = 稍等一下再点。
-                Toast.makeText(
-                    context,
-                    when (plan.reason) {
-                        WarehouseScriptBlockReason.NO_SCRIPT_PATH -> WarehouseStrings.scriptEmpty.text
-                        WarehouseScriptBlockReason.PAGE_NOT_LOADED ->
-                            WarehouseStrings.macroReplayWaitPageLoad.text
-                    },
-                    Toast.LENGTH_SHORT,
-                ).show()
+                val message = when (plan.reason) {
+                    WarehouseScriptBlockReason.NO_SCRIPT_PATH -> WarehouseStrings.scriptEmpty.text
+                    WarehouseScriptBlockReason.PAGE_NOT_LOADED ->
+                        WarehouseStrings.macroReplayWaitPageLoad.text
+                }
+                Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
+                // 回放完成后的自动执行被闸门挡住：覆盖层必须收掉。以前这里只弹 toast，
+                // 「回放完成，正在执行导入脚本」就永远停着（W1 / P0-1 第 1 条）；
+                // 手动导入没有覆盖层，助手是 no-op。
+                finishPlaybackWaitingWithError(message)
             }
 
             is WarehouseScriptExecutionPlan.Ready -> {
@@ -773,6 +817,9 @@ fun WarehouseWebLoginHost(
                         Log.w(LOG_TAG, "execute import skipped: previous script instance still running")
                         val message = WarehouseStrings.courseImportScriptStillRunning.text
                         endScriptWindow(message)
+                        // 回放等课程阶段的「上一轮脚本还活着」也是失败出口之一：
+                        // 只弹 toast 的话覆盖层会一直转（W1 / P0-1 同类）。
+                        finishPlaybackWaitingWithError(message)
                         Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
                         isExecuting = false
                         return@launch
@@ -804,12 +851,12 @@ fun WarehouseWebLoginHost(
                             )
                             // 拉脚本失败也走统一收尾：stage 回到 LOADED（页面本身是好的），
                             // 网络恢复后用户可以直接再点一次，不用先刷新页面。
-                            endScriptWindow(WarehouseStrings.courseImportScriptFailed.text)
-                            Toast.makeText(
-                                context,
-                                WarehouseStrings.courseImportScriptFailed.text,
-                                Toast.LENGTH_SHORT,
-                            ).show()
+                            val message = WarehouseStrings.courseImportScriptFailed.text
+                            endScriptWindow(message)
+                            // 回放等课程阶段拉脚本失败：覆盖层收掉再提示（以前只 toast，
+                            // 覆盖层永远停在「正在执行导入脚本」——W1 / P0-1 第 1 条）。
+                            finishPlaybackWaitingWithError(message)
+                            Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
                         }
                     }
                     isExecuting = false
@@ -902,6 +949,13 @@ fun WarehouseWebLoginHost(
         val promptKey = savePromptDocumentKey
         if (candidate.username.isEmpty() || candidate.password.isEmpty()) {
             session = session.copy(hasPromptedSave = true)
+            // 页面上还没填账号/密码（菜单「记住当前输入」被点、或卡片弹出后用户把输入
+            // 清空了）：给一句实话，否则点了没反应（发布版 `noUsernameOrPasswordRecognized`）。
+            Toast.makeText(
+                context,
+                WarehouseStrings.noUsernameOrPasswordRecognized.text,
+                Toast.LENGTH_SHORT,
+            ).show()
             return
         }
         // 已绑定的 host 保持不变（同一份凭据不因为换了子域就悄悄改绑）；新凭据绑当前页 host。
@@ -949,6 +1003,41 @@ fun WarehouseWebLoginHost(
         )
     }
 
+    /**
+     * 「清除已记住账号」：菜单里的显式动作（发布版 `_clearRememberedLogin`）。
+     *
+     * 为什么必须有：换号、借别人电脑、教务密码改过之后，用户没有别的入口把密文凭据
+     * 删掉——存储层的 [WarehouseRememberedLoginStore.clearRememberedLogin] 之前全仓
+     * 没有调用方（2026-11-10 审核「已记住账号没有管理入口」）。
+     */
+    fun clearRememberedLogin() {
+        scope.launch {
+            withContext(Dispatchers.IO) { rememberedStore.clearRememberedLogin(adapter.id) }
+            storedLogin = null
+            session = session.copy(
+                rememberedAccount = null,
+                // 清完不追问自动填充：否则卡片刚消失又弹一句「要不要帮你填」。
+                hasPromptedAutofill = true,
+            )
+            Toast.makeText(
+                context,
+                WarehouseStrings.clearedRememberedLoginSuccess.text,
+                Toast.LENGTH_SHORT,
+            ).show()
+        }
+    }
+
+    /** 菜单「复制当前地址」：与顶栏那颗「更多」同一份来源（liveUrl 优先，其次会话地址）。 */
+    fun copyCurrentWarehouseUrl() {
+        val url = controller.liveUrl() ?: session.currentUrl
+        if (url.isBlank()) {
+            toastUnavailable(context, "copy address: empty current url")
+        } else {
+            copyTextToClipboard(context, "warehouse-current-url", url)
+            Toast.makeText(context, WarehouseStrings.copiedCurrentAddress.text, Toast.LENGTH_SHORT).show()
+        }
+    }
+
     /** 一次待确认的脚本课程包：解析结果 + 上屏要用的计数（F32 前缺的两步确认挂这里）。 */
     var coursesSession by remember { mutableStateOf<WarehouseCoursesImportSession?>(null) }
 
@@ -973,19 +1062,22 @@ fun WarehouseWebLoginHost(
         coursesAskReplace = false
         coursesFinalizePlan = null
         coursesAskExpansion = false
+        // 第三步（节次补齐确认）取消落在「导入已中断」，与旧版 capacity 路径同文案。
+        val message = if (interrupted) {
+            WarehouseStrings.importInterruptedStatus.text
+        } else {
+            WarehouseStrings.importCancelledStatus.text
+        }
+        // 回放等课程期间用户取消确认：覆盖层必须从 EXECUTING_IMPORT 收掉——发布版
+        // 三条取消路径（覆盖/更新、开学日/首周、节次补齐）都走 `_showMacroReplayImportError`；
+        // 这里以前只清等待标志，覆盖层会永远停在「正在执行导入脚本」（W1 / P0-1 第 2 条）。
+        // 助手同时复位等待/自动执行标志——其后到达的 complete 走 IGNORE，不把取消翻成
+        // 成功（N10 的定局口径）。
+        finishPlaybackWaitingWithError(message)
         // 取消也是「执行窗口结束」：走统一收尾，stage 回 LOADED，用户可以直接重试。
         endScriptWindow()
-        // 回放等课程期间被用户取消：等待标志复位——其后到达的 complete 走 IGNORE，
-        // 不把取消翻成成功（N10 的定局口径）。
-        playbackWaitingForCourses = false
         Log.i(LOG_TAG, "courses import cancelled by user interrupted=$interrupted")
-        // 第三步（节次补齐确认）取消落在「导入已中断」，与旧版 capacity 路径同文案。
-        showToasts(
-            listOf(
-                if (interrupted) WarehouseStrings.importInterruptedStatus.text
-                else WarehouseStrings.importCancelledStatus.text,
-            ),
-        )
+        showToasts(listOf(message))
     }
 
     /** 完成提示（Done 文案口径与旧写回层一致，计数来自本次会话）。 */
@@ -1021,83 +1113,101 @@ fun WarehouseWebLoginHost(
         coursesAskExpansion = false
         // 课程已收齐、开始落盘：本轮脚本窗口到此结束（stage 回 LOADED，可再次导入）。
         endScriptWindow()
+        // 脚本阶段到此为止：写盘有自己的成败收尾（Done / Failed 两个分支都在下面），
+        // 别再让「脚本没回课程」的 30 秒兜底挂在头上——写盘超过 30 秒会误报失败，
+        // 而课程其实已经收齐了（W1 / P0-1 第 3 条）。
+        cancelImportTimeout()
+        // 写盘窗口置位：页面据此换「导入中……」并禁用主按钮（发布版 `_isExecutingImport`
+        // 一直保持到写成功）。成败都在 finally 清。
+        importWriting = true
         scope.launch {
-            val result = withContext(Dispatchers.IO) {
-                WarehouseCoursesImportApply.apply(
-                    repository = repo,
-                    request = WarehouseCoursesImportApply.Request(
-                        courses = plan.courses,
-                        semesterStartDate = plan.startDate,
-                        replaceExisting = plan.replaceExisting,
-                        preserveLocalColors = plan.preserveLocalColors,
-                        expandSections = expandSections,
-                    ),
-                )
-            }
-            when (result) {
-                is WarehouseCoursesImportApply.Result.Done -> {
-                    Log.i(LOG_TAG, "courses import done importedCount=${result.importedCount}")
-                    showToasts(doneMessagesFor(plan, result.importedCount))
-                    // 普通导入成功（非录制、非回放）：对齐发布版 `navigator.pop(true)`，
-                    // 立即离开网页页。录制/回放各有自己的收尾（保存询问 / 完成 sheet），
-                    // 不在这里抢跑；`importedCount == 0` 也不返回（发布版同口径）。
-                    val playbackFinishing = playbackWaitingForCourses
-                    if (result.importedCount > 0 &&
-                        macroState != WarehouseMacroActionState.RECORDING &&
-                        macroSavePrompt == null &&
-                        !macroBusy &&
-                        !playbackFinishing
-                    ) {
-                        onImported()
-                    }
-                    // 导入成功（写回课程数 > 0）且正在录制：自动完成录制并询问保存
-                    // （对齐 Dart `importedCount > 0 && recording → _completeMacroAndPop`）。
-                    if (result.importedCount > 0 && macroState == WarehouseMacroActionState.RECORDING) {
-                        completeMacroAndPop()
-                    }
-                    // 回放成功收尾（对齐 Dart `_markMacroImportCompleted`）：记账
-                    // （成功计数 +1、scriptPageUrl 更新为本次脱敏地址；**绝不抛**——
-                    // 导入已成功，存储异常不能把成功翻成失败）→ 覆盖层切 FINISHED →
-                    // 弹「导入完成」sheet（一次性闸置位，其后到达的 complete 一律忽略）。
-                    if (playbackWaitingForCourses) {
-                        playbackWaitingForCourses = false
-                        quickResultHandled = true
-                        playbackUiState = WarehousePlaybackUiState.FINISHED
-                        finishedScriptStatus = doneMessagesFor(plan, result.importedCount)
-                            .joinToString(separator = " ")
+            try {
+                val result = withContext(Dispatchers.IO) {
+                    WarehouseCoursesImportApply.apply(
+                        repository = repo,
+                        request = WarehouseCoursesImportApply.Request(
+                            courses = plan.courses,
+                            semesterStartDate = plan.startDate,
+                            replaceExisting = plan.replaceExisting,
+                            preserveLocalColors = plan.preserveLocalColors,
+                            expandSections = expandSections,
+                        ),
+                    )
+                }
+                when (result) {
+                    is WarehouseCoursesImportApply.Result.Done -> {
+                        // 课程真的落库了才记「最近使用」（发布版 Dart:2504 同位：`addRecentSchool`
+                        // 在 importedCount 判定之前）。点学校即记会把误点也顶进 ★ 分组；
+                        // 这里不阻塞主流程（独立协程，写失败不改变导入结果）。
                         scope.launch {
-                            withContext(Dispatchers.IO) {
-                                macroStore.recordSuccessfulImport(
-                                    schoolId = school.id,
-                                    adapterId = adapter.id,
-                                    scriptPageUrl = sanitizeWarehouseScriptPageUrl(
-                                        controller.liveUrl() ?: target.loginUrl,
-                                    ),
-                                )
+                            withContext(Dispatchers.IO) { prefs.recordRecentSchool(school.id) }
+                        }
+                        Log.i(LOG_TAG, "courses import done importedCount=${result.importedCount}")
+                        showToasts(doneMessagesFor(plan, result.importedCount))
+                        // 普通导入成功（非录制、非回放）：对齐发布版 `navigator.pop(true)`，
+                        // 立即离开网页页。录制/回放各有自己的收尾（保存询问 / 完成 sheet），
+                        // 不在这里抢跑；`importedCount == 0` 也不返回（发布版同口径）。
+                        val playbackFinishing = playbackWaitingForCourses
+                        if (result.importedCount > 0 &&
+                            macroState != WarehouseMacroActionState.RECORDING &&
+                            macroSavePrompt == null &&
+                            !macroBusy &&
+                            !playbackFinishing
+                        ) {
+                            onImported()
+                        }
+                        // 导入成功（写回课程数 > 0）且正在录制：自动完成录制并询问保存
+                        // （对齐 Dart `importedCount > 0 && recording → _completeMacroAndPop`）。
+                        if (result.importedCount > 0 && macroState == WarehouseMacroActionState.RECORDING) {
+                            completeMacroAndPop()
+                        }
+                        // 回放成功收尾（对齐 Dart `_markMacroImportCompleted`）：记账
+                        // （成功计数 +1、scriptPageUrl 更新为本次脱敏地址；**绝不抛**——
+                        // 导入已成功，存储异常不能把成功翻成失败）→ 覆盖层切 FINISHED →
+                        // 弹「导入完成」sheet（一次性闸置位，其后到达的 complete 一律忽略）。
+                        if (playbackWaitingForCourses) {
+                            playbackWaitingForCourses = false
+                            quickResultHandled = true
+                            playbackUiState = WarehousePlaybackUiState.FINISHED
+                            finishedScriptStatus = doneMessagesFor(plan, result.importedCount)
+                                .joinToString(separator = " ")
+                            scope.launch {
+                                withContext(Dispatchers.IO) {
+                                    macroStore.recordSuccessfulImport(
+                                        schoolId = school.id,
+                                        adapterId = adapter.id,
+                                        scriptPageUrl = sanitizeWarehouseScriptPageUrl(
+                                            controller.liveUrl() ?: target.loginUrl,
+                                        ),
+                                    )
+                                }
+                                showFinishedSheet = true
                             }
-                            showFinishedSheet = true
+                        }
+                    }
+
+                    is WarehouseCoursesImportApply.Result.Failed -> {
+                        // 服务码（如节次补不满）过本地化再展示；其余落固定文案。
+                        val text = result.serviceMessage
+                            ?.let { TimeSchemeServiceMessages.localize(it) }
+                            ?: WarehouseStrings.importFailedStatus.text
+                        Log.w(LOG_TAG, "courses import failed serviceMessage=${result.serviceMessage}")
+                        showToasts(listOf(text))
+                        // 回放等课程期间的写回失败：覆盖层切 ERROR（失败可重试/关闭），
+                        // 等待标志复位——其后到达的 complete 走 IGNORE，不再翻成成功。
+                        if (playbackWaitingForCourses) {
+                            playbackWaitingForCourses = false
+                            playbackUiState = WarehousePlaybackUiState.ERROR
+                            playbackProgress = playbackProgress?.copy(
+                                status = ReplayStepStatus.FAILED,
+                                errorMessage = text,
+                            )
                         }
                     }
                 }
-
-                is WarehouseCoursesImportApply.Result.Failed -> {
-                    // 服务码（如节次补不满）过本地化再展示；其余落固定文案。
-                    val text = result.serviceMessage
-                        ?.let { TimeSchemeServiceMessages.localize(it) }
-                        ?: WarehouseStrings.importFailedStatus.text
-                    Log.w(LOG_TAG, "courses import failed serviceMessage=${result.serviceMessage}")
-                    showToasts(listOf(text))
-                    // 回放等课程期间的写回失败：覆盖层切 ERROR（失败可重试/关闭），
-                    // 等待标志复位——其后到达的 complete 走 IGNORE，不再翻成成功。
-                    if (playbackWaitingForCourses) {
-                        playbackWaitingForCourses = false
-                        playbackUiState = WarehousePlaybackUiState.ERROR
-                        playbackProgress = playbackProgress?.copy(
-                            status = ReplayStepStatus.FAILED,
-                            errorMessage = text,
-                        )
-                    }
-                }
+            } finally {
+                // 成败都清：写盘失败/抛异常时主按钮不能永久停在「导入中……」。
+                importWriting = false
             }
         }
     }
@@ -1160,16 +1270,24 @@ fun WarehouseWebLoginHost(
     }
 
     fun handleCoursesMessage(raw: String) {
+        // 发布版对缺 payload 的 courses 按空数组处理（`payload ?? '[]'`），走
+        // 「没有可导入课程」的兜底提示；这里以前只留一条日志就 return，回放等课程
+        // 时覆盖层会一直转（W1 第 4 条）。两种缺法（键缺失 / 值不是字符串）同待遇。
         val payload = warehouseBridgeCoursesPayload(raw)
         if (payload == null) {
-            Log.w(LOG_TAG, "courses message without payload")
+            Log.w(LOG_TAG, "courses message without payload; treated as empty course list")
+            val message = WarehouseStrings.noImportableCoursesFromScript.text
+            showToasts(listOf(message))
+            finishPlaybackWaitingWithError(message)
             return
         }
         val repo = repository
         if (repo == null) {
-            // 壳没传仓储：不许假装导入成功。
+            // 壳没传仓储：不许假装导入成功（回放等课程时也要把覆盖层收掉）。
             Log.w(LOG_TAG, "courses received but repository is not wired")
-            showToasts(listOf(WarehouseStrings.importFailedStatus.text))
+            val message = WarehouseStrings.importFailedStatus.text
+            showToasts(listOf(message))
+            finishPlaybackWaitingWithError(message)
             return
         }
         if (coursesSession != null) {
@@ -1201,14 +1319,18 @@ fun WarehouseWebLoginHost(
                 Triple(courses, dropped, trimmed)
             }
             if (parsed == null) {
-                // 载荷不是数组：对齐旧版直接报格式错误，不进弹窗。
-                showToasts(listOf(WarehouseStrings.invalidCourseDataFormat.text))
+                // 载荷不是数组：对齐旧版直接报格式错误，不进弹窗。回放等课程时
+                // 同属「脚本没给出可用课程」，覆盖层收掉而不是干等 30 秒兜底。
+                val message = WarehouseStrings.invalidCourseDataFormat.text
+                showToasts(listOf(message))
+                finishPlaybackWaitingWithError(message)
                 return@launch
             }
             val (courses, dropped, trimmed) = parsed
             if (courses.isEmpty()) {
                 // 对齐旧版：解析后一门都没有 → 提示 + 丢弃计数，不进弹窗。
-                val toasts = mutableListOf(WarehouseStrings.noImportableCoursesFromScript.text)
+                val message = WarehouseStrings.noImportableCoursesFromScript.text
+                val toasts = mutableListOf(message)
                 if (dropped > 0) {
                     toasts.add(
                         WarehouseStrings.importCourseRecordsDropped.filled(
@@ -1218,6 +1340,7 @@ fun WarehouseWebLoginHost(
                     )
                 }
                 showToasts(toasts)
+                finishPlaybackWaitingWithError(message)
                 return@launch
             }
             coursesSession = WarehouseCoursesImportSession(
@@ -1597,6 +1720,9 @@ fun WarehouseWebLoginHost(
                     ?: WarehouseStrings.courseImportScriptFailed.text
                 Log.w(LOG_TAG, "bridge error reported by adapter script")
                 endScriptWindow(errorMessage = errorText)
+                // 回放等课程阶段脚本自报 error：同一套错误出口。以前只弹 toast，
+                // 覆盖层会永远停在「正在执行导入脚本」（W1 / P0-1 第 1 条）。
+                finishPlaybackWaitingWithError(errorText)
                 showToasts(listOf(errorText))
             }
 
@@ -1622,6 +1748,7 @@ fun WarehouseWebLoginHost(
             webViewController = controller,
             trustedLoginUrls = trustedLoginUrls,
             foregroundReplayActive = isMacroReplaying(),
+            importWriting = importWriting,
             onBack = onBack,
             onWebProgress = { progress ->
                 session = session.withStage(WarehouseWebLoginWebState.stageForProgress(progress))
@@ -1708,19 +1835,7 @@ fun WarehouseWebLoginHost(
                 // 数据回传（courses）与对话框分发在这里处理；正文不进日志（课表里有学号/课表内容）。
                 handleBridgeMessage(raw)
             },
-            onMoreOptions = {
-                val url = controller.liveUrl() ?: session.currentUrl
-                if (url.isBlank()) {
-                    toastUnavailable(context, "copy address: empty current url")
-                } else {
-                    copyTextToClipboard(context, "warehouse-current-url", url)
-                    Toast.makeText(
-                        context,
-                        WarehouseStrings.copiedCurrentAddress.text,
-                        Toast.LENGTH_SHORT,
-                    ).show()
-                }
-            },
+            onMoreOptions = { showMoreMenu = true },
             // ---- 记住账号 / 密码的四条回调（以前全是页面默认空实现 ⇒ 两张卡永远不出现）----
             onAutofillLogin = { fillRememberedLogin() },
             onDismissAutofill = { dismissAutofillPrompt() },
@@ -1858,6 +1973,66 @@ fun WarehouseWebLoginHost(
                 onImported()
             },
         )
+
+        // 「更多」菜单（发布版 `HyperosAnchorMenuPopup` 的 Compose 等价形态）：唯一入口是
+        // 顶栏最后一颗图标（页面只回调 `onMoreOptions`，凭据动作都留在宿主）。
+        // 发布版六项里只接四项：
+        // - 「执行导入脚本」已有底栏整宽主按钮，菜单里再来一份就是两套入口；
+        // - 「导入执行日志」的生产端还没移植（查看器未接，留假入口等于死点击）；
+        // - 记住账号三项正好补上「清除」这个全仓都没有调用方的能力（2026-11-10 审核）。
+        // 弹层用 miuix 官方 `OverlayDialog` + `TextButton`，与宏选择器/完成 sheet 同一套件。
+        OverlayDialog(
+            insideMargin = DpSize(16.dp, 16.dp),
+            show = showMoreMenu,
+            title = WarehouseStrings.moreActionsTooltip.text,
+            onDismissRequest = { showMoreMenu = false },
+        ) {
+            Column(
+                modifier = Modifier.fillMaxWidth(),
+                verticalArrangement = Arrangement.spacedBy(10.dp),
+            ) {
+                TextButton(
+                    modifier = Modifier.fillMaxWidth(),
+                    text = WarehouseStrings.rememberCurrentInputTooltip.text,
+                    onClick = {
+                        showMoreMenu = false
+                        saveRememberedLogin()
+                    },
+                )
+                TextButton(
+                    modifier = Modifier.fillMaxWidth(),
+                    text = WarehouseStrings.fillRememberedTooltip.text,
+                    // 与发布版一致：没记过账号时该项不可点（不是点了没反应）。
+                    enabled = storedLogin != null,
+                    onClick = {
+                        showMoreMenu = false
+                        fillRememberedLogin()
+                    },
+                )
+                TextButton(
+                    modifier = Modifier.fillMaxWidth(),
+                    text = WarehouseStrings.clearRememberedTooltip.text,
+                    enabled = storedLogin != null,
+                    onClick = {
+                        showMoreMenu = false
+                        clearRememberedLogin()
+                    },
+                )
+                TextButton(
+                    modifier = Modifier.fillMaxWidth(),
+                    text = WarehouseStrings.copyCurrentAddressTooltip.text,
+                    onClick = {
+                        showMoreMenu = false
+                        copyCurrentWarehouseUrl()
+                    },
+                )
+                TextButton(
+                    modifier = Modifier.fillMaxWidth(),
+                    text = WarehouseStrings.cancelAction.text,
+                    onClick = { showMoreMenu = false },
+                )
+            }
+        }
     }
 }
 
