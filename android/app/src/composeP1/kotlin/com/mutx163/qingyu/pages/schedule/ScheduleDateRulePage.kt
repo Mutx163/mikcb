@@ -14,7 +14,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -27,11 +26,11 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import com.mutx163.qingyu.components.QingyuCard
+import com.mutx163.qingyu.components.QingyuEmptyState
 import com.mutx163.qingyu.components.QingyuGlassIconButton
 import com.mutx163.qingyu.components.QingyuPageCardMargin
 import com.mutx163.qingyu.components.rememberSheetMaxHeight
@@ -42,7 +41,6 @@ import com.mutx163.qingyu.components.QingyuWeightDelta
 import com.mutx163.qingyu.components.shiftWeight
 import com.mutx163.qingyu.theme.QingyuTheme
 import top.yukonga.miuix.kmp.basic.HorizontalDivider
-import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TextButton
 import top.yukonga.miuix.kmp.basic.TextField
@@ -158,51 +156,39 @@ fun ScheduleDateRulePage(
             }
 
             if (rules.isEmpty()) {
-                // ── 空态：与 App 其它页（TaskEmptyState / CourseOverviewEmptyState）统一：
-                // 居中 图标(48) + 主标题(headline1) + 主操作按钮；不再 fillParentMaxSize + 空卡片。──
+                // ── 空态：收编共享件（C04）──
+                // 几何/字阶/墨色全部归 `QingyuEmptyState`（发布版 `HyperosEmptyState`：48 图标 +
+                // 16 + 17sp 标题 + 20 + 主按钮、不套卡片），以前手搓的那份与它逐字同版；
+                // 图标语义取官方 `Months`（与日程列表空态同一字形）。
+                // 判空与「去新建」的既有守卫逻辑原样搬进 action 槽，行为不变。
                 item(key = "empty") {
-                    Column(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 32.dp, vertical = 48.dp),
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                    ) {
-                        Icon(
-                            imageVector = MiuixIcons.Months,
-                            contentDescription = null,
-                            tint = Color(QingyuTheme.secondaryText(dark)),
-                            modifier = Modifier.size(48.dp),
-                        )
-                        Spacer(modifier = Modifier.height(16.dp))
-                        Text(
-                            text = ScheduleStrings.scheduleDateRuleEmpty.text,
-                            style = MiuixTheme.textStyles.headline1,
-                            color = Color(QingyuTheme.primaryText(dark)),
-                            textAlign = TextAlign.Center,
-                        )
-                        Spacer(modifier = Modifier.height(20.dp))
-                        ScheduleActionButton(
-                            text = ScheduleStrings.scheduleDateRuleAdd.text,
-                            primary = true,
-                            onClick = {
-                                if (availableSchemes.isEmpty()) {
-                                    bannerMessage = ScheduleStrings.scheduleDateRuleNeedScheme.text
-                                    return@ScheduleActionButton
-                                }
-                                bannerMessage = null
-                                isAddingNew = true
-                                editingRule = ScheduleDateRuleData(
-                                    id = "rule_${System.currentTimeMillis()}",
-                                    name = "",
-                                    timeSchemeId = availableSchemes.first().first,
-                                    startDate = "2026-10-01",
-                                    endDate = "2027-04-30",
-                                    enabled = true,
-                                )
-                                editorSession++
-                            },
-                        )
-                    }
+                    QingyuEmptyState(
+                        icon = MiuixIcons.Months,
+                        title = ScheduleStrings.scheduleDateRuleEmpty.text,
+                        action = {
+                            ScheduleActionButton(
+                                text = ScheduleStrings.scheduleDateRuleAdd.text,
+                                primary = true,
+                                onClick = {
+                                    if (availableSchemes.isEmpty()) {
+                                        bannerMessage = ScheduleStrings.scheduleDateRuleNeedScheme.text
+                                        return@ScheduleActionButton
+                                    }
+                                    bannerMessage = null
+                                    isAddingNew = true
+                                    editingRule = ScheduleDateRuleData(
+                                        id = "rule_${System.currentTimeMillis()}",
+                                        name = "",
+                                        timeSchemeId = availableSchemes.first().first,
+                                        startDate = "2026-10-01",
+                                        endDate = "2027-04-30",
+                                        enabled = true,
+                                    )
+                                    editorSession++
+                                },
+                            )
+                        },
+                    )
                 }
             } else {
                 // ── 规则卡片列表：横向留白按配方由每张卡自己带 12dp ──
