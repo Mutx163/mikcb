@@ -33,6 +33,7 @@ import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import com.mutx163.qingyu.app.AppLocaleRuntime
 import com.mutx163.qingyu.components.QingyuCard
+import com.mutx163.qingyu.components.QingyuEmptyState
 import com.mutx163.qingyu.components.QingyuGlassIconButton
 import com.mutx163.qingyu.components.QingyuPageCardMargin
 import com.mutx163.qingyu.components.QingyuPageList
@@ -48,7 +49,6 @@ import java.time.format.DateTimeFormatter
 import java.util.Locale
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.Text
-import top.yukonga.miuix.kmp.basic.TextButton
 import top.yukonga.miuix.kmp.overlay.OverlayDialog
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.ChevronForward
@@ -108,43 +108,23 @@ fun ScheduleListPage(
         ) {
             if (groups.isEmpty) {
                 // ── 空态展示 ──
+                // 收编共享件（C03）：几何/字阶就是发布版 `schedule_list_screen.dart:85-98` 的
+                // `HyperosEmptyState`（48 图标 + 16 + 17sp 标题 + 20 + 主按钮、不套卡片），
+                // 以前手搓的那份与它逐字同版，现在只留组件这一处口径。
+                // 图标语义取官方 `Months`（月历=「有日期/有安排」），与 `event_available_outlined`
+                // 最近；miuix 0.9.4 无「带勾日历」字形。
                 item(key = "empty") {
-                    Box(
-                        modifier = Modifier
-                            .fillParentMaxSize()
-                            .padding(24.dp),
-                        contentAlignment = Alignment.Center,
-                    ) {
-                        // 口径 = 发布版 `schedule_list_screen.dart:85-98` 的
-                        // `HyperosEmptyState(icon: event_available_outlined, title, action)`：
-                        // 居中图标(48) + 16dp + 标题 + 20dp + 主操作按钮，**不套卡片**
-                        // （考试页 `ExamEmptyState`、待办页 `TaskEmptyState` 同版式）。
-                        // 图标语义取官方 `Months`（月历=「有日期/有安排」），与
-                        // `event_available_outlined` 最近；miuix 0.9.4 无「带勾日历」字形。
-                        Column(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalAlignment = Alignment.CenterHorizontally,
-                        ) {
-                            Icon(
-                                imageVector = MiuixIcons.Months,
-                                contentDescription = null,
-                                tint = Color(QingyuTheme.secondaryText(dark)),
-                                modifier = Modifier.size(48.dp),
-                            )
-                            Spacer(modifier = Modifier.height(16.dp))
-                            Text(
-                                text = ScheduleStrings.scheduleListEmptyTitle.text,
-                                style = MiuixTheme.textStyles.headline1,
-                                color = Color(QingyuTheme.primaryText(dark)),
-                            )
-                            Spacer(modifier = Modifier.height(20.dp))
+                    QingyuEmptyState(
+                        icon = MiuixIcons.Months,
+                        title = ScheduleStrings.scheduleListEmptyTitle.text,
+                        action = {
                             ScheduleActionButton(
                                 text = ScheduleStrings.addScheduleAction.text,
                                 onClick = onAddSchedule,
                                 primary = true,
                             )
-                        }
-                    }
+                        },
+                    )
                 }
             } else {
                 // ── 分组列表：横向留白按配方由每个块自己带 12dp ──
@@ -214,10 +194,14 @@ fun ScheduleListPage(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
             ) {
-                TextButton(
-                    modifier = Modifier.weight(1f),
+                // 取消与删除同走共享动作按钮：发布版 `showHyperosConfirmDialog` 的两颗
+                // 动作是同一套 HyperosButton 度量（17sp button 字阶、同高同圆角）。
+                // 原来取消用 TextButton（button 17sp）、删除用 ScheduleActionButton
+                // （body1 16sp + MEDIUM），并排时字阶/字重不一致。
+                ScheduleActionButton(
                     text = ScheduleStrings.cancelAction.text,
                     onClick = { deleteCandidate = null },
+                    modifier = Modifier.weight(1f),
                 )
                 ScheduleActionButton(
                     text = ScheduleStrings.deleteAction.text,
