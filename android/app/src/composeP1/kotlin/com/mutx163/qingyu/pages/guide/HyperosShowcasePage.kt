@@ -21,7 +21,6 @@ import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -39,6 +38,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.mutx163.qingyu.components.QingyuCard
+import com.mutx163.qingyu.components.QingyuColorChips
 import com.mutx163.qingyu.components.QingyuPageList
 import com.mutx163.qingyu.components.QingyuPageScaffold
 import com.mutx163.qingyu.components.QingyuPageTheme
@@ -86,13 +86,17 @@ fun HyperosShowcasePage(
 
     // Dart `hyperos_showcase_screen.dart:53-59` 的 `_chipColors`：取应用层彩豆 token，
     // Miuix colorScheme 无对应槽，不写字面量（R5）。
-    val presetColors = listOf(
-        Color(QingyuIconColors.BLUE),
-        Color(QingyuIconColors.GREEN),
-        Color(QingyuIconColors.ORANGE),
-        Color(QingyuIconColors.PURPLE),
-        Color(QingyuIconColors.RED)
-    )
+    //
+    // 2026-11-10 颜色配方 v2：本页色块改调共享件 `QingyuColorChips`（squircle 12dp +
+    // 选中 2dp primary 描边 + 勾）。组件吃 `#RRGGBB`，所以这里把 token 掩成 hex 串——
+    // 颜色来源仍是 token，不是字面量；换色板只改 QingyuIconColors 一处。
+    val presetColorHex = listOf(
+        QingyuIconColors.BLUE,
+        QingyuIconColors.GREEN,
+        QingyuIconColors.ORANGE,
+        QingyuIconColors.PURPLE,
+        QingyuIconColors.RED,
+    ).map { "#" + (it and 0xFFFFFF).toString(16).padStart(6, '0').uppercase() }
 
     // 共享骨架：官方 TopAppBar + 标准返回键 + 顶栏毛玻璃；大标题可折叠
     // （Dart 原件 hyperos_showcase_screen.dart:92 走 HyperosSubpage 默认）。
@@ -373,39 +377,24 @@ fun HyperosShowcasePage(
                     }
                 }
 
-                // 6. 颜色选择
+                // 6. 颜色选择：改调共享色块件（配方 v2：36dp squircle + 选中勾 + 2dp 描边），
+                // 白点标记退役。
                 item {
                     ShowcaseSectionHeader(title = "颜色选择 · ColorChip", dark = dark)
                     QingyuCard(
                         modifier = Modifier.fillMaxWidth(),
                         insideMargin = PaddingValues(16.dp)
                     ) {
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceEvenly,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            presetColors.forEachIndexed { idx, color ->
-                                val isSelected = idx == selectedColorIndex
-                                Box(
-                                    modifier = Modifier
-                                        .size(36.dp)
-                                        .clip(CircleShape)
-                                        .background(color)
-                                        .clickable { selectedColorIndex = idx },
-                                    contentAlignment = Alignment.Center
-                                ) {
-                                    if (isSelected) {
-                                        Box(
-                                            modifier = Modifier
-                                                .size(14.dp)
-                                                .clip(CircleShape)
-                                                .background(Color.White)
-                                        )
-                                    }
-                                }
-                            }
-                        }
+                        QingyuColorChips(
+                            colors = presetColorHex,
+                            selectedHex = presetColorHex[selectedColorIndex],
+                            onSelect = { hex -> selectedColorIndex = presetColorHex.indexOf(hex) },
+                            // 档位参数**故意不传**：本页只是「色块示例」，用组件默认档即可。
+                            // 传具名档位会把我这条线绑死在 `QingyuColorChipSize` 的枚举值上，
+                            // 而那枚举正在定稿（Couple/Settings/QuickRow ↔ Large/Medium/Small），
+                            // 颜色线的定稿一变这里就断链——示例页不值得占这个依赖。
+                            dark = dark,
+                        )
                     }
                 }
         }
