@@ -33,6 +33,21 @@
     同模块并发时后启动者会删掉先启动者的输出目录、覆盖同一份 args 文件
     ⇒ 假失败/假通过 + 重复劳动（2026-10-27 22:17 实测复现）。
 
+    【main 源集里的 Compose/miuix 文件：排除 + WARN，不是静默放过】（2026-11-10）
+    渲染层在 `composeP1`，纯 JVM 的 L0 编译面解析不了 `androidx.compose` / `miuix`
+    （没有这两个 AAR）。历史上 `pages/timetable/TimetableBandUnderlap.kt`（`ebf87bac5`）
+    误落 main，导致**整个域** L0 一片 `unresolved reference 'ui'`，同域所有人失去
+    「交活前自测」通道（实测 245 文件全红）。
+
+    现在的语义（**纪律，不是方便**）：
+    1. 只把「自己 import 了 Compose/miuix」的那个文件踢出本次编译面，**逐个打印路径**；
+       整目录不过滤，`Easing` 这类有 JVM 桩的纯接口不放行（放行见 $jvmStubs）。
+    2. 引用被排除声明的测试类同样退出并点名（判据只看代码、剥注释与字符串）。
+    3. **被排除文件数 > 0 时，本次 L0 结果不得声明为「该域全绿」**——汇总行会打醒目
+       WARN；正式结论以 L1/L2 为准。别拿黄字当绿灯用。
+    4. 排除是**过渡手段**：正解是把误落的渲染层文件挪回 `composeP1`（纯数学部分拆回
+       main 让测试回 L0）。挪动涉及 main 代码，要单独授权。
+
 .EXAMPLE
     pwsh -File scripts/test-kotlin-module.ps1 -Module "pages/showcase"
     pwsh -File scripts/test-kotlin-module.ps1 -Module "pages/live"
@@ -145,11 +160,89 @@ if (-not (Test-Path $mainDir) -and -not (Test-Path $testDir)) {
 }
 
 $sources = @()
+# 排除清单与跳过清单的**初值**放在块外：两个 if 分支各自才赋值，缺了初值时无 main 目录的
+# 模块（如 `pages/sheetguard` 只有 test/）在读汇总行时会拿到 $null。
+$composeMainFiles = @()
+$skippedTests = @()
 if (Test-Path $mainDir) {
-    $sources += (Get-ChildItem -Path $mainDir -Filter "*.kt" -Recurse).FullName
+    # main 源集里的 Compose/miuix 文件（2026-11-10 新增过滤）。
+    #
+    # 本脚本的编译面是**纯 JVM**（JUnit + stdlib + 纯接口桩），而 main 源集按约定只放
+    # Android 壳与模型层——渲染层在 composeP1。历史上有人把 Compose 文件写进了
+    # `main/.../pages/<模块>/`（活例：`pages/timetable/TimetableBandUnderlap.kt`，`ebf87bac5`
+    # 带入），于是整域 L0 在这一个文件上编译失败、同域所有人失去「交活前自测」通道
+    # （实测 245 文件、一片 `unresolved reference 'ui'`）。
+    #
+    # 这里按**文件**过滤（不是整目录）：只有自己 import 了 Compose/miuix 的那个文件退出本次
+    # 编译面，并逐个打印出来——不静默跳过。文件的正身等 L1 后的迁移批次再挪进 composeP1，
+    # 本脚本不替它做决定。
+    #
+    # 连带处理：若某个测试类引用的正是被排除文件里的顶层声明（例：`TimetableBandUnderlapTest`
+    # 直接调用 `timetableBandStripPx` / `dayPanelHeightPx`），它会编译不过——这类测试同样退出
+    # 本次编译面，并单独点名（"测试对象已被排除"），绝不静默吞掉。
+    $composeImportPattern = "^\s*import\s+(androidx\.compose|top\.yukonga\.miuix)"
+    # 例外：`androidx.compose.animation.core.Easing` 是**纯接口**，脚本已有 JVM 桩
+    # （见下方「纯接口 JVM 桩」一节）——只 import 它的纯数学文件（`HomeViewExpandMotion.kt`）
+    # 必须留在编译面上，否则它那批纯函数单测会被误伤。
+    $stubbedImportPattern = "^\s*import\s+androidx\.compose\.animation\.core\.Easing\s*$"
+    $mainFiles = @(Get-ChildItem -Path $mainDir -Filter "*.kt" -Recurse)
+    $composeMainFiles = @()
+    foreach ($file in $mainFiles) {
+        $imports = @(Select-String -Path $file.FullName -Pattern $composeImportPattern -List)
+        $onlyStubbed = $imports.Count -gt 0 -and @(
+            Select-String -Path $file.FullName -Pattern "^\s*import\s+(?!androidx\.compose\.animation\.core\.Easing\s*$)(androidx\.compose|top\.yukonga\.miuix)" -List
+        ).Count -eq 0
+        if ($imports.Count -gt 0 -and -not $onlyStubbed) {
+            $composeMainFiles += $file.FullName
+        } else {
+            $sources += $file.FullName
+        }
+    }
+    if ($composeMainFiles.Count -gt 0) {
+        Write-Host ">>> [test-kotlin-module] main 源集含 Compose/miuix 导入，退出本次编译面（渲染层文件应放 composeP1）：" -ForegroundColor DarkYellow
+        foreach ($file in $composeMainFiles) {
+            Write-Host "      · $($file.Substring($repoRoot.Length + 1))" -ForegroundColor DarkYellow
+        }
+    }
 }
 if (Test-Path $testDir) {
-    $sources += (Get-ChildItem -Path $testDir -Filter "*.kt" -Recurse).FullName
+    # 依赖「已被排除的 main 文件」的测试类同样退出编译面（否则 unresolved reference）。
+    # 判据：同包里，测试文件正文引用了被排除文件里的**顶层声明名 + 调用括号**。
+    $excludedDeclsByPackage = @{}
+    foreach ($file in $composeMainFiles) {
+        $raw = Get-Content -Path $file -Raw
+        $pkgMatch = [regex]::Match($raw, "(?m)^\s*package\s+([a-zA-Z0-9_\.]+)")
+        $pkg = if ($pkgMatch.Success) { $pkgMatch.Groups[1].Value } else { "" }
+        $decls = @()
+        $decls += [regex]::Matches($raw, "(?m)^\s*(?:internal\s+|public\s+)?(?:const\s+)?fun\s+([A-Za-z0-9_]+)\s*[\(<]") |
+            ForEach-Object { $_.Groups[1].Value }
+        $decls += [regex]::Matches($raw, "(?m)^\s*(?:internal\s+|public\s+)?(?:const\s+)?val\s+([A-Za-z0-9_]+)") |
+            ForEach-Object { $_.Groups[1].Value }
+        if (-not $excludedDeclsByPackage.ContainsKey($pkg)) { $excludedDeclsByPackage[$pkg] = @() }
+        $excludedDeclsByPackage[$pkg] += @($decls | Select-Object -Unique)
+    }
+    $skippedTests = @()
+    foreach ($file in @(Get-ChildItem -Path $testDir -Filter "*.kt" -Recurse)) {
+        $raw = Get-Content -Path $file.FullName -Raw
+        $pkgMatch = [regex]::Match($raw, "(?m)^\s*package\s+([a-zA-Z0-9_\.]+)")
+        $pkg = if ($pkgMatch.Success) { $pkgMatch.Groups[1].Value } else { "" }
+        $decls = if ($excludedDeclsByPackage.ContainsKey($pkg)) { $excludedDeclsByPackage[$pkg] } else { @() }
+        # 判据只看**代码**：守卫类测试常把调用写法写在字符串里做断言
+        # （如 `s.contains("dayPanelHeightPx(")`），按原文匹配会把它们误判成依赖。
+        $code = [regex]::Replace($raw, "(?s)/\*.*?\*/", "")
+        $code = [regex]::Replace($code, "(?m)//.*$", "")
+        $code = [regex]::Replace($code, '"(\\\\|\\"|[^"\n])*"', '""')
+        $referenced = @($decls | Where-Object { $code -match ("\b" + [regex]::Escape($_) + "\s*\(") })
+        if ($referenced.Count -gt 0) {
+            $skippedTests += "$($file.Name)（引用 $($referenced -join '、')）"
+        } else {
+            $sources += $file.FullName
+        }
+    }
+    if ($skippedTests.Count -gt 0) {
+        Write-Host ">>> [test-kotlin-module] 以下测试类的被测声明在已排除的 Compose 文件里，本次同样不跑（不是静默跳过，报告里要点名）：" -ForegroundColor DarkYellow
+        foreach ($item in $skippedTests) { Write-Host "      · $item" -ForegroundColor DarkYellow }
+    }
 }
 
 # 默认带上公共模型层：绝大多页面模型都依赖 core 里的 Course / Exam / CourseTask /
@@ -391,6 +484,24 @@ try {
     
     java -cp $runClasspath org.junit.runner.JUnitCore @testClasses
     $testExitCode = $LASTEXITCODE
+
+    # 汇总 WARN（2026-11-10，Chief 要求）：只要本次排除了 main 源集里的 Compose/miuix 文件，
+    # 这一跑就**不是**「该域全绿」——黄字必须醒目到不能当绿灯用。正式结论以 L1/L2 为准。
+    if (@($composeMainFiles).Count -gt 0) {
+        Write-Host ""
+        Write-Host "──────────────────────────────────────────────────────────────" -ForegroundColor Yellow
+        Write-Host "WARN ⚠ 本次 L0 排除了 $(@($composeMainFiles).Count) 个 main 源集里的 Compose/miuix 文件：" -ForegroundColor Yellow
+        foreach ($file in $composeMainFiles) {
+            Write-Host "      · $($file.Substring($repoRoot.Length + 1))" -ForegroundColor Yellow
+        }
+        if (@($skippedTests).Count -gt 0) {
+            Write-Host "WARN ⚠ 同时跳过了 $(@($skippedTests).Count) 个测试类：$($skippedTests -join '；')" -ForegroundColor Yellow
+        }
+        Write-Host "WARN ⚠ 因此本域 L0 结果**不得**声明为「全绿」（被排除文件数 > 0）。" -ForegroundColor Yellow
+        Write-Host "      路过的 JUnit 条数只代表剩下那部分源码；正式结论以 safe-gradle L1/L2 为准。" -ForegroundColor Yellow
+        Write-Host "──────────────────────────────────────────────────────────────" -ForegroundColor Yellow
+        Write-Host ""
+    }
 
     if ($testExitCode -ne 0) {
         exit $testExitCode
