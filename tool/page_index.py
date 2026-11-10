@@ -45,6 +45,98 @@ FORCE = {
     "LocationTimeGroupEditorPage": "地点时间组编辑",
 }
 
+# ── 人工登记段：源码扫描认不出来，必须显式列 ────────────────────────────────
+#
+# 设置族 20 页走共享渲染器 `SettingsPageScreen(spec)`：源码里没有 `fun XxxPage(`，
+# 标题在运行期由 ARB 决定、路由在各宿主常量里 —— 扫描既扫不全也扫不准。
+# 超级岛两个子屏同理：同一渲染层靠宿主入参区分，没有独立入口函数。
+#
+# 所以用显式清单，并在 main() 里做**存在性断言**（文件在 + 标记串在）：
+# 少一样直接非零退出。清单漂了要当场红，不许静默少页。
+#
+# 元组：（标题, 相对 android/app/src/ 的路径, 必须命中的源码串, entry 名）
+_SETTINGS = "main/kotlin/com/mutx163/qingyu/pages/settings/"
+_LIVE = "composeP1/kotlin/com/mutx163/qingyu/pages/live/"
+
+SETTINGS_SPEC_PAGES = [
+    ("设置首页（课表设置）", _SETTINGS + "SettingsTimetablePage.kt",
+     "object SettingsTimetablePage {", "SettingsTimetableHubPage"),
+    ("设置 · 学期", _SETTINGS + "SettingsTimetablePage.kt",
+     "SEMESTER_ID", "SettingsTimetableSemesterPage"),
+    ("设置 · 外观", _SETTINGS + "SettingsAppearancePage.kt",
+     "object SettingsAppearancePage {", "SettingsAppearanceSpecPage"),
+    ("设置 · 主题管理", _SETTINGS + "SettingsAppearancePage.kt",
+     "object SettingsThemeManagePage {", "SettingsThemeManagePage"),
+    ("外观 · 材质（通用页签）", _SETTINGS + "SettingsMaterialPanels.kt",
+     "object SettingsMaterialGeneralPage {", "SettingsMaterialGeneralPage"),
+    ("外观 · 材质（课程卡页签）", _SETTINGS + "SettingsMaterialPanels.kt",
+     "object SettingsMaterialCourseCardPage {", "SettingsMaterialCourseCardPage"),
+    ("外观 · 首页背景（壁纸面板）", _SETTINGS + "SettingsBackdropFlowPage.kt",
+     "object SettingsBackdropFlowPage {", "SettingsBackdropFlowPage"),
+    ("Bing 壁纸画廊", _SETTINGS + "SettingsBingWallpaperGalleryPage.kt",
+     "object SettingsBingWallpaperGalleryPage {", "SettingsBingWallpaperGalleryPage"),
+    ("壁纸取景", _SETTINGS + "SettingsWallpaperPositionPage.kt",
+     "object SettingsWallpaperPositionPage {", "SettingsWallpaperPositionPage"),
+    ("首页小组件", _SETTINGS + "SettingsHomeWidgetPage.kt",
+     "object SettingsHomeWidgetPage {", "SettingsHomeWidgetPage"),
+    ("首页与导航", _SETTINGS + "SettingsHomeNavigationPage.kt",
+     "object SettingsHomeNavigationPage {", "SettingsHomeNavigationPage"),
+    ("课表页面设置", _SETTINGS + "SettingsTimetablePageSettingsPage.kt",
+     "object SettingsTimetablePageSettingsPage {", "SettingsTimetablePageSettingsPage"),
+    ("课程卡片设置", _SETTINGS + "SettingsCourseCardPage.kt",
+     "object SettingsCourseCardPage {", "SettingsCourseCardPage"),
+    ("设置 · 实时活动", _SETTINGS + "SettingsLivePage.kt",
+     "object SettingsLivePage {", "SettingsLivePage"),
+    ("实时活动自检", _SETTINGS + "SettingsLiveSelfCheckPage.kt",
+     "object SettingsLiveSelfCheckPage {", "SettingsLiveSelfCheckPage"),
+    ("设置 · 节假日", _SETTINGS + "SettingsHolidayPage.kt",
+     "object SettingsHolidayPage {", "SettingsHolidayPage"),
+    ("设置 · 节假日（高级）", _SETTINGS + "SettingsHolidayAdvancedPage.kt",
+     "object SettingsHolidayAdvancedPage {", "SettingsHolidayAdvancedPage"),
+    ("设置 · 天气", _SETTINGS + "SettingsWeatherPage.kt",
+     "object SettingsWeatherPage {", "SettingsWeatherPage"),
+    ("设置 · 诊断", _SETTINGS + "SettingsDiagnosticsPage.kt",
+     "object SettingsDiagnosticsPage {", "SettingsDiagnosticsPage"),
+    ("设置 · 重置", _SETTINGS + "SettingsResetPage.kt",
+     "object SettingsResetPage {", "SettingsResetPage"),
+]
+
+LIVE_SUBPAGES = [
+    ("上课前显示子屏", _LIVE + "DisplaySettingsPage.kt",
+     "fun DisplaySettingsPage(", "DisplaySettingsBeforeSubpage"),
+    ("下课前显示子屏", _LIVE + "DisplaySettingsPage.kt",
+     "fun DisplaySettingsPage(", "DisplaySettingsDuringSubpage"),
+]
+
+
+def _assert_marker(rel, marker, entry):
+    path = os.path.join("android", "app", "src", rel)
+    if not os.path.exists(path):
+        raise SystemExit("人工段条目 %s 的文件不存在：%s" % (entry, path))
+    with open(path, encoding="utf-8", errors="replace") as f:
+        src = f.read()
+    if marker not in src:
+        raise SystemExit("人工段条目 %s 的标记串未命中：%s → %r" % (entry, path, marker))
+
+
+def manual_rows():
+    """人工段的行。
+
+    `file` 存相对 `android/app/src/` 的路径（扫描段存的是相对 pages/ 的），
+    两者基准不同，靠 `href` 键在 render() 里区分链接拼法。
+    """
+    out = []
+    for title, rel, marker, entry in SETTINGS_SPEC_PAGES:
+        _assert_marker(rel, marker, entry)
+        out.append({"domain": "settings_spec", "title": title, "entry": entry,
+                    "file": rel, "href": rel, "previews": 0})
+    for title, rel, marker, entry in LIVE_SUBPAGES:
+        _assert_marker(rel, marker, entry)
+        out.append({"domain": "live_sub", "title": title, "entry": entry,
+                    "file": rel, "href": rel, "previews": 0})
+    return out
+
+
 GROUPS = [
     ("课表", "c", ["timetable"]),
     ("课程", "d1", ["course", "conflict"]),
@@ -59,6 +151,10 @@ GROUPS = [
     ("帮助与展示", "i", ["guide", "showcase"]),
     ("诊断", "h", ["diagnostics"]),
     ("关于", "a", ["about", "feedback"]),
+    # 追加在末尾：人工段从 p69 起排，旧的 p1–p68 编号一个不动
+    # （校验脚本、文档、群里的引用都还认旧号）。
+    ("设置二级页", "b1", ["settings_spec"]),
+    ("实时显示子屏", "j1", ["live_sub"]),
 ]
 
 CELL = r"`([^`]+?\.kt)`"
@@ -127,7 +223,7 @@ def load_rows():
     return rows
 
 
-def render(rows, prefix):
+def render(rows, prefix, base):
     order = {}
     for i, (title, _tag, domains) in enumerate(GROUPS):
         for d in domains:
@@ -143,7 +239,8 @@ def render(rows, prefix):
     out.append("# 页面索引\n")
     out.append("**共 %d 个页面，`Ctrl+F` 搜中文，按住 `Ctrl` 点名字直接打开源码。**\n" % total)
     out.append("按功能分区成块排列：课表 → 课程 → 日程与任务 → 时间与考试 → 统计 → 导入 → "
-               "迁移与导出 → 同步与备份 → 实时显示 → 设置 → 帮助与展示 → 诊断 → 关于。\n")
+               "迁移与导出 → 同步与备份 → 实时显示 → 设置 → 帮助与展示 → 诊断 → 关于 → "
+               "设置二级页 → 实时显示子屏。\n")
     out.append("> 这个文件由 `python tool/page_index.py` 生成，别手改；"
                "新增/删除页面后重跑一次并随代码提交。\n")
 
@@ -162,7 +259,8 @@ def render(rows, prefix):
         for r in group:
             n += 1
             ref = "p%d" % n
-            defs.append((ref, prefix + r["file"]))
+            # 扫描段的 file 相对 pages/（拼 prefix）；人工段的 href 相对 android/app/src/（拼 base）。
+            defs.append((ref, (base + r["href"]) if r.get("href") else (prefix + r["file"])))
             cells.append((r["title"], "[%s][%s]" % (r["title"], ref)))
         out.append("### %s\n" % title)
         line, width = [], 0
@@ -294,14 +392,19 @@ def main():
     for r in rows:
         if r["entry"] in FORCE:
             r["title"] = FORCE[r["entry"]]
+    # 人工段（设置 spec 页 20 + 超级岛子屏 2）追加在末尾：它们不参与源码扫描，
+    # 因此不会被 merge_with_source 按「源码里没这个函数」丢掉。
+    rows = rows + manual_rows()
     refresh_previews(rows)
     targets = [
-        ("docs/reference/page-index.md", "../../android/app/src/" + PAGES_REL + "/"),
-        ("android/docs/reference/page-index.md", "../../app/src/" + PAGES_REL + "/"),
+        ("docs/reference/page-index.md",
+         "../../android/app/src/" + PAGES_REL + "/", "../../android/app/src/"),
+        ("android/docs/reference/page-index.md",
+         "../../app/src/" + PAGES_REL + "/", "../../app/src/"),
     ]
-    for path, prefix in targets:
+    for path, prefix, base in targets:
         os.makedirs(os.path.dirname(path), exist_ok=True)
-        text = render(rows, prefix)
+        text = render(rows, prefix, base)
         with open(path, "w", encoding="utf-8", newline="\n") as f:
             f.write(text)
         print("写入 %s（%d 行）" % (path, text.count("\n")))

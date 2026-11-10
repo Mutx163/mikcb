@@ -32,7 +32,7 @@
   "title": "代码贡献者",
   "entry": "ContributorsPage",
   "file": "about/ContributorsPage.kt",
-  "previews": 9
+  "previews": 10
  },
  {
   "domain": "about",
@@ -46,14 +46,14 @@
   "title": "开源许可",
   "entry": "OpenSourceLicensesPage",
   "file": "about/OpenSourceLicensesPage.kt",
-  "previews": 6
+  "previews": 7
  },
  {
   "domain": "about",
   "title": "支持作者",
   "entry": "SupportCreatorPage",
   "file": "about/SupportCreatorPage.kt",
-  "previews": 7
+  "previews": 8
  },
  {
   "domain": "conflict",
@@ -67,7 +67,7 @@
   "title": "添加 / 编辑课程",
   "entry": "AddCoursePage",
   "file": "course/AddCoursePage.kt",
-  "previews": 4
+  "previews": 5
  },
  {
   "domain": "course",
@@ -81,7 +81,7 @@
   "title": "诊断日志查看器",
   "entry": "LiveDiagnosticsLogPage",
   "file": "diagnostics/LiveDiagnosticsLogPage.kt",
-  "previews": 7
+  "previews": 8
  },
  {
   "domain": "diagnostics",
@@ -95,21 +95,21 @@
   "title": "内存统计",
   "entry": "MemoryStatsPage",
   "file": "diagnostics/MemoryStatsPage.kt",
-  "previews": 7
+  "previews": 8
  },
  {
   "domain": "diagnostics",
   "title": "性能报告",
   "entry": "PerfReportPage",
   "file": "diagnostics/PerfReportPage.kt",
-  "previews": 7
+  "previews": 8
  },
  {
   "domain": "exam",
   "title": "添加 / 编辑考试",
   "entry": "AddExamPage",
   "file": "exam/AddExamPage.kt",
-  "previews": 7
+  "previews": 8
  },
  {
   "domain": "exam",
@@ -193,7 +193,7 @@
   "title": "适配器详情",
   "entry": "WarehouseAdapterDetailPage",
   "file": "import/warehouse/WarehouseAdapterDetailPage.kt",
-  "previews": 8
+  "previews": 9
  },
  {
   "domain": "import",
@@ -235,7 +235,7 @@
   "title": "超级岛",
   "entry": "DisplaySettingsPage",
   "file": "live/DisplaySettingsPage.kt",
-  "previews": 8
+  "previews": 9
  },
  {
   "domain": "live",
@@ -256,7 +256,7 @@
   "title": "新增/编辑日程",
   "entry": "AddScheduleItemPage",
   "file": "schedule/AddScheduleItemPage.kt",
-  "previews": 7
+  "previews": 8
  },
  {
   "domain": "schedule",
@@ -284,14 +284,14 @@
   "title": "玻璃坞底栏按钮编辑器",
   "entry": "GlassDockEditorScreen",
   "file": "settings/DockMenuEditors.kt",
-  "previews": 5
+  "previews": 6
  },
  {
   "domain": "settings",
   "title": "八宫格菜单按钮编辑器",
   "entry": "HomeMenuEditorScreen",
   "file": "settings/DockMenuEditors.kt",
-  "previews": 4
+  "previews": 5
  },
  {
   "domain": "settings",
@@ -305,28 +305,28 @@
   "title": "设置（通用）",
   "entry": "SettingsPageScreen",
   "file": "settings/SettingsPageRenderers.kt",
-  "previews": 5
+  "previews": 8
  },
  {
   "domain": "showcase",
   "title": "Miuix 展示册",
   "entry": "MiuixShowcasePage",
   "file": "showcase/MiuixShowcasePage.kt",
-  "previews": 4
+  "previews": 5
  },
  {
   "domain": "statistics",
   "title": "深度分析",
   "entry": "CourseStatisticsPage",
   "file": "statistics/CourseStatisticsPage.kt",
-  "previews": 6
+  "previews": 8
  },
  {
   "domain": "statistics",
   "title": "统计分析",
   "entry": "StatisticsAnalysisPage",
   "file": "statistics/StatisticsAnalysisPage.kt",
-  "previews": 6
+  "previews": 8
  },
  {
   "domain": "statistics",
@@ -396,7 +396,7 @@
   "title": "时间模板编辑节次",
   "entry": "TimeSchemeEditorPage",
   "file": "time_scheme/TimeSchemeEditorPage.kt",
-  "previews": 4
+  "previews": 5
  },
  {
   "domain": "time_scheme",
@@ -410,7 +410,7 @@
   "title": "多课表管理",
   "entry": "TimetableProfilesPage",
   "file": "timetable/TimetableProfilesPage.kt",
-  "previews": 7
+  "previews": 8
  },
  {
   "domain": "timetable",
@@ -474,5 +474,181 @@
   "entry": "WeatherCityPickerPage",
   "file": "weather/WeatherCityPickerPage.kt",
   "previews": 9
+ },
+ {
+  "domain": "settings_spec",
+  "title": "设置首页（课表设置）",
+  "entry": "SettingsTimetableHubPage",
+  "file": "main/kotlin/com/mutx163/qingyu/pages/settings/SettingsTimetablePage.kt",
+  "href": "main/kotlin/com/mutx163/qingyu/pages/settings/SettingsTimetablePage.kt",
+  "previews": 0
+ },
+ {
+  "domain": "settings_spec",
+  "title": "设置 · 学期",
+  "entry": "SettingsTimetableSemesterPage",
+  "file": "main/kotlin/com/mutx163/qingyu/pages/settings/SettingsTimetablePage.kt",
+  "href": "main/kotlin/com/mutx163/qingyu/pages/settings/SettingsTimetablePage.kt",
+  "previews": 0
+ },
+ {
+  "domain": "settings_spec",
+  "title": "设置 · 外观",
+  "entry": "SettingsAppearanceSpecPage",
+  "file": "main/kotlin/com/mutx163/qingyu/pages/settings/SettingsAppearancePage.kt",
+  "href": "main/kotlin/com/mutx163/qingyu/pages/settings/SettingsAppearancePage.kt",
+  "previews": 0
+ },
+ {
+  "domain": "settings_spec",
+  "title": "设置 · 主题管理",
+  "entry": "SettingsThemeManagePage",
+  "file": "main/kotlin/com/mutx163/qingyu/pages/settings/SettingsAppearancePage.kt",
+  "href": "main/kotlin/com/mutx163/qingyu/pages/settings/SettingsAppearancePage.kt",
+  "previews": 0
+ },
+ {
+  "domain": "settings_spec",
+  "title": "外观 · 材质（通用页签）",
+  "entry": "SettingsMaterialGeneralPage",
+  "file": "main/kotlin/com/mutx163/qingyu/pages/settings/SettingsMaterialPanels.kt",
+  "href": "main/kotlin/com/mutx163/qingyu/pages/settings/SettingsMaterialPanels.kt",
+  "previews": 0
+ },
+ {
+  "domain": "settings_spec",
+  "title": "外观 · 材质（课程卡页签）",
+  "entry": "SettingsMaterialCourseCardPage",
+  "file": "main/kotlin/com/mutx163/qingyu/pages/settings/SettingsMaterialPanels.kt",
+  "href": "main/kotlin/com/mutx163/qingyu/pages/settings/SettingsMaterialPanels.kt",
+  "previews": 0
+ },
+ {
+  "domain": "settings_spec",
+  "title": "外观 · 首页背景（壁纸面板）",
+  "entry": "SettingsBackdropFlowPage",
+  "file": "main/kotlin/com/mutx163/qingyu/pages/settings/SettingsBackdropFlowPage.kt",
+  "href": "main/kotlin/com/mutx163/qingyu/pages/settings/SettingsBackdropFlowPage.kt",
+  "previews": 0
+ },
+ {
+  "domain": "settings_spec",
+  "title": "Bing 壁纸画廊",
+  "entry": "SettingsBingWallpaperGalleryPage",
+  "file": "main/kotlin/com/mutx163/qingyu/pages/settings/SettingsBingWallpaperGalleryPage.kt",
+  "href": "main/kotlin/com/mutx163/qingyu/pages/settings/SettingsBingWallpaperGalleryPage.kt",
+  "previews": 0
+ },
+ {
+  "domain": "settings_spec",
+  "title": "壁纸取景",
+  "entry": "SettingsWallpaperPositionPage",
+  "file": "main/kotlin/com/mutx163/qingyu/pages/settings/SettingsWallpaperPositionPage.kt",
+  "href": "main/kotlin/com/mutx163/qingyu/pages/settings/SettingsWallpaperPositionPage.kt",
+  "previews": 0
+ },
+ {
+  "domain": "settings_spec",
+  "title": "首页小组件",
+  "entry": "SettingsHomeWidgetPage",
+  "file": "main/kotlin/com/mutx163/qingyu/pages/settings/SettingsHomeWidgetPage.kt",
+  "href": "main/kotlin/com/mutx163/qingyu/pages/settings/SettingsHomeWidgetPage.kt",
+  "previews": 0
+ },
+ {
+  "domain": "settings_spec",
+  "title": "首页与导航",
+  "entry": "SettingsHomeNavigationPage",
+  "file": "main/kotlin/com/mutx163/qingyu/pages/settings/SettingsHomeNavigationPage.kt",
+  "href": "main/kotlin/com/mutx163/qingyu/pages/settings/SettingsHomeNavigationPage.kt",
+  "previews": 0
+ },
+ {
+  "domain": "settings_spec",
+  "title": "课表页面设置",
+  "entry": "SettingsTimetablePageSettingsPage",
+  "file": "main/kotlin/com/mutx163/qingyu/pages/settings/SettingsTimetablePageSettingsPage.kt",
+  "href": "main/kotlin/com/mutx163/qingyu/pages/settings/SettingsTimetablePageSettingsPage.kt",
+  "previews": 0
+ },
+ {
+  "domain": "settings_spec",
+  "title": "课程卡片设置",
+  "entry": "SettingsCourseCardPage",
+  "file": "main/kotlin/com/mutx163/qingyu/pages/settings/SettingsCourseCardPage.kt",
+  "href": "main/kotlin/com/mutx163/qingyu/pages/settings/SettingsCourseCardPage.kt",
+  "previews": 0
+ },
+ {
+  "domain": "settings_spec",
+  "title": "设置 · 实时活动",
+  "entry": "SettingsLivePage",
+  "file": "main/kotlin/com/mutx163/qingyu/pages/settings/SettingsLivePage.kt",
+  "href": "main/kotlin/com/mutx163/qingyu/pages/settings/SettingsLivePage.kt",
+  "previews": 0
+ },
+ {
+  "domain": "settings_spec",
+  "title": "实时活动自检",
+  "entry": "SettingsLiveSelfCheckPage",
+  "file": "main/kotlin/com/mutx163/qingyu/pages/settings/SettingsLiveSelfCheckPage.kt",
+  "href": "main/kotlin/com/mutx163/qingyu/pages/settings/SettingsLiveSelfCheckPage.kt",
+  "previews": 0
+ },
+ {
+  "domain": "settings_spec",
+  "title": "设置 · 节假日",
+  "entry": "SettingsHolidayPage",
+  "file": "main/kotlin/com/mutx163/qingyu/pages/settings/SettingsHolidayPage.kt",
+  "href": "main/kotlin/com/mutx163/qingyu/pages/settings/SettingsHolidayPage.kt",
+  "previews": 0
+ },
+ {
+  "domain": "settings_spec",
+  "title": "设置 · 节假日（高级）",
+  "entry": "SettingsHolidayAdvancedPage",
+  "file": "main/kotlin/com/mutx163/qingyu/pages/settings/SettingsHolidayAdvancedPage.kt",
+  "href": "main/kotlin/com/mutx163/qingyu/pages/settings/SettingsHolidayAdvancedPage.kt",
+  "previews": 0
+ },
+ {
+  "domain": "settings_spec",
+  "title": "设置 · 天气",
+  "entry": "SettingsWeatherPage",
+  "file": "main/kotlin/com/mutx163/qingyu/pages/settings/SettingsWeatherPage.kt",
+  "href": "main/kotlin/com/mutx163/qingyu/pages/settings/SettingsWeatherPage.kt",
+  "previews": 0
+ },
+ {
+  "domain": "settings_spec",
+  "title": "设置 · 诊断",
+  "entry": "SettingsDiagnosticsPage",
+  "file": "main/kotlin/com/mutx163/qingyu/pages/settings/SettingsDiagnosticsPage.kt",
+  "href": "main/kotlin/com/mutx163/qingyu/pages/settings/SettingsDiagnosticsPage.kt",
+  "previews": 0
+ },
+ {
+  "domain": "settings_spec",
+  "title": "设置 · 重置",
+  "entry": "SettingsResetPage",
+  "file": "main/kotlin/com/mutx163/qingyu/pages/settings/SettingsResetPage.kt",
+  "href": "main/kotlin/com/mutx163/qingyu/pages/settings/SettingsResetPage.kt",
+  "previews": 0
+ },
+ {
+  "domain": "live_sub",
+  "title": "上课前显示子屏",
+  "entry": "DisplaySettingsBeforeSubpage",
+  "file": "composeP1/kotlin/com/mutx163/qingyu/pages/live/DisplaySettingsPage.kt",
+  "href": "composeP1/kotlin/com/mutx163/qingyu/pages/live/DisplaySettingsPage.kt",
+  "previews": 0
+ },
+ {
+  "domain": "live_sub",
+  "title": "下课前显示子屏",
+  "entry": "DisplaySettingsDuringSubpage",
+  "file": "composeP1/kotlin/com/mutx163/qingyu/pages/live/DisplaySettingsPage.kt",
+  "href": "composeP1/kotlin/com/mutx163/qingyu/pages/live/DisplaySettingsPage.kt",
+  "previews": 0
  }
 ]
