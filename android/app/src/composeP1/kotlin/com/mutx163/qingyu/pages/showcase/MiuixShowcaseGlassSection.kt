@@ -28,11 +28,11 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import com.mutx163.qingyu.components.QingyuSectionTitle
 import com.mutx163.qingyu.components.liquid.vibrancy
 import com.mutx163.qingyu.theme.QingyuIconColors
 import com.mutx163.qingyu.theme.QingyuTheme
 import top.yukonga.miuix.kmp.basic.Card
-import top.yukonga.miuix.kmp.basic.SmallTitle
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.blur.BlendColorEntry
 import top.yukonga.miuix.kmp.blur.BlurDefaults
@@ -45,6 +45,9 @@ import top.yukonga.miuix.kmp.blur.textureBlur
 import top.yukonga.miuix.kmp.preference.OverlayDropdownPreference
 import top.yukonga.miuix.kmp.preference.SwitchPreference
 import top.yukonga.miuix.kmp.theme.MiuixTheme
+
+/** 深水区分组标题内边距：与主目录 / 分类详情页同一套 28dp 轴线（列表 12 + 这里 16）。 */
+private val ShowcaseSectionTitleMargin = PaddingValues(horizontal = 16.dp, vertical = 8.dp)
 
 // ─────────────────────────────────────────────
 // 12b. 液态玻璃深水区（G4–G8，照抄官方 demo）
@@ -105,7 +108,10 @@ private fun ShowcaseTextureBlendDemo(
     )
 
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        SmallTitle(text = ShowcaseStrings.glassBlendCardTitle.text)
+        QingyuSectionTitle(
+            text = ShowcaseStrings.glassBlendCardTitle.text,
+            insideMargin = ShowcaseSectionTitleMargin,
+        )
         Card(insideMargin = PaddingValues(16.dp)) {
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 Box(
@@ -198,7 +204,10 @@ private fun ShowcaseForegroundBlurDemo(
     val backdrop = rememberLayerBackdrop()
 
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        SmallTitle(text = ShowcaseStrings.glassForegroundCardTitle.text)
+        QingyuSectionTitle(
+            text = ShowcaseStrings.glassForegroundCardTitle.text,
+            insideMargin = ShowcaseSectionTitleMargin,
+        )
         Card(insideMargin = PaddingValues(16.dp)) {
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 Box(
@@ -271,7 +280,10 @@ private fun ShowcaseGravityTiltDemo(
     )
 
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        SmallTitle(text = ShowcaseStrings.glassGravityCardTitle.text)
+        QingyuSectionTitle(
+            text = ShowcaseStrings.glassGravityCardTitle.text,
+            insideMargin = ShowcaseSectionTitleMargin,
+        )
         Card(insideMargin = PaddingValues(16.dp)) {
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 Box(

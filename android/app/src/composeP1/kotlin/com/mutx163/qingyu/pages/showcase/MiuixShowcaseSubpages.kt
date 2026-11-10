@@ -27,7 +27,9 @@ import androidx.compose.ui.state.ToggleableState
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
+import com.mutx163.qingyu.components.QingyuPageCardMargin
 import com.mutx163.qingyu.components.QingyuPageList
+import com.mutx163.qingyu.components.QingyuSectionTitle
 import com.mutx163.qingyu.components.QingyuSheet
 import com.mutx163.qingyu.components.QingyuSlider
 import com.mutx163.qingyu.theme.QingyuFixedTokens
@@ -42,7 +44,6 @@ import top.yukonga.miuix.kmp.basic.Checkbox
 import top.yukonga.miuix.kmp.basic.CircularProgressIndicator
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.IconButton
-import top.yukonga.miuix.kmp.basic.SmallTitle
 import top.yukonga.miuix.kmp.basic.ScrollBehavior
 import top.yukonga.miuix.kmp.basic.Switch
 import top.yukonga.miuix.kmp.basic.TabRow
@@ -91,7 +92,11 @@ fun MiuixShowcaseCategoryDetail(
     QingyuPageList(
         innerPadding = innerPadding,
         scrollBehavior = scrollBehavior,
-        contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 12.dp, bottom = 12.dp),
+        // 官方配方：页面横向 0，留白由每个块自己带（卡片 12dp）——
+        // 与主目录 MiuixShowcasePage 逐字一致（滚动条位置与此无关：miuix 竖条
+        // 只用 trackPadding 的上下两个值）。
+        horizontalPadding = QingyuPageCardMargin,
+        contentPadding = PaddingValues(top = 12.dp, bottom = 24.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
         when (category) {
@@ -144,6 +149,16 @@ fun MiuixShowcaseCategoryDetail(
     }
 }
 
+/**
+ * 分类详情页的分组标题内边距：列表已统一给 12dp（[QingyuPageCardMargin]），
+ * 标题这里再让 16dp ⇒ 12 + 16 = 官方 28dp 轴线，与卡内 16dp 的文字同缘。
+ *
+ * 2026-11-10：主目录与 13 个分类详情页收成同一套刻度。改前这里是列表 16dp +
+ * `SmallTitle` 默认 28dp = 44，比卡内文字（16 + 16 = 32）多缩 12dp——一进分类，
+ * 标题就右跳一格。
+ */
+private val ShowcaseSectionTitleMargin = PaddingValues(horizontal = 16.dp, vertical = 8.dp)
+
 // ─────────────────────────────────────────────
 // 1. 按钮展示
 // ─────────────────────────────────────────────
@@ -156,7 +171,7 @@ private fun ShowcaseButtonsSection(
     primaryColor: Color
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        SmallTitle(text = "MiuixButton · 基础按钮")
+        QingyuSectionTitle(text = "MiuixButton · 基础按钮", insideMargin = ShowcaseSectionTitleMargin)
         Card(insideMargin = PaddingValues(16.dp)) {
             FlowRow(
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
@@ -186,7 +201,7 @@ private fun ShowcaseButtonsSection(
             }
         }
 
-        SmallTitle(text = "MiuixTextButton · 文本按钮")
+        QingyuSectionTitle(text = "MiuixTextButton · 文本按钮", insideMargin = ShowcaseSectionTitleMargin)
         Card(insideMargin = PaddingValues(16.dp)) {
             FlowRow(
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
@@ -208,7 +223,7 @@ private fun ShowcaseButtonsSection(
             }
         }
 
-        SmallTitle(text = "MiuixIconButton · 图标按钮")
+        QingyuSectionTitle(text = "MiuixIconButton · 图标按钮", insideMargin = ShowcaseSectionTitleMargin)
         Card(insideMargin = PaddingValues(16.dp)) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -256,7 +271,7 @@ private fun ShowcaseInputsSection(
     primaryColor: Color
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        SmallTitle(text = "MiuixTextField · 文本输入")
+        QingyuSectionTitle(text = "MiuixTextField · 文本输入", insideMargin = ShowcaseSectionTitleMargin)
         Card(insideMargin = PaddingValues(16.dp)) {
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 TextField(
@@ -274,7 +289,7 @@ private fun ShowcaseInputsSection(
             }
         }
 
-        SmallTitle(text = "MiuixSwitch · 开关控件")
+        QingyuSectionTitle(text = "MiuixSwitch · 开关控件", insideMargin = ShowcaseSectionTitleMargin)
         Card(insideMargin = PaddingValues(16.dp)) {
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 Row(
@@ -313,7 +328,7 @@ private fun ShowcaseInputsSection(
             }
         }
 
-        SmallTitle(text = "MiuixCheckbox & Radio · 复选与单选")
+        QingyuSectionTitle(text = "MiuixCheckbox & Radio · 复选与单选", insideMargin = ShowcaseSectionTitleMargin)
         Card(insideMargin = PaddingValues(16.dp)) {
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 Row(
@@ -352,7 +367,7 @@ private fun ShowcaseInputsSection(
             }
         }
 
-        SmallTitle(text = "MiuixSlider · 滑块")
+        QingyuSectionTitle(text = "MiuixSlider · 滑块", insideMargin = ShowcaseSectionTitleMargin)
         Card(insideMargin = PaddingValues(16.dp)) {
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 Text(
@@ -403,7 +418,7 @@ private fun ShowcaseMenusSection(
     )
 
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        SmallTitle(text = "Dropdown 菜单选择演示")
+        QingyuSectionTitle(text = "Dropdown 菜单选择演示", insideMargin = ShowcaseSectionTitleMargin)
         Card(insideMargin = PaddingValues(16.dp)) {
             Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                 options.forEachIndexed { index, name ->
@@ -449,7 +464,7 @@ private fun ShowcaseDisplaySection(
     primaryColor: Color
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        SmallTitle(text = "MiuixText · 字阶规范")
+        QingyuSectionTitle(text = "MiuixText · 字阶规范", insideMargin = ShowcaseSectionTitleMargin)
         Card(insideMargin = PaddingValues(16.dp)) {
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Text("Title 1 示例文本", style = MiuixTheme.textStyles.title1, fontWeight = FontWeight.Bold)
@@ -460,7 +475,7 @@ private fun ShowcaseDisplaySection(
             }
         }
 
-        SmallTitle(text = "MiuixCard · 卡片容器")
+        QingyuSectionTitle(text = "MiuixCard · 卡片容器", insideMargin = ShowcaseSectionTitleMargin)
         Card(insideMargin = PaddingValues(16.dp)) {
             Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
                 Text("强调态主色卡片", style = MiuixTheme.textStyles.body1, fontWeight = FontWeight.SemiBold, color = primaryColor)
@@ -472,7 +487,7 @@ private fun ShowcaseDisplaySection(
             }
         }
 
-        SmallTitle(text = "BasicComponent · 基础图文混排")
+        QingyuSectionTitle(text = "BasicComponent · 基础图文混排", insideMargin = ShowcaseSectionTitleMargin)
         Card(insideMargin = PaddingValues(16.dp)) {
             BasicComponent(
                 title = "带图标的基础列表行",
@@ -501,8 +516,12 @@ private fun ShowcasePreferencesSection(
     primaryColor: Color
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        SmallTitle(text = "SuperPreference 族 · 澎湃设置行规范")
-        Card(insideMargin = PaddingValues(12.dp)) {
+        QingyuSectionTitle(text = "SuperPreference 族 · 澎湃设置行规范", insideMargin = ShowcaseSectionTitleMargin)
+        // 卡内不再夹 12dp：`*Preference` 自带 16dp 内边距，卡里再让 12 会变成
+        // 12（列表）+ 12（卡）+ 16（行）= 40，比标题的 28 右错一格；
+        // 传 0 时 12 + 0 + 16 = 28，正好与标题同轴，也正是 miuix demo 的配方
+        //（Card 外边距 12、卡内不夹层、preference 自带 16）。
+        Card(insideMargin = PaddingValues(0.dp)) {
             Column {
                 ArrowPreference(
                     title = ShowcaseStrings.prefSecurity.text,
@@ -526,8 +545,9 @@ private fun ShowcasePreferencesSection(
             }
         }
 
-        SmallTitle(text = "单选群组 · 主题模式")
-        Card(insideMargin = PaddingValues(12.dp)) {
+        QingyuSectionTitle(text = "单选群组 · 主题模式", insideMargin = ShowcaseSectionTitleMargin)
+        // 同上：`RadioButtonPreference` 自带 16dp，卡内不夹层 ⇒ 12 + 16 = 28 轴线。
+        Card(insideMargin = PaddingValues(0.dp)) {
             Column {
                 val themes = listOf(
                     ShowcaseStrings.prefThemeFollowSystem.text,
@@ -560,7 +580,7 @@ private fun ShowcasePickersSection(
     val timeFormatted = "%02d:%02d".format(state.pickerHour, state.pickerMinute)
 
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        SmallTitle(text = "NumberPicker · 时间滚轮选择器")
+        QingyuSectionTitle(text = "NumberPicker · 时间滚轮选择器", insideMargin = ShowcaseSectionTitleMargin)
         Card(insideMargin = PaddingValues(16.dp)) {
             Column(
                 modifier = Modifier.fillMaxWidth(),
@@ -603,7 +623,7 @@ private fun ShowcasePickersSection(
             }
         }
 
-        SmallTitle(text = "色彩空间选择")
+        QingyuSectionTitle(text = "色彩空间选择", insideMargin = ShowcaseSectionTitleMargin)
         Card(insideMargin = PaddingValues(16.dp)) {
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Text(
@@ -653,7 +673,7 @@ private fun ShowcaseFeedbackSection(
     primaryColor: Color
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        SmallTitle(text = "MiuixDialog · 对话框")
+        QingyuSectionTitle(text = "MiuixDialog · 对话框", insideMargin = ShowcaseSectionTitleMargin)
         Card(insideMargin = PaddingValues(16.dp)) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -674,7 +694,7 @@ private fun ShowcaseFeedbackSection(
             }
         }
 
-        SmallTitle(text = "ProgressIndicator · 进度")
+        QingyuSectionTitle(text = "ProgressIndicator · 进度", insideMargin = ShowcaseSectionTitleMargin)
         Card(insideMargin = PaddingValues(16.dp)) {
             Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
                 Row(
@@ -761,7 +781,7 @@ private fun ShowcaseOverlaysSection(
     primaryColor: Color
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        SmallTitle(text = "OverlayBottomSheet · 底部弹窗")
+        QingyuSectionTitle(text = "OverlayBottomSheet · 底部弹窗", insideMargin = ShowcaseSectionTitleMargin)
         Card(insideMargin = PaddingValues(16.dp)) {
             Button(
                 modifier = Modifier.fillMaxWidth(),
@@ -771,7 +791,7 @@ private fun ShowcaseOverlaysSection(
             }
         }
 
-        SmallTitle(text = "FloatingToolbar · 悬浮工具栏")
+        QingyuSectionTitle(text = "FloatingToolbar · 悬浮工具栏", insideMargin = ShowcaseSectionTitleMargin)
         Card(insideMargin = PaddingValues(16.dp)) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -844,7 +864,7 @@ private fun ShowcaseNavigationSection(
     )
 
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        SmallTitle(text = "TabRow · 标签栏")
+        QingyuSectionTitle(text = "TabRow · 标签栏", insideMargin = ShowcaseSectionTitleMargin)
         Card(insideMargin = PaddingValues(12.dp)) {
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 TabRow(
@@ -871,7 +891,7 @@ private fun ShowcaseUtilitySection(
     primaryColor: Color
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        SmallTitle(text = "Surface · 表面容器与滚动")
+        QingyuSectionTitle(text = "Surface · 表面容器与滚动", insideMargin = ShowcaseSectionTitleMargin)
         Card(insideMargin = PaddingValues(16.dp)) {
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Text("阻尼弹性滚动与刷新表面", style = MiuixTheme.textStyles.body1, fontWeight = FontWeight.SemiBold)
@@ -904,7 +924,7 @@ private fun ShowcaseThemingSection(
     )
 
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        SmallTitle(text = "DynamicTheme · 动态种子色取色")
+        QingyuSectionTitle(text = "DynamicTheme · 动态种子色取色", insideMargin = ShowcaseSectionTitleMargin)
         Card(insideMargin = PaddingValues(16.dp)) {
             Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
                 Text(ShowcaseStrings.themeSeedColor.text, style = MiuixTheme.textStyles.body2)
@@ -960,7 +980,7 @@ private fun ShowcaseBlurSection(
     primaryColor: Color
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        SmallTitle(text = "TextureBlur · 液态玻璃与模糊控制")
+        QingyuSectionTitle(text = "TextureBlur · 液态玻璃与模糊控制", insideMargin = ShowcaseSectionTitleMargin)
         Card(insideMargin = PaddingValues(16.dp)) {
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 // ── 真模糊（2026-10-27 修正）──
@@ -1113,7 +1133,7 @@ private fun ShowcaseFoundationSection(
     val hapticTypes = listOf("选择", "轻", "中", "重")
 
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        SmallTitle(text = "SquircleBorder · 平滑曲率圆角")
+        QingyuSectionTitle(text = "SquircleBorder · 平滑曲率圆角", insideMargin = ShowcaseSectionTitleMargin)
         Card(insideMargin = PaddingValues(16.dp)) {
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 Box(
@@ -1146,7 +1166,7 @@ private fun ShowcaseFoundationSection(
             }
         }
 
-        SmallTitle(text = "ScrollEndHaptic · 触觉反馈类型")
+        QingyuSectionTitle(text = "ScrollEndHaptic · 触觉反馈类型", insideMargin = ShowcaseSectionTitleMargin)
         Card(insideMargin = PaddingValues(12.dp)) {
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 TabRow(
