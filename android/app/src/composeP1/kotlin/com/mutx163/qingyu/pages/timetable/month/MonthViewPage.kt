@@ -442,6 +442,8 @@ fun MonthViewPage(
                             homeMenuStyle = homeMenuStyle,
                             menuItems = homeMenuItems,
                             onMenuSelect = onHomeMenuSelect,
+                            // 「更多」玻璃球的采样源 = 顶栏玻璃带自己在用的那一层（同一个对象）。
+                            backdrop = pageBackdrop,
                             // 根页（底栏栈底）不画返回键；从「更多功能」等处推入时画出。
                             navigationIcon = if (rememberShellShouldShowBackButton()) {
                                 { QingyuBackIconButton(onBack = onBack) }

@@ -852,6 +852,8 @@ fun DayViewPage(
                             homeMenuStyle = homeMenuStyle,
                             menuItems = homeMenuItems,
                             onMenuSelect = onHomeMenuSelect,
+                            // 「更多」玻璃球的采样源 = 顶栏玻璃带自己在用的那一层（同一个对象）。
+                            backdrop = pageBackdrop,
                         )
                     }
                     // 顶部星期日期条（Dart 日视图叠在首页上，这一条一直可见）：

@@ -915,6 +915,8 @@ fun TimetableWeekPage(
                             homeMenuStyle = homeMenuStyle,
                             menuItems = homeMenuItems,
                             onMenuSelect = onHomeMenuSelect,
+                            // 「更多」玻璃球的采样源 = 顶栏玻璃带自己在用的那一层（同一个对象）。
+                            backdrop = pageBackdrop,
                         )
                     }
 

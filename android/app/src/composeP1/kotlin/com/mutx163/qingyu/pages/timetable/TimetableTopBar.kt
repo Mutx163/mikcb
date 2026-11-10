@@ -1,7 +1,9 @@
 package com.mutx163.qingyu.pages.timetable
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -9,12 +11,14 @@ import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.compositionLocalOf
@@ -26,10 +30,14 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.mutx163.qingyu.app.AppLocaleRuntime
 import com.mutx163.qingyu.app.HomeMenuStyle
@@ -37,9 +45,15 @@ import com.mutx163.qingyu.components.QingyuCard
 import com.mutx163.qingyu.components.QingyuCardDefaults
 import com.mutx163.qingyu.components.QingyuSheet
 import com.mutx163.qingyu.components.QingyuWeightDelta
+import com.mutx163.qingyu.components.glass.LocalQingyuPageBackdrop
+import com.mutx163.qingyu.components.glass.QingyuGlassSurface
 import com.mutx163.qingyu.components.shiftWeight
+import com.mutx163.qingyu.core.GlassSpec
+import com.mutx163.qingyu.core.GlassSpecResolver
+import com.mutx163.qingyu.core.GlassTuning
 import com.mutx163.qingyu.pages.shell.HomeInkPolarity
 import com.mutx163.qingyu.theme.QingyuTheme
+import top.yukonga.miuix.kmp.blur.Backdrop
 import top.yukonga.miuix.kmp.basic.Badge
 import top.yukonga.miuix.kmp.basic.BadgedBox
 import top.yukonga.miuix.kmp.basic.DropdownEntry
@@ -112,6 +126,116 @@ private val updateBadgeLabel: String
     get() = AppLocaleRuntime.text("updateLabel", "Updates")
 
 /**
+ * 右上角动作球的直径：与全站顶栏玻璃钮同档（44dp；发布版 `FHeaderActionBall` 同一颗球）。
+ */
+private val HomeTopBarBallSize: Dp = 44.dp
+
+/**
+ * 动作球的玻璃口径：与 `QingyuPageScaffold` 里那颗顶栏玻璃钮**同值**——薄磨砂、不做折射/高光
+ *（对齐发布版 `maxRefraction = 0`）。
+ *
+ * 那份 spec 是 `private`、不跨文件共享，所以这里按同值重建；先例是
+ * `WallpaperPositionPickerPage` 的悬浮操作条。**改动时两处要一起改**（同一份观感）。
+ */
+private val HomeTopBarBallGlassSpec: GlassSpec = GlassSpecResolver.resolve(
+    GlassTuning(
+        blurSigmaDp = 18f,
+        tintAlpha = 0f,
+        vibrancy = 1.15f,
+        rimStrength = 0f,
+        rimWidthDp = 0f,
+        refractionBandDp = 0f,
+        refractionAmountDp = 0f,
+        dispersion = 0f,
+    ),
+)
+
+/**
+ * 首页右上角动作球的**视觉层**（不含点击）：44dp 正圆 + 0.75dp 细边 + 白纱，有采样源时走玻璃。
+ *
+ * 形制与 `QingyuPageScaffold` 的 [com.mutx163.qingyu.components.QingyuGlassIconButton] 圆底分支
+ * 逐项一致，差别只有一条：那颗是**门控**的（内容压到顶栏带下面才出现），而首页这颗是**常驻球**
+ *（发布版 `FHeaderActionBall` 一直浮在标题栏上）。所以这里不复用门控件，只复用它那套配方。
+ *
+ * @param backdrop 采样源（首页各视图的 `pageBackdrop`）。null = 退化分支：先铺不透明页底色再叠白纱。
+ *   只铺半透明白纱时，外浮影会从圆内透出来，圆里压成一块灰盘、边缘那圈白描边反而更亮 ——
+ *   肉眼就是「一大一小两个同心圈」（2026-11-08 版本更新页预览实报）。顺序不能反。
+ */
+@Composable
+private fun HomeTopBarActionBallChrome(
+    dark: Boolean,
+    backdrop: Backdrop?,
+    modifier: Modifier = Modifier,
+) {
+    val veil = Color.White.copy(alpha = if (dark) 0.16f else 0.42f)
+    val borderColor = Color.White.copy(alpha = if (dark) 0.18f else 0.55f)
+    Box(
+        modifier = modifier
+            .size(HomeTopBarBallSize)
+            .clip(CircleShape)
+            .border(width = 0.75.dp, color = borderColor, shape = CircleShape),
+    ) {
+        if (backdrop != null) {
+            QingyuGlassSurface(
+                backdrop = backdrop,
+                spec = HomeTopBarBallGlassSpec,
+                modifier = Modifier.fillMaxSize(),
+                shape = CircleShape,
+                tintBrush = SolidColor(veil),
+            )
+        } else {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(Color(QingyuTheme.scaffoldBackground(dark)), CircleShape)
+                    .background(veil, CircleShape),
+            )
+        }
+    }
+}
+
+/**
+ * 首页右上角动作球（**自带点击**的完整件）：玻璃层在下、可点击层在上。
+ *
+ * 点击层压在玻璃**上面**，涟漪才看得见（反过来会被玻璃盖住 = 点了没反馈）。
+ * 八宫格档用这个；列表档的点击归官方级联菜单，那边只要 [HomeTopBarActionBallChrome]。
+ *
+ * 为什么不再套 miuix `IconButton`：那组件自己画一层 squircle 圆底，套在玻璃球里就是
+ * 「双重圈圈」（2026-11-08 用户实报）。这里只保留外层这一层球。
+ */
+@Composable
+private fun HomeTopBarActionBall(
+    dark: Boolean,
+    backdrop: Backdrop?,
+    onClick: () -> Unit,
+    content: @Composable () -> Unit,
+) {
+    val interactionSource = remember { MutableInteractionSource() }
+    Box(
+        modifier = Modifier
+            .size(HomeTopBarBallSize)
+            // 浮影 clip = false：球内的投影会跟白纱叠成同心圈（见 Chrome 的退化分支注释）。
+            .shadow(elevation = 2.dp, shape = CircleShape, clip = false),
+        contentAlignment = Alignment.Center,
+    ) {
+        HomeTopBarActionBallChrome(dark = dark, backdrop = backdrop)
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .clip(CircleShape)
+                .clickable(
+                    role = Role.Button,
+                    interactionSource = interactionSource,
+                    onClick = onClick,
+                ),
+            contentAlignment = Alignment.Center,
+        ) {
+            content()
+        }
+    }
+}
+
+/**
  * 课表三视图（周 / 日 / 月）共用的**顶栏标题行**。
  *
  * ## 它补的是什么
@@ -127,12 +251,21 @@ private val updateBadgeLabel: String
  * * [brand] = true（Dart `HomeTitleStyle.brand`）：大字 + 下方小号课表名。两档
  *   其实都是文字，设置里「大 Logo」指的就是这行大字，没有图片资源。
  *
- * ## 右上角「更多」菜单（跟设置的 `homeMenuStyle` 分流，与 Flutter 一致）
+ * ## 右上角「更多」按钮：常驻玻璃球（2026-11-10）
  *
- * * `GRID`（八宫格）：点「更多」弹底部弹层（`QingyuSheet`），4 列图标瓷贴；
- * * `LIST`（列表）：miuix 官方**级联菜单**——图标按钮点开锚定弹层，弹层缩放弹出；
- *   「添加」展开时一级缩到 0.95、二级在新卡片里弹出。全部走官方件，零自研动画。
- *   这是 Dart `homeMenuController.showTopActionsSheet` 的两条分支，默认档位就是 list。
+ * 发布版顶栏动作键是一颗**常驻玻璃球**（`FHeaderActionBall`），不是裸图标。此前 Compose
+ * 两档分别用官方 `IconButton` / 官方级联菜单自带按钮，两者默认 `backgroundColor = Unspecified`
+ *（miuix `IconButton` 不画底）⇒ 用户看到的就是"没有圆圈底"。
+ *
+ * 现在两档共用 [HomeTopBarActionBall] 那套球（44dp 正圆 + 小浮影 + 0.75dp 细边 + 白纱，
+ * 有 [backdrop] 时走磨砂玻璃），差别只在点击归谁：
+ *
+ * * `LIST`：点击仍归官方级联菜单（它自己把 content 套进一颗 `IconButton`），所以球画成
+ *   **兄弟层垫在下面**、那颗按钮的底色让成透明 —— 视觉只有一个圈，按下态/涟漪不受影响；
+ * * `GRID`：点「更多」弹底部弹层（`QingyuSheet`），4 列图标瓷贴，球自带点击。
+ *
+ * 这两档与全站顶栏玻璃钮（`QingyuGlassIconButton`）配方同值，区别只有一条：那颗是**门控**的
+ *（内容压到顶栏带下面才出现），首页这颗是**常驻**的（发布版就是一直浮着）。
  *
  * ## 「添加」是二级菜单，不是普通行
  *
@@ -147,7 +280,8 @@ private val updateBadgeLabel: String
  * ## 按压反馈
  *
  * 列表档由官方组件提供：菜单开着期间那颗按钮保持**按下态**（官方 `holdDownState`），
- * 按压高亮走主题注入的 miuix 指示。八宫格档的触发按钮用官方 `SinkFeedback`。
+ * 按压高亮走主题注入的 miuix 指示。八宫格档由球自己的 `clickable` 提供涟漪
+ *（点击层压在玻璃**上面**，涟漪才不会被玻璃盖住）。
  *
  * 条目由 [menuItems] 注入（默认 [TimetableMenuDefaults.entries]），点选只回传
  * 稳定的 [TimetableMenuItem.id] —— 本组件不认识路由，页面/壳的分工不被污染。
@@ -165,6 +299,7 @@ private val updateBadgeLabel: String
  * @param homeMenuStyle 菜单形态：`LIST`（锚定列表，默认，对齐 Dart 默认）/
  *   `GRID`（八宫格底部弹层）。由壳从设置 `homeMenuStyle` 注入。
  * @param onMenuSelect 点菜单条目回调，参数是 [TimetableMenuItem.id]。
+ * @param backdrop 右上角玻璃球的采样源（首页各视图的 `pageBackdrop`）；null = 实心退化圆。
  */
 @Composable
 fun TimetableTopBar(
@@ -184,6 +319,14 @@ fun TimetableTopBar(
     menuItems: List<TimetableMenuItem> = emptyList(),
     onMenuSelect: (String) -> Unit = {},
     /**
+     * 右上角「更多」玻璃球的**背景采样源**：首页各视图的 `pageBackdrop`
+     * （就是顶栏玻璃带自己在用的那层，`TimetableChromeBandGlass(backdrop = …)` 同一个对象）。
+     *
+     * 有它就是「磨砂壁纸球」；null 时退化成本页底色 + 白纱的实心圆（见 [HomeTopBarActionBallChrome]）。
+     * 注意它与 [inkPolarity] 是两件事：墨色管字，玻璃只管底。
+     */
+    backdrop: Backdrop? = null,
+    /**
      * 顶栏左侧导航槽（返回键）。`null` = 不画。
      *
      * 显隐**不在这里判**：调用方按根页判据
@@ -193,6 +336,8 @@ fun TimetableTopBar(
     navigationIcon: (@Composable () -> Unit)? = null,
 ) {
     val dark = isSystemInDarkTheme()
+    // 球的采样源：调用方给的优先；嵌在骨架页里时吃骨架那一层（与返回键同一份）。
+    val ballBackdrop = backdrop ?: LocalQingyuPageBackdrop.current
     // 压在壁纸上时，墨色跟**壁纸明暗**走（Dart `homePageChromeForegroundForLuminance`：
     // 深色壁纸用浅墨、浅色壁纸用深墨，阈值 0.45）。实现上直接复用主题的两套文字色
     // （深色档 = 近白、浅色档 = 近黑），渲染层不写颜色字面量（守 R5）。
@@ -324,30 +469,50 @@ fun TimetableTopBar(
                         ),
                     )
                 }
-                OverlayIconCascadingDropdownMenu(
-                    entries = entries,
-                    // 跟着壳的 Scaffold（`PagesShellActivity` 的根 Scaffold 包在
-                    // NavDisplay 外面）：弹层挂它下面才不会被玻璃底栏盖住。
-                    renderInRootScaffold = false,
-                    content = {
-                        // 「更多」图标 + 待更新红点（发布版 `_buildMoreActionIcon`）。
-                        BadgedBox(
-                            badge = { if (topBarState.hasAvailableUpdate) Badge() },
-                            content = {
-                                Icon(
-                                    imageVector = MiuixIcons.More,
-                                    contentDescription = TimetableStrings.moreTooltip.text,
-                                    tint = primaryText,
-                                    modifier = Modifier.size(TimetableTopBarMetrics.ICON.dp),
-                                )
-                            },
-                        )
-                    },
-                )
+                Box(
+                    modifier = Modifier
+                        .size(HomeTopBarBallSize)
+                        .shadow(elevation = 2.dp, shape = CircleShape, clip = false),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    // 玻璃球视觉层在下，官方菜单的按钮在上：视觉只有这一个圈。
+                    HomeTopBarActionBallChrome(dark = dark, backdrop = ballBackdrop)
+                    OverlayIconCascadingDropdownMenu(
+                        entries = entries,
+                        // 跟着壳的 Scaffold（`PagesShellActivity` 的根 Scaffold 包在
+                        // NavDisplay 外面）：弹层挂它下面才不会被玻璃底栏盖住。
+                        renderInRootScaffold = false,
+                        // 官方这颗按钮自带一层 squircle 圆底（`IconButton` 默认 40dp 圆角 +
+                        // `squircleSurface`）：套进玻璃球里就是「双重圈圈」（2026-11-08 实报）。
+                        // 底色让给外层玻璃球、尺寸与球对齐，剩下这颗按钮只负责点击与按下态。
+                        modifier = Modifier.size(HomeTopBarBallSize),
+                        minWidth = HomeTopBarBallSize,
+                        minHeight = HomeTopBarBallSize,
+                        backgroundColor = Color.Transparent,
+                        content = {
+                            // 「更多」图标 + 待更新红点（发布版 `_buildMoreActionIcon`）。
+                            BadgedBox(
+                                badge = { if (topBarState.hasAvailableUpdate) Badge() },
+                                content = {
+                                    Icon(
+                                        imageVector = MiuixIcons.More,
+                                        contentDescription = TimetableStrings.moreTooltip.text,
+                                        tint = primaryText,
+                                        modifier = Modifier.size(TimetableTopBarMetrics.ICON.dp),
+                                    )
+                                },
+                            )
+                        },
+                    )
+                }
             } else {
-                // 八宫格档：与列表档**同一颗官方 `IconButton`**（圆角 40dp ⇒ 正圆，
-                // 底色跟随主题）。两档切换时按钮不会变形，用户不需要重新建立预期。
-                IconButton(onClick = { showMenu = true }) {
+                // 八宫格档：**同一颗玻璃球**，只是点击自己接（官方级联菜单那颗按钮不在这里）。
+                // 两档切换时球不变形，用户不需要重新建立预期。
+                HomeTopBarActionBall(
+                    dark = dark,
+                    backdrop = ballBackdrop,
+                    onClick = { showMenu = true },
+                ) {
                     // 「更多」图标 + 待更新红点（发布版 `_buildMoreActionIcon`）。
                     BadgedBox(
                         badge = { if (topBarState.hasAvailableUpdate) Badge() },

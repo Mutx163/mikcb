@@ -28,6 +28,7 @@ import androidx.lifecycle.compose.LocalLifecycleOwner
 import com.mutx163.qingyu.components.QingyuSheet
 import com.mutx163.qingyu.core.CourseTask
 import com.mutx163.qingyu.core.MiniJson
+import com.mutx163.qingyu.pages.homeTopMenuItems
 import com.mutx163.qingyu.pages.settings.AppearanceEditorBridge
 import com.mutx163.qingyu.pages.settings.AppearanceEditorScreen
 import com.mutx163.qingyu.pages.settings.BingGalleryApplyPlanner
@@ -69,6 +70,8 @@ import com.mutx163.qingyu.pages.shellTimetableMenuPageId
 import com.mutx163.qingyu.platform.ManagedWallpaperStore
 import com.mutx163.qingyu.platform.PrefsKeyValueStore
 import com.mutx163.qingyu.pages.timetable.TimetableDateLogic
+import com.mutx163.qingyu.pages.timetable.TimetableMenuDefaults
+import com.mutx163.qingyu.pages.timetable.TimetableMenuItem
 import com.mutx163.qingyu.pages.timetable.TimetableStyleMapping
 import com.mutx163.qingyu.pages.timetable.day.DayViewDataAssembler
 import com.mutx163.qingyu.pages.timetable.day.DayViewWeather
@@ -938,6 +941,15 @@ private fun TimetablePreviewPage(
     // 坞走 [HomeGlassDock] —— 与壳的栈底条目**同一份实现**，所以卡片里的坞与真机首页逐参一致
     // （条目排列 / 高亮 / 圆钮图标 / 材质都读同一份草稿设置；拖材质滑杆卡片当场跟着变）。
     // 2026-11-01 之前卡片里没有坞：坞画在壳层、不在页面树里，这是用户报的「预览里没底栏」。
+    //
+    // 顶栏右上角「更多」球的数据也一样：**必须**按草稿设置解析后传下去。不传时
+    // `TimetableHost` / `DayViewPage` 的 `homeMenuItems` 落到默认空表，`TimetableTopBar`
+    // 里 `menuItems.isNotEmpty()` 为假 ⇒ 整颗球不画（2026-11-10 用户实报「预览里缺三个点」）。
+    // 解析规则与真首页同一份（`homeTopMenuItems`，壳里周/日/月三处都调它）；
+    // 草稿里菜单排列为空/只剩钉住项时它会自己回退默认 8 项，`ifEmpty` 只是最后一道兜底。
+    val homeMenuItems = remember(settingsModel.homeGridMenuActions) {
+        homeTopMenuItems(settingsModel).ifEmpty { TimetableMenuDefaults.entries() }
+    }
     Box(modifier = Modifier.fillMaxSize()) {
         val glassAvailable = isRuntimeShaderSupported()
         val dockBackdrop = rememberLayerBackdrop()
@@ -960,12 +972,15 @@ private fun TimetablePreviewPage(
                     homeSelectedWeek = homeSelectedWeek,
                     homeSelectedDayOfWeek = homeSelectedDayOfWeek,
                     weatherProvider = weatherProvider,
+                    homeMenuItems = homeMenuItems,
                 )
             } else {
                 TimetableHost(
                     repository = repository,
                     // 预览与真首页同一份天气数据源（周课卡天气行）。
                     weatherProvider = weatherProvider,
+                    // 顶栏「更多」球的条目：与真首页同源（见本函数开头的说明）。
+                    homeMenuItems = homeMenuItems,
                     // 点击在页面壳那一层就被全部吞掉（`Modifier.consumeAllPointerEvents`），
                     // 这两个回调永远不会被调用；给空实现是为了让「预览不可操作」这件事只有一处真源。
                     onOpenAddCourse = { _, _ -> },
@@ -1018,6 +1033,8 @@ private fun DayViewPreview(
     homeSelectedWeek: Int? = null,
     homeSelectedDayOfWeek: Int? = null,
     weatherProvider: WeatherProvider? = null,
+    /** 顶栏「更多」球的条目（由 [TimetablePreviewPage] 按草稿设置解析后下传）。 */
+    homeMenuItems: List<TimetableMenuItem> = emptyList(),
 ) {
     var snapshot by remember(repository) { mutableStateOf(repository.snapshot) }
     DisposableEffect(repository) {
@@ -1126,6 +1143,8 @@ private fun DayViewPreview(
         courseResolver = { task -> snapshot.courses.firstOrNull { it.id == task.courseId } },
         homeTitleStyle = settingsModel.homeTitleStyle,
         homeMenuStyle = settingsModel.homeMenuStyle,
+        // 顶栏「更多」球（日视图预览也要有球，与真首页 `c3.day` 同源）。
+        homeMenuItems = homeMenuItems,
         profileName = TimetableHostLogic.resolveProfileName(
             profiles = snapshot.profiles,
             activeProfileId = snapshot.activeProfileId,
