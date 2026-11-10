@@ -204,7 +204,14 @@ fun WarehouseWebLoginHost(
     }
 
     val controller = rememberWarehouseWebViewController()
-    val service = remember(fetch) { WarehouseRepositoryService(fetch) }
+    // 拉取偏好（更新下载渠道 → GitCode / 镜像前缀）：与两个列表页同一条口径。
+    //
+    // 2026-11-10 修：这里原先直接 `WarehouseRepositoryService(fetch)`，偏好快照没传进去
+    // ⇒ 「执行导入」拉适配器脚本**固定走 GitHub raw**，设置里切 GitCode / 镜像对这一路
+    // 完全没用（发布版是透传的，移植时丢了）。用户实报的「执行导入超时」就是这条路：
+    // 国内网络 raw 被丢包，而列表页走 GitCode 是通的。
+    val fetchOptions = remember(context) { readWarehouseFetchOptions(PrefsKeyValueStore(context)) }
+    val service = remember(fetch, fetchOptions) { WarehouseRepositoryService(fetch, options = fetchOptions) }
     var session by remember(target.loginUrl) {
         mutableStateOf(initialWarehouseWebLoginSession(target))
     }
@@ -882,7 +889,11 @@ fun WarehouseWebLoginHost(
                             )
                             // 拉脚本失败也走统一收尾：stage 回到 LOADED（页面本身是好的），
                             // 网络恢复后用户可以直接再点一次，不用先刷新页面。
-                            val message = WarehouseStrings.courseImportScriptFailed.text
+                            //
+                            // 文案带出**试过哪些源**（2026-11-10 用户报「不知道选了哪个」）：
+                            // attempts + 偏好快照能还原「GitHub 直连 / GitCode 渠道 + N 个镜像」，
+                            // 比原来那句光秃秃的「脚本执行失败」能指导处置（换网络还是换渠道）。
+                            val message = warehouseScriptLoadFailedMessage(fetchOptions, loaded.attempts)
                             endScriptWindow(message)
                             // 回放等课程阶段拉脚本失败：覆盖层收掉再提示（以前只 toast，
                             // 覆盖层永远停在「正在执行导入脚本」——W1 / P0-1 第 1 条）。

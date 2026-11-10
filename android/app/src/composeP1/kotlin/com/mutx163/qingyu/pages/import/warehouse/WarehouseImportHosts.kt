@@ -675,7 +675,7 @@ private class WarehousePickerLocalRecords(
  * 为什么读全部设置再映射、而不是只读两个键：`AppUpdateSettings.fromJson` 已经封了
  * 「缺键/非法值按默认回落」的口径，自己挑键会把那份口径抄第二遍。
  */
-private fun readWarehouseFetchOptions(prefs: KeyValueStore): WarehouseFetchOptions {
+internal fun readWarehouseFetchOptions(prefs: KeyValueStore): WarehouseFetchOptions {
     val settings = AppUpdateSettings.fromJson(TimetableStore(prefs).loadSettingsJson())
     val preferGitCode = settings.downloadChannel == AppUpdateDownloadChannel.GITCODE ||
         settings.downloadChannel == AppUpdateDownloadChannel.PGYER
