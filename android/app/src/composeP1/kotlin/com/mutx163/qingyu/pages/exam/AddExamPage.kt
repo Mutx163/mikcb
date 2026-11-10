@@ -662,6 +662,22 @@ private fun AddExamPagePreviewLargeText() {
     )
 }
 
+/**
+ * 「6 整页」：整页高度档。
+ *
+ * 900 那几档只画一屏，页面下半截（提醒 / 备注等）会被画布裁掉；这一档按整页高度
+ * 给画布（1200dp），AS 里等比缩小能看全页、切「实际大小」可滚。
+ */
+@Suppress("unused")
+@Preview(name = "6 整页 1200", showBackground = true, widthDp = 400, heightDp = 1200)
+@Composable
+private fun AddExamPagePreviewFullPage() {
+    PreviewAddExamPage(
+        viewState = previewAddExamStateEditing(),
+        selectedCourse = previewExamCourse(),
+    )
+}
+
 // ── 总览：三态并排，一屏看完 ─────────────────────────────────────────────────
 
 /**

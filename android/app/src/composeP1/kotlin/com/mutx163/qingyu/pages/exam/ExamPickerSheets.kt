@@ -252,11 +252,18 @@ fun ExamDatePickerSheet(
                     .padding(horizontal = 16.dp),
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
             ) {
-                TextButton(
+                Button(
                     modifier = Modifier.weight(1f),
-                    text = ExamStrings.cancelAction.text,
                     onClick = onDismiss,
-                )
+                    // 发布版滚轮弹层的「取消」是次要色实心键（`hyperos_controls.dart:657-818`
+                    // 的 secondary：#E6E6E6 底 + 主文本字），不是 ghost 文字键。
+                    colors = ButtonDefaults.buttonColors(
+                        color = Color(QingyuTheme.secondary(dark)),
+                        contentColor = Color(QingyuTheme.primaryText(dark)),
+                    ),
+                ) {
+                    Text(text = ExamStrings.cancelAction.text)
+                }
                 Button(
                     modifier = Modifier.weight(1f),
                     // 未选星期时置灰而不是可点但无声无息（2026-11-02 弹窗审核 P2：
@@ -316,6 +323,7 @@ private fun ExamCalendarWheelSheet(
     onPick: (LocalDateTime) -> Unit,
     onDismiss: () -> Unit,
 ) {
+    val dark = isSystemInDarkTheme()
     val base = (initial ?: LocalDateTime.now()).toLocalDate()
     val minYear = LocalDateTime.now().minusDays(365).year
     val maxYear = LocalDateTime.now().plusYears(2).year
@@ -388,11 +396,18 @@ private fun ExamCalendarWheelSheet(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
             ) {
-                TextButton(
+                Button(
                     modifier = Modifier.weight(1f),
-                    text = ExamStrings.cancelAction.text,
                     onClick = onDismiss,
-                )
+                    // 发布版滚轮弹层的「取消」是次要色实心键（`hyperos_controls.dart:657-818`
+                    // 的 secondary：#E6E6E6 底 + 主文本字），不是 ghost 文字键。
+                    colors = ButtonDefaults.buttonColors(
+                        color = Color(QingyuTheme.secondary(dark)),
+                        contentColor = Color(QingyuTheme.primaryText(dark)),
+                    ),
+                ) {
+                    Text(text = ExamStrings.cancelAction.text)
+                }
                 Button(
                     modifier = Modifier.weight(1f),
                     onClick = { onPick(LocalDateTime.of(year, month, safeDay, 0, 0)) },
@@ -420,6 +435,7 @@ fun ExamTimePickerSheet(
     onPick: (String) -> Unit,
     onDismiss: () -> Unit,
 ) {
+    val dark = isSystemInDarkTheme()
     val normalized = AddExamLogic.normalizeTimeOrFallback(initial)
     val parts = normalized.split(":")
     val baseHour = parts[0].toIntOrNull() ?: 8
@@ -476,11 +492,18 @@ fun ExamTimePickerSheet(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
             ) {
-                TextButton(
+                Button(
                     modifier = Modifier.weight(1f),
-                    text = ExamStrings.cancelAction.text,
                     onClick = onDismiss,
-                )
+                    // 发布版滚轮弹层的「取消」是次要色实心键（`hyperos_controls.dart:657-818`
+                    // 的 secondary：#E6E6E6 底 + 主文本字），不是 ghost 文字键。
+                    colors = ButtonDefaults.buttonColors(
+                        color = Color(QingyuTheme.secondary(dark)),
+                        contentColor = Color(QingyuTheme.primaryText(dark)),
+                    ),
+                ) {
+                    Text(text = ExamStrings.cancelAction.text)
+                }
                 Button(
                     modifier = Modifier.weight(1f),
                     onClick = { onPick("%02d:%02d".format(hour, minute)) },
@@ -580,11 +603,17 @@ fun ExamCoursePickerSheet(
         }
         Spacer(modifier = Modifier.height(8.dp))
         // 2026-11-02 弹窗审核 P2：Dart 弹层底部有全宽「取消」，Compose 此前只能靠点空白/返回关闭。
-        TextButton(
+        Button(
             modifier = Modifier.fillMaxWidth(),
-            text = ExamStrings.cancelAction.text,
             onClick = onDismiss,
-        )
+            // 同上：取消键走次要色实心，不保留 ghost 文字键。
+            colors = ButtonDefaults.buttonColors(
+                color = Color(QingyuTheme.secondary(dark)),
+                contentColor = Color(QingyuTheme.primaryText(dark)),
+            ),
+        ) {
+            Text(text = ExamStrings.cancelAction.text)
+        }
         // 列表之下有固定件 ⇒ 底部让位（手势区 + 16）垫在固定件之后，
         // 不再塞进列表 contentPadding（会在按钮上方造一截空白）。
         Spacer(modifier = Modifier.height(bottomInset))
@@ -604,6 +633,7 @@ fun ExamReminderPickerSheet(
     onPick: (Int) -> Unit,
     onDismiss: () -> Unit,
 ) {
+    val dark = isSystemInDarkTheme()
     val parts = AddExamFormReducer.reminderPickerInitial(initialMinutes)
     var days by remember(show, initialMinutes) { mutableIntStateOf(parts.days) }
     var hours by remember(show, initialMinutes) { mutableIntStateOf(parts.hours) }
@@ -667,11 +697,18 @@ fun ExamReminderPickerSheet(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
             ) {
-                TextButton(
+                Button(
                     modifier = Modifier.weight(1f),
-                    text = ExamStrings.cancelAction.text,
                     onClick = onDismiss,
-                )
+                    // 发布版滚轮弹层的「取消」是次要色实心键（`hyperos_controls.dart:657-818`
+                    // 的 secondary：#E6E6E6 底 + 主文本字），不是 ghost 文字键。
+                    colors = ButtonDefaults.buttonColors(
+                        color = Color(QingyuTheme.secondary(dark)),
+                        contentColor = Color(QingyuTheme.primaryText(dark)),
+                    ),
+                ) {
+                    Text(text = ExamStrings.cancelAction.text)
+                }
                 Button(
                     modifier = Modifier.weight(1f),
                     onClick = {
