@@ -1,6 +1,8 @@
 package com.mutx163.qingyu.components
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -13,13 +15,17 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.mutx163.qingyu.pages.shell.EmptyStateInk
 import com.mutx163.qingyu.pages.shell.resolveEmptyStateColorsArgb
 import com.mutx163.qingyu.theme.QingyuTheme
+import top.yukonga.miuix.kmp.basic.Button
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.Text
+import top.yukonga.miuix.kmp.icon.MiuixIcons
+import top.yukonga.miuix.kmp.icon.extended.Info
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 /**
@@ -202,4 +208,74 @@ private fun emptyStateColors(ink: EmptyStateInk): EmptyStateColors {
         title = Color(argb.titleArgb),
         body = Color(argb.bodyArgb),
     )
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// IDE 预览（2026-11-10，全仓预览补齐批）
+//
+// 三档正好覆盖本文件三个 Composable：
+//   ①页面级空态（完整形态：图标 + 标题 + 说明 + 主操作）
+//   ②行内提示两档（Caption 13 / Body 14 同屏对照）
+//   ③判墨三档色卡（调私有 `emptyStateColors`，上条＝标题墨、下条＝说明墨，不含文字）
+//
+// 固定写法（与全仓一致）：一律 `QingyuPageTheme` 包住、宽 400dp、高 900dp（本仓折行实测口径）。
+// 预览名与假数据是 **IDE 里的标签**，不是屏上文案——本文件这部分由空态守卫「断言 4」豁免，
+// 豁免范围只有 `@Preview(...)` 参数与被它标注的函数体（见 `pages/emptyguard` 守卫文件头探针 3）。
+// ─────────────────────────────────────────────────────────────────────────────
+
+@Preview(name = "1 页面级空态", showBackground = true, widthDp = 400, heightDp = 900)
+@Composable
+private fun PreviewEmptyStatePage() {
+    QingyuPageTheme(isDark = false) {
+        QingyuEmptyState(
+            icon = MiuixIcons.Info,
+            title = "空态标题（17sp 常规，允许折行）",
+            description = "这里是说明：一句讲清为什么空、下一步能做什么。",
+            action = {
+                Button(onClick = {}) {
+                    Text(text = "主操作")
+                }
+            },
+        )
+    }
+}
+
+@Preview(name = "2 行内提示两档", showBackground = true, widthDp = 400, heightDp = 900)
+@Composable
+private fun PreviewEmptyHint() {
+    QingyuPageTheme(isDark = false) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            QingyuEmptyHint(
+                text = "卡内提示（13 档 footnote1）",
+                emphasis = EmptyStateHintEmphasis.Caption,
+            )
+            Spacer(modifier = Modifier.height(24.dp))
+            QingyuEmptyHint(
+                text = "卡内正文（14 档 body2）",
+                emphasis = EmptyStateHintEmphasis.Body,
+            )
+        }
+    }
+}
+
+@Preview(name = "3 判墨三档", showBackground = true, widthDp = 400, heightDp = 900)
+@Composable
+private fun PreviewEmptyStateInk() {
+    QingyuPageTheme(isDark = false) {
+        Column(modifier = Modifier.fillMaxWidth().padding(16.dp)) {
+            val inks = listOf(
+                EmptyStateInk.Theme,
+                EmptyStateInk.OnPhoto,
+                EmptyStateInk.OverBackdrop(wallpaperLuminance = 0.02),
+                EmptyStateInk.OverBackdrop(wallpaperLuminance = 0.9),
+            )
+            inks.forEach { ink ->
+                val colors = emptyStateColors(ink)
+                Box(modifier = Modifier.fillMaxWidth().height(40.dp).background(colors.title))
+                Spacer(modifier = Modifier.height(4.dp))
+                Box(modifier = Modifier.fillMaxWidth().height(20.dp).background(colors.body))
+                Spacer(modifier = Modifier.height(20.dp))
+            }
+        }
+    }
 }
