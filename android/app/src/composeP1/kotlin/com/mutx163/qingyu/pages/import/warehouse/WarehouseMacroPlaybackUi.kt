@@ -14,6 +14,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.DpSize
@@ -35,8 +36,13 @@ import top.yukonga.miuix.kmp.theme.MiuixTheme
  *   「步骤 N / M」+「正在……」行（斜体）+ 取消；
  * - **暂停等手动操作：底部卡片、scrim 不拦截触摸**（用户要在网页里填验证码——
  *   Dart 用 `IgnorePointer` + 底部 `HyperosControlCard`，同语义）；
- * - 执行脚本：全屏 scrim + 转圈 + 「回放完成，正在执行导入脚本……」；
+ * - 执行脚本：全屏 scrim + 转圈 + 「回放完成，正在执行导入脚本……」+ 取消
+ *   （发布版这一态没有出口，失败/取消只能干等；审核 8d 后补一颗取消，语义与播放态相同）；
  * - 失败：scrim + 卡片（「导入失败」+ 本地化后的原因 + 关闭/重试）。
+ *
+ * 遮罩只在 **播放中 / 执行脚本 / 失败** 三态拦截触摸（[PlaybackScrim] 自己吃掉指针）：
+ * 覆盖层挂在整页最上层，不拦就会穿透到下面的 WebView / 顶栏（审核 8d：回放中手指能
+ * 点到网页、能换 UA 打断回放）。**暂停态不拦**——用户要亲自在网页里填验证码。
  *
  * ## 弹层纪律
  *
@@ -65,7 +71,7 @@ fun WarehouseMacroPlaybackOverlay(
         WarehousePlaybackUiState.PAUSED_FOR_INPUT -> PausedBottomCard(progress, onCancel, onContinueAfterPause)
 
         WarehousePlaybackUiState.EXECUTING_IMPORT -> PlaybackScrim {
-            ExecutingContent(schoolName, adapterName)
+            ExecutingContent(schoolName, adapterName, onCancel)
         }
 
         WarehousePlaybackUiState.FINISHED -> {
@@ -78,13 +84,24 @@ fun WarehouseMacroPlaybackOverlay(
     }
 }
 
-/** 全屏黑 scrim（播放中 / 执行脚本 / 失败三态共用；空 pointerInput 参与命中即拦截触摸）。 */
+/** 全屏黑 scrim（播放中 / 执行脚本 / 失败三态共用）。 */
 @Composable
 private fun PlaybackScrim(content: @Composable () -> Unit) {
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color.Black.copy(alpha = 0.54f)),
+            .background(Color.Black.copy(alpha = 0.54f))
+            // 遮罩自己吃掉指针：这一层挂在整页最上层，不拦就会穿透到下面的 WebView /
+            // 顶栏（审核 8d：回放中手指能点网页、能点「桌面/移动切换」把回放 reload 掉）。
+            // 只在 Main pass 收事件、**不 consume**：卡片里的「取消 / 重试 / 关闭」是子节点，
+            // 先收到事件，照常可点（暂停态不用本组件，仍然放行网页触摸）。
+            .pointerInput(Unit) {
+                awaitPointerEventScope {
+                    while (true) {
+                        awaitPointerEvent()
+                    }
+                }
+            },
         contentAlignment = Alignment.Center,
     ) {
         content()
@@ -207,7 +224,11 @@ private fun PausedBottomCard(
 }
 
 @Composable
-private fun ExecutingContent(schoolName: String, adapterName: String) {
+private fun ExecutingContent(
+    schoolName: String,
+    adapterName: String,
+    onCancel: () -> Unit,
+) {
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
         CircularProgressIndicator(size = 48.dp, strokeWidth = 3.dp)
         Spacer(modifier = Modifier.height(24.dp))
@@ -224,6 +245,13 @@ private fun ExecutingContent(schoolName: String, adapterName: String) {
                 style = MiuixTheme.textStyles.body2,
                 color = Color.White.copy(alpha = 0.7f),
             )
+        }
+        // 发布版这一态没有取消按钮（失败/超时时要等宿主收尾才出 ERROR 卡）；脚本可能
+        // 卡在网页里几十秒，用户至少要有「我不导了」的出口。取消语义与播放态同一颗：
+        // 宿主 cancelMacroPlayback() 会停计时、复位 stage 并收掉覆盖层。
+        Spacer(modifier = Modifier.height(32.dp))
+        Button(onClick = onCancel, colors = ButtonDefaults.buttonColors()) {
+            Text(text = WarehouseMacroReplayStrings.quickImportCancelImportAction.text)
         }
     }
 }

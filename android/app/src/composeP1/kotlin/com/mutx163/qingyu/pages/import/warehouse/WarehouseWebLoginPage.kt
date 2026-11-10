@@ -64,6 +64,15 @@ fun WarehouseWebLoginPage(
     trustedLoginUrls: List<String> = emptyList(),
     /** 前台宏回放中（宿主真实状态）：回放导航阶段的 UI 类消息靠它过 §6.2 门禁。 */
     foregroundReplayActive: Boolean = false,
+    /**
+     * 课程落库（写盘）期间由宿主传 true：主按钮显示「导入中……」并禁用，防止同一次导入
+     * 在写盘窗口里被再点一次（发布版 `_isExecutingImport` 一直保持到写成功，见
+     * `warehouse_adapter_web_login_screen.dart` 的 handleCourses 收尾）。
+     *
+     * ⚠️ 宿主目前没有「写盘中」这个状态（`finalizeCoursesImport` 一进来就 endScriptWindow）；
+     * 页面这边先把契约和禁用行为做好，接线由 Host 主人补一行（已报 Chief）。
+     */
+    importWriting: Boolean = false,
     onBack: () -> Unit = {},
     onReload: () -> Unit = {},
     onToggleDesktopMode: () -> Unit = {},
@@ -87,52 +96,62 @@ fun WarehouseWebLoginPage(
         // （layerBackdrop 每帧重录自绘控件 ⇒ 网页持续闪烁）。关掉实时模糊，顶栏用不透明页底色。
         enableTopBarBlur = false,
         actions = {
-            // 宏录制开关（对齐 Dart 顶栏 FHeaderAction：只有图标 + 无障碍文案，
-            // 执行导入期间禁用 `_isExecutingImport ? null : _toggleMacroRecording`）。
-            // 录制中换 error 色提示状态；P1 起接真实现，不再是「不可用」实话。
-            //
-            // 图标取 `AppRecording`（应用窗口 + 声波），语义是「录制这个窗口里的操作」。
-            // 换掉的是原来的 `RecordingTape`：那是一盘磁带（两个卷轴 + 外壳），
-            // 缩到 24dp 只剩一个圆角方块里两个圆点，读起来像「小机器人脸」，不像录制。
-            val isRecording = sessionState.macroState == WarehouseMacroActionState.RECORDING
-            IconButton(
-                onClick = onToggleMacroRecording,
-                enabled = sessionState.stage != WarehouseWebLoginStage.EXECUTING,
-            ) {
-                Icon(
-                    imageVector = MiuixIcons.AppRecording,
-                    contentDescription = if (isRecording) {
-                        WarehouseStrings.stopRecordingTooltip.text
-                    } else {
-                        WarehouseStrings.startRecordingTooltip.text
-                    },
-                    tint = if (isRecording) {
-                        MiuixTheme.colorScheme.error
-                    } else {
-                        MiuixTheme.colorScheme.primary
-                    },
-                )
-            }
-            // 桌面/移动切换（Dart `_toggleWebPageMode`）。换 UA 之外还会重载当前页
-            // （`toggleDesktopMode` 内部做），因为教务站按 UA 决定回哪个登录页。
-            //
-            // 图标按 Dart 语义：**按钮描述的是「点了会切到哪边」**。
-            // - 切电脑版 → `ScreenMirroring`（显示器 + 投射三角）：miuix-icons 0.9.4 里
-            //   唯一带"屏幕/显示器"形状的图标，不再拿 `GridView`（四个小方块＝宫格）充当电脑；
-            // - 切手机版 → `Phone`（话筒）：图标集里没有任何手机/竖屏设备形状，
-            //   话筒是「手机」在中文语境下最不容易误读的近邻。
-            IconButton(onClick = {
-                webViewController.toggleDesktopMode()
-                onToggleDesktopMode()
-            }) {
-                Icon(
-                    imageVector = if (webViewController.isDesktopMode) MiuixIcons.Phone else MiuixIcons.ScreenMirroring,
-                    contentDescription = if (webViewController.isDesktopMode) {
-                        WarehouseStrings.switchToMobileWebTooltip.text
-                    } else {
-                        WarehouseStrings.switchToDesktopWebTooltip.text
-                    },
-                )
+            // 回放期间隐藏「录制」「桌面/移动切换」（发布版 `widget.macroRecord != null`
+            // 时这两颗根本不渲染，`warehouse_adapter_web_login_screen.dart` 顶栏 suffixes）：
+            // 回放中换 UA 会 reload 直接打断正在跑的宏；开录制会把回放操作录进新宏、
+            // 覆盖用户原来那份。
+            if (!foregroundReplayActive) {
+                // 宏录制开关（对齐 Dart 顶栏 FHeaderAction：只有图标 + 无障碍文案，
+                // 执行导入期间禁用 `_isExecutingImport ? null : _toggleMacroRecording`）。
+                // 录制中换 error 色提示状态；P1 起接真实现，不再是「不可用」实话。
+                //
+                // 图标取 `AppRecording`（应用窗口 + 声波），语义是「录制这个窗口里的操作」。
+                // 换掉的是原来的 `RecordingTape`：那是一盘磁带（两个卷轴 + 外壳），
+                // 缩到 24dp 只剩一个圆角方块里两个圆点，读起来像「小机器人脸」，不像录制。
+                val isRecording = sessionState.macroState == WarehouseMacroActionState.RECORDING
+                IconButton(
+                    onClick = onToggleMacroRecording,
+                    enabled = sessionState.stage != WarehouseWebLoginStage.EXECUTING,
+                ) {
+                    Icon(
+                        imageVector = MiuixIcons.AppRecording,
+                        contentDescription = if (isRecording) {
+                            WarehouseStrings.stopRecordingTooltip.text
+                        } else {
+                            WarehouseStrings.startRecordingTooltip.text
+                        },
+                        tint = if (isRecording) {
+                            MiuixTheme.colorScheme.error
+                        } else {
+                            MiuixTheme.colorScheme.primary
+                        },
+                    )
+                }
+                // 桌面/移动切换（Dart `_toggleWebPageMode`）。换 UA 之外还会重载当前页
+                // （`toggleDesktopMode` 内部做），因为教务站按 UA 决定回哪个登录页。
+                //
+                // 图标按 Dart 语义：**按钮描述的是「点了会切到哪边」**。
+                // - 切电脑版 → `ScreenMirroring`（显示器 + 投射三角）：miuix-icons 0.9.4 里
+                //   唯一带"屏幕/显示器"形状的图标，不再拿 `GridView`（四个小方块＝宫格）充当电脑；
+                // - 切手机版 → `Phone`（话筒）：图标集里没有任何手机/竖屏设备形状，
+                //   话筒是「手机」在中文语境下最不容易误读的近邻。
+                IconButton(onClick = {
+                    webViewController.toggleDesktopMode()
+                    onToggleDesktopMode()
+                }) {
+                    Icon(
+                        imageVector = if (webViewController.isDesktopMode) {
+                            MiuixIcons.Phone
+                        } else {
+                            MiuixIcons.ScreenMirroring
+                        },
+                        contentDescription = if (webViewController.isDesktopMode) {
+                            WarehouseStrings.switchToMobileWebTooltip.text
+                        } else {
+                            WarehouseStrings.switchToDesktopWebTooltip.text
+                        },
+                    )
+                }
             }
             IconButton(onClick = {
                 // 真视图刷新（原来只调外部回调，页面根本没在动）
@@ -158,9 +177,30 @@ fun WarehouseWebLoginPage(
                 // 可操作，宿主只会挡掉。之前按钮恒可点、点了回一句泛泛的「脚本执行失败」，
                 // 用户读作「点导入没反应」（审核 G1）。禁用态旁边给一句实话，别让按钮
                 // 灰着却不说为什么。
-                val scriptReady = sessionState.stage == WarehouseWebLoginStage.LOADED
-                if (!scriptReady && sessionState.stage != WarehouseWebLoginStage.ERROR) {
-                    Text(
+                val stage = sessionState.stage
+                val executing = stage == WarehouseWebLoginStage.INJECTING_SCRIPT ||
+                    stage == WarehouseWebLoginStage.EXECUTING
+                val scriptReady = stage == WarehouseWebLoginStage.LOADED
+                val issue = sessionState.errorMessage?.takeIf { it.isNotBlank() }
+                // 状态行（发布版地址栏下面常驻一条，`warehouse_adapter_web_login_screen.dart`
+                // 的 `_lastScriptStatus`）：错误优先——明文拦截 / 断网 / 脚本 error / 超时
+                // 都必须在这里有字；ERROR 态以前被整条藏掉，只剩一颗灰按钮，用户不知道
+                // 发生了什么（审核 8b）。执行期由按钮自己说「导入中……」，不再错写成
+                // 「等待页面加载」。
+                when {
+                    issue != null -> Text(
+                        text = issue,
+                        style = MiuixTheme.textStyles.footnote2,
+                        color = MiuixTheme.colorScheme.error,
+                    )
+
+                    stage == WarehouseWebLoginStage.INJECTING_SCRIPT -> Text(
+                        text = WarehouseStrings.injectingAdapterScript.text,
+                        style = MiuixTheme.textStyles.footnote2,
+                        color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                    )
+
+                    !scriptReady && !executing -> Text(
                         text = WarehouseStrings.macroReplayWaitPageLoad.text,
                         style = MiuixTheme.textStyles.footnote2,
                         color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
@@ -171,10 +211,19 @@ fun WarehouseWebLoginPage(
                 // 浅色下底衬色与底栏一样是白的 ⇒ 整颗按钮读成「一行悬空白字」，看着像没有按钮
                 // （用户实报「下面的导入按钮这么奇怪」）。同域 ICS / 表格导入页底栏都是主色实心，
                 // 这里改成同一套，形态、配色、按压反馈、loading 位就全部对上了。
+                //
+                // 执行期换「导入中……」+ 转圈（发布版 `_isExecutingImport ? importingAction :
+                // executeImportScriptAction`，loading 同一旗标）：以前执行 30 秒里按钮永远是
+                // 灰的「执行导入脚本」，用户分不清是在跑还是卡死。
                 ImportActionButton(
-                    label = WarehouseStrings.executeImportScriptAction.text,
+                    label = if (executing || importWriting) {
+                        WarehouseStrings.importingAction.text
+                    } else {
+                        WarehouseStrings.executeImportScriptAction.text
+                    },
                     onClick = onExecuteImport,
-                    enabled = scriptReady,
+                    loading = executing || importWriting,
+                    enabled = scriptReady && !importWriting,
                 )
             }
         }
