@@ -923,3 +923,19 @@ private fun HomeMenuEditorScreenPreviewDark() {
 private fun HomeMenuEditorScreenPreviewLargeText() {
     PreviewHomeMenuEditorScreen(textScale = 1.3f)
 }
+
+// 「整页」档（2026-11-10 评审：900 高会把编辑页下半截截掉）。纯注释，高度按整页给 1200，
+// 原 1~9 档保留。
+@Suppress("unused")
+@Preview(name = "10 玻璃坞·整页", showBackground = true, widthDp = 400, heightDp = 1200)
+@Composable
+private fun GlassDockEditorScreenPreviewFullPage() {
+    PreviewGlassDockEditorScreen()
+}
+
+@Suppress("unused")
+@Preview(name = "11 八宫格·整页", showBackground = true, widthDp = 400, heightDp = 1200)
+@Composable
+private fun HomeMenuEditorScreenPreviewFullPage() {
+    PreviewHomeMenuEditorScreen()
+}
