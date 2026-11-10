@@ -93,7 +93,10 @@ com/mutx163/qingyu/pages/showcase/MiuixShowcasePage.kt:10
 com/mutx163/qingyu/pages/task/AddTaskPage.kt:10
 com/mutx163/qingyu/pages/course/AddCoursePage.kt:10
 com/mutx163/qingyu/pages/import/warehouse/AiImageCourseImportPage.kt:9
-com/mutx163/qingyu/pages/schedule/AddScheduleItemPage.kt:10
+# 2026-11-10 美学波（日程页「时间模板」行，美化十二收集项）登记增量：
+#   schedule/AddScheduleItemPage.kt 10→11 —— 任务 A 快捷模板编辑态预览档补一档中文预览名的增量；
+#   理由：@Preview(name = …) 是 IDE 标签、不上屏、不进 l10n；屏上文案仍走 ArbText。
+com/mutx163/qingyu/pages/schedule/AddScheduleItemPage.kt:11
 com/mutx163/qingyu/pages/settings/DockMenuEditors.kt:11
 # 2026-11-10 全仓预览补齐批（加载态共享件，美化一）新增登记：
 # `components/QingyuLoading.kt` 0→7 —— 七个公开入口各一档「一屏」预览（1 整页居中 / 2 行内三档 /

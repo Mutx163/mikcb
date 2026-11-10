@@ -298,71 +298,70 @@ fun AddScheduleItemPage(
                     }
                 }
 
-                // 快捷模板选择区（新建时展示）
-                if (!isEditing) {
-                    item(key = "presets") {
-                        QingyuCard(
-                            modifier = Modifier.fillMaxWidth().padding(horizontal = QingyuPageCardMargin),
-                            insideMargin = PaddingValues(12.dp),
-                        ) {
-                            Column {
-                                Text(
-                                    text = ScheduleStrings.scheduleQuickPresetSectionTitle.text,
-                                    style = MiuixTheme.textStyles.body2.shiftWeight(QingyuWeightDelta.MEDIUM),
-                                    // 与 QingyuTheme.sectionLabel(dark) 在主题桥里同值，走语义槽取色（R5/R6）。
+                // 快捷模板选择区（新建 / 编辑都展示：有意保留的超出发布版能力——发布版无模板概念；
+                // 模板只回填标题 / 颜色 / 起止时刻，不改日程本身的存在性与重复规则）。
+                item(key = "presets") {
+                    QingyuCard(
+                        modifier = Modifier.fillMaxWidth().padding(horizontal = QingyuPageCardMargin),
+                        insideMargin = PaddingValues(12.dp),
+                    ) {
+                        Column {
+                            Text(
+                                text = ScheduleStrings.scheduleQuickPresetSectionTitle.text,
+                                style = MiuixTheme.textStyles.body2.shiftWeight(QingyuWeightDelta.MEDIUM),
+                                // 与 QingyuTheme.sectionLabel(dark) 在主题桥里同值，走语义槽取色（R5/R6）。
                                 color = MiuixTheme.colorScheme.onSurfaceVariantActions,
-                                    modifier = Modifier.padding(bottom = 8.dp),
-                                )
-                                Row(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .horizontalScroll(rememberScrollState()),
-                                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                                ) {
-                                    val activePreset = scheduleQuickPresetActiveId(appliedPresetId, title)
-                                    for (preset in kScheduleQuickPresets) {
-                                        val isSelected = activePreset == preset.id
-                                        val presetTitle = scheduleQuickPresetTitle(preset.id)
-                                        val chipBg = if (isSelected) {
-                                            Color(QingyuTheme.primary(dark = dark))
-                                        } else {
-                                            Color(QingyuTheme.card(dark))
-                                        }
-                                        val chipText = if (isSelected) {
-                                            Color.White
-                                        } else {
-                                            Color(QingyuTheme.primaryText(dark))
-                                        }
+                                modifier = Modifier.padding(bottom = 8.dp),
+                            )
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .horizontalScroll(rememberScrollState()),
+                                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            ) {
+                                val activePreset = scheduleQuickPresetActiveId(appliedPresetId, title)
+                                for (preset in kScheduleQuickPresets) {
+                                    val isSelected = activePreset == preset.id
+                                    val presetTitle = scheduleQuickPresetTitle(preset.id)
+                                    val chipBg = if (isSelected) {
+                                        Color(QingyuTheme.primary(dark = dark))
+                                    } else {
+                                        Color(QingyuTheme.card(dark))
+                                    }
+                                    val chipText = if (isSelected) {
+                                        Color.White
+                                    } else {
+                                        Color(QingyuTheme.primaryText(dark))
+                                    }
 
-                                        Box(
-                                            modifier = Modifier
-                                                .clip(RoundedCornerShape(8.dp))
-                                                .background(chipBg)
-                                                .border(
-                                                    1.dp,
-                                                    if (isSelected) Color.Transparent else Color(QingyuTheme.dividerLine(dark)),
-                                                    RoundedCornerShape(8.dp),
-                                                )
-                                                .clickable {
-                                                    if (isSelected) {
-                                                        appliedPresetId = null
-                                                        title = ""
-                                                    } else {
-                                                        appliedPresetId = preset.id
-                                                        title = presetTitle
-                                                        selectedColor = preset.colorHex
-                                                        val win = resolveSchedulePresetWindow(
-                                                            ScheduleDateUtils.parseMinutes(startTime),
-                                                            preset.durationMinutes,
-                                                        )
-                                                        startTime = ScheduleDateUtils.formatMinutes(win.startMinutes)
-                                                        endTime = ScheduleDateUtils.formatMinutes(win.endMinutes)
-                                                    }
+                                    Box(
+                                        modifier = Modifier
+                                            .clip(RoundedCornerShape(8.dp))
+                                            .background(chipBg)
+                                            .border(
+                                                1.dp,
+                                                if (isSelected) Color.Transparent else Color(QingyuTheme.dividerLine(dark)),
+                                                RoundedCornerShape(8.dp),
+                                            )
+                                            .clickable {
+                                                if (isSelected) {
+                                                    appliedPresetId = null
+                                                    title = ""
+                                                } else {
+                                                    appliedPresetId = preset.id
+                                                    title = presetTitle
+                                                    selectedColor = preset.colorHex
+                                                    val win = resolveSchedulePresetWindow(
+                                                        ScheduleDateUtils.parseMinutes(startTime),
+                                                        preset.durationMinutes,
+                                                    )
+                                                    startTime = ScheduleDateUtils.formatMinutes(win.startMinutes)
+                                                    endTime = ScheduleDateUtils.formatMinutes(win.endMinutes)
                                                 }
-                                                .padding(horizontal = 12.dp, vertical = 8.dp),
-                                        ) {
-                                            Text(text = presetTitle, style = MiuixTheme.textStyles.footnote1, color = chipText)
-                                        }
+                                            }
+                                            .padding(horizontal = 12.dp, vertical = 8.dp),
+                                    ) {
+                                        Text(text = presetTitle, style = MiuixTheme.textStyles.footnote1, color = chipText)
                                     }
                                 }
                             }
@@ -1259,6 +1258,19 @@ private fun AddScheduleItemPagePreviewLargeText() {
 @Preview(name = "6 整页 1300", showBackground = true, widthDp = 400, heightDp = 1300)
 @Composable
 private fun AddScheduleItemPagePreviewFullPage() {
+    PreviewAddScheduleItemPage(scheduleItem = previewScheduleItem())
+}
+
+/**
+ * 「7 编辑态 + 快捷模板」：编辑已有日程时**也**显示快捷模板横条。
+ *
+ * 有意保留的超出发布版能力（发布版 `add_schedule_item_screen.dart` 没有模板概念）：
+ * 模板只回填标题 / 颜色 / 起止时刻，不改日程本身的存在性与重复规则，与编辑不冲突。
+ */
+@Suppress("unused")
+@Preview(name = "7 编辑态 + 快捷模板", showBackground = true, widthDp = 400, heightDp = 900)
+@Composable
+private fun AddScheduleItemPagePreviewEditWithPresets() {
     PreviewAddScheduleItemPage(scheduleItem = previewScheduleItem())
 }
 
