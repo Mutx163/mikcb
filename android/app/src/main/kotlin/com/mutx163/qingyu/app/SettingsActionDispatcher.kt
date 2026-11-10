@@ -826,8 +826,11 @@ object SettingsActionDispatcher {
                 model.copy(glassDockActions = moved)
             }
 
+            // 出厂排列跟发布 tag（`HomeDockMenu.defaultActions`，v2.1.4.1 同文件 `:216`）：
+            // 只有日/周两格。这里不能 import `pages.settings`（会成环），
+            // 与 `SettingsGlassDockEditorPage.DEFAULT_ACTIONS` 同值靠测试钉。
             ROW_DOCK_RESET -> model.copy(
-                glassDockActions = listOf("day", "week", "tasks"),
+                glassDockActions = listOf("day", "week"),
             )
 
             ROW_MENU_ADD -> {
@@ -873,10 +876,12 @@ object SettingsActionDispatcher {
                 model.copy(homeGridMenuActions = moved)
             }
 
+            // 出厂八项跟发布 tag（`HomeGridMenu.defaultActions`，v2.1.4.1 `:170-178`）：
+            // 首项 update、不含 tasks。同 ROW_DOCK_RESET，与编辑器常量同值靠测试钉。
             ROW_MENU_RESET -> model.copy(
                 homeGridMenuActions = listOf(
-                    "overview", "statistics", "addCourse", "exams",
-                    "tasks", "importCourses", "settings", "support",
+                    "update", "overview", "statistics", "addCourse",
+                    "exams", "importCourses", "settings", "support",
                 ),
             )
 

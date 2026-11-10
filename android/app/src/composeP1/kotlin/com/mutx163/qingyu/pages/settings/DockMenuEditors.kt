@@ -805,19 +805,19 @@ private fun dockGlyph(id: String): ImageVector = when (id) {
 // * 只剩一格 → 「已启用」行的减号变灰不可点；
 // * 八宫格里 `settings` 钉住，即使未满格也不可移除。
 
-/** 底栏出厂的三个入口（`SettingsGlassDockEditorPage.DEFAULT_ACTIONS`）。 */
-private val previewDockDefaultIds = listOf("day", "week", "tasks")
+/** 底栏出厂的两个入口（`SettingsGlassDockEditorPage.DEFAULT_ACTIONS`，跟发布 tag）。 */
+private val previewDockDefaultIds = listOf("day", "week")
 
-/** 底栏满格：出厂三个 + 两个功能入口（`MAX_SLOTS = 5`）。 */
-private val previewDockFullIds = listOf("day", "week", "tasks", "exams", "importCourses")
+/** 底栏满格：出厂两个 + 三个功能入口（`MAX_SLOTS = 5`）。 */
+private val previewDockFullIds = listOf("day", "week", "exams", "importCourses", "statistics")
 
 /** 底栏只剩一格：此时 `canRemove = false`。 */
 private val previewDockSingleIds = listOf("week")
 
-/** 八宫格出厂排列（`SettingsHomeMenuEditorPage.DEFAULT_ACTIONS`，已满 8 格）。 */
+/** 八宫格出厂排列（`SettingsHomeMenuEditorPage.DEFAULT_ACTIONS`，已满 8 格，含 update）。 */
 private val previewHomeMenuDefaultIds = listOf(
-    "overview", "statistics", "addCourse", "exams",
-    "tasks", "importCourses", "settings", "support",
+    "update", "overview", "statistics", "addCourse",
+    "exams", "importCourses", "settings", "support",
 )
 
 /** 八宫格未满格：四个入口，其中 `settings` 被钉住。 */

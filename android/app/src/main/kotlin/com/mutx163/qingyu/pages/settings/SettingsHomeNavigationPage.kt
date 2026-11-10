@@ -66,13 +66,20 @@ object SettingsHomeNavigationPage {
     const val DOCK_ACTION_DAY = "day"
     const val DOCK_ACTION_WEEK = "week"
 
-    /** `HomeDockMenu.defaultActions`（`timetable_settings_enums.dart:219`）。 */
-    val DOCK_DEFAULT_ACTIONS: List<String> = listOf("day", "week", "tasks")
+    /**
+     * `HomeDockMenu.defaultActions`（tag `v2.1.4.1`
+     * `lib/models/settings/timetable_settings_enums.dart:216`）：出厂只有日/周。
+     */
+    val DOCK_DEFAULT_ACTIONS: List<String> = listOf("day", "week")
 
-    /** `HomeGridMenu.defaultActions`（`timetable_settings_enums.dart:173-182`）。 */
+    /**
+     * `HomeGridMenu.defaultActions`（tag `v2.1.4.1`
+     * `lib/models/settings/timetable_settings_enums.dart:170-178`）：首项 `update`、
+     * **不含** `tasks`（2026-11-10 用户拍板「默认就跟旧版本一致」）。
+     */
     val GRID_DEFAULT_ACTIONS: List<String> = listOf(
-        "overview", "statistics", "addCourse", "exams",
-        "tasks", "importCourses", "settings", "support",
+        "update", "overview", "statistics", "addCourse",
+        "exams", "importCourses", "settings", "support",
     )
 
     /** 八宫格候选目录的四个分类（`HomeMenuEntryCategory`，`home_top_menu.dart:10`）。 */

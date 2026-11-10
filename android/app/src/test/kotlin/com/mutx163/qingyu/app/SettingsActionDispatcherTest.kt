@@ -1028,9 +1028,9 @@ class SettingsActionDispatcherTest {
     }
 
     @Test
-    fun `底栏恢复默认回到 day week tasks`() {
+    fun `底栏恢复默认回到 day week`() {
         assertEquals(
-            listOf("day", "week", "tasks"),
+            listOf("day", "week"),
             write(
                 SettingsActionDispatcher.ROW_DOCK_RESET,
                 null,
@@ -1104,11 +1104,11 @@ class SettingsActionDispatcherTest {
             listOf("settings", "exams", "overview"),
             write(SettingsActionDispatcher.ROW_MENU_MOVE, "0:2", three).homeGridMenuActions,
         )
-        // 恢复默认完整 8 项
+        // 恢复默认完整 8 项（发布 tag v2.1.4.1 HomeGridMenu.defaultActions：首项 update、不含 tasks）
         assertEquals(
             listOf(
-                "overview", "statistics", "addCourse", "exams",
-                "tasks", "importCourses", "settings", "support",
+                "update", "overview", "statistics", "addCourse",
+                "exams", "importCourses", "settings", "support",
             ),
             write(SettingsActionDispatcher.ROW_MENU_RESET, null).homeGridMenuActions,
         )

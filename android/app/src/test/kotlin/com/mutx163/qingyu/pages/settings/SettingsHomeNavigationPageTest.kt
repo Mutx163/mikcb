@@ -188,13 +188,13 @@ class SettingsHomeNavigationPageTest {
     }
 
     @Test
-    fun `底栏空排列回落默认三档`() {
-        // home_menu_catalog.dart:539-556：空排列回退 HomeDockMenu.defaultActions
+    fun `底栏空排列回落默认两档`() {
+        // 发布 tag v2.1.4.1 `HomeDockMenu.defaultActions` = ['day','week']
         val row = spec(
             SettingsHomeNavigationState(navigationForm = "glassDock", dockActionIds = emptyList()),
         ).row("homeNavigation.dockCustomize")
-        assertEquals("已启用 3/5 个", row.details)
-        assertEquals(listOf("day", "week", "tasks"), SettingsHomeNavigationPage.resolveDockActionIds(emptyList()))
+        assertEquals("已启用 2/5 个", row.details)
+        assertEquals(listOf("day", "week"), SettingsHomeNavigationPage.resolveDockActionIds(emptyList()))
     }
 
     @Test

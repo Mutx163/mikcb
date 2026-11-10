@@ -12,7 +12,8 @@ import java.time.LocalDate
  * `lib/screens/settings/settings_home_navigation.dart`），底栏渲染时走
  * `resolveGlassDockActionIds(settings)`（`lib/widgets/home_menu_catalog.dart:536-556`）：
  * 读 `glassDockActions`、丢掉不可见/未知 id、去重保序、空表回退
- * `HomeDockMenu.defaultActions`（`timetable_settings_enums.dart:219` = `['day','week','tasks']`）。
+ * `HomeDockMenu.defaultActions`（tag `v2.1.4.1`
+ * `lib/models/settings/timetable_settings_enums.dart:216` = `['day','week']`）。
  *
  * Compose 壳此前把底栏写死成「课表 / 日程 / 任务 / 设置」四项
  * （`PagesShellActivity.dockItems`），于是设置里改底栏**一点效果都没有**
@@ -64,11 +65,13 @@ object HomeDockNavModel {
     const val MAX_SLOTS = 5
 
     /**
-     * `HomeDockMenu.defaultActions`（`timetable_settings_enums.dart:219`）。
+     * `HomeDockMenu.defaultActions`（tag `v2.1.4.1`
+     * `lib/models/settings/timetable_settings_enums.dart:216`）= `['day','week']`。
      *
-     * 空排列（没改过、或用户把 key 清掉）时回退到这一份，与 Dart 完全一致。
+     * 2026-11-10 用户拍板「默认就跟旧版本一致」：底栏出厂只有日/周两格，**不含**
+     * `tasks`。空排列（没改过、或用户把 key 清掉）时回退到这一份，与发布版完全一致。
      */
-    val DEFAULT_IDS: List<String> = listOf(ACTION_DAY, ACTION_WEEK, "tasks")
+    val DEFAULT_IDS: List<String> = listOf(ACTION_DAY, ACTION_WEEK)
 
     /**
      * 视图动作（不是页面）：点它切首页内容，不推路由。

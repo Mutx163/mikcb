@@ -47,8 +47,8 @@ object SettingsGlassDockEditorPage {
     /** `HomeDockMenu.maxSlots`（`timetable_settings_enums.dart:217`）：底栏最多 5 个。 */
     const val MAX_SLOTS = 5
 
-    /** `HomeDockMenu.defaultActions`（同文件 :219）：出厂排列。 */
-    val DEFAULT_ACTIONS: List<String> = listOf("day", "week", "tasks")
+    /** `HomeDockMenu.defaultActions`（tag `v2.1.4.1` 同文件 `:216`）：出厂排列只有日/周。 */
+    val DEFAULT_ACTIONS: List<String> = listOf("day", "week")
 
     /** `kGlassDockActionDay` / `kGlassDockActionWeek`（`home_menu_catalog.dart:534-535`）。 */
     const val ACTION_DAY = "day"

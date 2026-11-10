@@ -90,6 +90,12 @@ object TimetableStrings {
     val homeMenuSettingsTitle = ArbText("homeMenuSettingsTitle", "课表设置")
     val homeMenuCoffeeTitle = ArbText("homeMenuCoffeeTitle", "请喝咖啡")
 
+    /**
+     * 八宫格首项「版本更新」（发布版 `HomeGridMenu.defaultActions[0] = 'update'`，
+     * tag `v2.1.4.1` `timetable_settings_enums.dart:170-178`；文案键与设置目录同源）。
+     */
+    val homeMenuUpdateTitle = ArbText("homeMenuUpdateTitle", "版本更新")
+
     // ── 「添加」行的二级列表（Dart `kAddCourseSubmenu`，`home_top_menu.dart:88-96`）──
     // 列表档菜单里「添加」不是直接跳转，而是展开成这三项。文案复用三宫格添加弹层
     // 已有的 ARB 键，不另拟说法（Dart 同口径）。

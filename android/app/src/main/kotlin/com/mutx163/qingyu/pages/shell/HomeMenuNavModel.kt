@@ -36,13 +36,20 @@ object HomeMenuNavModel {
     /** `HomeGridMenu.maxSlots`（`:166`）：4 列 × 2 行。 */
     const val MAX_SLOTS = 8
 
-    /** `HomeGridMenu.defaultActions`（`:179-188`），顺序即屏上顺序。 */
+    /**
+     * 发布版 `HomeGridMenu.defaultActions`（tag `v2.1.4.1`
+     * `lib/models/settings/timetable_settings_enums.dart:170-178`），顺序即屏上顺序。
+     *
+     * 2026-11-10 用户拍板「默认就跟旧版本一致」：这里必须与发布 tag 的集合逐项一致
+     * （首项是 `update`，且**不含** `tasks`）。发布版注释原文写明这是
+     * 「v2.0.5.5 已发布版本的默认排列（不含后来新增的任务入口）」。
+     */
     val DEFAULT_IDS: List<String> = listOf(
+        "update",
         "overview",
         "statistics",
         "addCourse",
         "exams",
-        "tasks",
         "importCourses",
         PINNED_ID,
         "support",

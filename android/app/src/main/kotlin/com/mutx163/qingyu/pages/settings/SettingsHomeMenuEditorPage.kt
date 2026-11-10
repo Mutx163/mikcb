@@ -47,10 +47,16 @@ object SettingsHomeMenuEditorPage {
     /** `HomeGridMenu.pinnedActionId`（`timetable_settings_enums.dart:170`）。 */
     const val PINNED_ACTION_ID = "settings"
 
-    /** `HomeGridMenu.defaultActions`（`timetable_settings_enums.dart:173-182`）。 */
+    /**
+     * `HomeGridMenu.defaultActions`（tag `v2.1.4.1`
+     * `lib/models/settings/timetable_settings_enums.dart:170-178`）。
+     *
+     * 2026-11-10 用户拍板「默认就跟旧版本一致」：首项 `update`、**不含** `tasks`，
+     * 与发布版逐项一致。
+     */
     val DEFAULT_ACTIONS: List<String> = listOf(
-        "overview", "statistics", "addCourse", "exams",
-        "tasks", "importCourses", "settings", "support",
+        "update", "overview", "statistics", "addCourse",
+        "exams", "importCourses", "settings", "support",
     )
 
     /** 分类顺序（`HomeMenuEntryCategory`，`home_top_menu.dart:10`）。 */

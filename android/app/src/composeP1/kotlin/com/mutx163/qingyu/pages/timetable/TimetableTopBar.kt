@@ -58,7 +58,7 @@ import top.yukonga.miuix.kmp.icon.extended.More
 import top.yukonga.miuix.kmp.icon.extended.Notes
 import top.yukonga.miuix.kmp.icon.extended.Promotions
 import top.yukonga.miuix.kmp.icon.extended.Settings
-import top.yukonga.miuix.kmp.icon.extended.Tasks
+import top.yukonga.miuix.kmp.icon.extended.Update
 import top.yukonga.miuix.kmp.menu.OverlayIconCascadingDropdownMenu
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
@@ -416,15 +416,21 @@ data class TimetableMenuItem(
 )
 
 /**
- * 默认八宫格条目 —— 逐条对齐 Dart `HomeGridMenu.defaultActions`
- *（`timetable_settings_enums.dart:173-182`：overview / statistics / addCourse /
- * exams / tasks / importCourses / settings / support），标题复用既有 ARB 键。
+ * 默认八宫格条目 —— 逐条对齐发布 tag `v2.1.4.1`
+ * `HomeGridMenu.defaultActions`（`lib/models/settings/timetable_settings_enums.dart:170-178`：
+ * update / overview / statistics / addCourse / exams / importCourses / settings / support），
+ * 标题复用既有 ARB 键。2026-11-10 用户拍板「默认就跟旧版本一致」：首项 `update`、不含 `tasks`。
  *
- * 顺序即屏上顺序（4 列 × 2 行）。用户自定义排列属后续批次（读 `homeGridMenuActions`），
- * 本批次先固定默认表，行为与「没改过排列的用户」一致。
+ * 顺序即屏上顺序（4 列 × 2 行）。用户自定义排列由壳读 `homeGridMenuActions`；
+ * 本对象是「没有任何注入时」的兜底表（`ShellPageIndex` 里日视图那条分支用它）。
  */
 object TimetableMenuDefaults {
     fun entries(): List<TimetableMenuItem> = listOf(
+        TimetableMenuItem(
+            "update",
+            TimetableStrings.homeMenuUpdateTitle.text,
+            MiuixIcons.Update,
+        ),
         TimetableMenuItem(
             "overview",
             TimetableStrings.homeMenuOverviewTitle.text,
@@ -442,7 +448,6 @@ object TimetableMenuDefaults {
             children = addCourseSubmenu(),
         ),
         TimetableMenuItem("exams", TimetableStrings.examListTitle.text, MiuixIcons.Notes),
-        TimetableMenuItem("tasks", TimetableStrings.homeMenuTasksTitle.text, MiuixIcons.Tasks),
         TimetableMenuItem("importCourses", TimetableStrings.homeMenuImportTitle.text, MiuixIcons.Import),
         TimetableMenuItem("settings", TimetableStrings.homeMenuSettingsTitle.text, MiuixIcons.Settings),
         TimetableMenuItem("support", TimetableStrings.homeMenuCoffeeTitle.text, MiuixIcons.Favorites),

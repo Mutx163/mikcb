@@ -133,7 +133,7 @@ class SettingsHomeMenuEditorPageTest {
         assertEquals("homeGridEditorResetAction", row.titleKey)
         assertEquals(SettingsAction.WRITE_SETTING, row.action)
         assertEquals(
-            listOf("overview", "statistics", "addCourse", "exams", "tasks", "importCourses", "settings", "support"),
+            listOf("update", "overview", "statistics", "addCourse", "exams", "importCourses", "settings", "support"),
             SettingsHomeMenuEditorPage.DEFAULT_ACTIONS,
         )
     }

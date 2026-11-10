@@ -24,9 +24,10 @@ class HomeNavModelTest {
     // ---------------------------------------------------------------- 底栏排列
 
     @Test
-    fun `空排列回退到 day week tasks`() {
+    fun `空排列回退到 day week`() {
+        // 发布 tag v2.1.4.1 `HomeDockMenu.defaultActions`（timetable_settings_enums.dart:216）
         assertEquals(
-            listOf("day", "week", "tasks"),
+            listOf("day", "week"),
             HomeDockNavModel.resolveIds(emptyList()) { true },
         )
     }
@@ -184,10 +185,11 @@ class HomeNavModelTest {
 
     @Test
     fun `菜单空排列回退默认八项`() {
+        // 发布 tag v2.1.4.1 `HomeGridMenu.defaultActions`（timetable_settings_enums.dart:170-178）
         assertEquals(
             listOf(
-                "overview", "statistics", "addCourse", "exams",
-                "tasks", "importCourses", "settings", "support",
+                "update", "overview", "statistics", "addCourse",
+                "exams", "importCourses", "settings", "support",
             ),
             HomeMenuNavModel.resolveIds(emptyList()) { true },
         )

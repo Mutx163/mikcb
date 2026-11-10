@@ -91,17 +91,17 @@ data class SettingsHomeNavigationState(
     val navigationForm: String = "classic",
     /** `glassDockShowAddButton`（:812）。 */
     val showAddButton: Boolean = false,
-    /** `glassDockActions`（:809）：底栏按钮排列的原始 id 表。 */
-    val dockActionIds: List<String> = listOf("day", "week", "tasks"),
+    /** `glassDockActions`（:809）：底栏按钮排列的原始 id 表。出厂跟发布 tag：日/周。 */
+    val dockActionIds: List<String> = listOf("day", "week"),
     /** `glassDockButtonEntryId`（:810）。 */
     val dockButtonEntryId: String? = "addCourse",
     /** `glassDockButtonIconName`（:811）；null = 默认加号。 */
     val dockButtonIconName: String? = null,
     /** `homeMenuStyle`（:804），落盘 `list`/`grid`。 */
     val menuStyle: String = "list",
-    /** `homeGridMenuActions`（:806）：八宫格排列的原始 id 表。 */
+    /** `homeGridMenuActions`（:806）：八宫格排列的原始 id 表。出厂跟发布 tag（含 update、不含 tasks）。 */
     val gridMenuActions: List<String> =
-        listOf("overview", "statistics", "addCourse", "exams", "tasks", "importCourses", "settings", "support"),
+        listOf("update", "overview", "statistics", "addCourse", "exams", "importCourses", "settings", "support"),
     /** `homeTitleStyle`（:801），落盘 `classic`/`brand`。 */
     val titleStyle: String = "classic",
     /** 诊断构建：决定 `memoryStats` 等调试条目在目录里可见（`home_menu_catalog.dart:448`）。 */
@@ -117,9 +117,9 @@ data class SettingsHomeNavigationState(
  * （`settings_home_menu_editor.dart:8-11`）。
  */
 data class SettingsHomeMenuEditorState(
-    /** 进来时的排列（`initialIds`，:19）。脏 id 会被种子清洗丢掉（:33-38）。 */
+    /** 进来时的排列（`initialIds`，:19）。脏 id 会被种子清洗丢掉（:33-38）。出厂跟发布 tag。 */
     val enabledIds: List<String> =
-        listOf("overview", "statistics", "addCourse", "exams", "tasks", "importCourses", "settings", "support"),
+        listOf("update", "overview", "statistics", "addCourse", "exams", "importCourses", "settings", "support"),
     /** 诊断构建：决定调试条目是否可作候选（`home_menu_catalog.dart:448`）。 */
     val diagnosticsBuild: Boolean = false,
 )

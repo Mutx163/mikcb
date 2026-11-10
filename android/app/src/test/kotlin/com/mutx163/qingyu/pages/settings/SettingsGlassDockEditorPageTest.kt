@@ -41,9 +41,9 @@ class SettingsGlassDockEditorPageTest {
 
     @Test
     fun `槽位上限与默认排列照抄 HomeDockMenu`() {
-        // timetable_settings_enums.dart:214-219
+        // 发布 tag v2.1.4.1 timetable_settings_enums.dart:214-216
         assertEquals(5, SettingsGlassDockEditorPage.MAX_SLOTS)
-        assertEquals(listOf("day", "week", "tasks"), SettingsGlassDockEditorPage.DEFAULT_ACTIONS)
+        assertEquals(listOf("day", "week"), SettingsGlassDockEditorPage.DEFAULT_ACTIONS)
     }
 
     @Test
@@ -353,10 +353,10 @@ class SettingsGlassDockEditorPageTest {
     }
 
     @Test
-    fun `恢复默认排列回到 day week tasks`() {
-        // :80-82 `_commit(HomeDockMenu.defaultActions)`
+    fun `恢复默认排列回到 day week`() {
+        // :80-82 `_commit(HomeDockMenu.defaultActions)`（发布 tag v2.1.4.1 :216 = 日/周）
         assertEquals(
-            listOf("day", "week", "tasks"),
+            listOf("day", "week"),
             SettingsGlassDockEditorPage.reset(GlassDockEditorState(listOf("exams"))).enabledIds,
         )
     }
