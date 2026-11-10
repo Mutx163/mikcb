@@ -41,6 +41,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clipToBounds
@@ -93,6 +94,7 @@ import com.mutx163.qingyu.pages.shell.rememberHomeDockUsesBackdrop
 import kotlin.math.roundToInt
 import java.util.Locale
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import top.yukonga.miuix.kmp.basic.Scaffold
@@ -302,10 +304,13 @@ class PagesShellActivity : ComponentActivity() {
             // 日程提醒 / 日期规则自动套用：仓储是纯 Kotlin，Android 侧的回调与端口在这里装上。
             // 日程提醒还会在每次增删改后由 `TimetableRepository.syncExamReminders()` 触发重排。
             val schedulePrefs = remember { PrefsKeyValueStore(applicationContext) }
-            LaunchedEffect(wiring, firstRunDone) {
+            LaunchedEffect(wiring) {
                 // 首启隐私门未过之前不跑启动副作用（天气初始化可能发网、提醒协调器会排
-                // AlarmManager）：这些属于「同意之后」才该发生的事，和通知权限同一口径。
-                if (!firstRunDone) return@LaunchedEffect
+                // AlarmManager）：在这里**等门打开**再执行一次，而不是把 firstRunDone 加进
+                // key——加 key 会让整个副作用块在翻门时重跑，行为不再等价于旧版「启动一次」。
+                if (!firstRunDone) {
+                    snapshotFlow { firstRunDone }.first { it }
+                }
                 withContext(Dispatchers.IO) {
                     // 启动对账（settings → native pref）从 ShellWiring 构造函数搬到首帧之后：
                     // 它要读整份设置 JSON，还可能排一次 AlarmManager（binder），
