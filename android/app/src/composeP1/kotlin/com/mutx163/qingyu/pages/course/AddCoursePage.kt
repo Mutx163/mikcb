@@ -39,7 +39,6 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import com.mutx163.qingyu.components.QingyuCard
-import com.mutx163.qingyu.components.QingyuCardDefaults
 import com.mutx163.qingyu.components.QingyuColorPickerDialog
 import com.mutx163.qingyu.components.QingyuGlassIconButton
 import com.mutx163.qingyu.components.QingyuPageCardMargin
@@ -55,6 +54,7 @@ import com.mutx163.qingyu.components.shiftWeight
 import com.mutx163.qingyu.core.Course
 import com.mutx163.qingyu.core.CourseNature
 import com.mutx163.qingyu.core.DialogGlassSpec
+import com.mutx163.qingyu.core.TimeScheme
 import com.mutx163.qingyu.theme.QingyuTheme
 import top.yukonga.miuix.kmp.basic.BasicComponent
 import top.yukonga.miuix.kmp.basic.Icon
@@ -67,7 +67,6 @@ import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.Add
 import top.yukonga.miuix.kmp.icon.extended.Delete
 import top.yukonga.miuix.kmp.icon.extended.Info
-import top.yukonga.miuix.kmp.icon.extended.Notes
 import top.yukonga.miuix.kmp.icon.extended.Ok
 import top.yukonga.miuix.kmp.icon.extended.Remove
 import top.yukonga.miuix.kmp.layout.DialogGlass
@@ -104,11 +103,12 @@ private val kCourseColorPalette = listOf(
  * [AddCourseFormLogic] / [AddCourseWeekDraftLogic]，本文件只把状态摊到屏上。
  *
  * 与 Dart 的已知差异（真机对照前先读）：
- * - 教师/教室/周次/节次/星期在 Dart 走共享选择弹层（`course_field_picker_sheet`、
- *   `miuix_number_picker_sheet` 等，台账 §6 共享件未迁）；这里用 Miuix 官方
- *   `WindowDropdownPreference` 行内下拉与周网格弹层，选择结果同源同判据。
- * - 「沿用已有课程」与时间模板行需要 provider 数据与共享弹层，暂未搬（条目上的
- *   `timeSchemeIdOverride` 由模型层原样穿透，见穿透测试）；壳层补齐共享件后接线。
+ * - 教师/教室：走共享 [CourseFieldPickerSheet]（发布版 `showCourseFieldPickerSheet`，
+ *   候选由壳用 `CourseFieldSuggestionLogic` 从课程 + 日程算好注入）；星期/节次/周次
+ *   仍是 Miuix 行内下拉与周网格弹层。
+ * - 「沿用已有课程」（2026-11-10 已建）与「时间模板」行（同一批补上）：两者都需要
+ *   provider 数据，现由壳经 [courseTemplates] / [timeSchemes] 注入；条目上的
+ *   `timeSchemeIdOverride` 由模型层原样穿透，本页只负责选择与回写。
  * - 校验失败在 Dart 是 toast；这里用页内错误条（同一份文案键）。
  * - 钟点解析必须由壳层经 [clockResolver] 注入（Dart `_resolveEntryTimeScheme` →
  *   `CourseDomain.editCourseClock`），页面不猜时间。
@@ -129,6 +129,14 @@ fun AddCoursePage(
     entrySchemeSectionCount: (entry: AddCourseScheduleEntryData, location: String) -> Int? = { _, _ -> null },
     /** 课表里已有的课程：新建态「沿用已有课程」的候选（发布版 `provider.courseGroups` 的拍平视图）。 */
     courseTemplates: List<Course> = emptyList(),
+    /** 教师候选（发布版 `provider.uniqueTeachers` 的对位；壳用 CourseFieldSuggestionLogic 算）。 */
+    teacherSuggestions: List<String> = emptyList(),
+    /** 地点候选（发布版 `provider.uniqueLocations` 的对位，含日程地点）。 */
+    locationSuggestions: List<String> = emptyList(),
+    /** 时间模板候选（发布版 `provider.timeSchemes`）；首项「跟随当前课表」写回 null。 */
+    timeSchemes: List<TimeScheme> = emptyList(),
+    /** 当前生效模板名（`跟随当前课表 · <name>` 里的 name；null = 未知，只显示「跟随当前课表」）。 */
+    activeTimeSchemeName: String? = null,
     /** 条目钟点解析（含 `hasCustomTime` 权威钟点回传），保存时逐条调用。 */
     clockResolver: (AddCourseScheduleEntryData) -> AddCourseEntryClock,
     onBack: () -> Unit = {},
@@ -172,6 +180,10 @@ fun AddCoursePage(
     // 「沿用已有课程」候选（按课名分组、名称升序）与选择弹层开关。
     val templateGroups = remember(courseTemplates) { AddCourseTemplateLogic.groups(courseTemplates) }
     var templatePickerOpen by remember { mutableStateOf(false) }
+    // 「已有教师 / 地点」选择弹层：目标 = 共享信息卡两行 或 某条排课记录。
+    var fieldPickerTarget by remember { mutableStateOf<CourseFieldPickerTarget?>(null) }
+    // 「时间模板」选择弹层当前作用于哪条排课记录（null = 关）。
+    var timeSchemePickerEntryId by remember { mutableStateOf<String?>(null) }
     val context = LocalContext.current
 
     fun markDirty() {
@@ -305,20 +317,6 @@ fun AddCoursePage(
                 }
             }
 
-            // ── 实时课程名片：名称 / 简称 / 教师 / 教室 / 性质 / 颜色 / 首条排课一变就跟着变 ──
-            item(key = "identity") {
-                AddCourseIdentityCard(
-                    name = sharedName,
-                    shortName = sharedShortName,
-                    teacher = sharedTeacher,
-                    location = sharedLocation,
-                    nature = courseNature,
-                    colorHex = selectedColor,
-                    firstEntry = entries.firstOrNull(),
-                    dark = dark,
-                )
-            }
-
             // ── 共享信息：分组标题在卡外（官方 SmallTitle），卡内普通内容统一 16dp；
             // 性质是官方 Preference 行（自带 16dp），所以卡片本身不再给 insideMargin。
             item(key = "shared_info") {
@@ -428,27 +426,29 @@ fun AddCoursePage(
                                     color = Color(QingyuTheme.secondaryText(dark)),
                                 )
                             }
-                            TextField(
-                                value = sharedTeacher,
-                                onValueChange = {
-                                    sharedTeacher = it
-                                    markDirty()
+                            // 教师 / 地点：发布版是「手输 + 历史候选」弹层（`showCourseFieldPickerSheet`，
+                            // `add_course_screen.dart:917/:933`）；共享卡这两行与条目两行走同一份弹层。
+                            BasicComponent(
+                                title = AddCourseStrings.teacherLabel.text,
+                                endActions = {
+                                    Text(
+                                        text = sharedTeacher.ifBlank { AddCourseStrings.manualInputLabel.text },
+                                        style = MiuixTheme.textStyles.body2,
+                                        color = MiuixTheme.colorScheme.onSurfaceVariantActions,
+                                    )
                                 },
-                                label = AddCourseStrings.teacherLabel.text,
-                                useLabelAsPlaceholder = true,
-                                singleLine = true,
-                                modifier = Modifier.fillMaxWidth(),
+                                onClick = { fieldPickerTarget = CourseFieldPickerTarget.Shared(teacher = true) },
                             )
-                            TextField(
-                                value = sharedLocation,
-                                onValueChange = {
-                                    sharedLocation = it
-                                    markDirty()
+                            BasicComponent(
+                                title = AddCourseStrings.locationLabel.text,
+                                endActions = {
+                                    Text(
+                                        text = sharedLocation.ifBlank { AddCourseStrings.manualInputLabel.text },
+                                        style = MiuixTheme.textStyles.body2,
+                                        color = MiuixTheme.colorScheme.onSurfaceVariantActions,
+                                    )
                                 },
-                                label = AddCourseStrings.locationLabel.text,
-                                useLabelAsPlaceholder = true,
-                                singleLine = true,
-                                modifier = Modifier.fillMaxWidth(),
+                                onClick = { fieldPickerTarget = CourseFieldPickerTarget.Shared(teacher = false) },
                             )
                             TextField(
                                 value = sharedDescription,
@@ -541,6 +541,15 @@ fun AddCoursePage(
                         onEndSectionChange = { section -> updateEntry(index) { it.copy(endSection = section) } },
                         onTeacherChange = { teacher -> updateEntry(index) { it.copy(teacher = teacher) } },
                         onLocationChange = { location -> updateEntry(index) { it.copy(location = location) } },
+                        onOpenTeacherPicker = {
+                            fieldPickerTarget = CourseFieldPickerTarget.Entry(index = index, teacher = true)
+                        },
+                        onOpenLocationPicker = {
+                            fieldPickerTarget = CourseFieldPickerTarget.Entry(index = index, teacher = false)
+                        },
+                        activeTimeSchemeName = activeTimeSchemeName,
+                        timeSchemes = timeSchemes,
+                        onOpenTimeSchemePicker = { timeSchemePickerEntryId = entry.id },
                         onOpenWeekPicker = {
                             weekDraftEntryId = entry.id
                             weekDraft = AddCourseWeekDraftLogic.fromEntry(entry)
@@ -735,6 +744,71 @@ fun AddCoursePage(
         onDismiss = { templatePickerOpen = false },
     )
 
+    // 「已有教师 / 地点」弹层：常驻组合、显隐只由 `fieldPickerTarget` 驱动。
+    // 候选由壳用 `CourseFieldSuggestionLogic` 从课程 + 日程算好传进来；空表时就是纯手输，
+    // 不伪造历史（发布版有一份持久记录表，本仓没有——已登记的已知差异）。
+    val pickerTarget = fieldPickerTarget
+    val pickerIsTeacher = when (val target = pickerTarget) {
+        is CourseFieldPickerTarget.Shared -> target.teacher
+        is CourseFieldPickerTarget.Entry -> target.teacher
+        null -> true
+    }
+    val pickerInitialValue = when (val target = pickerTarget) {
+        null -> ""
+        is CourseFieldPickerTarget.Shared -> if (target.teacher) sharedTeacher else sharedLocation
+        is CourseFieldPickerTarget.Entry -> entries.getOrNull(target.index)?.let { entry ->
+            if (target.teacher) entry.teacher else entry.location
+        } ?: ""
+    }
+    CourseFieldPickerSheet(
+        show = pickerTarget != null,
+        title = if (pickerIsTeacher) {
+            AddCourseStrings.selectTeacherTitle.text
+        } else {
+            AddCourseStrings.selectLocationTitle.text
+        },
+        label = AddCourseStrings.manualInputLabel.text,
+        value = pickerInitialValue,
+        suggestions = if (pickerIsTeacher) teacherSuggestions else locationSuggestions,
+        confirmLabel = AddCourseStrings.confirmAction.text,
+        cancelLabel = AddCourseStrings.cancelAction.text,
+        onDismiss = { fieldPickerTarget = null },
+        onConfirm = { picked ->
+            when (val target = fieldPickerTarget) {
+                is CourseFieldPickerTarget.Shared -> {
+                    if (target.teacher) sharedTeacher = picked else sharedLocation = picked
+                    markDirty()
+                }
+                is CourseFieldPickerTarget.Entry -> {
+                    updateEntry(target.index) { entry ->
+                        if (target.teacher) entry.copy(teacher = picked) else entry.copy(location = picked)
+                    }
+                }
+                null -> {}
+            }
+            fieldPickerTarget = null
+        },
+    )
+
+    // 「时间模板」弹层：常驻组合、显隐由 `timeSchemePickerEntryId` 驱动。
+    // 候选 = 「跟随当前课表」（写回 null）+ `timeSchemes`；不自造模板。
+    val timeSchemeEntry = entries.firstOrNull { it.id == timeSchemePickerEntryId }
+    AddCourseTimeSchemeSheet(
+        show = timeSchemeEntry != null,
+        activeName = activeTimeSchemeName,
+        schemes = timeSchemes,
+        selectedId = timeSchemeEntry?.timeSchemeIdOverride,
+        onDismiss = { timeSchemePickerEntryId = null },
+        onPick = { schemeId ->
+            val targetId = timeSchemePickerEntryId
+            val targetIndex = entries.indexOfFirst { it.id == targetId }
+            if (targetIndex >= 0) {
+                updateEntry(targetIndex) { it.copy(timeSchemeIdOverride = schemeId) }
+            }
+            timeSchemePickerEntryId = null
+        },
+    )
+
     // 十色点阵退役（2026-11-10）：发布版没有点阵，只有一行「课程颜色」选择行；
     // 选色走官方 ColorPicker 弹窗。常驻组合、显隐只由 `show` 驱动（退场动画才播得出来）。
     QingyuColorPickerDialog(
@@ -759,126 +833,6 @@ fun AddCoursePage(
 private fun parseCourseColor(hex: String, fallback: Color): Color =
     runCatching { Color(android.graphics.Color.parseColor(hex)) }.getOrDefault(fallback)
 
-/**
- * 实时课程名片：填写过程中就能看到「这门课长什么样」。
- * 纯展示，所有取值都来自当前表单草稿，不参与保存载荷。
- */
-@Composable
-private fun AddCourseIdentityCard(
-    name: String,
-    shortName: String,
-    teacher: String,
-    location: String,
-    nature: CourseNature,
-    colorHex: String,
-    firstEntry: AddCourseScheduleEntryData?,
-    dark: Boolean,
-) {
-    val swatch = parseCourseColor(colorHex, Color(QingyuTheme.primary(dark = dark)))
-    // 文字用对比度修正后的同色相取值：浅色（黄 / 青）在亮底上也读得清；
-    // 色块本身仍用用户选的原色，所见即所得。
-    val accent = Color(QingyuTheme.primary(seedHex = colorHex, dark = dark))
-    val badgeText = shortName.trim()
-        .ifEmpty { AddCourseFormLogic.autofillShortName(name) }
-        .take(2)
-    val meta = listOf(teacher.trim(), location.trim())
-        .filter { it.isNotEmpty() }
-        .joinToString(" · ")
-
-    QingyuCard(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = QingyuPageCardMargin),
-        insideMargin = QingyuCardDefaults.ContentInsideMargin,
-    ) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Box(
-                modifier = Modifier
-                    .size(54.dp)
-                    .background(
-                        swatch.copy(alpha = if (dark) 0.26f else 0.14f),
-                        RoundedCornerShape(18.dp),
-                    )
-                    .border(
-                        width = 1.dp,
-                        color = swatch.copy(alpha = 0.32f),
-                        shape = RoundedCornerShape(18.dp),
-                    ),
-                contentAlignment = Alignment.Center,
-            ) {
-                if (badgeText.isEmpty()) {
-                    // 还没起名时不留空色块：放一张课程纸页图标当占位。
-                    Icon(
-                        imageVector = MiuixIcons.Notes,
-                        contentDescription = null,
-                        tint = accent,
-                        modifier = Modifier.size(22.dp),
-                    )
-                } else {
-                    Text(
-                        text = badgeText,
-                        style = MiuixTheme.textStyles.body1.shiftWeight(QingyuWeightDelta.SEMIBOLD),
-                        color = accent,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                    )
-                }
-            }
-            Spacer(modifier = Modifier.width(14.dp))
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = name.trim().ifEmpty { AddCourseStrings.courseNameLabel.text },
-                    style = MiuixTheme.textStyles.title4,
-                    color = if (name.isBlank()) {
-                        Color(QingyuTheme.secondaryText(dark))
-                    } else {
-                        Color(QingyuTheme.primaryText(dark))
-                    },
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                )
-                Spacer(modifier = Modifier.height(3.dp))
-                Text(
-                    text = meta.ifEmpty { AddCourseStrings.sharedInfoInlineHint.text },
-                    style = MiuixTheme.textStyles.footnote1,
-                    color = Color(QingyuTheme.secondaryText(dark)),
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                )
-                Spacer(modifier = Modifier.height(8.dp))
-                Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                    AddCourseMetaPill(
-                        text = AddCourseStrings.courseNatureName(nature),
-                        tint = accent,
-                    )
-                    firstEntry?.let { entry ->
-                        AddCourseMetaPill(
-                            text = AddCourseStrings.weekdayName(entry.dayOfWeek) + " · " +
-                                AddCourseStrings.sectionRangeText(entry.startSection, entry.endSection),
-                            tint = Color(QingyuTheme.actionIcon(dark)),
-                        )
-                    }
-                }
-            }
-        }
-    }
-}
-
-/** 名片上的小胶囊：课程性质 / 首条排课摘要。 */
-@Composable
-private fun AddCourseMetaPill(text: String, tint: Color) {
-    Text(
-        text = text,
-        style = MiuixTheme.textStyles.footnote2.shiftWeight(QingyuWeightDelta.MEDIUM),
-        color = tint,
-        maxLines = 1,
-        overflow = TextOverflow.Ellipsis,
-        modifier = Modifier
-            .background(tint.copy(alpha = 0.12f), RoundedCornerShape(999.dp))
-            .padding(horizontal = 8.dp, vertical = 3.dp),
-    )
-}
-
 /** 单条排课记录的输入区（星期 / 起止节次 / 哪些周上 / 条目教师教室 / 删除）。 */
 @Composable
 private fun AddCourseEntryFields(
@@ -896,6 +850,15 @@ private fun AddCourseEntryFields(
     onEndSectionChange: (Int) -> Unit,
     onTeacherChange: (String) -> Unit,
     onLocationChange: (String) -> Unit,
+    /** 点「教师」行：由页面统一开「已有教师」弹层（弹层状态在页级，不为此拆第二份）。 */
+    onOpenTeacherPicker: () -> Unit,
+    onOpenLocationPicker: () -> Unit,
+    /** 当前生效模板名：`跟随当前课表 · <name>` 的 name（null = 未知）。 */
+    activeTimeSchemeName: String?,
+    /** 时间模板候选（第一项「跟随当前课表」由页面拼，写回 null）。 */
+    timeSchemes: List<TimeScheme>,
+    /** 点「时间模板」行：由页面统一开模板弹层。 */
+    onOpenTimeSchemePicker: () -> Unit,
     onOpenWeekPicker: () -> Unit,
     onRemoveEntry: () -> Unit,
 ) {
@@ -1000,21 +963,43 @@ private fun AddCourseEntryFields(
                 modifier = Modifier.padding(horizontal = 16.dp, vertical = 14.dp),
                 verticalArrangement = Arrangement.spacedBy(10.dp),
             ) {
-                TextField(
-                    value = entry.teacher,
-                    onValueChange = onTeacherChange,
-                    label = AddCourseStrings.teacherLabel.text,
-                    useLabelAsPlaceholder = true,
-                    singleLine = true,
-                    modifier = Modifier.fillMaxWidth(),
+                // 教师 / 地点：发布版这两个位置就是 `CourseFieldPickerTile`（`add_course_screen.dart:917/:933`），
+                // 点开「手输 + 历史候选」弹层；这里不再用纯 TextField 手打。
+                BasicComponent(
+                    title = AddCourseStrings.teacherLabel.text,
+                    endActions = {
+                        Text(
+                            text = entry.teacher.ifBlank { AddCourseStrings.manualInputLabel.text },
+                            style = MiuixTheme.textStyles.body2,
+                            color = MiuixTheme.colorScheme.onSurfaceVariantActions,
+                        )
+                    },
+                    onClick = onOpenTeacherPicker,
                 )
-                TextField(
-                    value = entry.location,
-                    onValueChange = onLocationChange,
-                    label = AddCourseStrings.locationLabel.text,
-                    useLabelAsPlaceholder = true,
-                    singleLine = true,
-                    modifier = Modifier.fillMaxWidth(),
+                BasicComponent(
+                    title = AddCourseStrings.locationLabel.text,
+                    endActions = {
+                        Text(
+                            text = entry.location.ifBlank { AddCourseStrings.manualInputLabel.text },
+                            style = MiuixTheme.textStyles.body2,
+                            color = MiuixTheme.colorScheme.onSurfaceVariantActions,
+                        )
+                    },
+                    onClick = onOpenLocationPicker,
+                )
+                // 时间模板（Dart `_buildEntryTimeSchemeField`）：null = 跟随当前课表，否则覆盖这一条。
+                BasicComponent(
+                    title = AddCourseStrings.timeSchemeLabel.text,
+                    endActions = {
+                        Text(
+                            text = entryTimeSchemeSummary(entry, activeTimeSchemeName, timeSchemes),
+                            style = MiuixTheme.textStyles.body2,
+                            color = MiuixTheme.colorScheme.onSurfaceVariantActions,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                        )
+                    },
+                    onClick = onOpenTimeSchemePicker,
                 )
             }
         }
@@ -1467,8 +1452,6 @@ private fun PreviewAddCourseFullPage() {
     PreviewAddCourseBody(initialCourse = previewAddCourseInitial)
 }
 
-
-
 /**
  * 沿用已有课程：课程模板选择弹层（发布版 `widgets/course_template_picker_sheet.dart`）。
  *
@@ -1546,6 +1529,120 @@ private fun AddCourseTemplatePickerSheet(
                 text = AddCourseStrings.cancelAction.text,
                 onClick = onDismiss,
                 modifier = Modifier.fillMaxWidth(),
+            )
+        }
+    }
+}
+/**
+ * 「已有教师 / 地点」弹层当前作用于哪一处：共享信息卡两行，或第 [Entry.index] 条排课记录。
+ */
+private sealed class CourseFieldPickerTarget {
+    /** 共享信息卡：教师（true）/ 地点（false）。 */
+    data class Shared(val teacher: Boolean) : CourseFieldPickerTarget()
+
+    /** 第 [index] 条排课记录：教师（true）/ 地点（false）。 */
+    data class Entry(val index: Int, val teacher: Boolean) : CourseFieldPickerTarget()
+}
+
+/**
+ * 「时间模板」行的摘要：null = 跟随当前课表（带生效模板名），否则显示覆盖模板名。
+ *
+ * 发布版 `_buildEntryTimeSchemeField`：`timeSchemeIdOverride == null` 时显示
+ * 「跟随当前课表 · <生效模板>」；模板被删/找不到 id 时退回 id 本身，不吞成空白。
+ */
+private fun entryTimeSchemeSummary(
+    entry: AddCourseScheduleEntryData,
+    activeTimeSchemeName: String?,
+    schemes: List<TimeScheme>,
+): String {
+    val overrideId = entry.timeSchemeIdOverride
+    if (overrideId != null) {
+        return schemes.firstOrNull { it.id == overrideId }?.name ?: overrideId
+    }
+    return AddCourseStrings.followCurrentTimetableWithName
+        .filled("name", activeTimeSchemeName.orEmpty())
+        .trimEnd()
+}
+
+/**
+ * 「时间模板」选择弹层（照 `AddCourseWeekPickerDialog` 的列表形态，不自造控件）。
+ *
+ * 首项「跟随当前课表」写回 `null`（= 用课表生效模板）；其余项写回模板 id。
+ * 与发布版 `_buildEntryTimeSchemeField` 的弹层语义一致。
+ */
+@Composable
+private fun AddCourseTimeSchemeSheet(
+    show: Boolean,
+    activeName: String?,
+    schemes: List<TimeScheme>,
+    selectedId: String?,
+    onDismiss: () -> Unit,
+    onPick: (String?) -> Unit,
+) {
+    val dark = isSystemInDarkTheme()
+    val primaryText = Color(QingyuTheme.primaryText(dark))
+    val accent = MiuixTheme.colorScheme.primary
+    val followLabel = AddCourseStrings.followCurrentTimetableWithName
+        .filled("name", activeName.orEmpty())
+        .trimEnd()
+    QingyuSheet(
+        show = show,
+        title = AddCourseStrings.timeSchemeLabel.text,
+        onDismissRequest = onDismiss,
+        maxHeightFraction = 0.72f,
+    ) {
+        Column(modifier = Modifier.fillMaxWidth()) {
+            // 首项：跟随当前课表（id = null）。
+            TimeSchemeOptionRow(
+                label = followLabel,
+                selected = selectedId == null,
+                primaryText = primaryText,
+                accentColor = accent,
+                onClick = { onPick(null) },
+            )
+            schemes.forEach { scheme ->
+                TimeSchemeOptionRow(
+                    label = scheme.name,
+                    selected = selectedId == scheme.id,
+                    primaryText = primaryText,
+                    accentColor = accent,
+                    onClick = { onPick(scheme.id) },
+                )
+            }
+        }
+    }
+}
+
+/** 模板弹层里的一行（选中态 = 主色字 + 勾，与同域列表弹层一致）。 */
+@Composable
+private fun TimeSchemeOptionRow(
+    label: String,
+    selected: Boolean,
+    primaryText: Color,
+    accentColor: Color,
+    onClick: () -> Unit,
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick)
+            .padding(horizontal = 12.dp, vertical = 14.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Text(
+            text = label,
+            style = MiuixTheme.textStyles.main,
+            color = if (selected) accentColor else primaryText,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+            modifier = Modifier.weight(1f),
+        )
+        if (selected) {
+            Icon(
+                imageVector = MiuixIcons.Ok,
+                contentDescription = null,
+                tint = accentColor,
+                modifier = Modifier.size(18.dp),
             )
         }
     }

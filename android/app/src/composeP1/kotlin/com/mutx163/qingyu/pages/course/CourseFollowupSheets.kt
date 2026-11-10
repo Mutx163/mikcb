@@ -85,9 +85,11 @@ import top.yukonga.miuix.kmp.utils.scrollEndHaptic
  *
  * ## 与 Dart 的三处已知差异（都在报告里报过）
  *
- * 1. **地点候选历史**：Dart 的调课弹层会弹 `showCourseFieldPickerSheet` 列出历史地点
- *    （`locationSuggestions`）。本层契约里没有这个入参，所以地点弹层是「手输 + 清空」，
- *    历史建议要等壳把候选注入进来才有 —— 不伪造候选。
+ * 1. **地点候选历史（已接线，2026-11-10）**：Dart 的调课弹层会弹
+ *    `showCourseFieldPickerSheet` 列出历史地点（`locationSuggestions`，`course_followup_sheets.dart:421`）。
+ *    本层现在有 `locationSuggestions` 入参：候选由壳用
+ *    `CourseFieldSuggestionLogic.build(snapshot.courses, snapshot.scheduleItems)` 算好注入，
+ *    弹层里「手输 + 历史候选」并存；候选为空时就是纯手输，**不伪造历史**。
  * 2. **周 / 节次选择器**：Dart 是 `showHyperosSelectSheet`（列表弹层），本层同样是列表弹层
  *    （[FollowupPickerSheet]），不是数字步进；步进只留给「周」那对 ± 按钮（Dart 也有）。
  * 3. **容器高度**：Dart 调课弹层限高 `屏高 × 0.88` + 顶部滚动 + 底部按钮固定。
@@ -426,22 +428,31 @@ private fun FollowupPickerSheet(
 }
 
 /**
- * 地点编辑弹层（Dart `showCourseFieldPickerSheet` 的最小子集：**手输 + 清空**）。
+ * 地点编辑弹层（Dart `showCourseFieldPickerSheet` 的最小对位：**手输 + 历史候选 + 清空**）。
  *
- * 契约里没有地点候选历史（Dart 的 `locationSuggestions`），所以这里不列任何「建议」，
- * 只保证「能改、能清空、能确认」——不伪造候选。
+ * 候选来自 [CourseRescheduleSheet] 的 `locationSuggestions`（壳用
+ * `CourseFieldSuggestionLogic` 从课程 + 日程算好传进来）；输入即过滤（大小写不敏感，
+ * 与发布版 `filterFieldSuggestions` 同口径）；候选为空时就是纯手输，不伪造历史。
  */
 @Composable
 private fun FollowupLocationSheet(
     show: Boolean,
     initial: String,
     title: String,
+    suggestions: List<String> = emptyList(),
     onDismiss: () -> Unit,
     onConfirm: (String) -> Unit,
 ) {
     var text by remember(show, initial) { mutableStateOf(TextFieldValue(initial)) }
     val dark = isSystemInDarkTheme()
     val secondaryText = Color(QingyuTheme.secondaryText(dark))
+    val primaryText = Color(QingyuTheme.primaryText(dark))
+    val normalized = text.text.trim().lowercase()
+    val visible = if (normalized.isEmpty()) {
+        suggestions
+    } else {
+        suggestions.filter { it.lowercase().contains(normalized) }
+    }
 
     QingyuSheet(
         show = show,
@@ -468,6 +479,27 @@ private fun FollowupLocationSheet(
                     }
                 },
             )
+            if (visible.isNotEmpty()) {
+                Spacer(modifier = Modifier.height(8.dp))
+                visible.forEach { suggestion ->
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { text = TextFieldValue(suggestion) }
+                            .padding(horizontal = 12.dp, vertical = 12.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Text(
+                            text = suggestion,
+                            style = MiuixTheme.textStyles.body2,
+                            color = primaryText,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                            modifier = Modifier.weight(1f),
+                        )
+                    }
+                }
+            }
             Spacer(modifier = Modifier.height(14.dp))
             Row(modifier = Modifier.fillMaxWidth()) {
                 TextButton(
@@ -673,6 +705,8 @@ private enum class FollowupPickerKind { WEEK, START_SECTION, END_SECTION }
  * @param weekCount 可选周次上界（Dart `settings.availableWeeks`；本层按 1..weekCount 展开）
  * @param weekdayLabels 7 条星期文案（ARB `weekdayMon..Sun`，由调用方注入）
  * @param sectionTimes 这门课解析后的作息节次表（决定可选节次与目标时段钟点）
+ * @param locationSuggestions 地点候选（发布版 `locationSuggestions`：壳用
+ *   `CourseFieldSuggestionLogic` 从课程 + 日程算好注入；空表 = 纯手输）
  */
 @Composable
 fun CourseRescheduleSheet(
@@ -682,6 +716,7 @@ fun CourseRescheduleSheet(
     weekCount: Int,
     weekdayLabels: List<String>,
     sectionTimes: List<SectionTime>,
+    locationSuggestions: List<String> = emptyList(),
     onDismiss: () -> Unit,
     onConfirm: (CourseRescheduleTarget) -> Unit,
 ) {
@@ -947,6 +982,7 @@ fun CourseRescheduleSheet(
         show = editingLocation,
         initial = draft.targetLocation,
         title = view.locationField.pickerTitle,
+        suggestions = locationSuggestions,
         onDismiss = { editingLocation = false },
         onConfirm = { location ->
             draft = draft.withLocation(location)

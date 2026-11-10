@@ -114,6 +114,12 @@ fun CourseActionSheet(
     /** 闹钟是否跳过系统时钟保存页（宿主从 `classAlarmSkipUi` 读，缺省 false）。 */
     skipUi: Boolean = false,
     /**
+     * 地点候选（发布版 `course_followup_sheets.dart:421` 的 `locationSuggestions`）：
+     * 调课子弹层里「地点」行的历史建议。壳用
+     * `CourseFieldSuggestionLogic.build(snapshot.courses, snapshot.scheduleItems)` 算好传入。
+     */
+    locationSuggestions: List<String> = emptyList(),
+    /**
      * 选中这节课（**课程 × 真实日期**）旧版一次性提醒的响点（当日分钟数）。
      * null = 没设过 / 宿主还没接 `classReminders` 读侧 ⇒ 子弹层不画「已设提醒」行。
      */
@@ -291,6 +297,7 @@ fun CourseActionSheet(
             weekCount = details.weekCount,
             weekdayLabels = details.weekdayLabels,
             sectionTimes = details.sectionTimes,
+            locationSuggestions = locationSuggestions,
             onDismiss = { stage = CourseSheetStage.NONE },
             onConfirm = { target ->
                 stage = CourseSheetStage.NONE
