@@ -184,12 +184,13 @@ class SettingsHolidayPageTest {
 
     @Test
     fun `添加假期按钮是独立控制卡`() {
-        // settings_holiday.dart:576-592
+        // settings_holiday.dart:562-578 `HyperosControlCard(child: 整宽 HyperosButton)`：
+        // 卡里只有按钮、**没有卡标题**——label 留空，否则「添加假期」在卡头与按钮上各说一遍。
         val card = page().flatten().filterIsInstance<SettingsInline>()
             .single { it.id == "holiday.card.add" }
         assertEquals(InlineKind.CONTROL_CARD, card.kind)
-        assertEquals("customHolidayAdd", card.labelKey)
-        assertEquals("添加假期", card.label)
+        assertNull(card.labelKey)
+        assertNull(card.label)
         assertEquals(listOf("customHolidayAdd"), card.texts.map { it.key })
         assertEquals(listOf("添加假期"), card.texts.map { it.text })
     }

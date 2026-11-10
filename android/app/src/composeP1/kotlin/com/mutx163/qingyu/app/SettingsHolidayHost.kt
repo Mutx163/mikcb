@@ -47,7 +47,6 @@ import top.yukonga.miuix.kmp.basic.ButtonDefaults
 import top.yukonga.miuix.kmp.basic.NumberPicker
 import top.yukonga.miuix.kmp.basic.TabRow
 import top.yukonga.miuix.kmp.basic.Text
-import top.yukonga.miuix.kmp.basic.TextButton
 import top.yukonga.miuix.kmp.basic.TextField
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import top.yukonga.miuix.kmp.utils.overScrollVertical
@@ -450,6 +449,7 @@ private fun HolidayEditorForm(
     errorContentColor: Color,
 ) {
     val s = SettingsStringsExt3
+    val dark = isSystemInDarkTheme()
     Column(modifier = Modifier.fillMaxWidth()) {
         LazyColumn(
             modifier = Modifier
@@ -532,11 +532,18 @@ private fun HolidayEditorForm(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            TextButton(
+            // E2：取消 = 发布版 `HyperosButtonVariant.secondary`（浅灰实心 + 主文本字，
+            // `hyperos_controls.dart:657-818`），不再是 ghost TextButton；弹窗里的取消不动。
+            Button(
                 modifier = Modifier.weight(1f),
-                text = s.cancelAction.text,
                 onClick = onCancel,
-            )
+                colors = ButtonDefaults.buttonColors(
+                    color = Color(QingyuTheme.secondary(dark)),
+                    contentColor = Color(QingyuTheme.primaryText(dark)),
+                ),
+            ) {
+                Text(text = s.cancelAction.text)
+            }
             Button(
                 modifier = Modifier.weight(1f),
                 onClick = onSave,
@@ -588,6 +595,7 @@ private fun HolidayDateWheelPage(
 ) {
     val maxDay = HolidayEditorLogic.daysInMonth(year, month)
     val safeDay = day.coerceAtMost(maxDay)
+    val dark = isSystemInDarkTheme()
     Column(modifier = Modifier.fillMaxWidth()) {
         Row(
             modifier = Modifier
@@ -627,11 +635,17 @@ private fun HolidayDateWheelPage(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            TextButton(
+            // E2：同上（滚轮弹层取消 = secondary 实心）。
+            Button(
                 modifier = Modifier.weight(1f),
-                text = TaskStrings.cancelAction,
                 onClick = onCancel,
-            )
+                colors = ButtonDefaults.buttonColors(
+                    color = Color(QingyuTheme.secondary(dark)),
+                    contentColor = Color(QingyuTheme.primaryText(dark)),
+                ),
+            ) {
+                Text(text = TaskStrings.cancelAction)
+            }
             Button(
                 modifier = Modifier.weight(1f),
                 onClick = onConfirm,
@@ -678,11 +692,18 @@ private fun HolidayDeleteConfirmSheet(
                     .padding(horizontal = 16.dp),
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
             ) {
-                TextButton(
+                // E2：滚轮/确认弹层口径的取消键 = secondary 实心（与上面两处同款）；
+                // 删除键保持危险色。
+                Button(
                     modifier = Modifier.weight(1f),
-                    text = s.cancelAction.text,
                     onClick = onDismiss,
-                )
+                    colors = ButtonDefaults.buttonColors(
+                        color = Color(QingyuTheme.secondary(dark)),
+                        contentColor = Color(QingyuTheme.primaryText(dark)),
+                    ),
+                ) {
+                    Text(text = s.cancelAction.text)
+                }
                 Button(
                     modifier = Modifier.weight(1f),
                     onClick = onConfirm,

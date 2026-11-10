@@ -126,10 +126,11 @@ object SettingsHolidayPage {
                 SettingsInline(
                     id = "holiday.card.add",
                     kind = InlineKind.CONTROL_CARD,
+                    // 发布版这卡（`:562-578`）是 `HyperosControlCard` 里**只放一颗整宽按钮**，
+                    // 卡本身没有标题；再给 label 就是「添加假期」说两遍（2026-11-10 美化八
+                    // 给 ControlCard 加了「label 空不画标题」，这里按同一修法留空）。
                     note = "添加假期按钮（:576-592）：整宽官方 Button 装在控制卡里，" +
-                        "与数据迁移页的空态按钮同一写法",
-                    labelKey = s.customHolidayAdd.key,
-                    label = s.customHolidayAdd.text,
+                        "与数据迁移页的空态按钮同一写法；卡无标题，标题不另给",
                     texts = listOf(SettingsInlineText(s.customHolidayAdd.key, s.customHolidayAdd.text)),
                 ),
                 SettingsGap("holiday.gap.custom"),
