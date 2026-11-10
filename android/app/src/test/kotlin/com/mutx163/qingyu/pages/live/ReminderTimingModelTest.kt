@@ -35,6 +35,7 @@ class ReminderTimingModelTest {
         assertTrue(state.livePromoteDuringClass)
         assertEquals(20, state.liveShowBeforeClassMinutes)
         assertEquals(60, state.liveEndSecondsCountdownThreshold)
+        assertEquals(0, state.liveTimeCorrectionSeconds)
         assertEquals(LiveDuringClassTimeDisplayMode.NEAREST, state.liveDuringEndTimeDisplayMode)
     }
 
@@ -232,6 +233,17 @@ class ReminderTimingModelTest {
     }
 
     @Test
+    fun `时间矫正区间 clamp 到负三十到三十`() {
+        // Dart `_timeCorrectionMin = -30` / `_timeCorrectionMax = 30`（:107-108）。
+        assertEquals(-30, ReminderTimingLogic.clampTimeCorrectionSeconds(-31))
+        assertEquals(-30, ReminderTimingLogic.clampTimeCorrectionSeconds(-30))
+        assertEquals(0, ReminderTimingLogic.clampTimeCorrectionSeconds(0))
+        assertEquals(30, ReminderTimingLogic.clampTimeCorrectionSeconds(30))
+        assertEquals(30, ReminderTimingLogic.clampTimeCorrectionSeconds(31))
+        assertEquals(60, ReminderTimingLogic.TIME_CORRECTION_DIVISIONS)
+    }
+
+    @Test
     fun `空选项表原样返回不崩`() {
         assertEquals(42, ReminderTimingLogic.snapToOption(42, emptyList()))
     }
@@ -244,6 +256,7 @@ class ReminderTimingModelTest {
             liveClassReminderStartMinutes = 7,
             liveShowBeforeClassMinutes = 0,
             liveEndSecondsCountdownThreshold = 20,
+            liveTimeCorrectionSeconds = -45,
             liveEnableBeforeClass = false,
             liveShowDuringClassNotification = false,
         )
@@ -251,6 +264,7 @@ class ReminderTimingModelTest {
         assertEquals(5, clean.liveClassReminderStartMinutes)
         assertEquals(1, clean.liveShowBeforeClassMinutes)
         assertEquals(15, clean.liveEndSecondsCountdownThreshold)
+        assertEquals(-30, clean.liveTimeCorrectionSeconds)
         assertFalse(clean.liveEnableBeforeClass)
         assertFalse(clean.liveShowDuringClassNotification)
     }

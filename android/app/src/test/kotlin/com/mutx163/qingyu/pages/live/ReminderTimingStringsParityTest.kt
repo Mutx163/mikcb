@@ -135,6 +135,18 @@ class ReminderTimingStringsParityTest {
         )
     }
 
+    @Test
+    fun `时间矫正读数三档都对应 ARB`() {
+        // 手推：0 → 不矫正；正 → 整体延后 N 秒；负 → 整体提前 |N| 秒（Dart `_formatLiveTimeCorrection`）。
+        assertEquals(arbMap["liveTimeCorrectionNone"], ReminderTimingStrings.formatTimeCorrection(0))
+        assertEquals("整体延后 5 秒", ReminderTimingStrings.formatTimeCorrection(5))
+        assertEquals("整体提前 5 秒", ReminderTimingStrings.formatTimeCorrection(-5))
+        assertEquals(
+            arbMap["timeCorrectionLabel"]!!.replace("{value}", "整体延后 5 秒"),
+            ReminderTimingStrings.formatTimeCorrectionLabel(5),
+        )
+    }
+
     private fun loadArbZh(): Map<String, String> {
         var dir: File? = File("").absoluteFile
         var arbFile: File? = null

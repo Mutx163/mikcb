@@ -21,6 +21,7 @@ object ReminderTimingStrings {
     val beforeClassReminderTitle = ArbText("beforeClassReminderTitle", "上课前提醒")
     val beforeClassReminderSubtitle = ArbText("beforeClassReminderSubtitle", "课程开始前 {minutes} 分钟弹出")
     val duringClassReminderTitle = ArbText("duringClassReminderTitle", "课中与下课提醒")
+    val duringClassReminderSubtitle = ArbText("duringClassReminderSubtitle", "上课后到下课前的展示")
     val liveClassReminderLeadTitle = ArbText("liveClassReminderLeadTitle", "重点提醒切入时机")
     val liveClassReminderLeadOptionImmediate = ArbText("liveClassReminderLeadOptionImmediate", "一上课就切换")
     val liveClassReminderLeadOptionMinutes = ArbText("liveClassReminderLeadOptionMinutes", "下课前 {minutes} 分钟")
@@ -58,6 +59,7 @@ object ReminderTimingStrings {
         "全程显示普通通知",
     )
     val enableIslandDisplayTitle = ArbText("enableIslandDisplayTitle", "展示超级岛")
+    val enableIslandDisplaySubtitle = ArbText("enableIslandDisplaySubtitle", "关闭后不触发系统超级岛")
 
     // ── 时间阈值组 ──
     val beforeClassPopupLabel = ArbText("beforeClassPopupLabel", "上课前弹出时间")
@@ -65,8 +67,16 @@ object ReminderTimingStrings {
     val beforeEndSecondsLabel = ArbText("beforeEndSecondsLabel", "下课前秒级阈值")
     val beforeEndSecondsOption = ArbText("beforeEndSecondsOption", "{seconds} 秒")
     val duringEndTimeDisplayLabel = ArbText("duringEndTimeDisplayLabel", "课中时间样式")
+    val duringEndTimeDisplayHelp = ArbText("duringEndTimeDisplayHelp", "紧凑提醒显示最近时间或总时长")
     val liveDuringClassTimeNearest = ArbText("liveDuringClassTimeNearest", "最近时间")
     val liveDuringClassTimeTotal = ArbText("liveDuringClassTimeTotal", "总时间")
+
+    // ── 时间校正组（Dart `live_settings_subpages.dart:256-274`）──
+    val timeCorrectionTitle = ArbText("timeCorrectionTitle", "铃声时间矫正")
+    val timeCorrectionLabel = ArbText("timeCorrectionLabel", "铃声时间矫正：{value}")
+    val liveTimeCorrectionNone = ArbText("liveTimeCorrectionNone", "不矫正")
+    val liveTimeCorrectionDelay = ArbText("liveTimeCorrectionDelay", "整体延后 {seconds} 秒")
+    val liveTimeCorrectionAdvance = ArbText("liveTimeCorrectionAdvance", "整体提前 {seconds} 秒")
 
     /** 所有对接 ARB 的文案集合（用于 Parity 测试机械对拍）。 */
     val allTexts: List<ArbText> = listOf(
@@ -77,6 +87,7 @@ object ReminderTimingStrings {
         beforeClassReminderTitle,
         beforeClassReminderSubtitle,
         duringClassReminderTitle,
+        duringClassReminderSubtitle,
         liveClassReminderLeadTitle,
         liveClassReminderLeadOptionImmediate,
         liveClassReminderLeadOptionMinutes,
@@ -89,6 +100,7 @@ object ReminderTimingStrings {
         duringClassStatusNotificationBeforeEnd,
         duringClassStatusNotificationPersistent,
         enableIslandDisplayTitle,
+        enableIslandDisplaySubtitle,
         beforeClassPopupLabel,
         beforeClassMinutesOption,
         beforeEndSecondsLabel,
@@ -96,6 +108,12 @@ object ReminderTimingStrings {
         duringEndTimeDisplayLabel,
         liveDuringClassTimeNearest,
         liveDuringClassTimeTotal,
+        timeCorrectionTitle,
+        timeCorrectionLabel,
+        liveTimeCorrectionNone,
+        liveTimeCorrectionDelay,
+        liveTimeCorrectionAdvance,
+        duringEndTimeDisplayHelp,
     )
 
     // ── 格式化纯函数 ──
@@ -144,4 +162,22 @@ object ReminderTimingStrings {
     /** 「下课前秒级阈值」单个选项：「{seconds} 秒」。 */
     fun formatBeforeEndSecondsOption(seconds: Int): String =
         beforeEndSecondsOption.filled("seconds", seconds.toString())
+
+    /**
+     * 「铃声时间矫正」读数（Dart `_formatLiveTimeCorrection`，`live_settings_subpages.dart:43-51`）。
+     *
+     * 0 → 不矫正；正数 → 整体延后 N 秒；负数 → 整体提前 |N| 秒。
+     */
+    fun formatTimeCorrection(seconds: Int): String = when {
+        seconds == 0 -> liveTimeCorrectionNone.text
+        seconds > 0 -> liveTimeCorrectionDelay.filled("seconds", seconds.toString())
+        else -> liveTimeCorrectionAdvance.filled("seconds", (-seconds).toString())
+    }
+
+    /**
+     * 滑杆行标题：`timeCorrectionLabel` 填上 [formatTimeCorrection] 的整句
+     * （Dart `title: l10n.timeCorrectionLabel(timeCorrectionText)`，`:261`）。
+     */
+    fun formatTimeCorrectionLabel(seconds: Int): String =
+        timeCorrectionLabel.filled("value", formatTimeCorrection(seconds))
 }

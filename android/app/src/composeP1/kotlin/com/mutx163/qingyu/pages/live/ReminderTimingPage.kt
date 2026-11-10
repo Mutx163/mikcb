@@ -19,9 +19,11 @@ import com.mutx163.qingyu.components.QingyuPageList
 import com.mutx163.qingyu.components.QingyuPageScaffold
 import com.mutx163.qingyu.components.QingyuPageTheme
 import com.mutx163.qingyu.components.QingyuSectionTitle
+import com.mutx163.qingyu.components.QingyuSliderPreference
 import com.mutx163.qingyu.theme.QingyuShapes
 import top.yukonga.miuix.kmp.preference.OverlayDropdownPreference
 import top.yukonga.miuix.kmp.preference.SwitchPreference
+import kotlin.math.roundToInt
 
 /**
  * 「提醒时间」子屏 · Compose 渲染层（P35-live-reminder）。
@@ -29,10 +31,11 @@ import top.yukonga.miuix.kmp.preference.SwitchPreference
  * 对应 Flutter `lib/screens/live_settings_subpages.dart:72-289` 的
  * `LiveReminderTimingScreen`（State `:80-289`）：
  *
- * - 3 组共 12 个控件：
+ * - 4 组共 13 个控件：
  *   1) 提醒开关组：上课前提醒开关 / 课中与下课提醒开关 / 重点提醒切入时机下拉（仅课中提醒开启时出现）；
  *   2) 展示方式组：课中状态栏通知开关 / 展示超级岛开关；
- *   3) 时间阈值组：上课前弹出时间下拉 / 下课前秒级阈值下拉 / 课中时间样式下拉。
+ *   3) 时间阈值组：上课前弹出时间下拉 / 下课前秒级阈值下拉 / 课中时间样式下拉；
+ *   4) 时间校正组：铃声时间矫正滑杆（−30..30 秒，b5 回归，见 `live_settings_subpages.dart:256-274`）。
  * - 控件形态照抄 Dart：`HyperosSwitchTile` → 官方 `SwitchPreference`；
  *   `HyperosSelectTile` → 官方 `OverlayDropdownPreference`（标题 + 副标题 + 下拉）。
  * - 所有文案取 [ReminderTimingStrings]（与 `lib/l10n/app_zh.arb` 逐字一致）；
@@ -88,6 +91,7 @@ fun LiveReminderTimingPage(
                             )
                         },
                         title = ReminderTimingStrings.duringClassReminderTitle.text,
+                        summary = ReminderTimingStrings.duringClassReminderSubtitle.text,
                     )
 
                     if (duringClassEnabled) {
@@ -135,6 +139,7 @@ fun LiveReminderTimingPage(
                             onStateChange(state.copy(livePromoteDuringClass = it))
                         },
                         title = ReminderTimingStrings.enableIslandDisplayTitle.text,
+                        summary = ReminderTimingStrings.enableIslandDisplaySubtitle.text,
                     )
                 }
             }
@@ -192,6 +197,7 @@ fun LiveReminderTimingPage(
                         },
                         selectedIndex = displayModeIndex,
                         title = ReminderTimingStrings.duringEndTimeDisplayLabel.text,
+                        summary = ReminderTimingStrings.duringEndTimeDisplayHelp.text,
                         onSelectedIndexChange = { index ->
                             displayModes.getOrNull(index)?.let { mode ->
                                 onStateChange(
@@ -199,6 +205,33 @@ fun LiveReminderTimingPage(
                                 )
                             }
                         },
+                    )
+                }
+            }
+
+            // ── 组 4：时间校正（b5 回归：Dart :256-274）──
+            item(key = "time-correction") {
+                ReminderGroup(
+                    label = ReminderTimingStrings.timeCorrectionTitle.text,
+                ) {
+                    QingyuSliderPreference(
+                        value = state.liveTimeCorrectionSeconds.toFloat(),
+                        onValueChange = { raw ->
+                            val seconds = ReminderTimingLogic
+                                .clampTimeCorrectionSeconds(raw.roundToInt())
+                            if (seconds != state.liveTimeCorrectionSeconds) {
+                                onStateChange(state.copy(liveTimeCorrectionSeconds = seconds))
+                            }
+                        },
+                        // 行标题自带读数（Dart `title: timeCorrectionLabel(timeCorrectionText)`）：
+                        // 0 → 不矫正；正 → 整体延后 N 秒；负 → 整体提前 N 秒。
+                        title = ReminderTimingStrings.formatTimeCorrectionLabel(
+                            state.liveTimeCorrectionSeconds,
+                        ),
+                        valueRange = ReminderTimingLogic.TIME_CORRECTION_MIN.toFloat()..
+                            ReminderTimingLogic.TIME_CORRECTION_MAX.toFloat(),
+                        // 官方 `steps` 是端点之间的档数，比 Dart 的区间数少 1（见 LabelSlider 注释）。
+                        steps = (ReminderTimingLogic.TIME_CORRECTION_DIVISIONS - 1),
                     )
                 }
             }
@@ -210,7 +243,7 @@ fun LiveReminderTimingPage(
  * 宿主接线用的状态化重载：内部持有 [ReminderTimingState]，每次改动清洗后回调 [onPersist]。
  *
  * - [initialState]：进入页面时的草稿；先过一遍 [ReminderTimingLogic.sanitize]，
- *   保证三个下拉的当前值一定命中合法选项（外部老数据可能越界）。
+ *   保证三个下拉的当前值一定命中合法选项、时间矫正落在 −30..30（外部老数据可能越界）。
  * - [onPersist]：每次改动后的完整草稿快照交给宿主落库（Dart `_enqueuePersist` 的口径在宿主层，
  *   失败提示与串行保存也归宿主）。
  */

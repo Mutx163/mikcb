@@ -4,6 +4,7 @@ import android.animation.ValueAnimator
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -14,7 +15,8 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.sizeIn
@@ -22,8 +24,11 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -33,10 +38,20 @@ import androidx.compose.ui.draw.dropShadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.shadow.Shadow
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.semantics.CustomAccessibilityAction
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.customActions
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.zIndex
 import com.mutx163.qingyu.components.QingyuCard
+import com.mutx163.qingyu.components.QingyuColorChipSize
+import com.mutx163.qingyu.components.QingyuColorChips
 import com.mutx163.qingyu.components.QingyuPageCardMargin
 import com.mutx163.qingyu.components.QingyuPageList
 import com.mutx163.qingyu.components.QingyuPageScaffold
@@ -54,9 +69,12 @@ import com.mutx163.qingyu.core.HomeMaterialRenderSpec
 import com.mutx163.qingyu.core.dockGlassTuning
 import com.mutx163.qingyu.theme.QingyuShapes
 import com.mutx163.qingyu.theme.QingyuTheme
+import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.Switch
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TextButton
+import top.yukonga.miuix.kmp.icon.MiuixIcons
+import top.yukonga.miuix.kmp.icon.extended.Sort
 import top.yukonga.miuix.kmp.blur.LayerBackdrop
 import top.yukonga.miuix.kmp.blur.isRuntimeShaderSupported
 import top.yukonga.miuix.kmp.blur.layerBackdrop
@@ -65,6 +83,7 @@ import top.yukonga.miuix.kmp.theme.MiuixTheme
 import top.yukonga.miuix.kmp.preference.ArrowPreference
 import top.yukonga.miuix.kmp.preference.OverlayDropdownPreference
 import top.yukonga.miuix.kmp.preference.SwitchPreference
+import kotlin.math.roundToInt
 
 /** 图片选择目标（供宿主接线层落到各自目录 / 前缀）。 */
 enum class LiveImagePickTarget { LABEL_LOGO, EXPANDED_ICON }
@@ -72,10 +91,13 @@ enum class LiveImagePickTarget { LABEL_LOGO, EXPANDED_ICON }
 /**
  * 「超级岛 · 显示设置页」· Compose 渲染层（重建 Flutter `LiveDisplaySettingsScreen`）。
  *
- * 8 个 section 全量：显示内容（6 开关）/ 倒计时格式 / 上课前快捷操作 /
- * 小米岛左侧标签全套 / 展开态图标 / 展开详情（显隐 + 排序 + 恢复默认）/
- * 两张预览卡 / 速览 FAB；`forDuringEnd` 两个变体（课中/下课页顶部多一组
+ * 页面按发布版顺序铺开：**超级岛实时预览（标题正下方）** → 显示内容（6 开关）/
+ * 倒计时格式 / 上课前快捷操作 / 小米岛左侧标签全套 / 展开态图标 /
+ * 展开详情（显隐 + 拖动排序 + 恢复默认）；`forDuringEnd` 两个变体（课中/下课页多一组
  * 「配置方式 · 跟随上课前提醒设置」，且不显示上课前快捷操作）。
+ *
+ * 「试弹上课前岛」在顶栏右上（2026-11-10 用户拍板从底部浮钮上移），首屏可见、随时可点；
+ * 预览卡本身用当前草稿实时渲染（开关一拨就跟着变），不截图、不烤位图。
  *
  * 本层不碰平台：选图、落库、速览起岛全部由宿主回调注入。文案一律取
  * [DisplaySettingsStrings]（与 `lib/l10n/app_zh.arb` 逐字一致），页面不自造第二套组件
@@ -132,9 +154,11 @@ fun DisplaySettingsPage(
         null
     }
 
+    // 顶栏保持原样（只有返回箭头）：2026-11-10 用户否掉「试弹」放右上角。
+    // 试弹仍走底部浮钮；标题下方那一条是实时预览，两者分工：上面看、下面试。
     QingyuPageScaffold(title = title, onBack = onBack) {
         // 骨架照 `docs/reference/compose-page-style-rules.md` §三：滚动容器走共享套件
-        //（官方三件套 + 右侧滚动条）。Box 仍保留：速览 FAB 要贴在底部居中。
+        //（官方三件套 + 右侧滚动条）。Box 保留：速览 FAB 要贴在底部居中。
         // innerPadding 由外层 Box 吃掉，所以列表这里传 0，避免顶/底留白叠加两次。
         Box(modifier = Modifier.fillMaxSize().padding(innerPadding)) {
             QingyuPageList(
@@ -145,6 +169,34 @@ fun DisplaySettingsPage(
                 verticalArrangement = Arrangement.spacedBy(12.dp),
                 contentPadding = PaddingValues(top = 8.dp, bottom = 104.dp),
             ) {
+                // ── 0. 超级岛实时预览（标题正下方、首组之前，对齐发布版顶部形态）──
+                //
+                // 发布版 `live_settings_subpages.dart:1136-1137` 在列表最前放
+                // `HyperosSectionLabel(liveIslandPreviewTitle)` + `LiveIslandPreviewCard`；
+                // 卡片直接用当前草稿渲染（课程名/简称/地点/倒计时…拨一下就跟变）。
+                // 这里复用同一颗真实岛组件，不截图、不烤位图；没有真实课程时画诚实空态。
+                // 「展开态预览」仍是页尾一块（发布版 :1092-1093 也在展开详情之后），不放这里。
+                item(key = "island-preview-label") { QingyuSectionTitle(DisplaySettingsStrings.islandPreviewTitle.text) }
+                if (effectiveInfo == null) {
+                    item(key = "island-preview-empty") {
+                        IslandPreviewEmptyCard(
+                            hint = previewEmptyHint,
+                            dark = dark,
+                            modifier = Modifier.padding(horizontal = QingyuPageCardMargin),
+                        )
+                    }
+                } else {
+                    item(key = "island-preview-card") {
+                        LiveIslandPreviewCard(
+                            state = state,
+                            previewInfo = effectiveInfo,
+                            modifier = Modifier.padding(horizontal = QingyuPageCardMargin),
+                            forDuringEnd = forDuringEnd,
+                            followBeforeClass = followBeforeClass,
+                        )
+                    }
+                }
+
                 // ── 课中/下课页顶部：配置方式（跟随上课前设置）──
                 if (forDuringEnd) {
                     item(key = "config-mode-label") { QingyuSectionTitle(DisplaySettingsStrings.displayConfigModeTitle.text) }
@@ -230,7 +282,6 @@ fun DisplaySettingsPage(
                         QingyuCard(modifier = Modifier.fillMaxWidth().padding(horizontal = QingyuPageCardMargin).alpha(sectionAlpha)) {
                             EnumDropdown(
                                 title = DisplaySettingsStrings.countdownFormatLabel.text,
-                                summary = DisplaySettingsStrings.countdownFormatHelp.text,
                                 values = LiveCountdownTextStyle.entries,
                                 selected = state.countdownTextStyle,
                                 label = { DisplaySettingsStrings.countdownTextStyleLabel(it) },
@@ -247,7 +298,6 @@ fun DisplaySettingsPage(
                         QingyuCard(modifier = Modifier.fillMaxWidth().padding(horizontal = QingyuPageCardMargin).alpha(sectionAlpha)) {
                             EnumDropdown(
                                 title = DisplaySettingsStrings.beforeClassQuickActionTitle.text,
-                                summary = DisplaySettingsStrings.beforeClassQuickActionSubtitle.text,
                                 values = LiveBeforeClassQuickAction.entries,
                                 selected = state.beforeClassQuickAction,
                                 label = { DisplaySettingsStrings.liveBeforeClassQuickActionLabel(it) },
@@ -260,7 +310,6 @@ fun DisplaySettingsPage(
                                     items = autoOptions.map { DisplaySettingsStrings.quickActionAutoMinuteLabel(it) },
                                     selectedIndex = autoOptions.indexOf(state.beforeClassQuickActionAutoMinutes).coerceAtLeast(0),
                                     title = DisplaySettingsStrings.beforeClassQuickActionAutoTitle.text,
-                                    summary = DisplaySettingsStrings.beforeClassQuickActionAutoSubtitle.text,
                                     enabled = editable,
                                     onSelectedIndexChange = { idx ->
                                         autoOptions.getOrNull(idx)?.let {
@@ -317,7 +366,7 @@ fun DisplaySettingsPage(
                             if (state.miuiIslandLabelStyle == MiuiIslandLabelStyle.ICON_AND_TEXT) {
                                 ImagePickerBlock(
                                     title = DisplaySettingsStrings.miuiLabelLogoTitle.text,
-                                    subtitle = DisplaySettingsStrings.miuiLabelLogoSubtitle.text,
+                                    subtitle = null,
                                     path = state.miuiIslandLabelLogoPath,
                                     enabled = editable,
                                     onPick = {
@@ -343,11 +392,28 @@ fun DisplaySettingsPage(
                                     onChange = { onStateChange(state.withMiuiIslandLabelLogoCornerRadius(it.toDouble())) },
                                 )
                             }
-                            // 6 色点
-                            ColorDotRow(
+                            // 左侧文字颜色：全站统一色板（QingyuColorChips · 40dp 档）。
+                            // 旧本地 `_ColorDot` 的 48dp 热区/6dp 间距已由组件配方取代
+                            // （2026-11-10 用户拍板：FlowRow 12/12、官方 IconButton、选中 2dp 墨 + 勾）。
+                            //
+                            // 禁用态：点击交给官方 IconButton 的 `enabled`；明暗由整张卡的
+                            // `alpha(sectionAlpha)` 负责一次，所以传 `dimWhenDisabled = false`，
+                            // 否则卡片 0.5 × 组件 0.5 会叠成 25%。这与发布版的
+                            // `IgnorePointer + AnimatedOpacity(0.5)`（只淡一次）同构。
+                            QingyuColorChips(
+                                colors = LiveDisplayLogic.LABEL_COLORS,
                                 selectedHex = state.miuiIslandLabelFontColor,
-                                enabled = editable,
                                 onSelect = { onStateChange(state.withMiuiIslandLabelFontColor(it)) },
+                                enabled = editable,
+                                dimWhenDisabled = false,
+                                dark = dark,
+                                // 色板边长 40dp（[QingyuColorChipSize.Settings]）：本页就是该档位的
+                                // 发布版出处（Dart `HyperosHexColorChipGroup` 在显示设置里用 40）。
+                                size = QingyuColorChipSize.Settings,
+                                modifier = Modifier.padding(
+                                    horizontal = QingyuShapes.ROW_PADDING_HORIZONTAL.dp,
+                                    vertical = QingyuShapes.ROW_PADDING_VERTICAL.dp,
+                                ),
                             )
                         }
                     }
@@ -363,16 +429,6 @@ fun DisplaySettingsPage(
                                     start = QingyuShapes.ROW_PADDING_HORIZONTAL.dp,
                                     top = QingyuShapes.ROW_PADDING_VERTICAL.dp,
                                     end = QingyuShapes.ROW_PADDING_HORIZONTAL.dp,
-                                ),
-                            )
-                            Text(
-                                text = DisplaySettingsStrings.miuiLabelAdvancedAccordionSubtitle.text,
-                                style = MiuixTheme.textStyles.footnote1,
-                                color = Color(QingyuTheme.secondaryText(dark)),
-                                modifier = Modifier.padding(
-                                    start = QingyuShapes.ROW_PADDING_HORIZONTAL.dp,
-                                    end = QingyuShapes.ROW_PADDING_HORIZONTAL.dp,
-                                    bottom = 4.dp,
                                 ),
                             )
                             LabelSlider(
@@ -473,17 +529,17 @@ fun DisplaySettingsPage(
                                     ),
                                 )
                             },
-                            onMoveUp = { field ->
+                            onMoveTo = { from, to ->
                                 onStateChange(
                                     state.withExpandedDetailFields(
-                                        LiveDisplayLogic.moveDetailFieldBy(state, field, -1, forDuringEnd),
+                                        LiveDisplayLogic.reorderDetailField(state, from, to, forDuringEnd),
                                     ),
                                 )
                             },
-                            onMoveDown = { field ->
+                            onMoveBy = { field, delta ->
                                 onStateChange(
                                     state.withExpandedDetailFields(
-                                        LiveDisplayLogic.moveDetailFieldBy(state, field, 1, forDuringEnd),
+                                        LiveDisplayLogic.moveDetailFieldBy(state, field, delta, forDuringEnd),
                                     ),
                                 )
                             },
@@ -502,26 +558,8 @@ fun DisplaySettingsPage(
                     }
                 }
 
-                // ── 7. 两张预览卡（没有真实课程时只画诚实空态）──
-                item(key = "island-preview-label") { QingyuSectionTitle(DisplaySettingsStrings.islandPreviewTitle.text) }
-                if (effectiveInfo == null) {
-                    item(key = "island-preview-empty") {
-                        IslandPreviewEmptyCard(
-                            hint = previewEmptyHint,
-                            dark = dark,
-                            modifier = Modifier.padding(horizontal = QingyuPageCardMargin),
-                        )
-                    }
-                } else {
-                    item(key = "island-preview-card") {
-                        LiveIslandPreviewCard(
-                            state = state,
-                            previewInfo = effectiveInfo,
-                            modifier = Modifier.padding(horizontal = QingyuPageCardMargin),
-                            forDuringEnd = forDuringEnd,
-                            followBeforeClass = followBeforeClass,
-                        )
-                    }
+                // ── 7. 展开态预览（发布版 :1092-1093 也排在展开详情 / 恢复默认之后）──
+                if (effectiveInfo != null) {
                     item(key = "island-expanded-preview-label") {
                         QingyuSectionTitle(DisplaySettingsStrings.islandExpandedPreviewTitle.text)
                     }
@@ -537,7 +575,7 @@ fun DisplaySettingsPage(
                 }
             }
 
-            // ── 8. 速览 FAB ──
+            // ── 试弹：底部浮钮（用户 2026-11-10 恢复原位；顶部只放实时预览）──
             StagePreviewFab(
                 modifier = Modifier
                     .align(Alignment.BottomCenter)
@@ -652,49 +690,6 @@ private fun LabelSlider(
     )
 }
 
-/** 6 色点选择行（对照 Flutter `_ColorDot`）。 */
-@Composable
-private fun ColorDotRow(
-    selectedHex: String,
-    enabled: Boolean,
-    onSelect: (String) -> Unit,
-) {
-    val dark = isSystemInDarkTheme()
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(
-                horizontal = QingyuShapes.ROW_PADDING_HORIZONTAL.dp,
-                vertical = QingyuShapes.ROW_PADDING_VERTICAL.dp,
-            ),
-        // 色点可点区从 40dp 撑到 48dp 后，6 个点需要更紧的间距；收间距而不是缩命中面。
-        horizontalArrangement = Arrangement.spacedBy(6.dp),
-    ) {
-        LiveDisplayLogic.LABEL_COLORS.forEach { hex ->
-            val selected = selectedHex.equals(hex, ignoreCase = true)
-            // 可点区撑到 48dp，色块视觉本体仍是 40dp。
-            Box(
-                modifier = Modifier
-                    .sizeIn(minWidth = 48.dp, minHeight = 48.dp)
-                    .clickable(enabled = enabled) { onSelect(hex) },
-                contentAlignment = Alignment.Center,
-            ) {
-                Box(
-                    modifier = Modifier
-                        .size(40.dp)
-                        .clip(RoundedCornerShape(16.dp))
-                        .background(parseColor(hex))
-                        .border(
-                            width = if (selected) 2.5.dp else 1.dp,
-                            color = if (selected) MiuixTheme.colorScheme.primary else Color(QingyuTheme.dividerLine(dark)),
-                            shape = RoundedCornerShape(16.dp),
-                        ),
-                )
-            }
-        }
-    }
-}
-
 /** 选图块（对照 Flutter 里的 HyperosButton 组 + `_ImagePreview`）。 */
 @Composable
 private fun ImagePickerBlock(
@@ -767,7 +762,13 @@ private fun ImagePickerBlock(
     }
 }
 
-/** 展开详情分组：已显示区（可上/下移排序 + 开关）+ 已隐藏区（仅开关）。 */
+/**
+ * 展开详情分组：已显示区可拖动排序 + 开关；已隐藏区只有开关。
+ *
+ * 形态对齐发布版 `_ExpandedDetailGroup`（`live_settings_subpages.dart:2043-2150`）：
+ * 行首是拖动手柄（miuix `Sort` 图标），**不再有可视的上/下移按钮**；拖动即时跟手、
+ * 松手落位。读屏用户走行上挂的自定义动作「上移 / 下移」，与发布版同一口径。
+ */
 @Composable
 private fun ExpandedDetailGroup(
     state: LiveDisplayState,
@@ -775,70 +776,196 @@ private fun ExpandedDetailGroup(
     enabled: Boolean,
     dark: Boolean,
     onToggle: (LiveExpandedDetailField) -> Unit,
-    onMoveUp: (LiveExpandedDetailField) -> Unit,
-    onMoveDown: (LiveExpandedDetailField) -> Unit,
+    onMoveTo: (from: Int, to: Int) -> Unit,
+    onMoveBy: (field: LiveExpandedDetailField, delta: Int) -> Unit,
 ) {
     val enabledFields = LiveDisplayLogic.resolveDetailWorkOrder(state, forDuringEnd)
     val hiddenFields = LiveDisplayLogic.resolveHiddenDetailFields(state, forDuringEnd)
 
-    enabledFields.forEachIndexed { index, field ->
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(
-                    horizontal = QingyuShapes.ROW_PADDING_HORIZONTAL.dp,
-                    vertical = QingyuShapes.ROW_PADDING_VERTICAL.dp,
-                )
-                .heightIn(min = QingyuShapes.LIST_ROW_MIN_HEIGHT.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            // 拖动手柄位（Compose 无内置 ReorderableListView，改用上/下移按钮替代拖拽）
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                TextButton(
-                    text = DisplaySettingsStrings.detailMoveUpAction.text,
-                    onClick = { onMoveUp(field) },
-                    enabled = enabled && index > 0,
-                )
-                TextButton(
-                    text = DisplaySettingsStrings.detailMoveDownAction.text,
-                    onClick = { onMoveDown(field) },
-                    enabled = enabled && index < enabledFields.lastIndex,
+    var draggingIndex by remember { mutableStateOf(-1) }
+    var dragOffset by remember { mutableFloatStateOf(0f) }
+
+    Column(modifier = Modifier.fillMaxWidth()) {
+        enabledFields.forEachIndexed { index, field ->
+            val dragging = index == draggingIndex
+            key(field) {
+                DetailRow(
+                title = DisplaySettingsStrings.liveExpandedDetailFieldLabel(field),
+                checked = true,
+                enabled = enabled,
+                dark = dark,
+                modifier = if (dragging) {
+                    Modifier
+                        .zIndex(1f)
+                        .offset { IntOffset(0, dragOffset.roundToInt()) }
+                } else {
+                    Modifier
+                },
+                onToggle = { onToggle(field) },
+                onMoveUp = if (index > 0) {
+                    { onMoveBy(field, -1) }
+                } else {
+                    null
+                },
+                onMoveDown = if (index < enabledFields.lastIndex) {
+                    { onMoveBy(field, 1) }
+                } else {
+                    null
+                },
+                onDragStart = {
+                    if (enabled) {
+                        draggingIndex = index
+                        dragOffset = 0f
+                    }
+                },
+                onDrag = { delta ->
+                    if (draggingIndex == index) dragOffset += delta
+                },
+                onDragEnd = {
+                    if (draggingIndex == index) {
+                        val steps = (dragOffset / DetailRowHeight.value).roundToInt()
+                        val target = (index + steps).coerceIn(0, enabledFields.lastIndex)
+                        draggingIndex = -1
+                        dragOffset = 0f
+                        if (target != index) onMoveTo(index, target)
+                    }
+                },
+                onDragCancel = {
+                    draggingIndex = -1
+                    dragOffset = 0f
+                },
                 )
             }
-            Spacer(modifier = Modifier.width(8.dp))
-            Text(
-                text = DisplaySettingsStrings.liveExpandedDetailFieldLabel(field),
-                modifier = Modifier.weight(1f),
-                style = MiuixTheme.textStyles.body2,
-                color = Color(QingyuTheme.primaryText(dark)),
-            )
-            Switch(
-                checked = true,
-                onCheckedChange = { onToggle(field) },
-                enabled = enabled,
-            )
         }
-    }
-    if (hiddenFields.isNotEmpty()) {
-        Text(
-            text = DisplaySettingsStrings.detailHiddenCaption.text,
-            style = MiuixTheme.textStyles.footnote1,
-            color = Color(QingyuTheme.secondaryText(dark)),
-            modifier = Modifier.padding(
-                horizontal = QingyuShapes.ROW_PADDING_HORIZONTAL.dp,
-                vertical = 6.dp,
-            ),
-        )
-        hiddenFields.forEach { field ->
-            SwitchPreference(
-                checked = false,
-                onCheckedChange = { onToggle(field) },
-                title = DisplaySettingsStrings.liveExpandedDetailFieldLabel(field),
-                enabled = enabled,
+        if (hiddenFields.isNotEmpty()) {
+            Text(
+                text = DisplaySettingsStrings.detailHiddenCaption.text,
+                style = MiuixTheme.textStyles.footnote1,
+                color = Color(QingyuTheme.secondaryText(dark)),
+                modifier = Modifier.padding(
+                    start = QingyuShapes.ROW_PADDING_HORIZONTAL.dp,
+                    end = QingyuShapes.ROW_PADDING_HORIZONTAL.dp,
+                    top = 8.dp,
+                    bottom = 4.dp,
+                ),
             )
+            hiddenFields.forEach { field ->
+                SwitchPreference(
+                    checked = false,
+                    onCheckedChange = { onToggle(field) },
+                    title = DisplaySettingsStrings.liveExpandedDetailFieldLabel(field),
+                    enabled = enabled,
+                )
+            }
         }
     }
 }
+
+/**
+ * 展开详情的一行：`[手柄] 标题 [开关]`。
+ *
+ * 拖动只从手柄起手（页面纵向滚动、行尾开关都不抢手势）；拖动期间整行跟手位移，
+ * 由父层按 [DetailRowHeight] 换算目标位，松手一次落位——没有自写动画。
+ */
+@Composable
+private fun DetailRow(
+    title: String,
+    checked: Boolean,
+    enabled: Boolean,
+    dark: Boolean,
+    modifier: Modifier = Modifier,
+    onToggle: () -> Unit,
+    onMoveUp: (() -> Unit)?,
+    onMoveDown: (() -> Unit)?,
+    onDragStart: () -> Unit,
+    onDrag: (Float) -> Unit,
+    onDragEnd: () -> Unit,
+    onDragCancel: () -> Unit,
+) {
+    val secondary = Color(QingyuTheme.secondaryText(dark))
+    val moveUpLabel = DisplaySettingsStrings.detailMoveUpAction.text
+    val moveDownLabel = DisplaySettingsStrings.detailMoveDownAction.text
+    // 拖动手势协程只在 `enabled` 变化时重启；回调走 latest-state，避免拿到重排前的旧 index。
+    val currentDragStart by rememberUpdatedState(onDragStart)
+    val currentDrag by rememberUpdatedState(onDrag)
+    val currentDragEnd by rememberUpdatedState(onDragEnd)
+    val currentDragCancel by rememberUpdatedState(onDragCancel)
+    Row(
+        modifier = modifier
+            .fillMaxWidth()
+            .height(DetailRowHeight)
+            .semantics {
+                val actions = buildList {
+                    if (onMoveUp != null) {
+                        add(
+                            CustomAccessibilityAction(moveUpLabel) {
+                                onMoveUp()
+                                true
+                            },
+                        )
+                    }
+                    if (onMoveDown != null) {
+                        add(
+                            CustomAccessibilityAction(moveDownLabel) {
+                                onMoveDown()
+                                true
+                            },
+                        )
+                    }
+                }
+                if (actions.isNotEmpty()) customActions = actions
+            },
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        // 拖动手柄格：宽 = 行高（发布版 `SizedBox(width: listRowMinHeight)`）。
+        Box(
+            modifier = Modifier
+                .width(DetailRowHeight)
+                .fillMaxHeight()
+                .semantics {
+                    contentDescription = DisplaySettingsStrings.detailReorderHandleLabel.text
+                }
+                .pointerInput(enabled) {
+                    if (enabled) {
+                        detectDragGestures(
+                            onDragStart = { currentDragStart() },
+                            onDrag = { change, amount ->
+                                change.consume()
+                                currentDrag(amount.y)
+                            },
+                            onDragEnd = { currentDragEnd() },
+                            onDragCancel = { currentDragCancel() },
+                        )
+                    }
+                },
+            contentAlignment = Alignment.Center,
+        ) {
+            Icon(
+                imageVector = MiuixIcons.Sort,
+                contentDescription = null,
+                tint = secondary,
+                modifier = Modifier.size(20.dp),
+            )
+        }
+        Text(
+            text = title,
+            modifier = Modifier
+                .weight(1f)
+                .padding(end = 8.dp),
+            style = MiuixTheme.textStyles.body2,
+            color = Color(QingyuTheme.primaryText(dark)),
+        )
+        Switch(
+            checked = checked,
+            onCheckedChange = { onToggle() },
+            enabled = enabled,
+            modifier = Modifier.padding(end = QingyuShapes.ROW_PADDING_HORIZONTAL.dp),
+        )
+    }
+}
+
+/** 展开详情单行高度 = 拖动位移换算目标位的步长（与列表行最小高一致）。 */
+private val DetailRowHeight: Dp = QingyuShapes.LIST_ROW_MIN_HEIGHT.dp
 
 /** 预览空态：没有真实当前/下一节课时**如实说没有**，不画假课程。 */
 @Composable
@@ -918,7 +1045,10 @@ private fun StagePreviewFab(
             modifier = Modifier.padding(horizontal = StagePreviewFabHorizontalPaddingDp.dp),
         )
     }
-    val base = modifier.heightIn(min = StagePreviewFabMinHeightDp.dp)
+    // 触达目标 ≥48dp（`AccessibilitySemanticsGuardTest` 判据：源码须有 `sizeIn` + 48dp）。
+    // 这颗胶囊本身高度就是 48（[StagePreviewFabMinHeightDp]），这里改用 `sizeIn` 同时钉住
+    // 最小宽高：窄屏 / 大字号下圆角收窄时，点击热区不会被内容缩到 48 以下。
+    val base = modifier.sizeIn(minWidth = 48.dp, minHeight = StagePreviewFabMinHeightDp.dp)
 
     if (backdrop != null) {
         Box(
@@ -990,38 +1120,6 @@ private fun formatOneDecimal(value: Double): String {
     val rounded = Math.round(value * 10.0) / 10.0
     return "%.1f".format(rounded)
 }
-
-/**
- * `#RRGGBB` 解析（失败回落中性灰）。
- *
- * 色值来自设置里存的字符串，所以这里逐通道拆出来构造，不写死 `Color(0x…)` 字面量
- * ——写死的十六进制在深色模式/换主题色后必然与周围不一致（规则 R5）。
- */
-private fun parseColor(hex: String): Color {
-    val cleaned = hex.trim().removePrefix("#")
-    return try {
-        if (cleaned.length == 6) {
-            val rgb = cleaned.toInt(16)
-            Color(
-                red = (rgb shr 16) and 0xFF,
-                green = (rgb shr 8) and 0xFF,
-                blue = rgb and 0xFF,
-            )
-        } else {
-            NeutralFallback
-        }
-    } catch (_: NumberFormatException) {
-        NeutralFallback
-    }
-}
-
-/**
- * 非法色值时的中性灰兜底色（0xFF888888）。
- *
- * 这是**故意固定**的语义色：它只出现在「用户存的色值解析失败」这条异常路径上，
- * 与主题无关（深色下也应当是中性灰），所以不进主题语义槽。
- */
-private val NeutralFallback = Color(red = 0x88, green = 0x88, blue = 0x88)
 
 // ─────────────────────────────────────────────────────────────────────────────
 // IDE 预览（2026-11-08）
@@ -1162,6 +1260,19 @@ private fun DisplaySettingsPagePreviewDark() {
 @Composable
 private fun DisplaySettingsPagePreviewLargeText() {
     PreviewDisplaySettingsPage(previewDisplaySettingsState("课前页"), textScale = 1.3f)
+}
+
+// ── 整页：1400 高，一屏看完整个页面 ────────────────────────────────────────
+//
+// 900 高那几档只够看前半页：胶囊左侧图标、展开卡片大图标、展开详情、
+// 超级岛预览这几段都被裁在下面，改后半段时得靠滚动猜。这一档专门给「整页」，
+// 原 900 档全部保留——它们仍是逐项对照时最省眼力的尺寸。
+
+@Suppress("unused")
+@Preview(name = "7 整页 1400", showBackground = true, widthDp = 400, heightDp = 1400)
+@Composable
+private fun DisplaySettingsPagePreviewFullPage() {
+    PreviewDisplaySettingsPage(previewDisplaySettingsState("课前页"))
 }
 
 // ── 总览：四态并排，一屏看完 ────────────────────────────────────────────────

@@ -151,6 +151,11 @@ object LiveDisplayCodec {
     const val KEY_SHOW_BEFORE_CLASS_MINUTES = "liveShowBeforeClassMinutes"
     const val KEY_CLASS_REMINDER_START_MINUTES = "liveClassReminderStartMinutes"
     const val KEY_END_SECONDS_COUNTDOWN_THRESHOLD = "liveEndSecondsCountdownThreshold"
+    /**
+     * 「铃声时间矫正」秒数（Dart `liveTimeCorrectionSeconds`：默认 0 `timetable_settings.dart:874`，
+     * 读侧 `:1658-1659` 缺键/非数字一律 0，写侧 `:1199` 紧挨秒级阈值）。
+     */
+    const val KEY_TIME_CORRECTION_SECONDS = "liveTimeCorrectionSeconds"
     const val KEY_BEFORE_CLASS_QUICK_ACTION = "liveBeforeClassQuickAction"
     const val KEY_BEFORE_CLASS_QUICK_ACTION_AUTO_MINUTES =
         "liveBeforeClassQuickActionAutoMinutes"
@@ -284,6 +289,7 @@ object LiveDisplayCodec {
             livePromoteDuringClass = bool(json, KEY_PROMOTE_DURING_CLASS, true),
             liveShowBeforeClassMinutes = int(json, KEY_SHOW_BEFORE_CLASS_MINUTES, 20),
             liveEndSecondsCountdownThreshold = int(json, KEY_END_SECONDS_COUNTDOWN_THRESHOLD, 60),
+            liveTimeCorrectionSeconds = int(json, KEY_TIME_CORRECTION_SECONDS, 0),
             liveDuringEndTimeDisplayMode = LiveDuringClassTimeDisplayMode.fromValue(
                 LenientJson.string(json[KEY_DURING_END_TIME_DISPLAY_MODE])
                     ?: LenientJson.string(json[KEY_DURING_CLASS_TIME_DISPLAY_MODE]),
@@ -384,6 +390,7 @@ object LiveDisplayCodec {
         KEY_PROMOTE_DURING_CLASS to state.livePromoteDuringClass,
         KEY_SHOW_BEFORE_CLASS_MINUTES to state.liveShowBeforeClassMinutes,
         KEY_END_SECONDS_COUNTDOWN_THRESHOLD to state.liveEndSecondsCountdownThreshold,
+        KEY_TIME_CORRECTION_SECONDS to state.liveTimeCorrectionSeconds,
         KEY_DURING_END_TIME_DISPLAY_MODE to state.liveDuringEndTimeDisplayMode.value,
     )
 

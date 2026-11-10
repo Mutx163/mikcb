@@ -27,16 +27,10 @@ object DisplaySettingsStrings {
 
     // ── 倒计时格式组 ──
     val countdownFormatLabel = ArbText("countdownFormatLabel", "倒计时格式")
-    val countdownFormatHelp = ArbText("countdownFormatHelp", "纯分钟按分钟刷新，带秒按秒刷新")
 
     // ── 上课前快捷操作组 ──
     val beforeClassQuickActionTitle = ArbText("beforeClassQuickActionTitle", "上课前快捷操作")
-    val beforeClassQuickActionSubtitle = ArbText(
-        "beforeClassQuickActionSubtitle",
-        "仅在上课前提醒的展开通知中显示；免打扰下课自动恢复，首次需系统授权",
-    )
     val beforeClassQuickActionAutoTitle = ArbText("liveBeforeClassQuickActionAutoTitle", "自动执行")
-    val beforeClassQuickActionAutoSubtitle = ArbText("liveBeforeClassQuickActionAutoSubtitle", "上课前自动开启，下课后恢复")
     val beforeClassQuickActionAutoOptionOff = ArbText("liveBeforeClassQuickActionAutoOptionOff", "不自动执行")
     val beforeClassQuickActionAutoOptionMinutes = ArbText("liveBeforeClassQuickActionAutoOptionMinutes", "上课前 {minutes} 分钟")
 
@@ -47,13 +41,11 @@ object DisplaySettingsStrings {
     val miuiLabelContentLabel = ArbText("liveMiuiLabelContentLabel", "左侧文字内容")
     val miuiLabelStyleLabel = ArbText("liveMiuiLabelStyleLabel", "左侧图标样式")
     val miuiLabelLogoTitle = ArbText("liveMiuiLabelLogoTitle", "左侧图标 Logo")
-    val miuiLabelLogoSubtitle = ArbText("liveMiuiLabelLogoSubtitle", "未设置时用应用图标")
     val selectImageAction = ArbText("selectImageAction", "选择图片")
     val replaceImageAction = ArbText("replaceImageAction", "更换图片")
     val deleteAction = ArbText("deleteAction", "删除")
     val miuiLabelLogoCornerRadiusLabel = ArbText("liveMiuiLabelLogoCornerRadiusLabel", "左侧图标圆角 {value}")
     val miuiLabelAdvancedAccordionTitle = ArbText("liveMiuiLabelAdvancedAccordionTitle", "文字排版与位置微调")
-    val miuiLabelAdvancedAccordionSubtitle = ArbText("liveMiuiLabelAdvancedAccordionSubtitle", "字号、水平/垂直偏移、粗细与清晰度")
     val miuiLabelFontSizeLabel = ArbText("liveMiuiLabelFontSizeLabel", "左侧文字大小 {value}")
     val miuiLabelOffsetXLabel = ArbText("liveMiuiLabelOffsetXLabel", "左侧文字水平偏移 {value}")
     val miuiLabelOffsetYLabel = ArbText("liveMiuiLabelOffsetYLabel", "左侧文字垂直偏移 {value}")
@@ -94,7 +86,7 @@ object DisplaySettingsStrings {
     /** 学期未配置时的副句，同样复用 ARB 原句。 */
     val islandPreviewSemesterUnsetHint =
         ArbText("pleaseSetSemesterStartDate", "请先在课表设置里填写开学日期")
-    val islandPreviewFollowBadge = ArbText("liveIslandPreviewFollowBadge", "跟随课前提醒设置，修改课前提醒即生效")
+    val islandPreviewFollowBadge = ArbText("liveIslandPreviewFollowBadge", "跟随课前提醒设置")
     val stagePreviewBeforeClassAction = ArbText("liveStagePreviewBeforeClassAction", "试弹上课前岛")
     val stagePreviewDuringClassAction = ArbText("liveStagePreviewDuringClassAction", "试弹课中岛")
     val stagePreviewStopAction = ArbText("liveTestingCourseTestStopAction", "停止测试")
@@ -217,11 +209,8 @@ object DisplaySettingsStrings {
         courseNameDuplicatedHint,
         locationDuplicatedHint,
         countdownFormatLabel,
-        countdownFormatHelp,
         beforeClassQuickActionTitle,
-        beforeClassQuickActionSubtitle,
         beforeClassQuickActionAutoTitle,
-        beforeClassQuickActionAutoSubtitle,
         beforeClassQuickActionAutoOptionOff,
         beforeClassQuickActionAutoOptionMinutes,
         islandVisualTitle,
@@ -230,13 +219,11 @@ object DisplaySettingsStrings {
         miuiLabelContentLabel,
         miuiLabelStyleLabel,
         miuiLabelLogoTitle,
-        miuiLabelLogoSubtitle,
         selectImageAction,
         replaceImageAction,
         deleteAction,
         miuiLabelLogoCornerRadiusLabel,
         miuiLabelAdvancedAccordionTitle,
-        miuiLabelAdvancedAccordionSubtitle,
         miuiLabelFontSizeLabel,
         miuiLabelOffsetXLabel,
         miuiLabelOffsetYLabel,

@@ -27,6 +27,13 @@ data class ReminderTimingState(
     val liveShowBeforeClassMinutes: Int = 20,
     /** 「下课前秒级阈值」（Dart `liveEndSecondsCountdownThreshold`，默认 60，取值见 [ReminderTimingLogic.END_SECONDS_OPTIONS]）。 */
     val liveEndSecondsCountdownThreshold: Int = 60,
+    /**
+     * 「铃声时间矫正」秒数（Dart `liveTimeCorrectionSeconds`，默认 0）。
+     *
+     * 正数 = 整体延后（铃声比课表慢），负数 = 整体提前（铃声比课表快），
+     * 合法区间见 [ReminderTimingLogic.TIME_CORRECTION_MIN]..[ReminderTimingLogic.TIME_CORRECTION_MAX]。
+     */
+    val liveTimeCorrectionSeconds: Int = 0,
     /** 「课中时间样式」（Dart `liveDuringEndTimeDisplayMode`，默认 nearest）。 */
     val liveDuringEndTimeDisplayMode: LiveDuringClassTimeDisplayMode =
         LiveDuringClassTimeDisplayMode.NEAREST,
@@ -98,6 +105,15 @@ object ReminderTimingLogic {
 
     /** 上课前弹出时间的合法闭区间上界。 */
     const val BEFORE_CLASS_MINUTES_MAX: Int = 60
+
+    /** 「铃声时间矫正」可调下界（Dart `_timeCorrectionMin`，`live_settings_subpages.dart:107`）。 */
+    const val TIME_CORRECTION_MIN: Int = -30
+
+    /** 「铃声时间矫正」可调上界（Dart `_timeCorrectionMax`，`:108`）。 */
+    const val TIME_CORRECTION_MAX: Int = 30
+
+    /** 滑杆的区间数（Dart `divisions: (max - min).round()`，`:267` ⇒ 60）。 */
+    const val TIME_CORRECTION_DIVISIONS: Int = TIME_CORRECTION_MAX - TIME_CORRECTION_MIN
 
     /**
      * 「课中与下课提醒」开关的显示值 / 生效判据：
@@ -179,6 +195,15 @@ object ReminderTimingLogic {
         value.coerceIn(BEFORE_CLASS_MINUTES_MIN, BEFORE_CLASS_MINUTES_MAX)
 
     /**
+     * 「铃声时间矫正」的区间 clamp（口径 −30..30）。
+     *
+     * 与三个下拉的「贴选项」不同：滑杆本来就是连续整数档，越界值夹到端点即可
+     * （Dart 侧靠滑杆自身 min/max 约束，读盘老数据可能越界）。
+     */
+    fun clampTimeCorrectionSeconds(value: Int): Int =
+        value.coerceIn(TIME_CORRECTION_MIN, TIME_CORRECTION_MAX)
+
+    /**
      * 把任意整数贴到最近的合法选项上（下拉只能选这些值，落库值若越界会让下拉选空）。
      *
      * 命中直接返回；否则取绝对差最小的选项；**并列时取较小者**（选项升序 + `minByOrNull`
@@ -215,5 +240,7 @@ object ReminderTimingLogic {
             snapBeforeClassMinutes(state.liveShowBeforeClassMinutes),
         liveEndSecondsCountdownThreshold =
             snapEndSecondsThreshold(state.liveEndSecondsCountdownThreshold),
+        liveTimeCorrectionSeconds =
+            clampTimeCorrectionSeconds(state.liveTimeCorrectionSeconds),
     )
 }

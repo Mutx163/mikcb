@@ -79,6 +79,7 @@ class LiveDisplayStoreTest {
         assertEquals(20, loaded.liveShowBeforeClassMinutes)
         assertEquals(0, loaded.liveClassReminderStartMinutes)
         assertEquals(60, loaded.liveEndSecondsCountdownThreshold)
+        assertEquals(0, loaded.liveTimeCorrectionSeconds)
     }
 
     // ==========================================================
@@ -140,6 +141,7 @@ class LiveDisplayStoreTest {
             livePromoteDuringClass = false,
             liveShowBeforeClassMinutes = 40,
             liveEndSecondsCountdownThreshold = 15,
+            liveTimeCorrectionSeconds = -12,
             liveDuringEndTimeDisplayMode = LiveDuringClassTimeDisplayMode.TOTAL,
         )
 
@@ -371,6 +373,7 @@ class LiveDisplayStoreTest {
             "livePromoteDuringClass",
             "liveShowBeforeClassMinutes",
             "liveEndSecondsCountdownThreshold",
+            "liveTimeCorrectionSeconds",
             "liveDuringEndTimeDisplayMode",
         )
 
