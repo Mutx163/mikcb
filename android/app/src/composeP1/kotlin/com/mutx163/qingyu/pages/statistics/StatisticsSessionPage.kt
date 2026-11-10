@@ -29,6 +29,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.mutx163.qingyu.components.QingyuCard
+import com.mutx163.qingyu.components.QingyuEmptyState
 import com.mutx163.qingyu.components.QingyuPageCardMargin
 import com.mutx163.qingyu.components.QingyuPageList
 import com.mutx163.qingyu.components.QingyuPageScaffold
@@ -90,27 +91,12 @@ fun StatisticsSessionPage(
                     .padding(innerPadding),
                 contentAlignment = Alignment.Center,
             ) {
-                Column(
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.spacedBy(8.dp),
-                ) {
-                    Icon(
-                        imageVector = MiuixIcons.TopDownloads,
-                        contentDescription = null,
-                        tint = Color(QingyuTheme.secondaryText(dark)),
-                        modifier = Modifier.size(40.dp),
-                    )
-                    Text(
-                        text = viewState.emptyTitle,
-                        style = MiuixTheme.textStyles.body1,
-                        color = Color(QingyuTheme.primaryText(dark)),
-                    )
-                    Text(
-                        text = viewState.emptySubtitle,
-                        style = MiuixTheme.textStyles.footnote1,
-                        color = Color(QingyuTheme.secondaryText(dark)),
-                    )
-                }
+                // 方案 C08：图标 40→48、标题 body1→17N 收进共享件（观感变化在预览里看一屏）。
+                QingyuEmptyState(
+                    icon = MiuixIcons.TopDownloads,
+                    title = viewState.emptyTitle,
+                    description = viewState.emptySubtitle,
+                )
             }
             return@QingyuPageScaffold
         }

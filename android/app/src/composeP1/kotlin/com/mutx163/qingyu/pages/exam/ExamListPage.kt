@@ -27,12 +27,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import com.mutx163.qingyu.components.QingyuCard
+import com.mutx163.qingyu.components.QingyuEmptyState
 import com.mutx163.qingyu.components.QingyuPageList
 import com.mutx163.qingyu.components.QingyuPageScaffold
 import com.mutx163.qingyu.components.QingyuSectionTitle
@@ -55,6 +55,7 @@ import top.yukonga.miuix.kmp.icon.extended.ChevronForward
 import top.yukonga.miuix.kmp.icon.extended.Delete
 import top.yukonga.miuix.kmp.icon.extended.Location
 import top.yukonga.miuix.kmp.icon.extended.Months
+import top.yukonga.miuix.kmp.icon.extended.ContactsBook
 import top.yukonga.miuix.kmp.icon.extended.Notes
 import top.yukonga.miuix.kmp.icon.extended.Timer
 import top.yukonga.miuix.kmp.overlay.OverlayDialog
@@ -117,7 +118,20 @@ fun ExamListPage(
         ) {
                 if (viewState.isEmpty) {
                     item {
-                        ExamEmptyState(dark = dark, onAddExam = onAddExam)
+                        // 方案 C02：几何/字阶收进共享件；图标按 §7.2 统一 `ContactsBook`
+                        //（与课程总览同源 Dart `school_outlined`，miuix 无学校字形，取语义更近者）。
+                        QingyuEmptyState(
+                            icon = MiuixIcons.ContactsBook,
+                            title = ExamStrings.noExams.text,
+                            action = {
+                                Button(
+                                    onClick = onAddExam,
+                                    colors = ButtonDefaults.buttonColorsPrimary(),
+                                ) {
+                                    Text(text = ExamStrings.addExam.text)
+                                }
+                            },
+                        )
                     }
                 } else {
                     val overview = viewState.overview
@@ -207,42 +221,6 @@ fun ExamListPage(
             ) {
                 Text(text = ExamStrings.deleteAction.text)
             }
-        }
-    }
-}
-
-/**
- * 空态：与 App 其它页（`TaskEmptyState` / `CourseOverviewEmptyState`）统一——
- * 居中 图标(48) + 主标题(headline1) + 主操作按钮，不再套一张大卡片（Flutter v2.1.4.1
- * `exam_list_screen.dart:102-115` 是 `Center(HyperosEmptyState(icon,title,action))`）。
- */
-@Composable
-private fun ExamEmptyState(dark: Boolean, onAddExam: () -> Unit) {
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 32.dp, vertical = 48.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-    ) {
-        Icon(
-            imageVector = MiuixIcons.Notes,
-            contentDescription = null,
-            tint = Color(QingyuTheme.secondaryText(dark)),
-            modifier = Modifier.size(48.dp),
-        )
-        Spacer(modifier = Modifier.height(16.dp))
-        Text(
-            text = ExamStrings.noExams.text,
-            style = MiuixTheme.textStyles.headline1,
-            color = Color(QingyuTheme.primaryText(dark)),
-            textAlign = TextAlign.Center,
-        )
-        Spacer(modifier = Modifier.height(20.dp))
-        Button(
-            onClick = onAddExam,
-            colors = ButtonDefaults.buttonColorsPrimary(),
-        ) {
-            Text(text = ExamStrings.addExam.text)
         }
     }
 }

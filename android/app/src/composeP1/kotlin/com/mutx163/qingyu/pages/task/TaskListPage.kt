@@ -19,7 +19,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.state.ToggleableState
@@ -31,6 +30,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import com.mutx163.qingyu.components.QingyuCard
+import com.mutx163.qingyu.components.QingyuEmptyState
 import com.mutx163.qingyu.components.QingyuGlassIconButton
 import com.mutx163.qingyu.components.QingyuPageCardMargin
 import com.mutx163.qingyu.components.QingyuPageList
@@ -47,7 +47,6 @@ import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.IconButton
 import top.yukonga.miuix.kmp.basic.TabRowWithContour
 import top.yukonga.miuix.kmp.basic.Text
-import top.yukonga.miuix.kmp.basic.TextButton
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.Add
 import top.yukonga.miuix.kmp.icon.extended.ContactsBook
@@ -182,11 +181,22 @@ fun TaskListPage(
 
             if (viewState.isEmpty) {
                 // ── 3. 空态（Dart `:67-75`、`hyperos_empty_state.dart:7`） ──
+                // 几何/字阶收进共享件（方案 C01）：48dp 图标 + 17sp 标题 + 20dp + 主操作按钮。
                 item {
-                    TaskEmptyState(
+                    QingyuEmptyState(
+                        icon = MiuixIcons.Tasks,
                         title = viewState.emptyTitle,
-                        dark = dark,
-                        onAddTask = onAddTask,
+                        action = {
+                            // Dart `task_list_screen.dart:71-74`：空态 CTA 是 `HyperosButton` 默认
+                            // variant = primary 蓝底实心；官方默认 `buttonColors()` 灰底在页底
+                            // #F2F2F2 上对比比 ~1.02（融进背景），主操作必须显式按主操作配色。
+                            Button(
+                                onClick = onAddTask,
+                                colors = ButtonDefaults.buttonColorsPrimary(),
+                            ) {
+                                Text(text = TaskStrings.addTask)
+                            }
+                        },
                     )
                 }
             } else {
@@ -279,24 +289,33 @@ fun TaskListPage(
             // （`hyperos_dialog.dart:162`）。
             horizontalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            TextButton(
+            // 取消键：官方 secondary 实心按钮——发布版对话框两个动作都是 `HyperosButton`
+            // （`_HyperosDialogActions`），不是文字钮。
+            Button(
                 modifier = Modifier.weight(1f),
-                text = TaskStrings.cancelAction,
                 onClick = { pendingDelete = null },
-            )
-            TextButton(
+                colors = ButtonDefaults.buttonColors(),
+            ) {
+                Text(text = TaskStrings.cancelAction)
+            }
+            // 删除是危险动作：**对话框**里发布版 `destructive: true`
+            // （`task_list_screen.dart:297-305`）映射成 `HyperosButtonVariant.destructive`
+            // ⇒ **实心 error 底 + onError 字**（`hyperos_controls.dart:724-729`）。
+            // 淡红「水洗底」只属磨砂 sheet 按钮（同文件 `:817-846`），对话框别套那套。
+            Button(
                 modifier = Modifier.weight(1f),
-                text = TaskStrings.deleteAction,
-                colors = ButtonDefaults.textButtonColors(
-                    // 危险色只染**字**（`color` 是底色，传错就是「红底 + 默认灰字」）。
-                    textColor = Color(QingyuTheme.error(dark)),
-                ),
                 onClick = {
                     val target = pendingDelete
                     pendingDelete = null
                     if (target != null) onDeleteTask(target)
                 },
-            )
+                colors = ButtonDefaults.buttonColors(
+                    color = MiuixTheme.colorScheme.error,
+                    contentColor = MiuixTheme.colorScheme.onError,
+                ),
+            ) {
+                Text(text = TaskStrings.deleteAction)
+            }
         }
     }
 }
@@ -359,57 +378,6 @@ private fun TaskCourseFilterRow(
             },
             onClick = onClick,
         )
-    }
-}
-
-/**
- * 空态（A3）。
- *
- * Dart `HyperosEmptyState`（`lib/ui/hyperos/hyperos_empty_state.dart:7-54`）：
- * **图标 + 标题 +（可选副标题）+（可选）动作按钮**，整块不是卡片，四边留白
- * 横向 32 / 纵向 48，图标 48dp，图标与标题之间 16dp，标题与按钮之间 20dp。
- *
- * 图标：Dart 用 `Icons.task_alt_outlined`（圆底对勾）。miuix 图标集里没有同形的
- * 「圈内对勾」，取语义最近的 `MiuixIcons.Tasks`（任务清单），已核对存在于
- * `miuix-icons` 源码（`icon/extended/Tasks.kt:15`），同族先例 `CourseActionSheet.kt:377`。
- */
-@Composable
-private fun TaskEmptyState(
-    title: String,
-    dark: Boolean,
-    onAddTask: () -> Unit,
-) {
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 32.dp, vertical = 48.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-    ) {
-        Icon(
-            imageVector = MiuixIcons.Tasks,
-            contentDescription = null,
-            // Dart 用 onSurfaceVariantSummary（＝次级文字墨）。
-            tint = Color(QingyuTheme.secondaryText(dark)),
-            modifier = Modifier.size(48.dp),
-        )
-        Spacer(modifier = Modifier.height(16.dp))
-        Text(
-            text = title,
-            // Dart `HyperosTypography.title` = 17sp 常规字重 ⇒ 官方 headline1（17sp）。
-            style = MiuixTheme.textStyles.headline1,
-            color = Color(QingyuTheme.primaryText(dark)),
-            textAlign = TextAlign.Center,
-        )
-        Spacer(modifier = Modifier.height(20.dp))
-        // Dart `task_list_screen.dart:71-74`：空态 CTA 是 `HyperosButton` 默认 variant
-        // = primary 蓝底实心；官方默认 `buttonColors()` 灰底在页底 #F2F2F2 上对比比
-        // ~1.02（融进背景），主操作必须显式按主操作配色。
-        Button(
-            onClick = onAddTask,
-            colors = ButtonDefaults.buttonColorsPrimary(),
-        ) {
-            Text(text = TaskStrings.addTask)
-        }
     }
 }
 

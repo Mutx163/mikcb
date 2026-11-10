@@ -36,25 +36,29 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.mutx163.qingyu.components.QingyuCard
+import com.mutx163.qingyu.components.QingyuEmptyState
+import com.mutx163.qingyu.components.QingyuPageCardMargin
 import com.mutx163.qingyu.components.QingyuPageList
 import com.mutx163.qingyu.components.QingyuPageScaffold
 import com.mutx163.qingyu.components.QingyuPageTheme
+import com.mutx163.qingyu.components.QingyuSectionTitle
+import com.mutx163.qingyu.pages.settings.SettingsStringsExt4
 import com.mutx163.qingyu.theme.QingyuTheme
 import top.yukonga.miuix.kmp.basic.Icon
-import top.yukonga.miuix.kmp.basic.IconButton
-import top.yukonga.miuix.kmp.basic.SmallTitle
+import top.yukonga.miuix.kmp.basic.InputField
+import top.yukonga.miuix.kmp.basic.SearchBarDefaults
 import top.yukonga.miuix.kmp.basic.Text
-import top.yukonga.miuix.kmp.basic.TextField
 import top.yukonga.miuix.kmp.icon.MiuixIcons
+import top.yukonga.miuix.kmp.icon.basic.Search
+import top.yukonga.miuix.kmp.icon.basic.SearchCleanup
+import top.yukonga.miuix.kmp.icon.extended.Search as ExtendedSearch
 import top.yukonga.miuix.kmp.icon.extended.ChevronForward
-import top.yukonga.miuix.kmp.icon.extended.Clear
 import top.yukonga.miuix.kmp.icon.extended.Create
 import top.yukonga.miuix.kmp.icon.extended.Edit
 import top.yukonga.miuix.kmp.icon.extended.GridView
 import top.yukonga.miuix.kmp.icon.extended.Image
 import top.yukonga.miuix.kmp.icon.extended.Info
 import top.yukonga.miuix.kmp.icon.extended.ListView
-import top.yukonga.miuix.kmp.icon.extended.Search
 import top.yukonga.miuix.kmp.icon.extended.Settings
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
@@ -120,53 +124,70 @@ fun MiuixShowcasePage(
             QingyuPageList(
                 innerPadding = innerPadding,
                 scrollBehavior = scrollBehavior,
-                contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 12.dp, bottom = 12.dp),
+                // 官方配方：页面横向 0，留白由每个块自己带（卡片 12dp）——
+                // 与分类详情页（MiuixShowcaseSubpages）同一套刻度。
+                // 滚动条位置与此无关：miuix 竖条只用 trackPadding 的上下两个值，
+                // 左右两个值不参与定位。
+                horizontalPadding = QingyuPageCardMargin,
+                contentPadding = PaddingValues(top = 12.dp, bottom = 24.dp),
                 verticalArrangement = Arrangement.spacedBy(12.dp),
             ) {
-                // 1. 搜索框
-                item {
-                    QingyuCard(
+                // 1. 搜索框：miuix 官方 `InputField` 胶囊（45dp、surfaceContainerHigh、
+                // 左右 16/8 图标位），不再套卡片、也不自拼 Row+TextField。
+                item(key = "search") {
+                    InputField(
+                        query = searchQuery,
+                        onQueryChange = { searchQuery = it },
+                        // 输入即筛，没有独立提交动作（回车只收键盘）。
+                        onSearch = { },
+                        expanded = false,
+                        onExpandedChange = { },
                         modifier = Modifier.fillMaxWidth(),
-                        insideMargin = PaddingValues(horizontal = 12.dp, vertical = 6.dp),
-                    ) {
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
+                        label = ShowcaseStrings.showcaseSearchHint.text,
+                        // 默认放大镜的朗读文案是库里的英文 "Search"；输入框已有 label，
+                        // 图标纯装饰 ⇒ 交回正文朗读。
+                        leadingIcon = {
                             Icon(
-                                imageVector = MiuixIcons.Search,
+                                imageVector = MiuixIcons.Basic.Search,
                                 contentDescription = null,
-                                tint = Color(QingyuTheme.secondaryText(dark)),
-                                modifier = Modifier.size(20.dp)
+                                tint = MiuixTheme.colorScheme.onSurfaceContainerHigh,
+                                modifier = Modifier.padding(
+                                    start = SearchBarDefaults.LeadingIconStartPadding,
+                                    end = SearchBarDefaults.LeadingIconEndPadding,
+                                ),
                             )
-                            Spacer(modifier = Modifier.width(8.dp))
-                            TextField(
-                                value = searchQuery,
-                                onValueChange = { searchQuery = it },
-                                label = ShowcaseStrings.showcaseSearchHint.text,
-                                modifier = Modifier.weight(1f)
-                            )
-                            if (searchQuery.isNotEmpty()) {
-                                IconButton(onClick = { searchQuery = "" }) {
-                                    Icon(
-                                        imageVector = MiuixIcons.Clear,
-                                        contentDescription = "清空",
-                                        tint = Color(QingyuTheme.secondaryText(dark)),
-                                        modifier = Modifier.size(18.dp)
-                                    )
-                                }
+                        },
+                        // 清空键：44dp 触区、start 8 / end 16、无涟漪；文案复用全站「清空」。
+                        trailingIcon = {
+                            AnimatedVisibility(
+                                visible = searchQuery.isNotEmpty(),
+                                enter = fadeIn(),
+                                exit = fadeOut(),
+                            ) {
+                                Icon(
+                                    imageVector = MiuixIcons.Basic.SearchCleanup,
+                                    contentDescription = SettingsStringsExt4.clearSearchAction.text,
+                                    tint = MiuixTheme.colorScheme.onSurface,
+                                    modifier = Modifier
+                                        .size(44.dp)
+                                        .padding(start = 8.dp, end = 16.dp)
+                                        .clickable(interactionSource = null, indication = null) {
+                                            searchQuery = ""
+                                        },
+                                )
                             }
-                        }
-                    }
+                        },
+                    )
                 }
 
                 // 2. 搜索历史（当搜索词为空时展示）
                 if (searchQuery.isEmpty() && searchHistory.isNotEmpty()) {
-                    item {
+                    item(key = "history") {
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .padding(horizontal = 4.dp, vertical = 2.dp),
+                                // 列表 12 + 16 = 28：与下面卡片里首列文字同一条轴线。
+                                .padding(horizontal = 16.dp),
                             horizontalArrangement = Arrangement.SpaceBetween,
                             verticalAlignment = Alignment.CenterVertically
                         ) {
@@ -185,8 +206,10 @@ fun MiuixShowcasePage(
                                 }
                             )
                         }
-                        Spacer(modifier = Modifier.height(6.dp))
+                        Spacer(modifier = Modifier.height(8.dp))
+                        // 胶囊与标题同一条左缘（另外让出 16dp 时，标签会比标题缩进一格）。
                         FlowRow(
+                            modifier = Modifier.padding(horizontal = 16.dp),
                             horizontalArrangement = Arrangement.spacedBy(8.dp),
                             verticalArrangement = Arrangement.spacedBy(8.dp)
                         ) {
@@ -210,8 +233,8 @@ fun MiuixShowcasePage(
                 }
 
                 // 3. 统计计数
-                item {
-                    SmallTitle(
+                item(key = "count") {
+                    QingyuSectionTitle(
                         text = if (searchQuery.isEmpty()) {
                             ShowcaseStrings.showcaseCategoryCountLabel.filled(
                                 "count",
@@ -219,25 +242,20 @@ fun MiuixShowcasePage(
                             )
                         } else {
                             "检索结果 (${filteredEntries.size})"
-                        }
+                        },
+                        // 列表 12 + 16 = 28：与卡片内容左缘对齐（默认 28 会变成 40）。
+                        insideMargin = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
                     )
                 }
 
-                // 4. 空态提示
+                // 4. 空态提示：改调共享空态组件（C37）——示例页自己先用上，顺带自证
+                // 尺寸/字阶/墨色一套（48dp 图标 + 17sp 标题），不再自拼 Box + 灰字。
                 if (filteredEntries.isEmpty()) {
-                    item {
-                        Box(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(vertical = 40.dp),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Text(
-                                text = ShowcaseStrings.showcaseSearchNoResults.text,
-                                style = MiuixTheme.textStyles.body2,
-                                color = Color(QingyuTheme.secondaryText(dark))
-                            )
-                        }
+                    item(key = "empty") {
+                        QingyuEmptyState(
+                            icon = MiuixIcons.Info,
+                            title = ShowcaseStrings.showcaseSearchNoResults.text,
+                        )
                     }
                 }
 
@@ -296,7 +314,7 @@ private fun ShowcaseEntryCard(
                     "gridView" -> MiuixIcons.GridView
                     "info" -> MiuixIcons.Info
                     "image" -> MiuixIcons.Image
-                    "search" -> MiuixIcons.Search
+                    "search" -> MiuixIcons.ExtendedSearch
                     else -> MiuixIcons.Settings
                 }
                 Icon(
@@ -384,4 +402,17 @@ private fun PreviewMiuixShowcaseDark() {
 @Composable
 private fun PreviewMiuixShowcaseLargeText() {
     PreviewMiuixShowcasePage(textScale = 1.3f)
+}
+
+// ── 整页档（2000dp）────────────────────────────────────────────────────────
+//
+// 本页是 13 类组件的长目录，900dp 一屏只能看到前三四张卡；整页档给 2000dp，
+// 用来检查「搜索框 → 历史标签 → 计数标题 → 13 张分类卡」的整页节奏与末项留白。
+// 原 900 档保留：900 看首屏，2000 看整页。
+
+@Suppress("unused")
+@Preview(name = "4 整页", showBackground = true, widthDp = 400, heightDp = 2000)
+@Composable
+private fun PreviewMiuixShowcaseFullPage() {
+    PreviewMiuixShowcasePage()
 }

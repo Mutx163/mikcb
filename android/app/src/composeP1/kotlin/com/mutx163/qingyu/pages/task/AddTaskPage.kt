@@ -33,8 +33,9 @@ import com.mutx163.qingyu.components.QingyuPageList
 import com.mutx163.qingyu.components.QingyuPageScaffold
 import com.mutx163.qingyu.components.QingyuPageTheme
 import com.mutx163.qingyu.theme.QingyuTheme
+import top.yukonga.miuix.kmp.basic.Button
+import top.yukonga.miuix.kmp.basic.ButtonDefaults
 import top.yukonga.miuix.kmp.basic.Text
-import top.yukonga.miuix.kmp.basic.TextButton
 import top.yukonga.miuix.kmp.basic.TextField
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.Delete
@@ -380,24 +381,32 @@ fun AddTaskPage(
             // （`hyperos_dialog.dart:162`）。
             horizontalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            TextButton(
+            // 取消键：官方 secondary 实心按钮——发布版对话框两个动作都是 `HyperosButton`
+            // （`_HyperosDialogActions`），不是文字钮。
+            Button(
                 modifier = Modifier.weight(1f),
-                text = TaskStrings.cancelAction,
                 onClick = { showDeleteConfirm = false },
-            )
-            TextButton(
+                colors = ButtonDefaults.buttonColors(),
+            ) {
+                Text(text = TaskStrings.cancelAction)
+            }
+            // 删除是危险动作：**对话框**里发布版 `destructive: true`
+            // （`add_task_screen.dart:341-349`）映射成 `HyperosButtonVariant.destructive`
+            // ⇒ **实心 error 底 + onError 字**（`hyperos_controls.dart:724-729`）。
+            // 淡红「水洗底」只属磨砂 sheet 按钮（同文件 `:817-846`），对话框别套那套。
+            Button(
                 modifier = Modifier.weight(1f),
-                text = TaskStrings.deleteAction,
-                colors = top.yukonga.miuix.kmp.basic.ButtonDefaults.textButtonColors(
-                    // 危险色只染**字**：`color` 是底色，传错会变成「红底 + 默认灰字」
-                    //（对比度坏，也不是 Dart `destructive` 变体的观感）。
-                    textColor = Color(QingyuTheme.error(dark)),
-                ),
                 onClick = {
                     showDeleteConfirm = false
                     onDelete?.invoke()
                 },
-            )
+                colors = ButtonDefaults.buttonColors(
+                    color = MiuixTheme.colorScheme.error,
+                    contentColor = MiuixTheme.colorScheme.onError,
+                ),
+            ) {
+                Text(text = TaskStrings.deleteAction)
+            }
         }
     }
 }

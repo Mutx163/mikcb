@@ -24,6 +24,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.mutx163.qingyu.components.QingyuCard
+import com.mutx163.qingyu.components.QingyuEmptyState
 import com.mutx163.qingyu.components.QingyuWeightDelta
 import com.mutx163.qingyu.components.shiftWeight
 import com.mutx163.qingyu.pages.statistics.StatisticsAnalysisModel.AnalysisCardRole
@@ -43,6 +44,7 @@ import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.ChevronForward
+import top.yukonga.miuix.kmp.icon.extended.Report
 import top.yukonga.miuix.kmp.icon.extended.TopDownloads
 
 /**
@@ -89,13 +91,20 @@ fun StatisticsAnalysisPage(
     // 所以本页不再需要 `QingyuPageTheme { Scaffold { TopAppBar } }` 那一套手写组合。
     QingyuPageScaffold(title = viewState.title, onBack = onBack) {
         if (!viewState.hasData) {
-            EmptyState(
-                title = viewState.emptyTitle,
-                subtitle = viewState.emptySubtitle,
+            // 方案 C07：几何/字阶收进共享件（发布版 `statistics_analysis_screen.dart:57` 就是
+            // `HyperosEmptyState(icon: analytics_outlined, title, subtitle)`）。
+            Box(
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(innerPadding),
-            )
+                contentAlignment = Alignment.Center,
+            ) {
+                QingyuEmptyState(
+                    icon = MiuixIcons.Report,
+                    title = viewState.emptyTitle,
+                    description = viewState.emptySubtitle,
+                )
+            }
         } else {
             // 官方页面骨架：LazyColumn + 滚动条 + 末端触感（见 QingyuPageList 注释）
             QingyuPageList(
@@ -391,35 +400,6 @@ private fun MutedLine(text: String) {
     Text(text = text, style = MiuixTheme.textStyles.body2, color = Color(QingyuTheme.secondaryText(dark)))
 }
 
-/** 空态（Dart `HyperosEmptyState`：图标 + 标题 + 副标题，整页居中）。 */
-@Composable
-private fun EmptyState(title: String, subtitle: String, modifier: Modifier = Modifier) {
-    val dark = isSystemInDarkTheme()
-    Box(modifier = modifier, contentAlignment = Alignment.Center) {
-        Column(
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(8.dp),
-        ) {
-            Icon(
-                imageVector = MiuixIcons.TopDownloads,
-                contentDescription = null,
-                tint = Color(QingyuTheme.secondaryText(dark)),
-                modifier = Modifier.size(40.dp),
-            )
-            Text(
-                text = title,
-                style = MiuixTheme.textStyles.body1,
-                color = Color(QingyuTheme.primaryText(dark)),
-            )
-            Text(
-                text = subtitle,
-                style = MiuixTheme.textStyles.footnote1,
-                color = Color(QingyuTheme.secondaryText(dark)),
-            )
-        }
-    }
-}
-
 // ── 预览 ──────────────────────────────────────────────────────────────────────
 //
 // 六张卡的读数不手写：调 `StatisticsAnalysisModel.analysisViewState(...)`，它内部又走
@@ -546,4 +526,25 @@ private fun PreviewAnalysisDark() {
 @Composable
 private fun PreviewAnalysisLargeText() {
     PreviewAnalysisBody(previewAnalysisState("趋势"), textScale = 1.3f)
+}
+
+// ── 整页：1600 高画布，看全 900 档裁掉的后半段（20 周热力图）─────────────────
+
+/**
+ * 整页档（2026-11-10，用户点名「900 一屏，热力图等后半段在预览里全被裁掉」）。
+ *
+ * 900 档只画到每周课时趋势图，整块 20 周热力图落在画布外；这一档给 1600dp 高画布：
+ * Studio 里等比缩小看**整页结构**，切「实际大小」可滚看细节。原 1~6 档全部保留。
+ *
+ * 预览名按全仓口径用中文（Chief 2026-11-10 裁决：全仓既有中文名、基线按此登记）：
+ * `@Preview(name = …)` 是 IDE 里的标签、**不是屏上文案**，但它会被 `CjkLiteralGateTest`
+ * 按**出现次数**计入 composeP1 棘轮，所以本档带来的 +1 条增量已在
+ * `cjk-literal-baseline.txt` 登记并注明理由。状态串仍用 ASCII（那是分支逻辑不是文案）：
+ * `previewAnalysisState` 的 else 分支 = TREND（趋势图 + 热力图，本页最长的一档）。
+ */
+@Suppress("unused")
+@Preview(name = "7 整页 1600", showBackground = true, widthDp = 400, heightDp = 1600)
+@Composable
+private fun PreviewAnalysisFullPage() {
+    PreviewAnalysisBody(previewAnalysisState("trend"))
 }

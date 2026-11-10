@@ -44,6 +44,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.mutx163.qingyu.components.QingyuCard
+import com.mutx163.qingyu.components.QingyuEmptyState
 import com.mutx163.qingyu.components.QingyuPageCardMargin
 import com.mutx163.qingyu.components.QingyuPageList
 import com.mutx163.qingyu.components.QingyuPageScaffold
@@ -175,11 +176,17 @@ fun CourseStatisticsPage(
     ) {
         if (!viewState.hasData) {
             // 空态自己不吃内边距，这里补一层，免得内容钻到顶栏底下。
-            Box(modifier = Modifier.fillMaxSize().padding(innerPadding)) {
-                StatisticsEmptyState(
+            // 方案 C09：发布版 `course_statistics_screen.dart:336-345` 走共享构件（17/14）。
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(innerPadding),
+                contentAlignment = Alignment.Center,
+            ) {
+                QingyuEmptyState(
+                    icon = MiuixIcons.Report,
                     title = viewState.emptyTitle,
-                    hint = viewState.emptyHint,
-                    dark = dark,
+                    description = viewState.emptyHint,
                 )
             }
         } else {
@@ -332,41 +339,6 @@ fun CourseStatisticsPage(
                 showWeekPicker = false
                 if (week != viewState.selectedWeek) onWeekChanged(week)
             },
-        )
-    }
-}
-
-// ── 空态 ──
-
-@Composable
-private fun StatisticsEmptyState(title: String, hint: String, dark: Boolean) {
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(32.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center,
-    ) {
-        // Dart `HyperosEmptyState(icon: analytics_outlined)`：48dp 图标 + 16dp 间距。
-        Icon(
-            imageVector = MiuixIcons.Report,
-            contentDescription = null,
-            tint = Color(QingyuTheme.secondaryText(dark)),
-            modifier = Modifier.size(48.dp),
-        )
-        Text(
-            text = title,
-            style = MiuixTheme.textStyles.body1.shiftWeight(QingyuWeightDelta.MEDIUM),
-            color = Color(QingyuTheme.primaryText(dark)),
-            textAlign = TextAlign.Center,
-            modifier = Modifier.padding(top = 16.dp),
-        )
-        Text(
-            text = hint,
-            style = MiuixTheme.textStyles.footnote1,
-            color = Color(QingyuTheme.secondaryText(dark)),
-            textAlign = TextAlign.Center,
-            modifier = Modifier.padding(top = 8.dp),
         )
     }
 }
@@ -1170,6 +1142,28 @@ private fun PreviewCourseStatisticsDark() {
 @Composable
 private fun PreviewCourseStatisticsLargeText() {
     PreviewCourseStatisticsBody(previewStatsState("学期视图"), textScale = 1.3f)
+}
+
+// ── 整页：1600 高画布，看全 900 档裁掉的后半段（成就 / 故事 / 每日分布）──────────
+
+/**
+ * 整页档（2026-11-10，用户点名「900 一屏，后半段在预览里全被裁掉」）。
+ *
+ * 900 档只画到「周对比」，成就格、故事列表、每日分布柱图都落在画布外；这一档给
+ * 1600dp 高画布：Studio 里等比缩小看**整页结构**，切「实际大小」可滚看细节。
+ * 原 1~5 档全部保留（1:1 看单块细节用）。
+ *
+ * 预览名按全仓口径用中文（Chief 2026-11-10 裁决：全仓既有中文名、基线按此登记）：
+ * `@Preview(name = …)` 是 IDE 里的标签、**不是屏上文案**，但它会被 `CjkLiteralGateTest`
+ * 按**出现次数**计入 composeP1 棘轮，所以本档带来的 +1 条增量已在
+ * `cjk-literal-baseline.txt` 登记并注明理由。状态串仍用 ASCII（那是分支逻辑不是文案）：
+ * `previewStatsState` 的 else 分支 = 学期视图（内容最全）。
+ */
+@Suppress("unused")
+@Preview(name = "6 整页 1600", showBackground = true, widthDp = 400, heightDp = 1600)
+@Composable
+private fun PreviewCourseStatisticsFullPage() {
+    PreviewCourseStatisticsBody(previewStatsState("semester"))
 }
 
 // ── 总览：三态并排，一屏比结构差异 ───────────────────────────────────────────

@@ -30,7 +30,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.boundsInWindow
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.IntOffset
@@ -39,6 +38,7 @@ import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import com.mutx163.qingyu.components.QingyuCard
+import com.mutx163.qingyu.components.QingyuEmptyState
 import com.mutx163.qingyu.components.QingyuGlassIconButton
 import com.mutx163.qingyu.components.QingyuPageCardMargin
 import com.mutx163.qingyu.components.QingyuPageList
@@ -167,11 +167,21 @@ fun CourseOverviewPage(
             },
         ) {
             if (viewState.isEmpty) {
-                CourseOverviewEmptyState(
-                    hint = viewState.emptyHint,
-                    actionLabel = viewState.addCourseAction,
-                    dark = dark,
-                    onAddCourse = onAddCourse,
+                // 方案 C05：几何收进共享件。发布版这页**无标题**（`course_overview_screen.dart:171-197`
+                // 是 56dp 图标 + 12dp + 一行 listDetail 14sp + 20dp + 按钮），所以 title 传 null、
+                // 只给 iconSize/iconTitleGap 两个发布版钉住的例外参数。
+                QingyuEmptyState(
+                    icon = MiuixIcons.ContactsBook,
+                    title = null,
+                    description = viewState.emptyHint,
+                    iconSize = 56.dp,
+                    iconTitleGap = 12.dp,
+                    action = {
+                        CourseOverviewActionButton(
+                            text = viewState.addCourseAction,
+                            onClick = onAddCourse,
+                        )
+                    },
                     modifier = Modifier
                         .fillMaxSize()
                         .padding(innerPadding),
@@ -223,49 +233,6 @@ fun CourseOverviewPage(
                     sortPopupOpen = false
                 },
                 onDismiss = { sortPopupOpen = false },
-            )
-        }
-    }
-}
-
-/**
- * 空态：全屏居中，图标 + 提示句 + 添加入口（对齐 Dart `_buildEmptyState`）。
- *
- * 图标缺口见文件头「与 Dart 的渲染层差异」第三条。
- */
-@Composable
-private fun CourseOverviewEmptyState(
-    hint: String,
-    actionLabel: String,
-    dark: Boolean,
-    onAddCourse: () -> Unit,
-    modifier: Modifier = Modifier,
-) {
-    Box(
-        modifier = modifier.padding(32.dp),
-        contentAlignment = Alignment.Center,
-    ) {
-        Column(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalAlignment = Alignment.CenterHorizontally,
-        ) {
-            Icon(
-                imageVector = MiuixIcons.ContactsBook,
-                contentDescription = null,
-                tint = Color(QingyuTheme.secondaryText(dark)),
-                modifier = Modifier.size(56.dp),
-            )
-            Spacer(modifier = Modifier.height(12.dp))
-            Text(
-                text = hint,
-                style = MiuixTheme.textStyles.body2,
-                color = Color(QingyuTheme.secondaryText(dark)),
-                textAlign = TextAlign.Center,
-            )
-            Spacer(modifier = Modifier.height(20.dp))
-            CourseOverviewActionButton(
-                text = actionLabel,
-                onClick = onAddCourse,
             )
         }
     }
