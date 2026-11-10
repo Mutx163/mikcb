@@ -29,6 +29,7 @@ import androidx.compose.ui.unit.dp
 import com.mutx163.qingyu.components.QingyuCard
 import com.mutx163.qingyu.components.QingyuCardDefaults
 import com.mutx163.qingyu.components.QingyuGlassIconButton
+import com.mutx163.qingyu.components.QingyuLoadingCenter
 import com.mutx163.qingyu.components.QingyuPageCardMargin
 import com.mutx163.qingyu.components.QingyuPageList
 import com.mutx163.qingyu.components.QingyuPageScaffold
@@ -41,7 +42,6 @@ import com.mutx163.qingyu.theme.QingyuIconColors
 import com.mutx163.qingyu.theme.QingyuTheme
 import top.yukonga.miuix.kmp.basic.Button
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
-import top.yukonga.miuix.kmp.basic.CircularProgressIndicator
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.IconButton
 import top.yukonga.miuix.kmp.basic.Text
@@ -196,17 +196,19 @@ fun TimeSchemeManagementPage(
     }
 }
 
-/** 首装载转圈：与 App 其它异步列表页同形态（居中官方 `CircularProgressIndicator`）。 */
+/**
+ * 首装载转圈（D1 加载态统一，档 A2：块内居中）。
+ *
+ * 原来是「[Box] + `padding(vertical = 120.dp)` + 裸 `CircularProgressIndicator()`」——
+ * 留白与圈径都是本页自己拍的（120dp/默认 40dp）。统一后走组件
+ * [QingyuLoadingCenter]`(fillPage = false)`：`fillMaxWidth` + `heightIn(min = 120.dp)`、
+ * 24dp 圈、2.5dp 线宽，与 `CloudSyncPage` / `WarehouseCourseImportPage` 那几处同一个规格。
+ * 这一处仍作为列表项渲染，所以用档 A2 而不是整页档 A1（A1 的 `fillMaxSize` 在 LazyColumn
+ * 项里拿不到高度，会退化成 0 高）。
+ */
 @Composable
 private fun TimeSchemeLoadingState() {
-    Box(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = 120.dp),
-        contentAlignment = Alignment.Center,
-    ) {
-        CircularProgressIndicator()
-    }
+    QingyuLoadingCenter(fillPage = false)
 }
 
 /** 两个入口行：地点作息匹配 / 日期作息规则（Dart `_buildTimeSchemeListItem` index 0）。 */
