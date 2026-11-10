@@ -1,41 +1,48 @@
 package com.mutx163.qingyu.pages.about
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.mutx163.qingyu.components.QingyuCard
+import com.mutx163.qingyu.components.QingyuLoadingCenter
 import com.mutx163.qingyu.components.QingyuPageCardMargin
 import com.mutx163.qingyu.components.QingyuPageList
 import com.mutx163.qingyu.components.QingyuPageTheme
 import com.mutx163.qingyu.components.QingyuSectionTitle
 import com.mutx163.qingyu.components.QingyuWeightDelta
 import com.mutx163.qingyu.components.shiftWeight
+import com.mutx163.qingyu.pages.settings.SettingsStringsExt4
 import com.mutx163.qingyu.theme.QingyuIconColors
 import com.mutx163.qingyu.theme.QingyuTheme
-import top.yukonga.miuix.kmp.basic.CircularProgressIndicator
 import top.yukonga.miuix.kmp.basic.Icon
+import top.yukonga.miuix.kmp.basic.InputField
+import top.yukonga.miuix.kmp.basic.SearchBarDefaults
 import top.yukonga.miuix.kmp.basic.Text
-import top.yukonga.miuix.kmp.basic.TextField
 import top.yukonga.miuix.kmp.icon.MiuixIcons
+import top.yukonga.miuix.kmp.icon.basic.Search
+import top.yukonga.miuix.kmp.icon.basic.SearchCleanup
 import top.yukonga.miuix.kmp.icon.extended.File
-import top.yukonga.miuix.kmp.icon.extended.Search
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 /**
@@ -65,41 +72,76 @@ fun OpenSourceLicensesPage(
             modifier = Modifier.imePadding(),
             innerPadding = innerPadding,
             scrollBehavior = scrollBehavior,
-            // 官方配方：横向留白由卡片自己带（12dp），滚动条才贴得到屏幕边缘。
+            // 官方配方：页面横向 0，留白由每个块自己带（卡片 12dp），与关于族一致
+            //（滚动条位置与此无关：miuix 竖条只用 trackPadding 的上下两个值）。
             horizontalPadding = QingyuPageCardMargin,
+            // 发布版列表顶部 4dp（`hyperos_tokens.dart:71`）：本页首项是搜索卡，没有分组
+            // 标题的 8dp 兜底，直接贴栏会显得被切掉一截。
+            extraTopPadding = 4.dp,
             // 底部手势条那段由 QingyuPageList 内部按 innerPadding 算
             //（等价于原先手写的 innerPadding.calculateBottomPadding()），
             // 这里只补额外的滚动留白，避免重复相加。
-            contentPadding = PaddingValues(bottom = 24.dp),
-            verticalArrangement = Arrangement.spacedBy(10.dp),
+            contentPadding = PaddingValues(bottom = AboutPageListBottomPadding),
+            // 全族统一 12dp 段间距（原先是 10dp，与关于/更新/捐助页不是一套刻度）。
+            verticalArrangement = AboutPageListSpacing,
         ) {
-            // ── 搜索框（官方 TextField）──
-            item {
-                Row(
+            // ── 搜索框：miuix 官方 `InputField` 胶囊 ──
+            // 45dp 胶囊 + `surfaceContainerHigh` 底 + 左右自带 16/8 图标位，全在组件内部；
+            // 不再套一层卡片、也不自拼 Row+TextField（配方见 `basic/SearchBar.kt:158` 与
+            // 官方 demo `SuperSearchBar.kt`）。`expanded` 恒 false：这一页是「边输边滤」的
+            // 常驻搜索框，不展开成全屏搜索页；minSdk 33 不触发库内 API 26-27 焦点补丁。
+            item(key = "search") {
+                InputField(
+                    query = query,
+                    onQueryChange = { query = it },
+                    // 输入即筛，没有独立提交动作（回车只收键盘）。
+                    onSearch = { },
+                    expanded = false,
+                    onExpandedChange = { },
                     modifier = Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                ) {
-                    Icon(
-                        imageVector = MiuixIcons.Search,
-                        contentDescription = null,
-                        tint = Color(QingyuTheme.secondaryText(dark)),
-                    )
-                    TextField(
-                        value = query,
-                        onValueChange = { query = it },
-                        modifier = Modifier.fillMaxWidth(),
-                        label = OpenSourceLicensesStrings.searchHint,
-                        singleLine = true,
-                    )
-                }
+                    label = OpenSourceLicensesStrings.searchHint,
+                    // 官方默认放大镜的朗读文案是库里的英文 "Search"；输入框已有 label，
+                    // 图标纯装饰，交回正文朗读（同 GlassDockIconPicker 的写法）。
+                    leadingIcon = {
+                        Icon(
+                            imageVector = MiuixIcons.Basic.Search,
+                            contentDescription = null,
+                            tint = MiuixTheme.colorScheme.onSurfaceContainerHigh,
+                            modifier = Modifier.padding(
+                                start = SearchBarDefaults.LeadingIconStartPadding,
+                                end = SearchBarDefaults.LeadingIconEndPadding,
+                            ),
+                        )
+                    },
+                    // 清空键：44dp 触区、start 8 / end 16 内边距、无涟漪；文案复用全站
+                    // 已有的「清空」（`SettingsStringsExt4.clearSearchAction`），不新造键。
+                    trailingIcon = {
+                        AnimatedVisibility(
+                            visible = query.isNotEmpty(),
+                            enter = fadeIn(),
+                            exit = fadeOut(),
+                        ) {
+                            Icon(
+                                imageVector = MiuixIcons.Basic.SearchCleanup,
+                                contentDescription = SettingsStringsExt4.clearSearchAction.text,
+                                tint = MiuixTheme.colorScheme.onSurface,
+                                modifier = Modifier
+                                    .size(44.dp)
+                                    .padding(start = 8.dp, end = 16.dp)
+                                    .clickable(interactionSource = null, indication = null) {
+                                        query = ""
+                                    },
+                            )
+                        }
+                    },
+                )
             }
 
             // ── 许可说明卡 ──
-            item {
+            item(key = "app-license") {
                 QingyuCard(
                     modifier = Modifier.fillMaxWidth(),
-                    insideMargin = PaddingValues(14.dp),
+                    insideMargin = PaddingValues(16.dp),
                 ) {
                     Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                         Text(
@@ -114,23 +156,21 @@ fun OpenSourceLicensesPage(
                 }
             }
 
-            item {
+            item(key = "packages-title") {
                 QingyuSectionTitle(
-                    OpenSourceLicensesStrings.packagesSectionTitle(
+                    text = OpenSourceLicensesStrings.packagesSectionTitle(
                         if (isLoading) 0 else packages.size,
                     ),
+                    // 列表已统一加 12dp，标题这里只让 16dp ⇒ 12 + 16 = 官方 28dp 轴线；
+                    // 默认值 28 会变成 40，标题比整张卡缩进一格（2026-11-10 修）。
+                    insideMargin = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
                 )
             }
 
             when {
-                isLoading -> item {
-                    Row(
-                        modifier = Modifier.fillMaxWidth().padding(vertical = 32.dp),
-                        horizontalArrangement = Arrangement.Center,
-                    ) {
-                        CircularProgressIndicator()
-                    }
-                }
+                // D1 档 A2（块内居中）：列表上方还有分组标题，不能整页铺满；
+                // 共享件给 120dp 最小高度，替代原先手写的 padding(vertical = 32)。
+                isLoading -> item { QingyuLoadingCenter(fillPage = false) }
 
                 loadError != null -> item {
                     HintRow(OpenSourceLicensesStrings.loadFailed)
@@ -141,6 +181,11 @@ fun OpenSourceLicensesPage(
                 }
 
                 else -> items(filtered, key = { it.packageName }) { pkg ->
+                    // 发布版是一张 `HyperosListGroup`（所有包在一张卡里）。这里**故意**保持
+                    // 「一行一张卡 + 惰性组合」：APK 里的 `licenses/NOTICES` 实测聚合出
+                    // 234 个包，塞进同一个 item 会一次性组合 234 行（进页首帧、每次清空
+                    // 搜索框都要重来一遍）；拆成 list item 才只组合屏幕内那十来个。
+                    // 看起来仍是一套刻度：列表 12dp 页边 + 行内 16dp（= 28 轴线）。
                     QingyuRow(
                         title = pkg.packageName,
                         subtitle = OpenSourceLicensesStrings.packageSubtitle(pkg.licenseBodies.size),
@@ -204,19 +249,25 @@ fun OpenSourceLicenseDetailPage(
             innerPadding = innerPadding,
             scrollBehavior = scrollBehavior,
             horizontalPadding = QingyuPageCardMargin,
-            contentPadding = PaddingValues(bottom = 24.dp),
+            contentPadding = PaddingValues(bottom = AboutPageListBottomPadding),
         ) {
-            item {
+            item(key = "license-body") {
                 QingyuCard(
                     modifier = Modifier.fillMaxWidth(),
-                    insideMargin = PaddingValues(14.dp),
+                    // 与列表页说明卡同一内边距（原先 14dp，同族两页差 2dp）。
+                    insideMargin = PaddingValues(16.dp),
                 ) {
-                    Text(
-                        text = pkg.combinedLicenseText,
-                        style = MiuixTheme.textStyles.body2,
-                        lineHeight = 20.sp,
-                        color = Color(QingyuTheme.primaryText(dark)),
-                    )
+                    // 发布版用 `SelectionArea` 包住全文（`open_source_licenses_screen.dart:246`）：
+                    // 许可证要能被选中、复制去核对，不只是「看」。Compose 侧等价物就是
+                    // `SelectionContainer`，长按即出选择手柄。
+                    SelectionContainer {
+                        Text(
+                            text = pkg.combinedLicenseText,
+                            style = MiuixTheme.textStyles.body2,
+                            lineHeight = 20.sp,
+                            color = Color(QingyuTheme.primaryText(dark)),
+                        )
+                    }
                 }
             }
         }
@@ -377,4 +428,17 @@ private fun OpenSourceLicenseDetailPagePreviewDark() {
 @Composable
 private fun OpenSourceLicenseDetailPagePreviewLargeText() {
     PreviewOpenSourceLicenseDetailPage(textScale = 1.3f)
+}
+
+// ── 整页档（1200dp）────────────────────────────────────────────────────────
+//
+// 900dp 的一屏档只能看到搜索框 + 许可说明卡，组件列表被裁掉；整页档按页面
+// 真实长度给 1200dp，用来检查「搜索框 → 说明卡 → 分组标题 → 包列表」的整页节奏。
+// 原 900 档保留：900 看首屏，1200 看整页。
+
+@Suppress("unused")
+@Preview(name = "10 整页", showBackground = true, widthDp = 400, heightDp = 1200)
+@Composable
+private fun OpenSourceLicensesPagePreviewFullPage() {
+    PreviewOpenSourceLicensesPage()
 }

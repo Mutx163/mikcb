@@ -18,9 +18,11 @@ import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -50,6 +52,9 @@ import androidx.compose.ui.unit.sp
 import com.mutx163.qingyu.components.QingyuCard
 import com.mutx163.qingyu.components.QingyuCardDefaults
 import com.mutx163.qingyu.components.QingyuGlassIconButton
+import com.mutx163.qingyu.components.QingyuLoadingCenter
+import com.mutx163.qingyu.components.QingyuLoadingInline
+import com.mutx163.qingyu.components.QingyuLoadingSlot
 import com.mutx163.qingyu.components.QingyuPageCardMargin
 import com.mutx163.qingyu.components.QingyuPageList
 import com.mutx163.qingyu.components.QingyuPageTheme
@@ -63,7 +68,6 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import top.yukonga.miuix.kmp.basic.Button
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
-import top.yukonga.miuix.kmp.basic.CircularProgressIndicator
 import top.yukonga.miuix.kmp.basic.HorizontalDivider
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.TabRowDefaults
@@ -100,6 +104,30 @@ import top.yukonga.miuix.kmp.theme.MiuixTheme
  * 和一颗刷新键堆在一起，铅笔图标还把文字推开一条锯齿边、挤出一个孤字行。现在改成
  * 「说明 → 名单 → 元信息」三段：卡头只留一句副标题，刷新键上顶栏，时间与提示降卡尾。
  * 逐条理由（含旧版挂在哪）见 [DonorCard] 与 [DonorCardFooter] 的头注。
+ *
+ * ## 2026-11-10 第三轮：鸣谢条目重排（用户点名「条目列表很简陋」）
+ *
+ * 每一行改成「头像 + 名字/留言 + 右栏金额/日期」四层结构。数值逐条对应发布版
+ * `lib/widgets/support_donor_tile.dart`；与发布版不同的地方单列在下面（逐条给理由）：
+ *
+ * - 头像：38dp 圆形（发布版 :22），内容是**首字**（:45-46），底色/字色按昵称哈希取
+ *   12 档精选色相（:28-31 / :129-145；纯函数在 main 层 [donorAvatarColors]）；
+ * - 名字 `body2`(14) 半粗（发布版 :75-79 的 `body.sm`=14），留言 `footnote1`(13) 次级墨（:81-90）；
+ * - 右栏金额 `body2`(14) 半粗 + 主题主色 + 等宽数字（:99-109），日期 `footnote2`(11) 灰字、
+ *   只留 `yyyy-MM-dd`（:42-43 / :110-119）；
+ * - 行内边距：左右 16，上下**首 12 / 中间 10 / 末 14**（发布版 :49 原值）。
+ *
+ * **有意偏差**（发布版数值不同，逐条记）：
+ *
+ * 1. 留言用 `footnote1`(13)，发布版是 `typo.body.xs`(12)：miuix 字阶只有 11/13 两档，
+ *    取 13 保两行留言的可读性——就近取档，不是等值；
+ * 2. 头像首字先 `trim()` 再取，发布版直接取原始首字符：名单里有前导空格时发布版会画成
+ *    空白头像，这里取到真正的第一个字（有意改进）；
+ * 3. 行间不画线：发布版每行之间有一条内缩 66dp 的分割线（`support_creator_screen.dart:609`），
+ *    本仓 2026-11-03 已按用户口径全仓去掉卡内行间线（`RowDividerGuardTest` 钉着，本文件
+ *    白名单只给卡尾那条留 1 条），改用行内边距分行；
+ * 4. 哈希用 JVM `String.hashCode` 而不复刻 Dart 的实现：只要求「同名同色、异名分散」，
+ *    落在哪一档没有语义（见 [donorAvatarColors] KDoc）。
  *
  * ## 数据从哪来
  *
@@ -144,10 +172,11 @@ fun SupportCreatorPage(
                 enabled = !isLoading,
                 content = if (isLoading) {
                     {
-                        CircularProgressIndicator(
-                            modifier = Modifier.size(18.dp),
-                            strokeWidth = 2.dp,
-                        )
+                        // D1 档 B2（图标位替换）：共享件 18dp / 2dp。**不传 tint**：
+                        // 发布版这里是裸 `HyperosCircularProgress(18, 2)`，走主题主色；
+                        // 「跟同排灰图标同色」是观感升级，未经拍板不许 lane 自定
+                        //（`QingyuLoadingUsageGuardTest`「档 B 不许传 tint」钉着这一条）。
+                        QingyuLoadingInline(slot = QingyuLoadingSlot.IconSlot)
                     }
                 } else {
                     null
@@ -579,14 +608,9 @@ private fun DonorCard(
 ) {
     val dark = isSystemInDarkTheme()
     when {
-        isLoading && donorData == null -> Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(vertical = 28.dp),
-            contentAlignment = Alignment.Center,
-        ) {
-            CircularProgressIndicator()
-        }
+        // D1 档 A2（块内居中）：共享件给 120dp 最小高度承载留白，
+        // 24dp / 2.5dp 线宽是发布版 HyperosCircularProgress 的刻度（miuix 默认 30/4）。
+        isLoading && donorData == null -> QingyuLoadingCenter(fillPage = false)
 
         loadError != null && donorData == null -> Column(
             modifier = Modifier.padding(16.dp),
@@ -656,8 +680,12 @@ private fun DonorCard(
                         modifier = Modifier.padding(horizontal = 16.dp, vertical = 14.dp),
                     )
                 } else {
-                    donorData.donors.forEach { donor ->
-                        DonorRow(donor)
+                    donorData.donors.forEachIndexed { index, donor ->
+                        DonorRow(
+                            donor = donor,
+                            isFirst = index == 0,
+                            isLast = index == donorData.donors.lastIndex,
+                        )
                     }
                 }
                 DonorCardFooter(updatedAt = updatedAt, note = note)
@@ -671,7 +699,7 @@ private fun DonorCard(
  *
  * 2026-11-08 从卡头降到卡尾（版式理由见 [DonorCard] 头注）：
  *
- * - 两行都是 `footnote2`（11sp）弱色，与上面 `body1` 的名单名字拉开三个字阶；
+ * - 两行都是 `footnote2`（11sp）弱色，与上面 `body2`(14) 的名单名字差两档字阶；
  * - 不再带铅笔图标 —— `MiuixIcons.Edit` 的语义是「编辑」，文案说的却是同步时间；
  * - 提示句回到**整宽**（左右各 16dp，无图标占位），上一版被图标挤窄后折出「现。」孤字行；
  * - 名单行本身不带线（行距由行内边距承担，全仓守卫 `RowDividerGuardTest` 钉这一条）；
@@ -710,53 +738,102 @@ private fun DonorCardFooter(updatedAt: String?, note: String?) {
     }
 }
 
-/** 名单一行：心形底 + 名字 + 金额/日期/留言。 */
+/**
+ * 名单一行：首字头像 + 昵称/留言（左）+ 金额/日期（右）。
+ *
+ * 数值与偏差的逐条账在文件头「2026-11-10 第三轮」；这里只记三处**有意**与发布版不同：
+ * 留言 13（发布版 12，miuix 无 12 档）、首字先 trim（发布版取原始首字符）、行间不画线
+ *（发布版有内缩分割线，本仓行间线守卫禁止）。
+ */
 @Composable
-private fun DonorRow(donor: SupportDonorEntry) {
+private fun DonorRow(
+    donor: SupportDonorEntry,
+    isFirst: Boolean,
+    isLast: Boolean,
+) {
     val dark = isSystemInDarkTheme()
-    val yellow = Color(QingyuIconColors.YELLOW)
-    val meta = listOfNotNull(
-        donor.amount?.takeIf { it.isNotEmpty() },
-        donor.date?.takeIf { it.isNotEmpty() },
-        donor.message?.takeIf { it.isNotEmpty() },
-    ).joinToString(" · ")
+    val avatar = donorAvatarColors(donor.name, dark)
+    val message = donor.message?.trim().orEmpty()
+    val amount = donor.amount?.trim().orEmpty()
+    val date = donorDateLabel(donor.date)
 
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 12.dp),
+            .padding(
+                start = 16.dp,
+                end = 16.dp,
+                // 发布版 :49 原值：首行 12、中间 10、末行 14（卡角处不贴边）。
+                top = if (isFirst) 12.dp else 10.dp,
+                bottom = if (isLast) 14.dp else 10.dp,
+            ),
         horizontalArrangement = Arrangement.spacedBy(12.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
+        // 38dp 首字头像（发布版 :22）：颜色按昵称哈希取 12 档精选色相（纯函数在 main 层
+        // [donorAvatarColors]，JVM 单测钉着「同名字同色、不透明」）。旧版统一画一颗爱心，
+        // 一屏十几行全是同一个图标，等于没有头像。
         Box(
             modifier = Modifier
-                .size(28.dp)
+                .size(38.dp)
                 .clip(CircleShape)
-                .background(yellow.copy(alpha = 0.14f)),
+                .background(Color(avatar.backgroundArgb)),
             contentAlignment = Alignment.Center,
         ) {
-            Icon(
-                imageVector = MiuixIcons.Favorites,
-                contentDescription = null,
-                tint = yellow,
-                modifier = Modifier.size(14.dp),
+            Text(
+                text = donorAvatarInitial(donor.name),
+                // 发布版 `typo.body.md`≈14：这里取 body2(14) 半粗。
+                style = MiuixTheme.textStyles.body2.shiftWeight(QingyuWeightDelta.SEMIBOLD),
+                color = Color(avatar.inkArgb),
+                maxLines = 1,
             )
         }
         Column(modifier = Modifier.weight(1f)) {
             Text(
                 text = donor.name,
-                style = MiuixTheme.textStyles.body1.shiftWeight(QingyuWeightDelta.MEDIUM),
+                // 发布版 `body.sm`=14 半粗（:75-79）。
+                style = MiuixTheme.textStyles.body2.shiftWeight(QingyuWeightDelta.SEMIBOLD),
                 color = Color(QingyuTheme.primaryText(dark)),
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
             )
-            meta.takeIf { it.isNotEmpty() }?.let { text ->
+            if (message.isNotEmpty()) {
+                Spacer(Modifier.height(2.dp))
+                // 发布版 `body.xs`=12，miuix 字阶只有 11/13 两档 ⇒ 就近取 13（有意偏差 1，
+                // 见文件头）：两行留言在 400dp 屏上仍可读，且与名字(14)只差一档、不抢主语。
                 Text(
-                    text = text,
+                    text = message,
                     style = MiuixTheme.textStyles.footnote1,
+                    lineHeight = 19.sp,
                     color = Color(QingyuTheme.secondaryText(dark)),
-                    maxLines = 2,
+                    maxLines = 3,
                     overflow = TextOverflow.Ellipsis,
-                    modifier = Modifier.padding(top = 2.dp),
                 )
+            }
+        }
+        if (amount.isNotEmpty() || date.isNotEmpty()) {
+            Column(horizontalAlignment = Alignment.End) {
+                if (amount.isNotEmpty()) {
+                    Text(
+                        text = amount,
+                        // 与名字同档（发布版同为 14，:99-109）+ 等宽数字：右栏金额上下对齐，
+                        // ¥8.8 与 ¥100 的数字位宽一致。
+                        style = MiuixTheme.textStyles.body2
+                            .shiftWeight(QingyuWeightDelta.SEMIBOLD)
+                            .copy(fontFeatureSettings = "tnum"),
+                        color = MiuixTheme.colorScheme.primary,
+                        maxLines = 1,
+                    )
+                }
+                if (date.isNotEmpty()) {
+                    if (amount.isNotEmpty()) Spacer(Modifier.height(2.dp))
+                    Text(
+                        text = date,
+                        style = MiuixTheme.textStyles.footnote2.copy(fontFeatureSettings = "tnum"),
+                        color = Color(QingyuTheme.secondaryText(dark)),
+                        maxLines = 1,
+                    )
+                }
             }
         }
     }
@@ -917,6 +994,19 @@ private fun previewDonorData(): SupportDonorData = SupportDonorData(
             date = "2026-10-20",
             message = "课表很干净，辛苦作者",
         ),
+        // 长留言：验证留言最多三行的折行与截断，不与右栏金额打架。
+        SupportDonorEntry(
+            name = "赵六",
+            amount = "￥3.6",
+            date = "2026-09-14",
+            message = "从大一开始用，换过三台手机都先装这个课表，希望一直维护下去",
+        ),
+        // 带时分秒的日期 + 无留言：验证右栏日期只显示年月日、没有留言时不留空行。
+        SupportDonorEntry(
+            name = "陈七",
+            amount = "￥100",
+            date = "2026-09-30 12:18:45",
+        ),
     ),
 )
 
@@ -1039,4 +1129,50 @@ private fun SupportCreatorPagePreviewDark() {
 @Composable
 private fun SupportCreatorPagePreviewLargeText() {
     PreviewSupportCreatorPage(previewSupportCreatorState("有名单"), textScale = 1.3f)
+}
+
+// ── 整页档（1200dp）────────────────────────────────────────────────────────
+//
+// 900dp 的一屏档在 400dp 宽下只能看到头卡 + 部分收款卡，鸣谢名单被裁掉；
+// 整页档给 1200dp，用来检查「头卡 → 收款卡 → 鸣谢卡」的整页节奏。
+// 原 900 档保留：900 看首屏，1200 看整页。
+
+@Suppress("unused")
+@Preview(name = "8 整页", showBackground = true, widthDp = 400, heightDp = 1200)
+@Composable
+private fun SupportCreatorPagePreviewFullPage() {
+    PreviewSupportCreatorPage(previewSupportCreatorState("有名单"))
+}
+
+// ── 名单条目一屏档（400×900）────────────────────────────────────────────────
+//
+// 900dp 的整页档里鸣谢名单在屏幕下半、1200dp 档里也只看到卡的下半截；这一版评审的是
+// 「条目列表」本身，所以单独给一档：标题 + 鸣谢卡（五条名单覆盖有留言/无留言/长留言/
+// 带时分秒的日期）在一屏里看全。只走渲染层自己的假数据，不触发网络。
+
+@Suppress("unused")
+@Preview(name = "9 名单条目·一屏", showBackground = true, widthDp = 400, heightDp = 900)
+@Composable
+private fun SupportCreatorPagePreviewDonorRows() {
+    val data = previewDonorData()
+    QingyuPageTheme(isDark = false) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = QingyuPageCardMargin, vertical = 12.dp),
+        ) {
+            QingyuSectionTitle(
+                text = data.title ?: SupportCreatorStrings.donorListTitle,
+                insideMargin = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
+            )
+            QingyuCard(modifier = Modifier.fillMaxWidth()) {
+                DonorCard(
+                    donorData = data,
+                    isLoading = false,
+                    loadError = null,
+                    onReload = {},
+                )
+            }
+        }
+    }
 }

@@ -42,6 +42,7 @@ import com.mutx163.qingyu.components.QingyuPageCardMargin
 import com.mutx163.qingyu.components.QingyuPageList
 import com.mutx163.qingyu.components.QingyuPageTheme
 import com.mutx163.qingyu.components.QingyuGlassIconButton
+import com.mutx163.qingyu.components.QingyuLoadingProgressBar
 import com.mutx163.qingyu.components.QingyuSectionTitle
 import com.mutx163.qingyu.components.QingyuWeightDelta
 import com.mutx163.qingyu.components.rememberQingyuScrollBehavior
@@ -55,9 +56,7 @@ import com.mutx163.qingyu.infra.releaseListUrlFor
 import com.mutx163.qingyu.theme.QingyuTheme
 import top.yukonga.miuix.kmp.basic.Button
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
-import top.yukonga.miuix.kmp.basic.CircularProgressIndicator
 import top.yukonga.miuix.kmp.basic.HorizontalDivider
-import top.yukonga.miuix.kmp.basic.LinearProgressIndicator
 import top.yukonga.miuix.kmp.basic.ScrollBehavior
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TextButton
@@ -236,9 +235,10 @@ private fun AboutUpdateCheckingView(appName: String, innerPadding: PaddingValues
                     overflow = TextOverflow.Ellipsis,
                 )
             }
-            Spacer(Modifier.height(16.dp))
-            CircularProgressIndicator()
-            Spacer(Modifier.height(10.dp))
+            // 发布版 `about_screen.dart:749-779` 的「检查中」整页只有图标 + 应用名 + 这句
+            // 「正在检查更新……」，**没有转圈**（2026-11-10 按发布版去掉，Chief 已拍板；
+            // D1 方案 §1.6 同一结论）。文字本身已经说明状态，多一颗转圈反而像还在干别的。
+            Spacer(Modifier.height(12.dp))
             Text(
                 text = AboutUpdatePageStrings.checkingForUpdate,
                 style = MiuixTheme.textStyles.footnote1,
@@ -658,7 +658,7 @@ private fun highlightsWithLabels(digest: ReleaseNotesDigest): List<ReleaseChange
     }
 }
 
-/** 下载进度弹窗：官方 `OverlayDialog` + 官方 `LinearProgressIndicator`。
+/** 下载进度弹窗：官方 `OverlayDialog` + D1 档 D 进度条（`QingyuLoadingProgressBar`）。
  *
  * 2026-11-08：原先是一条钉在页底的进度条，切页/滑一半都还挂在那里，不像系统行为；
  * 改成标准弹窗后：下载中弹、下完自动消失，不能点外面关（写盘还在继续），只能按“取消下载”。
@@ -685,7 +685,9 @@ private fun DownloadProgressDialog(download: AboutUpdateDownloadUi, onCancel: ()
         renderInRootScaffold = false,
     ) {
         Column(modifier = Modifier.fillMaxWidth()) {
-            LinearProgressIndicator(
+            // 档 D（D1 统一）：文案在上（本弹窗的标题就是百分比/字节数），条不传高度走官方默认 6dp；
+            // 进行中/完成 primary、底槽 secondaryContainer（发布版 `home_update_prompt.dart:642-646`）。
+            QingyuLoadingProgressBar(
                 progress = fraction,
                 modifier = Modifier.fillMaxWidth(),
             )

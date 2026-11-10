@@ -10,11 +10,15 @@ import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.runtime.Composable
@@ -26,6 +30,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.mutx163.qingyu.components.QingyuCard
 import com.mutx163.qingyu.components.QingyuCardDefaults
+import com.mutx163.qingyu.components.QingyuLoadingCenter
 import com.mutx163.qingyu.components.QingyuPageCardMargin
 import com.mutx163.qingyu.components.QingyuPageList
 import com.mutx163.qingyu.components.QingyuPageTheme
@@ -36,7 +41,6 @@ import com.mutx163.qingyu.infra.MaintainerGroup
 import com.mutx163.qingyu.theme.QingyuTheme
 import top.yukonga.miuix.kmp.basic.Button
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
-import top.yukonga.miuix.kmp.basic.CircularProgressIndicator
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TextButton
 import top.yukonga.miuix.kmp.theme.MiuixTheme
@@ -58,6 +62,7 @@ import top.yukonga.miuix.kmp.theme.MiuixTheme
  *
  * 无中文字面量，全部取自 main 层 [ContributorsStrings]。
  */
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun ContributorsPage(
     maintainers: List<MaintainerGroup>,
@@ -82,16 +87,31 @@ fun ContributorsPage(
         QingyuPageList(
             innerPadding = innerPadding,
             scrollBehavior = scrollBehavior,
+            // 官方配方：页面横向 0，留白由每个块自己带（卡片 12dp）——
+            // 与关于/更新/捐助页同一套刻度（滚动条位置与此无关：miuix 竖条只用
+            // trackPadding 的上下两个值，左右两个值不参与定位）。
             horizontalPadding = QingyuPageCardMargin,
-            contentPadding = PaddingValues(bottom = 24.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp),
+            contentPadding = PaddingValues(bottom = AboutPageListBottomPadding),
+            // 全族统一 12dp 段间距（原先这里独写 8dp，与本域其它页不是一套刻度）。
+            verticalArrangement = AboutPageListSpacing,
         ) {
+            // 一组 = 一个 item：标题与卡片之间不再夹一层列表间距，
+            // 标题到卡片顶只剩 SmallTitle 自带的 8dp（官方 demo 的「段首贴合」）。
+            // 2026-11-10 版面收口：原先标题与卡片各占一个 item，加 8dp 列表间距后
+            // 标题到卡顶是 16dp，比同域的关于/更新/捐助页都松一档。
+
             // ── 开发人员 ──
-            item { QingyuSectionTitle(ContributorsStrings.developersTitle) }
-            item {
+            item(key = "developers") {
+                QingyuSectionTitle(
+                    text = ContributorsStrings.developersTitle,
+                    // 列表已统一加 12dp，标题这里只让 16dp ⇒ 12 + 16 = 官方 28dp 轴线，
+                    // 与卡内行文字的左缘落在同一条竖线上（默认 28 会变成 40，缩进一格）。
+                    insideMargin = ContributorSectionTitleMargin,
+                )
                 QingyuCard(
                     modifier = Modifier.fillMaxWidth(),
-                    insideMargin = QingyuCardDefaults.ContentInsideMargin,
+                    // 设置组语义圆角 24（与关于页分段卡同层同一套圆角，不再被默认压成 16）。
+                    cornerRadius = QingyuCardDefaults.SettingsGroupCorner,
                 ) {
                     ContributorRow(
                         name = ContributorsStrings.developerName,
@@ -101,40 +121,61 @@ fun ContributorsPage(
             }
 
             // ── 教务导入适配者 ──
-            item { QingyuSectionTitle(ContributorsStrings.maintainersTitle) }
-            item {
+            item(key = "maintainers") {
+                QingyuSectionTitle(
+                    text = ContributorsStrings.maintainersTitle,
+                    insideMargin = ContributorSectionTitleMargin,
+                )
                 QingyuCard(
                     modifier = Modifier.fillMaxWidth(),
-                    insideMargin = QingyuCardDefaults.ContentInsideMargin,
+                    cornerRadius = QingyuCardDefaults.SettingsGroupCorner,
                 ) {
-                    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                        Text(
-                            text = ContributorsStrings.maintainersIntro,
-                            style = MiuixTheme.textStyles.footnote1,
-                            lineHeight = 19.sp,
-                            color = Color(QingyuTheme.secondaryText(dark)),
-                        )
-                        // 缓存时间：只在「正在显示上次缓存」时出现，后台刷新成功后本行自动消失。
-                        cachedAt?.let { time ->
+                    Column(modifier = Modifier.fillMaxWidth()) {
+                        // 卡头说明：为什么有这份名单、名单怎么来的。
+                        // 与下面的名单之间**不画线**：行距由行内边距承担（发布版那条
+                        // `Divider(height: 24)` 的视觉作用就是 24dp 留白；全仓
+                        // `RowDividerGuardTest` 也明确禁止卡内行间横线）。
+                        Column(
+                            modifier = Modifier.padding(
+                                start = 16.dp,
+                                top = 14.dp,
+                                end = 16.dp,
+                                bottom = 2.dp,
+                            ),
+                        ) {
                             Text(
-                                text = ContributorsStrings.cachedAtLabel(time),
-                                style = MiuixTheme.textStyles.footnote2,
+                                text = ContributorsStrings.maintainersIntro,
+                                style = MiuixTheme.textStyles.footnote1,
+                                lineHeight = 19.sp,
                                 color = Color(QingyuTheme.secondaryText(dark)),
                             )
+                            // 缓存时间：只在「正在显示上次缓存」时出现，后台刷新成功后本行自动消失。
+                            cachedAt?.let { time ->
+                                Text(
+                                    text = ContributorsStrings.cachedAtLabel(time),
+                                    style = MiuixTheme.textStyles.footnote2,
+                                    color = Color(QingyuTheme.secondaryText(dark)),
+                                    modifier = Modifier.padding(top = 6.dp),
+                                )
+                            }
                         }
+
                         when {
                             // 「转圈」只用于**手上什么都没有**的时候。已有缓存时后台还在刷新：
                             // 继续显示旧数据，靠上面那行缓存时间说明它有多旧——本页自己的说明句
                             // 就写着「若本地已有缓存，会先显示缓存，再后台刷新」，被转圈盖住等于说话不算数。
-                            isLoading && groups.isEmpty() -> Row(
-                                modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
-                                horizontalArrangement = Arrangement.Center,
-                            ) {
-                                CircularProgressIndicator()
-                            }
+                            // D1 档 A2（块内居中）：共享件自带 120dp 最小高度，不再手写
+                            // padding(vertical = 24)（全仓原先 8/24/28/32 六档混用）。
+                            isLoading && groups.isEmpty() -> QingyuLoadingCenter(fillPage = false)
 
                             error != null && groups.isEmpty() -> Column(
-                                verticalArrangement = Arrangement.spacedBy(8.dp),
+                                modifier = Modifier.padding(
+                                    start = 16.dp,
+                                    top = 12.dp,
+                                    end = 16.dp,
+                                    bottom = 8.dp,
+                                ),
+                                verticalArrangement = Arrangement.spacedBy(4.dp),
                             ) {
                                 Text(
                                     text = ContributorsStrings.loadFailed(error),
@@ -151,26 +192,47 @@ fun ContributorsPage(
                                 text = ContributorsStrings.maintainersEmpty,
                                 style = MiuixTheme.textStyles.footnote1,
                                 color = Color(QingyuTheme.secondaryText(dark)),
+                                modifier = Modifier.padding(
+                                    start = 16.dp,
+                                    top = 14.dp,
+                                    end = 16.dp,
+                                    bottom = 16.dp,
+                                ),
                             )
 
                             else -> {
                                 // 有缓存但刷新失败：名单照常显示（比空屏有用），但要如实说明
                                 // 「这次没拉到」并给重试，不许让旧数据冒充刚刷新的结果。
                                 if (error != null) {
-                                    Text(
-                                        text = ContributorsStrings.loadFailed(error),
-                                        style = MiuixTheme.textStyles.footnote1,
-                                        color = Color(QingyuTheme.error(dark)),
-                                    )
-                                    TextButton(
-                                        text = ContributorsStrings.reloadAction,
-                                        onClick = onReload,
-                                    )
+                                    Column(
+                                        modifier = Modifier.padding(
+                                            start = 16.dp,
+                                            top = 8.dp,
+                                            end = 16.dp,
+                                            bottom = 0.dp,
+                                        ),
+                                        verticalArrangement = Arrangement.spacedBy(4.dp),
+                                    ) {
+                                        Text(
+                                            text = ContributorsStrings.loadFailed(error),
+                                            style = MiuixTheme.textStyles.footnote1,
+                                            color = Color(QingyuTheme.error(dark)),
+                                        )
+                                        TextButton(
+                                            text = ContributorsStrings.reloadAction,
+                                            onClick = onReload,
+                                        )
+                                    }
                                 }
+                                // 一个适配者一行，行与行之间不画线（同上：全仓禁止卡内行间横线），
+                                // 靠行自身的上下 12dp 内边距把两个人分开——一人一行里最多带三四条
+                                // 适配项，名字又是加粗的起始行，不加线也读得清。
                                 for (group in groups) {
                                     ContributorRow(
                                         name = group.name,
-                                        subtitle = ContributorsStrings.maintainerCount(group.adapterLabels.size),
+                                        subtitle = ContributorsStrings.maintainerCount(
+                                            group.adapterLabels.size,
+                                        ),
                                         details = group.adapterLabels,
                                     )
                                 }
@@ -181,28 +243,44 @@ fun ContributorsPage(
             }
 
             // ── 参与适配 ──
-            item { QingyuSectionTitle(ContributorsStrings.participateTitle) }
-            item {
+            item(key = "participate") {
+                QingyuSectionTitle(
+                    text = ContributorsStrings.participateTitle,
+                    insideMargin = ContributorSectionTitleMargin,
+                )
                 QingyuCard(
                     modifier = Modifier.fillMaxWidth(),
-                    insideMargin = QingyuCardDefaults.ContentInsideMargin,
+                    cornerRadius = QingyuCardDefaults.SettingsGroupCorner,
                 ) {
-                    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(start = 16.dp, top = 14.dp, end = 16.dp, bottom = 16.dp),
+                    ) {
                         Text(
                             text = ContributorsStrings.participateSubtitle,
                             style = MiuixTheme.textStyles.footnote1,
                             lineHeight = 20.sp,
                             color = Color(QingyuTheme.secondaryText(dark)),
                         )
-                        Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                        Spacer(Modifier.height(12.dp))
+                        // 发布版是 `Wrap(spacing: 10, runSpacing: 10)`：大字号下两个按钮放不下时
+                        // 换行，而不是被挤出屏幕。Compose 侧的等价物是官方 `FlowRow`。
+                        FlowRow(
+                            horizontalArrangement = Arrangement.spacedBy(10.dp),
+                            verticalArrangement = Arrangement.spacedBy(10.dp),
+                        ) {
                             Button(
                                 onClick = { openUrl(context, ContributorsStrings.warehouseRepoUrl) },
-                                colors = ButtonDefaults.buttonColors(),
+                                // 发布版 HyperosButton 默认 primary：强调色实心底。
+                                // 原先用了灰色的 `buttonColors()`，与右侧文字链接并列时
+                                // 两个都像次要动作，主次关系反了（2026-11-10 修）。
+                                colors = ButtonDefaults.buttonColorsPrimary(),
                             ) {
                                 Text(ContributorsStrings.openWarehouseRepoAction)
                             }
-                            TextButton(
-                                text = ContributorsStrings.copyAddress,
+                            // 发布版第二颗是 secondary 变体（灰底实心），不是纯文字链接。
+                            Button(
                                 onClick = {
                                     copyToClipboard(context, ContributorsStrings.warehouseRepoUrl)
                                     Toast.makeText(
@@ -211,8 +289,10 @@ fun ContributorsPage(
                                         Toast.LENGTH_SHORT,
                                     ).show()
                                 },
-                                colors = ButtonDefaults.textButtonColors(),
-                            )
+                                colors = ButtonDefaults.buttonColors(),
+                            ) {
+                                Text(ContributorsStrings.copyAddress)
+                            }
                         }
                     }
                 }
@@ -221,7 +301,21 @@ fun ContributorsPage(
     }
 }
 
-/** 一行贡献者：名字 + 副标题 +（可选）适配项 bullet 列表。 */
+/**
+ * 分组标题内边距：列表已经统一给了 12dp（[QingyuPageCardMargin]），标题这里再让 16dp，
+ * 合计正好落在官方 28dp 轴线上（12 页边 + 16 行内）。
+ */
+private val ContributorSectionTitleMargin = PaddingValues(horizontal = 16.dp, vertical = 8.dp)
+
+/**
+ * 一行贡献者：名字 + 副标题 +（可选）适配项 bullet 列表。
+ *
+ * 行高与留白照发布版 `_ContributorRow`（`about_screen.dart:2783-2817`）：
+ * 名字与副标题之间 4dp、副标题与适配项之间 8dp、每条适配项底 4dp；
+ * 行自身左右 16dp（与官方 Preference 同值）、上下 12dp。
+ * 适配项用 footnote1（发布版 `listDetail` 同档），不用 footnote2——11sp 的列表项
+ * 在 400dp 屏上会跟副标题混成同一种小字。
+ */
 @Composable
 private fun ContributorRow(
     name: String,
@@ -229,23 +323,33 @@ private fun ContributorRow(
     details: List<String> = emptyList(),
 ) {
     val dark = isSystemInDarkTheme()
-    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 12.dp),
+    ) {
         Text(
             text = name,
             style = MiuixTheme.textStyles.body1.shiftWeight(QingyuWeightDelta.SEMIBOLD),
             color = Color(QingyuTheme.primaryText(dark)),
         )
+        Spacer(Modifier.height(4.dp))
         Text(
             text = subtitle,
             style = MiuixTheme.textStyles.footnote1,
             color = Color(QingyuTheme.secondaryText(dark)),
         )
-        for (detail in details) {
-            Text(
-                text = "• $detail",
-                style = MiuixTheme.textStyles.footnote2,
-                color = Color(QingyuTheme.secondaryText(dark)),
-            )
+        if (details.isNotEmpty()) {
+            Spacer(Modifier.height(8.dp))
+            for (detail in details) {
+                Text(
+                    text = "• $detail",
+                    style = MiuixTheme.textStyles.footnote1,
+                    lineHeight = 18.sp,
+                    color = Color(QingyuTheme.secondaryText(dark)),
+                    modifier = Modifier.padding(bottom = 4.dp),
+                )
+            }
         }
     }
 }
@@ -451,4 +555,17 @@ private fun ContributorsPagePreviewOverview() {
             }
         }
     }
+}
+
+// ── 整页档（1200dp）────────────────────────────────────────────────────────
+//
+// 900dp 的一屏档只能看到前两张卡，第三张「参与适配」会被裁掉；整页档按页面
+// 真实长度给 1200dp，用来检查三张卡的整页节奏（组距、卡高、末项留白）。
+// 原 900 档保留，两档用途不同：900 看首屏观感，1200 看整页版式。
+
+@Suppress("unused")
+@Preview(name = "8 整页", showBackground = true, widthDp = 400, heightDp = 1200)
+@Composable
+private fun ContributorsPagePreviewFullPage() {
+    PreviewContributorsPage(previewState("有数据"))
 }

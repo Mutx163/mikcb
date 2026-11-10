@@ -2,11 +2,9 @@ package com.mutx163.qingyu.pages.about
 
 import android.content.Context
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -18,7 +16,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextOverflow
@@ -26,6 +23,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.mutx163.qingyu.components.QingyuCard
+import com.mutx163.qingyu.components.QingyuLoadingCenter
 import com.mutx163.qingyu.components.QingyuPageCardMargin
 import com.mutx163.qingyu.components.QingyuPageList
 import com.mutx163.qingyu.components.QingyuPageTheme
@@ -33,7 +31,6 @@ import com.mutx163.qingyu.components.QingyuWeightDelta
 import com.mutx163.qingyu.components.shiftWeight
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-import top.yukonga.miuix.kmp.basic.CircularProgressIndicator
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
@@ -85,19 +82,20 @@ fun ChangelogPage(
 
     QingyuPageScaffold(title = ChangelogStrings.title, onBack = onBack) {
         if (resolved == null) {
-            // 读盘期间：与 Dart 的 HyperosCircularProgress 居中态一致。
-            Box(
-                modifier = Modifier.fillMaxSize().padding(innerPadding),
-                contentAlignment = Alignment.Center,
-            ) {
-                CircularProgressIndicator()
-            }
+            // D1 档 A1（整页居中）：走共享加载件（24dp / 2.5 线宽，发布版 HyperosCircularProgress
+            // 的刻度）。原先直接裸调 miuix 默认的 30dp / 4dp，比发布版粗一倍。
+            QingyuLoadingCenter(modifier = Modifier.padding(innerPadding))
         } else {
             QingyuPageList(
                 innerPadding = innerPadding,
                 scrollBehavior = scrollBehavior,
-                // 官方配方：横向留白由卡片自己带（12dp），滚动条才贴得到屏幕边缘。
+                // 官方配方：页面横向 0，留白由每个块自己带（卡片 12dp）——
+                // 与关于族其它页同一套刻度（滚动条位置与此无关：miuix 竖条只用
+                // trackPadding 的上下两个值）。
                 horizontalPadding = QingyuPageCardMargin,
+                // 发布版列表统一 `listPadding` 顶部 4dp（`hyperos_tokens.dart:71`）：本页没有
+                // 分组标题兜底，首张卡直接顶在栏下会显得「被切掉一截」，补回这 4dp。
+                extraTopPadding = 4.dp,
                 contentPadding = PaddingValues(bottom = AboutPageListBottomPadding),
                 verticalArrangement = AboutPageListSpacing,
             ) {
@@ -185,13 +183,15 @@ private fun ChangelogCard(entry: ChangelogEntry) {
             if (digest.isEmpty) {
                 // 老版本里可能有解析不出条目的正文（纯段落），退回原文渲染，
                 // 不让「更新了但这里什么都没有」发生（Dart :326-332）。
+                // 这是**整段正文**不是条目：用 body2（14sp）+ 20 行高，段间 10dp，
+                // 与上面重点行（body2/19）同一档字，不再缩成 13sp 的脚注。
                 for (block in plainBlocks) {
                     Text(
                         text = block,
-                        style = MiuixTheme.textStyles.footnote1,
+                        style = MiuixTheme.textStyles.body2,
                         color = colors.onSurface,
                         lineHeight = 20.sp,
-                        modifier = Modifier.padding(bottom = 6.dp),
+                        modifier = Modifier.padding(bottom = 10.dp),
                     )
                 }
             } else {
@@ -208,10 +208,13 @@ private fun VersionTag(version: String) {
     Text(
         text = version,
         style = MiuixTheme.textStyles.footnote1.shiftWeight(QingyuWeightDelta.MEDIUM),
-        color = colors.onSurfaceSecondary,
+        // 版本号是这张卡的**身份**，不是附注：发布版 HyperosTag 的字色是 `onSurface`
+        //（`hyperos_badge.dart:93`）。原先用次级墨色，一屏十几张卡时版本号整体发灰，
+        // 第一眼看到的是一排小灰块而不是「这一版是哪个版本」。
+        color = colors.onSurface,
         modifier = Modifier
             .background(colors.surfaceContainerHigh, RoundedCornerShape(6.dp))
-            .padding(horizontal = 8.dp, vertical = 3.dp),
+            .padding(horizontal = 8.dp, vertical = 2.dp),
     )
 }
 
@@ -271,11 +274,15 @@ private fun ChangelogDigestView(digest: ReleaseNotesDigest) {
 
         if (expanded) {
             Spacer(Modifier.height(10.dp))
+            // 摘要与展开区之间的块级分节线（发布版 `Container(height: 1)` 同款：
+            // 这不是卡内行间线，`RowDividerGuardTest` 判的是 `HorizontalDivider`）。
+            // 颜色用主题的 `dividerLine` 槽，不再拿 `secondaryContainer` 当色块画——
+            // 后者在暗色下会亮成一根白条。
             Spacer(
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(1.dp)
-                    .background(colors.secondaryContainer),
+                    .background(colors.dividerLine),
             )
             Spacer(Modifier.height(10.dp))
             ReleaseNotesGroupedEntries(digest)
