@@ -67,6 +67,7 @@ object ScheduleStrings {
         ArbText("scheduleReminderPermissionMissing", "通知权限未开启，日程仍会保存，但提醒可能无法送达")
     val scheduleAppearanceSectionTitle = ArbText("scheduleAppearanceSectionTitle", "显示样式")
     val customPaletteAction = ArbText("customPaletteAction", "调色盘自定义颜色")
+    val colorPaletteTitle = ArbText("colorPaletteTitle", "调色盘")
     val selectStartTimeTitle = ArbText("selectStartTimeTitle", "选择开始时间")
     val selectEndTimeTitle = ArbText("selectEndTimeTitle", "选择结束时间")
     val scheduleTimeRangeInvalid = ArbText("scheduleTimeRangeInvalid", "结束时间必须晚于开始时间")
@@ -202,6 +203,7 @@ object ScheduleStrings {
             scheduleReminderPermissionMissing,
             scheduleAppearanceSectionTitle,
             customPaletteAction,
+            colorPaletteTitle,
             selectStartTimeTitle,
             selectEndTimeTitle,
             scheduleTimeRangeInvalid,

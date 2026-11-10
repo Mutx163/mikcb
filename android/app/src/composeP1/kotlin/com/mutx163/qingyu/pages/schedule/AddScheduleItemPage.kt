@@ -20,7 +20,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -38,6 +37,9 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import com.mutx163.qingyu.components.QingyuCard
+import com.mutx163.qingyu.components.QingyuColorChip
+import com.mutx163.qingyu.components.QingyuColorChipSize
+import com.mutx163.qingyu.components.QingyuColorPickerDialog
 import com.mutx163.qingyu.components.QingyuGlassIconButton
 import com.mutx163.qingyu.components.QingyuPageCardMargin
 import com.mutx163.qingyu.components.QingyuPageList
@@ -47,8 +49,6 @@ import com.mutx163.qingyu.components.shiftWeight
 import com.mutx163.qingyu.pages.task.TaskStrings
 import com.mutx163.qingyu.theme.QingyuTheme
 import top.yukonga.miuix.kmp.basic.BasicComponent
-import top.yukonga.miuix.kmp.basic.Button
-import top.yukonga.miuix.kmp.basic.ButtonDefaults
 import top.yukonga.miuix.kmp.basic.HorizontalDivider
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.IconButton
@@ -56,7 +56,6 @@ import top.yukonga.miuix.kmp.basic.NumberPicker
 import top.yukonga.miuix.kmp.basic.Scaffold
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TextField
-import top.yukonga.miuix.kmp.basic.TextButton
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.ChevronBackward
 import top.yukonga.miuix.kmp.theme.MiuixTheme
@@ -67,6 +66,7 @@ import top.yukonga.miuix.kmp.basic.TopAppBar
 import top.yukonga.miuix.kmp.preference.SwitchPreference
 import top.yukonga.miuix.kmp.icon.extended.Delete
 import top.yukonga.miuix.kmp.icon.extended.Ok
+import top.yukonga.miuix.kmp.icon.extended.Theme
 import top.yukonga.miuix.kmp.overlay.OverlayDialog
 import java.time.LocalDate
 import java.time.YearMonth
@@ -125,6 +125,8 @@ fun AddScheduleItemPage(
     // 日期/时间滚轮弹层：正在选「哪一端」（对应 Dart `_pickDate` / `_pickTime` 的 isStart）。
     var pickingDate by remember { mutableStateOf<ScheduleEndpoint?>(null) }
     var pickingTime by remember { mutableStateOf<ScheduleEndpoint?>(null) }
+    // 行尾调色盘入口点开的官方取色弹窗（常驻组合，显隐只由它驱动）。
+    var colorPickerOpen by remember { mutableStateOf(false) }
     // Dart 打开滚轮前先收键盘（add_schedule_item_screen.dart:749-751）：
     // 弹层里没有文本框，不收的话键盘会顶在弹层底下。
     val focusManager = LocalFocusManager.current
@@ -502,13 +504,16 @@ fun AddScheduleItemPage(
 
                             HorizontalDivider(modifier = Modifier.fillMaxWidth())
 
-                            // 颜色挑选横条
+                            // 颜色快捷行 + 行尾调色盘（发布版形态）
                             Text(
                                 text = ScheduleStrings.scheduleAppearanceSectionTitle.text,
                                 style = MiuixTheme.textStyles.footnote1.shiftWeight(QingyuWeightDelta.MEDIUM),
                                 // 与 QingyuTheme.sectionLabel(dark) 在主题桥里同值，走语义槽取色（R5/R6）。
                                 color = MiuixTheme.colorScheme.onSurfaceVariantActions,
                             )
+                            // 发布版 v2.1.4.1 `_buildColorPalette`：32dp 方块 + 8dp 间距的横向滚动
+                            // 快捷行，末尾一颗调色盘入口（点开全色取色）。尺寸/圆角/勾都走共享
+                            // `QingyuColorChipSize.QuickRow`，不在这里另起一套色块画法。
                             Row(
                                 modifier = Modifier
                                     .fillMaxWidth()
@@ -516,29 +521,37 @@ fun AddScheduleItemPage(
                                 horizontalArrangement = Arrangement.spacedBy(8.dp),
                             ) {
                                 for (hex in kColorPalette) {
-                                    val isChosen = selectedColor.equals(hex, ignoreCase = true)
-                                    Box(
-                                        modifier = Modifier
-                                            .size(34.dp)
-                                            .clip(RoundedCornerShape(8.dp))
-                                            .background(Color(android.graphics.Color.parseColor(hex)))
-                                            .border(
-                                                width = if (isChosen) 3.dp else 1.dp,
-                                                color = if (isChosen) Color.White else Color.Transparent,
-                                                shape = RoundedCornerShape(8.dp),
-                                            )
-                                            .clickable { selectedColor = hex },
-                                        contentAlignment = Alignment.Center,
-                                    ) {
-                                        if (isChosen) {
-                                            Box(
-                                                modifier = Modifier
-                                                    .size(10.dp)
-                                                    .clip(CircleShape)
-                                                    .background(Color.White),
-                                            )
-                                        }
-                                    }
+                                    QingyuColorChip(
+                                        hex = hex,
+                                        selected = selectedColor.equals(hex, ignoreCase = true),
+                                        onSelect = { selectedColor = it },
+                                        dark = dark,
+                                        size = QingyuColorChipSize.QuickRow,
+                                        showShadow = false,
+                                    )
+                                }
+                                Spacer(modifier = Modifier.width(2.dp))
+                                // 行尾调色盘入口：发布版同一颗 32dp 方块（`_buildPaletteSwatch(colorHex = null)`），
+                                // 按压面用官方 IconButton（同色块那一套）；图标取语义最近的官方
+                                // `MiuixIcons.Theme`（miuix 0.9.4 没有 palette 图标）。
+                                IconButton(
+                                    onClick = { colorPickerOpen = true },
+                                    modifier = Modifier.border(
+                                        width = 1.dp,
+                                        color = Color(QingyuTheme.outline(dark)),
+                                        shape = RoundedCornerShape(8.dp),
+                                    ),
+                                    backgroundColor = Color(QingyuTheme.surfaceContainer(dark)),
+                                    cornerRadius = 8.dp,
+                                    minWidth = 32.dp,
+                                    minHeight = 32.dp,
+                                ) {
+                                    Icon(
+                                        imageVector = MiuixIcons.Theme,
+                                        contentDescription = ScheduleStrings.customPaletteAction.text,
+                                        tint = Color(QingyuTheme.secondaryText(dark)),
+                                        modifier = Modifier.size(16.dp),
+                                    )
                                 }
                             }
                         }
@@ -723,79 +736,77 @@ fun AddScheduleItemPage(
     OverlayDialog(
         show = showOccurrenceScopeDialog,
         title = scopeTitleText,
+        // 发布版 `_chooseOccurrenceScope`（`add_schedule_item_screen.dart:824-849`）只给**编辑**
+        // 范围框带 `scheduleOccurrenceEditHint`，删除范围框的 message 是 null——同一句
+        // 「你正在编辑…」摆在删除框里是错话。这里改走官方 summary 槽：居中、次要色，
+        // 与发布版 HyperosDialog 的版式一致（原来是一段左对齐 body2 顶在按钮上方）。
+        summary = if (pendingActionIsDelete) null else ScheduleStrings.scheduleOccurrenceEditHint.text,
         onDismissRequest = { showOccurrenceScopeDialog = false },
         insideMargin = DpSize(16.dp, 16.dp),
     ) {
-        Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-            Text(
-                text = ScheduleStrings.scheduleOccurrenceEditHint.text,
-                style = MiuixTheme.textStyles.body2,
-                color = Color(QingyuTheme.secondaryText(dark)),
+        // 发布版只把第二个动作设成 `isPrimary`（「全部」），「本次」是次要的灰底按钮；
+        // 原来两颗都是主色实心，主次不分。
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            ScheduleActionButton(
+                text = thisActionText,
+                onClick = {
+                    showOccurrenceScopeDialog = false
+                    val draft = ScheduleItemData(
+                        id = scheduleItem?.id ?: "",
+                        title = title.trim(),
+                        location = location.trim().ifEmpty { null },
+                        note = note.trim().ifEmpty { null },
+                        startDate = startDate,
+                        endDate = endDate,
+                        startTime = startTime,
+                        endTime = endTime,
+                        color = selectedColor,
+                        recurrence = recurrence,
+                        reminderMinutesBefore = reminderMinutes,
+                        enabled = enabled,
+                        seriesId = scheduleItem?.seriesId,
+                        occurrenceDate = occurrenceDate,
+                    )
+                    if (pendingActionIsDelete) {
+                        onDelete(draft, false)
+                    } else {
+                        onSave(draft, false)
+                    }
+                },
+                modifier = Modifier.weight(1f),
             )
-            // 「本次 / 全部」都是出口，没有第三颗取消；两个都用主色实心。
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(12.dp),
-            ) {
-                ScheduleActionButton(
-                    text = thisActionText,
-                    onClick = {
-                        showOccurrenceScopeDialog = false
-                        val draft = ScheduleItemData(
-                            id = scheduleItem?.id ?: "",
-                            title = title.trim(),
-                            location = location.trim().ifEmpty { null },
-                            note = note.trim().ifEmpty { null },
-                            startDate = startDate,
-                            endDate = endDate,
-                            startTime = startTime,
-                            endTime = endTime,
-                            color = selectedColor,
-                            recurrence = recurrence,
-                            reminderMinutesBefore = reminderMinutes,
-                            enabled = enabled,
-                            seriesId = scheduleItem?.seriesId,
-                            occurrenceDate = occurrenceDate,
-                        )
-                        if (pendingActionIsDelete) {
-                            onDelete(draft, false)
-                        } else {
-                            onSave(draft, false)
-                        }
-                    },
-                    modifier = Modifier.weight(1f),
-                    primary = true,
-                )
-                ScheduleActionButton(
-                    text = allActionText,
-                    onClick = {
-                        showOccurrenceScopeDialog = false
-                        val draft = ScheduleItemData(
-                            id = scheduleItem?.id ?: "",
-                            title = title.trim(),
-                            location = location.trim().ifEmpty { null },
-                            note = note.trim().ifEmpty { null },
-                            startDate = startDate,
-                            endDate = endDate,
-                            startTime = startTime,
-                            endTime = endTime,
-                            color = selectedColor,
-                            recurrence = recurrence,
-                            reminderMinutesBefore = reminderMinutes,
-                            enabled = enabled,
-                            seriesId = scheduleItem?.seriesId,
-                            occurrenceDate = occurrenceDate,
-                        )
-                        if (pendingActionIsDelete) {
-                            onDelete(draft, true)
-                        } else {
-                            onSave(draft, true)
-                        }
-                    },
-                    modifier = Modifier.weight(1f),
-                    primary = true,
-                )
-            }
+            ScheduleActionButton(
+                text = allActionText,
+                onClick = {
+                    showOccurrenceScopeDialog = false
+                    val draft = ScheduleItemData(
+                        id = scheduleItem?.id ?: "",
+                        title = title.trim(),
+                        location = location.trim().ifEmpty { null },
+                        note = note.trim().ifEmpty { null },
+                        startDate = startDate,
+                        endDate = endDate,
+                        startTime = startTime,
+                        endTime = endTime,
+                        color = selectedColor,
+                        recurrence = recurrence,
+                        reminderMinutesBefore = reminderMinutes,
+                        enabled = enabled,
+                        seriesId = scheduleItem?.seriesId,
+                        occurrenceDate = occurrenceDate,
+                    )
+                    if (pendingActionIsDelete) {
+                        onDelete(draft, true)
+                    } else {
+                        onSave(draft, true)
+                    }
+                },
+                modifier = Modifier.weight(1f),
+                primary = true,
+            )
         }
     }
 
@@ -818,10 +829,13 @@ fun AddScheduleItemPage(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
             ) {
-                TextButton(
-                    modifier = Modifier.weight(1f),
+                // 取消与删除用同一颗按钮组件（灰底 / 破坏性红），两颗等宽等字阶；
+                // 原来取消是 TextButton（button 17sp）、删除是 ScheduleActionButton
+                // （body1 16sp），同一排放着两套字阶，肉眼能看出不齐。
+                ScheduleActionButton(
                     text = ScheduleStrings.cancelAction.text,
                     onClick = { showDeleteConfirmDialog = false },
+                    modifier = Modifier.weight(1f),
                 )
                 ScheduleActionButton(
                     text = ScheduleStrings.deleteAction.text,
@@ -835,6 +849,22 @@ fun AddScheduleItemPage(
             }
         }
     }
+
+    // 选色弹窗：常驻组合、显隐只由 `show` 驱动（退场动画才播得出来）；
+    // 确认才写回 selectedColor，取消不产生任何写入。
+    QingyuColorPickerDialog(
+        show = colorPickerOpen,
+        initialHex = selectedColor,
+        title = ScheduleStrings.colorPaletteTitle.text,
+        cancelLabel = ScheduleStrings.cancelAction.text,
+        confirmLabel = TaskStrings.confirmAction,
+        dark = dark,
+        onDismiss = { colorPickerOpen = false },
+        onConfirm = { hex ->
+            selectedColor = hex
+            colorPickerOpen = false
+        },
+    )
 
     // 起止日期滚轮（年/月/日三列官方 NumberPicker）。选完按 Dart `_pickDate` 归一：
     // 开始 > 结束时把另一端收拢，保证「结束不早于开始」。
@@ -922,6 +952,13 @@ private fun SchedulePickerField(label: String, value: String, onClick: () -> Uni
  * DatePicker，只有 `NumberPicker`——沿用 `SettingsSemesterHost` 的既定等价做法
  * （三列滚轮，交互结果一致）。年不循环、月/日循环；年/月改动后「日」的上界跟着
  * 变并就地收拢，避免确认写进一个不存在的日期（Dart `_YearMonthWheelDialog` 同口径）。
+ *
+ * 滚轮样式逐条照发布版那张年月日卡片：高 180dp、`title3`（w400）、每列文案「N年/N月/N日」、
+ * 取消 = 次要灰底 + 确认 = 主色实心、间距 12dp。两处刻意不同：
+ * - 发布版先弹月历，点标题才叠出这张滚轮卡；miuix 0.9.4 Kotlin 没有月历组件，这里直接出滚轮
+ *   （`SettingsSemesterHost` 同款等价做法）；
+ * - 标题用字段自己的「开始日期 / 结束日期」：发布版 `showMiuixDatePickerSheet` 调用没传
+ *   title，弹出来写的是默认值「开学日期」——那是发布版的一处串台，不复制。
  */
 @Composable
 private fun ScheduleDatePickerSheet(
@@ -998,22 +1035,22 @@ private fun ScheduleDatePickerSheet(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
             ) {
-                TextButton(
+                // 取消 = 次要灰底、确认 = 主色实心（发布版 `miuix_date_picker_sheet.dart`
+                // 的年月日滚轮是 HyperosButton secondary + primary）。两颗都走共享按钮，
+                // 字阶/高度/圆角天然一致；原来取消是 TextButton（17sp）、确认是裸 Button（16sp）。
+                ScheduleActionButton(
                     modifier = Modifier.weight(1f),
                     text = ScheduleStrings.cancelAction.text,
                     onClick = onDismiss,
                 )
-                Button(
+                ScheduleActionButton(
                     modifier = Modifier.weight(1f),
                     onClick = {
                         onConfirm(ScheduleDateUtils.formatDate(LocalDate.of(year, month, safeDay)))
                     },
-                    // 弹层的主出口（不是取消）⇒ 强调色；默认 `buttonColors()` 是灰底，
-                    // 读起来像禁用（审核 P1/S1 的同一条口径）。
-                    colors = ButtonDefaults.buttonColorsPrimary(),
-                ) {
-                    Text(text = TaskStrings.confirmAction)
-                }
+                    text = TaskStrings.confirmAction,
+                    primary = true,
+                )
             }
         }
     }
@@ -1080,18 +1117,18 @@ private fun ScheduleTimePickerSheet(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
             ) {
-                TextButton(
+                // 与日期滚轮同一个口径（见上）：取消灰底 + 确认主色，同组件同字阶。
+                ScheduleActionButton(
                     modifier = Modifier.weight(1f),
                     text = ScheduleStrings.cancelAction.text,
                     onClick = onDismiss,
                 )
-                Button(
+                ScheduleActionButton(
                     modifier = Modifier.weight(1f),
                     onClick = { onConfirm(ScheduleDateUtils.formatMinutes(hour * 60 + minute)) },
-                    colors = ButtonDefaults.buttonColorsPrimary(),
-                ) {
-                    Text(text = TaskStrings.confirmAction)
-                }
+                    text = TaskStrings.confirmAction,
+                    primary = true,
+                )
             }
         }
     }
@@ -1210,6 +1247,19 @@ private fun AddScheduleItemPagePreviewDark() {
 @Composable
 private fun AddScheduleItemPagePreviewLargeText() {
     PreviewAddScheduleItemPage(scheduleItem = previewScheduleItem(), textScale = 1.3f)
+}
+
+/**
+ * 「6 整页」：整页高度档。
+ *
+ * 900 那几档只画一屏，页面下半截（重复规则 / 提醒时间 / 颜色）会被画布裁掉；
+ * 这一档按整页高度给画布（1300dp），AS 里等比缩小能看全页、切「实际大小」可滚。
+ */
+@Suppress("unused")
+@Preview(name = "6 整页 1300", showBackground = true, widthDp = 400, heightDp = 1300)
+@Composable
+private fun AddScheduleItemPagePreviewFullPage() {
+    PreviewAddScheduleItemPage(scheduleItem = previewScheduleItem())
 }
 
 // ── 总览：三态并排，一屏看完 ─────────────────────────────────────────────────
