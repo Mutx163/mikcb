@@ -16,7 +16,9 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -89,6 +91,15 @@ fun WarehouseCourseImportPage(
      */
     phase: WarehouseListPhase = WarehouseListPhase.Idle,
     onRetry: () -> Unit = {},
+    /**
+     * 列表滚动位置（由宿主持有）。
+     *
+     * 为什么不在页面内自己 `rememberLazyListState()`：点学校是**本条目内换页**
+     * （见 `WarehouseImportHosts`），列表页会整体离开组合，页面内的滚动状态会清零；
+     * 发布版是 Navigator 压栈（列表页留在栈里），返回后仍停在原位置。由宿主传进来
+     * 才能在「学校列表 ↔ 适配器列表」这次换页里活下来。
+     */
+    listState: LazyListState = rememberLazyListState(),
 ) {
     var showMoreMenu by remember { mutableStateOf(false) }
 
@@ -122,6 +133,7 @@ fun WarehouseCourseImportPage(
             innerPadding = innerPadding,
             scrollBehavior = scrollBehavior,
             contentPadding = PaddingValues(bottom = 8.dp),
+            state = listState,
         ) {
             // 搜索输入栏：miuix 官方 `InputField`（`SearchBar.kt`）的**页内常驻**用法——
             // 自己就是一个 45dp 高、胶囊形、surfaceContainerHigh 底色的搜索框，左右自带

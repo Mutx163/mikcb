@@ -6,6 +6,7 @@ import android.content.Context
 import android.util.Log
 import android.widget.Toast
 import androidx.activity.compose.BackHandler
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -41,7 +42,8 @@ import kotlinx.coroutines.withContext
  *
  * | 控件 | 真落点 |
  * |---|---|
- * | 学校卡片 | 记住所选学校（[WarehouseShellState]）+ 写「最近使用」（[WarehouseImportPrefs]）+ 进适配器列表 |
+ * | 学校卡片 | 记住所选学校（[WarehouseShellState]）+ 进适配器列表；「最近使用」按发布版口径在**导入落库成功后**才写（`WarehouseWebLoginHost`，不在点学校时） |
+ * | 搜索框 | 学校名 / ID / 首字母 / 资源目录 + **适配器名**（[loadWarehouseSearchIndex] 拉 `index/search_index.yaml`）；返回列表时搜索词与滚动位置都保留 |
  * | 刷新 / 失败重试 | 重新走一遍候选链（[WarehouseRepositoryService]） |
  * | 适配器「网页登录导入」 | 进 `g2.webLogin`，地址取该适配器的 `import_url`（不再是 `example.com` 占位） |
  * | 适配器「查看详情」 | 进 `g2.adapterDetail`（真数据：分类/维护者/描述/脚本路径） |
@@ -128,7 +130,6 @@ fun WarehouseImportPickerHost(
     fetch: WarehouseFetch = remember { WarehouseJdkFetch() },
 ) {
     val context = LocalContext.current
-    val scope = rememberCoroutineScope()
     // 拉取偏好（更新下载渠道 → GitCode / 镜像前缀）。按设置的「渠道」选源，
     // 以前这里写死 GitHub raw 主地址，设置里切 GitCode 对适配仓毫无作用（见 WarehouseFetchOptions）。
     val fetchOptions = remember(context) {
@@ -154,6 +155,26 @@ fun WarehouseImportPickerHost(
     // 页面内的 remember 会清零 ⇒ 从学校页返回就丢了筛选条件。存在这里 ⇒ 返回后仍停在原来的
     // 搜索结果上（发布版是 Navigator 压栈，列表页留在栈里，观感一致）。
     var schoolSearchQuery by remember { mutableStateOf("") }
+
+    // 列表滚动位置同样提到宿主：点学校是本条目内换页（见下面那段），列表页会整体离开组合，
+    // 页面内 `rememberLazyListState()` 会清零 —— 发布版是 Navigator 压栈，列表页留在栈里，
+    // 返回后仍停在原位置。挂在这里（早退分支之前）才活得过那次换页。
+    val schoolListState = rememberLazyListState()
+
+    // 适配器（脚本）名搜索索引（`index/search_index.yaml`）：发布版在 `initState` 里单独拉
+    // （`warehouse_course_import_screen.dart:281-292`），失败就把索引留成 null、搜索退化为
+    // 只按学校字段匹配。这里同口径：尽力拉、失败回 null，**绝不拖垮学校清单**。
+    // 放在早退分支之前：进入适配器列表后不重复拉，返回选校列表也不再拉一次。
+    var searchIndex by remember { mutableStateOf<WarehouseSearchIndex?>(null) }
+    LaunchedEffect(fetch, fetchOptions) {
+        searchIndex = withContext(Dispatchers.IO) {
+            loadWarehouseSearchIndex(fetch, fetchOptions)
+        }
+    }
+    // 当前搜索词命中的适配器显示名（按学校 id 分组）。空词时为空表，学校卡片副标题不受影响。
+    val adapterMatches = remember(searchIndex, schoolSearchQuery) {
+        searchIndex?.matchedAdapterNamesBySchool(schoolSearchQuery) ?: emptyMap()
+    }
 
     // 2026-11-07 用户实报「学校列表点学校没反应，只把它排到第一位」：本条目的 state 上已经有选中的
     // 学校时，**在本条目内**换成适配器列表，不再指望 onOpenPage 推一层。
@@ -274,9 +295,9 @@ fun WarehouseImportPickerHost(
     WarehouseCourseImportPage(
         allSchools = schools,
         recentSchoolIds = recentSchoolIds,
-        // 适配器名搜索索引（`index/search_index.yaml`）这一刀没移植：搜索框仍按学校名/首字母/
-        // 代码匹配，按适配器名搜不到。属 8c 的补口，别当成已经能搜。
-        adapterMatches = emptyMap(),
+        // 适配器名搜索索引（`index/search_index.yaml`）：命中后学校照样进结果，
+        // 卡片副标题回显「匹配的适配器」；索引没拉到就是空表（退化为学校字段搜索）。
+        adapterMatches = adapterMatches,
         phase = phase,
         onBack = onBack,
         // P2 起有真值：存过宏才亮快捷导入入口，数量 = 已存宏数。
@@ -284,6 +305,7 @@ fun WarehouseImportPickerHost(
         quickImportMacroCount = macroRecords.size,
         searchQuery = schoolSearchQuery,
         onSearchQueryChange = { schoolSearchQuery = it },
+        listState = schoolListState,
         onRetry = { reloadToken += 1 },
         onSelectSchool = { school ->
             // 2026-11-07：这一跳不再 onOpenPage 推栈，改成函数顶部那段「本条目内换成适配器列表」。
@@ -293,10 +315,9 @@ fun WarehouseImportPickerHost(
             // 跨条目交接件也不必再发布：同一条目内换页，state 里就有学校，没有跨组合作用域的需求
             // （登录页/详情页那两跳仍要 publish，各自的 push 是不同 id，见下面）。
             state.school = school
-            scope.launch {
-                withContext(Dispatchers.IO) { prefs.recordRecentSchool(school.id) }
-                recentSchoolIds = withContext(Dispatchers.IO) { prefs.recentSchoolIds() }
-            }
+            // 「最近使用」不在这里记：发布版是**导入落库成功后**才 addRecentSchool
+            // （`warehouse_adapter_web_login_screen.dart:2504`），点学校只写本条目的 state。
+            // 写入口在 WarehouseWebLoginHost 的成功分支（跨 lane，见 2026-11-10 修复单）。
         },
         // 单宏直接跑；多宏弹选择器（Dart 课程导入页宏选择器同口径）。
         onQuickImportClick = {

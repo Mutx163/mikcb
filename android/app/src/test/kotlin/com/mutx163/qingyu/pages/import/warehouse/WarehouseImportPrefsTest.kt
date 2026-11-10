@@ -52,6 +52,10 @@ class WarehouseImportPrefsTest {
 
         assertEquals(emptyList<String>(), prefs.recentSchoolIds())
 
+        // 上限与发布版 addRecentSchool(limit: 6) 逐字一致（不是 8）：
+        // 两个入口写同一个键，上限不同会让「最近使用」在 Flutter / Compose 两侧不等长。
+        assertEquals(6, WarehouseImportPrefs.MAX_RECENT_SCHOOLS)
+
         prefs.recordRecentSchool("a")
         prefs.recordRecentSchool("b")
         assertEquals(listOf("b", "a"), prefs.recentSchoolIds())

@@ -65,6 +65,11 @@ class WarehouseImportPrefs(internal val store: KeyValueStore) {
      *
      * 上限存在是为了不让这个列表无限长——它只影响列表页顶部的 ★ 分组，
      * 长了既没用又会在同步时把档撑大。
+     *
+     * **写入时机由调用方保证**：发布版在网页登录页**导入落库成功后**才
+     * `addRecentSchool`（`warehouse_adapter_web_login_screen.dart:2504`），
+     * 不是「点一下学校」就记。点学校只写本条目的 `WarehouseShellState`，
+     * 否则「最近使用」会退化成「最近点过」（2026-11-10 审核差异）。
      */
     fun recordRecentSchool(schoolId: String) {
         if (schoolId.isBlank()) {
@@ -80,7 +85,15 @@ class WarehouseImportPrefs(internal val store: KeyValueStore) {
     companion object {
         const val CUSTOM_URL_PREFIX = "warehouse_custom_import_url_"
         const val RECENT_SCHOOL_IDS_KEY = "warehouse_recent_school_ids"
-        const val MAX_RECENT_SCHOOLS = 8
+
+        /**
+         * 最近使用最多留几所。
+         *
+         * = 发布版 `WarehouseImportPreferencesService.addRecentSchool(limit: 6)`
+         * （`warehouse_import_preferences_service.dart:379`）。原为 8，与发布版不一致，
+         * 且 Flutter 主入口仍会按 6 写同一个键——两套上限会让「准星」在不同入口间跳。
+         */
+        const val MAX_RECENT_SCHOOLS = 6
     }
 }
 

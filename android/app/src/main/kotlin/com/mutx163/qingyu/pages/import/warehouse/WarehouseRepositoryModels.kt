@@ -138,42 +138,180 @@ data class WarehouseAdaptersIndex(
 )
 
 /**
- * 全局搜索索引条目。
+ * 全局搜索索引里的一个适配器（只含搜索所需的 id 与名称）。
+ *
+ * 来自 `index/search_index.yaml`（仓库 `scripts/build_search_index.py` 聚合各校
+ * `adapters.yaml` 生成），与发布版 `WarehouseSearchAdapterEntry` 同形。
  */
 data class WarehouseSearchAdapterEntry(
-    val schoolId: String,
-    val schoolName: String,
     val adapterId: String,
     val adapterName: String,
 )
 
+/**
+ * 搜索索引里一所学校的适配器清单。
+ *
+ * 名称参与匹配；`adapterName` 为空时回退用 `adapterId` 显示（发布版
+ * `WarehouseSearchSchoolEntry.matchedAdapterNames` 同口径）。
+ */
 data class WarehouseSearchSchoolEntry(
     val id: String,
-    val name: String,
-    val initial: String = "",
-    val code: String = "",
-    val province: String = "",
-    val adapters: List<WarehouseSearchAdapterEntry> = emptyList(),
-)
-
-data class WarehouseSearchIndex(
-    val schools: List<WarehouseSearchSchoolEntry> = emptyList(),
     val adapters: List<WarehouseSearchAdapterEntry> = emptyList(),
 ) {
-    fun matchedAdapterNamesBySchool(keyword: String): Map<String, List<String>> {
-        val query = keyword.trim().lowercase()
-        if (query.isEmpty()) return emptyMap()
+    /** 关键词命中的适配器显示名（保持索引顺序；大小写不敏感；空白关键词回空表）。 */
+    fun matchedAdapterNames(keyword: String): List<String> {
+        val normalized = keyword.trim().lowercase()
+        if (normalized.isEmpty()) return emptyList()
 
-        val result = mutableMapOf<String, MutableList<String>>()
-        for (adapter in adapters) {
-            val nameMatch = adapter.adapterName.lowercase().contains(query)
-            val idMatch = adapter.adapterId.lowercase().contains(query)
-            if (nameMatch || idMatch) {
-                result.getOrPut(adapter.schoolId) { mutableListOf() }.add(adapter.adapterName)
+        return adapters.mapNotNull { adapter ->
+            val displayName = adapter.adapterName.ifEmpty { adapter.adapterId }
+            if (displayName.lowercase().contains(normalized) ||
+                adapter.adapterId.lowercase().contains(normalized)
+            ) {
+                displayName
+            } else {
+                null
             }
         }
-        return result
     }
+}
+
+/**
+ * `index/search_index.yaml` 的解析结果。
+ *
+ * 与发布版 `WarehouseSearchIndex` 同形（`version_id` + `schools[].adapters[]`）；
+ * 学校的 `name` / `initial` / `code` / `province` 不在这份索引里，也不参与搜索
+ * —— 学校字段的匹配在 [filterWarehouseSchools] 里做，这里只补「按适配器名」。
+ */
+data class WarehouseSearchIndex(
+    val versionId: String = "",
+    val schools: List<WarehouseSearchSchoolEntry> = emptyList(),
+) {
+    /**
+     * 关键词命中的适配器显示名，按学校 id 分组（仅含非空命中）。
+     *
+     * 选校页把它交给 [filterWarehouseSchools] 的 `adapterMatches`，于是「搜脚本名
+     * 也能带出对应学校」，并在学校卡片副标题里回显命中的脚本名。
+     */
+    fun matchedAdapterNamesBySchool(keyword: String): Map<String, List<String>> {
+        val normalized = keyword.trim()
+        if (normalized.isEmpty()) return emptyMap()
+
+        val matches = linkedMapOf<String, List<String>>()
+        for (school in schools) {
+            val names = school.matchedAdapterNames(normalized)
+            if (names.isNotEmpty()) {
+                matches[school.id] = names
+            }
+        }
+        return matches
+    }
+}
+
+/**
+ * 解析 `index/search_index.yaml`（发布版 `parseWarehouseSearchIndexYaml` 的逐条移植）。
+ *
+ * 宽松解析，与 Dart 侧同口径：跳过注释 / 空行 / 不完整条目；`version_id` 缺失记空串；
+ * 一所学校没有可用的适配器条目时整条丢弃（它给不出任何搜索命中）。
+ *
+ * YAML 子集与仓库文件一致：`schools:` 下缩进 2 的 `- id:` 开新学校，
+ * 学校块内 `adapters:` 下缩进 2 的 `- adapter_id:` 开新适配器，其余键值对按缩进归位。
+ * 不引第三方 YAML 库的理由见 [WarehouseYamlList] 的 KDoc。
+ */
+fun parseWarehouseSearchIndex(content: String): WarehouseSearchIndex {
+    var versionId = ""
+    val schools = mutableListOf<WarehouseSearchSchoolEntry>()
+
+    var inSchools = false
+    var inAdapters = false
+    var currentSchoolId: String? = null
+    var currentAdapters = mutableListOf<WarehouseSearchAdapterEntry>()
+    var currentAdapterId: String? = null
+    var currentAdapterName = ""
+
+    fun flushAdapter() {
+        val adapterId = currentAdapterId
+        if (!adapterId.isNullOrEmpty()) {
+            currentAdapters.add(WarehouseSearchAdapterEntry(adapterId, currentAdapterName))
+        }
+        currentAdapterId = null
+        currentAdapterName = ""
+    }
+
+    fun flushSchool() {
+        flushAdapter()
+        val schoolId = currentSchoolId
+        if (!schoolId.isNullOrEmpty() && currentAdapters.isNotEmpty()) {
+            schools.add(WarehouseSearchSchoolEntry(schoolId, currentAdapters.toList()))
+        }
+        currentSchoolId = null
+        currentAdapters = mutableListOf()
+        inAdapters = false
+    }
+
+    for (rawLine in content.split("\n")) {
+        // 制表符先换成两个空格**再算缩进**（仓库文件手写，混入 tab 时不能把缩进算成 1）。
+        val normalizedLine = rawLine.removeSuffix("\r").replace("\t", "  ")
+        val trimmed = normalizedLine.trim()
+        if (trimmed.isEmpty() || trimmed.startsWith("#")) {
+            continue
+        }
+        val indent = normalizedLine.length - normalizedLine.trimStart().length
+
+        if (indent == 0) {
+            val pair = WarehouseYamlList.parsePair(trimmed)
+            if (pair != null && pair.first == "version_id") {
+                versionId = pair.second
+                continue
+            }
+            if (trimmed == "schools:") {
+                inSchools = true
+                continue
+            }
+            if (inSchools) {
+                // 下一个顶层键：schools 列表结束。
+                flushSchool()
+                inSchools = false
+            }
+            continue
+        }
+        if (!inSchools) {
+            continue
+        }
+
+        if (indent == 2 && trimmed.startsWith("- ")) {
+            flushSchool()
+            val pair = WarehouseYamlList.parsePair(trimmed.substring(2).trim())
+            currentSchoolId = if (pair != null && pair.first == "id") pair.second else ""
+            continue
+        }
+        if (currentSchoolId == null) {
+            continue
+        }
+
+        if (trimmed == "adapters:") {
+            inAdapters = true
+            continue
+        }
+        if (!inAdapters) {
+            continue
+        }
+
+        if (trimmed.startsWith("- ")) {
+            flushAdapter()
+            val pair = WarehouseYamlList.parsePair(trimmed.substring(2).trim())
+            if (pair != null && pair.first == "adapter_id") {
+                currentAdapterId = pair.second
+            }
+            continue
+        }
+        val pair = WarehouseYamlList.parsePair(trimmed) ?: continue
+        if (pair.first == "adapter_name" && currentAdapterId != null) {
+            currentAdapterName = pair.second
+        }
+    }
+    flushSchool()
+    return WarehouseSearchIndex(versionId = versionId, schools = schools)
 }
 
 /**
