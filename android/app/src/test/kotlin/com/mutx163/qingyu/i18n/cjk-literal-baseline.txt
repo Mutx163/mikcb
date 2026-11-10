@@ -41,7 +41,7 @@ com/mutx163/qingyu/pages/settings/SettingsPageRenderers.kt:47
 com/mutx163/qingyu/pages/weather/WeatherCityPickerPage.kt:41
 com/mutx163/qingyu/pages/statistics/CourseStatisticsPage.kt:34
 com/mutx163/qingyu/pages/timetable/month/MonthViewPage.kt:33
-com/mutx163/qingyu/pages/timetable/HomeShellPreviews.kt:32
+com/mutx163/qingyu/pages/timetable/HomeShellPreviews.kt:38
 com/mutx163/qingyu/pages/timetable/TimetableWeekPage.kt:32
 com/mutx163/qingyu/pages/course/CourseOverviewPage.kt:29
 com/mutx163/qingyu/pages/statistics/StatisticsAnalysisPage.kt:28
@@ -116,6 +116,19 @@ com/mutx163/qingyu/components/QingyuEmptyState.kt:8
 #   色片/选色弹层的预览名与预览假数据（IDE 标签/样例，不上屏、不进 l10n）。
 com/mutx163/qingyu/components/QingyuColorChips.kt:2
 com/mutx163/qingyu/components/QingyuColorPickerDialog.kt:4
+# 2026-11-10 全仓预览补齐批（多 lane 收集，美化十/八/四/一 已核零登记）：
+#   timetable/HomeShellPreviews.kt 32→38（整壳预览）、components/QingyuSlider.kt 0→4、
+#   components/QingyuCard.kt 0→3、components/glass/QingyuGlassSurface.kt 0→2、
+#   components/BackToTodayFab.kt 0→3、components/glass/CourseCardGlassSurface.kt 0→2、
+#   components/liquid/LiquidCombinedBackdrop.kt 0→2、pages/live/LiveIslandPreview.kt 0→8。
+#   理由：@Preview(name = …) 与预览样例字符串是 IDE 标签/样例，不上屏、不进 l10n；屏上文案仍走 ArbText。
+com/mutx163/qingyu/components/QingyuSlider.kt:4
+com/mutx163/qingyu/components/QingyuCard.kt:3
+com/mutx163/qingyu/components/glass/QingyuGlassSurface.kt:2
+com/mutx163/qingyu/components/BackToTodayFab.kt:3
+com/mutx163/qingyu/components/glass/CourseCardGlassSurface.kt:2
+com/mutx163/qingyu/components/liquid/LiquidCombinedBackdrop.kt:2
+com/mutx163/qingyu/pages/live/LiveIslandPreview.kt:8
 com/mutx163/qingyu/pages/export/IcsExportPage.kt:8
 com/mutx163/qingyu/pages/time_scheme/TimeSchemeManagementPage.kt:8
 com/mutx163/qingyu/pages/settings/AppearanceEditorScreen.kt:7
