@@ -28,6 +28,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.mutx163.qingyu.components.QingyuCard
+import com.mutx163.qingyu.components.QingyuCardDefaults
 import com.mutx163.qingyu.components.QingyuGlassIconButton
 import com.mutx163.qingyu.components.QingyuPageCardMargin
 import com.mutx163.qingyu.components.QingyuPageList
@@ -73,10 +74,10 @@ import top.yukonga.miuix.kmp.basic.Text as MiuixText
  * |---|---|
  * | `HyperosSubpage(suffixes: 刷新 / 导出)`（`:101-115`） | [QingyuPageScaffold] 的 actions；导出在无快照时禁用 |
  * | 未安装说明（`:118-123`） | `not-installed` |
- * | `HyperosSectionLabel('Totals')` + `HyperosSummaryCard`（`:125-141`） | `totals-title` + [PerfIconBadge] + 三行文本 |
- * | `Startup phases`（`:144-162`） | `startup-*`，图标 teal |
- * | `Per-page ranking`（`:164-175`） | `page-*`，verdict 图标 + jank 档位色 |
- * | `Round control`（`:177-227`） | `round-card`：清空 / 展开 / 原文 / 复制文本 / 复制 JSON |
+ * | `HyperosSectionLabel('Totals')` + `HyperosSummaryCard`（`:125-141`） | `totals`：分组标题 + 指标卡（[PerfIconBadge] + 三行文本） |
+ * | `Startup phases`（`:144-162`） | `startup`：分组标题 + 卡（空态走同一 item 里的 [SectionHint]），图标 teal |
+ * | `Per-page ranking`（`:164-175`） | `pages`：分组标题 + 卡，verdict 图标 + jank 档位色 |
+ * | `Round control`（`:177-227`） | `round`：清空 / 展开 / 原文 / 复制文本 / 复制 JSON |
  * | energy 说明（`:229-239`） | `energy-note` |
  */
 @Composable
@@ -120,8 +121,15 @@ fun PerfReportPage(
         QingyuPageList(
             innerPadding = innerPadding,
             scrollBehavior = scrollBehavior,
+            // 官方配方（与关于族同一套，见 AboutStaticPage）：页面横向 0，留白由每个块
+            // 自己带（卡片 12dp）；原先是每张卡自己写 `.padding(horizontal = 12.dp)`，
+            // 视觉同样是 28/28，这次只是把口径搬到列表级，便于共享刻度。
+            // （滚动条位置不受这两处搬家影响：miuix 竖条只用 trackPadding 的上下两值。）
+            horizontalPadding = QingyuPageCardMargin,
             contentPadding = PaddingValues(bottom = 24.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp),
+            // 一组 = 一个 item（标题 + 卡），组间 12dp：与关于族/设置页同一套刻度
+            //（原先标题与卡各占一个 item + 8dp 间距，标题到卡顶是 16dp，松了一档）。
+            verticalArrangement = Arrangement.spacedBy(QingyuPageCardMargin),
         ) {
             if (!viewState.isAvailable) {
                 item(key = "not-installed") {
@@ -130,19 +138,24 @@ fun PerfReportPage(
                         style = MiuixTheme.textStyles.footnote1,
                         color = Color(QingyuTheme.secondaryText(dark)),
                         // 与分组标题的 28dp 轴线对齐（Card 外边距 12 + 行内 16）。
-                        modifier = Modifier.padding(horizontal = QingyuPageCardMargin + 16.dp),
+                        modifier = Modifier.padding(horizontal = 16.dp),
                     )
                 }
                 return@QingyuPageList
             }
 
             // ── Totals ──
-            item(key = "totals-title") { QingyuSectionTitle(PerfReportStrings.totalsSection) }
-            item(key = "totals-card") {
+            item(key = "totals") {
+                QingyuSectionTitle(
+                    text = PerfReportStrings.totalsSection,
+                    insideMargin = PerfSectionTitleMargin,
+                )
                 QingyuCard(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = QingyuPageCardMargin),
+                    modifier = Modifier.fillMaxWidth(),
+                    // 圆角 24 是**仓内设置组规范**（`QingyuCardDefaults.SettingsGroupCorner`），
+                    // 不是逐页对齐发布版像素——发布版 `HyperosAdaptiveCard` 已统一 16。
+                    // 同域「内存统计」整页重写后所有分组卡都用 24，本页跟随仓内口径保持一致。
+                    cornerRadius = QingyuCardDefaults.SettingsGroupCorner,
                     insideMargin = PaddingValues(16.dp),
                 ) {
                     Row(
@@ -161,6 +174,7 @@ fun PerfReportPage(
                                 maxLines = 1,
                                 overflow = TextOverflow.Ellipsis,
                             )
+                            // 指标名紧跟数字（2dp）：这两行是一句话，不能被行距拆开成两段。
                             MiuixText(
                                 text = viewState.summaryTitle,
                                 style = MiuixTheme.textStyles.footnote1,
@@ -175,7 +189,8 @@ fun PerfReportPage(
                                 text = viewState.summarySubtitle,
                                 style = MiuixTheme.textStyles.footnote1,
                                 color = Color(QingyuTheme.secondaryText(dark)),
-                                modifier = Modifier.padding(top = 4.dp),
+                                lineHeight = PerfNoteLineHeight,
+                                modifier = Modifier.padding(top = 6.dp),
                             )
                         }
                     }
@@ -183,20 +198,21 @@ fun PerfReportPage(
             }
 
             // ── Startup phases ──
-            item(key = "startup-title") { QingyuSectionTitle(PerfReportStrings.startupSection) }
-            if (viewState.startupRows.isEmpty()) {
-                item(key = "startup-empty") {
+            item(key = "startup") {
+                QingyuSectionTitle(
+                    text = PerfReportStrings.startupSection,
+                    insideMargin = PerfSectionTitleMargin,
+                )
+                if (viewState.startupRows.isEmpty()) {
                     SectionHint(text = viewState.noStartupText, dark = dark)
-                }
-            } else {
-                item(key = "startup-card") {
+                } else {
                     QingyuCard(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = QingyuPageCardMargin),
+                        modifier = Modifier.fillMaxWidth(),
+                        // 圆角同首卡：仓内设置组规范 24（非发布版逐页像素）。
+                        cornerRadius = QingyuCardDefaults.SettingsGroupCorner,
                         insideMargin = PaddingValues(vertical = 4.dp),
                     ) {
-                        viewState.startupRows.forEachIndexed { index, row ->
+                        viewState.startupRows.forEach { row ->
                             PerfRow(
                                 icon = MiuixIcons.Stopwatch,
                                 // Dart `:155`：`iconAccent: HyperosIconColors.teal`
@@ -212,18 +228,21 @@ fun PerfReportPage(
             }
 
             // ── Per-page ranking ──
-            item(key = "page-title") { QingyuSectionTitle(PerfReportStrings.pageSection) }
-            if (viewState.pageRows.isEmpty()) {
-                item(key = "page-empty") { SectionHint(text = viewState.noPagesText, dark = dark) }
-            } else {
-                item(key = "page-card") {
+            item(key = "pages") {
+                QingyuSectionTitle(
+                    text = PerfReportStrings.pageSection,
+                    insideMargin = PerfSectionTitleMargin,
+                )
+                if (viewState.pageRows.isEmpty()) {
+                    SectionHint(text = viewState.noPagesText, dark = dark)
+                } else {
                     QingyuCard(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = QingyuPageCardMargin),
+                        modifier = Modifier.fillMaxWidth(),
+                        // 圆角同首卡：仓内设置组规范 24（非发布版逐页像素）。
+                        cornerRadius = QingyuCardDefaults.SettingsGroupCorner,
                         insideMargin = PaddingValues(vertical = 4.dp),
                     ) {
-                        viewState.pageRows.forEachIndexed { index, row ->
+                        viewState.pageRows.forEach { row ->
                             PerfRow(
                                 icon = verdictIcon(row.verdict),
                                 iconTint = accentColor(row.accent, dark),
@@ -238,12 +257,15 @@ fun PerfReportPage(
             }
 
             // ── Round control ──
-            item(key = "round-title") { QingyuSectionTitle(PerfReportStrings.roundSection) }
-            item(key = "round-card") {
+            item(key = "round") {
+                QingyuSectionTitle(
+                    text = PerfReportStrings.roundSection,
+                    insideMargin = PerfSectionTitleMargin,
+                )
                 QingyuCard(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = QingyuPageCardMargin),
+                    modifier = Modifier.fillMaxWidth(),
+                    // 圆角同首卡：仓内设置组规范 24（非发布版逐页像素）。
+                    cornerRadius = QingyuCardDefaults.SettingsGroupCorner,
                     insideMargin = PaddingValues(vertical = 4.dp),
                 ) {
                     PerfRow(
@@ -317,10 +339,9 @@ fun PerfReportPage(
                     text = viewState.energyNote,
                     style = MiuixTheme.textStyles.footnote1,
                     color = Color(QingyuTheme.secondaryText(dark)),
-                    modifier = Modifier.padding(
-                        horizontal = QingyuPageCardMargin + 16.dp,
-                        vertical = 8.dp,
-                    ),
+                    lineHeight = PerfNoteLineHeight,
+                    // 列表已带 12dp 页边，这里只让 16dp ⇒ 落在 28dp 轴线。
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
                 )
             }
         }
@@ -352,6 +373,17 @@ private fun PerfIconBadge() {
     }
 }
 
+/** 分组标题内边距：列表给 12dp + 这里 16dp = 官方 28dp 轴线（与卡内行文字同缘）。 */
+private val PerfSectionTitleMargin = PaddingValues(horizontal = 16.dp, vertical = 8.dp)
+
+/**
+ * 说明/脚注行的行高：19sp（≈ footnote1 的 1.45 倍）。
+ *
+ * 本页三处说明字（指标卡副标题、energy 说明、空数据提示）共用这一个值，抽出来避免
+ * 「同一个 19sp 抄三遍」——改行距时只改一处，也不会漏掉其中一段。
+ */
+private val PerfNoteLineHeight = 19.sp
+
 /** 分组里缺内容时的灰字提示。 */
 @Composable
 private fun SectionHint(text: String, dark: Boolean) {
@@ -359,7 +391,8 @@ private fun SectionHint(text: String, dark: Boolean) {
         text = text,
         style = MiuixTheme.textStyles.footnote1,
         color = Color(QingyuTheme.secondaryText(dark)),
-        modifier = Modifier.padding(horizontal = QingyuPageCardMargin + 16.dp),
+        lineHeight = PerfNoteLineHeight,
+        modifier = Modifier.padding(horizontal = 16.dp),
     )
 }
 
@@ -389,7 +422,9 @@ private fun PerfRow(
             .clickable(onClick = onClick)
     }
     Row(
-        modifier = rowModifier.padding(horizontal = 14.dp, vertical = 10.dp),
+        // 左右 16dp：列表 12 + 16 = 官方 28dp 轴线（原先 14dp，比分组标题缩进少 2dp，
+        // 一行一行的左缘和标题差半格，看着「行不齐」）。上下 12dp 与 Preference 行同高。
+        modifier = rowModifier.padding(horizontal = 16.dp, vertical = 12.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(12.dp),
     ) {
@@ -621,4 +656,17 @@ private fun PreviewPerfReportOverview() {
             }
         }
     }
+}
+
+// ── 整页档（1600dp）────────────────────────────────────────────────────────
+//
+// 900dp 的一屏档只能看到 Totals + Startup 两段，排行与 Round control 被裁掉；
+// 整页档给 1600dp，用来检查四段（指标卡 / 启动阶段 / 页排行 / 轮次控制）的整页节奏。
+// 原 900 档保留：900 看首屏，1600 看整页。
+
+@Suppress("unused")
+@Preview(name = "7 整页", showBackground = true, widthDp = 400, heightDp = 1600)
+@Composable
+private fun PreviewPerfReportFullPage() {
+    PreviewPerfReportBody(previewPerfState("有数据"))
 }
