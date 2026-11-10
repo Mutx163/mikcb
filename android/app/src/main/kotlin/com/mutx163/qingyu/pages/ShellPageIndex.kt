@@ -403,8 +403,9 @@ fun ShellPageContent(
     // 导入三页的跨路由信号（2026-10-29 F07；2026-11-10 第二波改成进程级单例 + 代数）：
     // 子页成功落盘后通知入口页自关，对应 Dart 的 `Navigator.pop(true)` + 入口页
     // `_openImportPage` 的关单规则。同样不能是每路由一份，否则入口页永远读不到。
-    val importBridge = ImportShellBridge
-    // 教务仓库三页的跨路由暂存（选中学校 / 适配器）。与 importBridge 同挂法：
+    // 2026-11-10 J12：宿主已改成直接调 `ImportShellBridge.markImported()`，壳这边不再需要
+    // 本地别名（留着就是一条没人读的 val）。
+    // 教务仓库三页的跨路由暂存（选中学校 / 适配器）。与 `TransferShellBridge` 同挂法：
     // 切页不丢，退出壳即丢（`WarehouseImportHosts.kt:70-80`）。
     val warehouseState = remember { WarehouseShellState() }
     val warehouseContext = LocalContext.current
@@ -2110,12 +2111,10 @@ fun ShellPageContent(
         )
         "g1.icsImport" -> IcsImportHost(
             repository = wiring.timetable,
-            bridge = importBridge,
             onBack = onBack,
         )
         "g1.spreadsheetImport" -> SpreadsheetImportHost(
             repository = wiring.timetable,
-            bridge = importBridge,
             onBack = onBack,
         )
 
@@ -2162,14 +2161,12 @@ fun ShellPageContent(
         // 识图导入：剪贴板复制/粘贴、官方提示词弹层、确认导入真写课表（失败回滚并提示）。
         "g2.aiImageImport" -> AiImageCourseImportHost(
             repository = wiring.timetable,
-            bridge = importBridge,
             onBack = onBack,
         )
 
         // ── P3-G3 导出与传输 ──────────────────────────────────────────
         "g3.dataTransfer" -> DataTransferHost(
             repository = wiring.timetable,
-            bridge = transferBridge,
             onBack = onBack,
             onOpenPage = onOpenPage,
             onRequestQrSend = { onOpenPage("g3.qrSend") },
