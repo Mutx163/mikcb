@@ -1057,9 +1057,9 @@
     }
   },
   "duringClassReminderTitle": "課中與下課提醒",
-  "liveClassReminderLeadTitle": "重點提醒切入時機",
-  "liveClassReminderLeadOptionImmediate": "一上課就切換",
-  "liveClassReminderLeadOptionMinutes": "下課前 {minutes} 分鐘切換",
+  "liveClassReminderLeadTitle": "重點提醒切換時機",
+  "liveClassReminderLeadOptionImmediate": "一上課就切",
+  "liveClassReminderLeadOptionMinutes": "下課前 {minutes} 分",
   "@liveClassReminderLeadOptionMinutes": {
     "placeholders": {
       "minutes": {
@@ -1397,10 +1397,10 @@
       }
     }
   },
-  "liveClassReminderLeadSummaryImmediate": "一上課切重點提醒，下課前逐秒倒數",
-  "liveClassReminderLeadSummaryKeepNormal": "課中普通通知，下課前切重點提醒",
-  "liveClassReminderLeadSummaryIsland": "課中普通通知，下課前切超級島",
-  "liveClassReminderLeadSummaryFocused": "下課前開始重點提醒",
+  "liveClassReminderLeadSummaryImmediate": "下課前逐秒倒數",
+  "liveClassReminderLeadSummaryKeepNormal": "先普通通知，到時再切",
+  "liveClassReminderLeadSummaryIsland": "先普通通知，到時切超級島",
+  "liveClassReminderLeadSummaryFocused": "到時才開始重點提醒",
   "homeTitleSectionTitle": "首頁標題",
   "homeTitleStyleLabel": "標題樣式",
   "themeSeedSectionTitle": "應用主題色",
@@ -2082,6 +2082,7 @@
   "noValidWarehouseLoginUrl": "未找到有效的教務登入網址",
   "noMacroRecordFound": "未找到錄製記錄，請先完成一次錄製",
   "quickImportPlayingTitle": "自動匯入中…",
+  "quickImportRowSubtitle": "回放已錄製的匯入腳本",
   "quickImportExecutingScriptTitle": "回放完成，正在執行匯入腳本…",
   "quickImportManualInputTitle": "需要手動操作",
   "quickImportManualInputHint": "請完成當前需要的手動操作，完成後點擊繼續",
@@ -2125,6 +2126,14 @@
   "warehouseLoadIssueInvalidFormat": "適配倉回傳的內容無法辨識，請回報給適配倉維護者",
   "warehouseLoadIssueShowingCached": "網絡不太順暢，下面顯示的是上次載入的列表",
   "warehouseScriptLoadFailed": "無法讀取適配器腳本",
+  "warehouseScriptLoadFailedWithSources": "無法讀取適配器腳本：已嘗試 {sources}",
+  "@warehouseScriptLoadFailedWithSources": {
+    "placeholders": {
+      "sources": {
+        "type": "String"
+      }
+    }
+  },
   "stopRecordingTooltip": "停止錄製",
   "startRecordingTooltip": "錄製操作",
   "savedImportUrlHint": "已保存教務網址，下次可直接匯入",
@@ -5895,6 +5904,19 @@
   "appearanceEditorEntrySubtitle": "整頁縮小預覽，改桌布與材質",
   "commonLoadingLabel": "載入中",
   "warehouseSessionAlreadyActive": "教務仍處於登入狀態，可直接匯入",
+  "warehouseSourceGitCode": "GitCode 渠道",
+  "warehouseSourceGitHubRaw": "GitHub 直連",
+  "warehouseSourceWithMirrors": "{source} + {mirrorCount} 個鏡像",
+  "@warehouseSourceWithMirrors": {
+    "placeholders": {
+      "source": {
+        "type": "String"
+      },
+      "mirrorCount": {
+        "type": "int"
+      }
+    }
+  },
   "underlineTabSemanticsLabel": "{text}，標籤",
   "@underlineTabSemanticsLabel": {
     "placeholders": {

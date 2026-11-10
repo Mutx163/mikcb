@@ -1058,7 +1058,7 @@
     }
   },
   "duringClassReminderTitle": "授業中・終了通知",
-  "liveClassReminderLeadTitle": "フォーカス切替時点",
+  "liveClassReminderLeadTitle": "フォーカス切替の時点",
   "liveClassReminderLeadOptionImmediate": "授業開始と同時に切替",
   "liveClassReminderLeadOptionMinutes": "終了{minutes}分前に切替",
   "@liveClassReminderLeadOptionMinutes": {
@@ -1398,10 +1398,10 @@
       }
     }
   },
-  "liveClassReminderLeadSummaryImmediate": "授業開始から重点、終了前は秒単位",
-  "liveClassReminderLeadSummaryKeepNormal": "授業中は通常通知、終了前に重点へ",
-  "liveClassReminderLeadSummaryIsland": "授業中は通常通知、終了前に島へ",
-  "liveClassReminderLeadSummaryFocused": "終了前に重点リマインダーを開始",
+  "liveClassReminderLeadSummaryImmediate": "終了前に毎秒カウントダウン",
+  "liveClassReminderLeadSummaryKeepNormal": "通常通知、切替時点で重点へ",
+  "liveClassReminderLeadSummaryIsland": "通常通知、切替時点で島へ",
+  "liveClassReminderLeadSummaryFocused": "切替時点から重点通知",
   "homeTitleSectionTitle": "ホームタイトル",
   "homeTitleStyleLabel": "タイトルスタイル",
   "themeSeedSectionTitle": "アプリテーマカラー",
@@ -2089,6 +2089,7 @@
   "noValidWarehouseLoginUrl": "有効な教務ログインURLが見つかりません",
   "noMacroRecordFound": "録画記録が見つかりません。先に録画を完了してください",
   "quickImportPlayingTitle": "自動インポート中…",
+  "quickImportRowSubtitle": "録画済みスクリプトを再生",
   "quickImportExecutingScriptTitle": "再生完了、インポートスクリプトを実行中…",
   "quickImportManualInputTitle": "手動操作が必要",
   "quickImportManualInputHint": "必要な手動操作を完了してから「続行」をタップしてください",
@@ -2132,6 +2133,14 @@
   "warehouseLoadIssueInvalidFormat": "取得した内容を認識できません。適応倉庫のメンテナーに報告してください",
   "warehouseLoadIssueShowingCached": "通信が不安定です。以下は前回読み込んだ一覧です",
   "warehouseScriptLoadFailed": "アダプターのスクリプトを読み込めません",
+  "warehouseScriptLoadFailedWithSources": "アダプターのスクリプトを読み込めません：{sources} を試しました",
+  "@warehouseScriptLoadFailedWithSources": {
+    "placeholders": {
+      "sources": {
+        "type": "String"
+      }
+    }
+  },
   "stopRecordingTooltip": "録画停止",
   "startRecordingTooltip": "操作を録画",
   "savedImportUrlHint": "教務URLを保存済み，次回直接インポート可能",
@@ -5750,6 +5759,19 @@
   "appearanceEditorEntrySubtitle": "縮小プレビューで壁紙と素材を調整",
   "commonLoadingLabel": "読み込み中",
   "warehouseSessionAlreadyActive": "教务システムにはまだログインしています。そのままインポートできます",
+  "warehouseSourceGitCode": "GitCode チャンネル",
+  "warehouseSourceGitHubRaw": "GitHub 直結",
+  "warehouseSourceWithMirrors": "{source} + ミラー {mirrorCount} 件",
+  "@warehouseSourceWithMirrors": {
+    "placeholders": {
+      "source": {
+        "type": "String"
+      },
+      "mirrorCount": {
+        "type": "int"
+      }
+    }
+  },
   "underlineTabSemanticsLabel": "{text}タブ",
   "@underlineTabSemanticsLabel": {
     "placeholders": {

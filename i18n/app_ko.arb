@@ -1398,10 +1398,10 @@
       }
     }
   },
-  "liveClassReminderLeadSummaryImmediate": "수업 시작부터 중요, 종료 전 초 단위",
-  "liveClassReminderLeadSummaryKeepNormal": "수업 중 일반 알림, 종료 전 중요로",
-  "liveClassReminderLeadSummaryIsland": "수업 중 일반 알림, 종료 전 아일랜드로",
-  "liveClassReminderLeadSummaryFocused": "종료 전 중요 알림 시작",
+  "liveClassReminderLeadSummaryImmediate": "종료 전 매초 카운트다운",
+  "liveClassReminderLeadSummaryKeepNormal": "일반 알림, 전환 시점에 중요로",
+  "liveClassReminderLeadSummaryIsland": "일반 알림, 전환 시점에 아일랜드로",
+  "liveClassReminderLeadSummaryFocused": "전환 시점부터 중요 알림",
   "homeTitleSectionTitle": "홈 제목",
   "homeTitleStyleLabel": "제목 스타일",
   "themeSeedSectionTitle": "앱 테마 색상",
@@ -2089,6 +2089,7 @@
   "noValidWarehouseLoginUrl": "유효한 교무 로그인 URL을 찾을 수 없습니다",
   "noMacroRecordFound": "녹화 기록을 찾을 수 없습니다. 먼저 녹화를 완료하세요",
   "quickImportPlayingTitle": "자동 가져오는 중…",
+  "quickImportRowSubtitle": "녹화된 스크립트 재생",
   "quickImportExecutingScriptTitle": "재생 완료, 가져오기 스크립트 실행 중…",
   "quickImportManualInputTitle": "수동 작업 필요",
   "quickImportManualInputHint": "필요한 수동 작업을 완료한 후 계속을 탭하세요",
@@ -2132,6 +2133,14 @@
   "warehouseLoadIssueInvalidFormat": "받아온 내용을 인식할 수 없습니다. 적응 저장소 관리자에게 알려 주세요",
   "warehouseLoadIssueShowingCached": "네트워크가 원활하지 않습니다. 아래는 마지막으로 불러온 목록입니다",
   "warehouseScriptLoadFailed": "어댑터 스크립트를 읽을 수 없습니다",
+  "warehouseScriptLoadFailedWithSources": "어댑터 스크립트를 읽을 수 없습니다: {sources} 시도함",
+  "@warehouseScriptLoadFailedWithSources": {
+    "placeholders": {
+      "sources": {
+        "type": "String"
+      }
+    }
+  },
   "stopRecordingTooltip": "녹화 중지",
   "startRecordingTooltip": "동작 녹화",
   "savedImportUrlHint": "교무 URL 저장됨. 다음에 바로 가져올 수 있습니다",
@@ -5895,6 +5904,19 @@
   "appearanceEditorEntrySubtitle": "축소 미리보기에서 배경화면 조정",
   "commonLoadingLabel": "불러오는 중",
   "warehouseSessionAlreadyActive": "교무 시스템에 아직 로그인되어 있습니다. 바로 가져올 수 있습니다",
+  "warehouseSourceGitCode": "GitCode 채널",
+  "warehouseSourceGitHubRaw": "GitHub 직접 연결",
+  "warehouseSourceWithMirrors": "{source} + 미러 {mirrorCount}개",
+  "@warehouseSourceWithMirrors": {
+    "placeholders": {
+      "source": {
+        "type": "String"
+      },
+      "mirrorCount": {
+        "type": "int"
+      }
+    }
+  },
   "underlineTabSemanticsLabel": "{text} 탭",
   "@underlineTabSemanticsLabel": {
     "placeholders": {

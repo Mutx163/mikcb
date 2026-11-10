@@ -1228,9 +1228,9 @@
     }
   },
   "duringClassReminderTitle": "Class & end alerts",
-  "liveClassReminderLeadTitle": "Highlight timing",
-  "liveClassReminderLeadOptionImmediate": "As soon as class starts",
-  "liveClassReminderLeadOptionMinutes": "Switch {minutes} min before class ends",
+  "liveClassReminderLeadTitle": "Highlight switch timing",
+  "liveClassReminderLeadOptionImmediate": "Switch when class starts",
+  "liveClassReminderLeadOptionMinutes": "Switch {minutes} min before end",
   "@liveClassReminderLeadOptionMinutes": {
     "placeholders": {
       "minutes": {
@@ -1501,10 +1501,10 @@
       }
     }
   },
-  "liveClassReminderLeadSummaryImmediate": "Island from the start, counts down by the second",
-  "liveClassReminderLeadSummaryKeepNormal": "Normal notification, switches to priority later",
-  "liveClassReminderLeadSummaryIsland": "Normal notification, switches to Island",
-  "liveClassReminderLeadSummaryFocused": "Priority reminder before class ends",
+  "liveClassReminderLeadSummaryImmediate": "Counts down every second before the end",
+  "liveClassReminderLeadSummaryKeepNormal": "Normal notice first, switches on time",
+  "liveClassReminderLeadSummaryIsland": "Normal notice first, then Island on time",
+  "liveClassReminderLeadSummaryFocused": "Highlight starts at the set time",
   "homeTitleSectionTitle": "Home title",
   "homeTitleStyleLabel": "Title style",
   "themeSeedSectionTitle": "App theme color",
@@ -2301,6 +2301,7 @@
   "noValidWarehouseLoginUrl": "No valid academic-system login URL found",
   "noMacroRecordFound": "No recording found. Complete a recording first.",
   "quickImportPlayingTitle": "Auto-importing…",
+  "quickImportRowSubtitle": "Replay a recorded import script",
   "quickImportExecutingScriptTitle": "Playback finished. Running import script…",
   "quickImportManualInputTitle": "Manual action required",
   "quickImportManualInputHint": "Complete the required manual step, then tap Continue",
@@ -2344,6 +2345,14 @@
   "warehouseLoadIssueInvalidFormat": "The adapter repository returned data we cannot read, please report it to the maintainers",
   "warehouseLoadIssueShowingCached": "The network seems unstable, this is the list from the previous load",
   "warehouseScriptLoadFailed": "Unable to read the adapter script",
+  "warehouseScriptLoadFailedWithSources": "Unable to read the adapter script. Tried {sources}",
+  "@warehouseScriptLoadFailedWithSources": {
+    "placeholders": {
+      "sources": {
+        "type": "String"
+      }
+    }
+  },
   "stopRecordingTooltip": "Stop recording",
   "startRecordingTooltip": "Record actions",
   "savedImportUrlHint": "Academic-system URL saved. You can import directly next time",
@@ -5895,6 +5904,19 @@
   "appearanceEditorEntrySubtitle": "Whole-page mini preview",
   "commonLoadingLabel": "Loading…",
   "warehouseSessionAlreadyActive": "Your school account is still signed in, so you can import right away",
+  "warehouseSourceGitCode": "GitCode channel",
+  "warehouseSourceGitHubRaw": "GitHub direct",
+  "warehouseSourceWithMirrors": "{source} + {mirrorCount} mirrors",
+  "@warehouseSourceWithMirrors": {
+    "placeholders": {
+      "source": {
+        "type": "String"
+      },
+      "mirrorCount": {
+        "type": "int"
+      }
+    }
+  },
   "underlineTabSemanticsLabel": "{text} tab",
   "@underlineTabSemanticsLabel": {
     "placeholders": {

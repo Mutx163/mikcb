@@ -23,7 +23,7 @@ object ArbCatalog {
         else -> null
     }
 
-    // ── en（3040 条）──
+    // ── en（3045 条）──
     private fun lookupen(key: String): String? = lookupen1(key) ?: lookupen2(key) ?: lookupen3(key) ?: lookupen4(key) ?: lookupen5(key) ?: lookupen6(key) ?: lookupen7(key) ?: lookupen8(key) ?: lookupen9(key) ?: lookupen10(key) ?: lookupen11(key)
     private fun lookupen1(key: String): String? = when (key) {
         "aboutAdvancedOptionsTitle" -> "Advanced options"
@@ -1451,13 +1451,13 @@ object ArbCatalog {
         "liveBeforeClassQuickActionNone" -> "Hidden"
         "liveBeforeClassQuickActionPriorityOnly" -> "Priority contacts only"
         "liveBeforeClassQuickActionSilent" -> "Turn on silent mode"
-        "liveClassReminderLeadOptionImmediate" -> "As soon as class starts"
-        "liveClassReminderLeadOptionMinutes" -> "Switch {minutes} min before class ends"
-        "liveClassReminderLeadSummaryFocused" -> "Priority reminder before class ends"
-        "liveClassReminderLeadSummaryImmediate" -> "Island from the start, counts down by the second"
-        "liveClassReminderLeadSummaryIsland" -> "Normal notification, switches to Island"
-        "liveClassReminderLeadSummaryKeepNormal" -> "Normal notification, switches to priority later"
-        "liveClassReminderLeadTitle" -> "Highlight timing"
+        "liveClassReminderLeadOptionImmediate" -> "Switch when class starts"
+        "liveClassReminderLeadOptionMinutes" -> "Switch {minutes} min before end"
+        "liveClassReminderLeadSummaryFocused" -> "Highlight starts at the set time"
+        "liveClassReminderLeadSummaryImmediate" -> "Counts down every second before the end"
+        "liveClassReminderLeadSummaryIsland" -> "Normal notice first, then Island on time"
+        "liveClassReminderLeadSummaryKeepNormal" -> "Normal notice first, switches on time"
+        "liveClassReminderLeadTitle" -> "Highlight switch timing"
         "liveCountdownTextStyleMinuteOnlyCn" -> "Minutes only, Chinese units (5分钟)"
         "liveCountdownTextStyleMinuteOnlyMin" -> "min (5min)"
         "liveCountdownTextStyleMinuteOnlySlash" -> "/min (5/min)"
@@ -2170,6 +2170,7 @@ object ArbCatalog {
         "quickImportPlaybackStepProgress" -> "Step {current} / {total}"
         "quickImportPlayingTitle" -> "Auto-importing…"
         "quickImportRetryAction" -> "Retry"
+        "quickImportRowSubtitle" -> "Replay a recorded import script"
         "quickImportTitle" -> "Quick import - {name}"
         "quickImportTooltip" -> "Quick import"
         "quickImportUnknownError" -> "An unknown error occurred"
@@ -2446,10 +2447,10 @@ object ArbCatalog {
         "serviceMsgMacroElementNotFound" -> "Element not found: {selector}"
         "serviceMsgMacroFillSelectorEmpty" -> "Fill-field selector is empty."
         "serviceMsgMacroManualInputDefault" -> "Manual action required."
-        "serviceMsgMacroNavigateUrlEmpty" -> "Navigation URL is empty."
         else -> null
     }
     private fun lookupen9(key: String): String? = when (key) {
+        "serviceMsgMacroNavigateUrlEmpty" -> "Navigation URL is empty."
         "serviceMsgMacroNavigateUrlInvalid" -> "Invalid URL: {url}"
         "serviceMsgMacroNoSteps" -> "No recorded steps."
         "serviceMsgMacroPollTimeout" -> "{stepLabel} timed out ({timeoutSeconds}s){lastError}"
@@ -2749,10 +2750,10 @@ object ArbCatalog {
         "supportRunningBadge" -> "Active"
         "supportSaveShort" -> "Save"
         "supportTapQrHint" -> "Tap to enlarge"
-        "supportWeChatHint" -> "Use WeChat to scan and support the creator"
         else -> null
     }
     private fun lookupen10(key: String): String? = when (key) {
+        "supportWeChatHint" -> "Use WeChat to scan and support the creator"
         "supportedFilesImageHint" -> "If you only have screenshots, go back and choose Image Import instead"
         "supportedFilesSuffix" -> "The file extension must be .ics."
         "supportedFilesTitle" -> "Supported Files"
@@ -2979,7 +2980,11 @@ object ArbCatalog {
         "warehouseRootLoadFailedTitle" -> "Unable to read the adapter repository right now"
         "warehouseSchoolTapHint" -> "Tap to choose an adapter and import"
         "warehouseScriptLoadFailed" -> "Unable to read the adapter script"
+        "warehouseScriptLoadFailedWithSources" -> "Unable to read the adapter script. Tried {sources}"
         "warehouseSessionAlreadyActive" -> "Your school account is still signed in, so you can import right away"
+        "warehouseSourceGitCode" -> "GitCode channel"
+        "warehouseSourceGitHubRaw" -> "GitHub direct"
+        "warehouseSourceWithMirrors" -> "{source} + {mirrorCount} mirrors"
         "weatherAttribution" -> "Weather data from Open-Meteo.com"
         "weatherCityLabel" -> "City"
         "weatherCityNotSet" -> "Not set"
@@ -3048,14 +3053,14 @@ object ArbCatalog {
         "wechatLabel" -> "WeChat"
         "weekGridShowExamsSubtitle" -> "Long-press add skips exams"
         "weekGridShowExamsTitle" -> "Show exams"
+        else -> null
+    }
+    private fun lookupen11(key: String): String? = when (key) {
         "weekGridShowSchedulesSubtitle" -> "By time; multi-day full column"
         "weekGridShowSchedulesTitle" -> "Show schedules"
         "weekLabel" -> "Week {week}"
         "weekListSeparator" -> ", "
         "weekPickerCalendarTooltip" -> "Use calendar picker"
-        else -> null
-    }
-    private fun lookupen11(key: String): String? = when (key) {
         "weekPickerTitle" -> "Select weeks"
         "weekdayFri" -> "Fri"
         "weekdayInkContrastBodyDark" -> "Your weekday bar text color had too little contrast against the dark wallpaper, so it was lightened automatically to stay readable — your color is kept. You can change or reset it under \"Timetable Page → Text Colors\"."
@@ -3099,7 +3104,7 @@ object ArbCatalog {
         else -> null
     }
 
-    // ── ja（3040 条）──
+    // ── ja（3045 条）──
     private fun lookupja(key: String): String? = lookupja1(key) ?: lookupja2(key) ?: lookupja3(key) ?: lookupja4(key) ?: lookupja5(key) ?: lookupja6(key) ?: lookupja7(key) ?: lookupja8(key) ?: lookupja9(key) ?: lookupja10(key) ?: lookupja11(key)
     private fun lookupja1(key: String): String? = when (key) {
         "aboutAdvancedOptionsTitle" -> "高度なオプション"
@@ -4529,11 +4534,11 @@ object ArbCatalog {
         "liveBeforeClassQuickActionSilent" -> "Turn on silent mode"
         "liveClassReminderLeadOptionImmediate" -> "授業開始と同時に切替"
         "liveClassReminderLeadOptionMinutes" -> "終了{minutes}分前に切替"
-        "liveClassReminderLeadSummaryFocused" -> "終了前に重点リマインダーを開始"
-        "liveClassReminderLeadSummaryImmediate" -> "授業開始から重点、終了前は秒単位"
-        "liveClassReminderLeadSummaryIsland" -> "授業中は通常通知、終了前に島へ"
-        "liveClassReminderLeadSummaryKeepNormal" -> "授業中は通常通知、終了前に重点へ"
-        "liveClassReminderLeadTitle" -> "フォーカス切替時点"
+        "liveClassReminderLeadSummaryFocused" -> "切替時点から重点通知"
+        "liveClassReminderLeadSummaryImmediate" -> "終了前に毎秒カウントダウン"
+        "liveClassReminderLeadSummaryIsland" -> "通常通知、切替時点で島へ"
+        "liveClassReminderLeadSummaryKeepNormal" -> "通常通知、切替時点で重点へ"
+        "liveClassReminderLeadTitle" -> "フォーカス切替の時点"
         "liveCountdownTextStyleMinuteOnlyCn" -> "Minutes only, Chinese units (5分钟)"
         "liveCountdownTextStyleMinuteOnlyMin" -> "min (5min)"
         "liveCountdownTextStyleMinuteOnlySlash" -> "/min (5/min)"
@@ -5246,6 +5251,7 @@ object ArbCatalog {
         "quickImportPlaybackStepProgress" -> "ステップ {current} / {total}"
         "quickImportPlayingTitle" -> "自動インポート中…"
         "quickImportRetryAction" -> "再試行"
+        "quickImportRowSubtitle" -> "録画済みスクリプトを再生"
         "quickImportTitle" -> "クイックインポート - {name}"
         "quickImportTooltip" -> "クイックインポート"
         "quickImportUnknownError" -> "不明なエラーが発生しました"
@@ -5522,10 +5528,10 @@ object ArbCatalog {
         "serviceMsgMacroElementNotFound" -> "Element not found: {selector}"
         "serviceMsgMacroFillSelectorEmpty" -> "Fill-field selector is empty."
         "serviceMsgMacroManualInputDefault" -> "Manual action required."
-        "serviceMsgMacroNavigateUrlEmpty" -> "Navigation URL is empty."
         else -> null
     }
     private fun lookupja9(key: String): String? = when (key) {
+        "serviceMsgMacroNavigateUrlEmpty" -> "Navigation URL is empty."
         "serviceMsgMacroNavigateUrlInvalid" -> "Invalid URL: {url}"
         "serviceMsgMacroNoSteps" -> "No recorded steps."
         "serviceMsgMacroPollTimeout" -> "{stepLabel} timed out ({timeoutSeconds}s){lastError}"
@@ -5825,10 +5831,10 @@ object ArbCatalog {
         "supportRunningBadge" -> "稼働中"
         "supportSaveShort" -> "保存"
         "supportTapQrHint" -> "タップで拡大"
-        "supportWeChatHint" -> "WeChatでQRコードをスキャンして作者を支援"
         else -> null
     }
     private fun lookupja10(key: String): String? = when (key) {
+        "supportWeChatHint" -> "WeChatでQRコードをスキャンして作者を支援"
         "supportedFilesImageHint" -> "スクリーンショットしかない場合は、前のページに戻って「画像認識インポート」を選択してください"
         "supportedFilesSuffix" -> "ファイル拡張子は.icsである必要があります。"
         "supportedFilesTitle" -> "対応ファイル"
@@ -6055,7 +6061,11 @@ object ArbCatalog {
         "warehouseRootLoadFailedTitle" -> "適応倉庫を一時的に読み込めません"
         "warehouseSchoolTapHint" -> "タップしてアダプタを選びインポート"
         "warehouseScriptLoadFailed" -> "アダプターのスクリプトを読み込めません"
+        "warehouseScriptLoadFailedWithSources" -> "アダプターのスクリプトを読み込めません：{sources} を試しました"
         "warehouseSessionAlreadyActive" -> "教务システムにはまだログインしています。そのままインポートできます"
+        "warehouseSourceGitCode" -> "GitCode チャンネル"
+        "warehouseSourceGitHubRaw" -> "GitHub 直結"
+        "warehouseSourceWithMirrors" -> "{source} + ミラー {mirrorCount} 件"
         "weatherAttribution" -> "天気データ: Open-Meteo.com"
         "weatherCityLabel" -> "都市"
         "weatherCityNotSet" -> "未設定"
@@ -6124,14 +6134,14 @@ object ArbCatalog {
         "wechatLabel" -> "WeChat"
         "weekGridShowExamsSubtitle" -> "長押し追加は試験を回避"
         "weekGridShowExamsTitle" -> "週表示に試験を表示"
+        else -> null
+    }
+    private fun lookupja11(key: String): String? = when (key) {
         "weekGridShowSchedulesSubtitle" -> "時間順、複数日は列全体"
         "weekGridShowSchedulesTitle" -> "週表示に日程を表示"
         "weekLabel" -> "第{week}週"
         "weekListSeparator" -> "、"
         "weekPickerCalendarTooltip" -> "カレンダーで選択"
-        else -> null
-    }
-    private fun lookupja11(key: String): String? = when (key) {
         "weekPickerTitle" -> "授業週次を選択"
         "weekdayFri" -> "金曜"
         "weekdayInkContrastBodyDark" -> "曜日バーの文字色は濃い壁紙とのコントラストが不足していたため、読みやすいよう自動で明るくしました（色味はそのまま）。「時間割ページ → 文字色」で色を変更またはリセットできます。"
@@ -6175,7 +6185,7 @@ object ArbCatalog {
         else -> null
     }
 
-    // ── ko（3040 条）──
+    // ── ko（3045 条）──
     private fun lookupko(key: String): String? = lookupko1(key) ?: lookupko2(key) ?: lookupko3(key) ?: lookupko4(key) ?: lookupko5(key) ?: lookupko6(key) ?: lookupko7(key) ?: lookupko8(key) ?: lookupko9(key) ?: lookupko10(key) ?: lookupko11(key)
     private fun lookupko1(key: String): String? = when (key) {
         "aboutAdvancedOptionsTitle" -> "고급 옵션"
@@ -7605,10 +7615,10 @@ object ArbCatalog {
         "liveBeforeClassQuickActionSilent" -> "Turn on silent mode"
         "liveClassReminderLeadOptionImmediate" -> "수업 시작과 동시에 전환"
         "liveClassReminderLeadOptionMinutes" -> "종료 {minutes}분 전에 전환"
-        "liveClassReminderLeadSummaryFocused" -> "종료 전 중요 알림 시작"
-        "liveClassReminderLeadSummaryImmediate" -> "수업 시작부터 중요, 종료 전 초 단위"
-        "liveClassReminderLeadSummaryIsland" -> "수업 중 일반 알림, 종료 전 아일랜드로"
-        "liveClassReminderLeadSummaryKeepNormal" -> "수업 중 일반 알림, 종료 전 중요로"
+        "liveClassReminderLeadSummaryFocused" -> "전환 시점부터 중요 알림"
+        "liveClassReminderLeadSummaryImmediate" -> "종료 전 매초 카운트다운"
+        "liveClassReminderLeadSummaryIsland" -> "일반 알림, 전환 시점에 아일랜드로"
+        "liveClassReminderLeadSummaryKeepNormal" -> "일반 알림, 전환 시점에 중요로"
         "liveClassReminderLeadTitle" -> "포커스 전환 시점"
         "liveCountdownTextStyleMinuteOnlyCn" -> "Minutes only, Chinese units (5分钟)"
         "liveCountdownTextStyleMinuteOnlyMin" -> "min (5min)"
@@ -8322,6 +8332,7 @@ object ArbCatalog {
         "quickImportPlaybackStepProgress" -> "단계 {current} / {total}"
         "quickImportPlayingTitle" -> "자동 가져오는 중…"
         "quickImportRetryAction" -> "재시도"
+        "quickImportRowSubtitle" -> "녹화된 스크립트 재생"
         "quickImportTitle" -> "빠른 가져오기 - {name}"
         "quickImportTooltip" -> "빠른 가져오기"
         "quickImportUnknownError" -> "알 수 없는 오류가 발생했습니다"
@@ -8598,10 +8609,10 @@ object ArbCatalog {
         "serviceMsgMacroElementNotFound" -> "Element not found: {selector}"
         "serviceMsgMacroFillSelectorEmpty" -> "Fill-field selector is empty."
         "serviceMsgMacroManualInputDefault" -> "Manual action required."
-        "serviceMsgMacroNavigateUrlEmpty" -> "Navigation URL is empty."
         else -> null
     }
     private fun lookupko9(key: String): String? = when (key) {
+        "serviceMsgMacroNavigateUrlEmpty" -> "Navigation URL is empty."
         "serviceMsgMacroNavigateUrlInvalid" -> "Invalid URL: {url}"
         "serviceMsgMacroNoSteps" -> "No recorded steps."
         "serviceMsgMacroPollTimeout" -> "{stepLabel} timed out ({timeoutSeconds}s){lastError}"
@@ -8901,10 +8912,10 @@ object ArbCatalog {
         "supportRunningBadge" -> "운영 중"
         "supportSaveShort" -> "저장"
         "supportTapQrHint" -> "탭하여 확대"
-        "supportWeChatHint" -> "WeChat으로 QR 코드를 스캔하여 개발자 지원"
         else -> null
     }
     private fun lookupko10(key: String): String? = when (key) {
+        "supportWeChatHint" -> "WeChat으로 QR 코드를 스캔하여 개발자 지원"
         "supportedFilesImageHint" -> "스크린샷만 있다면 이곳이 아닌 이전 페이지에서 '이미지 인식 가져오기'를 선택하세요"
         "supportedFilesSuffix" -> "파일 확장자는 .ics여야 합니다."
         "supportedFilesTitle" -> "지원 파일"
@@ -9131,7 +9142,11 @@ object ArbCatalog {
         "warehouseRootLoadFailedTitle" -> "적응 저장소를 일시적으로 읽을 수 없습니다"
         "warehouseSchoolTapHint" -> "탭하여 어댑터를 선택하고 가져오기"
         "warehouseScriptLoadFailed" -> "어댑터 스크립트를 읽을 수 없습니다"
+        "warehouseScriptLoadFailedWithSources" -> "어댑터 스크립트를 읽을 수 없습니다: {sources} 시도함"
         "warehouseSessionAlreadyActive" -> "교무 시스템에 아직 로그인되어 있습니다. 바로 가져올 수 있습니다"
+        "warehouseSourceGitCode" -> "GitCode 채널"
+        "warehouseSourceGitHubRaw" -> "GitHub 직접 연결"
+        "warehouseSourceWithMirrors" -> "{source} + 미러 {mirrorCount}개"
         "weatherAttribution" -> "날씨 데이터: Open-Meteo.com"
         "weatherCityLabel" -> "도시"
         "weatherCityNotSet" -> "설정 안 됨"
@@ -9200,14 +9215,14 @@ object ArbCatalog {
         "wechatLabel" -> "WeChat"
         "weekGridShowExamsSubtitle" -> "길게 눌러 추가 시 시험 건너뜀"
         "weekGridShowExamsTitle" -> "주간 보기에 시험 표시"
+        else -> null
+    }
+    private fun lookupko11(key: String): String? = when (key) {
         "weekGridShowSchedulesSubtitle" -> "시간순, 여러 날은 열 전체"
         "weekGridShowSchedulesTitle" -> "주간 보기에 일정 표시"
         "weekLabel" -> "제{week}주"
         "weekListSeparator" -> ", "
         "weekPickerCalendarTooltip" -> "달력으로 선택"
-        else -> null
-    }
-    private fun lookupko11(key: String): String? = when (key) {
         "weekPickerTitle" -> "수업 주차 선택"
         "weekdayFri" -> "금요일"
         "weekdayInkContrastBodyDark" -> "요일 표시줄 텍스트 색상이 어두운 배경화면과 대비가 부족하여 읽기 쉽도록 자동으로 밝게 조정했습니다(색조는 그대로 유지). \"시간표 페이지 → 텍스트 색상\"에서 색상을 변경하거나 기본값으로 재설정할 수 있습니다."
@@ -9251,7 +9266,7 @@ object ArbCatalog {
         else -> null
     }
 
-    // ── zh（3040 条）──
+    // ── zh（3045 条）──
     private fun lookupzh(key: String): String? = lookupzh1(key) ?: lookupzh2(key) ?: lookupzh3(key) ?: lookupzh4(key) ?: lookupzh5(key) ?: lookupzh6(key) ?: lookupzh7(key) ?: lookupzh8(key) ?: lookupzh9(key) ?: lookupzh10(key) ?: lookupzh11(key)
     private fun lookupzh1(key: String): String? = when (key) {
         "aboutAdvancedOptionsTitle" -> "高级选项"
@@ -10679,13 +10694,13 @@ object ArbCatalog {
         "liveBeforeClassQuickActionNone" -> "不显示"
         "liveBeforeClassQuickActionPriorityOnly" -> "仅放行优先通知"
         "liveBeforeClassQuickActionSilent" -> "打开静音"
-        "liveClassReminderLeadOptionImmediate" -> "一上课就切换"
-        "liveClassReminderLeadOptionMinutes" -> "下课前 {minutes} 分钟"
-        "liveClassReminderLeadSummaryFocused" -> "下课前开始重点提醒"
-        "liveClassReminderLeadSummaryImmediate" -> "一上课切重点提醒，下课前逐秒倒数"
-        "liveClassReminderLeadSummaryIsland" -> "课中普通通知，下课前切超级岛"
-        "liveClassReminderLeadSummaryKeepNormal" -> "课中普通通知，下课前切重点提醒"
-        "liveClassReminderLeadTitle" -> "重点提醒切入时机"
+        "liveClassReminderLeadOptionImmediate" -> "一上课就切"
+        "liveClassReminderLeadOptionMinutes" -> "下课前 {minutes} 分"
+        "liveClassReminderLeadSummaryFocused" -> "到点才开始重点提醒"
+        "liveClassReminderLeadSummaryImmediate" -> "下课前逐秒倒数"
+        "liveClassReminderLeadSummaryIsland" -> "先普通通知，到点切超级岛"
+        "liveClassReminderLeadSummaryKeepNormal" -> "先普通通知，到点再切"
+        "liveClassReminderLeadTitle" -> "重点提醒切换时机"
         "liveCountdownTextStyleMinuteOnlyCn" -> "纯分钟 5分钟"
         "liveCountdownTextStyleMinuteOnlyMin" -> "纯分钟 5min"
         "liveCountdownTextStyleMinuteOnlySlash" -> "纯分钟 5/min"
@@ -11398,6 +11413,7 @@ object ArbCatalog {
         "quickImportPlaybackStepProgress" -> "步骤 {current} / {total}"
         "quickImportPlayingTitle" -> "自动导入中……"
         "quickImportRetryAction" -> "重试"
+        "quickImportRowSubtitle" -> "回放已录制的导入脚本"
         "quickImportTitle" -> "快捷导入 - {name}"
         "quickImportTooltip" -> "快捷导入"
         "quickImportUnknownError" -> "发生未知错误"
@@ -11674,10 +11690,10 @@ object ArbCatalog {
         "serviceMsgMacroElementNotFound" -> "未找到元素：{selector}"
         "serviceMsgMacroFillSelectorEmpty" -> "填充字段的选择器为空"
         "serviceMsgMacroManualInputDefault" -> "需要手动操作"
-        "serviceMsgMacroNavigateUrlEmpty" -> "导航 URL 为空"
         else -> null
     }
     private fun lookupzh9(key: String): String? = when (key) {
+        "serviceMsgMacroNavigateUrlEmpty" -> "导航 URL 为空"
         "serviceMsgMacroNavigateUrlInvalid" -> "无效的 URL: {url}"
         "serviceMsgMacroNoSteps" -> "没有录制的步骤"
         "serviceMsgMacroPollTimeout" -> "{stepLabel} 超时 {timeoutSeconds} 秒 {lastError}"
@@ -11977,10 +11993,10 @@ object ArbCatalog {
         "supportRunningBadge" -> "运行中"
         "supportSaveShort" -> "保存"
         "supportTapQrHint" -> "点击放大扫码"
-        "supportWeChatHint" -> "使用微信扫一扫支持作者"
         else -> null
     }
     private fun lookupzh10(key: String): String? = when (key) {
+        "supportWeChatHint" -> "使用微信扫一扫支持作者"
         "supportedFilesImageHint" -> "课表截图请返回上一页使用识图导入"
         "supportedFilesSuffix" -> "文件后缀必须是 .ics"
         "supportedFilesTitle" -> "支持的文件"
@@ -12207,7 +12223,11 @@ object ArbCatalog {
         "warehouseRootLoadFailedTitle" -> "暂时无法读取适配仓"
         "warehouseSchoolTapHint" -> "点击进入，选择适配器导入"
         "warehouseScriptLoadFailed" -> "无法读取适配器脚本"
+        "warehouseScriptLoadFailedWithSources" -> "无法读取适配器脚本：已尝试 {sources}"
         "warehouseSessionAlreadyActive" -> "教务仍处于登录状态，可直接导入"
+        "warehouseSourceGitCode" -> "GitCode 渠道"
+        "warehouseSourceGitHubRaw" -> "GitHub 直连"
+        "warehouseSourceWithMirrors" -> "{source} + {mirrorCount} 个镜像"
         "weatherAttribution" -> "天气数据来自 Open-Meteo.com"
         "weatherCityLabel" -> "城市"
         "weatherCityNotSet" -> "未设置"
@@ -12276,14 +12296,14 @@ object ArbCatalog {
         "wechatLabel" -> "微信"
         "weekGridShowExamsSubtitle" -> "长按加课会跳过考试时段"
         "weekGridShowExamsTitle" -> "周视图显示考试"
+        else -> null
+    }
+    private fun lookupzh11(key: String): String? = when (key) {
         "weekGridShowSchedulesSubtitle" -> "按时间落位，跨天占整列"
         "weekGridShowSchedulesTitle" -> "周视图显示日程"
         "weekLabel" -> "第 {week} 周"
         "weekListSeparator" -> "、"
         "weekPickerCalendarTooltip" -> "使用日历选择"
-        else -> null
-    }
-    private fun lookupzh11(key: String): String? = when (key) {
         "weekPickerTitle" -> "选择上课周次"
         "weekdayFri" -> "周五"
         "weekdayInkContrastBodyDark" -> "信息栏文字在深色背景下对比度不足，已自动提升亮度。可在 课表页面 文字颜色 中调整或恢复默认。"
@@ -12327,7 +12347,7 @@ object ArbCatalog {
         else -> null
     }
 
-    // ── zh_HK（3040 条）──
+    // ── zh_HK（3045 条）──
     private fun lookupzhHK(key: String): String? = lookupzhHK1(key) ?: lookupzhHK2(key) ?: lookupzhHK3(key) ?: lookupzhHK4(key) ?: lookupzhHK5(key) ?: lookupzhHK6(key) ?: lookupzhHK7(key) ?: lookupzhHK8(key) ?: lookupzhHK9(key) ?: lookupzhHK10(key) ?: lookupzhHK11(key)
     private fun lookupzhHK1(key: String): String? = when (key) {
         "aboutAdvancedOptionsTitle" -> "高級選項"
@@ -13755,13 +13775,13 @@ object ArbCatalog {
         "liveBeforeClassQuickActionNone" -> "不顯示"
         "liveBeforeClassQuickActionPriorityOnly" -> "僅放行優先通知"
         "liveBeforeClassQuickActionSilent" -> "打開靜音"
-        "liveClassReminderLeadOptionImmediate" -> "一上課就切換"
-        "liveClassReminderLeadOptionMinutes" -> "下課前 {minutes} 分鐘切換"
-        "liveClassReminderLeadSummaryFocused" -> "下課前開始重點提醒"
-        "liveClassReminderLeadSummaryImmediate" -> "一上課切重點提醒，下課前逐秒倒數"
-        "liveClassReminderLeadSummaryIsland" -> "課中普通通知，下課前切超級島"
-        "liveClassReminderLeadSummaryKeepNormal" -> "課中普通通知，下課前切重點提醒"
-        "liveClassReminderLeadTitle" -> "重點提醒切入時機"
+        "liveClassReminderLeadOptionImmediate" -> "一上課就切"
+        "liveClassReminderLeadOptionMinutes" -> "下課前 {minutes} 分"
+        "liveClassReminderLeadSummaryFocused" -> "到時才開始重點提醒"
+        "liveClassReminderLeadSummaryImmediate" -> "下課前逐秒倒數"
+        "liveClassReminderLeadSummaryIsland" -> "先普通通知，到時切超級島"
+        "liveClassReminderLeadSummaryKeepNormal" -> "先普通通知，到時再切"
+        "liveClassReminderLeadTitle" -> "重點提醒切換時機"
         "liveCountdownTextStyleMinuteOnlyCn" -> "純分鐘 5分鐘"
         "liveCountdownTextStyleMinuteOnlyMin" -> "純分鐘 5min"
         "liveCountdownTextStyleMinuteOnlySlash" -> "純分鐘 5/min"
@@ -14474,6 +14494,7 @@ object ArbCatalog {
         "quickImportPlaybackStepProgress" -> "步驟 {current} / {total}"
         "quickImportPlayingTitle" -> "自動匯入中…"
         "quickImportRetryAction" -> "重試"
+        "quickImportRowSubtitle" -> "回放已錄製的匯入腳本"
         "quickImportTitle" -> "快捷匯入 - {name}"
         "quickImportTooltip" -> "快捷匯入"
         "quickImportUnknownError" -> "發生未知錯誤"
@@ -14750,10 +14771,10 @@ object ArbCatalog {
         "serviceMsgMacroElementNotFound" -> "Element not found: {selector}"
         "serviceMsgMacroFillSelectorEmpty" -> "Fill-field selector is empty."
         "serviceMsgMacroManualInputDefault" -> "Manual action required."
-        "serviceMsgMacroNavigateUrlEmpty" -> "Navigation URL is empty."
         else -> null
     }
     private fun lookupzhHK9(key: String): String? = when (key) {
+        "serviceMsgMacroNavigateUrlEmpty" -> "Navigation URL is empty."
         "serviceMsgMacroNavigateUrlInvalid" -> "Invalid URL: {url}"
         "serviceMsgMacroNoSteps" -> "No recorded steps."
         "serviceMsgMacroPollTimeout" -> "{stepLabel} 超時 {timeoutSeconds} 秒 {lastError}"
@@ -15053,10 +15074,10 @@ object ArbCatalog {
         "supportRunningBadge" -> "運行中"
         "supportSaveShort" -> "保存"
         "supportTapQrHint" -> "點擊放大掃碼"
-        "supportWeChatHint" -> "使用微信掃一掃支持作者"
         else -> null
     }
     private fun lookupzhHK10(key: String): String? = when (key) {
+        "supportWeChatHint" -> "使用微信掃一掃支持作者"
         "supportedFilesImageHint" -> "課表截圖請返回上一頁使用識圖導入"
         "supportedFilesSuffix" -> "檔案後綴必須是 .ics"
         "supportedFilesTitle" -> "支持的檔案"
@@ -15283,7 +15304,11 @@ object ArbCatalog {
         "warehouseRootLoadFailedTitle" -> "暫時無法讀取適配倉"
         "warehouseSchoolTapHint" -> "點擊進入，選擇適配器匯入"
         "warehouseScriptLoadFailed" -> "無法讀取適配器腳本"
+        "warehouseScriptLoadFailedWithSources" -> "無法讀取適配器腳本：已嘗試 {sources}"
         "warehouseSessionAlreadyActive" -> "教務仍處於登入狀態，可直接匯入"
+        "warehouseSourceGitCode" -> "GitCode 渠道"
+        "warehouseSourceGitHubRaw" -> "GitHub 直連"
+        "warehouseSourceWithMirrors" -> "{source} + {mirrorCount} 個鏡像"
         "weatherAttribution" -> "天氣資料來自 Open-Meteo.com"
         "weatherCityLabel" -> "城市"
         "weatherCityNotSet" -> "未設定"
@@ -15352,14 +15377,14 @@ object ArbCatalog {
         "wechatLabel" -> "微信"
         "weekGridShowExamsSubtitle" -> "長按加課會跳過考試時段"
         "weekGridShowExamsTitle" -> "週檢視顯示考試"
+        else -> null
+    }
+    private fun lookupzhHK11(key: String): String? = when (key) {
         "weekGridShowSchedulesSubtitle" -> "按時間落位，跨天佔整列"
         "weekGridShowSchedulesTitle" -> "週檢視顯示日程"
         "weekLabel" -> "第 {week} 周"
         "weekListSeparator" -> "、"
         "weekPickerCalendarTooltip" -> "使用日曆選擇"
-        else -> null
-    }
-    private fun lookupzhHK11(key: String): String? = when (key) {
         "weekPickerTitle" -> "選擇上課週次"
         "weekdayFri" -> "周五"
         "weekdayInkContrastBodyDark" -> "信息欄文字在深色背景下對比度不足，已自動提升亮度。可在 課表頁面 文字顏色 中調整或恢復默認。"
@@ -15403,7 +15428,7 @@ object ArbCatalog {
         else -> null
     }
 
-    // ── zh_TW（3040 条）──
+    // ── zh_TW（3045 条）──
     private fun lookupzhTW(key: String): String? = lookupzhTW1(key) ?: lookupzhTW2(key) ?: lookupzhTW3(key) ?: lookupzhTW4(key) ?: lookupzhTW5(key) ?: lookupzhTW6(key) ?: lookupzhTW7(key) ?: lookupzhTW8(key) ?: lookupzhTW9(key) ?: lookupzhTW10(key) ?: lookupzhTW11(key)
     private fun lookupzhTW1(key: String): String? = when (key) {
         "aboutAdvancedOptionsTitle" -> "高級選項"
@@ -16831,13 +16856,13 @@ object ArbCatalog {
         "liveBeforeClassQuickActionNone" -> "不顯示"
         "liveBeforeClassQuickActionPriorityOnly" -> "僅放行優先通知"
         "liveBeforeClassQuickActionSilent" -> "開啟靜音"
-        "liveClassReminderLeadOptionImmediate" -> "一上課就切換"
-        "liveClassReminderLeadOptionMinutes" -> "下課前 {minutes} 分鐘切換"
-        "liveClassReminderLeadSummaryFocused" -> "下課前開始重點提醒"
-        "liveClassReminderLeadSummaryImmediate" -> "一上課切重點提醒，下課前逐秒倒數"
-        "liveClassReminderLeadSummaryIsland" -> "課中普通通知，下課前切超級島"
-        "liveClassReminderLeadSummaryKeepNormal" -> "課中普通通知，下課前切重點提醒"
-        "liveClassReminderLeadTitle" -> "重點提醒切入時機"
+        "liveClassReminderLeadOptionImmediate" -> "一上課就切"
+        "liveClassReminderLeadOptionMinutes" -> "下課前 {minutes} 分"
+        "liveClassReminderLeadSummaryFocused" -> "到時才開始重點提醒"
+        "liveClassReminderLeadSummaryImmediate" -> "下課前逐秒倒數"
+        "liveClassReminderLeadSummaryIsland" -> "先普通通知，到時切超級島"
+        "liveClassReminderLeadSummaryKeepNormal" -> "先普通通知，到時再切"
+        "liveClassReminderLeadTitle" -> "重點提醒切換時機"
         "liveCountdownTextStyleMinuteOnlyCn" -> "純分鐘 5分鐘"
         "liveCountdownTextStyleMinuteOnlyMin" -> "純分鐘 5min"
         "liveCountdownTextStyleMinuteOnlySlash" -> "純分鐘 5/min"
@@ -17550,6 +17575,7 @@ object ArbCatalog {
         "quickImportPlaybackStepProgress" -> "步驟 {current} / {total}"
         "quickImportPlayingTitle" -> "自動匯入中…"
         "quickImportRetryAction" -> "重試"
+        "quickImportRowSubtitle" -> "回放已錄製的匯入腳本"
         "quickImportTitle" -> "快捷匯入 - {name}"
         "quickImportTooltip" -> "快捷匯入"
         "quickImportUnknownError" -> "發生未知錯誤"
@@ -17826,10 +17852,10 @@ object ArbCatalog {
         "serviceMsgMacroElementNotFound" -> "Element not found: {selector}"
         "serviceMsgMacroFillSelectorEmpty" -> "Fill-field selector is empty."
         "serviceMsgMacroManualInputDefault" -> "Manual action required."
-        "serviceMsgMacroNavigateUrlEmpty" -> "Navigation URL is empty."
         else -> null
     }
     private fun lookupzhTW9(key: String): String? = when (key) {
+        "serviceMsgMacroNavigateUrlEmpty" -> "Navigation URL is empty."
         "serviceMsgMacroNavigateUrlInvalid" -> "Invalid URL: {url}"
         "serviceMsgMacroNoSteps" -> "No recorded steps."
         "serviceMsgMacroPollTimeout" -> "{stepLabel} 超時 {timeoutSeconds} 秒 {lastError}"
@@ -18129,10 +18155,10 @@ object ArbCatalog {
         "supportRunningBadge" -> "運行中"
         "supportSaveShort" -> "保存"
         "supportTapQrHint" -> "點擊放大掃碼"
-        "supportWeChatHint" -> "使用微信掃一掃支持作者"
         else -> null
     }
     private fun lookupzhTW10(key: String): String? = when (key) {
+        "supportWeChatHint" -> "使用微信掃一掃支持作者"
         "supportedFilesImageHint" -> "課表截圖請返回上一頁使用識圖導入"
         "supportedFilesSuffix" -> "檔案後綴必須是 .ics"
         "supportedFilesTitle" -> "支持的檔案"
@@ -18359,7 +18385,11 @@ object ArbCatalog {
         "warehouseRootLoadFailedTitle" -> "暫時無法讀取適配倉"
         "warehouseSchoolTapHint" -> "點擊進入，選擇適配器匯入"
         "warehouseScriptLoadFailed" -> "無法讀取適配器腳本"
+        "warehouseScriptLoadFailedWithSources" -> "無法讀取適配器腳本：已嘗試 {sources}"
         "warehouseSessionAlreadyActive" -> "教務仍處於登入狀態，可直接匯入"
+        "warehouseSourceGitCode" -> "GitCode 渠道"
+        "warehouseSourceGitHubRaw" -> "GitHub 直連"
+        "warehouseSourceWithMirrors" -> "{source} + {mirrorCount} 個鏡像"
         "weatherAttribution" -> "天氣資料來自 Open-Meteo.com"
         "weatherCityLabel" -> "城市"
         "weatherCityNotSet" -> "未設定"
@@ -18428,14 +18458,14 @@ object ArbCatalog {
         "wechatLabel" -> "微信"
         "weekGridShowExamsSubtitle" -> "長按加課會跳過考試時段"
         "weekGridShowExamsTitle" -> "週檢視顯示考試"
+        else -> null
+    }
+    private fun lookupzhTW11(key: String): String? = when (key) {
         "weekGridShowSchedulesSubtitle" -> "按時間落位，跨天佔整列"
         "weekGridShowSchedulesTitle" -> "週檢視顯示日程"
         "weekLabel" -> "第 {week} 周"
         "weekListSeparator" -> "、"
         "weekPickerCalendarTooltip" -> "使用日曆選擇"
-        else -> null
-    }
-    private fun lookupzhTW11(key: String): String? = when (key) {
         "weekPickerTitle" -> "選擇上課週次"
         "weekdayFri" -> "周五"
         "weekdayInkContrastBodyDark" -> "信息欄文字在深色背景下對比度不足，已自動提升亮度。可在 課表頁面 文字顏色 中調整或恢復默認。"
