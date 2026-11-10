@@ -50,6 +50,42 @@ data class TimetableSnapshot(
 )
 
 /**
+ * 导入扩节时给「共享模板副本」加的名字后缀。
+ *
+ * 逐字对齐发布版 `importSupplementNameSuffix = '（导入补齐）'`
+ *（`lib/providers/timetable/import_export_service.dart:10`）。它同时是恢复点识别
+ *「本次导入自己造的模板」的判据（`import_time_scheme_restore_point.dart:66-67`），
+ * 改字面量要连同清理判据一起改。
+ *
+ * ## 为什么保持硬编码中文、不走 ArbText
+ *
+ * 这个串会**持久化成模板名**并显示在时间模板列表里（用户可见）；发布版同样硬编码，
+ * 且用户盘上可能已有同名模板。改成 `ArbText` 会随语言变化，与发布版、与已存名字都不一致，
+ * 所以按发布版保持常量，并在 CJK 门禁基线登记（`cjk-literal-baseline-main.txt`，
+ * 理由写在那条注释里）。将来要收进 i18n 时，需新增 ARB 键并同步六语言 + ArbCatalog。
+ */
+const val IMPORT_TIME_SCHEME_SUPPLEMENT_SUFFIX: String = "（导入补齐）"
+
+/**
+ * [TimetableRepository.updateTimeSchemeForImport] 的结果。
+ *
+ * 与 [TimetableRepository.updateTimeScheme]「成功 null / 失败 service message 码」的
+ * 返回形状不同，是因为导入侧还要知道**本次有没有新建副本**：失败回滚时要把它删掉，
+ * 否则用户反复取消导入会攒出一堆没有引用的「（导入补齐）」模板（发布版恢复点为此
+ * 专门记了 schemeIds，见 `import_time_scheme_restore_point.dart:38-68`）。
+ */
+sealed interface TimeSchemeImportUpdate {
+    /**
+     * 已应用。[createdSchemeId] 非空 = 本次为共享模板新建了副本、当前课表已改绑到副本；
+     * 为空 = 原地改了模板（只有当前课表在用）。
+     */
+    data class Applied(val createdSchemeId: String?) : TimeSchemeImportUpdate
+
+    /** 被拒绝：service message 码，口径同 [TimetableRepository.updateTimeScheme]。 */
+    data class Rejected(val serviceMessage: String) : TimeSchemeImportUpdate
+}
+
+/**
  * 课表仓储：**持有状态 + 实现写入口 + 变更即落盘并通知**。
  *
  * 移植自 Dart `lib/providers/timetable_provider.dart` 的课表族职责
@@ -1298,6 +1334,143 @@ class TimetableRepository(
         currentLiveCourseId = null
         pendingNotify = true
         return null
+    }
+
+    /**
+     * 教务导入的扩节入口：**只改当前课表，绝不改写其他课表共用的模板**。
+     *
+     * ## 为什么不能直接用 [updateTimeScheme]
+     *
+     * [updateTimeScheme] 是「改模板」的通用语义：模板被多张课表引用时，改一处就是
+     * 所有课表一起改（对齐发布版 `time_scheme_repository.dart:206-221`）。但教务导入
+     * 只是**给当前课表补节**——发布版在导入扩节时走另一条分支：模板被引用超过 1 次就
+     * 复制一份 `<原名>（导入补齐）`、只把当前课表改绑到副本，其他课表连节次带课程钟点
+     * 都不动（`import_export_service.dart:268-331`）。本入口就是那条分支的仓储层落点。
+     *
+     * ## 回滚
+     *
+     * 只有共享模板会新建副本；导入失败时调用方先恢复设置（`updateSettings(before)`），
+     * 再用 [deleteTimeScheme] 删掉 [TimeSchemeImportUpdate.Applied.createdSchemeId]：
+     * 那时副本已无引用，删除会被放行（[deleteTimeScheme] 的 in-use 守卫）。
+     *
+     * @return [TimeSchemeImportUpdate.Rejected] = 校验失败 / 找不到模板；
+     *   [TimeSchemeImportUpdate.Applied.createdSchemeId] 非空 = 本次确实新建了副本。
+     */
+    fun updateTimeSchemeForImport(
+        schemeId: String,
+        name: String,
+        sections: List<SectionTime>,
+    ): TimeSchemeImportUpdate {
+        val result = updateTimeSchemeForImportLocked(schemeId, name, sections)
+        drainPendingNotify()
+        return result
+    }
+
+    @Synchronized
+    private fun updateTimeSchemeForImportLocked(
+        schemeId: String,
+        name: String,
+        sections: List<SectionTime>,
+    ): TimeSchemeImportUpdate {
+        val index = loadedTimeSchemes.indexOfFirst { it.id == schemeId }
+        if (index < 0) return TimeSchemeImportUpdate.Rejected("time_scheme_not_found")
+        // 发布版判据：usageCount = 当前课表 + 其他引用者；只有 > 1 才复制。
+        // 活动档的「真源」是 loadedSettings（内嵌镜像可能滞后），其他档看各自 settings。
+        val activeUsesScheme = loadedSettings.activeTimeSchemeId == schemeId
+        val sharedWithOthers = loadedProfiles.any { profile ->
+            profile.id != activeProfile.id && profile.settings.activeTimeSchemeId == schemeId
+        }
+        if (!activeUsesScheme || !sharedWithOthers) {
+            // 只有当前课表用这一套（或压根没有其他使用者）⇒ 与手工改模板完全同径：
+            // 原地改、名字照改、节次镜像进唯一使用者。
+            val error = updateTimeSchemeLocked(schemeId, name, sections)
+            return if (error == null) {
+                TimeSchemeImportUpdate.Applied(createdSchemeId = null)
+            } else {
+                TimeSchemeImportUpdate.Rejected(error)
+            }
+        }
+
+        validateSectionTimes(sections)?.let { return TimeSchemeImportUpdate.Rejected(it) }
+        // 导入入口只做**扩节**；万一调用方传了更短的表，照 [updateTimeScheme] 同一条
+        // 「不能少于已用最大节次」守卫拒绝，避免复制出一套装不下现有课程的模板。
+        val requiredMaxSection = TimeSchemeLogic.maxUsedSection(
+            profiles = loadedProfiles,
+            schemeId = schemeId,
+            profilesOverride = null,
+            schemes = loadedTimeSchemes,
+            locationTimeGroups = loadedLocationTimeGroups,
+        )
+        if (requiredMaxSection > 0 && sections.size < requiredMaxSection) {
+            return TimeSchemeImportUpdate.Rejected(
+                ServiceMessage.encode(
+                    "section_count_below_usage",
+                    linkedMapOf("requiredMaxSection" to requiredMaxSection),
+                ),
+            )
+        }
+        val now = LocalDateTime.now()
+        // 副本名字由本仓拼出：恢复点/清理判据认的就是这个后缀（见常量 KDoc）。
+        val duplicate = loadedTimeSchemes[index].copy(
+            id = UUID.randomUUID().toString(),
+            name = name.trim() + IMPORT_TIME_SCHEME_SUPPLEMENT_SUFFIX,
+            sections = sections.toList(),
+            createdAt = now,
+            updatedAt = now,
+        )
+        val nextSchemes = loadedTimeSchemes + duplicate
+        val activeId = activeProfile.id
+        val nextProfiles = loadedProfiles.map { profile ->
+            if (profile.id != activeId) {
+                // 其他课表原样保留：不换模板、不重算钟点——这正是本入口存在的理由。
+                profile
+            } else {
+                val profileSettings = profile.settings.copy(
+                    activeTimeSchemeId = duplicate.id,
+                    sections = duplicate.sections,
+                )
+                profile.copy(
+                    courses = TimeSchemeLogic.syncCoursesWithEffectiveTimeSchemes(
+                        source = profile.courses,
+                        schemes = nextSchemes,
+                        settings = profileSettings,
+                        locationTimeGroups = loadedLocationTimeGroups,
+                        scheduleDateRules = loadedScheduleDateRules,
+                    ),
+                    settings = profileSettings,
+                )
+            }
+        }
+        val nextSettings = loadedSettings.copy(
+            activeTimeSchemeId = duplicate.id,
+            sections = duplicate.sections,
+        )
+
+        val snapshotSchemes = loadedTimeSchemes
+        val snapshotProfiles = loadedProfiles
+        val snapshotSettings = loadedSettings
+        // 落盘顺序与 [updateTimeSchemeLocked] 一致：先作息表，再档案，最后全局设置。
+        // 任一步失败都要补偿已成功的那几笔，否则冷启动会读到「模板已复制、课表没改绑」
+        // 或反过来（发布版同一分支同样逐笔补偿，`import_export_service.dart:290-327`）。
+        store.saveTimeSchemes(nextSchemes)
+        try {
+            store.saveProfiles(nextProfiles)
+            if (nextSettings != snapshotSettings) store.saveSettings(nextSettings)
+        } catch (error: Throwable) {
+            runCatching { store.saveTimeSchemes(snapshotSchemes) }
+            runCatching { store.saveProfiles(snapshotProfiles) }
+            if (nextSettings != snapshotSettings) {
+                runCatching { store.saveSettings(snapshotSettings) }
+            }
+            throw error
+        }
+
+        loadedTimeSchemes = nextSchemes
+        loadedProfiles = nextProfiles
+        loadedSettings = nextSettings
+        currentLiveCourseId = null
+        pendingNotify = true
+        return TimeSchemeImportUpdate.Applied(createdSchemeId = duplicate.id)
     }
 
     /**

@@ -56,7 +56,12 @@ com/mutx163/qingyu/pages/settings/SettingsPageModel.kt:3
 com/mutx163/qingyu/pages/settings/SettingsRecentWallpaperPage.kt:3
 com/mutx163/qingyu/pages/statistics/charts/QrEncodeModel.kt:3
 com/mutx163/qingyu/share/camera/ScanResultDeduplicator.kt:3
-com/mutx163/qingyu/app/TimetableRepository.kt:2
+# 2026-11-10 官网调研 lane 登记（2→3）：`TimetableRepository.kt` 新增第 3 条是
+# `IMPORT_TIME_SCHEME_SUPPLEMENT_SUFFIX = "（导入补齐）"`。理由：该串是**持久化到时间模板名**、
+# 会显示在模板列表的用户可见名，发布版就是硬编码常量（import_export_service.dart:10）；
+# 改走 ArbText 会随语言变化，与发布版以及用户盘上已有的「（导入补齐）」模板名不一致。
+# 后续若要收进 i18n，需新增 ARB 键并同步 six 语言 + ArbCatalog（另开 i18n 工单）。
+com/mutx163/qingyu/app/TimetableRepository.kt:3
 com/mutx163/qingyu/core/TimetableProfile.kt:2
 com/mutx163/qingyu/pages/settings/SettingsAppearanceEditorPage.kt:2
 com/mutx163/qingyu/pages/settings/SettingsCourseCardPage.kt:2
