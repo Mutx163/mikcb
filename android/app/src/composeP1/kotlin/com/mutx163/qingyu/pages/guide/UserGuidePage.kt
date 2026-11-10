@@ -104,6 +104,11 @@ import top.yukonga.miuix.kmp.theme.MiuixTheme
 fun UserGuidePage(
     requirePrivacyConsent: Boolean = false,
     initialPrivacyChecked: Boolean = false,
+    /**
+     * 勾选态变化回传给宿主（首启门的同意标记必须按退出时的真实勾选落盘：
+     * 用户可以先勾选、翻到后面又回来取消，宿主看不到内部 `privacyChecked`）。
+     */
+    onPrivacyConsentChanged: (Boolean) -> Unit = {},
     initialPage: Int = 0,
     permissionState: GuidePermissionState = GuidePermissionState(),
     settings: GuideSettingsSnapshot = GuideSettingsSnapshot(),
@@ -196,7 +201,10 @@ fun UserGuidePage(
                         onBack = closeGuide,
                         requireConsent = requirePrivacyConsent,
                         consentChecked = privacyChecked,
-                        onConsentChanged = { privacyChecked = it },
+                        onConsentChanged = {
+                            privacyChecked = it
+                            onPrivacyConsentChanged(it)
+                        },
                     )
 
                     2 -> PermissionsPage(

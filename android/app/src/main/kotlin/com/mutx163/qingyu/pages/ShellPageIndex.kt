@@ -36,9 +36,6 @@ import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.Lifecycle
-import androidx.lifecycle.LifecycleEventObserver
-import androidx.lifecycle.compose.LocalLifecycleOwner
 import com.mutx163.qingyu.KeepAliveAccessibilityStatus
 import com.mutx163.qingyu.app.AddTaskFormReducer
 import com.mutx163.qingyu.app.CourseActionDispatcher
@@ -125,15 +122,13 @@ import com.mutx163.qingyu.pages.guide.HyperosShowcasePage
 import com.mutx163.qingyu.pages.guide.MoreFeaturesModel
 import com.mutx163.qingyu.pages.guide.MoreFeaturesPage
 import com.mutx163.qingyu.pages.guide.MoreFeaturesSearchOverlay
-import com.mutx163.qingyu.pages.guide.GuideSettingsMapping
 import com.mutx163.qingyu.pages.guide.GuideStrings
 import com.mutx163.qingyu.pages.guide.STARTUP_LEGACY_PACKAGE_CANDIDATES
 import com.mutx163.qingyu.pages.guide.StartupFlowPage
 import com.mutx163.qingyu.pages.guide.StartupFlowPreferences
 import com.mutx163.qingyu.pages.guide.StartupFlowState
-import com.mutx163.qingyu.pages.guide.UserGuidePage
+import com.mutx163.qingyu.pages.guide.UserGuideHost
 import com.mutx163.qingyu.pages.guide.planStartupSemesterWrite
-import com.mutx163.qingyu.platform.guide.GuidePermissionProbe
 import com.mutx163.qingyu.pages.import.IcsImportHost
 import com.mutx163.qingyu.pages.import.ImportEntryHost
 import com.mutx163.qingyu.pages.import.ImportShellBridge
@@ -2239,44 +2234,12 @@ fun ShellPageContent(
             onOpenPage = onOpenPage,
         )
         "i.userGuide" -> {
-            // 引导页接真实数据（对齐 Flutter user_guide_screen.dart）：
-            // 权限状态来自平台真值；个性化读写走同一个设置模型；导航接壳内已有页面。
-            val context = LocalContext.current
-            val lifecycleOwner = LocalLifecycleOwner.current
-            var permissionState by remember { mutableStateOf(GuidePermissionProbe.probe(context)) }
-            var guideSettings by remember {
-                mutableStateOf(GuideSettingsMapping.snapshotFrom(wiring.settingsModel.load()))
-            }
-            // 从系统设置页返回时重新探测权限 + 重新读设置，让「点完回来状态变了」看得见。
-            DisposableEffect(lifecycleOwner) {
-                val observer = LifecycleEventObserver { _, event ->
-                    if (event == Lifecycle.Event.ON_RESUME) {
-                        permissionState = GuidePermissionProbe.probe(context)
-                        guideSettings = GuideSettingsMapping.snapshotFrom(wiring.settingsModel.load())
-                    }
-                }
-                lifecycleOwner.lifecycle.addObserver(observer)
-                onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
-            }
-            UserGuidePage(
+            // 宿主抽到 pages/guide/UserGuideHost.kt：首启隐私门（FirstRunPrivacyGate）
+            // 与「设置里复看指南」共用同一套真数据接线，这里只传参数。
+            UserGuideHost(
+                wiring = wiring,
                 onBack = onBack,
-                permissionState = permissionState,
-                settings = guideSettings,
-                seedOptions = GuideSettingsMapping.seedOptions(),
-                onPermissionAction = { action ->
-                    GuidePermissionProbe.open(context, action)
-                    permissionState = GuidePermissionProbe.probe(context)
-                },
-                onRefreshPermissions = { permissionState = GuidePermissionProbe.probe(context) },
-                onSettingsPatch = { patch ->
-                    val next = GuideSettingsMapping.applyPatch(wiring.settingsModel.load(), patch)
-                    wiring.settingsModel.save(next)
-                    guideSettings = GuideSettingsMapping.snapshotFrom(next)
-                },
-                onImportCourses = { onOpenPage("g1.importEntry") },
-                onRestoreBackup = { onOpenPage("f.backupList") },
-                onOpenCourseOverview = { onOpenPage("d1.overview") },
-                onFinishGuide = { onBack() },
+                onOpenPage = onOpenPage,
             )
         }
         // 「全部功能」索引页：39 行每行都要能跳到对应页（F02 接线，2026-10-29）。

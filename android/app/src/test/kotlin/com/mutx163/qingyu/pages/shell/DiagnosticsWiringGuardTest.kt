@@ -300,7 +300,7 @@ class DiagnosticsWiringGuardTest {
             "g3.lanEdit" to listOf("LanEditHost"),
             "g3.pickupCodes" to listOf("PickupCodesHost"),
             // -- i --
-            "i.userGuide" to listOf("UserGuidePage", "GuidePermissionProbe.probe"),
+            "i.userGuide" to listOf("UserGuideHost"),
             "i.hyperosShowcase" to listOf("HyperosShowcasePage"),
             // -- i2 --
             "i2.showcase" to listOf("MiuixShowcasePage"),

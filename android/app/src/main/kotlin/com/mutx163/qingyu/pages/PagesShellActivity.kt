@@ -57,6 +57,7 @@ import com.mutx163.qingyu.LiveUpdateScheduler
 import com.mutx163.qingyu.ExamReminderCoordinator
 import com.mutx163.qingyu.ScheduleReminderCoordinator
 import com.mutx163.qingyu.NotificationLaunchTarget
+import com.mutx163.qingyu.UmengApplication
 import com.mutx163.qingyu.app.AppFontMode
 import com.mutx163.qingyu.app.AppLocaleRuntime
 import com.mutx163.qingyu.app.AppLocaleUiBridge
@@ -73,6 +74,8 @@ import com.mutx163.qingyu.pages.schedule.ScheduleDateRuleAutoApplyHost
 import com.mutx163.qingyu.pages.live.LiveSnapshotBuilder
 import com.mutx163.qingyu.pages.live.LiveSnapshotSyncRegistry
 import com.mutx163.qingyu.pages.live.LiveSnapshotSyncer
+import com.mutx163.qingyu.pages.guide.FirstRunPrivacyGate
+import com.mutx163.qingyu.pages.guide.PrivacyConsentPreferences
 import com.mutx163.qingyu.platform.PrefsKeyValueStore
 import com.mutx163.qingyu.platform.PerfProbe
 import com.mutx163.qingyu.platform.ScreenCaptureWatcher
@@ -275,10 +278,34 @@ class PagesShellActivity : ComponentActivity() {
             // * `appTextScale` → `LocalDensity.fontScale` 缩放；
             // * `appLocaleTag` → `attachBaseContext`（仅启动时生效，见该方法注释）。
             val wiring = rememberShellWiring()
+            // ── 首启隐私门（B1，2026-11-10）──────────────────────────────────────
+            // 冷启动先读两枚 Dart 契约键（`flutter.accepted_privacy_policy` /
+            // `flutter.has_seen_user_guide`）：都齐 → 直接进壳（对齐 v2.1.4.1
+            // `_handleStartupFlows` 的快速路径）；否则先渲染首启门，勾选同意并退出
+            // 后才挂壳。首启门的落盘与守门逻辑在 `FirstRunPrivacyGate`。
+            val privacyPrefs = remember {
+                PrivacyConsentPreferences(PrefsKeyValueStore(applicationContext))
+            }
+            var firstRunDone by remember { mutableStateOf(privacyPrefs.isFirstRunComplete()) }
+            LaunchedEffect(firstRunDone) {
+                if (!firstRunDone) return@LaunchedEffect
+                // 友盟 `init` 只能在同意之后：`Application` 里只做了 `preInit`；
+                // 这里按同意键兜住「老用户冷启 + 刚同意」两条路径（幂等）。
+                withContext(Dispatchers.IO) {
+                    UmengApplication.initializeAnalyticsIfConsented(applicationContext)
+                }
+                // 通知权限顺延到首启门之后：未同意隐私前不弹系统权限框。
+                Choreographer.getInstance().postFrameCallback {
+                    requestNotificationPermissionOnce()
+                }
+            }
             // 日程提醒 / 日期规则自动套用：仓储是纯 Kotlin，Android 侧的回调与端口在这里装上。
             // 日程提醒还会在每次增删改后由 `TimetableRepository.syncExamReminders()` 触发重排。
             val schedulePrefs = remember { PrefsKeyValueStore(applicationContext) }
-            LaunchedEffect(wiring) {
+            LaunchedEffect(wiring, firstRunDone) {
+                // 首启隐私门未过之前不跑启动副作用（天气初始化可能发网、提醒协调器会排
+                // AlarmManager）：这些属于「同意之后」才该发生的事，和通知权限同一口径。
+                if (!firstRunDone) return@LaunchedEffect
                 withContext(Dispatchers.IO) {
                     // 启动对账（settings → native pref）从 ShellWiring 构造函数搬到首帧之后：
                     // 它要读整份设置 JSON，还可能排一次 AlarmManager（binder），
@@ -331,14 +358,29 @@ class PagesShellActivity : ComponentActivity() {
                 // 语言切走的是「重组」而不是「重建壳」：`ArbText.text` 每次取值都会读
                 // `AppLocaleUiBridge` 的 revision state，语言一变，正在显示的文案自动重组；
                 // 返回栈、滚动位置、表单草稿都保留（不会弹回首页）。
-                PagesShell(
-                    wiring = wiring,
-                    settingsModel = settingsModel,
-                    onReloadSettings = {
-                        settingsModel = it
-                        AppLocaleRuntime.set(it.appLocaleTag)
-                    },
-                )
+                if (firstRunDone) {
+                    PagesShell(
+                        wiring = wiring,
+                        settingsModel = settingsModel,
+                        onReloadSettings = {
+                            settingsModel = it
+                            AppLocaleRuntime.set(it.appLocaleTag)
+                        },
+                    )
+                } else {
+                    FirstRunPrivacyGate(
+                        wiring = wiring,
+                        onCompleted = { routePageId ->
+                            firstRunDone = true
+                            // 指南里的「导入 / 恢复 / 课程总览」入口：首启门完成后把目标页
+                            // 交给壳的进程级落点通道（`ShellExternalEntryEffect` 消费；
+                            // 壳还没挂载时 post 不会丢）。
+                            if (routePageId != null) {
+                                ShellExternalEntryHub.post(routePageId, null)
+                            }
+                        },
+                    )
+                }
             }
         }
 
@@ -351,8 +393,9 @@ class PagesShellActivity : ComponentActivity() {
         // mainEnter（进程进入 Application）→ shellAttach（壳挂载）→ firstFrame（首帧）。
         Choreographer.getInstance().postFrameCallback {
             PerfProbe.markStartup("firstFrame")
-            // 通知权限：首帧已经上屏，此时再弹系统弹窗不会遮住启动过程（见 onCreate 里的注释）。
-            requestNotificationPermissionOnce()
+            // 通知权限不在这里申请：B1（2026-11-10）起顺延到首启隐私门通过之后，
+            // 见 setContent 里的 `LaunchedEffect(firstRunDone)`——避免系统权限框
+            // 盖在隐私页前面，把「先同意再要权限」的次序打乱。
         }
     }
 

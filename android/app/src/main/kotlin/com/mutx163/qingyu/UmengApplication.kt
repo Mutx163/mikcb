@@ -6,6 +6,8 @@ import android.os.SystemClock
 import com.mutx163.qingyu.infra.AppLogStore
 import com.mutx163.qingyu.infra.CrashLogInstaller
 import com.mutx163.qingyu.pages.diagnostics.PerfProbeCore
+import com.mutx163.qingyu.pages.guide.PrivacyConsentPreferences
+import com.mutx163.qingyu.platform.PrefsKeyValueStore
 import com.umeng.commonsdk.UMConfigure
 
 class UmengApplication : Application() {
@@ -61,6 +63,25 @@ class UmengApplication : Application() {
         private var initialized = false
 
         fun isAnalyticsInitialized(): Boolean = initialized
+
+        /**
+         * 「已同意隐私才初始化」的生产入口（B1，2026-11-10）。
+         *
+         * 为什么单独一层：`initializeAnalyticsIfNeeded` 只负责「初始化一次」，
+         * 它自己不看同意标记；生产路径必须**先查 `flutter.accepted_privacy_policy`**
+         * 再 init——旧版 Dart 就是 `if (await hasAcceptedPrivacyPolicy())`
+         * 后才调 `UmengAnalyticsService.initializeIfNeeded()`（`v2.1.4.1:lib/main.dart:1100-1102`）。
+         *
+         * @return true = 本次真的初始化了；false = 未同意 / 已初始化过 / 重复调用
+         */
+        fun initializeAnalyticsIfConsented(context: Context): Boolean {
+            val accepted = PrivacyConsentPreferences(PrefsKeyValueStore(context))
+                .hasAcceptedPrivacyPolicy()
+            if (!accepted) {
+                return false
+            }
+            return initializeAnalyticsIfNeeded(context)
+        }
 
         fun initializeAnalyticsIfNeeded(context: Context): Boolean {
             if (initialized) {
