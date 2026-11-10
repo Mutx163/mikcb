@@ -129,6 +129,9 @@ com/mutx163/qingyu/components/BackToTodayFab.kt:3
 com/mutx163/qingyu/components/glass/CourseCardGlassSurface.kt:2
 com/mutx163/qingyu/components/liquid/LiquidCombinedBackdrop.kt:2
 com/mutx163/qingyu/pages/live/LiveIslandPreview.kt:8
+# 2026-11-10 全仓预览补齐批（弹层套件，美化三）：
+#   components/QingyuSheet.kt 0→4 —— 套件预览档的预览名与预览样例（IDE 标签/样例，不上屏）。
+com/mutx163/qingyu/components/QingyuSheet.kt:4
 com/mutx163/qingyu/pages/export/IcsExportPage.kt:8
 com/mutx163/qingyu/pages/time_scheme/TimeSchemeManagementPage.kt:8
 com/mutx163/qingyu/pages/settings/AppearanceEditorScreen.kt:7

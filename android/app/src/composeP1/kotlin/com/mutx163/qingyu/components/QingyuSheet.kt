@@ -1,15 +1,18 @@
 package com.mutx163.qingyu.components
 
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.asPaddingValues
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.ime
 import androidx.compose.foundation.layout.navigationBars
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -17,12 +20,14 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.layout
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import top.yukonga.miuix.kmp.basic.Scaffold
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.overlay.OverlayBottomSheet
 import top.yukonga.miuix.kmp.theme.MiuixTheme
@@ -324,4 +329,62 @@ object QingyuSheetDefaults {
      * 记在这里，等上游把行内边距开放出来再对齐。
      */
     val TitleLineHeight: TextUnit = 20.4.sp
+}
+
+/**
+ * 预览用示例文案：**只在 Android Studio 的 `@Preview` 里画，不上屏**。
+ *
+ * CJK 棘轮（`i18n/CjkLiteralGateTest`）按文件计中文字面量，这两条会给本文件新增字面量；
+ * 已按既有口径（预览中文是 IDE 标签 / 占位、不是屏上文案）在 `cjk-literal-baseline.txt`
+ * 登记 `components/QingyuSheet.kt` 的新条目，理由随条目一起报，由串行提交统一落盘。
+ */
+private const val PreviewSheetTitle = "示例标题"
+private const val PreviewSheetBody = "正文内容示例"
+
+/**
+ * 预览：弹层套件一屏档（标题 + 一行正文）。
+ *
+ * **必须包一层 miuix [Scaffold]**：套件把面板交给 `OverlayBottomSheet` 的 dialog 槽
+ *（`MiuixPopupUtils.DialogLayout` → `LocalRootDialogStates`），而裸 `@Preview` 里没有
+ * 这个 host，面板根本不会被画出来。Scaffold 正是它的提供方（`Scaffold.kt:96-110`），
+ * 所以这层不是装饰，是预览能不能出图的前提。
+ */
+@Preview(name = "1 弹层套件 · 整屏", showBackground = true, widthDp = 400, heightDp = 900)
+@Composable
+private fun PreviewQingyuSheet() {
+    QingyuPageTheme(isDark = false, textScale = 1f) {
+        Scaffold { _ ->
+            QingyuSheet(
+                show = true,
+                onDismissRequest = {},
+                title = PreviewSheetTitle,
+            ) {
+                Text(
+                    text = PreviewSheetBody,
+                    style = MiuixTheme.textStyles.body1,
+                    color = MiuixTheme.colorScheme.onSurface,
+                )
+            }
+        }
+    }
+}
+
+/**
+ * 预览：标题行本身（S3 口径 = 17sp / w400 / 左对齐 / 行高 1.2）。
+ *
+ * 单独一档是为了核字号与字重：整屏预览里标题只占 20.4sp 一行，肉眼比对太吃力。
+ * 左内边距用 [QingyuSheetDefaults.InsideMargin]，与标题在面板里的真实落点一致。
+ */
+@Preview(name = "2 弹层标题行 · 整屏", showBackground = true, widthDp = 400, heightDp = 900)
+@Composable
+private fun PreviewQingyuSheetTitle() {
+    QingyuPageTheme(isDark = false, textScale = 1f) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(horizontal = QingyuSheetDefaults.InsideMargin, vertical = 16.dp),
+        ) {
+            QingyuSheetTitle(PreviewSheetTitle)
+        }
+    }
 }
