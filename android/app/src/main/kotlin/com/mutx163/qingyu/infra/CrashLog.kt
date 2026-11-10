@@ -143,10 +143,11 @@ object CrashLogInstaller {
     /**
      * @return true 表示本次装了新的一层；false 表示已装过或拿不到默认 handler。
      *
-     * 注意安装时机：U-APM 的 `UMConfigure.init` 会覆盖默认 handler，所以
-     * `UmengApplication.onCreate` 装一次（未同意隐私也有本地记录），
-     * `initializeAnalyticsIfNeeded` 在 `UmengCrashRedaction.install()` 之后再装一次
-     * （保证本层在最外层、崩溃时一定先落盘）。
+     * 注意安装时机（2026-11-10 B1 复核修正）：**只在隐私同意后安装**——
+     * `initializeAnalyticsIfNeeded` 里 `UMConfigure.init` 之后、`UmengCrashRedaction.install()`
+     * 之后再装（保证本层在最外层、崩溃时一定先落盘）。未同意阶段不装，崩溃不写
+     * `app_runtime.log`，对齐 v2.1.4.1 Dart `app_log_service.dart:424-426` 的
+     * `_shouldRecord=false`（未同意隐私时连崩溃都不落盘）。
      */
     fun install(): Boolean {
         val current = Thread.getDefaultUncaughtExceptionHandler() ?: return false

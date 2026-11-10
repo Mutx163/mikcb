@@ -36,11 +36,11 @@ class UmengApplication : Application() {
         // 与 Flutter 侧 `AppLogService` **同一个文件、同一个格式**：`filesDir/logs/app_runtime.log`，
         // 所以在迁移期两边写的东西能互相读到；未初始化时 append 返回 false，不会崩、不会打断业务。
         AppLogStore.initialize(this)
-        // 本地崩溃落盘（Dart `main.dart:321`/`:350` 的等价层）：崩溃先脱敏写
-        // `logs/app_runtime.log`，再原样交回系统/U-APM 的 handler，不吞异常。
-        // U-APM 的 `UMConfigure.init` 会覆盖默认 handler，所以 init 之后还要再装一次
-        // （见 `initializeAnalyticsIfNeeded`）；两处都幂等。
-        CrashLogInstaller.install()
+        // 本地崩溃落盘**不在 Application 启动时安装**（2026-11-10 B1 复核修正）：
+        // 旧版 Dart 在未同意隐私政策前连崩溃都不落盘（`app_log_service.dart:424-426`
+        // 的 `_shouldRecord` 直接返回 false），用户口径是「对齐发布版」。现在只在同意后、
+        // `initializeAnalyticsIfNeeded` 里（`UMConfigure.init` 之后）安装；未同意阶段的
+        // 崩溃交给系统默认 handler，不写 `app_runtime.log`。
 
         BeforeClassQuickActionRestore.restoreIfClassEnded(applicationContext)
 
@@ -65,12 +65,13 @@ class UmengApplication : Application() {
         fun isAnalyticsInitialized(): Boolean = initialized
 
         /**
-         * 「已同意隐私才初始化」的生产入口（B1，2026-11-10）。
+         * 「已同意隐私才初始化」的**语义化生产入口**（B1，2026-11-10）。
          *
-         * 为什么单独一层：`initializeAnalyticsIfNeeded` 只负责「初始化一次」，
-         * 它自己不看同意标记；生产路径必须**先查 `flutter.accepted_privacy_policy`**
-         * 再 init——旧版 Dart 就是 `if (await hasAcceptedPrivacyPolicy())`
-         * 后才调 `UmengAnalyticsService.initializeIfNeeded()`（`v2.1.4.1:lib/main.dart:1100-1102`）。
+         * 它和 [initializeAnalyticsIfNeeded] 的区别只是「名字表明用途」：后者现在也
+         * 自己查同意键（2026-11-10 复核补的结构保证），所以两条路径都不会在同意前
+         * init。保留本方法的理由：生产调用点一眼能看出「这里是有意等同意」，
+         * 与旧版 Dart `if (await hasAcceptedPrivacyPolicy())` 的门形对齐
+         *（`v2.1.4.1:lib/main.dart:1100-1102`）。
          *
          * @return true = 本次真的初始化了；false = 未同意 / 已初始化过 / 重复调用
          */
@@ -84,6 +85,12 @@ class UmengApplication : Application() {
         }
 
         fun initializeAnalyticsIfNeeded(context: Context): Boolean {
+            // 结构保证（B1 复核补）：raw 入口也先查同意键——调试页 / 未来任何新调用点
+            // 都绕不过隐私门；`UMConfigure.init` 与崩溃落盘（`CrashLogInstaller`）都只
+            // 可能发生在同意之后。行为约定升级成代码保证。
+            if (!PrivacyConsentPreferences(PrefsKeyValueStore(context)).hasAcceptedPrivacyPolicy()) {
+                return false
+            }
             if (initialized) {
                 return false
             }

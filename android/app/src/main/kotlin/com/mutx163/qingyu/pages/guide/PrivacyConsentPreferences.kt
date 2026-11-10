@@ -62,6 +62,18 @@ class PrivacyConsentPreferences(private val store: KeyValueStore) {
     }
 }
 
+/** 首启指南退出时的三种结果。 */
+enum class FirstRunPrivacyCompletion {
+    /** 三枚标记都写入且回读一致，可以进首页。 */
+    Completed,
+
+    /** 必须勾选同意却没勾（用户取消勾选 / 直接退出），一个字节都不写。 */
+    ConsentMissing,
+
+    /** 写盘失败（磁盘满、国产 ROM 的 commit 不可靠等），停在隐私页并提示。 */
+    SaveFailed,
+}
+
 /**
  * 首启门的**纯逻辑**（不依赖 Android / Compose），供 [FirstRunPrivacyGate] 与
  * JVM 单测共用。
@@ -71,7 +83,8 @@ class PrivacyConsentPreferences(private val store: KeyValueStore) {
  * - 否则弹指南：未同意时 `requirePrivacyConsent = true`、初始勾选 = 已同意；
  * - 退出时：**勾了同意才写 `accepted_privacy_policy`**，并写 `has_seen_user_guide`，
  *   最后统一写 `has_completed_onboarding = true`；
- * - 必须勾选却没勾（或用户直接退出）→ 一条都不写、界面不放行。
+ * - 必须勾选却没勾（或用户直接退出）→ 一条都不写、界面不放行；
+ * - 写盘失败 → 停在隐私页提示「保存失败」，**不许崩**（2026-11-10 B1 复核补）。
  */
 object FirstRunPrivacyFlow {
 
@@ -85,24 +98,37 @@ object FirstRunPrivacyFlow {
     /**
      * 完成首启指南时落盘。
      *
+     * 三处写入都走 `*AndVerify`（写完立刻回读）：国产 ROM 的 `commit()` 有不可靠
+     * 先例，Dart 侧 `storage_service.dart:888-891` 自己就带这段防御。写盘异常
+     *（如 `PrefsKeyValueStore.putBool` 在 `commit()` 失败时抛 `IOException`）一律
+     * 收成 [FirstRunPrivacyCompletion.SaveFailed]，由界面给一句人话，绝不让崩溃
+     * 发生在用户刚点「完成」的时候。
+     *
      * @param consentChecked 退出时页面上的勾选状态（用户可以先勾后取消）
      * @param previouslyAccepted 进入指南前是否已同意
-     * @return true = 允许离开首启门（已写入标记）；false = 不放行、未写任何键
      */
     fun complete(
         privacy: PrivacyConsentPreferences,
         startup: StartupFlowPreferences,
         consentChecked: Boolean,
         previouslyAccepted: Boolean,
-    ): Boolean {
+    ): FirstRunPrivacyCompletion {
         if (!previouslyAccepted && !consentChecked) {
-            return false
+            return FirstRunPrivacyCompletion.ConsentMissing
         }
-        if (consentChecked) {
-            privacy.markAcceptedPrivacyPolicy()
+        return try {
+            if (consentChecked && !privacy.markAcceptedPrivacyPolicyAndVerify()) {
+                return FirstRunPrivacyCompletion.SaveFailed
+            }
+            if (!privacy.markSeenUserGuideAndVerify()) {
+                return FirstRunPrivacyCompletion.SaveFailed
+            }
+            if (!startup.markOnboardingCompletedAndVerify()) {
+                return FirstRunPrivacyCompletion.SaveFailed
+            }
+            FirstRunPrivacyCompletion.Completed
+        } catch (_: Throwable) {
+            FirstRunPrivacyCompletion.SaveFailed
         }
-        privacy.markSeenUserGuide()
-        startup.markOnboardingCompleted()
-        return true
     }
 }

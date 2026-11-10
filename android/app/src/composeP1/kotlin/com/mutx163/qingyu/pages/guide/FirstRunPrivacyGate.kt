@@ -10,6 +10,7 @@ import androidx.compose.ui.platform.LocalContext
 import android.app.Activity
 import android.content.Context
 import android.content.ContextWrapper
+import android.widget.Toast
 import com.mutx163.qingyu.pages.ShellWiring
 import com.mutx163.qingyu.platform.PrefsKeyValueStore
 
@@ -63,8 +64,13 @@ fun FirstRunPrivacyGate(
 
     val requireConsent = FirstRunPrivacyFlow.requiresConsent(accepted)
     val finish: (String?) -> Unit = { route ->
-        if (FirstRunPrivacyFlow.complete(privacy, startup, consentChecked, accepted)) {
-            onCompleted(route)
+        when (FirstRunPrivacyFlow.complete(privacy, startup, consentChecked, accepted)) {
+            FirstRunPrivacyCompletion.Completed -> onCompleted(route)
+            // 写盘失败必须停在这页给一句人话，绝不让 commit 异常在用户点「完成」时崩。
+            FirstRunPrivacyCompletion.SaveFailed ->
+                Toast.makeText(context, GuideStrings.saveFailed.text, Toast.LENGTH_SHORT).show()
+            // 必须勾选却没勾：用户停在隐私页，什么都不写、也不放行。
+            FirstRunPrivacyCompletion.ConsentMissing -> Unit
         }
     }
     // 隐私页底栏的那颗「退出应用」走的是 `onBack`（`GuideBottomBar` 的
