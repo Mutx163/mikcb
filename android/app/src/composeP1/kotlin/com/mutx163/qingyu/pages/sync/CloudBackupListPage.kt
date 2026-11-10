@@ -29,6 +29,9 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.mutx163.qingyu.components.QingyuCard
+import com.mutx163.qingyu.components.QingyuEmptyState
+import com.mutx163.qingyu.components.QingyuLoadingCenter
+import com.mutx163.qingyu.components.QingyuLoadingInButton
 import com.mutx163.qingyu.components.QingyuPageList
 import com.mutx163.qingyu.components.QingyuPageScaffold
 import com.mutx163.qingyu.components.QingyuPageTheme
@@ -36,15 +39,17 @@ import com.mutx163.qingyu.components.QingyuWeightDelta
 import com.mutx163.qingyu.components.shiftWeight
 import com.mutx163.qingyu.theme.QingyuTheme
 import top.yukonga.miuix.kmp.basic.Button
+import top.yukonga.miuix.kmp.basic.ButtonDefaults
 import top.yukonga.miuix.kmp.basic.Card
-import top.yukonga.miuix.kmp.basic.CircularProgressIndicator
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.IconButton
 import top.yukonga.miuix.kmp.basic.Scaffold
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TextButton
 import top.yukonga.miuix.kmp.icon.MiuixIcons
+import top.yukonga.miuix.kmp.icon.extended.Backup
 import top.yukonga.miuix.kmp.icon.extended.ChevronForward
+import top.yukonga.miuix.kmp.icon.extended.Info
 import top.yukonga.miuix.kmp.icon.extended.Refresh
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
@@ -92,45 +97,32 @@ fun CloudBackupListPage(
             }
 
             when {
-                viewState.isLoading -> Box(
-                    modifier = Modifier.fillMaxSize(),
-                    contentAlignment = Alignment.Center,
-                ) {
-                    CircularProgressIndicator()
-                }
+                viewState.isLoading -> QingyuLoadingCenter()
 
-                viewState.isEmpty -> Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(24.dp),
-                    contentAlignment = Alignment.Center,
-                ) {
+                viewState.isEmpty -> if (viewState.errorText != null) {
                     // 拉取失败时换成「为什么空」（断网 / 密码失效），不把失败说成「还没有备份」。
                     // 2026-11-06 第三轮返工①后的模型口径：errorText **有 errorCode 即透出**、
                     // 不再按「列表是否为空」过滤——空态与非空列表都要有可见出口。空态分支
                     // 的出口 = 失败原因 + 显式「重试」（cloudBackupRetryAction）；纯空态
                     // 仍是静态文字；非空列表的出口见下方错误条窗口。
-                    if (viewState.errorText != null) {
-                        val error = viewState.errorText
-                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                            Text(
-                                text = error,
-                                style = MiuixTheme.textStyles.body1,
-                                color = Color(QingyuTheme.secondaryText(dark)),
-                            )
-                            TextButton(
-                                text = SyncStrings.cloudBackupRetryAction.text,
+                    val error = viewState.errorText
+                    QingyuEmptyState(
+                        icon = MiuixIcons.Info,
+                        title = error,
+                        action = {
+                            Button(
                                 onClick = onRetryRefresh,
-                                modifier = Modifier.padding(top = 16.dp),
-                            )
-                        }
-                    } else {
-                        Text(
-                            text = viewState.emptyText,
-                            style = MiuixTheme.textStyles.body1,
-                            color = Color(QingyuTheme.secondaryText(dark)),
-                        )
-                    }
+                                colors = ButtonDefaults.buttonColors(),
+                            ) {
+                                Text(text = SyncStrings.cloudBackupRetryAction.text)
+                            }
+                        },
+                    )
+                } else {
+                    QingyuEmptyState(
+                        icon = MiuixIcons.Backup,
+                        title = viewState.emptyText,
+                    )
                 }
 
                 else -> QingyuPageList(
@@ -187,7 +179,7 @@ fun CloudBackupListPage(
                                 modifier = Modifier.fillMaxWidth(),
                             ) {
                                 if (viewState.isCreatingBackup) {
-                                    CircularProgressIndicator(size = 16.dp, strokeWidth = 2.dp)
+                                    QingyuLoadingInButton()
                                     Spacer(modifier = Modifier.width(8.dp))
                                 }
                                 Text(text = viewState.createLabel)

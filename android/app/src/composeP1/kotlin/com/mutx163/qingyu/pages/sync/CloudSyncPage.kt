@@ -30,6 +30,9 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.mutx163.qingyu.components.QingyuCard
+import com.mutx163.qingyu.components.QingyuLoadingCenter
+import com.mutx163.qingyu.components.QingyuLoadingInButton
+import com.mutx163.qingyu.components.QingyuLoadingInline
 import com.mutx163.qingyu.components.QingyuPageList
 import com.mutx163.qingyu.components.QingyuPageScaffold
 import com.mutx163.qingyu.components.QingyuPageTheme
@@ -41,7 +44,6 @@ import com.mutx163.qingyu.theme.QingyuTheme
 import top.yukonga.miuix.kmp.basic.Button
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
 import top.yukonga.miuix.kmp.basic.Card
-import top.yukonga.miuix.kmp.basic.CircularProgressIndicator
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.IconButton
 import top.yukonga.miuix.kmp.basic.Scaffold
@@ -98,9 +100,8 @@ fun CloudSyncPage(
         ) {
 
             if (viewState.isLoading) {
-                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    CircularProgressIndicator()
-                }
+                // 档 A（D1 统一）：居中 24dp 裸圈，位置由整页内容区承担。
+                QingyuLoadingCenter()
                 return@Column
             }
 
@@ -257,7 +258,8 @@ fun CloudSyncPage(
                                     if (viewState.status.isSyncing) {
                                         Spacer(modifier = Modifier.height(8.dp))
                                         Row(verticalAlignment = Alignment.CenterVertically) {
-                                            CircularProgressIndicator(size = 16.dp, strokeWidth = 2.dp)
+                                            // 档 B（D1 统一）：行内 16dp / 2dp，主题色。
+                                            QingyuLoadingInline()
                                             Spacer(modifier = Modifier.width(8.dp))
                                             Text(
                                                 text = viewState.syncingLabel,
@@ -323,12 +325,9 @@ fun CloudSyncPage(
                                     modifier = Modifier.fillMaxWidth(),
                                     insideMargin = PaddingValues(vertical = 16.dp),
                                 ) {
-                                    Box(
-                                        modifier = Modifier.fillMaxWidth(),
-                                        contentAlignment = Alignment.Center,
-                                    ) {
-                                        CircularProgressIndicator()
-                                    }
+                                    // 档 A 块内（D1 统一）：卡片里居中，最小高度 120dp，
+                                    // 不再靠 padding 数值凑位置。
+                                    QingyuLoadingCenter(fillPage = false)
                                 }
                             }
                         } else if (viewState.backupRows.isEmpty()) {
@@ -585,7 +584,8 @@ private fun LoadingButton(
         modifier = Modifier.fillMaxWidth(),
     ) {
         if (loading) {
-            CircularProgressIndicator(size = 16.dp, strokeWidth = 2.dp)
+            // 档 B1（D1 统一）：按钮内圈吃 contentColor，主色按钮上是白圈。
+            QingyuLoadingInButton()
             Spacer(modifier = Modifier.width(8.dp))
         }
         Text(text = label)
@@ -662,7 +662,7 @@ fun WebdavConnectSheet(
                     modifier = Modifier.weight(1f),
                 ) {
                     if (testing) {
-                        CircularProgressIndicator(size = 16.dp, strokeWidth = 2.dp)
+                        QingyuLoadingInButton()
                         Spacer(modifier = Modifier.width(6.dp))
                     }
                     Text(text = SyncStrings.cloudSyncTestConnection.text)
@@ -675,7 +675,7 @@ fun WebdavConnectSheet(
                     modifier = Modifier.weight(1f),
                 ) {
                     if (connecting) {
-                        CircularProgressIndicator(size = 16.dp, strokeWidth = 2.dp)
+                        QingyuLoadingInButton()
                         Spacer(modifier = Modifier.width(6.dp))
                     }
                     Text(text = SyncStrings.cloudSyncConfirmConnect.text)

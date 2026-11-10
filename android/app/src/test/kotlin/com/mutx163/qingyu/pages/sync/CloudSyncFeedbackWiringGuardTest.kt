@@ -84,7 +84,11 @@ class CloudSyncFeedbackWiringGuardTest {
             "android/app/src/composeP1/kotlin/com/mutx163/qingyu/pages/sync/CloudBackupListPage.kt",
         )
         val page = stripComments(raw)
-        val emptyBranchStart = page.indexOf("viewState.isEmpty -> Box(")
+        // 结构锚点（2026-11-10 D1/C17 空态统一后，美化一更新）：空态分支不再是内联
+        // `Box(`，而是 `viewState.isEmpty -> if (errorText != null) { QingyuEmptyState(...) }
+        // else { QingyuEmptyState(...) }`。这里钉「分支起点 + 统一组件调用」，**不钉行号、
+        // 不钉旧 Box 形态**；意图不变：空态与列表两个状态下「重试出口」都必须可见。
+        val emptyBranchStart = page.indexOf("viewState.isEmpty -> if (")
         val listBranchStart = page.indexOf("else -> QingyuPageList(")
         assertTrue(
             "找不到空态分支 / 列表分支的分界（页面结构变了，守卫要跟着改）。",
@@ -104,28 +108,32 @@ class CloudSyncFeedbackWiringGuardTest {
                 "也不会挂错误条，有缓存时刷新失败回到静默（S2 原病）。",
             "viewState.errorText?.let" in listBranch,
         )
-        // 键引用与真调用**绑定同窗**（第五轮复核①：上一版退化成「只查串在分支内」，
-        // hy1 探针「掏空 clickable + 把文案串挪到同分支别处」能全绿——洞）。
-        //
-        // 空态分支：TextButton 的 text→onClick 紧邻，键后小窗必须含真调用；
-        // 非空分支：错误条整条 Row 的 clickable 是真调用，键引用必须落在
-        // `item(key = "refresh_error_bar")` 与 `item(key = "create_backup")` 的
-        // **错误条窗口**内——挪出窗口（挂到别处当死文案）→ 窗口内无键 → 红；
-        // 掏空 clickable → 窗口内无 onClick → 红。
-        val emptyRetryIndex = emptyBranch.indexOf("SyncStrings.cloudBackupRetryAction.text")
+        // 空态分支：错误态那一支必须走统一空态组件（C17 的 `QingyuEmptyState`），并且
+        // 「重试动作词 + 真调用」必须落在**同一个 QingyuEmptyState 调用的实参里**——
+        // 键挪去分支别处当死文案、或 onClick 被掏空，都要红。
+        val errorIconIndex = emptyBranch.indexOf("MiuixIcons.Info")
         assertTrue(
-            "空态分支里没有重试出口（cloudBackupRetryAction 无渲染点）：刷新失败在该状态下" +
-                "没有任何可点的东西，变成死提示（第三轮返工①两状态都要可见出口）。",
-            emptyRetryIndex >= 0,
+            "空态分支没走统一空态组件（找不到 `QingyuEmptyState` + 错误态图标 `MiuixIcons.Info`）：" +
+                "C17 的空态统一被回退成自拼 Box。",
+            errorIconIndex >= 0 && "QingyuEmptyState(" in emptyBranch,
         )
-        val emptyWindow = emptyBranch.substring(
-            emptyRetryIndex,
-            minOf(emptyRetryIndex + 200, emptyBranch.length),
+        val emptyStateCallStart = emptyBranch.lastIndexOf("QingyuEmptyState(", errorIconIndex)
+        assertTrue(
+            "找不到错误态 QingyuEmptyState 调用起点（页面结构变了，守卫跟着改）。",
+            emptyStateCallStart >= 0,
+        )
+        val emptyStateCall = matchedParenBody(emptyBranch, emptyStateCallStart + "QingyuEmptyState".length)
+        assertTrue("错误态 QingyuEmptyState 调用圆括号配对失败（源码结构异常，守卫跟着改）", emptyStateCall != null)
+        val emptyAction = emptyStateCall!!
+        assertTrue(
+            "错误态空态里没有重试出口（cloudBackupRetryAction 不在同一个 QingyuEmptyState 调用里）：" +
+                "刷新失败在该状态下没有任何可点的东西，变成死提示（第三轮返工①两状态都要可见出口）。",
+            "SyncStrings.cloudBackupRetryAction.text" in emptyAction,
         )
         assertTrue(
-            "空态分支的重试钮没接真调用（键后 200 字符内找不到 `onClick = onRetryRefresh`）：键在、" +
-                "点击不动。",
-            "onClick = onRetryRefresh" in emptyWindow,
+            "错误态空态的重试钮没接真调用（同一个 QingyuEmptyState 调用里找不到 `onClick = onRetryRefresh`）：" +
+                "键在、点击不动。",
+            "onClick = onRetryRefresh" in emptyAction,
         )
         val barStart = listBranch.indexOf("item(key = \"refresh_error_bar\")")
         val barEnd = listBranch.indexOf("item(key = \"create_backup\")")
@@ -255,6 +263,33 @@ class CloudSyncFeedbackWiringGuardTest {
     }
 
     // ── 辅助：从仓库根定位文件（同 WebdavConnectSheetWiringGuardTest） ──
+
+    /**
+     * 取 `openParenIndex`（指向 `(`）起、括号配对的**实参文本**；字符串字面量里的括号跳过。
+     * null = 源码结构异常（配对失败）。
+     */
+    private fun matchedParenBody(text: String, openParenIndex: Int): String? {
+        var depth = 0
+        var i = openParenIndex
+        while (i < text.length) {
+            when (text[i]) {
+                '"' -> {
+                    i++
+                    while (i < text.length && text[i] != '"') {
+                        if (text[i] == '\\') i++
+                        i++
+                    }
+                }
+                '(' -> depth++
+                ')' -> {
+                    depth--
+                    if (depth == 0) return text.substring(openParenIndex + 1, i)
+                }
+            }
+            i++
+        }
+        return null
+    }
 
     /**
      * 剥掉 `//` 行注释与 `/* */` 块注释（字符串字面量内的 `/` 不剥）——防「把实现

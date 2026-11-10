@@ -21,12 +21,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
+import com.mutx163.qingyu.components.QingyuLoadingInButton
 import com.mutx163.qingyu.components.QingyuSheet
 import com.mutx163.qingyu.components.rememberCappedSheetHeight
 import com.mutx163.qingyu.theme.QingyuTheme
 import top.yukonga.miuix.kmp.basic.Button
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
-import top.yukonga.miuix.kmp.basic.CircularProgressIndicator
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TextField
 import top.yukonga.miuix.kmp.theme.MiuixTheme
@@ -191,7 +191,7 @@ fun CoupleWebdavConnectSheet(
                     modifier = Modifier.weight(1f),
                 ) {
                     if (testing) {
-                        CircularProgressIndicator(size = 16.dp, strokeWidth = 2.dp)
+                        QingyuLoadingInButton()
                         Spacer(modifier = Modifier.width(8.dp))
                     }
                     Text(text = texts.testLabel)
@@ -204,7 +204,7 @@ fun CoupleWebdavConnectSheet(
                     modifier = Modifier.weight(1f),
                 ) {
                     if (connecting) {
-                        CircularProgressIndicator(size = 16.dp, strokeWidth = 2.dp)
+                        QingyuLoadingInButton()
                         Spacer(modifier = Modifier.width(8.dp))
                     }
                     Text(text = texts.confirmLabel)
