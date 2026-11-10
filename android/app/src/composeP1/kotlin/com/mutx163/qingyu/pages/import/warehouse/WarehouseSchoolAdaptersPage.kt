@@ -19,6 +19,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.mutx163.qingyu.components.QingyuCard
 import com.mutx163.qingyu.components.QingyuCardDefaults
+import com.mutx163.qingyu.components.QingyuLoadingCenter
 import com.mutx163.qingyu.components.QingyuPageCardMargin
 import com.mutx163.qingyu.components.QingyuPageList
 import com.mutx163.qingyu.components.QingyuPageScaffold
@@ -27,7 +28,6 @@ import com.mutx163.qingyu.components.QingyuWeightDelta
 import com.mutx163.qingyu.components.shiftWeight
 import top.yukonga.miuix.kmp.basic.Button
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
-import top.yukonga.miuix.kmp.basic.CircularProgressIndicator
 import top.yukonga.miuix.kmp.basic.HorizontalDivider
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.IconButton
@@ -121,49 +121,48 @@ fun WarehouseSchoolAdaptersPage(
             // 适配器列表
             if (adapters.isEmpty()) {
                 item(key = "empty_adapters") {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(vertical = 48.dp),
-                        contentAlignment = Alignment.Center,
-                    ) {
-                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                            if (phase == WarehouseListPhase.Loading) {
-                                // 请求还在路上：转圈，不写「读不到」——那会把「等一下」说成「坏了」。
-                                CircularProgressIndicator()
-                            } else {
+                    if (phase == WarehouseListPhase.Loading) {
+                        // 请求还在路上：D1 档 A2 居中转圈（块内最小高度 120），不写「读不到」
+                        // ——那会把「等一下」说成「坏了」。
+                        QingyuLoadingCenter(fillPage = false)
+                    } else {
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = 48.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                        ) {
+                            Text(
+                                text = WarehouseStrings.warehouseAdaptersLoadFailedTitle.text,
+                                style = MiuixTheme.textStyles.body1.shiftWeight(QingyuWeightDelta.MEDIUM),
+                                color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                            )
+                            // 真失败时把四档原因补一句：只留通用标题用户不知道该查什么。
+                            // 无缓存 ⇒ `showingCachedList` 为 false，走的是「已尝试 N 条线路」/网不通/
+                            // 超时/格式错那句（`attempts == 0` 的病句情形仍返回 null）。
+                            if (phase == WarehouseListPhase.Failed && failureText != null) {
+                                Spacer(modifier = Modifier.height(6.dp))
                                 Text(
-                                    text = WarehouseStrings.warehouseAdaptersLoadFailedTitle.text,
-                                    style = MiuixTheme.textStyles.body1.shiftWeight(QingyuWeightDelta.MEDIUM),
-                                    color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                                    text = failureText,
+                                    style = MiuixTheme.textStyles.footnote1,
+                                    color = MiuixTheme.colorScheme.error,
+                                    modifier = Modifier.padding(horizontal = 24.dp),
                                 )
-                                // 真失败时把四档原因补一句：只留通用标题用户不知道该查什么。
-                                // 无缓存 ⇒ `showingCachedList` 为 false，走的是「已尝试 N 条线路」/网不通/
-                                // 超时/格式错那句（`attempts == 0` 的病句情形仍返回 null）。
-                                if (phase == WarehouseListPhase.Failed && failureText != null) {
-                                    Spacer(modifier = Modifier.height(6.dp))
-                                    Text(
-                                        text = failureText,
-                                        style = MiuixTheme.textStyles.footnote1,
-                                        color = MiuixTheme.colorScheme.error,
-                                        modifier = Modifier.padding(horizontal = 24.dp),
-                                    )
-                                }
-                                if (phase == WarehouseListPhase.Failed) {
-                                    // 真失败才给重试；Idle 是「调用方没接数据层」，给重试按钮没有意义。
-                                    // 配色对齐旧版（warehouse_school_adapters_screen.dart:119-123
-                                    // 的 HyperosButton secondary）；此前 primary 12% 浅蓝底在
-                                    // 页底 #F2F2F2 上对比比 ~1.05，几乎看不见是个按钮。
-                                    Spacer(modifier = Modifier.height(16.dp))
-                                    Button(
-                                        onClick = onRetry,
-                                        content = { Text(text = WarehouseStrings.reloadAction.text) },
-                                        colors = ButtonDefaults.buttonColors(
-                                            color = MiuixTheme.colorScheme.secondary,
-                                            contentColor = MiuixTheme.colorScheme.onSecondaryVariant,
-                                        ),
-                                    )
-                                }
+                            }
+                            if (phase == WarehouseListPhase.Failed) {
+                                // 真失败才给重试；Idle 是「调用方没接数据层」，给重试按钮没有意义。
+                                // 配色对齐旧版（warehouse_school_adapters_screen.dart:119-123
+                                // 的 HyperosButton secondary）；此前 primary 12% 浅蓝底在
+                                // 页底 #F2F2F2 上对比比 ~1.05，几乎看不见是个按钮。
+                                Spacer(modifier = Modifier.height(16.dp))
+                                Button(
+                                    onClick = onRetry,
+                                    content = { Text(text = WarehouseStrings.reloadAction.text) },
+                                    colors = ButtonDefaults.buttonColors(
+                                        color = MiuixTheme.colorScheme.secondary,
+                                        contentColor = MiuixTheme.colorScheme.onSecondaryVariant,
+                                    ),
+                                )
                             }
                         }
                     }

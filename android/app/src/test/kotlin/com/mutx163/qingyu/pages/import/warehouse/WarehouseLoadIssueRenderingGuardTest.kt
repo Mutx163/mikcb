@@ -120,9 +120,16 @@ class WarehouseLoadIssueRenderingGuardTest {
             "分组必须把 scriptStatus 交给 ScriptStatusBody 渲染，只声明参数不画等于没接",
             detailPageSource.contains("ScriptStatusBody(scriptStatus)"),
         )
+        // D1-2（2026-11-10 评审）：原先这条钉的是「页面里有 `LinearProgressIndicator(`」——
+        // 页面一迁到 D1 档 D 的套件入口（`QingyuLoadingProgressBar`），这条就会变成「修好了反而红」
+        // 的雷。按 PickupCodes 的双向规格改成：正向必须出现套件入口，反向不许再直接调官方裸组件。
         assertTrue(
-            "读取中要用 miuix 的进度条，不要自己画",
-            detailPageSource.contains("LinearProgressIndicator("),
+            "读取中要走 D1 档 D 的套件入口 QingyuLoadingProgressBar（条高/配色由套件钉住），不要自己画",
+            detailPageSource.contains("QingyuLoadingProgressBar("),
+        )
+        assertFalse(
+            "详情页又直接调官方 LinearProgressIndicator 了——裸进度条回退，D1 套件白做",
+            Regex("""(?<!\w)LinearProgressIndicator\s*\(""").containsMatchIn(detailPageSource),
         )
     }
 

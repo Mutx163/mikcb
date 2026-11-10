@@ -23,6 +23,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.mutx163.qingyu.components.QingyuCard
 import com.mutx163.qingyu.components.QingyuCardDefaults
+import com.mutx163.qingyu.components.QingyuLoadingProgressBar
 import com.mutx163.qingyu.components.QingyuPageCardMargin
 import com.mutx163.qingyu.components.QingyuPageList
 import com.mutx163.qingyu.components.QingyuPageScaffold
@@ -34,7 +35,6 @@ import com.mutx163.qingyu.components.shiftWeight
 import top.yukonga.miuix.kmp.basic.Button
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
 import top.yukonga.miuix.kmp.basic.HorizontalDivider
-import top.yukonga.miuix.kmp.basic.LinearProgressIndicator
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TextField
 import top.yukonga.miuix.kmp.theme.MiuixTheme
@@ -297,7 +297,9 @@ fun WarehouseAdapterDetailPage(
 @Composable
 private fun ScriptStatusBody(status: WarehouseScriptStatus) {
     when (status) {
-        is WarehouseScriptStatus.Loading -> LinearProgressIndicator(
+        // 档 D（D1 统一，评审 D1-2）：不确定进度的「正在读取」走套件，条高/配色由套件钉住；
+        // 这里传 null 就是官方的不确定进度动画，语义与原来的 `LinearProgressIndicator(progress = null)` 等价。
+        is WarehouseScriptStatus.Loading -> QingyuLoadingProgressBar(
             progress = null,
             modifier = Modifier.fillMaxWidth(),
         )
@@ -466,5 +468,19 @@ private fun WarehouseAdapterDetailPagePreviewLargeText() {
     PreviewWarehouseAdapterDetailPage(
         scriptStatus = WarehouseScriptStatus.Loaded(length = 4820),
         textScale = 1.3f,
+    )
+}
+
+// 900dp 一屏只到「使用说明」——`custom_url`（自定义登录地址）与 `links`（更多操作）两段在
+// 预览里全被裁掉，改这两段时看不见效果。这一档把高度放到 1200dp 看整页：列表内容仍是同一条
+// `QingyuPageList` 惰性列表，拉高只是多露出两段，不是另一套排版；状态取「已读取 + 已自定义地址」
+// 这一最满的组合（同时看得到「保存 / 清除」两颗按钮与最后的分组）。900 档四个状态照旧保留。
+@Suppress("unused")
+@Preview(name = "8 整页 1200", showBackground = true, widthDp = 400, heightDp = 1200)
+@Composable
+private fun WarehouseAdapterDetailPagePreviewFullPage() {
+    PreviewWarehouseAdapterDetailPage(
+        scriptStatus = WarehouseScriptStatus.Loaded(length = 4820),
+        customImportUrl = "https://jw.example.edu.cn/login",
     )
 }

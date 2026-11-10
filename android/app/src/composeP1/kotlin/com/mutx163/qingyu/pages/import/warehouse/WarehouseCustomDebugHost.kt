@@ -2,7 +2,6 @@ package com.mutx163.qingyu.pages.import.warehouse
 
 import android.util.Log
 import android.widget.Toast
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -18,14 +17,12 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.mutx163.qingyu.pages.settings.SettingsStrings
 import com.mutx163.qingyu.platform.PrefsKeyValueStore
-import com.mutx163.qingyu.theme.QingyuTheme
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
@@ -139,8 +136,16 @@ fun WarehouseCustomDebugHost(onBack: () -> Unit) {
                 // 一致；改用 TextButton——原来两颗 surfaceVariant 实心按钮在深色下与对话框底
                 // 同为 #242424，按钮边界直接消失，取消字色还是 40% 透明的
                 // onSurfaceVariantActions（审核报告 P2 旧 :126）。
-                // 删除 = destructive：中性底 + 危险色字；`textButtonColors(color = …)` 的
-                // `color` 是**底色**位（会得到整颗红底 + 灰字），所以用 `textColor`。
+                // 确认钮是 **primary 实心**、不是红色：发布版此确认钮为 primary
+                // （`lib/widgets/app_dialogs.dart` 的 `showAppConfirmDialog` 里
+                // `destructiveConfirm` 默认 false ⇒ `HyperosDialogAction(isPrimary = true)`），
+                // 而 `warehouse_custom_debug_screen.dart` 的 `_deleteRecord` 没有传
+                // `destructiveConfirm`。红色水洗属磨砂按钮 destructive 分支（列表行 / 底部弹层用），
+                // 不适用于对话框确认钮。
+                // 写法取本仓弹层体系现成档 `ButtonDefaults.textButtonColorsPrimary()`
+                // （`color = primary` 底色 + `onPrimary` 字色，同 `TimeSchemeManagementDialogs`
+                // 的 `DialogActionRow` 非破坏性确认键）；取消键保持中性 TextButton，
+                // 避免深色下两颗实心钮与对话框底同色糊成一片（审核报告 P2 旧 :126）。
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(12.dp),
@@ -178,9 +183,7 @@ fun WarehouseCustomDebugHost(onBack: () -> Unit) {
                                 }
                             }
                         },
-                        colors = ButtonDefaults.textButtonColors(
-                            textColor = Color(QingyuTheme.error(isSystemInDarkTheme())),
-                        ),
+                        colors = ButtonDefaults.textButtonColorsPrimary(),
                     )
                 }
             }

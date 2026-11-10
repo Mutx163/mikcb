@@ -19,10 +19,10 @@ import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
+import com.mutx163.qingyu.components.QingyuLoadingProgressBar
+import com.mutx163.qingyu.components.QingyuLoadingScrim
 import top.yukonga.miuix.kmp.basic.Button
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
-import top.yukonga.miuix.kmp.basic.CircularProgressIndicator
-import top.yukonga.miuix.kmp.basic.LinearProgressIndicator
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TextButton
 import top.yukonga.miuix.kmp.overlay.OverlayDialog
@@ -119,7 +119,9 @@ private fun PlayingContent(
         modifier = Modifier.padding(horizontal = 32.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        CircularProgressIndicator(size = 48.dp, strokeWidth = 3.dp)
+        // 档 C（D1 统一，评审 D1-2）：48/3 的扫弧改为「细环 + 绕行小圆点」28dp 白——
+        // 这两处都是「不知道还要多久」的挡罩（发布版同族用 InfiniteProgress），不是常规加载。
+        QingyuLoadingScrim(color = Color.White)
         Spacer(modifier = Modifier.height(24.dp))
         Text(
             text = WarehouseMacroReplayStrings.quickImportPlayingTitle.text,
@@ -135,7 +137,10 @@ private fun PlayingContent(
             )
         }
         Spacer(modifier = Modifier.height(20.dp))
-        LinearProgressIndicator(
+        // 档 D（D1 统一，评审 D1-2）：可测进度条走套件，条高与配色由套件钉住
+        // （发布版 `home_update_prompt.dart:623-667` 的同一形态）。这里是压暗底，
+        // 所以「文案在上、条在下」的排法由本页自己承担，套件只管条本身。
+        QingyuLoadingProgressBar(
             progress = progress?.progressFraction,
             modifier = Modifier.fillMaxWidth(),
         )
@@ -230,7 +235,7 @@ private fun ExecutingContent(
     onCancel: () -> Unit,
 ) {
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
-        CircularProgressIndicator(size = 48.dp, strokeWidth = 3.dp)
+        QingyuLoadingScrim(color = Color.White)
         Spacer(modifier = Modifier.height(24.dp))
         Text(
             text = WarehouseMacroReplayStrings.quickImportExecutingScriptTitle.text,

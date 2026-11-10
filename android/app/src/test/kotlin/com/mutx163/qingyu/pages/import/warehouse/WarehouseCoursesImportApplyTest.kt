@@ -374,4 +374,30 @@ class WarehouseCoursesImportApplyTest {
         }
         error("找不到源码 $relative（当前目录 ${File("").absolutePath}）")
     }
+
+    /**
+     * J6：空课表导入必须像发布版一样**在第一次写入前 return 0**
+     * （`_timetableImportParsedCourses` 第一行 `if (importedCourses.isEmpty) return 0;`）。
+     * 旧防御路径会先写开学日/周数再按「无课可导」收尾，留下半套学期设置。
+     */
+    @Test
+    fun `空课表导入不写任何设置`() {
+        val repository = repositoryWithProfile(
+            courses = listOf(course("old", name = "旧课")),
+            settings = TimetableSettings.defaults().copy(semesterWeekCount = 18),
+        )
+        val beforeSettings = repository.snapshot.settings
+        val beforeWeek = repository.snapshot.currentWeek
+
+        val result = WarehouseCoursesImportApply.apply(
+            repository,
+            request(emptyList()).copy(semesterStartDate = LocalDate.of(2026, 9, 7)),
+        )
+
+        assertTrue(result is WarehouseCoursesImportApply.Result.Done)
+        assertEquals(0, (result as WarehouseCoursesImportApply.Result.Done).importedCount)
+        assertEquals("空导入不许写开学日/周数", beforeSettings, repository.snapshot.settings)
+        assertEquals(beforeWeek, repository.snapshot.currentWeek)
+        assertEquals(listOf("旧课"), repository.snapshot.courses.map { it.name })
+    }
 }

@@ -523,6 +523,30 @@ class WarehouseWebLoginHostWiringGuardTest {
             "自动执行导入脚本期间（EXECUTING_IMPORT）必须仍算回放中：脚本窗口里点「桌面切换」= reload 打断导入",
             block.contains("WarehousePlaybackUiState.EXECUTING_IMPORT"),
         )
+        // 2026-11-10 评审 J8：上面三条只钉「算回放中」，**恒真实现（把收口改成 `-> true`）能
+        // 全过**——那会让顶栏两颗在导入结束后永远消失（用户再也开不了录制 / 桌面版，只能重进
+        // 页面）。必须同时钉住收口三段（FINISHED / ERROR / null）落到 false，且不许留兜底。
+        assertTrue(
+            "必须有收口分支（会话结束 → false）：否则 `-> true` 的恒真实现也能过上面三条",
+            block.contains("-> false"),
+        )
+        val closingArm = block.substringBefore("-> false")
+        assertTrue(
+            "写盘完成（FINISHED）必须收口成 false：否则导入结束后顶栏两颗永远不回来",
+            closingArm.contains("WarehousePlaybackUiState.FINISHED"),
+        )
+        assertTrue(
+            "失败（ERROR）必须收口成 false：错误卡关闭后按钮要还给用户",
+            closingArm.contains("WarehousePlaybackUiState.ERROR"),
+        )
+        assertTrue(
+            "取消 / 关闭覆盖层（uiState 清空为 null）必须收口成 false",
+            closingArm.contains("null,"),
+        )
+        assertFalse(
+            "不许留兜底 `else -> true`：那等于把收口撤销（恒真回归）",
+            block.contains("else -> true"),
+        )
         assertFalse(
             "不许退回「只判 playbackJob.isActive」：那正是本轮要修的洞（协程结束 → 按钮重现）",
             hostSource.contains("fun isMacroReplaying(): Boolean = playbackJob?.isActive == true"),

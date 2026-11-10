@@ -24,17 +24,56 @@ import org.junit.Test
 class WarehouseSchoolSearchWiringGuardTest {
 
     private val hostSource: String by lazy {
-        relativeSource(
-            "android/app/src/composeP1/kotlin/com/mutx163/qingyu/pages/import/warehouse/" +
-                "WarehouseImportHosts.kt",
-        ).readText(Charsets.UTF_8)
+        stripKotlinComments(
+            relativeSource(
+                "android/app/src/composeP1/kotlin/com/mutx163/qingyu/pages/import/warehouse/" +
+                    "WarehouseImportHosts.kt",
+            ).readText(Charsets.UTF_8),
+        )
     }
 
     private val pageSource: String by lazy {
-        relativeSource(
-            "android/app/src/composeP1/kotlin/com/mutx163/qingyu/pages/import/warehouse/" +
-                "WarehouseCourseImportPage.kt",
-        ).readText(Charsets.UTF_8)
+        stripKotlinComments(
+            relativeSource(
+                "android/app/src/composeP1/kotlin/com/mutx163/qingyu/pages/import/warehouse/" +
+                    "WarehouseCourseImportPage.kt",
+            ).readText(Charsets.UTF_8),
+        )
+    }
+
+    /**
+     * 判据必须剥掉注释（2026-11-10 评审 J4）。
+     *
+     * 旧判据直接在原文上 `contains(...)`：把接线注释掉（`// adapterMatches = adapterMatches`）
+     * 仍会命中 —— 正是「注释不算接线」要防的假绿。照
+     * `WarehouseWebLoginHostWiringGuardTest:24-33` 的做法，先剥注释再判，且不能把
+     * 字符串字面量里的 `//` 当注释吃掉。
+     */
+    @Test
+    fun `判据必须剥掉注释 注释掉的接线不算接线`() {
+        val fakeHost = "fun fake() {\n" +
+            "    // adapterMatches = adapterMatches\n" +
+            "    // listState = schoolListState\n" +
+            "}"
+        val stripped = stripKotlinComments(fakeHost)
+        assertFalse(
+            "注释掉的 adapterMatches 接线不许再命中（否则 = 假绿）。",
+            stripped.contains("adapterMatches = adapterMatches"),
+        )
+        assertFalse(
+            "注释掉的 listState 接线不许再命中（否则 = 假绿）。",
+            stripped.contains("listState = schoolListState"),
+        )
+        // 块注释同理
+        assertFalse(
+            "块注释里的接线同样不算。",
+            stripKotlinComments("fun f() { /* state = listState */ }").contains("state = listState"),
+        )
+        // 字符串字面量里的 // 不能被当注释吃掉（源码里有 URL / 文案，吃掉了会误删真接线）
+        assertTrue(
+            "字符串字面量里的 // 被误当注释剥掉了。",
+            stripKotlinComments("val u = \"a//b\"\nval v = 'x'").contains("a//b"),
+        )
     }
 
     @Test
@@ -94,6 +133,78 @@ class WarehouseSchoolSearchWiringGuardTest {
             "页面的 QingyuPageList 必须吃宿主给的 state，否则滚动位置仍然丢。",
             pageSource.contains("state = listState"),
         )
+    }
+
+    /**
+     * 剥掉 Kotlin 行注释与（可嵌套）块注释，保留字符串/字符字面量原文。
+     *
+     * 逐字符扫描，没有正则回溯问题。抄自 `WarehouseWebLoginHostWiringGuardTest` 的同名函数
+     * （评审 J4 要求「照那个做法」）：那边 2026-11-03 被「注释掉判据仍命中」咬过一次。
+     */
+    private fun stripKotlinComments(source: String): String {
+        val sb = StringBuilder(source.length)
+        var i = 0
+        var inLineComment = false
+        var inBlockComment = false
+        var blockDepth = 0
+        var stringQuote: Char? = null
+        while (i < source.length) {
+            val ch = source[i]
+            val next = if (i + 1 < source.length) source[i + 1] else ' '
+            when {
+                inLineComment -> {
+                    if (ch == '\n') {
+                        inLineComment = false
+                        sb.append(ch)
+                    }
+                    i++
+                }
+                inBlockComment -> {
+                    if (ch == '/' && next == '*') {
+                        blockDepth++
+                        i += 2
+                    } else if (ch == '*' && next == '/') {
+                        blockDepth--
+                        i += 2
+                        if (blockDepth == 0) inBlockComment = false
+                    } else {
+                        if (ch == '\n') sb.append(ch)
+                        i++
+                    }
+                }
+                stringQuote != null -> {
+                    sb.append(ch)
+                    if (ch == '\\' && i + 1 < source.length) {
+                        sb.append(source[i + 1])
+                        i += 2
+                    } else {
+                        if (ch == stringQuote) stringQuote = null
+                        i++
+                    }
+                }
+                ch == '/' && next == '/' -> {
+                    inLineComment = true
+                    sb.append(' ')
+                    i += 2
+                }
+                ch == '/' && next == '*' -> {
+                    inBlockComment = true
+                    blockDepth = 1
+                    sb.append(' ')
+                    i += 2
+                }
+                ch == '"' || ch == '\'' -> {
+                    stringQuote = ch
+                    sb.append(ch)
+                    i++
+                }
+                else -> {
+                    sb.append(ch)
+                    i++
+                }
+            }
+        }
+        return sb.toString()
     }
 
     private fun relativeSource(relative: String): File {

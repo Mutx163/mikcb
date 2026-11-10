@@ -10,6 +10,7 @@ import com.mutx163.qingyu.core.ScheduleItem
 import com.mutx163.qingyu.core.SectionTime
 import com.mutx163.qingyu.core.TimetableProfile
 import com.mutx163.qingyu.core.TimetableSettings
+import com.mutx163.qingyu.core.TimeScheme
 import com.mutx163.qingyu.core.WeekCalculator
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -156,6 +157,28 @@ class WarehouseCourseWriteBackTest {
         return TimetableRepository(TimetableStore(store(raw)))
     }
 
+    /** 两张课表共用模板 ts1（发布版 usageCount>1 的现场），返回可直接落库的 key 表。 */
+    private fun sharedSchemeStoreMap(): Map<String, String> {
+        val sections = twoSections()
+        val scheme = TimeScheme(
+            id = "ts1",
+            name = "作息A",
+            sections = sections,
+            createdAt = LocalDateTime.of(2026, 9, 1, 0, 0),
+            updatedAt = LocalDateTime.of(2026, 9, 1, 0, 0),
+        )
+        val settings = TimetableSettings.defaults().copy(
+            activeTimeSchemeId = "ts1",
+            sections = sections,
+        )
+        val p1 = profileWith(emptyList(), settings)
+        val p2 = profileWith(listOf(course("p2-course")), settings).copy(id = "p2")
+        return mapOf(
+            TimetableStore.KEY_PROFILES to MiniJson.encode(listOf(p1.toJson(), p2.toJson())),
+            TimetableStore.KEY_TIME_SCHEMES to MiniJson.encode(listOf(scheme.toJson())),
+            TimetableStore.KEY_ACTIVE_PROFILE_ID to "p1",
+        )
+    }
     // ── 策略 ──────────────────────────────────────────────────────────
 
     @Test
@@ -724,5 +747,75 @@ class WarehouseCourseWriteBackTest {
 
         assertTrue(result is WarehouseCourseWriteBack.PayloadResult.NoImportableCourses)
         assertEquals(listOf("旧课"), repository.snapshot.courses.map { it.name })
+    }
+
+    // ── 评审 J1/J2（第二波返工） ─────────────────────────────────────────
+
+    /**
+     * J1：写回层内部扩节会把当前档改绑到「（导入补齐）」副本；随后写设置必须从**当前**
+     * 快照派生，否则入口旧快照会把引用退回原模板（副本孤儿 + 高节次课丢钟点）。
+     */
+    @Test
+    fun `内部扩节改绑副本后 写设置不得把引用退回原模板`() {
+        val repository = TimetableRepository(TimetableStore(InMemoryKeyValueStore(sharedSchemeStoreMap())))
+
+        val result = WarehouseCourseWriteBack.apply(
+            repository = repository,
+            courses = listOf(course("new", name = "新课", day = 3, endSection = 5)),
+            requestedMode = WarehouseCourseWriteBack.Mode.REPLACE,
+            semesterStartDate = LocalDateTime.of(2026, 9, 7, 0, 0),
+        )
+
+        assertTrue(result is WarehouseCourseWriteBack.Result.Done)
+        val schemes = repository.snapshot.timeSchemes
+        val copy = schemes.single { it.id != "ts1" }
+        assertEquals("原模板不许被原地改", 2, schemes.single { it.id == "ts1" }.sections.size)
+        assertEquals(
+            "J1：设置必须继续指向副本（旧快照退回原模板就是漏修）",
+            copy.id,
+            repository.snapshot.settings.activeTimeSchemeId,
+        )
+        assertEquals(5, repository.snapshot.settings.sections.size)
+        assertEquals("别的课表不许被串改", "ts1", repository.snapshot.profiles.single { it.id == "p2" }.settings.activeTimeSchemeId)
+    }
+
+    /**
+     * J2：覆盖导入清日程是内存态；仓储「profiles → active id」第一笔成功、第二笔抛错时，
+     * 盘上日程已被清空。回滚必须把旧日程写回**盘**——断言用重建仓储读盘，不看内存。
+     */
+    @Test
+    fun `覆盖导入第二笔写失败时 旧日程要写回磁盘`() {
+        val raw = InMemoryKeyValueStore(
+            mapOf(
+                TimetableStore.KEY_PROFILES to MiniJson.encode(
+                    listOf(
+                        profileWith(
+                            listOf(course("old", name = "旧课")),
+                            scheduleItems = listOf(scheduleItem("s1")),
+                        ).toJson(),
+                    ),
+                ),
+            ),
+        )
+        // 第 1 次写 active id 抛错：此刻 profiles 已写入「清空后的日程」。
+        val repository = TimetableRepository(
+            TimetableStore(FailingWriteStore(raw, TimetableStore.KEY_ACTIVE_PROFILE_ID, failOnMatch = 1)),
+        )
+
+        val result = WarehouseCourseWriteBack.apply(
+            repository = repository,
+            courses = listOf(course("new", name = "新课", day = 3)),
+            requestedMode = WarehouseCourseWriteBack.Mode.REPLACE,
+        )
+
+        assertTrue(result is WarehouseCourseWriteBack.Result.Failed)
+        assertEquals("内存要还原", listOf("s1"), repository.snapshot.scheduleItems.map { it.id })
+        val reloaded = TimetableRepository(TimetableStore(raw))
+        assertEquals(
+            "盘上日程必须也还原（旧实现只改内存，盘上已真丢）",
+            listOf("s1"),
+            reloaded.snapshot.scheduleItems.map { it.id },
+        )
+        assertEquals(listOf("旧课"), reloaded.snapshot.courses.map { it.name })
     }
 }
