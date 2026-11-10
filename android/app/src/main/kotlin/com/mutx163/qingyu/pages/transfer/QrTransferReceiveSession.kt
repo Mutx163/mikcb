@@ -68,7 +68,15 @@ class QrTransferReceiveSession(
     private val nowMillis: () -> Long = { System.currentTimeMillis() },
 ) {
 
-    private var startedAtMillis: Long = nowMillis()
+    /**
+     * 会话计时起点：**第一帧有效帧到达时**才落，不在页面打开/会话对象创建时开始。
+     *
+     * 发布版 `QrTransferDecoder._ensureCodec` 在收到第一帧、建立起 `_codec` 的同时写
+     * `_sessionStartedAt`，15 分钟从那一刻算。现版原先在构造 `QrTransferReceiveSession`
+     * 时就计时，用户打开扫码页后哪怕还没对准屏幕，15 分钟也在流逝——先发呆后扫码会被
+     * 直接判超时。null = 还没有第一帧，永不判超时。
+     */
+    private var startedAtMillis: Long? = null
 
     private var info: QrTransferSessionInfo? = null
     private var decoder: QrFountainPeelingDecoder? = null
@@ -160,6 +168,9 @@ class QrTransferReceiveSession(
                 sourceSymbolCount = frame.info.sourceSymbolCount,
                 symbolSize = frame.info.symbolSize,
             )
+            // 发布版在这一步（_ensureCodec 建解码器）同时落 _sessionStartedAt：
+            // 15 分钟只从「第一帧属于本会话的有效帧」开始算。
+            startedAtMillis = nowMillis()
         } else if (current != frame.info) {
             // 视野里同时有另一台发送端（或发送方中途换了数据）：**也不判死**，只记一笔。
             // 发布版 `qr_transfer_scan_screen.dart:132-140` 对 `qr_transfer_session_mismatch`
@@ -168,7 +179,10 @@ class QrTransferReceiveSession(
             return model()
         }
 
-        if (nowMillis() - startedAtMillis > QrTransferLimits.MAX_SESSION_DURATION_MILLIS) {
+        val startedAt = startedAtMillis
+        if (startedAt != null &&
+            nowMillis() - startedAt > QrTransferLimits.MAX_SESSION_DURATION_MILLIS
+        ) {
             fail(QrTransferScanModel.Error.SESSION_EXPIRED)
             return model()
         }
@@ -255,7 +269,7 @@ class QrTransferReceiveSession(
         error = null
         verifiedPayload = null
         rawPayload = null
-        startedAtMillis = nowMillis()
+        startedAtMillis = null
     }
 
     /** 收齐 → 截断 → SHA-256。任一步不对就落到对应错误，绝不「收了一半也算完」。 */

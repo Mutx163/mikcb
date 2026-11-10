@@ -23,6 +23,14 @@ object QrTransferLimits {
     const val MAX_SEED = Int.MAX_VALUE
 
     const val MAX_SESSION_DURATION_MILLIS = 15 * 60 * 1000L
+
+    /**
+     * 发送端换帧间隔（发布版同值）。
+     *
+     * ⚠️ 接收端的**通用扫码防抖**不要配成同值的「异码最小间隔」：250ms 一帧 + 250ms
+     * 闸门，任何抖动都会把下一帧丢掉，而那一帧已经翻过去了。二维码扫码宿主必须走
+     * `ScanPipeline.forQrFrameStream`（异码间隔 0，重复帧由解码会话按 seed 去重）。
+     */
     const val FRAME_INTERVAL_MILLIS = 250L
 
     const val MAX_DEGREE = 100

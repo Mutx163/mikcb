@@ -77,4 +77,37 @@ class ScanPipeline(
             permissionMachine.reset()
         }
     }
+
+    companion object {
+
+        /**
+         * 二维码**帧流**专用配置：关掉「异码之间至少隔 250ms」的全局防抖。
+         *
+         * ## 为什么通用默认值不能用于二维码传输
+         *
+         * 发送端每 250ms 换一帧（[com.mutx163.qingyu.share.QrTransferLimits.FRAME_INTERVAL_MILLIS]），
+         * 而通用扫码默认 `minIntervalBetweenScansMs = 250ms`。两者同值 ⇒ 只要解码耗时有一点
+         * 抖动，后一帧就会落在「距上次接受不足 250ms」的窗口里被丢掉；帧只展示 250ms，
+         * 丢掉就再也补不回来。接收端因此达不到 4fps，接近资源上限的包会撞 15 分钟会话上限。
+         *
+         * 发布版（`mobile_scanner` + `QrTransferDecoder.submitFrame`）没有任何异码间隔闸门，
+         * 重复帧只按 **seed** 去重。这里照做：异码间隔 0；同一段文本的 1500ms 冷却保留，
+         * 它只是省一次解析（同文本必然是同一 seed 的重复画面），不会丢有效帧。
+         *
+         * 单次扫码（加课、配对等）仍用 [ScanPipelineConfig] 默认值，避免同一画面弹两次。
+         */
+        fun qrFrameStreamConfig(): ScanPipelineConfig = ScanPipelineConfig(
+            minIntervalBetweenScansMs = 0L,
+        )
+
+        /** 二维码帧流管线（**唯一**给 `QrCameraHost` 用的构造入口）。 */
+        fun forQrFrameStream(
+            clock: ScanClock = SystemScanClock,
+            initialHasPermission: Boolean = false,
+        ): ScanPipeline = ScanPipeline(
+            config = qrFrameStreamConfig(),
+            clock = clock,
+            initialHasPermission = initialHasPermission,
+        )
+    }
 }

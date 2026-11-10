@@ -104,7 +104,9 @@ fun QrCameraSlot(
     val activity = remember(context) { context.findHostActivity() }
     val coordinator = remember {
         QrScanSessionCoordinator(
-            ScanPipeline(initialHasPermission = hasCameraPermission(context)),
+            // 二维码是 250ms 一帧的**流**，不能用通用扫码的「异码至少隔 250ms」防抖
+            // （那会把有效帧丢掉、把接收速率压到 4fps 以下）。重复帧由解码会话按 seed 去重。
+            ScanPipeline.forQrFrameStream(initialHasPermission = hasCameraPermission(context)),
         )
     }
     var permissionState by remember { mutableStateOf(coordinator.permissionState) }

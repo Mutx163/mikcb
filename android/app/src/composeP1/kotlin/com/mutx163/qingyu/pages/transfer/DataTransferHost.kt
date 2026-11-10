@@ -18,6 +18,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -42,6 +43,8 @@ import com.mutx163.qingyu.share.TransferShareContract
 import com.mutx163.qingyu.theme.QingyuTheme
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import top.yukonga.miuix.kmp.basic.Text
@@ -270,19 +273,29 @@ fun DataTransferHost(
     }
 
     // 扫码页收齐字节后回填到这里：与文件导入走同一条链路。
-    LaunchedEffect(bridge.inboundBytes) {
-        val bytes = bridge.inboundBytes ?: return@LaunchedEffect
-        bridge.inboundBytes = null
-        isImporting = true
-        // 严格 UTF-8：畸形字节不落成 U+FFFD 文本，直接走下面的「导入失败」分支。
-        val text = withContext(Dispatchers.IO) { DataTransferInboundDecoding.decodeTransferText(bytes) }
-        isImporting = false
-        if (text == null) {
-            // Dart：UTF-8 解码失败统一落到「导入失败，请确认文件有效」（`:551-563`）。
-            showToast(TransferStrings.importFailedInvalidFile.text)
-        } else {
-            openImportPreview(text, TransferChannel.QR)
-        }
+    //
+    // 不能把 LaunchedEffect 的 key 设成 `bridge.inboundBytes`：本协程内部要把该字段清空，
+    // key 一变就会把**正在解码的协程本身**取消（重组在下一次 VSync 生效；大备份的
+    // UTF-8 解码一旦超过这一帧，后面的预览就永远弹不出来，页面卡在 isImporting=true）。
+    // 用 snapshotFlow 消费：协程只随页面销毁而停；清空只会发一个 null 被 filterNotNull 忽略。
+    LaunchedEffect(Unit) {
+        snapshotFlow { bridge.inboundBytes }
+            .filterNotNull()
+            .collect { bytes ->
+                bridge.inboundBytes = null
+                isImporting = true
+                // 严格 UTF-8：畸形字节不落成 U+FFFD 文本，直接走下面的「导入失败」分支。
+                val text = withContext(Dispatchers.IO) {
+                    DataTransferInboundDecoding.decodeTransferText(bytes)
+                }
+                isImporting = false
+                if (text == null) {
+                    // Dart：UTF-8 解码失败统一落到「导入失败，请确认文件有效」（`:551-563`）。
+                    showToast(TransferStrings.importFailedInvalidFile.text)
+                } else {
+                    openImportPreview(text, TransferChannel.QR)
+                }
+            }
     }
 
     // 外部打开 .mikcb / .json 备份（R1 补口 2026-11-02 的最后一步）：透明跳板把 payload

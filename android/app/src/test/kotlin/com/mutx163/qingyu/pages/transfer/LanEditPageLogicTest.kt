@@ -62,7 +62,8 @@ class LanEditPageLogicTest {
             shanghai,
         )
 
-        assertEquals("http://192.168.1.5:8080", model.addressText)
+        // 发布版 encodeLanEditUrl(host, port, pin) 同口径：扫码/粘贴后网页端自动登录。
+        assertEquals("http://192.168.1.5:8080?pin=123456", model.addressText)
         assertEquals("123456", model.pinText)
         assertEquals("8080", model.portText)
         assertEquals("2 台", model.clientsText)

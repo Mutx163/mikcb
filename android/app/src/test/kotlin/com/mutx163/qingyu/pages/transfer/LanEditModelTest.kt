@@ -27,6 +27,35 @@ class LanEditModelTest {
     }
 
     @Test
+    fun `有 PIN 时地址带 pin 查询参数_电脑扫码免手输`() {
+        // 发布版 lan_edit_screen.dart 把 encodeLanEditUrl(host, port, pin) 同时用于
+        // 地址行与二维码；web 端 app.js 读到 ?pin= 会直接 verifyPinAndEnter。
+        val model = LanEditModel(
+            running = true,
+            ipAddress = "192.168.1.23",
+            port = 8080,
+            pin = "123456",
+        )
+        assertEquals("http://192.168.1.23:8080?pin=123456", model.addressText)
+        assertEquals(
+            "复制地址与二维码必须同源（都带 pin）",
+            "http://192.168.1.23:8080?pin=123456",
+            LanEditPageLogic.addressToCopy(model),
+        )
+    }
+
+    @Test
+    fun `PIN 里的特殊字符按 URL 编码_不能拼出坏地址`() {
+        val model = LanEditModel(
+            running = true,
+            ipAddress = "10.0.0.7",
+            port = 9000,
+            pin = "12 34&56",
+        )
+        assertEquals("http://10.0.0.7:9000?pin=12+34%2656", model.addressText)
+    }
+
+    @Test
     fun `没有 IP 时显示未检测到局域网 IP 而不是半截地址`() {
         val model = LanEditModel(running = true, ipAddress = null, port = 8080)
         assertEquals("未检测到局域网 IP，请确认已连接 WiFi 或已开启热点", model.addressText)

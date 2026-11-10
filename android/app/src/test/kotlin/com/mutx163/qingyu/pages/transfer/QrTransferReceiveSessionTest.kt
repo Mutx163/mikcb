@@ -255,11 +255,29 @@ class QrTransferReceiveSessionTest {
         val receiver = QrTransferReceiveSession(nowMillis = { now })
         val sender = QrTransferSendSession.prepare(randomPayload())
 
+        // 发布版从「第一帧建立起会话」才开始计时（_ensureCodec 里落 _sessionStartedAt）。
+        receiver.onBarcode(barcode(sender.frameTextForTick(0)!!))
         now += QrTransferLimits.MAX_SESSION_DURATION_MILLIS + 1
-        val model = receiver.onBarcode(barcode(sender.frameTextForTick(0)!!))
+        val model = receiver.onBarcode(barcode(sender.frameTextForTick(1)!!))
 
         assertEquals(QrTransferScanModel.Error.SESSION_EXPIRED, model.error)
         assertEquals(TransferStrings.qrTransferSessionExpired.zh, model.errorMessage)
+    }
+
+    @Test
+    fun 首帧到达前不计时_打开页面很久后第一帧仍然有效() {
+        // 页面打开后先发呆几十秒/几分钟（还没对准屏幕）不该烧掉 15 分钟额度；
+        // 发布版 _sessionStartedAt 是在第一帧让 _ensureCodec 建解码器时写的。
+        var now = 1_000_000L
+        val receiver = QrTransferReceiveSession(nowMillis = { now })
+        val sender = QrTransferSendSession.prepare(randomPayload())
+
+        now += QrTransferLimits.MAX_SESSION_DURATION_MILLIS + 1
+        val model = receiver.onBarcode(barcode(sender.frameTextForTick(0)!!))
+
+        assertNull("第一帧到达前不计时，不能一上来就判超时", model.error)
+        assertEquals(1, model.receivedFrames)
+        assertNotNull(receiver.sessionInfo)
     }
 
     @Test
@@ -270,9 +288,10 @@ class QrTransferReceiveSessionTest {
         val receiver = QrTransferReceiveSession(nowMillis = { now })
         val sender = QrTransferSendSession.prepare(randomPayload())
 
-        now += QrTransferLimits.MAX_SESSION_DURATION_MILLIS + 1
         receiver.onBarcode(barcode(sender.frameTextForTick(0)!!))
-        val model = receiver.onBarcode(barcode(sender.frameTextForTick(1)!!))
+        now += QrTransferLimits.MAX_SESSION_DURATION_MILLIS + 1
+        receiver.onBarcode(barcode(sender.frameTextForTick(1)!!))
+        val model = receiver.onBarcode(barcode(sender.frameTextForTick(2)!!))
 
         assertEquals(
             "超时之后不该被后续帧「治好」",
@@ -290,8 +309,10 @@ class QrTransferReceiveSessionTest {
         val receiver = QrTransferReceiveSession(nowMillis = { now })
         receiver.onBarcode(barcode("别人的二维码"))
         receiver.onBarcode(barcode("QRV2|1|256"))
-        now += QrTransferLimits.MAX_SESSION_DURATION_MILLIS + 1
+        // 外来码/坏帧不建立会话，也就不会起计时；先来一帧有效帧把会话建起来。
         receiver.onBarcode(barcode(sender.frameTextForTick(0)!!))
+        now += QrTransferLimits.MAX_SESSION_DURATION_MILLIS + 1
+        receiver.onBarcode(barcode(sender.frameTextForTick(1)!!))
         assertEquals(QrTransferScanModel.Error.SESSION_EXPIRED, receiver.model().error)
 
         receiver.reset()

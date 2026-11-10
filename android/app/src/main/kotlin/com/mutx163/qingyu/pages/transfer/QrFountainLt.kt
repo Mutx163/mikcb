@@ -19,14 +19,16 @@ import kotlin.math.sqrt
  * 接收端永远收不齐（`decodedSymbols` 涨不上去），发送端也生成不出帧。
  *
  * 这里按 `fountain_codes` 的**算法结构**移植（Robust Soliton 度数分布 + 种子选邻居 +
- * 逐符号 XOR + ripple 削皮解码），但把「随机数」换成自己的一份确定性实现，
- * 理由与代价见 [QrFountainRandom] 的注释。
+ * 逐符号 XOR + ripple 削皮解码）。**邻居序列**必须与发布版逐位一致（发布版用
+ * `dart:math Random(seed)`），所以走 [DartRandom]；度数分布只用于发送端抽样，
+ * 度数随帧传输、不跨端复现，仍用 [QrFountainRandom]。
  *
  * ## 三层结构
  *
  * ```
- * QrFountainRandom          确定性伪随机（同 seed 同序列）
- *   └─ QrFountainNeighbors   seed + 度数 → 邻居下标集合（编码/解码必须算出同一份）
+ * DartRandom                  Dart VM Random(seed) 的逐位移植（协议本体）
+ *   └─ QrFountainNeighbors    seed + 度数 → 邻居下标集合（编码/解码必须算出同一份）
+ * QrFountainRandom           splitmix64（只给发送端度数抽样，不参与协议）
  * QrFountainDegreeSampler    Robust Soliton 度数分布（发送端抽样；接收端不抽样，度数随帧传输）
  * QrFountainEncoder         源符号 → 指定 seed 的编码符号（度数 + 字节）
  * QrFountainPeelingDecoder  收到的编码符号 → 削皮还原源符号
@@ -40,20 +42,96 @@ import kotlin.math.sqrt
  */
 
 /**
+ * Dart VM `dart:math Random(seed)` 的**逐位移植**——协议本体，改一位就跨版本不兼容。
+ *
+ * ## 为什么必须是 Dart 的 PRNG
+ *
+ * 发布版 `fountain_codes-1.0.0` 的 `LTCodec.encode()` / `submit()` 都用
+ * `Random(esiOrSeed)` 推邻居（`lib/src/lt/lt_codec.dart:61-65,83-91`）。帧里只带
+ * `seed` 与 `degree`，不带邻居集合，所以接收端必须用**同一个 PRNG 序列**推出同一份邻居。
+ * 早先这里用 splitmix64，导致 Compose 端与 Flutter 发布版互相扫不出数据（解出乱码 /
+ * 校验失败），本类就是那处修复。
+ *
+ * ## 算法（Dart SDK `lib/_internal/vm/lib/math_patch.dart:193-233`）
+ *
+ * - 种子搅拌：Thomas Wang 64 位 mix（`_setupSeed`），构造后再连打**四拍** `_nextState`；
+ * - 状态推进：Multiply-with-Carry，`state = 0xffffda61 * (state & 0xFFFFFFFF) + (state >>> 32)`；
+ * - `nextInt(max)`：2 的幂走 `state & 0xFFFFFFFF & (max-1)`，否则取模并做拒绝采样。
+ *
+ * 全部按 64 位有符号整数**回绕**（Dart VM 与 Kotlin/JVM 的 `Long` 同语义）。
+ * 黄金向量由本机 Dart 3.12.2 生成（与发布 workflow 的 Flutter 3.44.8 配套），见
+ * `QrFountainDartParityTest`；不要凭记忆改这里的常数。
+ */
+class DartRandom(seed: Int) {
+
+    private var state: Long = setupSeed(seed.toLong())
+
+    init {
+        // Dart `Random(seed)` 工厂在 _setupSeed 之后固定连打四拍，把种子位再打散。
+        repeat(4) { nextState() }
+    }
+
+    private fun nextState() {
+        val lo = state and MASK_32
+        val hi = state ushr 32
+        state = A * lo + hi
+    }
+
+    /** `[0, bound)`；与 Dart `Random.nextInt` 同分布（含拒绝采样）。 */
+    fun nextInt(bound: Int): Int {
+        require(bound > 0) { "bound must be positive, got $bound" }
+        val max = bound.toLong()
+        // 2 的幂走快路径：一次推进后取低 32 位再掩码。
+        if ((max and -max) == max) {
+            nextState()
+            return ((state and MASK_32) and (max - 1)).toInt()
+        }
+        var rnd32: Long
+        var result: Long
+        do {
+            nextState()
+            rnd32 = state and MASK_32
+            result = rnd32 % max
+        } while (rnd32 - result + max > POW2_32)
+        return result.toInt()
+    }
+
+    private companion object {
+        /** `0xffffda61`（Numerical Recipes 3rd Edition p.348 B1）。 */
+        const val A: Long = 0xffffda61L
+
+        const val MASK_32: Long = 0xFFFFFFFFL
+        const val POW2_32: Long = 0x100000000L
+
+        /** Dart `_Random._setupSeed`：Thomas Wang 64-bit mix，零种子回落到 0x5a17。 */
+        fun setupSeed(seed: Long): Long {
+            var n = seed
+            n = n.inv() + (n shl 21)
+            n = n xor (n ushr 24)
+            n = n * 265
+            n = n xor (n ushr 14)
+            n = n * 21
+            n = n xor (n ushr 28)
+            n = n + (n shl 31)
+            return if (n == 0L) 0x5a17L else n
+        }
+    }
+}
+
+/**
  * 确定性伪随机数（splitmix64）。
  *
- * ## 为什么不用 `kotlin.random.Random(seed)`
+ * ## 只用于度数抽样，不参与跨端协议
  *
- * `kotlin.random.Random(seed)` 的序列**不承诺跨版本稳定**（实现可以换），而这里的序列是
- * **协议的一部分**：换一次实现，之前录下来的帧全部变成噪声。所以自己写一份钉死的算法。
+ * 邻居序列由 [DartRandom] 负责（必须与 Dart 一致）。这里只给
+ * [QrFountainDegreeSampler] 抽度数；度数**随帧传输**，接收端直接用帧里的值，
+ * 不与发送端复现同一串随机数。所以本实现可以自由定种子（便于单测复现），
+ * 不承担跨版本兼容责任。
  *
- * ## 已知的互操作缺口（诚实记录）
+ * ## 为什么不直接用 `kotlin.random.Random(seed)`
  *
- * Dart `fountain_codes` 用 `dart:math` 的 `Random(seed)` 选邻居，与本实现**序列不同**。
- * 后果：**Compose 发送端 ↔ Flutter 接收端（或反过来）互相扫不出内容**——不是静默损坏，
- * 而是拼包后 SHA-256 对不上、显示「传输校验失败」。同一 APK 内两端（都走本文件）互通。
- * 真要跨实现互通，得把 `dart:math` 的 PRNG 逐位移植过来，并拿 Dart 生成的黄金向量对拍，
- * 那是单独一批活（见认领文件的诚实清单）。
+ * `kotlin.random.Random(seed)` 的序列不承诺跨版本稳定；度数虽不跨端复现，
+ * 但单测/调试要求「同一份数据每次生成同一串帧」，所以仍自己钉一份算法。
  */
 class QrFountainRandom(seed: Int) {
 
@@ -114,9 +192,12 @@ class QrFountainRandom(seed: Int) {
  * 编码端与解码端都走这里，所以只要**这一处**两端一致，协议就闭合。
  *
  * 抽邻居的做法与 `fountain_codes` 的 `_selectNeighbors` 同结构：**放回式抽**
- * （`while (set.size < degree) add(rng.nextInt(k))`），重复的自动折叠。
+ * （`while (set.size < degree) add(rng.nextInt(k))`），重复的自动折叠；PRNG 必须是
+ * [DartRandom]（发布版 `Random(seed)` 的逐位移植），否则跨版本/跨端解不出同一份邻居。
  * 因此 `degree` 必须 ≤ 源符号数，否则循环永不收敛——这不是防御性检查，
  * 而是真实的死循环风险，故这里硬夹住（帧解析层 `QrTransferFrame.parse` 也会先挡一道）。
+ *
+ * 返回顺序是插入顺序；XOR 可交换，接收端按集合使用，顺序不参与协议。
  */
 object QrFountainNeighbors {
 
@@ -124,13 +205,14 @@ object QrFountainNeighbors {
      * @param seed 本帧的种子（帧里自带）
      * @param sourceSymbolCount 源符号数 k（帧里自带，解析层已校验上界）
      * @param degree 本帧度数（帧里自带）
-     * @return 升序去重后的源符号下标；`degree <= 0` 时返回空数组
+     * @return 去重后的源符号下标；`degree <= 0` 时返回空数组
      */
     fun select(seed: Int, sourceSymbolCount: Int, degree: Int): IntArray {
         if (sourceSymbolCount <= 0 || degree <= 0) return IntArray(0)
         // 度数与源符号数取小：度 > k 时按放回式抽取永远凑不齐 degree 个不同下标。
         val target = if (degree > sourceSymbolCount) sourceSymbolCount else degree
-        val random = QrFountainRandom(seed)
+        // 协议本体：与发布版 fountain_codes 的 Random(esiOrSeed) 同一序列。
+        val random = DartRandom(seed)
         val picked = LinkedHashSet<Int>(target * 2)
         while (picked.size < target) {
             picked.add(random.nextInt(sourceSymbolCount))

@@ -1,5 +1,7 @@
 package com.mutx163.qingyu.pages.transfer
 
+import java.net.URLEncoder
+
 /**
  * 局域网编辑页（`lib/screens/lan_edit_screen.dart`，489 行）模型层。
  *
@@ -16,7 +18,8 @@ package com.mutx163.qingyu.pages.transfer
  * 本类只负责**把服务状态翻译成屏上文字**，这几条正是最容易写错、又最值得单测的：
  *
  * 1. **访问地址**：没拿到 IP 时显示「未检测到局域网 IP…」而不是 `:8080` 这种半截地址；
- * 2. **地址拼法**：`http://ip:port`，端口缺省不拼；
+ * 2. **地址拼法**：`http://ip:port?pin=<PIN>`（发布版 `encodeLanEditUrl` 同口径，
+ *    电脑扫码/粘贴后网页端按 `?pin=` 自动登录，不用手输 6 位 PIN）；
  * 3. **已连接客户端**：0 台时 Dart 显示「暂无」，不是「0 台」；
  * 4. **开关态**：运行中显示「停止」，停止时显示「开启局域网编辑」。
  */
@@ -59,10 +62,12 @@ class LanEditModel(
         get() = if (running) TransferExtStrings.lanEditStop.text else TransferExtStrings.lanEditStart.text
 
     /**
-     * 访问地址。
+     * 访问地址（二维码与「复制地址」都用它）。
      *
-     * 没 IP 时**必须**显示那句提示，不能拼出 `http://:8080`：用户拿这个地址去浏览器
-     * 打不开，会误以为是 App 坏了。端口缺失时一并走这条，因为电脑连不上没有端口的地址。
+     * 没 IP / 没端口时**必须**显示那句提示，不能拼出 `http://:8080`：用户拿这个地址去浏览器
+     * 打不开，会误以为是 App 坏了。有 PIN 时按发布版 `encodeLanEditUrl(host, port, pin)` 的
+     * 口径把 `?pin=` 带上——电脑扫二维码打开网页后会自动登录；不发这条查询参数，用户就得
+     * 从手机上再抄 6 位 PIN（发布版不需要）。
      */
     val addressText: String
         get() {
@@ -71,7 +76,12 @@ class LanEditModel(
             if (ip.isEmpty() || p <= 0) {
                 return TransferExtStrings.lanEditAddressUnavailable.text
             }
-            return "http://$ip:$p"
+            val base = "http://$ip:$p"
+            val pinValue = pin?.trim().orEmpty()
+            if (pinValue.isEmpty()) {
+                return base
+            }
+            return "$base?pin=${URLEncoder.encode(pinValue, "UTF-8")}"
         }
 
     /** 地址是否可用（渲染层据此决定「复制地址」能不能点）。 */
