@@ -17,6 +17,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -45,7 +46,7 @@ import com.mutx163.qingyu.components.QingyuGlassIconButton
 import com.mutx163.qingyu.components.QingyuLoadingProgressBar
 import com.mutx163.qingyu.components.QingyuSectionTitle
 import com.mutx163.qingyu.components.QingyuWeightDelta
-import com.mutx163.qingyu.components.rememberQingyuScrollBehavior
+import com.mutx163.qingyu.components.rememberShellShouldShowBackButton
 import com.mutx163.qingyu.components.shiftWeight
 import com.mutx163.qingyu.infra.AppReleaseInfo
 import com.mutx163.qingyu.infra.AppUpdateCheckResult
@@ -57,7 +58,6 @@ import com.mutx163.qingyu.theme.QingyuTheme
 import top.yukonga.miuix.kmp.basic.Button
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
 import top.yukonga.miuix.kmp.basic.HorizontalDivider
-import top.yukonga.miuix.kmp.basic.ScrollBehavior
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TextButton
 import top.yukonga.miuix.kmp.icon.MiuixIcons
@@ -96,6 +96,23 @@ import java.util.Locale
  * 判据与结构逐段对应 Dart `:605-1720`：顶栏标题 +「高级选项」入口 / 三态（检查中 /
  * 检查失败 / 就绪）/ 就绪=状态卡 + 更新说明分组 + 说明卡 / 底部下载进度条。
  * 文案全部取自 [AboutUpdatePageStrings] / [AboutUpdateStrings]（ARB 逐字），本文件无中文字面量。
+ *
+ * ## 2026-11-10 用户真机三件（同批修）
+ *
+ * 1. **展开更新说明后整页滑不动**：本页自 2026-11-08 起不画顶栏，却仍给列表挂了
+ *    `MiuixScrollBehavior`。它的 `TopAppBarState.heightOffsetLimit` 没有 `TopAppBar`
+ *    来写，停在默认 `-Float.MAX_VALUE`，`onPreScroll` 于是把每一段向上滚动都当成
+ *    「收起不存在的大标题」整段吃掉。修法：本页**不建折叠行为、列表不传 `scrollBehavior`**
+ *    （没有栏可折）；全仓由 `FoldBehaviorNeedsTopBarGuardTest` 钉住。
+ * 2. **顶栏两钮离屏幕边缘不等**：原先 `padding(start = 4.dp, end = 8.dp)`，两颗都是同一个
+ *    44dp 玻璃圆钮（`QingyuBackIconButton` 是 `QingyuGlassIconButton` 的薄封装），
+ *    差异纯粹来自这行写死的边距。两侧统一 8dp。
+ * 3. **从首页八宫格进入时不显示返回键**（用户指令「这样才才对」）：显隐走全站唯一判据
+ *    [rememberShellShouldShowBackButton]（壳注入的顶页标记 → `ShellRootEntryRule`），
+ *    本页自绘顶栏原先无条件画返回键、从没读过它。现在顶级目的地（八宫格进入）不画返回
+ *    胶囊，但保留 44dp 占位防止 `SpaceBetween` 把右上那颗贴到左边。
+ *    **有意偏离发布版**：`v2.1.4.1` 八宫格进更新页一律推路由、始终有返回箭头
+ *    （`home_top_menu.dart:59-64`），按用户 2026-11-10 指令改成顶级态无返回。
  */
 
 /** 下载进行时的 UI 快照（宿主每帧喂入）。 */
@@ -126,7 +143,11 @@ fun AboutUpdatePage(
     QingyuPageTheme {
         val dark = isSystemInDarkTheme()
         val colors = MiuixTheme.colorScheme
-        val scrollBehavior = rememberQingyuScrollBehavior()
+        // 本页**不向列表挂折叠行为**（`rememberQingyuScrollBehavior()` 已删，2026-11-10）：
+        // 本页没有 `TopAppBar`，`MiuixScrollBehavior` 的 `TopAppBarState.heightOffsetLimit`
+        // 会停在默认 `-Float.MAX_VALUE`，于是它的 `onPreScroll` 把每一段向上滚动都当成
+        // 「收起（不存在的）大标题」整段吃掉 —— 展开更新说明后整页就滑不动了。
+        // 没有栏可折，就不该建这个行为：列表不传 `scrollBehavior`（套件默认 null）。
         // 这一页**不画顶栏**：没有标题、没有栏底、没有毛玻璃。
         // 只有两颗胶囊浮在状态栏下面，页面内容直接在它们下面开始。
         // 背景的蓝白渐变画在**最底层、不随内容滚动**（之前它做了列表的第一项，
@@ -152,16 +173,29 @@ fun AboutUpdatePage(
                 // [QingyuGlassIconButton]，都是圆底玻璃钮。
                 // 骨架默认只在内容压到栏下时才给返回键长圆底；本页没有栏，就显式把
                 // `LocalQingyuBackButtonGlass` 置 true，让左边与右边从一开始就是同一颗圆钮。
+                //
+                // 返回键的**显隐**走全站唯一判据（与 `QingyuPageScaffold` 同一条）：
+                // 从首页八宫格进入时壳把本页标成顶级目的地 ⇒ 不画返回胶囊；从关于页
+                // 等嵌套路径进入时照常画。左右两侧统一 8dp：原先 start=4 / end=8，
+                // 两颗同尺寸玻璃钮离屏幕边缘差 4dp（2026-11-10 用户实报）。
                 CompositionLocalProvider(LocalQingyuBackButtonGlass provides true) {
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
                             .windowInsetsPadding(WindowInsets.statusBars)
-                            .padding(start = 4.dp, top = 4.dp, end = 8.dp, bottom = 4.dp),
+                            .padding(start = 8.dp, top = 4.dp, end = 8.dp, bottom = 4.dp),
                         horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
-                        QingyuBackIconButton(onBack = onBack)
+                        // 写法与 `RootEntryBackGuardTest` 对「手拼顶栏页」的期望一致：
+                        // 直接在 if 里调唯一取法（该守卫若将来把本页加进名单，不会因写法不合而红）。
+                        if (rememberShellShouldShowBackButton()) {
+                            QingyuBackIconButton(onBack = onBack)
+                        } else {
+                            // 顶级目的地：不画返回胶囊，但**占住同尺寸空位**——
+                            // `Row` 是 `SpaceBetween`，只剩一个子项时右上那颗会贴到左边。
+                            Spacer(Modifier.size(44.dp))
+                        }
                         QingyuGlassIconButton(
                             onClick = onOpenAdvancedOptions,
                             contentDescription = AboutUpdatePageStrings.advancedOptionsTitle,
@@ -186,7 +220,6 @@ fun AboutUpdatePage(
 
                     AboutUpdatePagePhase.READY -> AboutUpdateReadyView(
                         innerPadding = contentInsets,
-                        scrollBehavior = scrollBehavior,
                         appName = appName,
                         result = result!!,
                         settings = settings,
@@ -280,7 +313,6 @@ private fun AboutUpdateCheckFailedView(
 @Composable
 private fun AboutUpdateReadyView(
     innerPadding: PaddingValues,
-    scrollBehavior: ScrollBehavior,
     appName: String,
     result: AppUpdateCheckResult,
     settings: AppUpdateSettings,
@@ -293,7 +325,8 @@ private fun AboutUpdateReadyView(
     val release = result.latestRelease
     QingyuPageList(
         innerPadding = innerPadding,
-        scrollBehavior = scrollBehavior,
+        // 不传 `scrollBehavior`：本页没有顶栏可折，挂折叠行为会把向上滚动整段吃掉
+        //（根因见 [AboutUpdatePage] 头注，2026-11-10 修「展开更新说明后滑不动」）。
         // 横向留白改为由每个块自己带：顶部身份区需要一层**通栏**的背景渐变，
         // 列表级 padding 会把渐变裁在两侧 12dp 里，边界看得见。
         horizontalPadding = 0.dp,
