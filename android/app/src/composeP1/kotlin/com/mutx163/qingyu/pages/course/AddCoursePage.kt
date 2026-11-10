@@ -1,8 +1,10 @@
 package com.mutx163.qingyu.pages.course
 
+import android.widget.Toast
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -18,11 +20,11 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -31,19 +33,21 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
-import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import com.mutx163.qingyu.components.QingyuCard
 import com.mutx163.qingyu.components.QingyuCardDefaults
+import com.mutx163.qingyu.components.QingyuColorPickerDialog
 import com.mutx163.qingyu.components.QingyuGlassIconButton
 import com.mutx163.qingyu.components.QingyuPageCardMargin
 import com.mutx163.qingyu.components.QingyuPageList
 import com.mutx163.qingyu.components.QingyuPageScaffold
 import com.mutx163.qingyu.components.QingyuPageTheme
 import com.mutx163.qingyu.components.QingyuSectionTitle
+import com.mutx163.qingyu.components.QingyuSheet
 import com.mutx163.qingyu.components.QingyuWeightDelta
 import com.mutx163.qingyu.components.glass.LocalQingyuPageBackdrop
 import com.mutx163.qingyu.components.rememberSheetMaxHeight
@@ -52,8 +56,10 @@ import com.mutx163.qingyu.core.Course
 import com.mutx163.qingyu.core.CourseNature
 import com.mutx163.qingyu.core.DialogGlassSpec
 import com.mutx163.qingyu.theme.QingyuTheme
+import top.yukonga.miuix.kmp.basic.BasicComponent
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.IconButton
+import top.yukonga.miuix.kmp.basic.NumberPicker
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TextButton
 import top.yukonga.miuix.kmp.basic.TextField
@@ -121,6 +127,8 @@ fun AddCoursePage(
     globalSectionCount: Int = 12,
     /** 条目自身解析出的作息模板节数（Dart `_resolveEntryTimeScheme(...)?.sections.length`）。 */
     entrySchemeSectionCount: (entry: AddCourseScheduleEntryData, location: String) -> Int? = { _, _ -> null },
+    /** 课表里已有的课程：新建态「沿用已有课程」的候选（发布版 `provider.courseGroups` 的拍平视图）。 */
+    courseTemplates: List<Course> = emptyList(),
     /** 条目钟点解析（含 `hasCustomTime` 权威钟点回传），保存时逐条调用。 */
     clockResolver: (AddCourseScheduleEntryData) -> AddCourseEntryClock,
     onBack: () -> Unit = {},
@@ -159,6 +167,12 @@ fun AddCoursePage(
     var weekDraft by remember(initialState) { mutableStateOf<AddCourseWeekDraft?>(null) }
     var confirmDiscard by remember { mutableStateOf(false) }
     var confirmDelete by remember { mutableStateOf(false) }
+    // 「课程颜色」选择行点开的官方取色弹窗；常驻组合，显隐只由它驱动（2026-11-10 十色点阵退役）。
+    var colorPickerOpen by remember { mutableStateOf(false) }
+    // 「沿用已有课程」候选（按课名分组、名称升序）与选择弹层开关。
+    val templateGroups = remember(courseTemplates) { AddCourseTemplateLogic.groups(courseTemplates) }
+    var templatePickerOpen by remember { mutableStateOf(false) }
+    val context = LocalContext.current
 
     fun markDirty() {
         dirty = true
@@ -166,6 +180,23 @@ fun AddCoursePage(
 
     fun updateEntry(index: Int, update: (AddCourseScheduleEntryData) -> AddCourseScheduleEntryData) {
         entries = entries.mapIndexed { i, entry -> if (i == index) update(entry) else entry }
+        markDirty()
+    }
+
+    /**
+     * 沿用已有课程：六字段回填 + 每条排课记录的教师/地点同步；**不搬排课时间表**
+     * （发布版 `_applyCourseTemplate`：只改共享信息与条目教师/地点，星期/节次/周次原样）。
+     */
+    fun applyTemplate(course: Course) {
+        val fill = AddCourseTemplateLogic.fillFor(course)
+        sharedName = fill.name
+        sharedShortName = fill.shortName
+        sharedTeacher = fill.teacher
+        sharedDescription = fill.description
+        courseNature = fill.courseNature
+        selectedColor = fill.color
+        entries = AddCourseTemplateLogic.fillEntries(entries, course)
+        nameError = null
         markDirty()
     }
 
@@ -310,18 +341,45 @@ fun AddCoursePage(
                             verticalArrangement = Arrangement.spacedBy(14.dp),
                         ) {
                             Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                                TextField(
-                                    value = sharedName,
-                                    onValueChange = {
-                                        sharedName = it
-                                        nameError = null
-                                        markDirty()
-                                    },
-                                    label = AddCourseStrings.courseNameLabel.text,
-                                    useLabelAsPlaceholder = true,
-                                    singleLine = true,
-                                    modifier = Modifier.fillMaxWidth(),
-                                )
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    TextField(
+                                        value = sharedName,
+                                        onValueChange = {
+                                            sharedName = it
+                                            nameError = null
+                                            markDirty()
+                                        },
+                                        label = AddCourseStrings.courseNameLabel.text,
+                                        useLabelAsPlaceholder = true,
+                                        singleLine = true,
+                                        modifier = Modifier.weight(1f),
+                                    )
+                                    // 发布版 `showReuseAction = course == null` 只判 course；这里**有意收窄**成
+                                    // 「只有新建态才出现」：组编辑时课程组已存在，沿用模板回填会盖掉整组共享信息。
+                                    // 按钮宽 108dp（Dart `_reuseCourseActionWidth = 108.0`）。
+                                    if (!isEditing) {
+                                        Spacer(modifier = Modifier.width(8.dp))
+                                        TextButton(
+                                            text = AddCourseStrings.reuseExistingCourseLabel.text,
+                                            onClick = {
+                                                if (templateGroups.isEmpty()) {
+                                                    Toast.makeText(
+                                                        context,
+                                                        AddCourseStrings.noTemplateCoursesHint.text,
+                                                        Toast.LENGTH_SHORT,
+                                                    ).show()
+                                                } else {
+                                                    templatePickerOpen = true
+                                                }
+                                            },
+                                            modifier = Modifier.width(108.dp),
+                                            minWidth = 0.dp,
+                                            minHeight = 0.dp,
+                                            insideMargin = PaddingValues(horizontal = 10.dp, vertical = 11.dp),
+                                            textStyle = MiuixTheme.textStyles.footnote1,
+                                        )
+                                    }
+                                }
                                 Text(
                                     text = nameError ?: AddCourseStrings.courseNameHelper.text,
                                     style = MiuixTheme.textStyles.footnote1,
@@ -423,24 +481,41 @@ fun AddCoursePage(
                             },
                         )
                         Spacer(modifier = Modifier.height(4.dp))
-                        Column(
-                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 16.dp),
-                            verticalArrangement = Arrangement.spacedBy(12.dp),
-                        ) {
-                            Text(
-                                text = AddCourseStrings.courseColorTitle.text,
-                                style = MiuixTheme.textStyles.body2.shiftWeight(QingyuWeightDelta.MEDIUM),
-                                color = MiuixTheme.colorScheme.onSurfaceVariantActions,
-                            )
-                            AddCourseColorSwatches(
-                                selectedColor = selectedColor,
-                                dark = dark,
-                                onSelect = { hex ->
-                                    selectedColor = hex
-                                    markDirty()
-                                },
-                            )
-                        }
+                        // 发布版 v2.1.4.1 的「课程颜色」是一行选择器（`HyperosPickerField`：左侧色块
+                        // + 十六进制值，点开全色调色盘），不是我们自造的十色点阵；这里照样只留一行，
+                        // 点开官方 ColorPicker。选色落盘仍只走 selectedColor 一处。
+                        BasicComponent(
+                            title = AddCourseStrings.courseColorTitle.text,
+                            endActions = {
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                ) {
+                                    Box(
+                                        modifier = Modifier
+                                            .size(20.dp)
+                                            .clip(RoundedCornerShape(5.dp))
+                                            .background(
+                                                parseCourseColor(
+                                                    selectedColor,
+                                                    Color(QingyuTheme.primary(dark = dark)),
+                                                ),
+                                            )
+                                            .border(
+                                                width = 1.dp,
+                                                color = Color(QingyuTheme.outline(dark)),
+                                                shape = RoundedCornerShape(5.dp),
+                                            ),
+                                    )
+                                    Text(
+                                        text = selectedColor.uppercase(),
+                                        style = MiuixTheme.textStyles.body2,
+                                        color = MiuixTheme.colorScheme.onSurfaceVariantActions,
+                                    )
+                                }
+                            },
+                            onClick = { colorPickerOpen = true },
+                        )
                     }
                 }
             }
@@ -562,7 +637,8 @@ fun AddCoursePage(
     ) {
         Row(
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(10.dp),
+            // 12dp：发布版 HyperosDialog 的动作行间距（`hyperos_dialog.dart` 两颗按钮之间）。
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             top.yukonga.miuix.kmp.basic.Button(
                 onClick = { confirmDiscard = false },
@@ -622,7 +698,8 @@ fun AddCoursePage(
     ) {
         Row(
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(10.dp),
+            // 12dp：与放弃修改框 / 发布版 HyperosDialog 的动作行同一间距。
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             top.yukonga.miuix.kmp.basic.Button(
                 onClick = { confirmDelete = false },
@@ -645,9 +722,38 @@ fun AddCoursePage(
             }
         }
     }
+
+    // 沿用已有课程弹层：常驻组合、显隐只由 `show` 驱动（与全仓弹层口径一致）。
+    AddCourseTemplatePickerSheet(
+        show = templatePickerOpen,
+        groups = templateGroups,
+        dark = dark,
+        onPick = { group ->
+            templatePickerOpen = false
+            applyTemplate(group.course)
+        },
+        onDismiss = { templatePickerOpen = false },
+    )
+
+    // 十色点阵退役（2026-11-10）：发布版没有点阵，只有一行「课程颜色」选择行；
+    // 选色走官方 ColorPicker 弹窗。常驻组合、显隐只由 `show` 驱动（退场动画才播得出来）。
+    QingyuColorPickerDialog(
+        show = colorPickerOpen,
+        initialHex = selectedColor,
+        title = AddCourseStrings.courseColorTitle.text,
+        cancelLabel = AddCourseStrings.cancelAction.text,
+        confirmLabel = AddCourseStrings.confirmAction.text,
+        dark = dark,
+        onDismiss = { colorPickerOpen = false },
+        onConfirm = { hex ->
+            selectedColor = hex
+            markDirty()
+            colorPickerOpen = false
+        },
+    )
 }
 
-// ── 课程名片 / 十色盘 / 单条排课卡片 ────────────────────────────────────────
+// ── 课程名片 / 颜色 / 单条排课卡片 ──────────────────────────────────────────
 
 /** 把课程色解析成 Compose 颜色；用户数据里的坏值回落主题主色，不让整页崩。 */
 private fun parseCourseColor(hex: String, fallback: Color): Color =
@@ -771,66 +877,6 @@ private fun AddCourseMetaPill(text: String, tint: Color) {
             .background(tint.copy(alpha = 0.12f), RoundedCornerShape(999.dp))
             .padding(horizontal = 8.dp, vertical = 3.dp),
     )
-}
-
-/**
- * 十色盘：两行五列。
- *
- * 十个圆点原来挤在一行：400dp 屏卡内只剩 344dp，最后两颗会被裁掉。
- * 改成两行五列后单行 224dp，任何字号档都不会溢出；选中态用 2dp 环 + 对勾，
- * 不靠颜色本身区分（色弱用户也能看出选中）。
- */
-@Composable
-private fun AddCourseColorSwatches(
-    selectedColor: String,
-    dark: Boolean,
-    onSelect: (String) -> Unit,
-) {
-    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-        kCourseColorPalette.chunked(5).forEach { rowColors ->
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                // 32dp 圆点 + 16dp 间距：Compose 的 48dp 最小触控区互不重叠，
-                // 既不会点错色，也仍然排得进 400dp 屏的卡内宽度。
-                horizontalArrangement = Arrangement.spacedBy(16.dp, Alignment.CenterHorizontally),
-            ) {
-                rowColors.forEach { hex ->
-                    val swatch = parseCourseColor(hex, Color(QingyuTheme.primary(dark = dark)))
-                    val isChosen = selectedColor.equals(hex, ignoreCase = true)
-                    Box(
-                        modifier = Modifier
-                            .size(32.dp)
-                            .clip(CircleShape)
-                            .background(swatch)
-                            .border(
-                                width = if (isChosen) 2.dp else 1.dp,
-                                color = if (isChosen) {
-                                    Color(QingyuTheme.primaryText(dark))
-                                } else {
-                                    Color(QingyuTheme.dividerLine(dark)).copy(alpha = 0.7f)
-                                },
-                                shape = CircleShape,
-                            )
-                            .selectable(
-                                selected = isChosen,
-                                role = Role.RadioButton,
-                                onClick = { onSelect(hex) },
-                            ),
-                        contentAlignment = Alignment.Center,
-                    ) {
-                        if (isChosen) {
-                            Icon(
-                                imageVector = MiuixIcons.Ok,
-                                contentDescription = null,
-                                tint = Color.White,
-                                modifier = Modifier.size(16.dp),
-                            )
-                        }
-                    }
-                }
-            }
-        }
-    }
 }
 
 /** 单条排课记录的输入区（星期 / 起止节次 / 哪些周上 / 条目教师教室 / 删除）。 */
@@ -979,6 +1025,14 @@ private fun AddCourseEntryFields(
  * 「哪些周上」弹层（Dart `_showEntryWeekPickerDialog` 的 Compose 形态）：
  * 模式组 + （范围：起止周 + 单双周组 | 自定义：周网格 + 全选/单周/双周）+ 摘要 + 确认。
  * 确认键按 [AddCourseWeekDraftLogic.canConfirm] 启用——最终周次为空集不许确认。
+ *
+ * 2026-11-10 按发布版 v2.1.4.1（`add_course_screen.dart:1713-1960`）对齐三处：
+ * - 起止周不再走行内下拉，改成**单列滚轮弹层**（Dart `_pickFromNumberWheelSheet` →
+ *   `showMiuixNumberPickerSheet`：220dp、title3 w600、「第 N 周」文案、取消 + 确认）；
+ *   止周滚轮的下界是当前起周（发布版 `minValue: tempStartWeek`）。
+ * - 取消 / 确认钉在滚动区**外面**（Dart 的底部动作行在 ListView 之外）：发布版是全屏子页，
+ *   这里收成对话框（正文限高 + 可滚），周次多（53 周 / 大字号）时不必滚到底才能确认。
+ * - 动作行间距 12dp、确认主色 / 取消灰底，与发布版 HyperosDialog 同一口径。
  */
 @Composable
 private fun AddCourseWeekPickerDialog(
@@ -992,9 +1046,21 @@ private fun AddCourseWeekPickerDialog(
 ) {
     // 退场期快照：`show` 转 false 后宿主把 weekDraft 置空，正文仍要按最后一份草稿渲染。
     val currentDraft = rememberLastNonNull(draftOrNull)
-    // Dart 原版是全屏子页 + 可滚 ListView；这里收成对话框，正文限高 + 可滚，
-    // 避免自定义周网格（53 周 / 大字号）撑破矮屏。确认/取消跟随正文滚动（与 Dart 底部动作一致）。
-    val maxBodyHeight = rememberSheetMaxHeight(0.72f)
+    // 正文 + 动作行的总限高：动作行固定在滚动区外，所以整卡一起限（不是只限列表）。
+    val maxCardHeight = rememberSheetMaxHeight(0.72f)
+    // 正在滚的「起 / 止」周；null = 滚轮弹层收起。
+    var pickingWeekEndpoint by remember { mutableStateOf<AddCourseWeekEndpoint?>(null) }
+    val wheelEndpoint = pickingWeekEndpoint
+    val wheelDraft = currentDraft
+    // 止周滚轮的下界是当前起周（发布版 `_pickFromNumberWheelSheet(minValue: tempStartWeek)`），
+    // 这样滚轮里根本滚不出「止周 < 起周」；回写时模型层还会再夹一次。
+    val wheelWeeks = when (wheelEndpoint) {
+        AddCourseWeekEndpoint.END -> {
+            availableWeeks.filter { it >= (wheelDraft?.startWeek ?: availableWeeks.first()) }
+        }
+        else -> availableWeeks
+    }.ifEmpty { availableWeeks }
+
     OverlayDialog(
         insideMargin = DpSize(16.dp, 16.dp),
         show = show,
@@ -1002,142 +1068,273 @@ private fun AddCourseWeekPickerDialog(
         onDismissRequest = onDismiss,
     ) {
         val draft = currentDraft ?: return@OverlayDialog
-        LazyColumn(
+        Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .heightIn(max = maxBodyHeight)
-                .scrollEndHaptic()
-                .overScrollVertical(),
+                .heightIn(max = maxCardHeight),
         ) {
-            item {
-                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                    AddCourseWeekModeTileGroup(
-                        tempMode = draft.mode,
-                        dark = dark,
-                        onSelect = { nextMode ->
-                            onDraftChange(AddCourseWeekDraftLogic.selectMode(draft, nextMode, availableWeeks))
-                        },
-                    )
-                    if (draft.mode == AddCourseWeekSelectionMode.RANGE) {
-                        WindowDropdownPreference(
-                            items = availableWeeks.map { AddCourseStrings.weekLabel.filled("week", it.toString()) },
-                            selectedIndex = availableWeeks.indexOf(draft.startWeek).coerceAtLeast(0),
-                            title = AddCourseStrings.startWeekLabel.text,
-                            onSelectedIndexChange = { position ->
-                                availableWeeks.getOrNull(position)?.let { week ->
-                                    onDraftChange(AddCourseWeekDraftLogic.setStartWeek(draft, week, availableWeeks))
-                                }
-                            },
-                        )
-                        WindowDropdownPreference(
-                            items = availableWeeks.map { AddCourseStrings.weekLabel.filled("week", it.toString()) },
-                            selectedIndex = availableWeeks.indexOf(draft.endWeek).coerceAtLeast(0),
-                            title = AddCourseStrings.endWeekLabel.text,
-                            onSelectedIndexChange = { position ->
-                                availableWeeks.getOrNull(position)?.let { week ->
-                                    onDraftChange(AddCourseWeekDraftLogic.setEndWeek(draft, week, availableWeeks))
-                                }
-                            },
-                        )
-                        AddCourseWeekParityTileGroup(
-                            isAllWeeks = !draft.isOddWeek && !draft.isEvenWeek,
-                            isOddWeek = draft.isOddWeek,
-                            isEvenWeek = draft.isEvenWeek,
+            LazyColumn(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    // fill = false：内容短时列表只占自身高度，不把对话框撑成空白大板。
+                    .weight(1f, fill = false)
+                    .scrollEndHaptic()
+                    .overScrollVertical(),
+            ) {
+                item {
+                    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                        AddCourseWeekModeTileGroup(
+                            tempMode = draft.mode,
                             dark = dark,
-                            onSelectAll = {
-                                onDraftChange(draft.copy(isOddWeek = false, isEvenWeek = false))
-                            },
-                            onSelectOdd = {
-                                onDraftChange(draft.copy(isOddWeek = true, isEvenWeek = false))
-                            },
-                            onSelectEven = {
-                                onDraftChange(draft.copy(isOddWeek = false, isEvenWeek = true))
+                            onSelect = { nextMode ->
+                                onDraftChange(AddCourseWeekDraftLogic.selectMode(draft, nextMode, availableWeeks))
                             },
                         )
-                    } else {
-                        // 周网格：每行 5 个（Dart 按宽度 4/5/6 列自适应，先取中档）。
-                        availableWeeks.chunked(5).forEach { rowWeeks ->
+                        if (draft.mode == AddCourseWeekSelectionMode.RANGE) {
+                            // 起止周 = 发布版 `HyperosPickerField`：行内显示「第 N 周」，点行弹单列滚轮。
+                            AddCourseWeekPickerField(
+                                label = AddCourseStrings.startWeekLabel.text,
+                                value = AddCourseStrings.weekLabel.filled("week", draft.startWeek.toString()),
+                                onClick = { pickingWeekEndpoint = AddCourseWeekEndpoint.START },
+                            )
+                            AddCourseWeekPickerField(
+                                label = AddCourseStrings.endWeekLabel.text,
+                                value = AddCourseStrings.weekLabel.filled("week", draft.endWeek.toString()),
+                                onClick = { pickingWeekEndpoint = AddCourseWeekEndpoint.END },
+                            )
+                            AddCourseWeekParityTileGroup(
+                                isAllWeeks = !draft.isOddWeek && !draft.isEvenWeek,
+                                isOddWeek = draft.isOddWeek,
+                                isEvenWeek = draft.isEvenWeek,
+                                dark = dark,
+                                onSelectAll = {
+                                    onDraftChange(draft.copy(isOddWeek = false, isEvenWeek = false))
+                                },
+                                onSelectOdd = {
+                                    onDraftChange(draft.copy(isOddWeek = true, isEvenWeek = false))
+                                },
+                                onSelectEven = {
+                                    onDraftChange(draft.copy(isOddWeek = false, isEvenWeek = true))
+                                },
+                            )
+                        } else {
+                            // 周网格：每行 5 个（Dart 按宽度 4/5/6 列自适应，先取中档）。
+                            availableWeeks.chunked(5).forEach { rowWeeks ->
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                ) {
+                                    rowWeeks.forEach { week ->
+                                        AddCourseWeekGridTile(
+                                            week = week,
+                                            isSelected = week in draft.customWeeks,
+                                            dark = dark,
+                                            modifier = Modifier.weight(1f),
+                                            onPress = {
+                                                onDraftChange(AddCourseWeekDraftLogic.toggleCustomWeek(draft, week))
+                                            },
+                                        )
+                                    }
+                                    // 末排不足 5 格时补等宽空位，保持格宽与上面各行一致（Dart GridView 原版行为）。
+                                    repeat(5 - rowWeeks.size) {
+                                        Spacer(modifier = Modifier.weight(1f))
+                                    }
+                                }
+                            }
                             Row(
                                 modifier = Modifier.fillMaxWidth(),
                                 horizontalArrangement = Arrangement.spacedBy(8.dp),
                             ) {
-                                rowWeeks.forEach { week ->
-                                    AddCourseWeekGridTile(
-                                        week = week,
-                                        isSelected = week in draft.customWeeks,
-                                        dark = dark,
-                                        modifier = Modifier.weight(1f),
-                                        onPress = {
-                                            onDraftChange(AddCourseWeekDraftLogic.toggleCustomWeek(draft, week))
-                                        },
-                                    )
-                                }
-                                // 末排不足 5 格时补等宽空位，保持格宽与上面各行一致（Dart GridView 原版行为）。
-                                repeat(5 - rowWeeks.size) {
-                                    Spacer(modifier = Modifier.weight(1f))
-                                }
+                                AddCourseChoiceChip(
+                                    label = AddCourseStrings.selectAllAction.text,
+                                    isSelected = false,
+                                    dark = dark,
+                                    modifier = Modifier.weight(1f),
+                                    onClick = {
+                                        onDraftChange(AddCourseWeekDraftLogic.selectAllCustom(draft, availableWeeks))
+                                    },
+                                )
+                                AddCourseChoiceChip(
+                                    label = AddCourseStrings.selectOddWeeksAction.text,
+                                    isSelected = false,
+                                    dark = dark,
+                                    modifier = Modifier.weight(1f),
+                                    onClick = {
+                                        onDraftChange(AddCourseWeekDraftLogic.selectOddCustom(draft, availableWeeks))
+                                    },
+                                )
+                                AddCourseChoiceChip(
+                                    label = AddCourseStrings.selectEvenWeeksAction.text,
+                                    isSelected = false,
+                                    dark = dark,
+                                    modifier = Modifier.weight(1f),
+                                    onClick = {
+                                        onDraftChange(AddCourseWeekDraftLogic.selectEvenCustom(draft, availableWeeks))
+                                    },
+                                )
                             }
                         }
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(8.dp),
-                        ) {
-                            AddCourseChoiceChip(
-                                label = AddCourseStrings.selectAllAction.text,
-                                isSelected = false,
-                                dark = dark,
-                                modifier = Modifier.weight(1f),
-                                onClick = {
-                                    onDraftChange(AddCourseWeekDraftLogic.selectAllCustom(draft, availableWeeks))
-                                },
-                            )
-                            AddCourseChoiceChip(
-                                label = AddCourseStrings.selectOddWeeksAction.text,
-                                isSelected = false,
-                                dark = dark,
-                                modifier = Modifier.weight(1f),
-                                onClick = {
-                                    onDraftChange(AddCourseWeekDraftLogic.selectOddCustom(draft, availableWeeks))
-                                },
-                            )
-                            AddCourseChoiceChip(
-                                label = AddCourseStrings.selectEvenWeeksAction.text,
-                                isSelected = false,
-                                dark = dark,
-                                modifier = Modifier.weight(1f),
-                                onClick = {
-                                    onDraftChange(AddCourseWeekDraftLogic.selectEvenCustom(draft, availableWeeks))
-                                },
-                            )
-                        }
+                        val selectedWeeks = AddCourseWeekDraftLogic.selectedWeeks(draft)
+                        Text(
+                            text = AddCourseStrings.selectedWeeksSummary
+                                .filled("count", selectedWeeks.size.toString())
+                                .filled("weeks", AddCourseFormLogic.formatWeekList(selectedWeeks)),
+                            style = MiuixTheme.textStyles.body2,
+                            color = Color(QingyuTheme.secondaryText(dark)),
+                        )
                     }
-                    val selectedWeeks = AddCourseWeekDraftLogic.selectedWeeks(draft)
-                    Text(
-                        text = AddCourseStrings.selectedWeeksSummary
-                            .filled("count", selectedWeeks.size.toString())
-                            .filled("weeks", AddCourseFormLogic.formatWeekList(selectedWeeks)),
-                        style = MiuixTheme.textStyles.body2,
-                        color = Color(QingyuTheme.secondaryText(dark)),
+                }
+            }
+            // 动作行钉在滚动区外（发布版底部动作行在 ListView 之外）：周次再多也不用来回滚。
+            Spacer(modifier = Modifier.height(12.dp))
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+            ) {
+                top.yukonga.miuix.kmp.basic.Button(
+                    onClick = onDismiss,
+                    modifier = Modifier.weight(1f),
+                ) {
+                    Text(text = AddCourseStrings.cancelAction.text)
+                }
+                top.yukonga.miuix.kmp.basic.Button(
+                    onClick = { onConfirm(draft) },
+                    // 算出来的周次为空（例如「第 2 周 + 单周」）时不许确认：存进去的课
+                    // 任何一周都不出现，却仍计入统计（发布版同一条 `selectedWeeks.isEmpty` 判据）。
+                    enabled = AddCourseWeekDraftLogic.canConfirm(draft),
+                    modifier = Modifier.weight(1f),
+                    colors = top.yukonga.miuix.kmp.basic.ButtonDefaults.buttonColorsPrimary(),
+                ) {
+                    Text(text = AddCourseStrings.confirmAction.text)
+                }
+            }
+        }
+    }
+
+    // 滚轮弹层在对话框**之后**组合：同一 root scaffold 下后组合者画在上层，
+    // 否则会被周次对话框盖住（发布版同样是把 sheet 叠在子页之上）。
+    AddCourseWeekWheelSheet(
+        show = wheelEndpoint != null,
+        title = if (wheelEndpoint == AddCourseWeekEndpoint.END) {
+            AddCourseStrings.endWeekLabel.text
+        } else {
+            AddCourseStrings.startWeekLabel.text
+        },
+        weeks = wheelWeeks,
+        currentWeek = if (wheelEndpoint == AddCourseWeekEndpoint.END) {
+            wheelDraft?.endWeek
+        } else {
+            wheelDraft?.startWeek
+        },
+        onConfirm = { week ->
+            val draft = wheelDraft
+            if (draft != null) {
+                when (wheelEndpoint) {
+                    AddCourseWeekEndpoint.START -> onDraftChange(
+                        AddCourseWeekDraftLogic.setStartWeek(draft, week, availableWeeks),
                     )
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(10.dp),
-                    ) {
-                        top.yukonga.miuix.kmp.basic.Button(
-                            onClick = onDismiss,
-                            modifier = Modifier.weight(1f),
-                        ) {
-                            Text(text = AddCourseStrings.cancelAction.text)
-                        }
-                        top.yukonga.miuix.kmp.basic.Button(
-                            onClick = { onConfirm(draft) },
-                            enabled = AddCourseWeekDraftLogic.canConfirm(draft),
-                            modifier = Modifier.weight(1f),
-                            colors = top.yukonga.miuix.kmp.basic.ButtonDefaults.buttonColorsPrimary(),
-                        ) {
-                            Text(text = AddCourseStrings.confirmAction.text)
-                        }
-                    }
+                    AddCourseWeekEndpoint.END -> onDraftChange(
+                        AddCourseWeekDraftLogic.setEndWeek(draft, week, availableWeeks),
+                    )
+                    null -> Unit
+                }
+            }
+            pickingWeekEndpoint = null
+        },
+        onDismiss = { pickingWeekEndpoint = null },
+    )
+}
+
+/** 周次滚轮正在选「起 / 止」哪一端。 */
+private enum class AddCourseWeekEndpoint { START, END }
+
+/**
+ * 起 / 止周选值行（Dart `HyperosPickerField` 的等价物）：标签 + 行尾取值 + 整行可点。
+ *
+ * 与 `schedule/AddScheduleItemPage.SchedulePickerField`、`SettingsHolidayHost.DatePickerField`
+ * 同一先例：官方 `BasicComponent` 承载，自带 16dp 内边距与官方按压反馈。
+ */
+@Composable
+private fun AddCourseWeekPickerField(label: String, value: String, onClick: () -> Unit) {
+    BasicComponent(
+        title = label,
+        endActions = {
+            Text(
+                text = value,
+                style = MiuixTheme.textStyles.body2,
+                color = MiuixTheme.colorScheme.onSurfaceVariantActions,
+            )
+        },
+        onClick = onClick,
+    )
+}
+
+/**
+ * 起 / 止周滚轮弹层：与发布版 `showMiuixNumberPickerSheet` 同口径——
+ * 底部 sheet、单列 `NumberPicker`（0.9.4 没有跨周列表能力，选项即连续周次区间）、
+ * 高 220dp、`title3` + w600、行文案「第 N 周」、取消灰底 + 确认主色、间距 12dp。
+ *
+ * 不循环：周次是一段区间，滚到底就是边界（发布版 `MiuixFlingNumberPicker` 默认不 wrap）。
+ */
+@Composable
+private fun AddCourseWeekWheelSheet(
+    show: Boolean,
+    title: String,
+    weeks: List<Int>,
+    currentWeek: Int?,
+    onConfirm: (Int) -> Unit,
+    onDismiss: () -> Unit,
+) {
+    if (weeks.isEmpty()) return
+    val range = weeks.first()..weeks.last()
+    var week by remember(show, currentWeek) {
+        mutableIntStateOf((currentWeek ?: weeks.first()).coerceIn(range))
+    }
+
+    QingyuSheet(
+        show = show,
+        title = title,
+        onDismissRequest = onDismiss,
+        // 内容根 Column 自带左右 16dp ⇒ 框架侧横向归零，单边仍是 16，不叠成 32。
+        contentPadsHorizontally = true,
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp),
+        ) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(220.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                NumberPicker(
+                    value = week,
+                    onValueChange = { week = it },
+                    range = range,
+                    label = { AddCourseStrings.weekLabel.filled("week", it.toString()) },
+                    textStyle = MiuixTheme.textStyles.title3.shiftWeight(QingyuWeightDelta.SEMIBOLD),
+                    modifier = Modifier.weight(1f),
+                )
+            }
+            Spacer(modifier = Modifier.height(16.dp))
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+            ) {
+                top.yukonga.miuix.kmp.basic.Button(
+                    onClick = onDismiss,
+                    modifier = Modifier.weight(1f),
+                ) {
+                    Text(text = AddCourseStrings.cancelAction.text)
+                }
+                top.yukonga.miuix.kmp.basic.Button(
+                    onClick = { onConfirm(week) },
+                    modifier = Modifier.weight(1f),
+                    colors = top.yukonga.miuix.kmp.basic.ButtonDefaults.buttonColorsPrimary(),
+                ) {
+                    Text(text = AddCourseStrings.confirmAction.text)
                 }
             }
         }
@@ -1167,9 +1364,14 @@ private fun <T : Any> rememberLastNonNull(current: T?): T? {
 //
 // `Course` / `AddCourseEntryClock` 用全限定名/同包名：本文件的 import 块按预览约定
 // 只允许动三行（`Preview` / `QingyuPageTheme` / 总览布局件），不为预览扩大 import 面。
+//
+// 高度口径（2026-11-10 用户点名「预览看不到排课区」）：四档整页预览按**整页高度**给画布
+// （1800 / 1800 / 1800 / 2200dp，大字号那档按 1.3 倍放宽），AS 里等比缩小能看全页、
+// 切「实际大小」可滚。另加一档 400×900 的「5 排课区 1:1」：只画排课段并按原尺寸显示，
+// 用来核对卡内下拉行、「哪些周上」摘要与条目删除键——整页缩放后这些细节看不清。
 
 /** 预览用“已有课程”：高等数学，周一 1~2 节，第 1~16 周，已设自定义钟点。 */
-private val previewAddCourseInitial = com.mutx163.qingyu.core.Course(
+internal val previewAddCourseInitial = com.mutx163.qingyu.core.Course(
     id = "course-math",
     name = "高等数学",
     shortName = "高数",
@@ -1190,6 +1392,38 @@ private fun previewAddCourseClockResolver(entry: AddCourseScheduleEntryData): Ad
     val start = if (entry.startSection <= 2) "08:00" else "10:00"
     val end = if (entry.endSection <= 2) "09:40" else "11:40"
     return AddCourseEntryClock(startTime = start, endTime = end)
+}
+
+// ── 单档：新建 / 编辑 × 亮色 ────────────────────────────────
+
+@Suppress("unused")
+@Preview(name = "1 新建课程", showBackground = true, widthDp = 400, heightDp = 900)
+@Composable
+private fun PreviewAddCourseCreate() {
+    PreviewAddCourseBody()
+}
+
+@Suppress("unused")
+@Preview(name = "2 编辑已有课程", showBackground = true, widthDp = 400, heightDp = 900)
+@Composable
+private fun PreviewAddCourseEdit() {
+    PreviewAddCourseBody(initialCourse = previewAddCourseInitial)
+}
+
+// ── 单档：外观两档（以「编辑」为基准，它内容最全）─────────────────────
+
+@Suppress("unused")
+@Preview(name = "3 暗色", showBackground = true, widthDp = 400, heightDp = 900)
+@Composable
+private fun PreviewAddCourseDark() {
+    PreviewAddCourseBody(initialCourse = previewAddCourseInitial, dark = true)
+}
+
+@Suppress("unused")
+@Preview(name = "4 大字号 1.3", showBackground = true, widthDp = 400, heightDp = 900)
+@Composable
+private fun PreviewAddCourseLargeText() {
+    PreviewAddCourseBody(initialCourse = previewAddCourseInitial, textScale = 1.3f)
 }
 
 /** 一档预览的公共身体：新建 / 编辑 + 外观档位。 */
@@ -1215,34 +1449,104 @@ private fun PreviewAddCourseBody(
     }
 }
 
-// ── 单档：新建 / 编辑 × 亮色 ────────────────────────────────────────────────
-
+/**
+ * 「5 整页」：整页高度档。
+ *
+ * 900 那几档只画一屏，页面下方的**排课区**（星期 / 起止节次 / 哪些周上 / 条目教师教室）
+ * 会被画布裁掉——用户点名「预览看不到排课区」就是这件事。这一档按整页高度给画布
+ * （1400dp），AS 里等比缩小能看全页、切「实际大小」可滚。
+ *
+ * 名字按全仓口径用中文（356 个既有预览名都是中文）；`CjkLiteralGateTest` 把预览名里的中文
+ * 计入棘轮，本档新增的 1 条已在 `cjk-literal-baseline.txt` 登记（理由：@Preview 名是 IDE
+ * 标签、非屏上文案）。
+ */
 @Suppress("unused")
-@Preview(name = "1 新建课程", showBackground = true, widthDp = 400, heightDp = 900)
+@Preview(name = "5 整页 1400", showBackground = true, widthDp = 400, heightDp = 1400)
 @Composable
-private fun PreviewAddCourseCreate() {
-    PreviewAddCourseBody()
-}
-
-@Suppress("unused")
-@Preview(name = "2 编辑已有课程", showBackground = true, widthDp = 400, heightDp = 900)
-@Composable
-private fun PreviewAddCourseEdit() {
+private fun PreviewAddCourseFullPage() {
     PreviewAddCourseBody(initialCourse = previewAddCourseInitial)
 }
 
-// ── 单档：外观两档（以「编辑」为基准，它内容最全）─────────────────────────
 
-@Suppress("unused")
-@Preview(name = "3 暗色", showBackground = true, widthDp = 400, heightDp = 900)
-@Composable
-private fun PreviewAddCourseDark() {
-    PreviewAddCourseBody(initialCourse = previewAddCourseInitial, dark = true)
-}
 
-@Suppress("unused")
-@Preview(name = "4 大字号 1.3", showBackground = true, widthDp = 400, heightDp = 900)
+/**
+ * 沿用已有课程：课程模板选择弹层（发布版 `widgets/course_template_picker_sheet.dart`）。
+ *
+ * 一行的名片信息取该组第一门课（Dart `final representative = group.courses.first`）：
+ * 36dp 圆角色块 + 12dp 同色圆点、课名 + 教师副标题；点一行即回填。
+ * 标题用 `reuseExistingCourseHelper`（「带入这门课已有的信息」），底部一颗取消——
+ * 与发布版的 sheet 结构一致。
+ */
 @Composable
-private fun PreviewAddCourseLargeText() {
-    PreviewAddCourseBody(initialCourse = previewAddCourseInitial, textScale = 1.3f)
+private fun AddCourseTemplatePickerSheet(
+    show: Boolean,
+    groups: List<AddCourseTemplateGroup>,
+    dark: Boolean,
+    onPick: (AddCourseTemplateGroup) -> Unit,
+    onDismiss: () -> Unit,
+) {
+    QingyuSheet(
+        show = show,
+        title = AddCourseStrings.reuseExistingCourseHelper.text,
+        onDismissRequest = onDismiss,
+        // Dart `maxListHeight = MediaQuery.sizeOf(context).height * 0.52`；
+        // 本仓弹层要连标题与取消按钮一起算，给 0.72 让列表区落在同一高度。
+        maxHeightFraction = 0.72f,
+    ) {
+        Column(modifier = Modifier.fillMaxWidth()) {
+            groups.forEach { group ->
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable { onPick(group) }
+                        .padding(horizontal = 16.dp, vertical = 10.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    val groupColor = parseCourseColor(
+                        group.color,
+                        Color(QingyuTheme.primary(dark = dark)),
+                    )
+                    Box(
+                        modifier = Modifier
+                            .size(36.dp)
+                            .clip(RoundedCornerShape(12.dp))
+                            .background(groupColor.copy(alpha = 0.14f)),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .size(12.dp)
+                                .clip(CircleShape)
+                                .background(groupColor),
+                        )
+                    }
+                    Spacer(modifier = Modifier.width(12.dp))
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = group.name,
+                            style = MiuixTheme.textStyles.main,
+                            color = Color(QingyuTheme.primaryText(dark)),
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                        )
+                        if (group.teacher.isNotBlank()) {
+                            Text(
+                                text = group.teacher,
+                                style = MiuixTheme.textStyles.footnote1,
+                                color = Color(QingyuTheme.secondaryText(dark)),
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
+                            )
+                        }
+                    }
+                }
+            }
+            Spacer(modifier = Modifier.height(8.dp))
+            TextButton(
+                text = AddCourseStrings.cancelAction.text,
+                onClick = onDismiss,
+                modifier = Modifier.fillMaxWidth(),
+            )
+        }
+    }
 }
