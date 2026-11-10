@@ -1,5 +1,6 @@
 package com.mutx163.qingyu.pages.shell
 
+import com.mutx163.qingyu.testutil.readSourceNormalized
 import java.io.File
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -226,16 +227,13 @@ class GlassDockRoundButtonIconWiringGuardTest {
 
     // ------------------------------------------------------------------ 定位
 
-    /** 从工作目录向上找仓库根，再读文件；与同目录守卫测试同一套做法。 */
-    private fun source(relativePath: String): String {
-        var dir: File? = File("").absoluteFile
-        repeat(8) {
-            val candidate = File(dir, relativePath)
-            if (candidate.isFile) return candidate.readText(Charsets.UTF_8)
-            dir = dir?.parentFile
-        }
-        error("找不到 $relativePath（工作目录 ${File("").absolutePath}）")
-    }
+    /**
+     * 从工作目录向上找仓库根，再读文件（**行尾已归一**：CRLF→LF）。
+     *
+     * 本仓工作区是 CRLF、索引是 LF；下面 `roundIconResolution()` 靠 `"\n\n"` 切函数体，
+     * 不归一会把切点打空、整段吞到文件尾，判据随机红/绿。
+     */
+    private fun source(relativePath: String): String = readSourceNormalized(relativePath)
 
     /** 去掉 `//` 行注释，避免注释里解释「旧写法 `ICONS[name]`」被当成代码。 */
     private fun stripLineComments(text: String): String =
