@@ -21,6 +21,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -33,6 +34,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import com.mutx163.qingyu.components.QingyuSheet
@@ -62,8 +64,8 @@ import com.mutx163.qingyu.pages.settings.SettingsRow
 import com.mutx163.qingyu.pages.settings.SettingsRowRenderTable
 import com.mutx163.qingyu.pages.settings.SettingsStrings
 import com.mutx163.qingyu.pages.settings.SettingsThemeManagePage
-import com.mutx163.qingyu.pages.settings.SettingsStringsExt1
 import com.mutx163.qingyu.pages.settings.SettingsStringsExt2
+import com.mutx163.qingyu.pages.settings.SettingsStringsExt3
 import com.mutx163.qingyu.pages.settings.SettingsStringsExt4
 import com.mutx163.qingyu.pages.settings.SettingsTimetablePageSettingsPage
 import com.mutx163.qingyu.pages.settings.debouncedSliderRowIds
@@ -432,29 +434,65 @@ fun SettingsHost(
         return SavedThemePreview(
             colors = colors,
             modeLabel = modeLabel,
-            seedHex = color("seed"),
+            // 发布版 `theme_manage_sheets.dart:125-127`：`seedColor ?? previewColors.firstOrNull()`。
+            // 只读 `seed` 会漏掉「色板有、seed 没记」的旧主题（那行会整块消失）。
+            seedHex = color("seed") ?: colors.firstOrNull(),
         )
     }
 
-    /** 已存主题的四种动作（Dart `showSavedThemeActionSheet` + 四个 handler，`:612-700`）。 */
+    /**
+     * 真正落一次「应用已存主题」。干净态与「放弃并应用」确认后都走这里，只有这一条写路径。
+     *
+     * 抽出本函数的理由：草稿态确认框的「放弃并应用」必须**绕过**门控直接落盘，
+     * 若回调再走 `runSavedThemeAction(APPLY)` 会重新命中 `hasThemeModifications` 再弹一次，
+     * 形成关不掉的循环。
+     *
+     * ⚠️ 必须定义在 [runSavedThemeAction] **之前**：本文件这些都是 `@Composable` 体内的
+     * 局部函数，Kotlin **不允许前向引用**（与 `deliverIntent` 同一条规矩）。2026-11-10
+     * 编译早筛抓到过 `unresolved reference 'applySavedThemeNow'`——L0 不编 composeP1，
+     * 只有 L1 能看见，别再把定义挪到调用方下面。
+     */
+    fun applySavedThemeNow(id: String) {
+        val previous = model
+        val next = SettingsActionDispatcher.applySavedTheme(model, id)
+        if (next == null) {
+            Log.w(LOG_TAG, "saved theme not found: $id")
+            return
+        }
+        commitModel(next)
+        // Dart `_applyThemeWithUndo` 弹「已切换到 X + 撤销」；撤销在这里用同一个对话框承载。
+        notice = SettingsNotice(
+            title = SettingsStrings.themeApply.text,
+            body = SettingsStrings.themeChanged.filled("themeName", savedThemeName(id)),
+            undoLabel = SettingsStrings.themeUndo.text,
+            onUndo = { commitModel(previous) },
+        )
+    }
+
+    /**
+     * 已存主题的四种动作（Dart `showSavedThemeActionSheet` + 四个 handler，`:612-700`）。
+     *
+     * **应用**分两条路（2026-11-10 收口「应用已存主题不走先保存确认」这一笔账）：
+     * - 当前主题**没有**未保存改动 ⇒ 直接生效（不弹任何确认，行为与改造前一致）；
+     * - 当前主题是**草稿态**（`hasThemeModifications`）⇒ 先弹 [ThemeDialogMode.APPLY_CONFIRM]
+     *   让用户选「取消 / 保存当前主题 / 放弃并应用」，避免一次点击静默丢掉草稿。
+     *
+     * 门控放在这里而不是弹层里：预览弹层与动作表两条入口都汇到本函数，只有一处判据。
+     */
     fun runSavedThemeAction(action: ThemeRowAction, id: String) {
         val name = savedThemeName(id)
         when (action) {
             ThemeRowAction.APPLY -> {
-                val previous = model
-                val next = SettingsActionDispatcher.applySavedTheme(model, id)
-                if (next == null) {
-                    Log.w(LOG_TAG, "saved theme not found: $id")
-                    return
+                if (SettingsActionDispatcher.hasThemeModifications(model)) {
+                    // 草稿态：先确认（此时**不动** model，也不换检查点）。
+                    themeDialog = ThemeDialogState(
+                        mode = ThemeDialogMode.APPLY_CONFIRM,
+                        themeId = id,
+                        themeName = name,
+                    )
+                } else {
+                    applySavedThemeNow(id)
                 }
-                commitModel(next)
-                // Dart `_applyThemeWithUndo` 弹「已切换到 X + 撤销」；撤销在这里用同一个对话框承载。
-                notice = SettingsNotice(
-                    title = SettingsStrings.themeApply.text,
-                    body = SettingsStrings.themeChanged.filled("themeName", name),
-                    undoLabel = SettingsStrings.themeUndo.text,
-                    onUndo = { commitModel(previous) },
-                )
             }
 
             ThemeRowAction.RENAME ->
@@ -836,6 +874,10 @@ fun SettingsHost(
                 }
             },
             onAction = { action, id -> themeDialog = null; runSavedThemeAction(action, id) },
+            // 草稿态确认后的「放弃并应用」：直接落盘，不再走一次草稿门控（否则会循环弹框）。
+            onApplyConfirmed = { id -> themeDialog = null; applySavedThemeNow(id) },
+            // 「保存当前主题」：换成保存框，保存完**不**应用（发布版 `onSaveRequested` 同义）。
+            onSaveBeforeApply = { themeDialog = ThemeDialogState(ThemeDialogMode.SAVE_CURRENT) },
         )
 
         SettingsNoticeDialog(
@@ -940,8 +982,11 @@ private fun AutoRefreshDailyTimeSheet(
     onConfirm: (Int) -> Unit,
 ) {
     val initial = CourseAutoRefreshModel.clampDailyMinute(initialMinute)
-    var hour by remember(initial) { mutableIntStateOf(initial / 60) }
-    var minute by remember(initial) { mutableIntStateOf(initial % 60) }
+    // ⚠️ 键里必须带 `show`：发布版每次打开都新建滚轮（`_MiuixTimePickerSheetBody` 的
+    // `initState` 取 `initialTime`）。只按 `initial` 记时，用户把 08:00 拨到 09:30 后点取消、
+    // 再打开，`initial` 仍是 08:00（同一个键）⇒ 草稿值 09:30 会残留，显示的和存的对不上。
+    var hour by remember(show, initial) { mutableIntStateOf(initial / 60) }
+    var minute by remember(show, initial) { mutableIntStateOf(initial % 60) }
 
     QingyuSheet(
         show = show,
@@ -1099,18 +1144,24 @@ internal fun SettingsConfirmResetDialog(
                     style = MiuixTheme.textStyles.body2,
                     color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
                 )
+                // 发布版确认框的两颗动作是**等宽并排 + 12dp**（`hyperos_dialog.dart:127-177`
+                // 的 `_HyperosDialogActions`：2 个动作走 Row + Expanded），不是行尾两颗小按钮。
+                // 恢复默认属破坏性确认，弱化的小按钮与「劝退」语义正好相反（2026-11-10 逐项核对 D25）。
                 Row(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.End,
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
                 ) {
-                    Button(onClick = onDismiss) {
+                    Button(
+                        modifier = Modifier.weight(1f),
+                        onClick = onDismiss,
+                    ) {
                         Text(
                             text = SettingsStringsExt4.cancelAction.text,
                             style = MiuixTheme.textStyles.button,
                         )
                     }
-                    Spacer(modifier = Modifier.width(8.dp))
                     Button(
+                        modifier = Modifier.weight(1f),
                         onClick = onConfirm,
                         // 恢复默认会覆盖用户设置，属破坏性操作：红底 + onError 字，
                         // 不再用「灰底 + 红字」这第三种形态。
@@ -1153,9 +1204,17 @@ private fun SettingsColorPickerDialog(
 ) {
     var shownHex by remember { mutableStateOf(initialHex ?: "") }
     if (initialHex != null) shownHex = initialHex
-    // 拖动中的本地色：每次重新打开都按初值重置（`remember` 的初值只在首次组合算一次）。
+    // 拖动中的本地色：按当前行的真值起手。
     var pickerColor by remember(shownHex) {
         mutableStateOf(Color(SettingsRowRenderTable.tryParseArgb(shownHex) ?: 0xFF000000.toInt()))
+    }
+    // 关闭这一拍把草稿清回真值：`remember(shownHex)` 只在**色值**变化时重建，
+    // 同一行「拨个颜色 → 取消 → 再打开」拿到的是同一把键 ⇒ 上次被取消的颜色会残留
+    //（发布版每次调用都是新局部变量）。重开时已经干净，不会闪一帧旧色。
+    LaunchedEffect(initialHex) {
+        if (initialHex == null) {
+            pickerColor = Color(SettingsRowRenderTable.tryParseArgb(shownHex) ?: 0xFF000000.toInt())
+        }
     }
 
     OverlayDialog(
@@ -1169,23 +1228,29 @@ private fun SettingsColorPickerDialog(
                 color = pickerColor,
                 onColorChanged = { pickerColor = it },
             )
+            // 与发布版同口径（`lib/widgets/timetable_text_color_settings.dart` 的 `_showColorPicker`）：
+            // 取消 + 确认两颗等宽并排（`hyperos_dialog.dart` 对 2 个动作走 Row + Expanded + 12dp），
+            // 确认是 `confirmAction`（不是外观编辑器的「完成」）。
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.End,
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
             ) {
-                Button(onClick = onDismiss) {
+                Button(
+                    modifier = Modifier.weight(1f),
+                    onClick = onDismiss,
+                ) {
                     Text(
                         text = SettingsStringsExt4.cancelAction.text,
                         style = MiuixTheme.textStyles.button,
                     )
                 }
-                Spacer(modifier = Modifier.width(8.dp))
                 Button(
+                    modifier = Modifier.weight(1f),
                     onClick = { onConfirm(pickerColor.toHexRgb()) },
                     colors = ButtonDefaults.buttonColorsPrimary(),
                 ) {
                     Text(
-                        text = SettingsStringsExt1.appearanceEditorDoneAction.text,
+                        text = SettingsStrings.confirmAction.text,
                         style = MiuixTheme.textStyles.button,
                     )
                 }
@@ -1676,6 +1741,19 @@ internal enum class ThemeDialogMode {
      * 这套主题长什么样。行尾「更多操作」仍走 [ACTIONS]（见 `SAVED_THEME_ACTIONS_TARGET`）。
      */
     PREVIEW,
+
+    /**
+     * 草稿态下「应用已存主题」的确认（2026-11-10 补回）。
+     *
+     * 发布版本就有这一步：`theme_manage_sheets.dart:60-69` 的 `showThemeUnsavedChangesDialog`
+     * 用 `themeUnsavedChangesTitle` / `themeUnsavedChangesMessage` / `themeSaveCurrent` /
+     * `themeDiscardAndApply` 拼一个**三动作弹框**（取消 / 保存当前主题 / 放弃并应用），
+     * 由 `settings_appearance.dart:636-645` 处调 `confirmApplyThemeWithUnsavedCheck`
+     * （`theme_manage_sheets.dart:327-347`）在草稿态拦一下。
+     * **不是发布版设计漏接，是 Kotlin 迁移时丢了这一步**；本弹层按发布版语义恢复：
+     * 干净态直通，草稿态三动作——「保存当前主题」打开保存框且不应用，「放弃并应用」才落盘。
+     */
+    APPLY_CONFIRM,
 }
 
 /** 已存主题预览弹层要用的数据（[SettingsHost.savedThemePreview] 的返回值）。 */
@@ -1732,6 +1810,9 @@ internal fun SettingsThemeDialogHost(
     onRename: (id: String, name: String) -> Unit,
     onDelete: (id: String) -> Unit,
     onAction: (ThemeRowAction, id: String) -> Unit,
+    onApplyConfirmed: (id: String) -> Unit,
+    /** 草稿态确认框的第二动作「保存当前主题」：打开保存框、**不**应用（发布版语义）。 */
+    onSaveBeforeApply: () -> Unit,
 ) {
     // 弹窗常驻组合（2026-11-02 弹窗审核 P2）：`show` 由 state 是否为空驱动，
     // 调用方关闭只把 state 置 null，官方退场动画才播得出来；退场期间 state 已是
@@ -1742,7 +1823,11 @@ internal fun SettingsThemeDialogHost(
     when (current?.mode) {
         ThemeDialogMode.SAVE_CURRENT, ThemeDialogMode.RENAME -> {
             val initial = if (current.mode == ThemeDialogMode.RENAME) current.themeName else ""
-            var text by remember(current) { mutableStateOf(initial) }
+            // 每次**打开**都按该形态的初值重铺。不能只写 `remember(current)`：同名重命名时
+            // 新旧 state 相等（data class），键不变 ⇒ 上一次取消掉的输入会原样留在框里。
+            var text by remember { mutableStateOf(initial) }
+            val opened = state != null
+            LaunchedEffect(opened) { if (opened) text = initial }
             OverlayDialog(
                 insideMargin = DpSize(16.dp, 16.dp),
                 show = state != null,
@@ -1786,7 +1871,9 @@ internal fun SettingsThemeDialogHost(
                             }
                         },
                     ) {
-                        Text(text = SettingsStrings.confirmAction.text)
+                        // 发布版这颗是「保存」（`app_dialogs.dart:107` 的 `showAppTextInputDialog`
+                        // 默认 `confirmLabel = saveAction`），不是通用「确定」。
+                        Text(text = SettingsStringsExt3.saveAction.text)
                     }
                 }
             }
@@ -1819,7 +1906,48 @@ internal fun SettingsThemeDialogHost(
                         contentColor = MiuixTheme.colorScheme.onError,
                     ),
                 ) {
-                    Text(text = SettingsStrings.themeDelete.text)
+                    // 发布版这颗是 `deleteAction`（「删除」）；标题已经是「确认删除」，
+                    // 按钮再写「删除主题」等于一句话说两遍（D28）。
+                    Text(text = SettingsStringsExt3.deleteAction.text)
+                }
+            }
+        }
+
+        // 草稿态下应用另一份主题：先确认「会不会丢掉当前未保存的修改」（2026-11-10）。
+        // 干净态根本不会走到这里（宿主在 runSavedThemeAction 里直接落盘）。
+        ThemeDialogMode.APPLY_CONFIRM -> OverlayDialog(
+            insideMargin = DpSize(16.dp, 16.dp),
+            show = state != null,
+            title = SettingsStrings.themeUnsavedChangesTitle.text,
+            summary = SettingsStrings.themeUnsavedChangesMessage.text,
+            onDismissRequest = onDismiss,
+        ) {
+            // 发布版是三动作**竖排**（`app_dialogs.dart` 的 `showAppTripleActionDialog` →
+            // `hyperos_dialog.dart` 的 actions 分支：>2 个走 Column，12dp 间距，按钮整宽）：
+            // 取消（secondary）→ 保存当前主题（secondary）→ 放弃并应用（primary）。
+            // 语义照 `confirmApplyThemeWithUnsavedCheck`（`theme_manage_sheets.dart:327-347`）：
+            // 保存那条**不应用**（打开保存框后结束），只有「放弃并应用」才落盘。
+            Column(
+                modifier = Modifier.fillMaxWidth(),
+                verticalArrangement = Arrangement.spacedBy(12.dp),
+            ) {
+                TextButton(
+                    modifier = Modifier.fillMaxWidth(),
+                    text = SettingsStringsExt4.cancelAction.text,
+                    onClick = onDismiss,
+                )
+                TextButton(
+                    modifier = Modifier.fillMaxWidth(),
+                    text = SettingsStrings.themeSaveCurrent.text,
+                    onClick = onSaveBeforeApply,
+                )
+                Button(
+                    modifier = Modifier.fillMaxWidth(),
+                    onClick = { current.themeId?.let(onApplyConfirmed) },
+                    // 发布版这个动作是 primary（`app_dialogs.dart:76` `isPrimary: true`），不是危险色。
+                    colors = ButtonDefaults.buttonColorsPrimary(),
+                ) {
+                    Text(text = SettingsStrings.themeDiscardAndApply.text)
                 }
             }
         }
@@ -1967,7 +2095,8 @@ private fun ThemePreviewSwatch(hex: String) {
 
 /**
  * 预览弹层的信息行（Dart `_ThemePreviewInfoRow`，`theme_manage_sheets.dart:260-280`）：
- * 左标签用次要色、右侧取值；[dotHex] 非空时在取值前加一颗 16dp 圆点（主题色行）。
+ * 左标签用次要色，**取值紧跟其后**（8dp），不是被推到行尾（那是设置行的读法）；
+ * [dotHex] 非空时在取值前加一颗 16dp 圆点 + 6dp（主题色行）。取值单行省略。
  */
 @Composable
 private fun ThemePreviewInfoRow(label: String, value: String, dotHex: String? = null) {
@@ -1979,8 +2108,8 @@ private fun ThemePreviewInfoRow(label: String, value: String, dotHex: String? = 
             text = label,
             style = MiuixTheme.textStyles.body2,
             color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-            modifier = Modifier.weight(1f),
         )
+        Spacer(modifier = Modifier.width(8.dp))
         if (dotHex != null) {
             val fallback = MiuixTheme.colorScheme.primary
             Box(
@@ -1990,12 +2119,15 @@ private fun ThemePreviewInfoRow(label: String, value: String, dotHex: String? = 
                     .background(Color(SettingsRowRenderTable.parseArgbOrFallback(dotHex, fallback.toArgb())))
                     .border(0.5.dp, MiuixTheme.colorScheme.outline, CircleShape),
             )
-            Spacer(modifier = Modifier.width(8.dp))
+            Spacer(modifier = Modifier.width(6.dp))
         }
         Text(
             text = value,
-            style = MiuixTheme.textStyles.body2,
+            style = MiuixTheme.textStyles.body2.shiftWeight(QingyuWeightDelta.SEMIBOLD),
             color = MiuixTheme.colorScheme.onBackground,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+            modifier = Modifier.weight(1f),
         )
     }
 }

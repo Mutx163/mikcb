@@ -150,6 +150,15 @@ object SettingsStrings {
     val themeChanged = ArbText("themeChanged", "已切换到 {themeName}")
     val themeUndo = ArbText("themeUndo", "撤销")
 
+    // 草稿态「应用已存主题」的确认（2026-11-10 补口）。
+    // 三个键在六份 ARB 里发布版就有（Dart `theme_manage_sheets.dart:60-69` 的
+    // `showThemeUnsavedChangesDialog` 就是它们的消费者）——是 **Kotlin 迁移时漏接了这一步**，
+    // 不是设计里没有。这里把 Kotlin 句柄补齐并按发布版三动作弹层接线。
+    val themeUnsavedChangesTitle = ArbText("themeUnsavedChangesTitle", "未保存的修改")
+    val themeUnsavedChangesMessage =
+        ArbText("themeUnsavedChangesMessage", "当前主题有未保存的修改，是否保存？")
+    val themeDiscardAndApply = ArbText("themeDiscardAndApply", "放弃并应用")
+
     // 周视图缩略预览（`SettingsWeekPreview.kt`）的星期短名与空态。
     // 这三个字一组的短名 `app_zh.arb:1769-1775` 早就有了，只是 Kotlin 侧一直没有句柄
     // —— 渲染层就此自己写死了「一」..「日」（一轮审核 D3 缺陷），这里补齐。
