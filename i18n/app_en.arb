@@ -3641,8 +3641,8 @@
   },
   "importSemesterStartDateTitle": "Semester start date",
   "importSemesterStartDateSubtitle": "Treat the week containing this date as calendar week 1",
-  "importFirstCourseWeekMappingLabel": "Maps to school week",
-  "importFirstCourseWeekMappingSubtitle": "If week 1 is empty, use week 2",
+  "importFirstCourseWeekMappingLabel": "Timetable week 1 maps to calendar week",
+  "importFirstCourseWeekMappingSubtitle": "If the first school week has no classes, choose week 2; if the first two weeks are empty, choose week 3.",
   "importSemesterMappingNoShiftHint": "After import, timetable week 1 will be treated as calendar week 1.",
   "importSemesterMappingShiftHint": "All course weeks will shift forward by {shiftedWeeks} so timetable week 1 lands on calendar week {calendarWeek}",
   "@importSemesterMappingShiftHint": {

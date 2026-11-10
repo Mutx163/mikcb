@@ -3384,8 +3384,8 @@
   },
   "importSemesterStartDateTitle": "개학일",
   "importSemesterStartDateSubtitle": "Treat the week containing this date as calendar week 1",
-  "importFirstCourseWeekMappingLabel": "1주차 = 학사력 몇 주",
-  "importFirstCourseWeekMappingSubtitle": "1주차 수업 없으면 2주차",
+  "importFirstCourseWeekMappingLabel": "시간표 1주차 = 학사력 몇 주",
+  "importFirstCourseWeekMappingSubtitle": "학교 1주차에 수업이 없으면 2주차, 첫 2주가 비어 있으면 3주차",
   "importSemesterMappingNoShiftHint": "After import, timetable week 1 will be treated as calendar week 1.",
   "importSemesterMappingShiftHint": "All course weeks will shift forward by {shiftedWeeks} so timetable week 1 lands on calendar week {calendarWeek}",
   "@importSemesterMappingShiftHint": {

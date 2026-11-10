@@ -3703,8 +3703,8 @@
   },
   "importSemesterStartDateTitle": "开学日期",
   "importSemesterStartDateSubtitle": "按这一天所在周作为校历第 1 周",
-  "importFirstCourseWeekMappingLabel": "第 1 周对应校历第几周",
-  "importFirstCourseWeekMappingSubtitle": "如果第一周没课，就选第 2 周",
+  "importFirstCourseWeekMappingLabel": "课表第 1 周对应校历第几周",
+  "importFirstCourseWeekMappingSubtitle": "如果学校第一周没课，就选第 2 周；前两周都没课就选第 3 周",
   "importSemesterMappingNoShiftHint": "导入后会直接把课表第 1 周当作校历第 1 周",
   "importSemesterMappingShiftHint": "导入后会把所有课程周次整体顺延 {shiftedWeeks} 周，让课表第 1 周落在校历第 {calendarWeek} 周",
   "@importSemesterMappingShiftHint": {

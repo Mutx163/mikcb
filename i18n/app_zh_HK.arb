@@ -3384,8 +3384,8 @@
   },
   "importSemesterStartDateTitle": "開學日期",
   "importSemesterStartDateSubtitle": "按這一天所在週作為校曆第 1 週",
-  "importFirstCourseWeekMappingLabel": "第 1 週對應校曆第幾週",
-  "importFirstCourseWeekMappingSubtitle": "如果第一週沒課，就選第 2 週",
+  "importFirstCourseWeekMappingLabel": "課表第 1 週對應校曆第幾週",
+  "importFirstCourseWeekMappingSubtitle": "如果學校第一週沒課，就選第 2 週；前兩週都沒課就選第 3 週",
   "importSemesterMappingNoShiftHint": "匯入後會直接把課表第 1 週當作校曆第 1 週",
   "importSemesterMappingShiftHint": "匯入後會把所有課程週次整體順延 {shiftedWeeks} 週，讓課表第 1 週落在校曆第 {calendarWeek} 週",
   "@importSemesterMappingShiftHint": {

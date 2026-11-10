@@ -101,8 +101,8 @@ object ImportStrings {
     val importConfirmSemesterMappingSubtitleIcs = ImportArbText("importConfirmSemesterMappingSubtitleIcs", "周次已按文件里最早的上课日期预填")
     val importSemesterStartDateTitle = ImportArbText("importSemesterStartDateTitle", "开学日期")
     val importSemesterStartDateSubtitle = ImportArbText("importSemesterStartDateSubtitle", "按这一天所在周作为校历第 1 周")
-    val importFirstCourseWeekMappingLabel = ImportArbText("importFirstCourseWeekMappingLabel", "第 1 周对应校历第几周")
-    val importFirstCourseWeekMappingSubtitle = ImportArbText("importFirstCourseWeekMappingSubtitle", "如果第一周没课，就选第 2 周")
+    val importFirstCourseWeekMappingLabel = ImportArbText("importFirstCourseWeekMappingLabel", "课表第 1 周对应校历第几周")
+    val importFirstCourseWeekMappingSubtitle = ImportArbText("importFirstCourseWeekMappingSubtitle", "如果学校第一周没课，就选第 2 周；前两周都没课就选第 3 周")
     val importSemesterMappingNoShiftHint = ImportArbText("importSemesterMappingNoShiftHint", "导入后会直接把课表第 1 周当作校历第 1 周")
     val importSemesterMappingShiftHint = ImportArbText(
         "importSemesterMappingShiftHint",

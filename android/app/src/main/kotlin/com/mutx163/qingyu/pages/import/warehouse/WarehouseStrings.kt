@@ -50,6 +50,7 @@ object WarehouseStrings {
     val clearAction = WarehouseArbText("clearAction", "清空")
     val clearCustomLoginAddressAction = WarehouseArbText("clearCustomLoginAddressAction", "清除自定义地址")
     val clearRememberedTooltip = WarehouseArbText("clearRememberedTooltip", "清除已记住账号")
+    val clearedRememberedLoginSuccess = WarehouseArbText("clearedRememberedLoginSuccess", "已清除记住的登录信息")
     val clearSearchTooltip = WarehouseArbText("clearSearchTooltip", "清空")
     val clipboardNoText = WarehouseArbText("clipboardNoText", "剪贴板里没有可用文本")
     val confirmImportAction = WarehouseArbText("confirmImportAction", "确认导入")
@@ -137,8 +138,8 @@ object WarehouseStrings {
     )
     val importSemesterStartDateSubtitle = WarehouseArbText("importSemesterStartDateSubtitle", "按这一天所在周作为校历第 1 周")
     val importSemesterStartDateTitle = WarehouseArbText("importSemesterStartDateTitle", "开学日期")
-    val importFirstCourseWeekMappingLabel = WarehouseArbText("importFirstCourseWeekMappingLabel", "第 1 周对应校历第几周")
-    val importFirstCourseWeekMappingSubtitle = WarehouseArbText("importFirstCourseWeekMappingSubtitle", "如果第一周没课，就选第 2 周")
+    val importFirstCourseWeekMappingLabel = WarehouseArbText("importFirstCourseWeekMappingLabel", "课表第 1 周对应校历第几周")
+    val importFirstCourseWeekMappingSubtitle = WarehouseArbText("importFirstCourseWeekMappingSubtitle", "如果学校第一周没课，就选第 2 周；前两周都没课就选第 3 周")
     val importFailedStatus = WarehouseArbText("importFailedStatus", "导入失败")
     val importInterruptedStatus = WarehouseArbText("importInterruptedStatus", "导入已中断")
     val importFromFileAction = WarehouseArbText("importFromFileAction", "从文件导入")
@@ -341,6 +342,7 @@ object WarehouseStrings {
         clearAction,
         clearCustomLoginAddressAction,
         clearRememberedTooltip,
+        clearedRememberedLoginSuccess,
         clearSearchTooltip,
         clipboardNoText,
         confirmImportAction,

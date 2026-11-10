@@ -3336,8 +3336,8 @@
   },
   "importSemesterStartDateTitle": "学期開始日",
   "importSemesterStartDateSubtitle": "この日を含む週を校歴第1週として扱います",
-  "importFirstCourseWeekMappingLabel": "第1週＝校暦の何週目",
-  "importFirstCourseWeekMappingSubtitle": "第1週に授業がなければ第2週",
+  "importFirstCourseWeekMappingLabel": "時間割の第1週＝校暦の何週目",
+  "importFirstCourseWeekMappingSubtitle": "学校の第1週に授業がなければ第2週、最初の2週が空なら第3週",
   "importSemesterMappingNoShiftHint": "After import, timetable week 1 will be treated as calendar week 1.",
   "importSemesterMappingShiftHint": "All course weeks will shift forward by {shiftedWeeks} so timetable week 1 lands on calendar week {calendarWeek}",
   "@importSemesterMappingShiftHint": {
