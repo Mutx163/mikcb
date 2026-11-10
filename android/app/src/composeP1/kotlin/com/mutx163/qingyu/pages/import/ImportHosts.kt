@@ -6,14 +6,19 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import com.mutx163.qingyu.app.TimetableHostLogic
 import com.mutx163.qingyu.app.TimetableRepository
 import com.mutx163.qingyu.app.TimetableSnapshot
@@ -90,19 +95,57 @@ fun ImportEntryHost(
     LaunchedEffect(Unit) {
         prefs = withContext(Dispatchers.IO) { store.snapshot() }
     }
-    // 子页导入成功 → 与 Dart 的 pop(true) 同义：入口页自关。
+    // 子页导入成功 → 与 Dart 的 `Navigator.pop(true)` 同义：**由入口页自己弹自己**。
     //
     // 2026-11-10 第二波：桥从「每个路由条目一份」改成进程级单例（见 ImportShellBridge），
-    // 且信号从布尔改成**代数**。原因有二：
-    // 1. 入口页被一个子页盖住时仍留在组合里（miuix-nav opaqueDepth=1 保留下层一层），
-    //    `LaunchedEffect(Unit)` 不会重跑 —— 布尔标记永远等不到消费者；
-    // 2. 外部「打开方式」直接进 ICS/表格导入时没有入口页，布尔标记会留到下一次进入
-    //    导入方式页、把它秒关。代数只认「挂载之后增长的那几次」，天然没有陈旧信号。
-    val importGenerationAtMount = remember { ImportShellBridge.importGeneration }
-    LaunchedEffect(ImportShellBridge.importGeneration) {
-        if (ImportShellBridge.importGeneration > importGenerationAtMount) {
-            onBack()
+    // 且信号从布尔改成**代数**（`importGeneration`）：
+    // - 入口页被一个子页盖住时仍留在组合里（miuix-nav opaqueDepth=1 保留下层一层），
+    //   `LaunchedEffect(Unit)` 不会重跑 —— 布尔标记永远等不到消费者；
+    // - 进程级单例下布尔标记会跨次残留，代数只认「挂载之后增长的那几次」。
+    //
+    // 2026-11-10 J11（评审一方案二 / 评审六逐环复核）：外部「打开方式」分享 `.ics` 进来时，
+    // 壳（noHistory 跳板 + singleTop）会 `pushPage` 把导入页**压在入口页之上**；导入成功后
+    // 导入页先 `markImported()` 再在同协程 `onBack()` 弹自己，入口页若也跟着 `onBack()`
+    // 就是**多弹一层**（用户被送回首页）。发布版 `pop(true)` 的返回值无人消费，停在入口页。
+    // 判定走纯函数三态（[ImportEntrySignalLogic.decide]，JVM 单测直接钉三态）：
+    //   · 自己的子页回来了且本页 RESUMED → **Consume**（推进基线 + onBack）；
+    //   · 自己的子页还盖在上面（`awaitingMyChild && !pageResumed`）→ **Wait**：
+    //     **不推进基线**，回前台再判 —— 正常流程的自关全靠这条；
+    //   · 其余（外部「打开方式」推来的子页，`awaitingMyChild=false`）→ **Ignore**：
+    //     推进基线、不消费 —— 外部那页的结果属于它自己的会话，免得回到前台拿旧增长补触发。
+    // 先例：`AppearanceEditorHost.kt:762` 同样用 `LocalLifecycleOwner` 取导航条目级生命周期。
+    val entryLifecycle = LocalLifecycleOwner.current
+    var pageResumed by remember(entryLifecycle) {
+        mutableStateOf(entryLifecycle.lifecycle.currentState.isAtLeast(Lifecycle.State.RESUMED))
+    }
+    DisposableEffect(entryLifecycle) {
+        val observer = LifecycleEventObserver { _, _ ->
+            pageResumed = entryLifecycle.lifecycle.currentState.isAtLeast(Lifecycle.State.RESUMED)
         }
+        entryLifecycle.lifecycle.addObserver(observer)
+        onDispose { entryLifecycle.lifecycle.removeObserver(observer) }
+    }
+    var importGenerationAtMount by remember {
+        mutableIntStateOf(ImportShellBridge.importGeneration)
+    }
+    // J11：本页是否自己 push 过导入子页。外部「打开方式」推来的子页不经过
+    // `onOpenDestination`，所以这里天然为 false —— 三态判据靠它区分「谁推的子页」。
+    var awaitingMyChild by remember { mutableStateOf(false) }
+    LaunchedEffect(ImportShellBridge.importGeneration, pageResumed) {
+        val decision = ImportEntrySignalLogic.decide(
+            awaitingMyChild = awaitingMyChild,
+            pageResumed = pageResumed,
+            importGeneration = ImportShellBridge.importGeneration,
+            importGenerationAtMount = importGenerationAtMount,
+        )
+        // 基线推进口径也收在纯函数里：Wait 不推进（回前台再判），其余推进。
+        importGenerationAtMount = ImportEntrySignalLogic.baselineAfter(
+            decision = decision,
+            importGeneration = ImportShellBridge.importGeneration,
+            importGenerationAtMount = importGenerationAtMount,
+        )
+        if (decision != ImportEntrySignalLogic.Decision.Wait) awaitingMyChild = false
+        if (decision == ImportEntrySignalLogic.Decision.Consume) onBack()
     }
     // 外部「打开方式 / 分享」带进来但 provider 自报超限的文件（R1 补口 2026-11-02）：
     // 跳板读完声明尺寸就 post 过来，这里弹与 SAF 路径同一句的「文件过大」——超限
@@ -136,6 +179,8 @@ fun ImportEntryHost(
             },
             onPickColorGroup = { if (prefs?.enabled == true) showGroupPicker = true },
             onOpenDestination = { destination ->
+                // J11：从这里推出去的子页才是「本页的会话」；外部「打开方式」不经过这行。
+                awaitingMyChild = true
                 when (destination) {
                     ImportEntryDestination.ICS -> onOpenPage("g1.icsImport")
                     ImportEntryDestination.SPREADSHEET -> onOpenPage("g1.spreadsheetImport")
@@ -170,9 +215,10 @@ fun ImportEntryHost(
  * ## 为什么是「代数」而不是布尔
  *
  * 发布版是 `Navigator.pop(true)` 的**返回值**，天然只对当前入口页生效、不会跨次残留。
- * 进程级单例没有返回值，于是入口页挂载时记下 [importGeneration]，只认它之后的增长：
- * 正常流程自关；外部「打开方式」直接进子页导入成功时没有入口页在等，代数增长不会
- * 传染给下一次进入的入口页（详见 `ImportCompletionCounter`）。
+ * 进程级单例没有返回值，于是改用代数 + **三态判定**（[ImportEntrySignalLogic.decide]）：
+ * 入口页按三态 decide 判定 —— **自己推的子页**（`awaitingMyChild`）且 RESUMED 才 Consume（自关）；
+ * **外部推来的子页** `awaitingMyChild=false` → Ignore，推进基线、不消费，代数增长不会
+ * 传染给下一次进入的入口页（详见 `ImportCompletionCounter` 与 [ImportEntrySignalLogic]）。
  */
 object ImportShellBridge {
 
@@ -198,7 +244,6 @@ object ImportShellBridge {
 @Composable
 fun IcsImportHost(
     repository: TimetableRepository,
-    bridge: ImportShellBridge,
     onBack: () -> Unit,
 ) {
     val context = LocalContext.current
@@ -250,7 +295,7 @@ fun IcsImportHost(
             isImporting = false
             showToast(result.message)
             if (result is ApplyResult.Done && result.importedCount > 0) {
-                bridge.markImported()
+                ImportShellBridge.markImported()
                 onBack()
             }
         }
@@ -373,7 +418,6 @@ fun IcsImportHost(
 @Composable
 fun SpreadsheetImportHost(
     repository: TimetableRepository,
-    bridge: ImportShellBridge,
     onBack: () -> Unit,
 ) {
     val context = LocalContext.current
@@ -447,7 +491,7 @@ fun SpreadsheetImportHost(
             isImporting = false
             showToast(result.message)
             if (result is ApplyResult.Done && result.importedCount > 0) {
-                bridge.markImported()
+                ImportShellBridge.markImported()
                 onBack()
             }
         }

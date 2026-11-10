@@ -23,11 +23,16 @@ import java.io.IOException
  * [AndroidShareAdapter]（ICS 分享），差异只有两点：文件名/正文由调用方给（`.mikcb` 包体是
  * 现成的 JSON 文本），失败分类多一项 `PROVIDER_UNAVAILABLE`。
  *
- * ## 为什么 manifest 里还没有 provider 也能编译、也能跑
+ * ## provider 已注册（2026-10-29），`PROVIDER_UNAVAILABLE` 只是兜底
  *
- * provider 的 `<provider>` 声明属 Lead（多会话共用 manifest，本泳道不许碰）。**没注册时**
- * [share] 会稳定返回 [TransferShareContract.Failure.PROVIDER_UNAVAILABLE]——不崩、不静默无反应、
- * 也不会误报成「写盘失败」。注册要粘的片段见本批交付说明。
+ * `AndroidManifest.xml:145-153` 早就有 `<provider androidx.core.content.FileProvider
+ * authorities="${applicationId}.fileprovider">`，白名单 `res/xml/file_paths.xml:40` 也覆盖了
+ * `transfer-share/`——也就是说**正常变体上这条分享路是通的**（2026-11-10 复核时翻正：本类
+ * 早先的注释写着「manifest 里还没有 provider」，那是 provider 注册之前的状态，已过时）。
+ *
+ * 保留 [TransferShareContract.Failure.PROVIDER_UNAVAILABLE] 是为了「改名/换变体/白名单漏项」
+ * 这类**运行期**事故：那时 [share] 会稳定返回它——不崩、不静默无反应、也不会误报成「写盘失败」。
+ * `file_paths.xml` 的 name/path 与 `TransferShareContract` 的常量必须逐字一致，改一边就炸在这条。
  *
  * ## 真机未验（L4）
  *
@@ -69,8 +74,8 @@ class AndroidTransferShareAdapter(
      * - 文件名不安全（空 / 带路径分隔符 / 带 `..`）→ [TransferShareContract.Failure.WRITE_FAILED]
      *   （宁可明确失败，也不要让 `FileProvider` 拒掉后误报成 provider 问题）；
      * - 写盘 `IOException` / `SecurityException` → `WRITE_FAILED`；
-     * - `FileProvider.getUriForFile` 抛 `IllegalArgumentException`（provider 未注册 / 路径没声明）
-     *   → `PROVIDER_UNAVAILABLE`；
+     * - `FileProvider.getUriForFile` 抛 `IllegalArgumentException`（`file_paths.xml` 没覆盖
+     *   `transfer-share/`，或运行期 authority 与 manifest 的对不上）→ `PROVIDER_UNAVAILABLE`；
      * - 选择器解析不到（`resolveActivity == null`）→ `NO_TARGET`；
      * - `startActivity` 抛 `ActivityNotFoundException` → `NO_TARGET`，抛别的运行时异常
      *   → `LAUNCH_FAILED`。
@@ -110,7 +115,8 @@ class AndroidTransferShareAdapter(
             return Outcome.Failed(TransferShareContract.Failure.PROVIDER_UNAVAILABLE)
         }
 
-        // 4) file:// → content://；provider 未注册或路径未声明都会抛 IllegalArgumentException。
+        // 4) file:// → content://；路径没声明或 authority 对不上都会抛 IllegalArgumentException
+        //    （provider 本身 2026-10-29 已注册，正常变体上这一步不会失败，见类注释）。
         val contentUri = try {
             FileProvider.getUriForFile(context, authority, target)
         } catch (e: IllegalArgumentException) {

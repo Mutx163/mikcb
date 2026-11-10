@@ -52,7 +52,7 @@ class LanEditModelTest {
             port = 9000,
             pin = "12 34&56",
         )
-        assertEquals("http://10.0.0.7:9000/?pin=12+34%2656", model.addressText)
+        assertEquals("http://10.0.0.7:9000/?pin=12%2034%2656", model.addressText)
     }
 
     @Test

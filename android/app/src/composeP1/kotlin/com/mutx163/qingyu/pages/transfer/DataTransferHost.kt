@@ -78,7 +78,6 @@ import java.util.UUID
 @Composable
 fun DataTransferHost(
     repository: TimetableRepository,
-    bridge: TransferShellBridge,
     onBack: () -> Unit,
     onOpenPage: (String) -> Unit,
     onRequestQrSend: () -> Unit,
@@ -235,7 +234,7 @@ fun DataTransferHost(
                 is QrPayloadResult.Ready -> {
                     // 2026-11-10 第二波：字节与发送范围标题一起写进**进程级**桥的发送槽。
                     // 原先桥是每路由一份，发送页拿到的是另一份空槽 ⇒ session 恒 null、出不了码。
-                    bridge.publishOutbound(result.bytes, result.title)
+                    TransferShellBridge.publishOutbound(result.bytes, result.title)
                     onRequestQrSend()
                 }
             }
@@ -276,15 +275,15 @@ fun DataTransferHost(
 
     // 扫码页收齐字节后回填到这里：与文件导入走同一条链路。
     //
-    // 不能把 LaunchedEffect 的 key 设成 `bridge.inboundBytes`：本协程内部要把该字段清空，
+    // 不能把 LaunchedEffect 的 key 设成 `TransferShellBridge.inboundBytes`：本协程内部要把该字段清空，
     // key 一变就会把**正在解码的协程本身**取消（重组在下一次 VSync 生效；大备份的
     // UTF-8 解码一旦超过这一帧，后面的预览就永远弹不出来，页面卡在 isImporting=true）。
     // 用 snapshotFlow 消费：协程只随页面销毁而停；清空只会发一个 null 被 filterNotNull 忽略。
     LaunchedEffect(Unit) {
-        snapshotFlow { bridge.inboundBytes }
+        snapshotFlow { TransferShellBridge.inboundBytes }
             .filterNotNull()
             .collect { bytes ->
-                bridge.inboundBytes = null
+                TransferShellBridge.inboundBytes = null
                 isImporting = true
                 // 严格 UTF-8：畸形字节不落成 U+FFFD 文本，直接走下面的「导入失败」分支。
                 val text = withContext(Dispatchers.IO) {
@@ -1046,6 +1045,17 @@ object TransferShellBridge {
     /** 数据备份页打包完成：字节与发送范围标题一起过页（后一次覆盖前一次）。 */
     fun publishOutbound(payload: ByteArray, title: String?) {
         outbound.publish(payload, title)
+    }
+
+    /**
+     * 清空发送槽（幂等）。**由发送页在页面层调用**（back / stop / 组合销毁）。
+     *
+     * 不要在组装 `session` 时清：`remember(payload)` 要靠它活到页面销毁；也不要在导航层
+     * 顺手清——页面层是唯一知道「这次发送真的结束了」的地方。不清的后果是最后一次发送包
+     * （压缩上限 16 MiB / 原始 64 MiB）跟着进程常驻。
+     */
+    fun clearOutbound() {
+        outbound.clear()
     }
 }
 

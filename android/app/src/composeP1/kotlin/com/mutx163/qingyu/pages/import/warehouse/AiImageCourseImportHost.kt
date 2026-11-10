@@ -76,7 +76,6 @@ private const val LOG_TAG = "AiImageImportHost"
 @Composable
 fun AiImageCourseImportHost(
     repository: TimetableRepository,
-    bridge: ImportShellBridge,
     onBack: () -> Unit,
 ) {
     val context = LocalContext.current
@@ -152,7 +151,7 @@ fun AiImageCourseImportHost(
             toast(outcome.message)
             val applied = outcome.applied
             if (applied is AiImageImportApply.Result.Done && applied.importedCount > 0) {
-                bridge.markImported()
+                ImportShellBridge.markImported()
                 onBack()
             }
         }

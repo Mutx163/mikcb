@@ -93,4 +93,25 @@ class ShellBridgeSignalsTest {
         assertNull(slot.current()?.title)
         assertTrue(byteArrayOf(9).contentEquals(slot.current()?.payload))
     }
+
+    @Test
+    fun `发送页离开时清空槽_幂等且可再次发送`() {
+        val slot = ShellOutboundSlot()
+        slot.publish(byteArrayOf(1, 2, 3), "发送当前课表")
+
+        slot.clear()
+        assertNull(
+            "离开发送页后槽必须清空：进程级 object 不许把最后一次 16MB/64MB 的包留到进程结束。",
+            slot.current(),
+        )
+
+        // 幂等：back 与 onDispose 会各调一次，第二次不能抛。
+        slot.clear()
+        assertNull(slot.current())
+
+        // 清空后下一次发送照常可用（进程内多次打开发送页）。
+        slot.publish(byteArrayOf(4), "发送全部数据")
+        assertTrue(byteArrayOf(4).contentEquals(slot.current()?.payload))
+        assertEquals("发送全部数据", slot.current()?.title)
+    }
 }

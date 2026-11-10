@@ -4,6 +4,7 @@ import android.os.SystemClock
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
@@ -99,6 +100,13 @@ fun QrTransferSendHost(
 ) {
     var elapsedMillis by remember(session) { mutableStateOf(0L) }
 
+    // J10：离开页面就把进程级发送槽清掉（幂等）。不清的话最后一次发送包（压缩上限 16 MiB /
+    // 原始 64 MiB）会一直活到进程结束。**只在页面层清**：back/stop/组合销毁；
+    // 不要在组装 session 时清——`remember(payload)` 要靠它活到页面销毁；导航层也不要清。
+    DisposableEffect(Unit) {
+        onDispose { TransferShellBridge.clearOutbound() }
+    }
+
     LaunchedEffect(session, active) {
         if (!active) return@LaunchedEffect
         val interval = session?.frameIntervalMillis ?: QrTransferLimits.FRAME_INTERVAL_MILLIS
@@ -115,8 +123,16 @@ fun QrTransferSendHost(
 
     QrTransferSendPage(
         model = model,
-        onBack = onBack,
-        onStop = onStop,
+        // back / stop 也清一次（幂等），保证退出动画/导航期间槽立刻空出来；
+        // 系统返回等没走这两个回调的路径由上面的 DisposableEffect 兜底。
+        onBack = {
+            TransferShellBridge.clearOutbound()
+            onBack()
+        },
+        onStop = {
+            TransferShellBridge.clearOutbound()
+            onStop()
+        },
         qrSlot = { QrSendQrSlot(session = session, elapsedMillis = elapsedMillis, modifier = Modifier.fillMaxSize()) },
         title = title ?: model.title,
     )

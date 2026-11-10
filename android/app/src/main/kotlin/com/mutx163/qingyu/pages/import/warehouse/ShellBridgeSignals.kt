@@ -48,4 +48,15 @@ class ShellOutboundSlot {
     }
 
     fun current(): ShellOutboundTransfer? = value
+
+    /**
+     * 清空槽（幂等）。二维码发送页离开时调用。
+     *
+     * 为什么必须有：桥是进程级 object，最后一次发送的包（压缩上限 16 MiB / 原始 64 MiB）
+     * 若不主动清，会一直活到进程结束。**不要**在组装 `session` 时清——发送页的
+     * `remember(payload)` 要靠它活到页面销毁；只在页面层（back/stop/组合销毁）清。
+     */
+    fun clear() {
+        value = null
+    }
 }
