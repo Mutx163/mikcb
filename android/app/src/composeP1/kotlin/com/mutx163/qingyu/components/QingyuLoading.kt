@@ -1,20 +1,32 @@
 package com.mutx163.qingyu.components
 
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import top.yukonga.miuix.kmp.basic.Button
 import top.yukonga.miuix.kmp.basic.CircularProgressIndicator
 import top.yukonga.miuix.kmp.basic.InfiniteProgressIndicator
 import top.yukonga.miuix.kmp.basic.LinearProgressIndicator
 import top.yukonga.miuix.kmp.basic.ProgressIndicatorDefaults
+import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.theme.LocalContentColor
+import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 /**
  * 全软件加载态统一套件（总清单 D1，2026-11-10）。
@@ -320,4 +332,116 @@ fun QingyuLoadingProgressBar(
         progress = progress,
         colors = ProgressIndicatorDefaults.progressIndicatorColors(),
     )
+}
+
+// ── 预览：Android Studio 里免装机看七档形态（2026-11-10，全仓预览补齐批）──────────
+//
+// 一屏档固定 400×900；预览名是 IDE 标签、不上屏（CJK 棘轮按条目登记，不直接改基线）。
+// 私有实现 `QingyuLoadingIndicator` 不单独做预览：它是套件内部拼装件，经七个公开入口已全部可见。
+
+/** 预览用的小槽位：上面是圈，下面一行 ASCII 标注（避免额外中文字面量）。 */
+@Composable
+private fun PreviewLoadingSlot(label: String, content: @Composable () -> Unit) {
+    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+        content()
+        Spacer(modifier = Modifier.height(8.dp))
+        Text(text = label, style = MiuixTheme.textStyles.footnote1)
+    }
+}
+
+@Suppress("unused")
+@Preview(name = "1 整页居中", showBackground = true, widthDp = 400, heightDp = 900)
+@Composable
+private fun PreviewLoadingCenter() {
+    QingyuPageTheme { QingyuLoadingCenter() }
+}
+
+@Suppress("unused")
+@Preview(name = "2 行内三档", showBackground = true, widthDp = 400, heightDp = 900)
+@Composable
+private fun PreviewLoadingInlineSlots() {
+    QingyuPageTheme {
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(24.dp),
+            horizontalArrangement = Arrangement.spacedBy(32.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            PreviewLoadingSlot("Button") { QingyuLoadingInline(slot = QingyuLoadingSlot.Button) }
+            PreviewLoadingSlot("IconSlot") { QingyuLoadingInline(slot = QingyuLoadingSlot.IconSlot) }
+            PreviewLoadingSlot("Badge") { QingyuLoadingInline(slot = QingyuLoadingSlot.Badge) }
+        }
+    }
+}
+
+@Suppress("unused")
+@Preview(name = "3 按钮内", showBackground = true, widthDp = 400, heightDp = 900)
+@Composable
+private fun PreviewLoadingInButton() {
+    QingyuPageTheme {
+        Column(modifier = Modifier.fillMaxWidth().padding(24.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
+            Button(onClick = {}) {
+                QingyuLoadingInButton()
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(text = "Saving")
+            }
+            Button(onClick = {}, enabled = false) {
+                QingyuLoadingInButton()
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(text = "Disabled")
+            }
+        }
+    }
+}
+
+@Suppress("unused")
+@Preview(name = "4 按钮内大号", showBackground = true, widthDp = 400, heightDp = 900)
+@Composable
+private fun PreviewLoadingInButtonLarge() {
+    QingyuPageTheme {
+        Column(modifier = Modifier.fillMaxWidth().padding(24.dp)) {
+            Button(onClick = {}, modifier = Modifier.fillMaxWidth()) {
+                QingyuLoadingInButtonLarge()
+                Spacer(modifier = Modifier.width(10.dp))
+                Text(text = "Downloading")
+            }
+        }
+    }
+}
+
+@Suppress("unused")
+@Preview(name = "5 行首方块位", showBackground = true, widthDp = 400, heightDp = 900)
+@Composable
+private fun PreviewLoadingAccentGlyph() {
+    QingyuPageTheme {
+        Box(modifier = Modifier.fillMaxWidth().padding(24.dp), contentAlignment = Alignment.Center) {
+            QingyuLoadingAccentGlyph(accent = MiuixTheme.colorScheme.primary)
+        }
+    }
+}
+
+@Suppress("unused")
+@Preview(name = "6 局部遮罩", showBackground = true, widthDp = 400, heightDp = 900)
+@Composable
+private fun PreviewLoadingScrim() {
+    QingyuPageTheme {
+        Box(
+            modifier = Modifier.fillMaxWidth().padding(24.dp).height(160.dp)
+                .background(Color.Black.copy(alpha = 0.45f)),
+            contentAlignment = Alignment.Center,
+        ) {
+            QingyuLoadingScrim(color = Color.White)
+        }
+    }
+}
+
+@Suppress("unused")
+@Preview(name = "7 确定进度", showBackground = true, widthDp = 400, heightDp = 900)
+@Composable
+private fun PreviewLoadingProgressBar() {
+    QingyuPageTheme {
+        Column(modifier = Modifier.fillMaxWidth().padding(24.dp), verticalArrangement = Arrangement.spacedBy(24.dp)) {
+            QingyuLoadingProgressBar(progress = 0.42f, modifier = Modifier.fillMaxWidth())
+            QingyuLoadingProgressBar(progress = null, modifier = Modifier.fillMaxWidth())
+        }
+    }
 }
