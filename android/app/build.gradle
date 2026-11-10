@@ -173,6 +173,18 @@ android {
             matchingFallbacks = ['debug', 'release']
         }
         release {
+            // R8 开关必须在这里显式写死（2026-11-09 补）。
+            //
+            // 为什么不是默认值：去 Flutter 化 P4-B（1e8b953b7，2026-11-08）删掉 Flutter
+            // Gradle 插件之前，这两项一直是**插件替我们开**的
+            //（Flutter SDK `FlutterPlugin.kt:215-218`：`releaseBuildType.isMinifyEnabled = true`
+            //  + `isShrinkResources = isBuiltAsApp`）；插件一删，AGP 9.4.1 的 release
+            // 默认值是**关**，于是 release / bench 包静默退化成「5 个 dex、类名全裸」，
+            // `proguard-rules.pro` 里的规则也全成了死配置（2026-11-09 实测产物对比）。
+            // 这里写死，不再依赖任何插件或 AGP 默认值；bench 通过 initWith(release)
+            // 继承这两项，继续保证「性能包与正式版同档」。
+            minifyEnabled true
+            shrinkResources true
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
             // 签名缺失不再于配置期抛错——配置期对所有 gradle 调用生效，会连带
             // CI 的 testProdDebugUnitTest 等纯 JVM 任务一起失败（CI 无
@@ -186,8 +198,9 @@ android {
         //
         // 为什么不是 profile：`profile` 是 `initWith(debug)`，debuggable=true ⇒ ART 跳过
         // AOT、R8 不跑，用它量的帧率/启动时间不代表正式版。bench 直接继承 release 的整档
-        // 优化（R8 混淆 + 非 debuggable，minify 取 AGP 9 对 release 的默认值，不再单独覆盖，
-        // 免得出现「测的档位和正式版不是一个档位」），同时保留最小的可观测性：
+        // 优化（R8 混淆 + 非 debuggable，minify/shrink 由上面 release 块显式开启，
+        // 不再依赖 AGP 默认值——去 Flutter 化时正是这个默认值把 R8 弄丢过一次），
+        // 同时保留最小的可观测性：
         //
         //   · `src/bench/AndroidManifest.xml` 的 `<profileable android:shell="true"/>`：
         //     不开 debuggable 也能被 Perfetto / simpleperf / `dumpsys gfxinfo` 采样；
