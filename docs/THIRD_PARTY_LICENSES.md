@@ -81,4 +81,4 @@
   之后按 `tool/license_notices/README.md` 更新 `FlutterAssetsDecouplingGuardTest` 里的 SHA-256 钉值。
 - 去 Flutter 化（2026-11 完成）后，本文件与 `NOTICES.gz` 都不再与 Flutter / Dart 的依赖有关。
 
-Last updated: 2026-11-10（Compose 重构版 2.1.4.2 发版前）。
+Last updated: 2026-11-10（Compose 重构版 3.0.0 发版前）。
