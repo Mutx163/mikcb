@@ -113,8 +113,8 @@ fun HomeGlassDock(
     // （2026-11-05 修：那两条渲染路径原本各算一次，平板那份漏了日号 / 周数）。
     val today = rememberDockToday()
 
-    // 底栏条目：**由用户存档决定**（Dart `resolveGlassDockActionIds`）。空表回退默认三格；
-    // 用户没自定义过时，开发壳的「页面索引」追加到末尾（与拆壳前的壳层口径一致）。
+    // 底栏条目：**由用户存档决定**（Dart `resolveGlassDockActionIds`）。空表回退默认排列；
+    // 用户没自定义过时，开发壳的「页面索引」追加到末尾（用户拿它当预览导航，要保留）。
     // 走 `resolveDockIds` 合一入口：壳的 Pager 页列表、Rail 都由同一方法解析，三处同源。
     val dockIds = remember(settingsModel, isNavigable) {
         HomeDockNavModel.resolveDockIds(settingsModel.glassDockActions) { id ->

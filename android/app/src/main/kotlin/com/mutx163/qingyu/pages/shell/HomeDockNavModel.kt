@@ -57,7 +57,10 @@ object HomeDockNavModel {
      *
      * 它只在**用户还没自定义过底栏**（`glassDockActions` 为空）时追加到排列末尾：
      * 一旦用户动过底栏，就完全按存档来，不把开发件混进用户的排列。
-     * 拆壳（R2）时连同 `PagesShellActivity` 一起删。
+     *
+     * 2026-11-10 用户拍板：索引页当**预览导航**用，要保留、要可达 —— 已登记进底栏编辑器
+     * 候选（`SettingsGlassDockEditorPage.catalog`），用户可自行加 / 删；拆壳（R2）时
+     * 连同 `PagesShellActivity` 一起删。
      */
     const val DEV_INDEX_ID = "index"
 
@@ -180,7 +183,9 @@ object HomeDockNavModel {
         val kept = ArrayList<String>(raw.size)
         for (item in raw) {
             if (item.isBlank() || kept.contains(item)) continue
-            if (!isViewAction(item) && !isNavigable(item)) continue
+            // 视图动作由首页自己处理；「页面索引」是开发壳独有的条目（`PagesShellActivity`
+            // 有专门渲染分支，不在页面映射表里），用户从底栏编辑器加进来时必须留下。
+            if (!isViewAction(item) && item != DEV_INDEX_ID && !isNavigable(item)) continue
             kept.add(item)
             if (kept.size >= MAX_SLOTS) break
         }
@@ -200,6 +205,10 @@ object HomeDockNavModel {
      *
      * 用户没自定义过底栏（`raw` 为空）且解析结果不满 [MAX_SLOTS] 时，把开发壳的
      * 「页面索引」追加到末尾 —— 一旦用户动过底栏就完全按存档来，不把开发件混进去。
+     *
+     * 2026-11-10 用户拍板：索引页当**预览导航**用，要保留、要可达。所以「恢复默认」
+     * 清空排列后这一格仍在；同时 `index` 已登记进底栏编辑器候选
+     * （`SettingsGlassDockEditorPage.catalog`），用户可以自己加 / 删，不再「删不掉」。
      */
     fun resolveDockIds(
         raw: List<String>,

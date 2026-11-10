@@ -95,6 +95,10 @@ object SettingsGlassDockEditorPage {
         DockCatalogEntry("profiles", SettingsStringsExt4.timetableProfilesTitle, DockCategory.FEATURES),
         DockCatalogEntry("quickSwitchTimetable", SettingsStringsExt4.switchTimetableTitle, DockCategory.FEATURES),
         DockCatalogEntry("more", SettingsStringsExt4.homeMenuMoreTitle, DockCategory.FEATURES),
+        // 开发壳「页面索引」：用户拿它当预览导航，必须能在底栏编辑器里加 / 删。
+        // 它不是 Dart 的目录项（`HomeDockNavModel.DEV_INDEX_ID`），渲染分支在
+        // `PagesShellActivity` 里单独一条；文案见 [SettingsStringsExt4.glassDockPageIndexTitle]。
+        DockCatalogEntry("index", SettingsStringsExt4.glassDockPageIndexTitle, DockCategory.FEATURES),
         // ── 数据与同步 ──
         DockCatalogEntry("dataTransfer", SettingsStringsExt4.dataTransferEntryTitle, DockCategory.DATA),
         DockCatalogEntry("cloudSync", SettingsStringsExt4.cloudSyncTitle, DockCategory.DATA),
