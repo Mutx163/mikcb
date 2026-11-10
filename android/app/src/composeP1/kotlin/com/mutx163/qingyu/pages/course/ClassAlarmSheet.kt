@@ -180,15 +180,24 @@ fun ClassAlarmSheet(
                 },
             )
 
-            // 取消旧提醒（Dart `:329-337` destructive「取消」）：已设块在、写侧回调也接了才画。
-            // 点击后**不自行收起**——持久化在宿主：成功才收弹层 + toast（Dart 成功才 pop）。
+            // 取消旧提醒（Dart `class_reminder_sheet.dart:329-337`，destructive 磨砂钮）：
+            // 已设块在、写侧回调也接了才画。点击后**不自行收起**——持久化在宿主：
+            // 成功才收弹层 + toast（Dart 成功才 pop）。
             if (existingReminderMinuteOfDay != null && onRemoveReminder != null) {
                 Spacer(modifier = Modifier.height(8.dp))
                 TextButton(
                     modifier = Modifier.fillMaxWidth(),
                     text = CourseActionStrings.cancelAction.text,
+                    // 发布版 destructive 磨砂钮 = 红字 + **淡红水洗底**（`hyperos_controls.dart:846-854`：
+                    // `fg = error`、`tint = error @ 亮 .10 / 暗 .14`）。miuix 的 `color` 不给就是中性的
+                    // secondaryVariant 底、看着像普通灰按钮；给饱和错误色又会变整颗红底。
+                    // 颜色 token 必须**内联在调用里**（不落局部变量）：S3 守卫按调用点字面 token 判，
+                    // 局部变量形态它看不见，这颗钮的回归就没人管。
                     colors = ButtonDefaults.textButtonColors(
+                        color = Color(QingyuTheme.destructive()).copy(alpha = if (dark) 0.14f else 0.10f),
+                        disabledColor = Color(QingyuTheme.destructive()).copy(alpha = 0.06f),
                         textColor = Color(QingyuTheme.destructive()),
+                        disabledTextColor = Color(QingyuTheme.destructive()).copy(alpha = 0.45f),
                     ),
                     onClick = { onRemoveReminder?.invoke() },
                 )

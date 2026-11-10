@@ -641,10 +641,15 @@ fun CourseDeleteConfirmSheet(
                 text = CourseFollowupStrings.deleteAction.text,
                 onClick = onConfirm,
                 modifier = Modifier.weight(1f),
-                // 危险色只染**字**（Dart `HyperosFrostedSheetButtonVariant.destructive`：
-                // 底色仍是中性磨砂、只有文字变红）。把 `color` 传成错误色会得到
-                // 「整颗红底 + 默认灰字」，既不是 Dart 的观感，对比度也不够。
-                colors = ButtonDefaults.textButtonColors(textColor = destructive),
+                // 发布版 destructive 磨砂钮 = 红字 + **淡红水洗底**（`hyperos_controls.dart:846-854`；
+                // 这一处对应 `course_followup_sheets.dart:261-266`）：`color` 不给就是中性的
+                // secondaryVariant 底；给饱和错误色会变整颗红底 + 灰字，对比度也坏。
+                colors = ButtonDefaults.textButtonColors(
+                    color = destructive.copy(alpha = if (dark) 0.14f else 0.10f),
+                    disabledColor = destructive.copy(alpha = 0.06f),
+                    textColor = destructive,
+                    disabledTextColor = destructive.copy(alpha = 0.45f),
+                ),
             )
         }
     }
