@@ -28,6 +28,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.mutx163.qingyu.components.QingyuEmptyHint
 import com.mutx163.qingyu.components.QingyuWeightDelta
 import com.mutx163.qingyu.components.shiftWeight
 import com.mutx163.qingyu.theme.QingyuTheme
@@ -109,6 +110,13 @@ fun LiveIslandPreviewCard(
         if (followBeforeClass) {
             FollowBadge(dark = dark)
         }
+        // 无课（`LivePreviewMoment.NO_COURSE`）时 `stages` 为空：**不画假岛卡**，
+        // 给一行诚实提示（C38 / T2 行内档：只统一字号与灰阶，位置不动）。
+        // 生产路径上页面级空态（`IslandPreviewEmptyCard`）会先兜住；这里是组件契约的补口，
+        // 避免别的调用方拿到一个纯空白块。
+        if (stages.isEmpty()) {
+            QingyuEmptyHint(text = DisplaySettingsStrings.islandPreviewEmpty.text)
+        }
         stages.forEachIndexed { index, stage ->
             if (stages.size > 1) {
                 Text(
@@ -154,6 +162,10 @@ fun LiveIslandExpandedPreviewCard(
     Column(modifier = modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
         if (followBeforeClass) {
             FollowBadge(dark = dark)
+        }
+        // 与摘要态同一条：无课时不画假展开卡，给一行诚实提示（C38）。
+        if (stages.isEmpty()) {
+            QingyuEmptyHint(text = DisplaySettingsStrings.islandPreviewEmpty.text)
         }
         stages.forEachIndexed { index, stage ->
             if (stages.size > 1) {
