@@ -1,8 +1,8 @@
 # 页面索引
 
-**共 68 个页面，`Ctrl+F` 搜中文，按住 `Ctrl` 点名字直接打开源码。**
+**共 90 个页面，`Ctrl+F` 搜中文，按住 `Ctrl` 点名字直接打开源码。**
 
-按功能分区成块排列：课表 → 课程 → 日程与任务 → 时间与考试 → 统计 → 导入 → 迁移与导出 → 同步与备份 → 实时显示 → 设置 → 帮助与展示 → 诊断 → 关于。
+按功能分区成块排列：课表 → 课程 → 日程与任务 → 时间与考试 → 统计 → 导入 → 迁移与导出 → 同步与备份 → 实时显示 → 设置 → 帮助与展示 → 诊断 → 关于 → 设置二级页 → 实时显示子屏。
 
 > 这个文件由 `python tool/page_index.py` 生成，别手改；新增/删除页面后重跑一次并随代码提交。
 
@@ -61,6 +61,20 @@
 [关于软件][p60] · [版本更新][p61] · [高级选项][p62] · [更新日志][p63] · [代码贡献者][p64] · [开源许可详情][p65] · [开源许可][p66] · [支持作者][p67]
 
 [问题反馈][p68]
+
+### 设置二级页
+
+[设置 · 外观][p69] · [外观 · 首页背景（壁纸面板）][p70] · [Bing 壁纸画廊][p71] · [课程卡片设置][p72] · [设置 · 诊断][p73]
+
+[设置 · 节假日（高级）][p74] · [设置 · 节假日][p75] · [首页与导航][p76] · [首页小组件][p77] · [设置 · 实时活动][p78] · [实时活动自检][p79]
+
+[外观 · 材质（课程卡页签）][p80] · [外观 · 材质（通用页签）][p81] · [设置 · 重置][p82] · [设置 · 主题管理][p83]
+
+[设置首页（课表设置）][p84] · [课表页面设置][p85] · [设置 · 学期][p86] · [壁纸取景][p87] · [设置 · 天气][p88]
+
+### 实时显示子屏
+
+[上课前显示子屏][p89] · [下课前显示子屏][p90]
 
 
 [p1]: ../../app/src/composeP1/kotlin/com/mutx163/qingyu/pages/timetable/day/DayViewPage.kt
@@ -131,3 +145,25 @@
 [p66]: ../../app/src/composeP1/kotlin/com/mutx163/qingyu/pages/about/OpenSourceLicensesPage.kt
 [p67]: ../../app/src/composeP1/kotlin/com/mutx163/qingyu/pages/about/SupportCreatorPage.kt
 [p68]: ../../app/src/composeP1/kotlin/com/mutx163/qingyu/pages/feedback/FeedbackPage.kt
+[p69]: ../../app/src/main/kotlin/com/mutx163/qingyu/pages/settings/SettingsAppearancePage.kt
+[p70]: ../../app/src/main/kotlin/com/mutx163/qingyu/pages/settings/SettingsBackdropFlowPage.kt
+[p71]: ../../app/src/main/kotlin/com/mutx163/qingyu/pages/settings/SettingsBingWallpaperGalleryPage.kt
+[p72]: ../../app/src/main/kotlin/com/mutx163/qingyu/pages/settings/SettingsCourseCardPage.kt
+[p73]: ../../app/src/main/kotlin/com/mutx163/qingyu/pages/settings/SettingsDiagnosticsPage.kt
+[p74]: ../../app/src/main/kotlin/com/mutx163/qingyu/pages/settings/SettingsHolidayAdvancedPage.kt
+[p75]: ../../app/src/main/kotlin/com/mutx163/qingyu/pages/settings/SettingsHolidayPage.kt
+[p76]: ../../app/src/main/kotlin/com/mutx163/qingyu/pages/settings/SettingsHomeNavigationPage.kt
+[p77]: ../../app/src/main/kotlin/com/mutx163/qingyu/pages/settings/SettingsHomeWidgetPage.kt
+[p78]: ../../app/src/main/kotlin/com/mutx163/qingyu/pages/settings/SettingsLivePage.kt
+[p79]: ../../app/src/main/kotlin/com/mutx163/qingyu/pages/settings/SettingsLiveSelfCheckPage.kt
+[p80]: ../../app/src/main/kotlin/com/mutx163/qingyu/pages/settings/SettingsMaterialPanels.kt
+[p81]: ../../app/src/main/kotlin/com/mutx163/qingyu/pages/settings/SettingsMaterialPanels.kt
+[p82]: ../../app/src/main/kotlin/com/mutx163/qingyu/pages/settings/SettingsResetPage.kt
+[p83]: ../../app/src/main/kotlin/com/mutx163/qingyu/pages/settings/SettingsAppearancePage.kt
+[p84]: ../../app/src/main/kotlin/com/mutx163/qingyu/pages/settings/SettingsTimetablePage.kt
+[p85]: ../../app/src/main/kotlin/com/mutx163/qingyu/pages/settings/SettingsTimetablePageSettingsPage.kt
+[p86]: ../../app/src/main/kotlin/com/mutx163/qingyu/pages/settings/SettingsTimetablePage.kt
+[p87]: ../../app/src/main/kotlin/com/mutx163/qingyu/pages/settings/SettingsWallpaperPositionPage.kt
+[p88]: ../../app/src/main/kotlin/com/mutx163/qingyu/pages/settings/SettingsWeatherPage.kt
+[p89]: ../../app/src/composeP1/kotlin/com/mutx163/qingyu/pages/live/DisplaySettingsPage.kt
+[p90]: ../../app/src/composeP1/kotlin/com/mutx163/qingyu/pages/live/DisplaySettingsPage.kt

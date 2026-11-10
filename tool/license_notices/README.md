@@ -72,8 +72,10 @@ python tool/license_notices/generate_notices.py --from-deps .tmp/deps.txt --dry-
 
 ### 2026-11-10 首次重生成的实际结果
 
-- `prodReleaseRuntimeClasspath` 共 **234 条**，gzip **38,752 B**（旧文件 128,519 B）。
-- 覆盖：androidx 138、Compose 71、miuix 12、友盟 4、ML Kit 6、OkHttp、Kotlin 18、本应用 GPL 1。
+- `prodReleaseRuntimeClasspath` 共 **234 条**，gzip **38,837 B**（旧文件 128,519 B）。
+- 覆盖：androidx **124**（以 `androidx.` 开头的坐标；另有 14 条 `org.jetbrains.androidx.*`
+  多平台移植，按「含 androidx 字样」口径才是 138）、Compose 71、miuix 12、友盟 4、
+  ML Kit 6、OkHttp、Kotlin 18、本应用 GPL 1。
 - 来源分布：`artifact=2 artifact-pom=3 manifest=3 pom=146 pom-remote=66 pom-remote-header=1
   pom-remote-short=10 placeholder=1 group=1 self=1 unresolved=0`。
 - `pom-remote-short` 的 10 条是 Google 的闭源条款（ML Kit ToS / Android SDK License），

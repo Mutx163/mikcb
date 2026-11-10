@@ -263,7 +263,25 @@ pwsh -File scripts/safe-gradle.ps1 :app:testDevDebugUnitTest
 
 ---
 
-## 六、相关文件
+## 六、`@Preview` 档位约定（2026-11-10 全站）
+
+预览不是「随便给个 900 高」——长页面永远被裁，验收时就看不到下半截。固定三档：
+
+| 档 | 尺寸 | 用途 |
+|---|---|---|
+| **一屏档** | `widthDp = 400, heightDp = 900` | 默认档，模拟一台手机的可见区域；四态/亮暗/大字号都挂这一档 |
+| **整页档** | `widthDp = 400, heightDp = 1200~2200`（按实测内容高取） | 长页面必配：一屏档会裁掉下半截的卡片/正文条目。现存示例：`MemoryStatsPage` 1600、`LiveDiagnosticsLogPage` 1400 |
+| **专项档** | `widthDp = 400, heightDp = 900`（可配 `showSystemUi` 等） | 只想框住某一段时用，名字写清「专项：<段名>」 |
+
+规矩：
+
+1. **原 900 档一律保留**，整页档是新增一档，不替换；
+2. 命名跟着编号走：现有 `1 有数据`…`6 大字号` 之后接 `7 整页 1600` 这种，一眼能对上顺序；
+3. 判据是「打开预览能不能在一张图里看完这一页」——看不完就加整页档，别靠 `heightDp` 猜。
+
+---
+
+## 七、相关文件
 
 - 套件：`components/QingyuPageScaffold.kt`（骨架/返回键）· `QingyuPageList.kt`（滚动三件套+滚动条）·
   `QingyuCard.kt`（按压反馈+圆角）· `QingyuPageTheme.kt`（主题桥）·

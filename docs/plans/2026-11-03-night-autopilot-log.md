@@ -189,7 +189,7 @@ miuix-only UI、无写死 sp/颜色/字重、无自研动画/转场、测试目�
 | 线 | 文件路径白名单 | 当前任务 | 验收闸门 | 禁止触碰 |
 |---|---|---|---|---|
 | **A（本代理）文案/l10n + 协调** | `lib/l10n/*.arb`、`android/app/src/**/i18n/**`（含 cjk-literal-baseline.txt / cjk_hardcode_baseline.txt）、`pages/timetable/TimetableStrings.kt`、`tool/` 下文案与样式基线及 copy_style 相关脚本、`docs/plans/` 日志 | copy_style 203 条欠账收敛、dead key 1 条、ARB 六份同步与 gen-l10n | 门4 + L0 | 其他线白名单外的一切 |
-| **B 课表/课程/共享件** | `android/app/src/**/pages/course/**`、`pages/timetable/**`（**不含** `TimetableStrings.kt`）、`components/QingyuSheet.kt`、`pages/ComposeSheetGuardTest.kt` | QingyuSheet IME 叠加（:104-106）、标题动作对齐、弹层毛玻璃未接（QingyuSheet 零 blur 引用）评估与实现、守卫只拦 OverlayBottomSheet 的补全 | L0 + 门3 | ✅ **已收线**（见下「B 线收口」） |
+| **B 课表/课程/共享件** | `android/app/src/**/pages/course/**`、`pages/timetable/**`（**不含** `TimetableStrings.kt`）、`components/QingyuSheet.kt`、`pages/sheetguard/ComposeSheetGuardTest.kt` | QingyuSheet IME 叠加（:104-106）、标题动作对齐、弹层毛玻璃未接（QingyuSheet 零 blur 引用）评估与实现、守卫只拦 OverlayBottomSheet 的补全 | L0 + 门3 | ✅ **已收线**（见下「B 线收口」） |
 | **C sync 族** | `android/app/src/**/pages/sync/**` | 云备份差异预览（CloudBackupDetailHost.kt:52-54）、sync 域剩余弹层与文案一致性（不动 ARB，需要的键报给 A） | L0 + 门3 | ✅ **已收线**（见下「C 线收口」） |
 | **D settings** | `android/app/src/**/app/SettingsHost.kt`、`pages/settings/**` | 主题动作表灰实心、设置子集（LanTransferApplier.kt:30 归属按台账核）、SettingsHost 剩余样式债 | L0 + 门3 | ✅ **已收线**（见下「D 线收口」） |
 | **E statistics + import** | `android/app/src/**/pages/statistics/**`、`pages/import/**`、`pages/import/warehouse/**` | I2 四件（原生 confirm/prompt、`saveCourseConfig` 落盘、替换/合并弹窗、宏录制，见 WIRING-NOTE.md:286-348） | L0 + 门3 | ✅ **已收线**（见下「E 线收口」）；禁触 lib/**、ARB、其他域 |
