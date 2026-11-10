@@ -119,6 +119,8 @@ object AiImageImportApply {
 
         /** 共享模板扩容时仓储新建的 `（导入补齐）` 副本 id；失败回滚要删掉它。 */
         var createdSchemeId: String? = null
+        /** 覆盖导入是否清过自建日程（内存态）；失败时既要还原内存，也要写回盘。 */
+        var scheduleCleared = false
 
         return try {
             if (needsExpansionNow) {
@@ -137,6 +139,12 @@ object AiImageImportApply {
             request.semesterStartDate?.let { start ->
                 repository.updateSettings(repository.snapshot.settings.copy(semesterStartDate = start))
             }
+            // J3：识图覆盖导入与写回层同一发布版语义（`import_export_service.dart:382-384`）：
+            // 覆盖时清空自建日程。`scheduleItems` setter 只改内存，由下面一次写盘带上。
+            if (request.replaceExisting) {
+                repository.scheduleItems = emptyList()
+                scheduleCleared = true
+            }
             repository.replaceActiveProfileContent(
                 courses = mergedCourses,
                 tasks = repository.tasks,
@@ -145,12 +153,20 @@ object AiImageImportApply {
             Result.Done(importedCount = importedCount, replaceExisting = request.replaceExisting)
         } catch (_: Exception) {
             // 回滚：设置（含开学日与节次表）、主模板节次、共享模板副本都恢复成导入前的样子。
+            if (scheduleCleared) {
+                runCatching { repository.scheduleItems = before.scheduleItems }
+            }
             runCatching { repository.updateSettings(before.settings) }
             if (createdSchemeId != null) {
                 // 设置已改回原模板引用，删副本不会撞 deleteTimeScheme 的 in-use 守卫。
                 runCatching { repository.deleteTimeScheme(createdSchemeId!!) }
             } else if (needsExpansionNow && scheme != null) {
                 runCatching { repository.updateTimeScheme(scheme.id, scheme.name, scheme.sections) }
+            }
+            // 覆盖分支的「两笔写」半成功（profiles 落盘、active id 抛错）会把清空后的日程
+            // 留在盘上：内存还原后补一次整体落盘，把旧日程写回盘（尽力而为）。
+            if (scheduleCleared) {
+                runCatching { repository.persistActiveProfileState() }
             }
             Result.Failed
         }

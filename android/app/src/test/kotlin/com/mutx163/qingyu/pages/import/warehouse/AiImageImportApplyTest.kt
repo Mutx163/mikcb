@@ -6,6 +6,7 @@ import com.mutx163.qingyu.app.TimetableRepository
 import com.mutx163.qingyu.app.TimetableStore
 import com.mutx163.qingyu.core.Course
 import com.mutx163.qingyu.core.MiniJson
+import com.mutx163.qingyu.core.ScheduleItem
 import com.mutx163.qingyu.core.SectionTime
 import com.mutx163.qingyu.core.TimetableProfile
 import com.mutx163.qingyu.core.TimetableSettings
@@ -272,5 +273,99 @@ class AiImageImportApplyTest {
         val active = repository.snapshot.profiles.single { it.id == "p1" }
         assertEquals("当前课表要回到原模板", "ts1", active.settings.activeTimeSchemeId)
         assertTrue(repository.snapshot.courses.isEmpty())
+    }
+
+    // ── 评审 J3（第二波返工）：识图覆盖导入清自建日程 + 失败写回盘 ──────────
+
+    private fun scheduleItem(id: String) = ScheduleItem(
+        id = id,
+        title = "自建日程$id",
+        startDate = LocalDateTime.of(2026, 9, 7, 0, 0),
+        endDate = LocalDateTime.of(2026, 9, 7, 0, 0),
+        startTime = "09:00",
+        endTime = "10:00",
+        createdAt = LocalDateTime.of(2026, 9, 1, 0, 0),
+        updatedAt = LocalDateTime.of(2026, 9, 1, 0, 0),
+    )
+
+    private fun profileWithSchedule(courses: List<Course>) = TimetableProfile(
+        id = "p1",
+        name = "默认课表",
+        courses = courses,
+        scheduleItems = listOf(scheduleItem("s1")),
+        settings = TimetableSettings.defaults(),
+        currentWeek = 1,
+        createdAt = LocalDateTime.of(2026, 9, 1, 0, 0),
+        lastUsedAt = LocalDateTime.of(2026, 9, 1, 0, 0),
+    )
+
+    /** 第 N 次写 `active_timetable_profile_id` 才失败（模拟「两笔写」第一笔成功后失败）。 */
+    private class FailingActiveIdStore(
+        private val delegate: KeyValueStore,
+        private val failOnMatch: Int,
+    ) : KeyValueStore by delegate {
+        private var match = 0
+
+        override fun putString(key: String, value: String) {
+            if (key == TimetableStore.KEY_ACTIVE_PROFILE_ID) {
+                match += 1
+                if (match == failOnMatch) throw IllegalStateException("disk_full")
+            }
+            delegate.putString(key, value)
+        }
+    }
+
+    @Test
+    fun `覆盖导入清空自建日程并落盘`() {
+        val raw = InMemoryKeyValueStore(
+            mapOf(
+                TimetableStore.KEY_PROFILES to MiniJson.encode(
+                    listOf(profileWithSchedule(listOf(course("old", name = "旧课"))).toJson()),
+                ),
+            ),
+        )
+        val repository = TimetableRepository(TimetableStore(raw))
+
+        val result = AiImageImportApply.apply(
+            repository = repository,
+            request = request(listOf(course("ai-1", name = "新课", dayOfWeek = 3))),
+            expandSections = false,
+        )
+
+        assertTrue(result is AiImageImportApply.Result.Done)
+        assertTrue("覆盖导入必须清空自建日程", repository.snapshot.scheduleItems.isEmpty())
+        assertTrue(
+            "落盘后冷启动也不能再看到旧日程",
+            TimetableRepository(TimetableStore(raw)).snapshot.scheduleItems.isEmpty(),
+        )
+    }
+
+    @Test
+    fun `覆盖导入第二笔写失败时旧日程写回磁盘`() {
+        val raw = InMemoryKeyValueStore(
+            mapOf(
+                TimetableStore.KEY_PROFILES to MiniJson.encode(
+                    listOf(profileWithSchedule(listOf(course("old", name = "旧课"))).toJson()),
+                ),
+            ),
+        )
+        // profiles 已把清空的日程写进盘、active id 第一次写抛错。
+        val repository = TimetableRepository(
+            TimetableStore(FailingActiveIdStore(raw, failOnMatch = 1)),
+        )
+
+        val result = AiImageImportApply.apply(
+            repository = repository,
+            request = request(listOf(course("ai-1", name = "新课", dayOfWeek = 3))),
+            expandSections = false,
+        )
+
+        assertSame(AiImageImportApply.Result.Failed, result)
+        assertEquals("内存要还原", listOf("s1"), repository.snapshot.scheduleItems.map { it.id })
+        assertEquals(
+            "盘上日程必须也还原（旧实现只改内存，盘上已真丢）",
+            listOf("s1"),
+            TimetableRepository(TimetableStore(raw)).snapshot.scheduleItems.map { it.id },
+        )
     }
 }

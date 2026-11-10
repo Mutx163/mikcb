@@ -236,12 +236,19 @@ object WarehouseCourseWriteBack {
         //
         // 算术只在 [SemesterWeekUplift] 一处：表格导入（`ImportFlowModel.nextSemesterWeekCount`）
         // 与本函数同调该对象，**不要再在这里写第二份 max/coerceIn**。
+        //
+        // J1：派生源必须是**当前**快照，不能用户外入口的 `before.settings`。本层上面的
+        // 扩节分支可能已经调用 `updateTimeSchemeForImport` 把当前档改绑到「（导入补齐）」
+        // 副本；再从旧快照派生设置，会把 `activeTimeSchemeId` 退回原模板——副本变孤儿，
+        // 高节次课程也按原模板取不到钟点。发布版同一处同样是 `host._settings.copyWith(...)`
+        //（`import_export_service.dart:423-429`）。
+        val currentSettings = repository.snapshot.settings
         val nextWeekCount = SemesterWeekUplift.nextSemesterWeekCount(
-            before.settings.semesterWeekCount,
+            currentSettings.semesterWeekCount,
             mergedCourses,
         )
-        val nextSettings = before.settings.copy(
-            semesterStartDate = semesterStartDate ?: before.settings.semesterStartDate,
+        val nextSettings = currentSettings.copy(
+            semesterStartDate = semesterStartDate ?: currentSettings.semesterStartDate,
             semesterWeekCount = nextWeekCount,
         )
         // 与 Dart 一致：有课程变化、或用户确认了新开学日，才动设置；
@@ -249,8 +256,8 @@ object WarehouseCourseWriteBack {
         // 再加一道「值真的变了」防线：上游（[WarehouseCoursesImportApply]）可能已经
         // 写过一次设置，这里 nextSettings 与现值全等时跳过，避免重复落盘+通知。
         val shouldWriteSettings = (semesterStartDate != null ||
-            (importedCount > 0 && nextWeekCount > before.settings.semesterWeekCount)) &&
-            nextSettings != before.settings
+            (importedCount > 0 && nextWeekCount > currentSettings.semesterWeekCount)) &&
+            nextSettings != currentSettings
         var settingsWritten = false
         // Dart 换了开学日就按今天重算当前周（`calculateWeekForDate`），不能留着旧开学日的周次。
         val nextCurrentWeek = if (semesterStartDate != null) {
@@ -341,6 +348,13 @@ object WarehouseCourseWriteBack {
             }
             // 学期设置/补齐的节次已先行写入，这里尽力回滚，避免「课没进、作息却变了」的半个状态。
             rollbackImportWrites(repository, rollbackBaseline, scheme, sectionsExpanded, settingsWritten, createdSchemeId)
+            // J2：仓储写档案是「profiles → active id」两笔写。第一笔已把**清空后的日程**
+            // 写进盘、第二笔才抛错时，只还原内存是不够的——盘上日程已经真丢了。
+            // 还原完内存与设置后补一次整体落盘，把旧日程写回盘（尽力而为：磁盘持续写不进去
+            // 时这里也只能失败，但至少不会在能写的时候把「盘上已丢」谎报成没事）。
+            if (mode == Mode.REPLACE) {
+                runCatching { repository.persistActiveProfileState() }
+            }
             Result.Failed(error)
         }
     }

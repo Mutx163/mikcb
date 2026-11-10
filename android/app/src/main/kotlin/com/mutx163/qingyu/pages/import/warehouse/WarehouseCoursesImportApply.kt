@@ -74,6 +74,11 @@ object WarehouseCoursesImportApply {
         buildExpandedSections(currentSections, requiredSectionCount)
 
     fun apply(repository: TimetableRepository, request: Request): Result {
+        // 发布版 `_timetableImportParsedCourses` 第一行就是 `if (importedCourses.isEmpty) return 0;`
+        // ——空导入**不写任何东西**。宿主虽在进确认流程前挡过一次，但这条防御路径一旦被
+        // 复用（录制/回放重放等），会先把开学日/周数写进盘再按「无课可导」收尾，留下半套学期设置。
+        if (request.courses.isEmpty()) return Result.Done(0)
+
         val before = repository.snapshot
         val scheme = TimetableHostLogic.resolveActiveTimeScheme(
             schemes = before.timeSchemes,

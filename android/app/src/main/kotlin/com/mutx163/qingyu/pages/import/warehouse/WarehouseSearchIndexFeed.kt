@@ -14,8 +14,10 @@ package com.mutx163.qingyu.pages.import.warehouse
  * 那个 `load` 是私有的（G2 的根索引/适配器清单/脚本三条专用链）。这里只借它公开的
  * [WarehouseRepositoryService.candidateUrlsFor] 拿同一条候选链（GitCode 主地址 →
  * GitHub raw 回退 → 镜像），再自己走「第一个 HTTP 200 且能解析的候选」。
- * 搜索索引只有几 KB，**不参与**根索引那套整链预算；每候选 8s、整链最多
- * [SEARCH_INDEX_TOTAL_BUDGET_MILLIS]，失败就静默降级。
+ * 搜索索引只有几 KB，**不参与**根索引那套整链预算。节奏是：每候选最多 8s；
+ * [SEARCH_INDEX_TOTAL_BUDGET_MILLIS] 只限制「要不要再开下一个候选」的截止时刻
+ * （检查在每个候选**之前**），最后一个已开始的候选收不回来——所以**最坏总耗时
+ * ≈ 20s + 8s = 28s**，不是 20s。它跑在后台 IO 协程里，不挡首帧；失败就静默降级。
  *
  * 线程约定：同步 IO，调用方放 `Dispatchers.IO`。
  */
@@ -58,5 +60,9 @@ private const val SEARCH_INDEX_RELATIVE_PATH = "index/search_index.yaml"
 /** 单候选额度：几 KB 的小文件，8s 不回基本就是这条链路半死。 */
 private const val SEARCH_INDEX_TIMEOUT_MILLIS = 8_000
 
-/** 整条链预算：最多让背景协程活这么久，超了就当这次没拿到（搜索退化，页面不受影响）。 */
+/**
+ * 整条链预算：只约束「是否**再开始**一个新候选」的截止时刻（检查在候选循环内、每次发请求前）。
+ * 已经开始的候选无法中断，所以最坏总耗时 ≈ 本值 + [SEARCH_INDEX_TIMEOUT_MILLIS]（≈28s），
+ * 别把它当成总耗时上限。
+ */
 private const val SEARCH_INDEX_TOTAL_BUDGET_MILLIS = 20_000L
