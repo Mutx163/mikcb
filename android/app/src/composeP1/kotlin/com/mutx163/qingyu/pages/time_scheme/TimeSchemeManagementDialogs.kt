@@ -30,6 +30,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import com.mutx163.qingyu.components.QingyuCard
@@ -38,7 +39,10 @@ import com.mutx163.qingyu.components.QingyuWeightDelta
 import com.mutx163.qingyu.components.rememberSheetMaxHeight
 import com.mutx163.qingyu.components.shiftWeight
 import com.mutx163.qingyu.theme.QingyuTheme
+import top.yukonga.miuix.kmp.basic.BasicComponent
+import top.yukonga.miuix.kmp.basic.Button
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
+import top.yukonga.miuix.kmp.basic.HorizontalDivider
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TextButton
 import top.yukonga.miuix.kmp.basic.TextField
@@ -72,8 +76,10 @@ import top.yukonga.miuix.kmp.utils.scrollEndHaptic
  *   （官方 `Card` 的薄封装）承载，圆角/底色随主题；
  * - `TimeSchemeShareSheetDialog` 正文居中显示模板名（与 Dart `_shareTimeScheme` 同口径）；
  *   宿主当前也未接分享（见其文件头差异表）；
- * - 新建/重命名弹层没有用 `sheet.nameHint`：miuix `TextField` 的占位与浮动标签是同一个槽位
- *   （`useLabelAsPlaceholder`），同时给会互相顶掉，这里以「标签」为准（与 `AddCoursePage` 同口径）。
+ * - 新建/重命名弹层没有用 `sheet.nameHint`：miuix `TextField` 只有 `label` 一个槽位
+ *   （`useLabelAsPlaceholder` 决定它是「占位」还是「浮动标签」），给不出「标签 + 提示」两层。
+ *   这里按发布版口径取 `label` 并把 `useLabelAsPlaceholder` 归 false（浮动标签）——
+ *   Dart `hyperos_text_field.dart:47-48` 正是「有 label ⇒ 不用占位模式」。
  *
  * ## 常驻组合（2026-11-02 弹层债）
  *
@@ -115,30 +121,66 @@ fun TimeSchemeMenuSheet(
     ) {
         val items = current?.items.orEmpty()
         Column(modifier = Modifier.fillMaxWidth()) {
-            for (item in items) {
-                TextButton(
-                    modifier = Modifier.fillMaxWidth(),
-                    text = item.label,
-                    // 删除是唯一 destructive 项（Dart `destructive: true`）：中性底 + 红字，
-                    // 但**照常可点**——点它只会开对话框（有引用时说明是什么挡住了），
-                    // 禁掉会读成「红字却点不动」。
-                    // 注意 `textButtonColors(color = …)` 的 `color` 是**底色**（会得到整颗红底 +
-                    // 默认灰字，对比度坏）；Dart 口径是中性的底 + 危险色的字 ⇒ 用 `textColor`。
-                    colors = if (item.action == TimeSchemeAction.DELETE) {
-                        ButtonDefaults.textButtonColors(textColor = Color(QingyuTheme.error(dark)))
-                    } else {
-                        ButtonDefaults.textButtonColors()
-                    },
+            items.forEachIndexed { index, item ->
+                // 行间细分隔线（Dart `HyperosChoiceTile(showDivider = true)`，除最后一项每条都有）。
+                // 分隔线在内容区里铺满=左缘正好与文字左缘对齐，与发布版的
+                // `HyperosInsetDivider(indent: settingsRowPadding.left)` 同一条线。
+                if (index > 0) {
+                    HorizontalDivider(
+                        thickness = Dp.Hairline,
+                        color = Color(QingyuTheme.dividerLine(dark)),
+                    )
+                }
+                TimeSchemeMenuRow(
+                    item = item,
+                    dark = dark,
                     onClick = { onAction(item.action) },
                 )
             }
-            Spacer(modifier = Modifier.height(4.dp))
+            Spacer(modifier = Modifier.height(8.dp))
             TextButton(
                 modifier = Modifier.fillMaxWidth(),
                 text = TimeSchemeManagementStrings.cancelAction.text,
                 onClick = onDismiss,
             )
         }
+    }
+}
+
+/**
+ * 动作表的一行（Dart `HyperosChoiceTile(variant: dialog)` 的排版）。
+ *
+ * 发布版这里是**左对齐的列表行**：标题 17sp 常规字重、行高 56dp、左右 16dp
+ * （`tiles.dart` 的 `_paddingForVariant` → `hyperosChevronRowPadding` = 16/13，
+ * 行壳 `hyperosListRowShell` 给 `listRowMinHeight`＝56）。原来用等宽 `TextButton`，
+ * 标签被按钮的 `Arrangement.Center` 居中成一列「居中的文字链」——和发布版的
+ * 动作表不是同一个形状，也和同页「课表档案」动作表（`TimetableProfilesPage`）左右错位。
+ *
+ * 危险项只染**字**、照常可点（Dart `destructive: true` 且无 disabled 语义）：
+ * 点它只会开对话框（有引用时说明是什么挡住了），禁掉会读成「红字却点不动」。
+ * 底色一律透明——弹层是毛玻璃，行底不该再压一块实心色。
+ */
+@Composable
+private fun TimeSchemeMenuRow(
+    item: TimeSchemeMenuItem,
+    dark: Boolean,
+    onClick: () -> Unit,
+) {
+    BasicComponent(
+        modifier = Modifier.fillMaxWidth(),
+        // 左右 16dp 已由 `QingyuSheet` 给（`contentPadsHorizontally = false`），这里只补行高节奏。
+        insideMargin = PaddingValues(horizontal = 0.dp, vertical = 13.dp),
+        onClick = onClick,
+    ) {
+        Text(
+            text = item.label,
+            style = MiuixTheme.textStyles.main,
+            color = if (item.action == TimeSchemeAction.DELETE) {
+                Color(QingyuTheme.error(dark))
+            } else {
+                Color(QingyuTheme.primaryText(dark))
+            },
+        )
     }
 }
 
@@ -167,7 +209,10 @@ fun TimeSchemeNameSheet(
                 value = text,
                 onValueChange = { text = it },
                 label = current.nameLabel,
-                useLabelAsPlaceholder = true,
+                // 发布版这里传的是 `label:`（`hyperos_text_field.dart:47-48`：有 label 时
+                // `useLabelAsPlaceholder = false`）⇒ 「模板名称」是**浮动标签**：框里空着时当占位，
+                // 一输入就缩到框内上沿、始终告诉用户这格填的是什么。原来按占位模式渲染，
+                // 输入第一个字标签就消失，改名时只能靠上方标题和已填内容猜这格是什么。
                 singleLine = true,
                 modifier = Modifier
                     .fillMaxWidth()
@@ -433,6 +478,10 @@ fun TimeSchemeUsageSheet(
  * 分享二选一（Dart `_shareTimeScheme`，:851-893）：取消 / 二维码分享 / 系统分享文件。
  *
  * 三个动作都是「上报」，真正打包与分享在宿主。
+ *
+ * [qrEnabled] 只在「壳还没接上二维码发送页」时为 false：那时候二维码这条路点下去什么都不会
+ * 发生，所以干脆不画这一行（宿主按 `onRequestQrSend` 是否有值传进来）。壳接上之后默认就是 true，
+ * 与发布版的三动作完全一致。
  */
 @Composable
 fun TimeSchemeShareSheetDialog(
@@ -440,6 +489,7 @@ fun TimeSchemeShareSheetDialog(
     onDismiss: () -> Unit,
     onShareSystem: () -> Unit,
     onShareQr: () -> Unit,
+    qrEnabled: Boolean = true,
 ) {
     val dark = isSystemInDarkTheme()
     val current = rememberLastNonNull(sheet)
@@ -469,12 +519,14 @@ fun TimeSchemeShareSheetDialog(
                     onClick = onDismiss,
                 )
                 Spacer(modifier = Modifier.height(12.dp))
-                TextButton(
-                    modifier = Modifier.fillMaxWidth(),
-                    text = current.viaQrLabel,
-                    onClick = onShareQr,
-                )
-                Spacer(modifier = Modifier.height(12.dp))
+                if (qrEnabled) {
+                    TextButton(
+                        modifier = Modifier.fillMaxWidth(),
+                        text = current.viaQrLabel,
+                        onClick = onShareQr,
+                    )
+                    Spacer(modifier = Modifier.height(12.dp))
+                }
                 TextButton(
                     modifier = Modifier.fillMaxWidth(),
                     text = current.viaSystemLabel,
@@ -509,7 +561,18 @@ private fun <T : Any> rememberLastNonNull(current: T?): T? {
  * 的 `_HyperosDialogActions`）：两个动作**横排等宽**，三个及以上**竖排全宽**，
  * 间距一律 12dp（2026-11-02 弹层债 #8/#9）。
  *
- * `destructive = true` 时确认按钮走危险色（删除）。
+ * ## 每一颗都是**实心块钮**（2026-11-10 Chief 口径）
+ *
+ * 发布版对话框动作统一是 `HyperosButton`（`hyperos_dialog.dart:126-137` 的 `_variantFor`，
+ * `expand: true`），三档变体：取消 = `secondary`、确认 = `primary`、
+ * `destructive` = `error` 底 + `onError` 字（`hyperos_controls.dart:724-729`，**不受**
+ * `onFrostedPanel` 影响）。所以这里不再用文字钮：只把确认键换成实心块、
+ * 取消键留细字，会成「灰文字 + 红实心块」混搭，与发布版不是同一形制
+ *（在仓先例：D17 删除课表对话框 `TimetableProfilesPage.kt:740-758`）。
+ *
+ * ⚠️ 水洗底（`error @ 亮 .10 / 暗 .14`）是**磨砂 sheet 按钮**那一套
+ *（`hyperos_controls.dart:817-846`，样板 `CourseActionSheet.kt:785-800`），两套都是发布版口径、
+ * 不能互相套：对话框里的动作一律实心。
  */
 @Composable
 private fun DialogActionRow(
@@ -520,27 +583,21 @@ private fun DialogActionRow(
     destructive: Boolean = false,
     onSecondary: (() -> Unit)? = null,
 ) {
-    val dark = isSystemInDarkTheme()
     if (onSecondary == null) {
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            TextButton(
+            DialogActionButton(
                 modifier = Modifier.weight(1f),
-                text = cancelLabel,
+                label = cancelLabel,
+                kind = DialogActionKind.SECONDARY,
                 onClick = onCancel,
             )
-            TextButton(
+            DialogActionButton(
                 modifier = Modifier.weight(1f),
-                text = confirmLabel,
-                // `destructive` 是「中性底 + 危险色的字」：`textButtonColors(color = …)` 的 `color`
-                // 是**底色**（红底 + 默认灰字），所以这里必须用 `textColor`。
-                colors = if (destructive) {
-                    ButtonDefaults.textButtonColors(textColor = Color(QingyuTheme.error(dark)))
-                } else {
-                    ButtonDefaults.textButtonColorsPrimary()
-                },
+                label = confirmLabel,
+                kind = if (destructive) DialogActionKind.DESTRUCTIVE else DialogActionKind.PRIMARY,
                 onClick = onConfirm,
             )
         }
@@ -549,27 +606,57 @@ private fun DialogActionRow(
             modifier = Modifier.fillMaxWidth(),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            TextButton(
+            DialogActionButton(
                 modifier = Modifier.fillMaxWidth(),
-                text = cancelLabel,
+                label = cancelLabel,
+                kind = DialogActionKind.SECONDARY,
                 onClick = onCancel,
             )
-            TextButton(
+            DialogActionButton(
                 modifier = Modifier.fillMaxWidth(),
-                text = TimeSchemeManagementStrings.viewUsageAction.text,
+                label = TimeSchemeManagementStrings.viewUsageAction.text,
+                kind = DialogActionKind.SECONDARY,
                 onClick = onSecondary,
             )
-            TextButton(
+            DialogActionButton(
                 modifier = Modifier.fillMaxWidth(),
-                text = confirmLabel,
-                colors = if (destructive) {
-                    ButtonDefaults.textButtonColors(textColor = Color(QingyuTheme.error(dark)))
-                } else {
-                    ButtonDefaults.textButtonColorsPrimary()
-                },
+                label = confirmLabel,
+                kind = if (destructive) DialogActionKind.DESTRUCTIVE else DialogActionKind.PRIMARY,
                 onClick = onConfirm,
             )
         }
+    }
+}
+
+/** 对话框动作的三档形制，与发布版 `HyperosButtonVariant` 一一对应。 */
+private enum class DialogActionKind { SECONDARY, PRIMARY, DESTRUCTIVE }
+
+/**
+ * 对话框里的一颗动作钮（实心块钮，`HyperosButton(expand: true)` 的形状）。
+ *
+ * 两个分支（两动作横排 / 三动作竖排）共用它，免得只有一支跟着新口径走。
+ * 为什么 `destructive` 不是「红字 + 淡红水洗底」：那是磨砂 sheet 按钮的变体，
+ * 见 [DialogActionRow] KDoc。
+ */
+@Composable
+private fun DialogActionButton(
+    modifier: Modifier,
+    label: String,
+    kind: DialogActionKind,
+    onClick: () -> Unit,
+) {
+    val colors = when (kind) {
+        // 发布版 secondary = `HyperosColors.secondary` 实心底（`hyperos_controls.dart:697-711`）。
+        DialogActionKind.SECONDARY -> ButtonDefaults.buttonColors()
+        DialogActionKind.PRIMARY -> ButtonDefaults.buttonColorsPrimary()
+        // S4 口径：实心危险底必须同时给 contentColor，否则是「红底 + 默认灰字」。
+        DialogActionKind.DESTRUCTIVE -> ButtonDefaults.buttonColors(
+            color = MiuixTheme.colorScheme.error,
+            contentColor = MiuixTheme.colorScheme.onError,
+        )
+    }
+    Button(modifier = modifier, onClick = onClick, colors = colors) {
+        Text(text = label)
     }
 }
 
@@ -597,14 +684,20 @@ private fun UsageCountChips(
     }
 }
 
-/** 单个统计 chip（Dart `HyperosTag`：8/2 内边距、圆角 6、w500 字重——2026-11-02 弹层债 #10）。 */
+/**
+ * 单个统计 chip。
+ *
+ * 配色逐项对 Dart `HyperosTag`（`hyperos_badge.dart:70-95`）：底是
+ * `theme.colors.secondaryContainer`（带一点强调色的容器面）、字是 `theme.colors.onSurface`
+ * （主文本墨色）。原来用 `surfaceContainerHighest` + 次级灰，chip 在弹窗里读成「一格格
+ * 灰底灰字的说明」，和发布版的强调色小标签差一个量级——chip 本来就该显眼。
+ */
 @Composable
 private fun UsageChip(text: String) {
-    val dark = isSystemInDarkTheme()
     Box(
         modifier = Modifier
             .clip(RoundedCornerShape(6.dp))
-            .background(Color(QingyuTheme.surfaceContainerHighest(dark)))
+            .background(MiuixTheme.colorScheme.secondaryContainer)
             .padding(horizontal = 8.dp, vertical = 2.dp),
     ) {
         Text(
@@ -613,7 +706,7 @@ private fun UsageChip(text: String) {
             // 字重差走 shiftWeight（不写死字重，用户字重/系统粗体设置仍然生效）。
             // 不限 maxLines：外语文案折行显示，不截断。
             style = MiuixTheme.textStyles.footnote1.shiftWeight(QingyuWeightDelta.MEDIUM),
-            color = Color(QingyuTheme.secondaryText(dark)),
+            color = MiuixTheme.colorScheme.onSurface,
         )
     }
 }
