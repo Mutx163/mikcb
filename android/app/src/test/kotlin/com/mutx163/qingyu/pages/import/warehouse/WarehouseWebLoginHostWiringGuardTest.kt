@@ -553,6 +553,38 @@ class WarehouseWebLoginHostWiringGuardTest {
         )
     }
 
+    /**
+     * 2026-11-10 P0/P1（用户实报「设成 GitCode 渠道，执行导入仍超时」）。
+     *
+     * 登录页宿主原先写的是 `WarehouseRepositoryService(fetch)`——偏好快照没传进去 ⇒
+     * 「执行导入」拉适配器脚本**固定走 GitHub raw**，设置里的 GitCode 渠道 / 镜像对这一路
+     * 完全没生效（发布版是透传的，移植时丢了）。同一个洞还带来「失败后不知道走的是哪个源」，
+     * 所以这条守卫一并钉住：构造必须带 `options =`，失败提示必须由
+     * `warehouseScriptLoadFailedMessage(...)` 拼出「GitHub 直连 / GitCode 渠道 + N 个镜像」。
+     */
+    @Test
+    fun `构造拉取服务必须透传渠道偏好 失败提示必须带出试过的源`() {
+        assertTrue(
+            "登录宿主构造 WarehouseRepositoryService 必须带 options =（否则拉脚本固定走 GitHub raw，" +
+                "设置里的 GitCode / 镜像对这一路无效）",
+            hostSource.contains("WarehouseRepositoryService(fetch, options = fetchOptions)"),
+        )
+        assertTrue(
+            "偏好必须由 readWarehouseFetchOptions 读设置（与两个列表页同一口径，不许另写一份）",
+            hostSource.contains("readWarehouseFetchOptions(PrefsKeyValueStore(context))"),
+        )
+        val failed = blockAfter(hostSource, "is WarehouseLoad.Failed ->")
+        assertTrue("取不到脚本拉取失败分支（守卫自身失效，先修守卫）", failed.isNotEmpty())
+        assertTrue(
+            "拉脚本失败提示必须带出试过的源（warehouseScriptLoadFailedMessage）",
+            failed.contains("warehouseScriptLoadFailedMessage("),
+        )
+        assertFalse(
+            "拉脚本失败不许退回光秃秃的 courseImportScriptFailed（用户看不出走的是哪个源）",
+            failed.contains("WarehouseStrings.courseImportScriptFailed.text"),
+        )
+    }
+
     private fun readHostSource(): String =
         readSource("android/app/src/composeP1/kotlin/com/mutx163/qingyu/pages/import/warehouse/WarehouseWebLoginHost.kt")
 
