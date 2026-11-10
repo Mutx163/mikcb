@@ -474,3 +474,16 @@ private fun TimeSchemeEditorPagePreviewDark() {
 private fun TimeSchemeEditorPagePreviewLargeText() {
     PreviewTimeSchemeEditorPage(model = previewEditorModel(inUse = true), textScale = 1.3f)
 }
+
+/**
+ * 「整页」档（2026-11-10 评审：全仓预览一律 900 高，整页在接口区就被截断，看不到下半截）。
+ *
+ * 只加注释、不改任何页面代码：高度给 1600，Studio 里可滚动看完整页；900 那四档保留，
+ * 日常仍看首屏观感。
+ */
+@Suppress("unused")
+@Preview(name = "5 整页", showBackground = true, widthDp = 400, heightDp = 1600)
+@Composable
+private fun TimeSchemeEditorPagePreviewFullPage() {
+    PreviewTimeSchemeEditorPage(model = previewEditorModel(inUse = true))
+}
