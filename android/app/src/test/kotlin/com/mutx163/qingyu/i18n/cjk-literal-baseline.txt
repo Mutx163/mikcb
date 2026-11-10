@@ -111,6 +111,11 @@ com/mutx163/qingyu/components/QingyuLoading.kt:7
 #   屏上文案仍一律走 ArbText。空态守卫「断言 4」同步收窄：豁免范围**只有** `@Preview(...)` 参数
 #   与被它标注的函数体，其余代码零中文照旧（探针见 `pages/emptyguard` 守卫文件头第 3 条）。
 com/mutx163/qingyu/components/QingyuEmptyState.kt:8
+# 2026-11-10 全仓预览补齐批（颜色线共享件，美化十二收集项）新增登记：
+# `components/QingyuColorChips.kt` 0→2、`components/QingyuColorPickerDialog.kt` 0→4 ——
+#   色片/选色弹层的预览名与预览假数据（IDE 标签/样例，不上屏、不进 l10n）。
+com/mutx163/qingyu/components/QingyuColorChips.kt:2
+com/mutx163/qingyu/components/QingyuColorPickerDialog.kt:4
 com/mutx163/qingyu/pages/export/IcsExportPage.kt:8
 com/mutx163/qingyu/pages/time_scheme/TimeSchemeManagementPage.kt:8
 com/mutx163/qingyu/pages/settings/AppearanceEditorScreen.kt:7

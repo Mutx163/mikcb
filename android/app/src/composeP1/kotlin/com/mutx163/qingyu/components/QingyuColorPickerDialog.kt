@@ -14,6 +14,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import com.mutx163.qingyu.theme.QingyuTheme
@@ -115,4 +116,30 @@ private fun Color.toHexRgb(): String {
         (argb shr 8) and 0xFF,
         argb and 0xFF,
     )
+}
+
+
+// ── 预览（一屏档 400×900）────────────────────────────────────────────────
+
+/**
+ * 组件预览：取色弹窗打开态。
+ *
+ * 用一条课程色起手，标题 / 动作文案传预览串（与真机同一套组件；屏上文案仍走 ARB）。
+ * 预览名与预览串是 IDE 标签、不是屏上文案，CJK 基线增量由提交窗统一登记。
+ */
+@Preview(name = "取色弹窗", showBackground = true, widthDp = 400, heightDp = 900)
+@Composable
+private fun PreviewQingyuColorPickerDialog() {
+    QingyuPageTheme(isDark = false) {
+        QingyuColorPickerDialog(
+            show = true,
+            initialHex = "#2196F3",
+            title = "课程颜色",
+            cancelLabel = "取消",
+            confirmLabel = "确认",
+            onDismiss = {},
+            onConfirm = {},
+            dark = false,
+        )
+    }
 }

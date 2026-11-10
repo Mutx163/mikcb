@@ -6,6 +6,8 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.sizeIn
@@ -21,6 +23,7 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.mutx163.qingyu.theme.QingyuTheme
@@ -293,3 +296,49 @@ internal fun parseChipColor(hex: String, fallback: Color): Color {
         fallback
     }
 }
+
+
+// ── 预览（一屏档 400×900）────────────────────────────────────────────────
+
+/**
+ * 组件预览：容器自动换行的一屏档。
+ *
+ * 只给色值、不写屏上文案（`onSelect` 空实现）；外层 [QingyuPageTheme] 与加课页预览
+ * 同一套包裹，AS 里看到的间距 / 描边 / 勾就是真机口径。预览名是中文：按全仓口径
+ * （IDE 标签、不是屏上文案），CJK 基线的增量由提交窗统一登记。
+ */
+@Preview(name = "色块组 · 42dp", showBackground = true, widthDp = 400, heightDp = 900)
+@Composable
+private fun PreviewQingyuColorChipsGroup() {
+    QingyuPageTheme(isDark = false) {
+        QingyuColorChips(
+            colors = previewColorHexes,
+            selectedHex = previewColorHexes[1],
+            onSelect = {},
+            dark = false,
+            size = QingyuColorChipSize.Couple,
+            modifier = Modifier.padding(16.dp),
+        )
+    }
+}
+
+/** 组件预览：单颗色块的选中 / 未选中两态（勾只画在选中那颗上）。 */
+@Preview(name = "单颗色块 · 选中态", showBackground = true, widthDp = 400, heightDp = 900)
+@Composable
+private fun PreviewQingyuColorChipStates() {
+    QingyuPageTheme(isDark = false) {
+        Row(
+            modifier = Modifier.padding(16.dp),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            QingyuColorChip(hex = previewColorHexes[0], selected = true, onSelect = {}, dark = false)
+            QingyuColorChip(hex = previewColorHexes[1], selected = false, onSelect = {}, dark = false)
+        }
+    }
+}
+
+/** 预览用色板（只放色值，预览页不需要真数据）。 */
+private val previewColorHexes = listOf(
+    "#6366F1", "#0EA5E9", "#2196F3", "#8B5CF6", "#D946EF",
+    "#F97316", "#22C55E", "#14B8A6", "#EF4444", "#F59E0B",
+)
