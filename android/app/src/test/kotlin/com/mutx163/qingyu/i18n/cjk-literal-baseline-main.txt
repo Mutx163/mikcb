@@ -42,6 +42,10 @@ com/mutx163/qingyu/pages/settings/SettingsAppearancePage.kt:5
 com/mutx163/qingyu/pages/settings/SettingsHomeWidgetPage.kt:5
 com/mutx163/qingyu/pages/transfer/QrFountainLt.kt:5
 com/mutx163/qingyu/share/qr/QrEncoder.kt:5
+# 2026-11-10 云同步设备名（美化十二）：
+#   pages/sync/DeviceLabelResolver.kt 0→1 —— 旧占位名常量「Compose 壳」（旧版写进存档的假设备名，
+#   识别后视同未设置并回落到设备型号）；常量字符串来自发布版同一语义，不是屏上文案，不走 ArbText。
+com/mutx163/qingyu/pages/sync/DeviceLabelResolver.kt:1
 # 2026-11-10 导出线登记（1→4）：`IcsExportModel.kt` 这 4 条是 `formatDate` 的日期格式 pattern
 # `y年M月d日`（ja / zh / zh_HK / zh_TW 四个标签共用同一条），**不是屏上可翻译文案**：
 # 它交给 `DateTimeFormatter.ofPattern` 消费，产出的是数字，语言差异只体现在 pattern 上。
