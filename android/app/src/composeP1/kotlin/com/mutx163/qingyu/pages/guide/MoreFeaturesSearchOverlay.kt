@@ -32,14 +32,16 @@ import androidx.compose.ui.unit.dp
 import top.yukonga.miuix.kmp.utils.overScrollVertical
 import top.yukonga.miuix.kmp.utils.scrollEndHaptic
 import com.mutx163.qingyu.components.QingyuCard
+import com.mutx163.qingyu.components.QingyuPageCardMargin
+import com.mutx163.qingyu.components.QingyuSectionTitle
 import com.mutx163.qingyu.components.QingyuWeightDelta
 import com.mutx163.qingyu.components.shiftWeight
 import com.mutx163.qingyu.theme.QingyuTheme
 import top.yukonga.miuix.kmp.basic.Button
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
 import top.yukonga.miuix.kmp.basic.Icon
+import top.yukonga.miuix.kmp.basic.InputField
 import top.yukonga.miuix.kmp.basic.Text
-import top.yukonga.miuix.kmp.basic.TextField
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.ChevronForward
 import top.yukonga.miuix.kmp.icon.extended.Search
@@ -81,10 +83,16 @@ fun MoreFeaturesSearchOverlay(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Box(modifier = Modifier.weight(1f)) {
-                    TextField(
-                        value = searchQuery,
-                        onValueChange = { searchQuery = it },
-                        modifier = Modifier.fillMaxWidth()
+                    // 官方 InputField（发布版 `MiuixInputField`）：胶囊形、17sp Medium、官方前后图标。
+                    // 浮层是「真正持有焦点」的那个输入框，展开态由这里自己管。
+                    InputField(
+                        query = searchQuery,
+                        onQueryChange = { searchQuery = it },
+                        onSearch = {},
+                        expanded = true,
+                        onExpandedChange = { if (!it) onDismiss() },
+                        label = GuideStrings.homeMenuMoreSearchHint.text,
+                        modifier = Modifier.fillMaxWidth(),
                     )
                 }
 
@@ -143,24 +151,21 @@ fun MoreFeaturesSearchOverlay(
                 // 搜索结果列表
                 LazyColumn(
                     modifier = Modifier.fillMaxSize().scrollEndHaptic().overScrollVertical(),
-                    contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
-                    verticalArrangement = Arrangement.spacedBy(14.dp)
+                    contentPadding = PaddingValues(vertical = 8.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
                     items(filteredGroups, key = { it.id }) { group ->
                         Column {
-                            Text(
-                                text = group.title,
-                                style = MiuixTheme.textStyles.footnote1.shiftWeight(QingyuWeightDelta.SEMIBOLD),
-                                color = primaryColor,
-                                modifier = Modifier.padding(start = 6.dp, bottom = 6.dp)
-                            )
+                            // 与主列表同一套：官方 SmallTitle（14sp/Bold、28dp 左缘）。
+                            QingyuSectionTitle(text = group.title)
 
                             QingyuCard(
-                                modifier = Modifier.fillMaxWidth(),
-                                insideMargin = PaddingValues(horizontal = 14.dp, vertical = 6.dp)
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(horizontal = QingyuPageCardMargin)
                             ) {
                                 Column {
-                                    group.items.forEachIndexed { idx, item ->
+                                    group.items.forEach { item ->
                                         SearchResultRow(
                                             item = item,
                                             query = searchQuery,
@@ -200,7 +205,7 @@ private fun SearchResultRow(
         modifier = Modifier
             .fillMaxWidth()
             .clickable(onClick = onClick)
-            .padding(vertical = 12.dp),
+            .padding(horizontal = 16.dp, vertical = 12.dp),
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {
@@ -209,7 +214,8 @@ private fun SearchResultRow(
                 highlightParts.forEach { part ->
                     Text(
                         text = part.text,
-                        style = MiuixTheme.textStyles.body2.shiftWeight(
+                        // 与官方列表行同字阶：标题 17sp（`textStyles.main`），高亮只加粗不改字号。
+                        style = MiuixTheme.textStyles.main.shiftWeight(
                             if (part.isHighlight) QingyuWeightDelta.BOLD else 0,
                         ),
                         color = if (part.isHighlight) primaryColor else Color(QingyuTheme.primaryText(dark))
@@ -221,7 +227,8 @@ private fun SearchResultRow(
                 Spacer(modifier = Modifier.height(2.dp))
                 Text(
                     text = item.subtitle,
-                    style = MiuixTheme.textStyles.footnote1,
+                    // 官方行副文本 = `body2`(14sp)。
+                    style = MiuixTheme.textStyles.body2,
                     color = Color(QingyuTheme.secondaryText(dark))
                 )
             }
