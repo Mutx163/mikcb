@@ -34,6 +34,7 @@ import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.withStyle
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.mutx163.qingyu.app.CourseActionStrings
 import com.mutx163.qingyu.components.QingyuCard
@@ -182,7 +183,10 @@ fun CourseActionSheet(
             )
             Spacer(modifier = Modifier.height(14.dp))
             section.rows.forEachIndexed { index, row ->
-                if (index > 0) Spacer(modifier = Modifier.height(8.dp))
+                if (index > 0) {
+                    // Dart 行间距一律 8，只有最后那条说明行前是 12（`:856-870` 上方 `SizedBox(height: 12)`）。
+                    Spacer(modifier = Modifier.height(if (row.kind == CourseActionRowKind.NOTICE) 12.dp else 8.dp))
+                }
                 val onRowTap: (() -> Unit)? = when (row.tap) {
                     CourseActionRowTap.OPEN_NOTE -> ({ stage = CourseSheetStage.NOTE })
                     CourseActionRowTap.OPEN_ALARM -> ({ stage = CourseSheetStage.ALARM })
@@ -218,6 +222,7 @@ fun CourseActionSheet(
                 CourseActionButtons(
                     section = section,
                     destructive = destructive,
+                    dark = dark,
                     onEdit = {
                         onEvent(CourseActionSheetModel.Events.edit(section))
                         onDismiss()
@@ -420,7 +425,9 @@ private fun SheetHeaderBlock(
             ) {
                 Text(
                     text = header.courseName,
-                    style = MiuixTheme.textStyles.footnote1,
+                    // Dart `typo.sm` = 14sp（`hyperos_proxies.dart` 的 ForuiCompatTypeface.sm）；
+                    // miuix 对位是 body2（14sp）。用 footnote1(13) 会小 1sp——二审修正。
+                    style = MiuixTheme.textStyles.body2,
                     color = primaryText,
                     maxLines = 2,
                     overflow = TextOverflow.Ellipsis,
@@ -483,9 +490,22 @@ private fun CourseDetailTile(
             Column(modifier = Modifier.weight(1f)) {
                 Text(
                     text = buildTitleText(row = row, primaryText = primaryText),
-                    style = MiuixTheme.textStyles.footnote1,
-                    color = if (row.mutedTitle) secondaryText else primaryText,
-                    maxLines = 2,
+                    // Dart `_CourseDetailTile` 主标题是 `typo.sm`（14sp）→ body2；
+                    // 说明行 `_CourseActionNoticeText` 单独走 `typo.xs2`（11sp）→ footnote2。
+                    style = if (row.kind == CourseActionRowKind.NOTICE) {
+                        MiuixTheme.textStyles.footnote2
+                    } else {
+                        MiuixTheme.textStyles.body2
+                    },
+                    // 说明行正文是 mutedForeground（次要墨），只有周次数字用前景色；
+                    // 其余行只在模型标了 mutedTitle（天气占位）时才降级。
+                    color = if (row.mutedTitle || row.kind == CourseActionRowKind.NOTICE) {
+                        secondaryText
+                    } else {
+                        primaryText
+                    },
+                    // Dart 说明行不限行数（`Text.rich` 没传 maxLines），其余详情行 2 行。
+                    maxLines = if (row.kind == CourseActionRowKind.NOTICE) Int.MAX_VALUE else 2,
                     overflow = TextOverflow.Ellipsis,
                 )
                 row.subtitle?.takeIf { it.isNotEmpty() }?.let {
@@ -577,7 +597,8 @@ private fun RelatedCoursesPanel(
             Column(modifier = Modifier.weight(1f)) {
                 Text(
                     text = panel.title,
-                    style = MiuixTheme.textStyles.footnote1,
+                    // Dart `_RelatedCoursesPanel` 标题 `typo.sm`（14sp）→ body2。
+                    style = MiuixTheme.textStyles.body2,
                     color = primaryText,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
@@ -651,7 +672,8 @@ private fun RelatedCourseRow(
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text(
                         text = entry.courseName,
-                        style = MiuixTheme.textStyles.footnote1,
+                        // Dart `_RelatedCourseCompactRow` 课名 `typo.sm`（14sp）→ body2。
+                        style = MiuixTheme.textStyles.body2,
                         color = primaryText,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
@@ -721,13 +743,14 @@ private fun entryColor(
  * | 按钮 | Dart | miuix 默认（错的） | 这里 |
  * |---|---|---|---|
  * | 编辑 | `HyperosButton`，**primary 变体**（强调色实心） | `buttonColors()` = `secondaryVariant` 灰 | [ButtonDefaults.buttonColorsPrimary] |
- * | 删除 | `HyperosFrostedSheetButton(variant = destructive)`：**底色仍是中性**，只有**字**是危险色 | `textButtonColors(color = 错误色)` = 整颗红底 + 灰字（对比度坏） | `textButtonColors(textColor = 危险色)` |
+ * | 删除 | `HyperosFrostedSheetButton(variant = destructive)`：**红字 + 淡红水洗底**（`fg=error`、`tint=error` 亮 α.10 / 暗 α.14，`hyperos_controls.dart:846-854`；tint 即面板填充色，`frosted_header_background.dart:172-174`） | `textButtonColors(color = 错误色)` = 整颗饱和红底 + 灰字（对比度坏） | `textButtonColors(color = 淡红水洗、textColor = 危险色)`（`color` 必须给，否则是中性的 `secondaryVariant` 底） |
  * | 三个次按钮 | 等宽 `Expanded` + 8dp 间距 | 同上 | 同 miuix 默认（58/40/16 与 Dart `HyperosMiuixButton` 逐值一致） |
  */
 @Composable
 private fun CourseActionButtons(
     section: CourseActionSection,
     destructive: Color,
+    dark: Boolean,
     onEdit: () -> Unit,
     onReschedule: () -> Unit,
     onSuspend: () -> Unit,
@@ -762,11 +785,46 @@ private fun CourseActionButtons(
             TextButton(
                 modifier = Modifier.weight(1f),
                 text = CourseActionStrings.courseActionDeleteSecondary.text,
-                // 危险色只染字：把 `color` 传成错误色会得到「整颗红底 + 灰字」，
-                // 那既不是 Dart 的观感（磨砂中性底 + 红字），对比度也不够。
-                colors = ButtonDefaults.textButtonColors(textColor = destructive),
+                // 发布版 destructive 磨砂钮 = 红字 + **淡红水洗底**（`hyperos_controls.dart:846-854`：
+                // `fg = error`、`tint = error @ 亮 .10 / 暗 .14`；tint 就是面板填充色，
+                // 见 `frosted_header_background.dart:172-174`）。只染字会得到中性的 secondaryVariant
+                // 底，跟发布版那层淡红不是一回事；`color` 也不要给成饱和错误色（会变整颗红底）。
+                colors = ButtonDefaults.textButtonColors(
+                    color = destructive.copy(alpha = if (dark) 0.14f else 0.10f),
+                    disabledColor = destructive.copy(alpha = 0.06f),
+                    textColor = destructive,
+                    disabledTextColor = destructive.copy(alpha = 0.45f),
+                ),
                 onClick = onDelete,
             )
         }
     }
+}
+
+
+/**
+ * 课程操作弹层预览：在 Android Studio 里直接看这个弹层的真实长相（用户点名要）。
+ *
+ * 样例课复用加课页预览那门满字段课（教师 / 地点 / 简介都在），描述走真模型
+ * `buildPreviewItems` → `build`，**不是手摆的假数据**；预览里看到的就是真机同一套几何。
+ * 样例课直接引用 `previewAddCourseInitial`（已提为 internal），**不新增任何中文字符串字面量**
+ * ——CJK 棘轮按文件计字符串字面量，函数名与注释都不计入；所以这档不碰基线。
+ */
+@Preview(showBackground = true, widthDp = 400, heightDp = 900)
+@Composable
+private fun PreviewCourseActionSheet() {
+    val course = previewAddCourseInitial
+    val items = remember(course) {
+        CourseActionSheetModel.buildPreviewItems(courses = listOf(course), primary = course, week = 3)
+    }
+    val details = remember(items) { CourseActionSheetModel.build(previewItems = items, week = 3) }
+    CourseActionSheet(
+        course = course,
+        week = 3,
+        previewItems = items,
+        details = details,
+        onEvent = {},
+        onAlarmEvent = {},
+        onDismiss = {},
+    )
 }
