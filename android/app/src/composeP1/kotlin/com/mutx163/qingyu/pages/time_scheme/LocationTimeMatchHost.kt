@@ -1,7 +1,6 @@
 package com.mutx163.qingyu.pages.time_scheme
 
 import android.widget.Toast
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -13,14 +12,14 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import com.mutx163.qingyu.core.LocationTimeGroup
-import com.mutx163.qingyu.theme.QingyuTheme
+import top.yukonga.miuix.kmp.basic.Button
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
-import top.yukonga.miuix.kmp.basic.TextButton
+import top.yukonga.miuix.kmp.basic.Text
+import top.yukonga.miuix.kmp.theme.MiuixTheme
 import top.yukonga.miuix.kmp.overlay.OverlayDialog
 
 /**
@@ -241,22 +240,25 @@ fun LocationTimeMatchHost(
         onDismissRequest = { pendingDelete = null },
     ) {
         if (deleting != null) {
-            val dark = isSystemInDarkTheme()
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 // Dart 两动作横排等宽、间距 12（`_HyperosDialogActions`）——弹层债 #9。
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
             ) {
-                TextButton(
+                // 发布版对话框动作**全是实心块钮**（`HyperosButton(expand: true)`）：
+                // 取消 = secondary 实心、删除 = destructive 实心红（`hyperos_controls.dart:724-729`，
+                // 不吃 `onFrostedPanel`）。只把确认键换成实心会成「灰文字 + 红块」混搭。
+                // 形状照 D17 删除课表对话框（`TimetableProfilesPage.kt:740-758`）。
+                Button(
                     modifier = Modifier.weight(1f),
-                    text = LocationTimeMatchStrings.cancelAction.text,
                     onClick = { pendingDelete = null },
-                )
-                TextButton(
+                    colors = ButtonDefaults.buttonColors(),
+                ) {
+                    Text(text = LocationTimeMatchStrings.cancelAction.text)
+                }
+                // S4 口径：实心危险底必须同时给 contentColor。
+                Button(
                     modifier = Modifier.weight(1f),
-                    text = LocationTimeMatchStrings.deleteAction.text,
-                    // 危险色只染**字**（`color` 是底色，传错就是「红底 + 默认灰字」）。
-                    colors = ButtonDefaults.textButtonColors(textColor = Color(QingyuTheme.error(dark))),
                     onClick = {
                         // 动作读实时值（点击只发生在可见期间）；快照只服务退场渲染。
                         val target = pendingDelete
@@ -274,7 +276,13 @@ fun LocationTimeMatchHost(
                             }
                         }
                     },
-                )
+                    colors = ButtonDefaults.buttonColors(
+                        color = MiuixTheme.colorScheme.error,
+                        contentColor = MiuixTheme.colorScheme.onError,
+                    ),
+                ) {
+                    Text(text = LocationTimeMatchStrings.deleteAction.text)
+                }
             }
         }
     }
@@ -294,20 +302,22 @@ fun LocationTimeMatchHost(
         onDismissRequest = { pendingApplyCount = null },
     ) {
         if (applyCount != null && applyExecutor != null) {
-            val dark = isSystemInDarkTheme()
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
             ) {
-                TextButton(
+                // 与删除框同一形制：发布版对话框动作全是实心块钮（`HyperosButton(expand: true)`，
+                // `hyperos_dialog.dart:126-137`）。取消 = secondary 实心（`hyperos_controls.dart:697-711`）。
+                Button(
                     modifier = Modifier.weight(1f),
-                    text = LocationTimeMatchStrings.cancelAction.text,
                     onClick = { pendingApplyCount = null },
-                )
-                TextButton(
+                    colors = ButtonDefaults.buttonColors(),
+                ) {
+                    Text(text = LocationTimeMatchStrings.cancelAction.text)
+                }
+                // 非破坏性确认 = primary 实心（`_variantFor` 的 `isPrimary` 分支），不是文字钮。
+                Button(
                     modifier = Modifier.weight(1f),
-                    text = listModel.applyConfirmLabel,
-                    colors = ButtonDefaults.textButtonColors(textColor = Color(QingyuTheme.primary(dark = dark))),
                     onClick = {
                         pendingApplyCount = null
                         // 失败**不报成功**：仓储写盘失败会抛错，这里落到「保存失败」。
@@ -324,7 +334,10 @@ fun LocationTimeMatchHost(
                             toast(applyResultText(listModel, stats))
                         }
                     },
-                )
+                    colors = ButtonDefaults.buttonColorsPrimary(),
+                ) {
+                    Text(text = listModel.applyConfirmLabel)
+                }
             }
         }
     }
