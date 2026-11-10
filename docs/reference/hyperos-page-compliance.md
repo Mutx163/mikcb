@@ -1,8 +1,13 @@
 # HyperOS 页面合规清单
 
+> ⚠️ **历史留档（2026-11-10 标注）**：本页描述的是 Dart 时代的 HyperOS 审计流水线。
+> `tool/hyperos_audit.py`（846 行）已在去 Flutter 化收尾 `02cb22f39`（2026-11-08）删除，
+> `lib/` 也在 P4-C `303220db1` 整层删除，**下面所有命令都已不可用**；现行 Compose 页面口径见
+> [`compose-page-style-rules.md`](./compose-page-style-rules.md) 与 AGENTS.md 的 R1–R7。
+
 > **唯一真相来源（机器可读）：** [`hyperos-page-compliance.json`](./hyperos-page-compliance.json)  
 > **组件/API 参考：** [`hyperos-ui-kit.md`](./hyperos-ui-kit.md)  
-> **验收样板页：** `lib/screens/hyperos_showcase_screen.dart`
+> **验收样板页：** 原 `lib/screens/hyperos_showcase_screen.dart` 已随 P4-C 删除；Compose 样板见 [`compose-page-style-rules.md`](./compose-page-style-rules.md)
 
 UI 迁移已从“逐页 feature 任务”改为 **持续 audit 流水线**。不再靠对话里肉眼问“这页澎湃了吗？”，改跑脚本 + 查 registry。
 
@@ -24,7 +29,9 @@ python tool/hyperos_audit.py --perfect    # 严格完美合规（error + warn）
 核对 manual 规则 + 真机抽检
 ```
 
-**CI：** `.github/workflows/ci.yml` 在 `flutter analyze` 前执行 `python tool/hyperos_audit.py --strict`。
+**CI：** 已不再执行——`flutter analyze` 与 `hyperos_audit.py --strict` 都随 Dart 层删除，当前
+`.github/workflows/ci.yml` 只剩版本号校验、Actions 钉值校验与 `:app:testProdDebugUnitTest`，
+没有 UI 审计步骤。
 
 **Agent：** 用户问“XX 页面是否符合澎湃 UI”→ 读 `mikcb-hyperos-audit` SKILL，不要即兴 grep。
 
@@ -43,7 +50,7 @@ python tool/hyperos_audit.py --perfect    # 严格完美合规（error + warn）
 | **info** | 间距网格、HyperosColors 使用率 | 仅报告 |
 | **manual** | 箭头对称、暗色逐屏、CFH、导入子流程 | Agent/真机必查 |
 
-### 标准值（与 `hyperos_miuix_spec.dart` 一致）
+### 标准值（Dart 时代 `hyperos_miuix_spec.dart` 的留档；该类已删除，现行口径见 `compose-page-style-rules.md`）
 
 | 项 | 值 |
 |----|-----|
@@ -83,7 +90,7 @@ python tool/hyperos_audit.py --perfect    # 严格完美合规（error + warn）
 | 字段 | 含义 |
 |------|------|
 | `id` | 稳定标识 |
-| `file` | 相对仓库根的 Dart 路径 |
+| `file` | 相对仓库根的 Dart 路径（历史记录；对应源码已随 P4-C 删除） |
 | `label` | 中文页面名（报告用） |
 | `category` | home / settings / form / import / live / sheet / qa …… |
 | `expectedShell` | `HyperosSubpage` 或 `HyperosRootPage` |
