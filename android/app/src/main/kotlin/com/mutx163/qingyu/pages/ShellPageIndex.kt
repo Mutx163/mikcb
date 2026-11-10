@@ -393,11 +393,17 @@ fun ShellPageContent(
     LaunchedEffect(pageId) { PerfProbe.beginPage(pageId) }
     CompositionLocalProvider(LocalShellOpenPage provides onOpenPage) {
     // 传输包跨路由暂存：「二维码发送」与「扫码接收」是两个独立路由，而发送载荷只有数据备份页
-    // 才算得出来（要读仓储）。挂在 `when` 之上，切路由才不会丢（2026-10-29 接线）。
-    val transferBridge = remember { TransferShellBridge() }
-    // 导入三页的跨路由暂存（2026-10-29 F07）：子页成功落盘后要能让入口页也自关，
-    // 对应 Dart 的 `Navigator.pop(true)` + 入口页 `_openImportPage` 的关单规则。
-    val importBridge = remember { ImportShellBridge() }
+    // 才算得出来（要读仓储）。
+    //
+    // 2026-11-10 第二波：**必须是进程级单例**。原先这里 `remember { TransferShellBridge() }`
+    // 而 `ShellPageContent` 由 `entry<ShellRoute.Page>` 每个路由条目各组合一次 ⇒ 发送页 /
+    // 扫码页各拿一份空桥，发送页 session 恒 null、扫码回填的字节本页读不到。照
+    // `WarehouseImportHandoff` 的 object 模式改全局一份（对象自己就是单例，本地 val 只是别名）。
+    val transferBridge = TransferShellBridge
+    // 导入三页的跨路由信号（2026-10-29 F07；2026-11-10 第二波改成进程级单例 + 代数）：
+    // 子页成功落盘后通知入口页自关，对应 Dart 的 `Navigator.pop(true)` + 入口页
+    // `_openImportPage` 的关单规则。同样不能是每路由一份，否则入口页永远读不到。
+    val importBridge = ImportShellBridge
     // 教务仓库三页的跨路由暂存（选中学校 / 适配器）。与 importBridge 同挂法：
     // 切页不丢，退出壳即丢（`WarehouseImportHosts.kt:70-80`）。
     val warehouseState = remember { WarehouseShellState() }
@@ -2099,7 +2105,6 @@ fun ShellPageContent(
         // `IcsImportModel` / `SpreadsheetImportModel`（xlsx 先过 `XlsxSheetDecoder`）、
         // 预览确认后 `replaceActiveProfileContent` 真落盘、模板写缓存再分享。
         "g1.importEntry" -> ImportEntryHost(
-            bridge = importBridge,
             onBack = onBack,
             onOpenPage = onOpenPage,
         )
@@ -2182,6 +2187,9 @@ fun ShellPageContent(
                 session = session,
                 onBack = onBack,
                 onStop = onBack,
+                // 发送范围标题（「发送当前课表」/「发送全部数据」）跟着传输包一起从数据备份页
+                // 带过来；不接就只剩分组标题兜底，两种发送范围看起来一模一样。
+                title = transferBridge.outboundTitle,
             )
         }
         "g3.qrScan" -> {

@@ -23,6 +23,7 @@ import com.mutx163.qingyu.core.TimeSchemeLogic
 import com.mutx163.qingyu.core.TimetableSettings
 import com.mutx163.qingyu.core.WeekCalculator
 import com.mutx163.qingyu.pages.ShellExternalEntryHub
+import com.mutx163.qingyu.pages.import.warehouse.ImportCompletionCounter
 import com.mutx163.qingyu.pages.shell.ShellExternalEntry
 import com.mutx163.qingyu.platform.AndroidImportDocumentReader
 import com.mutx163.qingyu.platform.AndroidImportTemplateSharer
@@ -76,7 +77,6 @@ import java.time.LocalDateTime
  */
 @Composable
 fun ImportEntryHost(
-    bridge: ImportShellBridge,
     onBack: () -> Unit,
     onOpenPage: (String) -> Unit,
 ) {
@@ -90,10 +90,17 @@ fun ImportEntryHost(
     LaunchedEffect(Unit) {
         prefs = withContext(Dispatchers.IO) { store.snapshot() }
     }
-    // 子页导入成功 → 与 Dart 的 pop(true) 同义：入口页回到前台时消费它并自关。
-    LaunchedEffect(Unit) {
-        if (bridge.completedImport) {
-            bridge.completedImport = false
+    // 子页导入成功 → 与 Dart 的 pop(true) 同义：入口页自关。
+    //
+    // 2026-11-10 第二波：桥从「每个路由条目一份」改成进程级单例（见 ImportShellBridge），
+    // 且信号从布尔改成**代数**。原因有二：
+    // 1. 入口页被一个子页盖住时仍留在组合里（miuix-nav opaqueDepth=1 保留下层一层），
+    //    `LaunchedEffect(Unit)` 不会重跑 —— 布尔标记永远等不到消费者；
+    // 2. 外部「打开方式」直接进 ICS/表格导入时没有入口页，布尔标记会留到下一次进入
+    //    导入方式页、把它秒关。代数只认「挂载之后增长的那几次」，天然没有陈旧信号。
+    val importGenerationAtMount = remember { ImportShellBridge.importGeneration }
+    LaunchedEffect(ImportShellBridge.importGeneration) {
+        if (ImportShellBridge.importGeneration > importGenerationAtMount) {
             onBack()
         }
     }
@@ -151,16 +158,40 @@ fun ImportEntryHost(
 }
 
 /**
- * 跨路由暂存（壳里 `remember { ImportShellBridge() }`，挂在 `when (pageId)` 之上）。
+ * 跨路由暂存：**进程级单例**（2026-11-10 第二波修桥）。
  *
- * 为什么需要：Dart 的导入页成功时 `Navigator.pop(true)`，入口页 `_openImportPage`
- * 拿到 true 后再关自己（[ImportEntryModel.shouldCloseAfterDetailResult]）。壳的
- * `onBack` 只弹一层，所以「导入成功」这件事得靠一个活过路由切换的对象传回去。
+ * ## 为什么必须是 object
+ *
+ * 原先它是 `ShellPageContent` 里的 `remember { ImportShellBridge() }`，而 `ShellPageContent`
+ * 由 `entry<ShellRoute.Page>` **每个路由条目各组合一次** ⇒ 入口页与子页各拿一份，
+ * 子页写的 `completedImport` 入口页永远读不到（「导入成功后入口页不自关」的根因）。
+ * 跨路由的一次性交接件在本仓已有先例：`WarehouseImportHandoff` 也是 object。
+ *
+ * ## 为什么是「代数」而不是布尔
+ *
+ * 发布版是 `Navigator.pop(true)` 的**返回值**，天然只对当前入口页生效、不会跨次残留。
+ * 进程级单例没有返回值，于是入口页挂载时记下 [importGeneration]，只认它之后的增长：
+ * 正常流程自关；外部「打开方式」直接进子页导入成功时没有入口页在等，代数增长不会
+ * 传染给下一次进入的入口页（详见 `ImportCompletionCounter`）。
  */
-class ImportShellBridge {
+object ImportShellBridge {
 
-    /** 子页成功导入并已落盘 ⇒ 入口页回到前台时消费它并自关。 */
-    var completedImport by mutableStateOf(false)
+    private val counter = ImportCompletionCounter()
+
+    /**
+     * 「子页导入成功」代数（只增不减）。
+     *
+     * 用 Compose 状态承载：入口页在组合里读它，代数一变就重组、由
+     * `LaunchedEffect` 消费并自关（被盖住时也在组合里，不会漏）。
+     */
+    var importGeneration by mutableStateOf(0)
+        private set
+
+    /** 子页成功导入并已落盘：通知入口页可以关了（子页自己也会 `onBack`）。 */
+    fun markImported() {
+        counter.markImported()
+        importGeneration = counter.snapshot()
+    }
 }
 
 /** ICS 导入页宿主（`g1.icsImport`）。 */
@@ -219,7 +250,7 @@ fun IcsImportHost(
             isImporting = false
             showToast(result.message)
             if (result is ApplyResult.Done && result.importedCount > 0) {
-                bridge.completedImport = true
+                bridge.markImported()
                 onBack()
             }
         }
@@ -416,7 +447,7 @@ fun SpreadsheetImportHost(
             isImporting = false
             showToast(result.message)
             if (result is ApplyResult.Done && result.importedCount > 0) {
-                bridge.completedImport = true
+                bridge.markImported()
                 onBack()
             }
         }

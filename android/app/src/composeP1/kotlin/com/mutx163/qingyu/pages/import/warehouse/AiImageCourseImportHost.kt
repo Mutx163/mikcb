@@ -55,7 +55,7 @@ private const val LOG_TAG = "AiImageImportHost"
  * | 提示词弹层 | 共享弹层套件 `QingyuSheet`，正文可滚动 |
  * | 粘贴 | 读系统剪贴板；空剪贴板给「剪贴板里没有可用文本」，不假装粘到了 |
  * | 确认导入 | 预览确认（开学日 / 第 1 周对应第几周 / 覆盖还是更新）→ 节次不够先问 → [AiImageImportApply] 真落盘 |
- * | 导入成功 | 与 Dart `Navigator.pop(true)` 同义：置 [ImportShellBridge.completedImport] 后返回 |
+ * | 导入成功 | 与 Dart `Navigator.pop(true)` 同义：调 [ImportShellBridge.markImported] 后返回（入口页据此自关） |
  *
  * ## 写的是哪个仓储、哪个方法
  *
@@ -152,7 +152,7 @@ fun AiImageCourseImportHost(
             toast(outcome.message)
             val applied = outcome.applied
             if (applied is AiImageImportApply.Result.Done && applied.importedCount > 0) {
-                bridge.completedImport = true
+                bridge.markImported()
                 onBack()
             }
         }

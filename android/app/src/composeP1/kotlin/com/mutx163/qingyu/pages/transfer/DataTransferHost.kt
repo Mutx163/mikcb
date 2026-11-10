@@ -32,6 +32,7 @@ import com.mutx163.qingyu.components.QingyuCard
 import com.mutx163.qingyu.core.TimeScheme
 import com.mutx163.qingyu.core.TimetableSettings
 import com.mutx163.qingyu.pages.ShellExternalEntryHub
+import com.mutx163.qingyu.pages.import.warehouse.ShellOutboundSlot
 import com.mutx163.qingyu.pages.shell.ShellExternalEntry
 import com.mutx163.qingyu.platform.AndroidTransferDocumentAdapter
 import com.mutx163.qingyu.platform.AndroidTransferShareAdapter
@@ -232,8 +233,9 @@ fun DataTransferHost(
                 is QrPayloadResult.Failure -> showSendFailure(result.code)
                 is QrPayloadResult.OverLimit -> showToast(TransferStrings.qrTransferResourceLimit.text)
                 is QrPayloadResult.Ready -> {
-                    bridge.outboundPayload = result.bytes
-                    bridge.outboundTitle = result.title
+                    // 2026-11-10 第二波：字节与发送范围标题一起写进**进程级**桥的发送槽。
+                    // 原先桥是每路由一份，发送页拿到的是另一份空槽 ⇒ session 恒 null、出不了码。
+                    bridge.publishOutbound(result.bytes, result.title)
                     onRequestQrSend()
                 }
             }
@@ -1014,20 +1016,37 @@ private fun buildViewState(
 }
 
 /**
- * 跨路由暂存（壳里 `remember { TransferShellBridge() }`，挂在 `when (pageId)` 之上）。
+ * 跨路由暂存：**进程级单例**（2026-11-10 第二波修桥）。
  *
- * 为什么需要：二维码的「发送页」与「扫码页」是两个独立路由，而发送载荷只有本页算得出来
- * （要读仓储）。壳原先拿 `"QingyuTimetable:<课表名>"` 当载荷，就是这一步没接的后果。
+ * ## 为什么必须是 object
+ *
+ * 原先它是 `ShellPageContent` 里的 `remember { TransferShellBridge() }`，而 `ShellPageContent`
+ * 由 `entry<ShellRoute.Page>` 每个路由条目各组合一次 ⇒ 数据备份页 / 发送页 / 扫码页
+ * 各拿一份**空桥**：发送页 `session` 恒 null（出不了码）、扫码回填的字节本页读不到
+ * （点「导入完整备份」没反应）。跨路由交接件照 `WarehouseImportHandoff` 改 object。
+ *
+ * ## 两半的存放
+ *
+ * - 发送包 (字节 + 标题) 存在 [ShellOutboundSlot]（纯逻辑、JVM 可直测）；
+ * - 扫码回填的字节仍是 Compose 状态：本页用 `snapshotFlow` 消费它（见下方消费段，
+ *   **不要**改回以它为 key 的 `LaunchedEffect`——那会把正在解码的协程自己取消）。
  */
-class TransferShellBridge {
+object TransferShellBridge {
+    private val outbound = ShellOutboundSlot()
+
     /** 待发送的传输包字节（`g3.qrSend` 读它建会话）。 */
-    var outboundPayload by mutableStateOf<ByteArray?>(null)
+    val outboundPayload: ByteArray? get() = outbound.current()?.payload
 
     /** 发送页标题（Dart 按 scope 取「二维码发送当前课表」/「二维码发送全部数据」）。 */
-    var outboundTitle by mutableStateOf<String?>(null)
+    val outboundTitle: String? get() = outbound.current()?.title
 
     /** 扫码收齐的字节（`g3.qrScan` 写它，回本页后消费）。 */
     var inboundBytes by mutableStateOf<ByteArray?>(null)
+
+    /** 数据备份页打包完成：字节与发送范围标题一起过页（后一次覆盖前一次）。 */
+    fun publishOutbound(payload: ByteArray, title: String?) {
+        outbound.publish(payload, title)
+    }
 }
 
 /** 一条提示（带可选动作）。 */
