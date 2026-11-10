@@ -1,6 +1,6 @@
 package com.mutx163.qingyu.pages.export
 
-import android.app.DatePickerDialog
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -10,18 +10,24 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import com.mutx163.qingyu.components.QingyuCard
-import com.mutx163.qingyu.components.QingyuCardDefaults
+import com.mutx163.qingyu.components.QingyuLoadingInButton
 import com.mutx163.qingyu.components.QingyuPageCardMargin
 import com.mutx163.qingyu.components.QingyuPageList
 import com.mutx163.qingyu.components.QingyuPageScaffold
@@ -30,13 +36,18 @@ import com.mutx163.qingyu.components.QingyuSectionTitle
 import com.mutx163.qingyu.components.QingyuSheet
 import com.mutx163.qingyu.components.QingyuWeightDelta
 import com.mutx163.qingyu.components.shiftWeight
+import com.mutx163.qingyu.pages.task.TaskStrings
 import com.mutx163.qingyu.theme.QingyuTheme
 import com.mutx163.qingyu.transfer.IcsExportEventKind
 import top.yukonga.miuix.kmp.basic.Button
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
-import top.yukonga.miuix.kmp.basic.CircularProgressIndicator
+import top.yukonga.miuix.kmp.basic.Icon
+import top.yukonga.miuix.kmp.basic.NumberPicker
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TextButton
+import top.yukonga.miuix.kmp.icon.MiuixIcons
+import top.yukonga.miuix.kmp.icon.extended.Folder
+import top.yukonga.miuix.kmp.icon.extended.Share
 import top.yukonga.miuix.kmp.overlay.OverlayDialog
 import top.yukonga.miuix.kmp.preference.ArrowPreference
 import top.yukonga.miuix.kmp.preference.CheckboxPreference
@@ -44,6 +55,7 @@ import top.yukonga.miuix.kmp.preference.OverlayDropdownPreference
 import top.yukonga.miuix.kmp.preference.SwitchPreference
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import java.time.LocalDate
+import java.time.YearMonth
 
 /**
  * 导出日历页 · Compose 渲染层（Phase 3）。
@@ -86,8 +98,10 @@ fun IcsExportPage(
     onDismissRemoveConfirm: () -> Unit,
 ) {
     val dark = isSystemInDarkTheme()
-    val context = LocalContext.current
     val options = viewState.options
+    // 「正在挑哪一端日期」是纯交互中间态，不进视图模型（同 `AddScheduleItemPage` 的
+    // `pickingDate`）：模型只收最后选定的那个日期。
+    var pickingDateField by remember { mutableStateOf<IcsExportDateField?>(null) }
 
     // 共享骨架：官方 TopAppBar + 标准返回键 + 顶栏毛玻璃；大标题可折叠
     // （Dart ics_export_screen.dart 的 HyperosSubpage 标题是纯 Text）。
@@ -141,16 +155,12 @@ fun IcsExportPage(
                         ArrowPreference(
                             title = ExportStrings.icsExportStartDate.text,
                             summary = IcsExportLogic.formatDate(options.fromDate),
-                            onClick = {
-                                showDatePicker(context, options.fromDate, onFromDateChange)
-                            },
+                            onClick = { pickingDateField = IcsExportDateField.From },
                         )
                         ArrowPreference(
                             title = ExportStrings.icsExportEndDate.text,
                             summary = IcsExportLogic.formatDate(options.toDate),
-                            onClick = {
-                                showDatePicker(context, options.toDate, onToDateChange)
-                            },
+                            onClick = { pickingDateField = IcsExportDateField.To },
                         )
                     }
                 }
@@ -225,7 +235,9 @@ fun IcsExportPage(
                                 modifier = Modifier.fillMaxWidth(),
                             ) {
                                 if (viewState.isSyncing) {
-                                    CircularProgressIndicator(size = 18.dp)
+                                    // 档 B1（美化一 D1 规格）：按钮内 16dp / 线宽 2 / 取 LocalContentColor。
+                                    // 原来裸 18dp 扫弧默认主色，压在 primary 蓝底按钮上等于「蓝底蓝圈」。
+                                    QingyuLoadingInButton()
                                     Spacer(modifier = Modifier.width(8.dp))
                                 }
                                 Text(ExportStrings.icsExportSyncCalendarButton.text)
@@ -251,7 +263,8 @@ fun IcsExportPage(
                             modifier = Modifier.fillMaxWidth(),
                         ) {
                             if (viewState.isExporting) {
-                                CircularProgressIndicator(size = 18.dp)
+                                // 同上：按钮内走共享件，文字与转圈同色（发布版按钮 loading = 16/2）。
+                                QingyuLoadingInButton()
                                 Spacer(modifier = Modifier.width(8.dp))
                             }
                             Text(ExportStrings.icsExportButton.text)
@@ -268,18 +281,22 @@ fun IcsExportPage(
         show = viewState.exportActionMenuVisible,
         onDismissRequest = onDismissExportMenu,
     ) {
-        Column(
-            modifier = Modifier.fillMaxWidth(),
-            verticalArrangement = Arrangement.spacedBy(8.dp),
-        ) {
-            TextButton(
-                modifier = Modifier.fillMaxWidth(),
-                text = ExportStrings.icsExportActionShare.text,
+        Column(modifier = Modifier.fillMaxWidth()) {
+            // 拍板 #8 定的是「去标题、去右箭头、两个动作铺满整宽」；行样式沿用本仓弹层菜单
+            // 的既有一套（课表管理「更多操作」菜单）：20dp 官方图标 + body1、整行可点、
+            // 官方按压反馈。Dart 原版那两条本来就带图标（`hyperos_anchor_menu_popup.dart`：
+            // `Icons.ios_share_rounded` / `Icons.folder_outlined`），66f90bfbb 收成底部弹层时丢了，
+            // 只剩两颗满宽 TextButton，读起来像两个「取消」。
+            ExportActionRow(
+                title = ExportStrings.icsExportActionShare.text,
+                icon = MiuixIcons.Share,
+                dark = dark,
                 onClick = onShareExported,
             )
-            TextButton(
-                modifier = Modifier.fillMaxWidth(),
-                text = ExportStrings.icsExportActionSave.text,
+            ExportActionRow(
+                title = ExportStrings.icsExportActionSave.text,
+                icon = MiuixIcons.Folder,
+                dark = dark,
                 onClick = onSaveExported,
             )
         }
@@ -303,7 +320,9 @@ fun IcsExportPage(
             style = MiuixTheme.textStyles.body2,
             color = Color(QingyuTheme.secondaryText(dark)),
         )
-        Spacer(modifier = Modifier.height(16.dp))
+        // 正文 ↔ 动作行的呼吸 = 20dp：Dart `HyperosDialog` 在正文与动作区之间垫的是
+        // `summaryBottomPadding(12) + 8`（`hyperos_dialog.dart:113-118`），不是动作行内部的 12dp。
+        Spacer(modifier = Modifier.height(20.dp))
         ConfirmRow(
             cancelLabel = ExportStrings.cancelAction.text,
             confirmLabel = ExportStrings.icsExportSyncCalendarConfirm.text,
@@ -326,7 +345,8 @@ fun IcsExportPage(
             style = MiuixTheme.textStyles.body2,
             color = Color(QingyuTheme.secondaryText(dark)),
         )
-        Spacer(modifier = Modifier.height(16.dp))
+        // 与上面同步说明同一个呼吸（20dp）：两个确认框是一对，别一个 16 一个 20。
+        Spacer(modifier = Modifier.height(20.dp))
         ConfirmRow(
             cancelLabel = ExportStrings.cancelAction.text,
             confirmLabel = ExportStrings.icsExportRemoveCalendarConfirm.text,
@@ -336,6 +356,31 @@ fun IcsExportPage(
             destructive = true,
         )
     }
+
+    // ── 起止日期滚轮（年 / 月 / 日三列官方 NumberPicker）──
+    val fieldBeingPicked = pickingDateField
+    ExportDatePickerSheet(
+        show = fieldBeingPicked != null,
+        title = if (fieldBeingPicked == IcsExportDateField.To) {
+            ExportStrings.icsExportEndDate.text
+        } else {
+            ExportStrings.icsExportStartDate.text
+        },
+        initial = if (fieldBeingPicked == IcsExportDateField.To) {
+            options.toDate
+        } else {
+            options.fromDate
+        },
+        onConfirm = { picked ->
+            when (fieldBeingPicked) {
+                IcsExportDateField.From -> onFromDateChange(picked)
+                IcsExportDateField.To -> onToDateChange(picked)
+                null -> {}
+            }
+            pickingDateField = null
+        },
+        onDismiss = { pickingDateField = null },
+    )
 }
 
 /**
@@ -395,19 +440,167 @@ private fun SectionLabel(text: String, dark: Boolean) {
     }
 }
 
-/** 系统日期选择器（Dart `HyperosDateTile` + `showDatePicker`）。 */
-private fun showDatePicker(
-    context: android.content.Context,
+/**
+ * 正在调日期滚轮的是哪一端（纯交互中间态；换成哪一天由宿主校验后写回模型）。
+ */
+private enum class IcsExportDateField { From, To }
+
+/** 日期滚轮可选年份 = Dart `ics_export_screen.dart:191-192` 的 `firstDate` / `lastDate`。 */
+private const val ICS_DATE_FIRST_YEAR = 1970
+private const val ICS_DATE_LAST_YEAR = 2100
+
+/**
+ * 起止日期滚轮弹层：年 / 月 / 日三列官方 `NumberPicker` + 取消 / 确认。
+ *
+ * Dart 侧是 `HyperosDateTile` → `showMiuixDatePickerSheet` 的**月历**；Kotlin 侧 miuix 0.9.4
+ * 没有 `DatePicker`，自绘月历属 MIUIX-FIRST 例外（要用户拍板 + 登记），所以沿用本仓既定的
+ * 等价做法：三列滚轮，交互结果一致。与 `pages/schedule/AddScheduleItemPage.kt` 的
+ * `ScheduleDatePickerSheet`、`pages/exam/ExamPickerSheets.kt` 的 `ExamCalendarWheelSheet`
+ * 同款（连「年不循环、月 / 日循环、改年 / 月后「日」上界就地收拢」的细节都一致）。
+ *
+ * 换掉的是系统 `DatePickerDialog`——那是全仓最后一处系统 Material 日期框，弹出来与本 App
+ * 其余界面（毛玻璃弹层 + 三列滚轮）完全是两套观感。
+ *
+ * 年份范围取本页 Dart 的 1970–2100，不套用日程页的 2020–2100：本页 Dart 明确写了
+ * `firstDate: DateTime(1970)`。
+ */
+@Composable
+private fun ExportDatePickerSheet(
+    show: Boolean,
+    title: String,
     initial: LocalDate,
-    onPicked: (LocalDate) -> Unit,
+    onConfirm: (LocalDate) -> Unit,
+    onDismiss: () -> Unit,
 ) {
-    DatePickerDialog(
-        context,
-        { _, year, month, dayOfMonth -> onPicked(LocalDate.of(year, month + 1, dayOfMonth)) },
-        initial.year,
-        initial.monthValue - 1,
-        initial.dayOfMonth,
-    ).show()
+    // 每次打开按「那一端当前值」重置三列：`show` / `initial` 变化才重算，滚轮不会跨次串值。
+    var year by remember(show, initial) { mutableIntStateOf(initial.year) }
+    var month by remember(show, initial) { mutableIntStateOf(initial.monthValue) }
+    var day by remember(show, initial) { mutableIntStateOf(initial.dayOfMonth) }
+
+    val maxDay = YearMonth.of(year, month).lengthOfMonth()
+    // 1/31 改到 2 月这类越界就地收拢，保证「确认」永远写进一个存在的日期。
+    val safeDay = day.coerceAtMost(maxDay)
+    val dark = isSystemInDarkTheme()
+
+    QingyuSheet(
+        show = show,
+        title = title,
+        onDismissRequest = onDismiss,
+        // 内容根 Column 自己给了左右 16（三列滚轮与按钮行都不通栏）⇒ 框架侧横向归零，
+        // 单边就是 16，不再叠成 32（与日程 / 学期设置那两处滚轮同口径）。
+        contentPadsHorizontally = true,
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp),
+        ) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(180.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                NumberPicker(
+                    value = year,
+                    onValueChange = {
+                        year = it
+                        day = day.coerceAtMost(YearMonth.of(it, month).lengthOfMonth())
+                    },
+                    range = ICS_DATE_FIRST_YEAR..ICS_DATE_LAST_YEAR,
+                    label = { "$it${TaskStrings.datePickerYear}" },
+                    textStyle = MiuixTheme.textStyles.title3,
+                    modifier = Modifier.weight(1f),
+                )
+                NumberPicker(
+                    value = month,
+                    onValueChange = {
+                        month = it
+                        day = day.coerceAtMost(YearMonth.of(year, it).lengthOfMonth())
+                    },
+                    range = 1..12,
+                    wrapAround = true,
+                    label = { "$it${TaskStrings.datePickerMonth}" },
+                    textStyle = MiuixTheme.textStyles.title3,
+                    modifier = Modifier.weight(1f),
+                )
+                NumberPicker(
+                    value = safeDay,
+                    onValueChange = { day = it },
+                    range = 1..maxDay,
+                    wrapAround = true,
+                    label = { "$it${TaskStrings.datePickerDay}" },
+                    textStyle = MiuixTheme.textStyles.title3,
+                    modifier = Modifier.weight(1f),
+                )
+            }
+            Spacer(modifier = Modifier.height(16.dp))
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+            ) {
+                // E2-02：取消键改发布版 `HyperosButtonVariant.secondary`（浅灰实心 `#E6E6E6` +
+                // 主文本字，暗色 0xFF505050），不再是 ghost `TextButton`——三颗滚轮弹层统一这个口径
+                //（`hyperos_controls.dart:657-818`；取色与导入预览卡 / transfer 域 `TransferButton`
+                // 的 secondary 分支同款）。**弹窗里的「取消」不动**：那是本仓 Dialog 口径（ghost）。
+                Button(
+                    modifier = Modifier.weight(1f),
+                    onClick = onDismiss,
+                    colors = ButtonDefaults.buttonColors(
+                        color = Color(QingyuTheme.secondary(dark)),
+                        contentColor = Color(QingyuTheme.primaryText(dark)),
+                    ),
+                ) {
+                    Text(text = ExportStrings.cancelAction.text)
+                }
+                Button(
+                    modifier = Modifier.weight(1f),
+                    onClick = { onConfirm(LocalDate.of(year, month, safeDay)) },
+                    // 「确认」是出口而不是取消 ⇒ 强调色。默认 `buttonColors()` 是灰底，
+                    // 读起来像禁用（2026-11-02 弹窗审核 S8 的同一条口径）。
+                    colors = ButtonDefaults.buttonColorsPrimary(),
+                ) {
+                    Text(text = TaskStrings.confirmAction)
+                }
+            }
+        }
+    }
+}
+
+/**
+ * 导出动作弹层的单项：官方图标 + 标题，整行可点（与 `TimetableProfilesPage.ActionMenuItem`
+ * 同一套弹层菜单行样式）。
+ *
+ * 横向留白由 [QingyuSheet] 给（单边 16dp），这里只补纵向 14dp——再多垫一次就成 30dp。
+ */
+@Composable
+private fun ExportActionRow(
+    title: String,
+    icon: ImageVector,
+    dark: Boolean,
+    onClick: () -> Unit,
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick)
+            .padding(vertical = 14.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(14.dp),
+    ) {
+        Icon(
+            imageVector = icon,
+            contentDescription = null,
+            tint = Color(QingyuTheme.actionIcon(dark)),
+            modifier = Modifier.size(20.dp),
+        )
+        Text(
+            text = title,
+            style = MiuixTheme.textStyles.body1.shiftWeight(QingyuWeightDelta.MEDIUM),
+            color = Color(QingyuTheme.primaryText(dark)),
+            modifier = Modifier.weight(1f),
+        )
+    }
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
