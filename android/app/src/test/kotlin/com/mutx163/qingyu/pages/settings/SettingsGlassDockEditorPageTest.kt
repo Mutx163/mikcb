@@ -237,17 +237,22 @@ class SettingsGlassDockEditorPageTest {
     }
 
     @Test
-    fun `目录里共 47 个条目 四个分类都有内容`() {
-        // home_menu_catalog.dart 的 kHomeMenuCatalog 实际条目数（脚本核对：47）
-        assertEquals(47, SettingsGlassDockEditorPage.catalog.size)
+    fun `目录里共 48 个条目 四个分类都有内容`() {
+        // 47 条 Dart `kHomeMenuCatalog` + 1 条开发壳「页面索引」（用户拿它当预览导航，
+        // 必须能在底栏编辑器里加 / 删，否则只能在空表时被追加、永远删不掉）。
+        assertEquals(48, SettingsGlassDockEditorPage.catalog.size)
         DockCategory.entries.forEach { category ->
             assertTrue(
                 "分类 $category 在目录里没有条目",
                 SettingsGlassDockEditorPage.catalog.any { it.category == category },
             )
         }
+        assertTrue(
+            "底栏候选里必须有开发壳「页面索引」",
+            SettingsGlassDockEditorPage.catalog.any { it.id == "index" },
+        )
         // 分类计数也钉住，防止「归类挪错」这种静默变化
-        assertEquals(23, SettingsGlassDockEditorPage.catalog.count { it.category == DockCategory.FEATURES })
+        assertEquals(24, SettingsGlassDockEditorPage.catalog.count { it.category == DockCategory.FEATURES })
         assertEquals(4, SettingsGlassDockEditorPage.catalog.count { it.category == DockCategory.DATA })
         assertEquals(13, SettingsGlassDockEditorPage.catalog.count { it.category == DockCategory.PREFERENCES })
         assertEquals(7, SettingsGlassDockEditorPage.catalog.count { it.category == DockCategory.ABOUT })

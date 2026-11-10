@@ -1,5 +1,6 @@
 package com.mutx163.qingyu.pages.settings
 
+import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -28,18 +29,58 @@ class DockMenuDragGuardTest {
         )
     }
 
+    /**
+     * 行区锚点：`DockSlotRow` 的**函数体**（到下一个 `private fun` 为止）。
+     *
+     * 2026-11-10 复核退回后收紧：原先第一条断言用跨文件的 `fillMaxWidth()[\s\S]*?pointerInput`
+     * 非贪婪匹配，把手势挪回行内小盒的旧版也照样绿——判据不是锚在这行的卡片上，而是锚在
+     * 「同一个文件里某处出现两个片段」。现在所有判据只在 [rowZone] 内取，且按卡片 / 行内
+     * 两段切开（见 [rowCardZone] / [rowInnerZone]）。
+     */
+    private val rowZone: String by lazy {
+        val start = editorsSource.indexOf("private fun DockSlotRow")
+        assertTrue("找不到 DockSlotRow 函数——守卫按线索断言对不齐", start >= 0)
+        val end = editorsSource.indexOf("private fun CandidateRow", start)
+        editorsSource.substring(start, if (end < 0) editorsSource.length else end)
+    }
+
+    /** 卡片调用段：`QingyuCard(` 到行内容 `Row(` 之前（只含卡片自身的 modifier 链）。 */
+    private val rowCardZone: String by lazy {
+        val cardStart = rowZone.indexOf("QingyuCard(")
+        assertTrue("DockSlotRow 里找不到卡片调用 `QingyuCard(`", cardStart >= 0)
+        val rowStart = rowZone.indexOf("\n        Row(", cardStart)
+        assertTrue("找不到卡片内的行内容 `Row(`——卡片/行内两段切不开，判据失效", rowStart > cardStart)
+        rowZone.substring(cardStart, rowStart)
+    }
+
+    /** 行内段：卡片内容那层 `Row(` 到函数结尾（图标徽章、标题、移除按钮都在这段）。 */
+    private val rowInnerZone: String by lazy {
+        val cardZoneLength = rowCardZone.length + rowZone.indexOf("QingyuCard(")
+        rowZone.substring(cardZoneLength)
+    }
+
     @Test
-    fun `拖动手势挂在整行卡片上而不是手柄小盒上`() {
-        // 挂整行：复位后指针的 Down 事件应直接落在卡片修饰链上（padding+pointerInput+zIndex）。
+    fun `拖动手势必须挂在整行卡片的修饰链上`() {
+        // ① 手势只在卡片修饰链里（不是行内某个小盒 / 图标上）。
         assertTrue(
-            "手势必须挂在整行卡片的 Modifier 上，不是手柄小盒里——按住条目不动就是假承诺。",
-            editorsSource.contains("detectDragGesturesAfterLongPress("),
+            "整行卡片的修饰链里没有 `pointerInput(index, itemCount)`——按住条目不能拖，假承诺。",
+            "pointerInput(index, itemCount)" in rowCardZone,
         )
         assertTrue(
-            "手势必须挂在整行卡片的 Modifier 上（.fillMaxWidth 链里出现 pointerInput）。",
-            Regex(
-                "fillMaxWidth\\(\\)[\\s\\S]*?pointerInput\\(index, itemCount\\)\\s*\\{",
-            ).containsMatchIn(editorsSource),
+            "卡片修饰链里没有 `detectDragGesturesAfterLongPress(`——长按拖动不在整行上。",
+            "detectDragGesturesAfterLongPress(" in rowCardZone,
+        )
+        // ② 行内子元素（图标徽章 / 标题 / 移除按钮）不许再挂拖动手势：
+        //    旧版把 pointerInput 放手柄小盒里，按住别处不动，正是这次要钉死的东西。
+        assertFalse(
+            "行内子元素上又出现了 `pointerInput`——手势被挪回小盒/图标上，整行拖动失效。",
+            "pointerInput" in rowInnerZone,
+        )
+        // ③ 整行只能有一处长按手势：多一处就有两套拖动状态互相打断。
+        assertEquals(
+            "DockSlotRow 里 `detectDragGesturesAfterLongPress(` 应恰好 1 处（整行卡片），实际为：",
+            1,
+            occurrences(rowZone, "detectDragGesturesAfterLongPress("),
         )
     }
 
@@ -97,6 +138,18 @@ class DockMenuDragGuardTest {
     }
 
     private fun indexOfEnd(end: Int): Int = if (end < 0) editorsSource.length else end
+
+    /** 数一个片段在给定区间里出现几次（不做正则，避免 `[\\s\\S]*?` 这类跨段匹配再次放水）。 */
+    private fun occurrences(haystack: String, needle: String): Int {
+        var count = 0
+        var from = 0
+        while (true) {
+            val i = haystack.indexOf(needle, from)
+            if (i < 0) return count
+            count++
+            from = i + 1
+        }
+    }
 
     /** 判据自检：剥注释后注释里的关键字不计。 */
     @Test
