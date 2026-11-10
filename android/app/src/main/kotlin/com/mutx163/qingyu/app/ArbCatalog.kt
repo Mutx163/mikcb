@@ -23,7 +23,7 @@ object ArbCatalog {
         else -> null
     }
 
-    // ── en（3040 条）──
+    // ── en（3038 条）──
     private fun lookupen(key: String): String? = lookupen1(key) ?: lookupen2(key) ?: lookupen3(key) ?: lookupen4(key) ?: lookupen5(key) ?: lookupen6(key) ?: lookupen7(key) ?: lookupen8(key) ?: lookupen9(key) ?: lookupen10(key) ?: lookupen11(key)
     private fun lookupen1(key: String): String? = when (key) {
         "aboutAdvancedOptionsTitle" -> "Advanced options"
@@ -252,7 +252,6 @@ object ArbCatalog {
         "beforeClassDisplaySettingsTitle" -> "Pre-class display"
         "beforeClassMinutesOption" -> "{minutes} min"
         "beforeClassPopupLabel" -> "Class-start trigger"
-        "beforeClassQuickActionSubtitle" -> "Shown only in the expanded before-class notification; DND auto-restores after class, first use needs system permission"
         "beforeClassQuickActionTitle" -> "Pre-class action"
         "beforeClassReminderSubtitle" -> "{minutes} min early"
         "beforeClassReminderTitle" -> "Pre-class reminder"
@@ -326,10 +325,10 @@ object ArbCatalog {
         "cloudBackupDetailSummary" -> "Contents"
         "cloudBackupDeviceLabelHint" -> "Shown in backup list, e.g. My phone"
         "cloudBackupDeviceLabelTitle" -> "Device name"
+        "cloudBackupEmpty" -> "No backups yet"
         else -> null
     }
     private fun lookupen2(key: String): String? = when (key) {
-        "cloudBackupEmpty" -> "No backups yet"
         "cloudBackupManualProtectedTitle" -> "Manual backups kept"
         "cloudBackupMaxAgeOption" -> "{days} days"
         "cloudBackupMaxAgeSubtitle" -> "Auto-deletes older backups"
@@ -456,7 +455,6 @@ object ArbCatalog {
         "copyCurrentAddressTooltip" -> "Copy current address"
         "copyLoginAddressAction" -> "Copy login address"
         "copyScriptAddressAction" -> "Copy script address"
-        "countdownFormatHelp" -> "Per minute, or per second"
         "countdownFormatLabel" -> "Countdown Format"
         "coupleTimetableBoundTitle" -> "Partner timetable linked"
         "coupleTimetableColorsTitle" -> "Overlay colors"
@@ -629,11 +627,11 @@ object ArbCatalog {
         "courseNoteTabWholeCourse" -> "Course description"
         "courseNoteTileSubtitleBoth" -> "Course description and this-class notes set"
         "courseNoteTileSubtitleEmpty" -> "Note what to bring or class reminders"
+        "courseNoteTileSubtitleSession" -> "This-class note set"
+        "courseNoteTileSubtitleWhole" -> "Course description set"
         else -> null
     }
     private fun lookupen3(key: String): String? = when (key) {
-        "courseNoteTileSubtitleSession" -> "This-class note set"
-        "courseNoteTileSubtitleWhole" -> "Course description set"
         "courseNoteWholeCourseHint" -> "Shared across same-name courses (e.g. syllabus notes or classroom tips)."
         "courseNoteWholeCourseLabel" -> "Course description"
         "courseNoteWholeCoursePlaceholder" -> "e.g. This teacher often takes attendance, classroom is in the new building…"
@@ -791,12 +789,14 @@ object ArbCatalog {
         "dontRememberAction" -> "Don't remember"
         "downloadSpreadsheetTemplateAction" -> "Download mikcb template"
         "duplicateAction" -> "Duplicate"
+        "duringClassReminderSubtitle" -> "Only affects the period after class starts and before it ends"
         "duringClassReminderTitle" -> "Class & end alerts"
         "duringClassStatusNotificationBeforeEnd" -> "Normal until the priority reminder"
         "duringClassStatusNotificationImmediate" -> "Keeps the status bar notification"
         "duringClassStatusNotificationPersistent" -> "Normal notification throughout"
         "duringClassStatusNotificationTitle" -> "Class status notice"
         "duringEndDisplaySettingsTitle" -> "Reminder display"
+        "duringEndTimeDisplayHelp" -> "Choose whether compact reminders show nearest time or the total remaining time."
         "duringEndTimeDisplayLabel" -> "Class time style"
         "editAction" -> "Edit"
         "editCourseTitle" -> "Edit Course"
@@ -808,6 +808,7 @@ object ArbCatalog {
         "editTask" -> "Edit Task"
         "editTimeSchemeTitle" -> "Edit Time Scheme"
         "emptyCourseOverviewHint" -> "Long press the timetable or tap the top-right button to add a course"
+        "enableIslandDisplaySubtitle" -> "Disable this if you never want the app to trigger system island presentation"
         "enableIslandDisplayTitle" -> "Show Island"
         "endSectionLabel" -> "End Section"
         "endWeekLabel" -> "End Week"
@@ -931,10 +932,10 @@ object ArbCatalog {
         "frostedGlassModeSolidNotice" -> "All blur is off: the top bar and dock render solid; course card choices have no effect yet."
         "frostedSheetSectionTitle" -> "Glass Material"
         "fullExportSubtitle" -> "Export the current timetable, or export all timetables, time schemes, and the current selection"
-        "fullExportTitle" -> "Export"
         else -> null
     }
     private fun lookupen4(key: String): String? = when (key) {
+        "fullExportTitle" -> "Export"
         "fullImportSubtitle" -> "When importing, you can overwrite the current timetable or import it as a new timetable. Export your backup first if possible"
         "fullImportTitle" -> "Import"
         "generalSettingsTitle" -> "General"
@@ -1234,10 +1235,10 @@ object ArbCatalog {
         "hyperosShowcaseSectionNavRows" -> "List rows · Navigation"
         "hyperosShowcaseSectionPicker" -> "Wheel picker"
         "hyperosShowcaseSectionPressable" -> "HyperosPressableRow"
-        "hyperosShowcaseSectionProgress" -> "Progress & refresh"
         else -> null
     }
     private fun lookupen5(key: String): String? = when (key) {
+        "hyperosShowcaseSectionProgress" -> "Progress & refresh"
         "hyperosShowcaseSectionShell" -> "Page shell"
         "hyperosShowcaseSectionSummary" -> "Summary card"
         "hyperosShowcaseSectionSwitchRows" -> "List rows · Switch / Destructive"
@@ -1444,7 +1445,6 @@ object ArbCatalog {
         "liveBeforeClassDisplayEntryTitle" -> "Before Class Display"
         "liveBeforeClassQuickActionAutoOptionMinutes" -> "{minutes} min before class"
         "liveBeforeClassQuickActionAutoOptionOff" -> "Off"
-        "liveBeforeClassQuickActionAutoSubtitle" -> "Auto-on before, restore after"
         "liveBeforeClassQuickActionAutoTitle" -> "Automatic"
         "liveBeforeClassQuickActionBoth" -> "Silent + Do Not Disturb"
         "liveBeforeClassQuickActionDoNotDisturb" -> "Turn on Do Not Disturb"
@@ -1530,7 +1530,7 @@ object ArbCatalog {
         "liveIslandExpandedPreviewTitle" -> "Expanded preview"
         "liveIslandLabelEntryDisabled" -> "Off"
         "liveIslandLabelEntryEnabled" -> "On"
-        "liveIslandPreviewFollowBadge" -> "Following before-class display settings; adjust those to preview changes"
+        "liveIslandPreviewFollowBadge" -> "Follows the before-class settings"
         "liveIslandPreviewSampleCourse" -> "Mathematics"
         "liveIslandPreviewSampleCourseShort" -> "Math"
         "liveIslandPreviewSampleLocation" -> "Bldg 3-401"
@@ -1552,7 +1552,6 @@ object ArbCatalog {
         "liveIslandVisualTitle" -> "Capsule Left Icon"
         "liveKeepAliveTitle" -> "Keep Alive"
         "liveMiuiExpandedIconLabel" -> "Expanded Large Icon"
-        "liveMiuiLabelAdvancedAccordionSubtitle" -> "Font size, horizontal/vertical offsets, weight, and render quality"
         "liveMiuiLabelAdvancedAccordionTitle" -> "Typography & Alignment Fine-Tuning"
         "liveMiuiLabelContentLabel" -> "Left Text Content"
         "liveMiuiLabelFontSizeLabel" -> "Left Text Size {value}"
@@ -1560,7 +1559,6 @@ object ArbCatalog {
         "liveMiuiLabelImageSubtitle" -> "Xiaomi/Redmi only"
         "liveMiuiLabelImageTitle" -> "Island left icon"
         "liveMiuiLabelLogoCornerRadiusLabel" -> "Corner radius {value}"
-        "liveMiuiLabelLogoSubtitle" -> "Falls back to the app icon"
         "liveMiuiLabelLogoTitle" -> "Left Icon Logo"
         "liveMiuiLabelOffsetXLabel" -> "Text X offset {value}"
         "liveMiuiLabelOffsetYLabel" -> "Text Y offset {value}"
@@ -1841,11 +1839,11 @@ object ArbCatalog {
         "logFieldLiveEnableDuringClass" -> "live Enable During Class"
         "logFieldLiveEnableMiuiIslandLabelImage" -> "live Enable Miui Island Label Image"
         "logFieldLiveEndSecondsCountdownThreshold" -> "live End Seconds Countdown Threshold"
+        "logFieldLiveHidePrefixText" -> "live Hide Prefix Text"
+        "logFieldLiveMiuiIslandExpandedIconMode" -> "live Miui Island Expanded Icon Mode"
         else -> null
     }
     private fun lookupen7(key: String): String? = when (key) {
-        "logFieldLiveHidePrefixText" -> "live Hide Prefix Text"
-        "logFieldLiveMiuiIslandExpandedIconMode" -> "live Miui Island Expanded Icon Mode"
         "logFieldLiveMiuiIslandLabelContent" -> "live Miui Island Label Content"
         "logFieldLiveMiuiIslandLabelFontColor" -> "live Miui Island Label Font Color"
         "logFieldLiveMiuiIslandLabelFontSize" -> "live Miui Island Label Font Size"
@@ -2144,11 +2142,11 @@ object ArbCatalog {
         "qrTransferSectionTitle" -> "QR Face-to-Face Transfer"
         "qrTransferSelectCoursesDone" -> "Done"
         "qrTransferSendAll" -> "Send All Data"
+        "qrTransferSendCurrent" -> "Send Current Timetable"
+        "qrTransferSendHint" -> "Ask the other party to open \"Scan to Receive\" and keep the camera pointed at this screen until done"
         else -> null
     }
     private fun lookupen8(key: String): String? = when (key) {
-        "qrTransferSendCurrent" -> "Send Current Timetable"
-        "qrTransferSendHint" -> "Ask the other party to open \"Scan to Receive\" and keep the camera pointed at this screen until done"
         "qrTransferSessionExpired" -> "QR transfer timed out. Restart and keep the camera pointed at one screen."
         "qrTransferSessionMismatch" -> "Detected a different transfer; make sure you are pointing at one stream only"
         "qrTransferShareSelectedCourses" -> "Share selected courses"
@@ -2447,11 +2445,11 @@ object ArbCatalog {
         "serviceMsgMacroElementNotFound" -> "Element not found: {selector}"
         "serviceMsgMacroFillSelectorEmpty" -> "Fill-field selector is empty."
         "serviceMsgMacroManualInputDefault" -> "Manual action required."
+        "serviceMsgMacroNavigateUrlEmpty" -> "Navigation URL is empty."
+        "serviceMsgMacroNavigateUrlInvalid" -> "Invalid URL: {url}"
         else -> null
     }
     private fun lookupen9(key: String): String? = when (key) {
-        "serviceMsgMacroNavigateUrlEmpty" -> "Navigation URL is empty."
-        "serviceMsgMacroNavigateUrlInvalid" -> "Invalid URL: {url}"
         "serviceMsgMacroNoSteps" -> "No recorded steps."
         "serviceMsgMacroPollTimeout" -> "{stepLabel} timed out ({timeoutSeconds}s){lastError}"
         "serviceMsgMacroReplayClick" -> "Clicking…"
@@ -2750,11 +2748,11 @@ object ArbCatalog {
         "supportSaveShort" -> "Save"
         "supportTapQrHint" -> "Tap to enlarge"
         "supportWeChatHint" -> "Use WeChat to scan and support the creator"
+        "supportedFilesImageHint" -> "If you only have screenshots, go back and choose Image Import instead"
+        "supportedFilesSuffix" -> "The file extension must be .ics."
         else -> null
     }
     private fun lookupen10(key: String): String? = when (key) {
-        "supportedFilesImageHint" -> "If you only have screenshots, go back and choose Image Import instead"
-        "supportedFilesSuffix" -> "The file extension must be .ics."
         "supportedFilesTitle" -> "Supported Files"
         "surfaceCourseCard" -> "Course cards"
         "surfaceMaterialSectionTitle" -> "Current material per surface"
@@ -3053,11 +3051,11 @@ object ArbCatalog {
         "weekLabel" -> "Week {week}"
         "weekListSeparator" -> ", "
         "weekPickerCalendarTooltip" -> "Use calendar picker"
+        "weekPickerTitle" -> "Select weeks"
+        "weekdayFri" -> "Fri"
         else -> null
     }
     private fun lookupen11(key: String): String? = when (key) {
-        "weekPickerTitle" -> "Select weeks"
-        "weekdayFri" -> "Fri"
         "weekdayInkContrastBodyDark" -> "Your weekday bar text color had too little contrast against the dark wallpaper, so it was lightened automatically to stay readable — your color is kept. You can change or reset it under \"Timetable Page → Text Colors\"."
         "weekdayInkContrastBodyLight" -> "Your weekday bar text color had too little contrast against the light wallpaper, so it was darkened automatically to stay readable — your color is kept. You can change or reset it under \"Timetable Page → Text Colors\"."
         "weekdayInkContrastTitle" -> "Low Text Contrast"
@@ -3099,7 +3097,7 @@ object ArbCatalog {
         else -> null
     }
 
-    // ── ja（3040 条）──
+    // ── ja（3038 条）──
     private fun lookupja(key: String): String? = lookupja1(key) ?: lookupja2(key) ?: lookupja3(key) ?: lookupja4(key) ?: lookupja5(key) ?: lookupja6(key) ?: lookupja7(key) ?: lookupja8(key) ?: lookupja9(key) ?: lookupja10(key) ?: lookupja11(key)
     private fun lookupja1(key: String): String? = when (key) {
         "aboutAdvancedOptionsTitle" -> "高度なオプション"
@@ -3328,7 +3326,6 @@ object ArbCatalog {
         "beforeClassDisplaySettingsTitle" -> "授業前リマインダー表示"
         "beforeClassMinutesOption" -> "{minutes}分"
         "beforeClassPopupLabel" -> "授業前ポップアップ時間"
-        "beforeClassQuickActionSubtitle" -> "授業前通知の展開表示にのみ表示されます。おやすみモードは授業後に自動復帰し、初回はシステム権限が必要です"
         "beforeClassQuickActionTitle" -> "授業前アクション"
         "beforeClassReminderSubtitle" -> "授業開始{minutes}分前にポップアップ"
         "beforeClassReminderTitle" -> "授業前リマインダー"
@@ -3402,10 +3399,10 @@ object ArbCatalog {
         "cloudBackupDetailSummary" -> "内容"
         "cloudBackupDeviceLabelHint" -> "バックアップ一覧に表示されます（例：私のスマホ）"
         "cloudBackupDeviceLabelTitle" -> "デバイス名"
+        "cloudBackupEmpty" -> "バックアップなし"
         else -> null
     }
     private fun lookupja2(key: String): String? = when (key) {
-        "cloudBackupEmpty" -> "バックアップなし"
         "cloudBackupManualProtectedTitle" -> "手動バックアップ無期限"
         "cloudBackupMaxAgeOption" -> "{days} days"
         "cloudBackupMaxAgeSubtitle" -> "超えた分は自動削除"
@@ -3532,7 +3529,6 @@ object ArbCatalog {
         "copyCurrentAddressTooltip" -> "現在のアドレスをコピー"
         "copyLoginAddressAction" -> "ログインURLをコピー"
         "copyScriptAddressAction" -> "スクリプトURLをコピー"
-        "countdownFormatHelp" -> "分のみは分ごと、秒ありは秒ごと"
         "countdownFormatLabel" -> "カウントダウン形式"
         "coupleTimetableBoundTitle" -> "相手の時間割と連携済み"
         "coupleTimetableColorsTitle" -> "重ね合わせの色"
@@ -3705,11 +3701,11 @@ object ArbCatalog {
         "courseNoteTabWholeCourse" -> "授業の概要"
         "courseNoteTileSubtitleBoth" -> "授業の概要と今回の授業のメモがあります"
         "courseNoteTileSubtitleEmpty" -> "持ち物や授業の注意点を記録"
+        "courseNoteTileSubtitleSession" -> "今回の授業のメモあり"
+        "courseNoteTileSubtitleWhole" -> "授業の概要あり"
         else -> null
     }
     private fun lookupja3(key: String): String? = when (key) {
-        "courseNoteTileSubtitleSession" -> "今回の授業のメモあり"
-        "courseNoteTileSubtitleWhole" -> "授業の概要あり"
         "courseNoteWholeCourseHint" -> "同名の授業で共有され、長期間有効です（例：授業の説明、注意点など）。"
         "courseNoteWholeCourseLabel" -> "授業の概要"
         "courseNoteWholeCoursePlaceholder" -> "例：この先生はよく出席確認をする、教室は新校舎…"
@@ -3867,12 +3863,14 @@ object ArbCatalog {
         "dontRememberAction" -> "記憶しない"
         "downloadSpreadsheetTemplateAction" -> "軽嶼課表テンプレートをダウンロード"
         "duplicateAction" -> "複製"
+        "duringClassReminderSubtitle" -> "授業開始後から終了前までの表示にのみ影響"
         "duringClassReminderTitle" -> "授業中・終了通知"
         "duringClassStatusNotificationBeforeEnd" -> "重点の前は通常通知"
         "duringClassStatusNotificationImmediate" -> "ステータスバー通知を保持"
         "duringClassStatusNotificationPersistent" -> "全体を通して通常通知"
         "duringClassStatusNotificationTitle" -> "授業中ステータス通知"
         "duringEndDisplaySettingsTitle" -> "リマインダー表示"
+        "duringEndTimeDisplayHelp" -> "コンパクトリマインダーで直近の時間を表示するか、全体の合計時間を表示するかを制御。"
         "duringEndTimeDisplayLabel" -> "授業中の時間スタイル"
         "editAction" -> "編集"
         "editCourseTitle" -> "授業を編集"
@@ -3884,6 +3882,7 @@ object ArbCatalog {
         "editTask" -> "タスクを編集"
         "editTimeSchemeTitle" -> "テンプレート編集"
         "emptyCourseOverviewHint" -> "時間割を長押しするか、右上のボタンから授業を追加"
+        "enableIslandDisplaySubtitle" -> "オフにするとシステムスーパーアイランドのトリガーを停止"
         "enableIslandDisplayTitle" -> "スーパーアイランド表示"
         "endSectionLabel" -> "終了時限"
         "endWeekLabel" -> "終了週"
@@ -4007,10 +4006,10 @@ object ArbCatalog {
         "frostedGlassModeSolidNotice" -> "ぼかしをすべてオフ：トップバーとドックはソリッドで描画され、コースカードの選択は反映されません。"
         "frostedSheetSectionTitle" -> "ガラス素材"
         "fullExportSubtitle" -> "現在の時間割、または全時間割・テンプレート・選択状態を一括エクスポート"
-        "fullExportTitle" -> "完全エクスポート"
         else -> null
     }
     private fun lookupja4(key: String): String? = when (key) {
+        "fullExportTitle" -> "完全エクスポート"
         "fullImportSubtitle" -> "インポート時に現在の時間割を上書きするか、新しい時間割としてインポート可能，事前にバックアップを推奨"
         "fullImportTitle" -> "完全インポート"
         "generalSettingsTitle" -> "一般"
@@ -4310,10 +4309,10 @@ object ArbCatalog {
         "hyperosShowcaseSectionNavRows" -> "List rows · Navigation"
         "hyperosShowcaseSectionPicker" -> "Wheel picker"
         "hyperosShowcaseSectionPressable" -> "HyperosPressableRow"
-        "hyperosShowcaseSectionProgress" -> "Progress & refresh"
         else -> null
     }
     private fun lookupja5(key: String): String? = when (key) {
+        "hyperosShowcaseSectionProgress" -> "Progress & refresh"
         "hyperosShowcaseSectionShell" -> "Page shell"
         "hyperosShowcaseSectionSummary" -> "Summary card"
         "hyperosShowcaseSectionSwitchRows" -> "List rows · Switch / Destructive"
@@ -4520,7 +4519,6 @@ object ArbCatalog {
         "liveBeforeClassDisplayEntryTitle" -> "授業前リマインダー表示"
         "liveBeforeClassQuickActionAutoOptionMinutes" -> "授業の {minutes} 分前"
         "liveBeforeClassQuickActionAutoOptionOff" -> "オフ"
-        "liveBeforeClassQuickActionAutoSubtitle" -> "授業前に自動オン、授業後に戻します"
         "liveBeforeClassQuickActionAutoTitle" -> "自動実行"
         "liveBeforeClassQuickActionBoth" -> "サイレントとおやすみモード"
         "liveBeforeClassQuickActionDoNotDisturb" -> "Turn on Do Not Disturb"
@@ -4606,7 +4604,7 @@ object ArbCatalog {
         "liveIslandExpandedPreviewTitle" -> "展開状態プレビュー"
         "liveIslandLabelEntryDisabled" -> "オフ"
         "liveIslandLabelEntryEnabled" -> "オン"
-        "liveIslandPreviewFollowBadge" -> "「授業前表示」の設定に従っています。そちらを調整すると反映されます"
+        "liveIslandPreviewFollowBadge" -> "授業前の設定に従う"
         "liveIslandPreviewSampleCourse" -> "高等数学"
         "liveIslandPreviewSampleCourseShort" -> "数学"
         "liveIslandPreviewSampleLocation" -> "3号館-401"
@@ -4628,7 +4626,6 @@ object ArbCatalog {
         "liveIslandVisualTitle" -> "カプセル左側アイコン"
         "liveKeepAliveTitle" -> "バックグラウンド常駐"
         "liveMiuiExpandedIconLabel" -> "展開時の大きいアイコン"
-        "liveMiuiLabelAdvancedAccordionSubtitle" -> "フォントサイズ、水平/垂直オフセット、太さ、鮮明度"
         "liveMiuiLabelAdvancedAccordionTitle" -> "文字組版と位置の微調整"
         "liveMiuiLabelContentLabel" -> "左側テキスト内容"
         "liveMiuiLabelFontSizeLabel" -> "左側テキストサイズ{value}"
@@ -4636,7 +4633,6 @@ object ArbCatalog {
         "liveMiuiLabelImageSubtitle" -> "Xiaomi/Redmi 推奨、他は非推奨"
         "liveMiuiLabelImageTitle" -> "アイランド左側アイコン"
         "liveMiuiLabelLogoCornerRadiusLabel" -> "左側アイコン角丸{value}"
-        "liveMiuiLabelLogoSubtitle" -> "未設定時はアプリアイコンを使用"
         "liveMiuiLabelLogoTitle" -> "左側アイコンLogo"
         "liveMiuiLabelOffsetXLabel" -> "横オフセット {value}"
         "liveMiuiLabelOffsetYLabel" -> "縦オフセット {value}"
@@ -4917,11 +4913,11 @@ object ArbCatalog {
         "logFieldLiveEnableDuringClass" -> "live Enable During Class"
         "logFieldLiveEnableMiuiIslandLabelImage" -> "live Enable Miui Island Label Image"
         "logFieldLiveEndSecondsCountdownThreshold" -> "live End Seconds Countdown Threshold"
+        "logFieldLiveHidePrefixText" -> "live Hide Prefix Text"
+        "logFieldLiveMiuiIslandExpandedIconMode" -> "live Miui Island Expanded Icon Mode"
         else -> null
     }
     private fun lookupja7(key: String): String? = when (key) {
-        "logFieldLiveHidePrefixText" -> "live Hide Prefix Text"
-        "logFieldLiveMiuiIslandExpandedIconMode" -> "live Miui Island Expanded Icon Mode"
         "logFieldLiveMiuiIslandLabelContent" -> "live Miui Island Label Content"
         "logFieldLiveMiuiIslandLabelFontColor" -> "live Miui Island Label Font Color"
         "logFieldLiveMiuiIslandLabelFontSize" -> "live Miui Island Label Font Size"
@@ -5220,11 +5216,11 @@ object ArbCatalog {
         "qrTransferSectionTitle" -> "QRコードで直接転送"
         "qrTransferSelectCoursesDone" -> "完了"
         "qrTransferSendAll" -> "すべてのデータを送信"
+        "qrTransferSendCurrent" -> "現在の時間割を送信"
+        "qrTransferSendHint" -> "相手に「読み取って受信」を開いてもらい、カメラをこの画面に向けてもらってください"
         else -> null
     }
     private fun lookupja8(key: String): String? = when (key) {
-        "qrTransferSendCurrent" -> "現在の時間割を送信"
-        "qrTransferSendHint" -> "相手に「読み取って受信」を開いてもらい、カメラをこの画面に向けてもらってください"
         "qrTransferSessionExpired" -> "QR転送がタイムアウトしました。最初からやり直し、1台の画面だけにカメラを向けてください。"
         "qrTransferSessionMismatch" -> "別の転送内容を検出しました。1つの画面だけに正対してください"
         "qrTransferShareSelectedCourses" -> "選択した科目を共有"
@@ -5523,11 +5519,11 @@ object ArbCatalog {
         "serviceMsgMacroElementNotFound" -> "Element not found: {selector}"
         "serviceMsgMacroFillSelectorEmpty" -> "Fill-field selector is empty."
         "serviceMsgMacroManualInputDefault" -> "Manual action required."
+        "serviceMsgMacroNavigateUrlEmpty" -> "Navigation URL is empty."
+        "serviceMsgMacroNavigateUrlInvalid" -> "Invalid URL: {url}"
         else -> null
     }
     private fun lookupja9(key: String): String? = when (key) {
-        "serviceMsgMacroNavigateUrlEmpty" -> "Navigation URL is empty."
-        "serviceMsgMacroNavigateUrlInvalid" -> "Invalid URL: {url}"
         "serviceMsgMacroNoSteps" -> "No recorded steps."
         "serviceMsgMacroPollTimeout" -> "{stepLabel} timed out ({timeoutSeconds}s){lastError}"
         "serviceMsgMacroReplayClick" -> "Clicking…"
@@ -5826,11 +5822,11 @@ object ArbCatalog {
         "supportSaveShort" -> "保存"
         "supportTapQrHint" -> "タップで拡大"
         "supportWeChatHint" -> "WeChatでQRコードをスキャンして作者を支援"
+        "supportedFilesImageHint" -> "スクリーンショットしかない場合は、前のページに戻って「画像認識インポート」を選択してください"
+        "supportedFilesSuffix" -> "ファイル拡張子は.icsである必要があります。"
         else -> null
     }
     private fun lookupja10(key: String): String? = when (key) {
-        "supportedFilesImageHint" -> "スクリーンショットしかない場合は、前のページに戻って「画像認識インポート」を選択してください"
-        "supportedFilesSuffix" -> "ファイル拡張子は.icsである必要があります。"
         "supportedFilesTitle" -> "対応ファイル"
         "surfaceCourseCard" -> "時間割カード"
         "surfaceMaterialSectionTitle" -> "表面ごとの現在の素材"
@@ -6129,11 +6125,11 @@ object ArbCatalog {
         "weekLabel" -> "第{week}週"
         "weekListSeparator" -> "、"
         "weekPickerCalendarTooltip" -> "カレンダーで選択"
+        "weekPickerTitle" -> "授業週次を選択"
+        "weekdayFri" -> "金曜"
         else -> null
     }
     private fun lookupja11(key: String): String? = when (key) {
-        "weekPickerTitle" -> "授業週次を選択"
-        "weekdayFri" -> "金曜"
         "weekdayInkContrastBodyDark" -> "曜日バーの文字色は濃い壁紙とのコントラストが不足していたため、読みやすいよう自動で明るくしました（色味はそのまま）。「時間割ページ → 文字色」で色を変更またはリセットできます。"
         "weekdayInkContrastBodyLight" -> "曜日バーの文字色は明るい壁紙とのコントラストが不足していたため、読みやすいよう自動で暗くしました（色味はそのまま）。「時間割ページ → 文字色」で色を変更またはリセットできます。"
         "weekdayInkContrastTitle" -> "文字のコントラスト不足"
@@ -6175,7 +6171,7 @@ object ArbCatalog {
         else -> null
     }
 
-    // ── ko（3040 条）──
+    // ── ko（3038 条）──
     private fun lookupko(key: String): String? = lookupko1(key) ?: lookupko2(key) ?: lookupko3(key) ?: lookupko4(key) ?: lookupko5(key) ?: lookupko6(key) ?: lookupko7(key) ?: lookupko8(key) ?: lookupko9(key) ?: lookupko10(key) ?: lookupko11(key)
     private fun lookupko1(key: String): String? = when (key) {
         "aboutAdvancedOptionsTitle" -> "고급 옵션"
@@ -6404,7 +6400,6 @@ object ArbCatalog {
         "beforeClassDisplaySettingsTitle" -> "수업 전 알림 표시"
         "beforeClassMinutesOption" -> "{minutes}분"
         "beforeClassPopupLabel" -> "수업 전 팝업 시간"
-        "beforeClassQuickActionSubtitle" -> "수업 전 알림의 확장 알림에만 표시됩니다. 방해 금지는 수업 후 자동 복원되며 최초 1회 시스템 권한이 필요합니다"
         "beforeClassQuickActionTitle" -> "수업 전 빠른 작업"
         "beforeClassReminderSubtitle" -> "수업 시작 {minutes}분 전에 팝업"
         "beforeClassReminderTitle" -> "수업 전 알림"
@@ -6478,10 +6473,10 @@ object ArbCatalog {
         "cloudBackupDetailSummary" -> "내용"
         "cloudBackupDeviceLabelHint" -> "백업 목록에 표시됩니다. 예: 내 휴대폰"
         "cloudBackupDeviceLabelTitle" -> "기기 이름"
+        "cloudBackupEmpty" -> "아직 백업이 없습니다"
         else -> null
     }
     private fun lookupko2(key: String): String? = when (key) {
-        "cloudBackupEmpty" -> "아직 백업이 없습니다"
         "cloudBackupManualProtectedTitle" -> "수동 백업 무기한 보존"
         "cloudBackupMaxAgeOption" -> "{days} days"
         "cloudBackupMaxAgeSubtitle" -> "초과 시 오래된 백업 삭제"
@@ -6608,7 +6603,6 @@ object ArbCatalog {
         "copyCurrentAddressTooltip" -> "현재 주소 복사"
         "copyLoginAddressAction" -> "로그인 주소 복사"
         "copyScriptAddressAction" -> "스크립트 주소 복사"
-        "countdownFormatHelp" -> "분만 분마다, 초 포함 초마다"
         "countdownFormatLabel" -> "카운트다운 형식"
         "coupleTimetableBoundTitle" -> "상대방 시간표 연결됨"
         "coupleTimetableColorsTitle" -> "겹쳐 보기 색상"
@@ -6781,11 +6775,11 @@ object ArbCatalog {
         "courseNoteTabWholeCourse" -> "수업 소개"
         "courseNoteTileSubtitleBoth" -> "수업 소개와 이번 수업 메모가 모두 있습니다"
         "courseNoteTileSubtitleEmpty" -> "준비물이나 수업 알림 기록"
+        "courseNoteTileSubtitleSession" -> "이번 수업 메모 있음"
+        "courseNoteTileSubtitleWhole" -> "수업 소개 있음"
         else -> null
     }
     private fun lookupko3(key: String): String? = when (key) {
-        "courseNoteTileSubtitleSession" -> "이번 수업 메모 있음"
-        "courseNoteTileSubtitleWhole" -> "수업 소개 있음"
         "courseNoteWholeCourseHint" -> "같은 이름의 수업에서 공유되며 장기간 유지됩니다(예: 수업 설명, 주의사항 등)."
         "courseNoteWholeCourseLabel" -> "수업 소개"
         "courseNoteWholeCoursePlaceholder" -> "예: 이 선생님은 출석을 자주 부른다, 교실은 새 건물…"
@@ -6943,12 +6937,14 @@ object ArbCatalog {
         "dontRememberAction" -> "기억 안 함"
         "downloadSpreadsheetTemplateAction" -> "경량섬 시간표 템플릿 다운로드"
         "duplicateAction" -> "복사"
+        "duringClassReminderSubtitle" -> "수업 시작 후부터 종료 전까지의 표시에만 영향"
         "duringClassReminderTitle" -> "수업 중과 종료 알림"
         "duringClassStatusNotificationBeforeEnd" -> "중요 알림 전까지 일반 알림"
         "duringClassStatusNotificationImmediate" -> "상태표시줄 알림 유지"
         "duringClassStatusNotificationPersistent" -> "전체 동안 일반 알림"
         "duringClassStatusNotificationTitle" -> "수업 중 상태바 알림"
         "duringEndDisplaySettingsTitle" -> "수업·종료 알림 표시"
+        "duringEndTimeDisplayHelp" -> "컴팩트 알림에서 최근 시간을 표시할지 전체 총 시간을 표시할지 제어합니다."
         "duringEndTimeDisplayLabel" -> "수업 중 시간 스타일"
         "editAction" -> "편집"
         "editCourseTitle" -> "수업 편집"
@@ -6960,6 +6956,7 @@ object ArbCatalog {
         "editTask" -> "할 일 편집"
         "editTimeSchemeTitle" -> "템플릿 편집"
         "emptyCourseOverviewHint" -> "시간표를 길게 누르거나 오른쪽 위에서 수업을 추가하세요"
+        "enableIslandDisplaySubtitle" -> "끄면 시스템 슈퍼아일랜드 트리거를 중단합니다"
         "enableIslandDisplayTitle" -> "슈퍼아일랜드 표시"
         "endSectionLabel" -> "종료 교시"
         "endWeekLabel" -> "종료 주"
@@ -7083,10 +7080,10 @@ object ArbCatalog {
         "frostedGlassModeSolidNotice" -> "모든 흐림 효과를 끔: 상단 바와 독은 솔리드로 그려지고, 강의 카드 선택은 반영되지 않습니다."
         "frostedSheetSectionTitle" -> "글래스 소재"
         "fullExportSubtitle" -> "현재 시간표 또는 모든 시간표, 시간 템플릿, 현재 선택 상태를 한 번에 내보낼 수 있습니다"
-        "fullExportTitle" -> "전체 내보내기"
         else -> null
     }
     private fun lookupko4(key: String): String? = when (key) {
+        "fullExportTitle" -> "전체 내보내기"
         "fullImportSubtitle" -> "가져오기 시 현재 시간표를 덮어쓰거나 새 시간표로 가져올 수 있습니다. 먼저 백업을 권장합니다"
         "fullImportTitle" -> "전체 가져오기"
         "generalSettingsTitle" -> "일반"
@@ -7386,10 +7383,10 @@ object ArbCatalog {
         "hyperosShowcaseSectionNavRows" -> "List rows · Navigation"
         "hyperosShowcaseSectionPicker" -> "Wheel picker"
         "hyperosShowcaseSectionPressable" -> "HyperosPressableRow"
-        "hyperosShowcaseSectionProgress" -> "Progress & refresh"
         else -> null
     }
     private fun lookupko5(key: String): String? = when (key) {
+        "hyperosShowcaseSectionProgress" -> "Progress & refresh"
         "hyperosShowcaseSectionShell" -> "Page shell"
         "hyperosShowcaseSectionSummary" -> "Summary card"
         "hyperosShowcaseSectionSwitchRows" -> "List rows · Switch / Destructive"
@@ -7596,7 +7593,6 @@ object ArbCatalog {
         "liveBeforeClassDisplayEntryTitle" -> "수업 전 알림 표시"
         "liveBeforeClassQuickActionAutoOptionMinutes" -> "수업 {minutes}분 전"
         "liveBeforeClassQuickActionAutoOptionOff" -> "끄기"
-        "liveBeforeClassQuickActionAutoSubtitle" -> "수업 전 자동 켜짐, 후 복원"
         "liveBeforeClassQuickActionAutoTitle" -> "자동 실행"
         "liveBeforeClassQuickActionBoth" -> "무음과 방해 금지"
         "liveBeforeClassQuickActionDoNotDisturb" -> "Turn on Do Not Disturb"
@@ -7682,7 +7678,7 @@ object ArbCatalog {
         "liveIslandExpandedPreviewTitle" -> "확장 상태 미리보기"
         "liveIslandLabelEntryDisabled" -> "꺼짐"
         "liveIslandLabelEntryEnabled" -> "켜짐"
-        "liveIslandPreviewFollowBadge" -> "'수업 전 표시' 설정을 따르며, 해당 설정을 조정하면 미리보기에 반영됩니다"
+        "liveIslandPreviewFollowBadge" -> "수업 전 설정을 따름"
         "liveIslandPreviewSampleCourse" -> "고등 수학"
         "liveIslandPreviewSampleCourseShort" -> "수학"
         "liveIslandPreviewSampleLocation" -> "3동-401"
@@ -7704,7 +7700,6 @@ object ArbCatalog {
         "liveIslandVisualTitle" -> "캡슐 좌측 아이콘"
         "liveKeepAliveTitle" -> "백그라운드 상주"
         "liveMiuiExpandedIconLabel" -> "펼친 상태 큰 아이콘"
-        "liveMiuiLabelAdvancedAccordionSubtitle" -> "글자 크기, 가로/세로 오프셋, 굵기 및 선명도"
         "liveMiuiLabelAdvancedAccordionTitle" -> "타이포그래피 및 위치 미세 조정"
         "liveMiuiLabelContentLabel" -> "왼쪽 텍스트 내용"
         "liveMiuiLabelFontSizeLabel" -> "왼쪽 텍스트 크기 {value}"
@@ -7712,7 +7707,6 @@ object ArbCatalog {
         "liveMiuiLabelImageSubtitle" -> "Xiaomi/Redmi 권장, 타 기기 주의"
         "liveMiuiLabelImageTitle" -> "아일랜드 왼쪽 아이콘"
         "liveMiuiLabelLogoCornerRadiusLabel" -> "아이콘 모서리 {value}"
-        "liveMiuiLabelLogoSubtitle" -> "설정하지 않으면 앱 아이콘 사용"
         "liveMiuiLabelLogoTitle" -> "왼쪽 아이콘 로고"
         "liveMiuiLabelOffsetXLabel" -> "가로 오프셋 {value}"
         "liveMiuiLabelOffsetYLabel" -> "세로 오프셋 {value}"
@@ -7993,11 +7987,11 @@ object ArbCatalog {
         "logFieldLiveEnableDuringClass" -> "live Enable During Class"
         "logFieldLiveEnableMiuiIslandLabelImage" -> "live Enable Miui Island Label Image"
         "logFieldLiveEndSecondsCountdownThreshold" -> "live End Seconds Countdown Threshold"
+        "logFieldLiveHidePrefixText" -> "live Hide Prefix Text"
+        "logFieldLiveMiuiIslandExpandedIconMode" -> "live Miui Island Expanded Icon Mode"
         else -> null
     }
     private fun lookupko7(key: String): String? = when (key) {
-        "logFieldLiveHidePrefixText" -> "live Hide Prefix Text"
-        "logFieldLiveMiuiIslandExpandedIconMode" -> "live Miui Island Expanded Icon Mode"
         "logFieldLiveMiuiIslandLabelContent" -> "live Miui Island Label Content"
         "logFieldLiveMiuiIslandLabelFontColor" -> "live Miui Island Label Font Color"
         "logFieldLiveMiuiIslandLabelFontSize" -> "live Miui Island Label Font Size"
@@ -8296,11 +8290,11 @@ object ArbCatalog {
         "qrTransferSectionTitle" -> "QR코드 직접 전송"
         "qrTransferSelectCoursesDone" -> "완료"
         "qrTransferSendAll" -> "모든 데이터 전송"
+        "qrTransferSendCurrent" -> "현재 시간표 전송"
+        "qrTransferSendHint" -> "상대방이 스캔하여 받기를 열고 이 화면에 카메라를 대고 있게 하세요"
         else -> null
     }
     private fun lookupko8(key: String): String? = when (key) {
-        "qrTransferSendCurrent" -> "현재 시간표 전송"
-        "qrTransferSendHint" -> "상대방이 스캔하여 받기를 열고 이 화면에 카메라를 대고 있게 하세요"
         "qrTransferSessionExpired" -> "QR 전송 시간이 초과되었습니다. 다시 시작하고 한 화면만 향하게 하세요."
         "qrTransferSessionMismatch" -> "다른 전송 내용이 감지되었습니다. 하나의 화면에만 정면으로 대세요"
         "qrTransferShareSelectedCourses" -> "선택한 과목 공유"
@@ -8599,11 +8593,11 @@ object ArbCatalog {
         "serviceMsgMacroElementNotFound" -> "Element not found: {selector}"
         "serviceMsgMacroFillSelectorEmpty" -> "Fill-field selector is empty."
         "serviceMsgMacroManualInputDefault" -> "Manual action required."
+        "serviceMsgMacroNavigateUrlEmpty" -> "Navigation URL is empty."
+        "serviceMsgMacroNavigateUrlInvalid" -> "Invalid URL: {url}"
         else -> null
     }
     private fun lookupko9(key: String): String? = when (key) {
-        "serviceMsgMacroNavigateUrlEmpty" -> "Navigation URL is empty."
-        "serviceMsgMacroNavigateUrlInvalid" -> "Invalid URL: {url}"
         "serviceMsgMacroNoSteps" -> "No recorded steps."
         "serviceMsgMacroPollTimeout" -> "{stepLabel} timed out ({timeoutSeconds}s){lastError}"
         "serviceMsgMacroReplayClick" -> "Clicking…"
@@ -8902,11 +8896,11 @@ object ArbCatalog {
         "supportSaveShort" -> "저장"
         "supportTapQrHint" -> "탭하여 확대"
         "supportWeChatHint" -> "WeChat으로 QR 코드를 스캔하여 개발자 지원"
+        "supportedFilesImageHint" -> "스크린샷만 있다면 이곳이 아닌 이전 페이지에서 '이미지 인식 가져오기'를 선택하세요"
+        "supportedFilesSuffix" -> "파일 확장자는 .ics여야 합니다."
         else -> null
     }
     private fun lookupko10(key: String): String? = when (key) {
-        "supportedFilesImageHint" -> "스크린샷만 있다면 이곳이 아닌 이전 페이지에서 '이미지 인식 가져오기'를 선택하세요"
-        "supportedFilesSuffix" -> "파일 확장자는 .ics여야 합니다."
         "supportedFilesTitle" -> "지원 파일"
         "surfaceCourseCard" -> "시간표 카드"
         "surfaceMaterialSectionTitle" -> "표면별 현재 재질"
@@ -9205,11 +9199,11 @@ object ArbCatalog {
         "weekLabel" -> "제{week}주"
         "weekListSeparator" -> ", "
         "weekPickerCalendarTooltip" -> "달력으로 선택"
+        "weekPickerTitle" -> "수업 주차 선택"
+        "weekdayFri" -> "금요일"
         else -> null
     }
     private fun lookupko11(key: String): String? = when (key) {
-        "weekPickerTitle" -> "수업 주차 선택"
-        "weekdayFri" -> "금요일"
         "weekdayInkContrastBodyDark" -> "요일 표시줄 텍스트 색상이 어두운 배경화면과 대비가 부족하여 읽기 쉽도록 자동으로 밝게 조정했습니다(색조는 그대로 유지). \"시간표 페이지 → 텍스트 색상\"에서 색상을 변경하거나 기본값으로 재설정할 수 있습니다."
         "weekdayInkContrastBodyLight" -> "요일 표시줄 텍스트 색상이 밝은 배경화면과 대비가 부족하여 읽기 쉽도록 자동으로 어둡게 조정했습니다(색조는 그대로 유지). \"시간표 페이지 → 텍스트 색상\"에서 색상을 변경하거나 기본값으로 재설정할 수 있습니다."
         "weekdayInkContrastTitle" -> "텍스트 대비 부족"
@@ -9251,7 +9245,7 @@ object ArbCatalog {
         else -> null
     }
 
-    // ── zh（3040 条）──
+    // ── zh（3038 条）──
     private fun lookupzh(key: String): String? = lookupzh1(key) ?: lookupzh2(key) ?: lookupzh3(key) ?: lookupzh4(key) ?: lookupzh5(key) ?: lookupzh6(key) ?: lookupzh7(key) ?: lookupzh8(key) ?: lookupzh9(key) ?: lookupzh10(key) ?: lookupzh11(key)
     private fun lookupzh1(key: String): String? = when (key) {
         "aboutAdvancedOptionsTitle" -> "高级选项"
@@ -9480,7 +9474,6 @@ object ArbCatalog {
         "beforeClassDisplaySettingsTitle" -> "上课前提醒显示"
         "beforeClassMinutesOption" -> "{minutes} 分钟"
         "beforeClassPopupLabel" -> "上课前弹出时间"
-        "beforeClassQuickActionSubtitle" -> "仅在上课前提醒的展开通知中显示；免打扰下课自动恢复，首次需系统授权"
         "beforeClassQuickActionTitle" -> "上课前快捷操作"
         "beforeClassReminderSubtitle" -> "课程开始前 {minutes} 分钟弹出"
         "beforeClassReminderTitle" -> "上课前提醒"
@@ -9554,10 +9547,10 @@ object ArbCatalog {
         "cloudBackupDetailSummary" -> "内容"
         "cloudBackupDeviceLabelHint" -> "在备份列表中显示的设备名称，例如 我的手机"
         "cloudBackupDeviceLabelTitle" -> "设备名称"
+        "cloudBackupEmpty" -> "还没有备份版本"
         else -> null
     }
     private fun lookupzh2(key: String): String? = when (key) {
-        "cloudBackupEmpty" -> "还没有备份版本"
         "cloudBackupManualProtectedTitle" -> "手动备份永不过期"
         "cloudBackupMaxAgeOption" -> "{days} 天"
         "cloudBackupMaxAgeSubtitle" -> "超过后自动删除过期备份"
@@ -9684,7 +9677,6 @@ object ArbCatalog {
         "copyCurrentAddressTooltip" -> "复制当前地址"
         "copyLoginAddressAction" -> "复制登录地址"
         "copyScriptAddressAction" -> "复制脚本地址"
-        "countdownFormatHelp" -> "纯分钟按分钟刷新，带秒按秒刷新"
         "countdownFormatLabel" -> "倒计时格式"
         "coupleTimetableBoundTitle" -> "已绑定对方课表"
         "coupleTimetableColorsTitle" -> "叠加颜色"
@@ -9857,11 +9849,11 @@ object ArbCatalog {
         "courseNoteTabWholeCourse" -> "课程简介"
         "courseNoteTileSubtitleBoth" -> "课程简介与本节课均有备注"
         "courseNoteTileSubtitleEmpty" -> "记录携带物品或课堂提醒"
+        "courseNoteTileSubtitleSession" -> "已有本节课备注"
+        "courseNoteTileSubtitleWhole" -> "已有课程简介"
         else -> null
     }
     private fun lookupzh3(key: String): String? = when (key) {
-        "courseNoteTileSubtitleSession" -> "已有本节课备注"
-        "courseNoteTileSubtitleWhole" -> "已有课程简介"
         "courseNoteWholeCourseHint" -> "同名课程共享并长期保留，如课堂说明或要求。"
         "courseNoteWholeCourseLabel" -> "课程简介"
         "courseNoteWholeCoursePlaceholder" -> "例如：这位教师容易点名、教室在新楼……"
@@ -10019,12 +10011,14 @@ object ArbCatalog {
         "dontRememberAction" -> "不记住"
         "downloadSpreadsheetTemplateAction" -> "下载轻屿课表模板"
         "duplicateAction" -> "复制"
+        "duringClassReminderSubtitle" -> "上课后到下课前的展示"
         "duringClassReminderTitle" -> "课中与下课提醒"
         "duringClassStatusNotificationBeforeEnd" -> "重点提醒前用普通通知"
         "duringClassStatusNotificationImmediate" -> "保留状态栏通知"
         "duringClassStatusNotificationPersistent" -> "全程显示普通通知"
         "duringClassStatusNotificationTitle" -> "课中状态栏通知"
         "duringEndDisplaySettingsTitle" -> "课中与下课提醒显示"
+        "duringEndTimeDisplayHelp" -> "紧凑提醒显示最近时间或总时长"
         "duringEndTimeDisplayLabel" -> "课中时间样式"
         "editAction" -> "编辑"
         "editCourseTitle" -> "编辑课程"
@@ -10036,6 +10030,7 @@ object ArbCatalog {
         "editTask" -> "编辑任务"
         "editTimeSchemeTitle" -> "编辑时间模板"
         "emptyCourseOverviewHint" -> "长按课表或点击右上角添加课程"
+        "enableIslandDisplaySubtitle" -> "关闭后不触发系统超级岛"
         "enableIslandDisplayTitle" -> "展示超级岛"
         "endSectionLabel" -> "结束节次"
         "endWeekLabel" -> "结束周"
@@ -10159,10 +10154,10 @@ object ArbCatalog {
         "frostedGlassModeSolidNotice" -> "已关闭全 App 模糊：顶栏与玻璃坞按实体渲染，课程卡片的选择暂不生效"
         "frostedSheetSectionTitle" -> "玻璃材质"
         "fullExportSubtitle" -> "支持导出当前课表，或一次导出全部课表、时间模板和当前选中状态"
-        "fullExportTitle" -> "完整导出"
         else -> null
     }
     private fun lookupzh4(key: String): String? = when (key) {
+        "fullExportTitle" -> "完整导出"
         "fullImportSubtitle" -> "导入时可以选择覆盖当前课表，或直接导入为一个新课表，建议先导出自己的备份"
         "fullImportTitle" -> "完整导入"
         "generalSettingsTitle" -> "通用"
@@ -10462,10 +10457,10 @@ object ArbCatalog {
         "hyperosShowcaseSectionNavRows" -> "列表行 · 导航"
         "hyperosShowcaseSectionPicker" -> "滚轮选择器"
         "hyperosShowcaseSectionPressable" -> "底层行 · HyperosPressableRow"
-        "hyperosShowcaseSectionProgress" -> "进度与刷新"
         else -> null
     }
     private fun lookupzh5(key: String): String? = when (key) {
+        "hyperosShowcaseSectionProgress" -> "进度与刷新"
         "hyperosShowcaseSectionShell" -> "页面壳层"
         "hyperosShowcaseSectionSummary" -> "概要卡片"
         "hyperosShowcaseSectionSwitchRows" -> "列表行 · 开关、危险"
@@ -10672,7 +10667,6 @@ object ArbCatalog {
         "liveBeforeClassDisplayEntryTitle" -> "上课前提醒显示"
         "liveBeforeClassQuickActionAutoOptionMinutes" -> "上课前 {minutes} 分钟"
         "liveBeforeClassQuickActionAutoOptionOff" -> "不自动执行"
-        "liveBeforeClassQuickActionAutoSubtitle" -> "上课前自动开启，下课后恢复"
         "liveBeforeClassQuickActionAutoTitle" -> "自动执行"
         "liveBeforeClassQuickActionBoth" -> "静音和免打扰"
         "liveBeforeClassQuickActionDoNotDisturb" -> "打开免打扰"
@@ -10758,7 +10752,7 @@ object ArbCatalog {
         "liveIslandExpandedPreviewTitle" -> "展开态预览"
         "liveIslandLabelEntryDisabled" -> "已关闭"
         "liveIslandLabelEntryEnabled" -> "已开启"
-        "liveIslandPreviewFollowBadge" -> "跟随课前提醒设置，修改课前提醒即生效"
+        "liveIslandPreviewFollowBadge" -> "跟随课前提醒设置"
         "liveIslandPreviewSampleCourse" -> "高等数学"
         "liveIslandPreviewSampleCourseShort" -> "高数"
         "liveIslandPreviewSampleLocation" -> "三教-401"
@@ -10780,7 +10774,6 @@ object ArbCatalog {
         "liveIslandVisualTitle" -> "胶囊左侧图标"
         "liveKeepAliveTitle" -> "后台保活"
         "liveMiuiExpandedIconLabel" -> "展开态大图标"
-        "liveMiuiLabelAdvancedAccordionSubtitle" -> "字号、水平/垂直偏移、粗细与清晰度"
         "liveMiuiLabelAdvancedAccordionTitle" -> "文字排版与位置微调"
         "liveMiuiLabelContentLabel" -> "左侧文字内容"
         "liveMiuiLabelFontSizeLabel" -> "左侧文字大小 {value}"
@@ -10788,7 +10781,6 @@ object ArbCatalog {
         "liveMiuiLabelImageSubtitle" -> "推荐小米/红米，其他机型可能异常"
         "liveMiuiLabelImageTitle" -> "超级岛左侧文字图标"
         "liveMiuiLabelLogoCornerRadiusLabel" -> "左侧图标圆角 {value}"
-        "liveMiuiLabelLogoSubtitle" -> "未设置时用应用图标"
         "liveMiuiLabelLogoTitle" -> "左侧图标 Logo"
         "liveMiuiLabelOffsetXLabel" -> "左侧文字水平偏移 {value}"
         "liveMiuiLabelOffsetYLabel" -> "左侧文字垂直偏移 {value}"
@@ -11069,11 +11061,11 @@ object ArbCatalog {
         "logFieldLiveEnableDuringClass" -> "课中超级岛"
         "logFieldLiveEnableMiuiIslandLabelImage" -> "岛标签图片"
         "logFieldLiveEndSecondsCountdownThreshold" -> "下课秒倒计时阈值"
+        "logFieldLiveHidePrefixText" -> "隐藏前缀文字"
+        "logFieldLiveMiuiIslandExpandedIconMode" -> "展开图标模式"
         else -> null
     }
     private fun lookupzh7(key: String): String? = when (key) {
-        "logFieldLiveHidePrefixText" -> "隐藏前缀文字"
-        "logFieldLiveMiuiIslandExpandedIconMode" -> "展开图标模式"
         "logFieldLiveMiuiIslandLabelContent" -> "岛标签内容"
         "logFieldLiveMiuiIslandLabelFontColor" -> "岛标签字体颜色"
         "logFieldLiveMiuiIslandLabelFontSize" -> "岛标签字号"
@@ -11372,11 +11364,11 @@ object ArbCatalog {
         "qrTransferSectionTitle" -> "二维码面对面传输"
         "qrTransferSelectCoursesDone" -> "完成"
         "qrTransferSendAll" -> "二维码发送全部数据"
+        "qrTransferSendCurrent" -> "二维码发送当前课表"
+        "qrTransferSendHint" -> "请对方打开扫码接收并对准屏幕，保持直到传输完成"
         else -> null
     }
     private fun lookupzh8(key: String): String? = when (key) {
-        "qrTransferSendCurrent" -> "二维码发送当前课表"
-        "qrTransferSendHint" -> "请对方打开扫码接收并对准屏幕，保持直到传输完成"
         "qrTransferSessionExpired" -> "二维码传输已超时，请重新开始并只对准一台设备。"
         "qrTransferSessionMismatch" -> "检测到不同传输内容，请确认只对准一份数据"
         "qrTransferShareSelectedCourses" -> "分享勾选的课程"
@@ -11675,11 +11667,11 @@ object ArbCatalog {
         "serviceMsgMacroElementNotFound" -> "未找到元素：{selector}"
         "serviceMsgMacroFillSelectorEmpty" -> "填充字段的选择器为空"
         "serviceMsgMacroManualInputDefault" -> "需要手动操作"
+        "serviceMsgMacroNavigateUrlEmpty" -> "导航 URL 为空"
+        "serviceMsgMacroNavigateUrlInvalid" -> "无效的 URL: {url}"
         else -> null
     }
     private fun lookupzh9(key: String): String? = when (key) {
-        "serviceMsgMacroNavigateUrlEmpty" -> "导航 URL 为空"
-        "serviceMsgMacroNavigateUrlInvalid" -> "无效的 URL: {url}"
         "serviceMsgMacroNoSteps" -> "没有录制的步骤"
         "serviceMsgMacroPollTimeout" -> "{stepLabel} 超时 {timeoutSeconds} 秒 {lastError}"
         "serviceMsgMacroReplayClick" -> "正在点击……"
@@ -11978,11 +11970,11 @@ object ArbCatalog {
         "supportSaveShort" -> "保存"
         "supportTapQrHint" -> "点击放大扫码"
         "supportWeChatHint" -> "使用微信扫一扫支持作者"
+        "supportedFilesImageHint" -> "课表截图请返回上一页使用识图导入"
+        "supportedFilesSuffix" -> "文件后缀必须是 .ics"
         else -> null
     }
     private fun lookupzh10(key: String): String? = when (key) {
-        "supportedFilesImageHint" -> "课表截图请返回上一页使用识图导入"
-        "supportedFilesSuffix" -> "文件后缀必须是 .ics"
         "supportedFilesTitle" -> "支持的文件"
         "surfaceCourseCard" -> "课程卡片"
         "surfaceMaterialSectionTitle" -> "各表面当前材质"
@@ -12281,11 +12273,11 @@ object ArbCatalog {
         "weekLabel" -> "第 {week} 周"
         "weekListSeparator" -> "、"
         "weekPickerCalendarTooltip" -> "使用日历选择"
+        "weekPickerTitle" -> "选择上课周次"
+        "weekdayFri" -> "周五"
         else -> null
     }
     private fun lookupzh11(key: String): String? = when (key) {
-        "weekPickerTitle" -> "选择上课周次"
-        "weekdayFri" -> "周五"
         "weekdayInkContrastBodyDark" -> "信息栏文字在深色背景下对比度不足，已自动提升亮度。可在 课表页面 文字颜色 中调整或恢复默认。"
         "weekdayInkContrastBodyLight" -> "信息栏文字在浅色背景下对比度不足，已自动降低亮度。可在 课表页面 文字颜色 中调整或恢复默认。"
         "weekdayInkContrastTitle" -> "文字对比度不足"
@@ -12327,7 +12319,7 @@ object ArbCatalog {
         else -> null
     }
 
-    // ── zh_HK（3040 条）──
+    // ── zh_HK（3038 条）──
     private fun lookupzhHK(key: String): String? = lookupzhHK1(key) ?: lookupzhHK2(key) ?: lookupzhHK3(key) ?: lookupzhHK4(key) ?: lookupzhHK5(key) ?: lookupzhHK6(key) ?: lookupzhHK7(key) ?: lookupzhHK8(key) ?: lookupzhHK9(key) ?: lookupzhHK10(key) ?: lookupzhHK11(key)
     private fun lookupzhHK1(key: String): String? = when (key) {
         "aboutAdvancedOptionsTitle" -> "高級選項"
@@ -12556,7 +12548,6 @@ object ArbCatalog {
         "beforeClassDisplaySettingsTitle" -> "上課前提醒顯示"
         "beforeClassMinutesOption" -> "{minutes} 分鐘"
         "beforeClassPopupLabel" -> "上課前彈出時間"
-        "beforeClassQuickActionSubtitle" -> "僅在上課前提醒的展開通知中顯示；勿擾模式下課自動恢復，首次需系統授權"
         "beforeClassQuickActionTitle" -> "上課前快捷操作"
         "beforeClassReminderSubtitle" -> "在課程開始前 {minutes} 分鐘彈出"
         "beforeClassReminderTitle" -> "上課前提醒"
@@ -12630,10 +12621,10 @@ object ArbCatalog {
         "cloudBackupDetailSummary" -> "內容"
         "cloudBackupDeviceLabelHint" -> "在備份列表中顯示的設備名稱，例如 我的手機"
         "cloudBackupDeviceLabelTitle" -> "裝置名稱"
+        "cloudBackupEmpty" -> "還沒有備份版本"
         else -> null
     }
     private fun lookupzhHK2(key: String): String? = when (key) {
-        "cloudBackupEmpty" -> "還沒有備份版本"
         "cloudBackupManualProtectedTitle" -> "手動備份永不過期"
         "cloudBackupMaxAgeOption" -> "{days} 天"
         "cloudBackupMaxAgeSubtitle" -> "超過後自動刪除過期備份"
@@ -12760,7 +12751,6 @@ object ArbCatalog {
         "copyCurrentAddressTooltip" -> "複製當前地址"
         "copyLoginAddressAction" -> "複制登入地址"
         "copyScriptAddressAction" -> "複制腳本地址"
-        "countdownFormatHelp" -> "純分鐘按分鐘刷新，帶秒按秒刷新"
         "countdownFormatLabel" -> "倒計時格式"
         "coupleTimetableBoundTitle" -> "已綁定對方課表"
         "coupleTimetableColorsTitle" -> "疊加顏色"
@@ -12933,11 +12923,11 @@ object ArbCatalog {
         "courseNoteTabWholeCourse" -> "課程簡介"
         "courseNoteTileSubtitleBoth" -> "課程簡介與本節課均有備註"
         "courseNoteTileSubtitleEmpty" -> "記錄攜帶物品或課堂提醒"
+        "courseNoteTileSubtitleSession" -> "已有本節課備註"
+        "courseNoteTileSubtitleWhole" -> "已有課程簡介"
         else -> null
     }
     private fun lookupzhHK3(key: String): String? = when (key) {
-        "courseNoteTileSubtitleSession" -> "已有本節課備註"
-        "courseNoteTileSubtitleWhole" -> "已有課程簡介"
         "courseNoteWholeCourseHint" -> "同名課程共享並長期保留，如課堂説明或要求。"
         "courseNoteWholeCourseLabel" -> "課程簡介"
         "courseNoteWholeCoursePlaceholder" -> "例如：這位教師容易點名、教室在新樓…"
@@ -13095,12 +13085,14 @@ object ArbCatalog {
         "dontRememberAction" -> "不記住"
         "downloadSpreadsheetTemplateAction" -> "下載輕嶼課表模板"
         "duplicateAction" -> "複製"
+        "duringClassReminderSubtitle" -> "只影響上課後到下課前的展示"
         "duringClassReminderTitle" -> "課中與下課提醒"
         "duringClassStatusNotificationBeforeEnd" -> "重點提醒前用普通通知"
         "duringClassStatusNotificationImmediate" -> "保留狀態欄通知"
         "duringClassStatusNotificationPersistent" -> "全程顯示普通通知"
         "duringClassStatusNotificationTitle" -> "課中狀態欄通知"
         "duringEndDisplaySettingsTitle" -> "課中／下課提醒顯示"
+        "duringEndTimeDisplayHelp" -> "控製緊湊提醒裡顯示最近時間還是整段總時間"
         "duringEndTimeDisplayLabel" -> "課中時間樣式"
         "editAction" -> "編輯"
         "editCourseTitle" -> "編輯課程"
@@ -13112,6 +13104,7 @@ object ArbCatalog {
         "editTask" -> "編輯任務"
         "editTimeSchemeTitle" -> "編輯時間範本"
         "emptyCourseOverviewHint" -> "長按課表或點擊右上角添加課程"
+        "enableIslandDisplaySubtitle" -> "關閉後不會再嘗試觸發系統超級島"
         "enableIslandDisplayTitle" -> "展示超級島"
         "endSectionLabel" -> "結束節次"
         "endWeekLabel" -> "結束周"
@@ -13235,10 +13228,10 @@ object ArbCatalog {
         "frostedGlassModeSolidNotice" -> "已關閉全 App 模糊：頂欄與玻璃塢按實體繪製，課程卡片的選擇暫不生效"
         "frostedSheetSectionTitle" -> "玻璃材質"
         "fullExportSubtitle" -> "支持匯出目前課表，或一次匯出全部課表、時間範本和目前選中狀態"
-        "fullExportTitle" -> "完整匯出"
         else -> null
     }
     private fun lookupzhHK4(key: String): String? = when (key) {
+        "fullExportTitle" -> "完整匯出"
         "fullImportSubtitle" -> "匯入時可以選擇覆蓋目前課表，或直接匯入為一個新課表，建議先匯出自己的備份"
         "fullImportTitle" -> "完整匯入"
         "generalSettingsTitle" -> "一般"
@@ -13538,10 +13531,10 @@ object ArbCatalog {
         "hyperosShowcaseSectionNavRows" -> "列表行 · 導航"
         "hyperosShowcaseSectionPicker" -> "滾輪選擇器"
         "hyperosShowcaseSectionPressable" -> "底層行 · HyperosPressableRow"
-        "hyperosShowcaseSectionProgress" -> "進度猶刷新"
         else -> null
     }
     private fun lookupzhHK5(key: String): String? = when (key) {
+        "hyperosShowcaseSectionProgress" -> "進度猶刷新"
         "hyperosShowcaseSectionShell" -> "頁面殼層"
         "hyperosShowcaseSectionSummary" -> "概要卡片"
         "hyperosShowcaseSectionSwitchRows" -> "列表行 · 開關 / 危險"
@@ -13748,7 +13741,6 @@ object ArbCatalog {
         "liveBeforeClassDisplayEntryTitle" -> "上課前提醒顯示"
         "liveBeforeClassQuickActionAutoOptionMinutes" -> "上課前 {minutes} 分鐘"
         "liveBeforeClassQuickActionAutoOptionOff" -> "不自動執行"
-        "liveBeforeClassQuickActionAutoSubtitle" -> "上課前自動開啟，下課後恢復"
         "liveBeforeClassQuickActionAutoTitle" -> "自動執行"
         "liveBeforeClassQuickActionBoth" -> "靜音和免打擾"
         "liveBeforeClassQuickActionDoNotDisturb" -> "打開免打擾"
@@ -13834,7 +13826,7 @@ object ArbCatalog {
         "liveIslandExpandedPreviewTitle" -> "展開狀態預覽"
         "liveIslandLabelEntryDisabled" -> "已關閉"
         "liveIslandLabelEntryEnabled" -> "已開啟"
-        "liveIslandPreviewFollowBadge" -> "跟隨課前提醒設置，修改課前提醒即生效"
+        "liveIslandPreviewFollowBadge" -> "跟隨課前提醒設定"
         "liveIslandPreviewSampleCourse" -> "高等數學"
         "liveIslandPreviewSampleCourseShort" -> "高數"
         "liveIslandPreviewSampleLocation" -> "三教-401"
@@ -13856,7 +13848,6 @@ object ArbCatalog {
         "liveIslandVisualTitle" -> "膠囊左側圖示"
         "liveKeepAliveTitle" -> "後台保活"
         "liveMiuiExpandedIconLabel" -> "展開態大圖示"
-        "liveMiuiLabelAdvancedAccordionSubtitle" -> "字型大小、水平/垂直偏移、粗細與清晰度"
         "liveMiuiLabelAdvancedAccordionTitle" -> "文字排版與位置微調"
         "liveMiuiLabelContentLabel" -> "左側文字內容"
         "liveMiuiLabelFontSizeLabel" -> "左側文字大小 {value}"
@@ -13864,7 +13855,6 @@ object ArbCatalog {
         "liveMiuiLabelImageSubtitle" -> "推薦小米/紅米，其他機型可能異常"
         "liveMiuiLabelImageTitle" -> "超級島左側文字圖標"
         "liveMiuiLabelLogoCornerRadiusLabel" -> "左側圖示圓角 {value}"
-        "liveMiuiLabelLogoSubtitle" -> "未設置時用應用圖標"
         "liveMiuiLabelLogoTitle" -> "左側圖示 Logo"
         "liveMiuiLabelOffsetXLabel" -> "左側文字水平偏移 {value}"
         "liveMiuiLabelOffsetYLabel" -> "左側文字垂直偏移 {value}"
@@ -14145,11 +14135,11 @@ object ArbCatalog {
         "logFieldLiveEnableDuringClass" -> "課中超級島"
         "logFieldLiveEnableMiuiIslandLabelImage" -> "島標簽圖片"
         "logFieldLiveEndSecondsCountdownThreshold" -> "下課秒倒計時閾值"
+        "logFieldLiveHidePrefixText" -> "隱藏前綴文字"
+        "logFieldLiveMiuiIslandExpandedIconMode" -> "展開圖標模式"
         else -> null
     }
     private fun lookupzhHK7(key: String): String? = when (key) {
-        "logFieldLiveHidePrefixText" -> "隱藏前綴文字"
-        "logFieldLiveMiuiIslandExpandedIconMode" -> "展開圖標模式"
         "logFieldLiveMiuiIslandLabelContent" -> "島標簽內容"
         "logFieldLiveMiuiIslandLabelFontColor" -> "島標簽字體顏色"
         "logFieldLiveMiuiIslandLabelFontSize" -> "島標簽字號"
@@ -14448,11 +14438,11 @@ object ArbCatalog {
         "qrTransferSectionTitle" -> "QR 碼面對面傳輸"
         "qrTransferSelectCoursesDone" -> "完成"
         "qrTransferSendAll" -> "QR 碼發送全部資料"
+        "qrTransferSendCurrent" -> "QR 碼發送目前課表"
+        "qrTransferSendHint" -> "請對方打開掃碼接收並對準屏幕，保持直到傳輸完成"
         else -> null
     }
     private fun lookupzhHK8(key: String): String? = when (key) {
-        "qrTransferSendCurrent" -> "QR 碼發送目前課表"
-        "qrTransferSendHint" -> "請對方打開掃碼接收並對準屏幕，保持直到傳輸完成"
         "qrTransferSessionExpired" -> "QR 碼傳輸已逾時，請重新開始並只對準一台裝置。"
         "qrTransferSessionMismatch" -> "偵測到不同傳輸內容，請確認只對準一份資料"
         "qrTransferShareSelectedCourses" -> "分享勾選的課程"
@@ -14751,11 +14741,11 @@ object ArbCatalog {
         "serviceMsgMacroElementNotFound" -> "Element not found: {selector}"
         "serviceMsgMacroFillSelectorEmpty" -> "Fill-field selector is empty."
         "serviceMsgMacroManualInputDefault" -> "Manual action required."
+        "serviceMsgMacroNavigateUrlEmpty" -> "Navigation URL is empty."
+        "serviceMsgMacroNavigateUrlInvalid" -> "Invalid URL: {url}"
         else -> null
     }
     private fun lookupzhHK9(key: String): String? = when (key) {
-        "serviceMsgMacroNavigateUrlEmpty" -> "Navigation URL is empty."
-        "serviceMsgMacroNavigateUrlInvalid" -> "Invalid URL: {url}"
         "serviceMsgMacroNoSteps" -> "No recorded steps."
         "serviceMsgMacroPollTimeout" -> "{stepLabel} 超時 {timeoutSeconds} 秒 {lastError}"
         "serviceMsgMacroReplayClick" -> "Clicking…"
@@ -15054,11 +15044,11 @@ object ArbCatalog {
         "supportSaveShort" -> "保存"
         "supportTapQrHint" -> "點擊放大掃碼"
         "supportWeChatHint" -> "使用微信掃一掃支持作者"
+        "supportedFilesImageHint" -> "課表截圖請返回上一頁使用識圖導入"
+        "supportedFilesSuffix" -> "檔案後綴必須是 .ics"
         else -> null
     }
     private fun lookupzhHK10(key: String): String? = when (key) {
-        "supportedFilesImageHint" -> "課表截圖請返回上一頁使用識圖導入"
-        "supportedFilesSuffix" -> "檔案後綴必須是 .ics"
         "supportedFilesTitle" -> "支持的檔案"
         "surfaceCourseCard" -> "課程卡片"
         "surfaceMaterialSectionTitle" -> "各表面當前材質"
@@ -15357,11 +15347,11 @@ object ArbCatalog {
         "weekLabel" -> "第 {week} 周"
         "weekListSeparator" -> "、"
         "weekPickerCalendarTooltip" -> "使用日曆選擇"
+        "weekPickerTitle" -> "選擇上課週次"
+        "weekdayFri" -> "周五"
         else -> null
     }
     private fun lookupzhHK11(key: String): String? = when (key) {
-        "weekPickerTitle" -> "選擇上課週次"
-        "weekdayFri" -> "周五"
         "weekdayInkContrastBodyDark" -> "信息欄文字在深色背景下對比度不足，已自動提升亮度。可在 課表頁面 文字顏色 中調整或恢復默認。"
         "weekdayInkContrastBodyLight" -> "信息欄文字在淺色背景下對比度不足，已自動降低亮度。可在 課表頁面 文字顏色 中調整或恢復默認。"
         "weekdayInkContrastTitle" -> "文字對比度不足"
@@ -15403,7 +15393,7 @@ object ArbCatalog {
         else -> null
     }
 
-    // ── zh_TW（3040 条）──
+    // ── zh_TW（3038 条）──
     private fun lookupzhTW(key: String): String? = lookupzhTW1(key) ?: lookupzhTW2(key) ?: lookupzhTW3(key) ?: lookupzhTW4(key) ?: lookupzhTW5(key) ?: lookupzhTW6(key) ?: lookupzhTW7(key) ?: lookupzhTW8(key) ?: lookupzhTW9(key) ?: lookupzhTW10(key) ?: lookupzhTW11(key)
     private fun lookupzhTW1(key: String): String? = when (key) {
         "aboutAdvancedOptionsTitle" -> "高級選項"
@@ -15632,7 +15622,6 @@ object ArbCatalog {
         "beforeClassDisplaySettingsTitle" -> "上課前提醒顯示"
         "beforeClassMinutesOption" -> "{minutes} 分鐘"
         "beforeClassPopupLabel" -> "上課前彈出時間"
-        "beforeClassQuickActionSubtitle" -> "僅在上課前提醒的展開通知中顯示；勿擾模式下課自動恢復，首次需系統授權"
         "beforeClassQuickActionTitle" -> "上課前快捷操作"
         "beforeClassReminderSubtitle" -> "在課程開始前 {minutes} 分鐘彈出"
         "beforeClassReminderTitle" -> "上課前提醒"
@@ -15706,10 +15695,10 @@ object ArbCatalog {
         "cloudBackupDetailSummary" -> "內容"
         "cloudBackupDeviceLabelHint" -> "在備份列表中顯示的設備名稱，例如 我的手機"
         "cloudBackupDeviceLabelTitle" -> "裝置名稱"
+        "cloudBackupEmpty" -> "還沒有備份版本"
         else -> null
     }
     private fun lookupzhTW2(key: String): String? = when (key) {
-        "cloudBackupEmpty" -> "還沒有備份版本"
         "cloudBackupManualProtectedTitle" -> "手動備份永不過期"
         "cloudBackupMaxAgeOption" -> "{days} 天"
         "cloudBackupMaxAgeSubtitle" -> "超過後自動刪除過期備份"
@@ -15836,7 +15825,6 @@ object ArbCatalog {
         "copyCurrentAddressTooltip" -> "複製當前地址"
         "copyLoginAddressAction" -> "複制登入地址"
         "copyScriptAddressAction" -> "複制腳本地址"
-        "countdownFormatHelp" -> "純分鐘按分鐘刷新，帶秒按秒刷新"
         "countdownFormatLabel" -> "倒計時格式"
         "coupleTimetableBoundTitle" -> "已綁定對方課表"
         "coupleTimetableColorsTitle" -> "疊加顏色"
@@ -16009,11 +15997,11 @@ object ArbCatalog {
         "courseNoteTabWholeCourse" -> "課程簡介"
         "courseNoteTileSubtitleBoth" -> "課程簡介與本節課均有備註"
         "courseNoteTileSubtitleEmpty" -> "記錄攜帶物品或課堂提醒"
+        "courseNoteTileSubtitleSession" -> "已有本節課備註"
+        "courseNoteTileSubtitleWhole" -> "已有課程簡介"
         else -> null
     }
     private fun lookupzhTW3(key: String): String? = when (key) {
-        "courseNoteTileSubtitleSession" -> "已有本節課備註"
-        "courseNoteTileSubtitleWhole" -> "已有課程簡介"
         "courseNoteWholeCourseHint" -> "同名課程共享並長期保留，如課堂說明或要求。"
         "courseNoteWholeCourseLabel" -> "課程簡介"
         "courseNoteWholeCoursePlaceholder" -> "例如：這位教師容易點名、教室在新樓…"
@@ -16171,12 +16159,14 @@ object ArbCatalog {
         "dontRememberAction" -> "不記住"
         "downloadSpreadsheetTemplateAction" -> "下載輕嶼課表模板"
         "duplicateAction" -> "複製"
+        "duringClassReminderSubtitle" -> "只影響上課後到下課前的展示"
         "duringClassReminderTitle" -> "課中與下課提醒"
         "duringClassStatusNotificationBeforeEnd" -> "重點提醒前用普通通知"
         "duringClassStatusNotificationImmediate" -> "保留狀態列通知"
         "duringClassStatusNotificationPersistent" -> "全程顯示普通通知"
         "duringClassStatusNotificationTitle" -> "課中狀態欄通知"
         "duringEndDisplaySettingsTitle" -> "課中／下課提醒顯示"
+        "duringEndTimeDisplayHelp" -> "控製緊湊提醒裡顯示最近時間還是整段總時間"
         "duringEndTimeDisplayLabel" -> "課中時間樣式"
         "editAction" -> "編輯"
         "editCourseTitle" -> "編輯課程"
@@ -16188,6 +16178,7 @@ object ArbCatalog {
         "editTask" -> "編輯任務"
         "editTimeSchemeTitle" -> "編輯時間範本"
         "emptyCourseOverviewHint" -> "長按課表或點擊右上角添加課程"
+        "enableIslandDisplaySubtitle" -> "關閉後不會再尝試觸發系統超級島"
         "enableIslandDisplayTitle" -> "展示超級島"
         "endSectionLabel" -> "結束節次"
         "endWeekLabel" -> "結束周"
@@ -16311,10 +16302,10 @@ object ArbCatalog {
         "frostedGlassModeSolidNotice" -> "已關閉全 App 模糊：頂欄與玻璃塢以實體繪製，課程卡片的選擇暫不生效"
         "frostedSheetSectionTitle" -> "玻璃材質"
         "fullExportSubtitle" -> "支持匯出目前課表，或一次匯出全部課表、時間範本和目前選中狀態"
-        "fullExportTitle" -> "完整匯出"
         else -> null
     }
     private fun lookupzhTW4(key: String): String? = when (key) {
+        "fullExportTitle" -> "完整匯出"
         "fullImportSubtitle" -> "匯入時可以選擇覆蓋目前課表，或直接匯入為一個新課表，建議先匯出自己的備份"
         "fullImportTitle" -> "完整匯入"
         "generalSettingsTitle" -> "一般"
@@ -16614,10 +16605,10 @@ object ArbCatalog {
         "hyperosShowcaseSectionNavRows" -> "列表行 · 導覽"
         "hyperosShowcaseSectionPicker" -> "滾輪選擇器"
         "hyperosShowcaseSectionPressable" -> "底層列 · HyperosPressableRow"
-        "hyperosShowcaseSectionProgress" -> "進度與重新整理"
         else -> null
     }
     private fun lookupzhTW5(key: String): String? = when (key) {
+        "hyperosShowcaseSectionProgress" -> "進度與重新整理"
         "hyperosShowcaseSectionShell" -> "頁面外框"
         "hyperosShowcaseSectionSummary" -> "概要卡片"
         "hyperosShowcaseSectionSwitchRows" -> "清單列 · 開關 / 危險"
@@ -16824,7 +16815,6 @@ object ArbCatalog {
         "liveBeforeClassDisplayEntryTitle" -> "上課前提醒顯示"
         "liveBeforeClassQuickActionAutoOptionMinutes" -> "上課前 {minutes} 分鐘"
         "liveBeforeClassQuickActionAutoOptionOff" -> "不自動執行"
-        "liveBeforeClassQuickActionAutoSubtitle" -> "上課前自動開啟，下課後恢復"
         "liveBeforeClassQuickActionAutoTitle" -> "自動執行"
         "liveBeforeClassQuickActionBoth" -> "靜音和免打擾"
         "liveBeforeClassQuickActionDoNotDisturb" -> "開啟勿擾模式"
@@ -16910,7 +16900,7 @@ object ArbCatalog {
         "liveIslandExpandedPreviewTitle" -> "展開狀態預覽"
         "liveIslandLabelEntryDisabled" -> "已關閉"
         "liveIslandLabelEntryEnabled" -> "已開啟"
-        "liveIslandPreviewFollowBadge" -> "跟隨課前提醒設置，修改課前提醒即生效"
+        "liveIslandPreviewFollowBadge" -> "跟隨課前提醒設定"
         "liveIslandPreviewSampleCourse" -> "高等數學"
         "liveIslandPreviewSampleCourseShort" -> "高數"
         "liveIslandPreviewSampleLocation" -> "三教-401"
@@ -16932,7 +16922,6 @@ object ArbCatalog {
         "liveIslandVisualTitle" -> "膠囊左側圖示"
         "liveKeepAliveTitle" -> "後台保活"
         "liveMiuiExpandedIconLabel" -> "展開態大圖示"
-        "liveMiuiLabelAdvancedAccordionSubtitle" -> "字型大小、水平/垂直偏移、粗細與清晰度"
         "liveMiuiLabelAdvancedAccordionTitle" -> "文字排版與位置微調"
         "liveMiuiLabelContentLabel" -> "左側文字內容"
         "liveMiuiLabelFontSizeLabel" -> "左側文字大小 {value}"
@@ -16940,7 +16929,6 @@ object ArbCatalog {
         "liveMiuiLabelImageSubtitle" -> "推薦小米/紅米，其他機型可能異常"
         "liveMiuiLabelImageTitle" -> "超級島左側文字圖標"
         "liveMiuiLabelLogoCornerRadiusLabel" -> "左側圖示圓角 {value}"
-        "liveMiuiLabelLogoSubtitle" -> "未設置時用應用圖標"
         "liveMiuiLabelLogoTitle" -> "左側圖示 Logo"
         "liveMiuiLabelOffsetXLabel" -> "左側文字水平偏移 {value}"
         "liveMiuiLabelOffsetYLabel" -> "左側文字垂直偏移 {value}"
@@ -17221,11 +17209,11 @@ object ArbCatalog {
         "logFieldLiveEnableDuringClass" -> "課中超級島"
         "logFieldLiveEnableMiuiIslandLabelImage" -> "島標籤圖片"
         "logFieldLiveEndSecondsCountdownThreshold" -> "下課倒數計時閾值（秒）"
+        "logFieldLiveHidePrefixText" -> "隱藏前綴文字"
+        "logFieldLiveMiuiIslandExpandedIconMode" -> "展開圖示模式"
         else -> null
     }
     private fun lookupzhTW7(key: String): String? = when (key) {
-        "logFieldLiveHidePrefixText" -> "隱藏前綴文字"
-        "logFieldLiveMiuiIslandExpandedIconMode" -> "展開圖示模式"
         "logFieldLiveMiuiIslandLabelContent" -> "島標籤內容"
         "logFieldLiveMiuiIslandLabelFontColor" -> "島標籤字體顏色"
         "logFieldLiveMiuiIslandLabelFontSize" -> "島標籤字號"
@@ -17524,11 +17512,11 @@ object ArbCatalog {
         "qrTransferSectionTitle" -> "QR 碼面對面傳輸"
         "qrTransferSelectCoursesDone" -> "完成"
         "qrTransferSendAll" -> "QR 碼發送全部資料"
+        "qrTransferSendCurrent" -> "QR 碼發送目前課表"
+        "qrTransferSendHint" -> "請對方打開掃碼接收並對準屏幕，保持直到傳輸完成"
         else -> null
     }
     private fun lookupzhTW8(key: String): String? = when (key) {
-        "qrTransferSendCurrent" -> "QR 碼發送目前課表"
-        "qrTransferSendHint" -> "請對方打開掃碼接收並對準屏幕，保持直到傳輸完成"
         "qrTransferSessionExpired" -> "QR 碼傳輸已逾時，請重新開始並只對準一台裝置。"
         "qrTransferSessionMismatch" -> "偵測到不同傳輸內容，請確認只對準一份資料"
         "qrTransferShareSelectedCourses" -> "分享勾選的課程"
@@ -17827,11 +17815,11 @@ object ArbCatalog {
         "serviceMsgMacroElementNotFound" -> "Element not found: {selector}"
         "serviceMsgMacroFillSelectorEmpty" -> "Fill-field selector is empty."
         "serviceMsgMacroManualInputDefault" -> "Manual action required."
+        "serviceMsgMacroNavigateUrlEmpty" -> "Navigation URL is empty."
+        "serviceMsgMacroNavigateUrlInvalid" -> "Invalid URL: {url}"
         else -> null
     }
     private fun lookupzhTW9(key: String): String? = when (key) {
-        "serviceMsgMacroNavigateUrlEmpty" -> "Navigation URL is empty."
-        "serviceMsgMacroNavigateUrlInvalid" -> "Invalid URL: {url}"
         "serviceMsgMacroNoSteps" -> "No recorded steps."
         "serviceMsgMacroPollTimeout" -> "{stepLabel} 超時 {timeoutSeconds} 秒 {lastError}"
         "serviceMsgMacroReplayClick" -> "Clicking…"
@@ -18130,11 +18118,11 @@ object ArbCatalog {
         "supportSaveShort" -> "保存"
         "supportTapQrHint" -> "點擊放大掃碼"
         "supportWeChatHint" -> "使用微信掃一掃支持作者"
+        "supportedFilesImageHint" -> "課表截圖請返回上一頁使用識圖導入"
+        "supportedFilesSuffix" -> "檔案後綴必須是 .ics"
         else -> null
     }
     private fun lookupzhTW10(key: String): String? = when (key) {
-        "supportedFilesImageHint" -> "課表截圖請返回上一頁使用識圖導入"
-        "supportedFilesSuffix" -> "檔案後綴必須是 .ics"
         "supportedFilesTitle" -> "支持的檔案"
         "surfaceCourseCard" -> "課程卡片"
         "surfaceMaterialSectionTitle" -> "各表面當前材質"
@@ -18433,11 +18421,11 @@ object ArbCatalog {
         "weekLabel" -> "第 {week} 周"
         "weekListSeparator" -> "、"
         "weekPickerCalendarTooltip" -> "使用日曆選擇"
+        "weekPickerTitle" -> "選擇上課週次"
+        "weekdayFri" -> "周五"
         else -> null
     }
     private fun lookupzhTW11(key: String): String? = when (key) {
-        "weekPickerTitle" -> "選擇上課週次"
-        "weekdayFri" -> "周五"
         "weekdayInkContrastBodyDark" -> "信息欄文字在深色背景下對比度不足，已自動提升亮度。可在 課表頁面 文字顏色 中調整或恢復默認。"
         "weekdayInkContrastBodyLight" -> "信息欄文字在淺色背景下對比度不足，已自動降低亮度。可在 課表頁面 文字顏色 中調整或恢復默認。"
         "weekdayInkContrastTitle" -> "文字對比度不足"
