@@ -5,12 +5,21 @@ import android.os.Handler
 import android.os.Looper
 import android.util.Log
 import android.widget.Toast
-import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -20,9 +29,12 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.unit.DpSize
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.mutx163.qingyu.BuildConfig
 import com.mutx163.qingyu.R
@@ -30,7 +42,8 @@ import com.mutx163.qingyu.core.Course
 import com.mutx163.qingyu.LiveUpdateService
 import com.mutx163.qingyu.UmengApplication
 import com.mutx163.qingyu.UmengDiagnosticReporter
-import com.mutx163.qingyu.components.rememberCappedSheetHeight
+import com.mutx163.qingyu.components.QingyuSheet
+import com.mutx163.qingyu.components.rememberSheetMaxHeight
 import com.mutx163.qingyu.core.LenientJson
 import com.mutx163.qingyu.core.MiniJson
 import com.mutx163.qingyu.core.TimetableSettings
@@ -54,6 +67,7 @@ import com.mutx163.qingyu.pages.settings.SettingsPageState
 import com.mutx163.qingyu.pages.settings.SettingsStrings
 import com.mutx163.qingyu.pages.settings.SettingsStringsExt2
 import com.mutx163.qingyu.pages.settings.SettingsStringsExt3
+import com.mutx163.qingyu.pages.timetable.day.parseHexColorOrFallback
 import com.mutx163.qingyu.platform.PrefsKeyValueStore
 import com.mutx163.qingyu.widgetdata.MILESTONE_RECENT_END_LABEL_KEY
 import kotlinx.coroutines.Dispatchers
@@ -67,7 +81,6 @@ import java.util.Locale
 import top.yukonga.miuix.kmp.basic.Button
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
 import top.yukonga.miuix.kmp.basic.Text
-import top.yukonga.miuix.kmp.overlay.OverlayDialog
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 /** 本地日志卡「清空日志」的节点 rowId（`SettingsLiveSelfCheckPage.localLogButtons` 的第一个动作）。 */
@@ -493,8 +506,8 @@ fun LiveSelfCheckHost(
         },
     )
 
-    // 选课测试：先选课程，再选阶段。两个弹层都按官方 OverlayDialog 走
-    //（遮罩、返回键、大屏行为由它提供），宿主只排正文。
+    // 选课测试：先选课程，再选阶段。两步都是**底部弹层**（发布版同形态，
+    // 见下方两个 composable 的 KDoc），不是居中对话框。
     if (pickingCourse) {
         CourseTestPickerDialog(
             courses = timetableRepository.snapshot.courses
@@ -523,69 +536,161 @@ fun LiveSelfCheckHost(
     }
 }
 
-/** 选课测试第一步：从真实课表里选一门课（同名同师同地的重复课只列一次）。 */
+/**
+ * 选课测试第一步：从真实课表里选一门课（同名同师同地的重复课只列一次）。
+ *
+ * 发布版这一步是**底部弹层**、不是居中对话框（`settings_live.dart:475-481` 调
+ * `showCourseTemplatePickerSheet`，实现在 `course_template_picker_sheet.dart:45-120`）：
+ * 自绘**居中**标题 → 12dp → 0.52 屏高的可滚课程列表 → 12dp → 底部整宽「取消」。
+ * 课程行是 `HyperosChoiceTile(variant: dialog)` + 36dp 课程色徽章：行内 16×13、
+ * 两行最小高 72、标题 17sp、教师名 14sp 次要色。
+ *
+ * 标题为什么自己画：发布版这个弹层的标题是居中的，而套件 `QingyuSheet` 的标题槽
+ * 是左对齐口径（见 `QingyuSheet` KDoc 的 A1），借过来就变成另一种观感。
+ *
+ * **已知差距（组件能力，不在本文件补）**：发布版是 floating 弹层（两侧留边 + 四角 28
+ * 圆角），miuix 0.9.4 的 `OverlayBottomSheet` 只画上圆角，且 `outsideMargin` 没从
+ * `QingyuSheet` 透出来 —— 要 floating 得改套件（美化三名下），已报 Chief。
+ */
 @Composable
 private fun CourseTestPickerDialog(
     courses: List<Course>,
     onDismiss: () -> Unit,
     onPick: (Course) -> Unit,
 ) {
-    OverlayDialog(
-        show = true,
-        title = SettingsStringsExt3.liveTestingCourseTestPickerTitle.text,
-        onDismissRequest = onDismiss,
-        insideMargin = DpSize(16.dp, 16.dp),
-    ) {
-        Column(
-            modifier = Modifier
-                .heightIn(max = rememberCappedSheetHeight(420.dp))
-                .verticalScroll(rememberScrollState()),
-            verticalArrangement = Arrangement.spacedBy(8.dp),
-        ) {
-            if (courses.isEmpty()) {
-                Text(
-                    text = SettingsStringsExt3.liveTestingNoCourseAvailable.text,
-                    style = MiuixTheme.textStyles.body2,
-                    color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-                )
-            } else {
-                courses.forEach { course ->
-                    Button(
-                        onClick = { onPick(course) },
-                        modifier = Modifier.fillMaxWidth(),
-                        colors = ButtonDefaults.buttonColorsPrimary(),
-                    ) {
-                        Text(text = course.name)
+    QingyuSheet(show = true, onDismissRequest = onDismiss) {
+        Column(modifier = Modifier.fillMaxWidth()) {
+            Text(
+                text = SettingsStringsExt3.liveTestingCourseTestPickerTitle.text,
+                style = MiuixTheme.textStyles.main,
+                color = MiuixTheme.colorScheme.onSurface,
+                textAlign = TextAlign.Center,
+                modifier = Modifier.fillMaxWidth(),
+            )
+            Spacer(modifier = Modifier.height(12.dp))
+            // 列表高度 = 屏高 × 0.52（`course_template_picker_sheet.dart:51`），超出滚动。
+            // ⚠️ `heightIn` 必须排在 `verticalScroll` **之前**，滚动容器才拿得到有界高度。
+            val maxListHeight = rememberSheetMaxHeight(0.52f)
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .heightIn(max = maxListHeight)
+                    .verticalScroll(rememberScrollState()),
+            ) {
+                Column(modifier = Modifier.fillMaxWidth()) {
+                    if (courses.isEmpty()) {
+                        Text(
+                            text = SettingsStringsExt3.liveTestingNoCourseAvailable.text,
+                            style = MiuixTheme.textStyles.footnote1,
+                            color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                            modifier = Modifier.padding(vertical = 12.dp),
+                        )
+                    } else {
+                        courses.forEach { course ->
+                            CoursePickerRow(course = course, onPick = { onPick(course) })
+                        }
                     }
                 }
             }
-            Button(onClick = onDismiss, modifier = Modifier.fillMaxWidth()) {
+            Spacer(modifier = Modifier.height(12.dp))
+            Button(
+                onClick = onDismiss,
+                modifier = Modifier.fillMaxWidth(),
+                colors = ButtonDefaults.buttonColors(),
+            ) {
                 Text(text = SettingsStringsExt3.cancelAction.text)
             }
         }
     }
 }
 
-/** 选课测试第二步：选要预览的阶段（课前倒计时 / 上课中）。 */
+/**
+ * 选课行（Dart `HyperosChoiceTile(variant: dialog)` + 36dp 课程色徽章，
+ * `course_template_picker_sheet.dart:96-120`）。
+ *
+ * 徽章 = 36dp 圆角 12 的 14% 同色底 + 中间 12dp 实心圆点；右边标题一行、教师名一行。
+ */
+@Composable
+private fun CoursePickerRow(course: Course, onPick: () -> Unit) {
+    val colors = MiuixTheme.colorScheme
+    val accent = parseHexColorOrFallback(course.color)
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .heightIn(min = 72.dp)
+            .clickable(onClick = onPick)
+            .padding(horizontal = 16.dp, vertical = 13.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Box(
+            modifier = Modifier
+                .size(36.dp)
+                .clip(RoundedCornerShape(12.dp))
+                .background(accent.copy(alpha = 0.14f)),
+            contentAlignment = Alignment.Center,
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(12.dp)
+                    .clip(CircleShape)
+                    .background(accent),
+            )
+        }
+        Spacer(modifier = Modifier.width(12.dp))
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = course.name,
+                style = MiuixTheme.textStyles.main,
+                color = colors.onSurface,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+            if (course.teacher.isNotBlank()) {
+                // 标题↔副标题 3dp（Dart `HyperosTokens.titleCaptionGap`）。
+                Spacer(modifier = Modifier.height(3.dp))
+                Text(
+                    text = course.teacher,
+                    style = MiuixTheme.textStyles.body2,
+                    color = colors.onSurfaceVariantSummary,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+            }
+        }
+    }
+}
+
+/**
+ * 选课测试第二步：选要预览的阶段（课前倒计时 / 上课中）。
+ *
+ * 发布版 `_pickCourseTestStage`（`settings_live.dart:514-560`）是底部弹层：
+ * 居中标题 17sp → 8dp → 居中课程名（13sp 次要色）→ 16dp → 三颗整宽按钮
+ * （主色 / 次色 / 次色），按钮之间 12dp。
+ */
 @Composable
 private fun CourseTestStageDialog(
     courseName: String,
     onDismiss: () -> Unit,
     onPick: (LiveCourseTestStage) -> Unit,
 ) {
-    OverlayDialog(
-        show = true,
-        title = SettingsStringsExt3.liveTestingCourseTestStageTitle.text,
-        onDismissRequest = onDismiss,
-        insideMargin = DpSize(16.dp, 16.dp),
-    ) {
-        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+    QingyuSheet(show = true, onDismissRequest = onDismiss) {
+        Column(modifier = Modifier.fillMaxWidth()) {
+            Text(
+                text = SettingsStringsExt3.liveTestingCourseTestStageTitle.text,
+                style = MiuixTheme.textStyles.main,
+                color = MiuixTheme.colorScheme.onSurface,
+                textAlign = TextAlign.Center,
+                modifier = Modifier.fillMaxWidth(),
+            )
+            Spacer(modifier = Modifier.height(8.dp))
             Text(
                 text = courseName,
-                style = MiuixTheme.textStyles.body2,
+                style = MiuixTheme.textStyles.footnote1,
                 color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-                modifier = Modifier.padding(bottom = 4.dp),
+                textAlign = TextAlign.Center,
+                modifier = Modifier.fillMaxWidth(),
             )
+            Spacer(modifier = Modifier.height(16.dp))
             Button(
                 onClick = { onPick(LiveCourseTestStage.BEFORE_CLASS) },
                 modifier = Modifier.fillMaxWidth(),
@@ -593,13 +698,20 @@ private fun CourseTestStageDialog(
             ) {
                 Text(text = SettingsStringsExt3.liveTestingCourseTestStageBeforeClass.text)
             }
+            Spacer(modifier = Modifier.height(12.dp))
             Button(
                 onClick = { onPick(LiveCourseTestStage.DURING_CLASS) },
                 modifier = Modifier.fillMaxWidth(),
+                colors = ButtonDefaults.buttonColors(),
             ) {
                 Text(text = SettingsStringsExt3.liveTestingCourseTestStageDuringClass.text)
             }
-            Button(onClick = onDismiss, modifier = Modifier.fillMaxWidth()) {
+            Spacer(modifier = Modifier.height(12.dp))
+            Button(
+                onClick = onDismiss,
+                modifier = Modifier.fillMaxWidth(),
+                colors = ButtonDefaults.buttonColors(),
+            ) {
                 Text(text = SettingsStringsExt3.cancelAction.text)
             }
         }
