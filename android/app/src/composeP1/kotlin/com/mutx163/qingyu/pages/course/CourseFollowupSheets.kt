@@ -454,12 +454,18 @@ private fun FollowupLocationSheet(
         suggestions.filter { it.lowercase().contains(normalized) }
     }
 
+    // 发布版 sheet 口径：**内容滚、按钮钉底**（候选长也不用滚到底才能确认）。
     QingyuSheet(
         show = show,
         title = title,
         onDismissRequest = onDismiss,
+        contentScrolls = true,
     ) {
-        Column(modifier = Modifier.fillMaxWidth()) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(bottom = bottomInset),
+        ) {
             TextField(
                 value = text,
                 onValueChange = { text = it },
@@ -481,22 +487,30 @@ private fun FollowupLocationSheet(
             )
             if (visible.isNotEmpty()) {
                 Spacer(modifier = Modifier.height(8.dp))
-                visible.forEach { suggestion ->
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clickable { text = TextFieldValue(suggestion) }
-                            .padding(horizontal = 12.dp, vertical = 12.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                    ) {
-                        Text(
-                            text = suggestion,
-                            style = MiuixTheme.textStyles.body2,
-                            color = primaryText,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis,
-                            modifier = Modifier.weight(1f),
-                        )
+                LazyColumn(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .heightIn(max = rememberSheetMaxHeight(0.4f))
+                        .scrollEndHaptic()
+                        .overScrollVertical(),
+                ) {
+                    items(visible) { suggestion ->
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable { text = TextFieldValue(suggestion) }
+                                .padding(horizontal = 12.dp, vertical = 12.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            Text(
+                                text = suggestion,
+                                style = MiuixTheme.textStyles.body2,
+                                color = primaryText,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
+                                modifier = Modifier.weight(1f),
+                            )
+                        }
                     }
                 }
             }

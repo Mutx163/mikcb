@@ -20,6 +20,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
@@ -426,30 +427,39 @@ fun AddCoursePage(
                                     color = Color(QingyuTheme.secondaryText(dark)),
                                 )
                             }
-                            // 教师 / 地点：发布版是「手输 + 历史候选」弹层（`showCourseFieldPickerSheet`，
-                            // `add_course_screen.dart:917/:933`）；共享卡这两行与条目两行走同一份弹层。
-                            BasicComponent(
-                                title = AddCourseStrings.teacherLabel.text,
-                                endActions = {
-                                    Text(
-                                        text = sharedTeacher.ifBlank { AddCourseStrings.manualInputLabel.text },
-                                        style = MiuixTheme.textStyles.body2,
-                                        color = MiuixTheme.colorScheme.onSurfaceVariantActions,
-                                    )
-                                },
-                                onClick = { fieldPickerTarget = CourseFieldPickerTarget.Shared(teacher = true) },
-                            )
-                            BasicComponent(
-                                title = AddCourseStrings.locationLabel.text,
-                                endActions = {
-                                    Text(
-                                        text = sharedLocation.ifBlank { AddCourseStrings.manualInputLabel.text },
-                                        style = MiuixTheme.textStyles.body2,
-                                        color = MiuixTheme.colorScheme.onSurfaceVariantActions,
-                                    )
-                                },
-                                onClick = { fieldPickerTarget = CourseFieldPickerTarget.Shared(teacher = false) },
-                            )
+                        }
+                        // 教师 / 地点：发布版是「手输 + 历史候选」弹层（`showCourseFieldPickerSheet`，
+                        // `add_course_screen.dart:917/:933`）；共享卡这两行与条目两行走同一份弹层。
+                        // 它们是 Preference 行，必须**满宽贴卡**（与下面的性质 / 颜色行同一缩进），
+                        // 不能再套一层 16dp 内衬——否则同卡出现 16 / 32 两套缩进（用户真机报）。
+                        BasicComponent(
+                            title = AddCourseStrings.teacherLabel.text,
+                            endActions = {
+                                Text(
+                                    text = sharedTeacher.ifBlank { AddCourseStrings.manualInputLabel.text },
+                                    style = MiuixTheme.textStyles.body2,
+                                    color = MiuixTheme.colorScheme.onSurfaceVariantActions,
+                                )
+                            },
+                            onClick = { fieldPickerTarget = CourseFieldPickerTarget.Shared(teacher = true) },
+                        )
+                        BasicComponent(
+                            title = AddCourseStrings.locationLabel.text,
+                            endActions = {
+                                Text(
+                                    text = sharedLocation.ifBlank { AddCourseStrings.manualInputLabel.text },
+                                    style = MiuixTheme.textStyles.body2,
+                                    color = MiuixTheme.colorScheme.onSurfaceVariantActions,
+                                )
+                            },
+                            onClick = { fieldPickerTarget = CourseFieldPickerTarget.Shared(teacher = false) },
+                        )
+                        // 说明放在第二个 16dp 内衬块里（与名称/简称同口径）——
+                        // 教师/地点是 Preference 行，必须满宽贴卡、与性质/颜色行同一缩进。
+                        Column(
+                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 16.dp),
+                            verticalArrangement = Arrangement.spacedBy(14.dp),
+                        ) {
                             TextField(
                                 value = sharedDescription,
                                 onValueChange = {
@@ -959,49 +969,44 @@ private fun AddCourseEntryFields(
                 onClick = onOpenWeekPicker,
             )
             Spacer(modifier = Modifier.height(4.dp))
-            Column(
-                modifier = Modifier.padding(horizontal = 16.dp, vertical = 14.dp),
-                verticalArrangement = Arrangement.spacedBy(10.dp),
-            ) {
-                // 教师 / 地点：发布版这两个位置就是 `CourseFieldPickerTile`（`add_course_screen.dart:917/:933`），
-                // 点开「手输 + 历史候选」弹层；这里不再用纯 TextField 手打。
-                BasicComponent(
-                    title = AddCourseStrings.teacherLabel.text,
-                    endActions = {
-                        Text(
-                            text = entry.teacher.ifBlank { AddCourseStrings.manualInputLabel.text },
-                            style = MiuixTheme.textStyles.body2,
-                            color = MiuixTheme.colorScheme.onSurfaceVariantActions,
-                        )
-                    },
-                    onClick = onOpenTeacherPicker,
-                )
-                BasicComponent(
-                    title = AddCourseStrings.locationLabel.text,
-                    endActions = {
-                        Text(
-                            text = entry.location.ifBlank { AddCourseStrings.manualInputLabel.text },
-                            style = MiuixTheme.textStyles.body2,
-                            color = MiuixTheme.colorScheme.onSurfaceVariantActions,
-                        )
-                    },
-                    onClick = onOpenLocationPicker,
-                )
-                // 时间模板（Dart `_buildEntryTimeSchemeField`）：null = 跟随当前课表，否则覆盖这一条。
-                BasicComponent(
-                    title = AddCourseStrings.timeSchemeLabel.text,
-                    endActions = {
-                        Text(
-                            text = entryTimeSchemeSummary(entry, activeTimeSchemeName, timeSchemes),
-                            style = MiuixTheme.textStyles.body2,
-                            color = MiuixTheme.colorScheme.onSurfaceVariantActions,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis,
-                        )
-                    },
-                    onClick = onOpenTimeSchemePicker,
-                )
-            }
+            // 教师 / 地点：发布版这两个位置就是 `CourseFieldPickerTile`（`add_course_screen.dart:917/:933`），
+            // 点开「手输 + 历史候选」弹层；这里不再用纯 TextField 手打。
+            BasicComponent(
+                title = AddCourseStrings.teacherLabel.text,
+                endActions = {
+                    Text(
+                        text = entry.teacher.ifBlank { AddCourseStrings.manualInputLabel.text },
+                        style = MiuixTheme.textStyles.body2,
+                        color = MiuixTheme.colorScheme.onSurfaceVariantActions,
+                    )
+                },
+                onClick = onOpenTeacherPicker,
+            )
+            BasicComponent(
+                title = AddCourseStrings.locationLabel.text,
+                endActions = {
+                    Text(
+                        text = entry.location.ifBlank { AddCourseStrings.manualInputLabel.text },
+                        style = MiuixTheme.textStyles.body2,
+                        color = MiuixTheme.colorScheme.onSurfaceVariantActions,
+                    )
+                },
+                onClick = onOpenLocationPicker,
+            )
+            // 时间模板（Dart `_buildEntryTimeSchemeField`）：null = 跟随当前课表，否则覆盖这一条。
+            BasicComponent(
+                title = AddCourseStrings.timeSchemeLabel.text,
+                endActions = {
+                    Text(
+                        text = entryTimeSchemeSummary(entry, activeTimeSchemeName, timeSchemes),
+                        style = MiuixTheme.textStyles.body2,
+                        color = MiuixTheme.colorScheme.onSurfaceVariantActions,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                },
+                onClick = onOpenTimeSchemePicker,
+            )
         }
     }
 }
@@ -1468,58 +1473,71 @@ private fun AddCourseTemplatePickerSheet(
     onPick: (AddCourseTemplateGroup) -> Unit,
     onDismiss: () -> Unit,
 ) {
+    // 发布版 sheet 口径：**内容滚、按钮钉底**——课程多时也不用滚到最后才能取消。
+    // 正文自带 LazyColumn ⇒ `contentScrolls = true`，底部让位垫在固定按钮下面。
+    val listMaxHeight = rememberSheetMaxHeight(0.52f) // Dart `maxListHeight = 屏高 × 0.52`
     QingyuSheet(
         show = show,
         title = AddCourseStrings.reuseExistingCourseHelper.text,
         onDismissRequest = onDismiss,
-        // Dart `maxListHeight = MediaQuery.sizeOf(context).height * 0.52`；
-        // 本仓弹层要连标题与取消按钮一起算，给 0.72 让列表区落在同一高度。
-        maxHeightFraction = 0.72f,
+        contentScrolls = true,
     ) {
-        Column(modifier = Modifier.fillMaxWidth()) {
-            groups.forEach { group ->
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clickable { onPick(group) }
-                        .padding(horizontal = 16.dp, vertical = 10.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    val groupColor = parseCourseColor(
-                        group.color,
-                        Color(QingyuTheme.primary(dark = dark)),
-                    )
-                    Box(
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(bottom = bottomInset),
+        ) {
+            LazyColumn(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .heightIn(max = listMaxHeight)
+                    .scrollEndHaptic()
+                    .overScrollVertical(),
+            ) {
+                items(groups, key = { it.name }) { group ->
+                    Row(
                         modifier = Modifier
-                            .size(36.dp)
-                            .clip(RoundedCornerShape(12.dp))
-                            .background(groupColor.copy(alpha = 0.14f)),
-                        contentAlignment = Alignment.Center,
+                            .fillMaxWidth()
+                            .clickable { onPick(group) }
+                            .padding(horizontal = 16.dp, vertical = 10.dp),
+                        verticalAlignment = Alignment.CenterVertically,
                     ) {
+                        val groupColor = parseCourseColor(
+                            group.color,
+                            Color(QingyuTheme.primary(dark = dark)),
+                        )
                         Box(
                             modifier = Modifier
-                                .size(12.dp)
-                                .clip(CircleShape)
-                                .background(groupColor),
-                        )
-                    }
-                    Spacer(modifier = Modifier.width(12.dp))
-                    Column(modifier = Modifier.weight(1f)) {
-                        Text(
-                            text = group.name,
-                            style = MiuixTheme.textStyles.main,
-                            color = Color(QingyuTheme.primaryText(dark)),
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis,
-                        )
-                        if (group.teacher.isNotBlank()) {
+                                .size(36.dp)
+                                .clip(RoundedCornerShape(12.dp))
+                                .background(groupColor.copy(alpha = 0.14f)),
+                            contentAlignment = Alignment.Center,
+                        ) {
+                            Box(
+                                modifier = Modifier
+                                    .size(12.dp)
+                                    .clip(CircleShape)
+                                    .background(groupColor),
+                            )
+                        }
+                        Spacer(modifier = Modifier.width(12.dp))
+                        Column(modifier = Modifier.weight(1f)) {
                             Text(
-                                text = group.teacher,
-                                style = MiuixTheme.textStyles.footnote1,
-                                color = Color(QingyuTheme.secondaryText(dark)),
+                                text = group.name,
+                                style = MiuixTheme.textStyles.main,
+                                color = Color(QingyuTheme.primaryText(dark)),
                                 maxLines = 1,
                                 overflow = TextOverflow.Ellipsis,
                             )
+                            if (group.teacher.isNotBlank()) {
+                                Text(
+                                    text = group.teacher,
+                                    style = MiuixTheme.textStyles.footnote1,
+                                    color = Color(QingyuTheme.secondaryText(dark)),
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis,
+                                )
+                            }
                         }
                     }
                 }

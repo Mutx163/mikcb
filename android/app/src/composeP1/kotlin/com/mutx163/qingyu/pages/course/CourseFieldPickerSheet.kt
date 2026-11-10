@@ -1,6 +1,8 @@
 package com.mutx163.qingyu.pages.course
 
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -8,6 +10,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.runtime.Composable
@@ -20,8 +23,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import com.mutx163.qingyu.components.rememberSheetMaxHeight
 import com.mutx163.qingyu.components.QingyuSheet
 import com.mutx163.qingyu.theme.QingyuTheme
+import top.yukonga.miuix.kmp.utils.overScrollVertical
+import top.yukonga.miuix.kmp.utils.scrollEndHaptic
 import top.yukonga.miuix.kmp.basic.Button
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
 import top.yukonga.miuix.kmp.basic.Icon
@@ -78,13 +84,20 @@ fun CourseFieldPickerSheet(
         suggestions.filter { it.lowercase().contains(normalized) }
     }
 
+    // 发布版 sheet 口径：**内容滚、按钮钉底**——候选很长时也不用滚到底才能确认/取消。
+    // 正文自带 LazyColumn ⇒ `contentScrolls = true`，底部让位垫在固定按钮下面。
+    val listMaxHeight = rememberSheetMaxHeight(0.45f)
     QingyuSheet(
         show = show,
         title = title,
         onDismissRequest = onDismiss,
-        maxHeightFraction = 0.72f,
+        contentScrolls = true,
     ) {
-        Column(modifier = Modifier.fillMaxWidth()) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(bottom = bottomInset),
+        ) {
             TextField(
                 value = text,
                 onValueChange = { text = it },
@@ -107,22 +120,30 @@ fun CourseFieldPickerSheet(
             )
             if (visible.isNotEmpty()) {
                 Spacer(modifier = Modifier.height(8.dp))
-                visible.forEach { suggestion ->
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clickable { text = suggestion }
-                            .padding(horizontal = 12.dp, vertical = 12.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                    ) {
-                        Text(
-                            text = suggestion,
-                            style = MiuixTheme.textStyles.body2,
-                            color = primaryText,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis,
-                            modifier = Modifier.weight(1f),
-                        )
+                LazyColumn(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .heightIn(max = listMaxHeight)
+                        .scrollEndHaptic()
+                        .overScrollVertical(),
+                ) {
+                    items(visible) { suggestion ->
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable { text = suggestion }
+                                .padding(horizontal = 12.dp, vertical = 12.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            Text(
+                                text = suggestion,
+                                style = MiuixTheme.textStyles.body2,
+                                color = primaryText,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
+                                modifier = Modifier.weight(1f),
+                            )
+                        }
                     }
                 }
             }
