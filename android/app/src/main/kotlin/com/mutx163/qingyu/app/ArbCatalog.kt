@@ -23,7 +23,7 @@ object ArbCatalog {
         else -> null
     }
 
-    // ── en（3038 条）──
+    // ── en（3040 条）──
     private fun lookupen(key: String): String? = lookupen1(key) ?: lookupen2(key) ?: lookupen3(key) ?: lookupen4(key) ?: lookupen5(key) ?: lookupen6(key) ?: lookupen7(key) ?: lookupen8(key) ?: lookupen9(key) ?: lookupen10(key) ?: lookupen11(key)
     private fun lookupen1(key: String): String? = when (key) {
         "aboutAdvancedOptionsTitle" -> "Advanced options"
@@ -2155,6 +2155,7 @@ object ArbCatalog {
         "qrTransferStop" -> "Stop Sending"
         "quickActionAutoStartTitle" -> "Auto Start"
         "quickGenerateAction" -> "Quick Generate"
+        "quickGeneratePreviewSummary" -> "{sections} sections · last one ends at {endTime}"
         "quickGenerateTimeSchemeTitle" -> "Quick Generate Timetable Times"
         "quickImportAction" -> "Quick import"
         "quickImportCancelImportAction" -> "Cancel import"
@@ -2446,10 +2447,10 @@ object ArbCatalog {
         "serviceMsgMacroFillSelectorEmpty" -> "Fill-field selector is empty."
         "serviceMsgMacroManualInputDefault" -> "Manual action required."
         "serviceMsgMacroNavigateUrlEmpty" -> "Navigation URL is empty."
-        "serviceMsgMacroNavigateUrlInvalid" -> "Invalid URL: {url}"
         else -> null
     }
     private fun lookupen9(key: String): String? = when (key) {
+        "serviceMsgMacroNavigateUrlInvalid" -> "Invalid URL: {url}"
         "serviceMsgMacroNoSteps" -> "No recorded steps."
         "serviceMsgMacroPollTimeout" -> "{stepLabel} timed out ({timeoutSeconds}s){lastError}"
         "serviceMsgMacroReplayClick" -> "Clicking…"
@@ -2480,6 +2481,7 @@ object ArbCatalog {
         "serviceMsgSectionEndMustAfterStart" -> "Section {sectionNumber} end time must be later than start time. Overnight classes are not supported"
         "serviceMsgSectionOutOfRange" -> "Section {section} is outside the time scheme range (1-{maxSection})"
         "serviceMsgSectionStartBeforePreviousEnd" -> "Section {sectionNumber} start time cannot be earlier than the previous section end time"
+        "serviceMsgSectionTimeOverlap" -> "Section {sectionNumber} overlaps the previous section. Adjust it before saving"
         "serviceMsgShareBackupSubject" -> "Qingyu Timetable backup"
         "serviceMsgShareBackupSubjectNamed" -> "{profileName} - Qingyu Timetable backup"
         "serviceMsgShareBackupText" -> "This is a full backup of the current timetable. Import it to restore courses and settings."
@@ -2748,11 +2750,11 @@ object ArbCatalog {
         "supportSaveShort" -> "Save"
         "supportTapQrHint" -> "Tap to enlarge"
         "supportWeChatHint" -> "Use WeChat to scan and support the creator"
-        "supportedFilesImageHint" -> "If you only have screenshots, go back and choose Image Import instead"
-        "supportedFilesSuffix" -> "The file extension must be .ics."
         else -> null
     }
     private fun lookupen10(key: String): String? = when (key) {
+        "supportedFilesImageHint" -> "If you only have screenshots, go back and choose Image Import instead"
+        "supportedFilesSuffix" -> "The file extension must be .ics."
         "supportedFilesTitle" -> "Supported Files"
         "surfaceCourseCard" -> "Course cards"
         "surfaceMaterialSectionTitle" -> "Current material per surface"
@@ -3051,11 +3053,11 @@ object ArbCatalog {
         "weekLabel" -> "Week {week}"
         "weekListSeparator" -> ", "
         "weekPickerCalendarTooltip" -> "Use calendar picker"
-        "weekPickerTitle" -> "Select weeks"
-        "weekdayFri" -> "Fri"
         else -> null
     }
     private fun lookupen11(key: String): String? = when (key) {
+        "weekPickerTitle" -> "Select weeks"
+        "weekdayFri" -> "Fri"
         "weekdayInkContrastBodyDark" -> "Your weekday bar text color had too little contrast against the dark wallpaper, so it was lightened automatically to stay readable — your color is kept. You can change or reset it under \"Timetable Page → Text Colors\"."
         "weekdayInkContrastBodyLight" -> "Your weekday bar text color had too little contrast against the light wallpaper, so it was darkened automatically to stay readable — your color is kept. You can change or reset it under \"Timetable Page → Text Colors\"."
         "weekdayInkContrastTitle" -> "Low Text Contrast"
@@ -3097,7 +3099,7 @@ object ArbCatalog {
         else -> null
     }
 
-    // ── ja（3038 条）──
+    // ── ja（3040 条）──
     private fun lookupja(key: String): String? = lookupja1(key) ?: lookupja2(key) ?: lookupja3(key) ?: lookupja4(key) ?: lookupja5(key) ?: lookupja6(key) ?: lookupja7(key) ?: lookupja8(key) ?: lookupja9(key) ?: lookupja10(key) ?: lookupja11(key)
     private fun lookupja1(key: String): String? = when (key) {
         "aboutAdvancedOptionsTitle" -> "高度なオプション"
@@ -5229,6 +5231,7 @@ object ArbCatalog {
         "qrTransferStop" -> "送信を停止"
         "quickActionAutoStartTitle" -> "自動起動"
         "quickGenerateAction" -> "クイック生成"
+        "quickGeneratePreviewSummary" -> "全 {sections} 限 · 最終限は {endTime} に終了"
         "quickGenerateTimeSchemeTitle" -> "時間割時間をクイック生成"
         "quickImportAction" -> "クイックインポート"
         "quickImportCancelImportAction" -> "インポートをキャンセル"
@@ -5520,10 +5523,10 @@ object ArbCatalog {
         "serviceMsgMacroFillSelectorEmpty" -> "Fill-field selector is empty."
         "serviceMsgMacroManualInputDefault" -> "Manual action required."
         "serviceMsgMacroNavigateUrlEmpty" -> "Navigation URL is empty."
-        "serviceMsgMacroNavigateUrlInvalid" -> "Invalid URL: {url}"
         else -> null
     }
     private fun lookupja9(key: String): String? = when (key) {
+        "serviceMsgMacroNavigateUrlInvalid" -> "Invalid URL: {url}"
         "serviceMsgMacroNoSteps" -> "No recorded steps."
         "serviceMsgMacroPollTimeout" -> "{stepLabel} timed out ({timeoutSeconds}s){lastError}"
         "serviceMsgMacroReplayClick" -> "Clicking…"
@@ -5554,6 +5557,7 @@ object ArbCatalog {
         "serviceMsgSectionEndMustAfterStart" -> "Section {sectionNumber} end time must be later than start time. Overnight classes are not supported"
         "serviceMsgSectionOutOfRange" -> "Section {section} is outside the time scheme range (1-{maxSection})"
         "serviceMsgSectionStartBeforePreviousEnd" -> "Section {sectionNumber} start time cannot be earlier than the previous section end time"
+        "serviceMsgSectionTimeOverlap" -> "第 {sectionNumber} 限目の時間が前の限目と重なっています。保存前に調整してください"
         "serviceMsgShareBackupSubject" -> "Qingyu Timetable backup"
         "serviceMsgShareBackupSubjectNamed" -> "{profileName} - Qingyu Timetable backup"
         "serviceMsgShareBackupText" -> "This is a full backup of the current timetable. Import it to restore courses and settings."
@@ -5822,11 +5826,11 @@ object ArbCatalog {
         "supportSaveShort" -> "保存"
         "supportTapQrHint" -> "タップで拡大"
         "supportWeChatHint" -> "WeChatでQRコードをスキャンして作者を支援"
-        "supportedFilesImageHint" -> "スクリーンショットしかない場合は、前のページに戻って「画像認識インポート」を選択してください"
-        "supportedFilesSuffix" -> "ファイル拡張子は.icsである必要があります。"
         else -> null
     }
     private fun lookupja10(key: String): String? = when (key) {
+        "supportedFilesImageHint" -> "スクリーンショットしかない場合は、前のページに戻って「画像認識インポート」を選択してください"
+        "supportedFilesSuffix" -> "ファイル拡張子は.icsである必要があります。"
         "supportedFilesTitle" -> "対応ファイル"
         "surfaceCourseCard" -> "時間割カード"
         "surfaceMaterialSectionTitle" -> "表面ごとの現在の素材"
@@ -6125,11 +6129,11 @@ object ArbCatalog {
         "weekLabel" -> "第{week}週"
         "weekListSeparator" -> "、"
         "weekPickerCalendarTooltip" -> "カレンダーで選択"
-        "weekPickerTitle" -> "授業週次を選択"
-        "weekdayFri" -> "金曜"
         else -> null
     }
     private fun lookupja11(key: String): String? = when (key) {
+        "weekPickerTitle" -> "授業週次を選択"
+        "weekdayFri" -> "金曜"
         "weekdayInkContrastBodyDark" -> "曜日バーの文字色は濃い壁紙とのコントラストが不足していたため、読みやすいよう自動で明るくしました（色味はそのまま）。「時間割ページ → 文字色」で色を変更またはリセットできます。"
         "weekdayInkContrastBodyLight" -> "曜日バーの文字色は明るい壁紙とのコントラストが不足していたため、読みやすいよう自動で暗くしました（色味はそのまま）。「時間割ページ → 文字色」で色を変更またはリセットできます。"
         "weekdayInkContrastTitle" -> "文字のコントラスト不足"
@@ -6171,7 +6175,7 @@ object ArbCatalog {
         else -> null
     }
 
-    // ── ko（3038 条）──
+    // ── ko（3040 条）──
     private fun lookupko(key: String): String? = lookupko1(key) ?: lookupko2(key) ?: lookupko3(key) ?: lookupko4(key) ?: lookupko5(key) ?: lookupko6(key) ?: lookupko7(key) ?: lookupko8(key) ?: lookupko9(key) ?: lookupko10(key) ?: lookupko11(key)
     private fun lookupko1(key: String): String? = when (key) {
         "aboutAdvancedOptionsTitle" -> "고급 옵션"
@@ -8303,6 +8307,7 @@ object ArbCatalog {
         "qrTransferStop" -> "전송 중지"
         "quickActionAutoStartTitle" -> "자동 시작"
         "quickGenerateAction" -> "빠른 생성"
+        "quickGeneratePreviewSummary" -> "총 {sections}교시 · 마지막 교시 {endTime} 종료"
         "quickGenerateTimeSchemeTitle" -> "시간표 시간 빠른 생성"
         "quickImportAction" -> "빠른 가져오기"
         "quickImportCancelImportAction" -> "가져오기 취소"
@@ -8594,10 +8599,10 @@ object ArbCatalog {
         "serviceMsgMacroFillSelectorEmpty" -> "Fill-field selector is empty."
         "serviceMsgMacroManualInputDefault" -> "Manual action required."
         "serviceMsgMacroNavigateUrlEmpty" -> "Navigation URL is empty."
-        "serviceMsgMacroNavigateUrlInvalid" -> "Invalid URL: {url}"
         else -> null
     }
     private fun lookupko9(key: String): String? = when (key) {
+        "serviceMsgMacroNavigateUrlInvalid" -> "Invalid URL: {url}"
         "serviceMsgMacroNoSteps" -> "No recorded steps."
         "serviceMsgMacroPollTimeout" -> "{stepLabel} timed out ({timeoutSeconds}s){lastError}"
         "serviceMsgMacroReplayClick" -> "Clicking…"
@@ -8628,6 +8633,7 @@ object ArbCatalog {
         "serviceMsgSectionEndMustAfterStart" -> "Section {sectionNumber} end time must be later than start time. Overnight classes are not supported"
         "serviceMsgSectionOutOfRange" -> "Section {section} is outside the time scheme range (1-{maxSection})"
         "serviceMsgSectionStartBeforePreviousEnd" -> "Section {sectionNumber} start time cannot be earlier than the previous section end time"
+        "serviceMsgSectionTimeOverlap" -> "{sectionNumber}교시 시간이 이전 교시와 겹칩니다. 저장 전에 조정하세요"
         "serviceMsgShareBackupSubject" -> "Qingyu Timetable backup"
         "serviceMsgShareBackupSubjectNamed" -> "{profileName} - Qingyu Timetable backup"
         "serviceMsgShareBackupText" -> "This is a full backup of the current timetable. Import it to restore courses and settings."
@@ -8896,11 +8902,11 @@ object ArbCatalog {
         "supportSaveShort" -> "저장"
         "supportTapQrHint" -> "탭하여 확대"
         "supportWeChatHint" -> "WeChat으로 QR 코드를 스캔하여 개발자 지원"
-        "supportedFilesImageHint" -> "스크린샷만 있다면 이곳이 아닌 이전 페이지에서 '이미지 인식 가져오기'를 선택하세요"
-        "supportedFilesSuffix" -> "파일 확장자는 .ics여야 합니다."
         else -> null
     }
     private fun lookupko10(key: String): String? = when (key) {
+        "supportedFilesImageHint" -> "스크린샷만 있다면 이곳이 아닌 이전 페이지에서 '이미지 인식 가져오기'를 선택하세요"
+        "supportedFilesSuffix" -> "파일 확장자는 .ics여야 합니다."
         "supportedFilesTitle" -> "지원 파일"
         "surfaceCourseCard" -> "시간표 카드"
         "surfaceMaterialSectionTitle" -> "표면별 현재 재질"
@@ -9199,11 +9205,11 @@ object ArbCatalog {
         "weekLabel" -> "제{week}주"
         "weekListSeparator" -> ", "
         "weekPickerCalendarTooltip" -> "달력으로 선택"
-        "weekPickerTitle" -> "수업 주차 선택"
-        "weekdayFri" -> "금요일"
         else -> null
     }
     private fun lookupko11(key: String): String? = when (key) {
+        "weekPickerTitle" -> "수업 주차 선택"
+        "weekdayFri" -> "금요일"
         "weekdayInkContrastBodyDark" -> "요일 표시줄 텍스트 색상이 어두운 배경화면과 대비가 부족하여 읽기 쉽도록 자동으로 밝게 조정했습니다(색조는 그대로 유지). \"시간표 페이지 → 텍스트 색상\"에서 색상을 변경하거나 기본값으로 재설정할 수 있습니다."
         "weekdayInkContrastBodyLight" -> "요일 표시줄 텍스트 색상이 밝은 배경화면과 대비가 부족하여 읽기 쉽도록 자동으로 어둡게 조정했습니다(색조는 그대로 유지). \"시간표 페이지 → 텍스트 색상\"에서 색상을 변경하거나 기본값으로 재설정할 수 있습니다."
         "weekdayInkContrastTitle" -> "텍스트 대비 부족"
@@ -9245,7 +9251,7 @@ object ArbCatalog {
         else -> null
     }
 
-    // ── zh（3038 条）──
+    // ── zh（3040 条）──
     private fun lookupzh(key: String): String? = lookupzh1(key) ?: lookupzh2(key) ?: lookupzh3(key) ?: lookupzh4(key) ?: lookupzh5(key) ?: lookupzh6(key) ?: lookupzh7(key) ?: lookupzh8(key) ?: lookupzh9(key) ?: lookupzh10(key) ?: lookupzh11(key)
     private fun lookupzh1(key: String): String? = when (key) {
         "aboutAdvancedOptionsTitle" -> "高级选项"
@@ -11377,6 +11383,7 @@ object ArbCatalog {
         "qrTransferStop" -> "停止发送"
         "quickActionAutoStartTitle" -> "自启动"
         "quickGenerateAction" -> "快捷生成"
+        "quickGeneratePreviewSummary" -> "共 {sections} 节 · 最后一节 {endTime} 结束"
         "quickGenerateTimeSchemeTitle" -> "快捷生成课表时间"
         "quickImportAction" -> "快捷导入"
         "quickImportCancelImportAction" -> "取消导入"
@@ -11668,10 +11675,10 @@ object ArbCatalog {
         "serviceMsgMacroFillSelectorEmpty" -> "填充字段的选择器为空"
         "serviceMsgMacroManualInputDefault" -> "需要手动操作"
         "serviceMsgMacroNavigateUrlEmpty" -> "导航 URL 为空"
-        "serviceMsgMacroNavigateUrlInvalid" -> "无效的 URL: {url}"
         else -> null
     }
     private fun lookupzh9(key: String): String? = when (key) {
+        "serviceMsgMacroNavigateUrlInvalid" -> "无效的 URL: {url}"
         "serviceMsgMacroNoSteps" -> "没有录制的步骤"
         "serviceMsgMacroPollTimeout" -> "{stepLabel} 超时 {timeoutSeconds} 秒 {lastError}"
         "serviceMsgMacroReplayClick" -> "正在点击……"
@@ -11702,6 +11709,7 @@ object ArbCatalog {
         "serviceMsgSectionEndMustAfterStart" -> "第 {sectionNumber} 节结束时间必须晚于开始时间，暂不支持跨 0 点课程"
         "serviceMsgSectionOutOfRange" -> "节次 {section} 超出作息范围 1 至 {maxSection}"
         "serviceMsgSectionStartBeforePreviousEnd" -> "第 {sectionNumber} 节开始时间不能早于上一节的结束时间"
+        "serviceMsgSectionTimeOverlap" -> "第 {sectionNumber} 节时间与上一节重叠，保存前请调整"
         "serviceMsgShareBackupSubject" -> "轻屿课表备份"
         "serviceMsgShareBackupSubjectNamed" -> "{profileName} - 轻屿课表备份"
         "serviceMsgShareBackupText" -> "这是轻屿课表当前课表的完整备份文件，导入后可直接恢复课程和设置"
@@ -11970,11 +11978,11 @@ object ArbCatalog {
         "supportSaveShort" -> "保存"
         "supportTapQrHint" -> "点击放大扫码"
         "supportWeChatHint" -> "使用微信扫一扫支持作者"
-        "supportedFilesImageHint" -> "课表截图请返回上一页使用识图导入"
-        "supportedFilesSuffix" -> "文件后缀必须是 .ics"
         else -> null
     }
     private fun lookupzh10(key: String): String? = when (key) {
+        "supportedFilesImageHint" -> "课表截图请返回上一页使用识图导入"
+        "supportedFilesSuffix" -> "文件后缀必须是 .ics"
         "supportedFilesTitle" -> "支持的文件"
         "surfaceCourseCard" -> "课程卡片"
         "surfaceMaterialSectionTitle" -> "各表面当前材质"
@@ -12273,11 +12281,11 @@ object ArbCatalog {
         "weekLabel" -> "第 {week} 周"
         "weekListSeparator" -> "、"
         "weekPickerCalendarTooltip" -> "使用日历选择"
-        "weekPickerTitle" -> "选择上课周次"
-        "weekdayFri" -> "周五"
         else -> null
     }
     private fun lookupzh11(key: String): String? = when (key) {
+        "weekPickerTitle" -> "选择上课周次"
+        "weekdayFri" -> "周五"
         "weekdayInkContrastBodyDark" -> "信息栏文字在深色背景下对比度不足，已自动提升亮度。可在 课表页面 文字颜色 中调整或恢复默认。"
         "weekdayInkContrastBodyLight" -> "信息栏文字在浅色背景下对比度不足，已自动降低亮度。可在 课表页面 文字颜色 中调整或恢复默认。"
         "weekdayInkContrastTitle" -> "文字对比度不足"
@@ -12319,7 +12327,7 @@ object ArbCatalog {
         else -> null
     }
 
-    // ── zh_HK（3038 条）──
+    // ── zh_HK（3040 条）──
     private fun lookupzhHK(key: String): String? = lookupzhHK1(key) ?: lookupzhHK2(key) ?: lookupzhHK3(key) ?: lookupzhHK4(key) ?: lookupzhHK5(key) ?: lookupzhHK6(key) ?: lookupzhHK7(key) ?: lookupzhHK8(key) ?: lookupzhHK9(key) ?: lookupzhHK10(key) ?: lookupzhHK11(key)
     private fun lookupzhHK1(key: String): String? = when (key) {
         "aboutAdvancedOptionsTitle" -> "高級選項"
@@ -14451,6 +14459,7 @@ object ArbCatalog {
         "qrTransferStop" -> "停止發送"
         "quickActionAutoStartTitle" -> "自啟動"
         "quickGenerateAction" -> "快捷生成"
+        "quickGeneratePreviewSummary" -> "共 {sections} 節 · 最後一節 {endTime} 結束"
         "quickGenerateTimeSchemeTitle" -> "快捷生成課表時間"
         "quickImportAction" -> "⚡ 快捷匯入"
         "quickImportCancelImportAction" -> "取消匯入"
@@ -14742,10 +14751,10 @@ object ArbCatalog {
         "serviceMsgMacroFillSelectorEmpty" -> "Fill-field selector is empty."
         "serviceMsgMacroManualInputDefault" -> "Manual action required."
         "serviceMsgMacroNavigateUrlEmpty" -> "Navigation URL is empty."
-        "serviceMsgMacroNavigateUrlInvalid" -> "Invalid URL: {url}"
         else -> null
     }
     private fun lookupzhHK9(key: String): String? = when (key) {
+        "serviceMsgMacroNavigateUrlInvalid" -> "Invalid URL: {url}"
         "serviceMsgMacroNoSteps" -> "No recorded steps."
         "serviceMsgMacroPollTimeout" -> "{stepLabel} 超時 {timeoutSeconds} 秒 {lastError}"
         "serviceMsgMacroReplayClick" -> "Clicking…"
@@ -14776,6 +14785,7 @@ object ArbCatalog {
         "serviceMsgSectionEndMustAfterStart" -> "Section {sectionNumber} end time must be later than start time. Overnight classes are not supported."
         "serviceMsgSectionOutOfRange" -> "節次 {section} 超出作息範圍 1 至 {maxSection}"
         "serviceMsgSectionStartBeforePreviousEnd" -> "Section {sectionNumber} start time cannot be earlier than the previous section end time."
+        "serviceMsgSectionTimeOverlap" -> "第 {sectionNumber} 節時間與上一節重疊，儲存前請調整"
         "serviceMsgShareBackupSubject" -> "Qingyu Timetable backup"
         "serviceMsgShareBackupSubjectNamed" -> "{profileName} - Qingyu Timetable backup"
         "serviceMsgShareBackupText" -> "This is a full backup of the current timetable. Import it to restore courses and settings."
@@ -15044,11 +15054,11 @@ object ArbCatalog {
         "supportSaveShort" -> "保存"
         "supportTapQrHint" -> "點擊放大掃碼"
         "supportWeChatHint" -> "使用微信掃一掃支持作者"
-        "supportedFilesImageHint" -> "課表截圖請返回上一頁使用識圖導入"
-        "supportedFilesSuffix" -> "檔案後綴必須是 .ics"
         else -> null
     }
     private fun lookupzhHK10(key: String): String? = when (key) {
+        "supportedFilesImageHint" -> "課表截圖請返回上一頁使用識圖導入"
+        "supportedFilesSuffix" -> "檔案後綴必須是 .ics"
         "supportedFilesTitle" -> "支持的檔案"
         "surfaceCourseCard" -> "課程卡片"
         "surfaceMaterialSectionTitle" -> "各表面當前材質"
@@ -15347,11 +15357,11 @@ object ArbCatalog {
         "weekLabel" -> "第 {week} 周"
         "weekListSeparator" -> "、"
         "weekPickerCalendarTooltip" -> "使用日曆選擇"
-        "weekPickerTitle" -> "選擇上課週次"
-        "weekdayFri" -> "周五"
         else -> null
     }
     private fun lookupzhHK11(key: String): String? = when (key) {
+        "weekPickerTitle" -> "選擇上課週次"
+        "weekdayFri" -> "周五"
         "weekdayInkContrastBodyDark" -> "信息欄文字在深色背景下對比度不足，已自動提升亮度。可在 課表頁面 文字顏色 中調整或恢復默認。"
         "weekdayInkContrastBodyLight" -> "信息欄文字在淺色背景下對比度不足，已自動降低亮度。可在 課表頁面 文字顏色 中調整或恢復默認。"
         "weekdayInkContrastTitle" -> "文字對比度不足"
@@ -15393,7 +15403,7 @@ object ArbCatalog {
         else -> null
     }
 
-    // ── zh_TW（3038 条）──
+    // ── zh_TW（3040 条）──
     private fun lookupzhTW(key: String): String? = lookupzhTW1(key) ?: lookupzhTW2(key) ?: lookupzhTW3(key) ?: lookupzhTW4(key) ?: lookupzhTW5(key) ?: lookupzhTW6(key) ?: lookupzhTW7(key) ?: lookupzhTW8(key) ?: lookupzhTW9(key) ?: lookupzhTW10(key) ?: lookupzhTW11(key)
     private fun lookupzhTW1(key: String): String? = when (key) {
         "aboutAdvancedOptionsTitle" -> "高級選項"
@@ -17525,6 +17535,7 @@ object ArbCatalog {
         "qrTransferStop" -> "停止發送"
         "quickActionAutoStartTitle" -> "自啟動"
         "quickGenerateAction" -> "快捷生成"
+        "quickGeneratePreviewSummary" -> "共 {sections} 節 · 最後一節 {endTime} 結束"
         "quickGenerateTimeSchemeTitle" -> "快捷生成課表時間"
         "quickImportAction" -> "⚡ 快捷匯入"
         "quickImportCancelImportAction" -> "取消匯入"
@@ -17816,10 +17827,10 @@ object ArbCatalog {
         "serviceMsgMacroFillSelectorEmpty" -> "Fill-field selector is empty."
         "serviceMsgMacroManualInputDefault" -> "Manual action required."
         "serviceMsgMacroNavigateUrlEmpty" -> "Navigation URL is empty."
-        "serviceMsgMacroNavigateUrlInvalid" -> "Invalid URL: {url}"
         else -> null
     }
     private fun lookupzhTW9(key: String): String? = when (key) {
+        "serviceMsgMacroNavigateUrlInvalid" -> "Invalid URL: {url}"
         "serviceMsgMacroNoSteps" -> "No recorded steps."
         "serviceMsgMacroPollTimeout" -> "{stepLabel} 超時 {timeoutSeconds} 秒 {lastError}"
         "serviceMsgMacroReplayClick" -> "Clicking…"
@@ -17850,6 +17861,7 @@ object ArbCatalog {
         "serviceMsgSectionEndMustAfterStart" -> "Section {sectionNumber} end time must be later than start time. Overnight classes are not supported."
         "serviceMsgSectionOutOfRange" -> "節次 {section} 超出作息範圍 1 至 {maxSection}"
         "serviceMsgSectionStartBeforePreviousEnd" -> "Section {sectionNumber} start time cannot be earlier than the previous section end time."
+        "serviceMsgSectionTimeOverlap" -> "第 {sectionNumber} 節時間與上一節重疊，儲存前請調整"
         "serviceMsgShareBackupSubject" -> "Qingyu Timetable backup"
         "serviceMsgShareBackupSubjectNamed" -> "{profileName} - Qingyu Timetable backup"
         "serviceMsgShareBackupText" -> "This is a full backup of the current timetable. Import it to restore courses and settings."
@@ -18118,11 +18130,11 @@ object ArbCatalog {
         "supportSaveShort" -> "保存"
         "supportTapQrHint" -> "點擊放大掃碼"
         "supportWeChatHint" -> "使用微信掃一掃支持作者"
-        "supportedFilesImageHint" -> "課表截圖請返回上一頁使用識圖導入"
-        "supportedFilesSuffix" -> "檔案後綴必須是 .ics"
         else -> null
     }
     private fun lookupzhTW10(key: String): String? = when (key) {
+        "supportedFilesImageHint" -> "課表截圖請返回上一頁使用識圖導入"
+        "supportedFilesSuffix" -> "檔案後綴必須是 .ics"
         "supportedFilesTitle" -> "支持的檔案"
         "surfaceCourseCard" -> "課程卡片"
         "surfaceMaterialSectionTitle" -> "各表面當前材質"
@@ -18421,11 +18433,11 @@ object ArbCatalog {
         "weekLabel" -> "第 {week} 周"
         "weekListSeparator" -> "、"
         "weekPickerCalendarTooltip" -> "使用日曆選擇"
-        "weekPickerTitle" -> "選擇上課週次"
-        "weekdayFri" -> "周五"
         else -> null
     }
     private fun lookupzhTW11(key: String): String? = when (key) {
+        "weekPickerTitle" -> "選擇上課週次"
+        "weekdayFri" -> "周五"
         "weekdayInkContrastBodyDark" -> "信息欄文字在深色背景下對比度不足，已自動提升亮度。可在 課表頁面 文字顏色 中調整或恢復默認。"
         "weekdayInkContrastBodyLight" -> "信息欄文字在淺色背景下對比度不足，已自動降低亮度。可在 課表頁面 文字顏色 中調整或恢復默認。"
         "weekdayInkContrastTitle" -> "文字對比度不足"
