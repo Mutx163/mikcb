@@ -3,6 +3,7 @@ package com.mutx163.qingyu.pages.import.warehouse
 import com.mutx163.qingyu.app.TimetableHostLogic
 import com.mutx163.qingyu.app.TimetableRepository
 import com.mutx163.qingyu.app.TimetableSnapshot
+import com.mutx163.qingyu.app.TimeSchemeImportUpdate
 import com.mutx163.qingyu.core.Course
 import com.mutx163.qingyu.core.MiniJson
 import com.mutx163.qingyu.core.TimeScheme
@@ -45,7 +46,12 @@ object WarehouseCourseWriteBack {
 
     /** 写回策略。 */
     enum class Mode {
-        /** 用脚本课程整份替换当前档案的课程（保留同名课程的本地 id / 颜色等字段）。 */
+        /**
+         * 用脚本课程整份替换当前档案的课程（保留同名课程的本地 id / 颜色等字段）。
+         *
+         * 与发布版覆盖导入一致：**自建日程一并清空**（旧日程属于上一套课表，
+         * `import_export_service.dart:384` 的 `host._scheduleItems = []`）。
+         */
         REPLACE,
 
         /** 与现有课程合并：能匹配上的更新，匹配不上的新增。 */
@@ -121,12 +127,23 @@ object WarehouseCourseWriteBack {
          * 默认 `true` 保持 [WarehouseCourseWriteBack] 独立调用（含其单测）历史行为。
          */
         allowSectionExpansion: Boolean = true,
+        /**
+         * **本次导入开始前**的快照（由 [WarehouseCoursesImportApply] 传入）。
+         *
+         * 为什么不能用本层入口快照当回滚基线：收尾层在调本层之前已经写过开学日 /
+         * 周数 / 节次，入口快照是**写完之后**的污染值，拿它回滚只能回到半套状态
+         * （P0-3：界面报「导入失败」、盘上却留着新设置）。独立调用不传时退回入口快照，
+         * 保持历史行为。
+         */
+        importBaseline: TimetableSnapshot? = null,
     ): Result {
         if (courses.isEmpty()) {
             return Result.NoImportableCourses(droppedCount)
         }
 
         val before = repository.snapshot
+        // 失败回滚目标：优先用调用方给的「导入前」现场（含本层不拥有的设置写入）。
+        val rollbackBaseline = importBaseline ?: before
         val mode = resolveMode(before.courses.size, requestedMode)
 
         val mergedCourses: List<Course>
@@ -178,21 +195,37 @@ object WarehouseCourseWriteBack {
         val needsSectionExpansion = allowSectionExpansion &&
             AiImageImportApply.needsExpansion(currentSections, requiredSections)
         var sectionsExpanded = false
+        /** 共享模板扩容时仓储新建的 `（导入补齐）` 副本 id；失败回滚要删掉它。 */
+        var createdSchemeId: String? = null
         if (needsSectionExpansion) {
             val nextSections = AiImageImportApply.expandedSections(currentSections, requiredSections)
             try {
                 if (scheme != null) {
-                    // 有主模板时页面读的是模板节次，写设置里的节次表不会生效。
-                    val error = repository.updateTimeScheme(scheme.id, scheme.name, nextSections)
-                    if (error != null) {
-                        return Result.Failed(null)
+                    // 模板被别的课表共用时仓储会复制副本、只改绑当前课表（不原地改别人的）。
+                    when (val update = repository.updateTimeSchemeForImport(scheme.id, scheme.name, nextSections)) {
+                        is TimeSchemeImportUpdate.Rejected -> {
+                            // 校验拒绝 = 一笔没写；但调用方（收尾层）可能已改过设置，
+                            // 统一走同一条回滚，别把半套状态留给上层。
+                            rollbackImportWrites(
+                                repository, rollbackBaseline, scheme,
+                                sectionsExpanded = false, settingsWritten = false,
+                                createdSchemeId = null,
+                            )
+                            return Result.Failed(null)
+                        }
+
+                        is TimeSchemeImportUpdate.Applied -> createdSchemeId = update.createdSchemeId
                     }
                 } else {
                     repository.updateSettings(before.settings.copy(sections = nextSections))
                 }
                 sectionsExpanded = true
             } catch (error: Exception) {
-                rollbackImportWrites(repository, before, scheme, sectionsExpanded = true, settingsWritten = false)
+                rollbackImportWrites(
+                    repository, rollbackBaseline, scheme,
+                    sectionsExpanded = true, settingsWritten = false,
+                    createdSchemeId = createdSchemeId,
+                )
                 return Result.Failed(error)
             }
         }
@@ -235,7 +268,7 @@ object WarehouseCourseWriteBack {
                 repository.updateSettings(nextSettings)
                 settingsWritten = true
             } catch (error: Exception) {
-                rollbackImportWrites(repository, before, scheme, sectionsExpanded, settingsWritten)
+                rollbackImportWrites(repository, rollbackBaseline, scheme, sectionsExpanded, settingsWritten, createdSchemeId)
                 return Result.Failed(error)
             }
         }
@@ -270,7 +303,7 @@ object WarehouseCourseWriteBack {
                 scheduleDateRules = after.scheduleDateRules,
             )
         } catch (error: Exception) {
-            rollbackImportWrites(repository, before, scheme, sectionsExpanded, settingsWritten)
+            rollbackImportWrites(repository, rollbackBaseline, scheme, sectionsExpanded, settingsWritten, createdSchemeId)
             return Result.Failed(error)
         }
         // 只有本地已存在的课（id 匹配）才计入「补时间」条数；新导入课已算在 importedCount。
@@ -285,6 +318,13 @@ object WarehouseCourseWriteBack {
         }
 
         return try {
+            // 发布版覆盖导入会清空自建日程（`import_export_service.dart:384`
+            // `host._scheduleItems = []`）：旧日程属于上一套课表，留在新表下就是脏数据。
+            // `scheduleItems` setter 只改内存、不落盘，由下面 `replaceActiveProfileContent`
+            // 一次写盘带上（与发布版「清内存 + 单次 persist」同序）；失败时先还原内存。
+            if (mode == Mode.REPLACE) {
+                repository.scheduleItems = emptyList()
+            }
             repository.replaceActiveProfileContent(
                 courses = syncedCourses,
                 tasks = repository.tasks,
@@ -295,30 +335,52 @@ object WarehouseCourseWriteBack {
             Result.Done(outcome.copy(importedCount = maxOf(importedCount, timesFilledCount)))
         } catch (error: Exception) {
             // 仓储先落盘、成功才改内存；抛错时内存仍是旧课表，宿主据此提示失败。
+            // 日程是内存态：先还原再回滚设置/节次——`updateTimeScheme` 会把内存档案整份落盘。
+            if (mode == Mode.REPLACE) {
+                runCatching { repository.scheduleItems = rollbackBaseline.scheduleItems }
+            }
             // 学期设置/补齐的节次已先行写入，这里尽力回滚，避免「课没进、作息却变了」的半个状态。
-            rollbackImportWrites(repository, before, scheme, sectionsExpanded, settingsWritten)
+            rollbackImportWrites(repository, rollbackBaseline, scheme, sectionsExpanded, settingsWritten, createdSchemeId)
             Result.Failed(error)
         }
     }
 
     /**
-     * 把先行写入的学期设置与补齐的节次恢复成写回前的值（尽力而为，不掩盖原始错误）。
+     * 把先行写入的学期设置与补齐的节次恢复成**导入前**的值（尽力而为，不掩盖原始错误）。
      *
-     * [settingsWritten] 为假时仍要恢复设置，只要本次确实扩过节且没有主模板——那种情况下
-     * 节次表就写在设置里，不回滚等于「课没进、节次却变长」。
+     * 判据三条，缺一条都会留半套状态：
+     * 1. [settingsWritten]：本层刚写过设置（周数抬升）；
+     * 2. `sectionsExpanded && scheme == null`：节次表写在设置里，扩过就得退；
+     * 3. **设置与基线不一致**：调用方（收尾层）在进本层前可能已经写过开学日/周数/节次
+     *    ——写回层"只回滚自己写的那几笔"会把它那份留在盘上（P0-3）。
+     *    只在该项真的变了时才写，正常失败路径不会多一次通知。
+     *
+     * 主模板同理：模板节次可能已被收尾层先写过，有导入前基线就还原它那一份，
+     * 不能拿本层入口的（已被污染的）节次当"原始值"。共享模板扩容会新建
+     * `（导入补齐）` 副本（[createdSchemeId] 非空）：此时要删副本，不能去改原模板。
      */
     private fun rollbackImportWrites(
         repository: TimetableRepository,
-        before: TimetableSnapshot,
+        baseline: TimetableSnapshot,
         scheme: TimeScheme?,
         sectionsExpanded: Boolean,
         settingsWritten: Boolean,
+        createdSchemeId: String? = null,
     ) {
-        if (settingsWritten || (sectionsExpanded && scheme == null)) {
-            runCatching { repository.updateSettings(before.settings) }
+        val settingsDrifted = repository.snapshot.settings != baseline.settings
+        if (settingsWritten || (sectionsExpanded && scheme == null) || settingsDrifted) {
+            runCatching { repository.updateSettings(baseline.settings) }
         }
-        if (sectionsExpanded && scheme != null) {
-            runCatching { repository.updateTimeScheme(scheme.id, scheme.name, scheme.sections) }
+        if (createdSchemeId != null) {
+            // 共享模板扩容时新建的副本：设置已恢复成原模板引用，删副本不会撞 in-use。
+            runCatching { repository.deleteTimeScheme(createdSchemeId) }
+        } else if (scheme != null) {
+            val originalSections = baseline.timeSchemes
+                .firstOrNull { it.id == scheme.id }
+                ?.sections
+            if (originalSections != null && originalSections != scheme.sections) {
+                runCatching { repository.updateTimeScheme(scheme.id, scheme.name, originalSections) }
+            }
         }
     }
 

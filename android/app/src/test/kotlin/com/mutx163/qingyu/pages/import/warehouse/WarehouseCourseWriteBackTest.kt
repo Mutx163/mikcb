@@ -6,12 +6,14 @@ import com.mutx163.qingyu.app.TimetableRepository
 import com.mutx163.qingyu.app.TimetableStore
 import com.mutx163.qingyu.core.Course
 import com.mutx163.qingyu.core.MiniJson
+import com.mutx163.qingyu.core.ScheduleItem
 import com.mutx163.qingyu.core.SectionTime
 import com.mutx163.qingyu.core.TimetableProfile
 import com.mutx163.qingyu.core.TimetableSettings
 import com.mutx163.qingyu.core.WeekCalculator
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import java.time.LocalDateTime
@@ -50,13 +52,26 @@ class WarehouseCourseWriteBackTest {
         customWeeks = weeks,
     )
 
+    private fun scheduleItem(id: String) = ScheduleItem(
+        id = id,
+        title = "自建日程$id",
+        startDate = LocalDateTime.of(2026, 9, 7, 0, 0),
+        endDate = LocalDateTime.of(2026, 9, 7, 0, 0),
+        startTime = "09:00",
+        endTime = "10:00",
+        createdAt = LocalDateTime.of(2026, 9, 1, 0, 0),
+        updatedAt = LocalDateTime.of(2026, 9, 1, 0, 0),
+    )
+
     private fun profileWith(
         courses: List<Course>,
         settings: TimetableSettings = TimetableSettings.defaults(),
+        scheduleItems: List<ScheduleItem> = emptyList(),
     ): TimetableProfile = TimetableProfile(
         id = "p1",
         name = "默认课表",
         courses = courses,
+        scheduleItems = scheduleItems,
         settings = settings,
         currentWeek = 1,
         createdAt = LocalDateTime.of(2026, 9, 1, 0, 0),
@@ -70,6 +85,19 @@ class WarehouseCourseWriteBackTest {
             } else {
                 mapOf("timetable_profiles" to MiniJson.encode(listOf(profileWith(courses).toJson())))
             },
+        )
+        return TimetableRepository(TimetableStore(raw))
+    }
+
+    /** 带自建日程的仓储（同一份 [raw] 可重建，用来断言「真的写进了盘」）。 */
+    private fun repositoryWithSchedule(
+        raw: InMemoryKeyValueStore,
+        courses: List<Course> = emptyList(),
+        scheduleItems: List<ScheduleItem> = listOf(scheduleItem("s1")),
+    ): TimetableRepository {
+        raw.putString(
+            "timetable_profiles",
+            MiniJson.encode(listOf(profileWith(courses, scheduleItems = scheduleItems).toJson())),
         )
         return TimetableRepository(TimetableStore(raw))
     }
@@ -243,6 +271,126 @@ class WarehouseCourseWriteBackTest {
 
         assertTrue(result is WarehouseCourseWriteBack.Result.Done)
         assertEquals(listOf("新课"), repository.snapshot.courses.map { it.name })
+    }
+
+    // ── 覆盖导入清空自建日程（发布版 import_export_service.dart:384） ──
+
+    @Test
+    fun `覆盖导入清空自建日程并落盘`() {
+        val raw = InMemoryKeyValueStore(emptyMap())
+        val repository = repositoryWithSchedule(raw, courses = listOf(course("old", name = "旧课")))
+
+        val result = WarehouseCourseWriteBack.apply(
+            repository = repository,
+            courses = listOf(course("new", name = "新课", day = 3)),
+            requestedMode = WarehouseCourseWriteBack.Mode.REPLACE,
+        )
+
+        assertTrue(result is WarehouseCourseWriteBack.Result.Done)
+        assertTrue(
+            "覆盖导入必须清空自建日程（旧日程属于上一套课表）",
+            repository.snapshot.scheduleItems.isEmpty(),
+        )
+        assertTrue(
+            "落盘后冷启动（重建仓储）也不能再看到旧日程",
+            TimetableRepository(TimetableStore(raw)).snapshot.scheduleItems.isEmpty(),
+        )
+    }
+
+    @Test
+    fun `更新导入保留自建日程`() {
+        val raw = InMemoryKeyValueStore(emptyMap())
+        val repository = repositoryWithSchedule(raw, courses = listOf(course("old", name = "旧课")))
+
+        val result = WarehouseCourseWriteBack.apply(
+            repository = repository,
+            courses = listOf(course("new", name = "新课", day = 3)),
+        )
+
+        assertTrue(result is WarehouseCourseWriteBack.Result.Done)
+        assertEquals(
+            "合并语义不碰用户自建日程",
+            listOf("s1"),
+            repository.snapshot.scheduleItems.map { it.id },
+        )
+    }
+
+    @Test
+    fun `覆盖导入落盘失败时自建日程还原`() {
+        val raw = InMemoryKeyValueStore(
+            mapOf(
+                "timetable_profiles" to MiniJson.encode(
+                    listOf(
+                        profileWith(
+                            listOf(course("old", name = "旧课")),
+                            scheduleItems = listOf(scheduleItem("s1")),
+                        ).toJson(),
+                    ),
+                ),
+            ),
+        )
+        // 课程落盘（第 1 次 timetable_profiles 写）就失败：日程是内存态先被清空，必须还原。
+        val repository = TimetableRepository(
+            TimetableStore(FailingWriteStore(raw, "timetable_profiles", failOnMatch = 1)),
+        )
+
+        val result = WarehouseCourseWriteBack.apply(
+            repository = repository,
+            courses = listOf(course("new", name = "新课", day = 3)),
+            requestedMode = WarehouseCourseWriteBack.Mode.REPLACE,
+        )
+
+        assertTrue(result is WarehouseCourseWriteBack.Result.Failed)
+        assertEquals(
+            "写盘失败后自建日程必须还原",
+            listOf("s1"),
+            repository.snapshot.scheduleItems.map { it.id },
+        )
+        assertEquals(listOf("旧课"), repository.snapshot.courses.map { it.name })
+    }
+
+    /**
+     * P0-3 的机制反例：回滚必须回到**导入前**基线。
+     *
+     * 收尾层（[WarehouseCoursesImportApply]）在进本层前已经写过开学日/周数，本层入口
+     * 快照是污染值；只拿它回滚会留下半套设置。这里把「导入前基线」显式传进来，并让
+     * 课程落盘在设置写过之后失败——回滚后必须回到 20 周 / 无开学日，而不是 22 周。
+     */
+    @Test
+    fun `写回失败按导入前基线回滚而不是入口现场`() {
+        val raw = InMemoryKeyValueStore(
+            mapOf(
+                "timetable_profiles" to MiniJson.encode(
+                    listOf(profileWith(listOf(course("old", name = "旧课"))).toJson()),
+                ),
+            ),
+        )
+        // 第 1 次写 = 模拟收尾层先写设置；第 2 次 = 写回层抬周数；第 3 次 = 课程落盘 → 失败。
+        val repository = TimetableRepository(
+            TimetableStore(FailingWriteStore(raw, "timetable_profiles", failOnMatch = 3)),
+        )
+        val baseline = repository.snapshot
+        repository.updateSettings(
+            baseline.settings.copy(
+                semesterStartDate = LocalDateTime.of(2026, 9, 7, 0, 0),
+                semesterWeekCount = 22,
+            ),
+        )
+
+        val result = WarehouseCourseWriteBack.apply(
+            repository = repository,
+            courses = listOf(course("new", name = "新课", day = 3, weeks = (1..25).toList())),
+            requestedMode = WarehouseCourseWriteBack.Mode.REPLACE,
+            importBaseline = baseline,
+        )
+
+        assertTrue(result is WarehouseCourseWriteBack.Result.Failed)
+        assertEquals(
+            "周数必须回到导入前的 20（入口现场已被收尾层改成 22）",
+            20,
+            repository.snapshot.settings.semesterWeekCount,
+        )
+        assertNull("开学日必须回到导入前的 null", repository.snapshot.settings.semesterStartDate)
     }
 
     @Test

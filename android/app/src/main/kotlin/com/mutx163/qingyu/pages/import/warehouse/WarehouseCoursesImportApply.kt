@@ -2,6 +2,7 @@ package com.mutx163.qingyu.pages.import.warehouse
 
 import com.mutx163.qingyu.app.TimetableHostLogic
 import com.mutx163.qingyu.app.TimetableRepository
+import com.mutx163.qingyu.app.TimeSchemeImportUpdate
 import com.mutx163.qingyu.core.Course
 import com.mutx163.qingyu.core.SectionTime
 import com.mutx163.qingyu.core.ServiceMessage
@@ -27,9 +28,11 @@ import java.time.LocalDateTime
  * - **与自定义节次表的关系**：扩节只**追加**、绝不改已有条目；有主时间模板时页面读的
  *   是模板节次，写设置不生效，所以写模板（`updateTimeScheme`），否则写设置——与同域
  *   `AiImageImportApply` 的判据同源；
- * - **失败回滚**：任一步抛错，把设置（含开学日/周数/节次表）与主模板节次都恢复成
- *   导入前的样子（同 `AiImageImportApply` 的回滚语义）。设置与课程仍是两次独立落盘，
- *   没有跨 key 事务；课程写回走 [WarehouseCourseWriteBack.apply] 的原子入口。
+ * - **失败回滚**：任一步失败——**抛异常，或写回层返回 `Failed`**——都把设置（含开学日/
+ *   周数/节次表）、主模板节次与（覆盖模式下的）自建日程恢复成导入前的样子。设置与课程
+ *   仍是两次独立落盘，没有跨 key 事务；课程写回走 [WarehouseCourseWriteBack.apply] 的
+ *   原子入口，并把**导入前快照**传下去当回滚基线（写回层自己的入口快照已被本层写过的
+ *   设置污染，见 P0-3）。
  */
 object WarehouseCoursesImportApply {
 
@@ -94,13 +97,44 @@ object WarehouseCoursesImportApply {
             }
         }
 
+        /**
+         * 共享模板扩容时仓储会新建 `<原名>（导入补齐）` 副本并返回它的 id（不原地改
+         * 别人的课表）。失败回滚要先恢复设置、再删掉这份副本，否则留下孤儿模板。
+         */
+        var createdSchemeId: String? = null
+
+        /**
+         * 把本层先行写入的学期设置、主模板节次与（覆盖模式下）自建日程恢复成导入前。
+         *
+         * **两条失败路径都要调**：本层是「设置先落盘、课程后落盘」，写回层返回 `Failed`
+         * 时不抛异常（磁盘满 / `saveActiveProfileId` 抛 / 课程钟点同步抛都经返回值），
+         * 旧实现只在 `catch` 里回滚——界面报「导入失败」，盘上却留着新的开学日 / 周数 /
+         * 扩出来的节次（P0-3）。只在值真的变了时才写，避免失败路径多一次无谓通知。
+         */
+        fun rollbackImportState() {
+            // 日程是内存态（`scheduleItems` setter 不落盘），必须在写模板之前还原：
+            // `updateTimeScheme` 会把内存里的档案整份落盘。
+            if (request.replaceExisting && repository.snapshot.scheduleItems != before.scheduleItems) {
+                runCatching { repository.scheduleItems = before.scheduleItems }
+            }
+            if (repository.snapshot.settings != before.settings) {
+                runCatching { repository.updateSettings(before.settings) }
+            }
+            if (needsExpansionNow && scheme != null && createdSchemeId == null) {
+                runCatching { repository.updateTimeScheme(scheme.id, scheme.name, scheme.sections) }
+            }
+            // 恢复设置（已改回原模板引用）之后再删副本，`deleteTimeScheme` 的 in-use 守卫才放行。
+            createdSchemeId?.let { created -> runCatching { repository.deleteTimeScheme(created) } }
+        }
+
         return try {
             if (needsExpansionNow) {
                 if (scheme != null) {
-                    // 有主模板时页面读的是模板节次，写设置里的节次表不会生效。
-                    val error = repository.updateTimeScheme(scheme.id, scheme.name, nextSections)
-                    if (error != null) {
-                        return Result.Failed(error)
+                    // 有主模板时页面读的是模板节次；模板被别的课表共用时必须复制副本
+                    // （`updateTimeSchemeForImport`），不能原地改把别人的课表一起改了。
+                    when (val update = repository.updateTimeSchemeForImport(scheme.id, scheme.name, nextSections)) {
+                        is TimeSchemeImportUpdate.Rejected -> return Result.Failed(update.serviceMessage)
+                        is TimeSchemeImportUpdate.Applied -> createdSchemeId = update.createdSchemeId
                     }
                 } else {
                     repository.updateSettings(before.settings.copy(sections = nextSections))
@@ -119,9 +153,7 @@ object WarehouseCoursesImportApply {
                 repository.updateSettings(nextSettings)
             }
             // 开学日确认变更（用户在弹层里改了学期起点）时，课程落盘后按今天重算当前周
-            // ——与写回层 refreshCurrentWeek 同一口径。不重算的话首页停在旧的第几周，
-            // 持久化值不自愈（读侧只做 clamp）；开学日没变时不碰，保留手动同步的当前周。
-            val startDateChanged = nextSettings.semesterStartDate != settingsNow.semesterStartDate
+            // ——收尾在下面统一做（成功一律重算，见下）。
             val importedCount = when (val result = WarehouseCourseWriteBack.apply(
                 repository = repository,
                 courses = request.courses,
@@ -136,34 +168,40 @@ object WarehouseCoursesImportApply {
                 semesterStartDate = null,
                 // 用户拒绝扩节时，写回层不得再补节（本层上面已按同一 flag 判断过一次）。
                 allowSectionExpansion = request.expandSections,
+                // 回滚基线必须是**本层写设置之前**的现场：写回层自己抓的入口快照已经是
+                // 「开学日/周数/节次写完之后」的污染值，拿它回滚只能回到半套状态（P0-3）。
+                importBaseline = before,
             )) {
                 is WarehouseCourseWriteBack.Result.Done -> result.outcome.importedCount
                 // 到不了：宿主在进确认流程前已挡掉空课表；防御性按「无事发生」收尾。
                 is WarehouseCourseWriteBack.Result.NoImportableCourses -> 0
-                is WarehouseCourseWriteBack.Result.Failed -> return Result.Failed(null)
-            }
-            if (startDateChanged) {
-                // 当前周要等设置落盘后再重算；失败也不抛（尽力而为，同写回层口径）。
-                // 周数取「写回层抬升后」的最终值（MERGE 下现有课可能比导入课更长）。
-                val settingsAfter = repository.snapshot.settings
-                runCatching {
-                    repository.setCurrentWeek(
-                        WeekCalculator.weekForDate(
-                            date = LocalDateTime.now(),
-                            semesterStart = settingsAfter.semesterStartDate,
-                            semesterWeekCount = settingsAfter.semesterWeekCount,
-                            fallback = before.currentWeek,
-                        ),
-                    )
+                is WarehouseCourseWriteBack.Result.Failed -> {
+                    // 返回 Failed = 写回层内部已经把异常收成了返回值，不会进下面的 catch。
+                    // 旧实现在这里直接 return，本层先写的设置与节次就留在了盘上（P0-3）。
+                    rollbackImportState()
+                    return Result.Failed(null)
                 }
+            }
+            // 对齐发布版：仓库导入的开学日恒由用户确认（非空），**导入成功一律按今天重算
+            // 当前周**（Dart `_timetableImportParsedCourses` 只要 `semesterStart != null` 就
+            // 重算，`import_export_service.dart:431`）。不能只在「开学日变了」时重算：上一次
+            // 导入失败若已把开学日写进盘（P0-3 的残留现场），重试时开学日已相同，当前周会
+            // 永远停在旧值。
+            val settingsAfter = repository.snapshot.settings
+            runCatching {
+                repository.setCurrentWeek(
+                    WeekCalculator.weekForDate(
+                        date = LocalDateTime.now(),
+                        semesterStart = settingsAfter.semesterStartDate,
+                        semesterWeekCount = settingsAfter.semesterWeekCount,
+                        fallback = before.currentWeek,
+                    ),
+                )
             }
             Result.Done(importedCount)
         } catch (_: Exception) {
-            // 回滚：设置（开学日/周数/节次表）与主模板节次恢复成导入前的样子。
-            runCatching { repository.updateSettings(before.settings) }
-            if (needsExpansionNow && scheme != null) {
-                runCatching { repository.updateTimeScheme(scheme.id, scheme.name, scheme.sections) }
-            }
+            // 抛异常路径（写回层之外的本层写入 / 读快照等）：同一条回滚。
+            rollbackImportState()
             Result.Failed(null)
         }
     }

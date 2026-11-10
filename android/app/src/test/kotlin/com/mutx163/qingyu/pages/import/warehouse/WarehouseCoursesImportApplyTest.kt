@@ -1,17 +1,23 @@
 package com.mutx163.qingyu.pages.import.warehouse
 
 import com.mutx163.qingyu.app.InMemoryKeyValueStore
+import com.mutx163.qingyu.app.KeyValueStore
 import com.mutx163.qingyu.app.TimetableRepository
 import com.mutx163.qingyu.app.TimetableStore
 import com.mutx163.qingyu.core.Course
+import com.mutx163.qingyu.core.MiniJson
+import com.mutx163.qingyu.core.ScheduleItem
 import com.mutx163.qingyu.core.SectionTime
 import com.mutx163.qingyu.core.TimetableProfile
+import com.mutx163.qingyu.core.TimetableSettings
+import com.mutx163.qingyu.core.WeekCalculator
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import java.io.File
 import java.time.LocalDate
+import java.time.LocalDateTime
 
 /**
  * courses 导入收尾两项缺口的反例测试（F32 第二批）：
@@ -28,19 +34,78 @@ class WarehouseCoursesImportApplyTest {
         name: String = "课程$id",
         endSection: Int = 2,
         color: String = "#ABCDEF",
+        day: Int = 1,
+        weeks: List<Int> = listOf(1, 2),
+        startTime: String = "",
+        endTime: String = "",
+        hasCustomTime: Boolean = false,
     ) = Course(
         id = id,
         name = name,
         teacher = "教师",
         location = "教室",
-        dayOfWeek = 1,
+        dayOfWeek = day,
         startSection = endSection,
         endSection = endSection,
-        startTime = "",
-        endTime = "",
-        customWeeks = listOf(1, 2),
+        startTime = startTime,
+        endTime = endTime,
+        hasCustomTime = hasCustomTime,
+        customWeeks = weeks,
         color = color,
     )
+
+    private fun scheduleItem(id: String) = ScheduleItem(
+        id = id,
+        title = "自建日程$id",
+        startDate = LocalDateTime.of(2026, 9, 7, 0, 0),
+        endDate = LocalDateTime.of(2026, 9, 7, 0, 0),
+        startTime = "09:00",
+        endTime = "10:00",
+        createdAt = LocalDateTime.of(2026, 9, 1, 0, 0),
+        updatedAt = LocalDateTime.of(2026, 9, 1, 0, 0),
+    )
+
+    /** 带一份档案（可含日程 / 自定义设置）的仓储；[store] 用来注入落盘失败。 */
+    private fun repositoryWithProfile(
+        courses: List<Course> = emptyList(),
+        settings: TimetableSettings = TimetableSettings.defaults(),
+        scheduleItems: List<ScheduleItem> = emptyList(),
+        store: (InMemoryKeyValueStore) -> KeyValueStore = { it },
+    ): TimetableRepository {
+        val profile = TimetableProfile(
+            id = "p1",
+            name = "默认课表",
+            courses = courses,
+            scheduleItems = scheduleItems,
+            settings = settings,
+            currentWeek = 1,
+            createdAt = LocalDateTime.of(2026, 9, 1, 0, 0),
+            lastUsedAt = LocalDateTime.of(2026, 9, 1, 0, 0),
+        )
+        val raw = InMemoryKeyValueStore(
+            mapOf("timetable_profiles" to MiniJson.encode(listOf(profile.toJson()))),
+        )
+        return TimetableRepository(TimetableStore(store(raw)))
+    }
+
+    /** 指定 key 的第 N 次写入失败（正数 = 第 N 次；-1 = 每次）。 */
+    private class FailingWriteStore(
+        private val delegate: InMemoryKeyValueStore,
+        private val failKey: String,
+        private val failOnMatch: Int,
+    ) : KeyValueStore by delegate {
+        private var matchCount = 0
+
+        override fun putString(key: String, value: String) {
+            if (key == failKey) {
+                matchCount += 1
+                if (failOnMatch < 0 || matchCount == failOnMatch) {
+                    throw IllegalStateException("disk_full")
+                }
+            }
+            delegate.putString(key, value)
+        }
+    }
 
     private fun repositoryWith(vararg extraPairs: Pair<String, String>): TimetableRepository {
         val raw = InMemoryKeyValueStore(extraPairs.toMap())
@@ -134,22 +199,25 @@ class WarehouseCoursesImportApplyTest {
         assertEquals(coursesBefore, repository.snapshot.courses)
     }
 
-    /** 课程落盘那步（`timetable_profiles` 写入）抛错的存储替身（模拟磁盘写满）。 */
-    private class FailingProfileWriteStore(
-        private val delegate: InMemoryKeyValueStore,
-        private val failKey: String,
-    ) : com.mutx163.qingyu.app.KeyValueStore by delegate {
-        override fun putString(key: String, value: String) {
-            if (key == failKey) throw IllegalStateException("disk_full")
-            delegate.putString(key, value)
-        }
-    }
-
+    /**
+     * P0-3 的核心反例：**课程落盘抛错时，本层先写的开学日 / 周数 / 节次必须一起退回**。
+     *
+     * 旧实现只断言「结果是 Failed」——同一条用例里节次已经从 10 扩到 12、开学日已经
+     * 写成 2026-09-07，界面报「导入失败」而盘上留着半套设置。这里直接断言设置与
+     * 课程都回到导入前，改回旧行为必红。
+     */
     @Test
-    fun `落盘抛错时回滚设置与节次`() {
+    fun `落盘失败时必须回滚开学日与节次`() {
         val broken = TimetableRepository(
-            TimetableStore(FailingProfileWriteStore(InMemoryKeyValueStore(emptyMap()), "timetable_profiles")),
+            TimetableStore(
+                FailingWriteStore(
+                    InMemoryKeyValueStore(emptyMap()),
+                    "timetable_profiles",
+                    failOnMatch = -1,
+                ),
+            ),
         )
+        val settingsBefore = broken.snapshot.settings
 
         val result = WarehouseCoursesImportApply.apply(
             broken,
@@ -158,6 +226,89 @@ class WarehouseCoursesImportApplyTest {
 
         assertTrue(result is WarehouseCoursesImportApply.Result.Failed)
         assertNull((result as WarehouseCoursesImportApply.Result.Failed).serviceMessage)
+        assertEquals(
+            "节次必须退回导入前的 10 节（旧实现会留在 12 节）",
+            settingsBefore,
+            broken.snapshot.settings,
+        )
+        assertNull(
+            "开学日不许残留（旧实现会留下 2026-09-07）",
+            broken.snapshot.settings.semesterStartDate,
+        )
+        assertTrue("课没进，课表必须还是空的", broken.snapshot.courses.isEmpty())
+    }
+
+    /**
+     * 覆盖导入写盘失败时，**自建日程也要还原**（内存态清空发生在写盘之前）。
+     */
+    @Test
+    fun `覆盖导入写盘失败时自建日程还原`() {
+        val repository = repositoryWithProfile(
+            courses = listOf(course("old", name = "旧课")),
+            scheduleItems = listOf(scheduleItem("s1")),
+            store = { raw -> FailingWriteStore(raw, "timetable_profiles", failOnMatch = 2) },
+        )
+
+        val result = WarehouseCoursesImportApply.apply(
+            repository,
+            request(listOf(course("new", name = "新课", day = 3)), replaceExisting = true),
+        )
+
+        assertTrue(result is WarehouseCoursesImportApply.Result.Failed)
+        assertEquals(
+            "写回失败后自建日程必须还在",
+            listOf("s1"),
+            repository.snapshot.scheduleItems.map { it.id },
+        )
+        assertEquals(listOf("旧课"), repository.snapshot.courses.map { it.name })
+    }
+
+    /**
+     * 导入成功**一律**按今天重算当前周（对齐发布版）：开学日没变也要算。
+     *
+     * 这条同时锁住 P0-3 的连带问题——上一次失败若已把开学日写进盘，重试时开学日
+     * 已经相同，若只在「开学日变了」时重算，当前周会永远停在旧值。
+     */
+    @Test
+    fun `开学日没变也按今天重算当前周`() {
+        val start = LocalDateTime.now().minusDays(14).toLocalDate().atStartOfDay()
+        val existing = course(
+            "c1",
+            name = "数学",
+            day = 2,
+            weeks = listOf(1, 2),
+            startTime = "08:00",
+            endTime = "09:40",
+            hasCustomTime = true,
+        )
+        val repository = repositoryWithProfile(
+            courses = listOf(existing),
+            settings = TimetableSettings.defaults().copy(
+                semesterStartDate = start,
+                semesterWeekCount = 20,
+            ),
+        )
+        assertEquals("导入前停在第 1 周", 1, repository.snapshot.currentWeek)
+
+        val result = WarehouseCoursesImportApply.apply(
+            repository,
+            request(listOf(existing.copy(id = "imported-id")), replaceExisting = false)
+                .copy(semesterStartDate = start.toLocalDate()),
+        )
+
+        assertTrue(result is WarehouseCoursesImportApply.Result.Done)
+        val expected = WeekCalculator.weekForDate(
+            date = LocalDateTime.now(),
+            semesterStart = start,
+            semesterWeekCount = 20,
+            fallback = 1,
+        )
+        assertTrue("开学两周，今天应落在第 3 周（实际 $expected）", expected >= 3)
+        assertEquals(
+            "开学日没变也必须按今天重算当前周",
+            expected,
+            repository.snapshot.currentWeek,
+        )
     }
 
     @Test

@@ -3,6 +3,7 @@ package com.mutx163.qingyu.pages.import.warehouse
 import com.mutx163.qingyu.app.TimetableHostLogic
 import com.mutx163.qingyu.app.TimetableRepository
 import com.mutx163.qingyu.app.TimetableSnapshot
+import com.mutx163.qingyu.app.TimeSchemeImportUpdate
 import com.mutx163.qingyu.core.Course
 import com.mutx163.qingyu.core.SectionTime
 import com.mutx163.qingyu.transfer.buildExpandedSections
@@ -116,14 +117,18 @@ object AiImageImportApply {
             importedCount = synced.addedCount + synced.updatedCount
         }
 
+        /** 共享模板扩容时仓储新建的 `（导入补齐）` 副本 id；失败回滚要删掉它。 */
+        var createdSchemeId: String? = null
+
         return try {
             if (needsExpansionNow) {
                 val nextSections = expandedSections(currentSections, required)
                 if (scheme != null) {
-                    // 有主模板时页面读的是模板节次，写设置里的节次表不会生效。
-                    val error = repository.updateTimeScheme(scheme.id, scheme.name, nextSections)
-                    if (error != null) {
-                        return Result.Failed
+                    // 与发布版 `ensureSectionCapacityForImport` 同一分支：模板被别的课表
+                    // 共用时复制「（导入补齐）」副本、只改绑当前课表，不能原地改共享模板。
+                    when (val update = repository.updateTimeSchemeForImport(scheme.id, scheme.name, nextSections)) {
+                        is TimeSchemeImportUpdate.Rejected -> return Result.Failed
+                        is TimeSchemeImportUpdate.Applied -> createdSchemeId = update.createdSchemeId
                     }
                 } else {
                     repository.updateSettings(before.settings.copy(sections = nextSections))
@@ -139,9 +144,12 @@ object AiImageImportApply {
             )
             Result.Done(importedCount = importedCount, replaceExisting = request.replaceExisting)
         } catch (_: Exception) {
-            // 回滚：设置（含开学日与节次表）与主模板节次都恢复成导入前的样子。
+            // 回滚：设置（含开学日与节次表）、主模板节次、共享模板副本都恢复成导入前的样子。
             runCatching { repository.updateSettings(before.settings) }
-            if (needsExpansionNow && scheme != null) {
+            if (createdSchemeId != null) {
+                // 设置已改回原模板引用，删副本不会撞 deleteTimeScheme 的 in-use 守卫。
+                runCatching { repository.deleteTimeScheme(createdSchemeId!!) }
+            } else if (needsExpansionNow && scheme != null) {
                 runCatching { repository.updateTimeScheme(scheme.id, scheme.name, scheme.sections) }
             }
             Result.Failed
