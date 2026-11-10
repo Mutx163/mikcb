@@ -343,6 +343,29 @@ data class SettingsRow(
      */
     val stacked: Boolean = false,
     /**
+     * 卡片内的**紧凑竖向内边距**（发布版更新日志卡，`settings_holiday.dart:734-783`）。
+     *
+     * 官方 `BasicComponentDefaults.InsideMargin` 是 **16dp 四边**，对「一行一个控件」的设置项
+     * 正好；但更新日志是**一卡多条目**的堆叠列表，发布版给的是「卡内 12dp 内边距 + 条目间
+     * 6dp」。照 16dp 走，屏上相邻日志相距 32dp，三条以上就是一大片散开的留白。
+     *
+     * `true` ⇒ 横向仍 16dp（与卡内文字轴线不变），纵向压到 6dp ⇒ 相邻条目相距 12dp、
+     * 卡片上下各 6dp。**只被 [stacked] 行读取**（其余行没有任何渲染路径读它，传了也不会变）；
+     * 默认 `false` = 官方默认边距，其它页零变化。
+     */
+    val compact: Boolean = false,
+    /**
+     * 行尾的**进行中转圈**（发布版 `_MiuixSettingsPreference(endActions: [CircularProgressIndicator])`，
+     * `settings_weather.dart:71-78`「使用当前位置」定位中）。
+     *
+     * 与 [enabled] 的分工：`enabled = false` 只说明「现在点不动」，转圈才是「正在做」——
+     * 只有禁用没有转圈时，用户点一下看到的是一次无反馈的变灰，会以为按坏了。
+     *
+     * 只在**箭头行**（[MiuixRowComponent.ARROW]）上生效：发布版这两处都挂在可点的导航行行尾；
+     * 开关行的行尾是开关本体，不叠转圈。默认 `false` = 所有既有行零变化。
+     */
+    val trailingSpinner: Boolean = false,
+    /**
      * 以**独立摘要卡**渲染（`HyperosSummaryCard`）：设置首页顶部的学期摘要。
      * 与普通行不同，它不套在分组卡里，自己就是一张白卡（16dp 内边距、可点、带右箭头）。
      */
@@ -449,6 +472,19 @@ data class SettingsInline(
      */
     val textWeight: Int? = null,
 ) : SettingsNode
+
+/**
+ * 控制卡（[InlineKind.CONTROL_CARD]）卡头标题的**渲染值**：空标题返回 `null`，渲染层据此整块不画。
+ *
+ * 为什么需要它：发布版里有些控制卡**卡内只有一颗整宽按钮、卡本身没有标题**
+ * （假期「添加假期」`settings_holiday.dart:562-578`、节假日高级页「检查更新」`:777-798`）。
+ * 模型侧照抄按钮名填进 `label` 时，屏上就是「标题 + 同名单按钮」两遍；
+ * 传空串也一样不行——`Text("")` 仍会占掉一行 headline1 的高度，卡片顶部多出一条空白带。
+ *
+ * 判据放在模型层（纯函数、JVM 可测），渲染层只消费结果：两处（`ControlCard` 与
+ * 固定底栏的栏式渲染）读同一个结论，将来不会一边判空、一边漏判。
+ */
+fun controlCardTitle(label: String?): String? = label?.takeIf { it.isNotBlank() }
 
 /**
  * 顶栏右侧的单图标动作（Flutter `HyperosSubpage(suffixes: [FHeaderAction(...)])`）。
@@ -563,6 +599,7 @@ fun settingsRow(
     trailingActionKey: String? = null,
     trailingAction: String? = null,
     trailingActionKind: SettingsAction? = null,
+    trailingSpinner: Boolean = false,
     previewColors: List<String> = emptyList(),
     standaloneSummaryCard: Boolean = false,
     leadingAppIcon: Boolean = false,
@@ -570,6 +607,7 @@ fun settingsRow(
     longPressAction: SettingsAction? = null,
     longPressTarget: String? = null,
     stacked: Boolean = false,
+    compact: Boolean = false,
 ): SettingsRow = SettingsRow(
     id = id,
     component = component,
@@ -594,6 +632,7 @@ fun settingsRow(
     trailingActionKey = trailingActionKey,
     trailingAction = trailingAction,
     trailingActionKind = trailingActionKind,
+    trailingSpinner = trailingSpinner,
     previewColors = previewColors,
     standaloneSummaryCard = standaloneSummaryCard,
     leadingAppIcon = leadingAppIcon,
@@ -601,4 +640,5 @@ fun settingsRow(
     longPressAction = longPressAction,
     longPressTarget = longPressTarget,
     stacked = stacked,
+    compact = compact,
 )

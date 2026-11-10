@@ -12,6 +12,10 @@ import com.mutx163.qingyu.calendar.HolidayLogLine
  * 日志为空时显示「暂无日志」（:727-733）——注意这三字**是硬编码的**，
  * 不在 ARB 里（`'暂无日志'` 直接写在 Dart 源码里）。
  *
+ * 首载另有一套口径（见 [HolidayAdvancedData.loading]）：空列表 + 还在加载 ⇒
+ * 「正在加载节假日数据…」，不是「暂无日志」。发布版没这个分支，因为 Dart 的 provider
+ * 是进设置页之前就加载好的；Compose 允许深链直达本页，得自己把这段讲清楚。
+ *
  * ## 逐项对照
  *
  * | Flutter（行号见 Dart 源） | 本模型 | 官方 Miuix 对应物 |
@@ -20,6 +24,7 @@ import com.mutx163.qingyu.calendar.HolidayLogLine
  * | `HyperosSectionLabel(holidayUpdateLog)`（:719） | `SettingsLabel` | preference category |
  * | `HyperosListGroup` 里的日志条目（:734-783） | `holidayAdvanced.logList` | `MiuixArrowPreference`（无箭头、不可点） |
  * | 空态 `Text('暂无日志')`（:727-733） | `holidayAdvanced.logEmpty` | 同上 |
+ * | （发布版无此分支）首载未完成 | `holidayAdvanced.logLoading` | 同上，文案 `holidayDataLoading` |
  * | 底栏 `HyperosButton(检查更新)`（:792-812） | `footerNode` 里的 `SettingsInline(CONTROL_CARD)` | `basic.Card` + 官方 `Button` |
  *
  * ## 不写进模型的两件事
@@ -58,16 +63,28 @@ object SettingsHolidayAdvancedPage {
             ),
             // 固定底栏（:792-812）：原版是页面 `Column` 的最后一个子项，**不随日志滚动**。
             // 放进 `nodes` 会跟着列表滚走（长日志时按钮被推出屏幕），所以走 footerNode。
-            footerNode = refreshCard(refreshing = data.refreshing),
+            //
+            // 首载也算「忙」：深链进来时 provider 还在 `initialize()`（最长 8 秒远端超时），
+            // 这段时间按钮必须是 loading 态——否则点下去会撞上 provider 的 `if (loading) return`
+            // 直接空转，然后按上一轮的 `remoteFetchSucceeded` 弹一句与本次无关的结果。
+            footerNode = refreshCard(refreshing = data.refreshing || data.loading),
         )
     }
 
     /**
-     * 「检查更新」按钮卡（:792-812）。
+     * 「检查更新」按钮栏（:792-812）。
      *
-     * 只有 `loading` 随 [HolidayAdvancedData.refreshing] 变，label 恒为
-     * `holidayCheckUpdate`（:803-807）。`busy` 由渲染层翻成「按钮转圈 + 不可点」
+     * 只有 loading 态随 [HolidayAdvancedData.refreshing] / [HolidayAdvancedData.loading] 变，
+     * 按钮文案恒为 `holidayCheckUpdate`（:803-807）。`busy` 由渲染层翻成「按钮转圈 + 不可点」
      * （`SettingsInline.busy`），**文案不换**——Dart 的 label 是写死的。
+     *
+     * ## 为什么卡头标题传 null
+     *
+     * 发布版底栏是**一条通栏按钮**，没有标题（:792-812 `HyperosButton(label, expand: true)`）。
+     * 渲染层对 `footerNode` 的这个分支已经收成「栏」（`SettingsPageRenderers.FooterBar`：
+     * 实心栏 + 0.5dp 上边线 + 16/12 内边距 + 整宽主色按钮），**只画 `texts` 里的按钮、不画标题**。
+     * 所以模型这边不再登记一个卡片标题，免得以后有人照抄按钮名填进来、又在栏上多画一遍
+     * 「检查更新」。
      */
     private fun refreshCard(refreshing: Boolean): SettingsInline {
         val s = SettingsStringsExt3
@@ -76,8 +93,9 @@ object SettingsHolidayAdvancedPage {
             kind = InlineKind.CONTROL_CARD,
             note = "检查更新按钮（:792-812）：固定底栏里的整宽官方 Button，" +
                 "与列表滚动区分离，故单独走 SettingsPageSpec.footerNode",
-            labelKey = s.holidayCheckUpdate.key,
-            label = s.holidayCheckUpdate.text,
+            // 栏式底栏没有标题（见本函数 KDoc）：按钮名只在 texts 里登记一次。
+            labelKey = null,
+            label = null,
             texts = listOf(
                 SettingsInlineText(s.holidayCheckUpdate.key, s.holidayCheckUpdate.text),
             ),
@@ -94,12 +112,22 @@ object SettingsHolidayAdvancedPage {
      */
     private fun logRows(data: HolidayAdvancedData): List<SettingsNode> {
         if (data.logs.isEmpty()) {
+            // 空列表有两种含义，屏上不能都写「暂无日志」：
+            // - 还在首载（provider 的日志是**加载结束才整体换快照**的，`HolidayProvider.load()`
+            //   最后一行才 `logs = logs`，中途一条都上不了屏）→ 说「正在加载」；
+            // - 真的一条都没有（缓存/远端/内置全空）→ 说「暂无日志」（发布版 :727-733 硬编码）。
+            val loading = data.loading
             return listOf(
                 settingsRow(
-                    id = "holidayAdvanced.logEmpty",
+                    id = if (loading) "holidayAdvanced.logLoading" else "holidayAdvanced.logEmpty",
                     component = MiuixRowComponent.ARROW,
-                    // 这三个字是 Dart 里硬编码的，ARB 没有对应键
-                    title = ArbText(NON_ARB_TEXT, EMPTY_LOG_TEXT),
+                    // 「暂无日志」这三个字是 Dart 里硬编码的，ARB 没有对应键；
+                    // 「正在加载节假日数据…」用 ARB 已有的 holidayDataLoading（六语齐全）。
+                    title = if (loading) {
+                        SettingsStringsExt3.holidayDataLoading
+                    } else {
+                        ArbText(NON_ARB_TEXT, EMPTY_LOG_TEXT)
+                    },
                     enabled = false,
                 ),
             )
@@ -113,6 +141,9 @@ object SettingsHolidayAdvancedPage {
                 // 纯展示，不可点
                 enabled = false,
                 stacked = true,
+                // 一卡多条目：按发布版的卡内节奏收紧纵向内边距（见 SettingsRow.compact）。
+                // 默认 16dp 四边会让相邻日志相距 32dp，三条以上就散成一片。
+                compact = true,
             )
         }
     }
@@ -135,12 +166,17 @@ object SettingsHolidayAdvancedPage {
      * @param refreshing `HolidaySnapshot.refreshing`；只影响底栏按钮的 loading 态，
      *   文案恒为「检查更新」（`:803-807`）。
      */
-    fun buildData(logs: List<HolidayLogLine>, refreshing: Boolean): HolidayAdvancedData =
+    fun buildData(
+        logs: List<HolidayLogLine>,
+        refreshing: Boolean,
+        loading: Boolean = false,
+    ): HolidayAdvancedData =
         HolidayAdvancedData(
             // 注意两个类型名只差一个词：calendar 的 HolidayLogLine（数据层）→
             // 本包的 HolidayLogEntry（页面词汇），字段逐一同形，故直接搬运。
             logs = logs.map { HolidayLogEntry(it.time, it.message) },
             refreshing = refreshing,
+            loading = loading,
         )
 }
 
@@ -154,6 +190,18 @@ data class HolidayAdvancedData(
     val logs: List<HolidayLogEntry> = emptyList(),
     /** 正在刷新（只影响按钮的 loading 态，不改文案——:803-807 的 label 是死的）。 */
     val refreshing: Boolean = false,
+    /**
+     * 首屏还在加载（`HolidayProvider.initialize()` 没回来）。
+     *
+     * 与 [refreshing] 分工不同：那个是「用户点了检查更新」，这个是「进页面的第一次加载」。
+     * provider 的日志是**加载结束才整体换快照**的（`HolidayProvider.load()` 末尾才写
+     * `snapshot.logs`），所以首载期间屏上一条日志都没有；不区分这两种「空」，用户会在
+     * 冷启动深链进来时先看到一句「暂无日志」（最长 8 秒远端超时），误以为数据没了。
+     *
+     * 首载结束、日志仍为空时才轮到「暂无日志」。默认 `false` = 按已经加载完渲染
+     * （预览与既有单测的默认口径）。
+     */
+    val loading: Boolean = false,
 )
 
 /** 一条更新日志（时刻 + 已本地化正文）。 */

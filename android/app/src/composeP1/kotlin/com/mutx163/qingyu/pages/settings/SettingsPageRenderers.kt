@@ -11,6 +11,8 @@ import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
@@ -54,6 +56,9 @@ import androidx.compose.ui.unit.dp
 import com.mutx163.qingyu.app.SettingsActionDispatcher
 import com.mutx163.qingyu.R
 import com.mutx163.qingyu.components.QingyuCard
+import com.mutx163.qingyu.components.QingyuLoadingInButtonLarge
+import com.mutx163.qingyu.components.QingyuLoadingInline
+import com.mutx163.qingyu.components.QingyuLoadingSlot
 import com.mutx163.qingyu.components.QingyuPageList
 import com.mutx163.qingyu.components.QingyuPageScaffold
 import com.mutx163.qingyu.components.QingyuPageTheme
@@ -68,7 +73,6 @@ import top.yukonga.miuix.kmp.basic.BasicComponent
 import top.yukonga.miuix.kmp.basic.BasicComponentDefaults
 import top.yukonga.miuix.kmp.basic.Button
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
-import top.yukonga.miuix.kmp.basic.CircularProgressIndicator
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.IconButton
 import top.yukonga.miuix.kmp.basic.TabRowWithContour
@@ -228,6 +232,15 @@ fun SettingsPageScreen(
     val footer = spec.footerNode
     val footerSlot: (@Composable () -> Unit)? = if (footer == null) {
         null
+    } else if (footer is SettingsInline && footer.kind == InlineKind.CONTROL_CARD) {
+        // 固定底栏是「栏」，不是「卡」（2026-11-10 A1，Chief 批）。
+        // 发布版把「检查更新」写成 `Column` 的最后一个子项：实心栏 + 顶部 0.5dp 细线 +
+        // 16/12 内边距 + 整宽主色按钮，**没有标题、没有圆角卡**（`settings_holiday.dart:777-798`）。
+        // 旧写法把 footer 交给通用节点渲染，走的正是 CONTROL_CARD 那张「卡头 + 按钮」——
+        // 于是屏上出现「大标题『检查更新』+ 灰色按钮『检查更新』」两遍，且不是栏。
+        // 这里把 footer 分支收成栏：**只有 footerNode 走这条**（全仓 grep 仅节假日高级页），
+        // nodes 里的 CONTROL_CARD（假期「添加假期」/主题卡/小组件「去授权」）行为完全不变。
+        { FooterBar(node = footer, navBottom = navBottom, onAction = onAction) }
     } else {
         { SettingsNodeView(node = footer, onAction = onAction) }
     }
@@ -278,7 +291,10 @@ fun SettingsPageScreen(
                     scrollBehavior = scrollBehavior.takeIf {
                         settingsListAttachesTopBarSync(spec.collapsibleLargeTitle)
                     },
-                    contentPadding = PaddingValues(bottom = 24.dp + navBottom),
+                    // 顶部同样补 4dp：这两页（课程卡片 / 课表页面）虽然上面有预览区，
+                    // 列表本身仍按发布版 `HyperosTokens.listPadding = (16, 4, 16, 24)`
+                    // 起排（评审 三-13；无预览那一支见下方同名注释）。
+                    contentPadding = PaddingValues(top = 4.dp, bottom = 24.dp + navBottom),
                 ) {
                     items(items = spec.nodes, key = { it.id }) { node ->
                         SliderEditFinishedScope(onSliderEditFinished) {
@@ -299,7 +315,13 @@ fun SettingsPageScreen(
                 scrollBehavior = scrollBehavior.takeIf {
                     settingsListAttachesTopBarSync(spec.collapsibleLargeTitle)
                 },
-                contentPadding = PaddingValues(bottom = 24.dp + navBottom),
+                // 顶部 4dp：发布版 `HyperosTokens.listPadding = (16, 4, 16, 24)`
+                // （`hyperos_miuix_spec.dart:88`）——每个设置页的首个小标题/白卡都从
+                // 顶栏下沿留 4dp 起排。此前这里只给了 bottom，页面全都贴着顶栏起排，
+                // 观感上「第一块顶着标题栏」。（2026-11-10 B4，Chief 批；已 grep 确认
+                // 没有任何页自己补过 top padding，不会双重补偿。预览分栏那支另计，
+                // 因为它上面还有一块预览区，4dp 由谁来给要单看那两页。）
+                contentPadding = PaddingValues(top = 4.dp, bottom = 24.dp + navBottom),
             ) {
                 items(items = spec.nodes, key = { it.id }) { node ->
                     SliderEditFinishedScope(onSliderEditFinished) {
@@ -406,6 +428,13 @@ private fun SettingsGroupCard(
     onAction: (action: SettingsAction, target: String?, rowId: String) -> Unit,
     rowInset: Dp? = null,
 ) {
+    // 紧凑组（2026-11-10，Chief 批）：整组行都是 `SettingsRow.compact` 时，卡内改成
+    // 「上下 12dp 内边距 + 条目间 6dp」，行自己不再带纵向内边距。
+    // 出处：节假日高级页的更新日志卡是 `ListView.separated(padding: (16,12,16,12),
+    // separator: 6dp)`（`settings_holiday.dart:720-769`）——条目之间本来就没有行高，
+    // 只有一条 6dp 缝。普通设置行仍是「每行自带 13dp 纵向内边距」，不受影响。
+    val compactGroup = group.children.isNotEmpty() &&
+        group.children.all { it is SettingsRow && it.compact }
     QingyuCard(
         modifier = Modifier
             .fillMaxWidth()
@@ -413,8 +442,21 @@ private fun SettingsGroupCard(
         cornerRadius = QingyuShapes.SETTINGS_GROUP_RADIUS.dp,
         insideMargin = PaddingValues(0.dp),
     ) {
-        group.children.forEach { child ->
-            SettingsNodeView(node = child, onAction = onAction, rowInset = rowInset)
+        if (compactGroup) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 12.dp),
+                verticalArrangement = Arrangement.spacedBy(6.dp),
+            ) {
+                group.children.forEach { child ->
+                    SettingsNodeView(node = child, onAction = onAction, rowInset = rowInset)
+                }
+            }
+        } else {
+            group.children.forEach { child ->
+                SettingsNodeView(node = child, onAction = onAction, rowInset = rowInset)
+            }
         }
     }
 }
@@ -467,6 +509,13 @@ private fun SettingsRowView(
                 },
                 endActions = {
                     TrailingText(SettingsRowRenderTable.trailingText(row))
+                    // 行尾进行中（发布版 `_MiuixSettingsPreference(endActions: [SizedBox(16,16,
+                    // CircularProgressIndicator(strokeWidth: 2))])`，`settings_weather.dart:71-78`）。
+                    // 走共享件（评审 P6-1）：按钮档 16dp / 2dp 线宽、取主题主色，与发布版同值；
+                    // 默认 false ⇒ 既有行零变化。
+                    if (row.trailingSpinner) {
+                        QingyuLoadingInline(slot = QingyuLoadingSlot.Button)
+                    }
                     row.trailingAction?.let { TrailingActionHint(it) }
                 },
             )
@@ -576,9 +625,41 @@ private fun SettingsRowView(
  * 用官方 `BasicComponent` 的 content 槽承载，不自绘行容器；`enabled = false` 让它不响应点击
  * （原版日志条目本来就不可点）。tabular 数字（`tnum`）在 Dart 侧是
  * `FontFeature.tabularFigures()`，Compose 的同义写法是 `fontFeatureSettings = "tnum"`。
+ *
+ * 行内边距按 [SettingsRow.compact] 分两档（2026-11-10，Chief 批 B）：默认仍是官方
+ * `BasicComponentDefaults.InsideMargin`（16dp 四边），紧凑档见 [CompactStackedInsideMargin]。
  */
 @Composable
 private fun StackedRow(row: SettingsRow) {
+    if (row.compact) {
+        // 紧凑档（评审 三-09）：**不走 `BasicComponent`**。
+        // 官方 `BasicComponent` 内部写死 `.heightIn(min = 56.dp)`
+        // （`third_party/miuix-ui/.../basic/Component.kt:161`），行高永远压不到发布版那条
+        // 「一卡多条目」的节奏（更新日志一条约 36dp = 两行 14sp + 2dp 缝）。
+        // 发布版这里本来就不是「一行 preference」，而是卡内一组 Text 列
+        // （`settings_holiday.dart:736-767`），所以直接照它排：左右 16dp、上下 0，
+        // 纵向节奏由卡层的 `spacedBy(6.dp)` + 卡内 12dp 承担。
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(start = 16.dp, end = 16.dp),
+        ) {
+            Text(
+                text = row.title,
+                color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                style = MiuixTheme.textStyles.body2.copy(fontFeatureSettings = "tnum"),
+            )
+            if (!row.subtitle.isNullOrEmpty()) {
+                Spacer(modifier = Modifier.height(2.dp))
+                Text(
+                    text = row.subtitle!!,
+                    color = MiuixTheme.colorScheme.onBackground,
+                    style = MiuixTheme.textStyles.body2,
+                )
+            }
+        }
+        return
+    }
     BasicComponent(
         modifier = Modifier.fillMaxWidth(),
         insideMargin = BasicComponentDefaults.InsideMargin,
@@ -1210,9 +1291,10 @@ private fun PreviewCard(node: SettingsInline) {
     ) {
         // 预览标题为空时不要留一行空 headline + 12dp 空白（首页标题预览就是这种：
         // `titleStylePreview` 不给 label）。那会表现成卡片顶部一大块空白。
-        if (!node.label.isNullOrBlank()) {
+        // 判空走模型层 `controlCardTitle`：与 `ControlCard` 同一个结论，别两处各写一套。
+        controlCardTitle(node.label)?.let { title ->
             Text(
-                text = node.label,
+                text = title,
                 color = colors.onBackground,
                 style = MiuixTheme.textStyles.headline1
                     .shiftWeight(QingyuWeightDelta.MEDIUM),
@@ -1353,6 +1435,7 @@ private fun FontPreview(node: SettingsInline) {
  * `WRITE_SETTING` + `target = 该色值` + `rowId = ROW_CARD_COLOR_CHIPS`；
  * 「点这个色值意味着什么」的判据仍在分派器里，渲染层只负责转达。
  */
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun ColorChipGroup(
     node: SettingsInline,
@@ -1371,9 +1454,14 @@ private fun ColorChipGroup(
         cornerRadius = QingyuShapes.CARD_CORNER.dp,
         insideMargin = PaddingValues(12.dp),
     ) {
-        Row(
+        // 2026-11-10（评审·颜色统一配方 v2）：色板由固定 `Row` 改 `FlowRow` 自动换行。
+        // 原来横排、不换行，八色板再长一格就横向溢出（真 bug：卡片被裁、末尾颜色点不到）。
+        // KDoc 口径：最终形态要迁共享件 `components/QingyuColorChips`（美化十二建），
+        // 这里先把溢出修掉；组件落地后这一块整体换调用，不再自绘。
+        FlowRow(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(12.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             node.colors.forEach { hex ->
                 val selected = hex.equals(node.selectedColor, ignoreCase = true)
@@ -1430,12 +1518,19 @@ private fun ControlCard(
         cornerRadius = QingyuShapes.SETTINGS_GROUP_RADIUS.dp,
         insideMargin = PaddingValues(QingyuShapes.SHEET_INSET.dp),
     ) {
-        Text(
-            text = node.label.orEmpty(),
-            color = colors.onBackground,
-            style = MiuixTheme.textStyles.headline1
-                .shiftWeight(QingyuWeightDelta.MEDIUM),
-        )
+        // label 为空时**不画标题**（2026-11-10，Chief 批 A）：发布版有些控制卡里只有一颗整宽
+        // 按钮，卡本身没有标题（假期「添加假期」`:562-578`、节假日高级页「检查更新」`:777-798`）。
+        // 传空串仍会占一行 headline1 的高度，屏上就是卡片顶部一条莫名其妙的空白带。
+        // 判空口径收在模型层 `controlCardTitle`（纯函数、JVM 单测钉住），这里只消费结果：
+        // 两处读同一个结论，将来不会一边判空、一边漏判。
+        controlCardTitle(node.label)?.let { title ->
+            Text(
+                text = title,
+                color = colors.onBackground,
+                style = MiuixTheme.textStyles.headline1
+                    .shiftWeight(QingyuWeightDelta.MEDIUM),
+            )
+        }
         node.value?.let { value ->
             Text(
                 text = value,
@@ -1446,7 +1541,12 @@ private fun ControlCard(
         }
         if (node.texts.isNotEmpty()) {
             Row(
-                modifier = Modifier.fillMaxWidth().padding(top = 12.dp),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    // 无标题卡（headerless）不额外加这一段：发布版 `headerlessBodyPadding` 顶部就是
+                    // 卡片自身内边距 16dp（`hyperos_controls.dart` 的 `defaultHorizontalPadding`），
+                    // 旧写法再加 12dp ⇒ 卡顶到按钮之间 28dp，比发布版松一档（评审 三-10）。
+                    .padding(top = if (controlCardTitle(node.label) == null) 0.dp else 12.dp),
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
             ) {
                 node.texts.forEach { action ->
@@ -1480,13 +1580,126 @@ private fun ControlCard(
                             contentColor = colors.onSecondaryVariant,
                         ),
                     ) {
+                        // busy 态（评审 P6-1 落点 + 发布版同款）：`HyperosButton(loading)` 把
+                        // 文案整块换成一颗圈（`hyperos_controls.dart` 的 `labelChild`），
+                        // 不是「圈 + 文案并排」。圈走共享件的按钮大档（18/2，发布版
+                        // `HyperosButton(loading)` 的同一个 `SizedBox(18×18)`），吃
+                        // `LocalContentColor`（这颗按钮是 secondary 底，禁用态自动取
+                        // disabledContentColor）。
                         if (node.busy) {
-                            CircularProgressIndicator(modifier = Modifier.size(16.dp))
-                            Spacer(modifier = Modifier.width(8.dp))
+                            QingyuLoadingInButtonLarge()
+                        } else {
+                            Text(
+                                text = action.text,
+                                // 墨色随 `contentColor`（Dart 是 onSecondaryVariant 深灰）。
+                                style = MiuixTheme.textStyles.button,
+                            )
                         }
+                    }
+                }
+            }
+        }
+    }
+}
+
+/**
+ * 固定底栏（`SettingsPageSpec.footerNode` 的**栏式**渲染）。
+ *
+ * 发布版把这类动作写成 `Column` 的最后一个子项（`settings_holiday.dart:777-798`）：
+ *
+ * ```dart
+ * Material(color: cardColor,
+ *   child: DecoratedBox(border: Border(top: BorderSide(color: divider, width: .5)),
+ *     child: SafeArea(top: false,
+ *       child: Padding(EdgeInsets.fromLTRB(16, 12, 16, 12),
+ *         child: HyperosButton(label: …, expand: true, loading: …, onPressed: …)))))
+ * ```
+ *
+ * 即：**实心栏 + 0.5dp 上边线 + 16/12 内边距 + SafeArea + 整宽主色按钮**，没有标题、没有圆角。
+ * 旧写法让 footer 走通用节点、落到 `ControlCard` 那张「卡头 + 双色按钮」上，于是按钮名被当
+ * 大标题又画一遍、按钮还是灰的——两处都与发布版不符（2026-11-10 A1 修）。
+ *
+ * 为什么只对 footer 生效：`nodes` 里的 `ControlCard`（假期「添加假期」、主题卡、小组件
+ * 「去授权」）在发布版里**本来就是卡 + secondary 按钮**，不能一起改；这条分支只由
+ * `footerSlot` 调用，而全仓 `footerNode` 只有节假日高级页在用（`grep` 可验）。
+ *
+ * @param navBottom 导航栏高度（`WindowInsets.navigationBars`）。发布版用 `SafeArea(top: false)`
+ *   把按钮垫到系统栏上方；这里等价地把这段高度加到栏自己的下内边距里，让**栏的底色**
+ *   一起铺到屏幕底（只给内容加 padding 会在栏下方漏出一条页底）。
+ */
+@Composable
+private fun FooterBar(
+    node: SettingsInline,
+    navBottom: Dp,
+    onAction: (action: SettingsAction, target: String?, rowId: String) -> Unit,
+) {
+    val colors = MiuixTheme.colorScheme
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            // 栏底 = 卡片色（发布版 `HyperosColors.card`），与页面底色区分开。
+            .background(colors.surfaceContainer),
+    ) {
+        // 顶部 0.5dp 细线（发布版 `Border(top: BorderSide(width: 0.5))`）。
+        // 用一条 Box 而不是 `HorizontalDivider`：这是**栏的边框**，不是列表行间线；
+        // `RowDividerGuardTest` 的白名单只登记行间线，别为一条边框去扩白名单。
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(0.5.dp)
+                .background(colors.dividerLine),
+        )
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(
+                    start = 16.dp,
+                    top = 12.dp,
+                    end = 16.dp,
+                    bottom = 12.dp + navBottom,
+                ),
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            node.texts.forEach { action ->
+                val wiring = controlCardWiring(action.key)
+                // 按钮配色（评审 三-07）：miuix `Button` 的**默认**色是 `secondaryVariant`
+                // （灰），不是主色——旧注释「官方默认=主色」是错的，屏上就是一颗灰按钮。
+                // 发布版这里的 `HyperosButton` 不传 variant ⇒ 默认 primary = 主题主色实心
+                // （`hyperos_controls.dart` 的 `HyperosButtonVariant.primary`），所以显式取
+                // `buttonColorsPrimary()`。
+                //
+                // busy 态（评审 三-08）：发布版 `HyperosButton(loading: true)` 把**文案整块换成**
+                // 一颗 18dp / 2dp 的圈，并且按钮取 disabled 主色（`hyperos_controls.dart`：
+                // `labelChild = loading ? SizedBox(18,18,CircularProgressIndicator(strokeWidth:2,
+                // color: enabled ? fg : disabledFg)) : …`）——不是「圈 + 文案并排」。
+                // 圈走共享件的**按钮大档** `QingyuLoadingInButtonLarge()`（18/2、吃
+                // `LocalContentColor`，禁用态自动取 disabledContentColor），与发布版同尺寸；
+                // 与 16/2 那颗（云同步 `_buttonLoadingPrefix` 口径）是两个语义档，别互相替换。
+                val dark = isSystemInDarkTheme()
+                Button(
+                    onClick = {
+                        // busy 期间吞掉点击（Dart `onPressed: _refreshing ? null : …`，`:807`）。
+                        if (wiring != null && !node.busy) {
+                            onAction(wiring.first, null, wiring.second)
+                        }
+                    },
+                    enabled = !node.busy,
+                    colors = if (node.busy) {
+                        ButtonDefaults.buttonColorsPrimary(
+                            disabledColor = Color(QingyuTheme.disabledPrimary(dark = dark)),
+                            disabledContentColor = Color(QingyuTheme.disabledOnPrimary(dark = dark)),
+                        )
+                    } else {
+                        ButtonDefaults.buttonColorsPrimary()
+                    },
+                    // 单按钮铺满整栏（Dart `expand: true`）；多按钮时平分。
+                    modifier = Modifier.weight(1f),
+                ) {
+                    if (node.busy) {
+                        QingyuLoadingInButtonLarge()
+                    } else {
                         Text(
                             text = action.text,
-                            // 墨色随 `contentColor`（Dart 是 onSecondaryVariant 深灰）。
                             style = MiuixTheme.textStyles.button,
                         )
                     }
@@ -1923,4 +2136,27 @@ private fun SettingsPageScreenPreviewSplit() {
         spec = previewSettingsSplitSpec(),
         preview = { PreviewSettingsSlotPlaceholder() },
     )
+}
+
+// ── 整页档：900 一屏会截断，这一档按整页高度渲染（2026-11-10，评审派单：全仓预览系统性截断）
+
+@Suppress("unused")
+@Preview(name = "5 整页 1600", showBackground = true, widthDp = 400, heightDp = 1600)
+@Composable
+private fun SettingsPageScreenPreviewFullPage() {
+    PreviewSettingsPageScreen(previewSettingsSpec())
+}
+
+@Suppress("unused")
+@Preview(name = "6 整页 1600 暗色", showBackground = true, widthDp = 400, heightDp = 1600)
+@Composable
+private fun SettingsPageScreenPreviewFullPageDark() {
+    PreviewSettingsPageScreen(previewSettingsSpec(), dark = true)
+}
+
+@Suppress("unused")
+@Preview(name = "7 整页 1600 大字号 1.3", showBackground = true, widthDp = 400, heightDp = 1600)
+@Composable
+private fun SettingsPageScreenPreviewFullPageLargeText() {
+    PreviewSettingsPageScreen(previewSettingsSpec(), textScale = 1.3f)
 }
