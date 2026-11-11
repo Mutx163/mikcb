@@ -319,6 +319,25 @@ tasks.withType(Test).configureEach { test ->
     // main 源集同理：CjkLiteralGateTest 的第二条 sourceSet、LocaleFormatGuardTest 的
     // srcRoot（LocaleFormatGuardTest.kt:188）都按磁盘原文扫 `src/main/kotlin`。
     test.inputs.dir(project.file('src/main/kotlin')).withPropertyName('i18nMainSources')
+    // ── 其余「运行时读磁盘」的门禁输入（2026-11-11 P0-2）─────────────────────────
+    // 同一类假绿：这些文件不在任何 sourceSet 里，Gradle 看不见；实测（P0-2 S3）篡改
+    // 例外清单里的锚后 `:app:testDevDebugUnitTest` 仍判 UP-TO-DATE。
+    // 每个输入的运行时读取点见 `.agents/notes/2026-11-11-gate-file-inputs.md` 的表；
+    // 新增守卫时先照表登记 inputs，别靠人记得。
+    test.inputs.dir(project.file('../../tool/compose_style_exceptions')).withPropertyName('styleExceptions')
+    test.inputs.file(project.file('../../tool/silent_failure_exceptions.txt')).withPropertyName('silentFailureExceptions')
+    test.inputs.file(project.file('../../tool/a11y_icon_button_baseline.txt')).withPropertyName('a11yIconButtonBaseline')
+    test.inputs.dir(project.file('../../tool/compose_sheet_baseline')).withPropertyName('composeSheetBaseline')
+    test.inputs.dir(project.file('../../docs/releases')).withPropertyName('releaseNotes')
+    // CrossDomainGateGuardTest 真的用 pwsh 跑样式脚本、并 readText() 读 CJK 脚本原文
+    //（CrossDomainGateGuardTest.kt:132,167,192）。
+    test.inputs.file(project.file('../../scripts/compose-style-lint.ps1')).withPropertyName('styleLintScript')
+    test.inputs.file(project.file('../../scripts/i18n-cjk-baseline.py')).withPropertyName('cjkBaselineScript')
+    // 清单 / 资源 / 资产：PermissionManifestGuardTest 读 AndroidManifest.xml，
+    // FilePaths 类守卫扫 `src/main/res`，另有守卫按 `src/main/assets` 读原文件。
+    test.inputs.file(project.file('src/main/AndroidManifest.xml')).withPropertyName('appManifest')
+    test.inputs.dir(project.file('src/main/res')).withPropertyName('mainRes')
+    test.inputs.dir(project.file('src/main/assets')).withPropertyName('mainAssets')
 }
 
 
