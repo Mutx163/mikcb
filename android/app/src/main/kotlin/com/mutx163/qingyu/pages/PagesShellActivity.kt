@@ -189,6 +189,19 @@ class PagesShellActivity : ComponentActivity() {
         super.attachBaseContext(withAppLocale(newBase))
     }
 
+    /**
+     * 系统语言变了（用户在系统设置里改语言，App 没重启）：刷新「跟随系统」的真源。
+     *
+     * 不刷的话 `AppLocaleRuntime` 手里还是启动时那个系统语言，用户改完系统再回 App，
+     * 「跟随系统」仍显示旧语言。刷新后若当前正是跟随系统，界面与默认 Locale 立刻跟上。
+     */
+    override fun onConfigurationChanged(newConfig: Configuration) {
+        super.onConfigurationChanged(newConfig)
+        AppLocaleRuntime.setSystemLocaleTag(
+            runCatching { newConfig.locales[0].toLanguageTag() }.getOrNull(),
+        )
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
@@ -482,6 +495,10 @@ class PagesShellActivity : ComponentActivity() {
  * 损坏留档仍由冷启动必经的 `ShellWiring` 解析在同一次启动里完成，最终状态不变。
  */
 private fun withAppLocale(base: Context): Context {
+    // 先把**真实系统语言**交给运行时（此刻 base 还没被 createConfigurationContext 覆盖）。
+    // 「跟随系统」必须读它，不能反读 `Locale.getDefault()`——后者会被用户手选语言改写，
+    // 反读就形成自指：切过英语再选「跟随系统」永远回不到中文（2026-11-10 用户报障）。
+    AppLocaleRuntime.setSystemLocaleTag(systemLocaleTagOf(base))
     val tag = runCatching {
         localeTagFromRawSettingsJson(
             PrefsKeyValueStore(base).getString(TimetableStore.KEY_SETTINGS),
@@ -497,6 +514,16 @@ private fun withAppLocale(base: Context): Context {
     val config = Configuration(base.resources.configuration).apply { setLocale(locale) }
     return base.createConfigurationContext(config)
 }
+
+/**
+ * 当前**真实系统语言**标签（`zh-Hans-CN` / `en-US`…）；取不到返回 null。
+ *
+ * 取 `resources.configuration.locales[0]`：这是设备配置，不是 App 手选语言改出来的
+ * 进程默认 Locale；在 `attachBaseContext` 里调用时拿到的还是覆盖前的配置。
+ */
+private fun systemLocaleTagOf(context: Context): String? = runCatching {
+    context.resources.configuration.locales[0].toLanguageTag()
+}.getOrNull()
 
 /** 主题模式 + 系统明暗 → 壳的实际明暗。 */
 private fun resolveAppDark(mode: AppThemeMode, systemDark: Boolean): Boolean = when (mode) {

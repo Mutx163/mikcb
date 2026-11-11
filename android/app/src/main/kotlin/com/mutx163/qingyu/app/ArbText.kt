@@ -134,6 +134,22 @@ object AppLocaleRuntime {
     @Volatile
     var onLocaleChanged: (() -> Unit)? = null
 
+    /**
+     * **真实系统语言**（语言标签，如 `zh-Hans-CN` / `en-US`），由壳注入。
+     *
+     * ## 为什么必须有它（2026-11-10 用户报障的根因）
+     *
+     * [set] 为了日期格式化会把进程默认 Locale 改成**用户手选的**语言。而「跟随系统」
+     * 原来又去读 `Locale.getDefault()`——读到的正是 App 自己刚改过的值：切到英语后再
+     * 选「跟随系统」，永远回到英语，系统是中文也不管用（自指链）。
+     *
+     * 现在「跟随系统」只认真实系统语言：壳在 `attachBaseContext` 里、**覆盖之前**从
+     * `resources.configuration.locales[0]` 读出并注入，系统语言变化时（`onConfigurationChanged`）
+     * 再刷新一次。`null` = 还没注入（单测 / 纯 JVM），此时才退回 `Locale.getDefault()`。
+     */
+    @Volatile
+    private var systemLocaleTag: String? = null
+
     @Volatile
     private var currentTag: String = UNSET
 
@@ -146,10 +162,34 @@ object AppLocaleRuntime {
         get() = languageOf(currentTag)
 
     /**
+     * 壳注入 / 刷新**真实系统语言**（`zh-Hans-CN`、`en-US`…）。
+     *
+     * 只在壳里调：冷启动在覆盖配置语言**之前**注入一次；系统语言变化时
+     * （`onConfigurationChanged`）再刷一次。当前是「跟随系统」时，刷新会立刻
+     * 通知 UI 并把默认 Locale 换成新的系统语言——用户改了系统语言、不重启 App 也跟随。
+     */
+    fun setSystemLocaleTag(rawTag: String?) {
+        val normalized = rawTag?.trim().orEmpty()
+        if (normalized == systemLocaleTag) return
+        systemLocaleTag = normalized.ifEmpty { null }
+        // `currentTag` 为空串 = 跟随系统；此时系统语言变了，界面与日期都要跟着走。
+        if (currentTag.isEmpty()) {
+            onLocaleChanged?.invoke()
+            Locale.setDefault(systemLocale())
+        }
+    }
+
+    /** 单测用：当前注入的系统语言（未注入 = null）。 */
+    fun systemLocaleTagForTest(): String? = systemLocaleTag
+
+    /**
      * 设置当前语言（`""` = 跟随系统）。
      *
      * 同时把 `Locale.setDefault` 调成对应语言——日期格式化（`DateFormat` 的等价实现）
      * 读的是默认 Locale，不跟着改会出现「界面英文、日期仍按中文格式」。
+     *
+     * 选「跟随系统」时**改成真实系统语言**（[systemLocaleTag]），不再沿用上一次手选语言：
+     * 否则切过英语再回来，界面和日期都会停在英语（2026-11-10 用户报障）。
      */
     fun set(tag: String?) {
         val normalized = normalize(tag)
@@ -158,12 +198,15 @@ object AppLocaleRuntime {
         // 先通知 UI 层（触发重组），再改默认 Locale；两者都在主线程回调里完成。
         onLocaleChanged?.invoke()
         val effective = languageOf(normalized) ?: return
-        Locale.setDefault(localeOf(effective))
+        Locale.setDefault(
+            if (normalized.isEmpty()) systemLocale() else localeOf(effective),
+        )
     }
 
     /** 单测用：恢复到未初始化态，避免用例之间互相污染。 */
     fun resetForTest() {
         currentTag = UNSET
+        systemLocaleTag = null
     }
 
     /** 按当前语言取文案；未初始化或目标语言缺键时回落 [fallbackZh]。 */
@@ -205,9 +248,26 @@ object AppLocaleRuntime {
      * 系统语言 → 支持的语言，口径对齐 Flutter `basicLocaleListResolution`：
      * 先按语言码匹配；中文再按地区/文字分简繁；都不认识回落 `en`（与 Flutter 取
      * `supportedLocales` 第一项一致）。
+     *
+     * **真源是壳注入的 [systemLocaleTag]**，不是 `Locale.getDefault()`——后者会被
+     * [set] 改成用户手选的语言，反读会形成自指（见该字段 KDoc）。
+     * 只有壳没注入时（单测 / 纯 JVM）才退回进程默认 Locale。
      */
-    private fun systemLanguage(): String {
-        val locale = Locale.getDefault()
+    private fun systemLanguage(): String = matchSupportedLocale(systemLocale())
+
+    /** 真实系统 Locale：优先注入值，没有就用进程默认（单测场景）。 */
+    private fun systemLocale(): Locale {
+        val injected = systemLocaleTag
+        if (!injected.isNullOrBlank()) {
+            runCatching { Locale.forLanguageTag(injected.replace('_', '-')) }
+                .getOrNull()
+                ?.let { return it }
+        }
+        return Locale.getDefault()
+    }
+
+    /** 设备 locale → 支持的语言标签（中文按地区/文字分简繁，其余不认识回落 `en`）。 */
+    private fun matchSupportedLocale(locale: Locale): String {
         val language = locale.language.lowercase(Locale.ROOT)
         return when (language) {
             "zh" -> {

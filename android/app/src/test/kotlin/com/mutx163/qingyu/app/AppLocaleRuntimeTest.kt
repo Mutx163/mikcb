@@ -112,6 +112,72 @@ class AppLocaleRuntimeTest {
         assertEquals(2, bumps)
     }
 
+    /**
+     * 2026-11-10 用户报障：切到英语后选「跟随系统」仍显示外语。
+     *
+     * 根因是「跟随系统」去读 `Locale.getDefault()`，而切英语时 App 刚把它改成 en——
+     * 自指。修法是真源改为壳注入的系统语言。这条用例把它钉住：
+     * 注入中文系统语言后，无论之前手选过什么，切回跟随系统都必须回中文，
+     * 且默认 Locale 也要恢复（日期格式化随之正确）。
+     */
+    @Test
+    fun `切过英语再选跟随系统要回真实系统语言`() {
+        val original = java.util.Locale.getDefault()
+        try {
+            AppLocaleRuntime.resetForTest()
+            AppLocaleRuntime.setSystemLocaleTag("zh-Hans-CN")
+            AppLocaleRuntime.set("en")
+            assertEquals("en", AppLocaleRuntime.language)
+
+            AppLocaleRuntime.set("")
+            assertEquals("跟随系统必须回到注入的系统语言，而不是上一次手选的 en", "zh", AppLocaleRuntime.language)
+            assertEquals(
+                "默认 Locale 也要恢复成系统语言（否则日期格式仍停在英语）",
+                "zh",
+                java.util.Locale.getDefault().language,
+            )
+        } finally {
+            AppLocaleRuntime.resetForTest()
+            java.util.Locale.setDefault(original)
+        }
+    }
+
+    @Test
+    fun `跟随系统期间系统语言变化要立刻跟上`() {
+        val original = java.util.Locale.getDefault()
+        try {
+            AppLocaleRuntime.resetForTest()
+            AppLocaleRuntime.setSystemLocaleTag("zh-Hans-CN")
+            AppLocaleRuntime.set("")
+            assertEquals("zh", AppLocaleRuntime.language)
+
+            var bumps = 0
+            AppLocaleRuntime.onLocaleChanged = { bumps++ }
+            // 用户在系统设置里改成了日语，App 没重启：壳在 onConfigurationChanged 里刷进来。
+            AppLocaleRuntime.setSystemLocaleTag("ja-JP")
+            assertEquals("ja", AppLocaleRuntime.language)
+            assertEquals("系统语言变化要通知 UI 重组", 1, bumps)
+            assertEquals("ja", java.util.Locale.getDefault().language)
+        } finally {
+            AppLocaleRuntime.resetForTest()
+            java.util.Locale.setDefault(original)
+        }
+    }
+
+    @Test
+    fun `刷新系统语言不能影响手选语言`() {
+        try {
+            AppLocaleRuntime.resetForTest()
+            AppLocaleRuntime.setSystemLocaleTag("zh-Hans-CN")
+            AppLocaleRuntime.set("ko")
+            AppLocaleRuntime.setSystemLocaleTag("ja-JP")
+            assertEquals("手选了韩语就不该被系统语言变化带走", "ko", AppLocaleRuntime.language)
+        } finally {
+            AppLocaleRuntime.resetForTest()
+            java.util.Locale.setDefault(java.util.Locale.ENGLISH)
+        }
+    }
+
     @Test
     fun `取文案会读 UI 订阅点`() {
         var reads = 0
