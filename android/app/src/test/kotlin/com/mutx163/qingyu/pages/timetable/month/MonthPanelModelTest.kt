@@ -273,6 +273,63 @@ class MonthPanelModelTest {
         assertEquals(3 * expanded.rowHeight, collapsed.scrollOffset, 1e-6)
     }
 
+    // ------------------------------------------------------------------
+    // 停靠端点归整（2026-11-11 用户报「收起后卡在两行中间」）
+    // ------------------------------------------------------------------
+
+    @Test
+    fun `停靠端点归整_端点残差一律钉到 0 或 1`() {
+        assertEquals(0.0, MonthPanelModel.dockedProgress(0.0), 1e-12)
+        assertEquals(0.0, MonthPanelModel.dockedProgress(0.0004), 1e-12)
+        assertEquals(1.0, MonthPanelModel.dockedProgress(1.0), 1e-12)
+        assertEquals(1.0, MonthPanelModel.dockedProgress(0.9998), 1e-12)
+        // 中途**原样透传**：跟手感不能被这条判据改（拖到哪儿就是哪儿）。
+        assertEquals(0.5, MonthPanelModel.dockedProgress(0.5), 1e-12)
+        assertEquals(0.02, MonthPanelModel.dockedProgress(0.02), 1e-12)
+        // 越界钳制（拖到头、动画过冲）。
+        assertEquals(0.0, MonthPanelModel.dockedProgress(-0.2), 1e-12)
+        assertEquals(1.0, MonthPanelModel.dockedProgress(1.7), 1e-12)
+    }
+
+    @Test
+    fun `停靠态几何必是整数行_端点残差不会切出半行`() {
+        fun layoutAt(progress: Double) = MonthPanelModel.layout(
+            progress = progress,
+            availableHeightDp = 800.0,
+            availableWidthDp = 400.0,
+            headerHeightDp = 28.0,
+            weekLabelWidthDp = 40.0,
+            minRowHeightDp = 40.0,
+            maxRowHeightDp = 78.0,
+            keptRow = 3,
+            handleHeightDp = 66.0,
+            topPaddingDp = 14.0,
+            rowCount = 6,
+        )
+
+        // 0.0004 / 0.9998 是吸附末帧与快拖到边界会真实出现的残差。归整之后窗口只能
+        // 是「1 行」或「整月行数」，卡高与位移都落在行边界上（用户读不出半行）。
+        val collapsed = layoutAt(0.0004)
+        assertEquals(1.0, collapsed.visibleRows, 1e-12)
+        assertEquals(
+            "收起态的内容位移必须正好是 keptRow × 行高（不能是 2.9988 行）。",
+            3 * collapsed.rowHeight,
+            collapsed.scrollOffset,
+            1e-9,
+        )
+        assertEquals(14.0 + 28.0 + collapsed.rowHeight, collapsed.gridHeight, 1e-9)
+
+        val expanded = layoutAt(0.9998)
+        assertEquals(6.0, expanded.visibleRows, 1e-12)
+        assertEquals(0.0, expanded.scrollOffset, 1e-12)
+        assertEquals(14.0 + 28.0 + 6 * expanded.rowHeight, expanded.gridHeight, 1e-9)
+
+        // t=0.5 在**中途**：绝不能被端点归整吸过去（拖拽跟手必须连续）。
+        val half = layoutAt(0.5)
+        assertEquals(3.5, half.visibleRows, 1e-12)
+        assertEquals(1.5 * half.rowHeight, half.scrollOffset, 1e-9)
+    }
+
     @Test
     fun `面板高度随进度单调不增_网格单调不减`() {
         var previousGrid = -1.0

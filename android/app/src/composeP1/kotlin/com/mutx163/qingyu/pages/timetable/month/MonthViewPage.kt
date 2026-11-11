@@ -199,6 +199,16 @@ fun MonthViewPage(
     }
     // 进行中的吸附动画：新一次按下/松手先取消它，避免两条动画抢同一个值。
     var settleJob by remember { mutableStateOf<Job?>(null) }
+    // 这次吸附**要去的那一端**（0 或 1）：吸附被新触摸打断时把进度直接补到它，
+    // 而不是把动画停在半截（见下方 onDragStart）。
+    var settleTargetValue by remember { mutableStateOf<Float?>(null) }
+    // 吸附**世代令牌**：每次起吸附 / 每次按下打断都自增。
+    //
+    // 为什么必须有：`cancel()` 不等待——挂在 `withFrameNanos` 上的取消要**下一帧**才落地，
+    // 于是旧 job 的 `finally` 会在新手势的第一发 update **之后**才执行。没有令牌时它会把
+    // `expandValue` 写回**旧 target**（一帧回跳）、还会把可能已是新目标的 `settleTargetValue`
+    // 清成 null。`finally` 只在自己仍是当前世代时才落端点（2026-11-11 复核指出）。
+    var settleGeneration by remember { mutableIntStateOf(0) }
     // 拖拽起点：松手判「翻面还是弹回」的基准（判据在 settleTarget）。
     var dragStart by remember { mutableStateOf(1f) }
 
@@ -342,7 +352,15 @@ fun MonthViewPage(
             onOpenAgendaRow = onOpenAgendaRow,
             onAddCourse = onAddCourse,
             onDragStart = {
+                // 先作废在跑的吸附（连同它**迟到的 finally**）：cancel 不等待，令牌才是判据。
+                settleGeneration++
                 settleJob?.cancel()
+                settleJob = null
+                // 被打断的吸附**不留半行**（2026-11-11 用户报「收起后卡在两行中间」）：
+                // 旧写法只 cancel，进度就冻在动画中途（例如 0.1 ⇒ 窗口 1.5 行、横切行边界）。
+                // 现在直接补到它原本要去的那一端，再以那一端作为本次拖拽的起点。
+                settleTargetValue?.let { expandValue = it }
+                settleTargetValue = null
                 dragStart = expandValue
             },
             onDragUpdate = { dy, rowHeightDp, rowCount ->
@@ -367,24 +385,37 @@ fun MonthViewPage(
                     velocityDy = velocityDy.toDouble(),
                 )
                 settleJob?.cancel()
+                val generation = ++settleGeneration
+                settleTargetValue = target.toFloat()
                 settleJob = scope.launch {
-                    // 吸附曲线：**时长跟着剩余距离走**（70~220ms），而不是固定 260ms。
-                    // 固定时长在两头都不对：快甩时前几帧近乎不动（掉一拍），只差
-                    // 2% 时又拖了一整拍（过阻尼）。距离越短动画越短，松手即到。
-                    val distance = abs(target.toFloat() - expandValue)
-                    val durationMs = (SNAP_MS_MIN + SNAP_MS_PER_UNIT * distance)
-                        .toInt()
-                        .coerceIn(SNAP_MS_MIN, SNAP_MS_MAX)
-                    animate(
-                        initialValue = expandValue,
-                        targetValue = target.toFloat(),
-                        animationSpec = tween(
-                            durationMillis = durationMs,
-                            easing = FastOutSlowInEasing,
-                        ),
-                    ) { value, _ -> expandValue = value }
-                    // 落定后写死端点：避免浮点残差让「收起」停在 1.0001 行。
-                    expandValue = target.toFloat()
+                    try {
+                        // 吸附曲线：**时长跟着剩余距离走**（70~220ms），而不是固定 260ms。
+                        // 固定时长在两头都不对：快甩时前几帧近乎不动（掉一拍），只差
+                        // 2% 时又拖了一整拍（过阻尼）。距离越短动画越短，松手即到。
+                        val distance = abs(target.toFloat() - expandValue)
+                        val durationMs = (SNAP_MS_MIN + SNAP_MS_PER_UNIT * distance)
+                            .toInt()
+                            .coerceIn(SNAP_MS_MIN, SNAP_MS_MAX)
+                        animate(
+                            initialValue = expandValue,
+                            targetValue = target.toFloat(),
+                            animationSpec = tween(
+                                durationMillis = durationMs,
+                                easing = FastOutSlowInEasing,
+                            ),
+                        ) { value, _ -> expandValue = value }
+                    } finally {
+                        // 端点写死放在 finally：正常落定、被新触摸打断、协程被取消都走这里。
+                        // ⚠️ **只在本世代才写**：cancel 不等待，旧 job 的 finally 可能迟到一帧，
+                        // 那时新手势已经跑过 update 了 —— 让它写就会把进度写回旧 target（一帧回跳）
+                        // 并把可能已是新目标的 settleTargetValue 清掉（2026-11-11 复核结论）。
+                        if (settleGeneration == generation) {
+                            // 浮点残差与中途打断都不会让「收起」停在 1.0001 行或 1.5 行
+                            //（几何侧还有一道 `dockedProgress` 兜底）。
+                            expandValue = target.toFloat()
+                            settleTargetValue = null
+                        }
+                    }
                 }
             },
         )

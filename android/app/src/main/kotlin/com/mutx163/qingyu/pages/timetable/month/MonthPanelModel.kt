@@ -127,6 +127,17 @@ object MonthCollapse {
      * 只剩一行」频繁误触发，宁可要求更明确的一甩。
      */
     const val FLING_VELOCITY: Double = 180.0
+
+    /**
+     * 停靠端点的**归整容差**：进度落在这个范围内就钉回 0 / 1（[MonthPanelModel.dockedProgress]）。
+     *
+     * 为什么需要：吸附动画的末帧、快速拖到边界、浮点残差都会留下 1e-6 量级的余数。余数一旦
+     * 被当成「还在中途」，窗口高度与内容位移就会是**小数行**，窗口横切在行边界上 —— 用户
+     * 读作「收起后还露着上一行下半截」（2026-11-11 用户实报「卡在两行中间」）。
+     *
+     * 取 1e-3：比拖拽可感知的步长小两个量级（不会提前截断一帧动画），又能吃掉所有残差。
+     */
+    const val DOCK_EPSILON: Double = 1e-3
 }
 
 /**
@@ -403,6 +414,26 @@ object MonthPanelModel {
     }
 
     /**
+     * 停靠端点归整：进度落在端点 [MonthCollapse.DOCK_EPSILON] 以内就**钉回 0 / 1**，
+     * 中途（正常拖拽 / 吸附动画进行中）原样返回。
+     *
+     * 停靠态只有两个值，几何（窗口行数 / 内容位移 / 卡高）都必须是**整数行**：钉住端点
+     * 之后 `visibleRowsExact` 恰好是 1 或整月行数、`scrollOffset` 恰好是 `keptRow × 行高`，
+     * 窗口不会横切在行边界上。这是「停靠必落一行」的结构保证，不是靠动画最后一帧写死值。
+     */
+    fun dockedProgress(
+        progress: Double,
+        epsilon: Double = MonthCollapse.DOCK_EPSILON,
+    ): Double {
+        val clamped = progress.coerceIn(0.0, 1.0)
+        return when {
+            clamped <= epsilon -> 0.0
+            clamped >= 1.0 - epsilon -> 1.0
+            else -> clamped
+        }
+    }
+
+    /**
      * 拖拽行程的**归一化基准**：从完全展开拖到收起，手指要走多少 dp。
      *
      * 必须按**这一页真实行数**算：`(行数 − 保留行数) × 行高`（Dart
@@ -604,7 +635,9 @@ object MonthPanelModel {
         topPaddingDp: Double,
         rowCount: Double,
     ): MonthPanelLayout {
-        val t = progress.coerceIn(0.0, 1.0)
+        // 端点归整：停靠态（含浮点残差 / 快拖到边界）一律按 0 或 1 算，见 [dockedProgress]。
+        // 拖拽中的中间值原样透传，跟手感不变。
+        val t = dockedProgress(progress)
         val rows = rowCount.coerceIn(
             MonthCollapse.COLLAPSED_ROWS.toDouble(),
             MonthCollapse.MAX_ROWS.toDouble(),
