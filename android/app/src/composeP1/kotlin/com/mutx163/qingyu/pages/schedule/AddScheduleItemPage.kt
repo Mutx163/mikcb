@@ -346,7 +346,11 @@ fun AddScheduleItemPage(
                                             .clickable {
                                                 if (isSelected) {
                                                     appliedPresetId = null
-                                                    title = ""
+                                                    // 编辑态取消选中时**不许清用户已填标题**：只有标题仍是这个模板名
+                                                    // （= 没被用户改过）才清空；用户手写的标题原样保留。
+                                                    if (title == presetTitle) {
+                                                        title = ""
+                                                    }
                                                 } else {
                                                     appliedPresetId = preset.id
                                                     title = presetTitle

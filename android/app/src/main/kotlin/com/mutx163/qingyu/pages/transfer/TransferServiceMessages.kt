@@ -90,6 +90,15 @@ object TransferServiceMessages {
             ArbText("serviceMsgMissingFullBackupData", "缺少完整备份数据"),
         "use_profile_backup_not_full" to
             ArbText("serviceMsgUseProfileBackupNotFull", "请使用课表档案备份 JSON，而非全部数据备份"),
+
+        // T-09（2026-11-11）：时间模板单套分享时，点名的模板已不在快照里。
+        // 判据在 `DataTransferPackageLogic`（新码 `no_selected_time_schemes`），
+        // 宿主经 `transfer_send_<code>` 前缀查这张表。
+        "transfer_send_no_selected_time_schemes" to
+            ArbText(
+                "serviceMsgTransferSendNoSelectedTimeSchemes",
+                "要分享的时间模板已不存在，请刷新后重试",
+            ),
     )
 
     /** 内部错误码的形状（Dart `_internalCodePattern` 原样；用 `matches` 即整串匹配）。 */

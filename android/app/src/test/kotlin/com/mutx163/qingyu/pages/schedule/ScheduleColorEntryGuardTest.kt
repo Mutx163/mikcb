@@ -4,6 +4,7 @@ import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import java.io.File
+import com.mutx163.qingyu.testutil.stripKotlinComments
 
 /**
  * 日程页「颜色快捷行」契约（2026-11-10 回到发布版形态）。
@@ -70,9 +71,18 @@ class ScheduleColorEntryGuardTest {
             "快捷模板条目必须还在（有意保留的超出发布版能力）",
             source.contains("item(key = \"presets\")"),
         )
+        // 只锚在 presets 条目块内判门控：页面别处有 `if (!isEditing)` 属正常逻辑，不该被这条误伤。
+        val presetsStart = source.indexOf("item(key = \"presets\")")
+        assertTrue("找不到 presets 条目", presetsStart >= 0)
+        val nextItem = source.indexOf("item(key = ", presetsStart + 1)
+        val presetsBlock = if (nextItem > presetsStart) {
+            source.substring(presetsStart, nextItem)
+        } else {
+            source.substring(presetsStart)
+        }
         assertFalse(
-            "快捷模板不许再被 `if (!isEditing)` 门控——用户在预览验收时要求编辑态也能用",
-            source.contains("if (!isEditing)"),
+            "快捷模板块不许再被 `if (!isEditing)` 门控——用户在预览验收时要求编辑态也能用",
+            presetsBlock.contains("if (!isEditing)"),
         )
     }
 
@@ -82,7 +92,7 @@ class ScheduleColorEntryGuardTest {
             "composeP1/kotlin/com/mutx163/qingyu/pages/schedule/AddScheduleItemPage.kt",
         )
         assertTrue("${file.path} 不存在", file.isFile)
-        return file.readText().replace("\r\n", "\n")
+        return stripKotlinComments(file.readText().replace("\r\n", "\n"))
     }
 
     private fun androidSrc(): File {
