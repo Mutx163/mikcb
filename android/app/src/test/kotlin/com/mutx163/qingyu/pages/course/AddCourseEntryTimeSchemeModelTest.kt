@@ -7,6 +7,7 @@ import com.mutx163.qingyu.core.SectionTime
 import com.mutx163.qingyu.core.TimeScheme
 import com.mutx163.qingyu.core.TimetableSettings
 import java.time.LocalDateTime
+import java.util.Locale
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
@@ -28,8 +29,10 @@ class AddCourseEntryTimeSchemeModelTest {
             sections = (1..count).map { i ->
                 val startMin = 8 * 60 + (i - 1) * 55
                 SectionTime(
-                    startTime = "%02d:%02d".format(startMin / 60, startMin % 60),
-                    endTime = "%02d:%02d".format((startMin + 45) / 60, (startMin + 45) % 60),
+                    // 显式 Locale.ROOT：默认 Locale 会把数字本地化成非 ASCII 字形，
+                    // 与断言里的 "08:00" 这类期望值不一致（LocaleFormatGuardTest 抓的）。
+                    startTime = "%02d:%02d".format(Locale.ROOT, startMin / 60, startMin % 60),
+                    endTime = "%02d:%02d".format(Locale.ROOT, (startMin + 45) / 60, (startMin + 45) % 60),
                 )
             },
             createdAt = now,
