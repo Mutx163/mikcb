@@ -81,9 +81,9 @@ class TransferServiceMessagesTest {
     // ---------- 3. 登记表逐字对拍 ARB ----------
 
     @Test
-    fun `登记了导入与备份那一段的十三个码`() {
-        assertEquals(13, TransferServiceMessages.registeredCodes.size)
-        assertEquals(14, TransferServiceMessages.allTexts.size) // 13 + 兜底那条
+    fun `登记了导入与备份那一段加单套模板分享的十四个码`() {
+        assertEquals(14, TransferServiceMessages.registeredCodes.size)
+        assertEquals(15, TransferServiceMessages.allTexts.size) // 14 + 兜底那条
         assertEquals(
             listOf(
                 "import_file_unrecognized",
@@ -99,6 +99,8 @@ class TransferServiceMessagesTest {
                 "unrecognized_mikcb_full_backup",
                 "missing_full_backup_data",
                 "use_profile_backup_not_full",
+                // T-09（2026-11-11）：单套时间模板分享时点名的那套已不在快照里。
+                "transfer_send_no_selected_time_schemes",
             ),
             TransferServiceMessages.registeredCodes,
         )
@@ -123,6 +125,17 @@ class TransferServiceMessagesTest {
         assertEquals(
             "不是可识别的 mikcb 全量备份文件",
             TransferServiceMessages.localize("unrecognized_mikcb_full_backup"),
+        )
+
+        // T-09：单套时间模板分享的新码（宿主以 `transfer_send_<code>` 前缀查表）。
+        assertEquals(
+            "要分享的时间模板已不存在，请刷新后重试",
+            TransferServiceMessages.localize("transfer_send_no_selected_time_schemes"),
+        )
+        // 带参数 payload 也必须按第一段取码（宿主偶尔会拼上 packageId 之类的细节）。
+        assertEquals(
+            "要分享的时间模板已不存在，请刷新后重试",
+            TransferServiceMessages.localize("transfer_send_no_selected_time_schemes|packageId=pkg-1"),
         )
         assertEquals(
             "请导入单课表备份文件，不支持全量备份",
