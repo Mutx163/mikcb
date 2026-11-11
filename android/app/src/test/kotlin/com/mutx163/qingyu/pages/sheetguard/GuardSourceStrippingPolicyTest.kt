@@ -297,7 +297,6 @@ class GuardSourceStrippingPolicyTest {
             "com/mutx163/qingyu/pages/shell/ShellRailWiringGuardTest.kt",
             "com/mutx163/qingyu/pages/sync/ButtonContrastGuardTest.kt",
             "com/mutx163/qingyu/pages/timetable/DayViewOverlayPerfWiringGuardTest.kt",
-            "com/mutx163/qingyu/pages/timetable/TimetableProfilesDialogGuardTest.kt",
             "com/mutx163/qingyu/pages/timetable/TimetableShareImageModelTest.kt",
             "com/mutx163/qingyu/pages/timetable/WeekViewCoupleOverlayWiringGuardTest.kt",
             "com/mutx163/qingyu/pages/timetable/day/DayAgendaWallpaperInkWiringGuardTest.kt",

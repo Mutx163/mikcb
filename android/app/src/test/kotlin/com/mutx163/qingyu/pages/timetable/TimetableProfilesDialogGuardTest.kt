@@ -4,7 +4,8 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
-import java.io.File
+import com.mutx163.qingyu.testutil.SourceSlice
+import com.mutx163.qingyu.testutil.readKotlinSourceNoStrings
 
 /**
  * 课表管理页五个弹层的源码级守卫（2026-11-02 建立）。
@@ -224,44 +225,31 @@ class TimetableProfilesDialogGuardTest {
 
     // ------------------------------------------------------------ 工具
 
-    private fun pageSource(): String {
-        val file = File(
-            androidSrc(),
-            "composeP1/kotlin/com/mutx163/qingyu/pages/timetable/TimetableProfilesPage.kt",
-        )
-        assertTrue("${file.path} 不存在", file.isFile)
-        // 源码是 CRLF；统一成 LF，函数收尾判据 `\n}\n` 才匹配得上。
-        return file.readText().replace("\r\n", "\n")
-    }
+    /**
+     * 读页面源码：共享剥离（剥注释 + **字符串中性化**，T-04）。
+     *
+     * 选档理由：本文件判据全是**接线 / 挂载类**（「必须用 `OverlayDialog(`」「`show = show`」
+     * 「`rememberLastNonNull(profileOrNull)`」「不许出现 `TextButton(`」），要的是代码骨架；
+     * 保留字符串内容时，日志 / 提示语里出现同名片段就能把判据喂绿，所以走 `NoStrings` 档，
+     * 不走保留字面量的 `Normalized` 档。
+     */
+    private fun pageSource(): String = readKotlinSourceNoStrings(PAGE_PATH)
 
-    private fun androidSrc(): File {
-        var dir: File? = File(System.getProperty("user.dir")).absoluteFile
-        while (dir != null) {
-            val candidate = File(dir, "android/app/src")
-            if (candidate.isDirectory) return candidate
-            val direct = File(dir, "app/src")
-            if (direct.isDirectory && File(dir, "app/build.gradle").isFile) return direct
-            dir = dir.parentFile
-        }
-        throw AssertionError(
-            "找不到 android/app/src —— 守卫无法验证，按失败处理。当前工作目录：" +
-                System.getProperty("user.dir"),
-        )
-    }
-
-    /** 截出顶层函数体：从 `marker` 起到第一个行首 `}`（顶层函数的收尾）为止。 */
-    private fun functionBlock(source: String, marker: String): String {
-        val start = source.indexOf(marker)
-        assertTrue("源码里找不到 $marker", start >= 0)
-        val rest = source.substring(start)
-        val end = rest.indexOf("\n}\n")
-        assertTrue("$marker 的函数体没有找到行首收尾 `}`", end > 0)
-        val block = rest.substring(0, end)
-        assertTrue("$marker 的函数体为空", block.isNotBlank())
-        return block
-    }
+    /**
+     * 截出顶层函数**签名 + 函数体**：共享切片（T-04）。
+     *
+     * 判据里有两条看的是**签名**（`profileOrNull: TimetableProfileItem?` 可空入参、
+     * `show: Boolean` 显隐参数），而 [SourceSlice.functionBody] 按设计只返回 `{` 起的花括号
+     * 配平正文、不含签名 ⇒ 必须把签名段（函数名到第一个 `{` 之前）补回来。
+     * 配平仍走共享件，不在这里另写一套括号扫描。
+     */
+    private fun functionBlock(source: String, marker: String): String =
+        SourceSlice.between(source, marker, "{") + SourceSlice.functionBody(source, marker)
 
     private companion object {
+        const val PAGE_PATH =
+            "android/app/src/composeP1/kotlin/com/mutx163/qingyu/pages/timetable/TimetableProfilesPage.kt"
+
         const val CREATE = "private fun CreateProfileDialog("
         const val RENAME = "private fun RenameProfileDialog("
         const val CLEAR = "private fun ClearCoursesConfirmDialog("
