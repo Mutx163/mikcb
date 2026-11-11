@@ -30,7 +30,6 @@
   "homeWidgetEntryTitle": "ホームウィジェット",
   "userGuideEntryTitle": "使用ガイドと権限",
   "timeSchemeEntryTitle": "時間テンプレート",
-  "timeSchemeEntryNotSelected": "未選択",
   "dataTransferEntryTitle": "データバックアップと移行",
   "dataTransferEntrySubtitle": "時間割ファイルをエクスポートして、他の人が直接インポート可能",
   "cloudSyncEntryTitle": "クラウド同期",
@@ -1023,7 +1022,7 @@
   "noLargeBreakRulesHint": "大休憩ルール未設定，全て小休憩時間が使用されます",
   "deleteRuleTooltip": "ルール削除",
   "generateAction": "生成",
-  "quickGeneratePreviewSummary": "全 {sections} 限 · 最終限は {endTime} に終了",
+  "quickGeneratePreviewSummary": "全 {sections} 時限 · 最終時限は {endTime} に終了",
   "@quickGeneratePreviewSummary": {
     "placeholders": {
       "sections": {
@@ -3578,7 +3577,11 @@
       }
     }
   },
-  "serviceMsgSectionTimeOverlap": "第 {sectionNumber} 限目の時間が前の限目と重なっています。保存前に調整してください",
+  "serviceMsgSectionTimeOverlap": "第 {sectionNumber} 時限の時間が前の時限と重なっています。保存前に調整してください",
+  "serviceMsgTransferSendNoSelectedTimeSchemes": "共有しようとした時限テンプレートは既に存在しません。更新してから再試行してください",
+  "@serviceMsgTransferSendNoSelectedTimeSchemes": {
+    "placeholders": {}
+  },
   "@serviceMsgSectionTimeOverlap": {
     "placeholders": {
       "sectionNumber": {
@@ -5940,3 +5943,4 @@
   "timetableProfileActiveBadge": "有効",
   "webdavPasswordReentryBody": "今回の更新でパスワードの保存方法が変更されたため、アプリ専用パスワードをもう一度入力してください。サーバーアドレス、アカウント、同期設定は保持されています。"
 }
+

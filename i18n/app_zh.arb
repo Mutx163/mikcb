@@ -30,7 +30,6 @@
   "homeWidgetEntryTitle": "桌面小组件",
   "userGuideEntryTitle": "使用引导与权限",
   "timeSchemeEntryTitle": "时间模板",
-  "timeSchemeEntryNotSelected": "未选择",
   "dataTransferEntryTitle": "数据备份与迁移",
   "dataTransferEntrySubtitle": "导出完整课表文件，给别人直接导入使用",
   "coupleTimetableEntryTitle": "情侣课表",
@@ -3946,6 +3945,10 @@
     }
   },
   "serviceMsgSectionTimeOverlap": "第 {sectionNumber} 节时间与上一节重叠，保存前请调整",
+  "serviceMsgTransferSendNoSelectedTimeSchemes": "要分享的时间模板已不存在，请刷新后重试",
+  "@serviceMsgTransferSendNoSelectedTimeSchemes": {
+    "placeholders": {}
+  },
   "@serviceMsgSectionTimeOverlap": {
     "placeholders": {
       "sectionNumber": {

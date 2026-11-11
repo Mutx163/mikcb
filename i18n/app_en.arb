@@ -30,7 +30,6 @@
   "homeWidgetEntryTitle": "Home Widgets",
   "userGuideEntryTitle": "Guide & Permissions",
   "timeSchemeEntryTitle": "Time Schemes",
-  "timeSchemeEntryNotSelected": "Not set",
   "dataTransferEntryTitle": "Backup & Migration",
   "dataTransferEntrySubtitle": "Export a complete timetable file for others to import directly",
   "coupleTimetableEntryTitle": "Couple Timetable",
@@ -3884,6 +3883,10 @@
     }
   },
   "serviceMsgSectionTimeOverlap": "Section {sectionNumber} overlaps the previous section. Adjust it before saving",
+  "serviceMsgTransferSendNoSelectedTimeSchemes": "The time template you wanted to share no longer exists. Refresh and try again",
+  "@serviceMsgTransferSendNoSelectedTimeSchemes": {
+    "placeholders": {}
+  },
   "@serviceMsgSectionTimeOverlap": {
     "placeholders": {
       "sectionNumber": {

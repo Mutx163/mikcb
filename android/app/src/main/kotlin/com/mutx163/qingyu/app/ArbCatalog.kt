@@ -2508,6 +2508,7 @@ object ArbCatalog {
         "serviceMsgTimeSchemeNotFoundSelected" -> "Selected time scheme was not found."
         "serviceMsgTimeSchemeSectionsInsufficient" -> "Selected time scheme does not have enough sections for sections {startSection}-{endSection}"
         "serviceMsgTimetableShareFailed" -> "Share failed: {detail}"
+        "serviceMsgTransferSendNoSelectedTimeSchemes" -> "The time template you wanted to share no longer exists. Refresh and try again"
         "serviceMsgUnrecognizedMikcbDataFile" -> "Not a recognizable mikcb data file."
         "serviceMsgUnrecognizedMikcbFullBackup" -> "Not a recognizable mikcb full backup file."
         "serviceMsgUnrecognizedSyncSnapshot" -> "Not a recognizable mikcb cloud sync snapshot."
@@ -2749,10 +2750,10 @@ object ArbCatalog {
         "supportMethodTitle" -> "Choose a Support Method"
         "supportRunningBadge" -> "Active"
         "supportSaveShort" -> "Save"
-        "supportTapQrHint" -> "Tap to enlarge"
         else -> null
     }
     private fun lookupen10(key: String): String? = when (key) {
+        "supportTapQrHint" -> "Tap to enlarge"
         "supportWeChatHint" -> "Use WeChat to scan and support the creator"
         "supportedFilesImageHint" -> "If you only have screenshots, go back and choose Image Import instead"
         "supportedFilesSuffix" -> "The file extension must be .ics."
@@ -2888,7 +2889,6 @@ object ArbCatalog {
         "timeSchemeEditorActiveAndCoursesHint" -> "The current timetable and some courses are using this time scheme. Saving will update all related timetables and courses"
         "timeSchemeEditorActiveHint" -> "The current timetable is using this time scheme. Saving will update every timetable that relies on it"
         "timeSchemeEditorOverrideHint" -> "Some courses are using this time scheme as an override. Saving will update every referenced course"
-        "timeSchemeEntryNotSelected" -> "Not set"
         "timeSchemeEntryTitle" -> "Time Schemes"
         "timeSchemeInUseMessage" -> "This scheme is currently used by a timetable"
         "timeSchemeLabel" -> "Time Scheme"
@@ -5236,7 +5236,7 @@ object ArbCatalog {
         "qrTransferStop" -> "送信を停止"
         "quickActionAutoStartTitle" -> "自動起動"
         "quickGenerateAction" -> "クイック生成"
-        "quickGeneratePreviewSummary" -> "全 {sections} 限 · 最終限は {endTime} に終了"
+        "quickGeneratePreviewSummary" -> "全 {sections} 時限 · 最終時限は {endTime} に終了"
         "quickGenerateTimeSchemeTitle" -> "時間割時間をクイック生成"
         "quickImportAction" -> "クイックインポート"
         "quickImportCancelImportAction" -> "インポートをキャンセル"
@@ -5563,7 +5563,7 @@ object ArbCatalog {
         "serviceMsgSectionEndMustAfterStart" -> "Section {sectionNumber} end time must be later than start time. Overnight classes are not supported"
         "serviceMsgSectionOutOfRange" -> "Section {section} is outside the time scheme range (1-{maxSection})"
         "serviceMsgSectionStartBeforePreviousEnd" -> "Section {sectionNumber} start time cannot be earlier than the previous section end time"
-        "serviceMsgSectionTimeOverlap" -> "第 {sectionNumber} 限目の時間が前の限目と重なっています。保存前に調整してください"
+        "serviceMsgSectionTimeOverlap" -> "第 {sectionNumber} 時限の時間が前の時限と重なっています。保存前に調整してください"
         "serviceMsgShareBackupSubject" -> "Qingyu Timetable backup"
         "serviceMsgShareBackupSubjectNamed" -> "{profileName} - Qingyu Timetable backup"
         "serviceMsgShareBackupText" -> "This is a full backup of the current timetable. Import it to restore courses and settings."
@@ -5589,6 +5589,7 @@ object ArbCatalog {
         "serviceMsgTimeSchemeNotFoundSelected" -> "Selected time scheme was not found."
         "serviceMsgTimeSchemeSectionsInsufficient" -> "Selected time scheme does not have enough sections for sections {startSection}-{endSection}"
         "serviceMsgTimetableShareFailed" -> "Share failed: {detail}"
+        "serviceMsgTransferSendNoSelectedTimeSchemes" -> "共有しようとした時限テンプレートは既に存在しません。更新してから再試行してください"
         "serviceMsgUnrecognizedMikcbDataFile" -> "Not a recognizable mikcb data file."
         "serviceMsgUnrecognizedMikcbFullBackup" -> "Not a recognizable mikcb full backup file."
         "serviceMsgUnrecognizedSyncSnapshot" -> "Not a recognizable mikcb cloud sync snapshot."
@@ -5830,10 +5831,10 @@ object ArbCatalog {
         "supportMethodTitle" -> "支援方法を選択"
         "supportRunningBadge" -> "稼働中"
         "supportSaveShort" -> "保存"
-        "supportTapQrHint" -> "タップで拡大"
         else -> null
     }
     private fun lookupja10(key: String): String? = when (key) {
+        "supportTapQrHint" -> "タップで拡大"
         "supportWeChatHint" -> "WeChatでQRコードをスキャンして作者を支援"
         "supportedFilesImageHint" -> "スクリーンショットしかない場合は、前のページに戻って「画像認識インポート」を選択してください"
         "supportedFilesSuffix" -> "ファイル拡張子は.icsである必要があります。"
@@ -5969,7 +5970,6 @@ object ArbCatalog {
         "timeSchemeEditorActiveAndCoursesHint" -> "現在の時間割と一部の授業がこのテンプレートを使用中，保存後、関連する全ての時間割と授業が同期更新されます"
         "timeSchemeEditorActiveHint" -> "現在の時間割がこのテンプレートを使用中，保存後、使用中の全ての時間割が同期更新されます"
         "timeSchemeEditorOverrideHint" -> "授業がこのテンプレートを副テンプレートとして使用中，保存後、参照する全ての授業が同期更新されます"
-        "timeSchemeEntryNotSelected" -> "未選択"
         "timeSchemeEntryTitle" -> "時間テンプレート"
         "timeSchemeInUseMessage" -> "このテンプレートは時間割で使用中です"
         "timeSchemeLabel" -> "授業時間方案"
@@ -8670,6 +8670,7 @@ object ArbCatalog {
         "serviceMsgTimeSchemeNotFoundSelected" -> "Selected time scheme was not found."
         "serviceMsgTimeSchemeSectionsInsufficient" -> "Selected time scheme does not have enough sections for sections {startSection}-{endSection}"
         "serviceMsgTimetableShareFailed" -> "Share failed: {detail}"
+        "serviceMsgTransferSendNoSelectedTimeSchemes" -> "공유하려던 시간 템플릿이 더 이상 존재하지 않습니다. 새로 고친 후 다시 시도하세요"
         "serviceMsgUnrecognizedMikcbDataFile" -> "Not a recognizable mikcb data file."
         "serviceMsgUnrecognizedMikcbFullBackup" -> "Not a recognizable mikcb full backup file."
         "serviceMsgUnrecognizedSyncSnapshot" -> "Not a recognizable mikcb cloud sync snapshot."
@@ -8911,10 +8912,10 @@ object ArbCatalog {
         "supportMethodTitle" -> "지원 방법 선택"
         "supportRunningBadge" -> "운영 중"
         "supportSaveShort" -> "저장"
-        "supportTapQrHint" -> "탭하여 확대"
         else -> null
     }
     private fun lookupko10(key: String): String? = when (key) {
+        "supportTapQrHint" -> "탭하여 확대"
         "supportWeChatHint" -> "WeChat으로 QR 코드를 스캔하여 개발자 지원"
         "supportedFilesImageHint" -> "스크린샷만 있다면 이곳이 아닌 이전 페이지에서 '이미지 인식 가져오기'를 선택하세요"
         "supportedFilesSuffix" -> "파일 확장자는 .ics여야 합니다."
@@ -9050,7 +9051,6 @@ object ArbCatalog {
         "timeSchemeEditorActiveAndCoursesHint" -> "현재 시간표와 일부 수업이 이 템플릿을 사용 중입니다. 저장 후 관련된 모든 시간표와 수업이 동기화됩니다"
         "timeSchemeEditorActiveHint" -> "현재 시간표가 이 템플릿을 사용 중입니다. 저장 후 사용 중인 모든 시간표가 동기화됩니다"
         "timeSchemeEditorOverrideHint" -> "수업이 이 템플릿을 부 템플릿으로 사용 중입니다. 저장 후 참조하는 모든 수업이 동기화됩니다"
-        "timeSchemeEntryNotSelected" -> "미선택"
         "timeSchemeEntryTitle" -> "시간 템플릿"
         "timeSchemeInUseMessage" -> "이 템플릿은 시간표에서 사용 중입니다"
         "timeSchemeLabel" -> "수업 시간 방안"
@@ -11751,6 +11751,7 @@ object ArbCatalog {
         "serviceMsgTimeSchemeNotFoundSelected" -> "未找到所选时间模板"
         "serviceMsgTimeSchemeSectionsInsufficient" -> "所选时间模板节次数不足，无法覆盖第 {startSection}～{endSection} 节"
         "serviceMsgTimetableShareFailed" -> "分享失败：{detail}"
+        "serviceMsgTransferSendNoSelectedTimeSchemes" -> "要分享的时间模板已不存在，请刷新后重试"
         "serviceMsgUnrecognizedMikcbDataFile" -> "不是可识别的 mikcb 数据文件"
         "serviceMsgUnrecognizedMikcbFullBackup" -> "不是可识别的 mikcb 全量备份文件"
         "serviceMsgUnrecognizedSyncSnapshot" -> "不是可识别的 mikcb 备份文件"
@@ -11992,10 +11993,10 @@ object ArbCatalog {
         "supportMethodTitle" -> "选择支持方式"
         "supportRunningBadge" -> "运行中"
         "supportSaveShort" -> "保存"
-        "supportTapQrHint" -> "点击放大扫码"
         else -> null
     }
     private fun lookupzh10(key: String): String? = when (key) {
+        "supportTapQrHint" -> "点击放大扫码"
         "supportWeChatHint" -> "使用微信扫一扫支持作者"
         "supportedFilesImageHint" -> "课表截图请返回上一页使用识图导入"
         "supportedFilesSuffix" -> "文件后缀必须是 .ics"
@@ -12131,7 +12132,6 @@ object ArbCatalog {
         "timeSchemeEditorActiveAndCoursesHint" -> "当前课表和部分课程正在使用这套时间模板，保存后会同步更新所有相关课表和课程"
         "timeSchemeEditorActiveHint" -> "当前课表正在使用这套时间模板，保存后会同步更新所有使用它的课表"
         "timeSchemeEditorOverrideHint" -> "有课程正在把这套模板作为副时间模板使用，保存后会同步更新所有引用课程"
-        "timeSchemeEntryNotSelected" -> "未选择"
         "timeSchemeEntryTitle" -> "时间模板"
         "timeSchemeInUseMessage" -> "当前课表正在使用这套模板"
         "timeSchemeLabel" -> "时间模板"
@@ -14832,6 +14832,7 @@ object ArbCatalog {
         "serviceMsgTimeSchemeNotFoundSelected" -> "Selected time scheme was not found."
         "serviceMsgTimeSchemeSectionsInsufficient" -> "Selected time scheme does not have enough sections for sections {startSection}-{endSection}."
         "serviceMsgTimetableShareFailed" -> "分享失敗: {detail}"
+        "serviceMsgTransferSendNoSelectedTimeSchemes" -> "要分享的時間模板已不存在，請重新整理後再試"
         "serviceMsgUnrecognizedMikcbDataFile" -> "Not a recognizable mikcb data file."
         "serviceMsgUnrecognizedMikcbFullBackup" -> "Not a recognizable mikcb full backup file."
         "serviceMsgUnrecognizedSyncSnapshot" -> "不是可識別的 mikcb 備份檔案"
@@ -15073,10 +15074,10 @@ object ArbCatalog {
         "supportMethodTitle" -> "選擇支持方式"
         "supportRunningBadge" -> "運行中"
         "supportSaveShort" -> "保存"
-        "supportTapQrHint" -> "點擊放大掃碼"
         else -> null
     }
     private fun lookupzhHK10(key: String): String? = when (key) {
+        "supportTapQrHint" -> "點擊放大掃碼"
         "supportWeChatHint" -> "使用微信掃一掃支持作者"
         "supportedFilesImageHint" -> "課表截圖請返回上一頁使用識圖導入"
         "supportedFilesSuffix" -> "檔案後綴必須是 .ics"
@@ -15212,7 +15213,6 @@ object ArbCatalog {
         "timeSchemeEditorActiveAndCoursesHint" -> "目前課表和部分課程正在使用這套時間範本，保存後會同步更新所有相關課表和課程"
         "timeSchemeEditorActiveHint" -> "目前課表正在使用這套時間範本，保存後會同步更新所有使用它的課表"
         "timeSchemeEditorOverrideHint" -> "有課程正在把這套模板作為副時間模板使用，儲存後會同步更新所有引用課程"
-        "timeSchemeEntryNotSelected" -> "未選擇"
         "timeSchemeEntryTitle" -> "時間範本"
         "timeSchemeInUseMessage" -> "該範本正在被課表使用"
         "timeSchemeLabel" -> "時間模板"
@@ -17913,6 +17913,7 @@ object ArbCatalog {
         "serviceMsgTimeSchemeNotFoundSelected" -> "Selected time scheme was not found."
         "serviceMsgTimeSchemeSectionsInsufficient" -> "Selected time scheme does not have enough sections for sections {startSection}-{endSection}."
         "serviceMsgTimetableShareFailed" -> "分享失敗: {detail}"
+        "serviceMsgTransferSendNoSelectedTimeSchemes" -> "要分享的時間模板已不存在，請重新整理後再試"
         "serviceMsgUnrecognizedMikcbDataFile" -> "Not a recognizable mikcb data file."
         "serviceMsgUnrecognizedMikcbFullBackup" -> "Not a recognizable mikcb full backup file."
         "serviceMsgUnrecognizedSyncSnapshot" -> "不是可識別的 mikcb 備份檔案"
@@ -18154,10 +18155,10 @@ object ArbCatalog {
         "supportMethodTitle" -> "選擇支持方式"
         "supportRunningBadge" -> "運行中"
         "supportSaveShort" -> "保存"
-        "supportTapQrHint" -> "點擊放大掃碼"
         else -> null
     }
     private fun lookupzhTW10(key: String): String? = when (key) {
+        "supportTapQrHint" -> "點擊放大掃碼"
         "supportWeChatHint" -> "使用微信掃一掃支持作者"
         "supportedFilesImageHint" -> "課表截圖請返回上一頁使用識圖導入"
         "supportedFilesSuffix" -> "檔案後綴必須是 .ics"
@@ -18293,7 +18294,6 @@ object ArbCatalog {
         "timeSchemeEditorActiveAndCoursesHint" -> "目前課表和部分課程正在使用這套時間範本，保存後會同步更新所有相關課表和課程"
         "timeSchemeEditorActiveHint" -> "目前課表正在使用這套時間範本，保存後會同步更新所有使用它的課表"
         "timeSchemeEditorOverrideHint" -> "有課程正在把這套模板作為副時間模板使用，儲存後會同步更新所有引用課程"
-        "timeSchemeEntryNotSelected" -> "未選擇"
         "timeSchemeEntryTitle" -> "時間範本"
         "timeSchemeInUseMessage" -> "該範本正在被課表使用"
         "timeSchemeLabel" -> "時間模板"

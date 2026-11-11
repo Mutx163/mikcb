@@ -30,7 +30,6 @@
   "homeWidgetEntryTitle": "桌面小工具",
   "userGuideEntryTitle": "使用引導與權限",
   "timeSchemeEntryTitle": "時間範本",
-  "timeSchemeEntryNotSelected": "未選擇",
   "dataTransferEntryTitle": "資料備份與遷移",
   "dataTransferEntrySubtitle": "匯出完整課表檔案，給別人直接匯入使用",
   "cloudSyncEntryTitle": "雲端同步",
@@ -3627,6 +3626,10 @@
     }
   },
   "serviceMsgSectionTimeOverlap": "第 {sectionNumber} 節時間與上一節重疊，儲存前請調整",
+  "serviceMsgTransferSendNoSelectedTimeSchemes": "要分享的時間模板已不存在，請重新整理後再試",
+  "@serviceMsgTransferSendNoSelectedTimeSchemes": {
+    "placeholders": {}
+  },
   "@serviceMsgSectionTimeOverlap": {
     "placeholders": {
       "sectionNumber": {
