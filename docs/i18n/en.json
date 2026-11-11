@@ -63,6 +63,7 @@
   "shots.title": "Real screens, ",
   "shots.titleGrad": "no guesswork.",
   "shots.desc": "Weekly timetable, Super Island, widgets and settings — captured from the running app. Tap to enlarge.",
+  "shots.pendingNote": "These screenshots are from the 2.x (Flutter) build. The UI was rewritten in Compose for 3.0; new screenshots will replace them once the new build is ready.",
   "shots.closeAria": "Close viewer",
   "shots.w1": "Week",
   "shots.w2": "Today",

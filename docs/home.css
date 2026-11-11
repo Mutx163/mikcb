@@ -2515,6 +2515,16 @@ html[lang="en"] .hero-title [data-i18n="hero.titleGrad"] {
   text-wrap: balance;
 }
 
+/* 截图换版说明：Flutter 版截图 → Compose 版待替换。低调一行，不抢截图。 */
+.section-shots .shots-pending {
+  margin: 0.75rem auto 0;
+  max-width: 46rem;
+  font-size: 0.8125rem;
+  line-height: 1.6;
+  color: var(--text-muted, #8b8f98);
+  text-wrap: balance;
+}
+
 .shots-band {
   position: relative;
   /* 两侧各越出内容列 40px（与 .section-shell 同步），胶片带贴边但不出视口 */

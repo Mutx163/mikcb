@@ -35,9 +35,13 @@
 
 详细界面演示与设计规范请参阅 [官方站点](https://163366.xyz)。
 
+当前 3.0 处于预发布阶段：界面层已整体迁移到 Jetpack Compose（miuix 组件库），安装包不再包含 Flutter 运行时；下方界面截图仍来自 2.x（Flutter 版），待 3.0 新包就绪后替换。
+
 ---
 
 ## 界面展示
+
+> **截图状态**：下方 8 张为 2.x（Flutter 版）实机截图。3.0 起界面已由 Compose 重写，新版截图需维护者用 3.0 安装包在真机重新截取后替换，当前仅作界面示意。
 
 <p align="center">
   <a href="docs/screenshots/01-week-timetable.png"><img src="docs/screenshots/01-week-timetable.png" width="23%" alt="周课表全貌" /></a>

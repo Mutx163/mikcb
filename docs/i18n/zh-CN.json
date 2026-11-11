@@ -68,6 +68,7 @@
   "shots.title": "实机截图，",
   "shots.titleGrad": "一眼看懂。",
   "shots.desc": "周课表、超级岛、小组件与设置，全部来自运行中的 App。点击查看原图。",
+  "shots.pendingNote": "当前截图来自 2.x（Flutter 版）实机；3.0 起界面已由 Compose 重写，新版截图待新包就绪后替换。",
   "shots.closeAria": "关闭查看器",
   "shots.w1": "周课表",
   "shots.w2": "今日日程",

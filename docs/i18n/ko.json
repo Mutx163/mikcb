@@ -63,6 +63,7 @@
   "shots.title": "실기기 스크린샷, ",
   "shots.titleGrad": "한눈에 확인.",
   "shots.desc": "주간 시간표, 슈퍼 아일랜드, 위젯, 설정——모두 실기기 캡처. 클릭하면 확대됩니다.",
+  "shots.pendingNote": "현재 스크린샷은 2.x(Flutter 버전) 실기기에서 촬영한 것입니다. 3.0부터 UI는 Compose로 다시 작성되었으며, 새 빌드가 준비되는 대로 교체합니다.",
   "shots.closeAria": "뷰어 닫기",
   "shots.w1": "주간",
   "shots.w2": "오늘",
