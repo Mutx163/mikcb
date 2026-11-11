@@ -205,10 +205,13 @@ android {
         //   · `src/bench/AndroidManifest.xml` 的 `<profileable android:shell="true"/>`：
         //     不开 debuggable 也能被 Perfetto / simpleperf / `dumpsys gfxinfo` 采样；
         //   · `proguard-bench.pro` 保留行号与源文件名 ⇒ 崩溃栈与采样栈能对回源码；
-        //   · **不加 applicationIdSuffix** ⇒ 与正式版同包名、同一份真实数据，
-        //     能直接和正式版做 A/B（空数据的课表比满数据的课表快，测不出真问题）。
-        //     ⚠️ 代价：装 bench 会覆盖手机上的正式版（应用数据保留，与升级一致）；
-        //     想换回来就再装一次 release。这一条与 composeP1 当初覆盖安装验证同一路子。
+        //   · **不加构建类型后缀**（`applicationIdSuffix` 只在 flavor 层声明，bench 这里没有）
+        //     ⇒ 包名继承所处 flavor 的后缀：`perfBench` 是 `.profile`、`devBench` 是 `.debug`，
+        //     只有 `prodBench` 与正式版同包名。所以本白名单里唯一放行的 `perfBench`
+        //     **与正式版数据独立**：能比启动耗时与帧率，比不了「真实数据量下的表现」
+        //     （空数据的课表比满数据的课表快，测不出真问题）。
+        //     ⚠️ 同包名的 `prodBench` 装上去会覆盖手机上的正式版（应用数据保留，与升级一致），
+        //     所以它被下面的 `keepVariants` 刻意关着，不是漏配。
         bench {
             initWith(getByName("release"))
             matchingFallbacks = ['release', 'debug']
