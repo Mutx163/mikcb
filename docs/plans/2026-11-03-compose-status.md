@@ -20,7 +20,7 @@
 | 页面文件 | **63 个 `*Page.kt` / 190 个 `.kt`** | HEAD `358af4aad`（2026-11-11 校准实测），`composeP1/.../pages/`；只说明代码规模。旧记 186/188 是 `29dbc4ae2` 的快照 |
 | Phase 3 页面单元 | **78**（历史口径） | 旧目录 82 − 暂不可用 3 − 常驻 1；只描述 2026-10-27 的搬运完成度，**不是现在的入口数** |
 | 剩余页任务 | **39 页 / 12 批**（历史任务） | 2026-10-30 复核时 28 已落地、11 未完成；后续批次均已交付，本清单只作历史 |
-| 弹层审核 | **138 条：126 已不成立 / 11 仍成立 / 1 部分成立** | `2026-11-02-compose-dialog-full-audit.md`（2026-11-03 第四批收尾口径） |
+| 弹层审核 | **138 条：126 已不成立 / 11 仍成立 / 1 部分成立**（2026-11-11 复核：其中「标题动作贴边」「IME 叠加」2 条已修，实际仍成立 **9** 条，见 R10） | `2026-11-02-compose-dialog-full-audit.md`（2026-11-03 第四批收尾口径） |
 | 文案三本账 | **清零** | 超宽、死键、复述三份基线文件已由 `02cb22f39`（去 Flutter 化收尾，2026-11-08 12:53）删除，不是只剩注释头；结论不变，当前无自动文案门禁 |
 | 样式例外 | **8 条**（timetable 4 + import 2 + showcase 1 + about 1） | `tool/compose_style_exceptions/<域>.txt`；timetable = 3×R5 数据色 + 1×R2 结构性，import = 2×R2 弹层内局部滚动，showcase = 1×R5，about = 1×R4 页尾免责声明 12sp，均注明原因；`-Domain all` 实测待修 0 / 过期 0（2026-11-10 复核） |
 
@@ -70,7 +70,7 @@ CI 权威变体是 `:app:testProdDebugUnitTest`（`.github/workflows/ci.yml` 的
 |---|---|---|
 | **R08** | **全仓 L1/L2 复跑（原 F19）** | 部分完成（2026-11-08）：L1 已通过；L2 跑出 7584 例 / 1 失败，唯一失败是 `ArbCatalog.kt` 生成物过期（ARB 新键 `liquidGlassPresetCustom`），重新生成后再跑一次即可销账。写作用域：无代码，只跑 `scripts/safe-gradle.ps1` |
 | **R09** | ~~通知点击落页~~ | ✅ **已落地**（2026-11-11 核销，依据代码与提交）：① **生产端 + 参数契约** `38df5178d`（2026-11-03）——`NotificationLaunchTarget.kt` 定 `open_route` / `open_lan_edit` 两个 extra，`pageIdFor`(:99) / `pageIdForIntent`(:119) / `postLaunchPage`(:132，解析后移除 extra 防重建重复推页)，生产端两处：`ExamReminderScheduler.kt:360` 写 `open_route=/exams`、`LanEditForegroundService.kt:29` 写 `open_lan_edit=true`；② **壳侧接线** `9427c4fd3`（2026-11-04）——冷启动 `pages/PagesShellActivity.kt:221-223`（`NotificationLaunchTarget.postLaunchPage(intent)`）、`singleTop` 复用 `:428-432`（`onNewIntent` → `setIntent` → `postLaunchPage`）；③ 三份 JVM 单测：`NotificationLaunchPageContractTest` / `NotificationLaunchShellWiringGuardTest` / `NotificationLaunchTargetGuardTest`。**已知边缘（未修，待真机判）**：`PagesShellActivity.kt:221` 的守卫是 `savedInstanceState == null`，进程被回收后点**新**通知若系统同时带回非空 `savedInstanceState`，该落点会被一起吞掉（作者在 `:217-220` 自记此事）；收紧方案是改判「该 Intent 是否真带页面 extra」，本行不预先实施。**真机项归 R01**，不算代码待办 |
-| **R10** | **弹层剩余 11 条（`QingyuSheet` 两个底层缺口已修）** | ✅ `QingyuSheet.kt` 两处已修并提交 `bd0c3eb7`：IME>0 时底部只留 16dp 呼吸（原来多垫 24~40dp）、有标题动作时保留 16dp 并用私有 `horizontalBleed` 把内容反向撑出（标题不贴边、内容仍满宽）。仍未做：42dp 无标题空档 ×4、自动聚焦 ×4、选周结构、ICS 菜单等（部分待 R05 拍板）。写作用域：`components/`、`pages/course/`、`pages/timetable/`、`pages/settings/` |
+| **R10** | **弹层剩余 11 条（`QingyuSheet` 两个底层缺口已修；42dp 一族 4 处已修 1）** | **两个底层缺口 → 已销**（2026-11-11 复核，均为活码、非注释）：① 标题动作贴边 —— `bd0c3eb7` 的私有 `horizontalBleed`（`QingyuSheet.kt:186` 调用、`:236` 定义）：有标题动作时保留 16dp、内容反向外扩，标题不贴边且内容仍满宽；② IME 叠加 —— 同提交引入 `androidx.compose.foundation.layout.ime` 与条件（现 `:176-177`：`imeBottomPx > 0` 时只留 16dp 呼吸，不再多垫 24~40dp）。**审计「11 条仍成立」里这两条已过期，别再按 `2026-11-02-compose-dialog-full-audit.md` 报**。另：`143638290`（11-10）是标题区 / 内边距 / 按钮区统一刻度 + 缩放守卫，IME 判据未变（只随重构移行）——「IME 由 `143638290` 修」与代码不符，见文末变更记录。**42dp 无标题空档（原计 4 处）→ 已修 1 / 未修 3 / 非缺陷 1**：已修 `pages/timetable/WeekSelectorSheet.kt`（`f7723ddd`：标题收回套件标题行 `:108`，删掉自绘 `headline1` + 8dp `Spacer`）；未修 `pages/course/CourseActionSheet.kt:163`、`pages/course/CourseNoteSheet.kt:143`（其注释 `:145-148` 已自记这 42dp）、`app/AppearanceEditorHost.kt`（材质 `:853` / 壁纸 `:886` 两面板不传 `title`，正文自带头）；**非缺陷** `pages/timetable/TimetableTopBar.kt:695`（八宫格「更多」，用户口径就是「不显示标题」，注释 `:697-699`，**别被后人当缺陷翻修**）。**算式（以后一次收口用）**：**42 = 24dp 把手 + 6+12dp 标题行**，两段都**无条件**画在 `third_party/miuix-ui/src/main/kotlin/top/yukonga/miuix/kmp/layout/BottomSheetContentLayout.kt:643-657`（`DragHandleArea` + `TitleAndActionsRow`，无 `title != null` 守卫），标题行 `padding(top = 6.dp, bottom = 12.dp)` 在 `:806`、把手 `.height(24.dp)` 在 `:735` ⇒ `title = null` 只跳过文字、不跳 padding。**收口要走「改库批次」**（动 miuix 共享件，影响所有无标题弹层）⇒ 需一次 L1 验编译，**待排批、不排期**。仍未做：自动聚焦 ×4、选周结构、ICS 菜单等（部分待 R05 拍板）。写作用域：`components/`、`pages/course/`、`pages/timetable/`、`pages/settings/`、`third_party/miuix-ui/` |
 | **R11** | **弹窗玻璃铺开** | 试点只有加课页删除确认 1 处（`e8cafb75` / `4a8011b3`，守卫钉调用点数=1）。先等真机看采样跟手与低端机帧率，确认后再铺其余 46 处 OverlayDialog 与底部弹层。写作用域：`components/glass/`、`pages/**` |
 | **R12** | **局域网两个残余** | `LanTransferLogic.kt:54` / `LanEditRepositoryHost.kt:70-72`：① settings 只应用 Kotlin 已移植的时间/周次子集；② 地点分组变化后不重算课程钟点（Dart `replaceLocationTimeGroups(resync:true)` 无对应物）。撤销点、真实 `transferId`、整份恢复已完成，勿重做。写作用域：`main/transfer/lan/`、`main/app/TimetableRepository.kt` |
 | **R13** | ~~F18：两条壁纸路由语义~~ | ✅ **已解决**（2026-11-11 校准）：`ShellPageIndex.kt:553-557` 注释原文记「原先 `b.recentWallpaper` 与 `b.backdropFlow` 都落 PICKER、语义重复（R13），已合并为这一条」，判据是 Dart `settings_home_backdrop_flow.dart:439-472`（该页同时含选图行与「最近使用」缩略图条，无独立页）；课表页「最近使用」行改由 `SettingsHost.timetablePageSheetRoute` 映射到同一个 `b.backdropFlow`。**注意**：保留哪一条是实现决定，若产品要恢复两个独立入口需另开需求 |
@@ -201,6 +201,21 @@ L3 出包、L3.5 性能包、L4 真机一律用户跑；**性能只认 Bench 或
 ---
 
 ## 变更记录
+
+- **2026-11-11 R10 复核（只改账）**：
+  - **审计 11 条里 2 条已过期**：「标题动作贴边」与「IME 叠加」均已由 `bd0c3eb7`（2026-11-03）修掉，
+    代码为活码 —— `QingyuSheet.kt:186` 调 `horizontalBleed`（定义 `:236`）、`:176-177` 的 `imeBottomPx > 0`
+    只留 16dp 呼吸。`2026-11-02-compose-dialog-full-audit.md` 的「11 仍成立」按 **9** 条引用。
+  - **归属更正（未采信口述的 sha）**：另有说法称 IME 那条由 `143638290` 修。实测 `143638290`（11-10，
+    标题区/内边距/按钮区统一刻度 + 缩放守卫）的 diff 里 IME 段落全是**上下文行**（`*` / 空），
+    未改判据；`bd0c3eb7` 的 diff 里才有 `+import ...layout.ime` 与 `+val imeBottomPx`。
+    故 IME 那条记在 `bd0c3eb7` 名下，`143638290` 只记「统一刻度 + 缩放守卫」。
+  - **42dp 一族进展**：已修 1 处 `WeekSelectorSheet`（`f7723ddd`，标题收回套件标题行 `:108`，删自绘
+    `headline1` + 8dp `Spacer`）；未修 3 处 `CourseActionSheet.kt:163`、`CourseNoteSheet.kt:143`、
+    `AppearanceEditorHost.kt`（材质 `:853` / 壁纸 `:886`）；`TimetableTopBar.kt:695` 为**用户口径的故意无标题**（注释 `:697-699`），计为非缺陷。
+  - **算式与出处**：42 = 24dp 把手 + 6+12dp 标题行，两段无条件画在
+    `third_party/miuix-ui/.../layout/BottomSheetContentLayout.kt:643-657`，标题行 padding 在 `:806`、
+    把手高度在 `:735` ⇒ `title = null` 照占。改库批次影响所有无标题弹层、需一次 L1，标**待排批、不排期**。
 
 - **2026-11-11 补记（新发现，未排期）**：
   - **新增 R18「单节课提醒 App 内无法新建」**（放「等 Lead 拍板」，不排期）：`ClassReminderLogic.upsert`
