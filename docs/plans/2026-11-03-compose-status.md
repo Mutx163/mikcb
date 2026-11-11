@@ -6,6 +6,9 @@
 > 原五份进度/任务文档（派工大表、Phase 3 页面台账、剩余页任务清单、现状交接、全仓体检）
 > 已于 2026-11-03 合并至此，各自顶部只留一句「已合并」。它们以后只作规格或历史记录，
 > **状态列不再更新**。
+>
+> **2026-11-11 校准**（依据代码与提交，未改任何代码）：核销 R02 / R06 / R13 / R14 四条已失真待办；
+> 页面 `.kt` 计数、认领区份数与「进行中」份数按实测改写。逐条证据见文末「变更记录」。
 
 ---
 
@@ -14,7 +17,7 @@
 | 指标 | 当前值 | 定义与出处 |
 |---|---|---|
 | 壳路由目录 | **88 总 / 87 可进入 / 0 暂不可用 / 1 常驻** | `ShellPageCatalogTest` 实测 `openable=87` / `UNAVAILABLE=0` / `ALWAYS_VISIBLE=1`（2026-11-08 复核，HEAD `7f8395776`）；这是用户点得到的入口数 |
-| 页面文件 | **63 个 `*Page.kt` / 186 个 `.kt`** | HEAD `29dbc4ae2`，`composeP1/.../pages/`；只说明代码规模（工作区另有 2 个未跟踪文件「首启隐私门」，计入为 188） |
+| 页面文件 | **63 个 `*Page.kt` / 190 个 `.kt`** | HEAD `358af4aad`（2026-11-11 校准实测），`composeP1/.../pages/`；只说明代码规模。旧记 186/188 是 `29dbc4ae2` 的快照 |
 | Phase 3 页面单元 | **78**（历史口径） | 旧目录 82 − 暂不可用 3 − 常驻 1；只描述 2026-10-27 的搬运完成度，**不是现在的入口数** |
 | 剩余页任务 | **39 页 / 12 批**（历史任务） | 2026-10-30 复核时 28 已落地、11 未完成；后续批次均已交付，本清单只作历史 |
 | 弹层审核 | **138 条：126 已不成立 / 11 仍成立 / 1 部分成立** | `2026-11-02-compose-dialog-full-audit.md`（2026-11-03 第四批收尾口径） |
@@ -48,7 +51,7 @@ CI 权威变体是 `:app:testProdDebugUnitTest`（`.github/workflows/ci.yml` 的
 | # | 事项 | 现状 / 卡点 |
 |---|---|---|
 | **R01** | **L4 真机逐页对照** | 0 页，是当前最大产品缺口。按 `2026-10-27-compose-phase3-l4-checklist.md` 在 `dev` 变体壳里逐页走；必验：相机取景/解码、WebDAV 上传→下载→冲突→恢复两步确认、通知点击落页、键盘不顶按钮、矮屏弹窗不裁切、课卡铃铛与「已设提醒+取消」、宽屏 Rail、弹窗玻璃试点、桌面小组件刷新。**注意**：该清单仍写 `.ui` 包名与已删除的 flavor，按 `dev` 变体走；`dev` 的 applicationId 带 `.debug` 后缀，**不能代替正式包的「覆盖安装后数据一条不丢」**，后者要另用 `prod` 包验 |
-| **R02** | **横屏/平板解锁** | `AndroidManifest.xml:166`、`:182` 两个 Activity 仍锁 `screenOrientation="portrait"`；解锁是产品决定，解锁后还要验矮屏弹层、返回手势与 Rail 冲突、配置变更重建 |
+| **R02** | ~~横屏/平板解锁~~ | ✅ **已解决**（2026-11-11 校准）：`1e8b953b7`（2026-11-08，去 Flutter 化 P4-B）删掉两个壳 Activity 的 `android:screenOrientation="portrait"`；现主清单里该串只剩解释性注释（`android/app/src/main/AndroidManifest.xml:169-172`，写明「两 Activity 不再锁 portrait」与回退方式），四个源集 manifest 无一处属性级方向锁。**残留**：解锁后的连带面（矮屏弹层、返回手势与 Rail 冲突、配置变更重建）属真机项，归 R01 / R17，不再是产品决策 |
 | **R03** | **R2：删 Flutter、出正式包** | `lib/**` 已由 `303220db1`（P4-C）整层删除，回退只能走 git 历史；唯一未完成项是 **P2 真出包未由用户执行**（见 `2026-11-07-deflutter-stage2-p4-deletion-order.md:8`）。L4 真机对照与原正式包仍归用户跑 |
 
 ### B. 等 Lead 拍板
@@ -57,7 +60,7 @@ CI 权威变体是 `:app:testProdDebugUnitTest`（`.github/workflows/ci.yml` 的
 |---|---|---|
 | **R04** | **超级岛展示层 `P3-L`** | 原生 `LiveUpdateService` 已在发小米超级岛通知；待定的是展示层走 RemoteViews 还是 Compose Glance。W1 的验收句里没有「岛」，需补判据 |
 | **R05** | **弹层 4 个决策点** | 审计里的 #1（自动聚焦是否回退）、#5（加课选周结构）、#7（42dp 无标题空档等不等上游）、#8（ICS 导出菜单形态）。拍板后一次落地，不要逐条反复 |
-| **R06** | **`src/perf/AndroidManifest.xml` 去留** | 仍只做「把 Flutter `MainActivity` 设为 enabled=false」；启动页已上移，是否删除影响 perfBench 入口 |
+| **R06** | ~~`src/perf/AndroidManifest.xml` 去留~~ | ✅ **已取消**（2026-11-11 校准）：该文件已不存在——`android/app/src/perf/` 目录还在但**为空**（`git ls-files android/app/src/perf` 返回 0 个跟踪文件，`Test-Path .../AndroidManifest.xml` = false）。`build.gradle:108` 的 `perf {}` 是 `env` 维度的 flavor，不是源集；`assemblePerfBench` 由 flavor 与变体决定，与该 manifest 无关。无需再拍板 |
 | **R07** | **L0 共享目录编译隔离** | `scripts/test-kotlin-module.ps1` 无条件收 app/core/course/sync/transfer/statistics/share/theme 等目录；任何泳道在共享目录留半成品，所有模块 L0 一起红。只有 `-ExcludeShared` 逃生门，需定根治方案 |
 
 ### C. agent 可做（按优先级）
@@ -69,11 +72,11 @@ CI 权威变体是 `:app:testProdDebugUnitTest`（`.github/workflows/ci.yml` 的
 | **R10** | **弹层剩余 11 条（`QingyuSheet` 两个底层缺口已修）** | ✅ `QingyuSheet.kt` 两处已修并提交 `bd0c3eb7`：IME>0 时底部只留 16dp 呼吸（原来多垫 24~40dp）、有标题动作时保留 16dp 并用私有 `horizontalBleed` 把内容反向撑出（标题不贴边、内容仍满宽）。仍未做：42dp 无标题空档 ×4、自动聚焦 ×4、选周结构、ICS 菜单等（部分待 R05 拍板）。写作用域：`components/`、`pages/course/`、`pages/timetable/`、`pages/settings/` |
 | **R11** | **弹窗玻璃铺开** | 试点只有加课页删除确认 1 处（`e8cafb75` / `4a8011b3`，守卫钉调用点数=1）。先等真机看采样跟手与低端机帧率，确认后再铺其余 46 处 OverlayDialog 与底部弹层。写作用域：`components/glass/`、`pages/**` |
 | **R12** | **局域网两个残余** | `LanTransferLogic.kt:54` / `LanEditRepositoryHost.kt:70-72`：① settings 只应用 Kotlin 已移植的时间/周次子集；② 地点分组变化后不重算课程钟点（Dart `replaceLocationTimeGroups(resync:true)` 无对应物）。撤销点、真实 `transferId`、整份恢复已完成，勿重做。写作用域：`main/transfer/lan/`、`main/app/TimetableRepository.kt` |
-| **R13** | **F18：两条壁纸路由语义** | `ShellPageIndex.kt:477-489` 两条路由都传 `initialWallpaperPage = PICKER`，疑似一条吃掉另一条；对照 Dart 两个文件确认是不同页签还是同一面板入口。写作用域：`pages/settings/`、`app/AppearanceEditorHost.kt`；`ShellPageIndex.kt` **[Lead]** |
-| **R14** | **壁纸取景页「换壁纸」入口** | `WallpaperPositionPickerPage.kt:85-87` 自认没有 `pickAndStoreManagedImage` 那样的公共入口，只显示重置；需把 URI→受管目录→写 path + 补历史抽成共享件。写作用域：`main/pages/settings/`、`main/platform/`、`composeP1/pages/settings/` |
+| **R13** | ~~F18：两条壁纸路由语义~~ | ✅ **已解决**（2026-11-11 校准）：`ShellPageIndex.kt:553-557` 注释原文记「原先 `b.recentWallpaper` 与 `b.backdropFlow` 都落 PICKER、语义重复（R13），已合并为这一条」，判据是 Dart `settings_home_backdrop_flow.dart:439-472`（该页同时含选图行与「最近使用」缩略图条，无独立页）；课表页「最近使用」行改由 `SettingsHost.timetablePageSheetRoute` 映射到同一个 `b.backdropFlow`。**注意**：保留哪一条是实现决定，若产品要恢复两个独立入口需另开需求 |
+| **R14** | ~~壁纸取景页「换壁纸」入口~~ | ✅ **已交付**（2026-11-11 校准）：提交 `5ade79faf`（2026-11-03）「取景页补『换壁纸』，选图落盘与补历史抽成共享件」——新增 `ManagedWallpaperStore.kt` / `ManagedWallpaperNaming.kt`，`WallpaperPositionPickerPage.kt` +180 行、`ManagedWallpaperPickChainTest.kt` 149 例；`WallpaperPositionPickerPage.kt:148` 注释自证「『换壁纸』（2026-11-03 R14 补上）」 |
 | **R15** | **自检页 4 个测试通知按钮** | `LiveSelfCheckHost.kt:362-366` 四个分支仍只弹「不可用」；要么移植测试夹具管线，要么明确记为已知缺口。台账旧 §9.10「已闭环」是过度声明。写作用域：`app/LiveSelfCheckHost.kt`、`pages/live/`、`main/pages/live/` |
 | **R16** | **埋点页面级接线** | core 三件与 `TimetableRepository` 单点已提交（`b9e5cdb6` / `9cd1e337`）；`composeP1` 页面侧引用为 0，无持久化/导出/后端 sink。先定要采哪些页面事件与隐私边界（产品决定）。写作用域：`main/core/`、`composeP1/app/` 与各页面宿主 |
-| **R17** | **宽屏收尾** | 前三批已落地：三档判据 `499b28d8`、`QingyuPageScaffold` 限宽与 SmallTopAppBar 分支 `75afb7f0`、Rail 判据 `6a564625`、`ShellNavigationRail` 接入 `e2e33583`。剩余：R02 解锁后的连带面 + 首页课表网格宽屏列数（属课程域另一批）。写作用域：`AndroidManifest.xml` **[Lead]**、`components/`、`pages/shell/`、`pages/timetable/` |
+| **R17** | **宽屏收尾** | 前三批已落地：三档判据 `499b28d8`、`QingyuPageScaffold` 限宽与 SmallTopAppBar 分支 `75afb7f0`、Rail 判据 `6a564625`、`ShellNavigationRail` 接入 `e2e33583`。剩余：首页课表网格宽屏列数（属课程域另一批）+ 宽屏连带面的真机验（`R02` 的方向锁已由 `1e8b953b7` 解除，剩下的矮屏弹层 / 返回手势 / Rail 冲突归 R01）。写作用域：`components/`、`pages/shell/`、`pages/timetable/`（`AndroidManifest.xml` 已无需再动） |
 
 > 标 **[Lead]** 的文件由 Lead 改；agent 只交 patch / snippet。共享件（`components/`、`main: platform/`、
 > `main: app/`、`*Strings.kt`）的历史锁规则见 `2026-10-29-remaining-pages-tasklist.md` §1.4：
@@ -97,6 +100,10 @@ CI 权威变体是 `:app:testProdDebugUnitTest`（`.github/workflows/ci.yml` 的
 | JVM 21 统一（miuix 0.9.4 class file 65 兼容） | `android/app/build.gradle:313`、`android/build.gradle:122` |
 | 壁纸取景 `transformable` 手势例外登记 | `docs/reference/miuix-component-first-standard.md` 第 5 条表第 2 行 |
 | 弹层审核 126/11/1 | `2026-11-02-compose-dialog-full-audit.md` 复核结论 |
+| R02 横屏/平板解锁（原「两个 Activity 锁 portrait」） | `1e8b953b7`（2026-11-08）删除两处方向锁；现仅注释 `main/AndroidManifest.xml:169-172` |
+| R06 `src/perf/AndroidManifest.xml` 去留 | 文件已不存在，`android/app/src/perf/` 空目录、0 个跟踪文件（2026-11-11 校准） |
+| R13 两条壁纸路由语义 | `ShellPageIndex.kt:553-557` 注释：已合并为单条 `b.backdropFlow`，Dart 判据 `settings_home_backdrop_flow.dart:439-472` |
+| R14 壁纸取景页「换壁纸」 | `5ade79faf`（2026-11-03）+ `WallpaperPositionPickerPage.kt:148` 注释；共享件 `ManagedWallpaperStore.kt` / `ManagedWallpaperNaming.kt` |
 
 > 以上只证明「代码已提交、门禁当时绿」，**不等于真机验过**。所有真机验收统一归 R01；
 > 不要因为某条出现在本表就对外说「已完成」。
@@ -106,10 +113,13 @@ CI 权威变体是 `:app:testProdDebugUnitTest`（`.github/workflows/ci.yml` 的
 ## 五、接活与避让
 
 1. **认领协议仍有效**（用户 2026-11-03 决定保留）：`.agents/compose-phase3/claims/` 里「有文件的批次 = 有人在做」。
-   **但认领文件大面积过期**：121 份里只有 24 份在 2026-11-01 之后动过（最新是 `F03-pickup-lan.md`，2026-11-02），
-   其余 97 份更早；其中 23 份仍写「进行中」而工作早已交付，F18/F19 反而没有文件。
-   所以它只能当意图登记，不能当占满判据：开工前必须再用
-   `git status -- <目标路径>` 与 `git log -1 --format='%h %ad %s' -- <目标文件>` 核实是否真有人在动。
+   **但认领文件大面积过期**（2026-11-11 校准实测）：清理前 **199 个文件（120 份 `.md`）**，只有 31 个在 2026-11-01 之后动过；
+   头部状态写「进行中」的 **7 份**而工作早已交付，本次已按交付提交清掉这 7 份（B1 / F29 / F28 / F32 / P3-C2 / P3-F / P3-K，
+   依据提交见文末变更记录），**清理后 192 个文件（113 份 `.md`）、25 个在 2026-11-01 之后动过、无「进行中」**；
+   最新文件回到 `F03-pickup-lan.md`（2026-11-02）。F18 仍无认领文件。
+   **核实方法要改**：`.agents/` 被 `.gitignore:140` 忽略（`git ls-files .agents` 返回 0），所以认领区**无法**用
+   `git status` / `git log` 核实。要落到产物上：`git cat-file -e HEAD:<目标路径>` 判产物在不在，
+   `git merge-base --is-ancestor <提交> HEAD` 判交付提交是否已在 HEAD。
 2. **写作用域**：按目录认领；`android/app/build.gradle`、`theme/`、两个壳的 Activity、`lib/ui/`、
    路由表、`AndroidManifest.xml` 都是 **Lead 专属**，泳道不得改。同域必须串行。
 3. **当前在途（2026-11-03 15:20 实测，避让）**：
@@ -150,9 +160,9 @@ L3 出包、L3.5 性能包、L4 真机一律用户跑；**性能只认 Bench 或
 |---|---|---|
 | 1 | 超级岛展示层 RemoteViews vs Compose Glance（R04） | Lead / 用户 |
 | 2 | 课表管理新建/重命名已加的自动聚焦是否回退（R05 #1） | Lead |
-| 3 | `src/perf/AndroidManifest.xml` 去留（R06） | Lead |
+| 3 | ~~`src/perf/AndroidManifest.xml` 去留（R06）~~ **已取消**：文件不存在（2026-11-11 校准） | — |
 | 4 | L0 共享目录隔离方案：挪文件 / 扩源集 / 换宿主域（R07） | Lead |
-| 5 | 横屏/平板是否解锁（R02） | 用户 |
+| 5 | ~~横屏/平板是否解锁（R02）~~ **已解决**：`1e8b953b7` 已删方向锁（2026-11-11 校准） | — |
 | 6 | R2 删 Flutter 的时机（R03） | 用户 |
 | 7 | 弹层 #5 / #7 / #8 的取舍（R05） | Lead |
 
@@ -172,7 +182,7 @@ L3 出包、L3.5 性能包、L4 真机一律用户跑；**性能只认 Bench 或
 | `2026-10-28-compose-phase35-batches.md` | Phase 3.5 历史批次 |
 | `2026-10-27-compose-phase3-l4-checklist.md` | 用户真机逐页清单（数字待更新为 88/87；`.ui` 包名与 flavor 已失效，按 `dev` 变体走） |
 | `2026-11-02-compose-dialog-full-audit.md` | 弹层审核明细与 8 个决策点 |
-| `2026-11-03-compose-widescreen-adaptive-plan.md` | 宽屏方案；前三批已落地，剩 R02/R17 |
+| `2026-11-03-compose-widescreen-adaptive-plan.md` | 宽屏方案；前三批已落地，剩 R17（R02 已解决） |
 | `2026-10-26-compose-migration-plan.md` | 总体方案、硬约束、阶段与回退方案 |
 | `2026-10-26-data-contract.md` | 盘上格式冻结 schema |
 
@@ -188,6 +198,26 @@ L3 出包、L3.5 性能包、L4 真机一律用户跑；**性能只认 Bench 或
 ---
 
 ## 变更记录
+
+- **2026-11-11 校准（只改账，未改代码；依据代码与提交）**：核销四条已失真待办，修正三处计数。
+  - **R02 横屏/平板解锁 → 已解决**：提交 `1e8b953b7`（2026-11-08，去 Flutter 化 P4-B）删除两处
+    `android:screenOrientation="portrait"`；`git show 1c198b4f3:.../main/AndroidManifest.xml` 当时仍有两条属性行（`:174`/`:190`），
+    到 `1e8b953b7` 只剩解释性注释（现行 `main/AndroidManifest.xml:169-172`）。残留真机连带面归 R01/R17。
+  - **R06 `src/perf/AndroidManifest.xml` 去留 → 已取消**：`Test-Path` = false，`git ls-files android/app/src/perf` = 0，
+    目录存在但为空；`build.gradle:108` 的 `perf {}` 是 `env` flavor 而非源集。
+  - **R13 两条壁纸路由 → 已解决**：`ShellPageIndex.kt:553-557` 注释记已合并为 `b.backdropFlow`（判据 Dart `settings_home_backdrop_flow.dart:439-472`）。
+  - **R14 取景页「换壁纸」→ 已交付**：`5ade79faf`（2026-11-03）+ `WallpaperPositionPickerPage.kt:148` 注释；
+    同批新增共享件 `ManagedWallpaperStore.kt` / `ManagedWallpaperNaming.kt` 与 `ManagedWallpaperPickChainTest.kt`（149 例）。
+  - **计数**：`composeP1/.../pages/` 实测 **63 个 `*Page.kt` / 190 个 `.kt`**（HEAD `358af4aad`，工作区干净），旧记 186/188 作废；
+    认领区清理前 **199 个文件（120 份 `.md`）**、31 个在 2026-11-01 之后动过、头部写「进行中」**7 份**（旧记分别是 121 份 / 24 份 / 23 份）；
+    清理后 **192 个文件（113 份 `.md`）**、25 个在 2026-11-01 之后动过、无「进行中」。
+  - **清过期认领 7 份**（`.agents/compose-phase3/claims/`，该目录被 `.gitignore:140` 忽略，不进 git）：
+    `B1-first-run-privacy.md`（`8d2d22f36`/`3f49f0257`）、`F29-wallpaper-whitelist-profiles.md`（`d0671f983`）、
+    `F28-i2-school-list.md`（`0abf794ed`）、`F32-i2-import-writeback.md`（`83e8426ac`/`2ed2fbba6`）、
+    `P3-C2.md`（`810f801a7`）、`P3-F.md`（`dfdac7f2c`）、`P3-K.md`（`aef4c5c85`）；
+    九条提交均以 `git merge-base --is-ancestor <sha> HEAD` 核实为 HEAD 祖先。
+  - **F18 归位**：`2026-10-29-remaining-pages-tasklist.md` §七 状态由「🔒 等前置」改为「可开工，待认领」——
+    前置 F06 认领文件状态为「已交付（由后续批次落地，2026-11-01 复核）」，且 `claims/` 下无 `F18-*` 文件；未标完成。
 
 - **2026-11-08 L1/L2 复跑**：L1 通过（`BUILD SUCCESSFUL in 57s`，HEAD `cb8f14d1f`）；L2 `:app:testDevDebugUnitTest` **7584 例 / 1 失败**，唯一失败是 `ArbCatalogTest`——`ArbCatalog.kt` 未随 ARB 新键 `liquidGlassPresetCustom` 重新生成（生成器 `--check` 报过期）。刷新生成物后需再跑一次 L2 才能销 R08。
 - **2026-11-08 数字校正**：路由 89/88 → **88/87**（`ShellPageCatalogTest` 实测，HEAD `7f8395776`）；`pages/**/*.kt` 176 → **183**（同 HEAD，工作区含未跟踪文件为 184）；样式例外 10 → **7**（timetable 4 + import 2 + showcase 1，`-Domain all` 待修 0 / 过期 0）。
