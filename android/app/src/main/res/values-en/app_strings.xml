@@ -17,6 +17,10 @@
     <string name="notification_weekly_report_default_body">Open Qingyu Timetable to view this week\'s stats</string>
     <string name="notification_exam_reminder_default_title">Exam reminder</string>
     <string name="notification_exam_reminder_default_body">You have an upcoming exam</string>
+    <string name="notification_channel_schedule_reminder_name">Schedule reminders</string>
+    <string name="notification_channel_schedule_reminder_desc">Notifications before schedule items start</string>
+    <string name="notification_schedule_reminder_default_title">Schedule reminder</string>
+    <string name="notification_schedule_reminder_default_body">You have an upcoming schedule item</string>
 
     <string name="notification_course_reminder_title">Class reminder: %1$s</string>
     <string name="notification_fgs_fallback_text">Live Island could not start; a standard reminder is shown instead.</string>

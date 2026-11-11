@@ -17,6 +17,10 @@
     <string name="notification_weekly_report_default_body">打開輕嶼課表查看本週課程統計</string>
     <string name="notification_exam_reminder_default_title">考試提醒</string>
     <string name="notification_exam_reminder_default_body">你有一場即將開始的考試</string>
+    <string name="notification_channel_schedule_reminder_name">日程提醒</string>
+    <string name="notification_channel_schedule_reminder_desc">日程開始前的提醒通知</string>
+    <string name="notification_schedule_reminder_default_title">日程提醒</string>
+    <string name="notification_schedule_reminder_default_body">你有一個即將開始的日程</string>
 
     <string name="notification_course_reminder_title">課程提醒: %1$s</string>
     <string name="notification_fgs_fallback_text">超級島未能啟動，已改用普通通知提醒</string>

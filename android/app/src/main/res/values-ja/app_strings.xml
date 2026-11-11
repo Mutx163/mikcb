@@ -17,6 +17,10 @@
     <string name="notification_weekly_report_default_body">軽嶼課表を開いて今週の統計を確認</string>
     <string name="notification_exam_reminder_default_title">試験リマインダー</string>
     <string name="notification_exam_reminder_default_body">まもなく試験があります</string>
+    <string name="notification_channel_schedule_reminder_name">スケジュールリマインダー</string>
+    <string name="notification_channel_schedule_reminder_desc">スケジュール開始前の通知</string>
+    <string name="notification_schedule_reminder_default_title">スケジュールリマインダー</string>
+    <string name="notification_schedule_reminder_default_body">まもなくスケジュールが始まります</string>
 
     <string name="notification_course_reminder_title">授業リマインダー: %1$s</string>
     <string name="notification_fgs_fallback_text">ライブアイランドを開始できなかったため、通常の通知でお知らせします</string>
