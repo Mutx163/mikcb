@@ -182,7 +182,7 @@ L3 出包、L3.5 性能包、L4 真机一律用户跑；**性能只认 Bench 或
 | `2026-10-28-full-software-audit-and-completion-plan.md` | 全仓体检快照与技术债背景 |
 | `2026-10-28-compose-phase35-wiring-plan.md` | 分层接线规格（仍然有效） |
 | `2026-10-28-compose-phase35-batches.md` | Phase 3.5 历史批次 |
-| `2026-11-11-l4-device-checklist-dev.md` | **现行 L4 真机手册（`dev` 变体口径）**，2026-11-11 起取代下面那份；由 L4 手册那条线提交，校准时仓库内尚未见该文件（**未核实**） |
+| `2026-11-11-l4-device-checklist-dev.md` | **现行 L4 真机手册（`dev` 变体口径）**，2026-11-11 起取代下面那份；正文提交 `8b84bc13a`（已核实存在于 HEAD） |
 | `2026-10-27-compose-phase3-l4-checklist.md` | ~~用户真机逐页清单~~ **已被上一条取代**（历史）：仍写 `.ui` 包名与已删 flavor，只作历史依据 |
 | `2026-11-02-compose-dialog-full-audit.md` | 弹层审核明细与 8 个决策点 |
 | `2026-11-03-compose-widescreen-adaptive-plan.md` | 宽屏方案；前三批已落地，剩 R17（R02 已解决） |
@@ -210,8 +210,8 @@ L3 出包、L3.5 性能包、L4 真机一律用户跑；**性能只认 Bench 或
     与删（`ShellWiring.kt:1284` → `ClassReminderLogic.remove`）。影响：A6「取消提醒」在干净 `dev` 包里
     造不出前置数据。
   - **L4 手册更替**：`2026-10-27-compose-phase3-l4-checklist.md` 已被 `2026-11-11-l4-device-checklist-dev.md`
-    （`dev` 变体口径）取代，R01 与 §八 文档地图两处引用同步改指新册；新册正文由 L4 手册那条线提交，
-    校准时仓库内尚未见该文件（**未核实**，本行只登记关系）。
+    （`dev` 变体口径）取代，R01 与 §八 文档地图两处引用同步改指新册；新册正文由 L4 手册那条线提交于
+    `8b84bc13a`（2026-11-11，已核实存在于 HEAD；本行只登记更替关系，不复制手册内容）。
 
 - **2026-11-11 校准（只改账，未改代码；依据代码与提交）**：核销五条已失真待办，修正三处计数。
   - **R02 横屏/平板解锁 → 已解决**：提交 `1e8b953b7`（2026-11-08，去 Flutter 化 P4-B）删除两处
