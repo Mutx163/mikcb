@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.requiredHeight
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.remember
@@ -22,6 +23,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
@@ -86,6 +88,9 @@ fun MonthGrid(
     reserveRail: Boolean = false,
     showWeekNumbers: Boolean = true,
 ) {
+    // 诊断探针：拖拽时这一层应为 0 次（42 格的状态都由参数驱动，不该每帧重组）。
+    SideEffect { MonthScrollProbe.bump(MonthScrollProbe.C_GRID_COMPOSE) }
+
     val dark = isSystemInDarkThemeSafe()
     // 表头与周次轨：压在白卡上，跟主题走。
     //
@@ -122,7 +127,17 @@ fun MonthGrid(
         modifier.fillMaxWidth()
     }
 
-    Column(modifier = rootModifier) {
+    // 诊断探针：只数「这一页网格画了几次」。非诊断包不挂这一层，正式包的绘制链不变。
+    val probedModifier = if (MonthScrollProbe.enabled) {
+        rootModifier.drawWithContent {
+            MonthScrollProbe.bump(MonthScrollProbe.C_GRID_DRAW)
+            drawContent()
+        }
+    } else {
+        rootModifier
+    }
+
+    Column(modifier = probedModifier) {
         // 表头：钉在固定高度（与页面行高预算、裁剪窗口上沿同一个数）。
         if (showHeader) {
         Row(

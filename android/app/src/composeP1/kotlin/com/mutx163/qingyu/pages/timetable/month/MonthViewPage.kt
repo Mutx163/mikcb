@@ -39,7 +39,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.ui.input.pointer.util.VelocityTracker
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.unit.Dp
@@ -268,6 +268,12 @@ fun MonthViewPage(
         MonthPanelDragState()
     }
 
+    // ── 纵向滑动诊断（2026-11-11 加）──
+    // 只在 dev / bench 包里挂窗口帧监听：正式包里 `attach` 第一行就返回 false，
+    // 不采数、不打日志。证据口径与怎么读见 `MonthScrollProbe` 的类注释。
+    val probeContext = LocalContext.current
+    LaunchedEffect(probeContext) { MonthScrollProbe.attach(probeContext) }
+
     val isCurrentMonth = focusedYear == today.year && focusedMonth == today.monthValue
     LaunchedEffect(focusedYear, focusedMonth) {
         onMonthLabelChanged(MonthText.monthLabel(focusedMonth))
@@ -346,8 +352,15 @@ fun MonthViewPage(
                     rowHeightDp = rowHeightDp,
                     rowCount = rowCount,
                 ).toFloat()
+                // 诊断探针：只累加（不打日志、不分配日志字符串），详见 MonthScrollProbe。
+                MonthScrollProbe.onDragEvent(dy)
             },
             onDragEnd = { velocityDy ->
+                MonthScrollProbe.endDrag(
+                    velocityDp = velocityDy.toDouble(),
+                    startProgress = dragStart,
+                    endProgress = expandValue,
+                )
                 val target = MonthPanelModel.settleTarget(
                     startValue = dragStart.toDouble(),
                     currentValue = expandValue.toDouble(),
@@ -537,6 +550,10 @@ private fun MonthViewBody(
     onDragUpdate: (dy: Float, rowHeightDp: Double, rowCount: Int) -> Unit,
     onDragEnd: (velocityDy: Float) -> Unit,
 ) {
+    // 诊断探针：这一层重组意味着拖拽把整页带进了组合（设计上不该发生）。
+    // 非诊断包里 `bump` 第一行就返回，保留这个 SideEffect 只为让口径唯一。
+    SideEffect { MonthScrollProbe.bump(MonthScrollProbe.C_BODY) }
+
     androidx.compose.foundation.layout.BoxWithConstraints(
         modifier = Modifier.fillMaxSize(),
     ) {
@@ -662,6 +679,7 @@ private fun MonthViewBody(
                     // 卡高 = 表格窗口高 + 卡内非表格开销。两个量都在**测量阶段**才读进度
                     //（`heightDeferred`，等价 `Modifier.height` 的约束语义），拖拽时只重测这一层。
                     modifier = Modifier.heightDeferred {
+                        MonthScrollProbe.bump(MonthScrollProbe.C_CARD_MEASURE)
                         (cardLayout.gridHeight + cardChrome).dp
                     },
                     navigator = if (showChrome) {
@@ -696,6 +714,7 @@ private fun MonthViewBody(
                             .fillMaxWidth()
                             // 窗口高度 = 版面账里的 gridHeight 减掉上内边距（卡片自己加那段 padding）。
                             .heightDeferred {
+                                MonthScrollProbe.bump(MonthScrollProbe.C_GRID_WINDOW_MEASURE)
                                 (cardLayout.gridHeight - MonthMetrics.CARD_PADDING)
                                     .coerceAtLeast(0.0).dp
                             }
@@ -705,14 +724,18 @@ private fun MonthViewBody(
                             // （`detectVerticalDragGestures`），点格选日期不会被拖拽抢走；
                             // 与 pager 的横向手势正交，同一手势不会互相抢。
                             .pointerInput(Unit) {
-                                val tracker = VelocityTracker()
+                                // 速度按位移增量采样（见 `DragVelocitySampler`）。网格这层
+                                // 上沿不动，`VelocityTracker` 本来也不会反号，但三条入口
+                                // 用同一把尺子，免得以后挪动拖拽区又踩回面板那个坑。
+                                val sampler = DragVelocitySampler()
                                 detectVerticalDragGestures(
                                     onDragStart = {
-                                        tracker.resetTracking()
+                                        sampler.reset()
+                                        MonthScrollProbe.beginDrag("grid")
                                         latestDragStart.value()
                                     },
                                     onVerticalDrag = { change, dragAmount ->
-                                        tracker.addPosition(change.uptimeMillis, change.position)
+                                        sampler.add(change.uptimeMillis, dragAmount)
                                         change.consume()
                                         // PointerInputScope 本身就是 Density，直接换 dp；
                                         // 不再把 density / 行高捕获进协程（那会让 key 必须变）。
@@ -720,7 +743,7 @@ private fun MonthViewBody(
                                     },
                                     onDragEnd = {
                                         latestDragEnd.value(
-                                            tracker.calculateVelocity().y.toDp().value,
+                                            sampler.velocityPerSecond().toDp().value,
                                         )
                                     },
                                     onDragCancel = { latestDragEnd.value(0f) },
@@ -779,6 +802,7 @@ private fun MonthViewBody(
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .heightDeferred {
+                                        MonthScrollProbe.bump(MonthScrollProbe.C_GRID_WINDOW_MEASURE)
                                         (pageLayout.gridHeight - MonthMetrics.CARD_PADDING)
                                             .coerceAtLeast(0.0).dp
                                     }
@@ -867,6 +891,9 @@ private fun MonthPanelContent(
     onOpenAgendaRow: (MonthAgendaRow) -> Unit,
     onAddCourse: (LocalDateTime) -> Unit,
 ) {
+    // 诊断探针：拖拽时这一层应为 0 次；跟着帧数长说明面板每帧都在重组。
+    SideEffect { MonthScrollProbe.bump(MonthScrollProbe.C_PANEL_COMPOSE) }
+
     // 底部避让：取「设计留白 / Scaffold 系统栏内边距 / 共享坞避让」三者**最大**值去重
     //（不相加，系统导航条不双计；口径与列表页 / 日 / 周视图一致）。
     // 之前月视图这套自定义滚动漏了坞避让，议程最后一行一直停在底部导航栏（坞）后面、

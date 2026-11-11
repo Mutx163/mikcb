@@ -17,6 +17,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.SideEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -219,6 +220,9 @@ fun MonthPanelOverview(
                         upcoming = upcoming,
                         contentHeightDp = MonthPanelChrome.contentHeight(maxHeight.value.toDouble()),
                     )
+                    // 诊断探针：这段是 `BoxWithConstraints` 的子组合，卡高每变一点就重跑一次。
+                    // 拖拽时它跟着帧数长，就说明「收起/展开每帧都在给概览卡重算行数」。
+                    SideEffect { MonthScrollProbe.bump(MonthScrollProbe.C_OVERVIEW_SLICE) }
                     UpcomingCard(
                         slice = slice,
                         onDayTap = onDayTap,

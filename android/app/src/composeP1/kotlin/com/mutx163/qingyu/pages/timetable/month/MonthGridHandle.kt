@@ -16,7 +16,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.ui.input.pointer.util.VelocityTracker
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
 
@@ -96,11 +95,12 @@ fun MonthGridHandle(
             .fillMaxWidth()
             .height(MonthGridHandleMetrics.HIT_HEIGHT.dp)
             .pointerInput(density) {
-                val tracker = VelocityTracker()
+                // 与 `MonthPanelDragArea` 同一个采样器：拉杆所在的那张卡会变高变矮，
+                // 节点局部绝对坐标会把卡的位移算成手指速度（见 `DragVelocitySampler`）。
+                val sampler = DragVelocitySampler()
                 awaitEachGesture {
                     val down = awaitFirstDown(requireUnconsumed = false)
-                    tracker.resetTracking()
-                    tracker.addPosition(down.uptimeMillis, down.position)
+                    sampler.reset()
                     // 先过 slop 再接管：轻点拉杆不应该取消正在跑的吸附，也不应该夺走横向滑动。
                     var overSlop = 0f
                     val crossing = awaitVerticalTouchSlopOrCancellation(down.id) { change, over ->
@@ -108,7 +108,9 @@ fun MonthGridHandle(
                         overSlop = over
                     }
                     if (crossing == null) return@awaitEachGesture
-                    tracker.addPosition(crossing.uptimeMillis, crossing.position)
+                    sampler.add(crossing.uptimeMillis, overSlop)
+                    // 诊断探针：卡底拉杆是第三条收放入口。
+                    MonthScrollProbe.beginDrag("handle")
                     onDragStart()
                     // 阈值内的位移补上，避免「起手丢几像素」。
                     if (overSlop != 0f) onDragUpdate(with(density) { overSlop.toDp().value })
@@ -116,7 +118,7 @@ fun MonthGridHandle(
                         // 位移取「本次事件相对上次事件」的差，与 Dart 那份
                         // `_onPointerMove` 的 dy 口径一致（不是相对按下点的累计）。
                         val dyPx = change.position.y - change.previousPosition.y
-                        tracker.addPosition(change.uptimeMillis, change.position)
+                        sampler.add(change.uptimeMillis, dyPx)
                         change.consume()
                         if (dyPx != 0f) {
                             onDragUpdate(with(density) { dyPx.toDp().value })
@@ -124,7 +126,7 @@ fun MonthGridHandle(
                     }
                     // 抬手：速度交给吸附判据（px/s → dp/s，判据常量是 dp 口径）。
                     val velocityDp = with(density) {
-                        tracker.calculateVelocity().y.toDp().value
+                        sampler.velocityPerSecond().toDp().value
                     }
                     onDragEnd(velocityDp)
                 }

@@ -12,7 +12,6 @@ import androidx.compose.runtime.Stable
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.ui.input.pointer.util.VelocityTracker
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.Job
@@ -105,7 +104,10 @@ fun MonthPanelDragArea(
 
     Box(
         modifier = modifier.pointerInput(state, density) {
-            val tracker = VelocityTracker()
+            // 速度按**位移增量**采样，不用 `VelocityTracker`：这块面板自身在跟着
+            // 日历高度上下移动，用节点局部绝对坐标会把面板的位移算成手指速度
+            // （2026-11-11 实测 25 次里 20 次反号，见 `DragVelocitySampler`）。
+            val sampler = DragVelocitySampler()
             // 这两个 flag 只活在这个 pointerInput 协程里：一次手势期间有效，
             // 与 Dart 那份 State 上的同名字段同义（判断「抬手要不要吸附/补惯性」）。
             var gridTouched = false
@@ -131,6 +133,8 @@ fun MonthPanelDragArea(
                 if (toGrid) {
                     if (!gridTouched) {
                         gridTouched = true
+                        // 诊断探针：面板上起手收日历（与「网格上直接拖」「拉杆拖」分开记）。
+                        MonthScrollProbe.beginDrag("panel")
                         state.onCollapseStart()
                     }
                     state.onCollapseUpdate(dyDp)
@@ -142,7 +146,13 @@ fun MonthPanelDragArea(
                 // dispatchRawDelta 是同步的，且它自己会在边界截断。
                 val consumed = list.dispatchRawDelta(-dyPx)
                 if (consumed == 0f) return false // 列表到边界：这段不归我们，不消费
-                listTouched = true
+                if (!listTouched) {
+                    listTouched = true
+                    // 诊断探针：这一手势里**没动过日历**、纯列表滚动时才另起一段。
+                    // 日历 + 列表串起来的那次手势仍记在 "panel" 名下，不切成两段。
+                    if (!gridTouched) MonthScrollProbe.beginDrag("list")
+                }
+                MonthScrollProbe.onListScroll(dyDp)
                 return true
             }
 
@@ -153,8 +163,7 @@ fun MonthPanelDragArea(
                 flingJob = null
                 gridTouched = false
                 listTouched = false
-                tracker.resetTracking()
-                tracker.addPosition(down.uptimeMillis, down.position)
+                sampler.reset()
 
                 // ── 先过 slop 再接管（2026-11-05）──
                 // 越过阈值之前**不消费任何事件**：这层下面是可点的行与日期格，
@@ -168,21 +177,27 @@ fun MonthPanelDragArea(
                 // 抬手（点击）或被判成横向滑动：不接管、不消费，交回下面的行。
                 if (crossing == null) return@awaitEachGesture
 
-                tracker.addPosition(crossing.uptimeMillis, crossing.position)
+                // 越过阈值那一下也是真实的手指位移，进速度样本；否则短手势里
+                // 第一段位移会被漏掉，速度样本不足两个就退化成「看行程」。
+                sampler.add(crossing.uptimeMillis, overSlopPx)
                 dispatchDelta(overSlopPx)
 
                 drag(crossing.id) { change ->
                     // 取「本次相对上次」的增量（与 Dart `_onPointerMove` 的 dy 同口径）。
                     val dyPx = change.position.y - change.previousPosition.y
-                    tracker.addPosition(change.uptimeMillis, change.position)
+                    sampler.add(change.uptimeMillis, dyPx)
                     val used = dispatchDelta(dyPx)
                     if (used) change.consume()
                 }
 
-                val velocityDp = with(density) { tracker.calculateVelocity().y.toDp().value }
+                val velocityDp = with(density) { sampler.velocityPerSecond().toDp().value }
                 if (gridTouched) {
                     // 网格吃过位移 → 按速度吸附到两端。
                     state.onCollapseEnd(velocityDp)
+                } else if (listTouched) {
+                    // 诊断探针：纯列表滚动没有网格吸附，收尾要在这里补，
+                    // 否则这条记录会一直挂着、把下一次手势也算进来。
+                    MonthScrollProbe.endDrag(velocityDp.toDouble(), Float.NaN, Float.NaN)
                 }
                 if (listTouched) {
                     // 列表的用户滚动被关掉了，惯性得自己补一段（Dart 的 _startListFling）。
