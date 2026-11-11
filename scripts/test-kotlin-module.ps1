@@ -33,6 +33,23 @@
     同模块并发时后启动者会删掉先启动者的输出目录、覆盖同一份 args 文件
     ⇒ 假失败/假通过 + 重复劳动（2026-10-27 22:17 实测复现）。
 
+    【两段编译：共享面独立成段 + 内容 hash 缓存（R07，2026-11-11）】
+    第 1 段只编**共享面**：`app` / `core` / `calendar` / `course` / `infra` / `statistics` /
+    `share` / `transfer` / `sync` / `weather` / `widgetdata` / `theme`（现 157 个 .kt）
+    + 根包白名单文件 + 按需 JVM 桩。产物按「共享文件相对路径 + 内容 + kotlinc 指纹」的
+    SHA256 缓存到 `%TEMP%\mikcb-l0-shared\<hash>\classes`：共享面没改动就整段跳过——
+    这是把每次重复编译那 ~160 个 .kt 从 L0 里拿掉的主要收益。
+    第 2 段拿第 1 段的 classes 当 `-cp`，只编本域 main+test+testutil+模块白名单文件。
+
+    失败语义分开（**关键纪律**）：
+      · 共享面红 → **点名报错的共享文件** + **exit 78（EX_CONFIG）**，语义是「不是你这一域的问题」：
+        别在本域瞎改去绕，先通知共享件所有者；跨域共编同一文件按 AGENTS.md 避让。
+      · 本域红 → 原样透传 kotlinc 退出码（1），语义与旧版一致。
+    缓存只存成功产物（编译失败不落盘）；落盘先写本次运行私有目录、再整体改名，
+    读方不会读到半个 classes。同机多 Agent 冷启动由 `Global\Mikcb_KotlinSharedCache_Mutex`
+    串行化（锁序固定：先模块锁、后缓存锁，不成环），没抢到锁的等它编完直接命中，不重复烧 CPU。
+    缓存不自动清理（每个 hash 只一份 classes，量很小）；换 kotlinc 或改共享面自然产生新 hash。
+
     【main 源集里的 Compose/miuix 文件：排除 + WARN，不是静默放过】（2026-11-10）
     渲染层在 `composeP1`，纯 JVM 的 L0 编译面解析不了 `androidx.compose` / `miuix`
     （没有这两个 AAR）。历史上 `pages/timetable/TimetableBandUnderlap.kt`（`ebf87bac5`）
@@ -160,6 +177,8 @@ if (-not (Test-Path $mainDir) -and -not (Test-Path $testDir)) {
 }
 
 $sources = @()
+# 共享面（第 1 段的输入）：与「本域」严格分开收集，两段各编各的。
+$sharedSources = @()
 # 排除清单与跳过清单的**初值**放在块外：两个 if 分支各自才赋值，缺了初值时无 main 目录的
 # 模块（如 `pages/sheetguard` 只有 test/）在读汇总行时会拿到 $null。
 $composeMainFiles = @()
@@ -282,9 +301,9 @@ foreach ($sharedDir in $sharedModelDirs) {
         Write-Host ">>> [test-kotlin-module] 跳过 $sharedDir/（含 Android 依赖，不属于纯 Kotlin 模型层）" -ForegroundColor DarkYellow
         continue
     }
-    $sharedSources = (Get-ChildItem -Path $absSharedDir -Filter "*.kt" -Recurse).FullName
-    foreach ($src in $sharedSources) {
-        if ($sources -notcontains $src) { $sources += $src }
+    $dirSources = @(Get-ChildItem -Path $absSharedDir -Filter "*.kt" -Recurse).FullName
+    foreach ($src in $dirSources) {
+        if ($sharedSources -notcontains $src) { $sharedSources += $src }
     }
 }
 
@@ -322,7 +341,7 @@ foreach ($sharedFile in $sharedModelFiles) {
         Write-Host ">>> [test-kotlin-module] 白名单文件不存在，已跳过：$sharedFile" -ForegroundColor DarkYellow
         continue
     }
-    if ($sources -notcontains $absSharedFile) { $sources += $absSharedFile }
+    if ($sharedSources -notcontains $absSharedFile) { $sharedSources += $absSharedFile }
 }
 
 # 模块专属补充源（2026-11-04 新增）。
@@ -382,22 +401,32 @@ $jvmStubs = @(
 foreach ($stub in $jvmStubs) {
     $absStub = Join-Path $repoRoot $stub.Path
     if (-not (Test-Path $absStub)) { continue }
-    if ($sources -contains $absStub) { continue }
-    $needsStub = @(Select-String -Path $sources -Pattern $stub.Pattern -List)
-    if ($needsStub.Count -gt 0) {
-        Write-Host ">>> [test-kotlin-module] 源码引用了纯接口 Easing，补 JVM 桩：$($stub.Path)" -ForegroundColor DarkYellow
+    if ($sources -contains $absStub -or $sharedSources -contains $absStub) { continue }
+    # 桩进哪一段有讲究：只塞共享面会让每个域的缓存键都不一样（各域需要的桩不同），
+    # 「跨域复用同一份共享 classes」当场失效。所以：共享面需要 → 第 1 段；只有本域需要 → 第 2 段。
+    $sharedNeedsStub = if ($sharedSources.Count -gt 0) { @(Select-String -Path $sharedSources -Pattern $stub.Pattern -List) } else { @() }
+    if ($sharedNeedsStub.Count -gt 0) {
+        Write-Host ">>> [test-kotlin-module] 共享面引用了纯接口 Easing，桩进第 1 段：$($stub.Path)" -ForegroundColor DarkYellow
+        $sharedSources += $absStub
+        continue
+    }
+    $domainNeedsStub = if ($sources.Count -gt 0) { @(Select-String -Path $sources -Pattern $stub.Pattern -List) } else { @() }
+    if ($domainNeedsStub.Count -gt 0) {
+        Write-Host ">>> [test-kotlin-module] 本域引用了纯接口 Easing，桩进第 2 段：$($stub.Path)" -ForegroundColor DarkYellow
         $sources += $absStub
     }
 }
 
-if ($sources.Count -eq 0) {
+$allSources = @($sources) + @($sharedSources)
+
+if ($allSources.Count -eq 0) {
     Write-Error "[test-kotlin-module] 模块 $cleanModule 下未找到任何 .kt 文件。"
     exit 1
 }
 
 # 4. 解析测试类全限定名
 $testClasses = @()
-$testFiles = $sources | Where-Object { $_ -match "Test\.kt$" }
+$testFiles = $allSources | Where-Object { $_ -match "Test\.kt$" }
 foreach ($file in $testFiles) {
     $lines = Get-Content $file
     $pkgLine = $lines | Where-Object { $_ -match "^\s*package\s+([a-zA-Z0-9_\.]+)" } | Select-Object -First 1
@@ -461,10 +490,6 @@ try {
     $argFile = Join-Path $workRoot "kotlinc.args"
     New-Item -ItemType Directory -Path $outDir -Force | Out-Null
 
-    Write-Host ">>> [test-kotlin-module] 编译模块 [$cleanModule] (文件数: $($sources.Count))，工作目录 $workRoot" -ForegroundColor Cyan
-
-    $classpath = "$junitJar;$hamcrestJar"
-
     # 大模块（叠上公共模型层后 >100 个 .kt）拼成一条命令行会撞 Windows 32k 上限，
     # 报 "The command line is too long."。改为写 kotlinc 的 @argfile（每行一个参数），
     # 命令行长度与源文件数解耦；argfile 内路径用双引号包住，兼容空格。
@@ -472,9 +497,130 @@ try {
     # kotlinc 的 argfile 解析器会把引号内的反斜杠当转义符吃掉（C:\xy\... 变成 C:xy...），
     # 因此 argfile 里统一写正斜杠路径；JVM 在 Windows 上接受正斜杠。
     $toSlash = { param($p) $p -replace '\\', '/' }
-    $argLines = @("-cp", "`"$(& $toSlash $classpath)`"", "-d", "`"$(& $toSlash $outDir)`"")
+    $classpath = "$junitJar;$hamcrestJar"
+
+    # ── 第 1 段：共享面独立编译 + 内容 hash 缓存（R07 两段编译，2026-11-11）─────────────
+    # 这一段只喂 $sharedSources（共享目录 + 根包白名单 + 按需桩），不含任何本域文件：
+    #   · 红了 = 共享件的锅，点名 + exit 78（EX_CONFIG），别在本域瞎改去绕；
+    #   · 绿了 = 其 classes 进 -cp，交给第 2 段；同时按内容 hash 落缓存，共享面没动就整段跳过。
+    $sharedClassesDir = $null
+    if ($sharedSources.Count -gt 0) {
+        # 缓存键 = kotlinc 指纹 + 每个共享文件的「相对路径 + 内容」。
+        # 用 IncrementalHash 一把算完（157 个文件几十毫秒），不逐个起 Get-FileHash 管道。
+        $sha = [System.Security.Cryptography.IncrementalHash]::CreateHash("SHA256")
+        $kotlincItem = Get-Item -LiteralPath $kotlinc
+        $null = $sha.AppendData([System.Text.Encoding]::UTF8.GetBytes("kotlinc|$kotlinc|$($kotlincItem.Length)|$($kotlincItem.LastWriteTimeUtc.Ticks)"))
+        foreach ($src in @($sharedSources | Sort-Object)) {
+            $rel = ($src.Substring($repoRoot.Length + 1)) -replace '\\', '/'
+            $null = $sha.AppendData([System.Text.Encoding]::UTF8.GetBytes("`nfile|$rel|"))
+            $null = $sha.AppendData([System.IO.File]::ReadAllBytes($src))
+        }
+        $sharedHash = ([System.Convert]::ToHexString($sha.GetHashAndReset())).ToLowerInvariant()
+        $sha.Dispose()
+
+        $sharedCacheRoot = Join-Path ([System.IO.Path]::GetTempPath()) "mikcb-l0-shared"
+        $sharedCacheDir = Join-Path $sharedCacheRoot $sharedHash
+        $sharedCacheClasses = Join-Path $sharedCacheDir "classes"
+        $sharedCacheStamp = Join-Path $sharedCacheDir "ok.txt"
+
+        # 冷启动串行化：同机多 Agent 同时没命中缓存时，只让一个真去编，其余等完直接命中。
+        # 锁序固定「先模块锁、后缓存锁」，且全局只此一处取缓存锁，不成环。
+        # 抢不到（等满 $timeoutMs）就降级为「本次不复用缓存」，绝不把 L0 卡死。
+        $sharedMutex = $null
+        $sharedLocked = $false
+        $sharedMutexName = "Global\Mikcb_KotlinSharedCache_Mutex"
+        try {
+            try { $sharedMutex = [System.Threading.Mutex]::new($false, $sharedMutexName) }
+            catch {
+                $sharedMutexName = "Local\Mikcb_KotlinSharedCache_Mutex"
+                $sharedMutex = [System.Threading.Mutex]::new($false, $sharedMutexName)
+            }
+            try { $sharedLocked = $sharedMutex.WaitOne($timeoutMs) }
+            catch [System.Threading.AbandonedMutexException] { $sharedLocked = $true }
+        } catch {
+            $sharedMutex = $null
+            Write-Host ">>> [test-kotlin-module] ⚠️ 共享缓存锁建不出来（$($_.Exception.Message)），本次不复用缓存" -ForegroundColor DarkYellow
+        }
+
+        try {
+            if ((Test-Path -LiteralPath $sharedCacheStamp) -and (Test-Path -LiteralPath $sharedCacheClasses)) {
+                $sharedClassesDir = $sharedCacheClasses
+                Write-Host ">>> [test-kotlin-module] 第 1 段：共享面 $($sharedSources.Count) 个 .kt 命中缓存 [$($sharedHash.Substring(0,12))]，跳过编译" -ForegroundColor DarkGreen
+            } else {
+                $sharedOut = Join-Path $workRoot "shared-classes"
+                $sharedArgFile = Join-Path $workRoot "kotlinc-shared.args"
+                New-Item -ItemType Directory -Path $sharedOut -Force | Out-Null
+                $sharedArgLines = @("-cp", "`"$(& $toSlash $classpath)`"", "-d", "`"$(& $toSlash $sharedOut)`"")
+                foreach ($src in @($sharedSources | Sort-Object)) { $sharedArgLines += "`"$(& $toSlash $src)`"" }
+                Set-Content -Path $sharedArgFile -Value $sharedArgLines -Encoding utf8NoBOM
+
+                $swShared = [System.Diagnostics.Stopwatch]::StartNew()
+                Write-Host ">>> [test-kotlin-module] 第 1 段：编译共享面 $($sharedSources.Count) 个 .kt（缓存未命中 [$($sharedHash.Substring(0,12))]）..." -ForegroundColor Cyan
+                $sharedLog = & $kotlinc "@$sharedArgFile" 2>&1
+                $sharedExit = $LASTEXITCODE
+                $swShared.Stop()
+                foreach ($line in $sharedLog) { Write-Host $line }
+
+                if ($sharedExit -ne 0) {
+                    # 点名：只认带 `.kt:<行>:` 的 error，且只收共享面文件——本域文件不在这段里。
+                    $named = @()
+                    foreach ($line in $sharedLog) {
+                        $m = [regex]::Match([string]$line, "(?i)^\s*(.+?\.kt):(\d+):(?:\d+:)?\s*error:")
+                        if (-not $m.Success) { continue }
+                        $abs = $m.Groups[1].Value.Trim()
+                        if ($abs.StartsWith($repoRoot, [System.StringComparison]::OrdinalIgnoreCase)) {
+                            $abs = $abs.Substring($repoRoot.Length).TrimStart('\', '/')
+                        }
+                        $named += ("{0}:{1}" -f ($abs -replace '\\', '/'), $m.Groups[2].Value)
+                    }
+                    $named = @($named | Select-Object -Unique)
+                    Write-Host ""
+                    Write-Host "──────────────────────────────────────────────────────────────" -ForegroundColor Red
+                    Write-Host "✗ 共享面编译失败：不是 [$cleanModule] 这一域的问题（exit 78 = EX_CONFIG）。" -ForegroundColor Red
+                    Write-Host "  先别在本域瞎改去绕；共享件归所有者，跨域共编同一文件按 AGENTS.md 避让。" -ForegroundColor Red
+                    if ($named.Count -gt 0) {
+                        Write-Host "  报错的共享面文件（$($named.Count) 处，点名如下）：" -ForegroundColor Red
+                        foreach ($n in $named) { Write-Host "    · $n" -ForegroundColor Red }
+                    } else {
+                        Write-Host "  kotlinc 没吐可解析的「文件:行」error，原始输出见上。" -ForegroundColor Red
+                    }
+                    Write-Host "──────────────────────────────────────────────────────────────" -ForegroundColor Red
+                    exit 78
+                }
+
+                # 只把**成功产物**落缓存：先编进本次运行私有目录，再整体改名进缓存目录，
+                # 读方永远看不到半个 classes；失败不写，坏产物不会污染下次。
+                New-Item -ItemType Directory -Path $sharedCacheDir -Force | Out-Null
+                if (Test-Path -LiteralPath $sharedCacheClasses) {
+                    Remove-Item -LiteralPath $sharedCacheClasses -Recurse -Force -ErrorAction SilentlyContinue
+                }
+                try {
+                    Move-Item -LiteralPath $sharedOut -Destination $sharedCacheClasses -ErrorAction Stop
+                    Set-Content -LiteralPath $sharedCacheStamp -Value $sharedHash -Encoding utf8NoBOM
+                    Write-Host ">>> [test-kotlin-module] 第 1 段通过（$([math]::Round($swShared.Elapsed.TotalSeconds,1)) s），已缓存 [$($sharedHash.Substring(0,12))]" -ForegroundColor DarkGreen
+                } catch {
+                    Write-Host ">>> [test-kotlin-module] ⚠️ 缓存落盘失败（$($_.Exception.Message)），本次直接用临时产物" -ForegroundColor DarkYellow
+                }
+                $sharedClassesDir = if (Test-Path -LiteralPath $sharedCacheClasses) { $sharedCacheClasses } else { $sharedOut }
+            }
+        } finally {
+            if ($sharedLocked -and $sharedMutex -ne $null) { try { $sharedMutex.ReleaseMutex() } catch { } }
+            if ($sharedMutex -ne $null) { $sharedMutex.Dispose() }
+        }
+    } else {
+        Write-Host ">>> [test-kotlin-module] 共享面为空（被 -ExcludeShared 排除了？），直接编本域" -ForegroundColor DarkYellow
+    }
+
+    # ── 第 2 段：本域 main+test+testutil+模块白名单，用共享面 classes 当 -cp ────────────
+    $domainCp = if ($sharedClassesDir) { "$sharedClassesDir;$classpath" } else { $classpath }
+    if ($sources.Count -eq 0) {
+        Write-Host ">>> [test-kotlin-module] 本域没有可编译源（全部被 Compose 过滤或跳过），共享面已通过，无测试可跑。" -ForegroundColor Yellow
+        exit 0
+    }
+    $argLines = @("-cp", "`"$(& $toSlash $domainCp)`"", "-d", "`"$(& $toSlash $outDir)`"")
     foreach ($src in $sources) { $argLines += "`"$(& $toSlash $src)`"" }
     Set-Content -Path $argFile -Value $argLines -Encoding utf8NoBOM
+    Write-Host ">>> [test-kotlin-module] 第 2 段：编译本域 [$cleanModule]（本域 $($sources.Count) 个 .kt，共享面 $($sharedSources.Count) 个已就绪），工作目录 $workRoot" -ForegroundColor Cyan
     & $kotlinc "@$argFile"
     if ($LASTEXITCODE -ne 0) {
         Write-Error "[test-kotlin-module] kotlinc 编译失败 (exit code: $LASTEXITCODE)"
@@ -487,7 +633,8 @@ try {
     }
 
     Write-Host ">>> [test-kotlin-module] 运行 JUnit 单元测试 (测试类: $($testClasses -join ', '))..." -ForegroundColor Green
-    $runClasspath = "$outDir;$junitJar;$hamcrestJar;$stdlibJar"
+    # 共享面的 classes 必须在运行期 classpath 上：本域 classes 只是引用它，不重复打包。
+    $runClasspath = if ($sharedClassesDir) { "$outDir;$sharedClassesDir;$junitJar;$hamcrestJar;$stdlibJar" } else { "$outDir;$junitJar;$hamcrestJar;$stdlibJar" }
     
     java -cp $runClasspath org.junit.runner.JUnitCore @testClasses
     $testExitCode = $LASTEXITCODE
