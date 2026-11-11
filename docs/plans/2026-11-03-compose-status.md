@@ -72,10 +72,10 @@ CI 权威变体是 `:app:testProdDebugUnitTest`（`.github/workflows/ci.yml` 的
 | **R09** | ~~通知点击落页~~ | ✅ **已落地**（2026-11-11 核销，依据代码与提交）：① **生产端 + 参数契约** `38df5178d`（2026-11-03）——`NotificationLaunchTarget.kt` 定 `open_route` / `open_lan_edit` 两个 extra，`pageIdFor`(:99) / `pageIdForIntent`(:119) / `postLaunchPage`(:132，解析后移除 extra 防重建重复推页)，生产端两处：`ExamReminderScheduler.kt:360` 写 `open_route=/exams`、`LanEditForegroundService.kt:29` 写 `open_lan_edit=true`；② **壳侧接线** `9427c4fd3`（2026-11-04）——冷启动 `pages/PagesShellActivity.kt:221-223`（`NotificationLaunchTarget.postLaunchPage(intent)`）、`singleTop` 复用 `:428-432`（`onNewIntent` → `setIntent` → `postLaunchPage`）；③ 三份 JVM 单测：`NotificationLaunchPageContractTest` / `NotificationLaunchShellWiringGuardTest` / `NotificationLaunchTargetGuardTest`。**已知边缘（未修，待真机判）**：`PagesShellActivity.kt:221` 的守卫是 `savedInstanceState == null`，进程被回收后点**新**通知若系统同时带回非空 `savedInstanceState`，该落点会被一起吞掉（作者在 `:217-220` 自记此事）；收紧方案是改判「该 Intent 是否真带页面 extra」，本行不预先实施。**真机项归 R01**，不算代码待办 |
 | **R10** | **弹层剩余 11 条（`QingyuSheet` 两个底层缺口已修；42dp 一族 4 处已修 1）** | **两个底层缺口 → 已销**（2026-11-11 复核，均为活码、非注释）：① 标题动作贴边 —— `bd0c3eb7` 的私有 `horizontalBleed`（`QingyuSheet.kt:186` 调用、`:236` 定义）：有标题动作时保留 16dp、内容反向外扩，标题不贴边且内容仍满宽；② IME 叠加 —— 同提交引入 `androidx.compose.foundation.layout.ime` 与条件（现 `:176-177`：`imeBottomPx > 0` 时只留 16dp 呼吸，不再多垫 24~40dp）。**审计「11 条仍成立」里这两条已过期，别再按 `2026-11-02-compose-dialog-full-audit.md` 报**。另：`143638290`（11-10）是标题区 / 内边距 / 按钮区统一刻度 + 缩放守卫，IME 判据未变（只随重构移行）——「IME 由 `143638290` 修」与代码不符，见文末变更记录。**42dp 无标题空档（原计 4 处）→ 已修 1 / 未修 3 / 非缺陷 1**：已修 `pages/timetable/WeekSelectorSheet.kt`（`f7723ddd`：标题收回套件标题行 `:108`，删掉自绘 `headline1` + 8dp `Spacer`）；未修 `pages/course/CourseActionSheet.kt:163`、`pages/course/CourseNoteSheet.kt:143`（其注释 `:145-148` 已自记这 42dp）、`app/AppearanceEditorHost.kt`（材质 `:853` / 壁纸 `:886` 两面板不传 `title`，正文自带头）；**非缺陷** `pages/timetable/TimetableTopBar.kt:695`（八宫格「更多」，用户口径就是「不显示标题」，注释 `:697-699`，**别被后人当缺陷翻修**）。**算式（以后一次收口用）**：**42 = 24dp 把手 + 6+12dp 标题行**，两段都**无条件**画在 `third_party/miuix-ui/src/main/kotlin/top/yukonga/miuix/kmp/layout/BottomSheetContentLayout.kt:643-657`（`DragHandleArea` + `TitleAndActionsRow`，无 `title != null` 守卫），标题行 `padding(top = 6.dp, bottom = 12.dp)` 在 `:806`、把手 `.height(24.dp)` 在 `:735` ⇒ `title = null` 只跳过文字、不跳 padding。**收口要走「改库批次」**（动 miuix 共享件，影响所有无标题弹层）⇒ 需一次 L1 验编译，**待排批、不排期**。仍未做：自动聚焦 ×4、选周结构、ICS 菜单等（部分待 R05 拍板）。写作用域：`components/`、`pages/course/`、`pages/timetable/`、`pages/settings/`、`third_party/miuix-ui/` |
 | **R11** | **弹窗玻璃铺开** | 试点只有加课页删除确认 1 处（`e8cafb75` / `4a8011b3`，守卫钉调用点数=1）。先等真机看采样跟手与低端机帧率，确认后再铺其余 46 处 OverlayDialog 与底部弹层。写作用域：`components/glass/`、`pages/**` |
-| **R12** | **局域网两个残余** | `LanTransferLogic.kt:54` / `LanEditRepositoryHost.kt:70-72`：① settings 只应用 Kotlin 已移植的时间/周次子集；② 地点分组变化后不重算课程钟点（Dart `replaceLocationTimeGroups(resync:true)` 无对应物）。撤销点、真实 `transferId`、整份恢复已完成，勿重做。写作用域：`main/transfer/lan/`、`main/app/TimetableRepository.kt` |
+| **R12** | ~~局域网两个残余~~ | ✅ **已闭环**（2026-11-11 核销，两段修复：`2026-11-03` 主修 + `b1317d213` 补刀）：① **settings 只应用子集 → 已修（2026-11-03）**：`LanTransferLogic.kt:55-58` 的 KDoc 自己记着「~~差异只比 Kotlin 已移植的时间/周次子集~~ **已修（2026-11-03）**」，差异与落盘改用包/盘上的**整份原始 map**（`LanTransferDiffSource.settingsJson`，落盘路径 `LanTransferApplier.kt:343-346` → `settingsReplacePatch`），核心四键仍由 `TimetableSettings` 负责。**11-11 再补一刀**：`normalizeSettingsDocument` 在「整份原始文档比对」改造时被丢弃，导致只改了更新镜像的包也被报「设置已改」；现 `settingsDiffView`（`:600`）比较前按落盘同一口径抹平**设备信任锚两键与 null 值键**（`:345-350` 调两遍归一，`:598` 注释自记「补回 `737a69909` 的 `normalizeSettingsDocument` 口径」）。② **地点分组重算 → 早已具备**：`LanTransferApplier.kt:367`（合并分支）/`:377`（覆盖分支）**都传 `resync = true`**（`:358` 注释），Dart `replaceLocationTimeGroups(resync:true)` 有对应物，**无需再做**。回归：`LanTransferResidualsTest` 8 例随 `b1317d213` 补回。写作用域：`main/transfer/lan/`（本文只记结论，未改代码） |
 | **R13** | ~~F18：两条壁纸路由语义~~ | ✅ **已解决**（2026-11-11 校准）：`ShellPageIndex.kt:553-557` 注释原文记「原先 `b.recentWallpaper` 与 `b.backdropFlow` 都落 PICKER、语义重复（R13），已合并为这一条」，判据是 Dart `settings_home_backdrop_flow.dart:439-472`（该页同时含选图行与「最近使用」缩略图条，无独立页）；课表页「最近使用」行改由 `SettingsHost.timetablePageSheetRoute` 映射到同一个 `b.backdropFlow`。**注意**：保留哪一条是实现决定，若产品要恢复两个独立入口需另开需求 |
 | **R14** | ~~壁纸取景页「换壁纸」入口~~ | ✅ **已交付**（2026-11-11 校准）：提交 `5ade79faf`（2026-11-03）「取景页补『换壁纸』，选图落盘与补历史抽成共享件」——新增 `ManagedWallpaperStore.kt` / `ManagedWallpaperNaming.kt`，`WallpaperPositionPickerPage.kt` +180 行、`ManagedWallpaperPickChainTest.kt` 149 例；`WallpaperPositionPickerPage.kt:148` 注释自证「『换壁纸』（2026-11-03 R14 补上）」 |
-| **R15** | **自检页 4 个测试通知按钮** | `LiveSelfCheckHost.kt:362-366` 四个分支仍只弹「不可用」；要么移植测试夹具管线，要么明确记为已知缺口。台账旧 §9.10「已闭环」是过度声明。写作用域：`app/LiveSelfCheckHost.kt`、`pages/live/`、`main/pages/live/` |
+| **R15** | ~~自检页 4 个测试通知按钮~~ | ✅ **已闭环**（2026-11-11 核销）：`LiveSelfCheckHost.kt:496-504` 已是**真管线**——`START` / `CANCEL` / `COURSE_TEST_STOP` 走 `notificationController.trigger(rowId)`，「崩溃」→ `triggerTestCrash()`（定义 `:427`）、「ANR」→ `triggerTestAnr()`（`:444`），「选课测试」先选课再选阶段（`:501`、弹层 `:509-512`），不再弹 `aboutUnavailable`。旧行「`:362-366` 四个分支仍只弹『不可用』」已过期；台账 §9.10 当年那句「已闭环」这次对得上。归位：**真机仍归 R01**（触发后岛/通知是否真弹出） |
 | **R16** | **埋点页面级接线** | core 三件与 `TimetableRepository` 单点已提交（`b9e5cdb6` / `9cd1e337`）；`composeP1` 页面侧引用为 0，无持久化/导出/后端 sink。先定要采哪些页面事件与隐私边界（产品决定）。写作用域：`main/core/`、`composeP1/app/` 与各页面宿主 |
 | **R17** | **宽屏收尾** | 前三批已落地：三档判据 `499b28d8`、`QingyuPageScaffold` 限宽与 SmallTopAppBar 分支 `75afb7f0`、Rail 判据 `6a564625`、`ShellNavigationRail` 接入 `e2e33583`。剩余：首页课表网格宽屏列数（属课程域另一批）+ 宽屏连带面的真机验（`R02` 的方向锁已由 `1e8b953b7` 解除，剩下的矮屏弹层 / 返回手势 / Rail 冲突归 R01）。写作用域：`components/`、`pages/shell/`、`pages/timetable/`（`AndroidManifest.xml` 已无需再动） |
 
@@ -105,6 +105,9 @@ CI 权威变体是 `:app:testProdDebugUnitTest`（`.github/workflows/ci.yml` 的
 | R06 `src/perf/AndroidManifest.xml` 去留 | 文件已不存在，`android/app/src/perf/` 空目录、0 个跟踪文件（2026-11-11 校准） |
 | R13 两条壁纸路由语义 | `ShellPageIndex.kt:553-557` 注释：已合并为单条 `b.backdropFlow`，Dart 判据 `settings_home_backdrop_flow.dart:439-472` |
 | R14 壁纸取景页「换壁纸」 | `5ade79faf`（2026-11-03）+ `WallpaperPositionPickerPage.kt:148` 注释；共享件 `ManagedWallpaperStore.kt` / `ManagedWallpaperNaming.kt` |
+| R12 局域网两处残余 | ① `LanTransferLogic.kt:55-58`（2026-11-03 整份原始 map）+ `b1317d213`（差异归一）；② `LanTransferApplier.kt:367`/`:377` 两分支 `resync = true` |
+| R15 自检页 4 个测试通知 | `LiveSelfCheckHost.kt:496-504` 接 `notificationController.trigger` 与 `triggerTestCrash()`/`triggerTestAnr()`（`:427`/`:444`） |
+| 审查文档 P0-2「5 份 `app_strings.xml` 缺日程提醒 4 条」→ **不成立** | 6 个 values 目录（`values` / `-en` / `-ja` / `-ko` / `-zh-rHK` / `-zh-rTW`）各 **4/4** 命中，`res/values/app_strings.xml:21-24`；`docs/reviews/2026-11-11-full-audit.md:36` 那条已过期（审查侧改写时以本行为准，本文档不改审查产物） |
 
 > 以上只证明「代码已提交、门禁当时绿」，**不等于真机验过**。所有真机验收统一归 R01；
 > 不要因为某条出现在本表就对外说「已完成」。
@@ -144,6 +147,12 @@ CI 权威变体是 `:app:testProdDebugUnitTest`（`.github/workflows/ci.yml` 的
 3. 文案与 ARB 逐字对拍；
 4. 改断言/守卫/棘轮基线必须做咬合探针（改坏 → 红 → 还原）；
 5. `dev` 变体页面壳（`PagesShellActivity`）真机逐页对照——最后一条需要用户配合。
+
+**合并后自查（2026-11-11 加，血案换的）**：每次合并 / 被别人合并后，对**测试文件**跑一遍
+`git cat-file -e HEAD:<测试路径>`，确认还在。本仓真的发生过：`LanTransferResidualsTest.kt` 随
+`737a69909`（11-03）进库，到 `9bf5de246`（11-04「合并 205 线」）之后从树里整份消失——
+`b1317d213^` 已查无此文件、`git log --diff-filter=D` 也**追不到删除提交**（合并把一侧整份吞了、
+不留删除记录）。11-11 由白鹭按当前构造器补回 8 例。**测试丢了守卫不会红，只有人找不到文件时才会发现。**
 
 L0 / L1 / L2 的机器与命令见 `AGENTS.md` 与 `.agents/reference/local-toolchain.md`。
 L3 出包、L3.5 性能包、L4 真机一律用户跑；**性能只认 Bench 或 release 包**。
@@ -201,6 +210,25 @@ L3 出包、L3.5 性能包、L4 真机一律用户跑；**性能只认 Bench 或
 ---
 
 ## 变更记录
+
+- **2026-11-11 R12 / R15 / 审查 P0-2 核销（只改账，代码为实测）**：
+  - **R12 两处残余 → 已闭环**，分两段：①`2026-11-03` 已把 settings 从「Kotlin 已移植子集」改成
+    **整份原始 map**（`LanTransferLogic.kt:55-58` 的 KDoc 自记「已修（2026-11-03）」、
+    `LanTransferDiffSource.settingsJson`、落盘 `LanTransferApplier.kt:343-346`）；`b1317d213`（11-11）
+    再补差异归一（信任锚两键 + null 值键，`settingsDiffView` `:600`）。②`LanTransferApplier.kt:367`/`:377`
+    两分支均 `resync = true`，Dart 行为早有对应物。回归 `LanTransferResidualsTest` 8 例。
+  - **R15 自检页 4 个测试通知 → 已闭环**：`LiveSelfCheckHost.kt:496-504` 走
+    `notificationController.trigger(rowId)`，崩溃/ANR 走 `triggerTestCrash()`(`:427`)/`triggerTestAnr()`(`:444`)；
+    旧行「只弹不可用」过期，真机效果仍归 R01。
+  - **审查 P0-2「`app_strings.xml` 缺日程提醒 4 条」→ 不成立**：6 个 values 目录各 4/4 命中
+    （`res/values/app_strings.xml:21-24`）；`docs/reviews/2026-11-11-full-audit.md:36` 需由审查侧重定向，
+    本文档不改审查产物。
+  - **测试被合并吞掉（账务事实）**：`LanTransferResidualsTest.kt` 于 `737a69909` 在树，
+    `9bf5de246`（11-04 合并）后消失，无删除提交可追；`b1317d213` 补回。已在 §六 加「合并后自查」一条。
+  - **CJK 基线净 +85 的背景（不是修复，别写成已修）**：那 30 条全部是 `@Preview` 预览名与假数据，
+    不是真新增文案；根因是两个守卫对 `@Preview` 口径不一致——`EmptyStateUnificationGuardTest` 有
+    `blankPreviewSpans` 豁免（`:196-211`/`:340-356`），`CjkLiteralGateTest` 无此豁免。统一口径并回落基线
+    （目标 ≈1080）由木尺那条线在做；本行只解释「基线为什么涨」，不改结论。
 
 - **2026-11-11 R10 复核（只改账）**：
   - **审计 11 条里 2 条已过期**：「标题动作贴边」与「IME 叠加」均已由 `bd0c3eb7`（2026-11-03）修掉，
