@@ -81,23 +81,8 @@ object ScheduleItemBridge {
 
     // ---------- 日期规则 ----------
 
-    fun toUiRule(rule: ScheduleDateRule): ScheduleDateRuleData = ScheduleDateRuleData(
-        id = rule.id,
-        name = rule.name,
-        timeSchemeId = rule.timeSchemeId,
-        startDate = rule.startDate,
-        endDate = rule.endDate,
-        enabled = rule.enabled,
-    )
-
-    fun toCoreRule(data: ScheduleDateRuleData): ScheduleDateRule = ScheduleDateRule(
-        id = data.id,
-        name = data.name,
-        timeSchemeId = data.timeSchemeId,
-        startDate = data.startDate,
-        endDate = data.endDate,
-        enabled = data.enabled,
-    )
+    // P1-11（2026-11-11）：`ScheduleDateRuleData` 已是指向 `core.ScheduleDateRule` 的
+    // typealias，原先的 `toUiRule` / `toCoreRule` 两个字段搬运函数随之删除（同一类型，无需转换）。
 
     /** 日期规则卡片视图（带「今天是否生效」与作息方案名）。 */
     fun buildDateRuleViews(
@@ -105,7 +90,7 @@ object ScheduleItemBridge {
         schemeNames: Map<String, String>,
         todayIso: String,
     ): List<ScheduleDateRuleItemView> = rules.map { rule ->
-        val ui = toUiRule(rule)
+        val ui = rule
         ScheduleDateRuleItemView(
             rule = ui,
             schemeName = schemeNames[rule.timeSchemeId] ?: "",

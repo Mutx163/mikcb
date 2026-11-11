@@ -507,7 +507,8 @@ private fun buildManagementModel(
     // 「今天在区间内」那句话本来就该随日期变。
     hasActiveDateRule = ScheduleDateRuleLogic.match(
         LocalDateTime.now(),
-        snapshot.scheduleDateRules.map { it.toCalendarRule() },
+        // P1-11：仓储里的规则就是 calendar 逻辑的入参（typealias 同一类型），无需转换。
+        snapshot.scheduleDateRules,
     ) != null,
 )
 
@@ -906,19 +907,6 @@ private fun parseClockOrDefault(value: String): Pair<Int, Int> {
 }
 
 /**
- * 把仓储里的 `core.ScheduleDateRule` 桥成 `calendar.ScheduleDateRule`。
- *
- * 本仓有两份同形模型：`core/` 那份是落盘真源（`TimetableSnapshot.scheduleDateRules`），
- * `calendar/` 那份是日期规则页与 `ScheduleDateRuleLogic` 的入参，目前**没有现成转换函数**。
- * 这里只做字段搬运，**不复制判据**——「今天落在哪条规则里」仍然只有
- * `ScheduleDateRuleLogic.match` 这一份实现（复制一套的话，两处早晚会漂）。
+ * P1-11（2026-11-11）：原先这里有一条 `core.ScheduleDateRule → calendar.ScheduleDateRule`
+ * 的私有桥（字段搬运）。现在 calendar 侧已是指向 core 的 typealias，桥随之删除。
  */
-private fun com.mutx163.qingyu.core.ScheduleDateRule.toCalendarRule(): com.mutx163.qingyu.calendar.ScheduleDateRule =
-    com.mutx163.qingyu.calendar.ScheduleDateRule(
-        id = id,
-        name = name,
-        timeSchemeId = timeSchemeId,
-        enabled = enabled,
-        startDate = startDate,
-        endDate = endDate,
-    )

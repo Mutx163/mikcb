@@ -47,46 +47,7 @@ data class TimeSchemeDeleteBlockers(
     val isNotEmpty: Boolean get() = !isEmpty
 }
 
-/** 日期规则模型（移植自 lib/models/schedule_date_rule.dart；本族只需要字段）。 */
-data class ScheduleDateRule(
-    val id: String,
-    val name: String,
-    val timeSchemeId: String,
-    /** 含头含尾，`yyyy-MM-dd`（本地日历日）。 */
-    val startDate: String,
-    val endDate: String,
-    val enabled: Boolean = true,
-) {
-    fun toJson(): Map<String, Any?> = linkedMapOf(
-        "id" to id,
-        "name" to name,
-        "timeSchemeId" to timeSchemeId,
-        "enabled" to enabled,
-        "startDate" to startDate,
-        "endDate" to endDate,
-    )
-
-    companion object {
-        fun fromJson(json: Map<String, Any?>): ScheduleDateRule {
-            val rawStartDate = json["startDate"]
-            val rawEndDate = json["endDate"]
-            if (rawStartDate !is String || rawStartDate.trim().isEmpty()) {
-                throw DartFormatException("missing schedule date rule start date")
-            }
-            if (rawEndDate !is String || rawEndDate.trim().isEmpty()) {
-                throw DartFormatException("missing schedule date rule end date")
-            }
-            return ScheduleDateRule(
-                id = json["id"] as? String ?: "",
-                name = (json["name"] as? String ?: "").trim(),
-                timeSchemeId = json["timeSchemeId"] as? String ?: "",
-                enabled = json["enabled"] as? Boolean ?: true,
-                startDate = rawStartDate.trim(),
-                endDate = rawEndDate.trim(),
-            )
-        }
-    }
-}
+/** 日期规则模型（P1-11 起唯一真源在 `core/ScheduleDateRule.kt`，本族只需按路径引用它）。 */
 
 /** 节次表规范签名：判断「设置已等于该模板」时按值比较用（:90-95）。 */
 fun sectionsSignature(sections: List<SectionTime>): String =

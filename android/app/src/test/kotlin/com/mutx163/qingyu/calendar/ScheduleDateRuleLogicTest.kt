@@ -1,5 +1,6 @@
 package com.mutx163.qingyu.calendar
 
+import com.mutx163.qingyu.core.DartFormatException
 import com.mutx163.qingyu.core.DartTime
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -82,12 +83,13 @@ class ScheduleDateRuleLogicTest {
 
     @Test
     fun `fromJson missing dates throw`() { // [Dart抄录] schedule_date_rule.dart:50-55 错误文案逐字
-        val e1 = assertThrows(IllegalArgumentException::class.java) {
+        // P1-11：模型并到 core 后异常类型统一为 DartFormatException（core 族约定），文案不变。
+        val e1 = assertThrows(DartFormatException::class.java) {
             ScheduleDateRule.fromJson(mapOf("endDate" to "2026-04-30"))
         }
         assertEquals("missing schedule date rule start date", e1.message)
 
-        val e2 = assertThrows(IllegalArgumentException::class.java) {
+        val e2 = assertThrows(DartFormatException::class.java) {
             ScheduleDateRule.fromJson(mapOf("startDate" to "2026-03-01", "endDate" to "  "))
         }
         assertEquals("missing schedule date rule end date", e2.message)

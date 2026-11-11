@@ -3,16 +3,16 @@ package com.mutx163.qingyu.pages.schedule
 import com.mutx163.qingyu.calendar.ScheduleDateRuleApplyResult
 
 /**
- * 作息时间表自动切换日期规则模型（移植 `lib/models/schedule_date_rule.dart` 与 `ScheduleDateRuleLogic`）。
+ * 日程页的日期规则视图模型（P1-11，2026-11-11）。
+ *
+ * 原先这里是一份独立的 `data class`（第三份副本）；现在真源收到
+ * [com.mutx163.qingyu.core.ScheduleDateRule]，这里只保留别名，UI 引用面不动。
+ * 它没有 JSON 契约（落盘只认 core 那份）——同一个规则不会再出现「UI 一套、盘上一套」。
+ *
+ * 注意：[ScheduleDateRuleDomain] 里的校验/重叠/生效判定仍是日程页自己的实现，
+ * 与 `calendar.ScheduleDateRuleLogic` 的同类函数**尚未合并**（尾件另立一单）。
  */
-data class ScheduleDateRuleData(
-    val id: String,
-    val name: String,
-    val timeSchemeId: String,
-    val startDate: String,
-    val endDate: String,
-    val enabled: Boolean = true,
-)
+typealias ScheduleDateRuleData = com.mutx163.qingyu.core.ScheduleDateRule
 
 sealed class ScheduleDateRuleValidationResult {
     data object Valid : ScheduleDateRuleValidationResult()

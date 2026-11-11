@@ -185,10 +185,11 @@ fun ScheduleDateRuleHost(
             availableSchemes = availableSchemes,
             onBack = onBack,
             onSaveRule = { incoming ->
-                val ui = snapshot.scheduleDateRules.map { ScheduleItemBridge.toUiRule(it) }.toMutableList()
+                // P1-11：UI 规则与仓储规则已是同一类型，无需 toUiRule / toCoreRule 搬运。
+                val ui = snapshot.scheduleDateRules.toMutableList()
                 ScheduleItemBridge.upsertRule(ui, incoming)
                 // 写盘失败：只提示「保存失败」，**不跑自动套用、也不出四态**（没说保存成功就不能说已保存）。
-                writeRules(ui.map { ScheduleItemBridge.toCoreRule(it) }) {
+                writeRules(ui) {
                     applyDueAndReport(incoming)
                 }
             },

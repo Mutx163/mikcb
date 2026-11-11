@@ -160,7 +160,7 @@ class ScheduleDateRuleAutoApplyTest {
             scheduleDateRules = listOf(rule),
             timeSchemes = listOf(scheme()),
             scheduleDateRuleLastAppliedSignature = ScheduleDateRuleLogic.appliedSignature(
-                rule.toCalendarDateRule(),
+                rule,
             ),
         )
 
@@ -223,7 +223,7 @@ class ScheduleDateRuleAutoApplyTest {
         assertEquals(1, port.saveSignatureCalls)
         assertEquals("s1", port.settings.activeTimeSchemeId)
         assertEquals(
-            ScheduleDateRuleLogic.appliedSignature(rule.toCalendarDateRule()),
+            ScheduleDateRuleLogic.appliedSignature(rule),
             port.scheduleDateRuleLastAppliedSignature,
         )
     }
@@ -284,23 +284,22 @@ class ScheduleDateRuleAutoApplyTest {
     }
 
     @Test
-    fun `core and calendar rule conversions are lossless`() {
-        val core = CoreScheduleDateRule(
+    fun `模型并库后字段顺序冻结 位置参数与命名参数等价`() {
+        // 仓库里仍有 `ScheduleDateRule("id","name","scheme",start,end[,enabled])` 的位置参数构造
+        // （ScheduleItemServiceTest / TimetableRepositoryTest）；真源并到 core 后顺序必须保持
+        // id / name / timeSchemeId / startDate / endDate / enabled，调换会静默错位而不是编译失败。
+        val positional = ScheduleDateRule(
+            "r9", " 冬令时 ", "s9", "2026-11-01", "2027-03-01", false,
+        )
+        val named = ScheduleDateRule(
             id = "r9",
             name = " 冬令时 ",
             timeSchemeId = "s9",
-            enabled = false,
             startDate = "2026-11-01",
             endDate = "2027-03-01",
+            enabled = false,
         )
-        val calendar = core.toCalendarDateRule()
-
-        assertEquals(core.id, calendar.id)
-        assertEquals(core.name, calendar.name)
-        assertEquals(core.timeSchemeId, calendar.timeSchemeId)
-        assertEquals(core.enabled, calendar.enabled)
-        assertEquals(core.startDate, calendar.startDate)
-        assertEquals(core.endDate, calendar.endDate)
-        assertEquals(core, calendar.toCoreDateRule())
+        assertEquals(named, positional)
+        assertEquals(named.toJson(), positional.toJson())
     }
 }

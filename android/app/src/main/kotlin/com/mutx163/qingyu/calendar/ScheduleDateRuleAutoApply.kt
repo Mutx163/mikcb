@@ -94,7 +94,9 @@ object ScheduleDateRuleAutoApply {
         now: LocalDateTime = LocalDateTime.now(),
     ): ScheduleDateRuleApplyResult {
         val today = ScheduleDateRuleLogic.dateOnly(now)
-        val calendarRules = port.scheduleDateRules.map { it.toCalendarDateRule() }
+        // P1-11：calendar 侧与 core 侧已是同一类型（calendar.ScheduleDateRule 是指向
+        // core.ScheduleDateRule 的 typealias），不再需要 toCalendarDateRule 转换。
+        val calendarRules = port.scheduleDateRules
         val matched = ScheduleDateRuleLogic.match(today, calendarRules)
         if (!ScheduleDateRuleLogic.shouldBulkApply(
                 matchedRule = matched,
@@ -171,27 +173,3 @@ object ScheduleDateRuleAutoApply {
     }
 }
 
-/**
- * `core.ScheduleDateRule`（落盘真源）→ [ScheduleDateRule]（规则逻辑入参）。
- *
- * 两份同形模型一直靠各宿主手抄转换（`TimeSchemeHost.kt:626` 有一份私有副本）；
- * 这里给出唯一入口，避免再多一份会漂的实现。
- */
-fun CoreScheduleDateRule.toCalendarDateRule(): ScheduleDateRule = ScheduleDateRule(
-    id = id,
-    name = name,
-    timeSchemeId = timeSchemeId,
-    enabled = enabled,
-    startDate = startDate,
-    endDate = endDate,
-)
-
-/** [ScheduleDateRule] → `core.ScheduleDateRule`（与 [toCalendarDateRule] 互逆，字段逐字保留）。 */
-fun ScheduleDateRule.toCoreDateRule(): CoreScheduleDateRule = CoreScheduleDateRule(
-    id = id,
-    name = name,
-    timeSchemeId = timeSchemeId,
-    enabled = enabled,
-    startDate = startDate,
-    endDate = endDate,
-)
