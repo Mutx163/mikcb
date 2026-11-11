@@ -15,7 +15,7 @@ Android Studio 的 Build Variants 下拉框里显示的是 Gradle 的构建标�
 |---|---|---|---|---|---|
 | `devDebug` | 调试版 | `com.mutx163.qingyu.debug` | debug | `3.0.0-0-debug` | 日常开发、L1/L2 闸门 |
 | `itestDebug` | 集成测试版 | `com.mutx163.qingyu.itest` | debug | `3.0.0-0-itest` | 集成测试专属包名（与正式版数据隔离）；`integration_test` 已随 Dart 层删除，现无自动化用途 |
-| `perfBench` | 性能版 | `com.mutx163.qingyu.profile` | release | `3.0.0-0-profile-bench` | 性能测量；Compose 壳；带 `<profileable>`，可抓帧/采样 |
+| `perfBench` | 性能版 | `com.mutx163.qingyu.profile` | release | `3.0.0-0-profile-bench` | **唯一的性能包**；Compose 壳；带 `<profileable>`，可抓帧/采样；数据与正式版独立（空数据，只比启动与帧率） |
 | `prodDebug` | 正式渠道·调试包 | `com.mutx163.qingyu` | debug | `3.0.0-0` | **只给 CI 单测用，不要装机** |
 | `prodRelease` | 正式版 | `com.mutx163.qingyu` | release | `3.0.0-0` | 发版、正式数据 |
 
@@ -35,15 +35,34 @@ Android Studio 的 Build Variants 下拉框里显示的是 Gradle 的构建标�
 ## 临时恢复某个组合
 
 编辑 `android/app/build.gradle` 里的 `keepVariants`，把变体名加进去，重新 Sync 即可。
+现状（`android/app/build.gradle:250`）：
+
+```groovy
+def keepVariants = ['devDebug', 'itestDebug', 'perfBench', 'prodDebug', 'prodRelease'] as Set
+```
+
 例如要恢复 `devProfile`（在 Android Studio 里用 profile 档临时排查启动、卡顿问题；注意
-profile 档的数字不作数，性能只认 Bench 或 release）：
+profile 档的数字不作数，性能只认 Bench 或 release），就是把它加进上面那个列表：
 
 ```groovy
 def keepVariants = ['devDebug', 'devProfile', 'itestDebug', 'perfBench', 'prodDebug', 'prodRelease'] as Set
 ```
 
-性能版只能从 Android Studio 选 `perfBench` 运行，或用 Gradle 的 `:app:assemblePerfBench`
-打包；旧的 `flutter build apk --release --flavor perf` 入口已随 Dart 层删除，不存在了。
+**`prodBench` 不在可恢复之列**：它与正式版同包名、同签名，一装就覆盖用户手机上的正式版
+（`android/app/build.gradle:241` 已写明），所以白名单刻意关着它，不是配置漏了。
+
+## 性能包只有 `perfBench` 一个
+
+对外口径就一句：**性能包 = `perfBench`**。它是唯一可用的性能变体，包名
+`com.mutx163.qingyu.profile`（比正式版多 `.profile` 后缀）、release 签名与整档 R8 优化、
+带 `<profileable android:shell="true"/>` 可被 Perfetto / simpleperf / `dumpsys gfxinfo` 采样。
+
+代价必须知道：**它和正式版数据独立（空数据）**，所以只能比启动耗时与帧率，不代表正式版
+在真实数据量下的表现。想看真实数据量下的性能没有安全的现成变体——`prodBench` 与正式版
+同包名，装上就覆盖用户正式版，默认不提供。
+
+性能包从 Android Studio 选 `perfBench` 运行，或用 Gradle 的 `:app:assemblePerfBench` 打包；
+旧的 `flutter build apk --release --flavor perf` 入口已随 Dart 层删除，不存在了。
 
 ## 各变体打开哪个界面
 
