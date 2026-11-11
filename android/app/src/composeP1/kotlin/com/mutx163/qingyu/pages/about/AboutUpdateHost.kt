@@ -33,9 +33,8 @@ import com.mutx163.qingyu.infra.recordingEnabledFromPrefs
 import com.mutx163.qingyu.pages.settings.SettingsStringsExt2
 import com.mutx163.qingyu.platform.PrefsKeyValueStore
 import com.mutx163.qingyu.isTrustedSystemDownloadUrl
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.channels.Channel
-import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -132,15 +131,27 @@ fun AboutUpdateHostPage(
         val info = packageInfo ?: run { checking = false; return }
         checking = true
         scope.launch {
-            val outcome = checkForUpdatesAcrossManifestSources(
-                currentVersion = info.version,
-                channel = settings.downloadChannel,
-                includePrerelease = settings.includePrerelease,
-            )
-            result = outcome
-            checking = false
-            if (outcome == null) {
+            // 2026-11-11 R-3：竞速/解析路径里任何未捕获异常都必须把「检查中」复位，
+            // 否则异常逃出协程后 `checking` 永远停在 true —— 页面就是「一直转」。
+            try {
+                val outcome = checkForUpdatesAcrossManifestSources(
+                    currentVersion = info.version,
+                    channel = settings.downloadChannel,
+                    includePrerelease = settings.includePrerelease,
+                )
+                result = outcome
+                if (outcome == null) {
+                    appendLog("warn", UPDATE_LOG_CATEGORY_CHECK, UPDATE_LOG_CHECK_FAILED)
+                }
+            } catch (cancelled: CancellationException) {
+                // 页面离开导致的取消：原样抛出，不动 UI 状态（作用域已经结束）。
+                throw cancelled
+            } catch (error: Throwable) {
+                result = null
                 appendLog("warn", UPDATE_LOG_CATEGORY_CHECK, UPDATE_LOG_CHECK_FAILED)
+                appendLog("warn", UPDATE_LOG_CATEGORY_CHECK, error.message ?: error.javaClass.simpleName)
+            } finally {
+                checking = false
             }
         }
     }
@@ -420,11 +431,15 @@ fun rememberHomeUpdateAvailability(enabled: Boolean = true): Boolean {
                 false
             } else {
                 // 与版本更新页同一条竞速链路（渠道取同一份设置），首页红点不再单独写一套。
-                val check = checkForUpdatesAcrossManifestSources(
-                    currentVersion = info.version,
-                    channel = updateSettings.downloadChannel,
-                    includePrerelease = updateSettings.includePrerelease,
-                )
+                // R-3 同口径：任何异常都只当「这次没查到」，不许把 LaunchedEffect 炸掉
+                //（首页红点是旁路功能，失败静默，不打扰用户）。
+                val check = runCatching {
+                    checkForUpdatesAcrossManifestSources(
+                        currentVersion = info.version,
+                        channel = updateSettings.downloadChannel,
+                        includePrerelease = updateSettings.includePrerelease,
+                    )
+                }.getOrNull()
                 check?.hasUpdate == true
             }
             AppUpdateDotShare.publish(latest)
@@ -485,6 +500,17 @@ private fun readHostPackageInfo(context: Context): HostPackageInfo? = runCatchin
  * + GitCode API** 三路并行，谁先拿到可用版本用谁；渠道只决定顺序（见
  * [appUpdateManifestCandidates]），**不裁源**。
  *
+ * ## 为什么不用 `coroutineScope`（2026-11-11 R-1 修复：用户报「检查更新一直转」）
+ *
+ * `coroutineScope` 必须等**全部**子协程结束才返回；而 `cancel()` 打不断阻塞的 socket 读
+ * （`inputStream.read`），未胜出的那两路要等满 `readTimeout`（6s）才收尾。国内丢包时
+ * 明明 GitCode 200ms 就拿到了结果，用户仍要干等 4s 以上。
+ *
+ * 发布版 `raceFutures`（`async_utils.dart:42-66`）的语义是「首个成功立即返回、**不 join
+ * 落败者**」，所以这里把三路放进**独立 scope**（`SupervisorJob + Dispatchers.IO`）：
+ * 胜负一分就返回；落败者在后台跑完或到超时自行收尾，摘要回填窗口内照样往
+ * [RaceHandle.successes] 写入。
+ *
  * ## 摘要回填
  *
  * Release 页 HTML 拿不到 asset 级摘要；若胜者没有摘要，按发布版同口径在
@@ -495,51 +521,38 @@ private suspend fun checkForUpdatesAcrossManifestSources(
     currentVersion: String,
     channel: AppUpdateDownloadChannel,
     includePrerelease: Boolean,
-): AppUpdateCheckResult? = coroutineScope {
+): AppUpdateCheckResult? = withContext(Dispatchers.IO) {
     val candidates = appUpdateManifestCandidates(channel)
-    // 只要成功的结果（ConcurrentHashMap 不存 null）。
-    val successes = java.util.concurrent.ConcurrentHashMap<AppUpdateManifestSource, AppUpdateCheckResult>()
-    val arrivals = Channel<AppUpdateCheckResult?>(Channel.UNLIMITED)
-
-    val jobs = candidates.map { candidate ->
-        launch(Dispatchers.IO) {
-            val outcome = runCatching {
-                fetchManifestBody(candidate)?.let { body ->
-                    parseManifestBody(candidate, currentVersion, body, includePrerelease)
-                }
-            }.getOrNull()
-            if (outcome != null && outcome.hasRelease) {
-                successes[candidate.source] = outcome
-            }
-            arrivals.send(outcome)
+    if (candidates.isEmpty()) return@withContext null
+    // 竞速内核（main 层 [startRaceFirstSuccess]，有 JVM 单测钉「首胜不等慢兄弟」）：
+    // 三路各占一个线程，`awaitWinner()` 只等首个成功，不 join 落败者。
+    val race = startRaceFirstSuccess(candidates) { candidate ->
+        fetchManifestBody(candidate)?.let { body ->
+            parseManifestBody(candidate, currentVersion, body, includePrerelease)
+                ?.takeIf { it.hasRelease }
         }
     }
-
-    var remaining = jobs.size
-    var winner: AppUpdateCheckResult? = null
-    while (remaining > 0) {
-        val outcome = arrivals.receive()
-        remaining -= 1
-        if (outcome != null && outcome.hasRelease) {
-            winner = outcome
-            break
-        }
+    try {
+        val winner = race.awaitWinner()
+        // 摘要回填窗口里，落败者仍可继续往 successes 写入（发布版同口径 120ms×1600ms）。
+        winner?.let { mergeDigestFromSiblings(it, race.successes) }
+    } finally {
+        // 回填结束后停掉后台竞速；阻塞读不保证立刻停，但已经没有人等它。
+        race.cancel()
     }
-
-    val merged = winner?.let { mergeDigestFromSiblings(it, successes) }
-    jobs.forEach { it.cancel() }
-    arrivals.close()
-    merged
 }
 
 /**
  * 胜者没有摘要时，从兄弟策略回填（同版本 + 直连渠道才有资格）。
  *
  * 与发布版一致：120ms 轮询、最多等 1600ms —— 不为摘要把「检查更新」拖成十几秒。
+ *
+ * @param successes 竞速内核的「已成功结果」表；键是候选（[AppUpdateManifestCandidate]），
+ *   本函数只读 values，所以按 `Map<*, AppUpdateCheckResult>` 收，键类型由内核决定。
  */
 private suspend fun mergeDigestFromSiblings(
     winner: AppUpdateCheckResult,
-    successes: java.util.concurrent.ConcurrentHashMap<AppUpdateManifestSource, AppUpdateCheckResult>,
+    successes: Map<*, AppUpdateCheckResult>,
 ): AppUpdateCheckResult {
     val release = winner.latestRelease ?: return winner
     if (release.expectedApkSha256 != null) return winner
@@ -567,7 +580,7 @@ private suspend fun mergeDigestFromSiblings(
     return winner
 }
 
-/** 拉一条清单候选；非 2xx / 传输失败 / 非信任根一律返回 null。 */
+/** 拉一条清单候选；非 2xx / 传输失败 / 非信任根 / 超体积一律返回 null。 */
 private fun fetchManifestBody(candidate: AppUpdateManifestCandidate): String? = runCatching {
     // 信任根兜底：清单只认官方直连（镜像候选永远不该出现在这条链里）。
     if (!isTrustedManifestUrl(candidate.url)) return null
@@ -584,11 +597,36 @@ private fun fetchManifestBody(candidate: AppUpdateManifestCandidate): String? = 
     }
     try {
         if (conn.responseCode !in 200..299) return null
-        conn.inputStream.bufferedReader(Charsets.UTF_8).use { it.readText() }
+        // 2026-11-11 R-5：清单是 JSON/HTML，正常几十 KB。别让一个异常响应（或中间设备
+        // 塞进来的大文件）无上限读进内存——Content-Length 可信就先挡，否则边读边数。
+        val declared = conn.getHeaderField("Content-Length")?.trim()?.toLongOrNull()
+        if (declared != null && declared > MAX_MANIFEST_BODY_BYTES) return null
+        conn.inputStream.use { stream ->
+            val out = java.io.ByteArrayOutputStream()
+            val chunk = ByteArray(16 * 1024)
+            var total = 0L
+            while (true) {
+                val read = stream.read(chunk)
+                if (read < 0) break
+                total += read
+                if (total > MAX_MANIFEST_BODY_BYTES) return null
+                out.write(chunk, 0, read)
+            }
+            out.toString(Charsets.UTF_8.name())
+        }
     } finally {
         conn.disconnect()
     }
 }.getOrNull()
+
+/**
+ * 清单响应体上限（2MB）。
+ *
+ * 三条来源的正文都在几十 KB 量级；2MB 是「够宽松、又能挡住异常大响应」的折中值。
+ * 超限按该路失败处理（让兄弟策略接手），不 partial 解析——半截 JSON/HTML 解析出来的
+ * 版本号与摘要都不可信。
+ */
+private const val MAX_MANIFEST_BODY_BYTES = 2L * 1024L * 1024L
 
 /** 按来源分派到对应的纯解析核；解析不出来返回 null（该路让位给兄弟策略）。 */
 private fun parseManifestBody(
