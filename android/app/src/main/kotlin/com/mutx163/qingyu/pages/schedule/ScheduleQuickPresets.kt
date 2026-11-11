@@ -73,9 +73,6 @@ val kScheduleQuickPresets = listOf(
     ),
 )
 
-fun scheduleQuickPresetById(id: String): ScheduleQuickPreset? =
-    kScheduleQuickPresets.firstOrNull { it.id == id }
-
 data class PresetTimeWindow(
     val startMinutes: Int,
     val endMinutes: Int,

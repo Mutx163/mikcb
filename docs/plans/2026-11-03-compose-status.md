@@ -36,7 +36,7 @@
 | **L4 真机逐页对照** | **0 页** | 仓库内无任何真机截图/录屏/回填记录 | 仍归用户 |
 
 **声明纪律**：agent 只能声明「编译通过」（L1）或「JVM 单测通过」（L2）；不得声明「能跑 / 能装上 / 已验证」。
-CI 权威变体是 `:app:testProdDebugUnitTest`（`.github/workflows/ci.yml:116`）；本地快速 L2 用
+CI 权威变体是 `:app:testProdDebugUnitTest`（`.github/workflows/ci.yml` 的「Android JVM Tests」任务）；本地快速 L2 用
 `:app:testDevDebugUnitTest`。**交付证据必须写明用的是哪一条**，不要都叫「权威」。
 
 ---

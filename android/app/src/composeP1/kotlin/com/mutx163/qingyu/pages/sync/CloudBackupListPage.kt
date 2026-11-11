@@ -309,50 +309,6 @@ fun CloudRestoreUndoCard(
     }
 }
 
-/** 详情弹框里「恢复 / 删除」两个动作的按钮组（宿主用 bottom sheet 承载）。 */
-@Composable
-fun CloudBackupDetailActions(
-    detail: CloudBackupDetailView,
-    onRestore: () -> Unit,
-    onDelete: () -> Unit,
-) {
-    Column(
-        modifier = Modifier.fillMaxWidth(),
-        verticalArrangement = Arrangement.spacedBy(10.dp),
-    ) {
-        Button(onClick = onRestore, modifier = Modifier.fillMaxWidth()) {
-            Text(text = SyncStrings.cloudBackupRestoreAction.text)
-        }
-        if (detail.canDelete) {
-            TextButton(
-                text = SyncStrings.deleteAction.text,
-                onClick = onDelete,
-                modifier = Modifier.fillMaxWidth(),
-            )
-        }
-    }
-}
-
-/** 详情弹框正文（当前版本 / 时间 + 设备 + 来源 + 内容）。 */
-@Composable
-fun CloudBackupDetailBody(detail: CloudBackupDetailView, dark: Boolean) {
-    Column(modifier = Modifier.fillMaxWidth()) {
-        Text(
-            text = detail.title,
-            style = MiuixTheme.textStyles.title4.shiftWeight(QingyuWeightDelta.SEMIBOLD),
-            color = Color(QingyuTheme.primaryText(dark)),
-        )
-        Spacer(modifier = Modifier.height(10.dp))
-        DetailLine(detail.deviceLine, dark)
-        Spacer(modifier = Modifier.height(6.dp))
-        DetailLine(detail.sourceLine, dark)
-        detail.summaryLine?.let { line ->
-            Spacer(modifier = Modifier.height(6.dp))
-            DetailLine(line, dark)
-        }
-    }
-}
-
 @Composable
 private fun DetailLine(text: String, dark: Boolean) {
     Text(

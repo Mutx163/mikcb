@@ -4,7 +4,7 @@ package com.mutx163.qingyu.platform
  * 异步结果回投的**唯一契约**（去 Flutter 化阶段 1，2026-11-07）。
  *
  * 形状与 `MethodChannel.Result` 逐项对应（`success` / `error` / `notImplemented`），
- * 但**不带任何 `io.flutter.*` 依赖**：`CalendarSync` / `LocationFix` 这类平台能力因此
+ * 但**不带任何 `io.flutter.*` 依赖**：`CalendarSync` 这类平台能力因此
  * 可以在「无 Flutter 构型」（`-PwithFlutter=false`）下照常编译。
  *
  * 调用方适配：

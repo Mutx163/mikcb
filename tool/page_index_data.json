@@ -53,7 +53,7 @@
   "title": "支持作者",
   "entry": "SupportCreatorPage",
   "file": "about/SupportCreatorPage.kt",
-  "previews": 8
+  "previews": 9
  },
  {
   "domain": "conflict",
@@ -256,7 +256,7 @@
   "title": "新增/编辑日程",
   "entry": "AddScheduleItemPage",
   "file": "schedule/AddScheduleItemPage.kt",
-  "previews": 8
+  "previews": 9
  },
  {
   "domain": "schedule",

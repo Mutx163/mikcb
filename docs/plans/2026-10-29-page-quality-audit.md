@@ -5,7 +5,7 @@
 > 因此**所有判据一律取 `git show HEAD:<路径>`**，工作树差异单列「在途改动（他人，不入判）」，不算缺陷也不算通过。
 > **判据文件**：`docs/plans/2026-10-29-quality-audit/_RUBRIC.md`（D1..D6 / 证据规范 / P0-P2 分级）。
 > **分报告**（同目录，全部只读复核，未改任何产品代码）：
-> [课表核心](timetable.md) · [设置/时间模板/节假日](settings-time-scheme.md) · [云同步/备份迁移](sync-transfer.md) · [诊断/关于](diagnostics-about.md) · [任务/考试/天气/统计/live](misc-wiring.md)
+> [课表核心](2026-10-29-quality-audit/timetable.md) · [设置/时间模板/节假日](2026-10-29-quality-audit/settings-time-scheme.md) · [云同步/备份迁移](2026-10-29-quality-audit/sync-transfer.md) · [诊断/关于](2026-10-29-quality-audit/diagnostics-about.md) · [任务/考试/天气/统计/live](2026-10-29-quality-audit/misc-wiring.md)
 
 ---
 

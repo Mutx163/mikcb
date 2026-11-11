@@ -35,8 +35,8 @@ import java.util.TimeZone
  *    insert 失败会把用户已同步日程清没）。重复点击、改课后重新同步都不会
  *    产生重复日程。清空范围限定在本应用账户名下——用户在系统日历里的
  *    其他账户日程不受影响。
- *  · ContentResolver 的读写全部放后台线程（参照 FrostedBlur 的
- *    Thread + 主线程回投模式），几条跨进程 Binder 调用不该卡主线程。
+ *  · ContentResolver 的读写全部放后台线程（Thread + 主线程回投模式），
+ *    几条跨进程 Binder 调用不该卡主线程。
  *  · 权限：READ/WRITE_CALENDAR 是运行时权限。检查在这里做，弹窗申请必须
  *    有 Activity，所以 [handle] 收一个 Activity（MainActivity 注册时传 this）；
  *    申请结果经 [onRequestPermissionsResult] 由 MainActivity 转发回来。

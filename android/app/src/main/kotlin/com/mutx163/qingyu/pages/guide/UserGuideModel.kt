@@ -1,17 +1,6 @@
 package com.mutx163.qingyu.pages.guide
 
 /**
- * 新手引导分步页面枚举。
- */
-enum class GuideTab(val pageIndex: Int, val titleKey: String) {
-    WELCOME(0, "welcomeTitle"),
-    PRIVACY(1, "guidePrivacyPageTitle"),
-    PERMISSIONS(2, "guidePermissionsPageTitle"),
-    PERSONALIZE(3, "guidePersonalizePageTitle"),
-    TIPS(4, "guideTipsPageTitle")
-}
-
-/**
  * 权限项数据模型。
  */
 data class PermissionItemData(
@@ -40,25 +29,6 @@ data class PermissionProgress(
             return PermissionProgress(ready, total, ratio)
         }
     }
-}
-
-/**
- * 个性化偏好枚举。
- */
-enum class GuideHomeMenuStyle {
-    LIST,
-    GRID
-}
-
-enum class GuideVisualEffect {
-    LIQUID_GLASS,
-    SOLID
-}
-
-enum class GuideAppThemeMode {
-    SYSTEM,
-    LIGHT,
-    DARK
 }
 
 /**

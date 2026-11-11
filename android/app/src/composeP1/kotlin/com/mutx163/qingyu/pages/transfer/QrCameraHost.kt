@@ -163,29 +163,6 @@ fun QrCameraSlot(
     }
 }
 
-/**
- * 「扫码页 + 真相机」的一行接线。
- *
- * 页面本身（[QrTransferScanPage]）把相机做成槽位参数，为的是「宿主决定相机长什么样」。
- * 本机宿主就是这里：CameraX 预览 + MLKit 解码。
- */
-@Composable
-fun QrScanPageWithCamera(
-    model: QrTransferScanModel,
-    onBack: () -> Unit,
-    onRestart: () -> Unit,
-    onImportFullBackup: () -> Unit,
-    onBarcode: (BarcodeScanResult) -> Unit,
-) {
-    QrTransferScanPage(
-        model = model,
-        onBack = onBack,
-        onRestart = onRestart,
-        onImportFullBackup = onImportFullBackup,
-        cameraSlot = { QrCameraSlot(onBarcode = onBarcode) },
-    )
-}
-
 // ─────────────────────────────────────────────────────────────
 // 权限
 // ─────────────────────────────────────────────────────────────

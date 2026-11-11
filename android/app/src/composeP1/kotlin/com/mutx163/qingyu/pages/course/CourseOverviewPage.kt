@@ -565,44 +565,7 @@ sealed interface TimetableFormPageRequest {
     }
 }
 
-/**
- * 表单页目录的渲染侧入口：壳层把请求（由 [TimetableFormPageRequest.fromPayload] 转换）
- * 与各域页面本体一起传进来，本函数只做「请求 → 页面」的一一转发。
- *
- * 六个槽位与 Dart `TimelineFormPages` 的六个 builder 同序同名；未接线的槽位给空实现
- * （渲染空白）而不是抛异常——多会话并行期间，某一域页面尚未落地是常态，
- * 不该让宿主页崩溃。
- *
- * @param courseForm 课程表单（本域 `AddCoursePage`；六字段逐字段透传）
- * @param examForm 考试表单（exam 域）
- * @param scheduleItemForm 日程表单（schedule 域；`initialDate` / `occurrenceDate` 各归各，
- *   不许互相顶替——由 Catalog 的校验契约保证，本层原样转发两个字段）
- * @param taskForm 作业/任务表单（task 域）
- * @param timeSchemeManagement 作息方案管理页（time_scheme 域）
- * @param aboutUpdate 更新详情页（about 域）
- */
-@Composable
-fun TimetableFormPageEntry(
-    request: TimetableFormPageRequest,
-    courseForm: @Composable (CourseFormPayload) -> Unit,
-    examForm: @Composable (ExamFormPayload) -> Unit = {},
-    scheduleItemForm: @Composable (ScheduleItemFormPayload) -> Unit = {},
-    taskForm: @Composable (TaskFormPayload) -> Unit = {},
-    timeSchemeManagement: @Composable (TimeSchemeManagementPayload) -> Unit = {},
-    aboutUpdate: @Composable (AboutUpdatePayload) -> Unit = {},
-) {
-    when (request) {
-        is TimetableFormPageRequest.CourseForm -> courseForm(request.payload)
-        is TimetableFormPageRequest.ExamForm -> examForm(request.payload)
-        is TimetableFormPageRequest.ScheduleItemForm -> scheduleItemForm(request.payload)
-        is TimetableFormPageRequest.TaskForm -> taskForm(request.payload)
-        is TimetableFormPageRequest.TimeSchemeManagement -> timeSchemeManagement(request.payload)
-        is TimetableFormPageRequest.AboutUpdate -> aboutUpdate(request.payload)
-    }
-}
-
 // ── 预览 ──────────────────────────────────────────────────────────────────────
-//
 // 分组、排序、冲突标记全部由真模型函数算：课程是普通 [com.mutx163.qingyu.core.Course]，
 // 装配走 `CourseOverviewLogic.buildViewState(...)`（内部再走 `CourseGroup.buildFrom`），
 // 预览里不手写一份假的组行。

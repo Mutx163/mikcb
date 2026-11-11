@@ -471,6 +471,3 @@ class CoupleTimetableSettingsController(
         return "mikcb-couple-$text.json"
     }
 }
-
-/** 组包时用的 packageId（Dart `TransferPackage.newPackageId` 同形）。 */
-internal fun couplePackageId(micros: Long, salt: Int): String = newCouplePackageId(micros, salt)

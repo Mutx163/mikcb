@@ -1,174 +1,113 @@
 # 网站与国际化协作约定
 
-这份文档用于明确两个长期约定：
+这份文档写清两个长期约定：
 
-1. 网站目录到底是哪一个
-2. 应用多语言应该怎样继续扩展
+1. 网站分别放在哪、各自负责什么；
+2. 应用多语言在**去 Flutter 化之后**怎么继续扩展（旧 Dart 本地化链路已删除）。
 
 ---
 
 ## 1. 网站目录约定
 
-### 当前正式网站目录
+仓库里有两个网站，职责不同，不要混用：
 
-当前正式网站以 `docs/` 为准。
+| 目录 | 是什么 | 怎么改 |
+|---|---|---|
+| `docs/` | **正式静态站**（下载页 / SEO / 公益页）。判据：`docs/CNAME`、`index.html`、`sitemap.xml`、`robots.txt` 都在这里 | 直接改 HTML/CSS/JS；改完自查 `docs/index.html`、`docs/sitemap.xml` 可达 |
+| `site/` | **Next.js 用户文档站**（fumadocs-mdx，静态导出到 `site/out/`） | 改 `site/content/docs/**/*.mdx`；本地 `pnpm dev`，产物 `pnpm build` |
 
-判断依据：
-
-- `docs/CNAME` 已存在
-- `docs/` 目录下有完整网站资源：
-  - `index.html`
-  - `script.js`
-  - `styles.css`
-  - `app-icon.png`
-  - `favicon.svg`
-  - `robots.txt`
-  - `sitemap.xml`
-
-### 后续规则
-
-- 做 SEO、下载页、落地页、分享卡片、站点脚本时，**优先修改 `docs/`**
-- `web/` 目前不是正式主站发布目录；除非后续明确切回 Flutter Web 或统一站点方案，否则不要把它当作唯一真源
-
-### 对未来 AI / 维护者的要求
-
-- 如果任务是“优化网站”或“做 SEO”，默认以 `docs/` 为主要目标
-- 如果发现 `web/` 和 `docs/` 内容不一致，优先保证 `docs/` 正确
+- 做 SEO、下载页、落地页、分享卡片、站点脚本 → **优先改 `docs/`**。
+- 写使用文档（教程、功能说明、更新日志的正文）→ 改 `site/content/`。
+- `site/next-env.d.ts`、`site/.next/`、`site/out/`、`site/.source/` 都是生成物，不要提交（`.gitignore` 已忽略）。
+- `site/AGENTS.md` / `site/CLAUDE.md` 由 `next dev` 自动生成或注入，**不提交**（根 `.gitignore` 已忽略，`git status` 里不该出现）。
 
 ---
 
-## 2. 国际化方案约定
+## 2. 国际化：唯一真源是 `i18n/*.arb`
 
-### 当前方案
+| 项 | 值 |
+|---|---|
+| 文案源文件 | `i18n/app_zh.arb`（**简体中文是源语言**） |
+| 其他语言 | `i18n/app_en.arb` / `app_ja.arb` / `app_ko.arb` / `app_zh_HK.arb` / `app_zh_TW.arb`（共 6 份） |
+| 生成的 Kotlin 表 | `android/app/src/main/kotlin/com/mutx163/qingyu/app/ArbCatalog.kt`（**生成物，不要手改**） |
+| 生成脚本 | `python tool/gen_compose_arb_catalog.py`；只校验最新：`... --check` |
+| 运行时取值 | `com.mutx163.qingyu.app.ArbText.text` → `AppLocaleRuntime` → `ArbCatalog`，缺键回落中文原文 |
+| 语言标签 | `AppLocaleRuntime.SUPPORTED_TAGS` = `en` / `ja` / `ko` / `zh` / `zh_HK` / `zh_TW` |
 
-应用国际化已切到 Flutter 标准 `gen-l10n`。
+### 为什么生成而不是运行时读 JSON
 
-关键文件：
-
-- `l10n.yaml`
-- `lib/l10n/app_zh.arb`
-- `lib/l10n/app_en.arb`
-
-### 中文是源语言
-
-当前约定：
-
-- **`lib/l10n/app_zh.arb` 是中文源文件**
-- 新功能、新页面、新按钮、新提示文案，优先先补中文 key
-- 英文和其他语言后续再跟进翻译
-
-这样做的原因：
-
-- 开发时不会被“多语言必须同时补齐”卡住
-- 中文语义是当前产品的主表达
-- 贡献者后续可以基于中文源文件做翻译适配
+首帧不付整份 JSON 解析成本；键缺失在编译期就能看见。Kotlin 单方法有 64KB 字节码上限，
+脚本按每 300 键一个 `when` 分块拼接。
 
 ---
 
-## 3. 新增文案时怎么做
+## 3. 新增 / 修改文案：固定步骤
 
-### 步骤
+1. **先改中文源** `i18n/app_zh.arb`：加键、写值。占位符用 `{name}`。
+2. 同步补其余五份 ARB 的翻译；**缺键允许**（运行时会回落中文），但不要写错键名。
+3. 重新生成 Kotlin 文案表：
 
-1. 在 `lib/l10n/app_zh.arb` 中新增中文 key
-2. 在其他语言 ARB 中补对应翻译
-3. 运行：
+   ```bash
+   python tool/gen_compose_arb_catalog.py
+   ```
 
-```bash
-flutter gen-l10n
-```
+4. 在 Kotlin 里用 `ArbText` 引用（不要直接拼屏幕文案）：
 
-4. 在 Dart 代码中通过：
+   ```kotlin
+   val title = ArbText("settingsWeatherTitle", "天气")
+   Text(text = title.text)   // 界面一律读 .text，不读 .zh
+   ```
 
-```dart
-import 'package:university_timetable/l10n/app_localizations.dart';
-```
+   - `.zh` 只给对拍测试与缺键兜底用；
+   - 带参数的行用 `ArbText(...).filled("count", "3")` 或 `resolved`。
 
-并使用：
+5. 跑对应域的 `*StringsParityTest`（54 个），它们直读 `i18n/app_zh.arb` 逐字对拍。
+6. 提交前自查：
 
-```dart
-final l10n = AppLocalizations.of(context)!;
-```
+   ```bash
+   python tool/gen_compose_arb_catalog.py --check   # 必须输出「ArbCatalog.kt 是最新的」
+   pwsh -NoProfile -File scripts/test-kotlin-module.ps1 -Module "app"   # ArbCatalogTest / AppLocaleRuntimeTest
+   ```
 
-读取文案
+### 文案风格规则（人工核对，无自动门禁）
 
----
-
-## 4. 新增语言时怎么做
-
-如果后续要支持更多国家 / 地区：
-
-### 只需要做
-
-1. 新增语言文件，例如：
-   - `lib/l10n/app_ja.arb`
-   - `lib/l10n/app_fr.arb`
-   - `lib/l10n/app_ru.arb`
-   - `lib/l10n/app_es.arb`
-2. 翻译已有 key
-3. 运行：
-
-```bash
-flutter gen-l10n
-```
-
-### 不需要做
-
-- 不需要新增语言枚举
-- 不需要修改语言设置架构
-- 不需要改 `MaterialApp` 主链路
-
-当前语言设置已经改成可扩展的 locale tag 方案，而不是写死语言枚举。
+- 行内控件（右侧有开关 / 取值 / 箭头的行）标题 ≤ **11**、说明句 ≤ **17**（汉字 1、ASCII 0.55、占位符按 3 位数字）。
+- 砍掉复述标题、导航说明、过程描述；只留「为什么 / 后果 / 前提」。
+- **删一处渲染就顺手删键**：六份 ARB 同步删，再跑生成脚本。死键会让 `ArbCatalogTest` / 死键基线对不上。
 
 ---
 
-## 5. 对未来 AI / 贡献者的明确约束
+## 4. 新增语言：改四处
 
-### 网站相关
+1. 新增 `i18n/app_<tag>.arb`（如 `app_fr.arb`），照 `app_en.arb` 的结构翻译；
+2. `tool/gen_compose_arb_catalog.py` 的 `LANGUAGES` 列表加一行 `("<tag>", "app_<tag>.arb")`；
+3. `AppLocaleRuntime.SUPPORTED_TAGS` 加标签（顺序与语言选择列表一致）；
+4. `SettingsGeneralPage` 里语言选项表同步加一项；重跑生成脚本。
 
-- 默认 `docs/` 是正式站点目录
-- `web/` 不应被默认当成生产站点
-
-### 国际化相关
-
-- 默认 `app_zh.arb` 是中文源
-- 新 key 先补中文
-- 不要重新引入手写本地化壳
-- 统一走 `gen-l10n`
+**不要**重新引入手写本地化壳，也不要绕开 `ArbText` 直接查 `ArbCatalog`。
 
 ---
 
-## 6. 建议验证命令
+## 5. 运行机制（改语言怎么生效）
+
+- 用户手选语言写入设置 → 壳在 `PagesShellActivity` 调 `AppLocaleRuntime.set(...)`；
+- `ArbText.text` 每次取值读 `AppLocaleRuntime.revisionReader`，壳把它接到 snapshot state，
+  所以所有读文案的 Composable 自动重组；返回栈不丢；
+- 「跟随系统」只认**真实系统语言**（壳在 `attachBaseContext` 注入），不读被 App 自己改过的
+  `Locale.getDefault()`。
+
+---
+
+## 6. 对未来 AI / 贡献者的明确约束
 
 ### 网站
 
-可至少检查：
+- 默认 `docs/` 是正式站点目录；`site/` 是用户文档站。
+- 生成物（`site/.next`、`site/out`、`site/.source`、`site/next-env.d.ts`、`site/AGENTS.md`）不提交。
 
-- `docs/index.html`
-- `docs/robots.txt`
-- `docs/sitemap.xml`
+### 国际化
 
-### Flutter 国际化
-
-优先使用 Windows Flutter 工具链：
-
-```bash
-flutter gen-l10n
-flutter analyze
-```
-
-如果当前环境是 Windows Flutter：
-
-```bash
-cmd.exe /C "D:\Flutter\flutter\bin\flutter.bat" gen-l10n
-cmd.exe /C "D:\Flutter\flutter\bin\flutter.bat" analyze
-```
-
----
-
-## 7. 当前状态备注
-
-- 网站 SEO 已优先补到 `docs/`
-- 国际化底座已完成
-- 仍有部分页面文案在持续迁移中
-
-这份文档的作用就是：避免未来再次混淆“网站目录到底是哪一个”和“多语言到底该怎么扩展”。
+- 默认 `i18n/app_zh.arb` 是中文源；新键先补中文。
+- 不要手改 `ArbCatalog.kt`；改 ARB 后必须重跑生成脚本并 `--check`。
+- 不要重新引入旧 Dart 本地化链路（已随去 Flutter 化删除）。
+- 界面文案一律经 `ArbText.text`，不要硬编码中文或直接读 `.zh`。

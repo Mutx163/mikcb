@@ -276,30 +276,3 @@ fun ChartEmptyCard(
         }
     }
 }
-
-/** 卡片内的一行"标签 + 数值"（图表卡里的次要读数，不是图本身）。 */
-@Composable
-fun ChartMetricRow(
-    label: String,
-    value: String,
-    dark: Boolean,
-    accent: Color? = null,
-    modifier: Modifier = Modifier,
-) {
-    Row(
-        modifier = modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Text(
-            text = label,
-            style = MiuixTheme.textStyles.body2,
-            color = Color(QingyuTheme.secondaryText(dark)),
-        )
-        Text(
-            text = value,
-            style = MiuixTheme.textStyles.body1,
-            color = accent ?: Color(QingyuTheme.primaryText(dark)),
-        )
-    }
-}

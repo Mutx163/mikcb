@@ -194,22 +194,3 @@ fun MonthPanelRow(
         content()
     }
 }
-
-/**
- * 信息区一列卡之间的**竖向排布**（概览卡 → 有安排的日子卡）。
- *
- * 抽出来只为让「卡缝 = [MonthMetrics.ITEM_GAP]、左右外沿 = [MonthMetrics.CARD_INSET]」
- * 只在页面壳里写一次 —— Dart 侧这两条是 `_buildInfoArea` 里的两个 padding，
- * 换页时容易漏。
- */
-@Composable
-fun MonthPanelColumn(
-    modifier: Modifier = Modifier,
-    content: @Composable ColumnScope.() -> Unit,
-) {
-    Column(
-        modifier = modifier.fillMaxWidth(),
-        verticalArrangement = Arrangement.spacedBy(MonthMetrics.ITEM_GAP.dp),
-        content = content,
-    )
-}

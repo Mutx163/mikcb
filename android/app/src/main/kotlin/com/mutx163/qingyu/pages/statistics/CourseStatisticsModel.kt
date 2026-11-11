@@ -32,9 +32,6 @@ import kotlin.math.roundToInt
  *   以及各图表件的文案与数值格式化（`**` 加粗标记原样保留，由渲染层解析）。
  */
 
-/** 学期 / 周 双视图分段（对齐屏层 `_semesterView`）。 */
-enum class StatisticsTab { SEMESTER, WEEK }
-
 /** 深度分析二级页模块（对齐 `StatisticsAnalysisScreen` 的 `module` 入参）。 */
 enum class StatisticsAnalysisModule { TREND, TIME_UTIL, VENUE, TEACHER, RANKING, COMPARE }
 

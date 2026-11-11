@@ -1,6 +1,5 @@
 package com.mutx163.qingyu.pages.about
 
-import java.io.File
 import java.io.InputStream
 import java.security.MessageDigest
 
@@ -112,8 +111,3 @@ fun sha256Hex(stream: InputStream, bufferSize: Int = 64 * 1024): String {
     }
     return digest.digest().toHexLower()
 }
-
-/** 文件摘要；读不到时返回 null（对应 [ApkDigestVerdict.UNVERIFIABLE]）。 */
-fun sha256HexOfFile(file: File): String? = runCatching {
-    file.inputStream().use { sha256Hex(it) }
-}.getOrNull()

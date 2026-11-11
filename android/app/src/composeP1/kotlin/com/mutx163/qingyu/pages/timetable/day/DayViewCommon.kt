@@ -97,22 +97,6 @@ fun DayAgendaBadge(
 }
 
 /**
- * 时间轴小圆点。
- */
-@Composable
-fun DayTimelineDot(
-    color: Color,
-    modifier: Modifier = Modifier,
-    size: Dp = 6.dp,
-) {
-    Box(
-        modifier = modifier
-            .size(size)
-            .background(color, CircleShape),
-    )
-}
-
-/**
  * 任务来源课程小圆点。
  */
 @Composable
