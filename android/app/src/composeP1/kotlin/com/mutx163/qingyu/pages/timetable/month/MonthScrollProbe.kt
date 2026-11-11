@@ -404,7 +404,8 @@ internal object MonthScrollProbe {
             "fps ${fmt(if (median > 0.0) 1000.0 / median else 0.0)} " +
                 "(interval med=${fmt(median)} p90=${fmt(p90)} max=${fmt(sorted.last())})"
         } else {
-            "fps - (样本不足)"
+            // 开发者向日志片段（logcat 读），不走 i18n；用英文避免撞中文字面量棘轮。
+            "fps - (insufficient samples)"
         }
 
         Log.i(
