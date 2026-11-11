@@ -1,7 +1,6 @@
 package com.mutx163.qingyu.infra
 
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertNull
 import org.junit.Assert.assertSame
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -103,27 +102,9 @@ class WarehouseInfraTest {
         WarehouseSchoolEntry("hust", "华中科技大学", "H", "hust"),
     )
 
-    @Test
-    fun `filter matches name id initial and folder`() {
-        assertEquals(listOf("whu"), filterWarehouseSchools(schools, "武汉").map { it.id })
-        assertEquals(listOf("hust"), filterWarehouseSchools(schools, "HUST").map { it.id })
-        assertEquals(listOf("whu"), filterWarehouseSchools(schools, "w").map { it.id })
-        assertEquals(listOf("hust"), filterWarehouseSchools(schools, "hust").map { it.id })
-        assertTrue(filterWarehouseSchools(schools, "不存在").isEmpty())
-    }
-
-    @Test
-    fun `blank query returns original list`() {
-        assertSame(schools, filterWarehouseSchools(schools, "   "))
-    }
-
-    @Test
-    fun `filter falls back to adapter matches`() {
-        // 人推：学校字段全不命中时，有适配器命中的学校被带出来。
-        val matches = mapOf("hust" to listOf("WakeUp导入"))
-        assertEquals(listOf("hust"), filterWarehouseSchools(schools, "wakeup", matches).map { it.id })
-        assertTrue(filterWarehouseSchools(schools, "wakeup").isEmpty())
-    }
+    // P1-10（2026-11-11）：`filterWarehouseSchools` 真源已归 pages/import/warehouse
+    // （6 字段超集匹配），对应的 3 条过滤用例随函数迁到
+    // `pages/import/warehouse/WarehouseRepositoryModelsTest`。
 
     @Test
     fun `matched adapter names prefer display name and match id`() {
@@ -203,18 +184,6 @@ class WarehouseInfraTest {
         )
     }
 
-    // ---------- adapter copyWith ----------
-
-    @Test
-    fun `adapter copyWith replaces only given fields`() {
-        val entry = WarehouseAdapterEntry(
-            adapterId = "a", adapterName = "n", category = "c",
-            assetJsPath = "p", importUrl = "u", maintainer = "m", description = "d",
-        )
-        val copied = entry.copyWith(isQingyuOnly = true)
-        assertEquals(true, copied.isQingyuOnly)
-        assertEquals("a", copied.adapterId)
-        assertEquals("", copied.sha256)
-        assertNull(entry.copyWith().let { if (it == entry) null else it })
-    }
+    // P1-10（2026-11-11）：`WarehouseAdapterEntry` 的发布版 metadata 形态已删除
+    // （生产零调用），对应的 `adapter copyWith` 用例随之删除；需要时从 git 历史恢复。
 }

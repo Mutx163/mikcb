@@ -5,95 +5,23 @@ import kotlin.math.min
 import kotlin.math.max
 
 /**
- * 适配仓宿主：GitHub（raw.githubusercontent 直链）或 GitCode（v5 contents API）。
+ * 适配仓宿主（P1-10，2026-11-11：真源在 `infra/WarehouseInfra`，这里只留别名）。
  */
-enum class WarehouseRepositoryHost {
-    GITHUB,
-    GITCODE;
-
-    companion object {
-        fun fromString(value: String): WarehouseRepositoryHost = when (value.lowercase()) {
-            "gitcode" -> GITCODE
-            else -> GITHUB
-        }
-    }
-}
+typealias WarehouseRepositoryHost = com.mutx163.qingyu.infra.WarehouseRepositoryHost
 
 /**
- * 轻屿教务适配仓源定义。
+ * 轻屿教务适配仓源定义（P1-10，2026-11-11：真源在 `infra/WarehouseInfra`）。
+ *
+ * 导入页原先那份副本已删：它自己的 `fromGitHubUrl` 生产与测试零调用（且不支持
+ * gitcode.com 域名），行为超集已归真源；`DEFAULT` / `effectiveOwner` / `effectiveRepo`
+ * 一并收进真源，所以本包调用点（`WarehouseRepositorySource.DEFAULT` 等）不用改。
  */
-data class WarehouseRepositorySource(
-    val owner: String,
-    val repo: String,
-    val branch: String = "main",
-    val host: WarehouseRepositoryHost = WarehouseRepositoryHost.GITHUB,
-    val gitcodeOwner: String? = null,
-    val gitcodeRepo: String? = null,
-) {
-    val effectiveOwner: String get() = if (host == WarehouseRepositoryHost.GITCODE) gitcodeOwner ?: owner else owner
-    val effectiveRepo: String get() = if (host == WarehouseRepositoryHost.GITCODE) gitcodeRepo ?: repo else repo
-
-    fun withHost(newHost: WarehouseRepositoryHost): WarehouseRepositorySource {
-        if (newHost == host) return this
-        return copy(host = newHost)
-    }
-
-    companion object {
-        val DEFAULT = WarehouseRepositorySource(
-            owner = "Mutx163",
-            repo = "qingyu_warehouse",
-            gitcodeOwner = "mutx",
-        )
-
-        fun fromGitHubUrl(
-            url: String,
-            branch: String = "main",
-            gitcodeOwner: String? = null,
-            gitcodeRepo: String? = null,
-        ): WarehouseRepositorySource {
-            val trimmed = url.trim()
-            val uri = runCatching { URI(trimmed) }.getOrNull()
-                ?: throw IllegalArgumentException("invalid_repository_url")
-            val hostStr = uri.host ?: throw IllegalArgumentException("invalid_repository_url")
-
-            val segments = (uri.path ?: "").split("/").filter { it.isNotEmpty() }
-            if (hostStr == "github.com") {
-                if (segments.size < 2) throw IllegalArgumentException("incomplete_github_repo_url")
-                return WarehouseRepositorySource(
-                    owner = segments[0],
-                    repo = segments[1],
-                    branch = branch,
-                    gitcodeOwner = gitcodeOwner,
-                    gitcodeRepo = gitcodeRepo,
-                )
-            }
-            if (hostStr == "raw.githubusercontent.com") {
-                if (segments.size < 3) throw IllegalArgumentException("incomplete_raw_github_url")
-                return WarehouseRepositorySource(
-                    owner = segments[0],
-                    repo = segments[1],
-                    branch = segments[2],
-                    gitcodeOwner = gitcodeOwner,
-                    gitcodeRepo = gitcodeRepo,
-                )
-            }
-            throw IllegalArgumentException("unsupported_repository_host")
-        }
-    }
-}
+typealias WarehouseRepositorySource = com.mutx163.qingyu.infra.WarehouseRepositorySource
 
 /**
- * 学校条目。
+ * 学校条目（P1-10：真源在 `infra/WarehouseInfra`，字段已并成导入页超集）。
  */
-data class WarehouseSchoolEntry(
-    val id: String,
-    val name: String,
-    val initial: String = "",
-    val resourceFolder: String = id,
-    val category: String = "default",
-    val code: String = "",
-    val province: String = "",
-)
+typealias WarehouseSchoolEntry = com.mutx163.qingyu.infra.WarehouseSchoolEntry
 
 /**
  * 根索引。
@@ -138,75 +66,22 @@ data class WarehouseAdaptersIndex(
 )
 
 /**
- * 全局搜索索引里的一个适配器（只含搜索所需的 id 与名称）。
- *
- * 来自 `index/search_index.yaml`（仓库 `scripts/build_search_index.py` 聚合各校
- * `adapters.yaml` 生成），与发布版 `WarehouseSearchAdapterEntry` 同形。
+ * 全局搜索索引里的一个适配器（P1-10：真源在 `infra/WarehouseInfra`，字段本来就同形）。
  */
-data class WarehouseSearchAdapterEntry(
-    val adapterId: String,
-    val adapterName: String,
-)
+typealias WarehouseSearchAdapterEntry = com.mutx163.qingyu.infra.WarehouseSearchAdapterEntry
 
 /**
- * 搜索索引里一所学校的适配器清单。
- *
- * 名称参与匹配；`adapterName` 为空时回退用 `adapterId` 显示（发布版
- * `WarehouseSearchSchoolEntry.matchedAdapterNames` 同口径）。
+ * 搜索索引里一所学校的适配器清单（P1-10：真源在 `infra/WarehouseInfra`）。
  */
-data class WarehouseSearchSchoolEntry(
-    val id: String,
-    val adapters: List<WarehouseSearchAdapterEntry> = emptyList(),
-) {
-    /** 关键词命中的适配器显示名（保持索引顺序；大小写不敏感；空白关键词回空表）。 */
-    fun matchedAdapterNames(keyword: String): List<String> {
-        val normalized = keyword.trim().lowercase()
-        if (normalized.isEmpty()) return emptyList()
-
-        return adapters.mapNotNull { adapter ->
-            val displayName = adapter.adapterName.ifEmpty { adapter.adapterId }
-            if (displayName.lowercase().contains(normalized) ||
-                adapter.adapterId.lowercase().contains(normalized)
-            ) {
-                displayName
-            } else {
-                null
-            }
-        }
-    }
-}
+typealias WarehouseSearchSchoolEntry = com.mutx163.qingyu.infra.WarehouseSearchSchoolEntry
 
 /**
- * `index/search_index.yaml` 的解析结果。
+ * `index/search_index.yaml` 的解析结果（P1-10：真源在 `infra/WarehouseInfra`）。
  *
- * 与发布版 `WarehouseSearchIndex` 同形（`version_id` + `schools[].adapters[]`）；
- * 学校的 `name` / `initial` / `code` / `province` 不在这份索引里，也不参与搜索
- * —— 学校字段的匹配在 [filterWarehouseSchools] 里做，这里只补「按适配器名」。
+ * 学校的 `name` / `initial` / `code` / `province` 不在这份索引里；学校字段的匹配在
+ * 本包的 [filterWarehouseSchools] 里做，索引只补「按适配器名」。
  */
-data class WarehouseSearchIndex(
-    val versionId: String = "",
-    val schools: List<WarehouseSearchSchoolEntry> = emptyList(),
-) {
-    /**
-     * 关键词命中的适配器显示名，按学校 id 分组（仅含非空命中）。
-     *
-     * 选校页把它交给 [filterWarehouseSchools] 的 `adapterMatches`，于是「搜脚本名
-     * 也能带出对应学校」，并在学校卡片副标题里回显命中的脚本名。
-     */
-    fun matchedAdapterNamesBySchool(keyword: String): Map<String, List<String>> {
-        val normalized = keyword.trim()
-        if (normalized.isEmpty()) return emptyMap()
-
-        val matches = linkedMapOf<String, List<String>>()
-        for (school in schools) {
-            val names = school.matchedAdapterNames(normalized)
-            if (names.isNotEmpty()) {
-                matches[school.id] = names
-            }
-        }
-        return matches
-    }
-}
+typealias WarehouseSearchIndex = com.mutx163.qingyu.infra.WarehouseSearchIndex
 
 /**
  * 解析 `index/search_index.yaml`（发布版 `parseWarehouseSearchIndexYaml` 的逐条移植）。

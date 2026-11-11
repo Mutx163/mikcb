@@ -3,6 +3,7 @@ package com.mutx163.qingyu.pages.import.warehouse
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertSame
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -133,5 +134,33 @@ class WarehouseRepositoryModelsTest {
         val adapterMatches = mapOf("zju" to listOf("浙大新教务"))
         val matchResult = filterWarehouseSchools(all, "新教务", adapterMatches = adapterMatches)
         assertEquals(listOf(s3), matchResult)
+    }
+
+    // P1-10（2026-11-11）：下面两条从 `infra/WarehouseInfraTest` 迁来——过滤函数真源
+    // 已归本包（6 字段超集），infra 侧同名 4 字段版本删除。
+
+    @Test
+    fun `filterWarehouseSchools 命中名称 ID 首字母 资源目录 且空查询返回原表`() {
+        val schools = listOf(
+            WarehouseSchoolEntry("whu", "武汉大学", "W", "whu"),
+            WarehouseSchoolEntry("hust", "华中科技大学", "H", "hust"),
+        )
+        assertEquals(listOf("whu"), filterWarehouseSchools(schools, "武汉").map { it.id })
+        assertEquals(listOf("hust"), filterWarehouseSchools(schools, "HUST").map { it.id })
+        assertEquals(listOf("whu"), filterWarehouseSchools(schools, "w").map { it.id })
+        assertEquals(listOf("hust"), filterWarehouseSchools(schools, "hust").map { it.id })
+        assertTrue(filterWarehouseSchools(schools, "不存在").isEmpty())
+        assertSame("空查询必须原样返回入参表（不复制）", schools, filterWarehouseSchools(schools, "   "))
+    }
+
+    @Test
+    fun `filterWarehouseSchools 学校字段不命中时可回退适配器命中`() {
+        val schools = listOf(
+            WarehouseSchoolEntry("whu", "武汉大学", "W", "whu"),
+            WarehouseSchoolEntry("hust", "华中科技大学", "H", "hust"),
+        )
+        val matches = mapOf("hust" to listOf("WakeUp导入"))
+        assertEquals(listOf("hust"), filterWarehouseSchools(schools, "wakeup", matches).map { it.id })
+        assertTrue(filterWarehouseSchools(schools, "wakeup").isEmpty())
     }
 }
