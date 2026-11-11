@@ -98,7 +98,7 @@ import top.yukonga.miuix.kmp.icon.extended.Back
  * 子项之间**没有**间距；共享玻璃钮是 44dp 圆底，多颗动作键就会贴成一排。
  * 8dp 与页面里的芯片 / 分组间距同一档，四颗并排时不拥挤、也不挤占标题。
  */
-private val TopBarActionGap: Dp = 8.dp
+private val TopBarActionGap: Dp = 4.dp
 
 /** 顶栏/图标按钮的玻璃口径：小圆钮用薄磨砂，不做折射/高光（对齐发布版 `maxRefraction = 0`）。 */
 private val QingyuChromeGlassSpec: GlassSpec = GlassSpecResolver.resolve(
@@ -515,6 +515,13 @@ private fun QingyuPageScaffoldBody(
                                     // 不传的话它保持默认 -Float.MAX，onPreScroll 会整段吞掉一个
                                     // 方向的滚动 ⇒ 小标题页接上列表后变成「只能单向滚」。
                                     scrollBehavior = scrollBehavior,
+                                    // 标题左右内边距 26 → 8（2026-11-10 用户实报「诊断日志页标题被
+                                    // 截成『应…』」）：miuix 的标题可用宽 = (屏宽 − 返回键 − 动作区) × 0.9，
+                                    // 再被左右各 26 的内边距吃掉 52dp。四颗 44/48dp 动作球 + 返回键
+                                    // 之后，400dp 屏只剩约 41dp 给文字（20sp 标题四个字要 ~80dp）。
+                                    // 收到 8 后文字区约 88dp，「应用日志」恢复全文；动作球个数不变
+                                    // （与发布版「四颗全露」一致）。
+                                    titlePadding = 8.dp,
                                 )
                             }
                             adaptive.isWideScreen -> {
