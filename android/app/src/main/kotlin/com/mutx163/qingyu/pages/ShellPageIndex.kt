@@ -103,7 +103,8 @@ import com.mutx163.qingyu.pages.about.SupportCreatorPage
 import com.mutx163.qingyu.pages.conflict.CourseConflictPage
 import com.mutx163.qingyu.pages.conflict.buildCourseConflictView
 import com.mutx163.qingyu.pages.course.AddCourseEntryClock
-import com.mutx163.qingyu.pages.course.AddCourseEntryTimeSchemeLogic com.mutx163.qingyu.pages.course.AddCourseScheduleEntryData
+import com.mutx163.qingyu.pages.course.AddCourseEntryTimeSchemeLogic
+import com.mutx163.qingyu.pages.course.AddCourseScheduleEntryData
 import com.mutx163.qingyu.pages.course.AddCoursePage
 import com.mutx163.qingyu.pages.course.AddCourseStrings
 import com.mutx163.qingyu.pages.course.CourseFieldSuggestionLogic
