@@ -205,7 +205,6 @@ object SettingsStringsExt2 {
     val settingsTimetableSectionTitle = ArbText("settingsTimetableSectionTitle", "课表")
     val timetableManagement = ArbText("timetableManagement", "课表管理")
     val timeSchemeEntryTitle = ArbText("timeSchemeEntryTitle", "时间模板")
-    val timeSchemeEntryNotSelected = ArbText("timeSchemeEntryNotSelected", "未选择")
     val holidaySettingsEntryTitle = ArbText("holidaySettingsEntryTitle", "节假日标记")
     val liveIslandLabelEntryEnabled = ArbText("liveIslandLabelEntryEnabled", "已开启")
     val liveIslandLabelEntryDisabled = ArbText("liveIslandLabelEntryDisabled", "已关闭")
@@ -288,7 +287,7 @@ object SettingsStringsExt2 {
         homeMenuMoreTitle, dataTransferEntryTitle, cloudSyncTitle, lanEditTitle, coupleTimetableTitle, homeMenuSettingsTitle,
         statisticsSettingsTitle, homeMenuCoffeeTitle, aboutTitle, aboutChangelogTitle, userGuideEntryTitle, feedbackTitle,
         aboutOpenSourceLicensesTitle, memoryStatsEntryTitle, settingsTitle, settingsTimetableSectionTitle, timetableManagement, timeSchemeEntryTitle,
-        timeSchemeEntryNotSelected, holidaySettingsEntryTitle, liveIslandLabelEntryEnabled, liveIslandLabelEntryDisabled, settingsDisplayAppearanceSectionTitle, timetablePageSettingsTitle,
+        holidaySettingsEntryTitle, liveIslandLabelEntryEnabled, liveIslandLabelEntryDisabled, settingsDisplayAppearanceSectionTitle, timetablePageSettingsTitle,
         weatherSettingsEntryTitle, weatherCityNotSet, settingsReminderDesktopSectionTitle, liveSettingsTitle, liveNotificationPermissionMissing, homeWidgetEntryTitle,
         settingsAppSectionTitle, appearanceEntryTitle, settingsDataShareSectionTitle, cloudSyncEntryTitle, cloudSyncEntryDisabled, cloudSyncEntrySyncing,
         cloudSyncEntryError, cloudSyncEntryEnabled, lanEditEntryTitle, coupleTimetableEntryTitle, coupleTimetableEntryBound, coupleTimetableEntryUnboundLabel,
