@@ -296,12 +296,29 @@ dependencies {
 tasks.withType(Test).configureEach { test ->
     test.jvmArgs('--add-opens', 'java.base/java.lang=ALL-UNNAMED')
     // 基线 + ARB 是上面那条假绿的直接原因，必须声明。
+    // 两份 CJK 棘轮基线：composeP1 与 main 各一份（CjkLiteralGateTest 的 sourceSets 两条）。
+    // 只声明前者时，改 cjk-literal-baseline-main.txt 同样不会让任务失效 → 门禁假绿。
     test.inputs.file(project.file('src/test/kotlin/com/mutx163/qingyu/i18n/cjk-literal-baseline.txt'))
             .withPropertyName('i18nCjkBaseline')
-    test.inputs.file(project.file('../../i18n/app_zh.arb')).withPropertyName('i18nArbZh')
+    test.inputs.file(project.file('src/test/kotlin/com/mutx163/qingyu/i18n/cjk-literal-baseline-main.txt'))
+            .withPropertyName('i18nCjkBaselineMain')
+    // 六份 ARB 全声明：ArbCatalogTest 逐键对拍**全部语言**（en/ja/ko/zh/zh_HK/zh_TW），
+    // AppLocaleRuntimeTest 也按语言读。只声明 zh 时改 en/ja/ko 会被判 UP-TO-DATE——
+    // 2026-11-11 实测复现：只改 app_ja.arb 的一条值，任务 UP-TO-DATE / BUILD SUCCESSFUL（假绿）。
+    test.inputs.files(
+            project.file('../../i18n/app_en.arb'),
+            project.file('../../i18n/app_ja.arb'),
+            project.file('../../i18n/app_ko.arb'),
+            project.file('../../i18n/app_zh.arb'),
+            project.file('../../i18n/app_zh_HK.arb'),
+            project.file('../../i18n/app_zh_TW.arb'),
+    ).withPropertyName('i18nArbs')
     // 渲染层源码本会经编译进入 inputs，但门禁读的是磁盘原文（含未参与编译的资源式
     // 片段），显式再声明一次：任一文件改动都强制重跑，代价只是一次测试。
     test.inputs.dir(project.file('src/composeP1/kotlin')).withPropertyName('i18nRenderSources')
+    // main 源集同理：CjkLiteralGateTest 的第二条 sourceSet、LocaleFormatGuardTest 的
+    // srcRoot（LocaleFormatGuardTest.kt:188）都按磁盘原文扫 `src/main/kotlin`。
+    test.inputs.dir(project.file('src/main/kotlin')).withPropertyName('i18nMainSources')
 }
 
 
