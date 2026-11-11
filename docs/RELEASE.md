@@ -1,803 +1,466 @@
 # 发行教程
 
-这份文档只写当前仓库实际在用的发布方法。
+这份文档只写当前仓库实际在用的发布方法。Dart 层已删除（去 Flutter 化 P4-C），文中不再有 `flutter` 命令；构建一律走 Gradle。
 
-先记住 9 句话：
+先记住 8 句话：
 
-- `push` / `pull_request` 会触发 CI 质量门禁。
-- 只有推送 `v*` tag 才会自动构建正式 APK 并创建或更新 GitHub Release，并同步 GitCode 镜像（需一次性配置，见第一节）。
-- **GitHub 预发布或正式，唯一由 version.properties 的 `version:` 是否含 `-` 决定；commit message 里的 `prerelease` 无效。**
-- 三位数版本和四位数版本都可以是正式版，也都可以是预发布版；关键看 version.properties 有没有 `-`。
-- 四位数版本可以先作为预发布发出，后面再原地转成正式版。
-- **默认只升第 4 位（如 `2.0.4` → `2.0.4.1`）；不要因本地草稿就默认升第 3 位到 `2.0.5` 至 `2.0.9`。**
-- 应用里比较版本时，`1.1.10-6+36` 会按 `1.1.10.6` 去比较。
-- **推送 tag 后必须完成第六节 Post-tag 验证（CI 绿勾 + APK > 5 MB + Release 渠道状态正确）才能宣告发布完成。**
-- **已打 tag、已出现在 `docs/releases/latest.json` 的 `docs/releases/v*.md` 视为只读历史：禁止再追加功能条目；新内容写下一版文件（默认第四位 +1）。**
+- `push` 到任意分支或提 PR，会跑 `ci.yml` 的 JVM 单测门禁。
+- 只有推送 `v*` tag，才会触发 `android-build.yml` 构建正式 APK、创建或更新 GitHub Release，并同步 GitCode 镜像。
+- **预发布还是正式，唯一由 `android/version.properties` 的 `versionName` 是否含 `-` 决定；commit message 写什么都无效。**
+- tag 名必须和 `versionName` 配套，`android-build.yml` 会在出包前逐字校验（见第四节）。
+- 默认只升第 4 位（`2.0.4` → `2.0.4.1`）；不要因为本地草稿就升第 3 位。
+- 出包归维护者：`assemble*` / `bundle*` 与真机操作由人在 Windows 侧跑，agent 不跑。
+- 推送 tag 后必须完成第八节的产物核验，才能宣告发布完成。
+- 已打 tag、已进 `docs/releases/latest.json` 的 `docs/releases/v*.md` 是只读历史：不许再追加功能条目。
 
-## 写更新日志前：已发版判定（强制）
+## 一、现在这条发版链
 
-以下规则在**任何场景**都适用：正式 cut、本地提交、用户只说“写好更新日志”。  
-**不**改变日常代码提交习惯：未要求写更新日志时，不必创建或修改 `docs/releases/`。
+| 工作流 | 触发 | 做什么 |
+|---|---|---|
+| [ci.yml](../.github/workflows/ci.yml) | 任意分支 push、PR | 校验 `version.properties`（BOM + 格式）、校验 Action 固定 SHA、跑 `:app:testProdDebugUnitTest` |
+| [android-build.yml](../.github/workflows/android-build.yml) | `v*` tag push、手动 | 校验发版元数据 → 签名构建 → 5 MB 门禁 → 建或改 GitHub Release → 触发 `latest.json` 更新 → 同步 GitCode |
+| [update-docs-releases.yml](../.github/workflows/update-docs-releases.yml) | Release 事件、每 6 小时、手动 | 扫全部 Release，重写 `docs/releases/latest.json` 与 `feed.json`，跳过小于 5 MB 的附件 |
+| [sync-main-to-gitcode.yml](../.github/workflows/sync-main-to-gitcode.yml) | push 到 `main`、文档工作流结束、每天 | 把 `main` 同步到 GitCode 镜像仓库 |
+| [sync-release-channel-to-gitcode.yml](../.github/workflows/sync-release-channel-to-gitcode.yml) | Release 事件、手动 | 把预发布 / 正式状态同步到 GitCode 对应 Release |
+| [gitcode-backfill.yml](../.github/workflows/gitcode-backfill.yml) | 手动 | 把某个历史 tag 补同步到 GitCode（真 APK + 说明） |
+| [gradle-cache-warm.yml](../.github/workflows/gradle-cache-warm.yml) | Gradle 相关文件改动进 `main`、每周一 | 预热 Gradle 依赖缓存；tag 构建读到的就是这份缓存 |
+| [update-docs-schools.yml](../.github/workflows/update-docs-schools.yml) | 每天、手动 | 从 `qingyu_warehouse` 拉 `root_index.yaml` 生成 `docs/schools.json` |
 
-### 1. 先判定“最后已发布”
+[android-build.yml](../.github/workflows/android-build.yml) 分五个 job：
 
-在编辑任何 `docs/releases/v*.md` 之前，至少做一项：
+1. `Analyze and Test`：先看同 SHA 的 `ci.yml` 有没有 `main` 上的全绿记录，有就跳过单测（约 7～8 分钟省下来），没有才跑 `:app:testDevDebugUnitTest`。不管是否复用，发版元数据校验每次必跑。
+2. `Build and Publish Android APK`：只在 `refs/tags/v*` 上跑。读版本号 → 准备签名 → `:app:assembleProdRelease` → 选包 + 两道 5 MB 门禁 → 上传 artifact 与蒲公英 → 建或改 GitHub Release。
+3. `Sync releases JSON to docs`：触发 `update-docs-releases.yml`。
+4. `Sync code to GitCode`：把 `main` 与全部 tag 同步到 GitCode 镜像。
+5. `Sync release to GitCode`：把本次 APK 挂成 GitCode Release 附件。
 
-| 来源 | 怎么看 |
-|------|--------|
-| Git tag | `git tag -l 'v*' --sort=-v:refname`（并对照远程是否已 push） |
-| 应用更新源 | `docs/releases/latest.json` 的 `stable.version` / `prerelease.version` |
+后两个需要仓库变量 `GITCODE_USERNAME`，没配就整个 job 跳过，不会让发版失败。
 
-**最后已发布** = 已存在对应 `v*` tag，或已写入 `latest.json` 的版本号（预发布也算已发布）。
+CNB 侧（[.cnb.yml](../.cnb.yml)）另有一条配合流水线：push / PR 跑 JVM 单测，`tag_push` 用密钥仓库里的签名出包。**当前不作为发布通道**：根组织的「云原生构建-CPU」配额自 2026-09-03 起耗尽，push / PR 流水线在 Prepare 阶段直接报错（`.cnb.yml:119-138`）。CNB 的 tag 流水线只按 tag 名取版本号，没有 GitHub 那三道校验，即使跑通也不作权威产物。代码镜像照推（`git push origin` 会同时推 GitHub 与 CNB），CNB 的 Release 失败不算发布失败。
 
-### 2. 文件能不能改
+## 二、本地三层门禁（L0 / L1 / L2）
 
-| 情况 | 允许的操作 |
-|------|------------|
-| `docs/releases/vX.md` 对应版本 **已发布** | **禁止**追加“新增、优化和移除”功能条目。仅允许笔误、错别字、断行等不改变产品含义的修正（且应极少用）；**另允许补一行 `> 本次重点：…` 摘要**（只是给读者抓重点，不改任何功能条目，2026-10-18 已统一补齐历史版本）。 |
-| 对应版本 **从未 tag、从未上架** | 可编辑；若多份未发草稿，合并进**即将 cut 的下一版**文件（见第三节“多版本连在一起”）。 |
-| 用户只说“写更新日志或提交并写 changelog” | 写入 **下一未发布版本** 文件，默认第四位：已发 `v2.0.5` → 写 `docs/releases/v2.0.5.1.md`；**不要**改 `v2.0.5.md`。 |
-| 用户只说“本地提交或提交代码”且未提更新日志 | **不要**主动改 `docs/releases/`，正常 `git commit` 即可。 |
+这三层由开发这侧跑，出包之前必须先绿。
 
-### 3. “合并草稿”≠“改已发版”
+| 层 | 命令 | 证明什么 | 不能证明什么 |
+|---|---|---|---|
+| L0 | `pwsh -File scripts/test-kotlin-module.ps1 -Module "<域>"`，域就是 `android/app/src/*/kotlin/com/mutx163/qingyu/pages/` 下的目录名（`export`、`schedule`、`sync`、`sheetguard` 等；共享模型层 `app` / `core` / `theme` 等会自动带上） | 该域模型层 JVM 单测通过 | 渲染层编译；`composeP1` 里的 Compose 检查 |
+| L1 | `pwsh -File scripts/safe-gradle.ps1 :app:compileDevDebugKotlin` | Kotlin 全量编译通过（含 `composeP1` 渲染层） | R8 规则对不对；装得上装不上 |
+| L2 | `pwsh -File scripts/safe-gradle.ps1 :app:testDevDebugUnitTest` | 全部 JVM 单测通过 | 真机行为；性能 |
 
-- **正确**：多份**未 tag** 的 notes → 合并进**下一次要 cut** 的那一个 `v{next}.md`。
-- **错误**：把未推送代码的新能力写回**已经发过**的 `v2.0.5.md`（即使 version.properties 仍停在 `2.0.5-0`）。
+三条纪律：
 
-`android/version.properties` 的 `version:` **不能**单独当作“这一版还没发”：发版后 version.properties 可能暂时仍停在旧号；以 **tag、latest.json** 为准。
+- **L1 / L2 必须走 `safe-gradle.ps1`**，它内置全机互斥锁，同一时刻只允许一个 Gradle；裸跑 `./gradlew` 会和别人的构建互抢。
+- L0 的编译面只含 `main` 源集（`composeP1` 用了 `androidx.compose` / `miuix`，纯 JVM 的 kotlinc 编不了）。**改动 `composeP1` 下的文件，L0 绿不代表编得过**，最后要等 L1。
+- 声明纪律：只能说「编译通过」（L1）或「JVM 单测通过」（L2），不能说「能跑 / 能装上 / 已验证」。
 
-### 4. 与正常发版的关系
+配套的几条检查，改到对应范围就跑：
 
-- **正常 cut**：仍按第三节升第四位、写 `v{ship}.md`、改 version.properties、打 tag；本规则只禁止动**已经发过的** notes 文件。
-- **预发布转正式**：仍可只改 GitHub Release 渠道，不必改写已发 notes 正文。
-- **可选习惯**（非强制）：tag 成功后把 version.properties 抬到下一预发布号（如 `2.0.5.1-0+…`），减少“代码已前进、版本号还像停在已发号”的误导；不抬号也不构成可以改已发 notes 的理由。
+```powershell
+# 页面样式守卫（只跑自己域；-Write 只删过期例外，绝不新增）
+pwsh -NoProfile -File scripts/compose-style-lint.ps1 -Domain <域>
 
-## 更新日志写法规则（强制）
+# 文案编排守卫（六份 ARB → ArbCatalog 同源）
+pwsh -File scripts/safe-gradle.ps1 :app:testDevDebugUnitTest
 
-以后写 `docs/releases/v*.md` 时，必须按**用户视角**写，只写这三类：
+# composeP1 免 Gradle 早筛：不抢编译锁也能查悬空引用 / 签名不匹配 / import 缺失
+pwsh -File scripts/typecheck-compose.ps1
 
-1. **新增**
-   - 新功能
-   - 新入口
-   - 新页面
-   - 新能力
+# CJK 字面量棘轮：当前树 vs 基线，只报增减
+python scripts/i18n-cjk-baseline.py
+python scripts/i18n-cjk-baseline.py --source-set main
+```
 
-2. **优化**
-   - 体验优化
-   - 设计优化
-   - 性能优化
-   - 稳定性优化
-   - 现有功能体验变好
+`typecheck-compose.ps1` 只是早筛，它没有 Compose 编译器插件，绿了也不能替代 L1。CJK 基线文件由多条线共写，每块带手写理由注释，**不要为了对齐去跑 `--write` 整文件重生成**，那会冲掉别人的注释；发现计数不一致，让写那块代码的人自己登记。
 
-3. **移除**
-   - 删除功能
-   - 下线入口
-   - 去掉旧逻辑
+L3 / L3.5 / L4 不在这张表里，归维护者，见下一节。
 
-### 版式：分类分组 + 本次重点（2026-10-18 起）
+## 三、出包（L3）：只有一条命令
 
-新版本按分类分组，条目本身不再重复类型词：
+[android-build.yml](../.github/workflows/android-build.yml) 的生产出包是：
+
+```bash
+cd android && ./gradlew :app:assembleProdRelease --no-daemon
+```
+
+Windows 本地等价写法：
+
+```powershell
+cd C:\cursor\mikcb\android
+.\gradlew.bat :app:assembleProdRelease -POVERRIDE_VERSION_NAME=3.0.0
+```
+
+- `-POVERRIDE_VERSION_NAME` 让本地包的 `versionName` 与 CI 产物一致（CI 用 tag 名覆盖，见 `android-build.yml:195-202` 与 `android/app/build.gradle:38`）。不加时显示 `version.properties` 里的原值，例如 `3.0.0-0`。
+- `versionCode = versionCodeBase + 100000`（`android/app/build.gradle:69`）。这个偏移是分 ABI 打包时代留下的，防止新版被系统判成降级。`versionCodeBase=150` ⇒ `100150`。
+- `prodRelease` 是唯一「同包名 + 同签名 + R8 开启」的变体：`minifyEnabled true`、`shrinkResources true`（`android/app/build.gradle:186-187`），ABI 只有 `arm64-v8a`（`:80`），minSdk 33（`:59`）。
+- 签名读 `android/key.properties`（四键：`storeFile` / `storePassword` / `keyAlias` / `keyPassword`），或环境变量 `ANDROID_KEYSTORE_PATH` 等。缺签名会在任务图阶段直接报错，不会产出未签名包（`:327`）。
+- 产物在仓库根的 `build/app/outputs/apk/prod/release/app-prod-release.apk`（`android/build.gradle` 把产物统一到根 `build/`）。
+
+几条硬要求：
+
+- **不要从 Android Studio 拷 APK**：AGP 会给它注入 `android:testOnly="true"`，普通安装被系统拒绝。AS 里点 Run 出的包同样不要用。
+- **不要用 `prodDebug`**：debug 签名 + 正式包名，会和手机上的正式版撞签名，装不上。
+- `prodBench` 已白名单关闭（`android/app/build.gradle:250`）。性能只有 `assemblePerfBench` 一个变体可用，包名带 `.profile`、数据是空的，只能比启动与帧率，不能代表真实数据量。
+- 出包前先做一次应用内备份：卸载会清数据，回滚只能靠备份。
+
+装前逐条核对（`<sdk>` 换成本机 SDK 路径，build-tools 用 36.0.0）：
+
+```powershell
+$apk = 'build\app\outputs\apk\prod\release\app-prod-release.apk'
+& "$bt\aapt2.exe" dump badging $apk | Select-String 'versionCode|versionName|minSdk'
+& "$bt\aapt2.exe" dump xmltree $apk --file AndroidManifest.xml | Select-String 'testOnly'
+& "$bt\apksigner.bat" verify --print-certs $apk
+```
+
+预期：`versionCode` 等于 `versionCodeBase + 100000`、`minSdkVersion` 为 33、`testOnly` 无输出、证书指纹与已发布版本一致（不一致会 `INSTALL_FAILED_UPDATE_INCOMPATIBLE`）。
+
+R8 冒烟（`prodRelease` 包必过）：冷启动 3 次、桌面小组件各看一张、教务导入走一遍网页登录、相机扫码、云备份恢复。logcat 过滤 `FATAL EXCEPTION`、`ClassNotFoundException`、`NoClassDefFoundError`、`NoSuchMethodError` 为空。任何一条不过，先补 `proguard-rules.pro` 的 keep 再重出包，**不许关掉 R8 出货**。
+
+## 四、版本号与 tag 规则
+
+### 1. 包内版本：唯一事实源是 `android/version.properties`
+
+```properties
+versionName=3.0.0-0
+versionCodeBase=150
+```
+
+- `versionName`：对外显示的版本号。带 `-` 即预发布。
+- `versionCodeBase`：Android 的 versionCode 基数，脚本加 100000 后写进包。
+- 文件必须 UTF-8 **无 BOM**：带 BOM 会让字段读不出来，CI 与 `tool/verify_release_version.sh` 都会拦。
+
+### 2. 对外版本：tag 与发版说明文件
+
+- tag：`v<对外版本>`，例如 `v3.0.0`。
+- 发版说明：`docs/releases/v<对外版本>.md`，**首行必须是 `# v<对外版本>`**，一字不差。
+
+### 3. tag 与 versionName 的配套规则（CI 逐字校验）
+
+`android-build.yml:59-84` 会在出包前把 `versionName` 换算成应有的 tag 名，和本次 tag 比对：
+
+| `versionName` | 换算 | 应打的 tag |
+|---|---|---|
+| `3.0.0-0` | 去掉 `+` 段，去掉结尾的 `-0` | `v3.0.0` |
+| `2.1.4.1-0` | 去掉结尾的 `-0` | `v2.1.4.1` |
+| `1.1.10-6` | 末尾的 `-6` 变成 `.6` | `v1.1.10.6` |
+| `1.1.11` | 原样 | `v1.1.11` |
+
+同一层还会检查：说明文件存在、首行是 `# v<tag>`、`> 本次重点` 在不在。前两项不匹配直接失败，第三项只警告。
+
+### 4. 升哪个位
+
+| 段位 | 例子 | 默认 |
+|---|---|---|
+| 第 1 / 2 位 | `2.0` | 禁止自作主张 |
+| 第 3 位 | `2.0.x` | 禁止默认 +1；只在人工明确点名新基线时动 |
+| 第 4 位 | `2.0.4.n` | 默认 +1，预发布与正式都优先四段 |
+
+未指定版本号时，以最后一个**已打 tag 并发布**的版本为准（不是本地草稿文件名）：已发 `v2.0.4` → 下一发 `v2.0.4.1`。
+
+### 5. 多个未发布草稿
+
+本地写了好几份 `v2.0.5.md` 到 `v2.0.9.md`、但一次都没打过 tag：不要按最大号发。默认按「最后已发布基线 + 第四位 +1」发一版，把所有未发布草稿合并进这一份即将发版的说明文件，只打一个 tag。已经发过的文件不要合并、也不要追加。
+
+## 五、渠道：这次是预发布还是正式
+
+唯一判定源是 `versionName` 里有没有 `-`（`android-build.yml:136-140`）：
+
+| 意图 | `versionName` 写法 | GitHub Release | `latest.json` |
+|---|---|---|---|
+| 预发布 | 含 `-`，如 `3.0.0-0`、`1.1.10-6` | `prerelease: true` | 进 `prerelease` 栏 |
+| 正式 | 不含 `-`，如 `3.0.0`、`1.1.11` | `prerelease: false` | 进 `stable` 栏 |
+
+**不能决定渠道的东西**：commit message 有没有写 `prerelease`、tag 是三位数还是四位数、说明文件叫什么、tag 里有没有 `beta`。
+
+三位数版本也能预发布：`versionName=1.3.2-0` + tag `v1.3.2`。`-0` 只用来触发预发布判定，对外显示仍是 tag 里的 `1.3.2`。
+
+原地转正式：不换版本号、不重发，去 GitHub Release 页面把这条 Release 的 Pre-release 取消即可。`sync-release-channel-to-gitcode.yml` 会把状态同步到 GitCode，不用再去国内镜像手改一遍。
+
+## 六、发版前置检查
+
+切版本、推送前按顺序跑这三条：
+
+```bash
+# 1) 版本号格式与渠道是否匹配（按本次渠道二选一：prerelease 要求含 '-'，release 要求不含）
+bash tool/verify_release_version.sh prerelease
+# bash tool/verify_release_version.sh release
+
+# 2) 发版体检：版本 / tag 重名 / 说明文件 / 工作区脏文件 / 落后远端 / 当前 HEAD 的 CI
+bash tool/release_preflight.sh
+
+# 3) 「本次重点」那行能不能认回正文条目（Windows 上把 python3 换成 python）
+python3 tool/check_release_highlights.py
+```
+
+`release_preflight.sh` 输出 PASS / WARN / FAIL：
+
+- 有 **FAIL** 就别打 tag。
+- **WARN** 允许继续，但逐条看一眼它说的是什么（常见：工作区有未提交文件、落后远端、HEAD 的 CI 还没跑）。
+- `--offline` 跳过联网项，`--retag` 只在 Tag recovery 时用（重打同名 tag 前先删远端 tag）。
+- 它还会检查许可快照：`NOTICES.gz` 必须已按 Android 依赖重生成（快照里要有 `androidx` 条目）。依赖有变时重跑许可生成脚本，并同步 `FlutterAssetsDecouplingGuardTest` 里的钉值，否则体检判红。
+
+推送顺序固定：**先 main 绿，再打 tag**。两步并行会拿到「main 红、tag 必挂」的结果。
+
+## 七、发版步骤
+
+### A. 推 main，等 CI 绿
+
+```bash
+git status --short          # 期望：空
+git fetch origin
+git push origin main        # 同时推 GitHub 与 CNB
+gh run list --workflow=ci.yml --branch main --limit 1
+gh run watch <run-id> --exit-status
+```
+
+失败先修 main，**绝不在红树上打 tag**：tag 的检查与 CI 同源，main 红 tag 必红。
+
+### B. 打 tag，推 tag
+
+```bash
+git tag -a v3.0.0 -m "chore: cut v3.0.0 prerelease"   # 正式版写 release
+git show v3.0.0 --no-patch --format='%H %s'           # 确认指向 main HEAD
+git push origin v3.0.0
+```
+
+推 tag 前再确认一次：`version.properties`、说明文件名、tag 名三者配套（第四节）。本地打错还没推时，`git tag -d v3.0.0` 删掉重打是安全的。
+
+### C. 等构建，验产物
+
+```bash
+gh run list --workflow=android-build.yml --limit 1
+gh run watch <run-id> --exit-status
+gh run view <run-id> --json jobs --jq '.jobs[] | "\(.name) => \(.conclusion)"'
+```
+
+预期五个 job 全绿（`GITCODE_USERNAME` 没配时后两个会显示跳过）。时长 15～30 分钟，无缓存更久。
+
+失败处置：
+
+- 临时故障（网络、runner 抽风）→ `gh workflow run android-build.yml --ref v3.0.0` 重跑。**`--ref` 必须选 tag**，选分支会让 `publish` 被跳过。
+- 代码或 workflow 本身有问题 → 走第十二节的 Tag recovery，先报维护者批准。
+- CNB 报配额错 → 已知问题，忽略。
+
+可选收尾：tag 成功后把 `version.properties` 抬到下一预发布号（例如已发 `v3.0.0` 就写 `versionName=3.0.0.1-0` 并把 `versionCodeBase` 加一），避免「代码已经往前走了、版本号还停在上一个已发号」的误导。不抬也不构成修改已发说明的理由。
+
+## 八、Post-tag 验证（必做）
+
+推送 tag 不等于发布完成。以下五项全过才算发好：
+
+| # | 检查 | 通过标准 |
+|---|---|---|
+| 1 | GitHub Actions `Android Build` | `Analyze and Test` 与 `Build and Publish Android APK` 都绿 |
+| 2 | artifact `android-release-apk` | APK 大于 5 MB（CI 在选包与上传前各校验一次） |
+| 3 | GitHub Release 附件 | 恰一个 `mikcb-<版本>-arm64-v8a.apk`，大于 5 MB |
+| 4 | Release 渠道 | 预发布这次必须勾着 Pre-release，正式这次必须没勾 |
+| 5 | 包的身份 | `versionCode`、`versionName`、签名三项与预期一致 |
+
+第 5 项 CI 不做，必须自己核。把已发布的包拉下来查：
+
+```powershell
+$dir = Join-Path $env:TEMP 'relcheck'
+New-Item -ItemType Directory -Force -Path $dir | Out-Null
+gh release download v3.0.0 --pattern 'mikcb-*.apk' --dir $dir
+
+& "$bt\aapt2.exe" dump badging "$dir\mikcb-3.0.0-arm64-v8a.apk" | Select-String 'versionCode|versionName|minSdk'
+& "$bt\apksigner.bat" verify --print-certs "$dir\mikcb-3.0.0-arm64-v8a.apk"
+```
+
+任何一项不符，按坏包处理：走 Tag recovery，**不许手工 `gh release create` 补空资产或占位资产**。
+
+再等两件事落地：
+
+- `latest.json` / `feed.json`：`update-docs-releases.yml` 通常 1 分钟内提交，`git fetch origin` 后看 `docs/releases/latest.json`。没触发就手动 `gh workflow run update-docs-releases.yml`。
+- GitCode 镜像：构建里的 `Sync code to GitCode` / `Sync release to GitCode` 绿即完成。附件上传是异步的，不用等。补建历史版本用 `gh workflow run gitcode-backfill.yml -f tag=v3.0.0`。
+
+## 九、镜像与渠道配置
+
+GitHub 侧需要这些东西（缺哪条，对应环节静默跳过或报错）：
+
+| 类型 | 名称 | 用途 |
+|---|---|---|
+| Secret | `ANDROID_KEYSTORE_BASE64` | 签名 keystore 的 base64 |
+| Secret | `ANDROID_KEYSTORE_PASSWORD` | keystore 口令 |
+| Secret | `ANDROID_KEY_ALIAS` | 密钥别名 |
+| Secret | `ANDROID_KEY_PASSWORD` | 密钥口令 |
+| Secret | `PGYER_API_KEY` | 蒲公英上传（第二镜像，失败不阻塞） |
+| Secret | `GITCODE_TOKEN` | GitCode 写权限令牌 |
+| Variable | `GITCODE_USERNAME` | GitCode 用户名，**同时当同步开关** |
+| Variable | `GITCODE_REPOSITORY`（可选） | GitCode 仓库路径与 GitHub 不同名时才要 |
+
+- GitCode 仓库要先在网页端建好空仓库，推送不会自动创建。首次同步会把 `main` 全部历史与全部 tag 一起推过去。
+- GitCode Release 正文是发版说明全文 + 一行 `SHA-256:` 摘要（GitCode 没有附件摘要，应用内校验靠这一行）。不要手工改写这段摘要，包换了要重新发。
+- CNB 的签名密钥在独立密钥仓库 `Mutx163/qingyukb-keys` 的 `android-release.yml`（CNB 网页维护，禁止 clone / push），只在 `tag_push` 流水线注入。
+- 蒲公英是可选第二镜像，`continue-on-error`，它失败不影响 GitHub Release。
+
+## 十、更新日志写法
+
+`docs/releases/v*.md` 是给用户看的版本摘要，不是提交记录。
+
+### 1. 先判「最后已发布」
+
+动手前至少核一项：
+
+- `git tag -l 'v*' --sort=-v:refname`，并确认是否已推远端；
+- `docs/releases/latest.json` 里的 `stable.version` / `prerelease.version`。
+
+**最后已发布 = 已有对应 tag，或已进 `latest.json`**（预发布也算已发布）。`version.properties` 里的版本号不能单独当依据。
+
+### 2. 哪些文件能改
+
+| 情况 | 允许做什么 |
+|---|---|
+| 对应版本已发布 | 只允许改错别字、断行；可补一行 `> 本次重点：…`。**不许追加功能条目** |
+| 从没打过 tag、从没上架 | 可编辑；多份未发草稿合并进即将发版的那一份 |
+| 只说「写更新日志」 | 写进下一个未发布版本，默认第四位 +1 |
+| 只说「提交代码」 | 不要动 `docs/releases/` |
+
+### 3. 版式
+
+按分类分组，条目本身不重复类型词：
 
 ```markdown
-# v2.1.4
+# v3.0.0
 
-> 本次重点：桌面小组件「效果预览」、小组件周末文案
+> 本次重点：全站界面换成 Compose 重写版、首页多了月视图
 
 ## 新增 · 2
 
-- 设置页的「桌面小组件效果预览」：十种卡片按真实渲染就地出图，左右滑动切换。
-- 桌面小组件的周末文案：周六周日没课时显示「周末愉快」。
+- 全站界面换成 Compose 重写版：……
+- 首页多了月视图：……
 
-## 优化 · 9
+## 优化 · 3
 
 - ……
 
-## 修复 · 32
+## 修复 · 5
 
 - ……
 ```
 
-- 分组标题用 `##`，标题里的条数是给人扫读的（`新增 · 12`），空分类整节不写；
-- 顺序固定：新增 → 优化 → 移除 → 修复；
-- 条目本身写正文，不要再以「新增 」开头（分组标题已经说了）；
-- 顶部「本次重点」最多 3 条、用「、」分隔，写给人看的简写即可（App 会按相似度
-  认回对应条目）；
-  **但简写必须能认回条目**：优先直接抄条目里的原话（含其中几个字），自己另起一种
-  说法（如条目写「转场更顺」而重点写「转场掉帧」）会让它认不回来——界面上那条会
-  变成**没有分类标签的灰色重点**，而且「有没有写重点行」的检查查不出来。
-  发版前自检：`python3 tool/check_release_highlights.py`（`release_preflight.sh`
-  已接这条，认不回来直接 FAIL；CI 的 `test/docs/release_notes_format_test.dart` 同时兜住）；
-- 历史版本（v2.1.3.4 及以前）仍是「扁平列表 + 条目类型前缀」。解析器、App 历史页、
-  官网都同时兼容两种写法，**不需要重写历史**；历史版本只允许补一行摘要。
+规则：
 
-`> 本次重点` 这一行同时决定三个地方的第一屏：App 更新弹窗、App 历史版本页、
-官网更新日志。没有它就只能按「新增 > 优化 > 移除 > 修复」猜前三条。
+- 分组标题用 `##`，条数是给人扫读的；空分类整节不写。
+- 顺序固定：新增 → 优化 → 修复 → 移除。
+- 顶部 `> 本次重点` 最多 3 条，用「、」分隔。
+- **重点必须能认回下面的条目**：直接抄条目里的原话最稳。自己另起一种说法（条目写「转场更顺」、重点写「转场掉帧」）就认不回来，App 里那条会变成没有分类标签的灰色重点。发版前跑 `python3 tool/check_release_highlights.py` 自检。
+- 历史版本（v2.1.3.4 及以前）是扁平列表 + 类型前缀，解析器两种都认，**不需要重写历史**。
 
-### 严禁这样写
+### 4. 写什么、不写什么
 
-- 不要写“修复英语”
-- 不要写“修复国际化”
-- 不要写“修复某个新功能的小 bug”
-- 不要写实现层、技术层、开发者视角描述
-
-### 正确写法原则
-
-如果这次版本的核心是**新增一个功能**，后面哪怕你修的是这个新功能里的 bug，更新日志里也优先写成：
-
-- **新增：xxx 功能**
-- **优化：xxx 功能体验**
-
-而不是写成：
-
-- **修复：xxx 功能 bug**
-
-也就是说：
-
-- 面向用户看起来是“第一次拥有这个能力” → 写 **新增**
-- 面向用户看起来是“这个能力更顺、更稳、更好用” → 写 **优化**
-- 面向用户看起来是“这个能力没了” → 写 **移除**
-
-### 一个典型例子
-
-如果这次主要工作是把国际化语言功能做出来，但过程中修了很多英文显示问题，最终更新日志应该写：
-
-- 新增：英语与繁体中文等多语言界面支持
-- 优化：多语言界面的文案与排版一致性
+只写用户能感知的三类：**新增**（第一次拥有这个能力）、**优化**（这个能力更顺更稳）、**移除**（这个能力没了）。
 
 不要写：
 
-- 修复：英语显示问题
+- 「修复英语」「修复国际化」这类按实现层分类的说法；
+- 只对开发者有意义的重构、守卫、测试、依赖升级；
+- 某个新功能内部的小 bug（写进「新增」或「优化」的那条里）。
 
-### 总结
+`> 本次重点` 这一行同时决定三个地方的第一屏：App 更新弹窗、App 历史版本页、官网更新日志。没写就只能按「新增 > 优化 > 修复 > 移除」猜前三条。
 
-更新日志是给用户看的版本摘要。
+## 十一、常见坑
 
-默认优先级：
+**1. tag 推了，构建没跑**
 
-`新增 > 优化 > 移除 > 修复细节`
+- 只推了 `main`，没推 tag；
+- tag 名不是 `v*`；
+- tag 还在本地。
 
-## 更新弹窗只显示重点：请在正文顶部写一行「本次重点」
+**2. tag 构建在元数据检查就失败**
 
-应用内的更新弹窗不再把正文前 4 行当摘要（那样用户只看到一大串更新的**头顶**，
-一条 60 字的说明还会断在半截）。它现在显示三样东西：
+三类原因：`version.properties` 带 BOM、tag 与 `versionName` 不配套、说明文件不存在或首行不是 `# v<tag>`。报错会写出「按某个版本应打 v…」的推导；提示文案里还留着 `pubspec` 字样，那是去 Flutter 化时漏改的措辞，不影响判据。
 
-- **本次更新重点**：至多 3 条短标题（每条取第一个「：」之前的半句）；
-- **分类计数**：新增 / 优化 / 修复 / 移除 各多少条，交代这一版的规模；
-- **查看全部 N 项**：在同一个弹窗里原地展开完整条目，不用跳浏览器。
+**3. 说明文件没生效**
 
-重点从哪里来，按这个顺序：
+Release 正文读的是 `docs/releases/v<tag 去掉 v>.md`。tag 是 `v1.1.10.6`，文件就必须叫 `v1.1.10.6.md`，少一个点都读不到。
 
-1. **你声明的**（最准，也是唯一能保证「重点真的是重点」的方式）：版本标题之后、
-   第一条 `- 新增` 之前写一行引用：
+**4. 渠道反了，官网显示正式版**
 
-   ```text
-   # v2.1.3.3
+几乎都是 `versionName` 没写 `-`。`1.3.2+109` 会建成正式版，`1.3.2-0+109` 才是预发布。已经发错渠道：在 GitHub Release 勾 / 取消 Pre-release，再触发一次 `Update Docs Releases JSON`。
 
-   > 本次重点：超级岛「速览」、壁纸图库的 Wallhaven 竖版图源、每日壁纸自动换
+**5. Release 上挂着几 KB 的假 APK**
 
-   - 新增 超级岛「速览」：……
-   ```
+那是选错了包（stub 或未签名碎片）。仓库里的流程已经固化成：显式路径 → 最大候选 → 5 MB 门禁 → `file(1)` 类型检查 → 上传前再验一次体积。**不要在本地用 `find` 猜包路径上传**。已经发了坏包，走第十二节。
 
-   - 最多 3 条，用「、」分隔；写的是**给人看的简写**，不必和下面条目逐字一致
-     （应用会按相似度认回分类；认不回来就按普通条目显示，不会丢）。
-   - 也可以用 `## 本次重点` 小节点列 2～3 条（此时这几条本身也计入「全部更新」）。
-2. **没声明时**：按上面的既有优先级 `新增 > 优化 > 移除 > 修复` 取前 3 条。
-   这只保证「不是空白」，**不保证**是这一版最重要的几条 —— 所以每版都请写那一行。
+**6. `version.properties` 写坏了**
 
-正文其余部分照旧遵守上一节（用户视角；优先写新增 / 优化 / 移除）。
-「重点」那行属于版本摘要的一部分，不写实现细节、不写版本号。
+必须 UTF-8 无 BOM；`versionCodeBase` 必须是非负整数。CI 与本地脚本都会拦，报错信息会指出缺哪一行。
 
-## 发版前置体检（2026-10-18 新增）
+**7. CNB 报配额不足**
 
-切版前先跑一条只读命令（2～5 秒）：
+已知问题，不是代码问题。发布以 GitHub + GitCode 为准，CNB 的红不影响交付。
+
+**8. 手动补 Release**
+
+禁止 `gh release create` 不挂 APK，或挂空文件、占位文件。坏包只能走 Tag recovery。
+
+## 十二、Tag recovery（远端已有坏 release）
+
+破坏性操作，**先报维护者批准**。`git push origin :refs/tags/…` 会同时删 GitHub 与 CNB 的 tag；GitHub 上已建的 Release 会变成 untagged，删之前先决定要不要保留。
 
 ```bash
-bash tool/release_preflight.sh
+# 1) 在 main 上修好 workflow / 构建问题，门禁跑绿
+# 2) 删远端坏 tag（两个远端一起失效）
+git push origin :refs/tags/vX.Y.Z
+# 3) 在当前 main HEAD 重打同名 tag
+git tag -f vX.Y.Z
+# 4) 重推
+git push origin vX.Y.Z
 ```
 
-它逐项给出 PASS / WARN / FAIL：
+重打前用 `bash tool/release_preflight.sh --retag` 复跑体检；重推后把第八节的五项再验一遍。
 
-- version.properties 的 `-` 段与目标渠道一致；目标 tag 由版本推导，不用手填；
-- build number 比上一个 tag 大；版本号高于最后发布；
-- `docs/releases/v目标.md` 存在、首行标题匹配、有没有写「本次重点」；
-- 本地 / 远端是否已有同名 tag 或 Release（历史删过的同名 tag 也会被认出来）；
-- 工作区有哪些未提交 / 未跟踪条目 —— **这些不会进本次包**；
-- 落后 `origin/main` 几个提交；
-- 当前 HEAD 的 CI 是否已经全绿。
+如果只想修 GitCode 上那一条，用 `gh workflow run gitcode-backfill.yml -f tag=vX.Y.Z`，不用动 GitHub 的 tag。
 
-有 FAIL 就别打 tag；WARN 先看一眼再决定。`--offline` 跳过联网项，`--retag` 只给
-Tag recovery 用（重打同名 tag 时先删远端 tag）。
+## 十三、模板
 
-### 推送顺序：main 先绿，再打 tag（不要并行）
+### 预发布（四位数，如 v2.1.4.1）
 
-1. `git push origin main`
-2. 等这次 push 的 CI 变绿（`gh run watch <run-id> --exit-status`）
-3. `git tag -a vX.Y.Z -m "chore: cut vX.Y.Z prerelease"` 并 `git push origin vX.Y.Z`
-
-tag 工作流的检查与 CI 同源：main 红则 tag 必挂，失败 tag 要走「删远端 tag → 重打」的
-恢复流程。**同 SHA 的绿灯会被 tag 工作流直接复用**（2026-10-18 起 `android-build.yml`
-的 check job 先查 `ci.yml` 有没有该 commit 的全绿记录），所以「先推 main 等绿」不再
-多花时间。
-
-### Windows 相关
-
-`tool/verify_release_version.sh` 已兼容 CRLF（2026-10-18）。如果你看到
-「prerelease cut requires '-'」而版本里明明有 `-`，多半是 CRLF 造成的误报：
-用 `git show HEAD:android/version.properties` 的内容再跑一次即可。
-
-**GitCode 镜像**：Release 附件上传是异步的，GitHub Release 通过就算发布完成，
-不必等镜像同步。
-
-## 一、当前发布机制
-
-当前仓库有四条 GitHub Actions 线：
-
-- [.github/workflows/ci.yml](../.github/workflows/ci.yml)：`push` / `pull_request` 时执行依赖安装、静态分析和测试。
-- [.github/workflows/android-build.yml](../.github/workflows/android-build.yml)：推送 `v*` tag 时先执行检查，再签名构建 `arm64-v8a` APK 并创建或更新 GitHub Release，最后同步源码、tag 和 APK 到 GitCode 镜像。
-- [.github/workflows/update-docs-releases.yml](../.github/workflows/update-docs-releases.yml)：GitHub Release 发布、编辑、撤销等事件后自动更新 `docs/releases/latest.json`，供应用内更新检查读取。
-- [.github/workflows/update-docs-schools.yml](../.github/workflows/update-docs-schools.yml)：每天定时（及手动）从 `qingyu_warehouse` 拉取 `root_index.yaml`，生成 `docs/schools.json`，供官网已适配学校列表读取。
-
-上游教务适配的自动同步在 [`qingyu_warehouse` 仓库](https://github.com/Mutx163/qingyu_warehouse) 的 `.github/workflows/sync-upstream.yml` 中执行（每天 09:00 北京时间）；mikcb 侧仅通过上述 schools JSON 任务跟进索引变化。
-
-也就是说：
-
-1. 平时 `git push origin main` 或提交 PR，会自动跑 CI 质量门禁。
-2. 发布前先本地提交并推送 `main`。
-3. 再推送一个 `v*` tag。
-4. tag workflow 会先跑 `flutter analyze` 和 `flutter test`，通过后才继续构建 APK、上传蒲公英并创建或更新 GitHub Release。
-
-release workflow 还会做这些事：
-
-- 读取 [android/version.properties](../android/version.properties) 的 `version:`
-- 读取 `docs/releases/v版本号.md`
-- 用 tag 名覆盖 Android 最终产物的 `versionName`
-- 使用 `flutter build apk --release --flavor prod --target-platform android-arm64` 构建正式包
-- 创建或更新 GitHub Release
-- 同步源码、tag 与 APK 到 GitCode 镜像仓库（国内下载加速，需一次性配置，见下）
-
-### GitCode 镜像同步（国内下载加速）
-
-发版时 android-build.yml 会调用 [nvdacn/sync_to_gitcode](https://github.com/nvdacn/sync_to_gitcode) 的两个可复用工作流（已按 master HEAD `18b70112` SHA pin）：
-
-- `gitcode-push`：把 `main` 分支与全部 tag 同步到 GitCode 仓库；
-- `gitcode-release`：把本次构建产物 `mikcb-*.apk` 上传为 GitCode Release 附件，正文使用 `docs/releases/v版本号.md` 全文，预发布或正式状态沿用 version.properties `-` 判定（`pre` / `latest`）。
-
-触发条件与发版一致：仅当推送 `v*` tag 且构建发布（publish job）成功后执行；两个 Job 都带 `vars.GITCODE_USERNAME` 存在性门禁，变量不存在时自动跳过，Fork 仓库不会因此失败。
-
-启用前需要一次性配置（任一项缺失时同步静默跳过，不影响 GitHub 发版）：
-
-| 平台 | 配置 | 说明 |
-|------|------|------|
-| GitCode | 创建仓库 | 路径默认需与 GitHub 相同（`Mutx163/mikcb`）；不同则设 GitHub Variable `GITCODE_REPOSITORY` |
-| GitCode | [个人访问令牌](https://gitcode.com/setting/token-classic) | 需具备仓库写权限（推代码 + 创建或编辑 Release） |
-| GitHub | Secret `GITCODE_TOKEN` | 存 GitCode 令牌 |
-| GitHub | Variable `GITCODE_USERNAME` | GitCode 用户名；同时充当同步开关 |
-| GitHub | Variable `GITCODE_REPOSITORY`（可选） | 仅当 GitCode 仓库路径与 GitHub 不同时需要 |
-
-注意：
-
-- GitCode 仓库不会在 push 时自动创建，必须先在 GitCode 网页端建好空仓库。
-- 同步从配置后的第一个新 tag 开始；历史 Release 不会自动回填（重推旧 tag 会重跑完整发版流程，一般不建议）。
-- 首次同步会把 main 的全部历史与所有历史 tag 一起推到 GitCode。
-
-## 二、先分清两套版本
-
-### 1. 包内版本
-
-写在 [android/version.properties](../android/version.properties) 里。
-
-例如：
-
-```yaml
-version: 1.1.10-6+36
+```properties
+# android/version.properties
+versionName=2.1.4.1-0
+versionCodeBase=<上一版 +1>
 ```
-
-含义：
-
-- `1.1.10` 是基线版本
-- `-6` 对应第四段版本号
-- `+36` 是 build number / versionCode，必须递增
-
-### 2. 对外版本
-
-体现在 Git tag 和 GitHub Release 上。
-
-例如：
-
-- tag：`v1.1.10.6`
-- release notes：`docs/releases/v1.1.10.6.md`
-
-### 3. 这两者的关系
-
-当前代码里，版本比较会把：
-
-- `1.1.10-6+36`
-- `1.1.10.6`
-
-当成同一个数值版本。
-
-这点在 [lib/services/app_update_service.dart](../lib/services/app_update_service.dart) 和 [test/services/app_update_service_test.dart](../test/services/app_update_service_test.dart) 里已经覆盖到了。
-
-## 三、三位数和四位数的真实规则
-
-### 1. 三位数版本
-
-例子：
-
-- `1.1.11`
-
-这种通常用来表示一个新的正式基线版本。
-
-### 2. 四位数版本
-
-例子：
-
-- `1.1.10.6`
-
-这种通常表示某个基线版本下面的编号版本。
-
-但要注意：
-
-- 四位数版本不等于“只能预发布”
-- 四位数版本也可以是正式版
-
-### 3. 当前实际发行习惯
-
-现在这套习惯更准确的说法是：
-
-- 新的测试包，通常继续递增第四段，例如 `11105 -> 11106`
-- 如果某个四位数测试版验证通过，可以直接把这个同版本号原地转成正式版
-- 不需要再单独发一个三位数版本来“接管”它
-
-也就是说：
-
-- `11106` 可以先是预发布
-- 后面也可以还是 `11106`，只是从预发布改成正式
-
-### 4. AI / 自动化默认怎么升版本（必守）
-
-**默认只动第 4 位，不要默认动第 3 位。**
-
-| 段位 | 例子 | 默认 |
-|------|------|------|
-| 第 1/2 位 | `2.0` | 禁止自作主张 |
-| 第 3 位 | `2.0.x` | **禁止默认 +1**；仅当人工明确点名新三位数基线 |
-| 第 4 位 | `2.0.4.n` | **默认 +1**（预发布与正式都优先四段） |
-
-未指定精确版本号时：
-
-1. 以 **最后一个已打 tag 并发布** 的版本为准（不是 `docs/releases/*.md` 草稿文件名）。
-2. 已发 `v2.0.4` → 下一发 **`v2.0.4.1`**，不是 `v2.0.5`。
-3. 已发 `v2.0.4.1` → 下一发 **`v2.0.4.2`**。
-
-### 5. 多个未发布版本连在一起时
-
-若本地写了很多 `docs/releases/v2.0.5.md` 至 `v2.0.9.md` 之类草稿，但 **从未打 tag 或从未上架**：
-
-1. **不要**按草稿最大号去 cut（禁止因为写了 `v2.0.9.md` 就发 `v2.0.9`）。
-2. 默认 cut 到“最后已发布基线下的下一个第四位”（如已发 `v2.0.4` → `v2.0.4.1`）；仅当人工明确点名三位数时才用三位数。
-3. 把所有**未发布**草稿内容 **合并进这一次** 即将 cut 的 `docs/releases/v{ship}.md`，打 **一个** tag。  
-   **若其中某文件版本其实已有 tag（例如已发 `v2.0.5`）→ 该文件不要合并、不要追加；只把其后的未发改动写进 `v2.0.5.1` 等下一版。**
-4. 中间空号笔记改写成四段归档或删除，不要当成已发布历史。
-5. 用户向更新日志不要写“相对完整累计、中间迭代未单独发”类说明。
-
-（Agent 流程细节见用户机 `mikcb-release` / `mikcb-ship-local` skill。）
-
-## 四、什么时候算预发布，什么时候算正式
-
-这里不要混淆“版本号形态”“commit 文案”和“GitHub 渠道状态”这三个概念。
-
-### 1. 唯一判定源：version.properties + CI
-
-[android-build.yml](../.github/workflows/android-build.yml) 在创建 GitHub Release 前读取 `android/version.properties` 的 `version:`：
 
 ```bash
-if [[ "${APP_VERSION}" == *-* ]]; then
-  IS_PRERELEASE=true    # gh release … --prerelease
-else
-  IS_PRERELEASE=false   # 正式 Release
-fi
+git add android/version.properties docs/releases/v2.1.4.1.md
+git commit -m "chore: cut v2.1.4.1 prerelease"
+git push origin main          # 等 CI 绿
+git tag -a v2.1.4.1 -m "chore: cut v2.1.4.1 prerelease"
+git push origin v2.1.4.1
 ```
 
-因此：
+### 预发布（三位数，如 v3.0.0）
 
-| 用户意图 | version.properties 必须写成 | GitHub Release | 官网 `latest.json` |
-|----------|------------------|----------------|---------------------|
-| **预发布** | 含 `-` 段，如 `1.3.2-0+109` 或 `1.1.10-7+37` | `prerelease: true` | 进 `prerelease` 栏 |
-| **正式版** | 不含 `-`，如 `1.3.2+109` 或 `1.1.11+37` | `prerelease: false` | 进 `stable` 栏 |
+```properties
+versionName=3.0.0-0
+versionCodeBase=150
+```
 
-**以下全部不能决定渠道：**
-
-- commit message 是否写了 `prerelease`
-- tag 是三位数还是四位数
-- release notes 文件名
-- tag 名里有没有 `beta`
-
-切版本前运行（把第二参数换成本次模式）：
+tag 推 `v3.0.0`，说明文件 `docs/releases/v3.0.0.md`。CI 会把 `-0` 剥掉再和 tag 比对。
 
 ```bash
-bash tool/verify_release_version.sh prerelease
-# 或
-bash tool/verify_release_version.sh release
-```
-
-### 2. GitHub、官网和应用各自看什么
-
-- **GitHub Release 是不是预发布**：看 `prerelease` 字段（由上一节 CI 写入）。
-- **官网下载区显示正式还是预发布**：读 `docs/releases/latest.json`，同样看 Release 的 `prerelease`。
-- **应用里版本高低怎么比**：看版本号数值，与渠道无关。
-
-例如当前代码会把：
-
-- `1.1.10-6+36`
-- `1.1.10.6`
-
-视为同版本。
-
-所以：
-
-- 如果你已经安装了 `11106` 预发布
-- 后面只是把 GitHub 上同一个 `11106` Release 原地转正式
-
-应用不应该再把它判定成“更高的新版本”，因为版本号没变。
-
-### 3. 三位数 vs 四位数（形态 ≠ 渠道）
-
-- **四位数对外版本**（如 `v1.1.10.7`）：version.properties 写 `1.1.10-7+build`；`-7` 同时表示第四段编号，且触发预发布。
-- **三位数对外版本**（如 `v1.3.2`）：若要做**预发布**，version.properties 仍必须含 `-`，通常写 `1.3.2-0+build`（`-0` 仅用于触发 CI 预发布，对外 versionName 仍来自 tag `1.3.2`）。
-- **三位数正式基线**（如 `v1.1.11`）：version.properties 写 `1.1.11+build`，**不要**写 `-0`。
-
-> **反面教材（v1.3.1 / v1.3.2 事故）**：commit 写了 `chore: cut v1.3.2 prerelease`，但 version.properties 是 `1.3.2+109`（无 `-`），CI 必然建成正式版，官网也会显示正式版。
-
-## 五、最短发布流程
-
-### 1. 发布一个新的预发布测试版
-
-假设目标是发布 `11107`：
-
-1. 修改 [android/version.properties](../android/version.properties)
-
-```yaml
-version: 1.1.10-7+37
-```
-
-2. 新建 release notes 文件：
-
-```text
-docs/releases/v1.1.10.7.md
-```
-
-3. 提交：
-
-```bash
-git add android/version.properties docs/releases/v1.1.10.7.md
-git commit -m "chore: cut v1.1.10.7 prerelease"
-```
-
-4. 打 tag：
-
-```bash
-git tag v1.1.10.7
-```
-
-5. 推送：
-
-```bash
+git add android/version.properties docs/releases/v3.0.0.md
+git commit -m "chore: cut v3.0.0 prerelease"
 git push origin main
-git push origin v1.1.10.7
+git tag -a v3.0.0 -m "chore: cut v3.0.0 prerelease"
+git push origin v3.0.0
 ```
 
-6. 去 GitHub Actions 看 `Android Build` 是否启动。
+### 正式基线（如 v1.1.11）
 
-7. 完成 [Post-tag 验证](#六post-tag-验证必做)，确认 GitHub Release 的 **Pre-release** 勾选状态与预期一致。
-
-### 1b. 发布一个新的三位数预发布（如 v1.3.2）
-
-与四位数预发布**渠道规则相同**：version.properties 必须含 `-`。
-
-假设目标是预发布 `v1.3.2`：
-
-1. 修改 [android/version.properties](../android/version.properties)
-
-```yaml
-version: 1.3.2-0+109
+```properties
+versionName=1.1.11
+versionCodeBase=<上一版 +1>
 ```
 
-2. 新建 release notes 文件：
-
-```text
-docs/releases/v1.3.2.md
-```
-
-3. 本地校验：
+说明文件 `docs/releases/v1.1.11.md` 与 `version.properties` 同笔提交、推 main 等 CI 绿，再打 tag：
 
 ```bash
-bash tool/verify_release_version.sh prerelease
-```
-
-4. 提交、打 tag、推送：
-
-```bash
-git add android/version.properties docs/releases/v1.3.2.md
-git commit -m "chore: cut v1.3.2 prerelease"
-git tag v1.3.2
-git push origin main
-git push origin v1.3.2
-```
-
-> 常见错误：写成 `version: 1.3.2+109` 会落成**正式版**，与 commit message 无关。
-
-### 2. 把已有四位数预发布原地转正式
-
-假设 `v1.1.10.6` 已经发成预发布，现在你决定它直接转正式：
-
-1. 不新增 `v1.1.10`
-2. 不改成别的版本号
-3. 直接保留 `v1.1.10.6`
-4. 去 GitHub Release 页面编辑这个已有 Release
-5. 把它从 `prerelease` 改成正式发布
-
-这一步的关键是：
-
-- 改的是 Release 状态
-- 不是重新发一个三位数版本
-
-### 3. 发布一个新的正式基线
-
-假设目标是发布 `1.1.11`：
-
-1. 修改 [android/version.properties](../android/version.properties)
-
-```yaml
-version: 1.1.11+37
-```
-
-2. 新建 release notes 文件：
-
-```text
-docs/releases/v1.1.11.md
-```
-
-3. 提交：
-
-```bash
-git add android/version.properties docs/releases/v1.1.11.md
-git commit -m "chore: cut v1.1.11 release"
-```
-
-4. 打 tag：
-
-```bash
-git tag v1.1.11
-```
-
-5. 推送：
-
-```bash
-git push origin main
+git tag -a v1.1.11 -m "chore: cut v1.1.11 release"
 git push origin v1.1.11
 ```
 
-## 六、Post-tag 验证（必做）
+### 预发布原地转正式
 
-推送 `v*` tag **不等于**发布完成。必须等 CI 产出有效 APK 后才能对用户或渠道宣告 release 就绪。
-
-### 检查清单
-
-| 步骤 | 检查项 | 通过标准 |
-|------|--------|----------|
-| 1 | GitHub Actions **Android Build**（对应 tag） | **Analyze and Test** 与 **Build and Publish Android APK** 均为 green |
-| 2 | Workflow 产物 **`android-release-apk`** | 体积 **> 5 MB**（CI 在 Prepare artifact 与上传 Release 前各校验一次） |
-| 3 | GitHub Release 页面同名 tag | 附件 APK **> 5 MB**；约 12 KB / ≤1 MB 视为失败产物 |
-| 4 | **Release 渠道状态** | 若本次为预发布 cut，Release 必须显示 **Pre-release**；若为正式 cut，必须**未**勾选 Pre-release |
-| 5 | 禁止手工绕过 | 不得 `gh release create` 不带 APK，或上传占位或空资产 |
-
-### 发布前本地脚本（推荐）
-
-切版本提交前运行（与 CI 编码门禁一致；**第二参数必传**）：
-
-```bash
-# 预发布 cut
-bash tool/verify_release_version.sh prerelease
-
-# 正式 cut
-bash tool/verify_release_version.sh release
-```
-
-### 不要用脆弱的 APK 选择方式
-
-- **禁止**在本地或临时脚本里用 `find` / 通配符“猜”哪个 `.apk` 是正式包并当作 release 依据。
-- 仓库已在 [.github/workflows/android-build.yml](../.github/workflows/android-build.yml) 固化：显式路径 → 最大 eligible 回退 → **5 MB** 体积门禁 → `file(1)` 归档类型检查 → 上传 Release 前再次校验体积。
-- 应用内 `latest.json` 更新（[update-docs-releases.yml](../.github/workflows/update-docs-releases.yml)）也会跳过 **< 5 MB** 的 APK 资产。
-
-### Tag 恢复（远端已有坏 release）
-
-若某次 tag 指向了错误构建（例如 Release 上只有 ~12 KB stub APK）：
-
-1. 在 `main` 上合并修复（workflow / 构建问题），确保本地 `flutter analyze` / `flutter test` 通过。
-2. 删除远端坏 tag：`git push origin :refs/tags/vX.Y.Z.W`
-3. 在**当前** `main` HEAD 重新打同名 tag：`git tag -f vX.Y.Z.W`
-4. 再次推送 tag：`git push origin vX.Y.Z.W`
-5. 重新执行本节 Post-tag 验证清单，确认 Release APK **> 5 MB** 后再宣告完成。
-
-## 七、推荐发布前检查
-
-发布前本地至少跑这组命令，和 CI / release workflow 保持一致：
-
-```bash
-flutter pub get
-flutter analyze
-flutter test
-flutter build apk --release --flavor prod --target-platform android-arm64
-```
-
-同时检查这几项：
-
-1. `bash tool/verify_release_version.sh prerelease` 或 `… release`（与本次 cut 模式一致）
-2. `android/version.properties` 版本号是否改对（预发布必须含 `-`）
-3. `docs/releases/` 文件名是否和 tag 完全一致
-4. `build number` 是否比上一个版本大
-5. 工作区是否干净：`git status`
-6. 如果要验证预发布检测，新的测试包版本号必须严格高于当前已安装版本
-
-推送 `v*` tag 后，release workflow 也会强制执行 `flutter analyze` 和 `flutter test`；只有检查通过才会进入签名构建和发布步骤。
-
-## 八、常见坑
-
-### 1. 为什么发布 workflow 没跑
-
-CI 会在 `push` / `pull_request` 时运行；正式 APK 发布 workflow 只有推送 `v*` tag 才会运行。发布没跑通常只有这几种原因：
-
-- 只推了 `main`，没推 tag
-- tag 不是 `v*`
-- tag 还在本地，没 `git push origin vX.Y.Z`
-
-### 2. 为什么 Release 说明没生效
-
-workflow 读的是：
-
-```text
-docs/releases/v${VERSION_NAME}.md
-```
-
-所以：
-
-- tag 是 `v1.1.10.6`
-- 文件就必须叫 `docs/releases/v1.1.10.6.md`
-
-少一个点、少一个数字、写成别的名字，都不会自动读取到。
-
-### 3. 为什么预发布检测不到新版本
-
-先检查这几件事：
-
-1. 当前安装包版本是否真的低于新的测试版本
-2. 应用内是否打开了“检测预发布版本”
-3. 远端对应 Release 是否仍然是 `prerelease`
-
-如果你只是把同一个 `11106` 从预发布改成正式：
-
-- 这是渠道状态变化
-- 不是版本号升级
-
-所以应用不应该把它提示成“比当前更高的新版本”。
-
-### 4. 为什么本地 commit 了还是没反应
-
-因为本地 commit 不会触发 GitHub Actions。
-
-一定要：
-
-```bash
-git push origin main
-git push origin v你的版本号
-```
-
-### 5. 为什么 GitHub Release 上是几 KB 的假 APK
-
-根因通常是 CI 用松散规则选错了 `.apk`（例如 stub 或未签名碎片），而不是真正的 `app-prod-release.apk`。
-
-**不要**在本地用 `find` 猜路径上传。**必须**依赖仓库 workflow 内的显式路径、5 MB 门禁与 Post-tag 验证（见第六节）。若已发布坏资产，按第六节 Tag 恢复流程处理。
-
-### 6. android/version.properties 出现乱码或 description 异常
-
-写入 `android/version.properties` 时必须 **UTF-8 无 BOM**。带 BOM 会导致 `description` 等字段乱码；CI 与 `tool/verify_release_version.sh` 会在 PR 与发布前拦截。
-
-### 7. 为什么 commit 写了 prerelease，官网却是正式版
-
-根因几乎总是 **version.properties 没写 `-` 段**。
-
-- `version: 1.3.2+109` → CI 建**正式** Release → 官网 `latest.json` 的 `stable` 指向它
-- `version: 1.3.2-0+109` → CI 建**预发布** Release → 官网 `latest.json` 的 `prerelease` 指向它
-
-修复已发布的错误渠道：在 GitHub Releases 编辑对应版本勾选或取消 Pre-release，然后触发 `Update Docs Releases JSON` workflow。下次 cut 务必先跑 `verify_release_version.sh … prerelease`。
-
-## 九、最常用模板
-
-### 新预发布模板（四位数，如 v1.1.10.7）
-
-```bash
-git add android/version.properties docs/releases/v1.1.10.X.md
-git commit -m "chore: cut v1.1.10.X prerelease"
-git tag v1.1.10.X
-git push origin main
-git push origin v1.1.10.X
-```
-
-`android/version.properties`：
-
-```yaml
-version: 1.1.10-X+递增编号
-```
-
-切前校验：`bash tool/verify_release_version.sh prerelease`
-
-### 新预发布模板（三位数，如 v1.3.2）
-
-```bash
-git add android/version.properties docs/releases/v1.3.2.md
-git commit -m "chore: cut v1.3.2 prerelease"
-git tag v1.3.2
-git push origin main
-git push origin v1.3.2
-```
-
-`android/version.properties`：
-
-```yaml
-version: 1.3.2-0+递增编号
-```
-
-切前校验：`bash tool/verify_release_version.sh prerelease`
-
-> `-0` 仅用于满足 CI 预发布判定；Android `versionName` 仍来自 tag `v1.3.2`。
-
-### 四位数预发布转正式模板
-
-```text
-GitHub Releases 页面
-找到 v1.1.10.X
-编辑 Release
-取消 prerelease
-保存
-```
-
-**只改 GitHub 这一处就够了，GitCode 会自动跟上**：
-
-- Android Build 的 GitCode 同步只在**推送 tag** 时跑，而“原地转正式”不会再推 tag，
-  所以那条任务不会重新触发；
-- `.github/workflows/sync-release-channel-to-gitcode.yml` 订阅 `release` 事件
-  （`released` / `prereleased` / `edited`），把同一个 tag 的渠道标志同步到 GitCode
-  （GitCode 用 `release_status: pre | latest`，按 tag PATCH，见该文件头部说明）；
-- 因此国内渠道（更新源选 GitCode 时读的是 GitCode 的 releases 接口）也会一起变成
-  正式版，不用再去 GitCode 手动改一遍。
-
-想手动补一次时，在该工作流的 Actions 页面点 `Run workflow`，填 tag 与是否预发布即可。
-
-**撤回与删除**（同一个工作流，监听 `unpublished` / `deleted`）：
-
-| GitHub 上的动作 | GitCode 上发生什么 |
-|---|---|
-| 取消发布（转成草稿） | 降级为 `pre`。GitCode 没有草稿概念，这里不删 —— 删除会连带丢掉 APK 附件，重新发布时无法自愈；降级成预发布是可逆的，重新发布时会自动回到 `latest`。 |
-| 删除 release | 删除 GitCode 上同 tag 的 release；404 视为“本来就没有”，其他失败码会明确报红，请手动处理。 |
-
-需要**强制删除**某条（比如上面“取消发布”也想彻底下线）时，在 Actions 页面手动跑该工作流，
-`mode` 选 `delete`、填 tag 即可。
-
-### 新正式基线模板
-
-```bash
-git add android/version.properties docs/releases/v1.1.11.md
-git commit -m "chore: cut v1.1.11 release"
-git tag v1.1.11
-git push origin main
-git push origin v1.1.11
-```
-
-`android/version.properties`：
-
-```yaml
-version: 1.1.11+递增编号
-```
-
-切前校验：`bash tool/verify_release_version.sh release`
+GitHub Release 页面 → 编辑该版本 → 取消 Pre-release → 保存。不换版本号、不重推 tag，GitCode 由 `sync-release-channel-to-gitcode.yml` 自动跟上。
