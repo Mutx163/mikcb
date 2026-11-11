@@ -38,6 +38,28 @@ import java.io.File
  * 按文件统计中文字面量条数，与对应基线比对。
  * - 新增文件或计数上调 → 失败（说明新代码绕过了 i18n）。
  * - 修复后计数下调 → 同样失败，提示下调基线（棘轮只许收不许放，避免"顺手加回去"）。
+ *
+ * ## `@Preview` 参数与预览函数体不算「屏上文案」（2026-11-11 与 EmptyState 守卫统一口径）
+ *
+ * `@Preview` 的参数（`name = "1 有数据"`、假课程名）和预览函数体里的构造数据**永远不上屏**：
+ * 只出现在 Android Studio 的预览面板里，用户看不到，也与六语文案无关。
+ * `EmptyStateUnificationGuardTest` 从 2026-11-10 起就这么判（它的 `blankPreviewSpans`：
+ * 只抹 `@Preview(...)` 的参数与被注解函数体，**抹完不外溢**）。本棘轮当时没跟上，于是同一份源码
+ * 在两套守卫下判出两种结论——预览名被算成 i18n 债务，逼人把预览名改成英文（`33a5c6e15`）。
+ *
+ * 现在两侧对齐：**豁免只放开预览块，不放开水位**。预览之外任何中文字面量照旧计数，
+ * 因此「预览之外零新增」的判定力与原规则完全一致（自检 `previewSpansAreNotCountedAsScreenCopy`）。
+ *
+ * 实现：先把整个文件抹一遍空白再按行数（换行保留、字符偏移不变），抹的范围严格是两段——
+ * 1. `@Preview` 之后紧跟的 `(...)` 参数列表；
+ * 2. 该注解之后**第一个** `fun` 的函数体（花括号配对）。
+ * 配对失败（未闭合）时**宁可不豁免**：多抹会盖住真违规，少抹只会多报，多报是安全方向。
+ *
+ * 只认**行首**（允许前导空白）的 `@Preview`：KDoc 的 ` * @Preview`、`// @Preview`、
+ * 字符串里的 `"@Preview"` 都不算。比 `EmptyStateUnificationGuardTest` 的全文 `indexOf` 更窄，
+ * 因为那套写法遇到注释里的 `@Preview` 会一路抹到下一个 `fun`，把真代码一起盖掉。
+ * 与 `scripts/i18n-cjk-baseline.py` 的 `PREVIEW_ANNOTATION` / `blankPreviewSpans` /
+ * `matching_delimiter` **逐字一致**。
  */
 class CjkLiteralGateTest {
 
@@ -51,6 +73,15 @@ class CjkLiteralGateTest {
      * 后面这条靠 `\bLog\.` 的词边界挡住。
      */
     private val LOG_CALL = Regex("\\bLog\\.[vdiwe]\\s*\\(")
+
+    /**
+     * 「行首的 `@Preview`」判据：`(?m)` 让 `^` 匹配每行行首，只允许前导空白。
+     *
+     * 与 `scripts/i18n-cjk-baseline.py` 的 `PREVIEW_ANNOTATION` **逐字一致**。
+     * 注释里的 ` * @Preview` / `// @Preview` 因为行首不是 `@` 而不命中——
+     * 这条收窄是安全方向（见类注释「为什么只认行首」）。
+     */
+    private val PREVIEW_ANNOTATION = Regex("(?m)^[ \t]*(@Preview\\b)")
 
     // 与 scripts/i18n-cjk-baseline.py 的 COPY_TABLE_* / GENERATED_* 逐字一致。
     private val COPY_TABLE_NAME_MARKERS = listOf("Strings", "Arb")
@@ -180,6 +211,65 @@ class CjkLiteralGateTest {
         )
     }
 
+    /** 判据自检用：按真实口径（先抹 `@Preview` 段，再逐行数）统计一段源码里的中文字面量。 */
+    private fun cjkLiteralsInText(text: String): Int =
+        previewBlanked(text).lines().sumOf { line -> cjkLiteralsIn(line).size }
+
+    /**
+     * 判据自检：`@Preview` 参数与预览函数体里的中文不算，**预览之外照数**。
+     *
+     * 两条一起才说明「收窄」而不是「放水」：只测第一条的话，把整份文件都豁免掉也能通过。
+     * 第二条把同一条中文从预览块挪到普通代码，必须仍然被数到——水位一点没降。
+     */
+    @Test
+    fun previewSpansAreNotCountedAsScreenCopy() {
+        val previewOnly = """
+            |@Preview(name = "1 有数据")
+            |@Composable
+            |private fun DemoScreenPreview() {
+            |    DemoScreen(
+            |        title = "假标题",
+            |        tags = listOf("语文", "数学"),
+            |    )
+            |}
+        """.trimMargin()
+        assertTrue(
+            "预览参数与预览函数体里的中文不该算成 i18n 债务（那是 IDE 预览标签与假数据）",
+            cjkLiteralsInText(previewOnly) == 0,
+        )
+
+        // 同一条中文从预览块**挪到普通代码**：必须判红。
+        val movedOut = """
+            |val screenTitle = "1 有数据"
+            |
+            |@Preview(name = "预览")
+            |@Composable
+            |private fun DemoScreenPreview() {
+            |    DemoScreen(title = screenTitle)
+            |}
+        """.trimMargin()
+        assertTrue(
+            "预览之外的中文仍然必须被数到（豁免只放开预览块，不放开水位），" +
+                "实际 ${cjkLiteralsInText(movedOut)} 条",
+            cjkLiteralsInText(movedOut) == 1,
+        )
+
+        // 注释里的 @Preview 不是注解：不能因为它在，就把后面真函数体一起豁免掉。
+        val commented = """
+            |// @Preview(name = "旧写法")
+            |val toolbarTitle = "全部功能"
+            |
+            |fun demoToolbar() {
+            |    val label = "编辑"
+            |}
+        """.trimMargin()
+        assertTrue(
+            "注释里的 @Preview 不算注解，后面的真代码必须照旧计数" +
+                "（期望 2 条：「全部功能」+「编辑」，实际 ${cjkLiteralsInText(commented)} 条）",
+            cjkLiteralsInText(commented) == 2,
+        )
+    }
+
     private fun checkRatchet(ss: SourceSet): List<String> {
         val problems = mutableListOf<String>()
         val baseline = loadBaseline(ss)
@@ -242,7 +332,69 @@ class CjkLiteralGateTest {
     }
 
     private fun countCjkLiterals(file: File): Int =
-        file.readLines().sumOf { line -> cjkLiteralsIn(line).size }
+        previewBlanked(file.readText()).lines().sumOf { line -> cjkLiteralsIn(line).size }
+
+    /** 文件文本先过一遍 `@Preview` 豁免，再交给按行计数 / 报命中行。 */
+    private fun previewBlanked(text: String): String = blankPreviewSpans(text)
+
+    /**
+     * `@Preview` 豁免：只把 `@Preview(...)` 的参数、以及被它标注的那个函数体抹成空格（换行保留）。
+     *
+     * 与 `scripts/i18n-cjk-baseline.py` 的 `blankPreviewSpans` **逐字一致**——两侧算不出同一份
+     * 文本，基线就会在脚本与守卫之间漂移。定位方式与 `EmptyStateUnificationGuardTest` 同构，
+     * 但只认**行首**的 `@Preview`（见类注释「为什么只认行首」）。
+     *
+     * 除这两段以外的源码原样返回——豁免**不外溢**：预览之外任何中文字面量照旧被抓。
+     */
+    private fun blankPreviewSpans(code: String): String {
+        val chars = code.toCharArray()
+        fun blank(from: Int, toExclusive: Int) {
+            for (i in from until toExclusive.coerceAtMost(chars.size)) {
+                if (chars[i] != '\n') chars[i] = ' '
+            }
+        }
+        var pos = 0
+        while (true) {
+            val m = PREVIEW_ANNOTATION.find(code, pos) ?: break
+            val at = m.groups[1]!!.range.first
+            pos = m.groups[1]!!.range.last + 1
+            var cursor = pos
+            var j = pos
+            while (j < code.length && (code[j] == ' ' || code[j] == '\t')) j++
+            if (j < code.length && code[j] == '(') {
+                val close = matchingDelimiter(code, j, '(', ')')
+                if (close < 0) continue // 配对失败 ⇒ 不豁免，绝不靠猜
+                blank(at, close + 1)
+                cursor = close + 1
+            }
+            val funAt = code.indexOf("fun ", cursor)
+            if (funAt >= 0) {
+                val bodyOpen = code.indexOf('{', funAt)
+                if (bodyOpen >= 0) {
+                    val bodyClose = matchingDelimiter(code, bodyOpen, '{', '}')
+                    if (bodyClose > 0) blank(bodyOpen, bodyClose + 1)
+                }
+            }
+        }
+        return String(chars)
+    }
+
+    /** 成对标点的配对位置（`(`…`)` / `{`…`}`）；未闭合返回 -1。 */
+    private fun matchingDelimiter(code: String, openIndex: Int, openCh: Char, closeCh: Char): Int {
+        var depth = 0
+        var i = openIndex
+        while (i < code.length) {
+            when (code[i]) {
+                openCh -> depth++
+                closeCh -> {
+                    depth--
+                    if (depth == 0) return i
+                }
+            }
+            i++
+        }
+        return -1
+    }
 
     private fun cjkLiteralsIn(line: String): List<String> {
         if (line.trimStart().startsWith("*") ||
@@ -265,7 +417,7 @@ class CjkLiteralGateTest {
     }
 
     private fun cjkLiteralOffenders(file: File): List<String> =
-        file.readLines().mapIndexedNotNull { index, line ->
+        previewBlanked(file.readText()).lines().mapIndexedNotNull { index, line ->
             val hits = cjkLiteralsIn(line)
             if (hits.isEmpty()) null else "L${index + 1}: " + hits.joinToString(" | ") { "『$it』" }
         }
