@@ -43,7 +43,6 @@ $repoRoot = Split-Path -Parent $PSScriptRoot
 $pagesRoot = Join-Path $repoRoot "android/app/src/composeP1/kotlin/com/mutx163/qingyu/pages"
 $exceptionsRoot = Join-Path $repoRoot "tool/compose_style_exceptions"
 $componentsRoot = Join-Path $repoRoot "android/app/src/composeP1/kotlin/com/mutx163/qingyu/components"
-$baselineRoot = Join-Path $repoRoot "tool/compose_style_baseline"
 
 if (-not (Test-Path $pagesRoot)) {
     Write-Error "找不到页面源码目录：$pagesRoot"

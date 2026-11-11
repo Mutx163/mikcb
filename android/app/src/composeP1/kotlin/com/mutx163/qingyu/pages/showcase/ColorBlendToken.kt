@@ -3,7 +3,7 @@
 //
 // 照抄自官方 demo（docs/reference/miuix-demo/example/shared/src/commonMain/kotlin/component/blend/ColorBlendToken.kt），
 // 仅改包名。这些颜色是官方调好的「模糊配色配方」数据表，不是 UI 主题色——不受 R5 主题取色约束，
-// 已在 tool/compose_style_baseline/showcase.txt 登记（与主题无关的固定语义色）。
+// 已在 tool/compose_style_exceptions/showcase.txt 登记（与主题无关的固定语义色）。
 // ForegroundLogoBlend 两条配方来自同目录 component/BlurSection.kt:398-412（官方「金属 logo」配色）。
 
 package com.mutx163.qingyu.pages.showcase
