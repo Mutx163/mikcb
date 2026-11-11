@@ -1,5 +1,6 @@
 package com.mutx163.qingyu
 
+import com.mutx163.qingyu.statistics.LongestStreakLogic
 import java.util.Calendar
 
 /**
@@ -40,15 +41,19 @@ internal object WidgetStatsLogic {
     ): List<WidgetSourceCourse> = courses.filter { it.isInWeek(week) }
 
     /**
-     * 最长连续上课天数（周排课口径，与 _calculateLongestStreak 一致）：
-     * 只看本周排课覆盖了星期几，展开两轮（14 天）单趟扫描，上限 7 天。
+     * 最长连续上课天数（周排课口径）。
+     *
+     * **算法本体在 [com.mutx163.qingyu.statistics.LongestStreakLogic]**（P1-12）：
+     * 统计页 `StatisticsService` 与这里此前各有一份逐行相同的实现，同一份课表可能给出两个数。
+     * 现在两边只共享最小契约——「本周哪几天有课」的 7 天布尔向量；这里负责把
+     * [WidgetSourceCourse] 折成该向量（含 `day !in 1..7` 的守卫），不再自己算streak。
      */
     internal fun calculateLongestStreak(
         courses: List<WidgetSourceCourse>,
         currentWeek: Int,
     ): Int {
         if (courses.isEmpty()) return 0
-        val hasClassDay = BooleanArray(7)
+        val hasClassDay = BooleanArray(LongestStreakLogic.DAYS_IN_WEEK)
         for (course in courses) {
             val day = course.dayOfWeek
             if (day < 1 || day > 7) continue
@@ -56,18 +61,7 @@ internal object WidgetStatsLogic {
                 hasClassDay[day - 1] = true
             }
         }
-        val expanded = hasClassDay + hasClassDay
-        var maxStreak = 0
-        var currentStreak = 0
-        for (has in expanded) {
-            if (has) {
-                currentStreak++
-                if (currentStreak > maxStreak) maxStreak = currentStreak
-            } else {
-                currentStreak = 0
-            }
-        }
-        return maxStreak.coerceIn(0, 7)
+        return LongestStreakLogic.longestStreak(hasClassDay)
     }
 
     /**

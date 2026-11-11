@@ -993,31 +993,19 @@ object StatisticsService {
 
     /**
      * 计算最长连续上课天数（service:1122-1146）。
-     * 展开两轮（14 天）单趟扫描，跨周边界自然处理，上限 7 天。
+     *
+     * **算法本体在 [LongestStreakLogic]**（P1-12）：桌面统计小组件（`WidgetStatsLogic`）
+     * 此前有一份逐行相同的副本，两侧各算各的。这里只负责把课程折成
+     * 「本周哪几天有课」的 7 天布尔向量，再交给唯一实现。
      */
     private fun calculateLongestStreak(allCourses: List<CourseStub>, currentWeek: Int): Int {
-        if (allCourses.isEmpty()) return 0
-
-        // 计算每天在整个学期是否有课
-        val hasClassDay = BooleanArray(7)
+        val hasClassDay = BooleanArray(LongestStreakLogic.DAYS_IN_WEEK)
         for (course in allCourses) {
             if (countActiveWeeks(course, currentWeek) > 0) {
                 hasClassDay[course.dayOfWeek - 1] = true
             }
         }
-
-        val expanded = hasClassDay + hasClassDay
-        var maxStreak = 0
-        var currentStreak = 0
-        for (has in expanded) {
-            if (has) {
-                currentStreak++
-                if (currentStreak > maxStreak) maxStreak = currentStreak
-            } else {
-                currentStreak = 0
-            }
-        }
-        return maxStreak.coerceIn(0, 7)
+        return LongestStreakLogic.longestStreak(hasClassDay)
     }
 
     /**
