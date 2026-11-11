@@ -1,10 +1,10 @@
 package com.mutx163.qingyu.pages.shell
 
 import com.mutx163.qingyu.app.TimetableHomeViewMode
+import com.mutx163.qingyu.testutil.readKotlinSourceNormalized
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
-import java.io.File
 
 /**
  * 「底栏日↔月直达、不路过周视图」守卫（2026-11-11 用户真机反馈）。
@@ -99,16 +99,10 @@ class HomeViewSwitchMotionTest {
         )
     }
 
-    private fun read(rel: String): String {
-        var dir: File? = File("").absoluteFile
-        while (dir != null) {
-            val candidate = File(dir, rel)
-            if (candidate.isFile) return candidate.readText(Charsets.UTF_8)
-            dir = dir.parentFile
-        }
-        // 找不到就失败，不静默跳过——跳过等于守卫不存在。
-        throw AssertionError("找不到 $rel —— 守卫无法验证，按失败处理")
-    }
+    private fun read(rel: String): String =
+        // 用共享读法（剥注释、保留字面量）：注释里写出同款收口行不许骗绿。
+        // 口径见 `testutil/SourceText.kt` 与 meta 守卫 `GuardSourceStrippingPolicyTest`。
+        readKotlinSourceNormalized(rel)
 
     private companion object {
         const val WIRING_PATH = "android/app/src/main/kotlin/com/mutx163/qingyu/pages/ShellWiring.kt"
