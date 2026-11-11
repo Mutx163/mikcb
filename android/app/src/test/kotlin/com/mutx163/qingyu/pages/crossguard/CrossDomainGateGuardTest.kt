@@ -44,7 +44,8 @@ import java.util.concurrent.TimeUnit
  *
  * - 样式：`pwsh -NoProfile -File scripts/compose-style-lint.ps1 -Domain all`
  *   —— 走全仓（`all`），因为本守卫是跨域的；exit 0 = 绿。
- * - CJK：`python scripts/i18n-cjk-baseline.py --check` —— exit 0 = 绿（该模式由并行交付物 1 提供）。
+ * - CJK：`python scripts/i18n-cjk-baseline.py --check` —— exit 0 = 绿
+ *   （该模式由并行交付物 1 于 2026-11-11 当天落地，并已用注入探针验过语义）。
  *
  * 失败时把子进程 exit code 与输出末尾 20 行贴进断言消息，读到报错就能定位，不用重跑。
  *
@@ -73,13 +74,14 @@ import java.util.concurrent.TimeUnit
  * 另加一条**入口活性探针**：拿一个不存在的域去问样式脚本，它必须非 0 退出。
  * 这条防的是「脚本还在、但已经什么都不判了」——那种情况下 exit 0 与绿无关，本类会假绿。
  *
- * ## 咬合探针（2026-11-11，原始输出见 `.agents/diag/`）
+ * ## 咬合探针（2026-11-11，原始输出见 `.agents/diag/crossguard-probe-*.log`）
  *
- * 1. 在 `pages/timetable/` 的页面源码里临时加一处 `fontSize = 12.sp` ⇒ 样式项红；
- *    还原 ⇒ 绿。
- * 2. CJK 项：注入中文那条依赖 `--check` 先落地；未落地时本项按能力门**明确红**，
- *    不复用只读模式打印出的统计充当判据。探针记录与结论见笔记
- *    `.agents/notes/implemented/testing/2026-11-11-crossguard-l0-entry.md`。
+ * 1. 在 `pages/guide/MoreFeaturesPage.kt` 的 `InputField(` 参数里临时加 `fontSize = 12.sp` ⇒
+ *    样式项 exit 1（待修 1 处）⇒ 还原 ⇒ `OK (3 tests)`。
+ * 2. 同一位置换成 `placeholder = "跨域探针中文字面量"` ⇒ i18n 项 exit 1，并点名该文件
+ *    `6 → 7` ⇒ 还原 ⇒ `OK (3 tests)`。`--check` 落地前出现过另一种红：能力门缺失时本项
+ *    **明确失败**并点名依赖，不静默跳过（那正是本类要防的假绿）。
+ *    完整记录见笔记 `.agents/notes/implemented/testing/2026-11-11-crossguard-l0-entry.md`。
  */
 class CrossDomainGateGuardTest {
 
