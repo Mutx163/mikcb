@@ -172,6 +172,13 @@ fun TimetableHost(
      */
     previewMode: Boolean = false,
     /**
+     * 预览里单独放开「点星期栏 → 日视图」（2026-11-10 用户指令，课程卡片设置页预览）。
+     *
+     * 只透传给 [TimetableWeekPage] 的 `previewAllowsDaySwitch`：预览里除这一条外的交互
+     * （顶栏/周次弹窗/回本周浮钮/课卡点击/长按加课/pager）仍全部封着。默认 `false`。
+     */
+    previewAllowsDaySwitch: Boolean = false,
+    /**
      * 预览里的**节高基准**：首页网格的可用高（= 整屏 − 状态栏 − 首页顶栏 − 星期栏）。
      *
      * 只在 [previewMode] 下有意义（2026-11-08）：预览窗口只有 4 行高，但行高必须与首页
@@ -575,6 +582,7 @@ fun TimetableHost(
         // 没有中间面板）。dayOfWeek = null ⇒ 周图。
         onShareScreenshot = { week, dayOfWeek -> shareCurrentView(week, dayOfWeek) },
         previewMode = previewMode,
+        previewAllowsDaySwitch = previewAllowsDaySwitch,
         previewSectionBasisDp = previewSectionBasisDp,
     )
     }

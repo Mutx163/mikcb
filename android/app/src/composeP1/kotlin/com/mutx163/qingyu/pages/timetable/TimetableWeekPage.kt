@@ -336,6 +336,15 @@ fun TimetableWeekPage(
      */
     previewMode: Boolean = false,
     /**
+     * 预览里**单独放开**「点星期栏 → 日视图」这一条交互（2026-11-10 用户指令：
+     * 课程卡片设置页顶部预览，点星期栏要能像真首页一样切到日视图）。
+     *
+     * 只影响 [previewMode] 下 `onDayClick` 的那一支（`previewMode` 的其它封禁不变：
+     * 顶栏/状态栏留白、周次选择弹窗、回本周浮钮、课卡点击、长按加课、pager）。
+     * 默认 `false` = 预览里星期栏仍只作列头，其它预览调用点行为零变化。
+     */
+    previewAllowsDaySwitch: Boolean = false,
+    /**
      * 预览里的节高基准（首页网格可用高，dp）。
      *
      * 2026-11-08：预览窗口只有 4 行高，但行高必须与首页一致。预览分支把这份基准转给
@@ -970,7 +979,9 @@ fun TimetableWeekPage(
                         onDayClick = { dayOfWeek ->
                             when {
                                 // 预览 / 月视图：星期栏只作列头，点它不切视图。
-                                previewMode || monthMode -> Unit
+                                // 例外（2026-11-10）：课程卡片设置页的预览显式要「点星期栏切日视图」，
+                                // 由 `previewAllowsDaySwitch` 单独放开；其余预览调用点仍走原封禁。
+                                (previewMode && !previewAllowsDaySwitch) || monthMode -> Unit
                                 dayMode && dayOfWeek == selectedDayOfWeek -> onCloseDay()
                                 dayMode -> onSelectDay(selectedWeek, dayOfWeek)
                                 else -> onSelectDay(displayedPage + 1, dayOfWeek)

@@ -66,6 +66,7 @@ import com.mutx163.qingyu.app.SettingsHolidayHost
 import com.mutx163.qingyu.app.SettingsHost
 import com.mutx163.qingyu.app.SettingsSemesterHost
 import com.mutx163.qingyu.app.SettingsTimetableHubHost
+import com.mutx163.qingyu.app.TimetableHomeViewMode
 import com.mutx163.qingyu.app.TimetableSettingsModel
 import com.mutx163.qingyu.app.WeatherSettingsHost
 import com.mutx163.qingyu.platform.PerfProbe
@@ -102,6 +103,7 @@ import com.mutx163.qingyu.pages.about.SupportCreatorPage
 import com.mutx163.qingyu.pages.conflict.CourseConflictPage
 import com.mutx163.qingyu.pages.conflict.buildCourseConflictView
 import com.mutx163.qingyu.pages.course.AddCourseEntryClock
+import com.mutx163.qingyu.pages.course.AddCourseEntryTimeSchemeLogic com.mutx163.qingyu.pages.course.AddCourseScheduleEntryData
 import com.mutx163.qingyu.pages.course.AddCoursePage
 import com.mutx163.qingyu.pages.course.AddCourseStrings
 import com.mutx163.qingyu.pages.course.CourseFieldSuggestionLogic
@@ -1230,6 +1232,18 @@ fun ShellPageContent(
                 courses = snapshot.courses,
                 scheduleLocations = snapshot.scheduleItems.map { it.location },
             )
+            // 时间模板解析（发布版 `_resolveEntryTimeScheme`）：生效模板、节数上界、钟点提示同源一份。
+            fun resolveEntryTimeScheme(entry: AddCourseScheduleEntryData, location: String) =
+                AddCourseEntryTimeSchemeLogic.resolve(
+                    schemes = snapshot.timeSchemes,
+                    settings = snapshot.settings,
+                    locationTimeGroups = snapshot.locationTimeGroups,
+                    timeSchemeIdOverride = entry.timeSchemeIdOverride,
+                    location = location,
+                    startSection = entry.startSection,
+                    endSection = entry.endSection,
+                    originalCourse = entry.originalCourse,
+                )
             AddCoursePage(
                 initialCourse = wiring.pendingEditCourse,
                 // 组编辑：课程总览点某个课程组进来时带整组（Dart `AddCourseScreen(courseGroup:)`），
@@ -1249,6 +1263,11 @@ fun ShellPageContent(
                 // 时间模板：候选 + 当前生效模板名（null = 没有生效模板，显示「跟随当前课表」）。
                 timeSchemes = snapshot.timeSchemes,
                 activeTimeSchemeName = snapshot.timeSchemes.firstOrNull { it.id == snapshot.activeTimeSchemeId }?.name,
+                // 时间模板解析接线（C2）：候选节次上界 + 行内钟点 / 弹层来源都走同一个解析器。
+                entrySchemeSectionCount = { entry, location ->
+                    resolveEntryTimeScheme(entry, location).sectionCount.takeIf { it > 0 }
+                },
+                entryTimeSchemeInfo = { entry, location -> resolveEntryTimeScheme(entry, location) },
                 // 表单要一个「节次 → 起止时间」的解析器；优先用**用户自己的作息表**，
                 // 拿不到才退回壳里的线性示例（08:00 起每节 45+10 分）。
                 clockResolver = { entry ->
@@ -2537,6 +2556,11 @@ private fun SettingsTimetablePreviewSlot(wiring: ShellWiring, settingsModel: Tim
     val configuration = LocalConfiguration.current
     // 星期栏高：previewMode 下顶栏只剩星期栏，取其固定高度 40dp（`WeekdayHeaderMetrics.HEIGHT_DP`）。
     val weekbarHeightDp = WeekdayHeaderMetrics.HEIGHT_DP
+    // 预览里的周↔日：**本地**选中态（2026-11-10 用户指令「点星期栏要能切日视图，跟正常一样」）。
+    // null = 周视图；有值 = 日视图，值为 (周次, 星期几)。
+    // 真首页这份状态由 `wiring.homeViewMode/homeSelectedWeek/...` 持有并把变更转出去；
+    // 预览不该改全局首页状态（用户只是来看外观的），所以就地 remember 一份。
+    var previewDay by remember { mutableStateOf<Pair<Int, Int>?>(null) }
     // 首页网格的可用高 = 整屏 − 状态栏 − 首页顶栏 − 星期栏。
     // 自动充满档的节高在首页由「网格盒子的实际高 / 节数」算（`WeekPageContent` 拿的是
     // 星期栏以下的盒子），所以这里必须把首页那两条栏也扣掉。只减星期栏会让预览每行
@@ -2573,6 +2597,75 @@ private fun SettingsTimetablePreviewSlot(wiring: ShellWiring, settingsModel: Tim
                 screenshotSharePromptEnabled = false,
                 // 预览模式：不画状态栏留白与顶栏，星期栏当首行、钉在窗口顶上。
                 previewMode = true,
+                // 只放开「点星期栏 → 日视图」这一条（用户指令）；其余预览交互仍封着。
+                previewAllowsDaySwitch = true,
+                // 周↔日的窗口动画照真首页走（向上翻），预览里同样播。
+                homeViewMode = if (previewDay == null) {
+                    TimetableHomeViewMode.WEEK
+                } else {
+                    TimetableHomeViewMode.DAY
+                },
+                selectedWeek = previewDay?.first ?: wiring.homeSelectedWeek,
+                selectedDayOfWeek = previewDay?.second ?: wiring.homeSelectedDayOfWeek,
+                daySwitchAnimate = true,
+                // 点星期栏某天：就地记下，切日视图；关掉日视图：回周视图。
+                onSelectDay = { week, day -> previewDay = week to day },
+                onCloseDay = { previewDay = null },
+                // 日视图正文：与外观编辑页预览同一套真实装配（`DayViewDataAssembler` +
+                // `dayViewPageDataOf`），标题/今天/课程/日程/考试/冲突/空态与真首页同源。
+                dayContent = { _, summaryModifier ->
+                    val snapshot = wiring.timetable.snapshot
+                    val coreSettings = snapshot.settings
+                    val visibleDays = TimetableHostLogic.visibleDayNumbers(
+                        TimetableHostDisplayPrefs.fromSettings(settingsModel).hideWeekends,
+                    )
+                    DayViewPage(
+                        summaryModifier = summaryModifier,
+                        initialWeek = previewDay?.first ?: snapshot.currentWeek.coerceAtLeast(1),
+                        initialDayOfWeek = previewDay?.second,
+                        visibleDays = visibleDays,
+                        totalWeeks = coreSettings.semesterWeekCount,
+                        semesterStartDate = coreSettings.semesterStartDate?.toLocalDate(),
+                        // 「今天在哪一周」按开学日现算（不能拿浏览周顶替）。
+                        realCurrentWeek = TimetableDateLogic.currentSemesterWeek(
+                            semesterStart = coreSettings.semesterStartDate?.toLocalDate(),
+                            totalWeeks = coreSettings.semesterWeekCount,
+                            today = LocalDate.now(),
+                        ),
+                        weekdayStyle = TimetableStyleMapping.weekViewStyle(settingsModel),
+                        showConflictBadge = settingsModel.showConflictBadgeOnTimetable,
+                        conflictCourseOpacity = settingsModel.timetableConflictCourseOpacity.toFloat(),
+                        useCourseColors = settingsModel.dayViewUseCourseColor,
+                        // 设置页预览里没有壁纸层（页面底色即背景）⇒ 不按壁纸判墨。
+                        hasWallpaper = false,
+                        hasExamOnDate = { date ->
+                            wiring.timetable.exams.any { exam ->
+                                CourseTask.dateOnly(exam.dateTime).toLocalDate() == date
+                            }
+                        },
+                        hasScheduleOnDate = { date ->
+                            snapshot.scheduleItems.any { item -> item.occursOn(date.atStartOfDay()) }
+                        },
+                        dataProvider = { week, dayOfWeek ->
+                            dayViewPageDataOf(
+                                DayViewDataAssembler.build(
+                                    week = week,
+                                    dayOfWeek = dayOfWeek,
+                                    courses = snapshot.courses,
+                                    settings = coreSettings,
+                                    currentWeek = snapshot.currentWeek,
+                                    scheduleItems = snapshot.scheduleItems,
+                                    exams = wiring.timetable.exams,
+                                    tasks = wiring.timetable.tasks,
+                                    showNonCurrentWeekCourses =
+                                        settingsModel.timetableShowNonCurrentWeekCourses,
+                                ),
+                            )
+                        },
+                        dataVersion = snapshot,
+                        onCloseToWeekView = { previewDay = null },
+                    )
+                },
                 // 节高基准 = 首页网格可用高：窗口只有 4 行高，但一行的高度与首页一致。
                 previewSectionBasisDp = homeGridHeightDp,
             )
