@@ -270,8 +270,8 @@
   "aboutEntryTitle": "關於軟件",
   "setSemesterStartDateAction": "設定開學日期",
   "semesterStartDateAction": "開學日期",
-  "syncCurrentWeekAction": "同步目前周",
-  "semesterWeekCountAction": "{count} 周",
+  "syncCurrentWeekAction": "同步目前週",
+  "semesterWeekCountAction": "{count} 週",
   "@semesterWeekCountAction": {
     "placeholders": {
       "count": {
@@ -279,7 +279,7 @@
       }
     }
   },
-  "selectSemesterWeekCountTitle": "選擇學期周數",
+  "selectSemesterWeekCountTitle": "選擇學期週數",
   "unifiedCourseCardColorTitle": "統一課程卡片顏色",
   "unifiedCourseCardColorSubtitle": "關閉後繼續使用每門課程自己的顏色",
   "dayViewCourseCardColorTitle": "日檢視課程卡片顏色",
@@ -315,7 +315,7 @@
   "importMethodSpreadsheetSubtitle": "填寫 Excel / CSV 模板後匯入",
   "spreadsheetImportTitle": "表格匯入",
   "spreadsheetScenarioIntro": "輕嶼模板依表頭辨識欄位：必填為課程名、星期、開始節、結束節及週次；其餘為可選，可下載完整模板，或只保留必要欄，亦相容 WakeUp 7 欄格式",
-  "spreadsheetStep1Subtitle": "下載完整模板填寫，或僅填寫必填列與上課周導入",
+  "spreadsheetStep1Subtitle": "下載完整模板填寫，或僅填寫必填列與上課週導入",
   "spreadsheetStep2Subtitle": "填寫完成後另存為 .csv 或直接保留 .xlsx",
   "spreadsheetStep3Subtitle": "選擇檔案匯入；如有識別提醒會先展示，再選擇追加或替換",
   "spreadsheetSupportedFilesSuffix": "支持 .csv 與 .xlsx，僅讀取首個工作表",
@@ -338,7 +338,7 @@
   },
   "icsStep1Subtitle": "先在其他課表應用裡匯出 .ics 日歷檔案",
   "icsStep2Subtitle": "在此選擇文件，可追加導入或替換現有課程",
-  "icsStep3Subtitle": "匯入前還會讓你確認開學日期，以及課表第 1 周對應校歷第幾周",
+  "icsStep3Subtitle": "匯入前還會讓你確認開學日期，以及課表第 1 週對應校歷第幾週",
   "supportedFilesTitle": "支持的檔案",
   "supportedFilesSuffix": "檔案後綴必須是 .ics",
   "supportedFilesImageHint": "課表截圖請返回上一頁使用識圖導入",
@@ -362,7 +362,7 @@
   "deleteFailed": "刪除失敗",
   "rescheduleFailed": "調課失敗",
   "timetableManagement": "課表管理",
-  "weekLabel": "第 {week} 周",
+  "weekLabel": "第 {week} 週",
   "@weekLabel": {
     "placeholders": {
       "week": {
@@ -392,7 +392,7 @@
   "feedbackOpenChannelFailed": "無法打開，已複製相關資訊",
   "timetableProfilesTitle": "課表管理",
   "createTimetableTooltip": "新建課表",
-  "coursesAndWeekSummary": "{count} 門課程 · 第 {week} 周",
+  "coursesAndWeekSummary": "{count} 門課程 · 第 {week} 週",
   "@coursesAndWeekSummary": {
     "placeholders": {
       "count": {
@@ -595,7 +595,7 @@
       }
     }
   },
-  "currentWeekBullet": "目前周：第 {week} 周",
+  "currentWeekBullet": "目前週：第 {week} 週",
   "@currentWeekBullet": {
     "placeholders": {
       "week": {
@@ -730,17 +730,17 @@
   "targetWeekLabel": "目標週",
   "endSectionLabel": "結束節次",
   "locationLabel": "上課地點",
-  "rangeWeeksLabel": "連續周",
-  "customWeeksLabel": "自定義周",
-  "startWeekLabel": "開始周",
-  "endWeekLabel": "結束周",
+  "rangeWeeksLabel": "連續週",
+  "customWeeksLabel": "自定義週",
+  "startWeekLabel": "開始週",
+  "endWeekLabel": "結束週",
   "allWeeksFilter": "全部",
-  "oddWeeksFilter": "單周",
-  "evenWeeksFilter": "雙周",
+  "oddWeeksFilter": "單週",
+  "evenWeeksFilter": "雙週",
   "selectAllAction": "全選",
-  "selectOddWeeksAction": "單周",
-  "selectEvenWeeksAction": "雙周",
-  "selectedWeeksSummary": "已選 {count} 周：第{weeks}周",
+  "selectOddWeeksAction": "單週",
+  "selectEvenWeeksAction": "雙週",
+  "selectedWeeksSummary": "已選 {count} 週：第{weeks}週",
   "@selectedWeeksSummary": {
     "placeholders": {
       "count": {
@@ -755,15 +755,15 @@
   "courseColorQuickSection": "常用顏色",
   "customPaletteAction": "調色盤自定義顏色",
   "colorPaletteTitle": "調色盤",
-  "weekdayMon": "周一",
-  "weekdayTue": "周二",
-  "weekdayWed": "周三",
-  "weekdayThu": "周四",
-  "weekdayFri": "周五",
-  "weekdaySat": "周六",
-  "weekdaySun": "周日",
+  "weekdayMon": "週一",
+  "weekdayTue": "週二",
+  "weekdayWed": "週三",
+  "weekdayThu": "週四",
+  "weekdayFri": "週五",
+  "weekdaySat": "週六",
+  "weekdaySun": "週日",
   "useThisColor": "使用這個顏色",
-  "selectAtLeastOneWeek": "請至少選擇一個上課周次",
+  "selectAtLeastOneWeek": "請至少選擇一個上課週次",
   "saveFailed": "保存失敗",
   "courseAddedSuccess": "課程添加成功",
   "courseUpdatedSuccess": "課程更新成功",
@@ -789,7 +789,7 @@
   "aboutChangelogSubtitle": "查看所有版本的更新內容",
   "aboutPositioningTitle": "項目定位",
   "aboutPositioningSubtitle": "這是什麼、適合誰、核心能力是什麼",
-  "aboutPositioningBullet1": "支持周視圖課表、課程增刪改、.ics 匯入",
+  "aboutPositioningBullet1": "支持週視圖課表、課程增刪改、.ics 匯入",
   "aboutPositioningBullet2": "已支持適配學校的教務系統網頁登錄匯入與完整備份遷移",
   "aboutPositioningBullet3": "支持實時通知；HyperOS 3.0.300 起支持超級島 / 焦點通知展示",
   "aboutPositioningBullet4": "支持多課表、時間範本、主題色和卡片樣式自定義",
@@ -1199,7 +1199,7 @@
   "keepAliveConfirmTitle": "開啟後台保活服務",
   "keepAliveConfirmBody": "用於後臺更新桌面小組件和課程提醒，不會讀取屏幕內容或代為點擊。需要系統無障礙權限，可隨時關閉。",
   "keepAliveConfirmGoAction": "去開啟",
-  "semesterOverviewCurrentWeek": "第 {current} 周，共 {total} 周",
+  "semesterOverviewCurrentWeek": "第 {current} 週，共 {total} 週",
   "@semesterOverviewCurrentWeek": {
     "placeholders": {
       "current": {
@@ -1220,7 +1220,7 @@
     }
   },
   "semesterStartDateLabel": "開學日期",
-  "syncedCurrentWeekMessage": "已同步到第 {week} 周",
+  "syncedCurrentWeekMessage": "已同步到第 {week} 週",
   "@syncedCurrentWeekMessage": {
     "placeholders": {
       "week": {
@@ -1341,7 +1341,7 @@
       }
     }
   },
-  "timeSchemeUsageReference": "{profileName} · {courseName} 周 {weekday} 第 {startSection} 至 {endSection} 節 {usageType}",
+  "timeSchemeUsageReference": "{profileName} · {courseName} 週 {weekday} 第 {startSection} 至 {endSection} 節 {usageType}",
   "@timeSchemeUsageReference": {
     "placeholders": {
       "profileName": {
@@ -1364,7 +1364,7 @@
       }
     }
   },
-  "weekdaySectionSummary": "周{weekday} {startSection}-{endSection}節",
+  "weekdaySectionSummary": "週{weekday} {startSection}-{endSection}節",
   "@weekdaySectionSummary": {
     "placeholders": {
       "weekday": {
@@ -1668,7 +1668,7 @@
   "homeWidgetPreviewAddAction": "加入桌面",
   "homeWidgetPreviewUnavailable": "預覽暫時無法使用",
   "layoutAutoFitHeightTitle": "自動充滿螢幕高度",
-  "layoutHideWeekendsTitle": "隱藏周六周日",
+  "layoutHideWeekendsTitle": "隱藏週六週日",
   "layoutEnableHapticsTitle": "啟用應用內震動反饋",
   "layoutEnableHapticsSubtitle": "關閉後頁碼切換不再震動",
   "layoutTimeColumnDisplayLabel": "首頁時間列顯示",
@@ -1679,7 +1679,7 @@
   "layoutShowTimeLabelsTitle": "顯示上下課字樣",
   "layoutShowWeeksTitle": "顯示週數",
   "layoutShowDescriptionTitle": "顯示課程簡介",
-  "layoutShowOtherWeeksTitle": "顯示非本周課程",
+  "layoutShowOtherWeeksTitle": "顯示非本週課程",
   "layoutShowOtherWeeksSubtitle": "非本週課程以半透明灰色顯示",
   "weekGridShowExamsTitle": "週檢視顯示考試",
   "weekGridShowExamsSubtitle": "長按加課會跳過考試時段",
@@ -1689,7 +1689,7 @@
   "layoutHorizontalAlignLabel": "水平排版",
   "layoutShowConflictBadgeTitle": "首頁顯示衝突小膠囊",
   "layoutConflictOpacityTitle": "衝突課程透明度",
-  "currentWeekCompact": "{week}周",
+  "currentWeekCompact": "{week}週",
   "@currentWeekCompact": {
     "placeholders": {
       "week": {
@@ -1943,7 +1943,7 @@
     }
   },
   "pasteAction": "貼上",
-  "importConfirmSemesterMappingSubtitleWarehouse": "已獲取課程周次，請確認校歷開學日期。若開學前幾周無課，可將第 1 周對應至校歷實際周次。",
+  "importConfirmSemesterMappingSubtitleWarehouse": "已獲取課程週次，請確認校歷開學日期。若開學前幾週無課，可將第 1 週對應至校歷實際週次。",
   "aiPreviewCourseCount": "課程數量：{count}",
   "@aiPreviewCourseCount": {
     "placeholders": {
@@ -2171,7 +2171,7 @@
   "clearedCustomLoginAddress": "已清除自訂登入地址",
   "restoredRepositoryImportUrl": "已恢複倉庫裡的登入地址",
   "backToCurrentWeekAction": "返回本週",
-  "nonCurrentWeekLabel": "非本周",
+  "nonCurrentWeekLabel": "非本週",
   "conflictLabel": "衝突",
   "courseConflictDetailTitle": "衝突詳情",
   "courseConflictDetailEntryTitle": "查看衝突詳情",
@@ -2186,7 +2186,7 @@
   "courseConflictEmpty": "目前沒有偵測到衝突",
   "courseConflictPairTitle": "衝突組合",
   "selectWeekTitle": "選擇週次",
-  "availableWeeksCount": "共 {count} 周",
+  "availableWeeksCount": "共 {count} 週",
   "@availableWeeksCount": {
     "placeholders": {
       "count": {
@@ -2194,7 +2194,7 @@
       }
     }
   },
-  "goToWeekLabel": "第 {week} 周",
+  "goToWeekLabel": "第 {week} 週",
   "@goToWeekLabel": {
     "placeholders": {
       "week": {
@@ -2210,7 +2210,7 @@
   "homeMenuCoffeeTitle": "請喝咖啡",
   "switchTimetableTitle": "切換課表",
   "todayTimetableTitle": "今日課表",
-  "backToWeekViewAction": "返回周視圖",
+  "backToWeekViewAction": "返回週視圖",
   "ongoingCourseBadge": "正在上課",
   "dayViewEmptyTitle": "暫無課程",
   "shortNamePrefix": "簡稱：{value}",
@@ -2240,7 +2240,7 @@
   "deleteModeTitle": "刪除方式",
   "deleteCourseAction": "刪這個課",
   "deleteOccurrenceAction": "刪這節課",
-  "deleteModeHintCurrentWeek": "刪除課程將移除全部周次，僅刪除此節僅移除第 {week} 周課程",
+  "deleteModeHintCurrentWeek": "刪除課程將移除全部週次，僅刪除此節僅移除第 {week} 週課程",
   "@deleteModeHintCurrentWeek": {
     "placeholders": {
       "week": {
@@ -2267,7 +2267,7 @@
       }
     }
   },
-  "deleteOccurrenceConfirmMessage": "確定刪除 {name} 第 {week} 周的此節課程？\n{detail}",
+  "deleteOccurrenceConfirmMessage": "確定刪除 {name} 第 {week} 週的此節課程？\n{detail}",
   "@deleteOccurrenceConfirmMessage": {
     "placeholders": {
       "name": {
@@ -2281,7 +2281,7 @@
       }
     }
   },
-  "occurrenceDeletedMessage": "已刪除第 {week} 周這節課",
+  "occurrenceDeletedMessage": "已刪除第 {week} 週這節課",
   "@occurrenceDeletedMessage": {
     "placeholders": {
       "week": {
@@ -2290,7 +2290,7 @@
     }
   },
   "noChangesDetected": "未檢測到變更",
-  "rescheduleCurrentOccurrenceTitle": "調本周這節課",
+  "rescheduleCurrentOccurrenceTitle": "調本週這節課",
   "rescheduleCurrentOccurrenceSubtitle": "僅改第 {week} 週本節，原課該週移除，其他週不變",
   "@rescheduleCurrentOccurrenceSubtitle": {
     "placeholders": {
@@ -2299,7 +2299,7 @@
       }
     }
   },
-  "rescheduleTargetWeekLabel": "調到第幾周",
+  "rescheduleTargetWeekLabel": "調到第幾週",
   "confirmRescheduleAction": "確認調課",
   "reschedulePreviousWeekAction": "上一週",
   "rescheduleNextWeekAction": "下一週",
@@ -2443,7 +2443,7 @@
       }
     }
   },
-  "rescheduledToMessage": "已調到第 {week} 周 {weekday} 第{startSection}-{endSection}節",
+  "rescheduledToMessage": "已調到第 {week} 週 {weekday} 第{startSection}-{endSection}節",
   "@rescheduledToMessage": {
     "placeholders": {
       "week": {
@@ -2819,7 +2819,7 @@
   "courseActionRescheduleSecondary": "調課",
   "courseActionSuspendSecondary": "停課",
   "courseActionDeleteSecondary": "刪除",
-  "courseActionSheetNotice": "您正在查看第 {week} 周，如該時段突發考試或衝突，可立即在下方執行快速調課或停課",
+  "courseActionSheetNotice": "您正在查看第 {week} 週，如該時段突發考試或衝突，可立即在下方執行快速調課或停課",
   "@courseActionSheetNotice": {
     "placeholders": {
       "week": {
@@ -2827,8 +2827,8 @@
       }
     }
   },
-  "courseActionOddWeekShort": "單周",
-  "courseActionEvenWeekShort": "雙周",
+  "courseActionOddWeekShort": "單週",
+  "courseActionEvenWeekShort": "雙週",
   "courseActionConflictExpandHint": "展開查看其他衝突課程，點擊可切換操作對象",
   "courseActionConflictCollapseHint": "點擊收起衝突課程列表",
   "courseActionConflictSwitchAction": "切換",
@@ -3222,7 +3222,7 @@
   "statisticsAchievementGapMasterName": "時間管理大師",
   "statisticsAchievementGapMasterDescription": "最長課間空檔 ≤ 2 節",
   "statisticsAchievementEarlyBirdDetail": "解鎖條件：課表中有 08:00 或更早開始的課程。",
-  "statisticsAchievementPerfectAttendanceDetail": "解鎖條件：至少一門課程在學期內每週均有課，無停課或跳周。",
+  "statisticsAchievementPerfectAttendanceDetail": "解鎖條件：至少一門課程在學期內每週均有課，無停課或跳週。",
   "statisticsAchievementWeekendWarriorDetail": "解鎖條件：週六或週日有課。",
   "statisticsAchievementClassKingDetail": "解鎖條件：某一天排課達到 6 節及以上。",
   "statisticsAchievementScholarDetail": "解鎖條件：學期累計課時達到 100 節。",
@@ -3369,7 +3369,7 @@
   },
   "statisticsAchievementDone": "已達成",
   "weekListSeparator": "、",
-  "courseWeekListLabel": "第{weeks}周",
+  "courseWeekListLabel": "第{weeks}週",
   "@courseWeekListLabel": {
     "placeholders": {
       "weeks": {
@@ -3377,7 +3377,7 @@
       }
     }
   },
-  "courseWeekRangeLabel": "第{startWeek}-{endWeek}周{mode}",
+  "courseWeekRangeLabel": "第{startWeek}-{endWeek}週{mode}",
   "@courseWeekRangeLabel": {
     "placeholders": {
       "startWeek": {
@@ -3391,7 +3391,7 @@
       }
     }
   },
-  "courseWeekSuspendedLabel": "第{weeks}周停課",
+  "courseWeekSuspendedLabel": "第{weeks}週停課",
   "@courseWeekSuspendedLabel": {
     "placeholders": {
       "weeks": {
@@ -3582,7 +3582,7 @@
       }
     }
   },
-  "serviceMsgSectionCountBelowUsageDetail": "節次數不能小於已用最大節次 第 {requiredMaxSection} 節。正在使用：{profileName} · {courseName} 周 {dayOfWeek} 第 {startSection} 至 {endSection} 節 {usageType}",
+  "serviceMsgSectionCountBelowUsageDetail": "節次數不能小於已用最大節次 第 {requiredMaxSection} 節。正在使用：{profileName} · {courseName} 週 {dayOfWeek} 第 {startSection} 至 {endSection} 節 {usageType}",
   "@serviceMsgSectionCountBelowUsageDetail": {
     "placeholders": {
       "requiredMaxSection": {
@@ -3824,7 +3824,7 @@
       }
     }
   },
-  "serviceMsgWeeksExceedSemesterClamped": "{itemName} 包含超出學期週數 {semesterWeekCount} 的周次 {weeks}，超出部分已忽略",
+  "serviceMsgWeeksExceedSemesterClamped": "{itemName} 包含超出學期週數 {semesterWeekCount} 的週次 {weeks}，超出部分已忽略",
   "@serviceMsgWeeksExceedSemesterClamped": {
     "placeholders": {
       "itemName": {
@@ -4470,9 +4470,9 @@
       }
     }
   },
-  "courseImportWeekNotProvided": "未提供周次",
+  "courseImportWeekNotProvided": "未提供週次",
   "courseImportLocationNotFilled": "未填寫地點",
-  "courseImportPreviewLine": "周{weekday} 第{startSection}-{endSection}節  {name}  {location}  周次：{weekText}",
+  "courseImportPreviewLine": "週{weekday} 第{startSection}-{endSection}節  {name}  {location}  週次：{weekText}",
   "@courseImportPreviewLine": {
     "placeholders": {
       "weekday": {
@@ -4529,7 +4529,7 @@
   "logAppLogsDefaultMigrated": "遷移時已預設開啟應用程式日誌記錄",
   "logTimetableLoadSettingsFailed": "載入課表設定失敗",
   "logTimetableLoadCoursesFailed": "載入課程資料失敗",
-  "logTimetableLoadCurrentWeekFailed": "載入目前周次失敗",
+  "logTimetableLoadCurrentWeekFailed": "載入目前週次失敗",
   "logHomeWidgetPinSupportFailed": "檢查桌面小工具固定支持失敗",
   "logHomeWidgetPinRequestFailed": "請求固定桌面小工具失敗",
   "logHomeWidgetSyncFailed": "同步桌面小工具快照失敗",
@@ -4670,7 +4670,7 @@
   "logFieldCourseName": "課程名",
   "logFieldStage": "階段",
   "logFieldFrom": "來源頁面",
-  "logFieldCurrentWeek": "目前周次",
+  "logFieldCurrentWeek": "目前週次",
   "logFieldWeekday": "星期",
   "logFieldUntilMillis": "暫停截止時間",
   "logFieldStartAtMillis": "開始時間",
@@ -4701,7 +4701,7 @@
   "logCatAppLogsDefaultMigrated": "應用程式日誌：遷移",
   "logCatTimetableLoadSettingsFailed": "課表：載入設定失敗",
   "logCatTimetableLoadCoursesFailed": "課表：載入課程失敗",
-  "logCatTimetableLoadCurrentWeekFailed": "課表：載入周次失敗",
+  "logCatTimetableLoadCurrentWeekFailed": "課表：載入週次失敗",
   "logCatHomeWidgetPinSupportFailed": "桌面小工具：檢查固定支持",
   "logCatHomeWidgetPinRequestFailed": "桌面小工具：請求固定",
   "logCatHomeWidgetSyncFailed": "桌面小工具：同步失敗",
@@ -5692,7 +5692,7 @@
   "classAlarmAddedToast": "已交給系統時鐘處理",
   "classAlarmLaunchFailedToast": "未找到可處理的時鐘應用",
   "classAlarmCourseConfirmTitle": "添加這節課的重複鬧鐘？",
-  "classAlarmCourseConfirmMessage": "將在系統時鐘創建每週 {weekday} {time} 的鬧鐘，提前 {lead} 分鐘響鈴，上課周次 {weeks}。非上課周與假期仍會響鈴，需在系統時鐘中刪除。",
+  "classAlarmCourseConfirmMessage": "將在系統時鐘創建每週 {weekday} {time} 的鬧鐘，提前 {lead} 分鐘響鈴，上課週次 {weeks}。非上課週與假期仍會響鈴，需在系統時鐘中刪除。",
   "@classAlarmCourseConfirmMessage": {
     "placeholders": {
       "weekday": {
