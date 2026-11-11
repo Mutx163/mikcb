@@ -341,7 +341,15 @@ object LanTransferLogic {
         val currentSettings = settingsMap(current)
         val incomingSettings = settingsMap(incoming)
         if (scope.carriesSettings && currentSettings != null && incomingSettings != null) {
-            val changes = if (sameJson(currentSettings, incomingSettings)) {
+            // 比较口径必须与落盘一致，否则预览会承诺一个应用时不会发生的变更：
+            // 设备级信任锚在 [settingsReplacePatch] 里一律取本机值，两边先按本机值抹平；
+            // null 值键与缺键在读侧等价（Dart `toJson` 对 null 是省略），一并归一。
+            val changes = if (
+                sameJson(
+                    settingsDiffView(currentSettings, currentSettings),
+                    settingsDiffView(incomingSettings, currentSettings),
+                )
+            ) {
                 emptyList()
             } else {
                 listOf(
@@ -578,6 +586,30 @@ object LanTransferLogic {
             if (local.containsKey(key)) patch[key] = local[key] else patch.remove(key)
         }
         return patch
+    }
+
+    /**
+     * 差异比较用的设置投影：与 [settingsReplacePatch] 的落盘口径对齐。
+     *
+     * - 设备信任锚两键一律取**本机值**（外来值写了也不会落盘，真机上等于没变）；
+     * - `null` 值键按缺键处理（合并写用显式 null 表达删除，Dart `toJson` 对 null 是省略）。
+     *
+     * 少了这层，预览会把「只改了更新镜像」的包报成一次设置变更——用户确认的是一个
+     * 应用时会被拒绝的变更（2026-11-11 补回 737a69909 的 `normalizeSettingsDocument` 口径）。
+     */
+    private fun settingsDiffView(
+        settings: Map<String, Any?>,
+        local: Map<String, Any?>,
+    ): Map<String, Any?> {
+        val out = LinkedHashMap<String, Any?>(settings.size)
+        for ((key, value) in settings) {
+            if (value == null || key in DEVICE_TRUST_ANCHOR_KEYS) continue
+            out[key] = value
+        }
+        for (key in DEVICE_TRUST_ANCHOR_KEYS) {
+            if (local.containsKey(key)) out[key] = local[key]
+        }
+        return out
     }
 
     /** Dart `_remapScheduleDateRules`。 */
