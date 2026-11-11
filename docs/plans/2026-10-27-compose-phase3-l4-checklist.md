@@ -1,5 +1,7 @@
 # Compose 迁移 Phase 3 · 真机对照（L4）逐页清单
 
+> **已由 [2026-11-11-l4-device-checklist-dev.md](2026-11-11-l4-device-checklist-dev.md) 取代（dev 变体口径），本文只作历史记录，状态列不再更新。**
+
 > 状态：**生效中**（2026-10-27 建立）
 > 读者：**要在手机上做对照的用户**，以及之后接手接线的人
 > 上游：[页面台账](2026-10-26-compose-phase3-page-ledger.md) §4/§5/§9 · [迁移计划](2026-10-26-compose-migration-plan.md)
