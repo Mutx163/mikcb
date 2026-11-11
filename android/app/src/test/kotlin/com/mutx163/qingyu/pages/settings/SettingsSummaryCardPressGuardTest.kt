@@ -1,9 +1,9 @@
 package com.mutx163.qingyu.pages.settings
 
+import com.mutx163.qingyu.testutil.readKotlinSourceNoStrings
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
-import java.io.File
 
 /**
  * 学期摘要卡（`SummaryCardRow`）**按压热区 = 整卡**守卫（2026-11-10，Chief 批）。
@@ -31,29 +31,11 @@ import java.io.File
  */
 class SettingsSummaryCardPressGuardTest {
 
-    private fun androidSrc(): File {
-        var dir: File? = File(System.getProperty("user.dir")).absoluteFile
-        while (dir != null) {
-            val candidate = File(dir, "android/app/src")
-            if (candidate.isDirectory) return candidate
-            val direct = File(dir, "app/src")
-            if (direct.isDirectory && File(dir, "app/build.gradle").isFile) return direct
-            dir = dir.parentFile
-        }
-        throw AssertionError(
-            "找不到 android/app/src —— 守卫无法验证，按失败处理（不许静默跳过）。" +
-                "当前工作目录：${System.getProperty("user.dir")}",
-        )
-    }
-
     /** 只取 `SummaryCardRow` 这一个函数的源码片段（到下一个 `@Composable` 之前）。 */
     private fun summaryCardRowSource(): String {
-        val file = File(
-            androidSrc(),
-            "composeP1/kotlin/com/mutx163/qingyu/pages/settings/SettingsPageRenderers.kt",
-        )
-        assertTrue("渲染层源码不存在：${file.path}", file.isFile)
-        val src = file.readText()
+        // 读法走 `testutil` 共享剥离（2026-11-11 迁移）：剥注释 + 中性化字符串，
+        // 注释里的 `onClick = click` 或字符串里的同名字样都不再能满足/违反判据。
+        val src = readKotlinSourceNoStrings(RENDERERS)
         val start = src.indexOf("private fun SummaryCardRow(")
         assertTrue("渲染层找不到 SummaryCardRow（改名后本守卫需要跟着改）", start >= 0)
         val end = src.indexOf("\n@Composable", start).let { if (it < 0) src.length else it }
@@ -100,5 +82,10 @@ class SettingsSummaryCardPressGuardTest {
             "内容 Row 缺少 .padding(16.dp) —— 内边距两处都没有，字会贴卡片边",
             body.contains(".padding(16.dp)"),
         )
+    }
+
+    private companion object {
+        const val RENDERERS =
+            "android/app/src/composeP1/kotlin/com/mutx163/qingyu/pages/settings/SettingsPageRenderers.kt"
     }
 }

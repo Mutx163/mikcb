@@ -186,13 +186,25 @@ class SettingsControlCardTitleGuardTest {
             "渲染层没有消费 compact（传了也不生效）",
             code.contains("if (row.compact)"),
         )
-        // 紧凑档必须绕开 BasicComponent —— 它内部写死 heightIn(min = 56.dp)
-        // （Component.kt:161），行高压不到发布版那条「一卡多条目」的节奏（评审 三-09）。
-        // 这条判据读**原始源码**（含 KDoc）：它钉的是「有人把这条前提交代删了」，
-        // 代码写法本身由 `if (row.compact)` 分支承担，剥注释后断言会变成检查注释。
+        // 紧凑档的**代码事实**（评审 E2R-08：原判据只认 KDoc 里的一句话——改注释会红、
+        // 真把行为改回去反而不红）。现在钉三件：
+        // ① 紧凑分支存在；② 它真的绕开 BasicComponent（分支体里不出现该类）；③ 非紧凑档回落到官方 16dp 四边。
+        val compactStart = code.indexOf("if (row.compact) {")
+        assertTrue("渲染层缺少 `if (row.compact) {` 分支", compactStart >= 0)
+        val compactEnd = code.indexOf("return", compactStart)
+        assertTrue("紧凑分支没有以 return 结束（会落回 BasicComponent）", compactEnd > compactStart)
+        val compactBody = code.substring(compactStart, compactEnd)
+        assertFalse(
+            "紧凑分支里仍调用 BasicComponent —— 它内部写死 heightIn(min = 56.dp)，行高压不下去",
+            compactBody.contains("BasicComponent("),
+        )
         assertTrue(
-            "紧凑档的 KDoc 必须写明为什么绕开 BasicComponent（heightIn(min = 56.dp)）",
-            renderersSource().contains("heightIn(min = 56.dp)"),
+            "紧凑分支没有照发布版排「左右 16dp、上下 0」",
+            compactBody.contains("padding(start = 16.dp, end = 16.dp)"),
+        )
+        assertTrue(
+            "非紧凑档没回落到 BasicComponentDefaults.InsideMargin（官方 16dp 四边）",
+            code.contains("insideMargin = BasicComponentDefaults.InsideMargin"),
         )
     }
 

@@ -3,6 +3,7 @@ package com.mutx163.qingyu.pages.settings
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import com.mutx163.qingyu.testutil.stripKotlinComments
 import java.io.File
 
 /**
@@ -54,7 +55,7 @@ class SettingsListBottomInsetGuardTest {
             "composeP1/kotlin/com/mutx163/qingyu/pages/settings/SettingsPageRenderers.kt",
         )
         assertTrue("渲染层源码不存在：${file.path}", file.isFile)
-        return file.readText()
+        return stripKotlinComments(file.readText())
     }
 
     /**
