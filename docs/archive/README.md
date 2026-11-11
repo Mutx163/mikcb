@@ -10,5 +10,6 @@
 | [soft-glass-miuix-review-2026-09-13.md](soft-glass-miuix-review-2026-09-13.md) | 柔光玻璃（flutter_miuix 路线）代码审核 | 柔光玻璃 Flutter 实现已退役 |
 | [soft-glass-review-angles-2026-09-13.md](soft-glass-review-angles-2026-09-13.md) | 柔光玻璃的审查角度清单 | 同上，审查对象已不存在 |
 | [transition-motion-oss-audit-2026-09-13.md](transition-motion-oss-audit-2026-09-13.md) | 转场动画 vs 开源替代方案调研 | 转场已统一走 miuix-nav，Dart 侧实现已删 |
+| [CODE_AUDIT_2026-09-26.md](CODE_AUDIT_2026-09-26.md) | 2026-09 全量代码审计（13 个并行代理）+ 第 8 章复核结论 | 基线远离当前分支；条目指向当年代码，仅存判断过程 |
 
 **当前有效文档请从 [docs/reference/](../reference/README.md) 与 [docs/plans/](../plans/) 找。**
