@@ -3,6 +3,8 @@ package com.mutx163.qingyu.pages.time_scheme
 import java.io.File
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
+import com.mutx163.qingyu.testutil.readKotlinSourceNoStrings
+import com.mutx163.qingyu.testutil.SourceSlice
 import org.junit.Test
 
 /**
@@ -18,7 +20,7 @@ import org.junit.Test
  */
 class LocationTimeMatchActionStyleGuardTest {
 
-    private val page by lazy { strip(read(PATH)) }
+    private val page by lazy { readKotlinSourceNoStrings(PATH) }
 
     @Test
     fun `动作区是两颗实心 secondary 块钮`() {
@@ -45,34 +47,11 @@ class LocationTimeMatchActionStyleGuardTest {
     @Test
     fun `删除钮不染红`() {
         // 红色只允许出现在确认框（LocationTimeMatchHost）里；卡片上的删除钮是 secondary。
-        val cardBody = sliceBetween(page, "private fun GroupCardView(", "\n@Composable")
+        val cardBody = SourceSlice.functionBody(page, "private fun GroupCardView(")
         assertFalse(
             "卡片动作区出现 error 色了——发布版删除钮是 secondary，红只在确认框",
             cardBody.contains("QingyuTheme.error"),
         )
-    }
-
-    private fun read(relative: String): String {
-        var dir: File? = File("").absoluteFile
-        repeat(8) {
-            val candidate = File(dir, relative)
-            if (candidate.isFile) return candidate.readText(Charsets.UTF_8)
-            dir = dir?.parentFile
-        }
-        error("找不到 $relative（工作目录 ${File("").absolutePath}）")
-    }
-
-    private fun strip(text: String): String =
-        text.replace(Regex("""(?s)/\*.*?\*/"""), " ")
-            .lineSequence()
-            .filterNot { it.trimStart().startsWith("//") }
-            .joinToString("\n")
-
-    private fun sliceBetween(text: String, startMarker: String, endMarker: String): String {
-        val start = text.indexOf(startMarker)
-        check(start >= 0) { "找不到 $startMarker" }
-        val end = text.indexOf(endMarker, start + startMarker.length)
-        return if (end < 0) text.substring(start) else text.substring(start, end)
     }
 
     private companion object {

@@ -3,6 +3,8 @@ package com.mutx163.qingyu.pages.time_scheme
 import java.io.File
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
+import com.mutx163.qingyu.testutil.readKotlinSourceNoStrings
+import com.mutx163.qingyu.testutil.SourceSlice
 import org.junit.Test
 
 /**
@@ -17,8 +19,8 @@ import org.junit.Test
  */
 class TimeSchemeMenuAnchorGuardTest {
 
-    private val page by lazy { strip(read(PAGE_PATH)) }
-    private val dialogs by lazy { strip(read(DIALOGS_PATH)) }
+    private val page by lazy { readKotlinSourceNoStrings(PAGE_PATH) }
+    private val dialogs by lazy { readKotlinSourceNoStrings(DIALOGS_PATH) }
 
     @Test
     fun `卡片上的三个点必须上报自己的窗口矩形`() {
@@ -60,10 +62,10 @@ class TimeSchemeMenuAnchorGuardTest {
         )
         assertFalse(
             "宿主又在用 TimeSchemeMenuSheet——菜单必须换成锚点弹层",
-            hostSource().contains("TimeSchemeMenuSheet("),
+            hostSource.contains("TimeSchemeMenuSheet("),
         )
         // 菜单里不该再有「取消」：发布版锚点菜单没有这一项（点空白/返回键收起）。
-        val popupBody = sliceBetween(dialogs, "fun TimeSchemeMenuPopup(", "\n@Composable")
+        val popupBody = SourceSlice.functionBody(dialogs, "fun TimeSchemeMenuPopup(")
         assertFalse(
             "锚点菜单里出现 cancelAction 了——发布版菜单没有取消项",
             popupBody.contains("cancelAction"),
@@ -75,37 +77,13 @@ class TimeSchemeMenuAnchorGuardTest {
         assertTrue(
             "宿主没有 `delay(240)`——发布版 `_kCollapseBudget=240ms`：点条目立即推页/弹框" +
                 "会把退场动画切在中间",
-            hostSource().contains("delay(240)"),
+            hostSource.contains("delay(240)"),
         )
     }
 
     // ------------------------------------------------------------------ 工具
 
-    private fun hostSource(): String = strip(read(HOST_PATH))
-
-    private fun read(relative: String): String {
-        var dir: File? = File("").absoluteFile
-        repeat(8) {
-            val candidate = File(dir, relative)
-            if (candidate.isFile) return candidate.readText(Charsets.UTF_8)
-            dir = dir?.parentFile
-        }
-        error("找不到 $relative（工作目录 ${File("").absolutePath}）")
-    }
-
-    /** 去掉 `//` 与块注释后再判断：注释里写「以前是 bottom sheet」不算复发。 */
-    private fun strip(text: String): String =
-        text.replace(Regex("""(?s)/\*.*?\*/"""), " ")
-            .lineSequence()
-            .filterNot { it.trimStart().startsWith("//") }
-            .joinToString("\n")
-
-    private fun sliceBetween(text: String, startMarker: String, endMarker: String): String {
-        val start = text.indexOf(startMarker)
-        check(start >= 0) { "找不到 $startMarker" }
-        val end = text.indexOf(endMarker, start + startMarker.length)
-        return if (end < 0) text.substring(start) else text.substring(start, end)
-    }
+    private val hostSource: String by lazy { readKotlinSourceNoStrings(HOST_PATH) }
 
     private companion object {
         const val PAGE_PATH =

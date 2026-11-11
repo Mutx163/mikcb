@@ -3,6 +3,8 @@ package com.mutx163.qingyu.pages.time_scheme
 import java.io.File
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
+import com.mutx163.qingyu.testutil.readKotlinSourceNoStrings
+import com.mutx163.qingyu.testutil.SourceSlice
 import org.junit.Test
 
 /**
@@ -22,14 +24,19 @@ import org.junit.Test
  */
 class TimeSchemeLoadingDoorGuardTest {
 
-    private val hostSource: String by lazy { stripLineComments(readSource(HOST_PATH)) }
+    private val hostSource: String by lazy { readKotlinSourceNoStrings(HOST_PATH) }
+
+    /** 列表页宿主函数体：加载门/IO 跳转的断言只看这里，别处同名片段不算（T-04 作用域化）。 */
+    private val listHostBody: String by lazy {
+        SourceSlice.functionBody(hostSource, "fun TimeSchemeManagementHost(")
+    }
 
     @Test
     fun `列表页不许再有加载门`() {
         assertFalse(
             "TimeSchemeHost.kt 又出现了 `isLoading = model == null`——" +
                 "首帧就该用内存快照装配轻模型，不要再让用户对着转圈等",
-            hostSource.contains("isLoading = model == null"),
+            listHostBody.contains("isLoading = model == null"),
         )
         assertTrue(
             "列表页必须直接以内存快照起步（`mutableStateOf(repository.snapshot)`）",
@@ -42,7 +49,7 @@ class TimeSchemeLoadingDoorGuardTest {
         assertFalse(
             "TimeSchemeHost.kt 里还有 `withContext(Dispatchers.IO) { repository.snapshot }`——" +
                 "snapshot 是纯内存 getter，绕 IO 只多一次主线程挂起",
-            hostSource.replace(" ", "").contains("withContext(Dispatchers.IO){repository.snapshot}"),
+            listHostBody.replace(" ", "").contains("withContext(Dispatchers.IO){repository.snapshot}"),
         )
     }
 
@@ -67,7 +74,7 @@ class TimeSchemeLoadingDoorGuardTest {
     fun `索引未就绪时不许画 0 个课表的计数（T-08）`() {
         assertTrue(
             "编辑页模型没有 usageReady——首帧 EMPTY 会把「0 个课表 / 0 节课程」画出来",
-            readSource(EDITOR_MODEL_PATH).contains("val usageReady"),
+            readKotlinSourceNoStrings(EDITOR_MODEL_PATH).contains("val usageReady"),
         )
         assertTrue(
             "宿主要把首帧标成 usageReady = false",
@@ -75,21 +82,8 @@ class TimeSchemeLoadingDoorGuardTest {
         )
         assertTrue(
             "页面要按 usageReady 决定画不画计数/预览",
-            readSource(EDITOR_PAGE_PATH).contains("model.usageReady"),
+            readKotlinSourceNoStrings(EDITOR_PAGE_PATH).contains("model.usageReady"),
         )
-    }
-
-    private fun stripLineComments(source: String): String =
-        source.lineSequence().filterNot { it.trimStart().startsWith("//") }.joinToString("\n")
-
-    private fun readSource(relative: String): String {
-        var dir: File? = File("").absoluteFile
-        repeat(8) {
-            val candidate = File(dir, relative)
-            if (candidate.isFile) return candidate.readText(Charsets.UTF_8)
-            dir = dir?.parentFile
-        }
-        error("找不到 $relative（工作目录 ${File("").absolutePath}）")
     }
 
     private companion object {

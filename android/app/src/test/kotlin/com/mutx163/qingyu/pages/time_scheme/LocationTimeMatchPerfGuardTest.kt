@@ -4,6 +4,8 @@ import java.io.File
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
+import com.mutx163.qingyu.testutil.readKotlinSourceNoStrings
+import com.mutx163.qingyu.testutil.SourceSlice
 import org.junit.Test
 
 /**
@@ -23,7 +25,7 @@ import org.junit.Test
  */
 class LocationTimeMatchPerfGuardTest {
 
-    private val source: String by lazy { stripLineComments(readSource(PATH)) }
+    private val source: String by lazy { readKotlinSourceNoStrings(PATH) }
 
     @Test
     fun `正则只许在文件级常量里编译一次`() {
@@ -71,8 +73,9 @@ class LocationTimeMatchPerfGuardTest {
 
     // ------------------------------------------------------------------ 定位
 
-    /** `normalizeForMatch` 函数体（从签名到下一个顶层 `}`）。 */
-    private fun normalizeBody(): String = sliceFrom("private fun normalizeForMatch(")
+    /** `normalizeForMatch` 函数体（共享切片，T-04）。 */
+    private fun normalizeBody(): String =
+        SourceSlice.functionBody(source, "private fun normalizeForMatch(")
 
     /** `candidates.sortWith {` 到匹配的 `}`。 */
     private fun sortComparatorBody(): String = sliceFrom("candidates.sortWith {")
@@ -100,22 +103,6 @@ class LocationTimeMatchPerfGuardTest {
      * 去掉 `//` 与块注释：KDoc 里正写着「原先每次 `Regex(...)` 新建」这句说明，
      * 不剥掉就会把**解释**当成**调用**，判据自己先红（2026-11-03 守卫同款假红）。
      */
-    private fun stripLineComments(text: String): String =
-        text.replace(Regex("""(?s)/\*.*?\*/"""), " ")
-            .lineSequence()
-            .filterNot { it.trimStart().startsWith("//") }
-            .joinToString("\n")
-
-    private fun readSource(relative: String): String {
-        var dir: File? = File("").absoluteFile
-        repeat(8) {
-            val candidate = File(dir, relative)
-            if (candidate.isFile) return candidate.readText(Charsets.UTF_8)
-            dir = dir?.parentFile
-        }
-        error("找不到 $relative（工作目录 ${File("").absolutePath}）")
-    }
-
     private companion object {
         const val PATH = "android/app/src/main/kotlin/com/mutx163/qingyu/core/LocationTimeGroup.kt"
     }

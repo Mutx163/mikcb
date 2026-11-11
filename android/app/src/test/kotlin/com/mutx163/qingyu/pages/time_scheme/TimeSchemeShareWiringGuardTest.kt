@@ -3,6 +3,9 @@ package com.mutx163.qingyu.pages.time_scheme
 import java.io.File
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
+import com.mutx163.qingyu.testutil.readKotlinSourceNoStrings
+import com.mutx163.qingyu.testutil.readKotlinSourceNormalized
+import com.mutx163.qingyu.testutil.SourceSlice
 import org.junit.Test
 
 /**
@@ -33,8 +36,8 @@ import org.junit.Test
  */
 class TimeSchemeShareWiringGuardTest {
 
-    private val hostSource: String by lazy { stripLineComments(readSource(HOST_PATH)) }
-    private val dialogsSource: String by lazy { stripLineComments(readSource(DIALOGS_PATH)) }
+    private val hostSource: String by lazy { readKotlinSourceNoStrings(HOST_PATH) }
+    private val dialogsSource: String by lazy { readKotlinSourceNoStrings(DIALOGS_PATH) }
 
     @Test
     fun `菜单不再把分享项过滤掉`() {
@@ -106,7 +109,7 @@ class TimeSchemeShareWiringGuardTest {
      */
     @Test
     fun `壳把二维码发送路由传给了时间模板宿主`() {
-        val shell = stripLineComments(readSource(SHELL_PATH))
+        val shell = readKotlinSourceNormalized(SHELL_PATH)
         val start = shell.indexOf("\"d3.timeSchemes\" ->")
         assertTrue("ShellPageIndex.kt 里找不到 d3.timeSchemes 分支", start >= 0)
         val end = shell.indexOf("\"d3.timeSchemeEditor\" ->", start)
@@ -131,24 +134,6 @@ class TimeSchemeShareWiringGuardTest {
     // ------------------------------------------------------------------ 定位
 
     /** 去掉行注释：注释里描述「旧实现曾把分享剪掉」不算复发。 */
-    private fun stripLineComments(source: String): String =
-        source.lineSequence()
-            .filterNot { it.trimStart().startsWith("//") }
-            .joinToString("\n")
-
-    private fun readSource(relative: String): String {
-        var dir: File? = File("").absoluteFile
-        repeat(8) {
-            val candidate = File(dir, relative)
-            if (candidate.isFile) return candidate.readText(Charsets.UTF_8)
-            dir = dir?.parentFile
-        }
-        error(
-            "找不到 $relative（工作目录 ${File("").absolutePath}）；" +
-                "守卫需要读到源文件才能判接线是否还在",
-        )
-    }
-
     private companion object {
         const val HOST_PATH = "android/app/src/composeP1/kotlin/com/mutx163/qingyu/app/TimeSchemeHost.kt"
         const val DIALOGS_PATH =
