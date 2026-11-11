@@ -70,6 +70,15 @@ class TimeSchemeMenuAnchorGuardTest {
         )
     }
 
+    @Test
+    fun `点条目先收菜单再动作（发布版 240ms）`() {
+        assertTrue(
+            "宿主没有 `delay(240)`——发布版 `_kCollapseBudget=240ms`：点条目立即推页/弹框" +
+                "会把退场动画切在中间",
+            hostSource().contains("delay(240)"),
+        )
+    }
+
     // ------------------------------------------------------------------ 工具
 
     private fun hostSource(): String = strip(read(HOST_PATH))

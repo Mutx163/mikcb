@@ -45,6 +45,22 @@ object TimeSchemeUsageIndexFactory {
                 TimeSchemeProfileRef(id = profile.id, name = profile.name)
         }
 
+        // T-03（2026-11-11 评审三）：先建**课程 id → 所属档案 id** 的一次性反查表。
+        //
+        // 原先每条用量都要 `profiles.firstOrNull { profile -> profile.courses.any { … } }`，
+        // 复杂度 O(用量 × 课程²)——档案一多、每档几十门课时，这就是首帧与 L0 的真开销，
+        // 异步化只把成本挪到后台、不解决问题。这里预映射一次，查表 O(1)。
+        // 语义与原实现一致：同一课程 id 出现在多个档案时以**第一个**档案为准
+        // （`containsKey` 判重，等价于原 `firstOrNull` 的短路）。
+        val profileIdByCourseId = HashMap<String, String>()
+        for (profile in profiles) {
+            for (course in profile.courses) {
+                if (!profileIdByCourseId.containsKey(course.id)) {
+                    profileIdByCourseId[course.id] = profile.id
+                }
+            }
+        }
+
         val overrideCourses = LinkedHashMap<String, List<TimeSchemeCourseRef>>()
         val locationCourses = LinkedHashMap<String, List<TimeSchemeCourseRef>>()
         val followMainCourses = LinkedHashMap<String, List<TimeSchemeCourseRef>>()
@@ -63,11 +79,10 @@ object TimeSchemeUsageIndexFactory {
             if (usages.isEmpty()) continue
             val refs = usages.map { usage ->
                 TimeSchemeCourseRef(
-                    // getCourseUsages 只回过档案名，不回档案 id；按课程 id 反查所属档案
-                    // （课程 id 在每个档案里唯一，比按名字匹配可靠：同名课表是合法状态）。
-                    profileId = profiles.firstOrNull { profile ->
-                        profile.courses.any { it.id == usage.course.id }
-                    }?.id.orEmpty(),
+                    // getCourseUsages 只回过档案名，不回档案 id；按上面预建的
+                    // 「课程 id → 档案 id」表反查（课程 id 在每个档案里唯一，比按名字匹配可靠：
+                    // 同名课表是合法状态）。
+                    profileId = profileIdByCourseId[usage.course.id].orEmpty(),
                     profileName = usage.profileName,
                     courseId = usage.course.id,
                     courseName = usage.course.name,

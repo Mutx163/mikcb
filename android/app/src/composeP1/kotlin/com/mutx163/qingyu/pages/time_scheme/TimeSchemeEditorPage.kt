@@ -188,8 +188,12 @@ private fun NameCard(
                         EditorTag(text = header.inUseBadgeText, accent = true)
                     }
                     // 三个计数 chip：`'$label $value'`（Dart `_TimeSchemeInfoChip` :1756-1766）。
-                    for (chip in header.chips) {
-                        EditorTag(text = "${chip.label} ${chip.value}")
+                    // T-08：引用索引还没算完时不画——首帧 usage 是 EMPTY，画出来会显示成
+                    // 「0 个课表 / 0 节课程」，等于在首帧说谎。后台算完 usageReady=true 再出现。
+                    if (model.usageReady) {
+                        for (chip in header.chips) {
+                            EditorTag(text = "${chip.label} ${chip.value}")
+                        }
                     }
                 }
 
@@ -205,7 +209,8 @@ private fun NameCard(
                 }
 
                 // 引用预览：`if (usage.previewText != null)`，最多两行省略（Dart `:1327-1335`）。
-                val preview = header.previewText
+                // T-08：索引未就绪时同样不画（否则会写成「无引用」）。
+                val preview = header.previewText.takeIf { model.usageReady }
                 if (!preview.isNullOrEmpty()) {
                     Spacer(Modifier.height(8.dp))
                     Text(

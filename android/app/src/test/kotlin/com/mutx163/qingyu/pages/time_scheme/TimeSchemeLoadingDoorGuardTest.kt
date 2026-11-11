@@ -63,6 +63,22 @@ class TimeSchemeLoadingDoorGuardTest {
         )
     }
 
+    @Test
+    fun `索引未就绪时不许画 0 个课表的计数（T-08）`() {
+        assertTrue(
+            "编辑页模型没有 usageReady——首帧 EMPTY 会把「0 个课表 / 0 节课程」画出来",
+            readSource(EDITOR_MODEL_PATH).contains("val usageReady"),
+        )
+        assertTrue(
+            "宿主要把首帧标成 usageReady = false",
+            hostSource.contains("usageReady = false"),
+        )
+        assertTrue(
+            "页面要按 usageReady 决定画不画计数/预览",
+            readSource(EDITOR_PAGE_PATH).contains("model.usageReady"),
+        )
+    }
+
     private fun stripLineComments(source: String): String =
         source.lineSequence().filterNot { it.trimStart().startsWith("//") }.joinToString("\n")
 
@@ -78,5 +94,9 @@ class TimeSchemeLoadingDoorGuardTest {
 
     private companion object {
         const val HOST_PATH = "android/app/src/composeP1/kotlin/com/mutx163/qingyu/app/TimeSchemeHost.kt"
+        const val EDITOR_MODEL_PATH =
+            "android/app/src/main/kotlin/com/mutx163/qingyu/pages/time_scheme/TimeSchemeEditorModel.kt"
+        const val EDITOR_PAGE_PATH =
+            "android/app/src/composeP1/kotlin/com/mutx163/qingyu/pages/time_scheme/TimeSchemeEditorPage.kt"
     }
 }

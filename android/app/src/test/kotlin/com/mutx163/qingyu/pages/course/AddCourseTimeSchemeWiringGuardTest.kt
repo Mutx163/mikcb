@@ -4,6 +4,7 @@ import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import java.io.File
+import com.mutx163.qingyu.testutil.stripKotlinComments
 
 /**
  * 排课记录「时间模板」行的接线契约（发布版 `_buildEntryTimeSchemeField`；
@@ -32,6 +33,15 @@ class AddCourseTimeSchemeWiringGuardTest {
             source.contains("AddCourseStrings.followCurrentTimetableWithName"),
         )
         assertTrue("条目行必须能打开模板弹层", source.contains("onOpenTimeSchemePicker"))
+        // C1：行内必须显示保存后真正会用的钟点 + 三种来源文案；
+        // 弹层必须带来源副题（地点组 / 课表默认）。
+        assertTrue("行内钟点必须来自生效解析", source.contains("entryTimeSchemeValue("))
+        assertTrue("地点组命中文案必须接上", source.contains("locationTimeMatchedSchemeHint"))
+        assertTrue("课表默认来源文案必须接上", source.contains("locationTimeAutoResolvedByTimetable"))
+        assertTrue("地点组来源文案必须接上", source.contains("locationTimeAutoResolvedByGroup"))
+        assertTrue("弹层必须有来源副题参数", source.contains("autoSubtitle ="))
+        // C2：页面必须把解析出的节数交给候选（壳侧负责注入）。
+        assertTrue("候选节数必须走生效解析", source.contains("info = entryTimeSchemeInfo(entry, entry.location)"))
     }
 
     @Test
@@ -43,18 +53,22 @@ class AddCourseTimeSchemeWiringGuardTest {
             shell.contains("activeTimeSchemeName = snapshot.timeSchemes.firstOrNull { it.id == snapshot.activeTimeSchemeId }?.name"),
         )
         assertFalse("不许把模板候选写成空表冒充接线", shell.contains("timeSchemes = emptyList()"))
+        // C2：壳必须注入「解析模板的节数」与生效解析，不能只传全局节数。
+        assertTrue("壳必须接 entrySchemeSectionCount", shell.contains("entrySchemeSectionCount = {"))
+        assertTrue("壳必须接 entryTimeSchemeInfo", shell.contains("entryTimeSchemeInfo = {"))
+        assertTrue("壳必须用同一个解析器", shell.contains("AddCourseEntryTimeSchemeLogic.resolve("))
     }
 
     private fun pageSource(name: String): String {
         val file = File(androidSrc(), "composeP1/kotlin/com/mutx163/qingyu/pages/course/$name")
         assertTrue("${file.path} 不存在", file.isFile)
-        return file.readText().replace("\r\n", "\n")
+        return stripKotlinComments(file.readText().replace("\r\n", "\n"))
     }
 
     private fun shellIndexSource(): String {
         val file = File(androidSrc(), "main/kotlin/com/mutx163/qingyu/pages/ShellPageIndex.kt")
         assertTrue("${file.path} 不存在", file.isFile)
-        return file.readText().replace("\r\n", "\n")
+        return stripKotlinComments(file.readText().replace("\r\n", "\n"))
     }
 
     private fun androidSrc(): File {

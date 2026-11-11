@@ -44,6 +44,15 @@ data class TimeSchemeEditorModel(
     val schemes: List<TimeScheme>,
     val activeSchemeId: String?,
     val usage: TimeSchemeUsageIndex = TimeSchemeUsageIndex.EMPTY,
+
+    /**
+     * 引用索引是否已就绪（T-08，2026-11-11）。
+     *
+     * 编辑器宿主首帧用 `EMPTY` 起步（不同步扫全量档案），这时卡片上的
+     * 「N 个课表 / N 节课程」其实是 0——不降级就是在首帧说谎。false 时页面
+     * **不画计数 chip**，后台算完置 true 再显示。
+     */
+    val usageReady: Boolean = true,
     val lastQuickGeneratePreset: TimeSchemeQuickGeneratePreset = TimeSchemeQuickGeneratePreset.DEFAULT,
 ) {
 
@@ -59,6 +68,7 @@ data class TimeSchemeEditorModel(
             activeSchemeId: String?,
             usage: TimeSchemeUsageIndex,
             schemeId: String,
+            usageReady: Boolean = true,
         ): TimeSchemeEditorModel? {
             val scheme = schemes.firstOrNull { it.id == schemeId } ?: return null
             return TimeSchemeEditorModel(
@@ -69,6 +79,7 @@ data class TimeSchemeEditorModel(
                 schemes = schemes,
                 activeSchemeId = activeSchemeId,
                 usage = usage,
+                usageReady = usageReady,
             )
         }
     }
@@ -188,6 +199,7 @@ data class TimeSchemeEditorModel(
         schemes = schemes,
         activeSchemeId = activeSchemeId,
         isActive = schemeId == activeSchemeId,
+        usageReady = true,
     )
 
     /**

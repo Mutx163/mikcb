@@ -185,88 +185,47 @@ fun TimeSchemeQuickGenerateSheet(
         timeField = null
     }
 
-    /** Dart `_submit` `:365-412`：先查五个数字，再逐条查大课间规则。 */
+    /**
+     * 表单当前值 → 判据输入。
+     *
+     * 2026-11-11 评审 T-06：`submit()` 与实时预览**必须同源**，否则会出现
+     * 「预览显示 12 节、点生成却报请填数字」这种自相矛盾。两者现在都走
+     * [TimeSchemeQuickGenerateInput.parse]，这里只负责把 UI 状态摊成输入。
+     */
+    fun currentInput(): QuickGenerateInputText = QuickGenerateInputText(
+        morningCount = morningCount,
+        afternoonCount = afternoonCount,
+        eveningCount = eveningCount,
+        classDuration = classDuration,
+        breakDuration = breakDuration,
+        breakRules = breakRules.map { it.afterSection to it.duration },
+        morningStartTime = morningStart,
+        afternoonStartTime = afternoonStart,
+        eveningStartTime = eveningStart,
+    )
+
+    /** 点「生成」：判据来自 [TimeSchemeQuickGenerateInput.parse]，错误挂到对应卡片。 */
     fun submit() {
         validationError = null
         errorSlot = null
-        val morning = morningCount.trim().toIntOrNull()
-        val afternoon = afternoonCount.trim().toIntOrNull()
-        val evening = eveningCount.trim().toIntOrNull()
-        val duration = classDuration.trim().toIntOrNull()
-        val breakMinutes = breakDuration.trim().toIntOrNull()
-        // 逐格判：先定位**第一格**没填好的，把提示挂在它所在的那张卡上。
-        val firstBadSlot = when {
-            morning == null -> QuickErrorSlot.MORNING
-            afternoon == null -> QuickErrorSlot.AFTERNOON
-            evening == null -> QuickErrorSlot.EVENING
-            duration == null || breakMinutes == null -> QuickErrorSlot.RHYTHM
-            else -> null
-        }
-        if (firstBadSlot != null) {
-            errorSlot = firstBadSlot
-            validationError = TimeSchemeManagementStrings.fillNumbersValidationMessage.text
-            return
-        }
+        when (val result = TimeSchemeQuickGenerateInput.parse(currentInput())) {
+            is QuickGenerateParseResult.MissingNumbers -> {
+                errorSlot = result.field.toErrorSlot()
+                validationError = TimeSchemeManagementStrings.fillNumbersValidationMessage.text
+            }
 
-        val rules = mutableListOf<BreakOverrideRule>()
-        for (draft in breakRules) {
-            val afterSection = draft.afterSection.trim().toIntOrNull()
-            val minutes = draft.duration.trim().toIntOrNull()
-            // Dart 同口径：解析失败（空/非数字）与越界（节次 < 1、时长 < 0）一并阻断，
-            // 不再像 2026-10-20 之前那样 `.where(...)` 把填错的规则一声不吭滤掉。
-            if (afterSection == null || afterSection < 1 || minutes == null || minutes < 0) {
+            QuickGenerateParseResult.InvalidBreakRule -> {
                 errorSlot = QuickErrorSlot.BREAK_RULES
                 validationError = TimeSchemeManagementStrings.breakOverrideInvalidMessage.text
-                return
             }
-            rules += BreakOverrideRule(afterSection = afterSection, breakDurationMinutes = minutes)
-        }
 
-        onConfirm(
-            TimeSchemeQuickGeneratePreset(
-                morningCount = morning!!,
-                afternoonCount = afternoon!!,
-                eveningCount = evening!!,
-                morningStartTime = morningStart,
-                afternoonStartTime = afternoonStart,
-                eveningStartTime = eveningStart,
-                classDurationMinutes = duration!!,
-                breakDurationMinutes = breakMinutes!!,
-                breakOverrideRules = rules,
-            ),
-        )
+            is QuickGenerateParseResult.Ready -> onConfirm(result.preset)
+        }
     }
 
-    /**
-     * 当前输入能不能拼成一个合法 preset：能就返回它（供实时预览用），不能返回 null。
-     *
-     * 与 [submit] 的判据同源但**不产生错误提示**——预览行在参数不全时单纯不显示。
-     */
-    fun parsedPresetOrNull(): TimeSchemeQuickGeneratePreset? {
-        val morning = morningCount.trim().toIntOrNull() ?: return null
-        val afternoon = afternoonCount.trim().toIntOrNull() ?: return null
-        val evening = eveningCount.trim().toIntOrNull() ?: return null
-        val duration = classDuration.trim().toIntOrNull() ?: return null
-        val breakMinutes = breakDuration.trim().toIntOrNull() ?: return null
-        val rules = mutableListOf<BreakOverrideRule>()
-        for (draft in breakRules) {
-            val afterSection = draft.afterSection.trim().toIntOrNull() ?: return null
-            val minutes = draft.duration.trim().toIntOrNull() ?: return null
-            if (afterSection < 1 || minutes < 0) return null
-            rules += BreakOverrideRule(afterSection = afterSection, breakDurationMinutes = minutes)
-        }
-        return TimeSchemeQuickGeneratePreset(
-            morningCount = morning,
-            afternoonCount = afternoon,
-            eveningCount = evening,
-            morningStartTime = morningStart,
-            afternoonStartTime = afternoonStart,
-            eveningStartTime = eveningStart,
-            classDurationMinutes = duration,
-            breakDurationMinutes = breakMinutes,
-            breakOverrideRules = rules,
-        )
-    }
+    /** 实时预览用：同一份判据的 Ready 分支（不产生错误提示）。 */
+    fun parsedPresetOrNull(): TimeSchemeQuickGeneratePreset? =
+        (TimeSchemeQuickGenerateInput.parse(currentInput()) as? QuickGenerateParseResult.Ready)?.preset
 
     /** 现有三个时段的总节数（新增规则时用来算「最后一节之后」）。全空时退回 1。 */
     fun totalSectionCount(): Int {
@@ -549,6 +508,14 @@ private fun QuickSectionCard(
 
 /** 校验错误挂在哪张卡上（重做新增；见 [QuickGenerateForm] KDoc 第 3 条）。 */
 private enum class QuickErrorSlot { MORNING, AFTERNOON, EVENING, RHYTHM, BREAK_RULES }
+
+/** 判据层「哪一格没填好」→ 渲染层「挂哪张卡」。两套枚举分开是为了让 app/ 判据零 Compose 依赖。 */
+private fun QuickGenerateField.toErrorSlot(): QuickErrorSlot = when (this) {
+    QuickGenerateField.MORNING -> QuickErrorSlot.MORNING
+    QuickGenerateField.AFTERNOON -> QuickErrorSlot.AFTERNOON
+    QuickGenerateField.EVENING -> QuickErrorSlot.EVENING
+    QuickGenerateField.RHYTHM -> QuickErrorSlot.RHYTHM
+}
 
 
 /**

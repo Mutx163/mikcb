@@ -96,6 +96,30 @@ class TimeSchemeShareWiringGuardTest {
         )
     }
 
+    /**
+     * T-01（2026-11-11 评审三）：壳必须真的把 `g3.qrSend` 传给宿主。
+     *
+     * 上面那条只钉住「宿主按 onRequestQrSend 是否为空决定画不画入口」——壳不传实参时
+     * 它会老老实实把二维码那一行藏起来，**编译过、单测也过**，用户只看到分享弹层少了
+     * 一条路。所以必须把壳的调用点也钉住：`d3.timeSchemes` 分支里有一行
+     * `onRequestQrSend = { onOpenPage("g3.qrSend") }`。
+     */
+    @Test
+    fun `壳把二维码发送路由传给了时间模板宿主`() {
+        val shell = stripLineComments(readSource(SHELL_PATH))
+        val start = shell.indexOf("\"d3.timeSchemes\" ->")
+        assertTrue("ShellPageIndex.kt 里找不到 d3.timeSchemes 分支", start >= 0)
+        val end = shell.indexOf("\"d3.timeSchemeEditor\" ->", start)
+        assertTrue("找不到 d3.timeSchemes 之后的 d3.timeSchemeEditor 分支", end > start)
+        val branch = shell.substring(start, end)
+        assertTrue(
+            "d3.timeSchemes 分支没给 TimeSchemeManagementHost 传 onRequestQrSend ——" +
+                "分享弹层会把「二维码分享」整行藏起来（宿主按 onRequestQrSend != null 判）",
+            branch.contains("onRequestQrSend") &&
+                branch.contains("g3.qrSend"),
+        )
+    }
+
     @Test
     fun `文件头不再写分享缺失与 provider 未注册`() {
         assertFalse(
@@ -129,5 +153,8 @@ class TimeSchemeShareWiringGuardTest {
         const val HOST_PATH = "android/app/src/composeP1/kotlin/com/mutx163/qingyu/app/TimeSchemeHost.kt"
         const val DIALOGS_PATH =
             "android/app/src/composeP1/kotlin/com/mutx163/qingyu/pages/time_scheme/TimeSchemeManagementDialogs.kt"
+        /** 壳的分派表（路由与宿主实参）：二维码那一行的传参只能在这里看到。 */
+        const val SHELL_PATH =
+            "android/app/src/main/kotlin/com/mutx163/qingyu/pages/ShellPageIndex.kt"
     }
 }
