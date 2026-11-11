@@ -1,5 +1,6 @@
 package com.mutx163.qingyu
 
+import com.mutx163.qingyu.app.LiveUpdateStageLogic
 import android.Manifest
 import android.app.Activity
 import android.app.Application
@@ -1461,42 +1462,24 @@ class LiveUpdateService : Service() {
     }
 
     private fun resolveStage(now: Long): String? {
-        if (now >= endAtMillis) {
-            return null
-        }
-        // Do not show the before-class stage earlier than its window start.
-        // (leadMillis == 0 means the caller did not supply a window; keep the
-        // legacy behavior of trusting the start intent in that case.)
-        if (beforeClassLeadMillis > 0L && now < startAtMillis - beforeClassLeadMillis) {
-            return null
-        }
-
-        val reminderStart = if (liveClassReminderStartMinutes == 0) {
-            startAtMillis
-        } else {
-            maxOf(startAtMillis, endAtMillis - liveClassReminderStartMinutes * 60_000L)
-        }
-        val endReminderStart = maxOf(startAtMillis, endAtMillis - endReminderLeadMillis)
-        return when {
-            now < startAtMillis -> if (enableBeforeClass) "beforeClass" else null
-            liveClassReminderStartMinutes > 0 && now < reminderStart ->
-                if (enableDuringClass && showNotificationDuringClass) {
-                    "duringClassStatusBar"
-                } else {
-                    null
-                }
-            now < reminderStart -> null
-            liveClassReminderStartMinutes > 0 && enableBeforeEnd -> "beforeEnd"
-            liveClassReminderStartMinutes > 0 && canDisplayDuringStage() -> "duringClass"
-            now >= endReminderStart && enableBeforeEnd -> "beforeEnd"
-            now < endReminderStart && canDisplayDuringStage() -> "duringClass"
-            now >= endReminderStart && canDisplayDuringStage() -> "duringClass"
-            else -> null
-        }
-    }
-
-    private fun canDisplayDuringStage(): Boolean {
-        return enableDuringClass && (promoteDuringClass || showNotificationDuringClass)
+        // P1-13：算法唯一一份在 `app/LiveUpdateStageLogic`，调度侧同一份。
+        // 服务侧没有「连堂课屏蔽点」概念 ⇒ blockedUntil 传 null（**行为差异保留**，
+        // 是否让服务也吃屏蔽点属用户可见的阶段变化，留后续真机专项）。
+        // beforeClassLeadMillis > 0 才是窗口；0 = 调用方没给窗口，信任 start ⇒ 传 null。
+        return LiveUpdateStageLogic.resolveStage(
+            nowMillis = now,
+            startAtMillis = startAtMillis,
+            endAtMillis = endAtMillis,
+            blockedUntilMillis = null,
+            beforeClassLeadMillis = beforeClassLeadMillis.takeIf { it > 0L },
+            liveClassReminderStartMinutes = liveClassReminderStartMinutes,
+            endReminderLeadMillis = endReminderLeadMillis,
+            enableBeforeClass = enableBeforeClass,
+            enableDuringClass = enableDuringClass,
+            enableBeforeEnd = enableBeforeEnd,
+            promoteDuringClass = promoteDuringClass,
+            showDuringClassNotification = showNotificationDuringClass,
+        )
     }
 
     private fun isXiaomiFamilyDevice(): Boolean {

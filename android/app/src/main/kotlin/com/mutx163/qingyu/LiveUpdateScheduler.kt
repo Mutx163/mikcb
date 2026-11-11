@@ -1,5 +1,6 @@
 package com.mutx163.qingyu
 
+import com.mutx163.qingyu.app.LiveUpdateStageLogic
 import android.app.AlarmManager
 import android.app.Notification
 import android.app.NotificationChannel
@@ -158,71 +159,22 @@ internal fun liveSchedulerResolveStage(
     liveShowDuringClassNotification: Boolean,
 ): String? {
     val beforeClassLeadMillis = liveShowBeforeClassMinutes * 60_000L
-    val aheadTime = maxOf(
-        startAtMillis - beforeClassLeadMillis,
-        blockedUntilMillis ?: Long.MIN_VALUE,
+    // P1-13：算法本体在 `app/LiveUpdateStageLogic`（与 LiveUpdateService 共用）。这里只做
+    // 「分钟 → 毫秒窗口」的换算；blockedUntil 照传（连堂课屏蔽点属于调度侧口径）。
+    return LiveUpdateStageLogic.resolveStage(
+        nowMillis = nowMillis,
+        startAtMillis = startAtMillis,
+        endAtMillis = endAtMillis,
+        blockedUntilMillis = blockedUntilMillis,
+        beforeClassLeadMillis = beforeClassLeadMillis,
+        liveClassReminderStartMinutes = liveClassReminderStartMinutes,
+        endReminderLeadMillis = endReminderLeadMillis,
+        enableBeforeClass = liveEnableBeforeClass,
+        enableDuringClass = liveEnableDuringClass,
+        enableBeforeEnd = liveEnableBeforeEnd,
+        promoteDuringClass = livePromoteDuringClass,
+        showDuringClassNotification = liveShowDuringClassNotification,
     )
-    if (nowMillis < aheadTime || nowMillis >= endAtMillis) {
-        return null
-    }
-    if (nowMillis < startAtMillis) {
-        return if (liveEnableBeforeClass) "beforeClass" else null
-    }
-    val reminderStartMillis = if (liveClassReminderStartMinutes == 0) {
-        startAtMillis
-    } else {
-        maxOf(startAtMillis, endAtMillis - liveClassReminderStartMinutes * 60_000L)
-    }
-    if (liveClassReminderStartMinutes > 0 && nowMillis < reminderStartMillis) {
-        return if (liveEnableDuringClass && liveShowDuringClassNotification) {
-            "duringClassStatusBar"
-        } else {
-            null
-        }
-    }
-    if (liveClassReminderStartMinutes > 0) {
-        if (liveEnableBeforeEnd) {
-            return "beforeEnd"
-        }
-        return if (
-            liveSchedulerCanDisplayDuring(
-                liveEnableDuringClass,
-                livePromoteDuringClass,
-                liveShowDuringClassNotification,
-            )
-        ) {
-            "duringClass"
-        } else {
-            null
-        }
-    }
-    val endReminderStart = maxOf(startAtMillis, endAtMillis - endReminderLeadMillis)
-    if (nowMillis >= endReminderStart) {
-        if (liveEnableBeforeEnd) {
-            return "beforeEnd"
-        }
-        if (
-            liveSchedulerCanDisplayDuring(
-                liveEnableDuringClass,
-                livePromoteDuringClass,
-                liveShowDuringClassNotification,
-            )
-        ) {
-            return "duringClass"
-        }
-        return null
-    }
-    return if (
-        liveSchedulerCanDisplayDuring(
-            liveEnableDuringClass,
-            livePromoteDuringClass,
-            liveShowDuringClassNotification,
-        )
-    ) {
-        "duringClass"
-    } else {
-        null
-    }
 }
 
 internal data class LiveSchedulerTestCourse(
