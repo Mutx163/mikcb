@@ -256,7 +256,7 @@ private fun ImportIconBadge(icon: ImageVector, accent: Color) {
 
 /**
  * 导入引导面板（Dart `ImportGuidePanel`）：适用场景卡（含三步引导）+ 支持的文件卡。
- * 步骤标题取 ARB `stepLabel`（「步骤 {step}」），圆形徽标里再去掉前缀只留数字。
+ * 步骤标题取 ARB `stepLabel`（「步骤 {step}」）；圆形徽标显示**序号数字本身**（五语言通用）。
  */
 @Composable
 fun ImportGuidePanel(
@@ -293,11 +293,14 @@ fun ImportGuidePanel(
                 )
                 // Dart `HyperosControlCard`：头部（标题 + 副标题）与正文之间 12dp。
                 Spacer(modifier = Modifier.height(12.dp))
-                ImportGuideLine(ImportStrings.stepLabel.filled("step", "1"), step1Subtitle)
-                Spacer(modifier = Modifier.height(10.dp))
-                ImportGuideLine(ImportStrings.stepLabel.filled("step", "2"), step2Subtitle)
-                Spacer(modifier = Modifier.height(10.dp))
-                ImportGuideLine(ImportStrings.stepLabel.filled("step", "3"), step3Subtitle)
+                // 序号在循环里给（模型侧序号，徽标只显示它）：不再从本地化标题里裁前缀，
+                // 五语言的「步骤 1 / Step 1 / ステップ1 / 단계 1」徽标都是纯数字。
+                listOf(step1Subtitle, step2Subtitle, step3Subtitle).forEachIndexed { index, subtitle ->
+                    if (index > 0) {
+                        Spacer(modifier = Modifier.height(10.dp))
+                    }
+                    ImportGuideLine(number = index + 1, subtitle = subtitle)
+                }
             }
         }
         // Dart 两张卡之间是 `HyperosSectionGap`（12dp）。
@@ -345,9 +348,16 @@ private val ImportGuideCardInsideMargin = PaddingValues(
 /** 卡内说明句行高：Dart `sectionDescription` 是 13sp × 1.5 ≈ 20sp（原 18 偏挤）。 */
 private val ImportGuideCaptionLineHeight = 20.sp
 
-/** 引导行（Dart `ImportGuideLine`）：28dp 主色圆徽标 + 步骤标题 + 说明。 */
+/**
+ * 引导行（Dart `ImportGuideLine`）：28dp 主色圆徽标 + 步骤标题 + 说明。
+ *
+ * [number] 是**模型给的序号**，徽标直接显示它的十进制数字；标题才走 ARB 模板
+ * [`ImportStrings.stepLabel`]（「步骤 {step}」/「Step {step}」/「ステップ{step}」…）。
+ * 以前这里从标题里 `replaceFirst("步骤 ", "")` 裁前缀，只有中文能裁掉——英文
+ * 「Step 1」、日文「ステップ1」、韩文「단계 1」会整串塞进 28dp 圆里溢出。
+ */
 @Composable
-private fun ImportGuideLine(title: String, subtitle: String) {
+private fun ImportGuideLine(number: Int, subtitle: String) {
     val dark = isSystemInDarkTheme()
     val primary = Color(QingyuTheme.primary(dark = dark))
     Row(
@@ -362,8 +372,8 @@ private fun ImportGuideLine(title: String, subtitle: String) {
             contentAlignment = Alignment.Center,
         ) {
             Text(
-                // Dart: title.replaceAll('步骤 ', '')——徽标里只留数字。
-                text = title.replaceFirst("步骤 ", ""),
+                // 徽标只放数字：五语言通用，不依赖任何语言的前缀写法。
+                text = number.toString(),
                 // Dart listDetail = 14sp（textStyles.body2）；原来 13sp 比徽标小一圈。
                 style = MiuixTheme.textStyles.body2,
                 color = primary,
@@ -371,7 +381,7 @@ private fun ImportGuideLine(title: String, subtitle: String) {
         }
         Column(modifier = Modifier.weight(1f)) {
             Text(
-                text = title,
+                text = ImportStrings.stepLabel.filled("step", number.toString()),
                 // Dart listTitle = 17sp / w400：与卡标题同阶（原 14sp + MEDIUM 小一号又偏粗）。
                 style = MiuixTheme.textStyles.main,
                 color = Color(QingyuTheme.primaryText(dark)),

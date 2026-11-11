@@ -73,8 +73,8 @@ object ImportStrings {
     // ── 导入引导面板（import_shared.dart: ImportGuidePanel）──
     val applicableScenarioTitle = ImportArbText("applicableScenarioTitle", "适用场景")
     val supportedFilesTitle = ImportArbText("supportedFilesTitle", "支持的文件")
-    // ImportGuidePanel 的三步引导行标题（Dart `l10n.stepLabel('1')` → 圆形徽标里再去掉
-    // 「步骤 」前缀只留数字）。前任落盘时漏收，渲染层需要，2026-10-27 续作补上。
+    // ImportGuidePanel 的三步引导行标题（Dart `l10n.stepLabel('1')`）。圆形徽标**不再**
+    // 从这个标题里裁前缀——那只有中文裁得掉，其余语言会整串塞进 28dp 圆；徽标改显示序号数字。
     val stepLabel = ImportArbText("stepLabel", "步骤 {step}")
 
     // ── 文件与通用错误 ──
