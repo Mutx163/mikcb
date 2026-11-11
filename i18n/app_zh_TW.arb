@@ -338,7 +338,7 @@
   },
   "icsStep1Subtitle": "先在其他課表應用裡匯出 .ics 日歷檔案",
   "icsStep2Subtitle": "在此選擇文件，可追加導入或替換現有課程",
-  "icsStep3Subtitle": "匯入前還會讓你確認開學日期，以及課表第 1 周對應校歷第几周",
+  "icsStep3Subtitle": "匯入前還會讓你確認開學日期，以及課表第 1 周對應校歷第幾周",
   "supportedFilesTitle": "支持的檔案",
   "supportedFilesSuffix": "檔案後綴必須是 .ics",
   "supportedFilesImageHint": "課表截圖請返回上一頁使用識圖導入",
@@ -964,7 +964,7 @@
       }
     }
   },
-  "timeSchemeUsageIntro": "先看總影響范圍，再決定是直接編輯這套範本，還是先複製一套再改",
+  "timeSchemeUsageIntro": "先看總影響範圍，再決定是直接編輯這套範本，還是先複製一套再改",
   "profileCountLabel": "課表",
   "courseCountLabel": "課程",
   "overrideTimeSchemeLabel": "副時間模板",
@@ -989,7 +989,7 @@
   "quickGenerateTimeSchemeTitle": "快捷生成課表時間",
   "addBreakRuleAction": "新增大課間規則",
   "breakOverrideInvalidMessage": "大課間規則要改：第幾節後填 1 以上的數字，時長填 0 以上的數字",
-  "afterSectionLabel": "第几節後",
+  "afterSectionLabel": "第幾節後",
   "breakDurationMinutesLabel": "休息時長 分鐘",
   "fillNumbersValidationMessage": "請把節數和時長填寫為數字",
   "timeSchemeEditorActiveAndCoursesHint": "目前課表和部分課程正在使用這套時間範本，保存後會同步更新所有相關課表和課程",
@@ -1009,11 +1009,11 @@
       }
     }
   },
-  "morningSectionCountLabel": "上午几節",
+  "morningSectionCountLabel": "上午幾節",
   "morningFirstSectionTimeLabel": "早上第一節時間",
-  "afternoonSectionCountLabel": "下午几節",
+  "afternoonSectionCountLabel": "下午幾節",
   "afternoonFirstSectionTimeLabel": "下午第一節時間",
-  "eveningSectionCountLabel": "晚上几節",
+  "eveningSectionCountLabel": "晚上幾節",
   "eveningFirstSectionTimeLabel": "晚上第一節時間",
   "classDurationMinutesLabel": "單節課時長 分鐘",
   "smallBreakDurationMinutesLabel": "小課間時長 分鐘",
@@ -2299,7 +2299,7 @@
       }
     }
   },
-  "rescheduleTargetWeekLabel": "調到第几周",
+  "rescheduleTargetWeekLabel": "調到第幾周",
   "confirmRescheduleAction": "確認調課",
   "reschedulePreviousWeekAction": "上一週",
   "rescheduleNextWeekAction": "下一週",
@@ -4627,7 +4627,7 @@
   "logFieldChannel": "渠道",
   "logFieldHasNotificationPermission": "通知權限",
   "logFieldHasPromotedPermissionDeclared": "已聲明提升通知權限",
-  "logFieldCanPostPromotedNotifications": "可发布提升通知",
+  "logFieldCanPostPromotedNotifications": "可發布提升通知",
   "logFieldIgnoringBatteryOptimizations": "忽略電池最佳化",
   "logFieldKeepAliveAccessibilityEnabled": "無障礙保活已啟用",
   "logFieldHideFromRecentsEnabled": "從最近工作隱藏",
