@@ -10,8 +10,6 @@ import android.util.Log
 import com.mutx163.qingyu.app.FrozenValueCodec
 import com.mutx163.qingyu.app.WidgetRefreshSignature
 import java.time.LocalDate
-import java.util.concurrent.ExecutorService
-import java.util.concurrent.Executors
 
 /**
  * 课表内容变化 → 唤醒桌面小组件与统计卡片（Phase 3.5 · W1 的最后一段接线）。
@@ -36,9 +34,11 @@ import java.util.concurrent.Executors
  * ## 去抖与线程
  *
  * 一次保存会连续写多个键，所以回调先合并 `SETTLE_DELAY_MILLIS` 再处理；
- * 真正的重画在单线程 executor 上跑（要解析整份档案 JSON、逐张构建 RemoteViews），
- * 不占主线程。判据层的「签名去重 / 跨天 / 今天有没有课」都在 [WidgetRefreshBridge] 里，
- * 本对象不重复实现一遍。
+ * 真正的重画在 [WidgetRefreshSerial] 的单线程串行器上跑（要解析整份档案 JSON、
+ * 逐张构建 RemoteViews），不占主线程，并与闹钟入口 [HomeWidgetRefreshReceiver]、
+ * 15 分钟兜底 [WidgetRefreshWorker] 排队 —— 三者并发会互抢 `rescheduleRefresh`
+ * 里闹钟的 cancel/set。判据层的「签名去重 / 跨天 / 今天有没有课」都在
+ * [WidgetRefreshBridge] 里，本对象不重复实现一遍。
  *
  * ## 没放桌面卡片时直接跳过
  *
@@ -60,7 +60,6 @@ object WidgetRefreshHost {
 
     private var appContext: Context? = null
     private var bridge: WidgetRefreshBridge? = null
-    private var executor: ExecutorService? = null
 
     private val mainHandler: Handler by lazy { Handler(Looper.getMainLooper()) }
 
@@ -104,20 +103,19 @@ object WidgetRefreshHost {
             preferences.registerOnSharedPreferenceChangeListener(listener)
             appContext = app
             bridge = refreshBridge
-            executor = Executors.newSingleThreadExecutor { runnable ->
-                Thread(runnable, "widget-refresh")
-            }
             initialized = true
             Log.i(TAG, "subscribed to timetable prefs; widget refresh on change is live")
         }
     }
 
-    /** 把去抖后的这一次处理丢到后台线程；线程名固定，方便 `logcat` 里认出是谁在刷卡片。 */
+    /**
+     * 把去抖后的这一次处理丢到 [WidgetRefreshSerial] 的 `widget-refresh` 线程；
+     * 与闹钟入口、15 分钟兜底排同一条队，避免并发重排闹钟。
+     */
     private fun submitRefresh() {
         val app = appContext ?: return
-        val worker = executor ?: return
         val refreshBridge = bridge ?: return
-        worker.execute {
+        WidgetRefreshSerial.execute {
             try {
                 if (!hasPlacedWidgets(app)) return@execute
                 refreshBridge.onTimetableChanged()

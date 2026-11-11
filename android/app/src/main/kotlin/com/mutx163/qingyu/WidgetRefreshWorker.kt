@@ -7,6 +7,7 @@ import androidx.work.ExistingPeriodicWorkPolicy
 import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkManager
 import androidx.work.WorkerParameters
+import kotlinx.coroutines.withContext
 import java.util.concurrent.TimeUnit
 
 /**
@@ -19,13 +20,17 @@ import java.util.concurrent.TimeUnit
  * This worker runs every 15 minutes (WorkManager minimum) and triggers
  * a widget update + reschedule, ensuring the widget stays fresh even
  * when AlarmManager alarms are suppressed.
+ *
+ * 与闹钟入口 [HomeWidgetRefreshReceiver]、App 内变更 [WidgetRefreshHost] 共用
+ * [WidgetRefreshSerial] 的单线程：三者都会 `updateAll` + `rescheduleRefresh`，
+ * 并发跑会互抢闹钟的 cancel/set，所以整段 `doWork` 先切到那条线程再干活。
  */
 class WidgetRefreshWorker(
     appContext: Context,
     params: WorkerParameters,
 ) : CoroutineWorker(appContext, params) {
 
-    override suspend fun doWork(): Result {
+    override suspend fun doWork(): Result = withContext(WidgetRefreshSerial.dispatcher) {
         // 一次取快照，后面判零实例与重排都消费它（不再各自遍历 10 类）。
         val widgetIds = HomeWidgetStorage.collectWidgetIds(applicationContext)
         // 桌面没有任何小部件实例 ⇒ 不为不存在的卡片空跑（用户报的耗电问题）。
@@ -33,9 +38,9 @@ class WidgetRefreshWorker(
             // 先取消自己再退出：periodic work 不会因为一次 return 就消失；0 卡片时
             // 这个任务应自我取消（BOOT 后系统自恢复的下一跑也会在这里自取消）。
             cancel(applicationContext)
-            return Result.success()
+            return@withContext Result.success()
         }
-        return try {
+        try {
             TodayWidgetSupport.updateAll(applicationContext)
             StatsWidgetSupport.updateAll(applicationContext)
             HomeWidgetStorage.rescheduleRefresh(applicationContext, widgetIds)
