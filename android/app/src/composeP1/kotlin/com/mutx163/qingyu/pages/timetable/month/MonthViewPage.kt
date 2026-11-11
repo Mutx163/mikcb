@@ -14,8 +14,12 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.asPaddingValues
+import androidx.compose.foundation.layout.calculateBottomPadding
 import androidx.compose.foundation.layout.calculateEndPadding
 import androidx.compose.foundation.layout.calculateStartPadding
+import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.rememberLazyListState
@@ -57,6 +61,7 @@ import com.mutx163.qingyu.pages.timetable.chromeDisplayedPage
 import com.mutx163.qingyu.pages.settings.HomeMaterialRenderSpec
 import com.mutx163.qingyu.pages.settings.SettingsMaterialModel
 import com.mutx163.qingyu.pages.settings.SurfaceMaterialState
+import com.mutx163.qingyu.pages.shell.HomeFloatingMetrics
 import com.mutx163.qingyu.pages.shell.HomeInkPolarity
 import com.mutx163.qingyu.theme.QingyuTheme
 import kotlin.math.abs
@@ -925,16 +930,24 @@ private fun MonthPanelContent(
     // 诊断探针：拖拽时这一层应为 0 次；跟着帧数长说明面板每帧都在重组。
     SideEffect { MonthScrollProbe.bump(MonthScrollProbe.C_PANEL_COMPOSE) }
 
-    // 底部避让：取「设计留白 / Scaffold 系统栏内边距 / 共享坞避让」三者**最大**值去重
-    //（不相加，系统导航条不双计；口径与列表页 / 日 / 周视图一致）。
-    // 之前月视图这套自定义滚动漏了坞避让，议程最后一行一直停在底部导航栏（坞）后面、
-    // 无法再上滑露出 —— 这就是「最底下内容被坞遮挡」的根因。
+    // 底部避让（2026-11-11 用户口径，按复核员的三处代码证据定稿）：
+    // **底栏可见时与底栏之间留一条间距；关掉底栏只留系统底内边距**——手势条的安全距离要留，
+    // 去掉的是原来那 28dp 设计留白（`MonthMetrics.PANEL_BOTTOM_INSET` 已退役）。
+    // 坞档 = 药丸总占用（已含系统栏）+ 12dp（与「回今日 / 回本周」浮钮同一口径，不新写数）。
+    // 系统底内边距：嵌入 c1.week 时宿主传的 `innerBottomPadding` 是 0.dp（月层只留顶部 14dp、
+    // 壳主屏是裸 Box、本页嵌入态 renderBody(0.dp)，三处都没补），所以这里自己取
+    // `WindowInsets.navigationBars` 的底值并与宿主传值取 max（两处都含系统栏，取 max 不双计）。
+    // 判据是纯函数 `MonthPanelModel.panelBottomInsetDp`（有单测）。
     val dockRelief = LocalGlassDockScrollRelief.current
-    val bottomInset = maxOf(
-        MonthMetrics.PANEL_BOTTOM_INSET.dp,
-        innerBottomPadding,
-        dockRelief,
+    val systemBottomDp = maxOf(
+        innerBottomPadding.value,
+        WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding().value,
     )
+    val bottomInset = MonthPanelModel.panelBottomInsetDp(
+        dockReliefDp = dockRelief.value.toDouble(),
+        systemBottomDp = systemBottomDp.toDouble(),
+        dockGapDp = HomeFloatingMetrics.DOCK_GAP_DP.toDouble(),
+    ).dp
     val padding = PaddingValues(
         start = MonthMetrics.CARD_INSET.dp,
         end = MonthMetrics.CARD_INSET.dp,

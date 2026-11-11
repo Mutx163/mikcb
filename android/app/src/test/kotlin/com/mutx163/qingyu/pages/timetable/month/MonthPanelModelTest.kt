@@ -330,6 +330,22 @@ class MonthPanelModelTest {
         assertEquals(1.5 * half.rowHeight, half.scrollOffset, 1e-9)
     }
 
+    // ------------------------------------------------------------------
+    // 面板内容底部避让（2026-11-11 用户口径：坞在留间距、坞关只留系统底内边距）
+    // ------------------------------------------------------------------
+
+    @Test
+    fun `底部避让_坞在留间距_坞关只吃系统底内边距`() {
+        // 坞在：药丸总占用（已含系统栏）+ 12dp 间距。系统内边距**不再叠一次**。
+        assertEquals(102.0, MonthPanelModel.panelBottomInsetDp(90.0, 24.0, 12.0), 1e-9)
+        // 坞关：只吃系统底内边距（手势条安全距离必须留，不是字面 0）。
+        assertEquals(24.0, MonthPanelModel.panelBottomInsetDp(0.0, 24.0, 12.0), 1e-9)
+        // 坞档下若「间距后仍比安全区小」，取安全区兜底（不会压手势条）。
+        assertEquals(24.0, MonthPanelModel.panelBottomInsetDp(10.0, 24.0, 12.0), 1e-9)
+        // 坞档下系统内边距更大时取较大的那个（不相加，不双计系统栏）。
+        assertEquals(102.0, MonthPanelModel.panelBottomInsetDp(90.0, 48.0, 12.0), 1e-9)
+    }
+
     @Test
     fun `面板高度随进度单调不增_网格单调不减`() {
         var previousGrid = -1.0

@@ -434,6 +434,33 @@ object MonthPanelModel {
     }
 
     /**
+     * 面板内容**底部避让**（从屏幕底端起算，dp）。
+     *
+     * 用户口径（2026-11-11）：**底栏可见时月视图与底栏之间留一条间距；关掉底栏只留系统底
+     * 内边距**（手势条的安全距离要留，去掉的是原来那 28dp 设计留白，不是字面 0）。
+     *
+     * - 坞可见：`坞避让 + 间距`，再与系统底内边距取 `max` —— 坞避让本身已含系统栏
+     *   （`HomeFloatingMetrics.dockScrollReliefDp` 明确「坞档 = 药丸总占用含系统栏、
+     *   经典形态 = 0」），取 max 不会双计；同时兜住「间距给得比安全区还小」的情况。
+     * - 坞不可见：只剩系统底内边距。**不能给 0**：嵌入 `c1.week` 时宿主传的是 0.dp，
+     *   内容会直接压到系统手势条上（2026-11-11 复核员给了三处代码证据）。
+     *
+     * @param dockReliefDp `LocalGlassDockScrollRelief` 的注入值（坞档 = 药丸总占用，经典 = 0）。
+     * @param systemBottomDp 系统底内边距（调用方已与宿主传入值取过 max）。
+     * @param dockGapDp 内容与药丸之间的视觉间隙：调用方传 `HomeFloatingMetrics.DOCK_GAP_DP`
+     *   （12，与「回今日 / 回本周」浮钮同一口径，不新写数）。
+     */
+    fun panelBottomInsetDp(
+        dockReliefDp: Double,
+        systemBottomDp: Double,
+        dockGapDp: Double,
+    ): Double = if (dockReliefDp > 0.0) {
+        maxOf(dockReliefDp + dockGapDp, systemBottomDp)
+    } else {
+        systemBottomDp
+    }
+
+    /**
      * 拖拽行程的**归一化基准**：从完全展开拖到收起，手指要走多少 dp。
      *
      * 必须按**这一页真实行数**算：`(行数 − 保留行数) × 行高`（Dart
