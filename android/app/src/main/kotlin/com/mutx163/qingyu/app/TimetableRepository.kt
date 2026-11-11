@@ -404,8 +404,13 @@ class TimetableRepository(
      * ——Dart `updateSettings` 走 `_persistActiveProfileState`，档案那份也会被写，
      * 只写顶层等于「设置页改了、桌面卡片纹丝不动」。
      *
-     * **失败语义**：两笔写（顶层 + 档案）。第二笔失败时把顶层写回旧值再上抛；
-     * 内存只在两笔都成功后才更新。补丁里值为 null = 删除该键（合并写的约定）。
+     * **单次事务（P1-14，2026-11-11）**：`store.saveSettingsPatch` 内部已经把补丁写到
+     * 三处（整机级全局真源、活动档案内嵌、顶层镜像），原实现外面**又**调了一次
+     * `saveSettingsPatchToActiveProfile(patch)`——同一份档案写两遍，且第二笔失败时
+     * 补偿只回滚顶层，档案内嵌那一份留着新值 ⇒ 两侧不一致（正是本方法旧注释里警告的情形）。
+     * 现在只走一次；失败时 [compensateSettingsPatchFailure] 把**顶层 + 活动档案**都补回调用前。
+     *
+     * 内存只在成功后才更新。补丁里值为 null = 删除该键（合并写的约定）。
      */
     fun updateSettingsPatch(patch: Map<String, Any?>) {
         updateSettingsPatchLocked(patch)
@@ -416,16 +421,18 @@ class TimetableRepository(
     private fun updateSettingsPatchLocked(patch: Map<String, Any?>) {
         if (patch.isEmpty()) return
         val previousTop = store.loadSettingsJson()
+        // 活动档案内嵌那份也要留快照：失败时两侧一起补回。
+        val previousActive = activeProfileSettingsJsonLocked()
         val mergedTop = LinkedHashMap<String, Any?>(previousTop)
         mergedTop.putAll(patch)
         val nextSettings = TimetableSettings.fromJson(mergedTop)
 
-        store.saveSettingsPatch(patch)
         try {
-            store.saveSettingsPatchToActiveProfile(patch)
+            // P1-14：单次调用即写全三处；**不要**再补一次
+            // saveSettingsPatchToActiveProfile——那是同一份档案的重复写。
+            store.saveSettingsPatch(patch)
         } catch (error: Throwable) {
-            // 第二笔失败：第一笔已落盘，把顶层写回旧文档（补偿失败不遮原始错误）。
-            runCatching { store.saveSettingsPatch(settingsDiffPatch(store.loadSettingsJson(), previousTop)) }
+            compensateSettingsPatchFailure(previousTop, previousActive)
             throw error
         }
 
@@ -435,6 +442,32 @@ class TimetableRepository(
             if (profile.id == activeId) profile.copy(settings = mergeSettings(profile.settings, patch)) else profile
         }
         pendingNotify = true
+    }
+
+    /**
+     * P1-14 失败补偿：把**顶层文档（含整机级全局镜像）**与**活动档案内嵌 settings**
+     * 两侧都按调用前的快照补回去。
+     *
+     * 为什么两笔都要求差写回而不是直接整份覆盖：底层只有合并写（[TimetableStore.saveSettingsPatch]
+     * / [TimetableStore.saveSettingsPatchToActiveProfile]），整份覆盖会顺手删掉盘上本层不认识的
+     * 250+ 个 Dart 侧键。差量用 [settingsDiffPatch]，目标里没有的键显式写 null。
+     *
+     * 补偿本身失败**不遮原始错误**（每一笔各自 runCatching，调用方仍收到第一现场异常）。
+     */
+    private fun compensateSettingsPatchFailure(
+        previousTop: Map<String, Any?>,
+        previousActive: Map<String, Any?>?,
+    ) {
+        runCatching {
+            val patch = settingsDiffPatch(store.loadSettingsJson(), previousTop)
+            if (patch.isNotEmpty()) store.saveSettingsPatch(patch)
+        }
+        if (previousActive == null) return
+        runCatching {
+            val current = activeProfileSettingsJsonLocked() ?: return@runCatching
+            val patch = settingsDiffPatch(current, previousActive)
+            if (patch.isNotEmpty()) store.saveSettingsPatchToActiveProfile(patch)
+        }
     }
 
     /**
