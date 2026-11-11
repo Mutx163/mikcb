@@ -24,14 +24,24 @@ enum class WeekCardBadge { CONFLICT }
  *
  * ## 「正在上课」为什么不做（这是 Dart 的原样，不是缺口）
  *
- * 2026-10-29 二轮复核（反证）：Dart 的日列确实有 `isHighlighted: item.isCurrentCourse`
- * （`timetable_day_column.dart:148`），但**周网格**调 `buildDisplayItems` 时没有传
- * `currentCourseIds`（`timetable_week_grid.dart:130-136`），而形参默认是
- * `const <String>{}`（`timetable_screen.dart:1212`）⇒ 周视图的 `isCurrentCourse`
- * **恒为 false**。所以 Compose 周视图不高亮「正在上课」与 Dart 一致；
- * 一审把它记成 P1 是误判，已在报告「二轮验真」里改正。
- * 日视图那边是真的要标（
- * `timetable_day_view_part.dart:592-599` 传了 currentCourseIds）。
+ * 证据链（行号按发布版 tag `v2.1.4.1` 逐一复核、2026-11-11 重锚；旧文档里那两处
+ * `timetable_week_grid.dart:130-136` / `timetable_screen.dart:1212` 已作废——前者在
+ * v2.1.4.1 已无此文件（周网格并回 `timetable_screen.dart`），后者是
+ * `_wrapHomeWithTopMenu(...)` 调用，不是 `currentCourseIds` 形参）：
+ * - 周网格的每一日列都是 `_buildDayColumn`（`lib/screens/timetable_screen.dart:4551`，
+ *   全仓唯一调用点 `:3338`），卡上确实写着 `isHighlighted: item.isCurrentCourse`（`:4653`）；
+ * - 但那一列的 `displayItems` 来自 `:3318-3324` 的 `_buildHomeDayDisplayItems(...)`：
+ *   只传 `provider` / `settings` / `week` / `dayOfWeek` / `myCourses`，**没有
+ *   `currentCourseIds`**；该形参默认空集 `const <String>{}`（同文件 `:5033`）⇒
+ *   周网格的 `isCurrentCourse` **恒为 false**，`:4653` 是发布版自己就没接的死路径；
+ * - 真会亮的只有**日视图**：调同一个函数时传了 `currentCourseIds`
+ *   （`lib/screens/timetable_day_view_part.dart:280` / `:968`，值 = 选中日恰为今天时的
+ *   `getCoursesInProgress(...)`），再在自己的卡上画「正在上课」角标与进度
+ *   （同文件 `:1160` / `:1241`）——用的是 `isCurrentCourse` 字段，不是
+ *   `CourseCard.isHighlighted` 那条边框高亮。
+ *
+ * 结论：Compose 周视图不高亮「正在上课」与 Dart 一致；一审把它记成 P1 是误判，
+ * 已在报告「二轮验真」里改正。2026-11-11 复核仍成立（行号已按 v2.1.4.1 重锚）。
  */
 data class WeekCardModel(
     val course: Course,

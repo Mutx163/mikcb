@@ -140,6 +140,13 @@ fun CourseGridCard(
     sectionHeight: Dp,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
+    /**
+     * 卡面高亮。**周视图不要接线**：发布版周网格（Dart）虽然写着
+     * `isHighlighted: item.isCurrentCourse`（`v2.1.4.1:lib/screens/timetable_screen.dart:4653`），
+     * 但那一列取 items 时没传 `currentCourseIds`（`:3318-3324`，形参默认空集 `:5033`）
+     * ⇒ 发布版里它恒为 false，是一条死路径。要让它亮属于产品变更（发布版周视图不高亮），
+     * 需拍板 + 真机对照，不是补漏。
+     */
     isHighlighted: Boolean = false,
     isHoliday: Boolean = false,
     /**
