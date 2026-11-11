@@ -342,5 +342,10 @@ fun DayViewScrollContent(
  *
  * 做成**列表首个 item** 而不是滚动区外的 Spacer：静止时首卡离星期栏 14dp，
  * 上滑时这道缝跟着内容一起滚走，不会变成一条永远滚不走的空带。
+ *
+ * **这是「第一张卡 ↔ 星期栏」唯一的那笔账**：月视图的卡片顶部接缝也复用它
+ *（2026-11-11 用户真机反馈「月视图卡片贴着星期栏、和日视图不一样」，宿主层
+ * `TimetableWeekPage` 的月视图滑入层直接引用本常量）。所以改这一个数 =
+ * 周/日/月三种首页视图的顶缝一起改；不要在别处再写一个 14。
  */
-private const val DAY_VIEW_TOP_SEAM_DP = 14f
+internal const val DAY_VIEW_TOP_SEAM_DP = 14f

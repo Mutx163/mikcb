@@ -86,6 +86,7 @@ import com.mutx163.qingyu.pages.settings.HomeMaterialRenderSpec
 import com.mutx163.qingyu.pages.settings.SettingsMaterialModel
 import com.mutx163.qingyu.pages.settings.SurfaceMaterialState
 import com.mutx163.qingyu.pages.shell.HomeBackgroundModel
+import com.mutx163.qingyu.pages.timetable.day.DAY_VIEW_TOP_SEAM_DP
 import com.mutx163.qingyu.pages.timetable.day.DayViewDataAssembler
 import com.mutx163.qingyu.pages.timetable.day.DayViewSharedFreeSource
 import com.mutx163.qingyu.pages.timetable.day.DayViewStrings
@@ -1359,7 +1360,22 @@ fun TimetableWeekPage(
                             }
                             .then(monthHitGate),
                     ) {
-                        monthContent()
+                        // ── 顶部接缝：与日视图第一张卡上沿同一条线（2026-11-11 用户真机反馈）──
+                        // 月页内（`MonthViewPage` 嵌入态）把日历卡直接铺在带子下沿，接缝是 0dp；
+                        // 日视图首卡离星期栏 [DAY_VIEW_TOP_SEAM_DP]（14dp）。两者的差只在这 14dp，
+                        // 所以在这里补：**月页可用高度也跟着少 14dp**，版面账（卡高 / 面板高）
+                        // 自己会重算，底部不会溢出、面板不会被顶出去。
+                        //
+                        // 为什么挂在宿主层而不是月页里：`month/MonthViewPage.kt` 当前有他人在途，
+                        // 不叠改；归属裁定后若月页内也加了顶缝，两处会叠（=28dp），由调度统一裁决。
+                        // 常量与日视图共用一份，不许在别处再写 14。
+                        Box(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .padding(top = DAY_VIEW_TOP_SEAM_DP.dp),
+                        ) {
+                            monthContent()
+                        }
                     }
                 }
             }
