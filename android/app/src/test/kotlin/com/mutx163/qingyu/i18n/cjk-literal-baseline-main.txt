@@ -5,7 +5,7 @@
 com/mutx163/qingyu/pages/diagnostics/MemoryStatsModel.kt:123
 com/mutx163/qingyu/pages/shell/ShellPageCatalog.kt:115
 com/mutx163/qingyu/pages/guide/MoreFeaturesModel.kt:101
-com/mutx163/qingyu/pages/import/SpreadsheetImportModel.kt:82
+com/mutx163/qingyu/pages/import/SpreadsheetImportModel.kt:71
 com/mutx163/qingyu/pages/weather/WeatherCityPickerModel.kt:81
 com/mutx163/qingyu/pages/guide/UserGuideModel.kt:80
 com/mutx163/qingyu/pages/showcase/MiuixShowcaseModel.kt:59
@@ -33,10 +33,20 @@ com/mutx163/qingyu/pages/import/IcsHeaderKeywords.kt:9
 com/mutx163/qingyu/pages/settings/SettingsLiveSelfCheckPage.kt:7
 com/mutx163/qingyu/pages/transfer/DataTransferPackageLogic.kt:7
 com/mutx163/qingyu/transfer/lan/LanEditRepositoryHost.kt:7
-com/mutx163/qingyu/calendar/WeekExpressionParser.kt:6
-com/mutx163/qingyu/pages/ShellPageIndex.kt:6
+com/mutx163/qingyu/calendar/WeekExpressionParser.kt:1
+com/mutx163/qingyu/pages/ShellPageIndex.kt:4
 com/mutx163/qingyu/pages/live/DisplaySettingsModel.kt:6
 com/mutx163/qingyu/pages/settings/SettingsGlassDockIconEditorPage.kt:6
+# 2026-11-11 审计 P1-9 周表达式单实现（导入域）：core/WeekExpressionParsing.kt 5 条中文
+# 是**解析语法**，不是屏上文案——两条正则里的「节」「全部|单|双」（剥 `[01-02节]` 后缀、
+# 识别 `(全部)/(单)/(双)` 括号模式）与 token 级单双后缀常量「单」「双」，必须与用户在表格/
+# 局域网输入框里敲的中文逐字一致；发布版 `week_expression_parser.dart` 也是硬编码同一批
+# 正则。改走 ArbText 会让「翻译改文案 = 解析器改语法」：六语 ARB 一旦本地化这两处，
+# 非中文语言下 `1-4单` 就解析失败。用户看到的报错/警告**不是**这些字面量，而是
+# `week_range_too_large` / `weeks_exceed_semester_clamped` 这类 ASCII 服务码，
+# 由现有 service message 层按语言本地化。本次搬家整体只减不增：原两份实现 82+6=88 条
+# → 现在 71+1+5=77 条（净 −11）。
+com/mutx163/qingyu/core/WeekExpressionParsing.kt:5
 com/mutx163/qingyu/pages/about/ChangelogModel.kt:5
 com/mutx163/qingyu/pages/settings/SettingsAppearancePage.kt:5
 com/mutx163/qingyu/pages/settings/SettingsHomeWidgetPage.kt:5
@@ -57,7 +67,7 @@ com/mutx163/qingyu/pages/import/ImportTemplateModel.kt:4
 com/mutx163/qingyu/pages/import/warehouse/AiImageImportModel.kt:4
 com/mutx163/qingyu/pages/import/warehouse/WarehouseRepositoryModels.kt:4
 com/mutx163/qingyu/pages/settings/SettingsGeneralPage.kt:4
-com/mutx163/qingyu/pages/settings/SettingsHomeNavigationPage.kt:4
+com/mutx163/qingyu/pages/settings/SettingsHomeNavigationPage.kt:2
 com/mutx163/qingyu/pages/ShellPageIndexScreen.kt:3
 com/mutx163/qingyu/pages/diagnostics/LiveTestingFixtureActions.kt:3
 com/mutx163/qingyu/pages/import/warehouse/WarehouseFormLabels.kt:3
