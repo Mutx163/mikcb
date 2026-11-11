@@ -1,11 +1,11 @@
 package com.mutx163.qingyu.pages.settings
 
+import com.mutx163.qingyu.testutil.readKotlinSourceNoStrings
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
-import java.io.File
 
 /**
  * 控制卡 / 底栏 / 行尾转圈 三条观感能力的守卫（2026-11-10）。
@@ -23,7 +23,8 @@ import java.io.File
  *
  * 1. 旧断言直接在**原始源码**里 `contains("controlCardTitle(node.label)?.let {")`——
  *    而渲染层的 KDoc 注释里也写着这串字，把真调用删掉、只留注释，这条守卫照样绿。
- *    现在一律先 `stripCommentsAndStrings` 再匹配（与 `RowDividerGuardTest` 同家法）。
+ *    现在一律先剥注释再匹配；2026-11-11 收波把自带剥离器换成 testutil 的
+ *    `readKotlinSourceNoStrings`（NoStrings 档，理由见下方「读源码」小节）。
  * 2. 正向钉住底栏与行尾转圈：只钉「有这个名字」不够，钉**具体写法**
  *    （`buttonColorsPrimary()`、busy 时 `QingyuLoadingInButtonLarge()`、`trailingSpinner = data.locating`）。
  *
@@ -36,33 +37,20 @@ import java.io.File
  */
 class SettingsControlCardTitleGuardTest {
 
-    private fun androidSrc(): File {
-        var dir: File? = File(System.getProperty("user.dir")).absoluteFile
-        while (dir != null) {
-            val candidate = File(dir, "android/app/src")
-            if (candidate.isDirectory) return candidate
-            val direct = File(dir, "app/src")
-            if (direct.isDirectory && File(dir, "app/build.gradle").isFile) return direct
-            dir = dir.parentFile
-        }
-        throw AssertionError(
-            "找不到 android/app/src —— 守卫无法验证，按失败处理（不许静默跳过）。" +
-                "当前工作目录：${System.getProperty("user.dir")}",
-        )
-    }
+    // ---------------- 读源码：走 testutil 共享剥离（2026-11-11 迁移，P6-G2 收波） ----------------
+    //
+    // 选档理由：本文件所有判据都是**代码事实**——某调用在不在（`controlCardTitle(node.label)`、
+    // `ButtonDefaults.buttonColorsPrimary(`）、某分支体里出现什么（紧凑档不许出现 `BasicComponent(`）、
+    // 某接线有没有做（`trailingSpinner = data.locating`）。没有任何一条要去读字符串字面量的**内容**，
+    // 所以统一用 **NoStrings 档**（剥注释 + 中性化字符串）：
+    // 注释里写着判据名、或日志/提示文案里含同名片段，都不该让判据假绿或假红。
+    // 若将来加一条「某字面量必须/不许出现」的判据，改那一处走 readKotlinSourceNormalized 即可。
 
-    private fun readSource(relative: String): String {
-        val file = File(androidSrc(), relative)
-        assertTrue("源码不存在：${file.path}", file.isFile)
-        return file.readText()
-    }
+    /** 渲染层源码的代码骨架（注释与字符串内容都已抹掉）。 */
+    private fun renderersCode(): String = readKotlinSourceNoStrings(RENDERERS)
 
-    private fun renderersSource(): String = readSource(
-        "composeP1/kotlin/com/mutx163/qingyu/pages/settings/SettingsPageRenderers.kt",
-    )
-
-    /** 渲染层源码**剥掉注释与字符串**后的正文（防止注释里写着判据名就假绿）。 */
-    private fun renderersCode(): String = stripCommentsAndStrings(renderersSource())
+    /** 天气页源码的代码骨架（同上：接线判据只看代码）。 */
+    private fun weatherCode(): String = readKotlinSourceNoStrings(WEATHER_PAGE)
 
     // ------------------------------------------------------------ A：空标题不渲染
 
@@ -140,9 +128,7 @@ class SettingsControlCardTitleGuardTest {
         )
         assertFalse("默认必须 false（既有行零变化）", plain.trailingSpinner)
 
-        val weather = readSource(
-            "main/kotlin/com/mutx163/qingyu/pages/settings/SettingsWeatherPage.kt",
-        )
+        val weather = weatherCode()
         assertTrue(
             "天气页「使用当前位置」定位中必须接 trailingSpinner = data.locating" +
                 "（发布版 settings_weather.dart:71-78）",
@@ -210,61 +196,15 @@ class SettingsControlCardTitleGuardTest {
 
     // ------------------------------------------------------------ 判据工具
 
-    /** 剥掉行注释、块注释与字符串字面量（普通 + `"""` 原始串），保留换行防行号漂移。 */
-    private fun stripCommentsAndStrings(text: String): String {
-        val out = StringBuilder(text.length)
-        var i = 0
-        var blockDepth = 0
-        while (i < text.length) {
-            if (blockDepth > 0) {
-                when {
-                    text.startsWith("/*", i) -> {
-                        blockDepth++
-                        i += 2
-                    }
-                    text.startsWith("*/", i) -> {
-                        blockDepth--
-                        i += 2
-                    }
-                    else -> {
-                        if (text[i] == '\n') out.append('\n')
-                        i++
-                    }
-                }
-                continue
-            }
-            if (text.startsWith("//", i)) {
-                while (i < text.length && text[i] != '\n') i++
-                continue
-            }
-            if (text.startsWith("/*", i)) {
-                blockDepth = 1
-                i += 2
-                continue
-            }
-            if (text.startsWith("\"\"\"", i)) {
-                var j = i + 3
-                while (j < text.length && !text.startsWith("\"\"\"", j)) j++
-                i = if (j >= text.length) text.length else j + 3
-                continue
-            }
-            if (text[i] == '"') {
-                i++
-                while (i < text.length) {
-                    when {
-                        text[i] == '\\' -> i += 2
-                        text[i] == '"' -> {
-                            i++
-                            break
-                        }
-                        else -> i++
-                    }
-                }
-                continue
-            }
-            out.append(text[i])
-            i++
-        }
-        return out.toString()
+    // 原先这里自带 `stripCommentsAndStrings`（行/块注释 + 普通/原始字符串）。
+    // 2026-11-11 收波：删掉私有剥离器，统一走 testutil 的 readKotlinSourceNoStrings——
+    // 自带一份的问题是本仓最全的实现散在某个守卫里，新守卫抄旧守卫就抄到弱版本
+    // （旧实现不识别字符串里的 `//`，会把字符串后面的真代码当成注释吃掉）。
+
+    private companion object {
+        const val RENDERERS =
+            "android/app/src/composeP1/kotlin/com/mutx163/qingyu/pages/settings/SettingsPageRenderers.kt"
+        const val WEATHER_PAGE =
+            "android/app/src/main/kotlin/com/mutx163/qingyu/pages/settings/SettingsWeatherPage.kt"
     }
 }
