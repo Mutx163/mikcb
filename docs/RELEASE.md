@@ -28,7 +28,7 @@
 
 [android-build.yml](../.github/workflows/android-build.yml) 分五个 job：
 
-1. `Analyze and Test`：先看同 SHA 的 `ci.yml` 有没有 `main` 上的全绿记录，有就跳过单测（约 7～8 分钟省下来），没有才跑 `:app:testDevDebugUnitTest`。不管是否复用，发版元数据校验每次必跑。
+1. `Analyze and Test`：先看同 SHA 的 `ci.yml` 有没有 `main` 上的全绿记录，有就跳过单测（约 7～8 分钟省下来），没有才跑 `:app:testProdDebugUnitTest`。不管是否复用，发版元数据校验每次必跑；手动触发（`workflow_dispatch`）时 `inputs.tag` 填要校验的版本号（不带 `v`），留空则按 `GITHUB_REF_NAME` 推断。
 2. `Build and Publish Android APK`：只在 `refs/tags/v*` 上跑。读版本号 → 准备签名 → `:app:assembleProdRelease` → 选包 + 两道 5 MB 门禁 → 上传 artifact 与蒲公英 → 建或改 GitHub Release。
 3. `Sync releases JSON to docs`：触发 `update-docs-releases.yml`。
 4. `Sync code to GitCode`：把 `main` 与全部 tag 同步到 GitCode 镜像。
