@@ -1,10 +1,10 @@
 {
-  "updatedAt": "2026-11-10T08:44:54+00:00",
+  "updatedAt": "2026-11-11T08:10:54+00:00",
   "source": "https://github.com/Mutx163/qingyu_warehouse",
   "sourceRef": "main",
   "counts": {
-    "total": 277,
-    "schools": 272,
+    "total": 278,
+    "schools": 273,
     "generic": 5
   },
   "schools": [
@@ -524,6 +524,13 @@
       "name": "广西电力职业技术学院",
       "initial": "G",
       "resourceFolder": "GXDLXY",
+      "category": "school"
+    },
+    {
+      "id": "GXSTNU",
+      "name": "广西科技师范学院",
+      "initial": "G",
+      "resourceFolder": "GXSTNU",
       "category": "school"
     },
     {
