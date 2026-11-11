@@ -267,6 +267,11 @@ class SheetBottomGapGuardTest {
             // 否则内容会被系统导航栏盖住（2026-11-08 去 Flutter 化收尾时新增——
             // 它不是弹层正文，不走 SheetContentBottomGap 的 IME 分流）。
             "pages/about/AboutUpdatePage.kt",
+            // 月视图（2026-11-11）：整页自绘的嵌入页、**不是弹层正文**——导航栏内边距
+            // 由页面自取 `WindowInsets.navigationBars`，再经坞避让 `max()` 收口
+            //（纯函数 `MonthPanelModel.panelBottomInsetDp`，四条单测钉着）；不存在
+            // 「键盘弹出时弹层已抬、正文又叠一截导航栏」的场景。
+            "pages/timetable/month/MonthViewPage.kt",
         )
     }
 }
