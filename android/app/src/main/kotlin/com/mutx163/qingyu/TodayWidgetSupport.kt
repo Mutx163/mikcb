@@ -158,6 +158,14 @@ object TodayWidgetSupport {
     /** TA 绑定（周偏移 + 情侣三色），与 Dart partner_timetable_binding 同源。 */
     private const val KEY_PARTNER_BINDING = "flutter.partner_timetable_binding"
 
+    /**
+     * `flutter.timetable_profiles` 的**单槽解析缓存**：一轮刷新里 10 张卡各读一次同一份
+     * 档案，原来每张卡都 `JSONArray(...)` 全量解析一遍（7 今日/考试 + 3 统计×2 + 重排 ≈ 14 次）。
+     * 缓存按**源文本**比对，课表被写/换课表后文本必变，自动重新解析，不会返回旧对象。
+     */
+    private val profilesPayloadCache = WidgetParseCache<JSONArray> { raw -> JSONArray(raw) }
+
+
     /** 无档案可读时的外观兜底，必须与 TimetableSettings 默认值一致。 */
     const val DEFAULT_CORNER_RADIUS_DP = 22
     const val DEFAULT_HEIGHT_ADJUSTMENT_DP = -11
@@ -1934,10 +1942,9 @@ internal fun findNextRefreshAtMillis(
      */
     fun readActiveProfileRawJson(context: Context): String? {
         val flutterPrefs = context.getSharedPreferences(FLUTTER_PREFS_NAME, Context.MODE_PRIVATE)
-        val profilesPayload = flutterPrefs.getString(KEY_TIMETABLE_PROFILES, null) ?: return null
         val activeProfileId = flutterPrefs.getString(KEY_ACTIVE_PROFILE_ID, null)
         return try {
-            val profiles = JSONArray(profilesPayload)
+            val profiles = parsedProfiles(context) ?: return null
             var fallbackRaw: String? = null
             for (index in 0 until profiles.length()) {
                 val profile = profiles.optJSONObject(index) ?: continue
@@ -1959,10 +1966,9 @@ internal fun findNextRefreshAtMillis(
 
     fun readActiveProfileJson(context: Context): JSONObject? {
         val flutterPrefs = context.getSharedPreferences(FLUTTER_PREFS_NAME, Context.MODE_PRIVATE)
-        val profilesPayload = flutterPrefs.getString(KEY_TIMETABLE_PROFILES, null) ?: return null
         return try {
             val activeProfileId = flutterPrefs.getString(KEY_ACTIVE_PROFILE_ID, null)
-            val profiles = JSONArray(profilesPayload)
+            val profiles = parsedProfiles(context) ?: return null
             var fallbackProfile: JSONObject? = null
             for (index in 0 until profiles.length()) {
                 val profile = profiles.optJSONObject(index) ?: continue
@@ -1984,10 +1990,8 @@ internal fun findNextRefreshAtMillis(
     /** 按 id 找任意课表（含 TA 课表）；找不到 = 课表已被删除/解绑。 */
     fun readProfileJsonById(context: Context, profileId: String): JSONObject? {
         if (profileId.isBlank()) return null
-        val flutterPrefs = context.getSharedPreferences(FLUTTER_PREFS_NAME, Context.MODE_PRIVATE)
-        val profilesPayload = flutterPrefs.getString(KEY_TIMETABLE_PROFILES, null) ?: return null
         return try {
-            val profiles = JSONArray(profilesPayload)
+            val profiles = parsedProfiles(context) ?: return null
             for (index in 0 until profiles.length()) {
                 val profile = profiles.optJSONObject(index) ?: continue
                 if (profile.optString("id") == profileId) {
@@ -1995,6 +1999,22 @@ internal fun findNextRefreshAtMillis(
                 }
             }
             null
+        } catch (_: Exception) {
+            null
+        }
+    }
+
+    /**
+     * 解析后的课表档案数组：**一次刷新内只解析一次**（[profilesPayloadCache]）。
+     *
+     * 缓存按源文本比对，课表被写/换档后文本必变 ⇒ 自动重新解析，不会拿到旧对象；
+     * 解析失败返回 null，与改造前「坏 JSON 当作无档案」的行为一致。
+     */
+    private fun parsedProfiles(context: Context): JSONArray? {
+        val flutterPrefs = context.getSharedPreferences(FLUTTER_PREFS_NAME, Context.MODE_PRIVATE)
+        val payload = flutterPrefs.getString(KEY_TIMETABLE_PROFILES, null) ?: return null
+        return try {
+            profilesPayloadCache.get(payload)
         } catch (_: Exception) {
             null
         }
