@@ -311,16 +311,22 @@ tasks.withType(Test).configureEach { test ->
 // 随 Flutter Gradle 插件一并移除——libapp.so 已不存在，残留的 MLKit 等原生库的
 // 打包不依赖这条强制重跑；若将来 AAR 原生库变更出现 stale 包裹再考虑加回。
 
-// 无签名配置时，仅当任务图真的包含 release 打包任务（assemble/bundle 前缀
-// + release 名）才报错；纯 JVM 测试/分析任务不被连坐。报错文案与原配置期
+// 无签名配置时，仅当任务图真的包含需要签名的打包任务（assemble/bundle 前缀
+// + release 或 bench 名）才报错；纯 JVM 测试/分析任务不被连坐。报错文案与原配置期
 // 校验一致，指引不变。CNB/GitHub 发布流水线均注入真实签名，不受影响。
+//
+// 为什么要把 bench 算进来：`bench` 构建类型是 `initWith(release)`（见上面 buildTypes），
+// 继承 release 的整档优化，也继承 release 的签名配置——`assemblePerfBench` /
+// `assembleProdBench` 这类任务名里没有 "release"，只认 release 就会漏判，直到打包末端
+// 才因为拿不到签名而失败（或产出未签名 APK）。bench 与 release 同属「需要签名的一类」。
 gradle.taskGraph.whenReady { graph ->
     if (hasReleaseSigning) {
         return
     }
     def needsSigning = graph.allTasks.any { task ->
         def name = task.name.toLowerCase()
-        (name.startsWith("assemble") || name.startsWith("bundle")) && name.contains("release")
+        (name.startsWith("assemble") || name.startsWith("bundle")) &&
+                (name.contains("release") || name.contains("bench"))
     }
     if (needsSigning) {
         throw new GradleException(
