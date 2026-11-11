@@ -34,7 +34,8 @@ internal object LongestStreakLogic {
      */
     fun longestStreak(hasClassOnDay: BooleanArray): Int {
         require(hasClassOnDay.size == DAYS_IN_WEEK) {
-            "hasClassOnDay 必须是 $DAYS_IN_WEEK 天向量（实际 ${hasClassOnDay.size}）"
+            // 开发者向异常消息（不上屏），按 CJK 棘轮用英文。
+            "hasClassOnDay must be a $DAYS_IN_WEEK-day boolean vector (got ${hasClassOnDay.size})"
         }
         val expanded = hasClassOnDay + hasClassOnDay
         var maxStreak = 0
