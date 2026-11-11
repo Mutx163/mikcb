@@ -4,7 +4,15 @@ on:
   push:
     tags:
       - 'v*'
+  # 手动触发跑在分支上（GITHUB_REF_NAME 是分支名，不是标签），版本闸没法从 ref 推断
+  # 该对哪个版本打包，所以必须能显式给版本号；留空则退回按 ref 推断（见 Release
+  # metadata 步骤）。
   workflow_dispatch:
+    inputs:
+      tag:
+        description: '要校验/发布的版本号（不带 v，如 3.0.0-1）；留空按当前 ref 推断'
+        required: false
+        default: ''
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -58,9 +66,16 @@ jobs:
       # 去 Flutter 化 P4-D：版本源已从 pubspec.yaml 换到 android/version.properties。
       - name: Release metadata (fast)
         shell: bash
+        env:
+          # 手动触发时由 inputs.tag 显式给版本号；tag 推送时该值为空，退回按 ref 推断。
+          INPUT_TAG: ${{ github.event.inputs.tag }}
         run: |
           set -euo pipefail
-          tag="${GITHUB_REF_NAME#v}"
+          # tag 推送：GITHUB_REF_NAME = "v3.0.0-1"；手动触发（workflow_dispatch）：
+          # GITHUB_REF_NAME 是分支名 —— 直接 #v 会得到分支名，版本闸必红。所以优先用
+          # inputs.tag，两边都容忍带不带前导 v。
+          tag="${INPUT_TAG:-${GITHUB_REF_NAME#v}}"
+          tag="${tag#v}"
           notes="docs/releases/v${tag}.md"
           bytes=$(head -c 3 android/version.properties | od -An -tx1 | tr -d ' \n')
           if [ "${bytes}" = "efbbbf" ]; then
@@ -69,7 +84,11 @@ jobs:
           version=$(sed -n 's/^versionName=//p' android/version.properties | tr -d '\r')
           expected=$(printf '%s' "${version}" | awk -F'+' '{print $1}' | sed -E 's/-0$//; s/-([0-9]+)$/.\1/')
           if [ "${expected}" != "${tag}" ]; then
-            echo "ERROR: tag ${tag} 与 pubspec ${version} 不配套（按 pubspec 应打 v${expected}）"; exit 1
+            echo "ERROR: tag ${tag} 与 android/version.properties 的 ${version} 不配套（按版本应打 v${expected}）"
+            if [ "${GITHUB_EVENT_NAME}" = "workflow_dispatch" ] && [ -z "${INPUT_TAG}" ]; then
+              echo "手动触发请在 inputs.tag 填版本号（不带 v，例如 ${expected}）" >&2
+            fi
+            exit 1
           fi
           if [ ! -s "${notes}" ]; then
             echo "ERROR: 缺少发版说明 ${notes}"; exit 1
@@ -92,13 +111,17 @@ jobs:
 
       # 去 Flutter 化 P4-D：Dart 层已删除，检查项换成 Kotlin/JVM 单测（Gradle）。
       # 复用绿灯时跳过，与原先 analyze 的口径一致。
+      # 变体口径：CI / 发布链一律 prod（与 ci.yml、.cnb.yml 同一条命令）；本地 L2 可以用
+      # dev（scripts/safe-gradle.ps1 默认 :app:testDevDebugUnitTest），两者跑同一份 src/test。
       - name: Unit tests (JVM)
         if: steps.reuse.outputs.reuse != 'true'
-        run: cd android && ./gradlew :app:testDevDebugUnitTest --no-daemon
+        run: cd android && ./gradlew :app:testProdDebugUnitTest --no-daemon
 
   publish:
     name: Build and Publish Android APK
     needs: check
+    # 只对真标签发布：手动触发（workflow_dispatch）跑的是分支 ref，这里会跳过，
+    # 等于只跑 check 那套校验。要真发版仍然打 v* 标签。
     if: startsWith(github.ref, 'refs/tags/v')
     runs-on: ubuntu-latest
     env:
