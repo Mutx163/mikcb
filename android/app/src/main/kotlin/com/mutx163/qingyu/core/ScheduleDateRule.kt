@@ -92,9 +92,11 @@ data class ScheduleDateRule(
                 else -> throw DartFormatException("schedule date rule enabled must be a bool")
             }
             return ScheduleDateRule(
-                id = rawId as String? ?: "",
-                name = ((rawName as String?) ?: "").trim(),
-                timeSchemeId = rawSchemeId as String? ?: "",
+                // 上面三处 `!is String` 已经拒收，原先的 `as String?` 强转是多余的（编译器
+                // 有 `no cast needed` 警告）；这里直接用 smart cast 后的可空字符串。
+                id = rawId ?: "",
+                name = (rawName ?: "").trim(),
+                timeSchemeId = rawSchemeId ?: "",
                 startDate = rawStartDate.trim(),
                 endDate = rawEndDate.trim(),
                 enabled = enabled,

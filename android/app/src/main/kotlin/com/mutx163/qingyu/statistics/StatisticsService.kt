@@ -922,8 +922,14 @@ object StatisticsService {
         }.sortedWith(compareByDescending { it.weeklySections })
     }
 
-    /** 计算课程在指定周次前的有效周数（service:1045-1053）。 */
-    private fun countActiveWeeks(course: CourseStub, currentWeek: Int): Int {
+    /**
+     * 计算课程在指定周次前的有效周数（service:1045-1053）。
+     *
+     * P1-12 补钉：`internal` 而非 `private`，供 `StatisticsWidgetWeekParityTest` 与
+     * 桌面小组件链路（`WidgetStatsLogic.countActiveWeeks`）做逐周对拍——两条链路
+     * 语义近似但一直零钉住。
+     */
+    internal fun countActiveWeeks(course: CourseStub, currentWeek: Int): Int {
         var count = 0
         for (week in 1..currentWeek) {
             if (course.isActiveInWeek(week)) {
