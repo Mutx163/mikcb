@@ -8,7 +8,7 @@ import java.util.Locale
  * ## 为什么 `.zh` 还在、但界面不许再读它
  *
  * `zh` 保留成**纯字面量**，只给两条路径用：
- * 1. `*Strings*ParityTest` 与 `lib/l10n/app_zh.arb` 逐字对拍（断言原文，不受当前语言影响）；
+ * 1. `*Strings*ParityTest` 与 `i18n/app_zh.arb` 逐字对拍（断言原文，不受当前语言影响）；
  * 2. [AppLocaleRuntime] 在目标语言缺键时兜底。
  *
  * 界面与模型层一律读 [text]：它按当前语言查 [ArbCatalog]。
