@@ -5485,7 +5485,7 @@
   "wallpaperHistoryRemoveBadgeTooltip": "最近使った壁紙から削除",
   "wallpaperHistoryRemoveConfirmHint": "最近使った壁紙から削除され、画像ファイルも一緒に削除されます",
   "homePageWallpaperFileMissingTitle": "画像ファイルがありません",
-  "homePageWallpaperFileMissingSubtitle": "ここをタップして選び直す",
+  "homePageWallpaperFileMissingSubtitle": "単色の背景に戻りました。下の「壁紙を変更」から選び直してください",
   "homePageWallpaperFileMissingToast": "壁紙ファイルがないため単色の背景に戻りました。新しい画像を選んでください",
   "wallpaperPositionPickerTitle": "壁紙の表示位置を調整",
   "wallpaperPositionPickerResetTooltip": "リセット",
@@ -5520,7 +5520,7 @@
       }
     }
   },
-  "wallpaperGalleryShowingCached": "前回の画像を表示中",
+  "wallpaperGalleryShowingCached": "通信が不安定です。前回の画像を表示しています",
   "bingWallpaperDateToday": "今日",
   "bingWallpaperDateYesterday": "昨日",
   "bingWallpaperDateMonthDay": "{month} 月 {day} 日",

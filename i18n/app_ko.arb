@@ -5533,7 +5533,7 @@
   "wallpaperHistoryRemoveBadgeTooltip": "최근 사용에서 삭제",
   "wallpaperHistoryRemoveConfirmHint": "최근 사용에서 삭제되며 이미지 파일도 함께 삭제됩니다",
   "homePageWallpaperFileMissingTitle": "이미지 파일이 없습니다",
-  "homePageWallpaperFileMissingSubtitle": "여기를 눌러 다시 선택",
+  "homePageWallpaperFileMissingSubtitle": "단색 배경으로 되돌렸습니다. 아래 '배경화면 바꾸기'에서 다시 선택하세요",
   "homePageWallpaperFileMissingToast": "배경화면 파일이 없어 단색 배경으로 되돌렸습니다. 새 이미지를 선택하세요",
   "wallpaperPositionPickerTitle": "배경화면 표시 위치 조정",
   "wallpaperPositionPickerResetTooltip": "재설정",
@@ -5575,7 +5575,7 @@
       }
     }
   },
-  "wallpaperGalleryShowingCached": "이전 이미지 표시",
+  "wallpaperGalleryShowingCached": "네트워크가 원활하지 않습니다. 이전에 불러온 이미지를 표시합니다",
   "bingWallpaperDateToday": "오늘",
   "bingWallpaperDateYesterday": "어제",
   "bingWallpaperDateMonthDay": "{month}월 {day}일",

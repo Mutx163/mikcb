@@ -5512,7 +5512,7 @@
   "wallpaperHistoryRemoveBadgeTooltip": "從最近使用中移除",
   "wallpaperHistoryRemoveConfirmHint": "會由最近使用中移除，圖片檔案亦會一併刪除",
   "homePageWallpaperFileMissingTitle": "圖片檔案已遺失",
-  "homePageWallpaperFileMissingSubtitle": "撳呢度重新揀一張",
+  "homePageWallpaperFileMissingSubtitle": "已還原做純色背景，撳下面更換桌布重選",
   "homePageWallpaperFileMissingToast": "桌布檔案已遺失，已還原做純色背景，請重新揀一張",
   "wallpaperPositionPickerTitle": "調整桌布顯示位置",
   "wallpaperPositionPickerResetTooltip": "重設",
@@ -5554,7 +5554,7 @@
       }
     }
   },
-  "wallpaperGalleryShowingCached": "顯示的是上次的圖",
+  "wallpaperGalleryShowingCached": "網絡不太順暢，顯示的是上次的圖",
   "bingWallpaperDateToday": "今日",
   "bingWallpaperDateYesterday": "尋日",
   "bingWallpaperDateMonthDay": "{month} 月 {day} 日",
