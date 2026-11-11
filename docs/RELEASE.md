@@ -19,7 +19,7 @@
 |---|---|---|
 | [ci.yml](../.github/workflows/ci.yml) | 任意分支 push、PR | 校验 `version.properties`（BOM + 格式）、校验 Action 固定 SHA、跑 `:app:testProdDebugUnitTest` |
 | [android-build.yml](../.github/workflows/android-build.yml) | `v*` tag push、手动 | 校验发版元数据 → 签名构建 → 5 MB 门禁 → 建或改 GitHub Release → 触发 `latest.json` 更新 → 同步 GitCode |
-| [update-docs-releases.yml](../.github/workflows/update-docs-releases.yml) | Release 事件、每 6 小时、手动 | 扫全部 Release，重写 `docs/releases/latest.json` 与 `feed.json`，跳过小于 5 MB 的附件 |
+| [update-docs-releases.yml](../.github/workflows/update-docs-releases.yml) | Release 事件、每 6 小时、手动 | 扫全部 Release，重写 `docs/releases/latest.json` 与 `feed.json`，跳过小于 5 MB 的附件；并校验 `assets/docs/releases/` 更新日志镜像与 `docs/releases/v*.md` 一致 |
 | [sync-main-to-gitcode.yml](../.github/workflows/sync-main-to-gitcode.yml) | push 到 `main`、文档工作流结束、每天 | 把 `main` 同步到 GitCode 镜像仓库 |
 | [sync-release-channel-to-gitcode.yml](../.github/workflows/sync-release-channel-to-gitcode.yml) | Release 事件、手动 | 把预发布 / 正式状态同步到 GitCode 对应 Release |
 | [gitcode-backfill.yml](../.github/workflows/gitcode-backfill.yml) | 手动 | 把某个历史 tag 补同步到 GitCode（真 APK + 说明） |
@@ -296,6 +296,12 @@ GitHub 侧需要这些东西（缺哪条，对应环节静默跳过或报错）�
 ## 十、更新日志写法
 
 `docs/releases/v*.md` 是给用户看的版本摘要，不是提交记录。
+
+> **只写 `docs/releases/` 不算完**：APK 里读的是 `android/app/src/main/assets/docs/releases/`，
+> 这份镜像没有自动化、必须手工拷一遍：
+> `cp docs/releases/v*.md android/app/src/main/assets/docs/releases/`。
+> 漏了就是「应用内更新日志少最新一版」；`update-docs-releases.yml` 的
+> `Verify assets mirror of release notes` 步骤会把清单/逐字节/本次 tag 首行的不一致判红。
 
 ### 1. 先判「最后已发布」
 

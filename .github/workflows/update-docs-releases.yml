@@ -37,6 +37,77 @@ jobs:
           # 没配就退回内置 token，行为与以前一致（会推失败，但不影响生成）。
           token: ${{ secrets.DOCS_PUSH_TOKEN != '' && secrets.DOCS_PUSH_TOKEN || github.token }}
 
+      # 更新日志镜像校验闸（审计 P1-6，2026-11-11 加）：
+      # APK 里的更新日志读的是 android/app/src/main/assets/docs/releases/，这份镜像是
+      # **手工**从 docs/releases/ 拷过去的——没有任何 workflow 自动拷，历史上一直是人工
+      # 提交同步（最近一次 b289e1b6a）。漏同步的症状是「应用内更新日志少最新一版」，
+      # 而且 FlutterAssetsDecouplingGuardTest 只校验「不少于回退清单」，抓不到新增缺失。
+      #
+      # 这里只设闸、不拷贝（拷贝保持手工，避免 bot 提交噪音和 CI 自触发）：
+      #   · 份数/清单必须一致——docs/releases 下只有 `v*.md` 进包，另外 3 份内部文档
+      #     （*-hard-gates.md / *-runbook.md / *-upgrade-checklist.md）不进包；
+      #   · 同名文件逐字节一致——镜像不是摘抄；
+      #   · 本次 release 事件那份 tag 说明，首行必须是 `# v<tag>`：历史上有 14 份老说明的
+      #     标题是「# 轻屿课表 1.1.0」这种，所以只判本次 tag，不做全量首行校验。
+      - name: Verify assets mirror of release notes
+        shell: bash
+        env:
+          RELEASE_TAG: ${{ github.event.release.tag_name }}
+          RELEASE_ACTION: ${{ github.event.action }}
+        run: |
+          set -euo pipefail
+          DOCS=docs/releases
+          ASSETS=android/app/src/main/assets/docs/releases
+          fail=0
+
+          find "$DOCS" -maxdepth 1 -type f -name 'v*.md' -printf '%f\n' | sort > /tmp/docs-notes.txt
+          find "$ASSETS" -maxdepth 1 -type f -printf '%f\n' | sort > /tmp/assets-notes.txt
+          echo "docs/releases 发布说明 $(wc -l < /tmp/docs-notes.txt) 份；assets 镜像 $(wc -l < /tmp/assets-notes.txt) 份"
+          if ! diff -u /tmp/docs-notes.txt /tmp/assets-notes.txt; then
+            echo "::error file=$ASSETS::清单与 $DOCS 的 v*.md 不一致（- 是 docs 独有，即漏拷；+ 是 assets 独有，即早该删）"
+            fail=1
+          fi
+
+          while IFS= read -r name; do
+            if [ -f "$ASSETS/$name" ] && ! cmp -s "$DOCS/$name" "$ASSETS/$name"; then
+              echo "::error file=$ASSETS/$name::内容与 $DOCS/$name 不一致（手工同步时漏更新）"
+              fail=1
+            fi
+          done < /tmp/docs-notes.txt
+
+          if [ -n "${RELEASE_TAG}" ] && [ "${RELEASE_ACTION}" != "deleted" ] && [ "${RELEASE_ACTION}" != "unpublished" ]; then
+            note="$DOCS/${RELEASE_TAG}.md"
+            mirror="$ASSETS/${RELEASE_TAG}.md"
+            if [ ! -s "$note" ]; then
+              echo "::error file=$note::本次发版缺少说明文件（tag ${RELEASE_TAG}）"
+              fail=1
+            else
+              head_line=$(awk 'NF{print; exit}' "$note" | tr -d '\r')
+              if [ "${head_line}" != "# ${RELEASE_TAG}" ]; then
+                echo "::error file=$note::首行是 '${head_line}'，应为 '# ${RELEASE_TAG}'"
+                fail=1
+              fi
+              if [ ! -f "$mirror" ]; then
+                echo "::error file=$mirror::assets 里没有本次发版的说明（应用内更新日志会缺这一版）"
+                fail=1
+              else
+                head_mirror=$(awk 'NF{print; exit}' "$mirror" | tr -d '\r')
+                if [ "${head_mirror}" != "# ${RELEASE_TAG}" ]; then
+                  echo "::error file=$mirror::镜像首行是 '${head_mirror}'，应为 '# ${RELEASE_TAG}'"
+                  fail=1
+                fi
+              fi
+            fi
+          else
+            echo "本次不是 release 事件（或事件为删除/撤销），跳过「本次 tag」首行校验"
+          fi
+
+          if [ "$fail" -ne 0 ]; then
+            echo "手工同步：cp docs/releases/v*.md android/app/src/main/assets/docs/releases/"
+            exit 1
+          fi
+          echo "assets 更新日志镜像一致"
+
       - name: Fetch Latest Releases and Generate JSON
         env:
           # secret 不能内插进 run：它会出现在 runner 的进程 argv 里（同机其他进程
