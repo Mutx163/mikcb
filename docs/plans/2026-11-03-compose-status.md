@@ -7,7 +7,7 @@
 > 已于 2026-11-03 合并至此，各自顶部只留一句「已合并」。它们以后只作规格或历史记录，
 > **状态列不再更新**。
 >
-> **2026-11-11 校准**（依据代码与提交，未改任何代码）：核销 R02 / R06 / R13 / R14 四条已失真待办；
+> **2026-11-11 校准**（依据代码与提交，未改任何代码）：核销 R02 / R06 / R09 / R13 / R14 五条已失真待办；
 > 页面 `.kt` 计数、认领区份数与「进行中」份数按实测改写。逐条证据见文末「变更记录」。
 
 ---
@@ -50,7 +50,7 @@ CI 权威变体是 `:app:testProdDebugUnitTest`（`.github/workflows/ci.yml` 的
 
 | # | 事项 | 现状 / 卡点 |
 |---|---|---|
-| **R01** | **L4 真机逐页对照** | 0 页，是当前最大产品缺口。按 `2026-10-27-compose-phase3-l4-checklist.md` 在 `dev` 变体壳里逐页走；必验：相机取景/解码、WebDAV 上传→下载→冲突→恢复两步确认、通知点击落页、键盘不顶按钮、矮屏弹窗不裁切、课卡铃铛与「已设提醒+取消」、宽屏 Rail、弹窗玻璃试点、桌面小组件刷新。**注意**：该清单仍写 `.ui` 包名与已删除的 flavor，按 `dev` 变体走；`dev` 的 applicationId 带 `.debug` 后缀，**不能代替正式包的「覆盖安装后数据一条不丢」**，后者要另用 `prod` 包验 |
+| **R01** | **L4 真机逐页对照** | 0 页，是当前最大产品缺口。按 `2026-10-27-compose-phase3-l4-checklist.md` 在 `dev` 变体壳里逐页走；必验：相机取景/解码、WebDAV 上传→下载→冲突→恢复两步确认、通知点击落页、键盘不顶按钮、矮屏弹窗不裁切、课卡铃铛与「已设提醒+取消」、宽屏 Rail、弹窗玻璃试点、桌面小组件刷新。**注意**：该清单仍写 `.ui` 包名与已删除的 flavor，按 `dev` 变体走；`dev` 的 applicationId 带 `.debug` 后缀，**不能代替正式包的「覆盖安装后数据一条不丢」**，后者要另用 `prod` 包验。**2026-11-11 补（R09 核销后的真机项）**：通知落页要单独验两条——① 壳在前台/后台时点通知能进 `d3.examList` / `g3.lanEdit`；② **杀进程后点一条新通知**（R09 已知边缘：`PagesShellActivity.kt:217-220` 的 `savedInstanceState == null` 守卫可能吞掉落点），命中即转为代码修复 |
 | **R02** | ~~横屏/平板解锁~~ | ✅ **已解决**（2026-11-11 校准）：`1e8b953b7`（2026-11-08，去 Flutter 化 P4-B）删掉两个壳 Activity 的 `android:screenOrientation="portrait"`；现主清单里该串只剩解释性注释（`android/app/src/main/AndroidManifest.xml:169-172`，写明「两 Activity 不再锁 portrait」与回退方式），四个源集 manifest 无一处属性级方向锁。**残留**：解锁后的连带面（矮屏弹层、返回手势与 Rail 冲突、配置变更重建）属真机项，归 R01 / R17，不再是产品决策 |
 | **R03** | **R2：删 Flutter、出正式包** | `lib/**` 已由 `303220db1`（P4-C）整层删除，回退只能走 git 历史；唯一未完成项是 **P2 真出包未由用户执行**（见 `2026-11-07-deflutter-stage2-p4-deletion-order.md:8`）。L4 真机对照与原正式包仍归用户跑 |
 
@@ -68,7 +68,7 @@ CI 权威变体是 `:app:testProdDebugUnitTest`（`.github/workflows/ci.yml` 的
 | # | 事项 | 现状 / 写作用域 |
 |---|---|---|
 | **R08** | **全仓 L1/L2 复跑（原 F19）** | 部分完成（2026-11-08）：L1 已通过；L2 跑出 7584 例 / 1 失败，唯一失败是 `ArbCatalog.kt` 生成物过期（ARB 新键 `liquidGlassPresetCustom`），重新生成后再跑一次即可销账。写作用域：无代码，只跑 `scripts/safe-gradle.ps1` |
-| **R09** | **通知点击落页** | `NotificationLaunchTarget.kt:31` 自认壳不读 Intent 页面参数；`PagesShellActivity` 无 Intent 解析。生产端已有 `open_route` / `open_lan_edit` 两处 extras 但无人消费。需定义页面参数、冷启动 + `singleTop` 两路解析，并补断言目标路由 id 的契约测试。写作用域：`NotificationLaunchTarget.kt`、四个 scheduler/service、`test/`；壳侧 `PagesShellActivity.kt` **[Lead]** |
+| **R09** | ~~通知点击落页~~ | ✅ **已落地**（2026-11-11 核销，依据代码与提交）：① **生产端 + 参数契约** `38df5178d`（2026-11-03）——`NotificationLaunchTarget.kt` 定 `open_route` / `open_lan_edit` 两个 extra，`pageIdFor`(:99) / `pageIdForIntent`(:119) / `postLaunchPage`(:132，解析后移除 extra 防重建重复推页)，生产端两处：`ExamReminderScheduler.kt:360` 写 `open_route=/exams`、`LanEditForegroundService.kt:29` 写 `open_lan_edit=true`；② **壳侧接线** `9427c4fd3`（2026-11-04）——冷启动 `pages/PagesShellActivity.kt:221-223`（`NotificationLaunchTarget.postLaunchPage(intent)`）、`singleTop` 复用 `:428-432`（`onNewIntent` → `setIntent` → `postLaunchPage`）；③ 三份 JVM 单测：`NotificationLaunchPageContractTest` / `NotificationLaunchShellWiringGuardTest` / `NotificationLaunchTargetGuardTest`。**已知边缘（未修，待真机判）**：`PagesShellActivity.kt:221` 的守卫是 `savedInstanceState == null`，进程被回收后点**新**通知若系统同时带回非空 `savedInstanceState`，该落点会被一起吞掉（作者在 `:217-220` 自记此事）；收紧方案是改判「该 Intent 是否真带页面 extra」，本行不预先实施。**真机项归 R01**，不算代码待办 |
 | **R10** | **弹层剩余 11 条（`QingyuSheet` 两个底层缺口已修）** | ✅ `QingyuSheet.kt` 两处已修并提交 `bd0c3eb7`：IME>0 时底部只留 16dp 呼吸（原来多垫 24~40dp）、有标题动作时保留 16dp 并用私有 `horizontalBleed` 把内容反向撑出（标题不贴边、内容仍满宽）。仍未做：42dp 无标题空档 ×4、自动聚焦 ×4、选周结构、ICS 菜单等（部分待 R05 拍板）。写作用域：`components/`、`pages/course/`、`pages/timetable/`、`pages/settings/` |
 | **R11** | **弹窗玻璃铺开** | 试点只有加课页删除确认 1 处（`e8cafb75` / `4a8011b3`，守卫钉调用点数=1）。先等真机看采样跟手与低端机帧率，确认后再铺其余 46 处 OverlayDialog 与底部弹层。写作用域：`components/glass/`、`pages/**` |
 | **R12** | **局域网两个残余** | `LanTransferLogic.kt:54` / `LanEditRepositoryHost.kt:70-72`：① settings 只应用 Kotlin 已移植的时间/周次子集；② 地点分组变化后不重算课程钟点（Dart `replaceLocationTimeGroups(resync:true)` 无对应物）。撤销点、真实 `transferId`、整份恢复已完成，勿重做。写作用域：`main/transfer/lan/`、`main/app/TimetableRepository.kt` |
@@ -199,12 +199,19 @@ L3 出包、L3.5 性能包、L4 真机一律用户跑；**性能只认 Bench 或
 
 ## 变更记录
 
-- **2026-11-11 校准（只改账，未改代码；依据代码与提交）**：核销四条已失真待办，修正三处计数。
+- **2026-11-11 校准（只改账，未改代码；依据代码与提交）**：核销五条已失真待办，修正三处计数。
   - **R02 横屏/平板解锁 → 已解决**：提交 `1e8b953b7`（2026-11-08，去 Flutter 化 P4-B）删除两处
     `android:screenOrientation="portrait"`；`git show 1c198b4f3:.../main/AndroidManifest.xml` 当时仍有两条属性行（`:174`/`:190`），
     到 `1e8b953b7` 只剩解释性注释（现行 `main/AndroidManifest.xml:169-172`）。残留真机连带面归 R01/R17。
   - **R06 `src/perf/AndroidManifest.xml` 去留 → 已取消**：`Test-Path` = false，`git ls-files android/app/src/perf` = 0，
     目录存在但为空；`build.gradle:108` 的 `perf {}` 是 `env` flavor 而非源集。
+  - **R09 通知点击落页 → 已落地**：`38df5178d`（2026-11-03）定义 `open_route` / `open_lan_edit` 契约与
+    `pageIdFor`(:99) / `pageIdForIntent`(:119) / `postLaunchPage`(:132)，生产端 `ExamReminderScheduler.kt:360`、
+    `LanEditForegroundService.kt:29`；`9427c4fd3`（2026-11-04）壳侧接冷启动 `PagesShellActivity.kt:221-223`
+    与 `onNewIntent` `:428-432`；三份 JVM 单测 `NotificationLaunchPageContractTest` /
+    `NotificationLaunchShellWiringGuardTest` / `NotificationLaunchTargetGuardTest`。**已知边缘未修**：
+    `PagesShellActivity.kt:221` 用 `savedInstanceState == null` 作守卫，杀进程后点新通知可能被吞（作者自记于 `:217-220`）；
+    改为判「Intent 是否真带页面 extra」属后续可选收紧。真机项归 R01（已在其行内补两条必验）。
   - **R13 两条壁纸路由 → 已解决**：`ShellPageIndex.kt:553-557` 注释记已合并为 `b.backdropFlow`（判据 Dart `settings_home_backdrop_flow.dart:439-472`）。
   - **R14 取景页「换壁纸」→ 已交付**：`5ade79faf`（2026-11-03）+ `WallpaperPositionPickerPage.kt:148` 注释；
     同批新增共享件 `ManagedWallpaperStore.kt` / `ManagedWallpaperNaming.kt` 与 `ManagedWallpaperPickChainTest.kt`（149 例）。
