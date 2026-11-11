@@ -241,7 +241,9 @@ object IcsExportLogic {
      * JDK 的 CLDR 里 `MEDIUM` 对 ja / ko 出的是 `2026/09/01`、`2026. 9. 1.`，与发布版的
      * `yMMMd` 不一致；固定 pattern 也不随 JDK 的 CLDR 版本漂。中文四个标签同一条 pattern。
      */
-    private val EXPORT_DATE_FORMATTERS: Map<String, DateTimeFormatter> = mapOf(
+    // internal（2026-11-11）：给 IcsExportLocaleCoverageTest 断言「pattern 语言集合 ==
+    // 界面支持语言集合」，防止以后新增语言时日期静默回落中文。除此之外仍是本文件私有事实。
+    internal val EXPORT_DATE_FORMATTERS: Map<String, DateTimeFormatter> = mapOf(
         "en" to DateTimeFormatter.ofPattern("MMM d, y", Locale.US),
         "ja" to DateTimeFormatter.ofPattern("y年M月d日", Locale.JAPAN),
         "ko" to DateTimeFormatter.ofPattern("y년 M월 d일", Locale.KOREA),
