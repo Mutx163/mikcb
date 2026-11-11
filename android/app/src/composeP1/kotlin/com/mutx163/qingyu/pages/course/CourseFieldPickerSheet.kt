@@ -33,7 +33,6 @@ import top.yukonga.miuix.kmp.basic.ButtonDefaults
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.IconButton
 import top.yukonga.miuix.kmp.basic.Text
-import top.yukonga.miuix.kmp.basic.TextButton
 import top.yukonga.miuix.kmp.basic.TextField
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.Clear
@@ -131,7 +130,8 @@ fun CourseFieldPickerSheet(
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .clickable { text = suggestion }
+                                // 点候选即回填并关闭（发布版一步到位；不再要求再点一次确认）。
+                                .clickable { onConfirm(suggestion) }
                                 .padding(horizontal = 12.dp, vertical = 12.dp),
                             verticalAlignment = Alignment.CenterVertically,
                         ) {
@@ -152,11 +152,14 @@ fun CourseFieldPickerSheet(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
             ) {
-                TextButton(
+                Button(
                     modifier = Modifier.weight(1f),
-                    text = cancelLabel,
                     onClick = onDismiss,
-                )
+                    // 取消 = secondary 实心（已裁口径：双键同组件，仅配色分主次）。
+                    colors = ButtonDefaults.buttonColors(),
+                ) {
+                    Text(text = cancelLabel)
+                }
                 Button(
                     modifier = Modifier.weight(1f),
                     onClick = { onConfirm(text) },

@@ -1,9 +1,9 @@
 package com.mutx163.qingyu.pages.course
 
+import com.mutx163.qingyu.testutil.readKotlinSourceNoStrings
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
-import java.io.File
 
 /**
  * 「哪些周上」弹层的**常驻组合**守卫（2026-11-03 建立）。
@@ -13,7 +13,8 @@ import java.io.File
  * 正确配方：弹层常驻组合、`show` 显式驱动、内部 `rememberLastNonNull` 钉住退场期草稿。
  *
  * composeP1 源集不进 `src/test` 的编译单元，所以读源码文本（与 `TimetableProfilesDialogGuardTest`
- * 同一套做法）；找不到文件判失败而不是跳过。
+ * 同一套做法）；读法走 `testutil` 共享剥离 [readKotlinSourceNoStrings]（2026-11-11 迁移：
+ * 匿名字符串里的同名片段不再能满足判据）；找不到文件由共享件直接判失败，不静默跳过。
  */
 class AddCoursePageMountGuardTest {
 
@@ -92,36 +93,9 @@ class AddCoursePageMountGuardTest {
     }
 
     /** 壳页索引：`ShellPageIndex.kt`（课程域宿主接线，读源码判，不上编译单元）。 */
-    private fun shellIndexSource(): String {
-        val file = File(
-            androidSrc(),
-            "main/kotlin/com/mutx163/qingyu/pages/ShellPageIndex.kt",
-        )
-        assertTrue("${file.path} 不存在", file.isFile)
-        return file.readText().replace("\r\n", "\n")
-    }
+    private fun shellIndexSource(): String =
+        readKotlinSourceNoStrings("android/app/src/main/kotlin/com/mutx163/qingyu/pages/ShellPageIndex.kt")
 
-    private fun pageSource(): String {
-        val file = File(
-            androidSrc(),
-            "composeP1/kotlin/com/mutx163/qingyu/pages/course/AddCoursePage.kt",
-        )
-        assertTrue("${file.path} 不存在", file.isFile)
-        return file.readText().replace("\r\n", "\n")
-    }
-
-    private fun androidSrc(): File {
-        var dir: File? = File(System.getProperty("user.dir")).absoluteFile
-        while (dir != null) {
-            val candidate = File(dir, "android/app/src")
-            if (candidate.isDirectory) return candidate
-            val direct = File(dir, "app/src")
-            if (direct.isDirectory && File(dir, "app/build.gradle").isFile) return direct
-            dir = dir.parentFile
-        }
-        throw AssertionError(
-            "找不到 android/app/src —— 守卫无法验证，按失败处理。当前工作目录：" +
-                System.getProperty("user.dir"),
-        )
-    }
+    private fun pageSource(): String =
+        readKotlinSourceNoStrings("android/app/src/composeP1/kotlin/com/mutx163/qingyu/pages/course/AddCoursePage.kt")
 }

@@ -1,10 +1,9 @@
 package com.mutx163.qingyu.pages.course
 
+import com.mutx163.qingyu.testutil.readKotlinSourceNoStrings
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
-import java.io.File
-import com.mutx163.qingyu.testutil.stripKotlinComments
 
 /**
  * 排课记录「时间模板」行的接线契约（发布版 `_buildEntryTimeSchemeField`；
@@ -14,6 +13,9 @@ import com.mutx163.qingyu.testutil.stripKotlinComments
  * 1. 页面拿到候选（`timeSchemes`）与生效模板名；
  * 2. 每条排课行都能开模板弹层，选择写回 `timeSchemeIdOverride`（null = 跟随当前课表）；
  * 3. 壳把这些参数从快照真正传进来（不传就是死行）。
+ *
+ * 读源码走 `testutil` 共享剥离 [readKotlinSourceNoStrings]（2026-11-11 迁移）：
+ * 全是接线/结构判据，字符串内容一并中性化——日志或提示语里写同名片段骗不过去。
  */
 class AddCourseTimeSchemeWiringGuardTest {
 
@@ -59,30 +61,9 @@ class AddCourseTimeSchemeWiringGuardTest {
         assertTrue("壳必须用同一个解析器", shell.contains("AddCourseEntryTimeSchemeLogic.resolve("))
     }
 
-    private fun pageSource(name: String): String {
-        val file = File(androidSrc(), "composeP1/kotlin/com/mutx163/qingyu/pages/course/$name")
-        assertTrue("${file.path} 不存在", file.isFile)
-        return stripKotlinComments(file.readText().replace("\r\n", "\n"))
-    }
+    private fun pageSource(name: String): String =
+        readKotlinSourceNoStrings("android/app/src/composeP1/kotlin/com/mutx163/qingyu/pages/course/$name")
 
-    private fun shellIndexSource(): String {
-        val file = File(androidSrc(), "main/kotlin/com/mutx163/qingyu/pages/ShellPageIndex.kt")
-        assertTrue("${file.path} 不存在", file.isFile)
-        return stripKotlinComments(file.readText().replace("\r\n", "\n"))
-    }
-
-    private fun androidSrc(): File {
-        var dir: File? = File(System.getProperty("user.dir")).absoluteFile
-        while (dir != null) {
-            val candidate = File(dir, "android/app/src")
-            if (candidate.isDirectory) return candidate
-            val direct = File(dir, "app/src")
-            if (direct.isDirectory && File(dir, "app/build.gradle").isFile) return direct
-            dir = dir.parentFile
-        }
-        throw AssertionError(
-            "找不到 android/app/src —— 守卫无法验证，按失败处理。当前工作目录：" +
-                System.getProperty("user.dir"),
-        )
-    }
+    private fun shellIndexSource(): String =
+        readKotlinSourceNoStrings("android/app/src/main/kotlin/com/mutx163/qingyu/pages/ShellPageIndex.kt")
 }

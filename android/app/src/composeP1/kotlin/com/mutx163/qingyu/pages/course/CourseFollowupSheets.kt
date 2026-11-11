@@ -241,11 +241,12 @@ private fun FollowupOptionRow(
 /** 通栏「取消」按钮（Dart `_FollowupCancelButton` `:997-1015`）。 */
 @Composable
 private fun FollowupCancelButton(onPress: () -> Unit) {
-    TextButton(
-        text = CourseFollowupStrings.cancelAction.text,
+    Button(
         onClick = onPress,
         modifier = Modifier.fillMaxWidth(),
-    )
+    ) {
+        Text(text = CourseFollowupStrings.cancelAction.text)
+    }
 }
 
 /**
@@ -498,7 +499,8 @@ private fun FollowupLocationSheet(
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .clickable { text = TextFieldValue(suggestion) }
+                                // 点候选即回填并关闭（发布版一步到位）。
+                                .clickable { onConfirm(suggestion) }
                                 .padding(horizontal = 12.dp, vertical = 12.dp),
                             verticalAlignment = Alignment.CenterVertically,
                         ) {
@@ -516,11 +518,14 @@ private fun FollowupLocationSheet(
             }
             Spacer(modifier = Modifier.height(14.dp))
             Row(modifier = Modifier.fillMaxWidth()) {
-                TextButton(
-                    text = CourseFollowupStrings.cancelAction.text,
+                Button(
                     onClick = onDismiss,
                     modifier = Modifier.weight(1f),
-                )
+                    // 取消 = secondary 实心（已裁口径：双键同组件，仅配色分主次）。
+                    colors = ButtonDefaults.buttonColors(),
+                ) {
+                    Text(text = CourseFollowupStrings.cancelAction.text)
+                }
                 Spacer(modifier = Modifier.width(12.dp))
                 Button(
                     onClick = { onConfirm(text.text) },

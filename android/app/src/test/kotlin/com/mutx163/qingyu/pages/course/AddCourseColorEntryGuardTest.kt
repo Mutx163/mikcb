@@ -1,9 +1,9 @@
 package com.mutx163.qingyu.pages.course
 
+import com.mutx163.qingyu.testutil.readKotlinSourceNoStrings
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
-import java.io.File
 
 /**
  * 「课程颜色」入口契约（2026-11-10 十色点阵退役）。
@@ -63,27 +63,8 @@ class AddCourseColorEntryGuardTest {
         )
     }
 
-    private fun pageSource(): String {
-        val file = File(
-            androidSrc(),
-            "composeP1/kotlin/com/mutx163/qingyu/pages/course/AddCoursePage.kt",
-        )
-        assertTrue("${file.path} 不存在", file.isFile)
-        return file.readText().replace("\r\n", "\n")
-    }
-
-    private fun androidSrc(): File {
-        var dir: File? = File(System.getProperty("user.dir")).absoluteFile
-        while (dir != null) {
-            val candidate = File(dir, "android/app/src")
-            if (candidate.isDirectory) return candidate
-            val direct = File(dir, "app/src")
-            if (direct.isDirectory && File(dir, "app/build.gradle").isFile) return direct
-            dir = dir.parentFile
-        }
-        throw AssertionError(
-            "找不到 android/app/src —— 守卫无法验证，按失败处理。当前工作目录：" +
-                System.getProperty("user.dir"),
-        )
-    }
+    // composeP1 源集不进 `src/test` 编译单元，所以读源码文本；读法走 `testutil` 共享剥离
+    // （2026-11-11 迁移）：接线/结构判据用中性化档，字符串里写同名片段骗不过去。
+    private fun pageSource(): String =
+        readKotlinSourceNoStrings("android/app/src/composeP1/kotlin/com/mutx163/qingyu/pages/course/AddCoursePage.kt")
 }

@@ -1,9 +1,10 @@
 package com.mutx163.qingyu.pages.course
 
+import com.mutx163.qingyu.testutil.readKotlinSourceNoStrings
+import com.mutx163.qingyu.testutil.readSourceNormalized
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
-import java.io.File
 
 /**
  * 「已有教师 / 地点」接线的源级守卫（发布版 `add_course_screen.dart:917/:933`、
@@ -16,7 +17,10 @@ import java.io.File
  * - `CourseFollowupSheets`：`CourseRescheduleSheet` 透传到地点子弹层，旧「等壳注入」注释不得回潮；
  * - `CourseActionSheet`：`locationSuggestions` 一路下传。
  *
- * composeP1 源集不进 `src/test` 编译单元，所以读源码文本；找不到文件判失败而不是跳过。
+ * 读源码走 `testutil` 共享剥离（2026-11-11 守卫迁移）：接线类判据用
+ * [readKotlinSourceNoStrings]（剥注释 + 中性化字符串，字符串里写同名片段骗不过去）；
+ * 「旧注释不许回潮」这条要看**注释原文**，所以单独走 [readSourceNormalized]——
+ * 剥了注释再断言它不在，等于断言恒真。
  */
 class CourseFieldSuggestionWiringGuardTest {
 
@@ -52,7 +56,8 @@ class CourseFieldSuggestionWiringGuardTest {
         assertTrue("地点子弹层必须收到候选", followup.contains("suggestions = locationSuggestions,"))
         assertFalse(
             "「等壳注入候选」的旧注释不许回来（说明契约又被挖空）",
-            followup.contains("等壳把候选注入进来"),
+            // 必须读未剥注释的原文：剥完注释再断言「这段注释不在」是恒真。
+            readSourceNormalized(courseFile("CourseFollowupSheets.kt")).contains("等壳把候选注入进来"),
         )
 
         val action = pageSource("CourseActionSheet.kt")
@@ -60,27 +65,9 @@ class CourseFieldSuggestionWiringGuardTest {
         assertTrue("必须下传给调课弹层", action.contains("locationSuggestions = locationSuggestions,"))
     }
 
-    private fun pageSource(name: String): String {
-        val file = File(
-            androidSrc(),
-            "composeP1/kotlin/com/mutx163/qingyu/pages/course/$name",
-        )
-        assertTrue("${file.path} 不存在", file.isFile)
-        return file.readText().replace("\r\n", "\n")
-    }
+    /** 接线类判据：剥注释 + 中性化字符串，只留代码骨架。 */
+    private fun pageSource(name: String): String = readKotlinSourceNoStrings(courseFile(name))
 
-    private fun androidSrc(): File {
-        var dir: File? = File(System.getProperty("user.dir")).absoluteFile
-        while (dir != null) {
-            val candidate = File(dir, "android/app/src")
-            if (candidate.isDirectory) return candidate
-            val direct = File(dir, "app/src")
-            if (direct.isDirectory && File(dir, "app/build.gradle").isFile) return direct
-            dir = dir.parentFile
-        }
-        throw AssertionError(
-            "找不到 android/app/src —— 守卫无法验证，按失败处理。当前工作目录：" +
-                System.getProperty("user.dir"),
-        )
-    }
+    private fun courseFile(name: String): String =
+        "android/app/src/composeP1/kotlin/com/mutx163/qingyu/pages/course/$name"
 }

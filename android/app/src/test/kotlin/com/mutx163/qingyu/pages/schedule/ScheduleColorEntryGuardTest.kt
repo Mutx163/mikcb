@@ -1,10 +1,11 @@
 package com.mutx163.qingyu.pages.schedule
 
+import com.mutx163.qingyu.testutil.readKotlinSourceNoStrings
+import com.mutx163.qingyu.testutil.readKotlinSourceNormalized
+import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
-import java.io.File
-import com.mutx163.qingyu.testutil.stripKotlinComments
 
 /**
  * 日程页「颜色快捷行」契约（2026-11-10 回到发布版形态）。
@@ -16,13 +17,16 @@ import com.mutx163.qingyu.testutil.stripKotlinComments
  * 此前这里被改成 FlowRow 自动换行的一整片色阵，与发布版不一致，用户对照能看出来；
  * 现在回到「一行横滚 + 行尾调色盘」，色块仍用共享组件、尺寸走 `QuickRow`（32dp）。
  *
- * composeP1 源集不进 `src/test` 编译单元，所以读源码文本；找不到文件判失败而不是跳过。
+ * 读源码走 `testutil` 共享剥离（2026-11-11 迁移）：结构/门控类判据用
+ * [readKotlinSourceNoStrings]；`item(key = "presets")` 这个锚点**靠字符串字面量**，
+ * 只能从保留字面量的 [readKotlinSourceNormalized] 上找，再按下标到中性化文本里判门控
+ * （两档剥法长度一致，下标可互通，本文件有断言钉住这个前提）。
  */
 class ScheduleColorEntryGuardTest {
 
     @Test
     fun `颜色快捷行是发布版形态 横滚 + 行尾调色盘`() {
-        val source = pageSource()
+        val source = structuralSource()
         assertFalse(
             "加日程的颜色行回到了发布版的一行横滚，不再用自动换行的 FlowRow 容器",
             source.contains("QingyuColorChips("),
@@ -48,7 +52,7 @@ class ScheduleColorEntryGuardTest {
 
     @Test
     fun `取色弹层必须常驻组合 显隐只由 show 驱动`() {
-        val source = pageSource()
+        val source = structuralSource()
         assertTrue(
             "取色弹层必须常驻组合，显隐由 `show = colorPickerOpen` 驱动",
             source.contains("show = colorPickerOpen"),
@@ -66,47 +70,39 @@ class ScheduleColorEntryGuardTest {
 
     @Test
     fun `快捷模板在编辑态也展示 不再按 isEditing 门控`() {
-        val source = pageSource()
+        val literal = literalSource()
+        val structural = structuralSource()
+        assertEquals(
+            "两档剥法必须长度一致（中性化只换字符、不删字符），否则下面的下标复用了错位",
+            literal.length,
+            structural.length,
+        )
+
+        val anchor = "item(key = \"presets\")"
         assertTrue(
             "快捷模板条目必须还在（有意保留的超出发布版能力）",
-            source.contains("item(key = \"presets\")"),
+            literal.contains(anchor),
         )
         // 只锚在 presets 条目块内判门控：页面别处有 `if (!isEditing)` 属正常逻辑，不该被这条误伤。
-        val presetsStart = source.indexOf("item(key = \"presets\")")
+        val presetsStart = literal.indexOf(anchor)
         assertTrue("找不到 presets 条目", presetsStart >= 0)
-        val nextItem = source.indexOf("item(key = ", presetsStart + 1)
-        val presetsBlock = if (nextItem > presetsStart) {
-            source.substring(presetsStart, nextItem)
-        } else {
-            source.substring(presetsStart)
-        }
+        val nextItem = literal.indexOf("item(key = ", presetsStart + 1)
+        val end = if (nextItem > presetsStart) nextItem else literal.length
+        val presetsBlock = structural.substring(presetsStart, end)
         assertFalse(
             "快捷模板块不许再被 `if (!isEditing)` 门控——用户在预览验收时要求编辑态也能用",
             presetsBlock.contains("if (!isEditing)"),
         )
     }
 
-    private fun pageSource(): String {
-        val file = File(
-            androidSrc(),
-            "composeP1/kotlin/com/mutx163/qingyu/pages/schedule/AddScheduleItemPage.kt",
-        )
-        assertTrue("${file.path} 不存在", file.isFile)
-        return stripKotlinComments(file.readText().replace("\r\n", "\n"))
-    }
+    /** 接线/结构类判据：剥注释 + 中性化字符串。 */
+    private fun structuralSource(): String = readKotlinSourceNoStrings(PAGE)
 
-    private fun androidSrc(): File {
-        var dir: File? = File(System.getProperty("user.dir")).absoluteFile
-        while (dir != null) {
-            val candidate = File(dir, "android/app/src")
-            if (candidate.isDirectory) return candidate
-            val direct = File(dir, "app/src")
-            if (direct.isDirectory && File(dir, "app/build.gradle").isFile) return direct
-            dir = dir.parentFile
-        }
-        throw AssertionError(
-            "找不到 android/app/src —— 守卫无法验证，按失败处理。当前工作目录：" +
-                System.getProperty("user.dir"),
-        )
+    /** 需要看字符串字面量的判据：剥注释、保留字面量。 */
+    private fun literalSource(): String = readKotlinSourceNormalized(PAGE)
+
+    private companion object {
+        const val PAGE =
+            "android/app/src/composeP1/kotlin/com/mutx163/qingyu/pages/schedule/AddScheduleItemPage.kt"
     }
 }

@@ -128,6 +128,8 @@ fun AddCoursePage(
     globalSectionCount: Int = 12,
     /** 条目自身解析出的作息模板节数（Dart `_resolveEntryTimeScheme(...)?.sections.length`）。 */
     entrySchemeSectionCount: (entry: AddCourseScheduleEntryData, location: String) -> Int? = { _, _ -> null },
+    /** 时间模板生效解析（发布版 `_resolveEntryTimeScheme`）：行内钟点 + 弹层来源副题 + 候选节数。 */
+    entryTimeSchemeInfo: (entry: AddCourseScheduleEntryData, location: String) -> AddCourseEntryTimeSchemeInfo? = { _, _ -> null },
     /** 课表里已有的课程：新建态「沿用已有课程」的候选（发布版 `provider.courseGroups` 的拍平视图）。 */
     courseTemplates: List<Course> = emptyList(),
     /** 教师候选（发布版 `provider.uniqueTeachers` 的对位；壳用 CourseFieldSuggestionLogic 算）。 */
@@ -557,8 +559,10 @@ fun AddCoursePage(
                         onOpenLocationPicker = {
                             fieldPickerTarget = CourseFieldPickerTarget.Entry(index = index, teacher = false)
                         },
-                        activeTimeSchemeName = activeTimeSchemeName,
-                        timeSchemes = timeSchemes,
+                        timeSchemeValue = entryTimeSchemeValue(
+                            info = entryTimeSchemeInfo(entry, entry.location),
+                            activeTimeSchemeName = activeTimeSchemeName,
+                        ),
                         onOpenTimeSchemePicker = { timeSchemePickerEntryId = entry.id },
                         onOpenWeekPicker = {
                             weekDraftEntryId = entry.id
@@ -806,6 +810,9 @@ fun AddCoursePage(
     AddCourseTimeSchemeSheet(
         show = timeSchemeEntry != null,
         activeName = activeTimeSchemeName,
+        autoSubtitle = timeSchemeEntry?.let { entry ->
+            entryTimeSchemeSubtitle(entryTimeSchemeInfo(entry, entry.location))
+        },
         schemes = timeSchemes,
         selectedId = timeSchemeEntry?.timeSchemeIdOverride,
         onDismiss = { timeSchemePickerEntryId = null },
@@ -863,10 +870,8 @@ private fun AddCourseEntryFields(
     /** 点「教师」行：由页面统一开「已有教师」弹层（弹层状态在页级，不为此拆第二份）。 */
     onOpenTeacherPicker: () -> Unit,
     onOpenLocationPicker: () -> Unit,
-    /** 当前生效模板名：`跟随当前课表 · <name>` 的 name（null = 未知）。 */
-    activeTimeSchemeName: String?,
-    /** 时间模板候选（第一项「跟随当前课表」由页面拼，写回 null）。 */
-    timeSchemes: List<TimeScheme>,
+    /** 时间模板行的显示值（含保存后真正会用的钟点；由页面按生效解析算好）。 */
+    timeSchemeValue: String,
     /** 点「时间模板」行：由页面统一开模板弹层。 */
     onOpenTimeSchemePicker: () -> Unit,
     onOpenWeekPicker: () -> Unit,
@@ -998,7 +1003,7 @@ private fun AddCourseEntryFields(
                 title = AddCourseStrings.timeSchemeLabel.text,
                 endActions = {
                     Text(
-                        text = entryTimeSchemeSummary(entry, activeTimeSchemeName, timeSchemes),
+                        text = timeSchemeValue,
                         style = MiuixTheme.textStyles.body2,
                         color = MiuixTheme.colorScheme.onSurfaceVariantActions,
                         maxLines = 1,
@@ -1563,23 +1568,57 @@ private sealed class CourseFieldPickerTarget {
 }
 
 /**
- * 「时间模板」行的摘要：null = 跟随当前课表（带生效模板名），否则显示覆盖模板名。
+ * 「时间模板」行的显示值：**生效模板名 + 保存后真正会用的钟点**（发布版
+ * `_buildEntryTimeSchemeField` 的 `displayValue`，紧凑行把钟点放前面，截断时先吃模板名）。
  *
- * 发布版 `_buildEntryTimeSchemeField`：`timeSchemeIdOverride == null` 时显示
- * 「跟随当前课表 · <生效模板>」；模板被删/找不到 id 时退回 id 本身，不吞成空白。
+ * - 显式覆盖：显示覆盖模板名；
+ * - 跟随自动 + 地点组命中：`地点匹配 · {scheme}`；
+ * - 跟随自动 + 课表默认：`跟随当前课表 {name}`；
+ * - 解析不到：`跟随课表 / 地点自动`；钟点由 [AddCourseEntryTimeSchemeInfo.clockHint] 给。
  */
-private fun entryTimeSchemeSummary(
-    entry: AddCourseScheduleEntryData,
+private fun entryTimeSchemeValue(
+    info: AddCourseEntryTimeSchemeInfo?,
     activeTimeSchemeName: String?,
-    schemes: List<TimeScheme>,
 ): String {
-    val overrideId = entry.timeSchemeIdOverride
-    if (overrideId != null) {
-        return schemes.firstOrNull { it.id == overrideId }?.name ?: overrideId
+    val name = if (info == null) {
+        AddCourseStrings.followCurrentTimetableWithName
+            .filled("name", activeTimeSchemeName.orEmpty())
+            .trimEnd()
+    } else {
+        when (info.autoSource) {
+            AddCourseEntryTimeSchemeSource.OVERRIDE ->
+                info.effectiveSchemeName ?: AddCourseStrings.followCurrentTimetableWithName
+                    .filled("name", activeTimeSchemeName.orEmpty())
+                    .trimEnd()
+            AddCourseEntryTimeSchemeSource.LOCATION_GROUP ->
+                AddCourseStrings.locationTimeMatchedSchemeHint
+                    .filled("scheme", info.effectiveSchemeName.orEmpty())
+            AddCourseEntryTimeSchemeSource.TIMETABLE ->
+                AddCourseStrings.followCurrentTimetableWithName
+                    .filled("name", info.effectiveSchemeName.orEmpty())
+            AddCourseEntryTimeSchemeSource.NONE -> AddCourseStrings.followLocationAutoTimeScheme.text
+        }
     }
-    return AddCourseStrings.followCurrentTimetableWithName
-        .filled("name", activeTimeSchemeName.orEmpty())
-        .trimEnd()
+    val clock = info?.clockHint
+    return if (clock == null) name else "$clock · $name"
+}
+
+/**
+ * 「时间模板」弹层的来源副题（发布版 `autoResolvedSubtitle`）：
+ * 地点组 → `地点组 {group} → {scheme}`；课表默认 → `课表默认 → {scheme}`；显式覆盖 / 解析不到 → null。
+ */
+private fun entryTimeSchemeSubtitle(info: AddCourseEntryTimeSchemeInfo?): String? {
+    if (info == null) return null
+    return when (info.autoSource) {
+        AddCourseEntryTimeSchemeSource.LOCATION_GROUP ->
+            AddCourseStrings.locationTimeAutoResolvedByGroup
+                .filled("group", info.autoGroupName.orEmpty())
+                .filled("scheme", info.autoSchemeName.orEmpty())
+        AddCourseEntryTimeSchemeSource.TIMETABLE ->
+            AddCourseStrings.locationTimeAutoResolvedByTimetable
+                .filled("scheme", info.autoSchemeName.orEmpty())
+        else -> null
+    }
 }
 
 /**
@@ -1592,6 +1631,8 @@ private fun entryTimeSchemeSummary(
 private fun AddCourseTimeSchemeSheet(
     show: Boolean,
     activeName: String?,
+    /** 自动模式的来源说明（地点组 / 课表默认）；显式覆盖时 null。 */
+    autoSubtitle: String?,
     schemes: List<TimeScheme>,
     selectedId: String?,
     onDismiss: () -> Unit,
@@ -1610,6 +1651,14 @@ private fun AddCourseTimeSchemeSheet(
         maxHeightFraction = 0.72f,
     ) {
         Column(modifier = Modifier.fillMaxWidth()) {
+            if (autoSubtitle != null) {
+                Text(
+                    text = autoSubtitle,
+                    style = MiuixTheme.textStyles.footnote2,
+                    color = Color(QingyuTheme.secondaryText(dark)),
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+            }
             // 首项：跟随当前课表（id = null）。
             TimeSchemeOptionRow(
                 label = followLabel,
