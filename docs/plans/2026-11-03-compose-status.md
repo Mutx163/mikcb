@@ -50,7 +50,7 @@ CI 权威变体是 `:app:testProdDebugUnitTest`（`.github/workflows/ci.yml` 的
 
 | # | 事项 | 现状 / 卡点 |
 |---|---|---|
-| **R01** | **L4 真机逐页对照** | 0 页，是当前最大产品缺口。按 `2026-10-27-compose-phase3-l4-checklist.md` 在 `dev` 变体壳里逐页走；必验：相机取景/解码、WebDAV 上传→下载→冲突→恢复两步确认、通知点击落页、键盘不顶按钮、矮屏弹窗不裁切、课卡铃铛与「已设提醒+取消」、宽屏 Rail、弹窗玻璃试点、桌面小组件刷新。**注意**：该清单仍写 `.ui` 包名与已删除的 flavor，按 `dev` 变体走；`dev` 的 applicationId 带 `.debug` 后缀，**不能代替正式包的「覆盖安装后数据一条不丢」**，后者要另用 `prod` 包验。**2026-11-11 补（R09 核销后的真机项）**：通知落页要单独验两条——① 壳在前台/后台时点通知能进 `d3.examList` / `g3.lanEdit`；② **杀进程后点一条新通知**（R09 已知边缘：`PagesShellActivity.kt:217-220` 的 `savedInstanceState == null` 守卫可能吞掉落点），命中即转为代码修复 |
+| **R01** | **L4 真机逐页对照** | 0 页，是当前最大产品缺口。按 `2026-11-11-l4-device-checklist-dev.md`（`dev` 变体口径，2026-11-11 起取代 `2026-10-27-compose-phase3-l4-checklist.md`；旧册仍写 `.ui` 包名与已删除的 flavor，只作历史）在 `dev` 变体壳里逐页走；必验：相机取景/解码、WebDAV 上传→下载→冲突→恢复两步确认、通知点击落页、键盘不顶按钮、矮屏弹窗不裁切、课卡铃铛与「已设提醒+取消」、宽屏 Rail、弹窗玻璃试点、桌面小组件刷新。**注意**：`dev` 的 applicationId 带 `.debug` 后缀，**不能代替正式包的「覆盖安装后数据一条不丢」**，后者要另用 `prod` 包验。**2026-11-11 补（R09 核销后的真机项）**：通知落页要单独验两条——① 壳在前台/后台时点通知能进 `d3.examList` / `g3.lanEdit`；② **杀进程后点一条新通知**（R09 已知边缘：`PagesShellActivity.kt:217-220` 的 `savedInstanceState == null` 守卫可能吞掉落点），命中即转为代码修复。**另（R18）**：A6「取消提醒」需要一条已存在的单节课提醒作前置，干净包里造不出来——见 R18 |
 | **R02** | ~~横屏/平板解锁~~ | ✅ **已解决**（2026-11-11 校准）：`1e8b953b7`（2026-11-08，去 Flutter 化 P4-B）删掉两个壳 Activity 的 `android:screenOrientation="portrait"`；现主清单里该串只剩解释性注释（`android/app/src/main/AndroidManifest.xml:169-172`，写明「两 Activity 不再锁 portrait」与回退方式），四个源集 manifest 无一处属性级方向锁。**残留**：解锁后的连带面（矮屏弹层、返回手势与 Rail 冲突、配置变更重建）属真机项，归 R01 / R17，不再是产品决策 |
 | **R03** | **R2：删 Flutter、出正式包** | `lib/**` 已由 `303220db1`（P4-C）整层删除，回退只能走 git 历史；唯一未完成项是 **P2 真出包未由用户执行**（见 `2026-11-07-deflutter-stage2-p4-deletion-order.md:8`）。L4 真机对照与原正式包仍归用户跑 |
 
@@ -62,6 +62,7 @@ CI 权威变体是 `:app:testProdDebugUnitTest`（`.github/workflows/ci.yml` 的
 | **R05** | **弹层 4 个决策点** | 审计里的 #1（自动聚焦是否回退）、#5（加课选周结构）、#7（42dp 无标题空档等不等上游）、#8（ICS 导出菜单形态）。拍板后一次落地，不要逐条反复 |
 | **R06** | ~~`src/perf/AndroidManifest.xml` 去留~~ | ✅ **已取消**（2026-11-11 校准）：该文件已不存在——`android/app/src/perf/` 目录还在但**为空**（`git ls-files android/app/src/perf` 返回 0 个跟踪文件，`Test-Path .../AndroidManifest.xml` = false）。`build.gradle:108` 的 `perf {}` 是 `env` 维度的 flavor，不是源集；`assemblePerfBench` 由 flavor 与变体决定，与该 manifest 无关。无需再拍板 |
 | **R07** | **L0 共享目录编译隔离** | `scripts/test-kotlin-module.ps1` 无条件收 app/core/course/sync/transfer/statistics/share/theme 等目录；任何泳道在共享目录留半成品，所有模块 L0 一起红。只有 `-ExcludeShared` 逃生门，需定根治方案 |
+| **R18** | **单节课提醒：App 内无法新建（产品缺口，2026-11-11 新发现）** | **现状**：`ClassReminderLogic.upsert`（`main: core/ClassReminder.kt:113`）**生产调用点 0 处**，只有单测在调（`test: pages/timetable/ClassReminderSettingsTest.kt:153`/`:161`）；`ClassAlarmSheet`（`composeP1: pages/course/ClassAlarmSheet.kt`，KDoc `:43-48`）三个动作全部抛 `ClassAlarmEvent` → 宿主 `SystemAlarmHelper.fireSetAlarm`（`SystemAlarm.kt:21`/`:29`，`AlarmClock.ACTION_SET_ALARM`）走**系统时钟**，本层不写 `timetable_settings.classReminders`；目前整条链只有**读**（课卡铃铛 `TimetableWeekPage.kt:773-775`）与**删**（`ShellWiring.kt:1284` 调 `ClassReminderLogic.remove`）有生产调用方。**影响**：单节课提醒在 App 内只能读 / 删，**不能在 App 内新建**；且 L4 的 A6「取消提醒」在干净的 `dev` 包里造不出前置数据（得先有一条旧版一次性提醒条目），真机验收会卡在这一步。**需要谁拍板**：**Lead**——要不要在 Compose 侧补「App 内新建」属产品取向（写侧本身不复杂：`upsert` → `saveSettingsPatch` 落盘 → toast；真正要定的是继续只往系统时钟引导、还是复刻旧版一次性提醒语义）。**未排期，不要写成已开工** |
 
 ### C. agent 可做（按优先级）
 
@@ -165,6 +166,7 @@ L3 出包、L3.5 性能包、L4 真机一律用户跑；**性能只认 Bench 或
 | 5 | ~~横屏/平板是否解锁（R02）~~ **已解决**：`1e8b953b7` 已删方向锁（2026-11-11 校准） | — |
 | 6 | R2 删 Flutter 的时机（R03） | 用户 |
 | 7 | 弹层 #5 / #7 / #8 的取舍（R05） | Lead |
+| 8 | 单节课提醒要不要补「App 内新建」（R18，2026-11-11 新发现） | Lead |
 
 ---
 
@@ -180,7 +182,8 @@ L3 出包、L3.5 性能包、L4 真机一律用户跑；**性能只认 Bench 或
 | `2026-10-28-full-software-audit-and-completion-plan.md` | 全仓体检快照与技术债背景 |
 | `2026-10-28-compose-phase35-wiring-plan.md` | 分层接线规格（仍然有效） |
 | `2026-10-28-compose-phase35-batches.md` | Phase 3.5 历史批次 |
-| `2026-10-27-compose-phase3-l4-checklist.md` | 用户真机逐页清单（数字待更新为 88/87；`.ui` 包名与 flavor 已失效，按 `dev` 变体走） |
+| `2026-11-11-l4-device-checklist-dev.md` | **现行 L4 真机手册（`dev` 变体口径）**，2026-11-11 起取代下面那份；由 L4 手册那条线提交，校准时仓库内尚未见该文件（**未核实**） |
+| `2026-10-27-compose-phase3-l4-checklist.md` | ~~用户真机逐页清单~~ **已被上一条取代**（历史）：仍写 `.ui` 包名与已删 flavor，只作历史依据 |
 | `2026-11-02-compose-dialog-full-audit.md` | 弹层审核明细与 8 个决策点 |
 | `2026-11-03-compose-widescreen-adaptive-plan.md` | 宽屏方案；前三批已落地，剩 R17（R02 已解决） |
 | `2026-10-26-compose-migration-plan.md` | 总体方案、硬约束、阶段与回退方案 |
@@ -198,6 +201,17 @@ L3 出包、L3.5 性能包、L4 真机一律用户跑；**性能只认 Bench 或
 ---
 
 ## 变更记录
+
+- **2026-11-11 补记（新发现，未排期）**：
+  - **新增 R18「单节课提醒 App 内无法新建」**（放「等 Lead 拍板」，不排期）：`ClassReminderLogic.upsert`
+    （`core/ClassReminder.kt:113`）生产调用点 0，只有 `ClassReminderSettingsTest.kt:153`/`:161` 在调；
+    `ClassAlarmSheet` 三动作全走 `SystemAlarmHelper.fireSetAlarm`（`SystemAlarm.kt:21`/`:29`，
+    `AlarmClock.ACTION_SET_ALARM`），不写 `classReminders`；整链只有读（`TimetableWeekPage.kt:773-775`）
+    与删（`ShellWiring.kt:1284` → `ClassReminderLogic.remove`）。影响：A6「取消提醒」在干净 `dev` 包里
+    造不出前置数据。
+  - **L4 手册更替**：`2026-10-27-compose-phase3-l4-checklist.md` 已被 `2026-11-11-l4-device-checklist-dev.md`
+    （`dev` 变体口径）取代，R01 与 §八 文档地图两处引用同步改指新册；新册正文由 L4 手册那条线提交，
+    校准时仓库内尚未见该文件（**未核实**，本行只登记关系）。
 
 - **2026-11-11 校准（只改账，未改代码；依据代码与提交）**：核销五条已失真待办，修正三处计数。
   - **R02 横屏/平板解锁 → 已解决**：提交 `1e8b953b7`（2026-11-08，去 Flutter 化 P4-B）删除两处
