@@ -56,7 +56,7 @@ object SettingsRecentWallpaperSection {
     /** 标签行高倍数（:325）。 */
     const val LABEL_HEIGHT_MULTIPLIER = 1.2
 
-    /** 历史上限（ARB 文案里写着「最多保留 10 张」）。 */
+    /** 历史上限（ARB 文案里写着「最多 10 张」）。 */
     const val MAX_ENTRIES = 10
 
     val BADGE_TOOLTIP = SettingsStringsExt1.wallpaperHistoryRemoveBadgeTooltip

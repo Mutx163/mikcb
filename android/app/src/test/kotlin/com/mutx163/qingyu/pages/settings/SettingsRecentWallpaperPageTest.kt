@@ -25,7 +25,7 @@ class SettingsRecentWallpaperPageTest {
         // settings_recent_wallpaper.dart:110-119
         val page = spec(RecentWallpaperState(entries = listOf("a.jpg")))
         assertEquals("最近使用", page.title)
-        assertEquals("点按切回，点角标移除，最多保留 10 张", page.rows().first().subtitle)
+        assertEquals("点按切回，点角标移除，最多 10 张", page.rows().first().subtitle)
     }
 
     @Test

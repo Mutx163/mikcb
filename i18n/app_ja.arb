@@ -1200,7 +1200,7 @@
   "keepAliveConfirmTitle": "バックグラウンド保持サービスを有効にする",
   "keepAliveConfirmBody": "このサービスはバックグラウンドでのウィジェット更新と授業リマインダーの再スケジュールにのみ使用され、画面の内容を読み取ったり、ユーザーに代わって操作を行ったりすることはありません。有効にするにはシステム設定で「ユーザー補助」権限を許可する必要があります。いつでもオフにできます。",
   "keepAliveConfirmGoAction": "有効にする",
-  "semesterOverviewCurrentWeek": "現在第{current}週 / 全{total}週",
+  "semesterOverviewCurrentWeek": "第{current}週 / 全{total}週",
   "@semesterOverviewCurrentWeek": {
     "placeholders": {
       "current": {
@@ -5477,7 +5477,7 @@
   "homePageClearImageAction": "画像をクリア",
   "homePageImageNotSelected": "未選択",
   "homePageWallpaperRecentTitle": "最近使った壁紙",
-  "homePageWallpaperRecentSubtitle": "タップで切替、角のマークで削除。最大 10 枚まで保持",
+  "homePageWallpaperRecentSubtitle": "タップ切替、✕削除、最大 10 枚",
   "homePageWallpaperRecentImageLabel": "写真",
   "wallpaperHistoryRemovedToast": "最近使った壁紙から削除しました",
   "wallpaperHistoryRemoveUndo": "元に戻す",
@@ -5485,7 +5485,7 @@
   "wallpaperHistoryRemoveBadgeTooltip": "最近使った壁紙から削除",
   "wallpaperHistoryRemoveConfirmHint": "最近使った壁紙から削除され、画像ファイルも一緒に削除されます",
   "homePageWallpaperFileMissingTitle": "画像ファイルがありません",
-  "homePageWallpaperFileMissingSubtitle": "ホームは単色の背景を表示しています。ここをタップして選び直してください",
+  "homePageWallpaperFileMissingSubtitle": "ここをタップして選び直す",
   "homePageWallpaperFileMissingToast": "壁紙ファイルがないため単色の背景に戻りました。新しい画像を選んでください",
   "wallpaperPositionPickerTitle": "壁紙の表示位置を調整",
   "wallpaperPositionPickerResetTooltip": "リセット",
@@ -5520,7 +5520,7 @@
       }
     }
   },
-  "wallpaperGalleryShowingCached": "ネットワークが不安定なため、前回読み込んだ画像を表示しています",
+  "wallpaperGalleryShowingCached": "前回の画像を表示中",
   "bingWallpaperDateToday": "今日",
   "bingWallpaperDateYesterday": "昨日",
   "bingWallpaperDateMonthDay": "{month} 月 {day} 日",

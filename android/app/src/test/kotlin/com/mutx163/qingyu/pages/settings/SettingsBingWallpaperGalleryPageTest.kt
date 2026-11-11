@@ -76,7 +76,7 @@ class SettingsBingWallpaperGalleryPageTest {
         )
         assertEquals(BingGalleryBody.GRID, SettingsBingWallpaperGalleryPage.bodyState(cached))
         assertEquals(
-            "网络不太顺畅，下面显示的是上次加载的图",
+            "显示的是上次的图",
             spec(cached).row("gallery.showingCached").title,
         )
         // 没走缓存时不出现

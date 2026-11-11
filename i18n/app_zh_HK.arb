@@ -1199,7 +1199,7 @@
   "keepAliveConfirmTitle": "開啟後台保活服務",
   "keepAliveConfirmBody": "用於後台更新桌面小組件和課程提醒，不會讀取屏幕內容或代為點擊。需要系統無障礙權限，可隨時關閉。",
   "keepAliveConfirmGoAction": "去開啟",
-  "semesterOverviewCurrentWeek": "目前第 {current} 周 / 共 {total} 周",
+  "semesterOverviewCurrentWeek": "第 {current} 周，共 {total} 周",
   "@semesterOverviewCurrentWeek": {
     "placeholders": {
       "current": {
@@ -5504,7 +5504,7 @@
   "homePageClearImageAction": "清除圖片",
   "homePageImageNotSelected": "未選擇",
   "homePageWallpaperRecentTitle": "最近使用",
-  "homePageWallpaperRecentSubtitle": "撳一下切返，撳角標移除，最多保留 10 張",
+  "homePageWallpaperRecentSubtitle": "撳下切返，撳角標移除，最多 10 張",
   "homePageWallpaperRecentImageLabel": "相片",
   "wallpaperHistoryRemovedToast": "已從最近使用中刪除",
   "wallpaperHistoryRemoveUndo": "復原",
@@ -5512,7 +5512,7 @@
   "wallpaperHistoryRemoveBadgeTooltip": "從最近使用中移除",
   "wallpaperHistoryRemoveConfirmHint": "會由最近使用中移除，圖片檔案亦會一併刪除",
   "homePageWallpaperFileMissingTitle": "圖片檔案已遺失",
-  "homePageWallpaperFileMissingSubtitle": "首頁而家顯示嘅係純色背景。撳呢度重新揀一張",
+  "homePageWallpaperFileMissingSubtitle": "撳呢度重新揀一張",
   "homePageWallpaperFileMissingToast": "桌布檔案已遺失，已還原做純色背景，請重新揀一張",
   "wallpaperPositionPickerTitle": "調整桌布顯示位置",
   "wallpaperPositionPickerResetTooltip": "重設",
@@ -5554,7 +5554,7 @@
       }
     }
   },
-  "wallpaperGalleryShowingCached": "網絡不太順暢，下面顯示的是上次載入的圖",
+  "wallpaperGalleryShowingCached": "顯示的是上次的圖",
   "bingWallpaperDateToday": "今日",
   "bingWallpaperDateYesterday": "尋日",
   "bingWallpaperDateMonthDay": "{month} 月 {day} 日",

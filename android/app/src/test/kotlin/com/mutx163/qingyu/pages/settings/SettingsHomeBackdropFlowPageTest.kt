@@ -101,7 +101,7 @@ class SettingsHomeBackdropFlowPageTest {
         val spec = SettingsBackdropFlowPage.selectionPage(missing.backdrop, missing)
         val notice = spec.row("backdrop.image.missing")
         assertEquals("图片文件已丢失", notice.title)
-        assertEquals("首页当前显示的是纯色背景。点这里重新选一张", notice.subtitle)
+        assertEquals("点这里重新选一张", notice.subtitle)
         // 警示条本身就是一个动作（点了回到选图），不是纯文字
         assertEquals(SettingsAction.NAVIGATE, notice.action)
         assertEquals("backdrop.image.missing", notice.actionTarget)
@@ -119,7 +119,7 @@ class SettingsHomeBackdropFlowPageTest {
             .single { it.id == "backdrop.recent" }
         assertEquals(InlineKind.CONTROL_CARD, recent.kind)
         assertEquals("最近使用", recent.label)
-        assertEquals("点按切回，点角标移除，最多保留 10 张", recent.value)
+        assertEquals("点按切回，点角标移除，最多 10 张", recent.value)
         assertEquals(listOf("a.jpg", "b.jpg"), recent.colors)
     }
 

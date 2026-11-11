@@ -75,7 +75,7 @@ class SettingsTimetablePageTest {
         // timetable_settings_screen.dart:389-392 `semesterOverviewCurrentWeek(current, total)`
         val page = spec(SettingsTimetableState(currentWeek = 5, semesterWeekCount = 20))
         val summary = page.row("timetable.summary")
-        assertEquals("当前第 5 周 / 共 20 周", summary.title)
+        assertEquals("第 5 周，共 20 周", summary.title)
         assertEquals("semesterOverviewCurrentWeek", summary.titleKey)
         assertEquals(SettingsAction.NAVIGATE, summary.action)
         assertEquals("/settings/semester", summary.actionTarget)

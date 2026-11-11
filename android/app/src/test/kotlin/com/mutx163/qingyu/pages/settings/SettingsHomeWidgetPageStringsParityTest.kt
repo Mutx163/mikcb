@@ -122,9 +122,9 @@ class SettingsHomeWidgetPageStringsParityTest {
         // 人推的反例：homeGridCustomizeDetails 的渲染值是「已启用 8/8 个」，
         // 与模板「已启用 {count}/{max} 个」不同但必须通过；改掉片段必须红。
         assertMatchesArb("homeGridCustomizeDetails", "已启用 8/8 个")
-        assertMatchesArb("semesterOverviewCurrentWeek", "当前第 5 周 / 共 20 周")
+        assertMatchesArb("semesterOverviewCurrentWeek", "第 5 周，共 20 周")
         assertEquals("已启用 {count}/{max} 个", ArbZh.value("homeGridCustomizeDetails"))
-        assertEquals("当前第 {current} 周 / 共 {total} 周", ArbZh.value("semesterOverviewCurrentWeek"))
+        assertEquals("第 {current} 周，共 {total} 周", ArbZh.value("semesterOverviewCurrentWeek"))
         val failed = runCatching { assertMatchesArb("homeGridCustomizeDetails", "已开启 8/8 个") }
         assertTrue("改掉模板片段应当比对失败", failed.isFailure)
     }

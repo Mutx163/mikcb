@@ -240,7 +240,7 @@ object SettingsStringsExt2 {
     val miuixShowcaseEntrySubtitle = ArbText("miuixShowcaseEntrySubtitle", "Miuix 组件预览")
     val debugUiOverlayToggleTitle = ArbText("debugUiOverlayToggleTitle", "调试 UI 叠层")
     val debugUiOverlayOpenPanelTitle = ArbText("debugUiOverlayOpenPanelTitle", "打开调试面板")
-    val semesterOverviewCurrentWeek = ArbText("semesterOverviewCurrentWeek", "当前第 {current} 周 / 共 {total} 周")
+    val semesterOverviewCurrentWeek = ArbText("semesterOverviewCurrentWeek", "第 {current} 周，共 {total} 周")
     val semesterStartUnset = ArbText("semesterStartUnset", "未设置开学日期")
     val semesterStartSet = ArbText("semesterStartSet", "开学日期：{date}")
     val settingsSemesterScreenTitle = ArbText("settingsSemesterScreenTitle", "学期设置")
