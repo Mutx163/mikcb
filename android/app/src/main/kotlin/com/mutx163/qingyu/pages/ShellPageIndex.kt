@@ -1528,6 +1528,10 @@ fun ShellPageContent(
             },
             onOpenLocationEntry = { onOpenPage("d3.locationMatch") },
             onOpenDateRules = { onOpenPage("d2.dateRule") },
+            // T-01（2026-11-11 评审三）：二维码发送页路由已在（`g3.qrSend`），宿主早就能打包并
+            // 写 `TransferShellBridge`；壳不传这一行时分享弹层会把「二维码分享」整行藏起来
+            // （宿主按 `onRequestQrSend != null` 决定）。一行实参，指向既有路由，不新增逻辑。
+            onRequestQrSend = { onOpenPage("g3.qrSend") },
         )
         // 时间模板「编辑节次」子页（`d3.timeSchemeEditor`）：没有任何模板 id 时直接退回，
         // 不渲染一个「不知道在编辑哪一套」的空壳。
