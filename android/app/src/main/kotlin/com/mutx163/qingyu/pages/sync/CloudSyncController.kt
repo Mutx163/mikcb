@@ -277,9 +277,18 @@ class CloudSyncController(
 
     fun onDeviceLabelChanged(value: String) {
         deviceLabelDraft = value
-        // 只改草稿不落盘 = 下次进页面又读回占位名（用户报的「为什么叫 Compose 壳」根因之一）。
-        persistDeviceLabel?.invoke(value.trim())
+        // 打字阶段只改内存草稿（发布版口径：onSubmitted 才落盘）。
         notifyChanged()
+    }
+
+    /**
+     * 提交设备名：**只有这一步才落盘**（发布版 `onSubmitted` 口径）。
+     *
+     * 清空也写一次空串：存储层把空白归一成「未设置」，读取侧再回落到设备型号 /「本机」，
+     * 这样「用户主动清空」与「从未设置」在展示上一致，但盘上状态是明确写过的。
+     */
+    fun submitDeviceLabel() {
+        persistDeviceLabel?.invoke(deviceLabelDraft.trim())
     }
 
     /**

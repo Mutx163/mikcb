@@ -24,6 +24,9 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
@@ -80,6 +83,8 @@ fun CloudSyncPage(
     onBaseUrlChange: (String) -> Unit,
     onRemoteFolderChange: (String) -> Unit,
     onDeviceLabelChange: (String) -> Unit,
+    /** 键盘「完成」提交时才落盘（发布版口径：草稿在内存，onSubmitted 才写）。 */
+    onDeviceLabelSubmit: () -> Unit = {},
     onSaveAdvanced: () -> Unit,
     onSyncNow: () -> Unit,
     onCreateBackup: () -> Unit,
@@ -222,6 +227,10 @@ fun CloudSyncPage(
                                         },
                                         label = viewState.deviceLabelTitle,
                                         modifier = Modifier.fillMaxWidth(),
+                                        // 发布版口径：打字只改内存草稿，**提交（完成键）才落盘**；
+                                        // 每键一次同步 commit() 会在慢盘上卡输入法。
+                                        keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
+                                        keyboardActions = KeyboardActions(onDone = { onDeviceLabelSubmit() }),
                                     )
                                     Text(
                                         text = viewState.deviceLabelHint,

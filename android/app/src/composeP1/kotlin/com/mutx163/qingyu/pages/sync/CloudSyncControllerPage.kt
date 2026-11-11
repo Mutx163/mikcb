@@ -252,6 +252,8 @@ fun CloudSyncPage(
             onBaseUrlChange = { controller.onBaseUrlChanged(it) },
             onRemoteFolderChange = { controller.onRemoteFolderChanged(it) },
             onDeviceLabelChange = { controller.onDeviceLabelChanged(it) },
+            // 发布版口径：打字只改草稿，**提交（完成键）才落盘**。
+            onDeviceLabelSubmit = { controller.submitDeviceLabel() },
             // 返回的 verdict 里 NEED_HTTP_CONFIRM / INVALID 在宿主层分流（弹确认框 / 报错胶囊）；
             // 默认 https 直接生效。保存挪 IO + runCatching（主线程写盘崩溃链已兜住）。
             onSaveAdvanced = { saveAdvanced(allowedInsecureHttp = false) },

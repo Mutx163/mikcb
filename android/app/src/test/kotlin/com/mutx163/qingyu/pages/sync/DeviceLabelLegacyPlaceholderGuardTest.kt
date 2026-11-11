@@ -4,6 +4,7 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import java.io.File
+import com.mutx163.qingyu.testutil.stripKotlinComments
 
 /**
  * 「Compose 壳」占位名不得回潮 + 设备名必须落盘的源级守卫（2026-11-10 用户报）。
@@ -26,7 +27,7 @@ class DeviceLabelLegacyPlaceholderGuardTest {
                 .filter { it.isFile && it.extension == "kt" }
                 .forEach { file ->
                     if (file.name.endsWith("DeviceLabelResolver.kt")) return@forEach
-                    if (file.readText().contains(quoted)) {
+                    if (stripKotlinComments(file.readText()).contains(quoted)) {
                         offenders += file.relativeTo(androidSrc()).path
                     }
                 }
@@ -36,7 +37,9 @@ class DeviceLabelLegacyPlaceholderGuardTest {
 
     @Test
     fun shell_must_use_resolver_and_persist() {
-        val shell = File(androidSrc(), "main/kotlin/com/mutx163/qingyu/pages/ShellPageIndex.kt").readText()
+        val shell = stripKotlinComments(
+            File(androidSrc(), "main/kotlin/com/mutx163/qingyu/pages/ShellPageIndex.kt").readText(),
+        )
         assertEquals(
             "两个云同步入口都必须走 DeviceLabelResolver（防止一处漏改）",
             2,
@@ -54,6 +57,14 @@ class DeviceLabelLegacyPlaceholderGuardTest {
             "main/kotlin/com/mutx163/qingyu/pages/sync/CloudSyncController.kt",
         ).readText()
         assertTrue("控制器改名时必须调落盘回调", controller.contains("persistDeviceLabel?.invoke("))
+        // 5A-1：打字阶段不许落盘，只有提交（onSubmitted 口径）才写。
+        assertTrue("必须提供提交方法", controller.contains("fun submitDeviceLabel()"))
+        val changedBlock = controller.substringAfter("fun onDeviceLabelChanged(", "")
+            .substringBefore("fun ", "")
+        assertTrue(
+            "onDeviceLabelChanged 里不许再直接落盘（每键一次 commit 会卡输入法）",
+            !changedBlock.contains("persistDeviceLabel?.invoke("),
+        )
     }
 
     private fun roots(): List<File> = listOf(
