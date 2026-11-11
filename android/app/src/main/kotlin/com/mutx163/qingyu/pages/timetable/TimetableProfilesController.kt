@@ -194,7 +194,11 @@ class TimetableProfilesController(
         // Dart `duplicateActiveProfile:1967-1972` 用 `source.copyWith(...)`，拷贝的是**整份**
         // `TimetableSettings`；Kotlin 的 `TimetableProfile.settings` 只有 core 4 键，完整外观/语言
         // 都在档案内嵌 JSON 里，所以先把源档内嵌整份取出，落盘后再铺到复制品。
-        val sourceSettings = rawSettingsOf(source.id)
+        //
+        // 2026-11-11 修（数据完整性）：非活动档的 44 个全局键只是**旧镜像**，裸读会把它原样写进
+        // `app_global_settings_v1` 真源 ⇒ 用户当前主题/字体/语言被旧档顶掉且无提示。
+        // 走 [settingsWithDeviceGlobals]：非全局键继承源档，全局键只认本机真源。
+        val sourceSettings = settingsWithDeviceGlobals(source.id)
         val copy = source.copy(
             id = idFactory(),
             name = "${source.name} 副本",
@@ -411,6 +415,37 @@ class TimetableProfilesController(
     private fun globalSettingsOf(snap: TimetableSnapshot): Map<String, Any?> =
         rawSettingsOf(snap.activeProfileId)
             .filterKeys { key -> key in GLOBAL_SETTINGS_KEYS }
+
+    /**
+     * 本机**整机级真源**的 44 键当前值。
+     *
+     * 活动档走 [rawSettingsOf]（= `readRawSettings()`，档案内嵌 + 44 键 overlay），
+     * 所以取出来的全局键就是真源值，而不是某份档案的旧镜像。
+     */
+    private fun deviceGlobalSettings(): Map<String, Any?> =
+        globalSettingsOf(snapshot)
+
+    /**
+     * 源档的完整 settings **合成视图**：档案内嵌的**非全局**键 + 本机全局真源。
+     *
+     * 为什么不能直接 `rawSettingsOf`：非活动档内嵌的那 44 个键是旧镜像，
+     * 原样铺到新档时 `writeRawSettingsPatch` 会按 `split` 把它们写进
+     * `app_global_settings_v1` 真源，等于用旧档把用户当前的主题 / 字体 / 语言覆盖掉，
+     * 读侧 overlay 立刻生效、无任何提示（2026-11-11 修复，契约测试
+     * `ProfileDuplicateGlobalSettingsContractTest`）。
+     *
+     * 读不到内嵌设置时原样返回空表：调用方会跳过铺设，不误删其它键。
+     */
+    private fun settingsWithDeviceGlobals(profileId: String?): Map<String, Any?> {
+        val embedded = rawSettingsOf(profileId)
+        if (embedded.isEmpty()) return embedded
+        val out = LinkedHashMap<String, Any?>(embedded.size + GLOBAL_SETTINGS_KEYS.size)
+        for ((key, value) in embedded) {
+            if (key !in GLOBAL_SETTINGS_KEYS) out[key] = value
+        }
+        for ((key, value) in deviceGlobalSettings()) out[key] = value
+        return out
+    }
 
     /**
      * 取指定档案的完整内嵌 settings：活动档走 `readRawSettings()`，非活动档从 `profiles`
