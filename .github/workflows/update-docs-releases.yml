@@ -37,7 +37,8 @@ jobs:
           # 没配就退回内置 token，行为与以前一致（会推失败，但不影响生成）。
           token: ${{ secrets.DOCS_PUSH_TOKEN != '' && secrets.DOCS_PUSH_TOKEN || github.token }}
 
-      # 更新日志镜像校验闸（审计 P1-6，2026-11-11 加）：
+      # 更新日志镜像校验闸（审计「发版说明进 APK 是手工复制，无自动化」——审计原件编号
+      # P1-6、本波工单编号 P1-8，2026-11-11 加）：
       # APK 里的更新日志读的是 android/app/src/main/assets/docs/releases/，这份镜像是
       # **手工**从 docs/releases/ 拷过去的——没有任何 workflow 自动拷，历史上一直是人工
       # 提交同步（最近一次 b289e1b6a）。漏同步的症状是「应用内更新日志少最新一版」，
