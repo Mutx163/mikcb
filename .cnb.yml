@@ -1,8 +1,8 @@
 # ─────────────────────────────────────────────────────────────
 # 轻屿课表 · CNB 云原生构建流水线
 # 覆盖三类场景：
-#   1. 任意分支推送  → 质量门禁（analyze + test + 静态审计）
-#   2. PR            → 预合并质量门禁（与推送保持一致）
+#   1. 任意分支推送  → JVM 单测闸（Gradle `:app:testProdDebugUnitTest`）
+#   2. PR            → 预合并 JVM 单测闸（与推送保持一致）
 #   3. v* 标签       → 构建发布签名 APK 并挂到 Release
 # ─────────────────────────────────────────────────────────────
 
@@ -32,25 +32,55 @@
       by: [Dockerfile]
       versionBy: [Dockerfile]
 
-# ── 质量门禁公共步骤（推送 / PR 共用）───────────────────────
-.quality-stages: &quality-stages
-  # 去 Flutter 化 P4-D（2026-11-07）：Dart 层已删除，原来这里的
-  # flutter-version / pub-get / pubspec 编码校验 / hyperos-audit / cjk 审计 /
-  # analyze / flutter test 全部失效（它们的输入 lib/ 与 pubspec.yaml 已不存在），
-  # 统一换成 Gradle 的 JVM 单测（与本地 L2、GitHub Actions 新口径一致）。
-  - name: jvm-unit-test
-    script: cd android && ./gradlew :app:testDevDebugUnitTest --no-daemon
-
-# ── Android JVM 单测（Gradle）────────────────────────────────
-# 注意：Gradle 的仓库镜像/inject 必须与 gradle 调用同 stage 内联执行——CNB 各 stage
-# 是独立容器，跨 stage 改镜像内文件会丢失。GitHub Actions 不执行本文件，不受影响。
-# （去 Flutter 化残件清理 2026-11-08：原先这里还说明 flutter_tools included build 的镜像注入，
-#   P4-B 后该 included build 已不存在、注入已删，只剩下面的 Gradle wrapper 镜像替换一处。）
+# ── JVM 单测脚本（推送 / PR 两个 pipeline 共用，YAML 锚点复用）──────
+# 为什么抽成字符串锚点、而不是拆成独立 stage：Gradle 的仓库镜像/inject 必须与 gradle
+# 调用**同 stage 内联执行**——CNB 各 stage 是独立容器，跨 stage 改镜像内文件会丢失。
+# 早先 `jvm-unit-test` 就是因为少了这段镜像替换，国内网络下卡 services.gradle.org 的
+# SSL 握手直接失败。抽成一个 anchor，两个单测 stage 共用同一份，改一处即两边同步。
+# （GitHub Actions 不执行本文件，不受影响。）
 #
 # 注入内容（现只剩 1 项）：
 # Gradle wrapper distribution 从 services.gradle.org 下载时会因 SSL 握手
 # 失败，需替换为腾讯云镜像。
 # （幂等：已注入则跳过）。
+#
+# 去 Flutter 化残件清理（2026-11-08）：原先还有针对 flutter_tools included build 的
+# settings 镜像注入（给已删除的 Flutter Gradle 插件拉国内镜像）。P4-B 后该目录不存在，
+# 注入分支只剩「缺失，跳过」——纯残件，已删除。CNB 仍需仓库级镜像的话，应改在主构建的
+# settings.gradle 注入（已由 android/settings.gradle 的 CNB 块覆盖）。
+#
+# 去 Flutter 化 P4-D（2026-11-07）：Dart 层已删除，原先 quality-stages 里的
+# flutter-version / pub-get / pubspec 编码校验 / hyperos-audit / cjk 审计 /
+# analyze / flutter test 全部失效（它们的输入 lib/ 与 pubspec.yaml 已不存在），
+# 统一换成下面这条 Gradle 的 JVM 单测。
+.jvm-test-script: &jvm-test-script |
+  set -eu
+
+  # Gradle wrapper distribution 换国内镜像（规避 services.gradle.org 不可达/SSL 失败）
+  WRAPPER_PROP="android/gradle/wrapper/gradle-wrapper.properties"
+  if [ -f "$WRAPPER_PROP" ] && ! grep -q 'mirrors.cloud.tencent.com/gradle' "$WRAPPER_PROP"; then
+    sed -i 's|distributionUrl=.*|distributionUrl=https\\://mirrors.cloud.tencent.com/gradle/gradle-9.8.2-all.zip|' "$WRAPPER_PROP"
+    echo "Gradle distribution 镜像已替换: $WRAPPER_PROP"
+  else
+    echo "Gradle distribution 镜像已存在或文件缺失，跳过替换"
+  fi
+
+  cd android
+  echo "Using Gradle distribution: $(grep '^distributionUrl' gradle/wrapper/gradle-wrapper.properties)"
+  # 变体口径：CI / 发布链一律 prod（本文件、ci.yml、android-build.yml 三处同一条命令）；
+  # 本地 L2 可以用 dev（scripts/safe-gradle.ps1 默认 :app:testDevDebugUnitTest）——
+  # 两者跑的是同一份 src/test，dev 只是包名多 .debug，闸门价值相同。
+  ./gradlew :app:testProdDebugUnitTest --stacktrace --quiet --no-daemon
+
+# ── 质量门禁公共步骤（推送 / PR 共用）───────────────────────
+.quality-stages: &quality-stages
+  - name: jvm-unit-test
+    script: *jvm-test-script
+
+# ── Android JVM 单测（Gradle，文档类变更可跳过）────────────────
+# 脚本体同上锚点 `jvm-test-script`：镜像替换必须与 gradle 调用同 stage 内联，
+# 所以不拆成独立 stage，而是两个 stage 各自引用同一份脚本。
+#
 # 核时优化：本 stage 实测 635s，占整条流水线（818s）的 ~78%，且只覆盖
 # android/app/src/test 下的纯 JVM 单测（JUnit + java.util，不依赖 Dart/Flutter
 # 产物）。变更只落在文档/站点（site/**）、docs/** 与编排文件（.mdx/meta.json）时
@@ -73,26 +103,7 @@
       - "!(**/*.mdx)"
       - "!(**/meta.json)"
       - "!(docs/**)"
-    script: |
-      set -eu
-
-      # 去 Flutter 化残件清理（2026-11-08）：原先这里还有针对 flutter_tools included build 的
-      # settings 镜像注入（给已删除的 Flutter Gradle 插件拉国内镜像）。P4-B 后该目录不存在，
-      # 注入分支只剩「缺失，跳过」——纯残件，已删除。CNB 仍需国内镜像的话，应改在主构建的
-      # settings.gradle 仓库级注入（已由 android/settings.gradle 的 CNB 块覆盖）。
-
-      # Gradle wrapper distribution 换国内镜像（规避 services.gradle.org 不可达/SSL 失败）
-      WRAPPER_PROP="android/gradle/wrapper/gradle-wrapper.properties"
-      if [ -f "$WRAPPER_PROP" ] && ! grep -q 'mirrors.cloud.tencent.com/gradle' "$WRAPPER_PROP"; then
-        sed -i 's|distributionUrl=.*|distributionUrl=https\\://mirrors.cloud.tencent.com/gradle/gradle-9.8.2-all.zip|' "$WRAPPER_PROP"
-        echo "Gradle distribution 镜像已替换: $WRAPPER_PROP"
-      else
-        echo "Gradle distribution 镜像已存在或文件缺失，跳过替换"
-      fi
-
-      cd android
-      echo "Using Gradle distribution: $(grep '^distributionUrl' gradle/wrapper/gradle-wrapper.properties)"
-      ./gradlew :app:testProdDebugUnitTest --stacktrace --quiet --no-daemon
+    script: *jvm-test-script
 
 # ═════════════════════════════════════════════════════════════
 # 1. 任意分支推送 → 质量门禁
