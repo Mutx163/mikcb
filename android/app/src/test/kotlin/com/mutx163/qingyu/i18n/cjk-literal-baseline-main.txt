@@ -5,9 +5,9 @@
 com/mutx163/qingyu/pages/diagnostics/MemoryStatsModel.kt:123
 com/mutx163/qingyu/pages/shell/ShellPageCatalog.kt:115
 com/mutx163/qingyu/pages/guide/MoreFeaturesModel.kt:101
-com/mutx163/qingyu/pages/import/SpreadsheetImportModel.kt:71
 com/mutx163/qingyu/pages/weather/WeatherCityPickerModel.kt:81
 com/mutx163/qingyu/pages/guide/UserGuideModel.kt:80
+com/mutx163/qingyu/pages/import/SpreadsheetImportModel.kt:71
 com/mutx163/qingyu/pages/showcase/MiuixShowcaseModel.kt:59
 com/mutx163/qingyu/pages/time_scheme/LocationBuildingClusterModel.kt:58
 com/mutx163/qingyu/pages/diagnostics/PerformanceSettingsSnapshot.kt:55
@@ -33,8 +33,6 @@ com/mutx163/qingyu/pages/import/IcsHeaderKeywords.kt:9
 com/mutx163/qingyu/pages/settings/SettingsLiveSelfCheckPage.kt:7
 com/mutx163/qingyu/pages/transfer/DataTransferPackageLogic.kt:7
 com/mutx163/qingyu/transfer/lan/LanEditRepositoryHost.kt:7
-com/mutx163/qingyu/calendar/WeekExpressionParser.kt:1
-com/mutx163/qingyu/pages/ShellPageIndex.kt:4
 com/mutx163/qingyu/pages/live/DisplaySettingsModel.kt:6
 com/mutx163/qingyu/pages/settings/SettingsGlassDockIconEditorPage.kt:6
 # 2026-11-11 审计 P1-9 周表达式单实现（导入域）：core/WeekExpressionParsing.kt 5 条中文
@@ -52,10 +50,7 @@ com/mutx163/qingyu/pages/settings/SettingsAppearancePage.kt:5
 com/mutx163/qingyu/pages/settings/SettingsHomeWidgetPage.kt:5
 com/mutx163/qingyu/pages/transfer/QrFountainLt.kt:5
 com/mutx163/qingyu/share/qr/QrEncoder.kt:5
-# 2026-11-10 云同步设备名（美化十二）：
-#   pages/sync/DeviceLabelResolver.kt 0→1 —— 旧占位名常量「Compose 壳」（旧版写进存档的假设备名，
-#   识别后视同未设置并回落到设备型号）；常量字符串来自发布版同一语义，不是屏上文案，不走 ArbText。
-com/mutx163/qingyu/pages/sync/DeviceLabelResolver.kt:1
+com/mutx163/qingyu/pages/ShellPageIndex.kt:4
 # 2026-11-10 导出线登记（1→4）：`IcsExportModel.kt` 这 4 条是 `formatDate` 的日期格式 pattern
 # `y年M月d日`（ja / zh / zh_HK / zh_TW 四个标签共用同一条），**不是屏上可翻译文案**：
 # 它交给 `DateTimeFormatter.ofPattern` 消费，产出的是数字，语言差异只体现在 pattern 上。
@@ -67,7 +62,12 @@ com/mutx163/qingyu/pages/import/ImportTemplateModel.kt:4
 com/mutx163/qingyu/pages/import/warehouse/AiImageImportModel.kt:4
 com/mutx163/qingyu/pages/import/warehouse/WarehouseRepositoryModels.kt:4
 com/mutx163/qingyu/pages/settings/SettingsGeneralPage.kt:4
-com/mutx163/qingyu/pages/settings/SettingsHomeNavigationPage.kt:2
+# 2026-11-10 官网调研 lane 登记（2→3）：`TimetableRepository.kt` 新增第 3 条是
+# `IMPORT_TIME_SCHEME_SUPPLEMENT_SUFFIX = "（导入补齐）"`。理由：该串是**持久化到时间模板名**、
+# 会显示在模板列表的用户可见名，发布版就是硬编码常量（import_export_service.dart:10）；
+# 改走 ArbText 会随语言变化，与发布版以及用户盘上已有的「（导入补齐）」模板名不一致。
+# 后续若要收进 i18n，需新增 ARB 键并同步 six 语言 + ArbCatalog（另开 i18n 工单）。
+com/mutx163/qingyu/app/TimetableRepository.kt:3
 com/mutx163/qingyu/pages/ShellPageIndexScreen.kt:3
 com/mutx163/qingyu/pages/diagnostics/LiveTestingFixtureActions.kt:3
 com/mutx163/qingyu/pages/import/warehouse/WarehouseFormLabels.kt:3
@@ -77,17 +77,12 @@ com/mutx163/qingyu/pages/settings/SettingsPageModel.kt:3
 com/mutx163/qingyu/pages/settings/SettingsRecentWallpaperPage.kt:3
 com/mutx163/qingyu/pages/statistics/charts/QrEncodeModel.kt:3
 com/mutx163/qingyu/share/camera/ScanResultDeduplicator.kt:3
-# 2026-11-10 官网调研 lane 登记（2→3）：`TimetableRepository.kt` 新增第 3 条是
-# `IMPORT_TIME_SCHEME_SUPPLEMENT_SUFFIX = "（导入补齐）"`。理由：该串是**持久化到时间模板名**、
-# 会显示在模板列表的用户可见名，发布版就是硬编码常量（import_export_service.dart:10）；
-# 改走 ArbText 会随语言变化，与发布版以及用户盘上已有的「（导入补齐）」模板名不一致。
-# 后续若要收进 i18n，需新增 ARB 键并同步 six 语言 + ArbCatalog（另开 i18n 工单）。
-com/mutx163/qingyu/app/TimetableRepository.kt:3
 com/mutx163/qingyu/core/TimetableProfile.kt:2
 com/mutx163/qingyu/pages/settings/SettingsAppearanceEditorPage.kt:2
 com/mutx163/qingyu/pages/settings/SettingsCourseCardPage.kt:2
 com/mutx163/qingyu/pages/settings/SettingsGlassDockEditorPage.kt:2
 com/mutx163/qingyu/pages/settings/SettingsHomeMenuEditorPage.kt:2
+com/mutx163/qingyu/pages/settings/SettingsHomeNavigationPage.kt:2
 com/mutx163/qingyu/pages/settings/SettingsResetPage.kt:2
 com/mutx163/qingyu/pages/statistics/StatisticsSettingsModel.kt:2
 com/mutx163/qingyu/pages/statistics/charts/StatsInfoModels.kt:2
@@ -96,6 +91,7 @@ com/mutx163/qingyu/statistics/ExportBrandModel.kt:2
 com/mutx163/qingyu/UmengDiagnosticReporter.kt:1
 com/mutx163/qingyu/app/TimetableHostLogic.kt:1
 com/mutx163/qingyu/calendar/HolidayConversion.kt:1
+com/mutx163/qingyu/calendar/WeekExpressionParser.kt:1
 com/mutx163/qingyu/core/EventSink.kt:1
 com/mutx163/qingyu/core/TimeScheme.kt:1
 com/mutx163/qingyu/pages/exam/ExamListModel.kt:1
@@ -104,6 +100,10 @@ com/mutx163/qingyu/pages/export/IcsShareWiring.kt:1
 com/mutx163/qingyu/pages/import/warehouse/WarehouseRepositoryParsers.kt:1
 com/mutx163/qingyu/pages/settings/SettingsTimetablePageSettingsPage.kt:1
 com/mutx163/qingyu/pages/sync/CoupleTimetableSettingsModel.kt:1
+# 2026-11-10 云同步设备名（美化十二）：
+#   pages/sync/DeviceLabelResolver.kt 0→1 —— 旧占位名常量「Compose 壳」（旧版写进存档的假设备名，
+#   识别后视同未设置并回落到设备型号）；常量字符串来自发布版同一语义，不是屏上文案，不走 ArbText。
+com/mutx163/qingyu/pages/sync/DeviceLabelResolver.kt:1
 com/mutx163/qingyu/pages/timetable/TimetableProfilesController.kt:1
 com/mutx163/qingyu/pages/timetable/TimetableShareImageModel.kt:1
 com/mutx163/qingyu/share/TransferShareContract.kt:1

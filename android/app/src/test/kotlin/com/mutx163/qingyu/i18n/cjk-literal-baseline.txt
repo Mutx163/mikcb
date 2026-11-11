@@ -37,118 +37,77 @@
 #   理由：`@Preview(name = …)` 的中文是 **IDE 里的标签**，预览样例字符串同样是 IDE 可见样例；
 #   都不上屏、不进 l10n，屏上文案仍一律走 ArbText。数值层与实测 0 差异，本次只补理由行。
 com/mutx163/qingyu/pages/showcase/MiuixShowcaseSubpages.kt:73
-com/mutx163/qingyu/pages/settings/SettingsPageRenderers.kt:47
-com/mutx163/qingyu/pages/weather/WeatherCityPickerPage.kt:41
-com/mutx163/qingyu/pages/statistics/CourseStatisticsPage.kt:34
-com/mutx163/qingyu/pages/timetable/month/MonthViewPage.kt:33
-com/mutx163/qingyu/pages/timetable/HomeShellPreviews.kt:38
-com/mutx163/qingyu/pages/timetable/TimetableWeekPage.kt:32
-com/mutx163/qingyu/pages/course/CourseOverviewPage.kt:29
-com/mutx163/qingyu/pages/statistics/StatisticsAnalysisPage.kt:28
+com/mutx163/qingyu/pages/settings/SettingsPageRenderers.kt:40
+com/mutx163/qingyu/pages/timetable/HomeShellPreviews.kt:29
+com/mutx163/qingyu/pages/timetable/TimetableWeekPage.kt:29
+com/mutx163/qingyu/pages/timetable/month/MonthViewPage.kt:26
+com/mutx163/qingyu/pages/weather/WeatherCityPickerPage.kt:20
+com/mutx163/qingyu/pages/statistics/CourseStatisticsPage.kt:19
+com/mutx163/qingyu/pages/import/warehouse/WarehouseCourseImportPage.kt:17
 # 2026-11-10 鸣谢名单条目重排（美化四）登记 about/SupportCreatorPage.kt 29→33：
 #   +1 = 一屏条目档预览名「9 名单条目·一屏」；+3 = 该档预览假数据里新增的两位支持者
 #   中文昵称与一条中文留言（用于覆盖「长留言折行」「带时分秒的日期」两种真实名单形态）。
 #   理由：@Preview 名与预览假数据都是 IDE 里给评审看的标签/样例，不上屏、不进 l10n；
 #   屏上文案仍一律走 ArbText，名单数据来自线上 docs/donors.json（本次一字未改）。
-com/mutx163/qingyu/pages/about/SupportCreatorPage.kt:33
-com/mutx163/qingyu/pages/diagnostics/PerfReportPage.kt:29
-com/mutx163/qingyu/pages/about/ContributorsPage.kt:28
-com/mutx163/qingyu/pages/import/warehouse/WarehouseCourseImportPage.kt:25
-com/mutx163/qingyu/pages/diagnostics/MemoryStatsPage.kt:26
+com/mutx163/qingyu/pages/about/SupportCreatorPage.kt:16
+com/mutx163/qingyu/pages/course/CourseOverviewPage.kt:15
+com/mutx163/qingyu/pages/statistics/StatisticsAnalysisPage.kt:15
+com/mutx163/qingyu/pages/task/TaskListPage.kt:15
+com/mutx163/qingyu/pages/statistics/StatisticsSessionPage.kt:13
+com/mutx163/qingyu/pages/conflict/CourseConflictPage.kt:12
+# 2026-11-10 收波登记（Chief 授权：无主合规收编，美化一执行）：
+# `WarehouseAdapterDetailPage.kt` 19→20 —— 文件末尾「8 整页 1200」预览名。
+# 理由：@Preview 名为 IDE 标签，非屏上文案（不上屏、不进 l10n）；原写入方未认领。
+com/mutx163/qingyu/pages/import/warehouse/WarehouseAdapterDetailPage.kt:12
+com/mutx163/qingyu/pages/about/ContributorsPage.kt:11
+com/mutx163/qingyu/pages/guide/HyperosShowcasePage.kt:11
+com/mutx163/qingyu/pages/import/warehouse/WarehouseSchoolAdaptersPage.kt:11
 # 2026-11-10 收波登记（Chief 授权：无主合规收编，美化十代登记）：
 # `DisplaySettingsPage.kt` 24→26 —— 点对点整页预览批落的「7 整页 1400」预览名
 # + 预览状态标注 `"课前页"`；收波时仍无主（原写入方未认领）。
 # 理由：@Preview 名 / 预览状态标注是 IDE 标签，非屏上文案（不上屏、不进 l10n）。
-com/mutx163/qingyu/pages/live/DisplaySettingsPage.kt:26
-com/mutx163/qingyu/pages/diagnostics/LiveDiagnosticsLogPage.kt:24
-com/mutx163/qingyu/pages/guide/StartupFlowPage.kt:22
-com/mutx163/qingyu/pages/guide/UserGuidePage.kt:22
-com/mutx163/qingyu/pages/about/AboutUpdatePage.kt:21
-com/mutx163/qingyu/pages/statistics/StatisticsSessionPage.kt:21
-com/mutx163/qingyu/pages/sync/CloudSyncPage.kt:21
-com/mutx163/qingyu/pages/sync/CloudBackupListPage.kt:20
-# 2026-11-10 收波登记（Chief 授权：无主合规收编，美化一执行）：
-# `WarehouseAdapterDetailPage.kt` 19→20 —— 文件末尾「8 整页 1200」预览名。
-# 理由：@Preview 名为 IDE 标签，非屏上文案（不上屏、不进 l10n）；原写入方未认领。
-com/mutx163/qingyu/pages/import/warehouse/WarehouseAdapterDetailPage.kt:20
-com/mutx163/qingyu/pages/task/TaskListPage.kt:19
-com/mutx163/qingyu/pages/import/warehouse/WarehouseSchoolAdaptersPage.kt:17
-com/mutx163/qingyu/pages/schedule/ScheduleListPage.kt:17
-com/mutx163/qingyu/pages/conflict/CourseConflictPage.kt:16
-com/mutx163/qingyu/pages/exam/AddExamPage.kt:17
-com/mutx163/qingyu/pages/exam/ExamListPage.kt:16
-com/mutx163/qingyu/pages/diagnostics/LiveTestingFixturePage.kt:15
-com/mutx163/qingyu/pages/time_scheme/LocationTimeGroupEditorPage.kt:15
-com/mutx163/qingyu/pages/guide/HyperosShowcasePage.kt:14
-com/mutx163/qingyu/pages/sync/CoupleTimetableSettingsPage.kt:14
-com/mutx163/qingyu/pages/about/AdvancedOptionsPage.kt:13
-com/mutx163/qingyu/pages/live/LiveKeepAliveSettingsPage.kt:13
-com/mutx163/qingyu/pages/timetable/TimetableProfilesPage.kt:14
-com/mutx163/qingyu/pages/schedule/ScheduleDateRulePage.kt:12
-com/mutx163/qingyu/pages/time_scheme/LocationTimeMatchPage.kt:12
-com/mutx163/qingyu/pages/timetable/day/DayViewPage.kt:12
-com/mutx163/qingyu/pages/about/OpenSourceLicensesPage.kt:11
-com/mutx163/qingyu/pages/import/warehouse/WarehouseCustomDebugPage.kt:10
-com/mutx163/qingyu/pages/showcase/MiuixShowcasePage.kt:10
-com/mutx163/qingyu/pages/task/AddTaskPage.kt:10
-com/mutx163/qingyu/pages/course/AddCoursePage.kt:10
-com/mutx163/qingyu/pages/import/warehouse/AiImageCourseImportPage.kt:9
+com/mutx163/qingyu/pages/live/DisplaySettingsPage.kt:11
+com/mutx163/qingyu/pages/schedule/ScheduleListPage.kt:11
+com/mutx163/qingyu/pages/time_scheme/LocationTimeGroupEditorPage.kt:11
+com/mutx163/qingyu/pages/diagnostics/PerfReportPage.kt:10
+com/mutx163/qingyu/pages/exam/AddExamPage.kt:10
+com/mutx163/qingyu/pages/exam/ExamListPage.kt:10
+com/mutx163/qingyu/pages/diagnostics/LiveDiagnosticsLogPage.kt:9
+com/mutx163/qingyu/pages/guide/StartupFlowPage.kt:9
+com/mutx163/qingyu/pages/timetable/day/DayViewPage.kt:9
+com/mutx163/qingyu/pages/sync/CloudSyncPage.kt:8
+com/mutx163/qingyu/pages/time_scheme/LocationTimeMatchPage.kt:8
+com/mutx163/qingyu/pages/about/AboutUpdatePage.kt:7
+com/mutx163/qingyu/pages/diagnostics/MemoryStatsPage.kt:7
+com/mutx163/qingyu/pages/sync/CloudBackupListPage.kt:7
+com/mutx163/qingyu/pages/import/warehouse/WarehouseCustomDebugPage.kt:6
+com/mutx163/qingyu/pages/live/LiveIslandPreview.kt:6
+com/mutx163/qingyu/pages/schedule/ScheduleDateRulePage.kt:6
+com/mutx163/qingyu/pages/showcase/MiuixShowcasePage.kt:6
+com/mutx163/qingyu/pages/timetable/TimetableProfilesPage.kt:6
+com/mutx163/qingyu/pages/course/AddCoursePage.kt:5
+com/mutx163/qingyu/pages/diagnostics/LiveTestingFixturePage.kt:5
+com/mutx163/qingyu/pages/guide/UserGuidePage.kt:5
+com/mutx163/qingyu/pages/import/warehouse/AiImageCourseImportPage.kt:5
+com/mutx163/qingyu/pages/task/AddTaskPage.kt:5
+com/mutx163/qingyu/pages/sync/CoupleTimetableSettingsPage.kt:4
+com/mutx163/qingyu/pages/about/AdvancedOptionsPage.kt:3
+com/mutx163/qingyu/pages/live/LiveKeepAliveSettingsPage.kt:3
 # 2026-11-10 美学波（日程页「时间模板」行，美化十二收集项）登记增量：
 #   schedule/AddScheduleItemPage.kt 10→11 —— 任务 A 快捷模板编辑态预览档补一档中文预览名的增量；
 #   理由：@Preview(name = …) 是 IDE 标签、不上屏、不进 l10n；屏上文案仍走 ArbText。
-com/mutx163/qingyu/pages/schedule/AddScheduleItemPage.kt:11
-com/mutx163/qingyu/pages/settings/DockMenuEditors.kt:11
-# 2026-11-10 全仓预览补齐批（加载态共享件，美化一）新增登记：
-# `components/QingyuLoading.kt` 0→7 —— 七个公开入口各一档「一屏」预览（1 整页居中 / 2 行内三档 /
-#   3 按钮内 / 4 按钮内大号 / 5 行首方块位 / 6 局部遮罩 / 7 确定进度）的预览名 7 条；私有实现
-#   `QingyuLoadingIndicator` 不做预览（内部拼装件，经七个入口已可见）。
-#   理由：`@Preview(name = …)` 是 IDE 里的标签，不上屏、不进 l10n；屏上文案仍一律走 ArbText。
-com/mutx163/qingyu/components/QingyuLoading.kt:7
-# 2026-11-10 全仓预览补齐批（空态共享件，美化二）新增登记：
-# `components/QingyuEmptyState.kt` 0→8 —— 三档预览「1 页面级空态 / 2 行内提示两档 / 3 判墨三档」的
-#   预览名 3 条 + 预览假数据 5 条（标题、说明、主操作、两档提示句）；该文件此前零中文字面量。
-# 理由：`@Preview(name = …)` 与预览假数据都是 **IDE 里的标签/样例**，不上屏、不进 l10n；
-#   屏上文案仍一律走 ArbText。空态守卫「断言 4」同步收窄：豁免范围**只有** `@Preview(...)` 参数
-#   与被它标注的函数体，其余代码零中文照旧（探针见 `pages/emptyguard` 守卫文件头第 3 条）。
-com/mutx163/qingyu/components/QingyuEmptyState.kt:8
-# 2026-11-10 全仓预览补齐批（颜色线共享件，美化十二收集项）新增登记：
-# `components/QingyuColorChips.kt` 0→2、`components/QingyuColorPickerDialog.kt` 0→4 ——
-#   色片/选色弹层的预览名与预览假数据（IDE 标签/样例，不上屏、不进 l10n）。
-com/mutx163/qingyu/components/QingyuColorChips.kt:2
-com/mutx163/qingyu/components/QingyuColorPickerDialog.kt:4
-# 2026-11-10 全仓预览补齐批（多 lane 收集，美化十/八/四/一 已核零登记）：
-#   timetable/HomeShellPreviews.kt 32→38（整壳预览）、components/QingyuSlider.kt 0→4、
-#   components/QingyuCard.kt 0→3、components/glass/QingyuGlassSurface.kt 0→2、
-#   components/BackToTodayFab.kt 0→3、components/glass/CourseCardGlassSurface.kt 0→2、
-#   components/liquid/LiquidCombinedBackdrop.kt 0→2、pages/live/LiveIslandPreview.kt 0→8。
-#   理由：@Preview(name = …) 与预览样例字符串是 IDE 标签/样例，不上屏、不进 l10n；屏上文案仍走 ArbText。
-com/mutx163/qingyu/components/QingyuSlider.kt:4
-com/mutx163/qingyu/components/QingyuCard.kt:3
-com/mutx163/qingyu/components/glass/QingyuGlassSurface.kt:2
-com/mutx163/qingyu/components/BackToTodayFab.kt:3
-com/mutx163/qingyu/components/glass/CourseCardGlassSurface.kt:2
-com/mutx163/qingyu/components/liquid/LiquidCombinedBackdrop.kt:2
-com/mutx163/qingyu/pages/live/LiveIslandPreview.kt:8
+com/mutx163/qingyu/pages/schedule/AddScheduleItemPage.kt:3
+com/mutx163/qingyu/pages/time_scheme/TimeSchemeManagementPage.kt:3
 # 2026-11-10 全仓预览补齐批（弹层套件，美化三）：
 #   components/QingyuSheet.kt 0→4 —— 套件预览档的预览名与预览样例（IDE 标签/样例，不上屏）。
-com/mutx163/qingyu/components/QingyuSheet.kt:4
-com/mutx163/qingyu/pages/export/IcsExportPage.kt:8
-com/mutx163/qingyu/pages/time_scheme/TimeSchemeManagementPage.kt:8
-com/mutx163/qingyu/pages/settings/AppearanceEditorScreen.kt:7
-com/mutx163/qingyu/pages/transfer/QrTransferSendPage.kt:7
-com/mutx163/qingyu/pages/guide/MoreFeaturesPage.kt:6
-com/mutx163/qingyu/pages/time_scheme/TimeSchemeEditorPage.kt:7
-com/mutx163/qingyu/pages/transfer/DataTransferPage.kt:6
-com/mutx163/qingyu/pages/transfer/LanEditPage.kt:6
-com/mutx163/qingyu/pages/transfer/QrTransferScanPage.kt:6
-com/mutx163/qingyu/pages/feedback/FeedbackPage.kt:5
-com/mutx163/qingyu/pages/import/ImportEntryPage.kt:5
-com/mutx163/qingyu/pages/import/SpreadsheetImportPage.kt:5
-com/mutx163/qingyu/pages/transfer/PickupCodesPage.kt:5
-com/mutx163/qingyu/pages/about/ChangelogPage.kt:4
-com/mutx163/qingyu/pages/import/IcsImportPage.kt:4
-com/mutx163/qingyu/pages/live/ReminderTimingPage.kt:4
-com/mutx163/qingyu/pages/settings/GlassDockIconPickerScreen.kt:4
-com/mutx163/qingyu/pages/statistics/StatisticsSettingsPage.kt:4
-com/mutx163/qingyu/pages/about/AboutStaticPage.kt:3
+com/mutx163/qingyu/components/QingyuSheet.kt:2
+com/mutx163/qingyu/pages/export/IcsExportPage.kt:2
+com/mutx163/qingyu/pages/guide/MoreFeaturesPage.kt:2
+com/mutx163/qingyu/pages/settings/AppearanceEditorScreen.kt:2
+com/mutx163/qingyu/pages/time_scheme/TimeSchemeEditorPage.kt:2
+com/mutx163/qingyu/pages/transfer/DataTransferPage.kt:2
+com/mutx163/qingyu/pages/transfer/QrTransferSendPage.kt:2
+com/mutx163/qingyu/pages/about/OpenSourceLicensesPage.kt:1
+com/mutx163/qingyu/pages/feedback/FeedbackPage.kt:1
 com/mutx163/qingyu/pages/guide/MoreFeaturesSearchOverlay.kt:1
+com/mutx163/qingyu/pages/transfer/QrTransferScanPage.kt:1
