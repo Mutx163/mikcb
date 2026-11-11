@@ -22,7 +22,10 @@ import org.junit.Test
  * 1. `P0 更新检查接回 GitCode + 三路竞速`：候选链按渠道排序、三条都是官方直连；
  *    三条清单解析核（GitHub JSON / GitCode JSON / Release 页 HTML）各自能出结果；
  * 2. `P1 donors.json 顺序随渠道`：候选顺序函数与「先请求哪一条」；
- * 3. `P1 维护者名单改候选链`：主地址 → 镜像的回退顺序（与仓库索引同链）。
+ * 3. `P1 维护者名单改候选链`：主地址 → 镜像的回退顺序（与仓库索引同链）；
+ * 4. `R-6/R-7 维护者名单的两个口径`（2026-11-11 评审四建议级）：镜像**保留**（与鸣谢名单
+ *    不同的理由写在 `MaintainersFeed` 类注释里，这里钉行为锚点）；取数跳数预算
+ *    （根索引 3 跳 / 单校 2 跳，主地址 200 时零变化）。
  *
  * 每件都配了咬合探针（把候选推导改坏 → 本文件红），见提交说明/回报。
  */
@@ -290,6 +293,110 @@ class UpdateManifestSourcesTest {
         assertEquals("第一跳必须是 GitCode 主地址", gitcodeRoot, http.requested.first())
         assertEquals("GitCode 主地址失败后回退 GitHub raw", rawRoot, http.requested[1])
         assertEquals(listOf("张三"), (outcome as MaintainersFetchOutcome.Success).groups.map { it.name })
+    }
+
+    // ── R-7：维护者名单取数的跳数预算（2026-11-11 评审四建议级） ─────────────
+
+    /**
+     * 预算常量本身是「用户愿意等多久」的上界，改大必须先算一遍最坏耗时。
+     *
+     * 每条候选最坏吃满 `JdkAboutHttp` 的 10s 超时：根索引 3×10s、单校 2×10s。
+     * 这里钉死数值（不是「跟常量走」），否则把 2 改成 6 时下面的计数用例会跟着变绿。
+     */
+    @Test
+    fun `取数预算钉死在根索引三跳与单校两跳`() {
+        assertEquals(
+            "根索引取数预算改动前先算一遍最坏耗时（每跳最坏 10s 超时）",
+            3,
+            WarehouseMaintainersFeed.MAX_ROOT_INDEX_ATTEMPTS,
+        )
+        assertEquals(
+            "单校取数预算必须 ≤2 跳：222 所学校 × 每跳 10s 就是「读名单读成十分钟」",
+            2,
+            WarehouseMaintainersFeed.MAX_SCHOOL_ADAPTER_ATTEMPTS,
+        )
+    }
+
+    /**
+     * 主地址 200 时预算一分不花：根索引 1 跳 + 单校 1 跳。
+     *
+     * 这条是 R-7 的「零变化」半边：加预算不许把成功路径变慢或多发请求。
+     */
+    @Test
+    fun `主地址都通时_根索引与单校各只发一次请求`() {
+        val source = WarehouseRepositorySource(owner = "Mutx163", repo = "qingyu_warehouse")
+        val rawRoot = source.buildRawFileUri(WarehouseMaintainersFeed.ROOT_INDEX_PATH).toString()
+        val rawAdapters = source.buildRawFileUri("resources/s1/adapters.yaml").toString()
+        val http = RecordingHttp { url ->
+            when (url) {
+                rawRoot -> AboutHttpResponse(200, rootYaml())
+                rawAdapters -> AboutHttpResponse(200, schoolYaml("张三"))
+                else -> null
+            }
+        }
+
+        val outcome = WarehouseMaintainersFeed(http, source, parallelism = 1).fetch()
+
+        assertTrue("outcome=$outcome", outcome is MaintainersFetchOutcome.Success)
+        assertEquals(
+            "主地址都通时必须恰好两跳（根索引 + 单校各一次）；多发的一跳就是白等一次超时",
+            listOf(rawRoot, rawAdapters),
+            http.requested.toList(),
+        )
+    }
+
+    /**
+     * 根索引全失败：最多 [WarehouseMaintainersFeed.MAX_ROOT_INDEX_ATTEMPTS] 跳就放手。
+     *
+     * 这条是 R-7 的「有上界」半边：候选链原本最长 6 跳，每跳最坏 10s 超时。
+     */
+    @Test
+    fun `根索引全失败时最多三跳就放手`() {
+        val source = WarehouseRepositorySource(owner = "Mutx163", repo = "qingyu_warehouse")
+        val http = RecordingHttp { AboutHttpResponse(500, "") }
+
+        val outcome = WarehouseMaintainersFeed(http, source, parallelism = 1).fetch()
+
+        assertEquals(MaintainersFetchOutcome.Failure("http_500"), outcome)
+        assertEquals(
+            "根索引取数预算应是 ${WarehouseMaintainersFeed.MAX_ROOT_INDEX_ATTEMPTS} 跳",
+            WarehouseMaintainersFeed.MAX_ROOT_INDEX_ATTEMPTS,
+            http.requested.size,
+        )
+    }
+
+    /**
+     * 单校全失败：2 跳就放手（原先是主地址 + GitHub raw + 4 个镜像共 5~6 跳）。
+     *
+     * 同时钉住 R-6 的行为侧：名单链里**仍然有镜像**（第二跳就是镜像前缀）；
+     * 谁要把镜像摘掉，这条会先红，然后得去改 `MaintainersFeed` 的 KDoc 理由。
+     */
+    @Test
+    fun `单校直连全失败时最多两跳且第二跳是镜像`() {
+        val source = WarehouseRepositorySource(owner = "Mutx163", repo = "qingyu_warehouse")
+        val rawRoot = source.buildRawFileUri(WarehouseMaintainersFeed.ROOT_INDEX_PATH).toString()
+        val rawAdapters = source.buildRawFileUri("resources/s1/adapters.yaml").toString()
+        val http = RecordingHttp { url ->
+            if (url == rawRoot) AboutHttpResponse(200, rootYaml()) else AboutHttpResponse(500, "")
+        }
+
+        val outcome = WarehouseMaintainersFeed(http, source, parallelism = 1).fetch()
+
+        assertEquals(
+            MaintainersFetchOutcome.Failure(WarehouseMaintainersFeed.REASON_ALL_SCHOOLS_FAILED),
+            outcome,
+        )
+        assertEquals(
+            "根索引 1 跳 + 单校 ${WarehouseMaintainersFeed.MAX_SCHOOL_ADAPTER_ATTEMPTS} 跳",
+            1 + WarehouseMaintainersFeed.MAX_SCHOOL_ADAPTER_ATTEMPTS,
+            http.requested.size,
+        )
+        assertEquals("第一跳是根索引主地址", rawRoot, http.requested.first())
+        assertEquals(
+            "单校第二跳必须是镜像兜底（R-6 保留镜像的行为锚点）：${http.requested}",
+            mirrorPrefix() + rawAdapters,
+            http.requested[2],
+        )
     }
 
     // ── 工具 ──────────────────────────────────────────────────────────────

@@ -23,6 +23,12 @@ import org.junit.Test
  * - `runCheck` 必须 try/finally 把 `checking` 复位（异常不再让页面永久转圈）；
  * - 清单响应体必须有 2MB 上限且先看 `Content-Length`。
  *
+ * 2026-11-11 评审四建议级（R-3 收紧 / R-4）：
+ * - R-3 的复位判据从「函数体里出现过 `checking = false`」收紧到「**`finally` 块内**出现过」——
+ *   否则把复位挪回普通早退分支（`packageInfo ?: run { … }`）仍然会绿；
+ * - R-4：摘要回填窗口必须用协程时钟（`withTimeoutOrNull`），不许用 `System.currentTimeMillis()`
+ *   算 deadline，也不许用裸 `withTimeout`。
+ *
  * ## 判据口径（P6-G1/G2）
  *
  * 一律用 `testutil` 的 [readKotlinSourceNoStrings]（剥注释 + 中性化字符串）/
@@ -33,7 +39,9 @@ import org.junit.Test
  *
  * 1. 删掉竞速里的 `race.cancel()` ⇒ 「必须 finally 取消」用例红；
  * 2. 从内核删掉全部失败兜底 `winner.complete(null)` ⇒ 「全部失败必须收场」用例红；
- * 3. 删掉 `MAX_MANIFEST_BODY_BYTES` 的体积判断 ⇒ 「体积上限」用例红。
+ * 3. 删掉 `MAX_MANIFEST_BODY_BYTES` 的体积判断 ⇒ 「体积上限」用例红；
+ * 4. 把 `runCheck` 的 `checking = false` 从 `finally` 移出去 ⇒ 「复位」用例红（R-3 收紧）；
+ * 5. 把回填窗口换回 `System.currentTimeMillis()` deadline / 裸 `withTimeout` ⇒ 「协程时钟」用例红（R-4）。
  */
 class AboutUpdateRaceGuardTest {
 
@@ -62,6 +70,40 @@ class AboutUpdateRaceGuardTest {
 
     private fun runCheckBody(code: String): String =
         functionBody(code, "fun runCheck() {", "    ")
+
+    private fun digestBackfillBody(code: String): String =
+        functionBody(code, "private suspend fun mergeDigestFromSiblings(", "")
+
+    /**
+     * 取出文本里**所有** `finally { … }` 块的正文（按花括号配平；入参已剥过字符串字面量）。
+     *
+     * 为什么要单独切块：`runCheck` 头部有 `packageInfo ?: run { checking = false; return }`，
+     * 那句也含 `checking = false`。只判「函数体里出现过 checking = false」的话，
+     * 把复位从 `finally` 挪回普通分支仍然会绿（评审四 R-3 反馈），所以判据必须落在块内。
+     */
+    private fun finallyBlocks(code: String): List<String> {
+        val blocks = arrayListOf<String>()
+        var index = code.indexOf("finally {")
+        while (index >= 0) {
+            val open = code.indexOf('{', index)
+            var depth = 0
+            var cursor = open
+            while (cursor < code.length) {
+                when (code[cursor]) {
+                    '{' -> depth++
+                    '}' -> {
+                        depth--
+                        if (depth == 0) break
+                    }
+                }
+                cursor++
+            }
+            assertTrue("finally 块没有闭合（R-3 守卫取不到复位点）", cursor < code.length)
+            blocks.add(code.substring(open, cursor + 1))
+            index = code.indexOf("finally {", cursor)
+        }
+        return blocks
+    }
 
     /**
      * `fetchManifestBody` 是**表达式体**（`= runCatching { … }.getOrNull()`），没有独占一行的
@@ -133,9 +175,36 @@ class AboutUpdateRaceGuardTest {
                 "（页面「一直转」的另一条路径，R-3）",
             body.contains("catch") || body.contains("runCatching"),
         )
+        val finallyBlocks = finallyBlocks(body)
         assertTrue(
-            "runCheck 没有 finally 复位：无论成功/失败/取消都要把 checking 置回 false",
-            body.contains("finally {") && body.contains("checking = false"),
+            "runCheck 里没有 finally 块：无论成功/失败/取消都要把 checking 置回 false（R-3）",
+            finallyBlocks.isNotEmpty(),
+        )
+        assertTrue(
+            "runCheck 的 finally **块里**没有 checking = false —— 复位被挪到别处时" +
+                "（例如只在 `?: run { checking = false }` 这类早退分支里），" +
+                "只要有一条出口漏掉，页面就永久停在「检查中」（评审四 R-3 收紧项）",
+            finallyBlocks.any { it.contains("checking = false") },
+        )
+    }
+
+    @Test
+    fun `摘要回填窗口必须走协程时钟`() {
+        val body = digestBackfillBody(readKotlinSourceNoStrings(hostPath()))
+        assertTrue(
+            "摘要回填没有用 withTimeoutOrNull —— 回填窗口必须由协程时钟（单调）封口" +
+                "（R-4：墙上时钟被拨会让窗口提前结束或拉长）",
+            body.contains("withTimeoutOrNull("),
+        )
+        assertFalse(
+            "摘要回填用回了 System.currentTimeMillis() 算 deadline：系统时间一跳，" +
+                "这个 120ms×1600ms 窗口就不准了（R-4）",
+            body.contains("currentTimeMillis"),
+        )
+        assertFalse(
+            "摘要回填用了裸 withTimeout：超时会抛 TimeoutCancellationException（取消的子类），" +
+                "被 runCheck 的取消分支重抛后 result 不再赋值，界面停在上一版；只能用 *OrNull*（R-4）",
+            Regex("""withTimeout\s*\(""").containsMatchIn(body),
         )
     }
 

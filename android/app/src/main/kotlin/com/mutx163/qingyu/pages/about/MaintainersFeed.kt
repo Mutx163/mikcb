@@ -47,6 +47,23 @@ import java.util.concurrent.Executors
  * 3. **缓存时间**：Dart 只存名单、不存时间；F09 的验收要求「不许把上次缓存当成新数据（要标缓存
  *    时间）」，因此额外落一个 [maintainersCacheTimeKey] 时间戳，展示时由
  *    [formatMaintainersCacheTime] 格式化。
+ *
+ * ## 镜像口径：为什么和鸣谢名单不一样（2026-11-11 R-6）
+ *
+ * 鸣谢名单（`SupportDonorsFeed`）的候选池只有两条官方直连，KDoc 明写「镜像永不进候选池
+ * （名单内容可被镜像整份替换）」；本文件却把镜像放进链里。两条兄弟名单口径不同，理由如下：
+ *
+ * 1. **两个名单不同仓**：`docs/donors.json` 在 mikcb 主仓（作者手写、随发版走）；
+ *    本页读的 `index/root_index.yaml` 与 `resources/<校>/adapters.yaml` 在 qingyu_warehouse 仓。
+ * 2. **镜像在仓库域本来就是主链**：仓库域抓这两份索引本来就走镜像族（镜像能决定
+ *    「这所学校有没有适配器、装哪个脚本」——比一行维护者名字大得多的信任面）。本页只是把
+ *    同一份 `adapters.yaml` 里的 `maintainer` 字段搬到屏幕上：镜像对「谁维护哪所学校」
+ *    早已有完全控制权，把它挡在名单链外多挡不住任何风险，只会让国内弱网下整页名单读不到。
+ * 3. **donors 那份更保守是另一件事**：`donors.json` 承载「谁捐了多少钱、写了什么留言」这类
+ *    社会证明，伪造的杀伤力最高，且它没有「镜像本来就该读这个仓」的先例 ⇒ 双官方直连。
+ *
+ * 结论：本文件**保留镜像候选**（与仓库索引同链），这条差异是有意的、不是漏改。
+ * 若哪天仓库域收紧镜像（例如只认官方直连），本文件必须同批跟着改，不许单边收。
  */
 sealed interface MaintainersFetchOutcome {
     data class Success(val groups: List<MaintainerGroup>) : MaintainersFetchOutcome
@@ -226,7 +243,7 @@ class WarehouseMaintainersFeed(
 ) {
 
     fun fetch(): MaintainersFetchOutcome {
-        val rootFetch = fetchText(ROOT_INDEX_PATH)
+        val rootFetch = fetchText(ROOT_INDEX_PATH, attemptBudget = MAX_ROOT_INDEX_ATTEMPTS)
         val rootText = rootFetch.text ?: return MaintainersFetchOutcome.Failure(
             when {
                 rootFetch.sawDecodeFailure -> REASON_ROOT_INDEX_DECODE_FAILED
@@ -304,10 +321,26 @@ class WarehouseMaintainersFeed(
         val sawDecodeFailure: Boolean = false,
     )
 
-    private fun fetchText(relativePath: String): CandidateTextFetch {
+    /**
+     * 取一份索引/清单文本：按 [candidateUrls] 顺序试，但**最多试 [attemptBudget] 跳**。
+     *
+     * 2026-11-11 R-7（评审四建议级）：候选链最长可到 6 跳（主地址 + GitHub raw 回退 +
+     * 4 个镜像外壳，去重后仍有 5~6 条），而 [JdkAboutHttp] 每条候选最坏要吃满 10s 超时。
+     * 直连丢包时单校最坏 = 5~6 次超时 ≈ 60s，而 222 所学校只能 [parallelism] 路并行 ⇒
+     * 一次「读取代码贡献者」能被拖成十几分钟，用户只看到转圈。所以给每次取数一个**跳数总预算**：
+     * 根索引 [MAX_ROOT_INDEX_ATTEMPTS] 跳（它失败 = 整页失败，值得多给一跳），
+     * 单校 [MAX_SCHOOL_ADAPTER_ATTEMPTS] 跳（失败只少一所学校）。
+     *
+     * 预算只在失败分支花：主地址 200 时仍然**只发一次**请求，顺序与前缀完全不变。
+     * 剩余风险写在 [MAX_SCHOOL_ADAPTER_ATTEMPTS] 上（最坏仍是 2×10s）。
+     */
+    private fun fetchText(
+        relativePath: String,
+        attemptBudget: Int = MAX_SCHOOL_ADAPTER_ATTEMPTS,
+    ): CandidateTextFetch {
         var lastStatus: Int? = null
         var sawDecodeFailure = false
-        for (url in candidateUrls(relativePath)) {
+        for (url in candidateUrls(relativePath).take(attemptBudget.coerceAtLeast(1))) {
             val response = runCatching { http.get(url) }.getOrNull() ?: continue
             if (response.statusCode != 200) {
                 lastStatus = response.statusCode
@@ -332,6 +365,23 @@ class WarehouseMaintainersFeed(
         const val ROOT_INDEX_PATH = "index/root_index.yaml"
         const val DEFAULT_PARALLELISM = 6
         const val MAX_PARALLELISM = 8
+
+        /**
+         * 根索引一次取数的**请求跳数预算**（2026-11-11 R-7）：主地址 + 两条兜底。
+         *
+         * 根索引失败 = 整页失败（用户只能重试），所以比单校多给一跳；但它只有一次，
+         * 最坏 3×10s = 30s，仍有上界。
+         */
+        const val MAX_ROOT_INDEX_ATTEMPTS = 3
+
+        /**
+         * 单校 `adapters.yaml` 一次取数的**请求跳数预算**（2026-11-11 R-7）：主地址 + 一条兜底。
+         *
+         * 222 所学校 × 6 跳 × 10s 超时是「读代码贡献者读成十分钟」的根因；压到 2 跳后
+         * 主地址 200 时零变化（只发 1 次），丢包时单校最坏 2×10s。
+         * 最后一条候选（第 3 个镜像之后的前缀）宁可不再试——那时用户已经在等半分钟了。
+         */
+        const val MAX_SCHOOL_ADAPTER_ATTEMPTS = 2
 
         const val REASON_NETWORK_UNAVAILABLE = "network_unreachable"
         const val REASON_ROOT_INDEX_DECODE_FAILED = "root_index_decode_failed"

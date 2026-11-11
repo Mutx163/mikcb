@@ -20,6 +20,7 @@ import com.mutx163.qingyu.DiagnosticLogMessages
 import com.mutx163.qingyu.app.DiagnosticsLogHost
 import com.mutx163.qingyu.app.TimetableStore
 import com.mutx163.qingyu.infra.AppLogStore
+import com.mutx163.qingyu.infra.AppReleaseInfo
 import com.mutx163.qingyu.infra.AppUpdateCheckResult
 import com.mutx163.qingyu.infra.AppUpdateDotShare
 import com.mutx163.qingyu.infra.AppUpdateDownloadChannel
@@ -38,6 +39,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.withTimeoutOrNull
 import java.net.HttpURLConnection
 import java.net.URL
 
@@ -515,7 +517,8 @@ private fun readHostPackageInfo(context: Context): HostPackageInfo? = runCatchin
  *
  * Release 页 HTML 拿不到 asset 级摘要；若胜者没有摘要，按发布版同口径在
  * [DIGEST_BACKFILL_DEADLINE_MS] 内轮询兄弟策略的结果，找到**同版本 + 直连渠道**的摘要就补上
- *（安装闸门据此决定「直接装」还是「引导去 Release 页」）。
+ *（安装闸门据此决定「直接装」还是「引导去 Release 页」）。窗口用协程时钟
+ *（`withTimeoutOrNull`，单调）而不是墙上时钟，理由见 [mergeDigestFromSiblings]。
  */
 private suspend fun checkForUpdatesAcrossManifestSources(
     currentVersion: String,
@@ -557,27 +560,38 @@ private suspend fun mergeDigestFromSiblings(
     val release = winner.latestRelease ?: return winner
     if (release.expectedApkSha256 != null) return winner
 
-    val deadline = System.currentTimeMillis() + DIGEST_BACKFILL_DEADLINE_MS
-    while (System.currentTimeMillis() < deadline) {
-        val sibling = successes.values.firstNotNullOfOrNull { other ->
-            other.latestRelease?.takeIf {
-                it.version == release.version &&
-                    it.digestFromDirectChannel &&
-                    it.expectedApkSha256 != null
+    // 2026-11-11 R-4（评审四建议级）：窗口用**协程时钟**（`withTimeoutOrNull`），不再拿
+    // `System.currentTimeMillis()` 算 deadline。墙上时钟会被拨——NTP 校正、用户改时间、
+    // 时区工具走一遭，这个 1600ms 窗口就会提前结束（摘要补不上 ⇒ 安装闸门退化成
+    // 「引导去 Release 页」）或突然拉长（多等好几秒）。协程超时走单调时钟，且随调用方取消一起收。
+    //
+    // 必须是 ***OrNull*** 版本：裸 `withTimeout` 超时会抛 `TimeoutCancellationException`
+    //（`CancellationException` 的子类），被 [runCheck] 的「取消原样抛出」分支重抛 ⇒ `result`
+    // 不赋值，界面停在上一版，等于这次检查白做。`withTimeoutOrNull` 只是「没等到」。
+    val sibling: AppReleaseInfo? = withTimeoutOrNull(DIGEST_BACKFILL_DEADLINE_MS) {
+        var found: AppReleaseInfo? = null
+        while (found == null) {
+            found = successes.values.firstNotNullOfOrNull { other ->
+                other.latestRelease?.takeIf {
+                    it.version == release.version &&
+                        it.digestFromDirectChannel &&
+                        it.expectedApkSha256 != null
+                }
             }
+            // 第一轮就是「兄弟可能已经写好了」；之后每 120ms 再看一次。
+            if (found == null) delay(DIGEST_BACKFILL_POLL_MS)
         }
-        if (sibling != null) {
-            return buildCheckResult(
-                currentVersion = winner.currentVersion,
-                release = release.copy(
-                    expectedApkSha256 = sibling.expectedApkSha256,
-                    digestFromDirectChannel = true,
-                ),
-            )
-        }
-        delay(DIGEST_BACKFILL_POLL_MS)
+        found
     }
-    return winner
+    if (sibling == null) return winner
+
+    return buildCheckResult(
+        currentVersion = winner.currentVersion,
+        release = release.copy(
+            expectedApkSha256 = sibling.expectedApkSha256,
+            digestFromDirectChannel = true,
+        ),
+    )
 }
 
 /** 拉一条清单候选；非 2xx / 传输失败 / 非信任根 / 超体积一律返回 null。 */
