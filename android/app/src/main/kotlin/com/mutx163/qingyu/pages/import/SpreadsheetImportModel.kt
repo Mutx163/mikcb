@@ -5,6 +5,7 @@ import com.mutx163.qingyu.core.CourseNature
 import com.mutx163.qingyu.core.FormatException
 import com.mutx163.qingyu.core.ServiceMessage
 import com.mutx163.qingyu.core.TimetableSettings
+import com.mutx163.qingyu.core.WeekExpressionParsing
 import java.util.Locale
 import java.util.UUID
 
@@ -22,148 +23,26 @@ data class SpreadsheetImportResult(
 }
 
 /**
- * 周次表达式解析（移植 `lib/services/week_expression_parser.dart`）。
+ * 周次表达式解析的**表格导入入口**（薄转发）。
  *
- * 处理 `1-16`、`1、3、5`、`1-4单`、`(单)3-5`、`1-2[3节]` 等形状；
- * 越界/非法抛 [FormatException]（消息 = service message payload），
- * 超学期周数钳制并写警告。
+ * 实现在 [com.mutx163.qingyu.core.WeekExpressionParsing]（全仓唯一一份）：本入口曾与
+ * `calendar.WeekExpressionParser` 各写一份，结果两边口径分岔（裸 token 一边 `toLongOrNull`
+ * 收下钳制、一边 `toIntOrNull` 判非法，输入 `3000000000` 结局不同）。2026-11-11 审计 P1-9
+ * 统一到 core；本对象保留原名字与签名只是为了不动调用点，行为逐字取自 core。
  */
 object WeekExpressionParser {
-
-    private val BRACKET_SECTION_SUFFIX = Regex("""\[[^\]]*节]""")
-    private val FULLWIDTH_BRACKET_SECTION_SUFFIX = Regex("""【[^】]*节】""")
-    private val PARITY_MODE = Regex("""[（(](全部|单|双)[)）]""")
-    private val PARENTHETICAL = Regex("""[（(][^)）]*[)）]""")
-    private val TOKEN_SEPARATOR = Regex("""[，,、]""")
-    private val RANGE = Regex("""^(\d+)-(\d+)$""")
 
     fun parse(
         raw: String,
         itemName: String,
         semesterWeekCount: Int?,
         warnings: MutableList<String>?,
-    ): List<Int> {
-        var normalized = raw.trim()
-        if (normalized.isEmpty()) return emptyList()
-
-        normalized = normalized
-            .replace(" ", "")
-            .replace(BRACKET_SECTION_SUFFIX, "")
-            .replace(FULLWIDTH_BRACKET_SECTION_SUFFIX, "")
-
-        val modeMatch = PARITY_MODE.find(normalized)?.groupValues?.get(1)
-        normalized = normalized.replace(PARENTHETICAL, "")
-
-        // 周次用 Long 累积：Dart 的 `int` 是 64 位，`int.tryParse('3000000000')` 能解出，
-        // 到 [clampToSemesterWeekCount] 才被学期周数钳掉；用 Int 会在解析阶段就把它当成
-        // 「无法识别」整行丢掉，与 Dart 结局不一致。
-        val result = sortedSetOf<Long>()
-        val parts = normalized.split(TOKEN_SEPARATOR)
-        var nonEmptyTokenCount = 0
-        var anyTokenParity = false
-        for (part in parts) {
-            var token = part.trim()
-            if (token.isEmpty()) continue
-            nonEmptyTokenCount += 1
-
-            var tokenParity: String? = null
-            if (token.endsWith("单")) {
-                tokenParity = "单"
-                token = token.substring(0, token.length - 1)
-                anyTokenParity = true
-            } else if (token.endsWith("双")) {
-                tokenParity = "双"
-                token = token.substring(0, token.length - 1)
-                anyTokenParity = true
-            }
-
-            val rangeMatch = RANGE.find(token)
-            if (rangeMatch != null) {
-                val start = rangeMatch.groupValues[1].toLongOrNull()
-                val end = rangeMatch.groupValues[2].toLongOrNull()
-                // 连 Long 都装不下（> 9.2e18）的数字必然远大于 30 周，按同一族
-                // 「范围过大」报错；此处不抛 NumberFormatException，否则行级 catch
-                //（只接 FormatException）接不住，整表导入崩掉。
-                if (start == null || end == null) {
-                    throw FormatException(
-                        ServiceMessage.encode("week_range_too_large", mapOf("itemName" to itemName)),
-                    )
-                }
-                if (start < 1) {
-                    throw FormatException(
-                        ServiceMessage.encode("week_start_invalid", mapOf("itemName" to itemName)),
-                    )
-                }
-                if (start > end) {
-                    throw FormatException(
-                        ServiceMessage.encode("week_range_invalid", mapOf("itemName" to itemName)),
-                    )
-                }
-                if (end > 30) {
-                    throw FormatException(
-                        ServiceMessage.encode("week_range_too_large", mapOf("itemName" to itemName)),
-                    )
-                }
-                result.addAll(applyParity((start..end).toList(), tokenParity))
-                continue
-            }
-
-            val parsed = token.toLongOrNull()
-            if (parsed == null || parsed < 1) {
-                throw FormatException(
-                    ServiceMessage.encode(
-                        "week_token_unrecognized",
-                        mapOf("itemName" to itemName, "token" to token),
-                    ),
-                )
-            }
-            result.addAll(applyParity(listOf(parsed), tokenParity))
-        }
-
-        var weeks = result.toList()
-        // 全局（单）/（双）只作用于单 token 表达式：`1-5、7-11(单)` 这种多区间
-        // 不能被整体过滤
-        val applyGlobalParity = modeMatch != null && !anyTokenParity && nonEmptyTokenCount <= 1
-        if (applyGlobalParity && modeMatch == "单") {
-            weeks = weeks.filter { it % 2 != 0L }
-        } else if (applyGlobalParity && modeMatch == "双") {
-            weeks = weeks.filter { it % 2 == 0L }
-        }
-
-        return clampToSemesterWeekCount(weeks, semesterWeekCount, itemName, warnings)
-    }
-
-    private fun clampToSemesterWeekCount(
-        weeks: List<Long>,
-        semesterWeekCount: Int?,
-        itemName: String,
-        warnings: MutableList<String>?,
-    ): List<Int> {
-        if (semesterWeekCount == null || semesterWeekCount < 1 || weeks.isEmpty()) {
-            // 没有学期周数可钳时，超出 Int 表示范围的周（只可能来自天文数字裸 token）
-            // 在 List<Int> 契约里放不下，丢弃；Dart 的 int 是 64 位会原样带出。
-            return weeks.filter { it <= Int.MAX_VALUE }.map { it.toInt() }
-        }
-        val over = weeks.filter { it > semesterWeekCount }
-        if (over.isEmpty()) return weeks.map { it.toInt() }
-        warnings?.add(
-            ServiceMessage.encode(
-                "weeks_exceed_semester_clamped",
-                mapOf(
-                    "itemName" to itemName,
-                    "semesterWeekCount" to semesterWeekCount,
-                    "weeks" to over.joinToString("、"),
-                ),
-            ),
-        )
-        return weeks.filter { it <= semesterWeekCount }.map { it.toInt() }
-    }
-
-    private fun applyParity(weeks: List<Long>, parity: String?): List<Long> = when (parity) {
-        "单" -> weeks.filter { it % 2 != 0L }
-        "双" -> weeks.filter { it % 2 == 0L }
-        else -> weeks
-    }
+    ): List<Int> = WeekExpressionParsing.parse(
+        raw = raw,
+        itemName = itemName,
+        semesterWeekCount = semesterWeekCount,
+        warnings = warnings,
+    )
 }
 
 /**
