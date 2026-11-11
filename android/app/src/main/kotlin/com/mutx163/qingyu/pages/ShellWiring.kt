@@ -86,6 +86,7 @@ import com.mutx163.qingyu.pages.schedule.ScheduleItemData
 import com.mutx163.qingyu.pages.statistics.StatisticsAnalysisModule
 import com.mutx163.qingyu.pages.shell.HomeMenuNavModel
 import com.mutx163.qingyu.pages.shell.HomeNavIcons
+import com.mutx163.qingyu.pages.shell.HomeViewSwitchMotion
 import com.mutx163.qingyu.pages.timetable.TimetableMenuItem
 import com.mutx163.qingyu.pages.timetable.TimetableStrings
 import com.mutx163.qingyu.pages.timetable.WeekAgendaKind
@@ -358,6 +359,11 @@ class ShellWiring(context: Context) {
      * 用户口径（2026-11-04）：底栏「周/日」两格互点 = 横滑（`animate=true` + [homeViewSwitchHorizontal]=true）；
      * 从别页切回课表 = 只让 Pager 横滑（`animate=false`，页面 snapTo）；
      * 点星期栏 / 页内关闭 = 默认 `animate=true`（上下翻）。系统「减少动画」仍优先 snapTo。
+     *
+     * **例外（2026-11-11 用户真机反馈）**：`日 ↔ 月` 这一对**跨过了周档**（三档在几何上是
+     * `日 | 周 | 月` 并排），播横滑会把中间的周网格露出来 —— 用户报「切月↔日时画面在周视图
+     * 停了一下」。判据在 [HomeViewSwitchMotion.directAcrossWeek]，命中时这里被强制收成
+     * `false`（两档当帧落定、直达）。相邻档（周↔日、周↔月）不受影响。
      */
     var homeViewSwitchAnimate by mutableStateOf(true)
 
@@ -383,10 +389,18 @@ class ShellWiring(context: Context) {
     private val homeViewPersistMutex = Mutex()
 
     /**
-     * 切周 / 日课表（Dart `timetableHomeViewMode` 的写入口）。
+     * 切周 / 日 / 月档（Dart `timetableHomeViewMode` 的写入口）。
      *
      * 只在真的换档时改状态：重复点当前档不写盘、也不触发动画（Dart
      * `timetable_dock_actions.dart` 的「重复点日/周 Tab 无动作」同口径）。
+     *
+     * **日↔月直达**：这一对跨过了周档（`日 | 周 | 月` 并排），播过渡会把周网格露出来
+     * （2026-11-11 用户真机反馈「在周视图停了一下」）。所以传到页面的 `animate` 在这里就被
+     * [HomeViewSwitchMotion.directAcrossWeek] 收成 false —— **调用点不用改**：底栏那几处
+     * `animate = true, horizontal = true` 的语义（两格互点 = 横滑）照旧，只有跨周这一对落定。
+     *
+     * 基准出处：发布版 `v2.1.4.1` 无月视图；去 Flutter 前最后一版 Dart 里月视图是首页内
+     * 整屏内嵌页，「点底栏闪现直切，无滑动转场」（`timetable_home_dock_shell.dart` 原注释）。
      */
     fun switchHomeViewMode(
         mode: TimetableHomeViewMode,
@@ -397,7 +411,8 @@ class ShellWiring(context: Context) {
         // 底栏两格互点：animate=true, horizontal=true（横向 translateX）；
         // 跨页切回课表：animate=false（snap，只让 Pager 滑）；
         // 点星期栏 / 页内关闭：默认 animate=true, horizontal=false（上下翻）。
-        homeViewSwitchAnimate = animate
+        // 日↔月跨过周：无论调用方传什么，都收成 snap（见函数 KDoc）。
+        homeViewSwitchAnimate = animate && !HomeViewSwitchMotion.directAcrossWeek(homeViewMode, mode)
         homeViewSwitchHorizontal = horizontal
         if (mode == homeViewMode) return
         homeViewMode = mode
