@@ -116,6 +116,7 @@ import top.yukonga.miuix.kmp.preference.OverlayDropdownPreference
 import top.yukonga.miuix.kmp.preference.RadioButtonPreference
 import top.yukonga.miuix.kmp.preference.SwitchPreference
 import top.yukonga.miuix.kmp.theme.MiuixTheme
+import top.yukonga.miuix.kmp.utils.PressFeedbackType
 
 /**
  * 「已过去」的行降到的透明度（Flutter `Opacity(opacity: 0.55)`，`settings_holiday.dart:613-614`）。
@@ -207,6 +208,17 @@ fun SettingsPageScreen(
      * `SettingsHost`——它把拖动期间压着的全局换肤在这里补广播一次。
      */
     onSliderEditFinished: (rowId: String) -> Unit = {},
+    /**
+     * 内联预览卡（`InlineKind.PREVIEW_CARD`）的**宿主注入槽**：node id → 真组件内容。
+     *
+     * 命中时由宿主画真内容（现用于首页导航页的「首页标题」预览：真壁纸样例 + 真玻璃带 +
+     * 真标题行，见 `HomeTitlePreviewCard`）；**没命中时仍走通用样张色块**，所以主题 /
+     * 字体 / 瓷贴那三处预览与本改动零关系。
+     *
+     * 默认空表：20 页设置里只有「要求看得出真实效果」的那一处才传（与 `preview` 槽同一思路）。
+     * 槽位按 **node id** 取，不按页面 id：同一种卡片在别的页复用同一份模型节点时不串味。
+     */
+    inlineSlots: Map<String, @Composable () -> Unit> = emptyMap(),
 ) {
     // 顶栏 + 折叠行为 + 返回键统一交给共享骨架（规则 R1）：
     // 骨架内部自己持有一个 ScrollBehavior，并通过 content 槽把它交给下面的 QingyuPageList，
@@ -307,7 +319,7 @@ fun SettingsPageScreen(
                 ) {
                     items(items = spec.nodes, key = { it.id }) { node ->
                         SliderEditFinishedScope(onSliderEditFinished) {
-                            SettingsNodeView(node = node, onAction = onAction)
+                            SettingsNodeView(node = node, onAction = onAction, inlineSlots = inlineSlots)
                         }
                     }
                 }
@@ -334,7 +346,7 @@ fun SettingsPageScreen(
             ) {
                 items(items = spec.nodes, key = { it.id }) { node ->
                     SliderEditFinishedScope(onSliderEditFinished) {
-                        SettingsNodeView(node = node, onAction = onAction)
+                        SettingsNodeView(node = node, onAction = onAction, inlineSlots = inlineSlots)
                     }
                 }
             }
@@ -363,13 +375,15 @@ internal fun SettingsNodeView(
      * 传 `0.dp` 后行左缘 = 弹层 16 + 行 16 = 32，与 Dart 面板一致。
      */
     rowInset: Dp? = null,
+    /** 内联预览卡的宿主注入槽（见 [SettingsPageScreen] 的同名参数）；默认空 = 全走通用样张。 */
+    inlineSlots: Map<String, @Composable () -> Unit> = emptyMap(),
 ) {
     when (node) {
         is SettingsLabel -> SectionLabel(text = node.text)
         is SettingsDescription -> SectionDescription(text = node.text)
         is SettingsGap -> Spacer(modifier = Modifier.height(node.heightDp.dp))
         is SettingsGroup -> SettingsGroupCard(group = node, onAction = onAction, rowInset = rowInset)
-        is SettingsInline -> SettingsInlineView(node = node, onAction = onAction)
+        is SettingsInline -> SettingsInlineView(node = node, onAction = onAction, inlineSlots = inlineSlots)
         is SettingsRow ->
             // 「已过去」的行整行降到 55% 透明度（Flutter `Opacity(0.55)`，settings_holiday.dart:613-614）。
             // 包在行外面而不是改组件内部颜色：卡片/背景/描边一起变淡才与原版一致，
@@ -787,12 +801,19 @@ private fun SummaryCardRow(
             .fillMaxWidth()
             .padding(horizontal = QingyuShapes.ROW_PADDING_HORIZONTAL.dp),
         cornerRadius = QingyuShapes.SETTINGS_GROUP_RADIUS.dp,
-        insideMargin = PaddingValues(16.dp),
+        // 内边距从卡片挪进内容（2026-11-10 按压热区修复）：miuix `Card` 的 clickable 节点挂在
+        // `insideMargin` **外面**，测的就是整卡热区；而把 16dp 留在 `insideMargin`、点击挂在里层
+        // `Row` 上时，热区只剩「卡片减去四周 16dp」的中间小长方形（用户真机实报：按压只亮中间一块）。
+        insideMargin = PaddingValues(0.dp),
+        // 整卡可点（发布版 `HyperosSummaryCard` → `HyperosPressableRow` 铺满整行）。
+        onClick = click,
+        // 只要水洗、不要 Sink 缩放：发布版的按压是 25ms 延迟的整面 alpha 水洗，没有下沉缩放。
+        pressFeedbackType = PressFeedbackType.None,
     ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .let { if (click != null) it.clickable(onClick = click) else it },
+                .padding(16.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             if (row.leadingAppIcon) {
@@ -1274,9 +1295,10 @@ private fun titleColors(row: SettingsRow): top.yukonga.miuix.kmp.basic.BasicComp
 private fun SettingsInlineView(
     node: SettingsInline,
     onAction: (action: SettingsAction, target: String?, rowId: String) -> Unit,
+    inlineSlots: Map<String, @Composable () -> Unit>,
 ) {
     when (node.kind) {
-        InlineKind.PREVIEW_CARD -> PreviewCard(node = node)
+        InlineKind.PREVIEW_CARD -> PreviewCard(node = node, injected = inlineSlots[node.id])
         InlineKind.FONT_PREVIEW -> FontPreview(node = node)
         InlineKind.COLOR_CHIP_GROUP -> ColorChipGroup(node = node, onAction = onAction)
         InlineKind.CONTROL_CARD -> ControlCard(node = node, onAction = onAction)
@@ -1289,7 +1311,14 @@ private fun SettingsInlineView(
 
 /** 主题/字体微缩预览（`settings_appearance.dart:116-193`）。 */
 @Composable
-private fun PreviewCard(node: SettingsInline) {
+private fun PreviewCard(
+    node: SettingsInline,
+    /**
+     * 宿主注入的真组件内容（`inlineSlots[node.id]`）。非 null 时**整块替换**样张色块：
+     * 卡片外壳（圆角 / 内缩 / 内边距）仍由本函数给，宿主只负责卡片里面那部分。
+     */
+    injected: (@Composable () -> Unit)? = null,
+) {
     val colors = MiuixTheme.colorScheme
     QingyuCard(
         modifier = Modifier
@@ -1313,9 +1342,13 @@ private fun PreviewCard(node: SettingsInline) {
         // 样张数量按 texts 决定：只有 1~2 条（首页标题 classic / brand）时画**一整张**。
         // 旧写法恒画两张半宽：第二张取 texts[2]，首页标题页永远没有，于是右半边白底白字，
         // 屏上看起来就是「一张半宽蓝块 + 一大片空白」。
-        if (node.texts.isEmpty()) {
-            // 宿主注入型预览（外观编辑页的真首页烤图）：模型里没有样张文字，
-            // 这里不画空块，真正的预览由宿主槽位注入。
+        if (injected != null) {
+            // 宿主注入型预览（首页导航页的「首页标题」→ `HomeTitlePreviewCard`）：
+            // 真壁纸 + 真玻璃带 + 真标题行，**不再画样张色块**（那是"看不出真实效果"的旧形态）。
+            injected()
+        } else if (node.texts.isEmpty()) {
+            // 模型没给样张、宿主也没注入 ⇒ 不画空块（旧注释写的「外观编辑页真首页烤图」已迁走：
+            // 那一页的预览走 `AppearanceEditorPreviewStage`，根本不进这个渲染器）。
         } else if (node.texts.size >= 3) {
             Row(
                 modifier = Modifier.fillMaxWidth(),

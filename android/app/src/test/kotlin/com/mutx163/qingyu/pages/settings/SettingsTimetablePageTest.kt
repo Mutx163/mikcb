@@ -129,13 +129,16 @@ class SettingsTimetablePageTest {
         val profiles = page.row("timetable.profiles")
         assertEquals(MiuixRowComponent.ARROW, profiles.component)
         assertEquals("课表管理", profiles.title)
-        assertEquals("大二上", profiles.details)
-        // 课表名是用户数据，不来自 ARB：键是 NON_ARB_TEXT 空串（对照测试跳过空键）
-        assertEquals("", profiles.detailsKey)
+        // 行尾**不显示**课表档案名（2026-11-10 用户指令：用户自起名长度不可控，
+        // 拉满整行很难看；全名在「课表档案」管理页可见）⇒ 有值也不挂 details。
+        assertNull(profiles.details)
+        assertNull(profiles.detailsKey)
 
         val scheme = page.row("timetable.timeScheme")
         assertEquals("时间模板", scheme.title)
-        assertEquals("标准作息", scheme.details)
+        // 同一口径：模板名「标准作息」这类用户数据不上行尾。
+        assertNull(scheme.details)
+        assertNull(scheme.detailsKey)
         assertEquals("/settings/time-schemes", scheme.actionTarget)
 
         val holiday = page.row("timetable.holiday")
@@ -146,19 +149,22 @@ class SettingsTimetablePageTest {
     }
 
     @Test
-    fun `课表与时间模板未设置时给占位值`() {
-        // :413-421（activeProfile 为 null 时不给行尾文案）、:432-436（未选择）
-        val page = spec(SettingsTimetableState(activeProfileName = null, activeTimeSchemeName = null))
-        assertNull(page.row("timetable.profiles").details)
-        assertEquals("未选择", page.row("timetable.timeScheme").details)
-        assertEquals("timeSchemeEntryNotSelected", page.row("timetable.timeScheme").detailsKey)
+    fun `课表与时间模板两行恒定不带行尾值`() {
+        // 2026-11-10 用户指令：这两行的行尾值是用户自起的长文本（档案名 / 模板名），
+        // 长度不可控，统一去掉、只留「图标 + 标题 + 箭头」；空与非空两种输入都不挂 details。
+        val empty = spec(SettingsTimetableState(activeProfileName = null, activeTimeSchemeName = null))
+        assertNull(empty.row("timetable.profiles").details)
+        assertNull(empty.row("timetable.profiles").detailsKey)
+        assertNull(empty.row("timetable.timeScheme").details)
+        assertNull(empty.row("timetable.timeScheme").detailsKey)
 
-        // 有值时行尾是用户数据（键为 NON_ARB_TEXT 空串），不是 ARB 文案
         val filled = spec(
             SettingsTimetableState(activeProfileName = "大二上", activeTimeSchemeName = "标准作息"),
         )
-        assertEquals("", filled.row("timetable.profiles").detailsKey)
-        assertEquals("", filled.row("timetable.timeScheme").detailsKey)
+        assertNull(filled.row("timetable.profiles").details)
+        assertNull(filled.row("timetable.profiles").detailsKey)
+        assertNull(filled.row("timetable.timeScheme").details)
+        assertNull(filled.row("timetable.timeScheme").detailsKey)
     }
 
     @Test

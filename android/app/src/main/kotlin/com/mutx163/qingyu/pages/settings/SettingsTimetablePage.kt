@@ -33,11 +33,13 @@ import java.util.Locale
  * | `MiuixSettingsPreference`×3（:623-652） | `timetable.*` | `MiuixArrowPreference` |
  * | `_SettingsDeveloperListGroup`（:658-670） | `timetable.section.developer` | preference category + 组 |
  *
- * ## 五个「行尾取值」是本页的核心逻辑，各有一个纯函数
+ * ## 四个「行尾取值」是本页的核心逻辑，各有一个纯函数
+ *
+ * （「课表档案」「时间模板」两行 2026-11-10 按用户指令**不再有行尾值**：模板名 / 档案名
+ * 都是用户自起的长文本，长度不可控；全名在各自管理页可见。）
  *
  * | 行 | Dart | 模型 |
  * |---|---|---|
- * | 时间模板 | :432-436 | 未选择 → `timeSchemeEntryNotSelected` |
  * | 节假日 | :447-451 | 开关 → 已开启/已关闭 |
  * | 天气 | :493 | 城市名 or `weatherCityNotSet` |
  * | 超级岛 | :919-926 | [LiveTrailing]：**权限缺口优先于开关状态** |
@@ -103,8 +105,9 @@ object SettingsTimetablePage {
                     icon = SettingsRowIcon("layers", "#3482FF"),
                     component = MiuixRowComponent.ARROW,
                     title = SettingsStringsExt2.timetableManagement,
-                    // 没有激活课表时不给行尾（:413-421）；名字是用户数据，键留空
-                    details = state.activeProfileName?.let { ArbText(NON_ARB_TEXT, it) },
+                    // 行尾**不显示**课表档案名（2026-11-10 用户指令）：名字是用户自起的，
+                    // 长度不可控，拉满整行很难看；全名在「课表档案」管理页里看得到，无信息损失。
+                    // 原来的 `details = state.activeProfileName?.let { … }` 已整段删除。
                     action = SettingsAction.NAVIGATE,
                     actionTarget = ROUTE_PROFILES,
                 ),
@@ -113,9 +116,9 @@ object SettingsTimetablePage {
                     icon = SettingsRowIcon("timer", "#14B8A6"),
                     component = MiuixRowComponent.ARROW,
                     title = SettingsStringsExt2.timeSchemeEntryTitle,
-                    // 未选择时行尾是 ARB 文案，选了就是模板名（用户数据，键留空）
-                    details = state.activeTimeSchemeName?.let { ArbText(NON_ARB_TEXT, it) }
-                        ?: SettingsStringsExt2.timeSchemeEntryNotSelected,
+                    // 行尾**不显示**模板名（同一口径，2026-11-10 用户指令）：模板名同样是用户起的，
+                    // 如「重庆城市科技学院 导入节次」，长度不可控。原 `details = … ?: 未选择` 整段删除，
+                    // 模板全名在「时间模板」管理页可见。
                     action = SettingsAction.NAVIGATE,
                     actionTarget = ROUTE_TIME_SCHEMES,
                 ),
