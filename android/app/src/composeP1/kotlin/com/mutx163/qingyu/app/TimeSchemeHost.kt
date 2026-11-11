@@ -67,6 +67,7 @@ import top.yukonga.miuix.kmp.theme.MiuixTheme
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
@@ -374,14 +375,22 @@ fun TimeSchemeManagementHost(
     // 父级一翻 false 整棵弹层就离开组合，官方 260ms 退场动画一次都播不出来。
     // 可见性只交给各弹层内部的 `show`；退场期间的标题/正文由各弹层用 remember 保留的
     // 最后一份非空状态渲染，不会闪成空板（同 settings 弹窗常驻组合配方）。----
+    val menuScope = coroutineScope
     TimeSchemeMenuPopup(
         state = menuSession?.state,
         anchor = menuSession?.anchor,
         onDismiss = { menuSession = null },
         onAction = { action ->
             val schemeId = menuSession?.state?.schemeId
+            // 先收起面板，隔 240ms 再动作：发布版 `_kCollapseBudget = 240ms`——
+            // 点条目就立即推页/弹框会把退场动画切在中间（发布版真机踩过这个坑）。
             menuSession = null
-            if (schemeId != null) dispatch(schemeId, action)
+            if (schemeId != null) {
+                menuScope.launch {
+                    delay(240)
+                    dispatch(schemeId, action)
+                }
+            }
         },
     )
 
@@ -603,7 +612,17 @@ fun TimeSchemeEditorHost(
     // 进来那一下也顿（正则还每次新建，见 `LocationTimeMatchLogic` 的常量注释）。
     // 现在首帧先给 EMPTY（卡片上的用量计数短暂为 0），后台算完再 `withUsage` 换进来。
     var usage by remember(schemeId) { mutableStateOf(TimeSchemeUsageIndex.EMPTY) }
-    LaunchedEffect(schemeId, snapshot.timeSchemes, snapshot.profiles) {
+    // T-02（2026-11-11 评审三）：键必须把引用索引**实际消费**的四份快照都包进来。
+    // 工厂读 `locationGroups` / `dateRules`（见下方实参），但旧键只有 schemes/profiles ⇒
+    // 用户改了「地点作息匹配」分组或「日期作息规则」时，本页的用量与引用预览不重建，
+    // 页面上就停在旧数字上（列表页 `:148` 用整份 snapshot 做键，是同一对照口径）。
+    LaunchedEffect(
+        schemeId,
+        snapshot.timeSchemes,
+        snapshot.profiles,
+        snapshot.locationTimeGroups,
+        snapshot.scheduleDateRules,
+    ) {
         val loaded = withContext(Dispatchers.Default) {
             TimeSchemeUsageIndexFactory.build(
                 schemes = snapshot.timeSchemes,
@@ -622,6 +641,7 @@ fun TimeSchemeEditorHost(
                 schemes = repository.snapshot.timeSchemes,
                 activeSchemeId = repository.snapshot.activeTimeSchemeId,
                 usage = TimeSchemeUsageIndex.EMPTY,
+                usageReady = false,
                 schemeId = schemeId,
             ),
         )

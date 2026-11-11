@@ -197,9 +197,9 @@ class PagesShellActivity : ComponentActivity() {
      */
     override fun onConfigurationChanged(newConfig: Configuration) {
         super.onConfigurationChanged(newConfig)
-        AppLocaleRuntime.setSystemLocaleTag(
-            runCatching { newConfig.locales[0].toLanguageTag() }.getOrNull(),
-        )
+        // 不要用 newConfig.locales[0]：它可能带着本 Activity 的手选语言覆写值。
+        // 真源是全局系统资源（与 systemLocaleTagOf 同一处）。
+        AppLocaleRuntime.setSystemLocaleTag(systemLocaleTagOf())
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -498,7 +498,7 @@ private fun withAppLocale(base: Context): Context {
     // 先把**真实系统语言**交给运行时（此刻 base 还没被 createConfigurationContext 覆盖）。
     // 「跟随系统」必须读它，不能反读 `Locale.getDefault()`——后者会被用户手选语言改写，
     // 反读就形成自指：切过英语再选「跟随系统」永远回不到中文（2026-11-10 用户报障）。
-    AppLocaleRuntime.setSystemLocaleTag(systemLocaleTagOf(base))
+    AppLocaleRuntime.setSystemLocaleTag(systemLocaleTagOf())
     val tag = runCatching {
         localeTagFromRawSettingsJson(
             PrefsKeyValueStore(base).getString(TimetableStore.KEY_SETTINGS),
@@ -518,11 +518,16 @@ private fun withAppLocale(base: Context): Context {
 /**
  * 当前**真实系统语言**标签（`zh-Hans-CN` / `en-US`…）；取不到返回 null。
  *
- * 取 `resources.configuration.locales[0]`：这是设备配置，不是 App 手选语言改出来的
- * 进程默认 Locale；在 `attachBaseContext` 里调用时拿到的还是覆盖前的配置。
+ * ⚠️ 只读 `Resources.getSystem()`——**不读 Activity 的 resources / 新 Configuration**：
+ * 那个 base 已经被 `withAppLocale` 用 `createConfigurationContext` 按**手选语言**覆写过，
+ * 转屏或切深色时 `onConfigurationChanged(newConfig)` 里的 `newConfig.locales[0]` 很可能
+ * 带着覆写值，拿它当「系统语言」会把自指链原样装回来（2026-11-11 评审 L-01）。
+ *
+ * `Resources.getSystem()` 是**全局系统资源**，不受任何 Activity 的 per-context 覆写影响，
+ * 也不受进程 `Locale.setDefault` 影响。
  */
-private fun systemLocaleTagOf(context: Context): String? = runCatching {
-    context.resources.configuration.locales[0].toLanguageTag()
+private fun systemLocaleTagOf(): String? = runCatching {
+    android.content.res.Resources.getSystem().configuration.locales[0].toLanguageTag()
 }.getOrNull()
 
 /** 主题模式 + 系统明暗 → 壳的实际明暗。 */

@@ -166,6 +166,9 @@ class AppLocaleRuntimeTest {
 
     @Test
     fun `刷新系统语言不能影响手选语言`() {
+        // L-03：这条也改了 `Locale.setDefault`，必须原样保存/恢复，
+        // 否则后面的用例会读到上一条留下的 ko，断言全变成「看似通过」。
+        val original = java.util.Locale.getDefault()
         try {
             AppLocaleRuntime.resetForTest()
             AppLocaleRuntime.setSystemLocaleTag("zh-Hans-CN")
@@ -174,7 +177,7 @@ class AppLocaleRuntimeTest {
             assertEquals("手选了韩语就不该被系统语言变化带走", "ko", AppLocaleRuntime.language)
         } finally {
             AppLocaleRuntime.resetForTest()
-            java.util.Locale.setDefault(java.util.Locale.ENGLISH)
+            java.util.Locale.setDefault(original)
         }
     }
 
