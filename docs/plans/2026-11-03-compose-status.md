@@ -63,6 +63,7 @@ CI 权威变体是 `:app:testProdDebugUnitTest`（`.github/workflows/ci.yml` 的
 | **R06** | ~~`src/perf/AndroidManifest.xml` 去留~~ | ✅ **已取消**（2026-11-11 校准）：该文件已不存在——`android/app/src/perf/` 目录还在但**为空**（`git ls-files android/app/src/perf` 返回 0 个跟踪文件，`Test-Path .../AndroidManifest.xml` = false）。`build.gradle:108` 的 `perf {}` 是 `env` 维度的 flavor，不是源集；`assemblePerfBench` 由 flavor 与变体决定，与该 manifest 无关。无需再拍板 |
 | **R07** | **L0 共享目录编译隔离** | `scripts/test-kotlin-module.ps1` 无条件收 app/core/course/sync/transfer/statistics/share/theme 等目录；任何泳道在共享目录留半成品，所有模块 L0 一起红。只有 `-ExcludeShared` 逃生门，需定根治方案 |
 | **R18** | **单节课提醒：App 内无法新建（产品缺口，2026-11-11 新发现）** | **现状**：`ClassReminderLogic.upsert`（`main: core/ClassReminder.kt:113`）**生产调用点 0 处**，只有单测在调（`test: pages/timetable/ClassReminderSettingsTest.kt:153`/`:161`）；`ClassAlarmSheet`（`composeP1: pages/course/ClassAlarmSheet.kt`，KDoc `:43-48`）三个动作全部抛 `ClassAlarmEvent` → 宿主 `SystemAlarmHelper.fireSetAlarm`（`SystemAlarm.kt:21`/`:29`，`AlarmClock.ACTION_SET_ALARM`）走**系统时钟**，本层不写 `timetable_settings.classReminders`；目前整条链只有**读**（课卡铃铛 `TimetableWeekPage.kt:773-775`）与**删**（`ShellWiring.kt:1284` 调 `ClassReminderLogic.remove`）有生产调用方。**影响**：单节课提醒在 App 内只能读 / 删，**不能在 App 内新建**；且 L4 的 A6「取消提醒」在干净的 `dev` 包里造不出前置数据（得先有一条旧版一次性提醒条目），真机验收会卡在这一步。**需要谁拍板**：**Lead**——要不要在 Compose 侧补「App 内新建」属产品取向（写侧本身不复杂：`upsert` → `saveSettingsPatch` 落盘 → toast；真正要定的是继续只往系统时钟引导、还是复刻旧版一次性提醒语义）。**未排期，不要写成已开工** |
+| **R19** | **岛支持只判品牌、无 ROM 版本判断（2026-11-11 新记；性质是效率 / 兼容性改进，不是缺陷）** | **现状（读出）**：`LiveUpdateService.kt:283-290`（`isXiaomiFamilyDeviceCompat`）与 `:1485-1492`（`isXiaomiFamilyDevice`）都只判 `Build.MANUFACTURER` / `Build.BRAND` 含 `xiaomi` / `redmi` / `poco`；全仓**无 Android 系统属性探测**——`ro.mi.*`、`ro.miui.*`、`android.os.SystemProperties` 各 **0 命中**（`getprop` 子串命中 138 处，逐条看全是 `System.getProperty`（JVM 属性）与测试/注释文本，无一处读 Android 系统属性）。**后果**：小米系但**没有焦点通知**的机器（MIUI 12–14、精简版 ROM、用户自己关了焦点通知）仍被 `PromotedFormPolicy.kt:32-35`（`if (isXiaomiFamily) return true`，不看 SDK）判成「会上岛」⇒ 课前 / 课末进 `computeNextTickDelayMillis` 返回 `1000L` 的窗口（`:2177`，`updatesEverySecond` 见 `:3038`）时**逐秒 `notify`**，每次构建照做一层 ROM 可能忽略的 `miui.focus.param` 多层 JSON 与位图（常态心跳 60s `:349`、后台浮现补发 500ms `:77`）。用户只看到一条普通通知，代价全在耗电与主线程；**「ROM 是否真忽略」属推断，代码路径是读出来的**。**非小米设备行为正常（读出）**：`buildMiuiFocusParam` 首行 `if (!isXiaomiFamilyDevice()) return null`（`:1786-1788`）；Android 16+ 走原生 promoted（`PromotedFormPolicy.kt:35` 的 `sdkInt >= 36 && canPostPromoted`），<16 只有普通通知；不崩、不刷屏（单 id + `onlyAlertAgain` 类设置）。**建议最小防护（未实施）**：`miui.focus.param` 照发；逐秒节奏只在确认 ROM 支持时启用（读 `ro.mi.os.version.code` / `ro.miui.ui.version.code`，读不到按不支持、回落 60s，并留可强制开启的逃生门）；自检页加一档「小米系但版本未知 / 不支持」；非小米设置页标「仅小米设备呈现」、`<16` 隐藏自定义左侧图标项。**文档失真一并记**：官网宣称「需 HyperOS 3.0.300+」，而代码里**没有任何版本判断** —— 文档比代码严格，照官网买设备的用户会碰上行为不一致（官网原文未核实，代码侧已核）。**状态：未排期，等 L2 与用户表态后决定；不要写成已开工** |
 
 ### C. agent 可做（按优先级）
 
@@ -210,6 +211,15 @@ L3 出包、L3.5 性能包、L4 真机一律用户跑；**性能只认 Bench 或
 ---
 
 ## 变更记录
+
+- **2026-11-11 记 R19「岛支持只判品牌、无 ROM 版本判断」（只改账；性质是效率 / 兼容性改进，不是缺陷）**：
+  - 读出部分：`LiveUpdateService.kt:283-290` / `:1485-1492` 两个判据只看 manufacturer/brand；`ro.mi.*` /
+    `ro.miui.*` / `SystemProperties` 全仓 0 命中（`getprop` 138 处子串全是 `System.getProperty` 与测试文本）；
+    `PromotedFormPolicy.kt:32-35` 对小米系直接 `return true`（不看 SDK）；`buildMiuiFocusParam` 对非小米首行
+    返回 null（`:1786-1788`）。
+  - 推断部分（**已在行内标注为推断**）：MIUI 12–14 / 精简 ROM / 用户关闭焦点通知的机器「被构建但被系统忽略」。
+  - 建议防护三条 + 官网文档失真（称需 HyperOS 3.0.300+，代码无版本判断）都写进 R19，**未实施、未排期**，
+    等 L2 与用户表态。
 
 - **2026-11-11 R12 / R15 / 审查 P0-2 核销（只改账，代码为实测）**：
   - **R12 两处残余 → 已闭环**，分两段：①`2026-11-03` 已把 settings 从「Kotlin 已移植子集」改成
