@@ -40,7 +40,7 @@ import top.yukonga.miuix.kmp.theme.MiuixTheme
  * |---|---|---|---|
  * | 1 | 底部弹层（`showHomeHyperosSheet`） | 居中 `Dialog` | `QingyuSheet`（底部弹层） |
  * | 2 | 内容内边距 `16/16/16/24`（`:47`） | `Card(padding 16)` + `Column(padding 16)` = 双层 | 由套件统一给（16 侧边 + 底部让位） |
- * | 3 | 标题 `选择周次`，17sp（`HyperosTokens.titleSize`）`sheetTitle` | `body1` 加粗 + 右上角关闭叉 | 17sp（`headline1`）、无关闭叉（Dart 靠下拉/点外部收起） |
+ * | 3 | 标题 `选择周次`，17sp（`HyperosTokens.titleSize`）`sheetTitle` | `body1` 加粗 + 右上角关闭叉 | 17sp / w400 / 左对齐（交给套件标题行，见下节；无关闭叉——Dart 靠下拉/点外部收起） |
  * | 4 | 说明行「共 N 周」13sp（`:44` / `:64-72`），左右各再缩 16 | 无 | 有 |
  * | 5 | 网格 **4 列**，`mainAxisSpacing/crossAxisSpacing = 10`，`childAspectRatio = 1.55`（`:87-92`） | 5 列、间距 8、`height(220.dp)` 写死 | 4 列 / 间距 10 / 宽高比 1.55（高度随宽度走，不再写死） |
  * | 6 | 格子文案「第 N 周」（`:96` `goToWeekLabel`） | 只写数字 | 「第 N 周」 |
@@ -54,6 +54,25 @@ import top.yukonga.miuix.kmp.theme.MiuixTheme
  *   通常一屏放得下，超了由 [QingyuSheet] 的外层滚动接管（比在弹层里再套一层滚动稳）。
  * - Dart 的格子文案用 `FittedBox(scaleDown)` 兜窄屏；这里同样 `maxLines = 1` + 不换行，
  *   4 列在 360dp 屏上每格约 74dp、「第 20 周」≈60dp，放得下，所以不额外做缩放。
+ *
+ * ## 标题已收回套件标题行（2026-11-11）
+ *
+ * 之前是 `QingyuSheet(show, onDismissRequest)` **不传 `title`**、在正文顶部**自绘**一行
+ * `headline1` 标题 + 8dp `Spacer`：miuix 那行空标题位（6 + 12dp）照旧占着，标题再叠在它
+ * 下面，顶部白占一段。现在改为 `title = TimetableStrings.selectWeekTitle.text`，
+ * **空档位由标题占用**，正文顶部不再多一层。
+ *
+ * 三处随之变化的数值（其余一律未动）：
+ *
+ * - **标题→说明行**：自绘时期 = 8dp `Spacer` + 说明行自带 8dp = **16dp**；现在 = miuix
+ *   标题行行内下边距 12dp + 说明行自带 8dp = **20dp**（**+4dp**）。不补不扣：
+ *   这 4dp 是 [QingyuSheetDefaults.TitleLineHeight] 里登记的上游缺口（发布版 16dp vs
+ *   miuix 行内 12dp），补的话 54 个弹层顶部统一再抬 4dp。
+ * - **标题行高**：自绘用 `headline1` 原样行高（平台默认 ≈1.35）；套件按发布版钉
+ *   `20.4sp`（17sp × 1.2）。行更紧 1 像素级，属发布版口径。
+ * - **标题颜色**：自绘用 `Color(QingyuTheme.primaryText(dark))`，套件标题用
+ *   `MiuixTheme.colorScheme.onSurface`；后者在 `QingyuPageTheme` 里就填的是同一个表达式
+ *   （`QingyuPageTheme.kt` 的 `qingyuLightColors` / `qingyuDarkColors`），**像素级相同**。
  *
  * @param show 是否显示。
  * @param availableWeeks 可选周次（Dart `settings.availableWeeks`）。
@@ -81,15 +100,17 @@ fun WeekSelectorSheet(
     // Dart `:38-39`：只有「能算出本周」且「浏览的不是本周」时才出现回本周。
     val showBackToCurrent = currentSemesterWeek != null && visibleWeek != currentSemesterWeek
 
-    QingyuSheet(show = show, onDismissRequest = onDismiss) {
+    QingyuSheet(
+        show = show,
+        onDismissRequest = onDismiss,
+        // 标题交给套件标题行：它的口径就是发布版（17sp / w400 / 左对齐 / 行高 1.2，
+        // 见 `QingyuSheetDefaults.TitleLineHeight`），不再在这里自绘一行 + 8dp 间距。
+        title = TimetableStrings.selectWeekTitle.text,
+    ) {
         Column(modifier = Modifier.fillMaxWidth()) {
-            // ── 标题（Dart `:52-55`：`HyperosTypography.sheetTitle` = 17sp / w400 / height 1.2）──
-            Text(
-                text = TimetableStrings.selectWeekTitle.text,
-                style = MiuixTheme.textStyles.headline1,
-                color = primaryText,
-            )
-            Spacer(modifier = Modifier.height(8.dp))
+            // 标题已在套件标题行里（2026-11-11 收回），正文直接从说明行开始：
+            // 标题→说明行 = miuix 标题行下边距 12dp + 说明行自带 8dp = 20dp
+            // （自绘时期是 8dp Spacer + 8dp = 16dp，多 4dp；那 4dp 是套件里登记的上游缺口，不补）。
 
             // ── 说明行「共 N 周」（Dart `:59-74`：13sp 次要色，左右各再缩 16）──
             Text(
