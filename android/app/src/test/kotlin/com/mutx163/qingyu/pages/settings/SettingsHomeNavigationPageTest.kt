@@ -350,20 +350,25 @@ class SettingsHomeNavigationPageTest {
     }
 
     @Test
-    fun `首页标题预览文案随应用标题与默认课表名`() {
-        // settings_appearance.dart:871-909：classic 只显示 appTitle；
-        // brand 显示大 Logo（appTitle）+ 小课表名（defaultTimetablePreviewName）
-        val classic = spec().flatten().filterIsInstance<SettingsInline>()
-            .first { it.id == "homeNavigation.homeTitle.preview" }
-        assertEquals(listOf("轻屿课表"), classic.texts.map { it.text })
-
-        val brand = spec(SettingsHomeNavigationState(titleStyle = "brand"))
-            .flatten().filterIsInstance<SettingsInline>()
-            .first { it.id == "homeNavigation.homeTitle.preview" }
-        assertEquals(
-            listOf("轻屿课表", "默认课表"),
-            brand.texts.map { it.text },
-        )
+    fun `首页标题预览交宿主注入真组件 模型不再带样张文字`() {
+        // 2026-11-10 用户实报「预览和实际差距太远」后重做：
+        // 旧形态是模型塞 1~2 条样张文字 → 渲染层画 72dp 主色蓝色块（PreviewCard/PreviewTile）。
+        // 新形态：模型只留一张占位卡（id + PREVIEW_CARD），内容由宿主按 id 注入
+        // `HomeTitlePreviewCard`（真壁纸 + 真玻璃带 + 真 TimetableTopBar）。
+        // 判据钉在「texts 必须为空」：一旦有人把样张文字塞回来，渲染层会立刻退回蓝图色块。
+        for (style in listOf("classic", "brand")) {
+            val preview = spec(SettingsHomeNavigationState(titleStyle = style))
+                .flatten()
+                .filterIsInstance<SettingsInline>()
+                .first { it.id == SettingsHomeNavigationPage.HOME_TITLE_PREVIEW_ID }
+            assertEquals(InlineKind.PREVIEW_CARD, preview.kind)
+            assertTrue(
+                "$style 档的首页标题预览带上了样张文字：渲染层会退回 PreviewTile 蓝图色块，" +
+                    "用户看到的又是「看不出真实效果」的旧形态",
+                preview.texts.isEmpty(),
+            )
+            assertNull(preview.label)
+        }
     }
 
     // ------------------------------------------------------------- 恢复默认

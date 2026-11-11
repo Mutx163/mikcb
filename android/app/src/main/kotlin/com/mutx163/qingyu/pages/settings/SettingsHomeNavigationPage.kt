@@ -159,7 +159,7 @@ object SettingsHomeNavigationPage {
         nodes += SettingsGroup(
             id = "homeNavigation.homeTitle",
             children = listOf(
-                titleStylePreview(state),
+                titleStylePreview(),
                 settingsRow(
                     id = "homeNavigation.homeTitleStyle",
                     component = MiuixRowComponent.DROPDOWN,
@@ -311,37 +311,28 @@ object SettingsHomeNavigationPage {
     )
 
     /**
-     * 首页标题微缩预览（`HomeTitleStylePreview`，`settings_appearance.dart:871-909`）。
-     *
-     * classic 只显示应用标题；brand 是「大 Logo + 小课表名」，第二行取
-     * `defaultTimetablePreviewName`（**不是**用户当前的课表名——预览是固定的示意值）。
+     * 首页标题预览的 node id（也是宿主注入真组件的**槽位键**，见 `SettingsHost.HomeNavigationHost`
+     * 与 `HomeTitlePreviewCard`）。单独一个常量：模型、宿主、守卫三处引同一个字面量。
      */
-    private fun titleStylePreview(state: SettingsHomeNavigationState): SettingsInline =
-        if (state.titleStyle == "brand") {
-            SettingsInline(
-                id = "homeNavigation.homeTitle.preview",
-                kind = InlineKind.PREVIEW_CARD,
-                note = "首页标题微缩预览（settings_appearance.dart:871-909）：官方没有标题样式预览，" +
-                    "两行文字由应用自绘；第二行固定取 defaultTimetablePreviewName",
-                texts = listOf(
-                    SettingsInlineText(SettingsStringsExt2.appTitle.key, SettingsStringsExt2.appTitle.text),
-                    SettingsInlineText(
-                        SettingsStringsExt2.defaultTimetablePreviewName.key,
-                        SettingsStringsExt2.defaultTimetablePreviewName.text,
-                    ),
-                ),
-            )
-        } else {
-            SettingsInline(
-                id = "homeNavigation.homeTitle.preview",
-                kind = InlineKind.PREVIEW_CARD,
-                note = "首页标题微缩预览（settings_appearance.dart:871-909）：官方没有标题样式预览，" +
-                    "classic 只有一行应用标题",
-                texts = listOf(
-                    SettingsInlineText(SettingsStringsExt2.appTitle.key, SettingsStringsExt2.appTitle.text),
-                ),
-            )
-        }
+    const val HOME_TITLE_PREVIEW_ID = "homeNavigation.homeTitle.preview"
+
+    /**
+     * 首页标题预览（`HomeTitleStylePreview`，`settings_appearance.dart:871-909`）的**占位节点**。
+     *
+     * 模型只声明「这里有一张预览卡」，内容由宿主注入真组件（真壁纸样例 + 真玻璃带 +
+     * 真 `TimetableTopBar`，见 `HomeTitlePreviewCard`）。因此这里**不携带任何样张文字**：
+     * 一带 `texts`，渲染层就会把它画成通用色块（72dp 主色蓝 + `body2` / `footnote1` 两行白字），
+     * 那正是 2026-11-10 用户实报「和实际差距太远，看不出来预览效果」的旧形态。
+     *
+     * 发布版这块本身也是抽象样张（`titleLarge` / `headlineSmall` 纯文字 + `surfaceContainer`
+     * 底），本次重做属用户明确要求的**超发布版**观感升级。
+     */
+    private fun titleStylePreview(): SettingsInline = SettingsInline(
+        id = HOME_TITLE_PREVIEW_ID,
+        kind = InlineKind.PREVIEW_CARD,
+        note = "首页标题预览：宿主注入真组件（真壁纸 + 真玻璃带 + 真标题行）；" +
+            "模型只占位、不存样张文字",
+    )
 
     // ------------------------------------------------------------- 纯函数行为
 

@@ -54,6 +54,7 @@ import com.mutx163.qingyu.pages.settings.SettingsGlassDockEditorPage
 import com.mutx163.qingyu.pages.settings.SettingsGroup
 import com.mutx163.qingyu.pages.settings.SettingsHomeMenuEditorPage
 import com.mutx163.qingyu.pages.settings.SettingsHomeMenuEditorState
+import com.mutx163.qingyu.pages.settings.HomeTitlePreviewCard
 import com.mutx163.qingyu.pages.settings.SettingsHomeNavigationPage
 import com.mutx163.qingyu.pages.settings.SettingsNode
 import com.mutx163.qingyu.pages.settings.SettingsPageBridge
@@ -72,6 +73,7 @@ import com.mutx163.qingyu.pages.settings.debouncedSliderRowIds
 import com.mutx163.qingyu.pages.settings.settingsPreviewDraft
 import com.mutx163.qingyu.theme.QingyuTheme
 import com.mutx163.qingyu.core.MiniJson
+import com.mutx163.qingyu.platform.PrefsKeyValueStore
 import com.mutx163.qingyu.platform.ScreenCaptureWatcher
 import android.content.ClipData
 import android.content.ClipboardManager
@@ -94,9 +96,11 @@ import top.yukonga.miuix.kmp.icon.extended.Ok
 import top.yukonga.miuix.kmp.overlay.OverlayDialog
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.time.LocalDateTime
 import java.util.Locale
 
@@ -1316,10 +1320,42 @@ fun HomeNavigationHost(
         return landed
     }
     val state = SettingsPageBridge.toHomeNavigationState(model)
+
+    // ── 首页标题预览：真组件需要的两样输入 ──
+    // ① 壁纸 / 材质 / 墨色：与首页、外观编辑页预览**同一份**推导（唯一入口），
+    //    所以「壁纸样例与其他预览一致」不是靠约定的，是同一个函数算出来的。
+    val homeChrome = rememberHomeBackdropChrome(model)
+    // ② brand 档副行是**当前课表名**（真首页 `TimetableTopBar` 的同一个入参）。
+    //    档案 JSON 含全部课程，解析放 IO、只在进页读一次；读不到留 null ⇒ 真页同一状态
+    //    显示「点击切换课表」，这里不编一个假课表名。
+    var previewProfileName by remember(context) { mutableStateOf<String?>(null) }
+    LaunchedEffect(context) {
+        previewProfileName = withContext(Dispatchers.IO) {
+            runCatching {
+                val timetableStore = TimetableStore(PrefsKeyValueStore(context))
+                TimetableHostLogic.resolveProfileName(
+                    profiles = timetableStore.loadProfiles().profiles,
+                    activeProfileId = timetableStore.loadActiveProfileId(),
+                )
+            }.getOrNull()
+        }
+    }
+
     Box(modifier = Modifier.fillMaxSize()) {
         SettingsPageScreen(
             spec = SettingsHomeNavigationPage.spec(state),
             onBack = onBack,
+            // 「首页标题」那张预览卡改由宿主喂真组件（2026-11-10 用户报预览失真）：
+            // 真壁纸样例 + 真玻璃带 + 真 `TimetableTopBar`，模型只占位不带样张文字。
+            inlineSlots = mapOf(
+                SettingsHomeNavigationPage.HOME_TITLE_PREVIEW_ID to {
+                    HomeTitlePreviewCard(
+                        chrome = homeChrome,
+                        brand = model.homeTitleStyle == HomeTitleStyle.BRAND,
+                        profileName = previewProfileName,
+                    )
+                },
+            ),
             onAction = { action, target, rowId ->
                 when (val kind = SettingsPageBridge.toKind(action)) {
                     SettingsActionKind.WRITE_SETTING -> {
