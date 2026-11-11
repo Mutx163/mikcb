@@ -15,12 +15,27 @@
     基线键前缀 `components/`），同样按 R1..R7 七条规则列违规。
 
     规则：**待修违规必须为 0**。真正需要保留的写法登记在
-    tool/compose_style_exceptions/<域>.txt，一行 `<相对路径>|<规则>|<原因>`；
-    每条例外都必须命中一处真实违规（过期即红）。
+    tool/compose_style_exceptions/<域>.txt，一行
+        <相对路径>|<规则>|<锚>[,<锚>…]|<原因>
+    每条例外都必须命中一处真实违规行（过期即红）。
 
-    -Write 只做一件事：删掉**已经修好、不再命中**的过期例外行。
-    它**绝不新增**，所以不存在「把新违规洗进基线」的后门。
-    新增例外只能人工编辑文件并写明原因。
+    【行级锚 · 2026-11-11】登记单位从「整个文件 + 整条规则」收窄到**行**：
+    锚 = 被判定的那行代码（剥注释与字符串内容、trim 之后）的 SHA-256 前 8 位小写十六进制。
+    不用行号——行号随无关改动（删一行空行、上方插一段）上下漂移，一漂整片例外就假红。
+    一条例外可以在第三段登记多个锚（同文件同规则的多处命中），逗号分隔。
+
+    判据（与 ComposePageStyleGuardTest.kt 逐字一致）：
+      · 同文件同规则下，出现**未登记的锚** ⇒ [待修]（= 新增违规，必须改代码）；
+      · 登记了但当前**不再命中**的锚 ⇒ [过期]（改过内容 / 挪到别的文件 / 已修好，都得删）；
+      · 同一行里重复登记同一个锚 ⇒ 用法错。
+    报 [待修] 时脚本直接打印「登记用锚：<hash>（第 N 行）」，人工登记照抄即可。
+
+    -Write 只做两件事：删掉**已经过期**的行与锚。它**绝不新增**，
+    所以不存在「把新违规洗进基线」的后门。新增例外只能人工编辑文件并写明原因。
+
+    【旧格式已作废】三段式 `<路径>|<规则>|<原因>` 等于整文件整规则免检，正是本轮要堵的
+    洗白通道（2026-11-11 之前，随便在同文件里再加一处同类违规，那条规则整体不判）。
+    现在还写三段会直接判用法错。
 
 .EXAMPLE
     pwsh -File scripts/compose-style-lint.ps1 -Domain statistics
@@ -33,7 +48,7 @@ param(
     [Parameter(Mandatory = $true, Position = 0)]
     [string]$Domain,
 
-    # 只删过期例外；不会新增任何行（没有旧行可加）。
+    # 只删过期例外（整行过期就删行、部分锚过期就裁锚）；不会新增任何内容。
     [switch]$Write
 )
 
@@ -44,9 +59,15 @@ $pagesRoot = Join-Path $repoRoot "android/app/src/composeP1/kotlin/com/mutx163/q
 $exceptionsRoot = Join-Path $repoRoot "tool/compose_style_exceptions"
 $componentsRoot = Join-Path $repoRoot "android/app/src/composeP1/kotlin/com/mutx163/qingyu/components"
 
-if (-not (Test-Path $pagesRoot)) {
-    Write-Error "找不到页面源码目录：$pagesRoot"
+# 用法错误一律 exit 2。不用 Write-Error：EAP=Stop 下它会抛出终止错误，拿不到稳定的退出码。
+function Write-UsageError {
+    param([string]$Message)
+    [Console]::Error.WriteLine("[compose-style-lint] $Message")
     exit 2
+}
+
+if (-not (Test-Path $pagesRoot)) {
+    Write-UsageError "找不到页面源码目录：$pagesRoot"
 }
 
 # 域 → 源码根。pages 下按目录分域；components 是共享套件层（2026-11-04 补域），
@@ -62,8 +83,7 @@ if ($Domain -eq "all") {
 } else {
     if (-not $domainRoots.ContainsKey($Domain)) {
         $avail = ($domainRoots.Keys | Sort-Object) -join ', '
-        Write-Error "没有这个域：$Domain（可选：$avail）"
-        exit 2
+        Write-UsageError "没有这个域：$Domain（可选：$avail）"
     }
     $domains = @($Domain)
 }
@@ -99,7 +119,7 @@ $exempt = @{
     "showcase" = @("R1", "R3", "R7")   # 展厅故意逐个展示官方裸组件与字重
 }
 
-# 4 个扫描器。每个函数返回 `Rel / Rule / Detail` 对象列表。
+# 4 个扫描器。每个函数返回 `Rel / Rule / Detail / Anchors` 对象列表。
 $scanners = @(
     "Get-SkeletonViolations",
     "Get-ContentBlockViolations",
@@ -211,6 +231,44 @@ function Get-HitCount {
     @($Lines | Where-Object { $Re.IsMatch($_.Code) }).Count
 }
 
+# ── 行级锚 ──────────────────────────────────────────────────────────────
+# 例外只覆盖「当初登记的那几行」，所以锚必须钉在**被判定的那行代码**上：
+# 剥掉注释与字符串内容、trim 之后，取 SHA-256 的前 8 位小写十六进制。
+#
+# 为什么不用行号：行号会随**无关改动**漂移——上方删一行空行、插一句 import，
+# 整片例外就集体假红，人会开始「顺手重跑一遍把锚刷掉」，棘轮就失效了。
+# 哈希只跟着这行代码本身走：内容一改就是另一个锚（过期红），挪到别的文件也匹配不上。
+#
+# 两侧必须算出同一个值：ComposePageStyleGuardTest.kt 的 lineAnchor() 是本函数的
+# 逐字对偶（MessageDigest "SHA-256" + trim + UTF-8 + 前 4 字节小写十六进制）。
+function Get-LineAnchor {
+    param([string]$Code)
+    $bytes = [System.Text.Encoding]::UTF8.GetBytes($Code.Trim())
+    $sha = [System.Security.Cryptography.SHA256]::Create()
+    try {
+        $digest = $sha.ComputeHash($bytes)
+    } finally {
+        $sha.Dispose()
+    }
+    $hex = ($digest | ForEach-Object { $_.ToString('x2') }) -join ''
+    return $hex.Substring(0, 8)
+}
+
+# 一行代码可能同时命中同一条规则的多个正则（例如 R2 的 LazyColumn 与 verticalScroll），
+# 锚按 hash 去重：同一行同样的代码只会有一个锚，登记一次覆盖全部。
+function Get-AnchorHits {
+    param($Lines, [regex]$Re)
+    $seen = @{}
+    $out = [System.Collections.Generic.List[object]]::new()
+    foreach ($line in @($Lines | Where-Object { $Re.IsMatch($_.Code) })) {
+        $hash = Get-LineAnchor $line.Code
+        if ($seen.ContainsKey($hash)) { continue }
+        $seen[$hash] = $true
+        $out.Add([pscustomobject]@{ Hash = $hash; Line = $line.Line })
+    }
+    return @($out)
+}
+
 # ── 扫描器 1：结构（顶栏 / 滚动）→ R1 / R2 ─────────────────────────────
 function Get-SkeletonViolations {
     param($Rel, $Lines, $Exempt)
@@ -220,25 +278,28 @@ function Get-SkeletonViolations {
     # R1 页面骨架与顶栏 → 不许手搓顶栏行（官方 TopAppBar / QingyuPageScaffold 都行）
     if ($Exempt -notcontains "R1" -and $reBackButton.IsMatch($code) -and -not $reHasTopBar.IsMatch($code)) {
         $out.Add([pscustomobject]@{
-            Rel    = $Rel
-            Rule   = "R1"
-            Detail = "手搓顶栏行（返回键），未走官方 TopAppBar / QingyuPageScaffold（第 $(Get-FirstLine $Lines $reBackButton) 行）"
+            Rel     = $Rel
+            Rule    = "R1"
+            Detail  = "手搓顶栏行（返回键），未走官方 TopAppBar / QingyuPageScaffold（第 $(Get-FirstLine $Lines $reBackButton) 行）"
+            Anchors = @(Get-AnchorHits $Lines $reBackButton)
         })
     }
 
     # R2 滚动容器 → QingyuPageList
     if ($reLazyColumn.IsMatch($code) -and -not $rePageList.IsMatch($code) -and -not $reHaptic.IsMatch($code)) {
         $out.Add([pscustomobject]@{
-            Rel    = $Rel
-            Rule   = "R2"
-            Detail = "裸 LazyColumn，缺滚动三件套与滚动条（第 $(Get-FirstLine $Lines $reLazyColumn) 行）"
+            Rel     = $Rel
+            Rule    = "R2"
+            Detail  = "裸 LazyColumn，缺滚动三件套与滚动条（第 $(Get-FirstLine $Lines $reLazyColumn) 行）"
+            Anchors = @(Get-AnchorHits $Lines $reLazyColumn)
         })
     }
     if ($reVerticalScroll.IsMatch($code)) {
         $out.Add([pscustomobject]@{
-            Rel    = $Rel
-            Rule   = "R2"
-            Detail = "用 Column+verticalScroll 当主滚动（非惰性，第 $(Get-FirstLine $Lines $reVerticalScroll) 行）"
+            Rel     = $Rel
+            Rule    = "R2"
+            Detail  = "用 Column+verticalScroll 当主滚动（非惰性，第 $(Get-FirstLine $Lines $reVerticalScroll) 行）"
+            Anchors = @(Get-AnchorHits $Lines $reVerticalScroll)
         })
     }
     return @($out)
@@ -253,18 +314,20 @@ function Get-ContentBlockViolations {
     # R3 卡片 → QingyuCard
     if ($Exempt -notcontains "R3" -and $reRawCard.IsMatch($code)) {
         $out.Add([pscustomobject]@{
-            Rel    = $Rel
-            Rule   = "R3"
-            Detail = "裸 Card，缺按压反馈与语义圆角（第 $(Get-FirstLine $Lines $reRawCard) 行）"
+            Rel     = $Rel
+            Rule    = "R3"
+            Detail  = "裸 Card，缺按压反馈与语义圆角（第 $(Get-FirstLine $Lines $reRawCard) 行）"
+            Anchors = @(Get-AnchorHits $Lines $reRawCard)
         })
     }
 
     # R6 分组标题 → QingyuSectionTitle
     if ($reSectionLabel.IsMatch($code) -and -not $reSectionTitle.IsMatch($code)) {
         $out.Add([pscustomobject]@{
-            Rel    = $Rel
-            Rule   = "R6"
-            Detail = "自己拼分组标题，未走 QingyuSectionTitle（第 $(Get-FirstLine $Lines $reSectionLabel) 行）"
+            Rel     = $Rel
+            Rule    = "R6"
+            Detail  = "自己拼分组标题，未走 QingyuSectionTitle（第 $(Get-FirstLine $Lines $reSectionLabel) 行）"
+            Anchors = @(Get-AnchorHits $Lines $reSectionLabel)
         })
     }
     return @($out)
@@ -279,18 +342,20 @@ function Get-TypographyViolations {
     # R4 字号 → MiuixTheme.textStyles
     if ($reFontSize.IsMatch($code)) {
         $out.Add([pscustomobject]@{
-            Rel    = $Rel
-            Rule   = "R4"
-            Detail = "写死字号 $(Get-HitCount $Lines $reFontSize) 处，首处第 $(Get-FirstLine $Lines $reFontSize) 行（应用 MiuixTheme.textStyles）"
+            Rel     = $Rel
+            Rule    = "R4"
+            Detail  = "写死字号 $(Get-HitCount $Lines $reFontSize) 处，首处第 $(Get-FirstLine $Lines $reFontSize) 行（应用 MiuixTheme.textStyles）"
+            Anchors = @(Get-AnchorHits $Lines $reFontSize)
         })
     }
 
     # R7 字重 → 主题字阶上的 shiftWeight
     if ($Exempt -notcontains "R7" -and $reFontWeight.IsMatch($code)) {
         $out.Add([pscustomobject]@{
-            Rel    = $Rel
-            Rule   = "R7"
-            Detail = "写死字重 $(Get-HitCount $Lines $reFontWeight) 处，首处第 $(Get-FirstLine $Lines $reFontWeight) 行（应用 MiuixTheme.textStyles.*.shiftWeight）"
+            Rel     = $Rel
+            Rule    = "R7"
+            Detail  = "写死字重 $(Get-HitCount $Lines $reFontWeight) 处，首处第 $(Get-FirstLine $Lines $reFontWeight) 行（应用 MiuixTheme.textStyles.*.shiftWeight）"
+            Anchors = @(Get-AnchorHits $Lines $reFontWeight)
         })
     }
     return @($out)
@@ -305,9 +370,10 @@ function Get-ColorViolations {
     # R5 颜色 → 主题取色
     if ($reHardColor.IsMatch($code)) {
         $out.Add([pscustomobject]@{
-            Rel    = $Rel
-            Rule   = "R5"
-            Detail = "写死颜色 $(Get-HitCount $Lines $reHardColor) 处，首处第 $(Get-FirstLine $Lines $reHardColor) 行（应用主题语义槽）"
+            Rel     = $Rel
+            Rule    = "R5"
+            Detail  = "写死颜色 $(Get-HitCount $Lines $reHardColor) 处，首处第 $(Get-FirstLine $Lines $reHardColor) 行（应用主题语义槽）"
+            Anchors = @(Get-AnchorHits $Lines $reHardColor)
         })
     }
     return @($out)
@@ -340,9 +406,78 @@ function Get-Violations {
     return @($out | Sort-Object Rel, Rule)
 }
 
+# 按 `文件|规则` 聚合：一个例外键对应一行代码集合，R2 的两种形态（LazyColumn /
+# verticalScroll）也是同一个键，锚合并到一组里。
+function Group-ViolationsByKey {
+    param([object[]]$Violations)
+    $map = [ordered]@{}
+    foreach ($hit in $Violations) {
+        $key = "$($hit.Rel)|$($hit.Rule)"
+        if (-not $map.Contains($key)) {
+            $map[$key] = [pscustomobject]@{
+                Key     = $key
+                Rel     = $hit.Rel
+                Rule    = $hit.Rule
+                Details = [System.Collections.Generic.List[string]]::new()
+                Anchors = [System.Collections.Generic.List[object]]::new()
+            }
+        }
+        $g = $map[$key]
+        if (-not $g.Details.Contains($hit.Detail)) { $g.Details.Add($hit.Detail) }
+        foreach ($a in @($hit.Anchors)) { $g.Anchors.Add($a) }
+    }
+    return $map
+}
+
 # ── 例外清单 ────────────────────────────────────────────────────────────
+# 一行 = 一处**行级**例外：<相对路径>|<规则>|<锚>[,<锚>…]|<原因>
+#   锚 = Get-LineAnchor 的 8 位小写十六进制；
+#   原因里允许再出现 `|`（前两段路径/规则、第三段锚，其余整段算原因）；
+#   同一「文件|规则」只允许登记一行，多个锚写在第三段用逗号分隔。
+# 三段式旧格式（<路径>|<规则>|<原因>）已作废：那等于整文件整规则免检，正是洗白通道。
+$reAnchor = [regex]'^[0-9a-f]{8}$'
+
+function ConvertFrom-ExceptionLine {
+    param([string]$Line, [string]$Where)
+
+    $parts = $Line -split '\|'
+    if ($parts.Count -lt 4) {
+        Write-UsageError (
+            "例外行格式不对（应为 <相对路径>|<规则>|<锚>[,<锚>…]|<原因>）：$Where → $Line`n" +
+            "三段式旧格式已作废——它等于整文件整规则免检。请按行级锚重新登记" +
+            "（跑一次本脚本，[待修] 行下面会直接打印「登记用锚：<hash>」）。")
+    }
+    $rel = $parts[0].Trim()
+    $rule = $parts[1].Trim()
+    $anchors = @($parts[2].Split(',') | ForEach-Object { $_.Trim().ToLowerInvariant() } | Where-Object { $_ -ne '' })
+    $reason = (($parts[3..($parts.Count - 1)]) -join "|").Trim()
+
+    if ($rel -eq "" -or $rule -eq "" -or $reason -eq "") {
+        Write-UsageError "例外行的路径/规则/原因都不能为空：$Where → $Line"
+    }
+    if ($anchors.Count -eq 0) {
+        Write-UsageError "例外行没有登记任何锚（第三段为空）：$Where → $Line"
+    }
+    $dupes = @($anchors | Group-Object | Where-Object { $_.Count -gt 1 } | ForEach-Object { $_.Name })
+    if ($dupes.Count -gt 0) {
+        Write-UsageError "同一例外行里重复登记了同一个锚：$($dupes -join ', ')（$Where）——一个锚只登一次"
+    }
+    foreach ($a in $anchors) {
+        if (-not $reAnchor.IsMatch($a)) {
+            Write-UsageError "锚不是 8 位小写十六进制：'$a'（$Where）→ $Line"
+        }
+    }
+    return [pscustomobject]@{
+        Key     = "$rel|$rule"
+        Rel     = $rel
+        Rule    = $rule
+        Anchors = $anchors
+        Reason  = $reason
+    }
+}
+
 function Read-ExceptionEntries {
-    $map = @{}
+    $map = [ordered]@{}
     if (-not (Test-Path $exceptionsRoot)) { return $map }
     foreach ($f in @(Get-ChildItem -Path $exceptionsRoot -File -Filter *.txt | Sort-Object Name)) {
         $n = 0
@@ -350,70 +485,109 @@ function Read-ExceptionEntries {
             $n++
             $line = $raw.Trim()
             if ($line -eq "" -or $line.StartsWith("#")) { continue }
-            $parts = $line -split '\|'
-            if ($parts.Count -lt 3) {
-                Write-Error "例外行格式不对（应为 <相对路径>|<规则>|<原因>）：$($f.Name):$n → $line"
-                exit 2
+            $entry = ConvertFrom-ExceptionLine -Line $line -Where "$($f.Name):$n"
+            if ($map.Contains($entry.Key)) {
+                Write-UsageError "例外键重复：$($entry.Key)（$($f.Name):$n）——同一处只登记一次，多个锚合并进同一行"
             }
-            $rel = $parts[0].Trim()
-            $rule = $parts[1].Trim()
-            $reason = (($parts[2..($parts.Count - 1)]) -join "|").Trim()
-            if ($rel -eq "" -or $rule -eq "" -or $reason -eq "") {
-                Write-Error "例外行的路径/规则/原因都不能为空：$($f.Name):$n → $line"
-                exit 2
-            }
-            $key = "$rel|$rule"
-            if ($map.ContainsKey($key)) {
-                Write-Error "例外键重复：$key（$($f.Name):$n）——同一处只登记一次"
-                exit 2
-            }
-            $map[$key] = [pscustomobject]@{
-                Key    = $key
-                Reason = $reason
-                Source = "$($f.Name):$n"
-            }
+            $entry | Add-Member -NotePropertyName SourceFile -NotePropertyValue $f.Name
+            $entry | Add-Member -NotePropertyName Source -NotePropertyValue "$($f.Name):$n"
+            $map[$entry.Key] = $entry
         }
     }
     return $map
 }
 
-# -Write 只删过期行；看见当前仍命中的例外就原样保留。
-# 绝不把「新违规」写成例外——那正是旧版 -Write 的后门。
+# 每个「文件|规则」组判一次：当前命中锚 vs 登记锚。
+#   Pending = 当前命中但没登记的锚 → 新增违规（必须改代码）
+#   Missing = 登记了但当前不再命中的锚 → 过期（改过内容 / 挪位置 / 已修好）
+function Get-GroupAnalysis {
+    param([object[]]$Violations, [hashtable]$Exceptions)
+
+    $groups = Group-ViolationsByKey -Violations $Violations
+    $items = [System.Collections.Generic.List[object]]::new()
+    foreach ($key in @($groups.Keys | Sort-Object)) {
+        $g = $groups[$key]
+        $current = @($g.Anchors | ForEach-Object { $_.Hash } | Sort-Object -Unique)
+        $entry = $Exceptions[$key]
+        $item = [pscustomobject]@{
+            Key     = $key
+            Rel     = $g.Rel
+            Rule    = $g.Rule
+            Details = @($g.Details)
+            Anchors = @($g.Anchors)
+            Current = $current
+            Entry   = $entry
+            Pending = @()
+            Missing = @()
+        }
+        if ($null -eq $entry) {
+            $item.Pending = @($g.Anchors)
+        } else {
+            $item.Pending = @($g.Anchors | Where-Object { $entry.Anchors -notcontains $_.Hash })
+            $item.Missing = @($entry.Anchors | Where-Object { $current -notcontains $_ })
+        }
+        $items.Add($item)
+    }
+    return $items
+}
+
+# -Write 只删过期货：
+#   · 某行的锚**全都**不再命中 ⇒ 整行删掉；
+#   · 还剩锚 ⇒ 只重写锚那一列（过期锚裁掉），路径/规则/原因原样保留。
+# 绝不新增锚或行，所以「跑一下命令把新违规洗绿」这条后门仍然关着。
 function Remove-StaleExceptions {
-    param([string]$DomainName, [object[]]$Violations)
+    param([string]$DomainName, [object[]]$Items)
 
     $file = Join-Path $exceptionsRoot "$DomainName.txt"
     if (-not (Test-Path $file)) { return }
 
-    $keys = @($Violations | ForEach-Object { "$($_.Rel)|$($_.Rule)" } | Sort-Object -Unique)
+    $live = @{}
+    foreach ($item in $Items) { $live[$item.Key] = @($item.Current) }
+
+    $raw = [System.IO.File]::ReadAllText($file)
+    $nl = if ($raw.Contains("`r`n")) { "`r`n" } else { "`n" }
     $kept = New-Object System.Collections.Generic.List[string]
-    $removed = 0
+    $removedLines = 0
+    $trimmedLines = 0
     $n = 0
 
-    foreach ($raw in [System.IO.File]::ReadAllLines($file)) {
+    foreach ($line in @($raw -split "`r?`n")) {
         $n++
-        $line = $raw.Trim()
-        if ($line -eq "" -or $line.StartsWith("#")) { $kept.Add($raw); continue }
-        $parts = $line -split '\|'
-        if ($parts.Count -lt 3) {
-            Write-Error "例外行格式不对（应为 <相对路径>|<规则>|<原因>）：$($DomainName).txt:$n → $line"
-            exit 2
+        $t = $line.Trim()
+        if ($t -eq "" -or $t.StartsWith("#")) { $kept.Add($line); continue }
+        $entry = ConvertFrom-ExceptionLine -Line $t -Where "$($DomainName).txt:$n"
+        $current = if ($live.ContainsKey($entry.Key)) { $live[$entry.Key] } else { @() }
+        $anchorsKept = @($entry.Anchors | Where-Object { $current -contains $_ })
+        if ($anchorsKept.Count -eq 0) {
+            $removedLines++
+            continue
         }
-        $key = "$($parts[0].Trim())|$($parts[1].Trim())"
-        if ($keys -contains $key) { $kept.Add($raw) } else { $removed++ }
+        if ($anchorsKept.Count -lt $entry.Anchors.Count) {
+            $trimmedLines++
+            $kept.Add(("{0}|{1}|{2}|{3}" -f $entry.Rel, $entry.Rule, ($anchorsKept -join ','), $entry.Reason))
+        } else {
+            $kept.Add($line)
+        }
     }
 
-    $hasData = @($kept | Where-Object { $_.Trim() -ne "" -and -not $_.Trim().StartsWith("#") }).Count -gt 0
+    if ($removedLines -eq 0 -and $trimmedLines -eq 0) { return }
+
+    $hasData = @($kept | Where-Object {
+            $x = $_.Trim()
+            $x -ne "" -and -not $x.StartsWith("#")
+        }).Count -gt 0
     if ($hasData) {
-        Set-Content -Path $file -Value $kept -Encoding UTF8
+        [System.IO.File]::WriteAllText(
+            $file,
+            (($kept -join $nl) + $nl),
+            [System.Text.UTF8Encoding]::new($false))
     } else {
         # 空清单不留在仓库里（旧版 21 份基线里 19 份就是这种空壳）。
         Remove-Item -Path $file -Force
     }
 
-    if ($removed -gt 0) {
-        Write-Host "  已删除过期例外 $removed 行：$file" -ForegroundColor Yellow
-    }
+    Write-Host "  已删过期例外 $removedLines 行、裁掉过期锚 $trimmedLines 行：$($DomainName).txt" `
+        -ForegroundColor Yellow
 }
 
 # ── 主流程 ──────────────────────────────────────────────────────────────
@@ -421,8 +595,14 @@ function Remove-StaleExceptions {
 $violationsByDomain = @{}
 foreach ($d in $domains) {
     $violationsByDomain[$d] = @(Get-Violations -DomainName $d)
-    if ($Write) {
-        Remove-StaleExceptions -DomainName $d -Violations $violationsByDomain[$d]
+}
+
+if ($Write) {
+    # -Write 先按当前扫描结果裁过期，再重新读清单出报告（否则报出来的还是旧锚）。
+    $exceptions = Read-ExceptionEntries
+    foreach ($d in $domains) {
+        $items = @(Get-GroupAnalysis -Violations $violationsByDomain[$d] -Exceptions $exceptions)
+        Remove-StaleExceptions -DomainName $d -Items $items
     }
 }
 
@@ -432,49 +612,70 @@ $usedTotal = 0
 $staleTotal = 0
 
 foreach ($d in $domains) {
-    $v = $violationsByDomain[$d]
-    $currentKeys = @($v | ForEach-Object { "$($_.Rel)|$($_.Rule)" } | Sort-Object -Unique)
-    $pendingKeys = @($currentKeys | Where-Object { -not $exceptions.ContainsKey($_) })
-    $usedKeys = @($currentKeys | Where-Object { $exceptions.ContainsKey($_) })
-    $stale = @($exceptions.Values |
-            Where-Object { $_.Source.StartsWith("$($d).txt:") -and ($currentKeys -notcontains $_.Key) } |
-            Sort-Object Key)
+    $items = @(Get-GroupAnalysis -Violations $violationsByDomain[$d] -Exceptions $exceptions)
+    $currentKeys = @($items | ForEach-Object { $_.Key })
+    # 清单里登记了、但该文件该规则已经一条违规都没有的整条例外（按 <域>.txt 归属）。
+    $orphans = @($exceptions.Values | Where-Object {
+            $_.SourceFile -eq "$($d).txt" -and ($currentKeys -notcontains $_.Key)
+        } | Sort-Object Key)
 
-    $pendingTotal += $pendingKeys.Count
-    $usedTotal += $usedKeys.Count
-    $staleTotal += $stale.Count
+    $hits = 0; $pending = 0; $stale = 0
+    foreach ($item in $items) {
+        $hits += $item.Current.Count
+        $pending += $item.Pending.Count
+        $stale += $item.Missing.Count
+    }
+    foreach ($o in $orphans) { $stale += $o.Anchors.Count }
+    $used = $hits - $pending
+
+    $pendingTotal += $pending
+    $usedTotal += $used
+    $staleTotal += $stale
 
     Write-Host ""
-    Write-Host "=== $d ：$($currentKeys.Count) 处命中 / $($pendingKeys.Count) 待修 / $($usedKeys.Count) 例外 / $($stale.Count) 过期 ===" -ForegroundColor Cyan
+    Write-Host "=== $d ：$hits 处命中 / $pending 待修 / $used 例外覆盖 / $stale 过期 ===" -ForegroundColor Cyan
 
-    if ($v.Count -eq 0) {
+    if ($items.Count -eq 0) {
         Write-Host "  干净" -ForegroundColor Green
     } else {
-        $v | ForEach-Object {
-            $key = "$($_.Rel)|$($_.Rule)"
-            if ($exceptions.ContainsKey($key)) {
-                Write-Host ("  [例外] {0,-4} {1}  {2}" -f $_.Rule, $_.Rel, $exceptions[$key].Reason) -ForegroundColor DarkGray
+        foreach ($item in $items) {
+            $anchorsText = (@($item.Anchors | ForEach-Object { "$($_.Hash)@L$($_.Line)" }) -join ' ')
+            if ($item.Pending.Count -eq 0) {
+                Write-Host ("  [例外] {0,-4} {1}  {2}" -f $item.Rule, $item.Rel, $item.Entry.Reason) -ForegroundColor DarkGray
+                Write-Host ("         {0}  {1}" -f $anchorsText, $item.Entry.Source) -ForegroundColor DarkGray
             } else {
-                Write-Host ("  [待修] {0,-4} {1}  {2}" -f $_.Rule, $_.Rel, $_.Detail) -ForegroundColor Yellow
+                $detail = ($item.Details -join '；')
+                Write-Host ("  [待修] {0,-4} {1}  {2}" -f $item.Rule, $item.Rel, $detail) -ForegroundColor Yellow
+                $regText = (@($item.Pending | ForEach-Object { "$($_.Hash)（第 $($_.Line) 行）" }) -join ', ')
+                Write-Host ("         登记用锚：$regText") -ForegroundColor Yellow
+                if ($null -ne $item.Entry) {
+                    Write-Host ("         该行已有例外 {0} 只覆盖 {1}；同文件同规则新增违规必须改代码，不许扩例外" -f `
+                            $item.Entry.Source, (@($item.Entry.Anchors) -join ',')) -ForegroundColor Yellow
+                }
+            }
+            foreach ($m in $item.Missing) {
+                Write-Host ("  [过期] {0,-4} {1}  锚 {2} 已不在当前违规行（改过内容 / 挪走 / 或已修好）  {3}" -f `
+                        $item.Rule, $item.Rel, $m, $item.Entry.Source) -ForegroundColor Red
             }
         }
     }
-    $stale | ForEach-Object {
-        Write-Host ("  [过期] {0}  ({1})" -f $_.Key, $_.Source) -ForegroundColor Red
+    foreach ($o in $orphans) {
+        Write-Host ("  [过期] {0,-4} {1}  整条例外失效：该文件该规则已无违规（锚 {2}）  {3}" -f `
+                $o.Rule, $o.Rel, (@($o.Anchors) -join ','), $o.Source) -ForegroundColor Red
     }
 }
 
 Write-Host ""
-Write-Host "合计：待修 $pendingTotal 处，例外 $usedTotal 条，过期 $staleTotal 条" -ForegroundColor Cyan
+Write-Host "合计：待修 $pendingTotal 处，例外覆盖 $usedTotal 处，过期 $staleTotal 处" -ForegroundColor Cyan
 
 if ($pendingTotal -gt 0) {
-    Write-Host "待修违规必须为 0。改代码走共享套件；确有正当理由要保留的，人工编辑 tool/compose_style_exceptions/<域>.txt 并写明原因（-Write 不会帮你加）。" -ForegroundColor Red
+    Write-Host "待修违规必须为 0。改代码走共享套件；确有正当理由要保留的，人工把「登记用锚」里的哈希写进 tool/compose_style_exceptions/<域>.txt 并写明原因（-Write 不会帮你加）。" -ForegroundColor Red
 }
 if ($staleTotal -gt 0) {
-    Write-Host "过期例外必须删掉：加 -Write 只删过期行，不会新增。" -ForegroundColor Red
+    Write-Host "过期例外必须删掉：加 -Write 只裁过期行与过期锚，不会新增。" -ForegroundColor Red
 }
 if (-not $Write) {
-    Write-Host "（只读模式；加 -Write 只会删除过期例外，不会新增任何行）" -ForegroundColor DarkGray
+    Write-Host "（只读模式；加 -Write 只会删除过期行与过期锚，不会新增任何内容）" -ForegroundColor DarkGray
 }
 
 if ($pendingTotal -gt 0 -or $staleTotal -gt 0) { exit 1 }

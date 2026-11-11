@@ -1,8 +1,13 @@
 # import 域的 Compose 页面样式例外清单（不是待还的债）。
-# 一行一条：<相对路径>|<规则>|<原因>
+# 一行一条：<相对路径>|<规则>|<锚>[,<锚>…]|<原因>
+# 锚 = 被判定的那行代码（剥注释与字符串、trim 之后）的 SHA-256 前 8 位小写十六进制；
+#      一条例外可以登记多个锚（同文件同规则多处命中），逗号分隔。
 # 规则：R1 顶栏 / R2 滚动 / R3 卡片 / R4 字号 / R5 颜色 / R6 分组标题 / R7 字重
-# 守卫要求「待修违规 = 0」；每条例外都必须命中一处真实违规，修好后必须删掉（否则判过期）。
-# 只允许人工编辑。scripts/compose-style-lint.ps1 -Write 只能删过期行，绝不新增。
+# 守卫要求「待修违规 = 0」；每条例外都必须命中一处**真实违规行**——那一行改掉、挪走或修好后必须删掉（否则判过期）。
+# 只允许人工编辑。scripts/compose-style-lint.ps1 -Write 只能删过期行与过期锚，绝不新增。
+# 登记用锚从脚本报错里抄：跑一次 scripts/compose-style-lint.ps1，[待修] 行下面会打印「登记用锚：<hash>」。
 # R2 是结构性豁免：底部弹层内部的「内容可滚 + 动作固定」分区，不是页面级滚动容器。
-import/warehouse/WarehouseCoursesImportDialogs.kt|R2|学期确认弹层按 miuix 弹层契约拆成「内容滚动区 + 固定动作行」：滚动区只能是 Column+verticalScroll（弹层内不能用 QingyuPageList 的惰性列表），按钮必须留在滚动区外才不会被超高内容顶出面板；R2 管的是页面级滚动容器，此处是弹层内局部滚动
-import/warehouse/WarehouseBridgeDialogHost.kt|R2|网页单选弹层同样拆成「选项滚动区 + 固定动作行」：学期列表由适配脚本下发，8 个以上就会把取消/保存推到面板底外；滚动区只能是 Column+verticalScroll（弹层内不能用 QingyuPageList），同样属于弹层内局部滚动而非页面级容器
+# 两个文件里的锚恰好相同（6958f657）——被判定的是同一行 `Column+verticalScroll` 写法；
+# 锚只在「同一文件 + 同一规则」内比对，跨文件相同不是冲突。
+import/warehouse/WarehouseCoursesImportDialogs.kt|R2|6958f657|学期确认弹层按 miuix 弹层契约拆成「内容滚动区 + 固定动作行」：滚动区只能是 Column+verticalScroll（弹层内不能用 QingyuPageList 的惰性列表），按钮必须留在滚动区外才不会被超高内容顶出面板；R2 管的是页面级滚动容器，此处是弹层内局部滚动
+import/warehouse/WarehouseBridgeDialogHost.kt|R2|6958f657|网页单选弹层同样拆成「选项滚动区 + 固定动作行」：学期列表由适配脚本下发，8 个以上就会把取消/保存推到面板底外；滚动区只能是 Column+verticalScroll（弹层内不能用 QingyuPageList），同样属于弹层内局部滚动而非页面级容器

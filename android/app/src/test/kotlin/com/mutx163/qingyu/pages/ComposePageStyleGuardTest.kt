@@ -1,9 +1,12 @@
 package com.mutx163.qingyu.pages
 
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNotEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import java.io.File
+import java.security.MessageDigest
 
 /**
  * Compose 页面样式守卫（2026-10-28 建立；2026-11-03 收口为「4 个扫描器 + 例外清单」）。
@@ -48,6 +51,25 @@ import java.io.File
  * - 真正需要保留的写法人工登记在 `tool/compose_style_exceptions/<域>.txt`，每条必须写明原因；
  * - 每条例外都必须命中一处真实违规（**过期即红**），修好就删那行；
  * - 脚本 `-Write` **只能删过期行、绝不能新增**——后门从命令层面关掉。
+ *
+ * ## 2026-11-11 改版：例外从「整文件」收窄到「行级锚」
+ *
+ * 上一版的例外键是 `文件|规则`：登记一处 = **整文件整条规则**免检。于是洗白通道还在——
+ * 在同一个已登记的文件里再写一处同类违规，那条规则整体不判，脚本和守卫都是绿的；
+ * 反过来也不成立：例外只因「键还在」就算命中，跟当初登记的那行代码有没有被删、被改毫无关系。
+ *
+ * 现在每条例外的第三段是**行级锚**，一行一个短哈希：
+ *
+ * - 锚 = 被判定的那行代码（剥注释与字符串内容、`trim` 之后）的 SHA-256 前 8 位小写十六进制。
+ *   **不用行号**：行号随无关改动（上方插一行 import、删一行空行）上下漂移，一漂整片例外假红，
+ *   人就会「顺手重跑一遍把锚刷掉」，棘轮随之失效。锚只跟这行代码本身走。
+ * - 一条例外可以登记多个锚（同文件同规则多处命中），逗号分隔；
+ * - 同文件同规则下出现**未登记的锚** ⇒ 待修（= 新增违规）；
+ * - 登记了但当前**不再命中**的锚 ⇒ 过期（那一行改过内容 / 挪到别的文件 / 或已修好）；
+ * - 同一行里重复登记同一个锚 ⇒ 直接判错；三段式旧格式 ⇒ 直接判错。
+ *
+ * 与 `scripts/compose-style-lint.ps1` 的 `Get-LineAnchor` / `ConvertFrom-ExceptionLine`
+ * **逐字对偶**：两侧算出的哈希必须一致，改一边就同步改另一边。
  *
  * ## 判定范围与「只看代码」
  *
@@ -134,6 +156,13 @@ class ComposePageStyleGuardTest {
 
     private data class CodeLine(val number: Int, val text: String)
 
+    /**
+     * 行级锚：`hash` 是那一行代码的短哈希（参与比对），`line` 只给人看（**不参与**比对）。
+     *
+     * 不绑行号是刻意的：见类注释「2026-11-11 改版」。
+     */
+    private data class Anchor(val hash: String, val line: Int)
+
     /** 一个页面文件剥完注释/字符串后的代码视图。 */
     private class SourceFile(val rel: String, val lines: List<CodeLine>) {
         val domain: String get() = rel.substringBefore('/')
@@ -144,19 +173,44 @@ class ComposePageStyleGuardTest {
 
         fun count(re: Regex): Int =
             lines.count { re.containsMatchIn(it.text) }
+
+        /**
+         * 命中 `re` 的行及其行级锚，按哈希去重。
+         *
+         * 去重是判据的一部分：同一内容的两行代码算同一个锚（登记一次覆盖两处）。
+         * 这是哈希锚的固有保守面——不是漏判，见笔记。
+         */
+        fun anchorHits(re: Regex): List<Anchor> =
+            lines.filter { re.containsMatchIn(it.text) }
+                .map { Anchor(lineAnchor(it.text), it.number) }
+                .distinctBy { it.hash }
+                .sortedBy { it.line }
     }
 
     /** 一处违规：`文件|规则` 是例外清单的比对键，说明文字只给人看。 */
-    private data class Violation(val rel: String, val rule: String, val detail: String) {
+    private data class Violation(
+        val rel: String,
+        val rule: String,
+        val detail: String,
+        /** 这一条违规**实际被判到的那几行**（行级锚）；例外必须逐行登记。 */
+        val anchors: List<Anchor>,
+    ) {
         val key: String get() = "$rel|$rule"
+        val anchorHashes: Set<String> get() = anchors.map { it.hash }.toSet()
     }
 
     /** 一条人工登记的例外。 */
     private data class ExceptionEntry(
         val key: String,
+        val rel: String,
+        val rule: String,
+        /** 登记的行级锚；一条例外可登记多个（同文件同规则多处命中）。 */
+        val anchors: Set<String>,
         val reason: String,
         /** 出处 `文件名:行号`，报错时直接指过去。 */
         val source: String,
+        /** 出处文件名（`<域>.txt`）——判「整条例外失效」时按它认域。 */
+        val sourceFile: String,
     )
 
     /**
@@ -221,6 +275,7 @@ class ComposePageStyleGuardTest {
                 out += Violation(
                     f.rel, "R1",
                     "手搓顶栏行（返回键），未走官方 TopAppBar / QingyuPageScaffold（第 ${f.first(reBackButton)} 行）",
+                    f.anchorHits(reBackButton),
                 )
             }
             if (reLazyColumn.containsMatchIn(f.code) &&
@@ -230,12 +285,14 @@ class ComposePageStyleGuardTest {
                 out += Violation(
                     f.rel, "R2",
                     "裸 LazyColumn，缺滚动三件套与滚动条（第 ${f.first(reLazyColumn)} 行）",
+                    f.anchorHits(reLazyColumn),
                 )
             }
             if (reVerticalScroll.containsMatchIn(f.code)) {
                 out += Violation(
                     f.rel, "R2",
                     "用 Column+verticalScroll 当主滚动（非惰性，第 ${f.first(reVerticalScroll)} 行）",
+                    f.anchorHits(reVerticalScroll),
                 )
             }
             out
@@ -253,12 +310,14 @@ class ComposePageStyleGuardTest {
                 out += Violation(
                     f.rel, "R3",
                     "裸 Card，缺按压反馈与语义圆角（第 ${f.first(reRawCard)} 行）",
+                    f.anchorHits(reRawCard),
                 )
             }
             if (reSectionLabel.containsMatchIn(f.code) && !reSectionTitle.containsMatchIn(f.code)) {
                 out += Violation(
                     f.rel, "R6",
                     "自己拼分组标题，未走 QingyuSectionTitle（第 ${f.first(reSectionLabel)} 行）",
+                    f.anchorHits(reSectionLabel),
                 )
             }
             out
@@ -276,6 +335,7 @@ class ComposePageStyleGuardTest {
                 out += Violation(
                     f.rel, "R4",
                     "写死字号 ${f.count(reFontSize)} 处，首处第 ${f.first(reFontSize)} 行（应用 MiuixTheme.textStyles）",
+                    f.anchorHits(reFontSize),
                 )
             }
             if ("R7" !in exempt && reFontWeight.containsMatchIn(f.code)) {
@@ -283,6 +343,7 @@ class ComposePageStyleGuardTest {
                     f.rel, "R7",
                     "写死字重 ${f.count(reFontWeight)} 处，首处第 ${f.first(reFontWeight)} 行" +
                         "（应用 MiuixTheme.textStyles.*.shiftWeight）",
+                    f.anchorHits(reFontWeight),
                 )
             }
             out
@@ -297,6 +358,7 @@ class ComposePageStyleGuardTest {
                 out += Violation(
                     f.rel, "R5",
                     "写死颜色 ${f.count(reHardColor)} 处，首处第 ${f.first(reHardColor)} 行（应用主题语义槽）",
+                    f.anchorHits(reHardColor),
                 )
             }
             out
@@ -430,11 +492,60 @@ class ComposePageStyleGuardTest {
             ?: emptyList()
     }
 
+    /** 锚的字面形状：8 位小写十六进制。与 `compose-style-lint.ps1` 的 `$reAnchor` 一致。 */
+    private val anchorRegex = Regex("""^[0-9a-f]{8}$""")
+
     /**
-     * 读全部例外。行格式 `<相对路径>|<规则>|<原因>`；`#` 开头与空行跳过。
+     * 解析一行例外：`<相对路径>|<规则>|<锚>[,<锚>…]|<原因>`。
      *
-     * 原因里允许再出现 `|`（取第一段路径、第二段规则，其余整段算原因）。
-     * 同一 `文件|规则` 只允许登记一次——重复说明有人没删旧行。
+     * 原因里允许再出现 `|`（前两段路径/规则、第三段锚，其余整段算原因）。
+     * 三段式旧格式 `<路径>|<规则>|<原因>` **直接判错**：那等于整文件整规则免检，
+     * 正是本轮要堵的洗白通道，绝不能当兼容形态悄悄放行。
+     */
+    private fun parseExceptionLine(line: String, fileName: String, lineNumber: Int): ExceptionEntry {
+        val where = "$fileName:$lineNumber"
+        val parts = line.split('|')
+        if (parts.size < 4) {
+            throw AssertionError(
+                "例外行格式不对（应为 <相对路径>|<规则>|<锚>[,<锚>…]|<原因>）：$where → $line\n" +
+                    "三段式旧格式已作废——它等于整文件整规则免检。请按行级锚重新登记" +
+                    "（跑一次 scripts/compose-style-lint.ps1，[待修] 下面会打印「登记用锚：<hash>」）。",
+            )
+        }
+        val rel = parts[0].trim()
+        val rule = parts[1].trim()
+        val anchors = parts[2].split(',').map { it.trim().lowercase() }.filter { it.isNotEmpty() }
+        val reason = parts.drop(3).joinToString("|").trim()
+        if (rel.isEmpty() || rule.isEmpty() || reason.isEmpty()) {
+            throw AssertionError("例外行的路径/规则/原因都不能为空：$where → $line")
+        }
+        if (anchors.isEmpty()) {
+            throw AssertionError("例外行没有登记任何锚（第三段为空）：$where → $line")
+        }
+        val dupes = anchors.groupingBy { it }.eachCount().filterValues { it > 1 }.keys
+        if (dupes.isNotEmpty()) {
+            throw AssertionError(
+                "同一例外行里重复登记了同一个锚：${dupes.joinToString(", ")}（$where）——一个锚只登一次",
+            )
+        }
+        anchors.firstOrNull { !anchorRegex.matches(it) }?.let {
+            throw AssertionError("锚不是 8 位小写十六进制：'$it'（$where）→ $line")
+        }
+        return ExceptionEntry(
+            key = "$rel|$rule",
+            rel = rel,
+            rule = rule,
+            anchors = anchors.toSet(),
+            reason = reason,
+            source = where,
+            sourceFile = fileName,
+        )
+    }
+
+    /**
+     * 读全部例外；`#` 开头与空行跳过。
+     *
+     * 同一 `文件|规则` 只允许登记一次——多个锚合并进同一行，重复说明有人没删旧行。
      */
     private fun exceptionEntries(): Map<String, ExceptionEntry> {
         val result = linkedMapOf<String, ExceptionEntry>()
@@ -442,27 +553,14 @@ class ComposePageStyleGuardTest {
             file.readLines().forEachIndexed { index, raw ->
                 val line = raw.trim()
                 if (line.isEmpty() || line.startsWith("#")) return@forEachIndexed
-                val parts = line.split('|')
-                if (parts.size < 3) {
+                val entry = parseExceptionLine(line, file.name, index + 1)
+                if (result.containsKey(entry.key)) {
                     throw AssertionError(
-                        "例外行格式不对（应为 <相对路径>|<规则>|<原因>）：${file.name}:${index + 1} → $line",
+                        "例外键重复：${entry.key}（${file.name}:${index + 1}）" +
+                            "——同一处只登记一次，多个锚合并进同一行",
                     )
                 }
-                val rel = parts[0].trim()
-                val rule = parts[1].trim()
-                val reason = parts.drop(2).joinToString("|").trim()
-                if (rel.isEmpty() || rule.isEmpty() || reason.isEmpty()) {
-                    throw AssertionError(
-                        "例外行的路径/规则/原因都不能为空：${file.name}:${index + 1} → $line",
-                    )
-                }
-                val key = "$rel|$rule"
-                if (result.containsKey(key)) {
-                    throw AssertionError(
-                        "例外键重复：$key（${file.name}:${index + 1}）——同一处只登记一次，说明要合并进同一行",
-                    )
-                }
-                result[key] = ExceptionEntry(key, reason, "${file.name}:${index + 1}")
+                result[entry.key] = entry
             }
         }
         return result
@@ -523,20 +621,88 @@ class ComposePageStyleGuardTest {
         )
     }
 
+    // ───────────────────────── 0.5 例外必须按「行级锚」判定 ─────────────────────────
+
+    @Test
+    fun `例外只覆盖登记过的那一行：整文件免检这条后门已关`() {
+        // 上一版的例外键是「文件|规则」，登记一处 = 整文件整条规则免检。这里把三条
+        // 性质钉住，防止有人把判据改回「比较 文件|规则 就完事」。
+        //
+        // ① 锚只跟这一行的代码走：trim 不影响，内容一改就换锚。
+        assertEquals(
+            "同一行代码 trim 前后必须是同一个锚",
+            lineAnchor("""    Text(text = "", fontSize = 15.sp)  """),
+            lineAnchor("""Text(text = "", fontSize = 15.sp)"""),
+        )
+        assertNotEquals(
+            "行内容改了必须是另一个锚（否则「登记行被改掉」永远判不出来）",
+            lineAnchor("""color = Color(0xFF2196F3)"""),
+            lineAnchor("""color = Color(0xFF2196F4)"""),
+        )
+
+        // ② 三段式旧格式必须判错，不能被当成「原因里带 | 」的合法行放过去。
+        val legacyRejected = runCatching {
+            parseExceptionLine("showcase/ColorBlendToken.kt|R5|官方 demo 固定配色", "showcase.txt", 1)
+        }.exceptionOrNull()
+        assertTrue(
+            "三段式旧格式（<路径>|<规则>|<原因>）必须被拒，实际没拒：$legacyRejected",
+            legacyRejected is AssertionError,
+        )
+
+        // ③ 登记了 A 行的锚，顺带免检 B 行是**不允许**的：未登记的锚必须留在待修里。
+        val probe = SourceFile(
+            "showcase/Probe.kt",
+            codeLinesOf(
+                listOf(
+                    "color = Color(0xFF111111)",
+                    "color = Color(0xFF222222)",
+                ).joinToString("\n"),
+            ),
+        )
+        val hits = scanners.flatMap { it.scan(probe, emptySet()) }.first { it.rule == "R5" }
+        assertEquals("两行写死色值应产生两个锚", 2, hits.anchorHashes.size)
+        val entry = parseExceptionLine(
+            hits.anchors.first().let { "showcase/Probe.kt|R5|${it.hash}|固定色" },
+            "showcase.txt",
+            1,
+        )
+        assertTrue(
+            "登记过的锚应被认成例外",
+            hits.anchors.first().hash in entry.anchors,
+        )
+        assertFalse(
+            "没登记的另一行不能被别人的例外兜住",
+            hits.anchors.last().hash in entry.anchors,
+        )
+    }
+
     // ───────────────────────── 1. 待修违规必须是 0 ─────────────────────────
 
     @Test
     fun `待修样式违规必须为 0`() {
         // 这是守卫的核心：新页面/新代码绕开共享套件就会被拦下。
         // 存量债已经清完；真正需要保留的写法走例外清单，不算「待修」。
+        //
+        // 2026-11-11 起「走例外清单」是**逐行**的：同一条规则下，只有登记过锚的那几行
+        // 算例外；同一文件里新加一处同类违规仍是待修（上一版按「文件|规则」判，那一处会被整条放过）。
         val exceptions = exceptionEntries()
-        val pending = allViolations().filter { it.key !in exceptions }
+        val pending = allViolations().filter { v ->
+            val entry = exceptions[v.key]
+            entry == null || !entry.anchors.containsAll(v.anchorHashes)
+        }
+        val detail = pending.joinToString("\n") { v ->
+            val entry = exceptions[v.key]
+            val missing = v.anchors.filter { entry == null || it.hash !in entry.anchors }
+            val anchorLines = missing.joinToString("") { "\n        登记用锚：${it.hash}（第 ${it.line} 行）" }
+            "  ${v.rel}  ${v.rule}  ${v.detail}$anchorLines"
+        }
         assertEquals(
             "待修样式违规必须为 $EXPECTED_PENDING_VIOLATIONS 处，实际 ${pending.size} 处。\n" +
                 "改代码走共享页面套件；确有正当理由要保留的，必须人工编辑 " +
                 "tool/compose_style_exceptions/<域>.txt 并写明原因（脚本 -Write 不会帮你加）。\n" +
-                pending.joinToString("\n") { "  ${it.rel}  ${it.rule}  ${it.detail}" } +
-                "\n\n规则见 docs/reference/compose-page-style-rules.md：\n" +
+                detail +
+                "\n\n例外只覆盖登记过锚的那几行：同文件同规则新增违规仍然是待修，不许靠扩例外放行。\n" +
+                "规则见 docs/reference/compose-page-style-rules.md：\n" +
                 "  R1 页面骨架 → QingyuPageScaffold\n" +
                 "  R2 滚动容器 → QingyuPageList（内含滚动三件套与滚动条）\n" +
                 "  R3 卡片 → QingyuCard（内含按压反馈与语义圆角）\n" +
@@ -555,12 +721,28 @@ class ComposePageStyleGuardTest {
     fun `例外清单里已经修好的行必须删掉`() {
         // 棘轮的另一半。没有这条，例外清单会退化成「永久豁免清单」——
         // 修好不删，下次扫描就不知道这行还有没有用，也让后来者以为它还在用。
-        val current = allViolations().map { it.key }.toSet()
-        val stale = exceptionEntries().values.filter { it.key !in current }.sortedBy { it.key }
+        //
+        // 2026-11-11 起按**锚**判过期：登记的那行代码改过内容（换写法）、挪到别的文件、
+        // 或已经不违规，都会让锚匹配不上 ⇒ 红。整条都匹配不上时按「整条例外失效」报。
+        val current = allViolations().associate { it.key to it.anchorHashes }
+        val stale = mutableListOf<String>()
+        exceptionEntries().values.sortedBy { it.key }.forEach { entry ->
+            val live = current[entry.key].orEmpty()
+            val missing = entry.anchors.filter { it !in live }
+            if (missing.isEmpty()) return@forEach
+            stale += if (live.isEmpty()) {
+                "  ${entry.source}  ${entry.key}  整条例外失效：该文件该规则已无违规" +
+                    "（锚 ${entry.anchors.sorted().joinToString(",")}）  ${entry.reason}"
+            } else {
+                "  ${entry.source}  ${entry.key}  锚 ${missing.sorted().joinToString(",")} " +
+                    "已不在当前违规行（那一行改过内容 / 挪到别的文件 / 或已修好）"
+            }
+        }
         assertTrue(
-            "以下例外对应的违规已经不存在了（说明修好了），请从例外清单里删掉：\n" +
-                stale.joinToString("\n") { "  ${it.source}  ${it.key}  ${it.reason}" } +
-                "\n\n删法：pwsh -File scripts/compose-style-lint.ps1 -Domain <域> -Write（只删过期行，不会新增）",
+            "以下例外对应的违规行已经不存在了（改过内容、挪走了，或者修好了），请从例外清单里删掉：\n" +
+                stale.joinToString("\n") +
+                "\n\n删法：pwsh -File scripts/compose-style-lint.ps1 -Domain <域> -Write" +
+                "（只删过期行与过期锚，不会新增）",
             stale.isEmpty(),
         )
     }
@@ -598,4 +780,23 @@ class ComposePageStyleGuardTest {
          */
         const val EXPECTED_PENDING_VIOLATIONS = 0
     }
+}
+
+/**
+ * 行级锚：剥完注释与字符串内容、`trim` 之后，取该行代码 UTF-8 的 SHA-256 前 4 字节。
+ *
+ * 放在**文件级**而不是成员函数：`SourceFile.anchorHits` 是嵌套类（非 inner），
+ * 拿不到外层实例，只能调文件级私有函数。
+ *
+ * 与 `scripts/compose-style-lint.ps1` 的 `Get-LineAnchor` **逐字对偶**：
+ * 同样的 `trim` → UTF-8 → SHA-256 → 前 8 位小写十六进制。两侧算不出同一个值，
+ * 守卫与脚本就会各说各话（一边说过期、一边说待修），所以改一边必须同步改另一边。
+ *
+ * 取 8 位（32 bit）是刻意的取舍：目前登记的锚不到 90 个，生日碰撞概率约 1e-6；
+ * 碰撞的后果也只是「多认一个锚」，不是漏判——要放行还得那行代码真的被登记。
+ */
+private fun lineAnchor(code: String): String {
+    val digest = MessageDigest.getInstance("SHA-256")
+        .digest(code.trim().toByteArray(Charsets.UTF_8))
+    return (0 until 4).joinToString("") { "%02x".format(digest[it].toInt() and 0xFF) }
 }
