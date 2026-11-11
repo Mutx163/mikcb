@@ -22,26 +22,26 @@ object ReminderTimingStrings {
     val beforeClassReminderSubtitle = ArbText("beforeClassReminderSubtitle", "课程开始前 {minutes} 分钟弹出")
     val duringClassReminderTitle = ArbText("duringClassReminderTitle", "课中与下课提醒")
     val duringClassReminderSubtitle = ArbText("duringClassReminderSubtitle", "上课后到下课前的展示")
-    val liveClassReminderLeadTitle = ArbText("liveClassReminderLeadTitle", "重点提醒切入时机")
-    val liveClassReminderLeadOptionImmediate = ArbText("liveClassReminderLeadOptionImmediate", "一上课就切换")
-    val liveClassReminderLeadOptionMinutes = ArbText("liveClassReminderLeadOptionMinutes", "下课前 {minutes} 分钟")
+    val liveClassReminderLeadTitle = ArbText("liveClassReminderLeadTitle", "重点提醒切换时机")
+    val liveClassReminderLeadOptionImmediate = ArbText("liveClassReminderLeadOptionImmediate", "一上课就切")
+    val liveClassReminderLeadOptionMinutes = ArbText("liveClassReminderLeadOptionMinutes", "下课前 {minutes} 分")
 
-    // ── 切入时机效果摘要（`_buildLiveClassReminderLeadSummary`） ──
+    // ── 切换时机效果摘要（`_buildLiveClassReminderLeadSummary`） ──
     val liveClassReminderLeadSummaryImmediate = ArbText(
         "liveClassReminderLeadSummaryImmediate",
-        "一上课切重点提醒，下课前逐秒倒数",
+        "下课前逐秒倒数",
     )
     val liveClassReminderLeadSummaryKeepNormal = ArbText(
         "liveClassReminderLeadSummaryKeepNormal",
-        "课中普通通知，下课前切重点提醒",
+        "先普通通知，到点再切",
     )
     val liveClassReminderLeadSummaryIsland = ArbText(
         "liveClassReminderLeadSummaryIsland",
-        "课中普通通知，下课前切超级岛",
+        "先普通通知，到点切超级岛",
     )
     val liveClassReminderLeadSummaryFocused = ArbText(
         "liveClassReminderLeadSummaryFocused",
-        "下课前开始重点提醒",
+        "到点才开始重点提醒",
     )
 
     // ── 展示方式组 ──

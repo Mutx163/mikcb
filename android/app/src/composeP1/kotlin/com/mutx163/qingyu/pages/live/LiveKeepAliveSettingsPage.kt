@@ -46,9 +46,9 @@ import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TextButton
 import top.yukonga.miuix.kmp.icon.MiuixIcons
-import top.yukonga.miuix.kmp.icon.extended.Info
+import top.yukonga.miuix.kmp.icon.extended.Background
 import top.yukonga.miuix.kmp.icon.extended.Ok
-import top.yukonga.miuix.kmp.icon.extended.Settings
+import top.yukonga.miuix.kmp.icon.extended.VolumeOff
 import top.yukonga.miuix.kmp.overlay.OverlayDialog
 import top.yukonga.miuix.kmp.preference.SwitchPreference
 import top.yukonga.miuix.kmp.theme.MiuixTheme
@@ -235,8 +235,10 @@ private fun LiveKeepAliveServiceRow(
         verticalAlignment = Alignment.CenterVertically,
     ) {
         LiveKeepAliveIconBadge(
-            // Dart 图标集无对位件：已开启用官方 Ok（绿勾），未开启用 Settings（去设置里开）。
-            icon = if (enabled) MiuixIcons.Ok else MiuixIcons.Settings,
+            // Dart 用 `accessibility_new_rounded`（无障碍小人）；miuix 图标集没有对位件，
+            // 按语义取 `Background`（后台），别拿 `Settings` 齿轮冒充——那会让徽标读成
+            // 「设置入口」。已开启仍用官方 `Ok` 绿勾（Dart `check_circle_rounded` 的对位）。
+            icon = if (enabled) MiuixIcons.Ok else MiuixIcons.Background,
             accent = Color(
                 toneColor(
                     LiveKeepAliveModel.resolveServiceTone(enabled),
@@ -289,7 +291,9 @@ private fun LiveDoNotDisturbAccessRow(
         verticalAlignment = Alignment.CenterVertically,
     ) {
         LiveKeepAliveIconBadge(
-            icon = if (grantedVisual) MiuixIcons.Ok else MiuixIcons.Info,
+            // Dart 用 `do_not_disturb_on_outlined`（禁止圆圈）；miuix 无同形，取
+            // `VolumeOff`（静音≈勿扰）。已授权用绿勾，未知态同为静音图标但走蓝色。
+            icon = if (grantedVisual) MiuixIcons.Ok else MiuixIcons.VolumeOff,
             accent = Color(toneColor(LiveKeepAliveModel.resolveTone(status))),
         )
         Spacer(modifier = Modifier.width(12.dp))
@@ -355,21 +359,29 @@ private fun LiveKeepAliveConfirmDialog(
     }
 }
 
-/** 图标徽标（Dart `HyperosIconBadge`）：36dp / 圆角 12 / 主色 12% 底 + 主色图标。 */
+/**
+ * 图标徽标（发布版 `HyperosIconBadge`，`lib/ui/hyperos/widgets/indicators.dart:143-166`）：
+ * 26dp / 圆角 7 / **实色**底 + **白色** 14dp 图标。尺寸与圆角逐字对齐
+ * `hyperos_tokens.dart:63-65`（`iconBadgeSize=26`、`iconGlyphSize=14`、`iconBadgeRadius=7`），
+ * 与设置族 `SettingsIconBadge`（`SettingsPageRenderers.kt:895-911`）同一块几何。
+ *
+ * 别换成导入页的 `ImportIconBadge`（36dp / 圆角 12 / 主色 12% 淡底 / 主色字形）——那套是
+ * 导入族的语言，放在设置行里会发虚、发糖果色，也是本页 2026-11-10「图标廉价」的根因。
+ */
 @Composable
 private fun LiveKeepAliveIconBadge(icon: ImageVector, accent: Color) {
     Box(
         modifier = Modifier
-            .size(36.dp)
-            .clip(RoundedCornerShape(12.dp))
-            .background(accent.copy(alpha = 0.12f)),
+            .size(26.dp)
+            .clip(RoundedCornerShape(7.dp))
+            .background(accent),
         contentAlignment = Alignment.Center,
     ) {
         Icon(
             imageVector = icon,
             contentDescription = null,
-            tint = accent,
-            modifier = Modifier.size(18.dp),
+            tint = Color.White,
+            modifier = Modifier.size(14.dp),
         )
     }
 }

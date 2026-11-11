@@ -22,12 +22,12 @@ object LiveStrings {
     val beforeClassReminderSubtitle = ArbText("beforeClassReminderSubtitle", "课程开始前 {minutes} 分钟弹出")
     val duringClassReminderTitle = ArbText("duringClassReminderTitle", "课中与下课提醒")
 
-    // ── 时间阈值与切入 ──
+    // ── 时间阈值与切换 ──
     val beforeClassPopupLabel = ArbText("beforeClassPopupLabel", "上课前弹出时间")
     val beforeClassMinutesOption = ArbText("beforeClassMinutesOption", "{minutes} 分钟")
-    val liveClassReminderLeadTitle = ArbText("liveClassReminderLeadTitle", "重点提醒切入时机")
-    val liveClassReminderLeadOptionImmediate = ArbText("liveClassReminderLeadOptionImmediate", "一上课就切换")
-    val liveClassReminderLeadOptionMinutes = ArbText("liveClassReminderLeadOptionMinutes", "下课前 {minutes} 分钟")
+    val liveClassReminderLeadTitle = ArbText("liveClassReminderLeadTitle", "重点提醒切换时机")
+    val liveClassReminderLeadOptionImmediate = ArbText("liveClassReminderLeadOptionImmediate", "一上课就切")
+    val liveClassReminderLeadOptionMinutes = ArbText("liveClassReminderLeadOptionMinutes", "下课前 {minutes} 分")
 
     // ── 显示项配置 ──
     val showCountdownTitle = ArbText("showCountdownTitle", "显示倒计时")

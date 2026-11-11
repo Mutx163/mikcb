@@ -60,13 +60,13 @@ class ReminderTimingStringsParityTest {
     }
 
     @Test
-    fun `切入时机选项零走立即切换其余走分钟`() {
-        // 0 -> immediate 标签；非 0 -> 「下课前 N 分钟」。
+    fun `切换时机选项零走立即切换其余走分钟`() {
+        // 0 -> immediate 标签；非 0 -> 「下课前 N 分」。
         assertEquals(
             arbMap["liveClassReminderLeadOptionImmediate"],
             ReminderTimingStrings.leadOptionText(0),
         )
-        assertEquals("下课前 10 分钟", ReminderTimingStrings.leadOptionText(10))
+        assertEquals("下课前 10 分", ReminderTimingStrings.leadOptionText(10))
         assertEquals(
             arbMap["liveClassReminderLeadOptionMinutes"]!!.replace("{minutes}", "30"),
             ReminderTimingStrings.leadOptionText(30),
