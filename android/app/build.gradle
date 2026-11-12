@@ -338,6 +338,20 @@ tasks.withType(Test).configureEach { test ->
     test.inputs.file(project.file('src/main/AndroidManifest.xml')).withPropertyName('appManifest')
     test.inputs.dir(project.file('src/main/res')).withPropertyName('mainRes')
     test.inputs.dir(project.file('src/main/assets')).withPropertyName('mainAssets')
+    // 文案缺口门禁（crossguard 第三条门禁，`bd52cd773` 接入）：运行时读脚本与基线
+    //（CrossDomainGateGuardTest.kt:218/267/269/473，常量 :796-798、:806）。
+    // 不做配置期存在性断言的话，`project.file(...)` 对不存在的路径**不报错**，只会安静地
+    // 记一个空输入——「登记了但没生效」，比没登记更难发现。所以这里先验存在再登记。
+    // ⚠️ 路径基准是 `android/app`：`../../` 才到仓库根。
+    [
+        copyGapScript  : project.file('../../scripts/i18n-copy-gap.py'),
+        copyGapBaseline: project.file('src/test/kotlin/com/mutx163/qingyu/i18n/copy-gap-baseline.txt'),
+    ].each { String name, File f ->
+        if (!f.isFile()) {
+            throw new GradleException("门禁输入不存在：${name} → ${f}（路径基准是 android/app，别照抄成 ../../android/app/...）")
+        }
+        test.inputs.file(f).withPropertyName(name)
+    }
 }
 
 
