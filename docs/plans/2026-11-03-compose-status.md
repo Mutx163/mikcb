@@ -35,12 +35,30 @@
 |---|---|---|---|
 | **L0 模块单测** | 各域随批交付时绿；`pages/timetable` 的跨域引用已由 `4517d938`（材质契约下沉 `core/`）治理 | 提交 `4517d938`（2026-11-03）；本域 L0 需复跑取证 | 需复跑 |
 | **L1 编译** | **通过**（UP-TO-DATE 复用）：`scripts/safe-gradle.ps1 :app:compileDevDebugKotlin` | 2026-11-09 23:17，HEAD `4a21d0ae4`（`build/app/tmp/kotlin-classes/devDebug` 类文件 mtime 23:17:10–23:18:43）；复核员用 `javap` 在 `SettingsHomeMenuEditorPage.class` 里读到该提交新增的 `editorSeed`，证实产物就是这份源码编出来的 | 当次有效；`4a21d0ae4` 之后的新提交此后只在 L2 轮里编过，未单独留 L1 记录 |
-| **L2 全量单测** | **7667 例 / 0 失败 / 0 错误 / 0 跳过**（来源：编译员 00:40 全量轮；产物已被 00:43 单类重跑覆盖、无法独立复现，仅 `+10 个 @Test` 旁证 7657+10=7667；待修复波次后全量 L2 回填） | 2026-11-10 00:40，`scripts/safe-gradle.ps1 :app:testDevDebugUnitTest`（本地快速变体，非 CI 的 `testProdDebugUnitTest`）。跑测时记作 HEAD `33c20a37a`，但该提交时间 00:46:46 晚于跑测，只能算同一棵工作树推定（2026-11-10 复核员核对） | 该轮数字无法从产物复现；等修复波次后全量 L2 定案 |
+| **L2 全量单测** | **8075 例 / 0 失败 / 0 错误 / 0 跳过**（`dev` 与 `prod` 各一轮，全量 `--rerun-tasks`，非过滤；快照 HEAD `5de395341`，归档见下方「今日检查点」） | `.agents/diag/20261112-215406-5de395341-testDevDebugUnitTest/summary.txt` 与 `…-215845-5de395341-testProdDebugUnitTest/summary.txt`，两轮均 `RESULT[...]: 8075 tests, 0 failures, 0 errors, 0 skipped`；口径 = `build/app/test-results/<变体>` 的 XML 汇总（XML-COUNT 761） | 当次有效。**11-10 记的 7667 例作废**：那轮产物已被覆盖、且当时闸门未修（四类假绿未堵），只作历史 |
 | **L4 真机逐页对照** | **0 页** | 仓库内无任何真机截图/录屏/回填记录 | 仍归用户 |
+
+**2026-11-12 今日检查点**（口径：全量、非过滤；证据取自 `build/app/test-results/<变体>` 的 XML 汇总，逐轮归档在 `.agents/diag/<时间戳>-<HEAD>-<变体>/summary.txt`）
+
+| HEAD | `dev`（`:app:testDevDebugUnitTest`） | `prod`（`:app:testProdDebugUnitTest`） | 判读 |
+|---|---|---|---|
+| `0cf4eabfb` | 8075 / 0（19:36:43） | 8075 / **1**（19:39:32）→ 复跑 8075 / 0（19:45:10） | **不算双绿**：prod 首轮红在 `MonthSwitchMotionWiringGuardTest`（M1 复发：effect 键缺 `homePagerScrolling`）；复跑转绿但当时闸门还没修（`b6ba086ff` 19:56 才落），这轮 0 失败**可能**是结果目录残留（正是四类假绿的 #3/#4），不作可信证据 |
+| `b6ba086ff` | 8075 / 0（19:56:51） | 8075 / 0（19:59:14） | **闸门修复后首个可信双绿**（落盘自检 + `TESTS-NOT-RUN` + 跑前清空均已生效） |
+| `5de395341` | 8075 / 0（21:54:06） | 8075 / 0（21:58:45） | **可信双绿**（B1+B2 守卫迁移已入，仍在同一闸门下） |
 
 **声明纪律**：agent 只能声明「编译通过」（L1）或「JVM 单测通过」（L2）；不得声明「能跑 / 能装上 / 已验证」。
 CI 权威变体是 `:app:testProdDebugUnitTest`（`.github/workflows/ci.yml` 的「Android JVM Tests」任务）；本地快速 L2 用
 `:app:testDevDebugUnitTest`。**交付证据必须写明用的是哪一条**，不要都叫「权威」。
+
+**今日未验边界（2026-11-12，写清楚免得被当成已覆盖）**：
+
+1. **真机观感一律未验**：L4 仍 0 页（R01），岛/通知/弹层/小组件在真机上的表现全部没有截图或录屏证据。
+2. **`composeP1` 没有单独的 L1 记录**——但它**不是没编**：Compose 页面源码自 2026-10-29 起挂在 `main` 源集
+   （`android/app/build.gradle:149-159`，`kotlin.srcDirs += 'src/composeP1/kotlin'`），随
+   `:app:compileDevDebugKotlin` 一起编。别写成「composeP1 未编译」，正确说法是「没有按源集分开的 L1 证据」。
+3. **CI 里没有 pwsh**：`.github/workflows/` 全量 grep `pwsh` / `powershell` **0 命中**，`scripts/*.ps1` 只在本地跑
+   ⇒ CI 的 `testProdDebugUnitTest` 与本地闸门**不是同一套证据机制**（CI 没有 `TESTS-NOT-RUN` / 落盘自检）。
+4. **首次/复跑数字不同不算双绿**：见上表 `0cf4eabfb` 一列，prod 首轮红、复跑绿且闸门未修，这种只能记「存疑」。
 
 ---
 
@@ -79,6 +97,9 @@ CI 权威变体是 `:app:testProdDebugUnitTest`（`.github/workflows/ci.yml` 的
 | **R15** | ~~自检页 4 个测试通知按钮~~ | ✅ **已闭环**（2026-11-11 核销）：`LiveSelfCheckHost.kt:496-504` 已是**真管线**——`START` / `CANCEL` / `COURSE_TEST_STOP` 走 `notificationController.trigger(rowId)`，「崩溃」→ `triggerTestCrash()`（定义 `:427`）、「ANR」→ `triggerTestAnr()`（`:444`），「选课测试」先选课再选阶段（`:501`、弹层 `:509-512`），不再弹 `aboutUnavailable`。旧行「`:362-366` 四个分支仍只弹『不可用』」已过期；台账 §9.10 当年那句「已闭环」这次对得上。归位：**真机仍归 R01**（触发后岛/通知是否真弹出） |
 | **R16** | **埋点页面级接线** | core 三件与 `TimetableRepository` 单点已提交（`b9e5cdb6` / `9cd1e337`）；`composeP1` 页面侧引用为 0，无持久化/导出/后端 sink。先定要采哪些页面事件与隐私边界（产品决定）。写作用域：`main/core/`、`composeP1/app/` 与各页面宿主 |
 | **R17** | **宽屏收尾** | 前三批已落地：三档判据 `499b28d8`、`QingyuPageScaffold` 限宽与 SmallTopAppBar 分支 `75afb7f0`、Rail 判据 `6a564625`、`ShellNavigationRail` 接入 `e2e33583`。剩余：首页课表网格宽屏列数（属课程域另一批）+ 宽屏连带面的真机验（`R02` 的方向锁已由 `1e8b953b7` 解除，剩下的矮屏弹层 / 返回手势 / Rail 冲突归 R01）。写作用域：`components/`、`pages/shell/`、`pages/timetable/`（`AndroidManifest.xml` 已无需再动） |
+| **R20** | **门禁四类假绿 → 已堵（2026-11-12，已完成）** | 四类：① 无日志（跑完没有任何可考证据）② 坐标不进文件（日志里有数字、但落不到归档，事后无法复查）③ 写不进也报成功（证据落盘失败仍打绿，含 `EXIT_CODE` 取到上一次调用的残留）④ 数字陈旧（编译失败被当成测试失败；结果目录留着上一轮 XML，数字照抄）。**实现锚点** `scripts/safe-gradle.ps1`：证据行 `=== REQUEST / HEAD before / HEAD after / RESULT[...]`（`:99-334`）；`TESTS-NOT-RUN` 三种情形（编译失败 / 任务未执行 / 任务执行但结果目录无产物，`:244-254`）；跑前**清空该变体结果目录**（`:145-157`）；落盘自检缺任一 marker 即报错（`:327-334`）；退出码取本次调用、哨兵 `-1`（`b6ba086ff`）。L0 侧同提交加「kotlinc 未执行 / 无产物」自检。**证据**：`b6ba086ff`；今日三轮归档见 §二「今日检查点」 |
+| **R21** | **守卫迁移：`LEGACY_UNSTRIPPED` 44 → 36（进行中，B3–B6 待做）** | **口径**：表内在 **36 / 44** 份（工作区实测；`git show c8fb8fd1f^:` 实数 44，`5de395341:` 与工作区均 36）。已修 **8 份**：B1 `c8fb8fd1f` 5 份（`DayViewOverlayPerfWiringGuardTest` / `DockSwitchNoDayReplayGuardTest` / `WeekViewCoupleOverlayWiringGuardTest` / `NotificationLaunchShellWiringGuardTest` / `DayAgendaWallpaperInkWiringGuardTest`），B2 `5de395341` 3 份（`HomeMenuEntryDestinationGuardTest` / `HomeMenuPreviewWiringGuardTest` / `HomePullQuickImportWiringGuardTest`）。**审计口径**：B1 实测覆盖 **26 份**（占 44 的 26/44），其中 **25 份**「把判据目标行注释掉仍绿」（25/26）；B1+B2 修的 8 份全在这 26 份内 ⇒ 同类风险约剩 **18 份**，但**其余 18 份未被审计、也未逐份复测**——**不要写「25/36」**。**两档选法**（违反即假绿）：判**字面量本身**用默认档（剥注释、留字符串）；判**调用/接线**用中性化档。判字面量的上中性化档会让被查表恒空、判据在空集上恒真。出处：各守卫类注释 + `GuardSourceStrippingPolicyTest.LEGACY_UNSTRIPPED`。写作用域：`android/app/src/test/kotlin/com/mutx163/qingyu/pages/**`；B3–B6 未排期 |
+| **R22** | **判定四类分法 → 已入档（2026-11-12，记账完成）** | 本账判定只用这四类，别再自造词：**设计边界**（有意不做 / 等上游，例：R04 岛展示层、R05 弹层决策点）· **性能取舍**（为耗电/帧率放弃，例：R19 逐秒节奏未实施、R11 玻璃先等真机）· **回归**（修好又坏 / 被合并吞掉，例：R12 `normalizeSettingsDocument` 丢失、`LanTransferResidualsTest` 随合并消失）· **配置遗漏**（构建或工具链漏项、静默不编译，例：`build.gradle:153-158`「逐目录登记 srcDirs，漏一个就静默不编译」、CI 无 pwsh 见 §二）。新增条目必须标出属于哪一类 |
 
 > 标 **[Lead]** 的文件由 Lead 改；agent 只交 patch / snippet。共享件（`components/`、`main: platform/`、
 > `main: app/`、`*Strings.kt`）的历史锁规则见 `2026-10-29-remaining-pages-tasklist.md` §1.4：
@@ -108,6 +129,8 @@ CI 权威变体是 `:app:testProdDebugUnitTest`（`.github/workflows/ci.yml` 的
 | R14 壁纸取景页「换壁纸」 | `5ade79faf`（2026-11-03）+ `WallpaperPositionPickerPage.kt:148` 注释；共享件 `ManagedWallpaperStore.kt` / `ManagedWallpaperNaming.kt` |
 | R12 局域网两处残余 | ① `LanTransferLogic.kt:55-58`（2026-11-03 整份原始 map）+ `b1317d213`（差异归一）；② `LanTransferApplier.kt:367`/`:377` 两分支 `resync = true` |
 | R15 自检页 4 个测试通知 | `LiveSelfCheckHost.kt:496-504` 接 `notificationController.trigger` 与 `triggerTestCrash()`/`triggerTestAnr()`（`:427`/`:444`） |
+| R20 门禁四类假绿 | `b6ba086ff`：证据行 + `TESTS-NOT-RUN` + 跑前清空结果目录 + 落盘自检（`scripts/safe-gradle.ps1:99-334`）；可信双绿见 §二 今日检查点（`b6ba086ff` / `5de395341`） |
+| R22 判定四类分法 | 见 §三 C 的 R22 行：设计边界 / 性能取舍 / 回归 / 配置遗漏 + 本账判例（R04、R19、R12、`build.gradle:153-158`） |
 | 审查文档 P0-2「5 份 `app_strings.xml` 缺日程提醒 4 条」→ **不成立** | 6 个 values 目录（`values` / `-en` / `-ja` / `-ko` / `-zh-rHK` / `-zh-rTW`）各 **4/4** 命中，`res/values/app_strings.xml:21-24`；`docs/reviews/2026-11-11-full-audit.md:36` 那条已过期（审查侧改写时以本行为准，本文档不改审查产物） |
 
 > 以上只证明「代码已提交、门禁当时绿」，**不等于真机验过**。所有真机验收统一归 R01；
@@ -211,6 +234,22 @@ L3 出包、L3.5 性能包、L4 真机一律用户跑；**性能只认 Bench 或
 ---
 
 ## 变更记录
+
+- **2026-11-12 收口（只改账，未改代码；数字全部带分母与快照 HEAD）**：新增 R20 / R21 / R22，改写 §二 L2 行并加「今日检查点」与「未验边界」，删掉 11-10 的 7667 例旧口径。
+  - **R20 门禁四类假绿 → 已堵**：四类（无日志 / 坐标不进文件 / 写不进也报成功含 `EXIT_CODE` 残留 / 数字陈旧）逐条落到
+    `scripts/safe-gradle.ps1`：证据行 `:99-334`、`TESTS-NOT-RUN` 三情形 `:244-254`、跑前清空结果目录 `:145-157`、
+    落盘自检 `:327-334`、退出码取本次调用（哨兵 `-1`）；提交 `b6ba086ff`。L0 侧同提交加「kotlinc 未执行 / 无产物」自检。
+  - **R21 守卫迁移 44 → 36（进行中）**：实测口径 `git show c8fb8fd1f^:` = **44**、`5de395341:` 与工作区 = **36**
+    （B1 `c8fb8fd1f` 5 份 + B2 `5de395341` 3 份）。审计覆盖 **26 / 44**，其中 **25 份**可被「注释掉判据目标行」骗绿（25/26）；
+    8 份修复全在这 26 份内 ⇒ 同类风险约剩 18 份，**其余 18 份未审计、未复测**。B3–B6 待做、未排期。
+    ⚠ 口径纠正：口头版本「剩余 36 条里 25 条可骗绿」把两个分母混了，本账按 **25/26（审计覆盖内）** 记，不写 25/36。
+  - **R22 四类分法入档**：设计边界 / 性能取舍 / 回归 / 配置遗漏，逐类给了本账判例（R04 / R19 / R12 / `build.gradle:153-158`）。
+  - **今日检查点（§二）**：`b6ba086ff`（19:56:51 dev / 19:59:14 prod）与 `5de395341`（21:54:06 / 21:58:45）为**可信双绿**，两轮各 **8075 例 / 0 失败**，归档在
+    `.agents/diag/20261112-195651-…`、`…-195914-…`、`…-215406-…`、`…-215845-…`。`0cf4eabfb` **改记为存疑**：dev 8075/0（19:36:43）、
+    prod **8075/1**（19:39:32，红在 `MonthSwitchMotionWiringGuardTest` 的 M1 复发）、复跑 8075/0（19:45:10），但复跑早于闸门修复
+    （`b6ba086ff` 19:56 才落），该轮 0 失败可能是结果目录残留，**不写成双绿**。
+  - **未验边界补四条**：真机观感未验；`composeP1` 无**分源集**的 L1 证据（源码已挂 `main`，`build.gradle:149-159`，随
+    `:app:compileDevDebugKotlin` 一起编，**不是**「未编译」）；CI 无 pwsh（workflows 全量 grep 0 命中）；首轮红/复跑绿不算双绿。
 
 - **2026-11-11 记 R19「岛支持只判品牌、无 ROM 版本判断」（只改账；性质是效率 / 兼容性改进，不是缺陷）**：
   - 读出部分：`LiveUpdateService.kt:283-290` / `:1485-1492` 两个判据只看 manufacturer/brand；`ro.mi.*` /
