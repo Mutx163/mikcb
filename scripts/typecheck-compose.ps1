@@ -50,14 +50,29 @@
 
     ```powershell
     pwsh -File scripts/typecheck-compose.ps1              # 只报新增/消失；新增则以 exit 1 结束
-    pwsh -File scripts/typecheck-compose.ps1 -Write       # 重写基线（收编当前所有 error）
+    pwsh -File scripts/typecheck-compose.ps1 -Write       # 只许删行；有任何新增则**拒绝写入**（exit 3）
+    pwsh -File scripts/typecheck-compose.ps1 -Init        # 基线不存在时首次落盘（唯一放行通道）
     pwsh -File scripts/typecheck-compose.ps1 -Full        # 连「未变化」的 error 一起打印
-    pwsh -File scripts/typecheck-compose.ps1 -ExtraSources "android/app/src/main/kotlin/com/mutx163/qingyu/pages/exam"
+    pwsh -File scripts/typecheck-compose.ps1 -ExtraSources "..."
     ```
 
+    ## `-Write` 的语义（2026-11-12 收口，与 CJK / copy-gap 两个 `--write` 同一套）
+
+    **基线只许降不许升。** 旧版 `-Write` 是「把当前所有 error 整段写回基线」——红了顺手跑一跑，
+    diff 与正常收敛长得一模一样，事后查不出来（force-write 同族开关）。
+
+    现在的两阶段：
+
+    1. 先把「本次待处理」与旧基线做**多重集**比对；
+    2. **任何新增 / 上调 ⇒ 拒绝写入**：一个字节不动、打印新增条目、`exit 3`；
+    3. 只有「只删不增」才落盘（error 被修掉了 ⇒ 基线可以缩）。
+
+    口径写死在这里：**要消掉新增，只能修代码，或登记到 `typecheck-compose-known.txt` 并写清原因**；
+    `-Write` 不是收编工具。基线文件被删掉时同样拒绝（`-Init` 是显式重建通道，必须人工确认）。
+
     规矩与 CJK 棘轮、copy_style 三份基线一致：**不许为了让提交变绿往基线里加行**；
-    确需收编（例如别人半成品带来的既有 error）时，改动原因写进提交说明，并在 PR/回报里点明。
-    基线少了行也要跟着**删掉**（脚本会报「消失」，确认后 `-Write` 收敛）。
+    基线少了行要跟着**删掉**（脚本会报「消失」，确认后 `-Write` 收敛）。
+
 
     ## 退出码 / 什么时候不能信它
 
@@ -66,6 +81,8 @@
     - `2` = **kotlinc 自己崩了**（OOM / 栈溢出），本次结果不可信：既不写基线、也不当通过。
       崩掉的输出里 often 一条 error 都没有，**不要当成全绿**。崩了就调大 `$env:JAVA_OPTS` 的 `-Xmx`
       （脚本默认已设 `-Xmx4096m`；注意 `-J-Xmx…` 写在 argfile 里不生效，只能走环境变量）。
+    - `3` = **`-Write` 被拒绝**（基线只许降不许升：出现新增，或基线不存在且没带 `-Init`）。
+      基线文件一个字节都没动，`sha256` 前后一致。
     - 每次运行的原始 kotlinc 输出落在**本次实例的临时目录**（`$env:TEMP\mikcb-compose-typecheck-<pid>-<guid>\kotlinc-raw.txt`，
       首行会打印完整路径），怀疑漏报就去翻它。实例目录结束**不自动删**（raw 是排查证据）；
       会随运行次数累积，嫌占空间可手动清理 `%TEMP%\mikcb-compose-typecheck-*`。
@@ -83,7 +100,12 @@
     额外的源码根或单个 .kt（相对仓库根，可多个）。用来把某个域临时纳入扫描。
 
 .PARAMETER Write
-    把本次的**待处理** error 写回基线（棘轮收编；显式登记的已知类别不进基线）。
+    收敛基线：**只允许删行**（error 被修掉）。任何新增 / 上调 ⇒ 拒绝写入、整份文件不动、exit 3。
+    要消掉新增只能修代码或登记到 `scripts/typecheck-compose-known.txt`，本开关不是收编工具。
+
+.PARAMETER Init
+    基线不存在时首次落盘（唯一允许「凭空建基线」的通道，必须人工显式确认）。
+    不带 `-Init` 时，缺基线一律拒绝（否则删掉基线再 `-Write` 就等于放行所有已知 error）。
 
 .PARAMETER Full
     除了差量，还把「未变化」的 error 全打出来（排查用）。
@@ -94,6 +116,7 @@
 param(
     [string[]]$ExtraSources = @(),
     [switch]$Write,
+    [switch]$Init,
     [switch]$Full,
     [string]$BaselinePath
 )
@@ -690,17 +713,61 @@ function Write-BaselineFile {
     Write-Host ">>> 基线已写入：$BaselinePath（$($Entries.Count) 条）" -ForegroundColor Green
 }
 
+function Get-BaselineSha256 {
+    param([string]$Path)
+    if (-not (Test-Path $Path)) { return "<不存在>" }
+    return (Get-FileHash -Path $Path -Algorithm SHA256).Hash.ToLowerInvariant()
+}
+
 if ($Write) {
-    # 基线只收**待处理**（已知类别已单独登记、不再进基线）：目标是把基线长期保持 0 条。
+    # ── 两阶段：先比对新旧基线，任何新增都拒绝写入 ─────────────────────────────
+    #
+    # 语义（与 i18n-cjk-baseline.py / i18n-copy-gap.py 的 --write 同一套）：
+    #   · 基线只许降不许升；新增 / 上调 ⇒ 拒绝，一个字节不动，exit 3；
+    #   · 只有「只删不增」才落盘（error 被修掉 ⇒ 基线可以缩）；
+    #   · 基线不存在 ⇒ 也拒绝（否则「删掉基线再 -Write」就等于放行所有已知 error）；
+    #     重建基线必须显式 -Init。
+    $shaBefore = Get-BaselineSha256 $BaselinePath
+    $baselineMissing = -not (Test-Path $BaselinePath)
+    if ($baselineMissing -and -not $Init) {
+        Write-Host ">>> 拒绝写入：基线不存在（$BaselinePath）。" -ForegroundColor Red
+        Write-Host ">>> 首次建基线必须显式加 -Init；否则等于把当前所有已知 error 一次性放行。" -ForegroundColor DarkYellow
+        Write-Host ">>> 基线 sha256 前后：$shaBefore = $shaBefore（未变动）" -ForegroundColor DarkYellow
+        exit 3
+    }
+
+    # 基线不存在且带 -Init：所有条目都是「新增」，但这是唯一被允许的一次。
+    $writeAdded = if ($baselineMissing) { @() } else { @(Compare-Multiset -Left $unexplained -Right $baseline) }
+    $writeRemoved = if ($baselineMissing) { @() } else { @(Compare-Multiset -Left $baseline -Right $unexplained) }
+
+    if ($writeAdded.Count -gt 0) {
+        Write-Host ">>> 拒绝写入：基线**只许降不许升**，本次待处理里有 $($writeAdded.Count) 条基线中没有的 error：" -ForegroundColor Red
+        $writeAdded | ForEach-Object { Write-Host "    + $_" -ForegroundColor Red }
+        Write-Host ">>> 一个字节都没写。新增只能靠修代码，或登记到 scripts/typecheck-compose-known.txt（必须写原因）——-Write 不是收编工具。" -ForegroundColor DarkYellow
+        Write-Host ">>> 基线 sha256 前后：$shaBefore = $shaBefore（未变动）" -ForegroundColor DarkYellow
+        exit 3
+    }
+
+    # 到这里的两种合法情形：只删（收敛） / 完全一致（重写同内容，哈希不变）。
     Write-BaselineFile -Entries $unexplained
+    $shaAfter = Get-BaselineSha256 $BaselinePath
+    if ($baselineMissing) {
+        Write-Host ">>> 已按 -Init 首次落盘基线（$($unexplained.Count) 条）。" -ForegroundColor Green
+    } elseif ($writeRemoved.Count -gt 0) {
+        Write-Host ">>> 允许写入：只删不增，收敛掉 $($writeRemoved.Count) 条已消失的 error。" -ForegroundColor Green
+        $writeRemoved | Select-Object -First 20 | ForEach-Object { Write-Host "    - $_" -ForegroundColor Green }
+    } else {
+        Write-Host ">>> 允许写入：与基线完全一致（无新增、无消失），基线内容不变。" -ForegroundColor Green
+    }
+    Write-Host ">>> 基线 sha256 前后：$shaBefore → $shaAfter" -ForegroundColor DarkCyan
     exit 0
 }
 
 if (-not (Test-Path $BaselinePath)) {
-    Write-Host ">>> 基线不存在，先落一份（等同于 -Write）" -ForegroundColor DarkYellow
-    Write-BaselineFile -Entries $unexplained
-    Write-Host ">>> 重跑一次即可看到干净的差量。" -ForegroundColor Green
-    exit 0
+    # 不再自动落盘：缺基线时必须人工用 -Init 明确重建，否则等于静默放行。
+    Write-Host ">>> 基线不存在：$BaselinePath" -ForegroundColor Red
+    Write-Host ">>> 没有基线就没有棘轮基准，本次**不算通过**（exit 3）。重建基线请显式加 -Init。" -ForegroundColor DarkYellow
+    exit 3
 }
 
 if ($Full) {
