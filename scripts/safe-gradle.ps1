@@ -142,6 +142,21 @@ try {
         $effective += @('--warning-mode', 'none')
     }
 
+    # #3 主修法（2026-11-12 监察定案）：跑前**清空该变体的结果目录**。
+    # 旧写法只看目录 mtime 判断「这批 XML 是不是本次的」，而编译失败时 Gradle 会碰目录
+    # （清理/临时文件），目录 mtime 落进窗口 ⇒ 上一轮旧 XML 被当成本次成绩，于是出现
+    # 「编译失败那轮也打 RESULT、聚合 sha 与上一轮真红完全相同」。物证已由归档承担
+    # （按时刻分目录），所以直接清空：目录里出现的必然是本次产物，这类陈旧问题整类消失。
+    # 代价是「跑前看不到上一次 XML」——正好逼人去看 `.agents/diag/` 的归档。
+    $testTaskArg = @($effective | Where-Object { $_ -match ':app:test[A-Za-z0-9_]*UnitTest' }) | Select-Object -First 1
+    $resultsRoot = Join-Path $repoRoot "build/app/test-results"
+    $resultsDirName = if ($testTaskArg) { $testTaskArg -replace '^:app:', '' } else { $null }
+    $resultsDirPath = if ($resultsDirName) { Join-Path $resultsRoot $resultsDirName } else { $null }
+    if ($resultsDirPath -and (Test-Path -LiteralPath $resultsDirPath)) {
+        Write-Host ">>> [safe-gradle] 清空本次变体的旧结果目录：$resultsDirName（物证看 .agents/diag 归档）" -ForegroundColor DarkGray
+        Remove-Item -LiteralPath $resultsDirPath -Recurse -Force -ErrorAction SilentlyContinue
+    }
+
     # ① 请求行：日志里必须能看出这次请求的是什么（含 `--rerun-tasks` 与否）——
     #    否则「真跑 / 吃缓存」只能靠旁证，1 秒的 `help` 日志也能被当成绿。
     & $writeEvidence "=== REQUEST: $($effective -join ' ')"
@@ -209,12 +224,32 @@ try {
         }
     }
 
-    # ③ 成功路径的用例数：只认本次跑期间更新过的变体目录，避免把上一轮的旧结果当成本次成绩。
-    $resultsRoot = Join-Path $repoRoot "build/app/test-results"
+    # ③ 用例数：**只有本次测试任务真的执行过**才允许打 RESULT。
+    # 2026-11-12 监察实证：编译失败那轮（`> Task :app:compileDevDebugKotlin FAILED`）也打印了
+    # 「5 tests, 1 failures」，而且聚合 sha 与上一轮真红完全相同——它把旧 XML 又读了一遍。
+    # 后果是「编译失败」伪装成「测试失败」：判据让看 RESULT 与失败用例名，而编译失败恰好没有
+    # 用例名，很容易被当成"红在别处"。所以这里先判状态，再决定是否计数。
+    $logTextForState = if (Test-Path -LiteralPath $logPath) { Get-Content -LiteralPath $logPath -Raw } else { '' }
+    $compileFailed = $logTextForState -match '> Task :app:compile[A-Za-z0-9_]* FAILED'
+    $testState = ''
+    if ($testTaskArg) {
+        $tm = [regex]::Match($logTextForState, '> Task ' + [regex]::Escape($testTaskArg) + '(?<state>[^\r\n]*)')
+        if ($tm.Success) { $testState = $tm.Groups['state'].Value.Trim() }
+    }
+    $testRan = ($testState -eq '')
+
     $emittedResult = $false
-    if (Test-Path $resultsRoot) {
-        foreach ($dir in @(Get-ChildItem $resultsRoot -Directory | Sort-Object LastWriteTime -Descending)) {
-            if ($dir.LastWriteTime -lt $runStartedAt.AddSeconds(-2)) { continue }
+    if ($compileFailed) {
+        & $writeEvidence "=== TESTS-NOT-RUN (compile failed)"
+    } elseif (-not $testTaskArg) {
+        & $writeEvidence "=== TESTS-NOT-RUN (本次请求不含 UnitTest 任务)"
+    } elseif (-not $testRan) {
+        & $writeEvidence "=== TESTS-NOT-RUN (test task 未执行：$($testState.Trim()))"
+    } elseif (-not $resultsDirPath -or -not (Test-Path -LiteralPath $resultsDirPath)) {
+        # #2 兜底：任务说跑了，但结果目录没有产物（被清空后没重建）⇒ 同样不许报数。
+        & $writeEvidence "=== TESTS-NOT-RUN (test task 执行但结果目录无产物：$resultsDirName)"
+    } else {
+        foreach ($dir in @(Get-ChildItem $resultsRoot -Directory | Where-Object { $_.Name -eq $resultsDirName })) {
             $xmlFiles = @(Get-ChildItem $dir.FullName -Filter "*.xml" -File)
             if ($xmlFiles.Count -eq 0) { continue }
             $tests = 0; $failures = 0; $errors = 0; $skipped = 0
