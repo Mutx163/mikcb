@@ -541,9 +541,7 @@ A|ja|serviceMsgStartWeekExceedsSemester
 A|ja|serviceMsgStartWeekMustBeAtLeast1
 A|ja|serviceMsgStatisticsShareFailed
 A|ja|serviceMsgSupportDonorsLoadFailed
-A|ja|serviceMsgSyncSnapshotChecksumFailed
 A|ja|serviceMsgSyncSnapshotNoProfiles
-A|ja|serviceMsgSyncSnapshotUnrecognized
 A|ja|serviceMsgTargetWeekOutOfRange
 A|ja|serviceMsgTimeSchemeConfigUnavailable
 A|ja|serviceMsgTimeSchemeNotFound
@@ -1133,9 +1131,7 @@ A|ko|serviceMsgStartWeekExceedsSemester
 A|ko|serviceMsgStartWeekMustBeAtLeast1
 A|ko|serviceMsgStatisticsShareFailed
 A|ko|serviceMsgSupportDonorsLoadFailed
-A|ko|serviceMsgSyncSnapshotChecksumFailed
 A|ko|serviceMsgSyncSnapshotNoProfiles
-A|ko|serviceMsgSyncSnapshotUnrecognized
 A|ko|serviceMsgTargetWeekOutOfRange
 A|ko|serviceMsgTimeSchemeConfigUnavailable
 A|ko|serviceMsgTimeSchemeNotFound
