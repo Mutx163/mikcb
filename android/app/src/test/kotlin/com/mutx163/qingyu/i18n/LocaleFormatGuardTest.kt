@@ -1,5 +1,6 @@
 package com.mutx163.qingyu.i18n
 
+import com.mutx163.qingyu.testutil.stripKotlinComments
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Assert.fail
@@ -29,12 +30,16 @@ import java.io.File
  *
  * 探针：把 `calendar/ScheduleDateRuleLogic.formatIsoDate` 的 `Locale.ROOT` 去掉 → 本测试红。
  *
- * ## 剥离边界（写这条用例之前必读，2026-11-12 两次踩坑的结论）
+ * ## 剥离边界（写这条用例之前必读，2026-11-12 三次踩坑的结论）
  *
- * 1. **块注释必须按嵌套深度配对**：`maskComments` 曾在「遇到块注释起始就找第一个结束符」处收尾，
- *    于是注释里把起止符当例子写出来，会让扫描提前结束、把后面的注释正文当代码。注释里别写
- *    那两个符号的原文；要举例就描述它（「块注释起止符」）。
- * 2. **字符串字面量内容保留**（本守卫要读 format 的首参），所以**本文件的用例样本里不能出现
+ * 1. **剥离统一走 `testutil.stripKotlinComments`，不自带一份**：本文件原有一个私有
+ *    `maskComments`，它在块注释处「找第一个结束符」就收尾，于是注释里把起止符当例子写出来时，
+ *    扫描提前结束、后面的注释正文被当代码（2026-11-12 全量 L2 唯一那条红即此）。
+ *    共享实现本来就按**嵌套深度**配对，所以正解是删掉私有实现、改用共享的那份：
+ *    一份实现、所有人都受益，也符合元守卫 `GuardSourceStrippingPolicyTest` 的要求。
+ * 2. **注释里别写块注释起止符的原文**：要举例就描述它（「块注释起止符」）——KDoc 本身是块注释，
+ *    写了裸的起止符会改变词法状态（共享剥离器能收尾，但人读代码时仍会被误导）。
+ * 3. **字符串字面量内容保留**（本守卫要读 format 的首参），所以**本文件的用例样本里不能出现
  *    调用原文**——写进去会被自己扫成真调用。要构造样本请用拼接：`"String." + "format("`。
  */
 class LocaleFormatGuardTest {
@@ -93,7 +98,7 @@ class LocaleFormatGuardTest {
             "fun real(): String = ${call}\"%d\", 1)",
         ).joinToString("\n")
 
-        val masked = maskComments(sample)
+        val masked = stripKotlinComments(sample)
 
         assertTrue(
             "注释里的示例不该被扫成真调用：\n$masked",
@@ -127,7 +132,7 @@ class LocaleFormatGuardTest {
 
     private fun localeLessCalls(file: File): List<Offense> {
         val raw = file.readText()
-        val text = maskComments(raw)
+        val text = stripKotlinComments(raw)
         val rel = file.absolutePath.removePrefix(srcRoot().absolutePath + File.separator)
             .replace('\\', '/')
         val out = mutableListOf<Offense>()
@@ -146,47 +151,6 @@ class LocaleFormatGuardTest {
             }
         }
         return out
-    }
-
-    /** 把注释内容替换成空格（保留换行，行号不变），避免 KDoc 里的示例被当成真调用。 */
-    private fun maskComments(source: String): String {
-        val sb = StringBuilder(source.length)
-        var i = 0
-        while (i < source.length) {
-            val ch = source[i]
-            when {
-                ch == '/' && i + 1 < source.length && source[i + 1] == '/' -> {
-                    while (i < source.length && source[i] != '\n') {
-                        sb.append(' '); i++
-                    }
-                }
-                ch == '/' && i + 1 < source.length && source[i + 1] == '*' -> {
-                    // Kotlin 的块注释**可以嵌套**：扁平扫到第一个 `*/` 就收尾，会把后面的注释正文
-                    // 当成代码继续扫。2026-11-12 L2 就红在这里——本仓 `ComposePageStyleGuardTest`
-                    // 的 KDoc 里写了 `/* */` 与 `"""` 当例子，扁平扫描在内层 `*/` 处提前收尾，
-                    // 随后把 `"""` 当原始字符串一路吞掉 6.5 KB，连带把 118 行起的注释和后面
-                    // 那句 `String.format(locale, "%02x", 0..255)` 的注释正文当成真调用。
-                    // 因此这里必须按深度配对，而不是找「第一个 `*/`」。
-                    var depth = 1
-                    sb.append("  "); i += 2
-                    while (i < source.length && depth > 0) {
-                        if (source[i] == '/' && i + 1 < source.length && source[i + 1] == '*') {
-                            depth++; sb.append("  "); i += 2
-                        } else if (source[i] == '*' && i + 1 < source.length && source[i + 1] == '/') {
-                            depth--; sb.append("  "); i += 2
-                        } else {
-                            sb.append(if (source[i] == '\n') '\n' else ' '); i++
-                        }
-                    }
-                }
-                ch == '"' || ch == '\'' -> {
-                    val end = skipLiteral(source, i)
-                    sb.append(source, i, end); i = end
-                }
-                else -> { sb.append(ch); i++ }
-            }
-        }
-        return sb.toString()
     }
 
     /** 从引号/三引号起始处跳到字面量之后；文本本身保留（参数里可能含格式串）。 */
