@@ -28,6 +28,14 @@ import java.io.File
  * 的调用；`core/`、`app/`、`infra/`、`share/`、`widgetdata/` 一律不许登记。
  *
  * 探针：把 `calendar/ScheduleDateRuleLogic.formatIsoDate` 的 `Locale.ROOT` 去掉 → 本测试红。
+ *
+ * ## 剥离边界（写这条用例之前必读，2026-11-12 两次踩坑的结论）
+ *
+ * 1. **块注释必须按嵌套深度配对**：`maskComments` 曾在「遇到块注释起始就找第一个结束符」处收尾，
+ *    于是注释里把起止符当例子写出来，会让扫描提前结束、把后面的注释正文当代码。注释里别写
+ *    那两个符号的原文；要举例就描述它（「块注释起止符」）。
+ * 2. **字符串字面量内容保留**（本守卫要读 format 的首参），所以**本文件的用例样本里不能出现
+ *    调用原文**——写进去会被自己扫成真调用。要构造样本请用拼接：`"String." + "format("`。
  */
 class LocaleFormatGuardTest {
 
