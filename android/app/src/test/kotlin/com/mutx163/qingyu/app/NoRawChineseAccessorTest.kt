@@ -1,5 +1,6 @@
 package com.mutx163.qingyu.app
 
+import com.mutx163.qingyu.testutil.stripKotlinComments
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -23,17 +24,41 @@ class NoRawChineseAccessorTest {
             val root = File(repoRoot(), "android/app/src/$rootName")
             root.walkTopDown().filter { it.isFile && it.extension == "kt" }.forEach { file ->
                 if (file.name == "ArbText.kt") return@forEach
-                file.readLines(Charsets.UTF_8).forEachIndexed { index, line ->
-                    val code = line.substringBefore("//")
-                    if (Regex("""\.zh\b""").containsMatchIn(code) && !code.trimStart().startsWith("*")) {
-                        offenders += "${file.relativeTo(repoRoot())}:${index + 1}: ${line.trim()}"
-                    }
+                // 注释一律先剥（含「续行不带星号」的块注释）：逐行 `substringBefore("//")`
+                // +「行首是 * 才算注释」的启发式会把块注释正文化当代码——2026-11-12 实测误报
+                // （`/* … resourceAccessor.zh … */` 被报成「直读中文原文」）。
+                val rawLines = file.readLines(Charsets.UTF_8)
+                for ((lineNo, _) in zhAccessorHits(file.readText(Charsets.UTF_8))) {
+                    val shown = rawLines.getOrNull(lineNo - 1)?.trim().orEmpty()
+                    offenders += "${file.relativeTo(repoRoot())}:$lineNo: $shown"
                 }
             }
         }
         assertTrue(
             "这些地方还在直读中文原文（改成 `.text`）：\n" + offenders.joinToString("\n"),
             offenders.isEmpty(),
+        )
+    }
+
+    @Test
+    fun `无星号续行的块注释不算直读中文`() {
+        val sample = buildString {
+            appendLine("val anchor = 1")
+            appendLine("/*")
+            appendLine("这是没有星号续行的块注释")
+            appendLine("resourceAccessor.zh")
+            appendLine("*/")
+            appendLine("val tail = 2")
+        }
+        assertEquals(
+            "块注释里的 .zh 被当成代码了——行首启发式又回来了。",
+            emptyList<Int>(),
+            zhAccessorHits(sample).map { it.first },
+        )
+        assertEquals(
+            "真实 .zh 读取必须仍被抓到，否则守卫会退化成永远绿。",
+            listOf(1),
+            zhAccessorHits("val a = arb.zh").map { it.first },
         )
     }
 
@@ -56,6 +81,20 @@ class NoRawChineseAccessorTest {
             definitions.size,
         )
     }
+
+    private val ZH_ACCESSOR = Regex("""\.zh\b""")
+
+    /**
+     * 代码里出现 `.zh` 的行号（1 起，与原文行号一致）。
+     *
+     * 先按共享剥离器把注释整段剥掉（支持嵌套块注释 / 原始字符串），**字符串内容保留**——
+     * 判据关心的是「有没有真的按 `.zh` 取值」这个访问本身，不涉及字符串里恰好写了 `.zh` 的极端情况。
+     * 共享剥离器只把注释换成空格、保留换行与列，所以行号可以直接对回原文。
+     */
+    private fun zhAccessorHits(text: String): List<Pair<Int, String>> =
+        stripKotlinComments(text).lines().mapIndexedNotNull { index, line ->
+            if (ZH_ACCESSOR.containsMatchIn(line)) (index + 1) to line.trim() else null
+        }
 
     private fun repoRoot(): File {
         var dir: File? = File("").absoluteFile
