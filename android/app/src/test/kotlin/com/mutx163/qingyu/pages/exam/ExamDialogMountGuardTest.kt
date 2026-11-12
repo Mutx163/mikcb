@@ -1,5 +1,6 @@
 package com.mutx163.qingyu.pages.exam
 
+import com.mutx163.qingyu.testutil.stripKotlinComments
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -15,6 +16,18 @@ import java.io.File
  *
  * composeP1 源集不进 `src/test` 的编译单元，所以读源码文本；找不到文件判失败而不是跳过。
  * 判据全部行首锚定：注释 / KDoc 里提到同一写法不会造成假红。
+ *
+ * ## 读法：剥注释 + **中性化档**（2026-11-12 B3 批）
+ *
+ * 走 `stripKotlinComments(…, neutralizeStrings = true)`：注释剥掉、字符串内容抹成空格。
+ *
+ * * **剥注释**：原来「注释里提到同一写法不会假红」只靠行首锚定撑着——块注释里独占一行的
+ *   `if (target != null) {` 照样命中 `^\s*if \(`，`// show = true` 这种行尾注释虽然不命中，
+ *   但把 `show = pendingDelete != null,` **整行注释掉**时，注释里保留的原文会让正例判据
+ *   （`contains`）继续通过——B3 批实测：迁移前版本注释掉那行仍全绿。
+ * * **中性化**：五条判据判的全是代码结构（`show = …` 实参、`rememberLastNonNull(…)` 调用、
+ *   `deleteTarget?.name.orEmpty()` 表达式、两处行首 `if` / `show = true` 形态），
+ *   没有一条判「某字面量许不许出现」，所以中性化既不会洗白判据，又能挡住字符串假绿。
  */
 class ExamDialogMountGuardTest {
 
@@ -72,7 +85,11 @@ class ExamDialogMountGuardTest {
             "composeP1/kotlin/com/mutx163/qingyu/pages/exam/$fileName",
         )
         assertTrue("${file.path} 不存在", file.isFile)
-        return file.readText().replace("\r\n", "\n")
+        // 剥注释 + 中性化字符串（口径见类注释）：注释掉的原文不再命中，字符串也不再喂饱判据。
+        return stripKotlinComments(
+            file.readText(Charsets.UTF_8).replace("\r\n", "\n"),
+            neutralizeStrings = true,
+        )
     }
 
     private fun androidSrc(): File {

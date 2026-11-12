@@ -1,5 +1,6 @@
 package com.mutx163.qingyu.pages.schedule
 
+import com.mutx163.qingyu.testutil.stripKotlinComments
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -24,30 +25,72 @@ import java.io.File
  *
  * ⚠️ 范围只限日程族这四个文件（多 Agent 并行，别把别人在途的代码记到本守卫头上）。
  * 文件改名/移动后必须同步更新本守卫——`扫描器必须真的扫到…` 会先红，避免空跑假绿。
+ *
+ * ## 读法：**同一个文件读两遍**，按锚分档（2026-11-12 B3 批，混合型文件）
+ *
+ * 本文件既有「判结构」的判据，也有「判字面量」的判据，**一个档位不可能同时满足**，
+ * 所以按锚分两个视图（[codeOnly] / [literalsKept]），每个判据只用它需要的那一档：
+ *
+ * | 判据 | 用在哪个视图 | 为什么 |
+ * |---|---|---|
+ * | `ScheduleActionButton(` 计数、`ButtonDefaults.`、`OverlayDialog(` 计数、`insideMargin = …`、`LazyColumn(` / `scrollEndHaptic()` / `overScrollVertical()`、`Text(` 片段、`ConfirmDeleteDialog` | **中性化档**（`neutralizeStrings = true`） | 判的是**调用 / 计数 / 结构**。留着字符串内容时，一句日志或提示语含同样片段就能把计数喂饱（实测：注释里写着 `OverlayDialog(` 会把「1 处」凑成 2 处）。 |
+ * | `color = MiuixTheme.colorScheme.onPrimary`、`private fun MiuixActionButton` | **默认档**（剥注释、**保留字面量**） | 这两条是**负例（不许出现）**，判的是那串字符本身。中性化档会把被判的文本自己抹成空格 ⇒ `assertFalse` 从此永远通过（洗白）。 |
+ *
+ * 两档都**先剥注释**：不剥时把目标行注释掉，注释掉的原文还在文本里——正例的 `contains`
+ * 被自己的注释喂饱（骗绿），负例则被一句解释文字触发（假红）。B3 批实测过这两个方向。
  */
 class ScheduleDialogGuardTest {
+
+    /**
+     * 中性化档视图：剥注释 + 字符串内容抹成空格。判「调用 / 计数 / 结构」的判据用它。
+     *
+     * 每个文件各读一次（`lazy` 缓存），四个文件合计 8 次读取——比让一条判据去猜
+     * 「这个锚是不是字面量」便宜得多，也不会出现两个判据各用各的档位。
+     */
+    private val codeOnly: Map<String, String> by lazy {
+        GUARDED_FILES.associateWith { view(it, neutralizeStrings = true) }
+    }
+
+    /**
+     * 默认档视图：剥注释、**保留字符串内容**。判「某字面量不许出现」的负例用它。
+     *
+     * 中性化档在这里会洗白：把 `color = MiuixTheme.colorScheme.onPrimary` 抹成空格之后，
+     * `assertFalse(contains(...))` 恒真——那正是本守卫要防的那条历史 bug（白字落灰底）。
+     */
+    private val literalsKept: Map<String, String> by lazy {
+        GUARDED_FILES.associateWith { view(it, neutralizeStrings = false) }
+    }
+
+    /** 读一个守卫目标文件并按指定档位剥一遍（行尾先归一，工作区是 CRLF）。 */
+    private fun view(path: String, neutralizeStrings: Boolean): String =
+        stripKotlinComments(
+            File(repoRoot(), path).readText(Charsets.UTF_8).replace("\r\n", "\n"),
+            neutralizeStrings = neutralizeStrings,
+        )
 
     // ───────────────────────── 0. 守卫自己不能空跑 ─────────────────────────
 
     @Test
     fun `扫描器必须真的扫到三个页面与共享按钮`() {
-        val sources = GUARDED_FILES.associateWith { path ->
+        GUARDED_FILES.forEach { path ->
             val file = File(repoRoot(), path)
             assertTrue(
                 "守卫目标文件不存在：${file.absolutePath}（user.dir=${System.getProperty("user.dir")}）。" +
                     "文件改名/移动后必须同步更新本守卫，否则它会空跑假绿。",
                 file.isFile,
             )
-            file.readText()
         }
         assertTrue(
             "三个页面里扫到的 ScheduleActionButton 调用少于 3 处，判据已失效",
-            sources.filterKeys { it != SHARED_BUTTON }
-                .values.sumOf { it.windowed(SHARED_CALL.length) { w -> w }.count { it == SHARED_CALL } } >= 3,
+            PAGE_FILES.sumOf { path ->
+                codeOnly.getValue(path)
+                    .windowed(SHARED_CALL.length) { it }
+                    .count { it == SHARED_CALL }
+            } >= 3,
         )
         assertTrue(
             "共享按钮文件里没有 ButtonDefaults 配色，判据已失效",
-            sources.getValue(SHARED_BUTTON).contains("ButtonDefaults."),
+            codeOnly.getValue(SHARED_BUTTON).contains("ButtonDefaults."),
         )
     }
 
@@ -57,7 +100,8 @@ class ScheduleDialogGuardTest {
     fun `三个页面不再出现写死 onPrimary 的旧按钮`() {
         val offenders = mutableListOf<String>()
         for (path in PAGE_FILES) {
-            val text = File(repoRoot(), path).readText()
+            // 负例：判的就是这串字符本身 ⇒ 默认档（中性化会把它抹掉、判据恒真）。
+            val text = literalsKept.getValue(path)
             if (text.contains(LEGACY_WHITE_TEXT)) {
                 offenders += path.replace('\\', '/')
             }
@@ -73,8 +117,9 @@ class ScheduleDialogGuardTest {
 
     @Test
     fun `三个页面都不再自带私有 MiuixActionButton`() {
+        // 负例：判的是声明文本 `private fun MiuixActionButton` ⇒ 默认档（同上，别中性化）。
         val offenders = PAGE_FILES.filter { path ->
-            File(repoRoot(), path).readText().contains("private fun MiuixActionButton")
+            literalsKept.getValue(path).contains("private fun MiuixActionButton")
         }
         assertTrue(
             "以下页面还留着私有 MiuixActionButton 副本（应改用共享 ScheduleActionButton）：\n" +
@@ -85,7 +130,7 @@ class ScheduleDialogGuardTest {
 
     @Test
     fun `共享按钮不把颜色写在文字上`() {
-        val text = File(repoRoot(), SHARED_BUTTON).readText()
+        val text = codeOnly.getValue(SHARED_BUTTON)
         // 允许 `color = MiuixTheme.colorScheme.error`（这是按钮**底色**），
         // 只禁按钮正文 `Text(...)` 里写 color——那会盖掉 Button 的 contentColor。
         val textCallStart = text.indexOf("Text(")
@@ -128,7 +173,7 @@ class ScheduleDialogGuardTest {
         )
         val offenders = mutableListOf<String>()
         for ((path, expected) in expectedDialogCount) {
-            val text = File(repoRoot(), path).readText()
+            val text = codeOnly.getValue(path)
             val dialogs = text.windowed(OVERLAY_CALL.length) { it }.count { it == OVERLAY_CALL } +
                 text.windowed("OverlayDialog {".length) { it }.count { it == "OverlayDialog {" }
             if (dialogs != expected) {
@@ -148,7 +193,7 @@ class ScheduleDialogGuardTest {
 
     @Test
     fun `旧的裸卡删除确认函数已经删除`() {
-        val text = File(repoRoot(), SCHEDULE_LIST).readText()
+        val text = codeOnly.getValue(SCHEDULE_LIST)
         assertFalse(
             "ScheduleListPage 还留着 ConfirmDeleteDialog（裸 QingyuCard 弹层），应改由 OverlayDialog 承载",
             text.contains("ConfirmDeleteDialog"),
@@ -159,7 +204,7 @@ class ScheduleDialogGuardTest {
 
     @Test
     fun `规则编辑框用官方 LazyColumn 滚动而不是 Column 加 verticalScroll`() {
-        val text = File(repoRoot(), RULE_PAGE).readText()
+        val text = codeOnly.getValue(RULE_PAGE)
         assertTrue(
             "规则编辑框缺少 LazyColumn（字段多，矮屏/键盘下必须能滚）",
             text.contains("LazyColumn("),
@@ -180,7 +225,7 @@ class ScheduleDialogGuardTest {
 
     @Test
     fun `规则编辑框的动作行留在滚动区外`() {
-        val text = File(repoRoot(), RULE_PAGE).readText()
+        val text = codeOnly.getValue(RULE_PAGE)
         val editor = text.substringAfter("private fun RuleEditorDialog(", missingDelimiterValue = "")
         assertTrue(
             "RuleEditorDialog 内容为空或函数被改名，守卫会空跑",

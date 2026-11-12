@@ -352,11 +352,6 @@ class GuardSourceStrippingPolicyTest {
                 reason = "十二个弹层是模型与键表对拍；三处读 MemoryStatsCollector.kt 原文，断言不再产出 dartVm 与 flutterImageCache，并把模型读的键逐条 contain 对回采集器",
                 reviewTrigger = LEGACY_REVIEW_TRIGGER,
             ),
-            "com/mutx163/qingyu/pages/exam/ExamDialogMountGuardTest.kt" to LegacyMeta(
-                introducedAt = "07c5b4189 2026-11-04",
-                reason = "读 ExamListPage.kt 与 AddExamPage.kt，判删除弹层常驻组合（show = pendingDelete != null）而非条件挂载；pageSource 只做 CRLF 归一",
-                reviewTrigger = LEGACY_REVIEW_TRIGGER,
-            ),
             "com/mutx163/qingyu/pages/import/IcsImportModelTest.kt" to LegacyMeta(
                 introducedAt = "1b58806b0 2026-10-27",
                 reason = "四十六条是 ICS 解析模型用例；末条读 IcsHeaderKeywords.kt 与解析器，用私有 cjkLiteralsIn 先滤掉星号、//、块注释开头的行再数中文字面量",
@@ -375,21 +370,6 @@ class GuardSourceStrippingPolicyTest {
             "com/mutx163/qingyu/pages/import/warehouse/WarehouseWebLoginUiGuardTest.kt" to LegacyMeta(
                 introducedAt = "34b7a9296 2026-11-10",
                 reason = "读 WarehouseWebLoginPage.kt 与 WarehouseMacroPlaybackUi.kt，判错误文案上屏、执行态换导入中、回放遮罩拦触摸；blockAfter 截块后原文 contains",
-                reviewTrigger = LEGACY_REVIEW_TRIGGER,
-            ),
-            "com/mutx163/qingyu/pages/schedule/ScheduleDateRuleApplyWiringGuardTest.kt" to LegacyMeta(
-                introducedAt = "434a7d2e6 2026-11-07",
-                reason = "读 ScheduleHost.kt 钉 applyDue 返回值交给四态判据、失败档走警示样式；dateRuleBranch 只按两条路由字符串截子串，注释仍在里面",
-                reviewTrigger = LEGACY_REVIEW_TRIGGER,
-            ),
-            "com/mutx163/qingyu/pages/schedule/ScheduleDialogGuardTest.kt" to LegacyMeta(
-                introducedAt = "b76cd2d27 2026-11-02",
-                reason = "扫列表页、规则页、添加页与共享按钮四个文件，判不再写死 onPrimary、四个确认弹窗走 OverlayDialog、规则编辑框用 LazyColumn；仅 matchingParen 配平括号",
-                reviewTrigger = LEGACY_REVIEW_TRIGGER,
-            ),
-            "com/mutx163/qingyu/pages/schedule/ScheduleOccurrenceScopeTest.kt" to LegacyMeta(
-                introducedAt = "434a7d2e6 2026-11-07",
-                reason = "读 AddScheduleItemPage.kt 与 ShellWiring.kt，判跨天条目的单次编辑与整条更新分支、删除走确认弹层；wholeItemDraft 等锚全是原文 contains",
                 reviewTrigger = LEGACY_REVIEW_TRIGGER,
             ),
             "com/mutx163/qingyu/pages/settings/SettingsPreviewCutoutGuardTest.kt" to LegacyMeta(
@@ -440,11 +420,6 @@ class GuardSourceStrippingPolicyTest {
             "com/mutx163/qingyu/pages/shell/RootEntryBackGuardTest.kt" to LegacyMeta(
                 introducedAt = "cfb12cd90 2026-11-03",
                 reason = "读 QingyuPageScaffold 与四个手拼顶栏根页，判返回键只由 rememberShellShouldShowBackButton() 决定、骨架签名不许加页面级显隐参数；codeOnly 剥注释",
-                reviewTrigger = LEGACY_REVIEW_TRIGGER,
-            ),
-            "com/mutx163/qingyu/pages/shell/ScheduleEditWiringGuardTest.kt" to LegacyMeta(
-                introducedAt = "434a7d2e6 2026-11-07",
-                reason = "读 ShellPageIndex.kt 与 ScheduleEditHost.kt，判 d2-addSchedule 分支经宿主而非直调页面；branchOf 只按两条路由字符串截子串",
                 reviewTrigger = LEGACY_REVIEW_TRIGGER,
             ),
             "com/mutx163/qingyu/pages/shell/ShellRailWiringGuardTest.kt" to LegacyMeta(

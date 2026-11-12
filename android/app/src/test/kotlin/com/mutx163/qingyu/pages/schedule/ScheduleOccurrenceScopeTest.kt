@@ -4,12 +4,14 @@ import com.mutx163.qingyu.app.ScheduleEditDispatcher
 import com.mutx163.qingyu.app.TimetableScheduleItemPort
 import com.mutx163.qingyu.core.ScheduleItem
 import com.mutx163.qingyu.core.TimetableProfile
+import com.mutx163.qingyu.testutil.readKotlinSourceNoStrings
+import com.mutx163.qingyu.testutil.readKotlinSourceNormalized
+import com.mutx163.qingyu.testutil.stripKotlinComments
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
-import java.io.File
 import java.time.LocalDateTime
 
 /**
@@ -44,6 +46,22 @@ import java.time.LocalDateTime
  * 提醒同步本文件——**不要为了变绿删断言**。
  *
  * 范围：只覆盖日程族的上述两处 + 一次性删除确认（同批 2026-11-05 的修改）。
+ *
+ * ## 读法：剥注释 + **中性化档**，切片在「剥过注释、保留字面量」的文本上做（2026-11-12 B3 批）
+ *
+ * 源码层三条 test 判的全是**代码结构**：`occurrenceDate = occurrenceDate.takeIf { … }`、
+ * `showDeleteConfirmDialog`、`destructive = true`、壳里那两段布尔判据——没有一条判
+ * 「某字面量许不许出现」，所以走中性化档（`neutralizeStrings = true`）：生产代码里一句日志 /
+ * 提示语含同样片段，不该把接线判据喂饱。
+ *
+ * **先切片再剥离**：`页面只把发生日交给宿主的单次编辑分支` 这条按 `indexOf` 截三段
+ * （`fun validateAndProceed(` → `val draft = ScheduleItemData(` → `if (isOccurrenceEditing) {`）
+ * 再在片段里断言，顺序不能反——整段先中性化会让 `indexOf` 的锚与 `substring` 的边界漂到别处；
+ * 这三个锚本身是代码，在「剥注释、留字面量」的文本上切出来最稳，切完再把片段按中性化档剥一遍。
+ *
+ * 剥注释这层是 B3 批实测出来的洞：不剥时把 `occurrenceDate = occurrenceDate.takeIf { … }`
+ * 或壳里 `existing?.isRecurring == true || …` 注释掉，注释掉的**原文还在**文本里 ⇒
+ * 迁移前版本照样全绿。
  */
 class ScheduleOccurrenceScopeTest {
 
@@ -104,7 +122,8 @@ class ScheduleOccurrenceScopeTest {
 
     @Test
     fun `页面只把发生日交给宿主的单次编辑分支`() {
-        val text = File(repoRoot(), ADD_SCHEDULE).readText()
+        // 剥注释、**保留字面量**：三段切片锚都是代码，先在这个文本上按 indexOf 截段。
+        val text = readKotlinSourceNormalized(ADD_SCHEDULE)
 
         val functionStart = text.indexOf("fun validateAndProceed(")
         assertTrue(
@@ -117,7 +136,11 @@ class ScheduleOccurrenceScopeTest {
         val scopeBranch = text.indexOf("if (isOccurrenceEditing) {", draftStart)
         assertTrue("找不到整条草稿之后的单次编辑分支（判据锚点失效）", scopeBranch > draftStart)
 
-        val wholeItemDraft = text.substring(draftStart, scopeBranch)
+        // 先切后剥：片段再按中性化档剥一遍，日志 / 提示语里的同名片段不算接线。
+        val wholeItemDraft = stripKotlinComments(
+            text.substring(draftStart, scopeBranch),
+            neutralizeStrings = true,
+        )
         assertTrue(
             "「新建 / 编辑整条」的草稿必须写成 occurrenceDate = occurrenceDate.takeIf { isOccurrenceEditing }，" +
                 "否则跨天（或单日）的单次日程会被壳判成单次编辑并被拆行",
@@ -131,7 +154,7 @@ class ScheduleOccurrenceScopeTest {
 
     @Test
     fun `壳按重复系列判单次编辑而不是只看草稿有没有日期`() {
-        val text = File(repoRoot(), SHELL_WIRING).readText()
+        val text = readKotlinSourceNoStrings(SHELL_WIRING)
         assertTrue(
             "ShellWiring.kt 里找不到 `isOccurrenceEditing = draft.occurrenceDate != null &&`（判据锚点失效）",
             text.contains(SHELL_DATE_GUARD),
@@ -147,7 +170,7 @@ class ScheduleOccurrenceScopeTest {
 
     @Test
     fun `一次性删除走官方 OverlayDialog 确认而不是直接删`() {
-        val text = File(repoRoot(), ADD_SCHEDULE).readText()
+        val text = readKotlinSourceNoStrings(ADD_SCHEDULE)
         assertTrue(
             "AddScheduleItemPage.kt 里找不到删除确认态 `showDeleteConfirmDialog`；" +
                 "发布版 `_confirmDelete` 会先弹确认框，误触顶栏垃圾桶不应立刻删数据",
@@ -202,27 +225,6 @@ class ScheduleOccurrenceScopeTest {
         override fun syncExamReminders() = Unit
 
         val items: List<ScheduleItem> get() = scheduleItems
-    }
-
-    private fun repoRoot(): String {
-        var dir: File? = File(System.getProperty("user.dir") ?: ".").absoluteFile
-        while (dir != null) {
-            if (File(dir, "android/app/src").isDirectory) {
-                var up: File? = dir
-                while (up != null) {
-                    if (File(up, "lib/screens").isDirectory && File(up, "pubspec.yaml").isFile) {
-                        return up.path
-                    }
-                    up = up.parentFile
-                }
-                return dir.path
-            }
-            dir = dir.parentFile
-        }
-        throw AssertionError(
-            "找不到仓库根（android/app/src）——守卫无法验证，按失败处理（不许静默跳过）。" +
-                "当前工作目录：${System.getProperty("user.dir")}",
-        )
     }
 
     private companion object {

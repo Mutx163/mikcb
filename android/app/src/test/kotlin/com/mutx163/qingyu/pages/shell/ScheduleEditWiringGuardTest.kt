@@ -1,9 +1,11 @@
 package com.mutx163.qingyu.pages.shell
 
+import com.mutx163.qingyu.testutil.readKotlinSourceNoStrings
+import com.mutx163.qingyu.testutil.readKotlinSourceNormalized
+import com.mutx163.qingyu.testutil.stripKotlinComments
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
-import java.io.File
 
 /**
  * 日程编辑页的**宿主接线**守卫（2026-11-05 建立）。
@@ -25,25 +27,49 @@ import java.io.File
  * 这是源码文本守卫：宿主与壳都带 Compose/Android 依赖，进不了 JVM 单测 classpath
  * （本仓同类做法见 `schedule/ScheduleDialogGuardTest`）。判据对格式敏感，只钉最小集合；
  * 分支里改了调用形态会先红，**请同步本文件而不是删断言**。
+ *
+ * ## 读法：同一个壳文件**读两遍**，按锚分档（2026-11-12 B3 批）
+ *
+ * 这个文件是混合型，判据分两类，档位不同：
+ *
+ * | 判据 | 锚 | 读法 | 为什么 |
+ * |---|---|---|---|
+ * | 路由 key 在不在 | `"d2.addSchedule" ->` | **默认档**（剥注释、留字面量） | 这条判的就是**字面量本身**；中性化会把 `"d2.addSchedule"` 抹成一串空格 ⇒ 判据永远失败（洗白反过来也成立：它会变成永远红） |
+ * | 分支必须经宿主 / 不许直调页面 / 传了 `onFinish` | `ScheduleEditHost(` / `AddScheduleItemPage(` / `onFinish =` | 中性化档 | 判的是**调用与实参**；字符串里出现同名片段（报错文案、日志）不该算接线 |
+ * | 宿主传了三个提醒参数 / 失败提示还在 | `reminderPermissionMissing =` 等 | 中性化档 | 同上，全是实参名与属性访问 |
+ *
+ * **两档都要「先切片再剥离」**：分支的起止锚是字符串字面量（路由 key），先中性化再切就找不到；
+ * 所以切片在「剥过注释、保留字面量」的文本上做，切出来的片段再按中性化档剥一遍。
+ *
+ * 剥注释这一层是 B3 批的实测口径：不剥时把 `onFinish = {` 或三个提醒参数之一注释掉，
+ * 注释掉的**原文还在**文本里，`contains` 照样命中 ⇒ 迁移前版本全绿。
  */
 class ScheduleEditWiringGuardTest {
+
+    /** 壳：剥注释、**保留字面量**——只为路由 key 那一条判据。 */
+    private val shellLiterals by lazy { readKotlinSourceNormalized(SHELL_PAGE_INDEX) }
+
+    /** 壳：剥注释 + 中性化字符串——判 import 之类纯代码结构。 */
+    private val shellCode by lazy { readKotlinSourceNoStrings(SHELL_PAGE_INDEX) }
+
+    /** 宿主：剥注释 + 中性化字符串（判的全是实参名与属性访问）。 */
+    private val host by lazy { readKotlinSourceNoStrings(SCHEDULE_EDIT_HOST) }
 
     // ───────────────────── 0. 守卫自己不能空跑 ─────────────────────
 
     @Test
     fun `判据锚点存在且能切出 d2-addSchedule 分支`() {
-        val shell = File(repoRoot(), SHELL_PAGE_INDEX).readText()
         assertTrue(
             "ShellPageIndex.kt 里找不到 `\"d2.addSchedule\" ->`（文件改名/重构后必须同步本守卫，否则空跑假绿）",
-            shell.contains(ADD_SCHEDULE_ROUTE),
+            shellLiterals.contains(ADD_SCHEDULE_ROUTE),
         )
         assertTrue(
             "找不到 d2 日程分支的终点标记 `\"d2.dateRule\"`，无法切出 d2.addSchedule 分支",
-            branchOf(shell).isNotBlank(),
+            branchOf().isNotBlank(),
         )
         assertTrue(
             "ShellPageIndex.kt 没有 import ScheduleEditHost（接线改了必须同步本守卫）",
-            shell.contains("import com.mutx163.qingyu.pages.schedule.ScheduleEditHost"),
+            shellCode.contains("import com.mutx163.qingyu.pages.schedule.ScheduleEditHost"),
         )
     }
 
@@ -51,7 +77,7 @@ class ScheduleEditWiringGuardTest {
 
     @Test
     fun `d2-addSchedule 分支经 ScheduleEditHost 而不是直调页面`() {
-        val branch = branchOf(File(repoRoot(), SHELL_PAGE_INDEX).readText())
+        val branch = branchOf()
         assertTrue(
             "d2.addSchedule 分支必须调 `ScheduleEditHost(`（宿主管落盘反馈 + 通知权限状态机）",
             branch.contains("ScheduleEditHost("),
@@ -71,7 +97,6 @@ class ScheduleEditWiringGuardTest {
 
     @Test
     fun `宿主把通知权限三个参数传给页面`() {
-        val host = File(repoRoot(), SCHEDULE_EDIT_HOST).readText()
         for (param in REMINDER_PARAMS) {
             assertTrue(
                 "ScheduleEditHost.kt 没有再给页面传 `$param`：用户关掉系统通知后选提醒，" +
@@ -89,7 +114,6 @@ class ScheduleEditWiringGuardTest {
 
     @Test
     fun `宿主保留保存与删除失败的提示`() {
-        val host = File(repoRoot(), SCHEDULE_EDIT_HOST).readText()
         assertTrue(
             "宿主保存失败分支没在用 `ScheduleStrings.saveFailed`：失败会变成静默（页面不动、零提示）",
             host.contains("ScheduleStrings.saveFailed.text"),
@@ -104,33 +128,18 @@ class ScheduleEditWiringGuardTest {
     // 工具
     // ------------------------------------------------------------------
 
-    /** 切出 `d2.addSchedule` 那一个 `when` 分支的源码（到 `d2.dateRule` 为止）。 */
-    private fun branchOf(shell: String): String {
-        val start = shell.indexOf(ADD_SCHEDULE_ROUTE)
+    /**
+     * 切出 `d2.addSchedule` 那一个 `when` 分支（到 `"d2.dateRule"` 为止），再按中性化档剥一遍。
+     *
+     * 顺序：**先切后剥**。切片锚 `"d2.addSchedule" ->` 是字符串字面量，中性化后再切永远找不到。
+     * 找不到起点返回空串——由上层断言报红，不静默跳过。
+     */
+    private fun branchOf(): String {
+        val start = shellLiterals.indexOf(ADD_SCHEDULE_ROUTE)
         if (start < 0) return ""
-        val end = shell.indexOf("\"d2.dateRule\"", start)
-        return if (end <= start) "" else shell.substring(start, end)
-    }
-
-    private fun repoRoot(): String {
-        var dir: File? = File(System.getProperty("user.dir") ?: ".").absoluteFile
-        while (dir != null) {
-            if (File(dir, "android/app/src").isDirectory) {
-                var up: File? = dir
-                while (up != null) {
-                    if (File(up, "lib/screens").isDirectory && File(up, "pubspec.yaml").isFile) {
-                        return up.path
-                    }
-                    up = up.parentFile
-                }
-                return dir.path
-            }
-            dir = dir.parentFile
-        }
-        throw AssertionError(
-            "找不到仓库根（android/app/src）—— 守卫无法验证，按失败处理（不许静默跳过）。" +
-                "当前工作目录：${System.getProperty("user.dir")}",
-        )
+        val end = shellLiterals.indexOf(ROUTE_DATE_RULE, start)
+        if (end <= start) return ""
+        return stripKotlinComments(shellLiterals.substring(start, end), neutralizeStrings = true)
     }
 
     private companion object {
@@ -140,6 +149,7 @@ class ScheduleEditWiringGuardTest {
             "android/app/src/composeP1/kotlin/com/mutx163/qingyu/pages/schedule/ScheduleEditHost.kt"
 
         const val ADD_SCHEDULE_ROUTE = "\"d2.addSchedule\" ->"
+        const val ROUTE_DATE_RULE = "\"d2.dateRule\""
 
         /** 页面侧三个提醒参数的形参名（宿主必须逐个传）。 */
         val REMINDER_PARAMS = listOf(
