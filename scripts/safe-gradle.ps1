@@ -213,14 +213,25 @@ try {
         Pop-Location
     }
 
+    $statusChanged = $false
     if ($gitExe) {
         $headAfter = (& git -C $repoRoot rev-parse HEAD 2>$null | Select-Object -First 1)
         $statusAfter = @(& git -C $repoRoot status --porcelain 2>$null)
+        # 只比条数不够（改一个再改回去条数相同）：比**集合**——(状态, 路径) 集合是否相等。
+        $beforeSet = @($statusLines | ForEach-Object { $_.Trim() } | Sort-Object)
+        $afterSet = @($statusAfter | ForEach-Object { $_.Trim() } | Sort-Object)
+        $statusChanged = (($beforeSet -join "`n") -ne ($afterSet -join "`n"))
         & $writeEvidence "=== HEAD after: $headAfter"
         & $writeEvidence ("=== STATUS after: " + $(if ($statusAfter.Count -eq 0) { '<clean>' } else { "$($statusAfter.Count) 条" }))
         foreach ($l in $statusAfter) { & $writeEvidence "=== STATUS after: $l" }
         if ($headBefore -ne $headAfter) {
             & $writeEvidence "=== WARN: 跑期间 HEAD 变了（$headBefore → $headAfter），本次结果归属需重新判定"
+        }
+        if ($statusChanged) {
+            # 2026-11-12 监察实证：`0cf4eabfb` 那次 prod 跑期间有人改 TimetableWeekPage.kt，
+            # 守卫读到被临时改掉的那一行而红——**一次本可避免的假红被当成真红分析了一整轮**。
+            # 所以工作区变了与 HEAD 变了同级：都要告警，并且**不输出 RESULT 数字**（结果归属存疑）。
+            & $writeEvidence "=== WARN: 跑期间工作区被改，本次结果归属存疑（STATUS before/after 集合不同）"
         }
     }
 
@@ -252,6 +263,9 @@ try {
     } elseif (-not $resultsDirPath -or -not (Test-Path -LiteralPath $resultsDirPath)) {
         # #2 兜底：任务说跑了，但结果目录没有产物（被清空后没重建）⇒ 同样不许报数。
         & $writeEvidence "=== TESTS-NOT-RUN (test task 执行但结果目录无产物：$resultsDirName)"
+    } elseif ($statusChanged) {
+        # 跑期间工作区被改：测试确实跑了，但**数字归属存疑**，所以不输出用例数（不是"没跑"）。
+        & $writeEvidence "=== RESULT-WITHHELD（跑期间工作区被改，用例数不输出；见上方 WARN）"
     } else {
         foreach ($dir in @(Get-ChildItem $resultsRoot -Directory | Where-Object { $_.Name -eq $resultsDirName })) {
             $xmlFiles = @(Get-ChildItem $dir.FullName -Filter "*.xml" -File)
