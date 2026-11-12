@@ -56,6 +56,14 @@
 .jvm-test-script: &jvm-test-script |
   set -eu
 
+  # crossguard 依赖（2026-11-12）：JVM 单测里的 CrossDomainGateGuardTest 会**真的**起子进程
+  # `pwsh`（compose-style-lint.ps1）与 `python3`（i18n-copy-gap.py）。镜像由 ./Dockerfile
+  # 构建（其中已装 PowerShell 7 与 python3），这里再 fail-fast 自证一次：缺工具当场红，
+  # 别让它表现成「样式/文案门禁失败」。
+  command -v pwsh >/dev/null 2>&1 || { echo "ERROR: 镜像缺 pwsh（见 Dockerfile 的 PowerShell 安装层）"; exit 1; }
+  command -v python3 >/dev/null 2>&1 || { echo "ERROR: 镜像缺 python3"; exit 1; }
+  echo "crossguard toolchain: $(pwsh -v | head -1) / $(python3 -V 2>&1)"
+
   # Gradle wrapper distribution 换国内镜像（规避 services.gradle.org 不可达/SSL 失败）
   WRAPPER_PROP="android/gradle/wrapper/gradle-wrapper.properties"
   if [ -f "$WRAPPER_PROP" ] && ! grep -q 'mirrors.cloud.tencent.com/gradle' "$WRAPPER_PROP"; then

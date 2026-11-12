@@ -113,6 +113,34 @@ jobs:
       # 复用绿灯时跳过，与原先 analyze 的口径一致。
       # 变体口径：CI / 发布链一律 prod（与 ci.yml、.cnb.yml 同一条命令）；本地 L2 可以用
       # dev（scripts/safe-gradle.ps1 默认 :app:testDevDebugUnitTest），两者跑同一份 src/test。
+      # crossguard 依赖（2026-11-12）：JVM 单测会真的以子进程调用 `pwsh`
+      # （compose-style-lint.ps1）与 `python3`（i18n-copy-gap.py）。缺工具必须 fail-fast，
+      # 否则会表现成「样式/文案门禁失败」，把环境问题误读成代码问题。
+      - name: Pin crossguard toolchain (pwsh 7 + python 3)
+        if: steps.reuse.outputs.reuse != 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          PWSH_PIN=7.4.6
+          if ! command -v pwsh >/dev/null 2>&1; then
+            echo "pwsh 缺失，安装钉版 ${PWSH_PIN}…"
+            curl -fsSL --retry 3 "https://github.com/PowerShell/PowerShell/releases/download/v${PWSH_PIN}/powershell-${PWSH_PIN}-linux-x64.tar.gz" -o /tmp/pwsh.tgz
+            sudo mkdir -p /opt/microsoft/powershell/7
+            sudo tar -xzf /tmp/pwsh.tgz -C /opt/microsoft/powershell/7
+            sudo chmod +x /opt/microsoft/powershell/7/pwsh
+            sudo ln -sf /opt/microsoft/powershell/7/pwsh /usr/bin/pwsh
+          fi
+          if ! command -v python3 >/dev/null 2>&1; then
+            echo "python3 缺失，安装…"
+            sudo apt-get update -qq
+            sudo DEBIAN_FRONTEND=noninteractive apt-get install -y python3
+          fi
+          pwsh -v
+          python3 -V
+          pwsh -v | grep -q "^PowerShell 7\." || { echo "ERROR: 需要 PowerShell 7.x（crossguard 脚本依赖）"; exit 1; }
+          python3 -c 'import sys; sys.exit(0 if sys.version_info[:2] >= (3, 11) else 1)' \
+            || { echo "ERROR: 需要 Python >= 3.11（i18n-copy-gap 依赖）"; exit 1; }
+
       - name: Unit tests (JVM)
         if: steps.reuse.outputs.reuse != 'true'
         run: cd android && ./gradlew :app:testProdDebugUnitTest --no-daemon

@@ -45,3 +45,21 @@ RUN set -eux; \
     DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends python3-yaml; \
     rm -rf /var/lib/apt/lists/*; \
     python3 -c "import yaml; print('PyYAML via python3-yaml OK')"
+
+# ── crossguard 依赖：PowerShell 7（钉版本，2026-11-12）──────────────
+# 为什么镜像必须有 pwsh：JVM 单测里的 CrossDomainGateGuardTest 会**真的**以子进程调用
+# `scripts/compose-style-lint.ps1`（样式门禁）。缺 pwsh ⇒ 这条门禁在 CNB 上必然
+# fail-closed 红，而且会被误读成「代码有问题」。python3 由上面那层 apt 一并提供。
+# 钉 7.4.6：可复现；升级要显式改 ARG，别让镜像漂。
+ARG PWSH_VERSION=7.4.6
+RUN set -eux; \
+    curl -fsSL --retry 3 \
+      "https://github.com/PowerShell/PowerShell/releases/download/v${PWSH_VERSION}/powershell-${PWSH_VERSION}-linux-x64.tar.gz" \
+      -o /tmp/pwsh.tar.gz; \
+    mkdir -p /opt/microsoft/powershell/7; \
+    tar -xzf /tmp/pwsh.tar.gz -C /opt/microsoft/powershell/7; \
+    chmod +x /opt/microsoft/powershell/7/pwsh; \
+    ln -sf /opt/microsoft/powershell/7/pwsh /usr/bin/pwsh; \
+    rm -f /tmp/pwsh.tar.gz; \
+    pwsh -v; \
+    python3 -V
