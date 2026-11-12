@@ -1220,7 +1220,6 @@ B|ko|locationTimeMatchPreviewHint
 B|ko|spreadsheetStep1Subtitle
 B|ko|supportCompleteThanks
 B|ko|supportHeroTitle
-B|ko|thirdPartyDisclaimer
 B|ko|timetableAppName
 B|ko|warehouseImportExecutionLogShareSubject
 B|ko|warehouseImportExecutionLogShareText
