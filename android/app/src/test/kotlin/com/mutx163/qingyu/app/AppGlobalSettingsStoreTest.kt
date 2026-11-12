@@ -20,7 +20,12 @@ class AppGlobalSettingsStoreTest {
 
     // ---------- 结构：键表就是契约 ----------
 
-    /** Dart `keys`（`:59-114`）逐字快照——顺序与内容漂移都必须红。 */
+    /**
+     * Dart `keys`（`:59-114`）逐字快照——顺序与内容漂移都必须红。
+     *
+     * **刻意独立于** [AppGlobalSettingsStore.KEYS]（独立 oracle）：只有「两份独立写出来、
+     * 再逐字对拍」才能抓到正本被误删/误加一个键。改成引用正本，正本掉键时这条会跟着一起消失。
+     */
     private val dartKeys = listOf(
         "homeNavigationForm",
         "glassDockActions",

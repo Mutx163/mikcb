@@ -1,5 +1,6 @@
 package com.mutx163.qingyu.pages.timetable
 
+import com.mutx163.qingyu.app.AppGlobalSettingsStore
 import com.mutx163.qingyu.app.TimetableRepository
 import com.mutx163.qingyu.app.TimetableSnapshot
 import com.mutx163.qingyu.app.TimetableStore
@@ -141,8 +142,10 @@ class TimetableProfilesController(
             return TimetableProfileActionResult.Rejected()
         }
         return try {
-            // 切档 = 换激活 id **并且**把全局设置换成目标档那份（Dart `_applyProfileState`）。
-            // 仓储的 setActiveProfile 只换 id，设置会留在旧档，所以走合并写入口。
+            // 切档 = 换激活 id + 把**档案级**核心设置（开学日/周次/节次）换成目标档那份。
+            // 44 个整机级偏好**不随切档变**（Dart 2026-09-22 明确否掉，`_applyProfileState` 只叠
+            // 目标档的档案级字段；整机偏好真源在 `app_global_settings_v1`，见 [AppGlobalSettingsStore]）。
+            // 仓储的 setActiveProfile 只换 id，档案级设置会留在旧档，所以走这一次整份替换入口。
             // 当前周同样按**目标档**的开学日重算（不能带着上一份课表的周数）。
             // Dart `switchProfile:2034` 带 `touchLastUsedAt: true`：目标档的「最近使用」要刷新，
             // 一并塞进同一次整份替换里，保持「一次写 + 一次通知」。
@@ -547,65 +550,18 @@ class TimetableProfilesController(
         const val PARTNER_BINDING_KEY: String = "partner_timetable_binding"
 
         /**
-         * 整机级「全局偏好」键集，逐字对齐 Dart `lib/services/app_global_settings_service.dart:59-114`。
+         * 整机级「全局偏好」键集 —— **唯一真源是 [AppGlobalSettingsStore.KEYS]**（Dart
+         * `lib/services/app_global_settings_service.dart:59-114` 的 44 键）。
          *
-         * 新建档只从当前活动档摘出这些键铺过去（Dart 新档 settings = `defaults()`
-         * + 当前作息 sections，再经 `_applyProfileState` 叠全局）；档案级外观/课表项不继承。
+         * 新建/复制档只按这份键集区分「跟课表走的档案级键」与「整机级键」：档案级键继承源档，
+         * 全局键只认本机真源（见 [settingsWithDeviceGlobals]）。
          *
-         * 待 `app_global_settings_v1` 专线落地后，这份清单应改为共享常量并直接读全局真源。
+         * 这里原本**手抄了第三份名单**。2026-11-11 对抗审查 H3：抄本一旦与正本漂移
+         * （例如正本新增 `savedThemes` 而这里没加，或这里漏掉某键），该键就会被当成档案级键、
+         * 按旧镜像写回真源；而当时的契约测试只钉了两个键，照样全绿——丢的是数据不是外观。
+         * 现在只引用正本，别再复制一份。
          */
-        val GLOBAL_SETTINGS_KEYS: Set<String> = setOf(
-            // 首页导航 / 图标（:60-70）
-            "homeNavigationForm",
-            "glassDockActions",
-            "glassDockShowAddButton",
-            "glassDockButtonEntryId",
-            "glassDockButtonIconName",
-            "homeTitleStyle",
-            "homeMenuStyle",
-            "homeGridMenuActions",
-            // 底部标签（:71-74）
-            "glassDockShowDayTab",
-            "glassDockShowWeekTab",
-            "glassDockShowSettingsTab",
-            // 材质 / 玻璃（:75-89）
-            "frostedBlurEnabled",
-            "liquidGlassPreset",
-            "liquidGlassTuning",
-            "liquidGlassTuningDark",
-            "linkLiquidGlassTuning",
-            "darkGlassBoostEnabled",
-            "liquidGlassDockEnabled",
-            "courseCardSurfaceStyle",
-            "courseCardGlassTuning",
-            "courseCardGlassPreset",
-            "homeBandGlassMaterial",
-            "homePageTimeColumnBlurEnabled",
-            // 主题 / 字体 / 语言（:90-103）
-            "appThemeMode",
-            "appFontMode",
-            "appFontWeight",
-            "appTextScale",
-            "themeSeedColor",
-            "foruiTheme",
-            "savedThemes",
-            "themeCheckpointName",
-            "themeCheckpointConfig",
-            "appLocaleTag",
-            // 通用（:104-107）
-            "pageTransitionSpeed",
-            "enableHaptics",
-            "homePullQuickImportEnabled",
-            "liveHideFromRecents",
-            // 应用内更新（:108-114）
-            "appUpdateDownloadSource",
-            "appUpdateDownloadChannel",
-            "appUpdateUseSystemDownloader",
-            "appUpdateMirrorPreset",
-            "appUpdateIncludePrerelease",
-            "appUpdateMirrorUrlPrefix",
-            "appUpdatePromptEnabled",
-        )
+        val GLOBAL_SETTINGS_KEYS: Set<String> = AppGlobalSettingsStore.KEYS.toSet()
 
         /**
          * 纯 JVM 日志（`java.util.logging` 在 Android 上映射到 logcat）。
