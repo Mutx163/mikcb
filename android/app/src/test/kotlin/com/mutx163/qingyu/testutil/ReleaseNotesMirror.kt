@@ -2,6 +2,7 @@ package com.mutx163.qingyu.testutil
 
 import java.io.File
 import java.security.MessageDigest
+import java.util.Locale
 
 /**
  * 「发版说明：真源 ↔ 进包镜像」一致性判据的**唯一实现**（2026-11-12 抽取）。
@@ -84,4 +85,5 @@ fun normalizedTextHash(file: File): String {
 
 /** SHA-256 的小写十六进制串。 */
 fun sha256Hex(bytes: ByteArray): String =
-    MessageDigest.getInstance("SHA-256").digest(bytes).joinToString("") { "%02x".format(it) }
+    MessageDigest.getInstance("SHA-256").digest(bytes)
+        .joinToString("") { "%02x".format(Locale.ROOT, it) }
