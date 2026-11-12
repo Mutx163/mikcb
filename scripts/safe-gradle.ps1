@@ -51,6 +51,13 @@ param(
     # CI / AS / 裸 gradlew 不经过本闸门，不受影响。）
     [switch]$ShowDeprecations,
 
+    # 输出留档：不占参数位（否则会跟 ValueFromRemainingArguments 抢位置参数，实测会把
+    # `:app:help` 这类任务名当成日志路径吃掉）。用环境变量 `MIKCB_GRADLE_LOG` 覆盖；
+    # **省略时自动落** `.agents/diag/auto-<时间>-<sha>.log`。
+    # 为什么默认也落：2026-11-12 出现过「测试结果写盘了、日志却没有」的入口——
+    # 一次 smoke 跑（`:app:testDevDebugUnitTest --tests ...`）直接用变量接输出、没 tee，
+    # 于是 `build/app/test-results` 更新了，`.agents/diag` 里什么都没有。
+    # 那是「8057 只在屏幕上活过」的同一个病换个入口又出现。闸门自己默认留档，绕不过去。
     [Parameter(ValueFromRemainingArguments = $true)]
     [string[]]$GradleArgs
 )
@@ -94,7 +101,7 @@ try {
     # 不需要问人、也不用从文件名猜。所以跑前跑后各打一行 HEAD 与树状态；
     # Gradle 只在失败时打「N tests completed」，绿的时候一个字不打，所以成功路径
     # 自己从 JUnit XML 汇总一行 RESULT。
-    # 注意：产物在仓库根 `build/app/test-results/`（android/build.gradle:28-34 把
+    # 注意：产物在仓库根 `build/app/test-results/`（android/build.gradle:28-36 把
     # buildDir 重定向过去了），**不是** `android/app/build/test-results/`。
     $gitExe = Get-Command git -ErrorAction SilentlyContinue
     $statusLines = @()
@@ -126,7 +133,16 @@ try {
         }
 
         Write-Host ">>> [safe-gradle] 实际参数: $($effective -join ' ')" -ForegroundColor DarkGray
-        & $gradlew @effective
+        # 输出留档：默认就落盘（见参数块注释），调用方漏 tee 也不会再出现「结果写盘无日志」。
+        $logPath = $env:MIKCB_GRADLE_LOG
+        if (-not $logPath) {
+            $shaShort = if ($headBefore) { $headBefore.Substring(0, [Math]::Min(9, $headBefore.Length)) } else { "nogit" }
+            $logPath = Join-Path $repoRoot (".agents/diag/auto-{0}-{1}.log" -f (Get-Date -Format "yyyyMMdd-HHmmss"), $shaShort)
+        }
+        $logDir = Split-Path -Parent $logPath
+        if ($logDir) { New-Item -ItemType Directory -Path $logDir -Force | Out-Null }
+        Write-Host ">>> [safe-gradle] 输出留档: $logPath" -ForegroundColor DarkGray
+        & $gradlew @effective *>&1 | Tee-Object -FilePath $logPath | ForEach-Object { Write-Host $_ }
         $exitCode = $LASTEXITCODE
     } finally {
         Pop-Location
