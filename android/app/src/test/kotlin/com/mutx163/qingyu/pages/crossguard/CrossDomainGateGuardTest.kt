@@ -1,5 +1,6 @@
 package com.mutx163.qingyu.pages.crossguard
 
+import com.mutx163.qingyu.testutil.releaseNotesMirrorProblems
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import java.io.ByteArrayOutputStream
@@ -49,6 +50,11 @@ import java.util.concurrent.TimeUnit
  * - CJK：`python scripts/i18n-cjk-baseline.py --check` —— exit 0 = 绿
  *   （该模式由并行交付物 1 于 2026-11-11 当天落地，并已用注入探针验过语义）。
  * - 文案缺口：`python scripts/i18n-copy-gap.py --check` —— exit 0 = 绿。
+ *
+ * 另有一条是**进程内**判据：发版说明镜像（`docs/releases/` ↔ `assets/docs/releases/`）走
+ * `testutil/ReleaseNotesMirror.kt` 的共享函数，与 `FlutterAssetsDecouplingGuardTest` 同一实现。
+ * 它是纯文件系统判定，起子进程没有收益；关键是**判据只有一份**——两处各写一份的话，
+ * 改了一边另一边会悄悄漂，而且「哪份算准」没有答案。
  *
  * 失败时把子进程 exit code 与输出末尾 20 行贴进断言消息，读到报错就能定位，不用重跑。
  *
@@ -561,6 +567,45 @@ class CrossDomainGateGuardTest {
         return null
     }
 
+    /**
+     * 发版说明镜像判据：`docs/releases/` 与 `assets/docs/releases/` 必须清单相等、同名文件内容一致。
+     *
+     * 同口径的判据原本只活在 `pages/about/FlutterAssetsDecouplingGuardTest.kt` 里，只有**全量 L2**
+     * 才会跑到；`2026-11-12` 的 `9b10a1b1d`（改了真源没同步镜像）就是排到 L2 末尾、2 分多钟才暴露。
+     *
+     * 这里调的是 `testutil/ReleaseNotesMirror.kt` 里的 [releaseNotesMirrorProblems] ——
+     * 与那条守卫**同一个函数**，不是第二份实现：判据只有一处，谁红了都指向同一段代码。
+     * 它是纯文件系统判定（不调外部脚本），所以直接在本进程里跑，比再起一个子进程更省。
+     */
+    @Test
+    fun `发版说明镜像与真源必须一致`() {
+        val root = repoRoot()
+        val sourceDir = File(root, RELEASE_NOTES_SOURCE)
+        val mirrorDir = File(root, RELEASE_NOTES_MIRROR)
+        assertTrue(
+            "读不到发版说明真源目录：${sourceDir.absolutePath}（目录改名/被清空？判据无从比对，按红处理）",
+            sourceDir.isDirectory,
+        )
+        assertTrue(
+            "读不到发版说明镜像目录：${mirrorDir.absolutePath}（进包资产搬家？判据无从比对，按红处理）",
+            mirrorDir.isDirectory,
+        )
+
+        val problems = releaseNotesMirrorProblems(sourceDir, mirrorDir)
+        assertTrue(
+            buildString {
+                appendLine("发版说明镜像与真源不一致（不是业务红，是漏同步）：")
+                problems.forEach { appendLine("  - $it") }
+                appendLine("真源：${sourceDir.absolutePath}")
+                appendLine("镜像：${mirrorDir.absolutePath}")
+                appendLine("修法：把 `docs/releases/v*.md` 拷进镜像目录 —— " +
+                    "`cp docs/releases/v*.md android/app/src/main/assets/docs/releases/`，两份同批提交。")
+                appendLine("判据实现只有一份：testutil/ReleaseNotesMirror.kt（与 about 域的守卫共用）。")
+            },
+            problems.isEmpty(),
+        )
+    }
+
     // ------------------------------------------------------------------
     // 判据实现（只做「起子进程 + 读退出码」，不含任何业务扫描规则）
     // ------------------------------------------------------------------
@@ -804,6 +849,10 @@ class CrossDomainGateGuardTest {
 
         /** 文案缺口基线：`i18n-copy-gap.py --check` 的比对对象，头里带 RULES/WHITELIST 版本。 */
         const val COPY_GAP_BASELINE = "android/app/src/test/kotlin/com/mutx163/qingyu/i18n/copy-gap-baseline.txt"
+
+        /** 发版说明真源与进包镜像：判据在 `testutil/ReleaseNotesMirror.kt`（与 about 域守卫共用）。 */
+        const val RELEASE_NOTES_SOURCE = "docs/releases"
+        const val RELEASE_NOTES_MIRROR = "android/app/src/main/assets/docs/releases"
 
         /**
          * 版本常量的名字。**名字写在这里，值一律从脚本源码读**（见 [constantValue]）——

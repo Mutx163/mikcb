@@ -1,11 +1,13 @@
 package com.mutx163.qingyu.pages.about
 
+import com.mutx163.qingyu.testutil.normalizedTextHash
+import com.mutx163.qingyu.testutil.releaseNotesMirrorProblems
+import com.mutx163.qingyu.testutil.sha256Hex
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import java.io.File
-import java.security.MessageDigest
 import java.util.zip.GZIPInputStream
 
 /**
@@ -55,14 +57,9 @@ class FlutterAssetsDecouplingGuardTest {
     private fun pageSource(pathUnderSrc: String): File =
         File(repoRoot(), "android/app/src/$pathUnderSrc")
 
-    private fun sha256Hex(bytes: ByteArray): String =
-        MessageDigest.getInstance("SHA-256").digest(bytes).joinToString("") { "%02x".format(it) }
-
-    /** 文本资产按「换行规范化后」取哈希，与检出方式的 CRLF/LF 无关。 */
-    private fun normalizedTextHash(file: File): String {
-        val text = file.readText().replace("\r\n", "\n").replace("\r", "\n")
-        return sha256Hex(text.toByteArray(Charsets.UTF_8))
-    }
+    // `sha256Hex` / `normalizedTextHash` 已抽到 `testutil/ReleaseNotesMirror.kt`（2026-11-12）：
+    // 发版说明镜像判据要在 crossguard 的 L0 入口复用同一份实现，哈希工具跟着搬过去，
+    // 避免两个包各留一份、改了一边另一边悄悄漂。
 
     // ---- 1. 迁移后的资产内容钉死 ----
 
@@ -150,10 +147,7 @@ class FlutterAssetsDecouplingGuardTest {
         }
     }
 
-    // ---- 2b. 镜像与真源逐份对拍（2026-11-11 补）----
-
-    /** 真源 `docs/releases/` 里「给 App 看的发布说明」的文件名形态（`v1.1.10.6.md` / `v1.1.5.a.md`）。 */
-    private val versionedNoteName = Regex("""^v\d[\w.\-]*\.md$""")
+    // ---- 2b. 镜像与真源逐份对拍（2026-11-11 补；2026-11-12 判据抽到 testutil）----
 
     /**
      * 更新日志镜像必须与真源一一对应（审计「发版说明进 APK 是手工复制，无自动化」，2026-11-11）。
@@ -162,43 +156,25 @@ class FlutterAssetsDecouplingGuardTest {
      * （没有任何自动化，历史上一律人工提交同步）。上面那条测试只校验「不少于回退清单」，
      * 漏拷**新增**版本时它照样绿——症状是应用内更新日志少最新一版，只有用户翻到才发现。
      *
-     * 这里钉死两件事：
-     * 1. 清单相等：真源多一个（漏拷）或镜像多一个（真源删了没跟着删）都红；
-     * 2. 同名文件内容一致：按「换行规范化后」比，避免 `core.autocrlf` 下 LF/CRLF 误红。
+     * 判据本体已抽到 `testutil/ReleaseNotesMirror.kt`（[releaseNotesMirrorProblems]，2026-11-12）：
+     * 这段原先只随全量 L2 跑，`9b10a1b1d`（改真源没同步镜像）排到 L2 末尾、2 分多钟才暴露；
+     * 抽出来后 crossguard 的 L0 入口用**同一个函数**做秒级判定，这里只负责把问题列表转成断言——
+     * 两处各写一份判据，改了一边另一边会悄悄漂，而且「哪份算准」没有答案。
      *
-     * 真源里另外那三份内部文档（`3.0.0-1-hard-gates.md` / `-release-runbook.md` /
-     * `-upgrade-checklist.md`）**不进包**，所以按 [versionedNoteName] 过滤，不参与对拍。
-     * 有意新增/废弃版本时，改的是 `docs/releases/` 与镜像两处，测试不需要改。
+     * 真源里另外那三份内部文档（`3.0.0-1-*.md`）**不进包**，由共享函数按文件名过滤，不参与对拍。
      */
     @Test
     fun `assets changelog mirror matches docs releases one to one`() {
         val sourceDir = File(repoRoot(), "docs/releases")
         val mirrorDir = asset("docs/releases")
-        val sourceNames = sourceDir.listFiles()
-            ?.filter { it.isFile && versionedNoteName.matches(it.name) }
-            ?.map { it.name }
-            ?.sorted()
-            ?: error("读不到更新日志真源目录：${sourceDir.path}")
-        val mirrorNames = mirrorDir.listFiles()
-            ?.filter { it.isFile }
-            ?.map { it.name }
-            ?.sorted()
-            ?: error("读不到更新日志镜像目录：${mirrorDir.path}")
-        assertTrue("docs/releases 里一份 v*.md 都没有（真源被清空了？）", sourceNames.isNotEmpty())
-        assertEquals(
-            "更新日志镜像与 docs/releases 清单不一致。漏拷（应用内会缺这些版本）：${sourceNames - mirrorNames}；" +
-                "镜像孤儿文件（真源已没有）：${mirrorNames - sourceNames}。" +
-                "手工同步：cp docs/releases/v*.md android/app/src/main/assets/docs/releases/",
-            sourceNames,
-            mirrorNames,
-        )
-        val stale = sourceNames.filter { name ->
-            normalizedTextHash(File(sourceDir, name)) != normalizedTextHash(File(mirrorDir, name))
-        }
-        assertEquals(
-            "以下更新日志在两个目录内容不一致（手工同步时漏更新正文）：$stale",
-            emptyList<String>(),
-            stale,
+        val problems = releaseNotesMirrorProblems(sourceDir, mirrorDir)
+        assertTrue(
+            buildString {
+                problems.forEach { appendLine(it) }
+                appendLine("真源：${sourceDir.path}")
+                appendLine("镜像：${mirrorDir.path}")
+            },
+            problems.isEmpty(),
         )
     }
 
