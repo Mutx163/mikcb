@@ -108,13 +108,45 @@ try {
     if ($gitExe) {
         $headBefore = (& git -C $repoRoot rev-parse HEAD 2>$null | Select-Object -First 1)
         $statusLines = @(& git -C $repoRoot status --porcelain 2>$null)
-        Write-Host "=== HEAD before: $headBefore"
-        Write-Host "=== STATUS before: $(if ($statusLines.Count -eq 0) { '<clean>' } else { "$($statusLines.Count) 条" })"
-        if ($statusLines.Count -gt 0) { $statusLines | ForEach-Object { Write-Host "=== STATUS before: $_" } }
-    } else {
-        Write-Host "=== HEAD before: <git 不可用，无法记录>"
     }
     $runStartedAt = Get-Date
+
+    # 日志路径先定：后面所有 `===` 证据行都要同时进控制台与**同一份日志**。
+    $logPath = $env:MIKCB_GRADLE_LOG
+    if (-not $logPath) {
+        $shaShort = if ($headBefore) { $headBefore.Substring(0, [Math]::Min(9, $headBefore.Length)) } else { "nogit" }
+        $logPath = Join-Path $repoRoot (".agents/diag/auto-{0}-{1}.log" -f (Get-Date -Format "yyyyMMdd-HHmmss"), $shaShort)
+    }
+    $logDir = Split-Path -Parent $logPath
+    if ($logDir) { New-Item -ItemType Directory -Path $logDir -Force | Out-Null }
+
+    # ⚠️ 关键（2026-11-12 监察实证）：`===` 证据行**不能只用 Write-Host**——它们在 tee 之外，
+    # 只活在控制台，日志里 grep 不到（于是"日志自带坐标"变成口头声明）。
+    # 统一走这个函数：控制台 + 追加到同一份日志。
+    $writeEvidence = {
+        param([string]$text)
+        Write-Host $text
+        Add-Content -LiteralPath $logPath -Value $text -Encoding utf8NoBOM
+    }
+
+    $effective = @('--daemon') + @($GradleArgs)
+    if (-not $ShowDeprecations) {
+        $effective += @('--warning-mode', 'none')
+    }
+
+    # ① 请求行：日志里必须能看出这次请求的是什么（含 `--rerun-tasks` 与否）——
+    #    否则「真跑 / 吃缓存」只能靠旁证，1 秒的 `help` 日志也能被当成绿。
+    & $writeEvidence "=== REQUEST: $($effective -join ' ')"
+    if ($gitExe) {
+        & $writeEvidence "=== HEAD before: $headBefore"
+        & $writeEvidence ("=== STATUS before: " + $(if ($statusLines.Count -eq 0) { '<clean>' } else { "$($statusLines.Count) 条" }))
+        foreach ($l in $statusLines) { & $writeEvidence "=== STATUS before: $l" }
+    } else {
+        & $writeEvidence "=== HEAD before: <git 不可用，无法记录>"
+    }
+
+    Write-Host ">>> [safe-gradle] 输出留档: $logPath" -ForegroundColor DarkGray
+    Add-Content -LiteralPath $logPath -Value ">>> [safe-gradle] 输出留档: $logPath" -Encoding utf8NoBOM
 
     Push-Location $androidDir
     try {
@@ -125,24 +157,12 @@ try {
         # 造出一个「只有走本闸门的客户端才认」的独立 daemon，与 Android Studio / 裸 gradlew
         # 各占一份内存（2026-10-27 实测：同机因此并存 2 个 daemon、4 个 JVM 合计 6.8 GB）。
         # idle 超时统一写在 android/gradle.properties 里，让所有客户端收敛到同一个 daemon。
-        $effective = @('--daemon') + @($GradleArgs)
-
-        # 默认压掉 Gradle 通道的弃用警告（见 $ShowDeprecations 注释）。
-        if (-not $ShowDeprecations) {
-            $effective += @('--warning-mode', 'none')
-        }
-
         Write-Host ">>> [safe-gradle] 实际参数: $($effective -join ' ')" -ForegroundColor DarkGray
-        # 输出留档：默认就落盘（见参数块注释），调用方漏 tee 也不会再出现「结果写盘无日志」。
-        $logPath = $env:MIKCB_GRADLE_LOG
-        if (-not $logPath) {
-            $shaShort = if ($headBefore) { $headBefore.Substring(0, [Math]::Min(9, $headBefore.Length)) } else { "nogit" }
-            $logPath = Join-Path $repoRoot (".agents/diag/auto-{0}-{1}.log" -f (Get-Date -Format "yyyyMMdd-HHmmss"), $shaShort)
-        }
-        $logDir = Split-Path -Parent $logPath
-        if ($logDir) { New-Item -ItemType Directory -Path $logDir -Force | Out-Null }
-        Write-Host ">>> [safe-gradle] 输出留档: $logPath" -ForegroundColor DarkGray
-        & $gradlew @effective *>&1 | Tee-Object -FilePath $logPath | ForEach-Object { Write-Host $_ }
+        # 直接**重定向追加**进日志，不走 `| Tee-Object` 管道：
+        # Gradle daemon 会继承子进程的标准输出句柄，tee 管道因此可能永不关闭，
+        # 外层调用会一直等到超时（2026-11-12 实测：跑本身 3m2s 已结束，外层却卡满 600s）。
+        # `*>>` 让 daemon 拿到的是文件句柄，不是我们的管道，函数就能及时返回。
+        & $gradlew @effective *>> $logPath
         $exitCode = $LASTEXITCODE
     } finally {
         Pop-Location
@@ -151,15 +171,15 @@ try {
     if ($gitExe) {
         $headAfter = (& git -C $repoRoot rev-parse HEAD 2>$null | Select-Object -First 1)
         $statusAfter = @(& git -C $repoRoot status --porcelain 2>$null)
-        Write-Host "=== HEAD after: $headAfter"
-        Write-Host "=== STATUS after: $(if ($statusAfter.Count -eq 0) { '<clean>' } else { "$($statusAfter.Count) 条" })"
-        if ($statusAfter.Count -gt 0) { $statusAfter | ForEach-Object { Write-Host "=== STATUS after: $_" } }
+        & $writeEvidence "=== HEAD after: $headAfter"
+        & $writeEvidence ("=== STATUS after: " + $(if ($statusAfter.Count -eq 0) { '<clean>' } else { "$($statusAfter.Count) 条" }))
+        foreach ($l in $statusAfter) { & $writeEvidence "=== STATUS after: $l" }
         if ($headBefore -ne $headAfter) {
-            Write-Host "=== WARN: 跑期间 HEAD 变了（$headBefore → $headAfter），本次结果归属需重新判定" -ForegroundColor Yellow
+            & $writeEvidence "=== WARN: 跑期间 HEAD 变了（$headBefore → $headAfter），本次结果归属需重新判定"
         }
     }
 
-    # 成功路径的用例数：只认本次跑期间更新过的变体目录，避免把上一轮的旧结果当成本次成绩。
+    # ③ 成功路径的用例数：只认本次跑期间更新过的变体目录，避免把上一轮的旧结果当成本次成绩。
     $resultsRoot = Join-Path $repoRoot "build/app/test-results"
     if (Test-Path $resultsRoot) {
         foreach ($dir in @(Get-ChildItem $resultsRoot -Directory | Sort-Object LastWriteTime -Descending)) {
@@ -176,8 +196,8 @@ try {
                     $skipped += [int]$doc.testsuite.skipped
                 } catch { }
             }
-            Write-Host "=== RESULT[$($dir.Name)]: $tests tests, $failures failures, $errors errors, $skipped skipped (XML 文件 $($xmlFiles.Count))"
-            Write-Host "=== RESULT-DIR: $($dir.FullName)"
+            & $writeEvidence "=== RESULT[$($dir.Name)]: $tests tests, $failures failures, $errors errors, $skipped skipped (XML 文件 $($xmlFiles.Count))"
+            & $writeEvidence "=== RESULT-DIR: $($dir.FullName)"
         }
     }
 
