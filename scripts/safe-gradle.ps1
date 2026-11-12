@@ -89,6 +89,26 @@ try {
     $androidDir = Join-Path $repoRoot "android"
     $gradlew = Join-Path $androidDir "gradlew.bat"
 
+    # ── 证据自证（2026-11-12 监察要求）──────────────────────────────────────────
+    # 目的：**任何人拿到这份日志就能独立判定「这次跑覆盖的是哪一版树、跑了多少用例」**，
+    # 不需要问人、也不用从文件名猜。所以跑前跑后各打一行 HEAD 与树状态；
+    # Gradle 只在失败时打「N tests completed」，绿的时候一个字不打，所以成功路径
+    # 自己从 JUnit XML 汇总一行 RESULT。
+    # 注意：产物在仓库根 `build/app/test-results/`（android/build.gradle:28-34 把
+    # buildDir 重定向过去了），**不是** `android/app/build/test-results/`。
+    $gitExe = Get-Command git -ErrorAction SilentlyContinue
+    $statusLines = @()
+    if ($gitExe) {
+        $headBefore = (& git -C $repoRoot rev-parse HEAD 2>$null | Select-Object -First 1)
+        $statusLines = @(& git -C $repoRoot status --porcelain 2>$null)
+        Write-Host "=== HEAD before: $headBefore"
+        Write-Host "=== STATUS before: $(if ($statusLines.Count -eq 0) { '<clean>' } else { "$($statusLines.Count) 条" })"
+        if ($statusLines.Count -gt 0) { $statusLines | ForEach-Object { Write-Host "=== STATUS before: $_" } }
+    } else {
+        Write-Host "=== HEAD before: <git 不可用，无法记录>"
+    }
+    $runStartedAt = Get-Date
+
     Push-Location $androidDir
     try {
         # 显式 --daemon（见 .DESCRIPTION）：即使 android/gradle.properties 哪天又写回
@@ -110,6 +130,39 @@ try {
         $exitCode = $LASTEXITCODE
     } finally {
         Pop-Location
+    }
+
+    if ($gitExe) {
+        $headAfter = (& git -C $repoRoot rev-parse HEAD 2>$null | Select-Object -First 1)
+        $statusAfter = @(& git -C $repoRoot status --porcelain 2>$null)
+        Write-Host "=== HEAD after: $headAfter"
+        Write-Host "=== STATUS after: $(if ($statusAfter.Count -eq 0) { '<clean>' } else { "$($statusAfter.Count) 条" })"
+        if ($statusAfter.Count -gt 0) { $statusAfter | ForEach-Object { Write-Host "=== STATUS after: $_" } }
+        if ($headBefore -ne $headAfter) {
+            Write-Host "=== WARN: 跑期间 HEAD 变了（$headBefore → $headAfter），本次结果归属需重新判定" -ForegroundColor Yellow
+        }
+    }
+
+    # 成功路径的用例数：只认本次跑期间更新过的变体目录，避免把上一轮的旧结果当成本次成绩。
+    $resultsRoot = Join-Path $repoRoot "build/app/test-results"
+    if (Test-Path $resultsRoot) {
+        foreach ($dir in @(Get-ChildItem $resultsRoot -Directory | Sort-Object LastWriteTime -Descending)) {
+            if ($dir.LastWriteTime -lt $runStartedAt.AddSeconds(-2)) { continue }
+            $xmlFiles = @(Get-ChildItem $dir.FullName -Filter "*.xml" -File)
+            if ($xmlFiles.Count -eq 0) { continue }
+            $tests = 0; $failures = 0; $errors = 0; $skipped = 0
+            foreach ($f in $xmlFiles) {
+                try {
+                    [xml]$doc = Get-Content $f.FullName -Raw
+                    $tests += [int]$doc.testsuite.tests
+                    $failures += [int]$doc.testsuite.failures
+                    $errors += [int]$doc.testsuite.errors
+                    $skipped += [int]$doc.testsuite.skipped
+                } catch { }
+            }
+            Write-Host "=== RESULT[$($dir.Name)]: $tests tests, $failures failures, $errors errors, $skipped skipped (XML 文件 $($xmlFiles.Count))"
+            Write-Host "=== RESULT-DIR: $($dir.FullName)"
+        }
     }
 
     if ($exitCode -ne 0) {
