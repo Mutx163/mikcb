@@ -1,5 +1,7 @@
 package com.mutx163.qingyu.pages.course
 
+import com.mutx163.qingyu.testutil.stripKotlinComments
+import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import java.io.File
@@ -17,23 +19,28 @@ import java.io.File
  *    **1 个调用点**（其余官方 `OverlayDialog` 调用与全部底部弹层保持现状）——
  *    防止后续改动顺手扩散；铺开必须经用户看过效果拍板后再加。
  *
- * 判据**先剥注释再数**（字符串感知，`ComposeSheetGuardTest` 同款）：注释里写
- * `glass = DialogGlass(` 不计数，也不会把真调用藏进注释里绕过。
+ * 判据**先剥注释再数**，并且**把字符串内容中性化**：注释里写 `glass = DialogGlass(` 不计数，
+ * 字符串 / 原始字符串里写 `DialogGlass(` 也不计数——那是提示语、日志模板，不是调用点。
+ *
+ * 2026-11-12 修误报（本守卫实测到的一例）：此前用私有剥离器只剥注释、保留字符串内容，
+ * 页面里任何一处 `"""…DialogGlass(…"""` 都会被当成第二个调用点（探针实测数到 2 处 ≠ 1）。
+ * 现在改走 `testutil.stripKotlinComments(..., neutralizeStrings = true)`，顺带去掉那份
+ * 私有拷贝（它没有原始字符串状态，抄来抄去只会再退化成第二份弱实现）。
  *
  * 放在 course 域随 L0 跑（宿主域 git 状态干净；被钉文件在 core/ 与 course 域）。
  */
 class QingyuGlassDialogGuardTest {
 
     private val addCourseSource: String by lazy {
-        stripKotlinComments(readAndroidSource(ADD_COURSE_PATH))
+        codeOnly(readAndroidSource(ADD_COURSE_PATH))
     }
 
     private val specSource: String by lazy {
-        stripKotlinComments(readAndroidSource(DIALOG_GLASS_SPEC_PATH))
+        codeOnly(readAndroidSource(DIALOG_GLASS_SPEC_PATH))
     }
 
     private val allPageSources: List<String> by lazy {
-        readAllSources(PAGES_ROOT).map { stripKotlinComments(it) }
+        readAllSources(PAGES_ROOT).map { codeOnly(it) }
     }
 
     @Test
@@ -61,7 +68,7 @@ class QingyuGlassDialogGuardTest {
 
     @Test
     fun `玻璃调用点必须保持唯一试点`() {
-        val calls = allPageSources.sumOf { Regex("""\bDialogGlass\(""").findAll(it).count() }
+        val calls = allPageSources.sumOf { callSites(it) }
         assertTrue(
             "fork 玻璃调用点 $calls 处 ≠ 1。试点期全仓只允许加课页删除确认这一个玻璃弹窗；" +
                 "铺开须经用户看过真机效果拍板，届时连同本守卫的计数一起改。",
@@ -69,75 +76,36 @@ class QingyuGlassDialogGuardTest {
         )
     }
 
+    @Test
+    fun `字符串里的 DialogGlass 不算调用点`() {
+        val sample = buildString {
+            appendLine("val raw = \"\"\"")
+            appendLine("DialogGlass(")
+            appendLine("\"\"\"")
+            appendLine("val normal = \"DialogGlass(\"")
+        }
+        assertEquals(
+            "字符串 / 原始字符串里的 DialogGlass 被数成了调用点——判据必须先中性化字符串内容。",
+            0,
+            callSites(codeOnly(sample)),
+        )
+        assertEquals(
+            "真实调用必须仍被数到，否则守卫会退化成永远绿。",
+            1,
+            callSites(codeOnly("val x = DialogGlass(")),
+        )
+    }
+
     // ------------------------------------------------------------------
     // 判据工具
     // ------------------------------------------------------------------
 
-    private fun stripKotlinComments(source: String): String {
-        val sb = StringBuilder(source.length)
-        var i = 0
-        var inLineComment = false
-        var inBlockComment = false
-        var blockDepth = 0
-        var stringQuote: Char? = null
-        while (i < source.length) {
-            val ch = source[i]
-            val next = if (i + 1 < source.length) source[i + 1] else ' '
-            when {
-                inLineComment -> {
-                    if (ch == '\n') {
-                        inLineComment = false
-                        sb.append(ch)
-                    }
-                    i++
-                }
-                inBlockComment -> {
-                    if (ch == '/' && next == '*') {
-                        blockDepth++
-                        i += 2
-                    } else if (ch == '*' && next == '/') {
-                        blockDepth--
-                        i += 2
-                        if (blockDepth == 0) inBlockComment = false
-                    } else {
-                        if (ch == '\n') sb.append(ch)
-                        i++
-                    }
-                }
-                stringQuote != null -> {
-                    sb.append(ch)
-                    if (ch == '\\' && i + 1 < source.length) {
-                        sb.append(source[i + 1])
-                        i += 2
-                    } else {
-                        if (ch == stringQuote) stringQuote = null
-                        i++
-                    }
-                }
-                ch == '/' && next == '/' -> {
-                    inLineComment = true
-                    sb.append(' ')
-                    i += 2
-                }
-                ch == '/' && next == '*' -> {
-                    inBlockComment = true
-                    blockDepth = 1
-                    sb.append(' ')
-                    i += 2
-                }
-                ch == '"' || ch == '\'' -> {
-                    stringQuote = ch
-                    sb.append(ch)
-                    i++
-                }
-                else -> {
-                    sb.append(ch)
-                    i++
-                }
-            }
-        }
-        return sb.toString()
-    }
+    /** 判据只看代码骨架：剥注释 + **把字符串内容中性化**（提示语 / 日志模板不算调用点）。 */
+    private fun codeOnly(raw: String): String = stripKotlinComments(raw, neutralizeStrings = true)
+
+    private fun callSites(source: String): Int = DIALOG_GLASS_CALL.findAll(source).count()
+
+    private val DIALOG_GLASS_CALL = Regex("""\bDialogGlass\(""")
 
     private fun readAndroidSource(relative: String): String {
         var dir: File? = File("").absoluteFile
