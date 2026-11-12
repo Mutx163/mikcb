@@ -161,9 +161,20 @@ object TodayWidgetSupport {
     /**
      * `flutter.timetable_profiles` 的**单槽解析缓存**：一轮刷新里 10 张卡各读一次同一份
      * 档案，原来每张卡都 `JSONArray(...)` 全量解析一遍（7 今日/考试 + 3 统计×2 + 重排 ≈ 14 次）。
-     * 缓存按**源文本**比对，课表被写/换课表后文本必变，自动重新解析，不会返回旧对象。
+     *
+     * 缓存里存的是 [CachedProfile]（id + 原始 JSON 字符串，**全不可变**），
+     * 需要 `JSONObject` 的调用方每次现解析一份自己的对象——不共享可变 JSON（M4）。
+     * 解析失败也缓存（M3），同一轮不会每张卡各抛一次。
      */
-    private val profilesPayloadCache = WidgetParseCache<JSONArray> { raw -> JSONArray(raw) }
+    private val profilesCache = WidgetParseCache<List<CachedProfile>> { payload ->
+        val array = JSONArray(payload)
+        buildList {
+            for (index in 0 until array.length()) {
+                val profile = array.optJSONObject(index) ?: continue
+                add(CachedProfile(id = profile.optString("id"), raw = profile.toString()))
+            }
+        }
+    }
 
 
     /** 无档案可读时的外观兜底，必须与 TimetableSettings 默认值一致。 */
@@ -1943,81 +1954,49 @@ internal fun findNextRefreshAtMillis(
     fun readActiveProfileRawJson(context: Context): String? {
         val flutterPrefs = context.getSharedPreferences(FLUTTER_PREFS_NAME, Context.MODE_PRIVATE)
         val activeProfileId = flutterPrefs.getString(KEY_ACTIVE_PROFILE_ID, null)
-        return try {
-            val profiles = parsedProfiles(context) ?: return null
-            var fallbackRaw: String? = null
-            for (index in 0 until profiles.length()) {
-                val profile = profiles.optJSONObject(index) ?: continue
-                val raw = profile.toString()
-                if (fallbackRaw == null) {
-                    fallbackRaw = raw
-                }
-                if (!activeProfileId.isNullOrBlank() &&
-                    profile.optString("id") == activeProfileId
-                ) {
-                    return raw
-                }
-            }
-            fallbackRaw
-        } catch (_: Exception) {
-            null
-        }
+        val profiles = cachedProfiles(context) ?: return null
+        if (profiles.isEmpty()) return null
+        val active = profiles.firstOrNull { !activeProfileId.isNullOrBlank() && it.id == activeProfileId }
+        return (active ?: profiles.first()).raw
     }
 
+    /**
+     * 活动档案的 `JSONObject`：**每次现解析一份新对象**，不与缓存或其它卡片共享。
+     *
+     * 这是 M4 修正后的形状：缓存只存不可变字符串，谁要 JSON 谁自己解析——
+     * 拿到之后即使 `put` 也不会污染下一张卡。
+     */
     fun readActiveProfileJson(context: Context): JSONObject? {
-        val flutterPrefs = context.getSharedPreferences(FLUTTER_PREFS_NAME, Context.MODE_PRIVATE)
+        val raw = readActiveProfileRawJson(context) ?: return null
         return try {
-            val activeProfileId = flutterPrefs.getString(KEY_ACTIVE_PROFILE_ID, null)
-            val profiles = parsedProfiles(context) ?: return null
-            var fallbackProfile: JSONObject? = null
-            for (index in 0 until profiles.length()) {
-                val profile = profiles.optJSONObject(index) ?: continue
-                if (fallbackProfile == null) {
-                    fallbackProfile = profile
-                }
-                if (!activeProfileId.isNullOrBlank() &&
-                    profile.optString("id") == activeProfileId
-                ) {
-                    return profile
-                }
-            }
-            fallbackProfile
+            JSONObject(raw)
         } catch (_: Exception) {
             null
         }
     }
 
-    /** 按 id 找任意课表（含 TA 课表）；找不到 = 课表已被删除/解绑。 */
+    /** 按 id 找任意课表（含 TA 课表）；找不到 = 课表已被删除/解绑。返回新建对象，不共享。 */
     fun readProfileJsonById(context: Context, profileId: String): JSONObject? {
         if (profileId.isBlank()) return null
+        val profiles = cachedProfiles(context) ?: return null
+        val entry = profiles.firstOrNull { it.id == profileId } ?: return null
         return try {
-            val profiles = parsedProfiles(context) ?: return null
-            for (index in 0 until profiles.length()) {
-                val profile = profiles.optJSONObject(index) ?: continue
-                if (profile.optString("id") == profileId) {
-                    return profile
-                }
-            }
-            null
+            JSONObject(entry.raw)
         } catch (_: Exception) {
             null
         }
     }
 
     /**
-     * 解析后的课表档案数组：**一次刷新内只解析一次**（[profilesPayloadCache]）。
+     * 缓存里的课表档案列表（**一次刷新内只解析一次**，[profilesCache]）。
      *
-     * 缓存按源文本比对，课表被写/换档后文本必变 ⇒ 自动重新解析，不会拿到旧对象；
+     * 缓存按源文本比对，课表被写/换档后文本必变 ⇒ 自动重新解析；
      * 解析失败返回 null，与改造前「坏 JSON 当作无档案」的行为一致。
      */
-    private fun parsedProfiles(context: Context): JSONArray? {
+    private fun cachedProfiles(context: Context): List<CachedProfile>? {
         val flutterPrefs = context.getSharedPreferences(FLUTTER_PREFS_NAME, Context.MODE_PRIVATE)
         val payload = flutterPrefs.getString(KEY_TIMETABLE_PROFILES, null) ?: return null
-        return try {
-            profilesPayloadCache.get(payload)
-        } catch (_: Exception) {
-            null
-        }
+        return profilesCache.get(payload)
     }
 
     /**

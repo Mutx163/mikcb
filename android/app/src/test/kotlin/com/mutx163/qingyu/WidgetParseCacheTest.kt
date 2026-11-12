@@ -1,22 +1,28 @@
 package com.mutx163.qingyu
 
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertSame
+import org.junit.Assert.assertNull
 import org.junit.Test
 
 /**
- * [WidgetParseCache] 的 JVM 单测。
+ * [WidgetParseCache] 的 JVM 单测，钉三条契约：
  *
- * 钉两件事（Tob 给的契约）：
- * 1. **解析次数**：同一份 `timetable_profiles` 文本在一轮刷新里只能被解析一次；
- * 2. **失效**：文本变了（课表被写）必须重新解析，绝不能把旧对象当新数据返回。
+ * 1. **解析次数**：同一份源文本在一轮刷新里只解析一次；
+ * 2. **失效**：文本变了、或显式 `invalidate()`，必须重新解析；
+ * 3. **失败也缓存**（M3 修复点）：`parse` 抛异常时同一文本不反复重试，
+ *    换文本/失效后允许再试一次。
  *
- * 咬合探针记录：把 `get()` 改成「无条件 `parse(source)`」→ 第 1、2 例立即红；
- * 把 `source == cachedSource` 改成 `true`（永不失效）→ 第 3、4 例红；还原后全绿。
+ * 被测值用 `data class`（不可变），对应 M4 修复点的契约：缓存只收不可变值，
+ * 可变 JSON 一律由调用方现解析——这里不再断言「返回同一个可变对象」。
+ *
+ * 咬合探针（可复现命令见 `.agents/notes/2026-11-11-widget-refresh-goasync.md`）：
+ * 去掉 `get()` 的命中分支 → 第 1、2、3 例红；去掉 `catch` → 第 4 例红；还原后绿。
  */
 class WidgetParseCacheTest {
 
-    private class CountingParser<T>(private val parser: (String) -> T?) {
+    private data class ImmutableValue(val text: String)
+
+    private class CountingParser<T : Any>(private val parser: (String) -> T?) {
         var calls = 0
             private set
 
@@ -28,7 +34,7 @@ class WidgetParseCacheTest {
 
     @Test
     fun `同一份源文本只解析一次`() {
-        val parser = CountingParser<String> { "已解析:$it" }
+        val parser = CountingParser { ImmutableValue("解析:$it") }
         val cache = WidgetParseCache(parser::parse)
 
         val first = cache.get("profiles-A")
@@ -36,14 +42,14 @@ class WidgetParseCacheTest {
         val third = cache.get("profiles-A")
 
         assertEquals("同一份文本不应重复解析", 1, parser.calls)
-        assertEquals("已解析:profiles-A", first)
-        assertSame("命中缓存应返回同一个对象", first, second)
-        assertSame(first, third)
+        assertEquals(ImmutableValue("解析:profiles-A"), first)
+        assertEquals(first, second)
+        assertEquals(first, third)
     }
 
     @Test
     fun `源文本变化必须重新解析`() {
-        val parser = CountingParser<String> { "已解析:$it" }
+        val parser = CountingParser { ImmutableValue("解析:$it") }
         val cache = WidgetParseCache(parser::parse)
 
         cache.get("profiles-A")
@@ -51,12 +57,12 @@ class WidgetParseCacheTest {
         val afterChange = cache.get("profiles-B")
 
         assertEquals("换了一份数据必须重新解析", 2, parser.calls)
-        assertEquals("已解析:profiles-B", afterChange)
+        assertEquals(ImmutableValue("解析:profiles-B"), afterChange)
     }
 
     @Test
     fun `显式失效后即使文本相同也重新解析`() {
-        val parser = CountingParser<String> { "已解析:$it" }
+        val parser = CountingParser { ImmutableValue("解析:$it") }
         val cache = WidgetParseCache(parser::parse)
 
         cache.get("profiles-A")
@@ -67,16 +73,27 @@ class WidgetParseCacheTest {
     }
 
     @Test
-    fun `解析失败也按文本缓存空结果 不反复重试`() {
-        val parser = CountingParser<String?> { null }
+    fun `解析抛异常时按无结果缓存 同一文本不反复重试`() {
+        val parser = CountingParser<ImmutableValue> { throw IllegalArgumentException("坏 JSON") }
         val cache = WidgetParseCache(parser::parse)
 
-        cache.get("坏 JSON")
-        cache.get("坏 JSON")
+        assertNull(cache.get("坏 JSON"))
+        assertNull(cache.get("坏 JSON"))
+        assertEquals("坏数据不该在每张卡上反复解析/反复抛", 1, parser.calls)
 
-        assertEquals("坏数据不该在每张卡上反复解析", 1, parser.calls)
         cache.invalidate()
-        cache.get("坏 JSON")
+        assertNull(cache.get("坏 JSON"))
         assertEquals("显式失效后允许再试一次", 2, parser.calls)
+    }
+
+    @Test
+    fun `解析返回 null 也缓存 不反复重试`() {
+        val parser = CountingParser<ImmutableValue> { null }
+        val cache = WidgetParseCache(parser::parse)
+
+        cache.get("空档案")
+        cache.get("空档案")
+
+        assertEquals(1, parser.calls)
     }
 }
