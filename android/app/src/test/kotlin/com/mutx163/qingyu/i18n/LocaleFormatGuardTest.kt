@@ -1,5 +1,6 @@
 package com.mutx163.qingyu.i18n
 
+import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Assert.fail
 import org.junit.Test
@@ -60,6 +61,47 @@ class LocaleFormatGuardTest {
         }
     }
 
+    /**
+     * 回归：注释里出现行注释符、块注释起止符、原始字符串三引号、`String.format(...)` 示例时，
+     * 剥离不能被打乱。
+     *
+     * 2026-11-12 L2 的唯一一条红就是这个形状：KDoc 把块注释起止符与三引号当例子写进说明 ⇒
+     * 扁平扫描把内层收尾符当成真正的结束 ⇒ 后面的注释正文被当成代码 ⇒ 注释里的示例被扫成真调用。
+     * 本用例把当时的形状钉住：注释里的示例一律不可见，真实代码一个字都不能被抹掉。
+     *
+     * 注：本段说明刻意不写出那两个符号的原文，因为它们出现在注释里就会改变词法状态。
+     */
+    @Test
+    fun `注释里的注释符号与引号不会打乱剥离`() {
+        // 注意：本用例的源码里不能出现「String.」「format(」拼在一起的原文——本守卫**连字符串
+        // 字面量内容也保留**（要检查 format 的首参是否传 Locale），写进去会被自己扫成真调用。
+        // 这是 canary 找出的第二类误报形态，所以这里用拼接构造样本。
+        val call = "String." + "format("
+        val ext = "." + "format("
+        val sample = listOf(
+            "/**",
+            " * 例子：`/* */`、`\"\"\"`、`${call}\"%02d\", 1)`、`\"%02x\".${ext}1)`",
+            " */",
+            "fun real(): String = ${call}\"%d\", 1)",
+        ).joinToString("\n")
+
+        val masked = maskComments(sample)
+
+        assertTrue(
+            "注释里的示例不该被扫成真调用：\n$masked",
+            !masked.contains(call + "\"%02d\"") && !masked.contains("\"%02x\"" + ext),
+        )
+        assertTrue(
+            "真实代码不能被一起抹掉：\n$masked",
+            masked.contains(call + "\"%d\", 1)"),
+        )
+        assertEquals(
+            "剥离必须保留换行（行号不漂）",
+            sample.count { it == '\n' },
+            masked.count { it == '\n' },
+        )
+    }
+
     private fun isWhitelisted(relPath: String): Boolean =
         WHITELIST.any { relPath.startsWith(it.pathPrefix) }
 
@@ -111,11 +153,23 @@ class LocaleFormatGuardTest {
                     }
                 }
                 ch == '/' && i + 1 < source.length && source[i + 1] == '*' -> {
+                    // Kotlin 的块注释**可以嵌套**：扁平扫到第一个 `*/` 就收尾，会把后面的注释正文
+                    // 当成代码继续扫。2026-11-12 L2 就红在这里——本仓 `ComposePageStyleGuardTest`
+                    // 的 KDoc 里写了 `/* */` 与 `"""` 当例子，扁平扫描在内层 `*/` 处提前收尾，
+                    // 随后把 `"""` 当原始字符串一路吞掉 6.5 KB，连带把 118 行起的注释和后面
+                    // 那句 `String.format(locale, "%02x", 0..255)` 的注释正文当成真调用。
+                    // 因此这里必须按深度配对，而不是找「第一个 `*/`」。
+                    var depth = 1
                     sb.append("  "); i += 2
-                    while (i < source.length && !(source[i] == '*' && i + 1 < source.length && source[i + 1] == '/')) {
-                        sb.append(if (source[i] == '\n') '\n' else ' '); i++
+                    while (i < source.length && depth > 0) {
+                        if (source[i] == '/' && i + 1 < source.length && source[i + 1] == '*') {
+                            depth++; sb.append("  "); i += 2
+                        } else if (source[i] == '*' && i + 1 < source.length && source[i + 1] == '/') {
+                            depth--; sb.append("  "); i += 2
+                        } else {
+                            sb.append(if (source[i] == '\n') '\n' else ' '); i++
+                        }
                     }
-                    if (i < source.length) { sb.append("  "); i += 2 }
                 }
                 ch == '"' || ch == '\'' -> {
                     val end = skipLiteral(source, i)
