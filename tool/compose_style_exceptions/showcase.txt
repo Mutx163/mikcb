@@ -1,11 +1,25 @@
 # showcase 域的 Compose 页面样式例外清单（不是待还的债）。
 # 一行一条：<相对路径>|<规则>|<锚>[,<锚>…]|<原因>
 # 锚 = 被判定的那行代码（剥注释与字符串、trim 之后）的 SHA-256 前 8 位小写十六进制；
-#      一条例外可以登记多个锚（同文件同规则多处命中），逗号分隔。
+#      一条例外可以登记多个锚（同文件同规则多处命中），逗号分隔；**同一个锚可重复出现**，
+#      出现 N 次 = 该文件该规则下「同文本」必须命中 N 处（登记 1 次只免检 1 处，盈余判待修）。
 # 规则：R1 顶栏 / R2 滚动 / R3 卡片 / R4 字号 / R5 颜色 / R6 分组标题 / R7 字重
-# 守卫要求「待修违规 = 0」；每条例外都必须命中一处**真实违规行**——那一行改掉、挪走或修好后必须删掉（否则判过期）。
-# 只允许人工编辑。scripts/compose-style-lint.ps1 -Write 只能删过期行与过期锚，绝不新增。
-# 登记用锚从脚本报错里抄：跑一次 scripts/compose-style-lint.ps1，[待修] 行下面会打印「登记用锚：<hash>」。
-# ColorBlendToken.kt 是一张**逐行搬自官方 demo 的固定配色数据表**，所以锚多（76 个 = 表里每个写死色值一行）。
-# 这不是「整文件免检」：表里新增一行色值就是新锚 ⇒ 待修红；改动或删掉已登记的那一行 ⇒ 过期红。
-showcase/ColorBlendToken.kt|R5|cf3f1e6f,e5afb68d,c7653605,6c1c33ce,585824cf,62dc1e3f,d6628cc5,f75ce49a,9d569408,f23ace69,9c8d7a35,74f4c4cc,14ad7dc1,4ae85ae6,bf8320ea,a46ba807,d65a6458,294b21f2,2353f1f7,afd0e9af,58c9b2d9,10801ee0,db995973,a4febbdc,9b48af41,44a28b1e,b5b25e02,0663a592,d4234b0d,8692f4bb,9bc89754,5b6c17ec,bc9203a2,9522b3df,5c931be1,be6ea26c,760dc8ee,56b4c01d,7f6d8ba7,fc8fef6d,2751aca9,6ceda9b7,ba56a345,8899da33,16ab81cb,b256a91e,b46ed273,b3b8fa47,8c751205,b5cc69ee,1f842070,32857bfc,0265e7fd,f8f8ce9f,6421a6f4,9467b99f,f531273f,e86bc6aa,71dceb02,67991a5f,bce5fda0,ee53f1f4,b5d36a50,87512758,d567c96e,8b01c8fb,62caab3a,47bed057,69f88a7d,2ab53464,a6fddec4,f3040cd4,dc4acf4a,ef22bf1f,d076d06e,e44879c8|官方 demo 配方数据表逐字照抄（component/blend/ColorBlendToken.kt + 前景模糊 logoBlend），是模糊配色的输入数据，与主题无关的固定语义色
+# 守卫要求「待修违规 = 0」；每处登记都必须命中**真实违规行**——登记次数多于命中次数即判过期
+#（任一登记锚失效即过期，不等全部失效；那一行改掉、挪走或修好后必须删掉）。
+# 只允许人工编辑。scripts/compose-style-lint.ps1 -Write 只能删过期行与过期锚（按次数裁到命中数），绝不新增。
+# 登记用锚从脚本报错里抄：跑一次 scripts/compose-style-lint.ps1，[待修] 行下面会打印「锚 <hash> 还需再登记 N 次」。
+# ColorBlendToken.kt 是一张**逐行搬自官方 demo 的固定配色数据表**，所以锚多：
+# 表里 82 处写死色值 = 76 个不同色值 + 6 个重复（同一行文本在**不同配色条目**里各出现一次，
+#   见文件尾「重复色值核对」）；2026-11-12 起按次数登记，所以锚列表共 82 项。
+# 这不是「整文件免检」：表里新增一行色值就是新锚 ⇒ 待修红；同一色值再出现一次也要再登 1 次；
+#   改动或删掉已登记的那一行 ⇒ 过期红。
+showcase/ColorBlendToken.kt|R5|cf3f1e6f,e5afb68d,c7653605,6c1c33ce,585824cf,62dc1e3f,d6628cc5,f75ce49a,9d569408,f23ace69,9c8d7a35,74f4c4cc,14ad7dc1,4ae85ae6,bf8320ea,a46ba807,d65a6458,294b21f2,2353f1f7,afd0e9af,58c9b2d9,10801ee0,db995973,a4febbdc,9b48af41,44a28b1e,b5b25e02,0663a592,d4234b0d,8692f4bb,9bc89754,5b6c17ec,bc9203a2,9522b3df,5c931be1,be6ea26c,760dc8ee,56b4c01d,7f6d8ba7,fc8fef6d,2751aca9,6ceda9b7,ba56a345,8899da33,16ab81cb,b256a91e,b46ed273,b3b8fa47,8c751205,b5cc69ee,1f842070,32857bfc,0265e7fd,f8f8ce9f,6421a6f4,9467b99f,f531273f,e86bc6aa,71dceb02,67991a5f,bce5fda0,ee53f1f4,b5d36a50,87512758,d567c96e,8b01c8fb,62caab3a,47bed057,69f88a7d,2ab53464,a6fddec4,f3040cd4,dc4acf4a,ef22bf1f,d076d06e,e44879c8,56b4c01d,56b4c01d,5c931be1,8c751205,9467b99f,9522b3df|官方 demo 配方数据表逐字照抄（component/blend/ColorBlendToken.kt + 前景模糊 logoBlend），是模糊配色的输入数据，与主题无关的固定语义色。末尾 6 个重复锚不是「洗白」而是逐组核对过的**正当保留**：这 5 个色值在官方 demo 里本来就重复出现，且每次都落在**不同**配色条目里，两处都要留，删掉任一处都会让对应亮度档的配色缺一层——
+#   56b4c01d ×3：L118 Pured_Extra_Thin_Dark、L154 Pured_Extra_Thick_Light、L210 Heavy_Light；
+#   5c931be1 ×2：L112 Pured_Extra_Thin_Light、L123 Pured_Thin_Light；
+#   8c751205 ×2：L148 Pured_Thick_Dark、L193 Overlay_Extra_Thick_Light；
+#   9467b99f ×2：L172 Overlay_Thin_Light、L177 Overlay_Regular_Light；
+#   9522b3df ×2：L111 Pured_Extra_Thin_Light、L214 Heavy_Dark。
+# 核对方式：把本文件与 docs/reference/miuix-demo/example/shared/src/commonMain/kotlin/component/blend/ColorBlendToken.kt
+#   的 BlendColorEntry 行逐行比对，上游同样有这 5 组重复（唯一差异是本文件尾部 G4 前景模糊 6 行，
+#   那 6 行取自同目录 BlurSection.kt:398-412，本来就属于另一份配方）。
+#   结论：没有粘贴冗余，一行都不删。

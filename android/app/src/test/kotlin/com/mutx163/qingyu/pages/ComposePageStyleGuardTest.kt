@@ -72,6 +72,28 @@ import java.util.Locale
  * 与 `scripts/compose-style-lint.ps1` 的 `Get-LineAnchor` / `ConvertFrom-ExceptionLine`
  * **逐字对偶**：两侧算出的哈希必须一致，改一边就同步改另一边。
  *
+ * ## 2026-11-12 改版：锚列从「集合」改成「多重集」，并堵掉零锚命中
+ *
+ * 上一版把锚当 `Set` 用，于是留了两个洞：
+ *
+ * 1. **同文本免检**（H1）：`anchorHits` 按 hash 去重，同文件再粘一行**完全相同的**违规，
+ *    借旧锚就免检了。实测 `showcase/ColorBlendToken.kt` 82 处命中只有 76 个锚。
+ *    现在锚是**多重集**：同一个锚登记 N 次 = 该文件该规则下同文本必须命中 N 处；
+ *    命中次数 > 登记次数 ⇒ 盈余部分待修。**行号不掺进哈希**——掺进去就变成「挪一下行号
+ *    失去豁免」，人就会去重刷锚，棘轮随之失效。
+ * 2. **跨行命中假绿**（H2）：判据在整文件拼接文本上匹配，`\s` 允许跨行，于是
+ *    `IconButton(` 换行后 `onClick = onBack` 能命中，却没有任何单独一行匹配得上，锚算不出来；
+ *    上一版 `containsAll(空集)` 恒真 ⇒ 只要该键有例外行，这种命中就白放过。
+ *    现在**零锚命中一律判待修**，并且**故意不回退**成「该键有例外 ⇒ 放过」——
+ *    那等于把 2026-11-11 刚堵掉的整文件免检通道重新打开。
+ *
+ * 过期口径同步收紧：**任一登记锚失效即过期**（登记次数 > 命中次数就报），不是「全部失效才过期」。
+ * 后者会让陈旧锚无限期留着，「只进不出」的口子重新打开。
+ *
+ * 键的规则名两侧都 `ToUpperInvariant` 归一（路径原样，避免引入新的平台大小写差异）。
+ * 脚本侧的字典是大小写不敏感的（`[ordered]@{}`），守卫侧是敏感的（`linkedMapOf`），
+ * 不归一就会出现「脚本绿、守卫找不到键」的各说各话。
+ *
  * ## 判定范围与「只看代码」
  *
  * 只扫 `composeP1/.../pages/` 下的 `.kt`。`components/` 是套件自身（它就该调裸组件），
@@ -176,16 +198,26 @@ class ComposePageStyleGuardTest {
             lines.count { re.containsMatchIn(it.text) }
 
         /**
-         * 命中 `re` 的行及其行级锚，按哈希去重。
+         * 命中 `re` 的行及其行级锚（**不去重**）。
          *
-         * 去重是判据的一部分：同一内容的两行代码算同一个锚（登记一次覆盖两处）。
-         * 这是哈希锚的固有保守面——不是漏判，见笔记。
+         * 同一段代码出现两次就是两个同值锚（2026-11-12 多重集语义：登记 N 次只免检 N 处）。
+         * 上一版在这里 `distinctBy { it.hash }`，同文件再粘一行完全相同的违规就借旧锚免检了。
          */
         fun anchorHits(re: Regex): List<Anchor> =
             lines.filter { re.containsMatchIn(it.text) }
                 .map { Anchor(lineAnchor(it.text), it.number) }
-                .distinctBy { it.hash }
                 .sortedBy { it.line }
+
+        /**
+         * 跨行未计命中数 = 整文件拼接文本里的匹配数 − Σ(逐行匹配数)。
+         *
+         * 判据在拼接文本上匹配、`\s` 允许跨行，于是 `IconButton(` 换行后 `onClick = onBack`
+         * 能在拼接文本里命中，却没有任何单独一行匹配得上 ⇒ 行级锚一个都算不出来。
+         * 这个数 > 0 就说明有匹配只活在换行处：一律判待修，且**不可登记**。
+         * 与 `compose-style-lint.ps1` 的 `Get-UnaccountedMatches` 逐字对偶。
+         */
+        fun unaccounted(re: Regex): Int =
+            re.findAll(code).count() - lines.sumOf { re.findAll(it.text).count() }
     }
 
     /** 一处违规：`文件|规则` 是例外清单的比对键，说明文字只给人看。 */
@@ -193,8 +225,10 @@ class ComposePageStyleGuardTest {
         val rel: String,
         val rule: String,
         val detail: String,
-        /** 这一条违规**实际被判到的那几行**（行级锚）；例外必须逐行登记。 */
+        /** 这一条违规**实际被判到的那几行**（行级锚，允许同值重复）；例外必须逐处登记。 */
         val anchors: List<Anchor>,
+        /** 只活在换行处的命中数（算不出行级锚，一律待修、不可登记）。 */
+        val crossLine: Int,
     ) {
         val key: String get() = "$rel|$rule"
         val anchorHashes: Set<String> get() = anchors.map { it.hash }.toSet()
@@ -205,14 +239,20 @@ class ComposePageStyleGuardTest {
         val key: String,
         val rel: String,
         val rule: String,
-        /** 登记的行级锚；一条例外可登记多个（同文件同规则多处命中）。 */
-        val anchors: Set<String>,
+        /**
+         * 登记的锚，**按出现次数计**：同一个锚登 N 次只免检 N 处命中（多重集，不是集合）。
+         * 顺序保留（`-Write` 裁过期时按顺序裁尾）。
+         */
+        val anchors: List<String>,
         val reason: String,
         /** 出处 `文件名:行号`，报错时直接指过去。 */
         val source: String,
         /** 出处文件名（`<域>.txt`）——判「整条例外失效」时按它认域。 */
         val sourceFile: String,
-    )
+    ) {
+        /** 锚 → 需要几处命中。 */
+        val anchorCounts: Map<String, Int> get() = anchors.groupingBy { it }.eachCount()
+    }
 
     /**
      * 一个扫描器 = 一组同源判据 + 一组哨兵样本。
@@ -277,6 +317,7 @@ class ComposePageStyleGuardTest {
                     f.rel, "R1",
                     "手搓顶栏行（返回键），未走官方 TopAppBar / QingyuPageScaffold（第 ${f.first(reBackButton)} 行）",
                     f.anchorHits(reBackButton),
+                    f.unaccounted(reBackButton),
                 )
             }
             if (reLazyColumn.containsMatchIn(f.code) &&
@@ -287,6 +328,7 @@ class ComposePageStyleGuardTest {
                     f.rel, "R2",
                     "裸 LazyColumn，缺滚动三件套与滚动条（第 ${f.first(reLazyColumn)} 行）",
                     f.anchorHits(reLazyColumn),
+                    f.unaccounted(reLazyColumn),
                 )
             }
             if (reVerticalScroll.containsMatchIn(f.code)) {
@@ -294,6 +336,7 @@ class ComposePageStyleGuardTest {
                     f.rel, "R2",
                     "用 Column+verticalScroll 当主滚动（非惰性，第 ${f.first(reVerticalScroll)} 行）",
                     f.anchorHits(reVerticalScroll),
+                    f.unaccounted(reVerticalScroll),
                 )
             }
             out
@@ -312,6 +355,7 @@ class ComposePageStyleGuardTest {
                     f.rel, "R3",
                     "裸 Card，缺按压反馈与语义圆角（第 ${f.first(reRawCard)} 行）",
                     f.anchorHits(reRawCard),
+                    f.unaccounted(reRawCard),
                 )
             }
             if (reSectionLabel.containsMatchIn(f.code) && !reSectionTitle.containsMatchIn(f.code)) {
@@ -319,6 +363,7 @@ class ComposePageStyleGuardTest {
                     f.rel, "R6",
                     "自己拼分组标题，未走 QingyuSectionTitle（第 ${f.first(reSectionLabel)} 行）",
                     f.anchorHits(reSectionLabel),
+                    f.unaccounted(reSectionLabel),
                 )
             }
             out
@@ -337,6 +382,7 @@ class ComposePageStyleGuardTest {
                     f.rel, "R4",
                     "写死字号 ${f.count(reFontSize)} 处，首处第 ${f.first(reFontSize)} 行（应用 MiuixTheme.textStyles）",
                     f.anchorHits(reFontSize),
+                    f.unaccounted(reFontSize),
                 )
             }
             if ("R7" !in exempt && reFontWeight.containsMatchIn(f.code)) {
@@ -345,6 +391,7 @@ class ComposePageStyleGuardTest {
                     "写死字重 ${f.count(reFontWeight)} 处，首处第 ${f.first(reFontWeight)} 行" +
                         "（应用 MiuixTheme.textStyles.*.shiftWeight）",
                     f.anchorHits(reFontWeight),
+                    f.unaccounted(reFontWeight),
                 )
             }
             out
@@ -360,6 +407,7 @@ class ComposePageStyleGuardTest {
                     f.rel, "R5",
                     "写死颜色 ${f.count(reHardColor)} 处，首处第 ${f.first(reHardColor)} 行（应用主题语义槽）",
                     f.anchorHits(reHardColor),
+                    f.unaccounted(reHardColor),
                 )
             }
             out
@@ -480,6 +528,123 @@ class ComposePageStyleGuardTest {
             scanners.flatMap { it.scan(source, exempt) }
         }.sortedBy { it.key }
 
+    // ─────────────────── 判定层：多重集 + 零锚（与脚本对偶） ───────────────────
+
+    /**
+     * 全树违规折成判定用的视图：**按 `文件|规则` 合并**（R2 的两种形态是同一个键），
+     * 锚保留成多重集（不去重）。
+     *
+     * 合并这一步是 M1 的修法：上一版把违规按 key `associate` 成 Set，同键的两条违规
+     * 后者覆盖前者，于是「R2 双形态都登记」在脚本那边是绿的、在这边却报过期。
+     */
+    private class ScanResult(
+        /** `文件|规则` → 该键下所有命中行的锚（按行号升序，**允许同值重复**）。 */
+        val anchorsByKey: Map<String, List<Anchor>>,
+        /** `文件|规则` → 只活在换行处、算不出行级锚的命中数。 */
+        val crossLineByKey: Map<String, Int>,
+        /** `文件|规则` → 人看的说明（多条同键违规合并）。 */
+        val detailsByKey: Map<String, String>,
+    )
+
+    private fun mergeViolations(violations: List<Violation>): ScanResult {
+        val anchors = LinkedHashMap<String, MutableList<Anchor>>()
+        val cross = LinkedHashMap<String, Int>()
+        violations.forEach { v ->
+            anchors.getOrPut(v.key) { mutableListOf() }.addAll(v.anchors)
+            cross[v.key] = (cross[v.key] ?: 0) + v.crossLine
+        }
+        return ScanResult(
+            anchorsByKey = anchors.mapValues { (_, list) -> list.sortedBy { it.line } },
+            crossLineByKey = cross.filterValues { it > 0 },
+            detailsByKey = violations.groupBy { it.key }
+                .mapValues { (_, vs) -> vs.map { it.detail }.distinct().joinToString("；") },
+        )
+    }
+
+    private fun scanAll(): ScanResult = mergeViolations(allViolations())
+
+    /** 一处待修：多算出来的命中。跨行命中没有锚 ⇒ `hash == null`。 */
+    private data class PendingHit(
+        val key: String,
+        val rel: String,
+        val rule: String,
+        val detail: String,
+        val hash: String?,
+        val registered: Int,
+        val hit: Int,
+        val need: Int,
+        val surplusLines: List<Int>,
+        val crossLine: Int,
+    )
+
+    /** 一处过期：登记了但没命中（按次数算盈余）。 */
+    private data class StaleHit(
+        val source: String,
+        val key: String,
+        val rel: String,
+        val rule: String,
+        val hash: String,
+        val registered: Int,
+        val hit: Int,
+        val reason: String,
+    )
+
+    private class Judgement(val pending: List<PendingHit>, val stale: List<StaleHit>)
+
+    /**
+     * 判定一次：命中（多重集）vs 登记（多重集）。
+     *
+     * - **待修** = 每个锚「命中次数 − 登记次数 > 0」的盈余，加上跨行命中（零行级锚，不可登记）；
+     *   零锚命中**一律**待修，**不回退**成「该键有例外 ⇒ 放过」（那等于退回整文件免检）。
+     * - **过期** = 每个锚「登记次数 − 命中次数 > 0」的盈余。**任一登记锚失效即过期**，
+     *   不是「全部失效才过期」——后者会让陈旧锚无限期留着，「只进不出」的口子重新打开。
+     *   整条键已无任何违规时，该行全部锚都算过期。
+     */
+    private fun judge(scan: ScanResult, entries: Map<String, ExceptionEntry>): Judgement {
+        val pending = mutableListOf<PendingHit>()
+        val stale = mutableListOf<StaleHit>()
+        val keys = (scan.anchorsByKey.keys + scan.crossLineByKey.keys).toSortedSet()
+
+        keys.forEach { key ->
+            val rel = key.substringBefore('|')
+            val rule = key.substringAfter('|')
+            val anchors = scan.anchorsByKey[key].orEmpty()
+            val crossLine = scan.crossLineByKey[key] ?: 0
+            val entry = entries[key]
+            val detail = scan.detailsByKey[key].orEmpty()
+            val hitCounts = anchors.groupingBy { it.hash }.eachCount()
+            val regCounts = entry?.anchorCounts.orEmpty()
+
+            hitCounts.forEach { (hash, hit) ->
+                val registered = regCounts[hash] ?: 0
+                if (hit <= registered) return@forEach
+                pending += PendingHit(
+                    key, rel, rule, detail, hash, registered, hit, hit - registered,
+                    anchors.filter { it.hash == hash }.drop(registered).map { it.line },
+                    0,
+                )
+            }
+            if (crossLine > 0) {
+                pending += PendingHit(key, rel, rule, detail, null, 0, crossLine, crossLine, emptyList(), crossLine)
+            }
+
+            regCounts.forEach { (hash, registered) ->
+                val hit = hitCounts[hash] ?: 0
+                if (registered <= hit) return@forEach
+                stale += StaleHit(entry!!.source, key, rel, rule, hash, registered, hit, entry.reason)
+            }
+        }
+
+        // 整条键已经一条违规都没有的例外（keys 里没有它）——单独走一遍，不能漏。
+        entries.values.sortedBy { it.key }.forEach { e ->
+            if (e.key in keys) return@forEach
+            e.anchorCounts.forEach { (hash, registered) ->
+                stale += StaleHit(e.source, e.key, e.rel, e.rule, hash, registered, 0, e.reason)
+            }
+        }
+        return Judgement(pending, stale)
+    }
+
     // ───────────────────────── 例外清单 ─────────────────────────
 
     private fun exceptionFiles(): List<File> {
@@ -497,9 +662,12 @@ class ComposePageStyleGuardTest {
     private val anchorRegex = Regex("""^[0-9a-f]{8}$""")
 
     /**
-     * 解析一行例外：`<相对路径>|<规则>|<锚>[,<锚>…]|<原因>`。
+     * 解析一行例外：`<相对路径>|<规则>|<锚列表>|<原因>`。
      *
      * 原因里允许再出现 `|`（前两段路径/规则、第三段锚，其余整段算原因）。
+     * 锚列表**允许重复**：同一个锚写 N 次 = 该文件该规则下同文本必须命中 N 处。
+     * 改造前（2026-11-11）的清单里每个锚各出现 1 次，在本解析器下仍然完全兼容——
+     * 有回归测试钉着（`改造前的例外清单仍然解析成「每个锚 1 次」`）。
      * 三段式旧格式 `<路径>|<规则>|<原因>` **直接判错**：那等于整文件整规则免检，
      * 正是本轮要堵的洗白通道，绝不能当兼容形态悄悄放行。
      */
@@ -514,8 +682,11 @@ class ComposePageStyleGuardTest {
             )
         }
         val rel = parts[0].trim()
-        val rule = parts[1].trim()
-        val anchors = parts[2].split(',').map { it.trim().lowercase() }.filter { it.isNotEmpty() }
+        // 规则名统一大写后再拼键（与脚本的 ToUpperInvariant 对偶）。
+        // 两侧不归一就会各说各话：脚本侧的字典大小写不敏感、这边的 linkedMapOf 敏感，
+        // 规则列写成 r2 时一边判命中、另一边判「找不到键」。
+        val rule = parts[1].trim().uppercase(Locale.ROOT)
+        val anchors = parts[2].split(',').map { it.trim().lowercase(Locale.ROOT) }.filter { it.isNotEmpty() }
         val reason = parts.drop(3).joinToString("|").trim()
         if (rel.isEmpty() || rule.isEmpty() || reason.isEmpty()) {
             throw AssertionError("例外行的路径/规则/原因都不能为空：$where → $line")
@@ -523,12 +694,8 @@ class ComposePageStyleGuardTest {
         if (anchors.isEmpty()) {
             throw AssertionError("例外行没有登记任何锚（第三段为空）：$where → $line")
         }
-        val dupes = anchors.groupingBy { it }.eachCount().filterValues { it > 1 }.keys
-        if (dupes.isNotEmpty()) {
-            throw AssertionError(
-                "同一例外行里重复登记了同一个锚：${dupes.joinToString(", ")}（$where）——一个锚只登一次",
-            )
-        }
+        // 同一个锚重复出现是**合法**的：登记 N 次 = 该文件该规则下同文本必须命中 N 处。
+        // 2026-11-11 那版把重复当用法错，会把多重集语义直接挡死。
         anchors.firstOrNull { !anchorRegex.matches(it) }?.let {
             throw AssertionError("锚不是 8 位小写十六进制：'$it'（$where）→ $line")
         }
@@ -536,7 +703,7 @@ class ComposePageStyleGuardTest {
             key = "$rel|$rule",
             rel = rel,
             rule = rule,
-            anchors = anchors.toSet(),
+            anchors = anchors,
             reason = reason,
             source = where,
             sourceFile = fileName,
@@ -677,6 +844,195 @@ class ComposePageStyleGuardTest {
         )
     }
 
+    // ─────────────────── 0.6 多重集语义 / 零锚（2026-11-12 契约） ───────────────────
+
+    @Test
+    fun `零锚命中一律待修：跨行 IconButton 不能靠该键的例外放行`() {
+        // H2 回归。判据在整文件拼接文本上匹配，`\s` 允许跨行，于是
+        //     IconButton(
+        //         onClick = onBack,
+        //     )
+        // 能在拼接文本里命中，却没有任何单独一行匹配得上 ⇒ 行级锚一个都算不出来。
+        // 上一版 `containsAll(空集)` 恒真：只要该键有例外行，这种命中就被白放过。
+        val mixed = listOf(
+            "fun p() {",
+            "    IconButton(onClick = onBack) { }",
+            "    IconButton(",
+            "        onClick = onBack,",
+            "    ) { }",
+            "}",
+        ).joinToString("\n")
+        val hits = scanners.flatMap { it.scan(SourceFile("about/Probe.kt", codeLinesOf(mixed)), emptySet()) }
+        val r1 = hits.first { it.rule == "R1" }
+        assertEquals("单行那处有行级锚", 1, r1.anchors.size)
+        assertEquals("跨行那处没有行级锚，必须单独计出来", 1, r1.crossLine)
+
+        // 把单行那处登记成例外：不许因此把跨行命中一起放过（那等于退回整文件免检）。
+        val entry = parseExceptionLine(
+            "about/Probe.kt|R1|${r1.anchors.single().hash}|探针",
+            "about.txt",
+            1,
+        )
+        val judged = judge(mergeViolations(hits), mapOf(entry.key to entry))
+        assertEquals("跨行命中必须留在待修里", 1, judged.pending.size)
+        assertEquals("待修的正是那条零锚命中", null, judged.pending.single().hash)
+        assertTrue("也不许把它记成过期（那是另一回事）", judged.stale.isEmpty())
+
+        // 整个文件只有跨行写法时同样判待修（锚列表为空，连可登记的哈希都没有）。
+        val onlyCrossLine = listOf("fun p() {", "    IconButton(", "        onClick = onBack,", "    ) { }", "}").joinToString("\n")
+        val alone = scanners.flatMap { it.scan(SourceFile("about/Probe2.kt", codeLinesOf(onlyCrossLine)), emptySet()) }
+            .first { it.rule == "R1" }
+        assertTrue("零锚命中的锚列表必须是空的", alone.anchors.isEmpty())
+        assertEquals("一处跨行命中", 1, judge(mergeViolations(listOf(alone)), emptyMap()).pending.size)
+    }
+
+    @Test
+    fun `同一个锚按次数消费：登记 1 次只免检 1 处命中`() {
+        // H1 回归：同文件再粘一行**完全相同的**违规。上一版锚按 hash 去重，
+        // 于是这种复制粘贴借旧锚就免检了（实测 ColorBlendToken.kt 82 处命中只有 76 个锚）。
+        val before = listOf(
+            "fun p() {",
+            "    val c = Color(0xFF123456)",
+            "}",
+        ).joinToString("\n")
+        val after = listOf(
+            "fun p() {",
+            "    val c = Color(0xFF123456)",
+            "    val c = Color(0xFF123456)",
+            "}",
+        ).joinToString("\n")
+
+        fun hitsOf(sample: String): List<Violation> =
+            scanners.flatMap { it.scan(SourceFile("showcase/Probe.kt", codeLinesOf(sample)), emptySet()) }
+
+        fun judgeWith(sample: String, anchors: String): Judgement {
+            val entry = parseExceptionLine("showcase/Probe.kt|R5|$anchors|探针值得保留", "showcase.txt", 1)
+            return judge(mergeViolations(hitsOf(sample)), mapOf(entry.key to entry))
+        }
+
+        val twice = hitsOf(after).first { it.rule == "R5" }
+        assertEquals("两行文本完全一致 ⇒ 两个锚", 2, twice.anchors.size)
+        assertEquals("但值是同一个（锚只跟这行代码的文本走）", 1, twice.anchors.map { it.hash }.toSet().size)
+        val hash = twice.anchors.first().hash
+
+        val once = judgeWith(after, hash)
+        assertEquals("登记 1 次只能免检 1 处，第 2 处仍是待修", 1, once.pending.size)
+        assertEquals("还差 1 处没登记", 1, once.pending.single().need)
+        assertEquals("未登记的正是第 2 处（样板的第 3 行）", listOf(3), once.pending.single().surplusLines)
+        assertTrue("登记次数没超过命中次数，不该报过期", once.stale.isEmpty())
+
+        val twiceRegistered = judgeWith(after, "$hash,$hash")
+        assertTrue("同一行登两次同一个锚 = 需要 2 处命中，这时应绿", twiceRegistered.pending.isEmpty())
+        assertTrue(twiceRegistered.stale.isEmpty())
+
+        val shrunk = judgeWith(before, "$hash,$hash")
+        assertTrue("只剩一处命中、没有新违规", shrunk.pending.isEmpty())
+        assertEquals("登记 2 次 / 命中 1 处 ⇒ 多登的那 1 次必须过期", 1, shrunk.stale.size)
+        assertEquals("登记 2 次", 2, shrunk.stale.single().registered)
+        assertEquals("命中 1 处", 1, shrunk.stale.single().hit)
+    }
+
+    @Test
+    fun `R2 双形态：任一登记锚失效即过期`() {
+        // M1 回归 + 过期边界。R2 的两种形态（裸 LazyColumn / Column+verticalScroll）是**同一个键**，
+        // 上一版按 key `associate` 成 Set，同键后一条覆盖前一条：脚本那边合并着是绿的，
+        // 这边却把先出现的锚当成过期。现在按多重集合并。
+        // 过期边界就一句：**任一登记锚失效即过期**（不是「全部失效才过期」）。
+        val both = listOf(
+            "fun p() {",
+            "    LazyColumn {",
+            "    }",
+            "    Column(Modifier.verticalScroll(rememberScrollState())) {",
+            "    }",
+            "}",
+        ).joinToString("\n")
+        val onlyScroll = listOf(
+            "fun p() {",
+            "    Column(Modifier.verticalScroll(rememberScrollState())) {",
+            "    }",
+            "}",
+        ).joinToString("\n")
+
+        fun hitsOf(sample: String): List<Violation> =
+            scanners.flatMap { it.scan(SourceFile("import/Probe.kt", codeLinesOf(sample)), emptySet()) }
+
+        val hits = hitsOf(both)
+        assertEquals("两条违规是同一个键", 1, hits.map { it.key }.toSet().size)
+        val hashes = hits.flatMap { it.anchors }.map { it.hash }
+        assertEquals("双形态各一处命中", 2, hashes.size)
+
+        val entry = parseExceptionLine("import/Probe.kt|R2|${hashes.joinToString(",")}|探针双形态", "import.txt", 1)
+        val entries = mapOf(entry.key to entry)
+
+        val green = judge(mergeViolations(hits), entries)
+        assertTrue("两种形态都登记 ⇒ 绿", green.pending.isEmpty())
+        assertTrue("都命中，没有过期", green.stale.isEmpty())
+
+        // 修掉其中一处（LazyColumn 那行删掉），另一个锚还命中。
+        val after = judge(mergeViolations(hitsOf(onlyScroll)), entries)
+        assertTrue("剩下那处已登记，不该待修", after.pending.isEmpty())
+        assertEquals("任一登记锚失效即过期（不是等全部失效）", 1, after.stale.size)
+        assertEquals("过期的正是 LazyColumn 那个锚", hashes.first(), after.stale.single().hash)
+    }
+
+    @Test
+    fun `规则名统一大写后比较：例外里写 r5 与 R5 是同一把键`() {
+        // M2 回归：脚本侧字典大小写不敏感、守卫侧 linkedMapOf 敏感，规则列写 r5 时
+        // 两边会各说各话。现在两侧都先 ToUpperInvariant 再拼键（路径保持原样）。
+        val entry = parseExceptionLine("showcase/Probe.kt|r5|deadbeef|探针", "showcase.txt", 1)
+        assertEquals("规则名必须归一成大写", "showcase/Probe.kt|R5", entry.key)
+        assertEquals("归一只动规则列", "R5", entry.rule)
+        assertEquals("路径保持原样（小写路径不许被一起大写）", "showcase/Probe.kt", entry.rel)
+
+        // 判定层也要认：写 r5 的例外能覆盖 R5 的命中，写 R5 的也能。
+        val sample = "fun p() { val c = Color(0xFF123456) }"
+        val hits = scanners.flatMap { it.scan(SourceFile("showcase/Probe.kt", codeLinesOf(sample)), emptySet()) }
+        val hash = hits.first { it.rule == "R5" }.anchors.single().hash
+        listOf("r5", "R5").forEach { spelling ->
+            val lower = parseExceptionLine("showcase/Probe.kt|$spelling|$hash|探针", "showcase.txt", 1)
+            val judged = judge(mergeViolations(hits), mapOf(lower.key to lower))
+            assertTrue("规则列写 $spelling 时应认作例外", judged.pending.isEmpty())
+            assertTrue("规则列写 $spelling 时不该报过期", judged.stale.isEmpty())
+        }
+    }
+
+    @Test
+    fun `改造前的例外清单仍然解析成「每个锚 1 次」`() {
+        // 契约从「集合」改成「多重集」以后，旧清单（每个锚各 1 次）必须仍然完全兼容：
+        // 解析层不报格式错、每个锚解析出来的次数都是 1。
+        //
+        // fixture 是改造前 `tool/compose_style_exceptions/` 的**逐字快照**（共 87 个锚），
+        // 故意入库而不是运行时 `git show`：测试不该依赖 git 状态，也不该随工作区改动漂。
+        val dir = File(repoRoot(), "android/app/src/test/resources/style-exceptions-legacy")
+        assertTrue("找不到旧例外清单 fixture：${dir.path}", dir.isDirectory)
+        val files = dir.listFiles { f -> f.isFile && f.name.endsWith(".txt") }
+            ?.sortedBy { it.name }
+            ?: emptyList()
+        assertEquals("fixture 应该是 4 份域清单", 4, files.size)
+
+        var total = 0
+        files.forEach { file ->
+            file.readLines().forEachIndexed { index, raw ->
+                val line = raw.trim()
+                if (line.isEmpty() || line.startsWith("#")) return@forEachIndexed
+                // 能解析出来（不抛 AssertionError）本身就是「格式兼容」的断言。
+                val entry = parseExceptionLine(line, file.name, index + 1)
+                val repeated = entry.anchorCounts.filterValues { it > 1 }
+                assertTrue(
+                    "旧清单里每个锚只出现 1 次，实际多出：${repeated.keys}（${file.name}:${index + 1}）",
+                    repeated.isEmpty(),
+                )
+                assertEquals(
+                    "旧清单的规则列本来就写的是大写，归一后不该变：${file.name}:${index + 1}",
+                    line.split('|')[1].trim(),
+                    entry.rule,
+                )
+                total += entry.anchors.size
+            }
+        }
+        assertEquals("改造前的例外清单共 87 个锚（旧值不许漂）", 87, total)
+    }
+
     // ───────────────────────── 1. 待修违规必须是 0 ─────────────────────────
 
     @Test
@@ -684,25 +1040,27 @@ class ComposePageStyleGuardTest {
         // 这是守卫的核心：新页面/新代码绕开共享套件就会被拦下。
         // 存量债已经清完；真正需要保留的写法走例外清单，不算「待修」。
         //
-        // 2026-11-11 起「走例外清单」是**逐行**的：同一条规则下，只有登记过锚的那几行
-        // 算例外；同一文件里新加一处同类违规仍是待修（上一版按「文件|规则」判，那一处会被整条放过）。
-        val exceptions = exceptionEntries()
-        val pending = allViolations().filter { v ->
-            val entry = exceptions[v.key]
-            entry == null || !entry.anchors.containsAll(v.anchorHashes)
-        }
-        val detail = pending.joinToString("\n") { v ->
-            val entry = exceptions[v.key]
-            val missing = v.anchors.filter { entry == null || it.hash !in entry.anchors }
-            val anchorLines = missing.joinToString("") { "\n        登记用锚：${it.hash}（第 ${it.line} 行）" }
-            "  ${v.rel}  ${v.rule}  ${v.detail}$anchorLines"
+        // 2026-11-11 起「走例外清单」是**逐行**的；2026-11-12 起再收一次：锚是**多重集**，
+        // 同一个锚登记 N 次只免检 N 处命中；跨行命中算不出锚 ⇒ 一律待修（不可登记）。
+        val pending = judge(scanAll(), exceptionEntries()).pending
+        val detail = pending.joinToString("\n") { p ->
+            val anchorLine = if (p.hash == null) {
+                "\n        跨行命中 ${p.crossLine} 处（零行级锚）：不可登记，必须改回单行或改代码"
+            } else {
+                "\n        锚 ${p.hash} 还需再登记 ${p.need} 次" +
+                    "（当前已登记 ${p.registered} 次 / 当前命中 ${p.hit} 处" +
+                    (if (p.surplusLines.isEmpty()) "" else "，未登记的是第 ${p.surplusLines.joinToString("、")} 行") +
+                    "）"
+            }
+            "  ${p.rel}  ${p.rule}  ${p.detail}$anchorLine"
         }
         assertEquals(
             "待修样式违规必须为 $EXPECTED_PENDING_VIOLATIONS 处，实际 ${pending.size} 处。\n" +
                 "改代码走共享页面套件；确有正当理由要保留的，必须人工编辑 " +
                 "tool/compose_style_exceptions/<域>.txt 并写明原因（脚本 -Write 不会帮你加）。\n" +
                 detail +
-                "\n\n例外只覆盖登记过锚的那几行：同文件同规则新增违规仍然是待修，不许靠扩例外放行。\n" +
+                "\n\n例外只覆盖登记过锚的那几处：同一个锚登记 N 次只免检 N 处命中，" +
+                "同文件同规则新增违规仍然是待修，不许靠扩例外放行。\n" +
                 "规则见 docs/reference/compose-page-style-rules.md：\n" +
                 "  R1 页面骨架 → QingyuPageScaffold\n" +
                 "  R2 滚动容器 → QingyuPageList（内含滚动三件套与滚动条）\n" +
@@ -723,25 +1081,20 @@ class ComposePageStyleGuardTest {
         // 棘轮的另一半。没有这条，例外清单会退化成「永久豁免清单」——
         // 修好不删，下次扫描就不知道这行还有没有用，也让后来者以为它还在用。
         //
-        // 2026-11-11 起按**锚**判过期：登记的那行代码改过内容（换写法）、挪到别的文件、
-        // 或已经不违规，都会让锚匹配不上 ⇒ 红。整条都匹配不上时按「整条例外失效」报。
-        val current = allViolations().associate { it.key to it.anchorHashes }
-        val stale = mutableListOf<String>()
-        exceptionEntries().values.sortedBy { it.key }.forEach { entry ->
-            val live = current[entry.key].orEmpty()
-            val missing = entry.anchors.filter { it !in live }
-            if (missing.isEmpty()) return@forEach
-            stale += if (live.isEmpty()) {
-                "  ${entry.source}  ${entry.key}  整条例外失效：该文件该规则已无违规" +
-                    "（锚 ${entry.anchors.sorted().joinToString(",")}）  ${entry.reason}"
-            } else {
-                "  ${entry.source}  ${entry.key}  锚 ${missing.sorted().joinToString(",")} " +
-                    "已不在当前违规行（那一行改过内容 / 挪到别的文件 / 或已修好）"
-            }
-        }
+        // 2026-11-11 起按**锚**判过期；2026-11-12 起按**次数**判：
+        // 登记次数 > 命中次数的那部分就算过期（**任一登记锚失效即过期**，不等全部失效）。
+        // 整条键都匹配不上时按「整条例外失效」报。
+        val stale = judge(scanAll(), exceptionEntries()).stale
         assertTrue(
             "以下例外对应的违规行已经不存在了（改过内容、挪走了，或者修好了），请从例外清单里删掉：\n" +
-                stale.joinToString("\n") +
+                stale.joinToString("\n") { s ->
+                    if (s.hit == 0) {
+                        "  ${s.source}  ${s.key}  整条例外失效：该文件该规则已无违规（锚 ${s.hash}）  ${s.reason}"
+                    } else {
+                        "  ${s.source}  ${s.key}  锚 ${s.hash} 登记 ${s.registered} 次、命中 ${s.hit} 处：" +
+                            "多登 ${s.registered - s.hit} 次（那一行改过内容 / 挪到别的文件 / 或已修好）"
+                    }
+                } +
                 "\n\n删法：pwsh -File scripts/compose-style-lint.ps1 -Domain <域> -Write" +
                 "（只删过期行与过期锚，不会新增）",
             stale.isEmpty(),
