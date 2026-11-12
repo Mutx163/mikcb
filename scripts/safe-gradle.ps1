@@ -124,10 +124,17 @@ try {
     # ⚠️ 关键（2026-11-12 监察实证）：`===` 证据行**不能只用 Write-Host**——它们在 tee 之外，
     # 只活在控制台，日志里 grep 不到（于是"日志自带坐标"变成口头声明）。
     # 统一走这个函数：控制台 + 追加到同一份日志。
+    # 并且「能写出日志」本身必须被断言：2026-11-12 实测过 `*>> $logPath` 报
+    # `Access to the path ... is denied`、gradle 根本没执行，脚本却沿用残留的
+    # `$LASTEXITCODE=0` 报了成功 —— **证据机制可以在没有任何证据的情况下报告成功**。
     $writeEvidence = {
         param([string]$text)
         Write-Host $text
-        Add-Content -LiteralPath $logPath -Value $text -Encoding utf8NoBOM
+        try {
+            Add-Content -LiteralPath $logPath -Value $text -Encoding utf8NoBOM -ErrorAction Stop
+        } catch {
+            throw "日志写入失败：$logPath（$($_.Exception.Message)）——拒绝把这次跑当成有证据"
+        }
     }
 
     $effective = @('--daemon') + @($GradleArgs)
@@ -152,7 +159,11 @@ try {
     }
 
     Write-Host ">>> [safe-gradle] 输出留档: $logPath" -ForegroundColor DarkGray
-    Add-Content -LiteralPath $logPath -Value ">>> [safe-gradle] 输出留档: $logPath" -Encoding utf8NoBOM
+    try {
+        Add-Content -LiteralPath $logPath -Value ">>> [safe-gradle] 输出留档: $logPath" -Encoding utf8NoBOM -ErrorAction Stop
+    } catch {
+        throw "日志写入失败：$logPath（$($_.Exception.Message)）——拒绝把这次跑当成有证据"
+    }
 
     Push-Location $androidDir
     try {
@@ -168,8 +179,21 @@ try {
         # Gradle daemon 会继承子进程的标准输出句柄，tee 管道因此可能永不关闭，
         # 外层调用会一直等到超时（2026-11-12 实测：跑本身 3m2s 已结束，外层却卡满 600s）。
         # `*>>` 让 daemon 拿到的是文件句柄，不是我们的管道，函数就能及时返回。
-        & $gradlew @effective *>> $logPath
+        # 退出码只能来自**本次**调用：先置 -1 当哨兵，跑完仍是 -1 就说明 gradle 根本没跑，
+        # 绝不能让残留的 `$LASTEXITCODE` 冒充成功（2026-11-12 青禾会话实测到的假绿入口）。
+        $LASTEXITCODE = -1
+        try {
+            & $gradlew @effective *>> $logPath
+        } catch {
+            throw "Gradle 输出写不进日志：$logPath（$($_.Exception.Message)）——拒绝把这次跑当成有证据"
+        }
         $exitCode = $LASTEXITCODE
+        if ($null -eq $exitCode -or $exitCode -eq -1) {
+            throw "Gradle 未执行或未返回退出码（日志：$logPath）——不把未执行当成功"
+        }
+        if (-not (Test-Path -LiteralPath $logPath) -or (Get-Item -LiteralPath $logPath).Length -eq 0) {
+            throw "日志不存在或为空：$logPath——不把无日志当成功"
+        }
     } finally {
         Pop-Location
     }
@@ -187,6 +211,7 @@ try {
 
     # ③ 成功路径的用例数：只认本次跑期间更新过的变体目录，避免把上一轮的旧结果当成本次成绩。
     $resultsRoot = Join-Path $repoRoot "build/app/test-results"
+    $emittedResult = $false
     if (Test-Path $resultsRoot) {
         foreach ($dir in @(Get-ChildItem $resultsRoot -Directory | Sort-Object LastWriteTime -Descending)) {
             if ($dir.LastWriteTime -lt $runStartedAt.AddSeconds(-2)) { continue }
@@ -216,6 +241,7 @@ try {
             }
             & $writeEvidence "=== RESULT[$($dir.Name)]: $tests tests, $failures failures, $errors errors, $skipped skipped (XML 文件 $($xmlFiles.Count))"
             & $writeEvidence "=== RESULT-DIR: $($dir.FullName)"
+            $emittedResult = $true
 
             # 归档摘要（2026-11-12 监察要求）：过滤跑会覆盖同变体的 XML 目录，
             # 上一次全量的磁盘物证会就此消失（实测：`--tests` 跑完后只剩 1 份 XML / 3 tests）。
@@ -252,8 +278,24 @@ try {
             $sumLines += ""
             $sumLines += "=== AGGREGATE-SHA256: $aggHash"
             Set-Content -LiteralPath (Join-Path $sumDir "summary.txt") -Value $sumLines -Encoding utf8NoBOM
+            if (-not (Test-Path -LiteralPath (Join-Path $sumDir "summary.txt"))) {
+                throw "归档摘要写入失败：$sumDir\summary.txt"
+            }
             & $writeEvidence "=== SUMMARY-DIR: $sumDir"
         }
+    }
+
+    # ④ 落盘自检（2026-11-12）：证据机制自己必须被证明。日志里缺 `=== REQUEST/HEAD before/after`
+    #    （以及跑过测试时的 `=== RESULT`）⇒ 说明落盘路径其实失效了，此时**不许**报成功。
+    if (-not (Test-Path -LiteralPath $logPath)) {
+        throw "日志不存在：$logPath——不把无日志当成功"
+    }
+    $logText = Get-Content -LiteralPath $logPath -Raw
+    $requiredMarkers = @('=== REQUEST:', '=== HEAD before:', '=== HEAD after:')
+    if ($emittedResult) { $requiredMarkers += '=== RESULT[' }
+    $missing = @($requiredMarkers | Where-Object { -not $logText.Contains($_) })
+    if ($missing.Count -gt 0) {
+        throw ("日志缺证据行 [{0}]：{1}——落盘路径可能失效，不把这次跑当成有证据" -f ($missing -join ', '), $logPath)
     }
 
     if ($exitCode -ne 0) {

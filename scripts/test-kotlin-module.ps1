@@ -568,10 +568,17 @@ try {
 
                 $swShared = [System.Diagnostics.Stopwatch]::StartNew()
                 Write-Host ">>> [test-kotlin-module] 第 1 段：编译共享面 $($sharedSources.Count) 个 .kt（缓存未命中 [$($sharedHash.Substring(0,12))]）..." -ForegroundColor Cyan
+                # 退出码只认本次调用：先置哨兵 -1；跑完仍是 -1 说明 kotlinc 根本没起（脚本替换/路径失效），
+                # 绝不能拿残留的 `$LASTEXITCODE` 冒充成功（2026-11-12「证据机制自己假绿」同类形状）。
+                $LASTEXITCODE = -1
                 $sharedLog = & $kotlinc "@$sharedArgFile" 2>&1
                 $sharedExit = $LASTEXITCODE
                 $swShared.Stop()
                 foreach ($line in $sharedLog) { Write-Host $line }
+                if ($null -eq $sharedExit -or $sharedExit -eq -1) {
+                    Write-Error "[test-kotlin-module] kotlinc 未执行或未返回退出码（共享面）。检查 kotlinc 路径：$kotlinc"
+                    exit 1
+                }
 
                 if ($sharedExit -ne 0) {
                     # 点名：只认带 `.kt:<行>:` 的 error，且只收共享面文件——本域文件不在这段里。
@@ -642,10 +649,22 @@ try {
     foreach ($src in $sources) { $argLines += "`"$(& $toSlash $src)`"" }
     Set-Content -Path $argFile -Value $argLines -Encoding utf8NoBOM
     Write-Host ">>> [test-kotlin-module] 第 2 段：编译本域 [$cleanModule]（本域 $($sources.Count) 个 .kt，共享面 $($sharedSources.Count) 个已就绪），工作目录 $workRoot" -ForegroundColor Cyan
+    $LASTEXITCODE = -1
     & $kotlinc "@$argFile"
-    if ($LASTEXITCODE -ne 0) {
-        Write-Error "[test-kotlin-module] kotlinc 编译失败 (exit code: $LASTEXITCODE)"
-        exit $LASTEXITCODE
+    $domainExit = $LASTEXITCODE
+    if ($null -eq $domainExit -or $domainExit -eq -1) {
+        Write-Error "[test-kotlin-module] kotlinc 未执行或未返回退出码（本域）。检查 kotlinc 路径：$kotlinc"
+        exit 1
+    }
+    if ($domainExit -ne 0) {
+        Write-Error "[test-kotlin-module] kotlinc 编译失败 (exit code: $domainExit)"
+        exit $domainExit
+    }
+    # 产物自检：退出码 0 但输出目录空 ⇒ 不把「什么都没产出」当编译通过。
+    $producedCount = @(Get-ChildItem -Path $outDir -Recurse -File -ErrorAction SilentlyContinue).Count
+    if ($producedCount -eq 0) {
+        Write-Error "[test-kotlin-module] kotlinc 报成功但没产出任何 class：$outDir"
+        exit 1
     }
 
     if ($testClasses.Count -eq 0) {
