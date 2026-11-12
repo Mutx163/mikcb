@@ -42,7 +42,7 @@
 
 | HEAD | `dev`（`:app:testDevDebugUnitTest`） | `prod`（`:app:testProdDebugUnitTest`） | 判读 |
 |---|---|---|---|
-| `0cf4eabfb` | 8075 / 0（19:36:43） | 8075 / **1**（19:39:32）→ 复跑 8075 / 0（19:45:10） | **不算双绿，且不可当证据**：prod 首轮红在 `MonthSwitchMotionWiringGuardTest`（M1 复发：effect 键缺 `homePagerScrolling`）；复跑虽然转绿，但它（19:45）**早于闸门修复**（`b6ba086ff` 19:56），当时「本次产物」还靠**结果目录 mtime / 旧 XML** 判断 ⇒ 那次 0 失败**无法排除读到上一轮结果**（正是 R20 第 ④ 类假绿）。只能记「存疑」 |
+| `0cf4eabfb` | 8075 / 0（19:36:43） | 8075 / **1**（19:39:32）→ 复跑 8075 / 0（19:45:10） | **prod 绿成立，但「怎么成立」值得记**：同 HEAD 两次 prod 的**聚合指纹不同**（`2c97ed31…` vs `e6f3f689…`），且前一次的失败**没被继承** ⇒ 19:45 那批 XML 是被重写的、不是复用旧产物，绿可信（检察重判三重互证）。**但当时的闸门还不具备「自证产物归属」的能力**——`RESULT` 靠目录 mtime、无跑前清空、无四行坐标 ⇒ 结论不是靠机制成立、而是靠事后推理成立，成本高得多。**这正是 R20 要解决的事**。19:39 那次红另有根因（工作树被并发改动），见 R20 判例 |
 | `b6ba086ff` | 8075 / 0（19:56:51） | 8075 / 0（19:59:14） | **闸门修复后首个可信双绿**（落盘自检 + `TESTS-NOT-RUN` + 跑前清空均已生效） |
 | `5de395341` | 8075 / 0（21:54:06） | 8075 / 0（21:58:45） | **可信双绿**（B1+B2 守卫迁移已入，仍在同一闸门下） |
 
@@ -58,7 +58,7 @@ CI 权威变体是 `:app:testProdDebugUnitTest`（`.github/workflows/ci.yml` 的
    `:app:compileDevDebugKotlin` 一起编。别写成「composeP1 未编译」，正确说法是「没有按源集分开的 L1 证据」。
 3. **CI 里没有 pwsh**：`.github/workflows/` 全量 grep `pwsh` / `powershell` **0 命中**，`scripts/*.ps1` 只在本地跑
    ⇒ CI 的 `testProdDebugUnitTest` 与本地闸门**不是同一套证据机制**（CI 没有 `TESTS-NOT-RUN` / 落盘自检）。
-4. **首次/复跑数字不同不算双绿**：见上表 `0cf4eabfb` 一列，prod 首轮红、复跑绿且闸门未修，这种只能记「存疑」。
+4. **首轮红 / 复跑绿，不能只写「双绿」**：必须能说清绿是**怎么成立**的——要么由闸门自证（跑前清空 + 四行坐标 + 聚合指纹），要么由事后互证（同 HEAD 两次跑的聚合不同、且失败未被继承）。见 §二 `0cf4eabfb` 一列：绿成立，但靠的是后者；这正是 R20 要消灭的成本。
 
 ---
 
@@ -97,7 +97,7 @@ CI 权威变体是 `:app:testProdDebugUnitTest`（`.github/workflows/ci.yml` 的
 | **R15** | ~~自检页 4 个测试通知按钮~~ | ✅ **已闭环**（2026-11-11 核销）：`LiveSelfCheckHost.kt:496-504` 已是**真管线**——`START` / `CANCEL` / `COURSE_TEST_STOP` 走 `notificationController.trigger(rowId)`，「崩溃」→ `triggerTestCrash()`（定义 `:427`）、「ANR」→ `triggerTestAnr()`（`:444`），「选课测试」先选课再选阶段（`:501`、弹层 `:509-512`），不再弹 `aboutUnavailable`。旧行「`:362-366` 四个分支仍只弹『不可用』」已过期；台账 §9.10 当年那句「已闭环」这次对得上。归位：**真机仍归 R01**（触发后岛/通知是否真弹出） |
 | **R16** | **埋点页面级接线** | core 三件与 `TimetableRepository` 单点已提交（`b9e5cdb6` / `9cd1e337`）；`composeP1` 页面侧引用为 0，无持久化/导出/后端 sink。先定要采哪些页面事件与隐私边界（产品决定）。写作用域：`main/core/`、`composeP1/app/` 与各页面宿主 |
 | **R17** | **宽屏收尾** | 前三批已落地：三档判据 `499b28d8`、`QingyuPageScaffold` 限宽与 SmallTopAppBar 分支 `75afb7f0`、Rail 判据 `6a564625`、`ShellNavigationRail` 接入 `e2e33583`。剩余：首页课表网格宽屏列数（属课程域另一批）+ 宽屏连带面的真机验（`R02` 的方向锁已由 `1e8b953b7` 解除，剩下的矮屏弹层 / 返回手势 / Rail 冲突归 R01）。写作用域：`components/`、`pages/shell/`、`pages/timetable/`（`AndroidManifest.xml` 已无需再动） |
-| **R20** | **门禁四类假绿 → 已堵（2026-11-12，已完成）** | 四类：① 无日志（跑完没有任何可考证据）② 坐标不进文件（日志里有数字、但落不到归档，事后无法复查）③ 写不进也报成功（证据落盘失败仍打绿，含 `EXIT_CODE` 取到上一次调用的残留）④ 数字陈旧（编译失败被当成测试失败；结果目录留着上一轮 XML，数字照抄）。**实现锚点** `scripts/safe-gradle.ps1`：证据行 `=== REQUEST / HEAD before / HEAD after / RESULT[...]`（`:99-334`）；`TESTS-NOT-RUN` 三种情形（编译失败 / 任务未执行 / 任务执行但结果目录无产物，`:244-254`）；跑前**清空该变体结果目录**（`:145-157`）；落盘自检缺任一 marker 即报错（`:327-334`）；退出码取本次调用、哨兵 `-1`（`b6ba086ff`）。L0 侧同提交加「kotlinc 未执行 / 无产物」自检。**证据**：`b6ba086ff`；今日三轮归档见 §二「今日检查点」 |
+| **R20** | **门禁四类假绿 → 已堵（2026-11-12，已完成）** | 四类：① 无日志（跑完没有任何可考证据）② 坐标不进文件（日志里有数字、但落不到归档，事后无法复查）③ 写不进也报成功（证据落盘失败仍打绿，含 `EXIT_CODE` 取到上一次调用的残留）④ 数字陈旧（编译失败被当成测试失败；结果目录留着上一轮 XML，数字照抄）。**实现锚点** `scripts/safe-gradle.ps1`：证据行 `=== REQUEST / HEAD before / HEAD after / RESULT[...]`（`:99-334`）；`TESTS-NOT-RUN` 三种情形（编译失败 / 任务未执行 / 任务执行但结果目录无产物，`:244-254`）；跑前**清空该变体结果目录**（`:145-157`）；落盘自检缺任一 marker 即报错（`:327-334`）；退出码取本次调用、哨兵 `-1`（`b6ba086ff`）。L0 侧同提交加「kotlinc 未执行 / 无产物」自检。**证据**：`b6ba086ff`；今日三轮归档见 §二「今日检查点」。**判例（2026-11-12，监察重判）**：`0cf4eabfb` 的 prod 首轮红**不是代码问题**——跑期间有人改了 `TimetableWeekPage.kt`（记录为 `STATUS before 1 → after 2`），提交态本身是对的。这正是「闸门没有**工作树 STATUS 比对**告警」的直接后果：跑批期间工作树被动过，闸门不喊，红/绿照算本次头上。（注：今日七份归档里**还没有** `STATUS` 行，那是后续闸门版本补的；本条依据监察重判记录，不是从 `summary.txt` 读出来的。）补列：跑前清空 + 四行坐标落地后，同类并发改动才会被当场点名 |
 | **R21** | **守卫迁移：`LEGACY_UNSTRIPPED` 44 → 36（进行中，B3–B6 待做）** | **口径**：表内在 **36 / 44** 份（工作区实测；`git show c8fb8fd1f^:` 实数 44，`5de395341:` 与工作区均 36）。已修 **8 份**：B1 `c8fb8fd1f` 5 份（`DayViewOverlayPerfWiringGuardTest` / `DockSwitchNoDayReplayGuardTest` / `WeekViewCoupleOverlayWiringGuardTest` / `NotificationLaunchShellWiringGuardTest` / `DayAgendaWallpaperInkWiringGuardTest`），B2 `5de395341` 3 份（`HomeMenuEntryDestinationGuardTest` / `HomeMenuPreviewWiringGuardTest` / `HomePullQuickImportWiringGuardTest`）。**审计口径**：B1 实测覆盖 **26 份**（占 44 的 26/44），其中 **25 份**「把判据目标行注释掉仍绿」（25/26）；B1+B2 修的 8 份全在这 26 份内 ⇒ 同类风险约剩 **18 份**，但**其余 18 份未被审计、也未逐份复测**——**不要写「25/36」**。**两档选法**（违反即假绿）：判**字面量本身**用默认档（剥注释、留字符串）；判**调用/接线**用中性化档。判字面量的上中性化档会让被查表恒空、判据在空集上恒真。出处：各守卫类注释 + `GuardSourceStrippingPolicyTest.LEGACY_UNSTRIPPED`。写作用域：`android/app/src/test/kotlin/com/mutx163/qingyu/pages/**`；B3–B6 未排期 |
 | **R22** | **判定四类分法 → 已入档（2026-11-12，记账完成）** | 本账判定只用这四类，别再自造词：**设计边界**（有意不做 / 等上游，例：R04 岛展示层、R05 弹层决策点）· **性能取舍**（为耗电/帧率放弃，例：R19 逐秒节奏未实施、R11 玻璃先等真机）· **回归**（修好又坏 / 被合并吞掉，例：R12 `normalizeSettingsDocument` 丢失、`LanTransferResidualsTest` 随合并消失）· **配置遗漏**（构建或工具链漏项、静默不编译，例：`build.gradle:153-158`「逐目录登记 srcDirs，漏一个就静默不编译」、CI 无 pwsh 见 §二）。新增条目必须标出属于哪一类 |
 
@@ -245,11 +245,21 @@ L3 出包、L3.5 性能包、L4 真机一律用户跑；**性能只认 Bench 或
     ⚠ 口径纠正：口头版本「剩余 36 条里 25 条可骗绿」把两个分母混了，本账按 **25/26（审计覆盖内）** 记，不写 25/36。
   - **R22 四类分法入档**：设计边界 / 性能取舍 / 回归 / 配置遗漏，逐类给了本账判例（R04 / R19 / R12 / `build.gradle:153-158`）。
   - **今日检查点（§二）**：`b6ba086ff`（19:56:51 dev / 19:59:14 prod）与 `5de395341`（21:54:06 / 21:58:45）为**可信双绿**，两轮各 **8075 例 / 0 失败**，归档在
-    `.agents/diag/20261112-195651-…`、`…-195914-…`、`…-215406-…`、`…-215845-…`。`0cf4eabfb` **改记为存疑**：dev 8075/0（19:36:43）、
-    prod **8075/1**（19:39:32，红在 `MonthSwitchMotionWiringGuardTest` 的 M1 复发）、复跑 8075/0（19:45:10），但复跑早于闸门修复
-    （`b6ba086ff` 19:56 才落），该轮 0 失败可能是结果目录残留，**不写成双绿**。
+    `.agents/diag/20261112-195651-…`、`…-195914-…`、`…-215406-…`、`…-215845-…`。`0cf4eabfb` 的 prod 绿**成立**（同 HEAD 两次 prod 聚合指纹
+    `2c97ed31…` vs `e6f3f689…` 不同、前一次失败未被继承 ⇒ 19:45 的 XML 是重写的），但当时闸门无「自证产物归属」能力，**绿靠事后推理而非机制**——见二次修正条。
   - **未验边界补四条**：真机观感未验；`composeP1` 无**分源集**的 L1 证据（源码已挂 `main`，`build.gradle:149-159`，随
-    `:app:compileDevDebugKotlin` 一起编，**不是**「未编译」）；CI 无 pwsh（workflows 全量 grep 0 命中）；首轮红/复跑绿不算双绿。
+    `:app:compileDevDebugKotlin` 一起编，**不是**「未编译」）；CI 无 pwsh（workflows 全量 grep 0 命中）；**绿要能说清怎么成立的**（机制 / 事后互证），不能只写「双绿」。
+
+- **2026-11-12 二次修正（监察重判，只改账）**：把 `0cf4eabfb` 从「存疑」改成「**绿成立，但依赖事后互证**」，并给附录 A 补聚合指纹列。
+  - **判据（三重互证）**：同一 HEAD `0cf4eabfb` 跑过两次 prod——19:39 `8075 / 1`（聚合 `2c97ed31f59d…`）、19:45 `8075 / 0`（聚合 `e6f3f6894e83…`）；
+    **聚合不同 + 前一次的失败没被继承** ⇒ 19:45 那批 XML 是被重写的，不是复用旧产物 ⇒ 绿成立。
+  - **但结论的成立方式要留住**：当时闸门还不具备「自证产物归属」（`RESULT` 靠目录 mtime、无跑前清理、无四行坐标）⇒ 绿**不是靠机制成立、而是靠事后推理成立**，
+    成本高得多。**这正是 R20 存在的理由**（机制到位后，这类结论本该由闸门自己给出）。
+  - **19:39 那次红的根因（监察重判）**：跑期间有人改了 `TimetableWeekPage.kt`（`STATUS before 1 → after 2`），**提交态本身是对的**；
+    这是「闸门没有工作树 STATUS 比对告警」的直接后果——并发改动不会喊，红/绿照算本次。已写进 R20 判例。
+    ⚠ 今日七份归档里**没有** `STATUS` 行（那是后续闸门版本补的），本条依据监察记录，不是从 `summary.txt` 读出来的。
+  - **附录 A 加列**：`AGGREGATE-XML-SHA256`（对排序后的逐份 XML 哈希再哈希）与 `summary.txt` 自身 sha256 **两个都要**——
+    前者防「张冠李戴（是不是同一次运行）」，后者防「摘要被改过」；闸门里行名是 `AGGREGATE-SHA256`，同口径同值。
 
 - **2026-11-11 记 R19「岛支持只判品牌、无 ROM 版本判断」（只改账；性质是效率 / 兼容性改进，不是缺陷）**：
   - 读出部分：`LiveUpdateService.kt:283-290` / `:1485-1492` 两个判据只看 manufacturer/brand；`ro.mi.*` /
@@ -344,17 +354,24 @@ L3 出包、L3.5 性能包、L4 真机一律用户跑；**性能只认 Bench 或
 ## 附录 A：2026-11-12 检查点的本机归档
 
 归档是**本机产物**（`.agents/` 被 `.gitignore:140` 忽略，不进 git）：**换机器 / 新克隆查不到，需重跑才能复核**。
-下表只记目录名与指纹，方便「该找什么、找不到怎么补」；摘要文件都叫 `summary.txt`。
+下表只记目录名与两个指纹，方便「该找什么、找不到怎么补」；摘要文件都叫 `summary.txt`。
 
-| 检查点 HEAD | 归档目录名 | `summary.txt` 指纹（sha256 前 12） | `RESULT[...]` |
-|---|---|---|---|
-| `0cf4eabfb`（**存疑，不作证据**） | `20261112-193643-0cf4eabfb-testDevDebugUnitTest` | `b883959636ec` | 8075 / 0 |
-| 同上 | `20261112-193932-0cf4eabfb-testProdDebugUnitTest` | `081a7d20f0a6` | 8075 / **1** |
-| 同上（复跑，仍存疑：早于闸门修复，可能读到上一轮 XML） | `20261112-194510-0cf4eabfb-testProdDebugUnitTest` | `867632c17e40` | 8075 / 0 |
-| `b6ba086ff`（**可信**） | `20261112-195651-b6ba086ff-testDevDebugUnitTest` | `bf3e27868c46` | 8075 / 0 |
-| 同上 | `20261112-195914-b6ba086ff-testProdDebugUnitTest` | `7a28874e7ef6` | 8075 / 0 |
-| `5de395341`（**可信**） | `20261112-215406-5de395341-testDevDebugUnitTest` | `244f37460828` | 8075 / 0 |
-| 同上 | `20261112-215845-5de395341-testProdDebugUnitTest` | `c3d7db45bda9` | 8075 / 0 |
+| 检查点 HEAD | 归档目录名 | `summary.txt` 自身 sha256（前 12） | `AGGREGATE-XML-SHA256`（前 12） | `RESULT[...]` |
+|---|---|---|---|---|
+| `0cf4eabfb`（dev，绿） | `20261112-193643-0cf4eabfb-testDevDebugUnitTest` | `b883959636ec` | `eda3d8b35482` | 8075 / 0 |
+| `0cf4eabfb`（prod 首轮，**红**：工作树被并发改动） | `20261112-193932-0cf4eabfb-testProdDebugUnitTest` | `081a7d20f0a6` | `2c97ed31f59d` | 8075 / **1** |
+| `0cf4eabfb`（prod 复跑，**绿成立**：与上一行聚合不同 + 未继承其失败） | `20261112-194510-0cf4eabfb-testProdDebugUnitTest` | `867632c17e40` | `e6f3f6894e83` | 8075 / 0 |
+| `b6ba086ff`（dev，可信） | `20261112-195651-b6ba086ff-testDevDebugUnitTest` | `bf3e27868c46` | `6528c4d57131` | 8075 / 0 |
+| `b6ba086ff`（prod，可信） | `20261112-195914-b6ba086ff-testProdDebugUnitTest` | `7a28874e7ef6` | `ed2fa3f88150` | 8075 / 0 |
+| `5de395341`（dev，可信） | `20261112-215406-5de395341-testDevDebugUnitTest` | `244f37460828` | `06f53ab2eb23` | 8075 / 0 |
+| `5de395341`（prod，可信） | `20261112-215845-5de395341-testProdDebugUnitTest` | `c3d7db45bda9` | `6c2632fceadc` | 8075 / 0 |
+
+**两个指纹用途不同，缺一不可**：
+
+- `summary.txt` 自身 sha256 ⇒ 防**这份摘要事后被改**（篡改检测）；
+- `AGGREGATE-XML-SHA256` ⇒ 防**张冠李戴**（是不是同一次运行）：对**排序后的逐份 XML 哈希**再哈希。
+  列名按本账口径写 `AGGREGATE-XML-SHA256`；闸门在 `summary.txt` 里打的行名是 `AGGREGATE-SHA256`
+  （同口径、同值），只此两种写法，别再自创。**两次跑聚合不同 = 两批不同产物**，即便用例数一样。
 
 **找不到归档时怎么补**（本地跑，`safe-gradle.ps1` 的剩余参数会原样传给 gradle）：
 
