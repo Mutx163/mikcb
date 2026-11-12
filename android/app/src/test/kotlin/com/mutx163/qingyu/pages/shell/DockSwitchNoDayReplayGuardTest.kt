@@ -1,9 +1,9 @@
 package com.mutx163.qingyu.pages.shell
 
+import com.mutx163.qingyu.testutil.readKotlinSourceNoStrings
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
-import java.io.File
 
 /**
  * 底栏/导航栏切页「日↔周按来源选几何」守卫（2026-11-04）。
@@ -122,16 +122,26 @@ class DockSwitchNoDayReplayGuardTest {
         src.contains("switchHomeViewMode(TimetableHomeViewMode.DAY, animate = true, horizontal = true)") &&
             src.contains("switchHomeViewMode(TimetableHomeViewMode.WEEK, animate = true, horizontal = true)")
 
-    private fun read(rel: String): String {
-        var dir: File? = File("").absoluteFile
-        while (dir != null) {
-            val candidate = File(dir, rel)
-            if (candidate.isFile) return candidate.readText(Charsets.UTF_8)
-            dir = dir.parentFile
-        }
-        // 找不到就失败，不静默跳过——跳过等于守卫不存在。
-        throw AssertionError("找不到 $rel —— 守卫无法验证，按失败处理")
-    }
+    /**
+     * 读生产源码，走**中性化字符串档**（`readKotlinSourceNoStrings`：剥注释 + 字符串内容换空格）。
+     *
+     * ## 为什么这一档（2026-11-12 B1 批）
+     *
+     * 本文件判的全是**调用与实参**：`HorizontalPager(`、`springAnimateToPage(`、
+     * `switchHomeViewMode(mode, animate = false)`、`dayExpandEasing.transform(dayExpand.value) * size.width.toFloat()`、
+     * `daySwitchHorizontal: Boolean = false`、`onCloseDay = { … }`。这些是代码骨架，
+     * 判据要的是「这行代码在不在」，不是「这句话有没有被谁写进字符串」。
+     *
+     * 选中性化档的两个理由：
+     * 1. 生产代码里任何一句含同样片段的日志 / 提示语，都能让 `contains` 假绿；
+     * 2. 两条负例自测（`负例自测_*`）先断言「原文件通过」再 `replace` 造负例——若字符串内容
+     *    留着，负例的 `replace` 可能把字符串里的同名字样也替掉，探针结论就不可信。
+     *
+     * 本文件**没有**判「某字面量许不许出现」的判据，所以不需要默认档。
+     * 剥注释那一半是必须的：**注释掉的接线不算接线**——此前 `readText()` 读原文时，
+     * 把目标行注释掉守卫照样绿（B1 批实测的绕过面）。
+     */
+    private fun read(rel: String): String = readKotlinSourceNoStrings(rel)
 
     private companion object {
         const val ACTIVITY_PATH =

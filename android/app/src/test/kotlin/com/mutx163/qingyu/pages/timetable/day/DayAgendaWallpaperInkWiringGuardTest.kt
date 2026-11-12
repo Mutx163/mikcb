@@ -1,9 +1,12 @@
 package com.mutx163.qingyu.pages.timetable.day
 
+import com.mutx163.qingyu.testutil.readKotlinSourceNoStrings
+import com.mutx163.qingyu.testutil.readKotlinSourceNormalized
+import com.mutx163.qingyu.testutil.readSourceNormalized
+import com.mutx163.qingyu.testutil.stripKotlinComments
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
-import java.io.File
 
 /**
  * 日视图卡面墨色「接线不许回退」守卫（2026-11-07）。
@@ -43,7 +46,7 @@ class DayAgendaWallpaperInkWiringGuardTest {
     @Test
     fun `五张卡都必须调用共享的壁纸墨色件`() {
         for (path in cardFiles) {
-            val source = readSource(path)
+            val source = readCallSource(path)
             assertTrue(
                 "$path 没有调用 `CourseCardInk.resolveCardInkOverWallpaper(`：" +
                     "这些卡在玻璃 / 半透明档必须按卡面有效亮度翻黑白，回退成「恒白字 / 只按卡色判」" +
@@ -56,7 +59,7 @@ class DayAgendaWallpaperInkWiringGuardTest {
     @Test
     fun `旧的墨色取法不许回来`() {
         // 考试卡：曾经 `val ink = Color.White`（液态档染色最低时白字压在浅壁纸上直接消失）。
-        val exam = readSource("$dayDir/DayViewExamCard.kt")
+        val exam = readCallSource("$dayDir/DayViewExamCard.kt")
         assertFalse(
             "考试卡又写回 `val ink = Color.White`：半透明档必须按卡面有效亮度翻黑白。",
             Regex("""^[ \t]*val ink = Color\.White[ \t]*$""", RegexOption.MULTILINE)
@@ -65,7 +68,7 @@ class DayAgendaWallpaperInkWiringGuardTest {
 
         // 课程卡 / 日程卡：曾经只按不透明卡色判，完全不看壁纸。
         for (path in listOf("$dayDir/DayViewCourseCard.kt", "$dayDir/DayViewScheduleCard.kt")) {
-            val source = readSource(path)
+            val source = readCallSource(path)
             assertFalse(
                 "$path 又写回 `val ink = calculateCardInk(...)`：那只看不透明卡色，" +
                     "近透明的卡压在深壁纸上会拿到深字。",
@@ -75,7 +78,7 @@ class DayAgendaWallpaperInkWiringGuardTest {
         }
 
         // 待办带：曾经标题墨恒取主题前景色（深色主题白字 × 浅壁纸）。
-        val taskBand = readSource("$dayDir/DayViewTaskBandCard.kt")
+        val taskBand = readCallSource("$dayDir/DayViewTaskBandCard.kt")
         assertFalse(
             "待办带又写回 `val primaryTextColor = Color(QingyuTheme.primaryText(dark))`：" +
                 "它必须走壁纸墨色件。",
@@ -88,14 +91,14 @@ class DayAgendaWallpaperInkWiringGuardTest {
 
     @Test
     fun `四个调用点都必须把壁纸亮度传下去`() {
-        val source = readSource("$dayDir/DayViewScrollContent.kt")
+        val scrollPath = "$dayDir/DayViewScrollContent.kt"
         for (marker in listOf(
             "DayViewTaskBandCard(",
             "DayViewCourseCard(",
             "DayViewScheduleCard(",
             "DayViewExamCard(",
         )) {
-            val block = callBlock(source, marker)
+            val block = callBlockNoStrings(scrollPath, marker)
             assertTrue(
                 "$marker 的调用没有传 `wallpaperLuminance = wallpaperLuminance`：" +
                     "参数不传，卡里的判据永远拿到 null，等于没接线。实际调用块：$block",
@@ -105,7 +108,7 @@ class DayAgendaWallpaperInkWiringGuardTest {
         // 摘要卡走的是星期栏那档亮度（与它字面的星期栏字色同源）。
         assertTrue(
             "DayViewSummaryCard( 的调用没有传 `wallpaperLuminance = summaryWallpaperLuminance`",
-            callBlock(source, "DayViewSummaryCard(")
+            callBlockNoStrings(scrollPath, "DayViewSummaryCard(")
                 .contains("wallpaperLuminance = summaryWallpaperLuminance"),
         )
     }
@@ -116,9 +119,8 @@ class DayAgendaWallpaperInkWiringGuardTest {
      */
     @Test
     fun `DayViewPage 必须按区域把亮度带传对`() {
-        val page = readSource("$dayDir/DayViewPage.kt")
         // 只看发给日视图滚动内容的那次调用（页面里别的组件按自己的区域取带子）。
-        val scrollCall = callBlock(page, "DayViewScrollContent(")
+        val scrollCall = callBlockNoStrings("$dayDir/DayViewPage.kt", "DayViewScrollContent(")
         assertTrue(
             "DayViewPage 没有把**正文带**亮度传给议程列表（`wallpaperLuminance = effectiveWallpaperBands?.body`）",
             scrollCall.contains("wallpaperLuminance = effectiveWallpaperBands?.body"),
@@ -152,7 +154,7 @@ class DayAgendaWallpaperInkWiringGuardTest {
      */
     @Test
     fun `嵌入首页的日页必须借宿主的壁纸亮度带`() {
-        val page = readSource("$dayDir/DayViewPage.kt")
+        val page = readCallSource("$dayDir/DayViewPage.kt")
         assertTrue(
             "DayViewPage 没有定义 `LocalEmbeddedDayInkBands`：嵌入日页永远拿不到亮度带，" +
                 "深壁纸上的空态与卡片会退回主题 / 不透明卡色墨（深底深字）。",
@@ -164,7 +166,7 @@ class DayAgendaWallpaperInkWiringGuardTest {
             page.contains("LocalEmbeddedDayInkBands.current ?: wallpaperBands"),
         )
 
-        val weekPage = readSource(
+        val weekPage = readCallSource(
             "android/app/src/composeP1/kotlin/com/mutx163/qingyu/pages/timetable/TimetableWeekPage.kt",
         )
         val provideCount = Regex("LocalEmbeddedDayInkBands provides wallpaperBands")
@@ -186,7 +188,7 @@ class DayAgendaWallpaperInkWiringGuardTest {
      */
     @Test
     fun `空态必须接星期栏的亮暗两档字色`() {
-        val empty = readSource("$dayDir/DayViewEmptyState.kt")
+        val empty = readCallSource("$dayDir/DayViewEmptyState.kt")
         assertTrue(
             "DayViewEmptyState 没有把配置字色传进 `inkOverWallpaperArgb`" +
                 "（`configuredArgb = HomeBackgroundModel.parseInkArgb(configuredArgbHex)`）",
@@ -203,8 +205,7 @@ class DayAgendaWallpaperInkWiringGuardTest {
             empty.contains("mutedInkOverWallpaperArgb(titleArgb)"),
         )
 
-        val scroll = readSource("$dayDir/DayViewScrollContent.kt")
-        val emptyCall = callBlock(scroll, "DayViewEmptyState(")
+        val emptyCall = callBlockNoStrings("$dayDir/DayViewScrollContent.kt", "DayViewEmptyState(")
         assertTrue(
             "DayViewScrollContent 没有把星期栏字色传给空态（`configuredArgbHex`）",
             emptyCall.contains("configuredArgbHex = summaryWeekdayFontColorHex"),
@@ -214,8 +215,7 @@ class DayAgendaWallpaperInkWiringGuardTest {
             emptyCall.contains("defaultInkHex = summaryWeekdayFontDefaultHex"),
         )
 
-        val page = readSource("$dayDir/DayViewPage.kt")
-        val scrollCall = callBlock(page, "DayViewScrollContent(")
+        val scrollCall = callBlockNoStrings("$dayDir/DayViewPage.kt", "DayViewScrollContent(")
         assertTrue(
             "DayViewPage 没有按明暗档把星期栏字色传给滚动内容" +
                 "（`summaryWeekdayFontColorHex = if (dark) weekdayStyle.weekdayFontColorDark else …`）",
@@ -240,7 +240,7 @@ class DayAgendaWallpaperInkWiringGuardTest {
             "$dayDir/DayViewSummaryCard.kt" to "fillAlpha = fillAlpha",
         )
         for ((path, expected) in alphaByFile) {
-            val source = readSource(path)
+            val source = readCallSource(path)
             assertTrue(
                 "$path 没有传 `$expected`：判墨的 α 必须与 `dayAgendaSurface(fill = …)` 画出来的" +
                     "那个 α 同源，写死常数会在大 alpha 档给出相反的墨色。",
@@ -256,7 +256,7 @@ class DayAgendaWallpaperInkWiringGuardTest {
     /** 绕过面 ②：模型层必须保持「按对比度择优」，不许退回写死阈值。 */
     @Test
     fun `模型层不许退回写死的翻面阈值`() {
-        val ink = readSource("$mainDir/CourseCardInk.kt")
+        val ink = readCallSource("$mainDir/CourseCardInk.kt")
         assertFalse(
             "CourseCardInk 又出现 `backgroundLuminance < 0.xx` 这种阈值判据：" +
                 "墨色必须由黑白对比度择优决定（相等点 ≈0.2017 是算出来的，不是常量）。",
@@ -267,7 +267,7 @@ class DayAgendaWallpaperInkWiringGuardTest {
             Regex("""val t = 0\.\d""").containsMatchIn(ink),
         )
 
-        val model = readSource("$shellDir/HomeBackgroundModel.kt")
+        val model = readCallSource("$shellDir/HomeBackgroundModel.kt")
         for (constant in listOf("CHROME_INK_FLIP_LUMINANCE", "CARD_GLASS_INK_FLIP_LUMINANCE")) {
             assertFalse(
                 "HomeBackgroundModel 又用回写死的 $constant：顶栏 / 星期栏 / 时间列 / 空态的墨色" +
@@ -279,7 +279,7 @@ class DayAgendaWallpaperInkWiringGuardTest {
 
     @Test
     fun `摘要卡不许再要 glass 门槛 也不许再传 darkThreshold`() {
-        val summary = readSource("$dayDir/DayViewSummaryCard.kt")
+        val summary = readCallSource("$dayDir/DayViewSummaryCard.kt")
         assertFalse(
             "摘要卡又要求 `glass != null` 才判墨：`dayAgendaGlassBackdrop` 只认液态档，" +
                 "高斯档（α=0.55）与半透明实心档会直接退回主题前景色，不按卡面亮度算。",
@@ -305,7 +305,7 @@ class DayAgendaWallpaperInkWiringGuardTest {
             "$dayDir/DayViewExamCard.kt",
             "$dayDir/DayViewTaskBandCard.kt",
         )) {
-            val source = readSource(path)
+            val source = readCallSource(path)
             assertTrue(
                 "$path 的实心档没有走 `CourseCardInk.bestContrastInk(`：" +
                     "实心档不露壁纸，但仍要按卡色自身的 WCAG 亮度择优。" +
@@ -318,7 +318,7 @@ class DayAgendaWallpaperInkWiringGuardTest {
                 source.contains("calculateCardInk(") || source.contains("fallbackArgb = Color.White"),
             )
         }
-        val common = readSource("$dayDir/DayViewCommon.kt")
+        val common = readCallSource("$dayDir/DayViewCommon.kt")
         assertTrue(
             "`calculateCardInk` 没有走 WCAG 择优（又回 gamma 0.55 加权阈值？）",
             common.contains("Color(CourseCardInk.bestContrastInk(backgroundColor.toArgb()))"),
@@ -333,13 +333,12 @@ class DayAgendaWallpaperInkWiringGuardTest {
      */
     @Test
     fun `模型层三个墨色入口不许出现字面量阈值`() {
-        val model = readSource("$shellDir/HomeBackgroundModel.kt")
         for (fn in listOf(
             "fun chromeInkPolarity(",
             "fun cardGlassInkPolarity(",
             "fun flipInkArgb(",
         )) {
-            val body = memberBlock(model, fn)
+            val body = memberBlockNoStrings("$shellDir/HomeBackgroundModel.kt", fn)
             assertTrue(
                 "`$fn` 里没有比对比度（`contrastOnLuminance(`），判据可能不是择优",
                 body.contains("contrastOnLuminance("),
@@ -360,7 +359,7 @@ class DayAgendaWallpaperInkWiringGuardTest {
             "$mainDir/CourseCardInk.kt",
             "$shellDir/HomeBackgroundModel.kt",
         )) {
-            val source = readSource(path)
+            val source = readCallSource(path)
             assertTrue(
                 "$path 源码读取太短（${source.length} 字符），路径解析可能坏了",
                 source.length > 1000,
@@ -382,7 +381,7 @@ class DayAgendaWallpaperInkWiringGuardTest {
             "$dayDir/DayViewScheduleCard.kt",
             "$dayDir/DayViewExamCard.kt",
         )) {
-            val source = readSource(path)
+            val source = readCallSource(path)
             assertTrue(
                 "$path 没有把 `pageBackgroundLuminance = pageBackgroundLuminance` 传给共享判据：" +
                     "磨砂档无壁纸时卡面是卡色 0.55α 压在页底上，只按不透明卡色回退会反判。",
@@ -394,18 +393,19 @@ class DayAgendaWallpaperInkWiringGuardTest {
             )
         }
 
-        val scroll = readSource("$dayDir/DayViewScrollContent.kt")
+        val scrollPath = "$dayDir/DayViewScrollContent.kt"
         for (marker in listOf("DayViewCourseCard(", "DayViewScheduleCard(", "DayViewExamCard(")) {
             assertTrue(
                 "$marker 的调用没有把 `pageBackgroundLuminance = pageBackgroundLuminance` 传下去",
-                callBlock(scroll, marker).contains("pageBackgroundLuminance = pageBackgroundLuminance"),
+                callBlockNoStrings(scrollPath, marker)
+                    .contains("pageBackgroundLuminance = pageBackgroundLuminance"),
             )
         }
 
-        val page = readSource("$dayDir/DayViewPage.kt")
+        val page = readCallSource("$dayDir/DayViewPage.kt")
         assertTrue(
             "DayViewPage 没有把页底亮度传给日视图滚动内容",
-            callBlock(page, "DayViewScrollContent(")
+            callBlockNoStrings("$dayDir/DayViewPage.kt", "DayViewScrollContent(")
                 .contains("pageBackgroundLuminance = pageBackgroundLuminance"),
         )
         assertTrue(
@@ -427,7 +427,7 @@ class DayAgendaWallpaperInkWiringGuardTest {
      */
     @Test
     fun `有壁纸时不许用页底亮度判墨`() {
-        val page = readSource("$dayDir/DayViewPage.kt")
+        val page = readCallSource("$dayDir/DayViewPage.kt")
         assertTrue(
             "DayViewPage 没有用 `dayAgendaPageFallbackLuminance(` 门控页底亮度：" +
                 "有壁纸但亮度未就绪时按页底判墨会闪一帧反极性。",
@@ -438,9 +438,10 @@ class DayAgendaWallpaperInkWiringGuardTest {
             page.contains("hasWallpaper = hasWallpaper"),
         )
 
-        val shell =
-            readSource("android/app/src/main/kotlin/com/mutx163/qingyu/pages/ShellPageIndex.kt")
-        val shellCall = callBlock(shell, "DayViewPage(")
+        val shellCall = callBlockNoStrings(
+            "android/app/src/main/kotlin/com/mutx163/qingyu/pages/ShellPageIndex.kt",
+            "DayViewPage(",
+        )
         assertTrue(
             "壳的 `c3.day` 没传纯 `hasWallpaper = homeChrome.hasBackdrop`：" +
                 "漏了这一行，独立日页/首页展开层仍会在亮度未就绪时按页底反判。",
@@ -452,10 +453,10 @@ class DayAgendaWallpaperInkWiringGuardTest {
             shellCall.contains("hasWallpaper = glassSurfacesEnabled &&"),
         )
 
-        val editor = readSource(
+        val editorCall = callBlockNoStrings(
             "android/app/src/composeP1/kotlin/com/mutx163/qingyu/app/AppearanceEditorHost.kt",
+            "DayViewPage(",
         )
-        val editorCall = callBlock(editor, "DayViewPage(")
         assertTrue(
             "外观预览没传纯 `hasWallpaper = homeChrome.hasBackdrop`",
             editorCall.contains("hasWallpaper = homeChrome.hasBackdrop"),
@@ -475,7 +476,11 @@ class DayAgendaWallpaperInkWiringGuardTest {
      */
     @Test
     fun `空态必须固定，不进滚动列表`() {
-        val scroll = readSource("$dayDir/DayViewScrollContent.kt")
+        // ── 选档：**默认档**（剥注释、**保留字符串内容**）──
+        // 这条判的正是 `day-empty-state-item` 这个 LazyColumn item key **字面量**在不在源码里。
+        // 若图省事用中性化档，字面量会被擦成空格，`assertFalse` 从此永远通过——守卫变摆设。
+        // 注释照样剥：注释掉的接线不算接线。
+        val scroll = readLiteralSource("$dayDir/DayViewScrollContent.kt")
         assertFalse(
             "`day-empty-state-item` 又回到列表里了：空态一旦是 LazyColumn 的 item，" +
                 "上下滑时就会跟着手走（用户 2026-11-09 明要求固定）。",
@@ -510,7 +515,7 @@ class DayAgendaWallpaperInkWiringGuardTest {
      */
     @Test
     fun `空态必须按页底亮度兜底`() {
-        val empty = readSource("$dayDir/DayViewEmptyState.kt")
+        val empty = readCallSource("$dayDir/DayViewEmptyState.kt")
         assertTrue(
             "DayViewEmptyState 没有把页底亮度纳入判墨（缺 `wallpaperLuminance ?: pageBackgroundLuminance`）：" +
                 "没壁纸 + 深页底色时会给深字，深底深字看不见。",
@@ -521,17 +526,16 @@ class DayAgendaWallpaperInkWiringGuardTest {
             empty.contains("wallpaperLuminance = backdropLuminance,"),
         )
 
-        val scroll = readSource("$dayDir/DayViewScrollContent.kt")
         assertTrue(
             "DayViewScrollContent 调用空态时没传 `pageBackgroundLuminance = pageBackgroundLuminance`",
-            callBlock(scroll, "DayViewEmptyState(")
+            callBlockNoStrings("$dayDir/DayViewScrollContent.kt", "DayViewEmptyState(")
                 .contains("pageBackgroundLuminance = pageBackgroundLuminance"),
         )
 
-        val page = readSource("$dayDir/DayViewPage.kt")
+        val page = readCallSource("$dayDir/DayViewPage.kt")
         assertTrue(
             "DayViewPage 没有把页底亮度传给日视图滚动内容",
-            callBlock(page, "DayViewScrollContent(")
+            callBlockNoStrings("$dayDir/DayViewPage.kt", "DayViewScrollContent(")
                 .contains("pageBackgroundLuminance = pageBackgroundLuminance"),
         )
         assertTrue(
@@ -583,13 +587,33 @@ class DayAgendaWallpaperInkWiringGuardTest {
     }
 
     /** 从工作目录向上找仓库根再定位文件；找不到仍判失败，不静默跳过。 */
-    private fun readSource(relative: String): String {
-        var dir: File? = File("").absoluteFile
-        repeat(8) {
-            val candidate = File(dir, relative)
-            if (candidate.isFile) return candidate.readText(Charsets.UTF_8)
-            dir = dir?.parentFile
-        }
-        error("找不到 $relative（工作目录 ${File("").absolutePath}）")
-    }
+    private fun readCallSource(relative: String): String = readKotlinSourceNoStrings(relative)
+
+    /**
+     * 判「某字面量许不许出现」时用这一档：**剥注释、保留字符串内容**。
+     *
+     * 只有 [空态必须固定，不进滚动列表] 需要它——那条判的正是 `day-empty-state-item`
+     * 这个 **LazyColumn item key 字符串**在不在源码里。用中性化档会把被判的字面量自己
+     * 擦成空格，`assertFalse` 从此永远通过（洗白），所以这一档不能与其他判据混用。
+     */
+    private fun readLiteralSource(relative: String): String = readKotlinSourceNormalized(relative)
+
+    /**
+     * 取出 `marker(` 那一整个调用块，**再**按「判调用型」剥离（剥注释 + 中性化字符串）。
+     *
+     * 顺序是硬要求（**先切片、再剥离**）：[callBlock] 靠圆括号配平定位，剥离会改变文本，
+     * 先剥后切会对不上原件；剥离也可能吃掉将来新增的块边界标记。
+     */
+    private fun callBlockNoStrings(relative: String, marker: String): String =
+        stripKotlinComments(callBlock(readSourceNormalized(relative), marker), neutralizeStrings = true)
+
+    /**
+     * 取出一个成员块，**再**按「判调用型」剥离。顺序理由同 [callBlockNoStrings]：
+     * [memberBlock] 的块结束标记是缩进四个空格的 KDoc 起始符（斜杠 + 星号 + 星号）——
+     * 剥完注释这个标记就没了，块会一路延长到下一个 `fun`，判据范围跟着漂。
+     * （这里刻意不把那个三字符序列写出来：Kotlin 的 KDoc 是块注释，写了会被当嵌套注释，
+     * 整份文件收不了尾。）
+     */
+    private fun memberBlockNoStrings(relative: String, marker: String): String =
+        stripKotlinComments(memberBlock(readSourceNormalized(relative), marker), neutralizeStrings = true)
 }

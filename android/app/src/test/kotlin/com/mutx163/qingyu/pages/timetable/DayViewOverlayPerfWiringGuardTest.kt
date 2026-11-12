@@ -1,9 +1,9 @@
 package com.mutx163.qingyu.pages.timetable
 
+import com.mutx163.qingyu.testutil.readKotlinSourceNoStrings
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
-import java.io.File
 
 /**
  * 日视图展开层的**卡顿修复接线守卫**（2026-11-03 建，2026-11-05 补时序断言）。
@@ -455,16 +455,26 @@ class DayViewOverlayPerfWiringGuardTest {
         return source.substring(start, end)
     }
 
-    private fun readSource(relative: String): String {
-        var dir: File? = File("").absoluteFile
-        while (dir != null) {
-            val candidate = File(dir, relative)
-            if (candidate.isFile) return candidate.readText(Charsets.UTF_8)
-            dir = dir.parentFile
-        }
-        // 找不到就失败，不静默跳过——跳过等于守卫不存在。
-        throw AssertionError("找不到 $relative —— 守卫无法验证，按失败处理")
-    }
+    /**
+     * 读生产源码，走**中性化字符串档**（`readKotlinSourceNoStrings`：剥注释 + 字符串内容换空格）。
+     *
+     * ## 为什么这一档（2026-11-12 B1 批，选档判据留给后来人）
+     *
+     * 本文件的判据**全部是「调用 / 实参 / effect 键 / 赋值结构在不在」**这类接线型问题：
+     * `DayViewOverlayBinding(settingsModel = settingsModel)`、`dayExpand.animateTo(`、
+     * `LaunchedEffect` 的键里有 `dayContentComposed`、`dayContentComposed = true` 恰好两处、
+     * `HorizontalPager(`/`graphicsLayer { alpha = panelAlpha }`……要的是**代码骨架**，
+     * 不是文案。所以字符串内容必须抹掉：否则生产代码里一句日志 / 提示语 / 示例写进
+     * 字符串，就能把对应 `contains` 喂饱（假绿）。
+     *
+     * 反过来说，**这里没有一条判据判「某个字面量许不许出现」**，所以不需要默认档；
+     * 一旦以后有人要加这类判据，必须另起一个走 `readKotlinSourceNormalized` 的读法，
+     * 不能图省事把这里整档换掉——中性化会把被判的字面量自己擦掉，判据变永绿。
+     *
+     * 剥注释这一半解决的是另一件事：**注释掉的接线不算接线**。此前这里直接
+     * `readText()` 读原文，「把目标行注释掉仍绿」是实测可复现的绕过面。
+     */
+    private fun readSource(relative: String): String = readKotlinSourceNoStrings(relative)
 
     private companion object {
         const val ShellPageIndex =

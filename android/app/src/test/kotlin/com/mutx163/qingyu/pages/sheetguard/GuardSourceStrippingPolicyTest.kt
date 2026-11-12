@@ -342,11 +342,6 @@ class GuardSourceStrippingPolicyTest {
                 reason = "启动落点契约里有两处读原文：ExamReminderScheduler.kt 必须写 putExtra(EXTRA_OPEN_ROUTE, ROUTE_EXAMS)，LanEditForegroundService.kt 必须写统一 EXTRA_OPEN_LAN_EDIT",
                 reviewTrigger = LEGACY_REVIEW_TRIGGER,
             ),
-            "com/mutx163/qingyu/NotificationLaunchShellWiringGuardTest.kt" to LegacyMeta(
-                introducedAt = "9427c4fd3 2026-11-04",
-                reason = "读 PagesShellActivity.kt 与 ShellPageIndex.kt，判通知落点在 onCreate 的 null 分支与 onNewIntent 都投递、落点页 id 在壳分派表里；methodBody 截块不剥注释",
-                reviewTrigger = LEGACY_REVIEW_TRIGGER,
-            ),
             "com/mutx163/qingyu/NotificationLaunchTargetGuardTest.kt" to LegacyMeta(
                 introducedAt = "bd1bbeb0e 2026-11-01",
                 reason = "扫五个通知发送点（两个 Scheduler、LiveUpdateService、LanEditForegroundService、TodayWidgetSupport）必须走 NotificationLaunchTarget.intent(，不许 Intent(context, MainActivity::class.java)",
@@ -432,11 +427,6 @@ class GuardSourceStrippingPolicyTest {
                 reason = "读 PagesShellActivity.kt 与 ShellRoute.kt，判底栏切换必须 HorizontalPager( 加 springAnimateToPage(、不许自研转场；codeOnly 剥注释后逐条 contains",
                 reviewTrigger = LEGACY_REVIEW_TRIGGER,
             ),
-            "com/mutx163/qingyu/pages/shell/DockSwitchNoDayReplayGuardTest.kt" to LegacyMeta(
-                introducedAt = "13252d037 2026-11-04",
-                reason = "读壳、ShellWiring、TimetableHost、TimetableWeekPage，判两格互点走 translateX 横滑而不重放日视图；两条负例自测直接替换原文再 contains",
-                reviewTrigger = LEGACY_REVIEW_TRIGGER,
-            ),
             "com/mutx163/qingyu/pages/shell/HomeBackToRootGuardTest.kt" to LegacyMeta(
                 introducedAt = "893790123 2026-11-04",
                 reason = "读 PagesShellActivity.kt 判系统返回回首页根，codeOnly 剥注释后判 systemBackBlock 内不许出现 selectRoot(ROOT_WEEK)",
@@ -482,24 +472,9 @@ class GuardSourceStrippingPolicyTest {
                 reason = "读 CoupleTimetableSettingsPage.kt 与 CoupleWebDavConnectSheet.kt，用 callArguments 与 topLevelArgument 切出着色调用，判不许 primarySurface 底配 primary 字",
                 reviewTrigger = LEGACY_REVIEW_TRIGGER,
             ),
-            "com/mutx163/qingyu/pages/timetable/DayViewOverlayPerfWiringGuardTest.kt" to LegacyMeta(
-                introducedAt = "ffb858ffd 2026-11-03",
-                reason = "读壳、ShellWiring、DayViewPage、TimetableWeekPage，判展开层复用宿主设置、隐藏不绘制、打开先挂载再动画；靠十余个私有定位器切原文",
-                reviewTrigger = LEGACY_REVIEW_TRIGGER,
-            ),
             "com/mutx163/qingyu/pages/timetable/TimetableShareImageModelTest.kt" to LegacyMeta(
                 introducedAt = "890c98af1 2026-11-03",
                 reason = "二十条是导出几何与文件名模型用例；另读 file_paths.xml 白名单与 TimetableShareLauncher.kt 的 ACTION_SEND、ClipData.newUri、MIME_PNG",
-                reviewTrigger = LEGACY_REVIEW_TRIGGER,
-            ),
-            "com/mutx163/qingyu/pages/timetable/WeekViewCoupleOverlayWiringGuardTest.kt" to LegacyMeta(
-                introducedAt = "60ed8558b 2026-11-07",
-                reason = "读 TimetableHost、TimetableWeekPage、CourseGridCard、WeekGridCourseMapping、CoupleOverlaySource，判叠加内核与 TA 角标，并判数据源不许 import pages.sync",
-                reviewTrigger = LEGACY_REVIEW_TRIGGER,
-            ),
-            "com/mutx163/qingyu/pages/timetable/day/DayAgendaWallpaperInkWiringGuardTest.kt" to LegacyMeta(
-                introducedAt = "3cf8d910b 2026-11-07",
-                reason = "读五张日视图卡、DayViewPage、DayViewScrollContent 与模型层，判卡片墨色走 CourseCardInk 且亮度带按区域传对；memberBlock 与 callBlock 只截块不剥注释",
                 reviewTrigger = LEGACY_REVIEW_TRIGGER,
             ),
             "com/mutx163/qingyu/pages/timetable/day/DayViewColorTokenGuardTest.kt" to LegacyMeta(

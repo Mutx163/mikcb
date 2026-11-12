@@ -1,6 +1,6 @@
 package com.mutx163.qingyu.pages.timetable
 
-import java.io.File
+import com.mutx163.qingyu.testutil.readKotlinSourceNoStrings
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -93,18 +93,23 @@ class WeekViewCoupleOverlayWiringGuardTest {
 
     // ---------------------------------------------------------------- 工具
 
-    private fun read(relativePath: String): String {
-        val file = File(repoRoot(), relativePath)
-        check(file.isFile) { "找不到 $relativePath" }
-        return file.readText(Charsets.UTF_8)
-    }
-
-    private fun repoRoot(): File {
-        var dir: File? = File("").absoluteFile
-        repeat(8) {
-            if (File(dir, "android/app/src/composeP1").isDirectory) return dir!!
-            dir = dir?.parentFile
-        }
-        error("找不到仓库根（工作目录 ${File("").absolutePath}）")
-    }
+    /**
+     * 读生产源码，走**中性化字符串档**（`readKotlinSourceNoStrings`：剥注释 + 字符串内容换空格）。
+     *
+     * ## 为什么这一档（2026-11-12 B1 批）
+     *
+     * 本守卫判的是**接线五环**：`CoupleOverlaySource.load(repository)`、
+     * `coupleOverlay = coupleOverlay`、`cardsForWeekWithCoupleOverlay`、
+     * `isPartnerCourse = true`、`val isPartnerCourse: Boolean = false`、
+     * `model.isPartnerCourse`、`coupleTimetableLegendPartner`（Kotlin 标识符，不是字面量）、
+     * 以及「不许 `import com.mutx163.qingyu.pages.sync`」。这些都是**代码骨架**。
+     *
+     * 所以字符串内容要抹掉：否则一句日志 / 调试提示里出现同样的片段就能让 `contains` 假绿；
+     * 而 `assertFalse` 那条（不许 import pages.sync）也不该被字符串里的同名文本触发假红。
+     *
+     * 本文件没有「某字面量许不许出现」的判据，因此不需要默认档。
+     * 剥注释是另一半：**注释掉的接线不算接线**——此前直接 `readText()` 读原文，
+     * 把目标行注释掉守卫仍绿（B1 批实测的绕过面）。
+     */
+    private fun read(relativePath: String): String = readKotlinSourceNoStrings(relativePath)
 }
