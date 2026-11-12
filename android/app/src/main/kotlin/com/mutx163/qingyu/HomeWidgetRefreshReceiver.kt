@@ -5,6 +5,7 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.util.Log
+import java.util.concurrent.atomic.AtomicBoolean
 
 /**
  * 桌面卡片的**定时刷新入口**（课程边界闹钟、开机、覆盖安装、改时间/时区）。
@@ -44,6 +45,28 @@ class HomeWidgetRefreshReceiver : BroadcastReceiver() {
                 // goAsync 把 PendingResult 交出来：主线程立刻返回，真正的刷新在
                 // widget-refresh 线程上跑；整段必须在广播时限内 finish()（runner 的 finally 保证）。
                 val pendingResult = goAsync()
+                // 幂等壳：正常路径（runner 的 finally）与卡死路径（onTimeout）都会想跑
+                // reschedule / finish，二者只许真跑一次。
+                val rescheduled = AtomicBoolean(false)
+                val finished = AtomicBoolean(false)
+                fun rescheduleOnce() {
+                    if (!rescheduled.compareAndSet(false, true)) return
+                    try {
+                        HomeWidgetStorage.rescheduleRefresh(appContext)
+                    } catch (error: Throwable) {
+                        Log.w(TAG, "widget refresh: reschedule failed", error)
+                    }
+                }
+
+                fun finishOnce() {
+                    if (!finished.compareAndSet(false, true)) return
+                    try {
+                        pendingResult.finish()
+                    } catch (error: Throwable) {
+                        Log.w(TAG, "widget refresh: finish failed", error)
+                    }
+                }
+
                 val runner = WidgetRefreshRunner(
                     updateAll = {
                         // Don't overwrite Flutter-synced snapshot with native-computed data.
@@ -52,13 +75,25 @@ class HomeWidgetRefreshReceiver : BroadcastReceiver() {
                         TodayWidgetSupport.updateAll(appContext)
                         StatsWidgetSupport.updateAll(appContext)
                     },
-                    reschedule = { HomeWidgetStorage.rescheduleRefresh(appContext) },
-                    finish = { pendingResult.finish() },
+                    reschedule = { rescheduleOnce() },
+                    finish = { finishOnce() },
                     onError = { stage, error ->
                         Log.w(TAG, "widget refresh failed at [$stage]; alarm reschedule still runs", error)
                     },
                 )
-                WidgetRefreshSerial.execute { runner.run() }
+                // 卡死保底：block 在专用线程上跑，串行线程最多等 ROUND_TIMEOUT_MILLIS；
+                // 超时就由这里把重新排程与广播交还系统，然后继续下一轮。
+                WidgetRefreshSerial.executeGuarded(
+                    onTimeout = {
+                        Log.w(
+                            TAG,
+                            "widget refresh stuck > ${WidgetRefreshSerial.ROUND_TIMEOUT_MILLIS}ms; forcing reschedule + finish",
+                        )
+                        rescheduleOnce()
+                        finishOnce()
+                    },
+                    block = { runner.run() },
+                )
             }
         }
     }

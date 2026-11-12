@@ -111,13 +111,25 @@ object WidgetRefreshHost {
     /**
      * 把去抖后的这一次处理丢到 [WidgetRefreshSerial] 的 `widget-refresh` 线程；
      * 与闹钟入口、15 分钟兜底排同一条队，避免并发重排闹钟。
+     *
+     * 卡死保底：这一轮若超过 [WidgetRefreshSerial.ROUND_TIMEOUT_MILLIS] 不返回，
+     * 由 `onTimeout` 记日志并补一次重排（正常路径本来也会重排，重复一次是幂等的取消+重设）。
      */
     private fun submitRefresh() {
         val app = appContext ?: return
         val refreshBridge = bridge ?: return
-        WidgetRefreshSerial.execute {
+        WidgetRefreshSerial.executeGuarded(
+            onTimeout = {
+                Log.w(
+                    TAG,
+                    "widget refresh after timetable change stuck > ${WidgetRefreshSerial.ROUND_TIMEOUT_MILLIS}ms; " +
+                        "forcing reschedule",
+                )
+                runCatching { HomeWidgetStorage.rescheduleRefresh(app) }
+            },
+        ) {
             try {
-                if (!hasPlacedWidgets(app)) return@execute
+                if (!hasPlacedWidgets(app)) return@executeGuarded
                 refreshBridge.onTimetableChanged()
             } catch (error: Throwable) {
                 // 刷新失败不能打断用户正在做的事：记一条日志，等下一次变更 / 闹钟再来。

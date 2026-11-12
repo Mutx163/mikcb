@@ -7,8 +7,9 @@ import androidx.work.ExistingPeriodicWorkPolicy
 import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkManager
 import androidx.work.WorkerParameters
-import kotlinx.coroutines.withContext
+import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
+import java.util.concurrent.atomic.AtomicBoolean
 
 /**
  * WorkManager-based backup for widget refresh.
@@ -30,7 +31,7 @@ class WidgetRefreshWorker(
     params: WorkerParameters,
 ) : CoroutineWorker(appContext, params) {
 
-    override suspend fun doWork(): Result = withContext(WidgetRefreshSerial.dispatcher) {
+    override suspend fun doWork(): Result {
         // 一次取快照，后面判零实例与重排都消费它（不再各自遍历 10 类）。
         val widgetIds = HomeWidgetStorage.collectWidgetIds(applicationContext)
         // 桌面没有任何小部件实例 ⇒ 不为不存在的卡片空跑（用户报的耗电问题）。
@@ -38,17 +39,41 @@ class WidgetRefreshWorker(
             // 先取消自己再退出：periodic work 不会因为一次 return 就消失；0 卡片时
             // 这个任务应自我取消（BOOT 后系统自恢复的下一跑也会在这里自取消）。
             cancel(applicationContext)
-            return@withContext Result.success()
+            return Result.success()
         }
-        try {
-            TodayWidgetSupport.updateAll(applicationContext)
-            StatsWidgetSupport.updateAll(applicationContext)
-            HomeWidgetStorage.rescheduleRefresh(applicationContext, widgetIds)
-            Result.success()
-        } catch (e: Exception) {
-            Log.w(TAG, DiagnosticLogMessages.LOG_WIDGET_REFRESH_WORKER_FAILED, e)
-            Result.retry()
+        // 卡死保底：这一轮跑在专用线程上，串行线程最多等 ROUND_TIMEOUT_MILLIS。
+        // 超时（不是抛异常）也要把重排补上，并让 WorkManager 下一轮再来。
+        val done = CountDownLatch(1)
+        val timedOut = AtomicBoolean(false)
+        var failure: Exception? = null
+        WidgetRefreshSerial.executeGuarded(
+            onTimeout = {
+                timedOut.set(true)
+                Log.w(
+                    TAG,
+                    "widget refresh worker stuck > ${WidgetRefreshSerial.ROUND_TIMEOUT_MILLIS}ms; forcing reschedule",
+                )
+                runCatching { HomeWidgetStorage.rescheduleRefresh(applicationContext, widgetIds) }
+                done.countDown()
+            },
+        ) {
+            try {
+                TodayWidgetSupport.updateAll(applicationContext)
+                StatsWidgetSupport.updateAll(applicationContext)
+                HomeWidgetStorage.rescheduleRefresh(applicationContext, widgetIds)
+            } catch (e: Exception) {
+                failure = e
+            } finally {
+                done.countDown()
+            }
         }
+        done.await()
+        failure?.let {
+            Log.w(TAG, DiagnosticLogMessages.LOG_WIDGET_REFRESH_WORKER_FAILED, it)
+            return Result.retry()
+        }
+        if (timedOut.get()) return Result.retry()
+        return Result.success()
     }
 
     companion object {
