@@ -101,8 +101,11 @@ class SettingsHomeBackdropFlowPageTest {
         val spec = SettingsBackdropFlowPage.selectionPage(missing.backdrop, missing)
         val notice = spec.row("backdrop.image.missing")
         assertEquals("图片文件已丢失", notice.title)
-        assertEquals("点这里重新选一张", notice.subtitle)
-        // 警示条本身就是一个动作（点了回到选图），不是纯文字
+        assertEquals("已回退为纯色背景，点下方换壁纸重选", notice.subtitle)
+        // 警示条本身就是一个动作（点了回到选图），不是纯文字。
+        // ⚠ 因此这条 subtitle 里的「点下方换壁纸」在这条**可点**的警示条上是错的说法：
+        // 同一个 ARB 键还被选图页的不可点空态复用（WallpaperPositionPickerPage.PickerEmptyState）。
+        // 要修必须拆键，属于产品文案决定，见 .botharness/copy-audit 的对照表。
         assertEquals(SettingsAction.NAVIGATE, notice.action)
         assertEquals("backdrop.image.missing", notice.actionTarget)
 

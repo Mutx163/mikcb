@@ -97,7 +97,7 @@ object SettingsStringsExt1 {
     val homePageWallpaperFileMissingTitle =
         ArbText("homePageWallpaperFileMissingTitle", "图片文件已丢失")
     val homePageWallpaperFileMissingSubtitle =
-        ArbText("homePageWallpaperFileMissingSubtitle", "点这里重新选一张")
+        ArbText("homePageWallpaperFileMissingSubtitle", "已回退为纯色背景，点下方换壁纸重选")
     val homePageWallpaperFileMissingToast = ArbText(
         "homePageWallpaperFileMissingToast",
         "壁纸文件已丢失，已恢复为纯色背景，请重新选择一张",
@@ -152,7 +152,7 @@ object SettingsStringsExt1 {
         ArbText("bingWallpaperGalleryFailed", "没能取到 Bing 每日壁纸，请检查网络后重试")
     val bingWallpaperGalleryRetry = ArbText("bingWallpaperGalleryRetry", "重试")
     val wallpaperGalleryShowingCached =
-        ArbText("wallpaperGalleryShowingCached", "显示的是上次的图")
+        ArbText("wallpaperGalleryShowingCached", "网络不太顺畅，显示的是上次的图")
     val bingWallpaperDownloadFailed =
         ArbText("bingWallpaperDownloadFailed", "这张壁纸没能下载成功，请稍后再试")
     val bingWallpaperDownloadProgress = ArbText("bingWallpaperDownloadProgress", "正在下载 {percent}")
