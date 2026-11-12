@@ -239,10 +239,14 @@ try {
     $testRan = ($testState -eq '')
 
     $emittedResult = $false
+    # 标记语义（2026-11-12 定死，别混）：
+    # · `NO-TEST-TASK` —— 本次请求本来就不含测试任务（如 `:app:help`、`:app:compile*`）⇒ **正常**；
+    # · `TESTS-NOT-RUN` —— 该跑却没跑（编译失败 / UP-TO-DATE / SKIPPED / 产物缺失）⇒ **异常**。
+    # 一个标记承载两种语义时，机械扫描只能二选一地误判（监察实测把两份 help 日志标成异常）。
     if ($compileFailed) {
         & $writeEvidence "=== TESTS-NOT-RUN (compile failed)"
     } elseif (-not $testTaskArg) {
-        & $writeEvidence "=== TESTS-NOT-RUN (本次请求不含 UnitTest 任务)"
+        & $writeEvidence "=== NO-TEST-TASK（本次请求不含测试任务；正常，不是异常）"
     } elseif (-not $testRan) {
         & $writeEvidence "=== TESTS-NOT-RUN (test task 未执行：$($testState.Trim()))"
     } elseif (-not $resultsDirPath -or -not (Test-Path -LiteralPath $resultsDirPath)) {
