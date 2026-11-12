@@ -82,6 +82,17 @@ MIN_WORDS = 2
 
 LANGS = ("zh", "zh_HK", "zh_TW", "en", "ja", "ko")
 
+# 刻意例外：基线里这些行**不是未翻译**，是引用了别的资源文件里的字面量。
+# 写明在基线头注释里，是为了挡住「半年后的清理者」把它当漏翻删掉。
+# 值 = 为什么它是例外（一句话，要能独立看懂）。
+DELIBERATE_EXCEPTIONS = {
+    "B|ko|spreadsheetStep1Subtitle":
+        "引用了模板 CSV 的中文列名（assets/templates/mikcb_course_import_template.csv："
+        "课程名/星期/开始节/结束节/上课周…）。韩国用户下载到的就是这份中文表头，"
+        "把列名译成韩文会让人在文件里找不到那一列；en / ja 同口径。改这一条必须同时改模板本体。",
+}
+
+
 
 def load(lang: str) -> dict[str, str]:
     raw = json.loads((ARB_DIR / ("app_%s.arb" % lang)).read_text(encoding="utf-8"))
@@ -152,7 +163,7 @@ def load_baseline() -> list[str]:
 
 
 def header() -> str:
-    return "\n".join([
+    out = [
         "# i18n 文案缺口基线（棘轮：只许降不许升）",
         "# 生成：python scripts/i18n-copy-gap.py --write（判据见脚本头注释）",
         "# 规则版本 RULES_VERSION=%d，白名单版本 WHITELIST_VERSION=%d" % (RULES_VERSION, WHITELIST_VERSION),
@@ -161,8 +172,16 @@ def header() -> str:
         "# 白名单（v%d）：品牌 %d 个（%s…）；技术标识 %s；剥掉后英文词 < %d 的短标签不判。"
         % (WHITELIST_VERSION, len(BRANDS), "、".join(BRANDS[:6]), "扩展名/URL/缩写词", MIN_WORDS),
         "# 修好一条要同步删掉对应行；新增缺口会直接让 CopyGapGateTest 变红。",
-        "",
-    ])
+    ]
+    if DELIBERATE_EXCEPTIONS:
+        out.append("#")
+        out.append("# ⚠ 刻意例外（不是未翻译，别当漏翻删掉）：")
+        for line, why in DELIBERATE_EXCEPTIONS.items():
+            out.append("#   %s" % line)
+            out.append("#     → %s" % why)
+        out.append("#   清理基线的正确姿势：只删「已翻译好」的行；上面这些行若要删，必须同时改掉它引用的资源本体。")
+    out.append("")
+    return "\n".join(out)
 
 
 def compare(old: list[str], new: list[str]):
@@ -207,14 +226,37 @@ def do_write(arb: dict[str, dict[str, str]]) -> int:
               "不要靠重写基线放行。")
         return 1
 
+    # 刻意例外必须「还在缺口集合里」：若某条例外已不成立（被人修好/删了），
+    # 基线里那句「为什么」就成了假话——要求改代码把它摘掉，而不是让它悄悄残留。
+    stale = stale_exceptions(new_lines)
+    if stale:
+        print("拒绝：基线头里的刻意例外已不成立 %d 条（它们不再是缺口）：" % len(stale))
+        for line in stale:
+            print("  - %s" % line)
+        print("请从 scripts/i18n-copy-gap.py 的 DELIBERATE_EXCEPTIONS 里删掉这些条目"
+              "（这是代码改动，应当出现在 diff 里），再重跑 --write。一个字节都没写。")
+        return 1
+
     BASELINE.write_text(header() + "\n".join(new_lines) + "\n", encoding="utf-8", newline="\n")
     msg = "已写入基线：%s（%d 条）" % (BASELINE.relative_to(ROOT), len(new_lines))
     if lowers:
         msg += "；同时下调 %d 条" % len(lowers)
     else:
         msg += "；无升降（内容未变）"
+    if DELIBERATE_EXCEPTIONS:
+        msg += "；刻意例外 %d 条已写进头注释" % len(DELIBERATE_EXCEPTIONS)
     print(msg)
     return 0
+
+
+def stale_exceptions(current: list[str]) -> list[str]:
+    """返回已经不再是缺口的「刻意例外」条目。
+
+    它们仍挂在 DELIBERATE_EXCEPTIONS 里，基线头就会继续断言一个不成立的事实。
+    处理方式只有一种：改代码把条目摘掉（可 review），不允许基线悄悄分叉。
+    """
+    present = set(current)
+    return [line for line in DELIBERATE_EXCEPTIONS if line not in present]
 
 
 def do_check(arb: dict[str, dict[str, str]]) -> int:
@@ -222,8 +264,15 @@ def do_check(arb: dict[str, dict[str, str]]) -> int:
     baseline = load_baseline()
     blockers, lowers = compare(baseline, actual)  # blockers = 新增缺口（红）
     if not blockers and not lowers:
-        print("文案缺口基线一致：%d 条（RULES v%d / WHITELIST v%d）"
-              % (len(actual), RULES_VERSION, WHITELIST_VERSION))
+        stale = stale_exceptions(actual)
+        if stale:
+            print("文案缺口门禁失败：基线头的「刻意例外」已不成立 %d 条：" % len(stale))
+            for line in stale:
+                print("  - %s" % line)
+            print("请从 scripts/i18n-copy-gap.py 的 DELIBERATE_EXCEPTIONS 里删掉它们。")
+            return 1
+        print("文案缺口基线一致：%d 条（RULES v%d / WHITELIST v%d，刻意例外 %d 条）"
+              % (len(actual), RULES_VERSION, WHITELIST_VERSION, len(DELIBERATE_EXCEPTIONS)))
         return 0
     print("文案缺口门禁失败：新增 %d 条、该降未降 %d 条" % (len(blockers), len(lowers)))
     for line in blockers[:40]:

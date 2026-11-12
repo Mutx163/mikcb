@@ -5,6 +5,11 @@
 #       B=中文污染（en/ko 值里出现汉字）。ja 不走 B（日语本来用汉字）。
 # 白名单（v1）：品牌 32 个（MiSans、HarmonyOS、OPPO、PingFang、Noto、Bing…）；技术标识 扩展名/URL/缩写词；剥掉后英文词 < 2 的短标签不判。
 # 修好一条要同步删掉对应行；新增缺口会直接让 CopyGapGateTest 变红。
+#
+# ⚠ 刻意例外（不是未翻译，别当漏翻删掉）：
+#   B|ko|spreadsheetStep1Subtitle
+#     → 引用了模板 CSV 的中文列名（assets/templates/mikcb_course_import_template.csv：课程名/星期/开始节/结束节/上课周…）。韩国用户下载到的就是这份中文表头，把列名译成韩文会让人在文件里找不到那一列；en / ja 同口径。改这一条必须同时改模板本体。
+#   清理基线的正确姿势：只删「已翻译好」的行；上面这些行若要删，必须同时改掉它引用的资源本体。
 A|ja|aboutDownloadChannelSectionTitle
 A|ja|aboutDownloadPackageMethodTitle
 A|ja|aboutInAppDownloadSubtitle
