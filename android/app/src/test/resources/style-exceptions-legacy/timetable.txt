@@ -1,0 +1,14 @@
+# timetable 域的 Compose 页面样式例外清单（不是待还的债）。
+# 一行一条：<相对路径>|<规则>|<锚>[,<锚>…]|<原因>
+# 锚 = 被判定的那行代码（剥注释与字符串、trim 之后）的 SHA-256 前 8 位小写十六进制；
+#      一条例外可以登记多个锚（同文件同规则多处命中），逗号分隔。
+# 规则：R1 顶栏 / R2 滚动 / R3 卡片 / R4 字号 / R5 颜色 / R6 分组标题 / R7 字重
+# 守卫要求「待修违规 = 0」；每条例外都必须命中一处**真实违规行**——那一行改掉、挪走或修好后必须删掉（否则判过期）。
+# 只允许人工编辑。scripts/compose-style-lint.ps1 -Write 只能删过期行与过期锚，绝不新增。
+# 登记用锚从脚本报错里抄：跑一次 scripts/compose-style-lint.ps1，[待修] 行下面会打印「登记用锚：<hash>」。
+# R5 全是与用户数据/固定语义绑定、Dart 逐字同源的颜色（不跟主题，避免撞色失真）；R2 是结构性豁免。
+# 课程色那三份都登记了**多个锚**：每个写死色值的行各一个——同文件里再加一处写死色值不会被这份清单兜住。
+timetable/CourseGridCard.kt|R5|92fa581e,ab809265,07fd9fe3|课程色数据链——解析兜底 0xFF2196F3 与 Dart course_card.dart:121 同值；0xFF1E293B/白墨按用户课程色亮度对比选取（Dart card_surface_ink 同构），不跟主题
+timetable/day/DayViewCommon.kt|R5|789104f2|课程色解析兜底 0xFF2196F3（Dart 同值）与亮底墨 0xFF1E293B——都挂在用户课程色上做对比，主题令牌无法保证对比度
+timetable/day/DayViewCourseCard.kt|R5|05ed9ad1,6c8632dd,b0d713e5|课程卡数据色——非本周置灰 0xFF94A3B8 = Dart kNonCurrentWeekColorHex；情侣徽标 0xFFE91E63 = partnerColorHexDefault；停课徽标 0xFFD32F2F = Dart Colors.red.shade700；另有解析兜底
+timetable/month/MonthViewPage.kt|R2|03483c33|议程列表 userScrollEnabled=false，只作容器、位移由 MonthPanelDragArea 驱动，非用户直滚，无滚动条语义
