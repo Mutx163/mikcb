@@ -133,6 +133,14 @@ fun TimetableHost(
      * 点星期栏 / 页内关闭 = `false`（heightFactor 上下翻）。与 [daySwitchAnimate] 正交。
      */
     daySwitchHorizontal: Boolean = false,
+    /**
+     * 外层底栏 Pager 是否**仍在 spring 滑行**（逐字转发给 [TimetableWeekPage] 的同名参数）。
+     *
+     * 默认 `false` = **未接线**：`MonthSwitchMotion.shouldSnap` 的第三项恒不成立，周 / 日 / 月
+     * 全部行为与接线前一致。壳侧接上 `pagerState.isScrollInProgress` 之后，连点底栏时页内
+     * 过渡会当帧落定、只让外层 spring 收尾（不再出现外层 spring 与页内 360ms tween 同帧叠加）。
+     */
+    homePagerScrolling: Boolean = false,
     /** 点星期栏某天：壳记下选中日并切到日视图。 */
     onSelectDay: (week: Int, dayOfWeek: Int) -> Unit = { _, _ -> },
     /** 日视图摘要卡的关闭叉：壳收回周视图。 */
@@ -529,6 +537,9 @@ fun TimetableHost(
         dayProgressSeed = dayProgressSeed,
         daySwitchAnimate = daySwitchAnimate,
         daySwitchHorizontal = daySwitchHorizontal,
+        // 月视图过渡的叠加门（2026-11-12）：壳侧接 `pagerState.isScrollInProgress`；
+        // 不接线时默认 false = 只按 daySwitchAnimate 判断，行为与今天一致。
+        homePagerScrolling = homePagerScrolling,
         onSelectDay = onSelectDay,
         onCloseDay = onCloseDay,
         dayContent = dayContent,

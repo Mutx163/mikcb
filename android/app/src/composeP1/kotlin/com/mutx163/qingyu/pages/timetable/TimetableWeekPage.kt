@@ -274,6 +274,22 @@ fun TimetableWeekPage(
      * 两者共用同一个 [dayExpand] 进度；与 [daySwitchAnimate] 正交。
      */
     daySwitchHorizontal: Boolean = false,
+    /**
+     * 外层底栏 Pager 是否**仍在 spring 滑行**（默认 `false` = 未接线，行为与今天一致）。
+     *
+     * 为什么页面需要知道：月视图过渡以前只按 [daySwitchAnimate] 判断，于是**连点底栏**那一刻
+     * 外层 Pager 还在 spring 滑行、页内又同时播 360ms tween —— 两段位移同帧叠加（唯一的真叠加
+     * 窗口，画面像被拽了两次）。接上它以后，外层还在滑 ⇒ 页内当帧落定、跟着外层走，用户只看到
+     * 一次横滑。
+     *
+     * 判据是纯函数（[MonthSwitchMotion.shouldSnap]，JVM 单测在
+     * `MonthSwitchMotionTest`），本页只负责把布尔喂进去。壳侧由 `PagesShellActivity` 传
+     * `pagerState.isScrollInProgress`、经 `ShellWiring` 下传到 `TimetableHost`。
+     *
+     * ⚠️ **没接线时默认 `false`** ⇒ `shouldSnap` 的这一项恒不成立，周 / 日 / 月的全部行为与接线前
+     * 完全一致（不会因为新增参数悄悄改掉任何存量路径）。
+     */
+    homePagerScrolling: Boolean = false,
     /** 点了星期栏某一天 / 翻到另一周某一天。宿主据此切到日视图并记住选中日。 */
     onSelectDay: (week: Int, dayOfWeek: Int) -> Unit = { _, _ -> },
     /** 日视图摘要卡上的关闭叉（收回周视图）。 */
@@ -501,12 +517,39 @@ fun TimetableWeekPage(
     val monthVisible by remember {
         derivedStateOf { currentMonthMode || monthExpand.value > 0f }
     }
-    LaunchedEffect(monthMode) {
+    // 月层子树是否**已完成至少一次组合**：由月层里的 [MonthContentMountSignal] 在组合落地后
+    // 置真，月层卸载时清回假 —— 下一次打开要重新等这一下。
+    var monthContentComposed by remember { mutableStateOf(false) }
+    // ⚠️ 键里必须带 `monthContentComposed`：打开方向要靠它分两步走（先挂树 → 等首组合 → 再开播）。
+    // 键只写 `monthMode` 就等于「首组合和动画第一帧挤同一帧」——正是本轮要修的那 1~2 帧空。
+    LaunchedEffect(monthMode, monthContentComposed) {
+        // ① 先挂树：下面几支都依赖月层已经在这棵树上（要等的信号也只能来自已挂上的树）。
         if (monthMode) monthMounted = true
         val target = if (monthMode) 1f else 0f
-        if (dayExpandReducedMotion || !daySwitchAnimate) {
+        if (MonthSwitchMotion.shouldSnap(dayExpandReducedMotion, daySwitchAnimate, homePagerScrolling)) {
+            // ② 直接落定，不播逐帧形变。三条来源：
+            //    a. 系统「减少动画」降级（与日视图同口径）；
+            //    b. 调用方要求不播 —— 跨过周档的「日 ↔ 月」直达（`HomeViewSwitchMotion.directAcrossWeek`），
+            //       播了会把淡出中的周网格露在中间；
+            //    c. **外层底栏 Pager 仍在 spring 滑行** —— 页内再播 360ms tween 就是真叠加。
+            // ⚠️ 这一支必须留在下面的 gate **之前**：底栏切月要当帧落定，不能被「先挂树」拖一帧。
+            // 判据是纯函数 [MonthSwitchMotion.shouldSnap]（JVM 单测在 `MonthSwitchMotionTest`）。
             monthExpand.snapTo(target)
-        } else {
+        } else if (
+            MonthSwitchMotion.needsMountWait(monthMode, monthContentComposed, monthContent != null)
+        ) {
+            // ③ 打开方向 · 第一步：本帧只挂树，不启动横向滑入。
+            // 月层是「换档下一帧才首次组合」（`monthMounted` 先置真、月层才挂树），若这里直接
+            // `animateTo`，首组合 / 首测量就和 tween 第一帧挤在同一帧里 ⇒ 起步空 / 顿 1~2 帧。
+            // 本帧面板刚组好，什么都不做；月层里的 [MonthContentMountSignal] 会在本帧组合落地后
+            // 把 `monthContentComposed` 置真，键里带着它 ⇒ 本 effect 重进一次才走到下面的
+            // `animateTo`，动画因此从**已经画好的树**上起步。
+            // 等待期间 `monthExpand` 仍是 0（月层整体偏出一个屏宽），屏幕上没有可察觉的变化。
+            // 兜底：`monthContent == null` 时不进这一支（见 [MonthSwitchMotion.needsMountWait]）——
+            // 没有内容可挂就永远等不到信号，`monthVisible` 会一直是真、命中层一直吃事件，页面就点不动了。
+        } else if (monthExpand.value != target) {
+            // ④ 已经在终点就不白跑一趟协程：清假会让本 effect 因第二个键再进一次，
+            // 那次 value 已等于目标（0→0），这里直接跳过，不重播一遍 animateTo。
             monthExpand.animateTo(
                 targetValue = target,
                 animationSpec = tween(
@@ -515,8 +558,21 @@ fun TimetableWeekPage(
                 ),
             )
         }
-        if (!monthMode) monthMounted = false
+        // ⑤ 收起**动画播完**后才把月层卸载（只在落定 value==0 且已非月模式时卸），
+        // 不在收起动画中途卸，避免重组打断收起动画。
+        // 「已组合过」的清假**不这里做**：`monthContentComposed` 是本 effect 的键，在体内写它
+        // 会把自己取消重启；见下面独立的 `LaunchedEffect(monthMounted)`。
+        if (!monthMode && monthExpand.value <= 0f) monthMounted = false
     }
+
+    // 月层被卸载（`monthMounted` 真 → 假）后把「已组合过」清回假：下次打开必须重新挂树、
+    // 重新等一次首组合信号，否则会拿着上一次的旧值直接开播，又变回首组合与首帧抢同一帧。
+    // 单独立一个 effect：`monthContentComposed` 是上面那个计时 effect 的键，在那边体内写它
+    // 会把正在跑的 animateTo 取消掉。这里只在「树真的卸了」之后清。
+    LaunchedEffect(monthMounted) {
+        if (!monthMounted) monthContentComposed = false
+    }
+
     // 展开层是否**本次开合期间挂在树上**：打开时置真，收起动画播完就置假 ——
     // 即**不跨开合保活**。周浏览时没有日视图的布局 / effect 成本（R07，`417db2569` 的口径），
     // 代价是每次打开都要重新组合一次日视图整棵树，所以打开方向必须「先挂树、再播下推」
@@ -1374,6 +1430,9 @@ fun TimetableWeekPage(
                                 .fillMaxSize()
                                 .padding(top = DAY_VIEW_TOP_SEAM_DP.dp),
                         ) {
+                            // 首组合打点：组合落地后置真 ⇒ 外面那个计时 effect 因键变化重进一次
+                            // 才开播（「先挂树 → 等首组合 → 再播」两步门的第二步）。
+                            MonthContentMountSignal { monthContentComposed = true }
                             monthContent()
                         }
                     }
@@ -1691,6 +1750,28 @@ private val WeekScrollStatesSaver: Saver<MutableMap<Int, ScrollState>, IntArray>
  */
 @Composable
 private fun DayContentMountSignal(onMounted: () -> Unit) {
+    SideEffect(onMounted)
+}
+
+/**
+ * 月视图页内态的「首组合」打点（2026-11-12）：与 [DayContentMountSignal] **同构**。
+ *
+ * 必须放在月层的挂载块（`monthMounted && monthContent != null` 那个 `if` 体内）内部、
+ * 紧挨 `monthContent()` 调用：月层和日视图一样是「换档下一帧才首次组合」，若不等这一下，
+ * `monthExpand` 的 tween 第一帧就撞上首组合 / 首测量，表现为月内容起步空 / 顿 1~2 帧。
+ *
+ * 用 [SideEffect] 而不是在组合体里直接给状态赋值：SideEffect 在**本帧组合落地之后、测量之前**
+ * 执行，因此置真时子树已经组好、下一帧即可绘制；直接写会触发「组合期写状态」再补一轮重组。
+ * 重复置真不进快照（`mutableStateOf` 结构化相等），不会白白多跑一轮。
+ *
+ * ⚠️ **不复用、也不改名**成 `DayContentMountSignal`：既有守卫
+ * `DayViewOverlayPerfWiringGuardTest` 用文本判据咬「日视图两支挂载点各有一个信号，且
+ * `dayContentComposed` 的置真**恰好两处**」（它按原文数出现次数，注释也算，所以这里
+ * 不写那句赋值的样子）；借道会让那条守卫的计数前提变糊（月层一挂，「为什么只有两处」
+ * 就说不清了），改名的连带面也更大。两个函数同构、名字分域，守卫各咬各的。
+ */
+@Composable
+private fun MonthContentMountSignal(onMounted: () -> Unit) {
     SideEffect(onMounted)
 }
 
