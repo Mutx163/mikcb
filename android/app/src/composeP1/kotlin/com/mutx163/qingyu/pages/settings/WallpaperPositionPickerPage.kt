@@ -746,7 +746,9 @@ private fun PickerEmptyState(imageMissing: Boolean) {
         )
         if (imageMissing) {
             Text(
-                text = SettingsStringsExt1.homePageWallpaperFileMissingSubtitle.text,
+                // 这里点不动（整页只有底部「换壁纸」可走），所以用「点下方…」那条专用文案；
+                // 设置页那条可点警示条用的是 homePageWallpaperFileMissingSubtitle。
+                text = SettingsStringsExt1.homePageWallpaperFileMissingPickerHint.text,
                 modifier = Modifier.padding(top = 8.dp),
                 style = MiuixTheme.textStyles.body2,
                 color = Color.White.copy(alpha = 0.6f),

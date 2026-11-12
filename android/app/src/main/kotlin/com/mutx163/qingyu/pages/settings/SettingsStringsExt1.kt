@@ -97,7 +97,18 @@ object SettingsStringsExt1 {
     val homePageWallpaperFileMissingTitle =
         ArbText("homePageWallpaperFileMissingTitle", "图片文件已丢失")
     val homePageWallpaperFileMissingSubtitle =
-        ArbText("homePageWallpaperFileMissingSubtitle", "已回退为纯色背景，点下方换壁纸重选")
+        ArbText("homePageWallpaperFileMissingSubtitle", "已回退为纯色背景，点这里重选")
+    /**
+     * 选图页里**不可点**的空态提示（`WallpaperPositionPickerPage.PickerEmptyState`）。
+     *
+     * 与上面那条分开：那条用在设置页的警示条，本身就是可点动作（`SettingsAction.NAVIGATE`）；
+     * 这条所在的位置点不动，唯一出路是底部「换壁纸」按钮，所以必须写清去哪点。
+     * 一个键套两种交互，怎么措辞都会在其中一处说错。
+     */
+    val homePageWallpaperFileMissingPickerHint = ArbText(
+        "homePageWallpaperFileMissingPickerHint",
+        "已回退为纯色背景，点下方换壁纸重选",
+    )
     val homePageWallpaperFileMissingToast = ArbText(
         "homePageWallpaperFileMissingToast",
         "壁纸文件已丢失，已恢复为纯色背景，请重新选择一张",
