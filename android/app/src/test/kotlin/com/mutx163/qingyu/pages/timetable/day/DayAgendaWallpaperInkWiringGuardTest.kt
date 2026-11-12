@@ -4,6 +4,7 @@ import com.mutx163.qingyu.testutil.readKotlinSourceNoStrings
 import com.mutx163.qingyu.testutil.readKotlinSourceNormalized
 import com.mutx163.qingyu.testutil.readSourceNormalized
 import com.mutx163.qingyu.testutil.stripKotlinComments
+import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -485,6 +486,25 @@ class DayAgendaWallpaperInkWiringGuardTest {
             "`day-empty-state-item` 又回到列表里了：空态一旦是 LazyColumn 的 item，" +
                 "上下滑时就会跟着手走（用户 2026-11-09 明要求固定）。",
             scroll.contains("day-empty-state-item"),
+        )
+        // ── 档位钉子（2026-11-12 对抗审查 M2）──
+        // 上面那条是 assertFalse + 字面量：一旦 readLiteralSource 被换成中性化档，
+        // 字面量会被擦成空格，assertFalse 从此永远通过，而本测试其余五条断言照样全绿
+        // ——换档不会有任何信号。所以不钉「字面量在不在」，钉「档位有没有被换」。
+        val path = "$dayDir/DayViewScrollContent.kt"
+        val defaultTier = stripKotlinComments(readSourceNormalized(path))
+        val neutralTier = stripKotlinComments(readSourceNormalized(path), neutralizeStrings = true)
+        assertEquals(
+            "readLiteralSource 必须就是默认档（剥注释、保留字符串内容）：" +
+                "一旦被换成中性化档，上面那条 assertFalse 会恒真，本测试其余断言却全绿。" +
+                "判字面量的守卫不许上中性化档——它会把被判的字面量自己擦掉。",
+            defaultTier,
+            readLiteralSource(path),
+        )
+        assertFalse(
+            "档位钉子失去区分度：`DayViewScrollContent.kt` 在两种档位下输出完全相同，" +
+                "上面的 assertEquals 就抓不到换档。换一个锚点，或在源码里补一个可区分的字面量。",
+            defaultTier == neutralTier,
         )
         val emptyIndex = scroll.indexOf("DayViewEmptyState(")
         val listIndex = scroll.indexOf("LazyColumn(")
