@@ -7,11 +7,11 @@ import org.junit.Test
 /**
  * 行控件单行口径（AGENTS.md 文案纪律：标题 ≤11、说明 ≤17，按渲染宽度量）。
  *
- * 口径的**唯一定义处**是 `tool/copy_style_rules.dart` 的 `visualWidth()`；
+ * 口径的**唯一定义处**是 `AGENTS.md`「界面文案风格」段（标题 ≤11、说明 ≤17 + 渲染宽度算法）；
  * 这里用 [CopyWidthMirror] 做同一套度量，把「Kotlin 侧设置行有没有超宽」也钉住
- * ——Dart 守卫只扫 ARB 文案，扫不到「同一段文案被放进更窄的槽位」这类接线错误。
+ * ——原 Dart 守卫（`tool/copy_style_rules.dart`，已随 P4-C 删除）只扫 ARB 文案，扫不到「同一段文案被放进更窄的槽位」这类接线错误。
  *
- * 不适用本口径的（本测试不检查，与 Dart 守卫一致）：分组小标题
+ * 不适用本口径的（本测试不检查，与原 Dart 守卫一致；该守卫已删）：分组小标题
  * （`HyperosSectionLabel`）、整宽段说明（`HyperosSectionDescription`）、
  * 对话框正文、行尾取值（`details`/`value`）。
  */
@@ -45,7 +45,7 @@ class SettingsCopyWidthTest {
 
     @Test
     fun `度量镜像与 Dart 口径一致`() {
-        // tool/copy_style_rules.dart:81-88
+        // 口径依据：AGENTS.md「界面文案风格」段的渲染宽度算法
         assertEquals(4.0, CopyWidthMirror.of("语言选择"), 1e-9)
         assertEquals(3.85, CopyWidthMirror.of("English"), 1e-9)
         assertEquals(4.2, CopyWidthMirror.of("{name} 副本"), 1e-9)

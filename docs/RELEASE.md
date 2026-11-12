@@ -374,7 +374,7 @@ GitHub 侧需要这些东西（缺哪条，对应环节静默跳过或报错）�
 
 **2. tag 构建在元数据检查就失败**
 
-三类原因：`version.properties` 带 BOM、tag 与 `versionName` 不配套、说明文件不存在或首行不是 `# v<tag>`。报错会写出「按某个版本应打 v…」的推导；提示文案里还留着 `pubspec` 字样，那是去 Flutter 化时漏改的措辞，不影响判据。
+三类原因：`version.properties` 带 BOM、tag 与 `versionName` 不配套、说明文件不存在或首行不是 `# v<tag>`。报错会写出「按某个版本应打 v…」的推导；提示文案里**已不含** `pubspec` 字样（去 Flutter 化时清干净了，且 `verify_release_version.sh` 只读 `android/version.properties`），哪天又见到就说明有回退。
 
 **3. 说明文件没生效**
 
