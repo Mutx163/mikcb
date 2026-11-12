@@ -1069,7 +1069,7 @@
       }
     }
   },
-  "timeSchemeBlockedByLocationGroups": "绑定了它的地点作息匹配：{names}",
+  "timeSchemeBlockedByLocationGroups": "绑定了它的地点组：{names}",
   "@timeSchemeBlockedByLocationGroups": {
     "placeholders": {
       "names": {

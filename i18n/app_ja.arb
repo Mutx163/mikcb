@@ -929,7 +929,7 @@
       }
     }
   },
-  "timeSchemeBlockedByLocationGroups": "結び付いている場所ルール：{names}",
+  "timeSchemeBlockedByLocationGroups": "結び付いている場所グループ：{names}",
   "@timeSchemeBlockedByLocationGroups": {
     "placeholders": {
       "names": {

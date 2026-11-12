@@ -1045,7 +1045,7 @@
       }
     }
   },
-  "timeSchemeBlockedByLocationGroups": "Location rules bound to it: {names}",
+  "timeSchemeBlockedByLocationGroups": "Location groups bound to it: {names}",
   "@timeSchemeBlockedByLocationGroups": {
     "placeholders": {
       "names": {

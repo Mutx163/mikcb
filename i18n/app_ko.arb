@@ -929,7 +929,7 @@
       }
     }
   },
-  "timeSchemeBlockedByLocationGroups": "이 템플릿에 연결된 장소 규칙: {names}",
+  "timeSchemeBlockedByLocationGroups": "이 템플릿에 연결된 장소 그룹: {names}",
   "@timeSchemeBlockedByLocationGroups": {
     "placeholders": {
       "names": {

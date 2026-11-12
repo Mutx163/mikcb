@@ -66,7 +66,7 @@ class TimeSchemeManagementStringsParityTest {
             TimeSchemeManagementStrings.timeSchemeBlockedByLocationCourses.filled("count", "2"),
         )
         assertEquals(
-            "绑定了它的地点作息匹配：教学楼 A",
+            "绑定了它的地点组：教学楼 A",
             TimeSchemeManagementStrings.timeSchemeBlockedByLocationGroups.filled("names", "教学楼 A"),
         )
         assertEquals(

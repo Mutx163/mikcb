@@ -928,7 +928,7 @@
       }
     }
   },
-  "timeSchemeBlockedByLocationGroups": "綁咗佢嘅地點作息配對：{names}",
+  "timeSchemeBlockedByLocationGroups": "綁定了它的地點組：{names}",
   "@timeSchemeBlockedByLocationGroups": {
     "placeholders": {
       "names": {

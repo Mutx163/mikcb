@@ -78,7 +78,7 @@ object TimeSchemeManagementStrings {
     val timeSchemeBlockedByLocationCourses =
         TimeSchemeManagementText("timeSchemeBlockedByLocationCourses", "按上课地点自动匹配到它的课程：{count} 门")
     val timeSchemeBlockedByLocationGroups =
-        TimeSchemeManagementText("timeSchemeBlockedByLocationGroups", "绑定了它的地点作息匹配：{names}")
+        TimeSchemeManagementText("timeSchemeBlockedByLocationGroups", "绑定了它的地点组：{names}")
     val timeSchemeBlockedByDateRules =
         TimeSchemeManagementText("timeSchemeBlockedByDateRules", "绑定了它的日期作息规则：{names}")
     val timeSchemeDeleteBlockedIntro =
