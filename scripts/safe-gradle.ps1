@@ -153,7 +153,7 @@ try {
     $resultsDirName = if ($testTaskArg) { $testTaskArg -replace '^:app:', '' } else { $null }
     $resultsDirPath = if ($resultsDirName) { Join-Path $resultsRoot $resultsDirName } else { $null }
     if ($resultsDirPath -and (Test-Path -LiteralPath $resultsDirPath)) {
-        Write-Host ">>> [safe-gradle] 清空本次变体的旧结果目录：$resultsDirName（物证看 .agents/diag 归档）" -ForegroundColor DarkGray
+        & $writeEvidence "=== CLEARED-RESULTS: $resultsDirName（跑前清空；物证看 .agents/diag 归档）"
         Remove-Item -LiteralPath $resultsDirPath -Recurse -Force -ErrorAction SilentlyContinue
     }
 
