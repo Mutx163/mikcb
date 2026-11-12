@@ -46,6 +46,18 @@ import java.io.File
  * （三路分工）＋ time_scheme 5 份，其余存量按批次收。**迁移一份就把对应一行删掉**；
  * 新守卫不许加行。删行时不用改判据——文件不再命中，留着就会被下面的 stale 断言点名。
  *
+ * ### 每条豁免都带元数据（2026-11-12）
+ *
+ * 表是 `Map<路径, LegacyMeta>`，一条豁免必须回答三个问题：**什么时候进来的**
+ * （[LegacyMeta.introducedAt]，首次出现的 commit + 日期）、**为什么它算例外**
+ * （[LegacyMeta.reason]，一句话事实，必须点名该文件的具体判据 / 私有剥离函数，不许写套话）、
+ * **什么时候必须重看**（[LegacyMeta.reviewTrigger]，可机械判定的触发条件）。
+ *
+ * 棘轮不得有**无期限**豁免：`reviewTrigger` 全表统一为「该条目所指文件下次被 git diff
+ * 触及时必须重新确认」，因此任何一次对该文件的改动都会把这条豁免变成待办。
+ * **新增豁免 = 改这份代码 + 走 review**（两份元数据都要写实）；
+ * **不许加运行时开关**（系统属性 / 环境变量 / 文件开关）把判据关掉——那等于给守卫开后门。
+ *
  * ⚠️ 本文件自己扫自己会误判（它本来就有 `.kt` 字面量与 `.contains`），所以扫描时跳过自身；
  * 剥离器本体 `testutil/SourceText.kt` 同理跳过（它是实现，不是守卫）。
  */
@@ -64,10 +76,11 @@ class GuardSourceStrippingPolicyTest {
             if (!looksLikeSourceReadingGuard(text)) return@forEach
             if (usesSharedStripping(text)) return@forEach
             seen += rel
+            // Map 的 `in` 判的是 key，与原来 Set<String> 的 membership 语义一致。
             if (rel !in LEGACY_UNSTRIPPED) offenders += rel
         }
 
-        val stale = LEGACY_UNSTRIPPED.filter { it !in seen }.sorted()
+        val stale = LEGACY_UNSTRIPPED.keys.filter { it !in seen }.sorted()
 
         assertEquals(
             "以下守卫读 .kt 源码做 contains 却没有剥注释——把判据目标行注释掉就能骗绿。" +
@@ -255,56 +268,265 @@ class GuardSourceStrippingPolicyTest {
         val OWN_STRIPPER_PATTERN = Regex("""fun\s+strip[A-Za-z0-9_]*\s*\(""")
 
         /**
+         * 一条豁免的全部元数据。三个字段都必填，**没有默认值**——想加一条豁免就必须回答
+         * 「什么时候进来的 / 为什么算例外 / 什么时候重看」，答不出来就加不进去。
+         */
+        data class LegacyMeta(
+            /**
+             * 该文件**首次出现**的 commit（短 sha + 提交日期）。取法：
+             * `git log --diff-filter=A --follow --format='%h %ad' --date=short -- <路径>`
+             * （多条取最早；重命名靠 `--follow` 追到旧名）。
+             */
+            val introducedAt: String,
+            /**
+             * 一句话事实：它为什么在豁免表里。**必须点名该文件的具体判据 / 私有剥离函数**，
+             * 同类可以共享措辞，但「为什么是这一条」要看得出来。
+             */
+            val reason: String,
+            /**
+             * 可机械判定的复核触发条件。[LEGACY_REVIEW_TRIGGER] 是全表统一的那一句，
+             * 不写「定期检查」——「定期」等于没人负责。
+             */
+            val reviewTrigger: String,
+        )
+
+        /**
+         * 全表统一的复核触发句。**统一成一份常量**而不是抄 44 遍：抄 44 遍就有 44 份会各自漂移，
+         * 而这条句子的价值恰恰是「每一行都长一样，所以谁都没法挑一个宽松的版本留下」。
+         */
+        const val LEGACY_REVIEW_TRIGGER =
+            "该条目所指文件下次被 git diff 触及时必须重新确认；确认后再决定修复或继续保留。"
+
+        /**
          * 存量守卫（迁移一份删一行，**不许加**）。
          *
          * 口径：测试源码里同时出现带引号的 `.kt` 路径 + `readText(`/`readSourceNormalized(` +
          * `.contains(`，且没有走共享剥离、也没有自带 `fun strip…(`。
+         *
+         * 判据只读这份表的 **key**（`rel !in LEGACY_UNSTRIPPED` 判 key，`stale` 也只按 key 过滤），
+         * 所以往里填元数据不会改变任何一条判定的宽严。
          */
-        val LEGACY_UNSTRIPPED = setOf(
-            "com/mutx163/qingyu/app/SettingsActionDispatcherTest.kt",
-            "com/mutx163/qingyu/architecture/SilentFailureCatchGuardTest.kt",
-            "com/mutx163/qingyu/components/GlassSingleChainGuardTest.kt",
-            "com/mutx163/qingyu/components/QingyuPageThemeSlotsGuardTest.kt",
-            "com/mutx163/qingyu/components/TopBarProgressiveBlurGuardTest.kt",
-            "com/mutx163/qingyu/core/QingyuAdaptiveRulesTest.kt",
-            "com/mutx163/qingyu/NotificationLaunchPageContractTest.kt",
-            "com/mutx163/qingyu/NotificationLaunchShellWiringGuardTest.kt",
-            "com/mutx163/qingyu/NotificationLaunchTargetGuardTest.kt",
-            "com/mutx163/qingyu/pages/diagnostics/MemoryStatsCollectorKeyCompatTest.kt",
-            "com/mutx163/qingyu/pages/exam/ExamDialogMountGuardTest.kt",
-            "com/mutx163/qingyu/pages/import/IcsImportModelTest.kt",
-            "com/mutx163/qingyu/pages/import/warehouse/WarehouseCoursesImportApplyTest.kt",
-            "com/mutx163/qingyu/pages/import/warehouse/WarehouseWebLoginPageWiringGuardTest.kt",
-            "com/mutx163/qingyu/pages/import/warehouse/WarehouseWebLoginUiGuardTest.kt",
-            "com/mutx163/qingyu/pages/schedule/ScheduleDateRuleApplyWiringGuardTest.kt",
-            "com/mutx163/qingyu/pages/schedule/ScheduleDialogGuardTest.kt",
-            "com/mutx163/qingyu/pages/schedule/ScheduleOccurrenceScopeTest.kt",
-            "com/mutx163/qingyu/pages/settings/SettingsPreviewCutoutGuardTest.kt",
-            "com/mutx163/qingyu/pages/settings/SettingsRowRenderingCapabilityGuardTest.kt",
-            "com/mutx163/qingyu/pages/settings/SettingsSharedParityTest.kt",
-            "com/mutx163/qingyu/pages/settings/WallpaperEvictionWiringGuardTest.kt",
-            "com/mutx163/qingyu/pages/shell/DockInkFallbackGuardTest.kt",
-            "com/mutx163/qingyu/pages/shell/DockInkGuardTest.kt",
-            "com/mutx163/qingyu/pages/shell/DockPagerWiringGuardTest.kt",
-            "com/mutx163/qingyu/pages/shell/DockSwitchNoDayReplayGuardTest.kt",
-            "com/mutx163/qingyu/pages/shell/HomeBackToRootGuardTest.kt",
-            "com/mutx163/qingyu/pages/shell/HomeDockInkBandsWiringGuardTest.kt",
-            "com/mutx163/qingyu/pages/shell/HomeMenuEntryDestinationGuardTest.kt",
-            "com/mutx163/qingyu/pages/shell/HomeMenuPreviewWiringGuardTest.kt",
-            "com/mutx163/qingyu/pages/shell/HomePullQuickImportWiringGuardTest.kt",
-            "com/mutx163/qingyu/pages/shell/RootEntryBackGuardTest.kt",
-            "com/mutx163/qingyu/pages/shell/ScheduleEditWiringGuardTest.kt",
-            "com/mutx163/qingyu/pages/shell/ShellRailWiringGuardTest.kt",
-            "com/mutx163/qingyu/pages/sync/ButtonContrastGuardTest.kt",
-            "com/mutx163/qingyu/pages/timetable/DayViewOverlayPerfWiringGuardTest.kt",
-            "com/mutx163/qingyu/pages/timetable/TimetableShareImageModelTest.kt",
-            "com/mutx163/qingyu/pages/timetable/WeekViewCoupleOverlayWiringGuardTest.kt",
-            "com/mutx163/qingyu/pages/timetable/day/DayAgendaWallpaperInkWiringGuardTest.kt",
-            "com/mutx163/qingyu/pages/timetable/day/DayViewColorTokenGuardTest.kt",
-            "com/mutx163/qingyu/pages/timetable/day/DayViewStringsParityTest.kt",
-            "com/mutx163/qingyu/pages/topbar/TopBarActionGlassGuardTest.kt",
-            "com/mutx163/qingyu/pages/transfer/PickupCodesPageGuardTest.kt",
-            "com/mutx163/qingyu/WidgetWakeupSourceGuardTest.kt",
+        val LEGACY_UNSTRIPPED: Map<String, LegacyMeta> = mapOf(
+            "com/mutx163/qingyu/app/SettingsActionDispatcherTest.kt" to LegacyMeta(
+                introducedAt = "432727375 2026-10-28",
+                reason = "主体是 dispatcher 模型用例；末条读 SettingsPageRenderers.kt，用 functionBody 截函数体 + 内联 codeOnly 行级剥注释，chips/controlCard 的 contains 仍打在原文上",
+                reviewTrigger = LEGACY_REVIEW_TRIGGER,
+            ),
+            "com/mutx163/qingyu/architecture/SilentFailureCatchGuardTest.kt" to LegacyMeta(
+                introducedAt = "1d0413169 2026-11-03",
+                reason = "空 catch 判据委托共享词法器 KotlinCatchScanner（分词时已跳注释与字符串）；触发本扫描的 contains 打在 relativePath 上，判的是关键写路径白名单",
+                reviewTrigger = LEGACY_REVIEW_TRIGGER,
+            ),
+            "com/mutx163/qingyu/components/GlassSingleChainGuardTest.kt" to LegacyMeta(
+                introducedAt = "320adfa71 2026-11-03",
+                reason = "扫 glass 链 API 前先过私有 codeOnly（去块注释 + 按行截 //），判的字符串是 QingyuGlassSurface 与 GlassSpec(",
+                reviewTrigger = LEGACY_REVIEW_TRIGGER,
+            ),
+            "com/mutx163/qingyu/components/QingyuPageThemeSlotsGuardTest.kt" to LegacyMeta(
+                introducedAt = "181b6e085 2026-11-02",
+                reason = "读 QingyuPageTheme.kt 的亮/暗两个 colorScheme 函数体，codeOnly 剥注释后用 slotCount 数槽位，函数体由 matchDelimiter 自己截",
+                reviewTrigger = LEGACY_REVIEW_TRIGGER,
+            ),
+            "com/mutx163/qingyu/components/TopBarProgressiveBlurGuardTest.kt" to LegacyMeta(
+                introducedAt = "7d9ba9b99 2026-11-02",
+                reason = "读 QingyuPageScaffold.kt 与 QingyuGlassSurface.kt 钉模糊与渐变数值，codeOnly 剥注释后逐条 contains，含暗色不许退回 #565656 的负例",
+                reviewTrigger = LEGACY_REVIEW_TRIGGER,
+            ),
+            "com/mutx163/qingyu/core/QingyuAdaptiveRulesTest.kt" to LegacyMeta(
+                introducedAt = "499b28d86 2026-11-03",
+                reason = "读 QingyuPageScaffold.kt 与 QingyuPageList.kt 判自适应接线，codeOnly 剥注释后看 rememberQingyuWindowAdaptive() 与 widthIn(max = cap) 是否还在",
+                reviewTrigger = LEGACY_REVIEW_TRIGGER,
+            ),
+            "com/mutx163/qingyu/NotificationLaunchPageContractTest.kt" to LegacyMeta(
+                introducedAt = "38df5178d 2026-11-03",
+                reason = "启动落点契约里有两处读原文：ExamReminderScheduler.kt 必须写 putExtra(EXTRA_OPEN_ROUTE, ROUTE_EXAMS)，LanEditForegroundService.kt 必须写统一 EXTRA_OPEN_LAN_EDIT",
+                reviewTrigger = LEGACY_REVIEW_TRIGGER,
+            ),
+            "com/mutx163/qingyu/NotificationLaunchShellWiringGuardTest.kt" to LegacyMeta(
+                introducedAt = "9427c4fd3 2026-11-04",
+                reason = "读 PagesShellActivity.kt 与 ShellPageIndex.kt，判通知落点在 onCreate 的 null 分支与 onNewIntent 都投递、落点页 id 在壳分派表里；methodBody 截块不剥注释",
+                reviewTrigger = LEGACY_REVIEW_TRIGGER,
+            ),
+            "com/mutx163/qingyu/NotificationLaunchTargetGuardTest.kt" to LegacyMeta(
+                introducedAt = "bd1bbeb0e 2026-11-01",
+                reason = "扫五个通知发送点（两个 Scheduler、LiveUpdateService、LanEditForegroundService、TodayWidgetSupport）必须走 NotificationLaunchTarget.intent(，不许 Intent(context, MainActivity::class.java)",
+                reviewTrigger = LEGACY_REVIEW_TRIGGER,
+            ),
+            "com/mutx163/qingyu/pages/diagnostics/MemoryStatsCollectorKeyCompatTest.kt" to LegacyMeta(
+                introducedAt = "795d797a7 2026-10-29",
+                reason = "十二个弹层是模型与键表对拍；三处读 MemoryStatsCollector.kt 原文，断言不再产出 dartVm 与 flutterImageCache，并把模型读的键逐条 contain 对回采集器",
+                reviewTrigger = LEGACY_REVIEW_TRIGGER,
+            ),
+            "com/mutx163/qingyu/pages/exam/ExamDialogMountGuardTest.kt" to LegacyMeta(
+                introducedAt = "07c5b4189 2026-11-04",
+                reason = "读 ExamListPage.kt 与 AddExamPage.kt，判删除弹层常驻组合（show = pendingDelete != null）而非条件挂载；pageSource 只做 CRLF 归一",
+                reviewTrigger = LEGACY_REVIEW_TRIGGER,
+            ),
+            "com/mutx163/qingyu/pages/import/IcsImportModelTest.kt" to LegacyMeta(
+                introducedAt = "1b58806b0 2026-10-27",
+                reason = "四十六条是 ICS 解析模型用例；末条读 IcsHeaderKeywords.kt 与解析器，用私有 cjkLiteralsIn 先滤掉星号、//、块注释开头的行再数中文字面量",
+                reviewTrigger = LEGACY_REVIEW_TRIGGER,
+            ),
+            "com/mutx163/qingyu/pages/import/warehouse/WarehouseCoursesImportApplyTest.kt" to LegacyMeta(
+                introducedAt = "1f95d17ee 2026-11-03",
+                reason = "扩节与回滚等十条是模型用例；末条读 WarehouseWebLoginHost.kt，判 requiredSectionCount(、WarehouseSectionExpansionDialog(、apply( 三处接线均在",
+                reviewTrigger = LEGACY_REVIEW_TRIGGER,
+            ),
+            "com/mutx163/qingyu/pages/import/warehouse/WarehouseWebLoginPageWiringGuardTest.kt" to LegacyMeta(
+                introducedAt = "383df7435 2026-10-28",
+                reason = "读 WarehouseWebLoginPage.kt 判桥接消息过 shouldDeliverBridgeMessage( 门禁、占位块不许回来；blockAfter 按花括号配平截块但不剥注释",
+                reviewTrigger = LEGACY_REVIEW_TRIGGER,
+            ),
+            "com/mutx163/qingyu/pages/import/warehouse/WarehouseWebLoginUiGuardTest.kt" to LegacyMeta(
+                introducedAt = "34b7a9296 2026-11-10",
+                reason = "读 WarehouseWebLoginPage.kt 与 WarehouseMacroPlaybackUi.kt，判错误文案上屏、执行态换导入中、回放遮罩拦触摸；blockAfter 截块后原文 contains",
+                reviewTrigger = LEGACY_REVIEW_TRIGGER,
+            ),
+            "com/mutx163/qingyu/pages/schedule/ScheduleDateRuleApplyWiringGuardTest.kt" to LegacyMeta(
+                introducedAt = "434a7d2e6 2026-11-07",
+                reason = "读 ScheduleHost.kt 钉 applyDue 返回值交给四态判据、失败档走警示样式；dateRuleBranch 只按两条路由字符串截子串，注释仍在里面",
+                reviewTrigger = LEGACY_REVIEW_TRIGGER,
+            ),
+            "com/mutx163/qingyu/pages/schedule/ScheduleDialogGuardTest.kt" to LegacyMeta(
+                introducedAt = "b76cd2d27 2026-11-02",
+                reason = "扫列表页、规则页、添加页与共享按钮四个文件，判不再写死 onPrimary、四个确认弹窗走 OverlayDialog、规则编辑框用 LazyColumn；仅 matchingParen 配平括号",
+                reviewTrigger = LEGACY_REVIEW_TRIGGER,
+            ),
+            "com/mutx163/qingyu/pages/schedule/ScheduleOccurrenceScopeTest.kt" to LegacyMeta(
+                introducedAt = "434a7d2e6 2026-11-07",
+                reason = "读 AddScheduleItemPage.kt 与 ShellWiring.kt，判跨天条目的单次编辑与整条更新分支、删除走确认弹层；wholeItemDraft 等锚全是原文 contains",
+                reviewTrigger = LEGACY_REVIEW_TRIGGER,
+            ),
+            "com/mutx163/qingyu/pages/settings/SettingsPreviewCutoutGuardTest.kt" to LegacyMeta(
+                introducedAt = "5ecf2df02 2026-11-03",
+                reason = "读 SettingsWeekPreview、TimetableWeekPage、AppearanceEditorScreen 等预览槽，先过私有 codeOf（去块注释 + 去行尾 //）再判挖洞件接线与假缩略图不许复活",
+                reviewTrigger = LEGACY_REVIEW_TRIGGER,
+            ),
+            "com/mutx163/qingyu/pages/settings/SettingsRowRenderingCapabilityGuardTest.kt" to LegacyMeta(
+                introducedAt = "2083fa081 2026-10-29",
+                reason = "只读 SettingsPageRenderers.kt，判行渲染能力 ROW_DIMMED_ALPHA、combinedClickable、bottomBar = footerSlot、topBarAction 逐条落在渲染层",
+                reviewTrigger = LEGACY_REVIEW_TRIGGER,
+            ),
+            "com/mutx163/qingyu/pages/settings/SettingsSharedParityTest.kt" to LegacyMeta(
+                introducedAt = "459d7cebc 2026-10-27",
+                reason = "Dart 共享件对拍（十二键登记表、locale 归一、colorFromHex 回退色）；读 SettingsRowRenderTable.kt 用 in 运算符，触发本扫描的 contains 打在文案键集合上",
+                reviewTrigger = LEGACY_REVIEW_TRIGGER,
+            ),
+            "com/mutx163/qingyu/pages/settings/WallpaperEvictionWiringGuardTest.kt" to LegacyMeta(
+                introducedAt = "c26be91fd 2026-11-01",
+                reason = "只读 AppearanceEditorHost.kt，判删除入口从档案原始 JSON 收集全部壁纸路径并调 WallpaperEvictionSources.planEviction(，hostSource 直接 readText",
+                reviewTrigger = LEGACY_REVIEW_TRIGGER,
+            ),
+            "com/mutx163/qingyu/pages/shell/DockInkFallbackGuardTest.kt" to LegacyMeta(
+                introducedAt = "2117a73a3 2026-11-04",
+                reason = "读 HomeGlassDock.kt 与 HomeWallpaperBackdrop.kt，判亮度未知时取浅墨兜底与缓存回读；codeOnly 剥注释后再用 replace 造负例自测",
+                reviewTrigger = LEGACY_REVIEW_TRIGGER,
+            ),
+            "com/mutx163/qingyu/pages/shell/DockInkGuardTest.kt" to LegacyMeta(
+                introducedAt = "b35e425ec 2026-11-03",
+                reason = "读玻璃坞、HomeGlassDock、DockInkRule 与壳，判坞墨色只走 DockInkRule.resolve( 且不含 onBackground；codeOnly 剥注释，另带守卫空转自检",
+                reviewTrigger = LEGACY_REVIEW_TRIGGER,
+            ),
+            "com/mutx163/qingyu/pages/shell/DockPagerWiringGuardTest.kt" to LegacyMeta(
+                introducedAt = "c65208abb 2026-11-03",
+                reason = "读 PagesShellActivity.kt 与 ShellRoute.kt，判底栏切换必须 HorizontalPager( 加 springAnimateToPage(、不许自研转场；codeOnly 剥注释后逐条 contains",
+                reviewTrigger = LEGACY_REVIEW_TRIGGER,
+            ),
+            "com/mutx163/qingyu/pages/shell/DockSwitchNoDayReplayGuardTest.kt" to LegacyMeta(
+                introducedAt = "13252d037 2026-11-04",
+                reason = "读壳、ShellWiring、TimetableHost、TimetableWeekPage，判两格互点走 translateX 横滑而不重放日视图；两条负例自测直接替换原文再 contains",
+                reviewTrigger = LEGACY_REVIEW_TRIGGER,
+            ),
+            "com/mutx163/qingyu/pages/shell/HomeBackToRootGuardTest.kt" to LegacyMeta(
+                introducedAt = "893790123 2026-11-04",
+                reason = "读 PagesShellActivity.kt 判系统返回回首页根，codeOnly 剥注释后判 systemBackBlock 内不许出现 selectRoot(ROOT_WEEK)",
+                reviewTrigger = LEGACY_REVIEW_TRIGGER,
+            ),
+            "com/mutx163/qingyu/pages/shell/HomeDockInkBandsWiringGuardTest.kt" to LegacyMeta(
+                introducedAt = "518437ff0 2026-11-08",
+                reason = "读壳、坞、壁纸背板与 HomeInkBandsStore，判亮度带按视口取景落盘、三个冷读点都带 store；codeOnly 是逐字符状态机，能正确处理字符串里的双斜杠",
+                reviewTrigger = LEGACY_REVIEW_TRIGGER,
+            ),
+            "com/mutx163/qingyu/pages/shell/HomeMenuEntryDestinationGuardTest.kt" to LegacyMeta(
+                introducedAt = "fb60f0567 2026-11-10",
+                reason = "读 ShellWiring、壳与两个设置页，判八宫格与底栏候选目录每条都有去处；断言看的是 homeItems 里 fun 之前的原文片段是否含 shellTimetableMenuSupported(",
+                reviewTrigger = LEGACY_REVIEW_TRIGGER,
+            ),
+            "com/mutx163/qingyu/pages/shell/HomeMenuPreviewWiringGuardTest.kt" to LegacyMeta(
+                introducedAt = "32ee79727 2026-11-10",
+                reason = "只读 AppearanceEditorHost.kt，判周与日视图预览都传 homeMenuItems 且按草稿解析，homeMenuItems = emptyList() 作为负例",
+                reviewTrigger = LEGACY_REVIEW_TRIGGER,
+            ),
+            "com/mutx163/qingyu/pages/shell/HomePullQuickImportWiringGuardTest.kt" to LegacyMeta(
+                introducedAt = "7612ea0bc 2026-11-08",
+                reason = "读 ShellWiring.kt 判下拉快捷导入挂上并受设置与视图态门控；判据取 lineSequence 里含 val pullImportEnabled = 的那一行",
+                reviewTrigger = LEGACY_REVIEW_TRIGGER,
+            ),
+            "com/mutx163/qingyu/pages/shell/RootEntryBackGuardTest.kt" to LegacyMeta(
+                introducedAt = "cfb12cd90 2026-11-03",
+                reason = "读 QingyuPageScaffold 与四个手拼顶栏根页，判返回键只由 rememberShellShouldShowBackButton() 决定、骨架签名不许加页面级显隐参数；codeOnly 剥注释",
+                reviewTrigger = LEGACY_REVIEW_TRIGGER,
+            ),
+            "com/mutx163/qingyu/pages/shell/ScheduleEditWiringGuardTest.kt" to LegacyMeta(
+                introducedAt = "434a7d2e6 2026-11-07",
+                reason = "读 ShellPageIndex.kt 与 ScheduleEditHost.kt，判 d2-addSchedule 分支经宿主而非直调页面；branchOf 只按两条路由字符串截子串",
+                reviewTrigger = LEGACY_REVIEW_TRIGGER,
+            ),
+            "com/mutx163/qingyu/pages/shell/ShellRailWiringGuardTest.kt" to LegacyMeta(
+                introducedAt = "e2e335838 2026-11-03",
+                reason = "读壳、ShellNavigationRail、HomeGlassDock、DayViewPage，判 Rail 出现时坞不组合、条目点击先弹回主屏；codeOnly 剥注释",
+                reviewTrigger = LEGACY_REVIEW_TRIGGER,
+            ),
+            "com/mutx163/qingyu/pages/sync/ButtonContrastGuardTest.kt" to LegacyMeta(
+                introducedAt = "73b923ef7 2026-11-02",
+                reason = "读 CoupleTimetableSettingsPage.kt 与 CoupleWebDavConnectSheet.kt，用 callArguments 与 topLevelArgument 切出着色调用，判不许 primarySurface 底配 primary 字",
+                reviewTrigger = LEGACY_REVIEW_TRIGGER,
+            ),
+            "com/mutx163/qingyu/pages/timetable/DayViewOverlayPerfWiringGuardTest.kt" to LegacyMeta(
+                introducedAt = "ffb858ffd 2026-11-03",
+                reason = "读壳、ShellWiring、DayViewPage、TimetableWeekPage，判展开层复用宿主设置、隐藏不绘制、打开先挂载再动画；靠十余个私有定位器切原文",
+                reviewTrigger = LEGACY_REVIEW_TRIGGER,
+            ),
+            "com/mutx163/qingyu/pages/timetable/TimetableShareImageModelTest.kt" to LegacyMeta(
+                introducedAt = "890c98af1 2026-11-03",
+                reason = "二十条是导出几何与文件名模型用例；另读 file_paths.xml 白名单与 TimetableShareLauncher.kt 的 ACTION_SEND、ClipData.newUri、MIME_PNG",
+                reviewTrigger = LEGACY_REVIEW_TRIGGER,
+            ),
+            "com/mutx163/qingyu/pages/timetable/WeekViewCoupleOverlayWiringGuardTest.kt" to LegacyMeta(
+                introducedAt = "60ed8558b 2026-11-07",
+                reason = "读 TimetableHost、TimetableWeekPage、CourseGridCard、WeekGridCourseMapping、CoupleOverlaySource，判叠加内核与 TA 角标，并判数据源不许 import pages.sync",
+                reviewTrigger = LEGACY_REVIEW_TRIGGER,
+            ),
+            "com/mutx163/qingyu/pages/timetable/day/DayAgendaWallpaperInkWiringGuardTest.kt" to LegacyMeta(
+                introducedAt = "3cf8d910b 2026-11-07",
+                reason = "读五张日视图卡、DayViewPage、DayViewScrollContent 与模型层，判卡片墨色走 CourseCardInk 且亮度带按区域传对；memberBlock 与 callBlock 只截块不剥注释",
+                reviewTrigger = LEGACY_REVIEW_TRIGGER,
+            ),
+            "com/mutx163/qingyu/pages/timetable/day/DayViewColorTokenGuardTest.kt" to LegacyMeta(
+                introducedAt = "010c2e21f 2026-11-04",
+                reason = "只读 DayViewCourseCard.kt，判非本周灰复用 WeekGridCourseMapping.NON_CURRENT_WEEK_COLOR_HEX；readSource 直接 readText，另带守卫空转自检",
+                reviewTrigger = LEGACY_REVIEW_TRIGGER,
+            ),
+            "com/mutx163/qingyu/pages/timetable/day/DayViewStringsParityTest.kt" to LegacyMeta(
+                introducedAt = "b5b8bba2f 2026-10-27",
+                reason = "日视图文案逐字对拍 app_zh.arb；读 DayViewStrings.kt 只用正则抽 ArbText( 声明比集合，触发本扫描的 contains 打在 ARB 模板串上",
+                reviewTrigger = LEGACY_REVIEW_TRIGGER,
+            ),
+            "com/mutx163/qingyu/pages/topbar/TopBarActionGlassGuardTest.kt" to LegacyMeta(
+                introducedAt = "925da76af 2026-11-05",
+                reason = "扫二十余个页面顶栏的 actions 与 navigationIcon，判不许裸写 IconButton、待迁移颗数精确；文件先过私有 codeOf（块注释与行注释两条正则）",
+                reviewTrigger = LEGACY_REVIEW_TRIGGER,
+            ),
+            "com/mutx163/qingyu/pages/transfer/PickupCodesPageGuardTest.kt" to LegacyMeta(
+                introducedAt = "d29d73490 2026-11-02",
+                reason = "读 PickupCodesPage.kt 与 PickupCodesHost.kt，判入口行走官方组件、忙碌态传到渲染层、无障碍标签接线；readAndroidSource 直接 readText",
+                reviewTrigger = LEGACY_REVIEW_TRIGGER,
+            ),
+            "com/mutx163/qingyu/WidgetWakeupSourceGuardTest.kt" to LegacyMeta(
+                introducedAt = "978a24d33 2026-11-07",
+                reason = "读小组件 Provider、HomeWidgetStorage、WidgetRefreshWorker 与 LiveUpdateService，判广播重排、onDisabled、doWork 零实例、KEEP 周期等九条行为",
+                reviewTrigger = LEGACY_REVIEW_TRIGGER,
+            ),
         )
     }
 }
