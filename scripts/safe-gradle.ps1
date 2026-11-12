@@ -112,10 +112,11 @@ try {
     $runStartedAt = Get-Date
 
     # 日志路径先定：后面所有 `===` 证据行都要同时进控制台与**同一份日志**。
+    $runStamp = Get-Date -Format "yyyyMMdd-HHmmss"
     $logPath = $env:MIKCB_GRADLE_LOG
     if (-not $logPath) {
         $shaShort = if ($headBefore) { $headBefore.Substring(0, [Math]::Min(9, $headBefore.Length)) } else { "nogit" }
-        $logPath = Join-Path $repoRoot (".agents/diag/auto-{0}-{1}.log" -f (Get-Date -Format "yyyyMMdd-HHmmss"), $shaShort)
+        $logPath = Join-Path $repoRoot (".agents/diag/auto-{0}-{1}.log" -f $runStamp, $shaShort)
     }
     $logDir = Split-Path -Parent $logPath
     if ($logDir) { New-Item -ItemType Directory -Path $logDir -Force | Out-Null }
@@ -137,6 +138,11 @@ try {
     # ① 请求行：日志里必须能看出这次请求的是什么（含 `--rerun-tasks` 与否）——
     #    否则「真跑 / 吃缓存」只能靠旁证，1 秒的 `help` 日志也能被当成绿。
     & $writeEvidence "=== REQUEST: $($effective -join ' ')"
+    # 过滤跑与全量跑共用同一个任务名与结果目录：日志里必须能一眼分开，
+    # 否则「8063 用例」和「3 用例」都叫 `:app:testDevDebugUnitTest`，事后无法区分。
+    if (($effective -join ' ') -match '--tests') {
+        & $writeEvidence "=== FILTERED: --tests 生效（本次不是全量跑，RESULT 用例数不可与全量比较）"
+    }
     if ($gitExe) {
         & $writeEvidence "=== HEAD before: $headBefore"
         & $writeEvidence ("=== STATUS before: " + $(if ($statusLines.Count -eq 0) { '<clean>' } else { "$($statusLines.Count) 条" }))
@@ -187,6 +193,7 @@ try {
             $xmlFiles = @(Get-ChildItem $dir.FullName -Filter "*.xml" -File)
             if ($xmlFiles.Count -eq 0) { continue }
             $tests = 0; $failures = 0; $errors = 0; $skipped = 0
+            $failureLines = @()
             foreach ($f in $xmlFiles) {
                 try {
                     [xml]$doc = Get-Content $f.FullName -Raw
@@ -194,10 +201,58 @@ try {
                     $failures += [int]$doc.testsuite.failures
                     $errors += [int]$doc.testsuite.errors
                     $skipped += [int]$doc.testsuite.skipped
+                    # 失败列表：摘要必须能回答「红在哪」，否则复核还得重跑（2026-11-12 监察）。
+                    foreach ($tc in @($doc.testsuite.testcase)) {
+                        foreach ($bad in @(@($tc.failure) + @($tc.error))) {
+                            if ($null -eq $bad) { continue }
+                            # 断言消息优先取 message 属性（首行通常就是断言原文），没有再退回正文。
+                            $msgRaw = [string]$bad.GetAttribute('message')
+                            if ([string]::IsNullOrWhiteSpace($msgRaw)) { $msgRaw = [string]$bad.InnerText }
+                            $msg = ($msgRaw -split "`n")[0].Trim()
+                            $failureLines += ("FAILURE {0}.{1} :: {2}" -f $tc.classname, $tc.name, $msg)
+                        }
+                    }
                 } catch { }
             }
             & $writeEvidence "=== RESULT[$($dir.Name)]: $tests tests, $failures failures, $errors errors, $skipped skipped (XML 文件 $($xmlFiles.Count))"
             & $writeEvidence "=== RESULT-DIR: $($dir.FullName)"
+
+            # 归档摘要（2026-11-12 监察要求）：过滤跑会覆盖同变体的 XML 目录，
+            # 上一次全量的磁盘物证会就此消失（实测：`--tests` 跑完后只剩 1 份 XML / 3 tests）。
+            # 所以每次跑完把「本次是谁、多少用例、每份 XML 的 sha256 + 汇总 sha」写进
+            # `.agents/diag/<runId>/summary.txt`，不复制 XML 本体（省盘），但足以事后核对
+            # 「某次声称的 N 用例」是不是这一批文件算出来的。
+            $shaShortAgg = if ($headBefore) { $headBefore.Substring(0, [Math]::Min(9, $headBefore.Length)) } else { "nogit" }
+            $sumDir = Join-Path $repoRoot (".agents/diag/{0}-{1}-{2}" -f $runStamp, $shaShortAgg, $dir.Name)
+            New-Item -ItemType Directory -Path $sumDir -Force | Out-Null
+            $sumLines = @(
+                "=== REQUEST: $($effective -join ' ')",
+                "=== FILTERED: $(if (($effective -join ' ') -match '--tests') { 'yes（--tests 生效，非全量）' } else { 'no（全量）' })",
+                "=== HEAD before: $headBefore",
+                "=== HEAD after: $(if ($gitExe) { $headAfter } else { '<n/a>' })",
+                "=== RESULT[$($dir.Name)]: $tests tests, $failures failures, $errors errors, $skipped skipped",
+                "=== XML-DIR: $($dir.FullName)",
+                "=== XML-COUNT: $($xmlFiles.Count)",
+                "=== FAILURE-COUNT: $($failureLines.Count)",
+                ""
+            )
+            $sumLines += $failureLines
+            if ($failureLines.Count -gt 0) { $sumLines += "" }
+            $hashPairs = @()
+            foreach ($f in $xmlFiles) {
+                $fh = (Get-FileHash -LiteralPath $f.FullName -Algorithm SHA256).Hash.ToLower()
+                $relName = $f.Name
+                $hashPairs += "$relName $fh"
+                $sumLines += "XML-SHA256 $relName $fh"
+            }
+            $sha256 = [System.Security.Cryptography.SHA256]::Create()
+            $aggBytes = [System.Text.Encoding]::UTF8.GetBytes(($hashPairs -join "`n"))
+            $aggHash = (([System.BitConverter]::ToString($sha256.ComputeHash($aggBytes)) -replace '-', '')).ToLower()
+            $sha256.Dispose()
+            $sumLines += ""
+            $sumLines += "=== AGGREGATE-SHA256: $aggHash"
+            Set-Content -LiteralPath (Join-Path $sumDir "summary.txt") -Value $sumLines -Encoding utf8NoBOM
+            & $writeEvidence "=== SUMMARY-DIR: $sumDir"
         }
     }
 
