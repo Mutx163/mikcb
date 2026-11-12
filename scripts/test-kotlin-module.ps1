@@ -50,6 +50,18 @@
     串行化（锁序固定：先模块锁、后缓存锁，不成环），没抢到锁的等它编完直接命中，不重复烧 CPU。
     缓存不自动清理（每个 hash 只一份 classes，量很小）；换 kotlinc 或改共享面自然产生新 hash。
 
+    【第 2 段必须带 -Xfriend-paths（2026-11-12 回归修复）】
+    Kotlin 的 `internal` 是**模块内可见**。共享面单独编成产物后就是「另一个模块」，
+    只靠 `-cp` 喂给第 2 段时，本域**看不到共享面里的 `internal` 声明**——活例：
+    `-Module pages/about` 报 `cannot access 'object InfraJson': it is internal in file`
+    （`AboutHttp.kt:88`、`DonorsFeed.kt:3,88`），而这种报错发生在**没改过的 main 源**上，
+    第一眼根本不像本域的问题。
+    所以第 2 段一律追加 `-Xfriend-paths=<共享面 classes 目录>`：把本域登记成共享面的友元模块，
+    `internal` 即可见。三条红线：
+      · 不要「退回每域重编共享面」——那会把两段编译的提速全还回去；
+      · 不要用 `-Xallow-internal-access` 之类开关——那只是关掉检查，不解决「谁该看见」；
+      · 换编译器/换语言（或改共享面产出形式）时，这条同样要跟着走，别让它夜里自己复发。
+
     【main 源集里的 Compose/miuix 文件：排除 + WARN，不是静默放过】（2026-11-10）
     渲染层在 `composeP1`，纯 JVM 的 L0 编译面解析不了 `androidx.compose` / `miuix`
     （没有这两个 AAR）。历史上 `pages/timetable/TimetableBandUnderlap.kt`（`ebf87bac5`）
@@ -612,12 +624,21 @@ try {
     }
 
     # ── 第 2 段：本域 main+test+testutil+模块白名单，用共享面 classes 当 -cp ────────────
+    # ⚠️ 必带 `-Xfriend-paths`：Kotlin 的 `internal` 是**模块内可见**。共享面单独编成产物后
+    # 就是「另一个模块」，只靠 `-cp` 喂给第 2 段时，本域看不到共享面里的 `internal` 声明
+    # （活例：`-Module pages/about` 报 `cannot access 'object InfraJson': it is internal in file`）。
+    # `-Xfriend-paths=<共享面 classes>` 把本域登记成共享面的友元模块，`internal` 即可见。
+    # 不要退回「每域重编共享面」（把两段编译的提速还回去），也不要用 `-Xallow-internal-access`
+    # 之类的开关（那只是关掉检查，不解决「谁该看见」）。换实现语言/编译器时这条同样要跟着走。
     $domainCp = if ($sharedClassesDir) { "$sharedClassesDir;$classpath" } else { $classpath }
     if ($sources.Count -eq 0) {
         Write-Host ">>> [test-kotlin-module] 本域没有可编译源（全部被 Compose 过滤或跳过），共享面已通过，无测试可跑。" -ForegroundColor Yellow
         exit 0
     }
     $argLines = @("-cp", "`"$(& $toSlash $domainCp)`"", "-d", "`"$(& $toSlash $outDir)`"")
+    if ($sharedClassesDir) {
+        $argLines += "`"-Xfriend-paths=$(& $toSlash $sharedClassesDir)`""
+    }
     foreach ($src in $sources) { $argLines += "`"$(& $toSlash $src)`"" }
     Set-Content -Path $argFile -Value $argLines -Encoding utf8NoBOM
     Write-Host ">>> [test-kotlin-module] 第 2 段：编译本域 [$cleanModule]（本域 $($sources.Count) 个 .kt，共享面 $($sharedSources.Count) 个已就绪），工作目录 $workRoot" -ForegroundColor Cyan
