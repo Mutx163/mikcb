@@ -10,6 +10,7 @@ import java.nio.charset.Charset
 import java.nio.charset.CodingErrorAction
 import java.nio.file.Files
 import java.nio.file.InvalidPathException
+import java.nio.file.Path
 import java.util.concurrent.TimeUnit
 
 /**
@@ -17,28 +18,29 @@ import java.util.concurrent.TimeUnit
  *
  * ## 它补的是哪个洞
  *
- * 仓库里两条最常用的文本门禁都没法用 L0 点：
+ * 仓库里三条最常用的文本门禁都没法用 L0 点：
  *
  * | 门禁 | 现在住哪 | L0 能不能点到 |
  * |---|---|---|
  * | `ComposePageStyleGuardTest`（R1..R7 七条样式规则） | `test/.../pages/` **包根** | 不能 |
  * | `CjkLiteralGateTest`（中文字面量棘轮） | `test/.../i18n/` | 不能 |
+ * | `CopyGapGateTest`（文案缺口棘轮） | `test/.../i18n/` | 不能 |
  *
  * 原因在 `scripts/test-kotlin-module.ps1` 的映射规则：`-Module pages/<域>` 只收
  * `main/…/pages/<域>` 与 `test/…/pages/<域>` 两个目录，外加 `testutil/` 与共享模型层。
  * 包根 `pages/` 不是 `pages/<域>`（`-Module pages` 剥前缀后 slug 为空，收不到包根测试），
- * `i18n/` 更是完全另一个包。于是这两条门禁**只有跑整包 L2 才会被执行**——
- * 改一行页面样式、加一句中文字面量，想在交活前自查，代价是拉起 Gradle 排队等锁。
- * 实际后果是「交活前根本不查」，样式债与 i18n 债都得靠人盯。
+ * `i18n/` 更是完全另一个包。于是这三条门禁**只有跑整包 L2 才会被执行**——
+ * 改一行页面样式、加一句中文字面量、改一条译文，想在交活前自查，代价是拉起 Gradle 排队等锁。
+ * 实际后果是「交活前根本不查」，样式债、i18n 债、文案缺口债都得靠人盯。
  *
  * 本类不改判据、不搬既有守卫，只做一件事：在 `-Module pages/crossguard` 里**调用既有入口**，
- * 让 L0 一条命令同时判样式与 i18n。`pages/crossguard` 因此是一个**只有测试目录**的域
+ * 让 L0 一条命令同时判样式、i18n 与文案缺口。`pages/crossguard` 因此是一个**只有测试目录**的域
  * （与 `pages/emptyguard`、`pages/loading`、`pages/sheetguard` 同一先例）：
  * 它不属于任何页面，产物只有「红/绿」。
  *
  * ## 判据一律走既有入口，本类不重写扫描规则
  *
- * 样式与 CJK 的规则各有**两份实现**（PowerShell / Python 一份，Kotlin 守卫一份），
+ * 样式与 i18n 的规则各有**两份实现**（PowerShell / Python 一份，Kotlin 守卫一份），
  * 逐字保持一致本身就是维护负担。如果在第三个地方再抄一份判据，三份迟早漂移，
  * 而且「哪份算准」没有答案。所以这里只做**进程调用 + 退出码判读**：
  *
@@ -46,8 +48,32 @@ import java.util.concurrent.TimeUnit
  *   —— 走全仓（`all`），因为本守卫是跨域的；exit 0 = 绿。
  * - CJK：`python scripts/i18n-cjk-baseline.py --check` —— exit 0 = 绿
  *   （该模式由并行交付物 1 于 2026-11-11 当天落地，并已用注入探针验过语义）。
+ * - 文案缺口：`python scripts/i18n-copy-gap.py --check` —— exit 0 = 绿。
  *
  * 失败时把子进程 exit code 与输出末尾 20 行贴进断言消息，读到报错就能定位，不用重跑。
+ *
+ * ## 文案缺口基线的版本头：为什么单独做哨兵，而且拆纯函数
+ *
+ * `--check` 只比对「缺口条目」，**版本头不一致它看不出来**：改了规则或白名单（脚本里常量 +1）
+ * 却没重跑 `--write`，旧基线里是旧口径算出的条目，`--check` 照样可能绿，门禁悄悄失效。
+ * 这类漂移编译得过、单测也绿，只能靠源码哨兵钉住。
+ *
+ * 判据**从脚本源码读常量**再与基线头比对（[verifyCopyGapHeader]），不写死「只认 1」：
+ * 将来升到 v2，基线没跟上会红，两边一起升则绿。
+ *
+ * 拆成纯函数是为了**可测**：三条「必须红」的分支（源码取不到常量 / 基线缺版本行 / 两边不相等）
+ * 用真实仓库是测不到的——真实仓库永远落在绿的那一支。于是：
+ *
+ * - `verifyCopyGapHeader(scriptSource, baselineText)`：入参两段文本、出参问题列表，空 = 通过；
+ * - `copyGapSentinelProblems(baselinePath, scriptPath)`：入口，路径可替换（默认真实仓库）；
+ * - `runCopyGapSentinel(...)`：出口，把问题列表翻成「退出码 + 打印行」，同样可被 fixture 驱动。
+ *
+ * 五条用例 = 4 条语义（改名 / 缺版本行 / 不一致 / 真实仓库默认参数）+ 1 条接线
+ * （喂 TEMP 里的坏基线，断言入口真的返回非零并打印两边的值）。
+ * **纯函数证明「判断对不对」，接线用例证明「判断有没有被用上」**——只做前者，
+ * 「拿到问题列表却 exit 0」这类故障一条都抓不到。
+ *
+ * 「取不到 ⇒ 红」是默认姿势，不是特例：读不到输入却算通过，等于哨兵不存在。
  *
  * ## 为什么必须先探测 `--check` 再信退出码（假绿陷阱，实测）
  *
@@ -86,13 +112,13 @@ import java.util.concurrent.TimeUnit
 class CrossDomainGateGuardTest {
 
     /**
-     * 空跑哨兵：仓库根、两个脚本、两份基线、两个解释器缺一即红；外加样式入口活性探针。
+     * 空跑哨兵：仓库根、三个脚本、三份基线、两个解释器缺一即红；外加样式入口活性探针。
      *
      * 这一条不判业务红绿，只保证「后面的判据不是空转」。它红了先按报错里的路径修环境，
      * 不要去看业务代码。
      */
     @Test
-    fun `空跑哨兵 仓库根与两个入口两份基线必须都在`() {
+    fun `空跑哨兵 仓库根与三个入口三份基线必须都在`() {
         val root = repoRoot()
         val missing = mutableListOf<String>()
 
@@ -221,6 +247,315 @@ class CrossDomainGateGuardTest {
             },
             run.exitCode == 0,
         )
+    }
+
+    /**
+     * 文案缺口判据：`i18n-copy-gap.py --check` 必须 exit 0。
+     *
+     * 与 CJK 那条同一套路（见类注释的假绿陷阱）：该脚本同样**静默忽略未知参数**，
+     * 没有 `--check` 时会退化成「统计 + 比对基线」，退出码不再表达「只比基线」的语义，
+     * 所以先过能力门再信退出码。基线缺失时它会把全部条目算成「该降未降」（碰巧也红），
+     * 但那种红说的是另一件事，所以基线存在性在这里也先断言一次，让报错说准。
+     */
+    @Test
+    fun `文案缺口判据 i18n-copy-gap --check 必须是绿`() {
+        val root = repoRoot()
+        val python = requireExecutable(PYTHON_NAME, "文案缺口门禁要调 python 起 i18n-copy-gap.py")
+        val script = File(root, COPY_GAP_SCRIPT)
+        val scriptText = if (script.isFile) script.readText() else ""
+        val baseline = File(root, COPY_GAP_BASELINE)
+        assertTrue(
+            buildString {
+                appendLine("依赖未落地：scripts/i18n-copy-gap.py 里没有 --check 模式，本条无法成立。")
+                appendLine("为什么不能直接看退出码：该脚本会**静默忽略**未知参数，" +
+                    "没有 --check 时退化成「统计 + 比对基线」，退出码不再表达「只比基线」的语义" +
+                    "——直接判 exit 0 会得到假绿。")
+                appendLine("纪律：本类不许跳过、也不许在本类里自己实现缺口比对（那等于造第三份判据）。")
+                appendLine("脚本：${script.absolutePath}")
+                appendLine(
+                    "基线：${baseline.absolutePath}" +
+                        "（存在=${baseline.isFile}，字节=${if (baseline.isFile) baseline.length() else -1}）",
+                )
+            },
+            scriptText.contains("--check") && baseline.isFile && baseline.length() > 0L,
+        )
+
+        val run = runGate(
+            "i18n-copy-gap --check",
+            root,
+            python, script.absolutePath, "--check",
+        )
+        assertTrue(
+            buildString {
+                appendLine("文案缺口棘轮红了：新增「未翻译 / 中文污染」，或修好一条却没下调基线，都算红。")
+                appendLine("判据由 scripts/i18n-copy-gap.py --check 给出，本守卫不重写规则；下面是它的原始输出。")
+                appendLine(run.report())
+                appendLine("修法：补本地语种译文；确属修复的，用 `python scripts/i18n-copy-gap.py --write`")
+                appendLine("下调基线（棘轮只许降不许升），并与代码同批提交。")
+            },
+            run.exitCode == 0,
+        )
+    }
+
+    /**
+     * 文案缺口基线的**版本头比对**（纯函数：入参两段文本，出参问题列表，空 = 通过）。
+     *
+     * 为什么拆成纯函数：三条「必须红」的分支（源码取不到常量 / 基线缺版本行 / 两边不相等）
+     * 用真实仓库是**测不到**的——真实仓库永远落在绿的那一支，判据写坏了也发现不了。
+     * 传两段 fixture 文本进来，四条用例各自咬一次，且**不必改**执笔的 `i18n-copy-gap.py`。
+     *
+     * 为什么需要它：`--check` 只比对「缺口条目」，**版本头不一致它看不出来**——
+     * 改了规则或白名单（脚本里常量 +1）却没重跑 `--write`，旧基线里是旧口径算出来的条目，
+     * `--check` 照样可能绿，门禁就悄悄失效了。这类漂移编译得过、测试也绿，只能靠源码哨兵钉住。
+     *
+     * 判据刻意**从脚本源码读常量**再与基线头比对，不写死「只认 1」：将来升到 v2，
+     * 基线没跟上会红；脚本与基线一起升则绿。写死数字的哨兵升级当天就会假红、然后被改松成假绿。
+     *
+     * **取不到就是红**，不是特例：读不到输入却算通过，等于哨兵不存在。
+     */
+    internal fun verifyCopyGapHeader(scriptSource: String, baselineText: String): List<String> {
+        val problems = mutableListOf<String>()
+        val scriptRules = constantValue(scriptSource, RULES_CONST)
+        val scriptWhitelist = constantValue(scriptSource, WHITELIST_CONST)
+        if (scriptRules == null || scriptWhitelist == null) {
+            problems += "没找到 $RULES_CONST / $WHITELIST_CONST：可能被改名 / 移位 / 改成导入" +
+                "（哨兵只认脚本里行首的常量赋值）。实际读到：$RULES_CONST=${scriptRules ?: "<缺失>"}、" +
+                "$WHITELIST_CONST=${scriptWhitelist ?: "<缺失>"}"
+        }
+
+        val lines = baselineText.lines()
+        val baselineRules = versionLineOf(lines, RULES_CONST)
+        val baselineWhitelist = versionLineOf(lines, WHITELIST_CONST)
+        if (baselineRules == null || baselineWhitelist == null) {
+            problems += "基线头里没找到版本行：$RULES_CONST=${baselineRules?.value ?: "<缺失>"}、" +
+                "$WHITELIST_CONST=${baselineWhitelist?.value ?: "<缺失>"}" +
+                "（期望形如 `# 规则版本 $RULES_CONST=1，白名单版本 $WHITELIST_CONST=1`）。" +
+                "基线头前 6 行：" +
+                lines.take(6).mapIndexed { index, line -> "L${index + 1}: $line" }.joinToString(" ｜ ")
+        }
+
+        if (scriptRules != null && baselineRules != null && scriptRules != baselineRules.value) {
+            problems += "$RULES_CONST 不一致：基线=${baselineRules.value}，脚本=$scriptRules"
+        }
+        if (scriptWhitelist != null && baselineWhitelist != null && scriptWhitelist != baselineWhitelist.value) {
+            problems += "$WHITELIST_CONST 不一致：基线=${baselineWhitelist.value}，脚本=$scriptWhitelist"
+        }
+        return problems
+    }
+
+    /**
+     * 哨兵**入口**：读磁盘上的脚本与基线，返回问题列表（空 = 通过）。
+     *
+     * 路径可替换（默认真实仓库）：纯函数只能证明「判断对不对」，而门禁链上真正跑的是
+     * 「谁调它、喂的是哪个文件、拿到非空列表后干什么」。路径写死时，「接线把结果丢了」
+     * 这类故障一条语义用例都抓不到——所以这里把路径做成参数，接线才能被 fixture 驱动。
+     *
+     * 读不到输入（文件不在 / 读不出来）**也是问题**，不返回空列表：读不到却算通过，等于哨兵不存在。
+     */
+    internal fun copyGapSentinelProblems(
+        baselinePath: Path = defaultCopyGapBaselinePath(),
+        scriptPath: Path = defaultCopyGapScriptPath(),
+    ): List<String> {
+        val problems = mutableListOf<String>()
+        if (!Files.isRegularFile(scriptPath)) {
+            problems += "读不到脚本：$scriptPath（哨兵取不到输入就按红处理，不跳过）"
+        }
+        if (!Files.isRegularFile(baselinePath)) {
+            problems += "读不到基线：$baselinePath（先跑 `python scripts/i18n-copy-gap.py --write` 再提交）"
+        }
+        if (problems.isNotEmpty()) return problems
+        return verifyCopyGapHeader(Files.readString(scriptPath), Files.readString(baselinePath))
+    }
+
+    /** 哨兵运行结论：退出码 + 要打印的行。让「非空 → 非零 + 打印列表」这段能被断言。 */
+    internal data class SentinelResult(val exitCode: Int, val lines: List<String>)
+
+    /**
+     * 哨兵出口：把问题列表翻成「退出码 + 打印行」。
+     *
+     * 这一段是接线里最容易丢结果的地方（拿到列表却不看），所以它本身也得能被 fixture 驱动：
+     * [copyGapSentinelProblems] 的入参可以换成 TEMP 里的坏基线，再断言这里返回非零。
+     */
+    internal fun runCopyGapSentinel(
+        baselinePath: Path = defaultCopyGapBaselinePath(),
+        scriptPath: Path = defaultCopyGapScriptPath(),
+    ): SentinelResult {
+        val problems = copyGapSentinelProblems(baselinePath, scriptPath)
+        val lines = if (problems.isEmpty()) {
+            listOf("文案缺口基线版本头一致：$RULES_CONST / $WHITELIST_CONST 与脚本常量相符")
+        } else {
+            problems
+        }
+        return SentinelResult(if (problems.isEmpty()) 0 else 1, lines)
+    }
+
+    /** 真实仓库的基线路径（默认参数用）。 */
+    internal fun defaultCopyGapBaselinePath(): Path = File(repoRoot(), COPY_GAP_BASELINE).toPath()
+
+    /** 真实仓库的脚本路径（默认参数用）。 */
+    internal fun defaultCopyGapScriptPath(): Path = File(repoRoot(), COPY_GAP_SCRIPT).toPath()
+
+    /**
+     * 失败分支 1：脚本里的版本常量被改名 / 移位 / 改成导入 ⇒ 哨兵必须红。
+     *
+     * 这是最容易写成假绿的一支：正则匹配不到时若返回「没问题」，哨兵就永远绿。
+     */
+    @Test
+    fun `版本常量被改名时哨兵必须红`() {
+        // fixture：把 RULES_VERSION 改名成 RULES_VERSION_NEW（基线那头正常）
+        val scriptSource = "${RULES_CONST}_NEW = 1\n$WHITELIST_CONST = 1"
+        val baselineText = "# 规则版本 $RULES_CONST=1，白名单版本 $WHITELIST_CONST=1"
+        val problems = verifyCopyGapHeader(scriptSource, baselineText)
+        assertTrue(
+            "常量被改名（只剩 ${RULES_CONST}_NEW）时哨兵必须红，实际返回「无问题」——那会变成假绿：",
+            problems.isNotEmpty(),
+        )
+        assertTrue(
+            "报错必须点名 $RULES_CONST 并说明可能「改名 / 移位 / 导入」，实际：\n${problems.joinToString("\n")}",
+            problems.any { it.contains(RULES_CONST) && it.contains("改名") },
+        )
+    }
+
+    /**
+     * 失败分支 2：基线里读不到版本行 ⇒ 哨兵必须红。
+     *
+     * 真实故障形态：有人用 `--write` 之前手工编辑过基线、把注释头删了，或换了生成器。
+     */
+    @Test
+    fun `基线缺少版本行时哨兵必须红`() {
+        val scriptSource = "$RULES_CONST = 3\n$WHITELIST_CONST = 4"
+        val baselineText = "# i18n 文案缺口基线（这条 fixture 故意没有版本行）\nA|ja|someKey"
+        val problems = verifyCopyGapHeader(scriptSource, baselineText)
+        assertTrue(
+            "基线缺版本行时哨兵必须红，实际返回「无问题」：",
+            problems.isNotEmpty(),
+        )
+        assertTrue(
+            "报错必须点名「基线头」与缺失的常量，实际：\n${problems.joinToString("\n")}",
+            problems.any { it.contains("基线头") && it.contains(RULES_CONST) },
+        )
+    }
+
+    /**
+     * 失败分支 3：两边版本号都有但不相等 ⇒ 哨兵必须红，且消息里要能同时看到两边的值。
+     *
+     * 顺带反向咬一口：只有 RULES 不一致时，不许把 WHITELIST 也算成问题（否则真升版时分不清要改哪个）。
+     */
+    @Test
+    fun `两边版本号不一致时哨兵必须红`() {
+        val scriptSource = "$RULES_CONST = 2\n$WHITELIST_CONST = 1"
+        val baselineText = "# 规则版本 $RULES_CONST=1，白名单版本 $WHITELIST_CONST=1"
+        val problems = verifyCopyGapHeader(scriptSource, baselineText)
+        assertTrue("两边不一致时哨兵必须红，实际返回「无问题」：", problems.isNotEmpty())
+        assertTrue(
+            "报错必须同时打出两边的值（基线=1、脚本=2），实际：\n${problems.joinToString("\n")}",
+            problems.any { it.contains("基线=1") && it.contains("脚本=2") },
+        )
+        assertTrue(
+            "$WHITELIST_CONST 两边都是 1，不该被算成问题（否则升版时分不清要改哪个），实际：\n" +
+                problems.joinToString("\n"),
+            problems.none { it.contains(WHITELIST_CONST) },
+        )
+    }
+
+    /**
+     * 真实仓库那一支（健全性）：默认参数读仓库里的脚本与基线，必须**没有问题列表、exit 0**。
+     *
+     * 它红了才是「今天的仓库有漂移」；它绿不代表上面三条红分支被验过——那三条靠 fixture 用例。
+     * 顺带钉死「空列表 ⇒ exit 0」：反向的接线错误（没问题却判红）也会在这里暴露。
+     */
+    @Test
+    fun `真实仓库默认参数下版本头一致`() {
+        val root = repoRoot()
+        val script = File(root, COPY_GAP_SCRIPT)
+        val baseline = File(root, COPY_GAP_BASELINE)
+        assertTrue("找不到脚本：${script.absolutePath}", script.isFile)
+        assertTrue(
+            "找不到文案缺口基线：${baseline.absolutePath}（或为空）—— 没有基线，--check 无从比对，" +
+                "先跑 `python scripts/i18n-copy-gap.py --write` 再提交",
+            baseline.isFile && baseline.length() > 0L,
+        )
+
+        val problems = copyGapSentinelProblems()
+        assertTrue(
+            buildString {
+                appendLine("真实仓库的文案缺口基线版本头哨兵红了：")
+                problems.forEach { appendLine("  - $it") }
+                appendLine("基线：${baseline.absolutePath}")
+                appendLine("脚本：${script.absolutePath}")
+                appendLine("修法：改了规则 / 白名单就重生成基线 —— " +
+                    "`python scripts/i18n-copy-gap.py --write`，与脚本常量同批提交。")
+            },
+            problems.isEmpty(),
+        )
+
+        val result = runCopyGapSentinel()
+        assertTrue(
+            "真实仓库没问题时必须 exit 0（反过来判红就是接线错误），实际 exitCode=${result.exitCode}，打印：\n" +
+                result.lines.joinToString("\n"),
+            result.exitCode == 0,
+        )
+    }
+
+    /**
+     * **接线用例**：喂 TEMP 里一份版本号不匹配的基线给哨兵入口，必须返回非零并打印两边的值。
+     *
+     * 前面三条语义用例证明「判断对不对」，这一条证明「判断有没有被用上」：
+     * 入口若把结果丢了（拿到问题列表却不看、或仍读死仓库默认路径），这里就会红。
+     * 脚本用真实仓库那份，所以「基线=999 / 脚本=真实常量」必然不一致。
+     */
+    @Test
+    fun `基线版本不匹配时哨兵入口返回非零`() {
+        val tempDir = Files.createTempDirectory("crossguard-copygap-")
+        val mismatched = tempDir.resolve("copy-gap-baseline.txt")
+        try {
+            Files.writeString(
+                mismatched,
+                "# 规则版本 $RULES_CONST=999，白名单版本 $WHITELIST_CONST=999\n" +
+                    "A|ja|__crossguard_wiring_probe__\n",
+            )
+
+            val result = runCopyGapSentinel(baselinePath = mismatched)
+            val printed = result.lines.joinToString("\n")
+            assertTrue(
+                "喂一份版本号不匹配的基线，哨兵入口必须返回非零" +
+                    "（拿到问题却 exit 0 = 结果被丢了）。实际 exitCode=${result.exitCode}，打印：\n$printed",
+                result.exitCode != 0,
+            )
+            assertTrue(
+                "打印里必须同时出现两边的值：基线=999 与脚本的真实常量，实际：\n$printed",
+                printed.contains("基线=999") && Regex("""脚本=\d+""").containsMatchIn(printed),
+            )
+            assertTrue(
+                "接线用例的证据要能看出「读的是我传进去的那份基线」：$mismatched",
+                printed.isNotBlank(),
+            )
+        } finally {
+            Files.deleteIfExists(mismatched)
+            Files.deleteIfExists(tempDir)
+        }
+    }
+
+    /**
+     * 从脚本源码里取 `<常量> = <整数>`；取不到返回 null（调用方必须按红处理，不许当成 0 或跳过）。
+     *
+     * 只认「行首常量赋值」：`NAME = 1` / 前面有缩进的同名赋值也行，但 `X_NAME = 1` 不算，
+     * 所以改名 / 改成 `import` 都能被识别成「取不到」。
+     */
+    private fun constantValue(scriptSource: String, constant: String): Int? =
+        Regex("""(?m)^\s*$constant\s*=\s*(\d+)\s*$""").find(scriptSource)?.groupValues?.get(1)?.toInt()
+
+    /** 基线里形如 `RULES_VERSION=1` 的一行；返回行号（1 基）、原文与数值。 */
+    private data class VersionLine(val lineNumber: Int, val text: String, val value: Int)
+
+    /** 在基线文本里找版本行；找不到返回 null（调用方必须按红处理）。 */
+    private fun versionLineOf(lines: List<String>, constant: String): VersionLine? {
+        val pattern = Regex("""\b$constant\s*=\s*(\d+)""")
+        lines.forEachIndexed { index, line ->
+            val match = pattern.find(line) ?: return@forEachIndexed
+            return VersionLine(index + 1, line.trim(), match.groupValues[1].toInt())
+        }
+        return null
     }
 
     // ------------------------------------------------------------------
@@ -457,12 +792,30 @@ class CrossDomainGateGuardTest {
 
         const val STYLE_SCRIPT = "scripts/compose-style-lint.ps1"
         const val CJK_SCRIPT = "scripts/i18n-cjk-baseline.py"
+        const val COPY_GAP_SCRIPT = "scripts/i18n-copy-gap.py"
 
         /** 两份 CJK 基线：`--check` 的比对对象，缺一份就没有棘轮可判。 */
         const val CJK_BASELINE_COMPOSE = "android/app/src/test/kotlin/com/mutx163/qingyu/i18n/cjk-literal-baseline.txt"
         const val CJK_BASELINE_MAIN =
             "android/app/src/test/kotlin/com/mutx163/qingyu/i18n/cjk-literal-baseline-main.txt"
 
-        val GATE_FILES = listOf(STYLE_SCRIPT, CJK_SCRIPT, CJK_BASELINE_COMPOSE, CJK_BASELINE_MAIN)
+        /** 文案缺口基线：`i18n-copy-gap.py --check` 的比对对象，头里带 RULES/WHITELIST 版本。 */
+        const val COPY_GAP_BASELINE = "android/app/src/test/kotlin/com/mutx163/qingyu/i18n/copy-gap-baseline.txt"
+
+        /**
+         * 版本常量的名字。**名字写在这里，值一律从脚本源码读**（见 [constantValue]）——
+         * 把值也写死成 1，脚本升到 v2 时哨兵就会假红，然后被人改松成假绿。
+         */
+        const val RULES_CONST = "RULES_VERSION"
+        const val WHITELIST_CONST = "WHITELIST_VERSION"
+
+        val GATE_FILES = listOf(
+            STYLE_SCRIPT,
+            CJK_SCRIPT,
+            COPY_GAP_SCRIPT,
+            CJK_BASELINE_COMPOSE,
+            CJK_BASELINE_MAIN,
+            COPY_GAP_BASELINE,
+        )
     }
 }
