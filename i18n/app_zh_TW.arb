@@ -4830,7 +4830,7 @@
   "aboutMirrorProbeFailedLabel": "失敗",
   "unnamedTimetableProfile": "未命名課表",
   "cloudBackupManualProtectedTitle": "手動備份永不過期",
-  "courseImportPortalUrlMissingBody": "{schoolName} {adapterName} 無默認登錄地址，請先輸入教務系統網址",
+  "courseImportPortalUrlMissingBody": "{schoolName} / {adapterName} 無默認登錄地址，請先輸入教務系統網址",
   "@courseImportPortalUrlMissingBody": {
     "placeholders": {
       "schoolName": {

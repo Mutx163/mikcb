@@ -5149,7 +5149,7 @@
   "aboutMirrorProbeFailedLabel": "失败",
   "unnamedTimetableProfile": "未命名课表",
   "cloudBackupManualProtectedTitle": "手动备份永不过期",
-  "courseImportPortalUrlMissingBody": "{schoolName} {adapterName} 无默认登录地址，请先输入教务系统网址",
+  "courseImportPortalUrlMissingBody": "{schoolName} / {adapterName} 无默认登录地址，请先输入教务系统网址",
   "@courseImportPortalUrlMissingBody": {
     "placeholders": {
       "schoolName": {

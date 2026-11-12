@@ -123,7 +123,7 @@ object ImportStrings {
     val courseImportPortalUrlSaveContinue = ImportArbText("courseImportPortalUrlSaveContinue", "保存并继续")
     val courseImportPortalUrlMissingBody = ImportArbText(
         "courseImportPortalUrlMissingBody",
-        "{schoolName} {adapterName} 无默认登录地址，请先输入教务系统网址",
+        "{schoolName} / {adapterName} 无默认登录地址，请先输入教务系统网址",
     )
     val courseImportPortalUrlLabel = ImportArbText("courseImportPortalUrlLabel", "教务网址")
     val courseImportPortalUrlHint = ImportArbText("courseImportPortalUrlHint", "保存后下次会直接使用，也可以在适配器信息页里修改")
