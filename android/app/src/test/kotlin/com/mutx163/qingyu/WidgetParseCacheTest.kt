@@ -1,7 +1,9 @@
 package com.mutx163.qingyu
 
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
 import org.junit.Test
 
 /**
@@ -73,27 +75,34 @@ class WidgetParseCacheTest {
     }
 
     @Test
-    fun `解析抛异常时按无结果缓存 同一文本不反复重试`() {
+    fun `解析抛异常时按失败缓存 同一文本不反复重试 且失败只通知一次`() {
         val parser = CountingParser<ImmutableValue> { throw IllegalArgumentException("坏 JSON") }
-        val cache = WidgetParseCache(parser::parse)
+        var failures = 0
+        val cache = WidgetParseCache(parser::parse, onParseFailed = { _, _ -> failures++ })
 
         assertNull(cache.get("坏 JSON"))
         assertNull(cache.get("坏 JSON"))
         assertEquals("坏数据不该在每张卡上反复解析/反复抛", 1, parser.calls)
+        assertEquals("失败只通知一次（生产据此打一条 warning）", 1, failures)
+        assertTrue("当前缓存项必须记为失败", cache.currentFailure())
 
         cache.invalidate()
         assertNull(cache.get("坏 JSON"))
         assertEquals("显式失效后允许再试一次", 2, parser.calls)
+        assertEquals(2, failures)
     }
 
     @Test
-    fun `解析返回 null 也缓存 不反复重试`() {
+    fun `解析成功但结果为空 与解析失败是两种状态`() {
         val parser = CountingParser<ImmutableValue> { null }
-        val cache = WidgetParseCache(parser::parse)
+        var failures = 0
+        val cache = WidgetParseCache(parser::parse, onParseFailed = { _, _ -> failures++ })
 
-        cache.get("空档案")
-        cache.get("空档案")
+        assertNull(cache.get("空档案"))
+        assertNull(cache.get("空档案"))
 
-        assertEquals(1, parser.calls)
+        assertEquals("空结果同样不反复重试", 1, parser.calls)
+        assertEquals("空结果不是失败，不得打失败日志", 0, failures)
+        assertFalse("当前缓存项不是失败状态", cache.currentFailure())
     }
 }

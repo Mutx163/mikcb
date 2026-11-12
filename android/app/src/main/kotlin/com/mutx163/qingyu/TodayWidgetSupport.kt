@@ -8,6 +8,7 @@ import android.content.Intent
 import android.content.res.Configuration
 import android.graphics.Color
 import android.os.Bundle
+import android.util.Log
 import android.util.TypedValue
 import android.view.View
 import android.widget.RemoteViews
@@ -164,17 +165,23 @@ object TodayWidgetSupport {
      *
      * 缓存里存的是 [CachedProfile]（id + 原始 JSON 字符串，**全不可变**），
      * 需要 `JSONObject` 的调用方每次现解析一份自己的对象——不共享可变 JSON（M4）。
-     * 解析失败也缓存（M3），同一轮不会每张卡各抛一次。
+     * 解析失败也缓存（M3），同一轮不会每张卡各抛一次；失败与「空档案」分开记，
+     * 失败在这里打一条 warning，否则卡片空白时日志里什么都查不到。
      */
-    private val profilesCache = WidgetParseCache<List<CachedProfile>> { payload ->
-        val array = JSONArray(payload)
-        buildList {
-            for (index in 0 until array.length()) {
-                val profile = array.optJSONObject(index) ?: continue
-                add(CachedProfile(id = profile.optString("id"), raw = profile.toString()))
+    private val profilesCache = WidgetParseCache<List<CachedProfile>>(
+        parse = { payload ->
+            val array = JSONArray(payload)
+            buildList {
+                for (index in 0 until array.length()) {
+                    val profile = array.optJSONObject(index) ?: continue
+                    add(CachedProfile(id = profile.optString("id"), raw = profile.toString()))
+                }
             }
-        }
-    }
+        },
+        onParseFailed = { _, error ->
+            Log.w("WidgetRefresh", "timetable_profiles parse failed; widget cards fall back to empty", error)
+        },
+    )
 
 
     /** 无档案可读时的外观兜底，必须与 TimetableSettings 默认值一致。 */
