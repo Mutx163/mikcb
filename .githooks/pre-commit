@@ -1,26 +1,176 @@
 #!/bin/sh
-# 提交钩子（2026-11-07 去 Flutter 化 P4-C 后）
+# 提交钩子：**只做「红得快、修得便宜」的检查**（目标 2–5 秒跑完）。
 #
-# Dart 层已删除：`lib/`、`test/`、`integration_test/`、`pubspec.yaml` 都没了。
-# 原 Flutter 架构守卫（`test/architecture/`）与 `dart analyze` 门禁已整条退役。
-# Kotlin/Compose 的验证走 L0（scripts/test-kotlin-module.ps1）与 L1
-# （scripts/safe-gradle.ps1 :app:compileDevDebugKotlin），**不放进提交钩子**：
-# 单次 20 秒~2 分钟，放进来只会让 `--no-verify` 变成习惯。
+# 为什么不跑编译 / 单测：L0 约 20 秒、L1 分钟级，放进提交钩子只会让人养成
+# `--no-verify` 的习惯 —— 那样的门禁等于没有。编译与单测仍在 L0/L1/L2 阶段跑。
 #
-# 本文件现在只做一件事：正常走完钩子时写下 `pre-commit-ok` 标记，
-# 供 `post-commit` 区分「正常提交」与「--no-verify 跳过」并自动留痕。
-# 没有门禁可跳过时也不要删掉本文件：删了 post-commit 会把每次提交都记成跳过。
+# ## 现在检查什么
 #
-# 历史：Flutter 时代的快照守卫 / 超时 / 工具链崩溃放行见
-# `.agents/notes/implemented/process/2026-11-07-precommit-kotlin-and-flutter-crash.md`
-# 与 git 历史（bab26f1c5 / 4ae35d13e）。
+#   1. 探针 / canary 文件：`android/app/src` 下文件名命中 `(?i)canary|probe` 且不在
+#      白名单 ⇒ 拒。白名单直接从 `CanaryFileGuardTest.kt` 里读（不维护第二份清单）。
+#   2. ARB 可解析：改动的 `i18n/*.arb` 必须能被 JSON 解析（读的是**索引里的内容**）。
+#   3. 发布说明镜像：`docs/releases/*.md` ↔ `android/app/src/main/assets/docs/releases/*.md`
+#      同名文件**逐字节相同**；比较的是**两边索引里的 blob**，不是工作区。
+#   4. 棘轮只降不升：碰 `.kt` 跑 `i18n-cjk-baseline.py --check`；碰 `.arb` 跑
+#      `i18n-copy-gap.py --check`。这两条读的是**工作区**（脚本本身如此），
+#      完整暂存时与索引一致；部分暂存（`git add -p`）以工作区为准。
+#   5. ArbCatalog 同步：碰 ARB / `ArbCatalog.kt` 时跑 `gen_compose_arb_catalog.py --check`（同上，读工作区）。
+#
+# 每步先按「暂存文件是否相关」短路：只改普通文档时一条检查都不跑，秒过。
+#
+# ## 逃生口
+#
+# 只有 git 原生的 `git commit --no-verify`，**不要再加更隐蔽的开关**。
+# 跳过后 `post-commit` 往 `.agents/no-verify-log.md` 记账；被跳过的项要手动补跑（见 README）。
+#
+# ## 工具链缺失
+#
+# python 起不来时**放行并提醒**，不拦提交（与 pre-push 同口径）。纯 shell 的三条
+# （探针文件名 / ARB 解析 / 镜像比对）不依赖 python，不受影响。
+#
+# ## 不要删掉本文件的记账段
+#
+# `post-commit` 靠 `pre-commit-ok` 标记区分「正常提交」与「--no-verify 跳过」。
+# 删了它，每次提交都会被记成跳过门禁。
 
-set -e
+set -u
 
-tree=$(git write-tree 2>/dev/null || true)
-if [ -n "$tree" ]; then
-  gd=$(git rev-parse --git-dir)
-  printf '%s\t%s\n' "$tree" "$(date +%s)" >> "$gd/pre-commit-ok.log" 2>/dev/null || true
+root=$(git rev-parse --show-toplevel 2>/dev/null || pwd)
+cd "$root" || exit 1
+
+mark_ok() {
+  tree=$(git write-tree 2>/dev/null || true)
+  if [ -n "$tree" ]; then
+    gd=$(git rev-parse --git-dir 2>/dev/null || echo .git)
+    printf '%s\t%s\n' "$tree" "$(date +%s)" >> "$gd/pre-commit-ok.log" 2>/dev/null || true
+  fi
+}
+
+staged=$(git diff --cached --name-only --diff-filter=ACMR)
+if [ -z "$staged" ]; then
+  mark_ok
+  exit 0
 fi
 
+fail=0
+reject() {
+  printf '  \342\234\227 %s\n' "$*" >&2
+  fail=1
+}
+
+python_bin=""
+for cand in python python3 py; do
+  if command -v "$cand" >/dev/null 2>&1; then python_bin="$cand"; break; fi
+done
+if [ -z "$python_bin" ]; then
+  echo "pre-commit: 找不到 python，跳过 ARB 生成物 / 棘轮检查（放行，不拦提交）。" >&2
+fi
+
+# 读索引（即将提交的内容）里的 blob；失败说明该路径不在索引里。
+index_blob() {
+  git cat-file blob ":$1" 2>/dev/null
+}
+
+# ── 1. 探针 / canary 文件 ───────────────────────────────────────────────────
+probe_files=$(printf '%s\n' "$staged" | grep -Ei '^android/app/src/.*(canary|probe)[^/]*\.kt$' || true)
+if [ -n "$probe_files" ]; then
+  guard_test="android/app/src/test/kotlin/com/mutx163/qingyu/pages/crossguard/CanaryFileGuardTest.kt"
+  whitelist=""
+  if [ -f "$guard_test" ]; then
+    whitelist=$(sed -n '/PROBE_WHITELIST.*setOf(/,/^[[:space:]]*)/p' "$guard_test" | grep -o '"[^"]*"' | tr -d '"' || true)
+  fi
+  while IFS= read -r f; do
+    [ -z "$f" ] && continue
+    rel=${f#android/app/src/}
+    if printf '%s\n' "$whitelist" | grep -Fxq "$rel"; then
+      :
+    else
+      reject "探针 / canary 文件进了源码目录：$f（判据见 CanaryFileGuardTest；长期调试工具请改名去掉 probe/canary，并在评审里说明）"
+    fi
+  done <<EOF
+$probe_files
+EOF
+fi
+
+# ── 2. ARB 可解析（读索引内容的 JSON 解析交给 python；没有 python 时用最小检查）──
+arb_files=$(printf '%s\n' "$staged" | grep -E '^i18n/.*\.arb$' || true)
+catalog_touched=$(printf '%s\n' "$staged" | grep -E 'ArbCatalog\.kt$' || true)
+if [ -n "$arb_files" ]; then
+  while IFS= read -r f; do
+    [ -z "$f" ] && continue
+    if [ -n "$python_bin" ]; then
+      if ! index_blob "$f" | "$python_bin" -c 'import json,sys; json.load(sys.stdin)' 2>/dev/null; then
+        reject "ARB 不是合法 JSON：$f（按索引内容校验）"
+      fi
+    fi
+  done <<EOF
+$arb_files
+EOF
+fi
+
+# ── 3. 发布说明镜像（比较两边索引 blob 的 sha256）────────────────────────────
+mirror_files=$(printf '%s\n' "$staged" | grep -E '^(docs/releases/|android/app/src/main/assets/docs/releases/).+\.md$' || true)
+if [ -n "$mirror_files" ]; then
+  while IFS= read -r f; do
+    [ -z "$f" ] && continue
+    base=$(basename "$f")
+    case "$f" in
+      docs/releases/*)
+        other="android/app/src/main/assets/docs/releases/$base"
+        if git cat-file -e ":$other" 2>/dev/null; then
+          a=$(index_blob "$f" | sha256sum | cut -d' ' -f1)
+          b=$(index_blob "$other" | sha256sum | cut -d' ' -f1)
+          if [ "$a" != "$b" ]; then
+            reject "发布说明镜像不同步：$f 与 $other（逐字节比对；按索引内容）"
+          fi
+        else
+          case "$base" in
+            v[0-9]*) reject "发布说明镜像缺失：$f 是版本说明，但 $other 不存在（assets 侧要同步一份）" ;;
+          esac
+        fi
+        ;;
+      android/app/src/main/assets/docs/releases/*)
+        other="docs/releases/$base"
+        if ! git cat-file -e ":$other" 2>/dev/null; then
+          reject "发布说明没有源文件：$f 在 docs/releases 找不到同名 $base"
+        else
+          a=$(index_blob "$f" | sha256sum | cut -d' ' -f1)
+          b=$(index_blob "$other" | sha256sum | cut -d' ' -f1)
+          if [ "$a" != "$b" ]; then
+            reject "发布说明镜像不同步：$f 与 $other（逐字节比对；按索引内容）"
+          fi
+        fi
+        ;;
+    esac
+  done <<EOF
+$mirror_files
+EOF
+fi
+
+# ── 4. 生成物 / 棘轮（读工作区；完整暂存时与索引一致）────────────────────────
+if [ -n "$python_bin" ]; then
+  if { [ -n "$arb_files" ] || [ -n "$catalog_touched" ]; }; then
+    if ! "$python_bin" tool/gen_compose_arb_catalog.py --check >/dev/null 2>&1; then
+      reject "ArbCatalog.kt 与 ARB 不同步：跑 $python_bin tool/gen_compose_arb_catalog.py 重新生成后再提交"
+    fi
+  fi
+  if printf '%s\n' "$staged" | grep -qE '\.kt$'; then
+    if ! "$python_bin" scripts/i18n-cjk-baseline.py --check >/dev/null 2>&1; then
+      reject "CJK 字面量棘轮上涨：跑 $python_bin scripts/i18n-cjk-baseline.py --check 看明细（基线只许降；新增中文要进 ARB）"
+    fi
+  fi
+  if [ -n "$arb_files" ]; then
+    if ! "$python_bin" scripts/i18n-copy-gap.py --check >/dev/null 2>&1; then
+      reject "copy-gap 棘轮上涨：跑 $python_bin scripts/i18n-copy-gap.py --check 看明细（基线只许降）"
+    fi
+  fi
+fi
+
+if [ "$fail" -ne 0 ]; then
+  echo "" >&2
+  echo "pre-commit: 以上问题必须在提交前修掉。确需跳过用 git commit --no-verify（会被记账，事后要补跑，见 .githooks/README.md）。" >&2
+  exit 1
+fi
+
+mark_ok
 exit 0
