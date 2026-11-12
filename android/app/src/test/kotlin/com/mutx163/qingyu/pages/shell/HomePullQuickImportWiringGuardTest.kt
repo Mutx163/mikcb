@@ -57,10 +57,15 @@ class HomePullQuickImportWiringGuardTest {
                 "包整页时指示器会压状态栏或被正文盖住，且日/月视图会误触发。",
             "weekScrollWrapper = { weekContent ->" in source && "HomePullQuickImportHost(" in source,
         )
-        val enabledLine = source.lineSequence().firstOrNull { it.contains("val pullImportEnabled =") }.orEmpty()
+        val enabledLine = source.lineSequence().firstOrNull { it.contains("val pullImportEnabled =") }
+        assertTrue(
+            "`ShellWiring` 里找不到 `val pullImportEnabled =`（锚点被内联 / 改名 / 删除）：" +
+                "下面那条「不许乘视图态」的判据在空串上会恒真，等于没守。",
+            enabledLine != null,
+        )
         assertTrue(
             "pullImportEnabled 又乘了视图态：`enabled` 翻转会把首页整棵销毁重建（日展开动画/滚动位置全丢）。",
-            "homeViewMode" !in enabledLine,
+            "homeViewMode" !in (enabledLine ?: ""),
         )
     }
 
