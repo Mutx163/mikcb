@@ -680,6 +680,10 @@ private fun PagesShell(
     ) {
         dockPageIds.size
     }
+    // 接线 E（2026-11-12）：外层主屏 Pager 正在滑行时，页内周/日/月切换当帧落定，
+    // 不再叠加一段页内动画（否则「滑行中又抖一下」）。惰性默认 false：不接也不改变现有行为，
+    // 详见 `ShellWiring.homePagerScrolling` 的注释。
+    SideEffect { wiring.homePagerScrolling = pagerState.isScrollInProgress }
     val backStack = remember { navBackStackOf(ShellRoute.Dock) }
 
     // 底栏切换动画的启动器（官方 demo `MainPagerState.animateToPage` 的壳侧等价）：

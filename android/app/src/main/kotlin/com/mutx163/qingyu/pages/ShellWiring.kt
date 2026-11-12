@@ -374,6 +374,17 @@ class ShellWiring(context: Context) {
      */
     var homeViewSwitchHorizontal by mutableStateOf(false)
 
+    /**
+     * **外层主屏 Pager 是否正在滑行**（`PagerState.isScrollInProgress`，由壳侧
+     * [PagesShellActivity] 的 `SideEffect` 写入，接线 E，2026-11-12）。
+     *
+     * 用途：外层底栏左右滑期间，页内周/日/月切换若再起一段动画，会叠出「滑行中又抖一下」。
+     * 为 `true` 时页内当帧落定（`shouldSnap`），不额外播动画。
+     *
+     * 默认 `false` 是刻意的**惰性默认**：不接线时恒 `false` ⇒ 全部路径与接线前完全一致。
+     */
+    var homePagerScrolling by mutableStateOf(false)
+
     /** 日视图「正看着」的那一周（底栏「日」进入时取当前浏览周）。 */
     var homeSelectedWeek: Int by mutableIntStateOf(
         timetable.snapshot.currentWeek.coerceAtLeast(1),
@@ -1119,6 +1130,8 @@ fun TimetableWithCourseActions(
         dayProgressSeed = dayProgressSeed,
         daySwitchAnimate = wiring.homeViewSwitchAnimate,
         daySwitchHorizontal = wiring.homeViewSwitchHorizontal,
+        // 接线 E（2026-11-12）：外层 Pager 滑行中 ⇒ 页内当帧落定，避免叠动画。
+        homePagerScrolling = wiring.homePagerScrolling,
         onSelectDay = { selectedWeek, selectedDayOfWeek ->
             wiring.setHomeSelection(selectedWeek, selectedDayOfWeek)
             wiring.switchHomeViewMode(TimetableHomeViewMode.DAY)
