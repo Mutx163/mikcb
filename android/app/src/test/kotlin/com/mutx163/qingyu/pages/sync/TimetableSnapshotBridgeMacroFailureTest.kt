@@ -69,6 +69,8 @@ class TimetableSnapshotBridgeMacroFailureTest {
         )
         // —— 落盘断言：磁盘 profiles 已是快照内容 ——
         val raw = delegate.getString(TimetableStore.KEY_PROFILES).orEmpty()
+        // 空读与「真没有 local」在否定断言上无法区分：先红在「读不到」上（2026-11-12 恒真断言审计）。
+        assertTrue("磁盘 profiles 读成空：读法/落盘都可能是原因", raw.isNotBlank())
         assertTrue("磁盘应已恢复远端课程（course id=remote 进了 profiles JSON）", raw.contains("\"remote\""))
         assertFalse("本地旧课程不应残留（整份覆盖语义）", raw.contains("\"local\""))
         assertEquals(

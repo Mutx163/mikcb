@@ -72,6 +72,9 @@ class DiagnosticsWiringGuardTest {
         val wrong = MANAGED.entries
             .flatMap { (id, symbols) ->
                 val code = codeOf(blocks[id].orEmpty())
+                // 空读会让下面的 "!in" 把**所有**符号都报成缺失：看着像接线回归，其实是锚点改名。
+                // 先在「读不到」上红，失败消息才指向真因（2026-11-12 恒真断言审计）。
+                assertTrue("$id 的分支块读成空：锚点/正则改名了？读不到就没法判符号", code.isNotBlank())
                 symbols.filter { it !in code }
                     .map { "$id 的分支（去注释后）里没有 $it —— 说明它还直接拼渲染层，数据和回调很可能又是空壳" }
             }
