@@ -799,9 +799,14 @@ class ComposePageStyleGuardTest {
 private fun lineAnchor(code: String): String {
     val digest = MessageDigest.getInstance("SHA-256")
         .digest(code.trim().toByteArray(Charsets.UTF_8))
-    // 锚是**机器签名**，必须显式 Locale.ROOT：默认 Locale 下 `%02x` 会把数字本地化
-    // （ar-EG / fa-IR 出阿拉伯/波斯数字），同一行代码在不同机器上算出不同锚——
-    // 不只是 LocaleFormatGuardTest 会红，已登记的锚在那些机器上会集体对不上。
+    // 锚是**机器签名**，必须显式 Locale.ROOT —— 理由是结构判据：`LocaleFormatGuardTest`
+    // 要求 `android/app/src` 下所有 `.format(…)` 调用一律显式传 Locale，漏传即红。
+    //
+    // 2026-11-12 实测（OpenJDK 17，逐个 Locale 跑 `String.format(locale, "%02x", 0..255)`）：
+    // **`%02x` 的输出与 Locale 无关**，ar-EG / fa-IR / ar-EG-u-nu-arab / tr-TR / hi-IN / ROOT
+    // 全部输出 ASCII 十六进制（同批实测 `%d` 在 ar-EG、fa-IR 下才变成阿拉伯/波斯数字）。
+    // 所以「默认 Locale 下锚会跨机漂移」这个说法**不成立**，别拿它当理由；
+    // 保留 Locale.ROOT 是为了守住结构判据，不是因为它改变了输出。
     return (0 until 4).joinToString("") {
         "%02x".format(Locale.ROOT, digest[it].toInt() and 0xFF)
     }
