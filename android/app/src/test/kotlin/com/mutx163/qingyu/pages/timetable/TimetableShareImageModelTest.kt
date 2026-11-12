@@ -3,6 +3,7 @@ package com.mutx163.qingyu.pages.timetable
 import com.mutx163.qingyu.app.TimetableHostLogic
 import com.mutx163.qingyu.core.Course
 import com.mutx163.qingyu.core.TimetableSettings
+import com.mutx163.qingyu.testutil.stripKotlinComments
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
@@ -26,6 +27,19 @@ import java.time.LocalDate
  * - 周次标题：`app_zh.arb` `timetableShareExportWeekTitle` = 「第 {week} 周课表」；
  * - 日图标题：`timetableShareExportDayTitle` = 「第 {week} 周 · {weekday}」；
  * - 像素比 2.5：`image_export_capture.dart:36`。
+ *
+ * ## 读法：**只对源码部分剥离**，资产文件原样读（2026-11-12 B4 批）
+ *
+ * 本文件读两类文件，处置不同：
+ *
+ * - **`.kt` 源码**（`TimetableShareLauncher.kt`）：剥注释 + 中性化字符串
+ *   （`stripKotlinComments(…, neutralizeStrings = true)`）。四条判据判的是**调用与常量引用**
+ *   （`Intent(Intent.ACTION_SEND)` / `Intent.FLAG_GRANT_READ_URI_PERMISSION` /
+ *   `ClipData.newUri` / `TimetableShareImageModel.MIME_PNG`），留着字符串内容只会让日志或
+ *   报错文案把 `contains` 喂饱；不剥注释则注释掉那几行仍绿（B4 批 before/after 实测过）。
+ * - **`file_paths.xml` 等资产**：**原样读**。它是 XML 不是 Kotlin，跑一遍 Kotlin 注释剥离器
+ *   只会把 `name="timetable_share"` 的引号内容当字符串抹掉、判据自己失效。
+ *   这类文件没有「被注释掉仍绿」的问题——XML 注释成 `<!-- … -->` 时判据本来就读不到属性。
  */
 class TimetableShareImageModelTest {
 
@@ -125,6 +139,7 @@ class TimetableShareImageModelTest {
             "timetable-share/timetable_share_1.png",
             TimetableShareImageModel.cacheRelativePath("timetable_share_1.png"),
         )
+        // 资产：原样读（XML 不能过 Kotlin 剥离器，见类注释的读法一节）。
         val xml = repoFile("android/app/src/main/res/xml/file_paths.xml").readText()
         assertTrue(
             "file_paths.xml 缺 timetable_share 白名单条目（FileProvider 会拒发 content Uri）",
@@ -172,9 +187,13 @@ class TimetableShareImageModelTest {
 
     @Test
     fun `分享落地文件必须带 ACTION_SEND 与读权限与 ClipData`() {
-        val launcher = repoFile(
-            "android/app/src/composeP1/kotlin/com/mutx163/qingyu/pages/timetable/TimetableShareLauncher.kt",
-        ).readText()
+        // 源码：剥注释 + 中性化字符串（判的是调用与常量引用，见类注释的读法一节）。
+        val launcher = stripKotlinComments(
+            repoFile(
+                "android/app/src/composeP1/kotlin/com/mutx163/qingyu/pages/timetable/TimetableShareLauncher.kt",
+            ).readText(Charsets.UTF_8).replace("\r\n", "\n"),
+            neutralizeStrings = true,
+        )
         assertTrue("分享必须走 ACTION_SEND", launcher.contains("Intent(Intent.ACTION_SEND)"))
         assertTrue(
             "必须带 FLAG_GRANT_READ_URI_PERMISSION（接收方拿不到读权限会显示裂图）",

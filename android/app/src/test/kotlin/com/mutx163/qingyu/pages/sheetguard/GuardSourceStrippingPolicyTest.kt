@@ -337,21 +337,6 @@ class GuardSourceStrippingPolicyTest {
                 reason = "读 QingyuPageScaffold.kt 与 QingyuPageList.kt 判自适应接线，codeOnly 剥注释后看 rememberQingyuWindowAdaptive() 与 widthIn(max = cap) 是否还在",
                 reviewTrigger = LEGACY_REVIEW_TRIGGER,
             ),
-            "com/mutx163/qingyu/NotificationLaunchPageContractTest.kt" to LegacyMeta(
-                introducedAt = "38df5178d 2026-11-03",
-                reason = "启动落点契约里有两处读原文：ExamReminderScheduler.kt 必须写 putExtra(EXTRA_OPEN_ROUTE, ROUTE_EXAMS)，LanEditForegroundService.kt 必须写统一 EXTRA_OPEN_LAN_EDIT",
-                reviewTrigger = LEGACY_REVIEW_TRIGGER,
-            ),
-            "com/mutx163/qingyu/NotificationLaunchTargetGuardTest.kt" to LegacyMeta(
-                introducedAt = "bd1bbeb0e 2026-11-01",
-                reason = "扫五个通知发送点（两个 Scheduler、LiveUpdateService、LanEditForegroundService、TodayWidgetSupport）必须走 NotificationLaunchTarget.intent(，不许 Intent(context, MainActivity::class.java)",
-                reviewTrigger = LEGACY_REVIEW_TRIGGER,
-            ),
-            "com/mutx163/qingyu/pages/diagnostics/MemoryStatsCollectorKeyCompatTest.kt" to LegacyMeta(
-                introducedAt = "795d797a7 2026-10-29",
-                reason = "十二个弹层是模型与键表对拍；三处读 MemoryStatsCollector.kt 原文，断言不再产出 dartVm 与 flutterImageCache，并把模型读的键逐条 contain 对回采集器",
-                reviewTrigger = LEGACY_REVIEW_TRIGGER,
-            ),
             "com/mutx163/qingyu/pages/import/IcsImportModelTest.kt" to LegacyMeta(
                 introducedAt = "1b58806b0 2026-10-27",
                 reason = "四十六条是 ICS 解析模型用例；末条读 IcsHeaderKeywords.kt 与解析器，用私有 cjkLiteralsIn 先滤掉星号、//、块注释开头的行再数中文字面量",
@@ -430,11 +415,6 @@ class GuardSourceStrippingPolicyTest {
             "com/mutx163/qingyu/pages/sync/ButtonContrastGuardTest.kt" to LegacyMeta(
                 introducedAt = "73b923ef7 2026-11-02",
                 reason = "读 CoupleTimetableSettingsPage.kt 与 CoupleWebDavConnectSheet.kt，用 callArguments 与 topLevelArgument 切出着色调用，判不许 primarySurface 底配 primary 字",
-                reviewTrigger = LEGACY_REVIEW_TRIGGER,
-            ),
-            "com/mutx163/qingyu/pages/timetable/TimetableShareImageModelTest.kt" to LegacyMeta(
-                introducedAt = "890c98af1 2026-11-03",
-                reason = "二十条是导出几何与文件名模型用例；另读 file_paths.xml 白名单与 TimetableShareLauncher.kt 的 ACTION_SEND、ClipData.newUri、MIME_PNG",
                 reviewTrigger = LEGACY_REVIEW_TRIGGER,
             ),
             "com/mutx163/qingyu/pages/timetable/day/DayViewColorTokenGuardTest.kt" to LegacyMeta(

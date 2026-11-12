@@ -1,5 +1,6 @@
 package com.mutx163.qingyu
 
+import com.mutx163.qingyu.testutil.stripKotlinComments
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
@@ -16,6 +17,16 @@ import java.io.File
  * - `open_route` 是 Dart 路由串，显式优先；
  * - `open_lan_edit` 是旧布尔，仅在无路由时生效；
  * - 未知路由不猜（null = 落默认主屏）。
+ *
+ * ## 读法：剥注释 + **中性化档**（2026-11-12 B4 批）
+ *
+ * 源码层那一条判的是**生产端的调用写法**（`putExtra(NotificationLaunchTarget.EXTRA_OPEN_ROUTE,
+ * NotificationLaunchTarget.ROUTE_EXAMS)` / `const val EXTRA_OPEN_LAN_EDIT = …`），
+ * 全是标识符与调用，一条都不判「某字面量许不许出现」——所以中性化档既不会洗白判据，
+ * 又能挡住「日志 / 报错文案里出现同一片段」把 `contains` 喂饱。
+ *
+ * 剥注释这层是实测的洞：不剥时把 `putExtra(…)` 整行注释掉，注释掉的原文还在文本里 ⇒
+ * 迁移前版本仍绿（B4 批 before/after 探针记录见提交信息）。
  */
 class NotificationLaunchPageContractTest {
 
@@ -93,17 +104,24 @@ class NotificationLaunchPageContractTest {
     @Test
     fun `生产端使用统一契约常量`() {
         val root = resolveSourceRoot()
-        val exam = File(root, "ExamReminderScheduler.kt").readText()
+        val exam = codeOnly(root, "ExamReminderScheduler.kt")
         assertTrue(
             "考试提醒必须用 EXTRA_OPEN_ROUTE + ROUTE_EXAMS 写落页参数",
             exam.contains("putExtra(NotificationLaunchTarget.EXTRA_OPEN_ROUTE, NotificationLaunchTarget.ROUTE_EXAMS)"),
         )
-        val lan = File(root, "LanEditForegroundService.kt").readText()
+        val lan = codeOnly(root, "LanEditForegroundService.kt")
         assertTrue(
             "局域网编辑服务必须引用统一的 extra 键",
             lan.contains("const val EXTRA_OPEN_LAN_EDIT = NotificationLaunchTarget.EXTRA_OPEN_LAN_EDIT"),
         )
     }
+
+    /** 中性化档：剥注释 + 字符串内容抹成空格（判调用写法，见类注释的读法一节）。 */
+    private fun codeOnly(root: File, name: String): String =
+        stripKotlinComments(
+            File(root, name).readText(Charsets.UTF_8).replace("\r\n", "\n"),
+            neutralizeStrings = true,
+        )
 
     /** 与 [NotificationLaunchTargetGuardTest] 同款路径解析（工作目录可能是仓库根或 android/）。 */
     private fun resolveSourceRoot(): File {

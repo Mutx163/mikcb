@@ -1,5 +1,6 @@
 package com.mutx163.qingyu.pages.diagnostics
 
+import com.mutx163.qingyu.testutil.stripKotlinComments
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotEquals
@@ -36,6 +37,21 @@ import java.util.TimeZone
  * `dartVm` / `flutterImageCache` 是 Dart `MemoryStatsService.fetchSnapshot:82-94` 从 Flutter
  * 运行时补进来的，采集器**不产出**这两个键；2026-10-31 起页面也不再读它们，改读采集器的
  * `imageCache` 块（`AndroidImageLoader` 的真实 LruCache），见 [imageCacheRowUsesComposeLoaderBlock]。
+ *
+ * ## 读法：剥注释、**保留字符串**（默认档，2026-11-12 B4 批）
+ *
+ * 三处读采集器源码的判据（[collectorHasNoFlutterRuntimeKeys] / [collectorKeyTableMatchesModelReads] /
+ * [keyTableScanDetectsUnknownKey]）判的都是**字符串字面量**：`text.contains("\"$key\"")`、
+ * 不许出现 `"dartVm"`、以及「字符串里不许出现 Flutter」。
+ *
+ * - **不许**换成中性化档（`readKotlinSourceNoStrings`）：它把字符串内容抹成空格，
+ *   `"$key"` 全部消失 ⇒ key 表判据恒红，而 `assertFalse(contains("\"dartVm\""))` 变成**恒真**
+ *   （洗白：加回 `"dartVm"` 也抓不到）。这是本文件唯一不能踩的档位坑。
+ * - **必须剥注释**：不剥时把采集器里某个 key 行注释掉，注释掉的 `"key"` 原文还在文本里 ⇒
+ *   模型层读它仍判「采集器有这个键」（B4 批 before/after 探针实测：迁移前绿、迁移后红）。
+ *
+ * 否定式断言前另有「正向锚存在」的断言（见各 test 内注释）：源码读成空窜时否定式恒真，
+ * 本批按 AGENTS.md「源码守卫」纪律补上。
  */
 class MemoryStatsCollectorKeyCompatTest {
 
@@ -422,12 +438,22 @@ class MemoryStatsCollectorKeyCompatTest {
     fun collectorHasNoFlutterRuntimeKeys() {
         val source = collectorSource()
         assumeTrue("未定位到 MemoryStatsCollector.kt，跳过", source != null)
-        val text = source!!.readText(Charsets.UTF_8)
+        val text = collectorText(source!!)
 
+        // 否定式断言在空读上恒真：先钉一个必须存在的正向锚，否则「路径写错」= 全绿。
+        assertTrue(
+            "采集器源码里读不到 `fun buildSnapshot(`：路径 / 读法错了，" +
+                "下面两条否定式断言会在空文本上恒真",
+            text.contains("fun buildSnapshot("),
+        )
         assertFalse("采集器里不该再产出 dartVm", text.contains("\"dartVm\""))
         assertFalse("采集器里不该再产出 flutterImageCache", text.contains("\"flutterImageCache\""))
-        // 只扫字符串字面量（`"..."`），注释里的历史说明不拦。
-        val literals = Regex("\"((?:[^\"\\\\]|\\\\.)*)\"").findAll(text).map { it.groupValues[1] }
+        // 只扫字符串字面量（`"..."`），注释里的历史说明不拦（行注释已由 collectorText 剥掉）。
+        val literals = Regex("\"((?:[^\"\\\\]|\\\\.)*)\"").findAll(text).map { it.groupValues[1] }.toList()
+        assertTrue(
+            "采集器源码里一个字符串字面量都没抽到：读法把内容擦掉了（例如误用了中性化档）？",
+            literals.isNotEmpty(),
+        )
         for (literal in literals) {
             assertFalse("用户可见文案里不该再出现 Flutter：$literal", literal.contains("Flutter"))
         }
@@ -493,12 +519,23 @@ class MemoryStatsCollectorKeyCompatTest {
         return null
     }
 
+    /**
+     * 采集器源码的**默认档**读法：剥注释、**保留字符串内容**（档位理由见类注释「读法」一节）。
+     *
+     * 行尾先归一（工作区是 CRLF，索引是 LF），否则带换行的锚点会随机假红。
+     */
+    private fun collectorText(file: File): String =
+        stripKotlinComments(
+            file.readText(Charsets.UTF_8).replace("\r\n", "\n"),
+            neutralizeStrings = false,
+        )
+
     @Test
     fun collectorKeyTableMatchesModelReads() {
         val source = collectorSource()
         // 找不到源码（例如测试在别的目录跑）就跳过，不让它变成假红。
         assumeTrue("未定位到 MemoryStatsCollector.kt，跳过源码级 key 对拍", source != null)
-        val text = source!!.readText(Charsets.UTF_8)
+        val text = collectorText(source!!)
 
         val missing = modelReadKeys.filterNot { key -> text.contains("\"$key\"") }
         assertEquals(
@@ -517,7 +554,7 @@ class MemoryStatsCollectorKeyCompatTest {
     fun keyTableScanDetectsUnknownKey() {
         val source = collectorSource()
         assumeTrue("未定位到 MemoryStatsCollector.kt，跳过源码级 key 对拍", source != null)
-        val text = source!!.readText(Charsets.UTF_8)
+        val text = collectorText(source!!)
 
         assertNotEquals(-1, text.indexOf("\"totalPssKb\""))
         assertEquals(-1, text.indexOf("\"definitelyNotACollectorKey\""))
