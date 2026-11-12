@@ -1,6 +1,7 @@
 package com.mutx163.qingyu.pages.shell
 
-import java.io.File
+import com.mutx163.qingyu.testutil.readSourceNormalized
+import com.mutx163.qingyu.testutil.stripKotlinComments
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
@@ -35,6 +36,28 @@ import org.junit.Test
  * 进不了 L0 的 JVM classpath（`scripts/test-kotlin-module.ps1` 会跳过整目录）。
  * 与 `MoreFeaturesNavigationGuardTest` / `SettingsRouteWiringGuardTest` 同一套做法：
  * 按「向上找 android/app/src」的原则定位源文件再正则解析；**找不到判失败，不静默跳过**。
+ *
+ * ## 读法：注释必须剥掉，且**必须默认档**（2026-11-12 B2 批）
+ *
+ * 判据读的是源码文本，所以**先剥注释**再解析（`stripKotlinComments`，共享剥离器）。
+ * 不剥的时候，把 `"settings" -> "b.settingsHome"` 或 `CatalogEntry("settings"` 那类行
+ * 注释掉，正则照样在注释文本里命中 —— 判据一行没少地通过，「注释掉的接线算接线」
+ * 这个洞在本文件里是活的（B2 批实测：迁移前版本注释掉锚点仍绿）。
+ *
+ * **档位 = 默认（`neutralizeStrings = false`，保留字符串内容），不许换中性化档。**
+ * 理由是本文件两条主判据判的**就是字符串字面量本身**：
+ *
+ * * `pageTable()` 解析 `"id" -> "pageId"`；
+ * * `catalogIds()` 解析 `CatalogEntry("id"`。
+ *
+ * 中性化档会把被判的字面量自己擦成空格 ⇒ 表恒空、目录恒空 ⇒ 「目录 ⊆ 判据」在
+ * 空集上恒真（变全绿），而「守卫本身没有空转」又会因为表太小把整份守卫一起带红——
+ * 两头都不是想要的信号。所以本文件整体只用默认档。
+ *
+ * 残留面（记录在案，不是待办）：`八宫格与底栏共用同一条判据` 判的是
+ * `contains("shellTimetableMenuSupported(")` 这类调用片段，理论上生产代码里一句含同片段的
+ * 字符串字面量也能喂饱它。按本批口径本文件**不许**上中性化档，故不改档；
+ * 实测 `ShellWiring.kt` / `PagesShellActivity.kt` 里该名字只出现在代码里（注释已被剥掉）。
  */
 class HomeMenuEntryDestinationGuardTest {
 
@@ -144,26 +167,21 @@ class HomeMenuEntryDestinationGuardTest {
     }
 
     /**
-     * 从工作目录向上找 `android/app/src`，再定位源文件。
+     * 读壳源码：向上找 `android/app/src` 定位源文件 ⇒ 归一行尾（`readSourceNormalized`）
+     * ⇒ **剥注释、保留字符串**（`stripKotlinComments` 默认档）。
      *
-     * 与 `MoreFeaturesNavigationGuardTest` 同一套：L0 与 Gradle 的工作目录不同，
-     * 所以按「向上找标志目录」而不是写死相对路径。
+     * 三步各自有原因，缺一条都会让判据失真：
+     *
+     * 1. **向上找**：L0 与 Gradle 的工作目录不同，写死相对路径会在其中一边找不到文件；
+     * 2. **归一成 LF**：工作区是 `core.autocrlf=true` 检出的（部分文件 w/crlf），
+     *    不归一则下面 `pageTable()` 的「到列 0 的 `}` 为止」按 `"\n}\n"` 切不到；
+     * 3. **剥注释**：否则把锚点行注释掉，正则仍在注释文本里命中（假绿）。
+     *
+     * **档位是默认档**（字符串内容保留），因为本文件判的就是字面量本身；换中性化档
+     * 会把被判的字面量自己擦掉，判据在空集上恒真。详见类注释「读法」一节。
      */
-    private fun source(relative: String): String {
-        var dir: File? = File("").absoluteFile
-        repeat(10) {
-            dir?.let { current ->
-                val candidate = File(current, "android/app/src/$relative")
-                if (candidate.isFile) {
-                    // 工作区是 core.autocrlf=true 检出的（部分文件 w/crlf）：先归一成 LF，
-                    // 否则下面的「到列 0 的 } 为止」会按 "\n}\n" 切不到（CRLF 文件里没有它）。
-                    return candidate.readText(Charsets.UTF_8).replace("\r\n", "\n")
-                }
-            }
-            dir = dir?.parentFile
-        }
-        error("找不到壳源码 android/app/src/$relative（工作目录 ${File("").absolutePath}）")
-    }
+    private fun source(relative: String): String =
+        stripKotlinComments(readSourceNormalized("android/app/src/$relative"))
 
     private companion object {
         const val ShellWiringSource = "main/kotlin/com/mutx163/qingyu/pages/ShellWiring.kt"

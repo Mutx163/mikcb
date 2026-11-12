@@ -1,9 +1,9 @@
 package com.mutx163.qingyu.pages.shell
 
+import com.mutx163.qingyu.testutil.readKotlinSourceNoStrings
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
-import java.io.File
 
 /**
  * 外观编辑页预览的「首页顶栏菜单」接线守卫（2026-11-10）。
@@ -23,10 +23,23 @@ import java.io.File
  *
  * 判据不许写成「全文出现 `homeMenuItems` 就算过」：那正是这条 bug 的原始状态
  *（参数声明、KDoc、别的调用点都会命中）。只看这两个调用块的实参。
+ *
+ * ## 读法：剥注释 + **中性化档**（2026-11-12 B2 批）
+ *
+ * 走 `readKotlinSourceNoStrings`：**注释剥掉、字符串内容也抹成空格**。
+ *
+ * * 剥注释：不剥时把 `homeMenuItems = homeMenuItems,` 注释掉，`contains` 照样命中注释文本
+ *   ⇒ 用户实报的那条「预览里缺三个点」可以原样复发而守卫全绿。B2 批实测过这个洞。
+ * * 中性化：本文件四条判据判的全是**代码结构**（实参有没有传、走没走 `homeTopMenuItems` 解析、
+ *   有没有 `.ifEmpty` 兜底、有没有传空表），一条都不判「某字面量许不许出现」。这类判据最怕
+ *   生产代码里一句日志 / 提示语含同样片段把 `contains` 喂饱 —— 抹掉字符串内容正好消掉这个面。
+ *
+ * 反向的坑也确认过：本文件没有一条判据需要看字符串内容（负例 `homeMenuItems = emptyList()`
+ * 本身是代码表达式，不含任何字面量），所以中性化不会把判据擦空。
  */
 class HomeMenuPreviewWiringGuardTest {
 
-    private val source by lazy { readSource(APPEARANCE_EDITOR_HOST) }
+    private val source by lazy { readKotlinSourceNoStrings(APPEARANCE_EDITOR_HOST) }
 
     @Test
     fun `周视图预览必须把菜单条目传进 TimetableHost`() {
@@ -106,18 +119,8 @@ class HomeMenuPreviewWiringGuardTest {
         error("`$marker` 的实参括号没有闭合")
     }
 
-    /** 从工作目录向上找仓库根再定位文件；找不到仍判失败，不静默跳过。 */
-    private fun readSource(relative: String): String {
-        var dir: File? = File("").absoluteFile
-        repeat(8) {
-            val candidate = File(dir, relative)
-            if (candidate.isFile) return candidate.readText(Charsets.UTF_8)
-            dir = dir?.parentFile
-        }
-        error("找不到 $relative（工作目录 ${File("").absolutePath}）")
-    }
-
     private companion object {
+        /** 仓库相对路径；读法见上层 `source`（剥注释 + 中性化字面量）。 */
         const val APPEARANCE_EDITOR_HOST =
             "android/app/src/composeP1/kotlin/com/mutx163/qingyu/app/AppearanceEditorHost.kt"
     }

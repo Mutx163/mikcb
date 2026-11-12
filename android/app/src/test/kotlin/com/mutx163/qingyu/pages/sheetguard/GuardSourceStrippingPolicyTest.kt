@@ -437,21 +437,6 @@ class GuardSourceStrippingPolicyTest {
                 reason = "读壳、坞、壁纸背板与 HomeInkBandsStore，判亮度带按视口取景落盘、三个冷读点都带 store；codeOnly 是逐字符状态机，能正确处理字符串里的双斜杠",
                 reviewTrigger = LEGACY_REVIEW_TRIGGER,
             ),
-            "com/mutx163/qingyu/pages/shell/HomeMenuEntryDestinationGuardTest.kt" to LegacyMeta(
-                introducedAt = "fb60f0567 2026-11-10",
-                reason = "读 ShellWiring、壳与两个设置页，判八宫格与底栏候选目录每条都有去处；断言看的是 homeItems 里 fun 之前的原文片段是否含 shellTimetableMenuSupported(",
-                reviewTrigger = LEGACY_REVIEW_TRIGGER,
-            ),
-            "com/mutx163/qingyu/pages/shell/HomeMenuPreviewWiringGuardTest.kt" to LegacyMeta(
-                introducedAt = "32ee79727 2026-11-10",
-                reason = "只读 AppearanceEditorHost.kt，判周与日视图预览都传 homeMenuItems 且按草稿解析，homeMenuItems = emptyList() 作为负例",
-                reviewTrigger = LEGACY_REVIEW_TRIGGER,
-            ),
-            "com/mutx163/qingyu/pages/shell/HomePullQuickImportWiringGuardTest.kt" to LegacyMeta(
-                introducedAt = "7612ea0bc 2026-11-08",
-                reason = "读 ShellWiring.kt 判下拉快捷导入挂上并受设置与视图态门控；判据取 lineSequence 里含 val pullImportEnabled = 的那一行",
-                reviewTrigger = LEGACY_REVIEW_TRIGGER,
-            ),
             "com/mutx163/qingyu/pages/shell/RootEntryBackGuardTest.kt" to LegacyMeta(
                 introducedAt = "cfb12cd90 2026-11-03",
                 reason = "读 QingyuPageScaffold 与四个手拼顶栏根页，判返回键只由 rememberShellShouldShowBackButton() 决定、骨架签名不许加页面级显隐参数；codeOnly 剥注释",
