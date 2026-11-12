@@ -7,6 +7,7 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 import java.io.File
 import java.security.MessageDigest
+import java.util.Locale
 
 /**
  * Compose 页面样式守卫（2026-10-28 建立；2026-11-03 收口为「4 个扫描器 + 例外清单」）。
@@ -798,5 +799,10 @@ class ComposePageStyleGuardTest {
 private fun lineAnchor(code: String): String {
     val digest = MessageDigest.getInstance("SHA-256")
         .digest(code.trim().toByteArray(Charsets.UTF_8))
-    return (0 until 4).joinToString("") { "%02x".format(digest[it].toInt() and 0xFF) }
+    // 锚是**机器签名**，必须显式 Locale.ROOT：默认 Locale 下 `%02x` 会把数字本地化
+    // （ar-EG / fa-IR 出阿拉伯/波斯数字），同一行代码在不同机器上算出不同锚——
+    // 不只是 LocaleFormatGuardTest 会红，已登记的锚在那些机器上会集体对不上。
+    return (0 until 4).joinToString("") {
+        "%02x".format(Locale.ROOT, digest[it].toInt() and 0xFF)
+    }
 }
