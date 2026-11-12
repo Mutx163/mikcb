@@ -38,11 +38,11 @@
 | **L2 全量单测** | **8075 例 / 0 失败 / 0 错误 / 0 跳过**（`dev` 与 `prod` 各一轮，全量 `--rerun-tasks`，非过滤；快照 HEAD `5de395341`，归档见下方「今日检查点」） | `.agents/diag/20261112-215406-5de395341-testDevDebugUnitTest/summary.txt` 与 `…-215845-5de395341-testProdDebugUnitTest/summary.txt`，两轮均 `RESULT[...]: 8075 tests, 0 failures, 0 errors, 0 skipped`；口径 = `build/app/test-results/<变体>` 的 XML 汇总（XML-COUNT 761） | 当次有效。**11-10 记的 7667 例作废**：那轮产物已被覆盖、且当时闸门未修（四类假绿未堵），只作历史 |
 | **L4 真机逐页对照** | **0 页** | 仓库内无任何真机截图/录屏/回填记录 | 仍归用户 |
 
-**2026-11-12 今日检查点**（口径：全量、非过滤；证据取自 `build/app/test-results/<变体>` 的 XML 汇总，逐轮归档在 `.agents/diag/<时间戳>-<HEAD>-<变体>/summary.txt`）
+**2026-11-12 今日检查点**（口径：全量、非过滤；证据取自 `build/app/test-results/<变体>` 的 XML 汇总，逐轮归档在 `.agents/diag/<时间戳>-<HEAD>-<变体>/summary.txt`；目录名与指纹见**附录 A**）
 
 | HEAD | `dev`（`:app:testDevDebugUnitTest`） | `prod`（`:app:testProdDebugUnitTest`） | 判读 |
 |---|---|---|---|
-| `0cf4eabfb` | 8075 / 0（19:36:43） | 8075 / **1**（19:39:32）→ 复跑 8075 / 0（19:45:10） | **不算双绿**：prod 首轮红在 `MonthSwitchMotionWiringGuardTest`（M1 复发：effect 键缺 `homePagerScrolling`）；复跑转绿但当时闸门还没修（`b6ba086ff` 19:56 才落），这轮 0 失败**可能**是结果目录残留（正是四类假绿的 #3/#4），不作可信证据 |
+| `0cf4eabfb` | 8075 / 0（19:36:43） | 8075 / **1**（19:39:32）→ 复跑 8075 / 0（19:45:10） | **不算双绿，且不可当证据**：prod 首轮红在 `MonthSwitchMotionWiringGuardTest`（M1 复发：effect 键缺 `homePagerScrolling`）；复跑虽然转绿，但它（19:45）**早于闸门修复**（`b6ba086ff` 19:56），当时「本次产物」还靠**结果目录 mtime / 旧 XML** 判断 ⇒ 那次 0 失败**无法排除读到上一轮结果**（正是 R20 第 ④ 类假绿）。只能记「存疑」 |
 | `b6ba086ff` | 8075 / 0（19:56:51） | 8075 / 0（19:59:14） | **闸门修复后首个可信双绿**（落盘自检 + `TESTS-NOT-RUN` + 跑前清空均已生效） |
 | `5de395341` | 8075 / 0（21:54:06） | 8075 / 0（21:58:45） | **可信双绿**（B1+B2 守卫迁移已入，仍在同一闸门下） |
 
@@ -338,3 +338,30 @@ L3 出包、L3.5 性能包、L4 真机一律用户跑；**性能只认 Bench 或
 - **2026-11-03 建立**：合并派工大表、Phase 3 页面台账、剩余页任务清单、现状交接、全仓体检五份进度文档；
   统一口径为 89/88/0/1；把 78/82/87/165 标为历史；销账 I2 收尾、截屏面板、教务对话框、WebDAV 恢复、
   通知权限、JVM21、宽屏前三批、timetable L0 跨域；新增 R01–R17 待办与阻塞归属。
+
+---
+
+## 附录 A：2026-11-12 检查点的本机归档
+
+归档是**本机产物**（`.agents/` 被 `.gitignore:140` 忽略，不进 git）：**换机器 / 新克隆查不到，需重跑才能复核**。
+下表只记目录名与指纹，方便「该找什么、找不到怎么补」；摘要文件都叫 `summary.txt`。
+
+| 检查点 HEAD | 归档目录名 | `summary.txt` 指纹（sha256 前 12） | `RESULT[...]` |
+|---|---|---|---|
+| `0cf4eabfb`（**存疑，不作证据**） | `20261112-193643-0cf4eabfb-testDevDebugUnitTest` | `b883959636ec` | 8075 / 0 |
+| 同上 | `20261112-193932-0cf4eabfb-testProdDebugUnitTest` | `081a7d20f0a6` | 8075 / **1** |
+| 同上（复跑，仍存疑：早于闸门修复，可能读到上一轮 XML） | `20261112-194510-0cf4eabfb-testProdDebugUnitTest` | `867632c17e40` | 8075 / 0 |
+| `b6ba086ff`（**可信**） | `20261112-195651-b6ba086ff-testDevDebugUnitTest` | `bf3e27868c46` | 8075 / 0 |
+| 同上 | `20261112-195914-b6ba086ff-testProdDebugUnitTest` | `7a28874e7ef6` | 8075 / 0 |
+| `5de395341`（**可信**） | `20261112-215406-5de395341-testDevDebugUnitTest` | `244f37460828` | 8075 / 0 |
+| 同上 | `20261112-215845-5de395341-testProdDebugUnitTest` | `c3d7db45bda9` | 8075 / 0 |
+
+**找不到归档时怎么补**（本地跑，`safe-gradle.ps1` 的剩余参数会原样传给 gradle）：
+
+```bash
+pwsh -File scripts/safe-gradle.ps1 :app:testDevDebugUnitTest --rerun-tasks   # dev
+pwsh -File scripts/safe-gradle.ps1 :app:testProdDebugUnitTest --rerun-tasks  # prod（CI 同构变体）
+```
+
+跑完看 `build/app/test-results/<变体>` 的 XML 汇总与本次新生成的 `.agents/diag/<时间戳>-<HEAD>-<变体>/summary.txt`。
+**指纹不同就是另一次运行**，不要拿旧 `summary.txt` 当本次证据（那正是 R20 第 ④ 类假绿）。
