@@ -5116,7 +5116,7 @@
       }
     }
   },
-  "scheduleDateRuleErrorMax": "Limit of 2 rules reached",
+  "scheduleDateRuleErrorMax": "최대 {max}개에 도달했습니다",
   "scheduleDateRuleErrorOverlap": "Date range overlaps another rule",
   "scheduleDateRuleErrorInvalidDate": "Invalid date",
   "scheduleDateRuleErrorEndBeforeStart": "End date cannot be before start date",

@@ -5429,7 +5429,15 @@
       }
     }
   },
-  "scheduleDateRuleErrorMax": "已达到 2 条上限",
+  "scheduleDateRuleErrorMax": "已达到 {max} 条上限",
+  "@scheduleDateRuleErrorMax": {
+    "description": "日期规则数量到顶的提示。上限是常量 MAX_RULES_PER_DEVICE，用占位符而不是写死数字，改常量时文案自动跟着走。",
+    "placeholders": {
+      "max": {
+        "type": "int"
+      }
+    }
+  },
   "scheduleDateRuleErrorOverlap": "日期区间与已有规则重叠",
   "scheduleDateRuleErrorInvalidDate": "日期格式无效",
   "scheduleDateRuleErrorEndBeforeStart": "结束日期不能早于开始日期",

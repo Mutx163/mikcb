@@ -5114,7 +5114,7 @@
       }
     }
   },
-  "scheduleDateRuleErrorMax": "已達到 2 條上限",
+  "scheduleDateRuleErrorMax": "已達到 {max} 條上限",
   "scheduleDateRuleErrorOverlap": "日期區間與已有規則重疊",
   "scheduleDateRuleErrorInvalidDate": "日期格式無效",
   "scheduleDateRuleErrorEndBeforeStart": "結束日期不能早於開始日期",

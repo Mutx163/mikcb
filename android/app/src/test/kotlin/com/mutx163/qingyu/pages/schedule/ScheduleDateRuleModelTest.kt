@@ -99,7 +99,9 @@ class ScheduleDateRuleModelTest {
         val resAdd = ScheduleDateRuleDomain.validateRule(draft, existing, isEditing = false)
         assertTrue(resAdd is ScheduleDateRuleValidationResult.Invalid)
         assertEquals(
-            ScheduleStrings.scheduleDateRuleErrorMax.zh,
+            // 文案用 {max} 占位符，模型层负责把常量填进去——这里断言填好的整句，
+            // 顺手证明「文案 ↔ 常量」这条连线没断（若 .zh 原样透出就是 {max} 漏到屏上）。
+            "已达到 2 条上限",
             (resAdd as ScheduleDateRuleValidationResult.Invalid).errorText,
         )
 

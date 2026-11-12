@@ -5068,7 +5068,7 @@
       }
     }
   },
-  "scheduleDateRuleErrorMax": "Limit of 2 rules reached",
+  "scheduleDateRuleErrorMax": "上限の {max} 件に達しました",
   "scheduleDateRuleErrorOverlap": "Date range overlaps another rule",
   "scheduleDateRuleErrorInvalidDate": "Invalid date",
   "scheduleDateRuleErrorEndBeforeStart": "End date cannot be before start date",

@@ -5367,7 +5367,7 @@
       }
     }
   },
-  "scheduleDateRuleErrorMax": "Limit of 2 rules reached",
+  "scheduleDateRuleErrorMax": "Limit of {max} rules reached",
   "scheduleDateRuleErrorOverlap": "Date range overlaps another rule",
   "scheduleDateRuleErrorInvalidDate": "Invalid date",
   "scheduleDateRuleErrorEndBeforeStart": "End date cannot be before start date",

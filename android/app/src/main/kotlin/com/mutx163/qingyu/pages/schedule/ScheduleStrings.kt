@@ -141,7 +141,7 @@ object ScheduleStrings {
     val scheduleDateRuleDeleteMessage =
         ArbText("scheduleDateRuleDeleteMessage", "确定删除日期规则 {name}？已套用的作息不会自动恢复，需手动调整。")
     val scheduleDateRuleSaveFailed = ArbText("scheduleDateRuleSaveFailed", "保存失败：{reason}")
-    val scheduleDateRuleErrorMax = ArbText("scheduleDateRuleErrorMax", "已达到 2 条上限")
+    val scheduleDateRuleErrorMax = ArbText("scheduleDateRuleErrorMax", "已达到 {max} 条上限")
     val scheduleDateRuleErrorOverlap = ArbText("scheduleDateRuleErrorOverlap", "日期区间与已有规则重叠")
     val scheduleDateRuleErrorInvalidDate = ArbText("scheduleDateRuleErrorInvalidDate", "日期格式无效")
     val scheduleDateRuleErrorEndBeforeStart =

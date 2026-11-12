@@ -428,7 +428,6 @@ A|ja|scheduleDateRuleEmpty
 A|ja|scheduleDateRuleEndDate
 A|ja|scheduleDateRuleErrorEndBeforeStart
 A|ja|scheduleDateRuleErrorInvalidDate
-A|ja|scheduleDateRuleErrorMax
 A|ja|scheduleDateRuleErrorNameRequired
 A|ja|scheduleDateRuleErrorOverlap
 A|ja|scheduleDateRuleErrorSchemeRequired
@@ -1018,7 +1017,6 @@ A|ko|scheduleDateRuleEmpty
 A|ko|scheduleDateRuleEndDate
 A|ko|scheduleDateRuleErrorEndBeforeStart
 A|ko|scheduleDateRuleErrorInvalidDate
-A|ko|scheduleDateRuleErrorMax
 A|ko|scheduleDateRuleErrorNameRequired
 A|ko|scheduleDateRuleErrorOverlap
 A|ko|scheduleDateRuleErrorSchemeRequired

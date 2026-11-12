@@ -86,10 +86,12 @@ object ScheduleDateRuleDomain {
             )
         }
 
-        // 设备上限校验（只在新增时拦截，含停用的）
+        // 设备上限校验（只在新增时拦截，含停用的）。上限是常量，文案用 {max} 占位符，
+        // 所以这里必须真的把常量填进去——否则屏上会露出 `{max}`。
         if (!isEditing && existingRules.size >= MAX_RULES_PER_DEVICE) {
             return ScheduleDateRuleValidationResult.Invalid(
-                ScheduleStrings.scheduleDateRuleErrorMax.text,
+                ScheduleStrings.scheduleDateRuleErrorMax.text
+                    .replace("{max}", MAX_RULES_PER_DEVICE.toString()),
             )
         }
 
