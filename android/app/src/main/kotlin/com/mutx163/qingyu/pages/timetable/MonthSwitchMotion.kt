@@ -17,14 +17,16 @@ package com.mutx163.qingyu.pages.timetable
  *      观感是月内容到位前先空一下。日视图早就有「先挂树 → 等首组合 → 再开播」两步门，
  *      月层一直没有。
  *   2. **外层 spring 与内层 tween 真叠加**：只看 `daySwitchAnimate` 不够 —— 连点底栏时
- *      外层底栏 Pager 还在 spring 滑行，页内再播 360ms tween，是唯一的真叠加窗口
- *      （两者各动一半，画面像被拽了两次）。判据应是「外层还在滑 ⇒ 本页别播，跟着走」。
+ *      外层底栏 Pager 还在 spring 滑行，页内再播 360ms tween —— 这是**已知的一条真叠加路径**
+ *      （**是否在叠加帧生效未验**：effect 的键变化要等一次重组，重进之前可能已播 1~2 帧 tween；
+ *      两者各动一半，画面像被拽了两次）。判据应是「外层还在滑 ⇒ 本页别播，跟着走」。
  *
  * ## 为什么单独成文件
  *
  * 两个判据都是**纯函数**：没有 Compose、没有 Android、没有状态。放在 main 源集是为了让
  * JVM 单测（[MonthSwitchMotionTest]）直接钉真值表，而不是靠渲染层文本守卫猜意图；
- * 渲染侧只剩「取哪个布尔」的薄适配（`TimetableWeekPage` 的 `LaunchedEffect(monthMode, …)`）。
+ * 渲染侧只剩「取哪个布尔」的薄适配（`TimetableWeekPage` 的
+ * `LaunchedEffect(monthMode, monthContentComposed, homePagerScrolling)`）。
  *
  * ⚠️ 本文件**不改**「月 ↔ 日直达」那条决定，也不负责外层 Pager 的几何；壳侧要不要把
  * `pagerState.isScrollInProgress` 接进来由 `PagesShellActivity` / `ShellWiring` 的所有者决定。
@@ -41,7 +43,9 @@ object MonthSwitchMotion {
      *    降级时一律不补形变；
      * 2. 调用方要求不播（`monthMode` 来源是「跨过周档的直达」，见 `HomeViewSwitchMotion`）；
      * 3. **外层底栏 Pager 仍在 spring 滑行**——此时页内再播 360ms tween 会与外层位移
-     *    叠成一帧两动（唯一真叠加窗口）。跟着外层走、页内当帧到位，用户只看到一次横滑。
+     *    叠成一帧两动，是**已知的一条真叠加路径**（**是否在叠加帧生效未验**：effect 的键变化
+     *    要等一次重组，重进之前可能已播 1~2 帧 tween）。判据应是「外层还在滑 ⇒ 本页别播，
+     *    跟着走」；真机观感未验，别把这条当已验结论。
      *
      * @param reducedMotion 系统「减少动画」是否生效（`homeViewExpandReducedMotion`）。
      * @param animate 调用方本次是否允许播动画（`TimetableWeekPage.daySwitchAnimate`）。
@@ -61,7 +65,8 @@ object MonthSwitchMotion {
      *
      * ⚠️ `hasContent == false`（宿主没给 `monthContent`）时**必须不等**：没有东西可挂就永远等不到
      * 信号，`monthExpand` 会停在 0，而 `monthVisible` 已为真 ⇒ 命中层一直吃事件，页面点不动。
-     * 这也是唯一一个「四个输入里有一个为假就整体为假」的原因（其余是「全真才等」）。
+     * `monthMode == false`（收起方向）同样必须不等 —— 那一支没人再把状态翻回来，收起动画会永久挂起。
+     * 两条都被真值表钉着（`MonthSwitchMotionTest` 的 `needsMountWait` 用例）。
      *
      * @param monthMode 当前是不是月视图页内态（收起方向一律不等）。
      * @param contentComposed 月层子树是否已完成至少一次组合（`monthContentComposed`）。

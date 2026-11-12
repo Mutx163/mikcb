@@ -278,13 +278,16 @@ fun TimetableWeekPage(
      * 外层底栏 Pager 是否**仍在 spring 滑行**（默认 `false` = 未接线，行为与今天一致）。
      *
      * 为什么页面需要知道：月视图过渡以前只按 [daySwitchAnimate] 判断，于是**连点底栏**那一刻
-     * 外层 Pager 还在 spring 滑行、页内又同时播 360ms tween —— 两段位移同帧叠加（唯一的真叠加
-     * 窗口，画面像被拽了两次）。接上它以后，外层还在滑 ⇒ 页内当帧落定、跟着外层走，用户只看到
-     * 一次横滑。
+     * 外层 Pager 还在 spring 滑行、页内又同时播 360ms tween —— 这是**已知的一条叠加路径**
+     * （两段位移各动一半，画面像被拽了两次）。
      *
-     * 判据是纯函数（[MonthSwitchMotion.shouldSnap]，JVM 单测在
-     * `MonthSwitchMotionTest`），本页只负责把布尔喂进去。壳侧由 `PagesShellActivity` 传
-     * `pagerState.isScrollInProgress`、经 `ShellWiring` 下传到 `TimetableHost`。
+     * ⚠️ 接线后**是否真在叠加那一帧生效属未验证假设**：它依赖壳侧父级 `SideEffect` 写
+     * `isScrollInProgress` 与子组合 `LaunchedEffect` 启动的先后顺序 —— 本 effect 的键变化要等
+     * 一次重组才生效，effect 重进之前可能已经播了 1~2 帧 tween。**真机未验**，别把这里当已验过。
+     *
+     * 判据是纯函数（[MonthSwitchMotion.shouldSnap]，JVM 单测在 `MonthSwitchMotionTest`），
+     * 本页只负责把布尔喂进去。壳侧由 `PagesShellActivity` 传 `pagerState.isScrollInProgress`、
+     * 经 `ShellWiring` 下传到 `TimetableHost`。
      *
      * ⚠️ **没接线时默认 `false`** ⇒ `shouldSnap` 的这一项恒不成立，周 / 日 / 月的全部行为与接线前
      * 完全一致（不会因为新增参数悄悄改掉任何存量路径）。
@@ -522,7 +525,20 @@ fun TimetableWeekPage(
     var monthContentComposed by remember { mutableStateOf(false) }
     // ⚠️ 键里必须带 `monthContentComposed`：打开方向要靠它分两步走（先挂树 → 等首组合 → 再开播）。
     // 键只写 `monthMode` 就等于「首组合和动画第一帧挤同一帧」——正是本轮要修的那 1~2 帧空。
-    LaunchedEffect(monthMode, monthContentComposed) {
+    // ⚠️ 键里还必须带 `homePagerScrolling`（2026-11-12 修 M1）：它是 `shouldSnap` 的第三个判据，
+    // 判据读了、键里却没有 ⇒ 外层 Pager 从静止开始滑（false → true）时本 effect 不重进，
+    // 「接线后在叠加那一帧生效」就只是没验证过的假设。键带上它之后**不会重播、也不会抖**，
+    // 因果可以按下面两个分支逐条复核（不是结论式描述）：
+    //   · 键变化重进时，若 `monthExpand.value` 已等于 `target`（例如此前刚 `snapTo` 过、或本来
+    //     就是 1/0），会落到 `else if (monthExpand.value != target)` 的**假**分支 ⇒ 整段不调
+    //     `animateTo`，只有 value 与目标不等时才会走到下面的 `animateTo`；
+    //   · 若外层在 `animateTo` 播到一半时开始滑：键变 ⇒ 本 effect 的协程被取消（正在跑的
+    //     `animateTo` 一起取消），重进后 `MonthSwitchMotion.shouldSnap(...)` 为真 ⇒
+    //     `monthExpand.snapTo(target)` 把值直接拉到终点；外层滑行结束时键再变回 false、
+    //     effect 再重进一次，此时 `value == target` ⇒ 又落到上面那个假分支，不会二次开播。
+    // 仍未验证（别把这两条因果当成「实机已验」）：键变化要等一次重组才生效，而壳侧是在父级
+    // `SideEffect` 里写 `isScrollInProgress` 的 —— effect 重进之前可能已经播了 1~2 帧 tween。
+    LaunchedEffect(monthMode, monthContentComposed, homePagerScrolling) {
         // ① 先挂树：下面几支都依赖月层已经在这棵树上（要等的信号也只能来自已挂上的树）。
         if (monthMode) monthMounted = true
         val target = if (monthMode) 1f else 0f
