@@ -4080,13 +4080,6 @@
       }
     }
   },
-  "serviceMsgAuthFailed": "Invalid username or password.",
-  "serviceMsgAccessDenied": "Access denied.",
-  "serviceMsgCertificateError": "Certificate validation failed.",
-  "serviceMsgConnectionTimeout": "Connection timed out.",
-  "serviceMsgConnectionFailed": "Could not connect to the server.",
-  "serviceMsgInvalidResponse": "Invalid server response.",
-  "serviceMsgSyncFailed": "Sync failed.",
   "serviceMsgUsageTypeOverride": "override time scheme",
   "serviceMsgUsageTypeProfile": "profile main time scheme",
   "dataTransferProfileShareText": "This is a full backup of the current timetable from Qingyu Timetable. Import it to restore courses and settings.",

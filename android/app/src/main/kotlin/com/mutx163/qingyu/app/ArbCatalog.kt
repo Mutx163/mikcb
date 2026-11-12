@@ -23,7 +23,7 @@ object ArbCatalog {
         else -> null
     }
 
-    // ── en（3045 条）──
+    // ── en（3038 条）──
     private fun lookupen(key: String): String? = lookupen1(key) ?: lookupen2(key) ?: lookupen3(key) ?: lookupen4(key) ?: lookupen5(key) ?: lookupen6(key) ?: lookupen7(key) ?: lookupen8(key) ?: lookupen9(key) ?: lookupen10(key) ?: lookupen11(key)
     private fun lookupen1(key: String): String? = when (key) {
         "aboutAdvancedOptionsTitle" -> "Advanced options"
@@ -2383,7 +2383,6 @@ object ArbCatalog {
         "semesterStartUnsetBullet" -> "Semester start date: not set"
         "semesterWeekCountAction" -> "{count} weeks"
         "sendFailedWithError" -> "Failed to send: {error}"
-        "serviceMsgAccessDenied" -> "Access denied."
         "serviceMsgAiCourseCustomWeeksEmpty" -> "courses[{index}].customWeeks cannot be empty."
         "serviceMsgAiCourseDayOfWeekInvalid" -> "courses[{index}].dayOfWeek must be between 1 and 7."
         "serviceMsgAiCourseEndSectionInvalid" -> "courses[{index}].endSection cannot be less than startSection"
@@ -2405,14 +2404,10 @@ object ArbCatalog {
         "serviceMsgAtLeastOnePeriodSection" -> "At least one period must have sections"
         "serviceMsgAtLeastOneScheduleSlot" -> "At least one class time slot must be kept."
         "serviceMsgAtLeastOneSectionRequired" -> "At least one section time must be kept"
-        "serviceMsgAuthFailed" -> "Invalid username or password."
         "serviceMsgBackupContentRequired" -> "Backup content cannot be empty."
         "serviceMsgBreakDurationMustNonNegative" -> "Break duration cannot be less than 0."
-        "serviceMsgCertificateError" -> "Certificate validation failed."
         "serviceMsgClassDurationMustPositive" -> "Class duration must be greater than 0."
         "serviceMsgClassWeeksRequired" -> "Class weeks cannot be empty."
-        "serviceMsgConnectionFailed" -> "Could not connect to the server."
-        "serviceMsgConnectionTimeout" -> "Connection timed out."
         "serviceMsgCourseNameRequired" -> "Course name cannot be empty."
         "serviceMsgCourseNotFoundForDelete" -> "Course to delete was not found."
         "serviceMsgCourseNotFoundForReschedule" -> "Course to reschedule was not found."
@@ -2439,7 +2434,6 @@ object ArbCatalog {
         "serviceMsgIncompleteGithubRepoUrl" -> "GitHub repository URL is incomplete."
         "serviceMsgIncompleteRawGithubUrl" -> "raw.githubusercontent.com URL is incomplete."
         "serviceMsgInvalidRepositoryUrl" -> "Repository URL format is invalid."
-        "serviceMsgInvalidResponse" -> "Invalid server response."
         "serviceMsgInvalidTimeFormat" -> "Time format is invalid."
         "serviceMsgInvalidUrl" -> "Invalid URL."
         "serviceMsgLinkedCourseNotFound" -> "Linked course was not found."
@@ -2447,15 +2441,15 @@ object ArbCatalog {
         "serviceMsgMacroElementNotFound" -> "Element not found: {selector}"
         "serviceMsgMacroFillSelectorEmpty" -> "Fill-field selector is empty."
         "serviceMsgMacroManualInputDefault" -> "Manual action required."
-        else -> null
-    }
-    private fun lookupen9(key: String): String? = when (key) {
         "serviceMsgMacroNavigateUrlEmpty" -> "Navigation URL is empty."
         "serviceMsgMacroNavigateUrlInvalid" -> "Invalid URL: {url}"
         "serviceMsgMacroNoSteps" -> "No recorded steps."
         "serviceMsgMacroPollTimeout" -> "{stepLabel} timed out ({timeoutSeconds}s){lastError}"
         "serviceMsgMacroReplayClick" -> "Clicking…"
         "serviceMsgMacroReplayDelay" -> "Waiting…"
+        else -> null
+    }
+    private fun lookupen9(key: String): String? = when (key) {
         "serviceMsgMacroReplayExecuteScript" -> "Running import script…"
         "serviceMsgMacroReplayFailed" -> "Failed: {detail}"
         "serviceMsgMacroReplayFillField" -> "Filling form…"
@@ -2498,7 +2492,6 @@ object ArbCatalog {
         "serviceMsgStartWeekMustBeAtLeast1" -> "Start week must be at least 1."
         "serviceMsgStatisticsShareFailed" -> "Share failed: {detail}"
         "serviceMsgSupportDonorsLoadFailed" -> "Failed to load supporters list: {detail}"
-        "serviceMsgSyncFailed" -> "Sync failed."
         "serviceMsgSyncSnapshotChecksumFailed" -> "Cloud sync snapshot verification failed."
         "serviceMsgSyncSnapshotNoProfiles" -> "No recoverable timetables in the cloud sync snapshot."
         "serviceMsgSyncSnapshotUnrecognized" -> "Cloud sync snapshot could not be recognized."
@@ -2750,9 +2743,6 @@ object ArbCatalog {
         "supportMethodTitle" -> "Choose a Support Method"
         "supportRunningBadge" -> "Active"
         "supportSaveShort" -> "Save"
-        else -> null
-    }
-    private fun lookupen10(key: String): String? = when (key) {
         "supportTapQrHint" -> "Tap to enlarge"
         "supportWeChatHint" -> "Use WeChat to scan and support the creator"
         "supportedFilesImageHint" -> "If you only have screenshots, go back and choose Image Import instead"
@@ -2760,6 +2750,9 @@ object ArbCatalog {
         "supportedFilesTitle" -> "Supported Files"
         "surfaceCourseCard" -> "Course cards"
         "surfaceMaterialSectionTitle" -> "Current material per surface"
+        else -> null
+    }
+    private fun lookupen10(key: String): String? = when (key) {
         "surfaceSubpageHeader" -> "Subpage top bar"
         "suspendAllWeeks" -> "All weeks"
         "suspendAllWeeksDesc" -> "Suspend all weeks"
@@ -3053,9 +3046,6 @@ object ArbCatalog {
         "wechatLabel" -> "WeChat"
         "weekGridShowExamsSubtitle" -> "Long-press add skips exams"
         "weekGridShowExamsTitle" -> "Show exams"
-        else -> null
-    }
-    private fun lookupen11(key: String): String? = when (key) {
         "weekGridShowSchedulesSubtitle" -> "By time; multi-day full column"
         "weekGridShowSchedulesTitle" -> "Show schedules"
         "weekLabel" -> "Week {week}"
@@ -3063,6 +3053,9 @@ object ArbCatalog {
         "weekPickerCalendarTooltip" -> "Use calendar picker"
         "weekPickerTitle" -> "Select weeks"
         "weekdayFri" -> "Fri"
+        else -> null
+    }
+    private fun lookupen11(key: String): String? = when (key) {
         "weekdayInkContrastBodyDark" -> "Your weekday bar text color had too little contrast against the dark wallpaper, so it was lightened automatically to stay readable — your color is kept. You can change or reset it under \"Timetable Page → Text Colors\"."
         "weekdayInkContrastBodyLight" -> "Your weekday bar text color had too little contrast against the light wallpaper, so it was darkened automatically to stay readable — your color is kept. You can change or reset it under \"Timetable Page → Text Colors\"."
         "weekdayInkContrastTitle" -> "Low Text Contrast"
@@ -3104,7 +3097,7 @@ object ArbCatalog {
         else -> null
     }
 
-    // ── ja（3045 条）──
+    // ── ja（3038 条）──
     private fun lookupja(key: String): String? = lookupja1(key) ?: lookupja2(key) ?: lookupja3(key) ?: lookupja4(key) ?: lookupja5(key) ?: lookupja6(key) ?: lookupja7(key) ?: lookupja8(key) ?: lookupja9(key) ?: lookupja10(key) ?: lookupja11(key)
     private fun lookupja1(key: String): String? = when (key) {
         "aboutAdvancedOptionsTitle" -> "高度なオプション"
@@ -5464,7 +5457,6 @@ object ArbCatalog {
         "semesterStartUnsetBullet" -> "学期開始日：未設定"
         "semesterWeekCountAction" -> "{count}週"
         "sendFailedWithError" -> "送信失敗：{error}"
-        "serviceMsgAccessDenied" -> "Access denied."
         "serviceMsgAiCourseCustomWeeksEmpty" -> "courses[{index}].customWeeks cannot be empty."
         "serviceMsgAiCourseDayOfWeekInvalid" -> "courses[{index}].dayOfWeek must be between 1 and 7."
         "serviceMsgAiCourseEndSectionInvalid" -> "courses[{index}].endSection cannot be less than startSection"
@@ -5486,14 +5478,10 @@ object ArbCatalog {
         "serviceMsgAtLeastOnePeriodSection" -> "At least one period must have sections"
         "serviceMsgAtLeastOneScheduleSlot" -> "At least one class time slot must be kept."
         "serviceMsgAtLeastOneSectionRequired" -> "At least one section time must be kept"
-        "serviceMsgAuthFailed" -> "Invalid username or password."
         "serviceMsgBackupContentRequired" -> "Backup content cannot be empty."
         "serviceMsgBreakDurationMustNonNegative" -> "Break duration cannot be less than 0."
-        "serviceMsgCertificateError" -> "Certificate validation failed."
         "serviceMsgClassDurationMustPositive" -> "Class duration must be greater than 0."
         "serviceMsgClassWeeksRequired" -> "Class weeks cannot be empty."
-        "serviceMsgConnectionFailed" -> "Could not connect to the server."
-        "serviceMsgConnectionTimeout" -> "Connection timed out."
         "serviceMsgCourseNameRequired" -> "Course name cannot be empty."
         "serviceMsgCourseNotFoundForDelete" -> "Course to delete was not found."
         "serviceMsgCourseNotFoundForReschedule" -> "Course to reschedule was not found."
@@ -5520,7 +5508,6 @@ object ArbCatalog {
         "serviceMsgIncompleteGithubRepoUrl" -> "GitHub repository URL is incomplete."
         "serviceMsgIncompleteRawGithubUrl" -> "raw.githubusercontent.com URL is incomplete."
         "serviceMsgInvalidRepositoryUrl" -> "Repository URL format is invalid."
-        "serviceMsgInvalidResponse" -> "Invalid server response."
         "serviceMsgInvalidTimeFormat" -> "Time format is invalid."
         "serviceMsgInvalidUrl" -> "Invalid URL."
         "serviceMsgLinkedCourseNotFound" -> "Linked course was not found."
@@ -5528,15 +5515,15 @@ object ArbCatalog {
         "serviceMsgMacroElementNotFound" -> "Element not found: {selector}"
         "serviceMsgMacroFillSelectorEmpty" -> "Fill-field selector is empty."
         "serviceMsgMacroManualInputDefault" -> "Manual action required."
-        else -> null
-    }
-    private fun lookupja9(key: String): String? = when (key) {
         "serviceMsgMacroNavigateUrlEmpty" -> "Navigation URL is empty."
         "serviceMsgMacroNavigateUrlInvalid" -> "Invalid URL: {url}"
         "serviceMsgMacroNoSteps" -> "No recorded steps."
         "serviceMsgMacroPollTimeout" -> "{stepLabel} timed out ({timeoutSeconds}s){lastError}"
         "serviceMsgMacroReplayClick" -> "Clicking…"
         "serviceMsgMacroReplayDelay" -> "Waiting…"
+        else -> null
+    }
+    private fun lookupja9(key: String): String? = when (key) {
         "serviceMsgMacroReplayExecuteScript" -> "Running import script…"
         "serviceMsgMacroReplayFailed" -> "Failed: {detail}"
         "serviceMsgMacroReplayFillField" -> "Filling form…"
@@ -5579,7 +5566,6 @@ object ArbCatalog {
         "serviceMsgStartWeekMustBeAtLeast1" -> "Start week must be at least 1."
         "serviceMsgStatisticsShareFailed" -> "Share failed: {detail}"
         "serviceMsgSupportDonorsLoadFailed" -> "Failed to load supporters list: {detail}"
-        "serviceMsgSyncFailed" -> "Sync failed."
         "serviceMsgSyncSnapshotChecksumFailed" -> "Cloud sync snapshot verification failed."
         "serviceMsgSyncSnapshotNoProfiles" -> "No recoverable timetables in the cloud sync snapshot."
         "serviceMsgSyncSnapshotUnrecognized" -> "Cloud sync snapshot could not be recognized."
@@ -5831,9 +5817,6 @@ object ArbCatalog {
         "supportMethodTitle" -> "支援方法を選択"
         "supportRunningBadge" -> "稼働中"
         "supportSaveShort" -> "保存"
-        else -> null
-    }
-    private fun lookupja10(key: String): String? = when (key) {
         "supportTapQrHint" -> "タップで拡大"
         "supportWeChatHint" -> "WeChatでQRコードをスキャンして作者を支援"
         "supportedFilesImageHint" -> "スクリーンショットしかない場合は、前のページに戻って「画像認識インポート」を選択してください"
@@ -5841,6 +5824,9 @@ object ArbCatalog {
         "supportedFilesTitle" -> "対応ファイル"
         "surfaceCourseCard" -> "時間割カード"
         "surfaceMaterialSectionTitle" -> "表面ごとの現在の素材"
+        else -> null
+    }
+    private fun lookupja10(key: String): String? = when (key) {
         "surfaceSubpageHeader" -> "サブページの上部バー"
         "suspendAllWeeks" -> "全週停止"
         "suspendAllWeeksDesc" -> "全週次を一時停止"
@@ -6134,9 +6120,6 @@ object ArbCatalog {
         "wechatLabel" -> "WeChat"
         "weekGridShowExamsSubtitle" -> "長押し追加は試験を回避"
         "weekGridShowExamsTitle" -> "週表示に試験を表示"
-        else -> null
-    }
-    private fun lookupja11(key: String): String? = when (key) {
         "weekGridShowSchedulesSubtitle" -> "時間順、複数日は列全体"
         "weekGridShowSchedulesTitle" -> "週表示に日程を表示"
         "weekLabel" -> "第{week}週"
@@ -6144,6 +6127,9 @@ object ArbCatalog {
         "weekPickerCalendarTooltip" -> "カレンダーで選択"
         "weekPickerTitle" -> "授業週次を選択"
         "weekdayFri" -> "金曜"
+        else -> null
+    }
+    private fun lookupja11(key: String): String? = when (key) {
         "weekdayInkContrastBodyDark" -> "曜日バーの文字色は濃い壁紙とのコントラストが不足していたため、読みやすいよう自動で明るくしました（色味はそのまま）。「時間割ページ → 文字色」で色を変更またはリセットできます。"
         "weekdayInkContrastBodyLight" -> "曜日バーの文字色は明るい壁紙とのコントラストが不足していたため、読みやすいよう自動で暗くしました（色味はそのまま）。「時間割ページ → 文字色」で色を変更またはリセットできます。"
         "weekdayInkContrastTitle" -> "文字のコントラスト不足"
@@ -6185,7 +6171,7 @@ object ArbCatalog {
         else -> null
     }
 
-    // ── ko（3045 条）──
+    // ── ko（3038 条）──
     private fun lookupko(key: String): String? = lookupko1(key) ?: lookupko2(key) ?: lookupko3(key) ?: lookupko4(key) ?: lookupko5(key) ?: lookupko6(key) ?: lookupko7(key) ?: lookupko8(key) ?: lookupko9(key) ?: lookupko10(key) ?: lookupko11(key)
     private fun lookupko1(key: String): String? = when (key) {
         "aboutAdvancedOptionsTitle" -> "고급 옵션"
@@ -8545,7 +8531,6 @@ object ArbCatalog {
         "semesterStartUnsetBullet" -> "학기 시작일: 미설정"
         "semesterWeekCountAction" -> "{count}주"
         "sendFailedWithError" -> "전송 실패: {error}"
-        "serviceMsgAccessDenied" -> "Access denied."
         "serviceMsgAiCourseCustomWeeksEmpty" -> "courses[{index}].customWeeks cannot be empty."
         "serviceMsgAiCourseDayOfWeekInvalid" -> "courses[{index}].dayOfWeek must be between 1 and 7."
         "serviceMsgAiCourseEndSectionInvalid" -> "courses[{index}].endSection cannot be less than startSection"
@@ -8567,14 +8552,10 @@ object ArbCatalog {
         "serviceMsgAtLeastOnePeriodSection" -> "At least one period must have sections"
         "serviceMsgAtLeastOneScheduleSlot" -> "At least one class time slot must be kept."
         "serviceMsgAtLeastOneSectionRequired" -> "At least one section time must be kept"
-        "serviceMsgAuthFailed" -> "Invalid username or password."
         "serviceMsgBackupContentRequired" -> "Backup content cannot be empty."
         "serviceMsgBreakDurationMustNonNegative" -> "Break duration cannot be less than 0."
-        "serviceMsgCertificateError" -> "Certificate validation failed."
         "serviceMsgClassDurationMustPositive" -> "Class duration must be greater than 0."
         "serviceMsgClassWeeksRequired" -> "Class weeks cannot be empty."
-        "serviceMsgConnectionFailed" -> "Could not connect to the server."
-        "serviceMsgConnectionTimeout" -> "Connection timed out."
         "serviceMsgCourseNameRequired" -> "Course name cannot be empty."
         "serviceMsgCourseNotFoundForDelete" -> "Course to delete was not found."
         "serviceMsgCourseNotFoundForReschedule" -> "Course to reschedule was not found."
@@ -8601,7 +8582,6 @@ object ArbCatalog {
         "serviceMsgIncompleteGithubRepoUrl" -> "GitHub repository URL is incomplete."
         "serviceMsgIncompleteRawGithubUrl" -> "raw.githubusercontent.com URL is incomplete."
         "serviceMsgInvalidRepositoryUrl" -> "Repository URL format is invalid."
-        "serviceMsgInvalidResponse" -> "Invalid server response."
         "serviceMsgInvalidTimeFormat" -> "Time format is invalid."
         "serviceMsgInvalidUrl" -> "Invalid URL."
         "serviceMsgLinkedCourseNotFound" -> "Linked course was not found."
@@ -8609,15 +8589,15 @@ object ArbCatalog {
         "serviceMsgMacroElementNotFound" -> "Element not found: {selector}"
         "serviceMsgMacroFillSelectorEmpty" -> "Fill-field selector is empty."
         "serviceMsgMacroManualInputDefault" -> "Manual action required."
-        else -> null
-    }
-    private fun lookupko9(key: String): String? = when (key) {
         "serviceMsgMacroNavigateUrlEmpty" -> "Navigation URL is empty."
         "serviceMsgMacroNavigateUrlInvalid" -> "Invalid URL: {url}"
         "serviceMsgMacroNoSteps" -> "No recorded steps."
         "serviceMsgMacroPollTimeout" -> "{stepLabel} timed out ({timeoutSeconds}s){lastError}"
         "serviceMsgMacroReplayClick" -> "Clicking…"
         "serviceMsgMacroReplayDelay" -> "Waiting…"
+        else -> null
+    }
+    private fun lookupko9(key: String): String? = when (key) {
         "serviceMsgMacroReplayExecuteScript" -> "Running import script…"
         "serviceMsgMacroReplayFailed" -> "Failed: {detail}"
         "serviceMsgMacroReplayFillField" -> "Filling form…"
@@ -8660,7 +8640,6 @@ object ArbCatalog {
         "serviceMsgStartWeekMustBeAtLeast1" -> "Start week must be at least 1."
         "serviceMsgStatisticsShareFailed" -> "Share failed: {detail}"
         "serviceMsgSupportDonorsLoadFailed" -> "Failed to load supporters list: {detail}"
-        "serviceMsgSyncFailed" -> "Sync failed."
         "serviceMsgSyncSnapshotChecksumFailed" -> "Cloud sync snapshot verification failed."
         "serviceMsgSyncSnapshotNoProfiles" -> "No recoverable timetables in the cloud sync snapshot."
         "serviceMsgSyncSnapshotUnrecognized" -> "Cloud sync snapshot could not be recognized."
@@ -8912,9 +8891,6 @@ object ArbCatalog {
         "supportMethodTitle" -> "지원 방법 선택"
         "supportRunningBadge" -> "운영 중"
         "supportSaveShort" -> "저장"
-        else -> null
-    }
-    private fun lookupko10(key: String): String? = when (key) {
         "supportTapQrHint" -> "탭하여 확대"
         "supportWeChatHint" -> "WeChat으로 QR 코드를 스캔하여 개발자 지원"
         "supportedFilesImageHint" -> "스크린샷만 있다면 이곳이 아닌 이전 페이지에서 '이미지 인식 가져오기'를 선택하세요"
@@ -8922,6 +8898,9 @@ object ArbCatalog {
         "supportedFilesTitle" -> "지원 파일"
         "surfaceCourseCard" -> "시간표 카드"
         "surfaceMaterialSectionTitle" -> "표면별 현재 재질"
+        else -> null
+    }
+    private fun lookupko10(key: String): String? = when (key) {
         "surfaceSubpageHeader" -> "하위 페이지 상단 바"
         "suspendAllWeeks" -> "전체 중단"
         "suspendAllWeeksDesc" -> "모든 주차 일시 중단"
@@ -9215,9 +9194,6 @@ object ArbCatalog {
         "wechatLabel" -> "WeChat"
         "weekGridShowExamsSubtitle" -> "길게 눌러 추가 시 시험 건너뜀"
         "weekGridShowExamsTitle" -> "주간 보기에 시험 표시"
-        else -> null
-    }
-    private fun lookupko11(key: String): String? = when (key) {
         "weekGridShowSchedulesSubtitle" -> "시간순, 여러 날은 열 전체"
         "weekGridShowSchedulesTitle" -> "주간 보기에 일정 표시"
         "weekLabel" -> "제{week}주"
@@ -9225,6 +9201,9 @@ object ArbCatalog {
         "weekPickerCalendarTooltip" -> "달력으로 선택"
         "weekPickerTitle" -> "수업 주차 선택"
         "weekdayFri" -> "금요일"
+        else -> null
+    }
+    private fun lookupko11(key: String): String? = when (key) {
         "weekdayInkContrastBodyDark" -> "요일 표시줄 텍스트 색상이 어두운 배경화면과 대비가 부족하여 읽기 쉽도록 자동으로 밝게 조정했습니다(색조는 그대로 유지). \"시간표 페이지 → 텍스트 색상\"에서 색상을 변경하거나 기본값으로 재설정할 수 있습니다."
         "weekdayInkContrastBodyLight" -> "요일 표시줄 텍스트 색상이 밝은 배경화면과 대비가 부족하여 읽기 쉽도록 자동으로 어둡게 조정했습니다(색조는 그대로 유지). \"시간표 페이지 → 텍스트 색상\"에서 색상을 변경하거나 기본값으로 재설정할 수 있습니다."
         "weekdayInkContrastTitle" -> "텍스트 대비 부족"
@@ -9266,7 +9245,7 @@ object ArbCatalog {
         else -> null
     }
 
-    // ── zh（3045 条）──
+    // ── zh（3038 条）──
     private fun lookupzh(key: String): String? = lookupzh1(key) ?: lookupzh2(key) ?: lookupzh3(key) ?: lookupzh4(key) ?: lookupzh5(key) ?: lookupzh6(key) ?: lookupzh7(key) ?: lookupzh8(key) ?: lookupzh9(key) ?: lookupzh10(key) ?: lookupzh11(key)
     private fun lookupzh1(key: String): String? = when (key) {
         "aboutAdvancedOptionsTitle" -> "高级选项"
@@ -11626,7 +11605,6 @@ object ArbCatalog {
         "semesterStartUnsetBullet" -> "开学日期：未设置"
         "semesterWeekCountAction" -> "{count} 周"
         "sendFailedWithError" -> "发送失败：{error}"
-        "serviceMsgAccessDenied" -> "没有访问权限"
         "serviceMsgAiCourseCustomWeeksEmpty" -> "courses[{index}].customWeeks 不能为空"
         "serviceMsgAiCourseDayOfWeekInvalid" -> "courses[{index}].dayOfWeek 必须是 1～7"
         "serviceMsgAiCourseEndSectionInvalid" -> "courses[{index}].endSection 不能小于 startSection"
@@ -11648,14 +11626,10 @@ object ArbCatalog {
         "serviceMsgAtLeastOnePeriodSection" -> "至少需要设置一个时段的节次数"
         "serviceMsgAtLeastOneScheduleSlot" -> "至少需要保留一个上课时间段"
         "serviceMsgAtLeastOneSectionRequired" -> "至少需要保留一节课的时间"
-        "serviceMsgAuthFailed" -> "账号或密码错误"
         "serviceMsgBackupContentRequired" -> "备份内容不能为空"
         "serviceMsgBreakDurationMustNonNegative" -> "课间时长不能小于 0"
-        "serviceMsgCertificateError" -> "证书校验失败"
         "serviceMsgClassDurationMustPositive" -> "上课时长必须大于 0"
         "serviceMsgClassWeeksRequired" -> "上课周不能为空"
-        "serviceMsgConnectionFailed" -> "无法连接服务器"
-        "serviceMsgConnectionTimeout" -> "连接超时"
         "serviceMsgCourseNameRequired" -> "课程名称不能为空"
         "serviceMsgCourseNotFoundForDelete" -> "未找到要删除的课程"
         "serviceMsgCourseNotFoundForReschedule" -> "未找到要调课的课程"
@@ -11682,7 +11656,6 @@ object ArbCatalog {
         "serviceMsgIncompleteGithubRepoUrl" -> "GitHub 仓库地址不完整"
         "serviceMsgIncompleteRawGithubUrl" -> "raw.githubusercontent.com 地址不完整"
         "serviceMsgInvalidRepositoryUrl" -> "仓库地址格式不正确"
-        "serviceMsgInvalidResponse" -> "服务器响应无效"
         "serviceMsgInvalidTimeFormat" -> "时间格式不正确"
         "serviceMsgInvalidUrl" -> "地址无效"
         "serviceMsgLinkedCourseNotFound" -> "关联的课程不存在"
@@ -11690,15 +11663,15 @@ object ArbCatalog {
         "serviceMsgMacroElementNotFound" -> "未找到元素：{selector}"
         "serviceMsgMacroFillSelectorEmpty" -> "填充字段的选择器为空"
         "serviceMsgMacroManualInputDefault" -> "需要手动操作"
-        else -> null
-    }
-    private fun lookupzh9(key: String): String? = when (key) {
         "serviceMsgMacroNavigateUrlEmpty" -> "导航 URL 为空"
         "serviceMsgMacroNavigateUrlInvalid" -> "无效的 URL: {url}"
         "serviceMsgMacroNoSteps" -> "没有录制的步骤"
         "serviceMsgMacroPollTimeout" -> "{stepLabel} 超时 {timeoutSeconds} 秒 {lastError}"
         "serviceMsgMacroReplayClick" -> "正在点击……"
         "serviceMsgMacroReplayDelay" -> "等待中……"
+        else -> null
+    }
+    private fun lookupzh9(key: String): String? = when (key) {
         "serviceMsgMacroReplayExecuteScript" -> "正在执行导入脚本……"
         "serviceMsgMacroReplayFailed" -> "失败：{detail}"
         "serviceMsgMacroReplayFillField" -> "正在填充表单……"
@@ -11741,7 +11714,6 @@ object ArbCatalog {
         "serviceMsgStartWeekMustBeAtLeast1" -> "开始周必须大于等于1"
         "serviceMsgStatisticsShareFailed" -> "分享失败：{detail}"
         "serviceMsgSupportDonorsLoadFailed" -> "加载鸣谢名单失败：{detail}"
-        "serviceMsgSyncFailed" -> "同步失败"
         "serviceMsgSyncSnapshotChecksumFailed" -> "备份文件校验失败"
         "serviceMsgSyncSnapshotNoProfiles" -> "备份文件里没有可恢复的课表"
         "serviceMsgSyncSnapshotUnrecognized" -> "备份文件无法识别"
@@ -11993,9 +11965,6 @@ object ArbCatalog {
         "supportMethodTitle" -> "选择支持方式"
         "supportRunningBadge" -> "运行中"
         "supportSaveShort" -> "保存"
-        else -> null
-    }
-    private fun lookupzh10(key: String): String? = when (key) {
         "supportTapQrHint" -> "点击放大扫码"
         "supportWeChatHint" -> "使用微信扫一扫支持作者"
         "supportedFilesImageHint" -> "课表截图请返回上一页使用识图导入"
@@ -12003,6 +11972,9 @@ object ArbCatalog {
         "supportedFilesTitle" -> "支持的文件"
         "surfaceCourseCard" -> "课程卡片"
         "surfaceMaterialSectionTitle" -> "各表面当前材质"
+        else -> null
+    }
+    private fun lookupzh10(key: String): String? = when (key) {
         "surfaceSubpageHeader" -> "子页顶栏"
         "suspendAllWeeks" -> "全部停"
         "suspendAllWeeksDesc" -> "暂停所有周次"
@@ -12296,9 +12268,6 @@ object ArbCatalog {
         "wechatLabel" -> "微信"
         "weekGridShowExamsSubtitle" -> "长按加课会跳过考试时段"
         "weekGridShowExamsTitle" -> "周视图显示考试"
-        else -> null
-    }
-    private fun lookupzh11(key: String): String? = when (key) {
         "weekGridShowSchedulesSubtitle" -> "按时间落位，跨天占整列"
         "weekGridShowSchedulesTitle" -> "周视图显示日程"
         "weekLabel" -> "第 {week} 周"
@@ -12306,6 +12275,9 @@ object ArbCatalog {
         "weekPickerCalendarTooltip" -> "使用日历选择"
         "weekPickerTitle" -> "选择上课周次"
         "weekdayFri" -> "周五"
+        else -> null
+    }
+    private fun lookupzh11(key: String): String? = when (key) {
         "weekdayInkContrastBodyDark" -> "信息栏文字在深色背景下对比度不足，已自动提升亮度。可在 课表页面 文字颜色 中调整或恢复默认。"
         "weekdayInkContrastBodyLight" -> "信息栏文字在浅色背景下对比度不足，已自动降低亮度。可在 课表页面 文字颜色 中调整或恢复默认。"
         "weekdayInkContrastTitle" -> "文字对比度不足"
@@ -12347,7 +12319,7 @@ object ArbCatalog {
         else -> null
     }
 
-    // ── zh_HK（3045 条）──
+    // ── zh_HK（3038 条）──
     private fun lookupzhHK(key: String): String? = lookupzhHK1(key) ?: lookupzhHK2(key) ?: lookupzhHK3(key) ?: lookupzhHK4(key) ?: lookupzhHK5(key) ?: lookupzhHK6(key) ?: lookupzhHK7(key) ?: lookupzhHK8(key) ?: lookupzhHK9(key) ?: lookupzhHK10(key) ?: lookupzhHK11(key)
     private fun lookupzhHK1(key: String): String? = when (key) {
         "aboutAdvancedOptionsTitle" -> "高級選項"
@@ -14707,7 +14679,6 @@ object ArbCatalog {
         "semesterStartUnsetBullet" -> "開學日期：未設定"
         "semesterWeekCountAction" -> "{count} 週"
         "sendFailedWithError" -> "發送失敗: {error}"
-        "serviceMsgAccessDenied" -> "Access denied."
         "serviceMsgAiCourseCustomWeeksEmpty" -> "courses[{index}].customWeeks cannot be empty."
         "serviceMsgAiCourseDayOfWeekInvalid" -> "courses[{index}].dayOfWeek must be between 1 and 7."
         "serviceMsgAiCourseEndSectionInvalid" -> "courses[{index}].endSection cannot be less than startSection."
@@ -14729,14 +14700,10 @@ object ArbCatalog {
         "serviceMsgAtLeastOnePeriodSection" -> "At least one period must have sections."
         "serviceMsgAtLeastOneScheduleSlot" -> "At least one class time slot must be kept."
         "serviceMsgAtLeastOneSectionRequired" -> "At least one section time must be kept."
-        "serviceMsgAuthFailed" -> "Invalid username or password."
         "serviceMsgBackupContentRequired" -> "Backup content cannot be empty."
         "serviceMsgBreakDurationMustNonNegative" -> "Break duration cannot be less than 0."
-        "serviceMsgCertificateError" -> "Certificate validation failed."
         "serviceMsgClassDurationMustPositive" -> "Class duration must be greater than 0."
         "serviceMsgClassWeeksRequired" -> "Class weeks cannot be empty."
-        "serviceMsgConnectionFailed" -> "Could not connect to the server."
-        "serviceMsgConnectionTimeout" -> "Connection timed out."
         "serviceMsgCourseNameRequired" -> "Course name cannot be empty."
         "serviceMsgCourseNotFoundForDelete" -> "Course to delete was not found."
         "serviceMsgCourseNotFoundForReschedule" -> "Course to reschedule was not found."
@@ -14763,7 +14730,6 @@ object ArbCatalog {
         "serviceMsgIncompleteGithubRepoUrl" -> "GitHub repository URL is incomplete."
         "serviceMsgIncompleteRawGithubUrl" -> "raw.githubusercontent.com URL is incomplete."
         "serviceMsgInvalidRepositoryUrl" -> "Repository URL format is invalid."
-        "serviceMsgInvalidResponse" -> "Invalid server response."
         "serviceMsgInvalidTimeFormat" -> "Time format is invalid."
         "serviceMsgInvalidUrl" -> "Invalid URL."
         "serviceMsgLinkedCourseNotFound" -> "Linked course was not found."
@@ -14771,15 +14737,15 @@ object ArbCatalog {
         "serviceMsgMacroElementNotFound" -> "Element not found: {selector}"
         "serviceMsgMacroFillSelectorEmpty" -> "Fill-field selector is empty."
         "serviceMsgMacroManualInputDefault" -> "Manual action required."
-        else -> null
-    }
-    private fun lookupzhHK9(key: String): String? = when (key) {
         "serviceMsgMacroNavigateUrlEmpty" -> "Navigation URL is empty."
         "serviceMsgMacroNavigateUrlInvalid" -> "Invalid URL: {url}"
         "serviceMsgMacroNoSteps" -> "No recorded steps."
         "serviceMsgMacroPollTimeout" -> "{stepLabel} 超時 {timeoutSeconds} 秒 {lastError}"
         "serviceMsgMacroReplayClick" -> "Clicking…"
         "serviceMsgMacroReplayDelay" -> "Waiting…"
+        else -> null
+    }
+    private fun lookupzhHK9(key: String): String? = when (key) {
         "serviceMsgMacroReplayExecuteScript" -> "Running import script…"
         "serviceMsgMacroReplayFailed" -> "Failed: {detail}"
         "serviceMsgMacroReplayFillField" -> "Filling form…"
@@ -14822,7 +14788,6 @@ object ArbCatalog {
         "serviceMsgStartWeekMustBeAtLeast1" -> "Start week must be at least 1."
         "serviceMsgStatisticsShareFailed" -> "Share failed: {detail}"
         "serviceMsgSupportDonorsLoadFailed" -> "Failed to load supporters list: {detail}"
-        "serviceMsgSyncFailed" -> "Sync failed."
         "serviceMsgSyncSnapshotChecksumFailed" -> "備份檔案校驗失敗"
         "serviceMsgSyncSnapshotNoProfiles" -> "備份檔案裡沒有可恢復的課表"
         "serviceMsgSyncSnapshotUnrecognized" -> "備份檔案無法識別"
@@ -15074,9 +15039,6 @@ object ArbCatalog {
         "supportMethodTitle" -> "選擇支持方式"
         "supportRunningBadge" -> "運行中"
         "supportSaveShort" -> "保存"
-        else -> null
-    }
-    private fun lookupzhHK10(key: String): String? = when (key) {
         "supportTapQrHint" -> "點擊放大掃碼"
         "supportWeChatHint" -> "使用微信掃一掃支持作者"
         "supportedFilesImageHint" -> "課表截圖請返回上一頁使用識圖導入"
@@ -15084,6 +15046,9 @@ object ArbCatalog {
         "supportedFilesTitle" -> "支持的檔案"
         "surfaceCourseCard" -> "課程卡片"
         "surfaceMaterialSectionTitle" -> "各表面當前材質"
+        else -> null
+    }
+    private fun lookupzhHK10(key: String): String? = when (key) {
         "surfaceSubpageHeader" -> "子頁頂欄"
         "suspendAllWeeks" -> "全部週次停課"
         "suspendAllWeeksDesc" -> "套用到所有週次"
@@ -15377,9 +15342,6 @@ object ArbCatalog {
         "wechatLabel" -> "微信"
         "weekGridShowExamsSubtitle" -> "長按加課會跳過考試時段"
         "weekGridShowExamsTitle" -> "週檢視顯示考試"
-        else -> null
-    }
-    private fun lookupzhHK11(key: String): String? = when (key) {
         "weekGridShowSchedulesSubtitle" -> "按時間落位，跨天佔整列"
         "weekGridShowSchedulesTitle" -> "週檢視顯示日程"
         "weekLabel" -> "第 {week} 週"
@@ -15387,6 +15349,9 @@ object ArbCatalog {
         "weekPickerCalendarTooltip" -> "使用日曆選擇"
         "weekPickerTitle" -> "選擇上課週次"
         "weekdayFri" -> "週五"
+        else -> null
+    }
+    private fun lookupzhHK11(key: String): String? = when (key) {
         "weekdayInkContrastBodyDark" -> "信息欄文字在深色背景下對比度不足，已自動提升亮度。可在 課表頁面 文字顏色 中調整或恢復默認。"
         "weekdayInkContrastBodyLight" -> "信息欄文字在淺色背景下對比度不足，已自動降低亮度。可在 課表頁面 文字顏色 中調整或恢復默認。"
         "weekdayInkContrastTitle" -> "文字對比度不足"
@@ -15428,7 +15393,7 @@ object ArbCatalog {
         else -> null
     }
 
-    // ── zh_TW（3045 条）──
+    // ── zh_TW（3038 条）──
     private fun lookupzhTW(key: String): String? = lookupzhTW1(key) ?: lookupzhTW2(key) ?: lookupzhTW3(key) ?: lookupzhTW4(key) ?: lookupzhTW5(key) ?: lookupzhTW6(key) ?: lookupzhTW7(key) ?: lookupzhTW8(key) ?: lookupzhTW9(key) ?: lookupzhTW10(key) ?: lookupzhTW11(key)
     private fun lookupzhTW1(key: String): String? = when (key) {
         "aboutAdvancedOptionsTitle" -> "高級選項"
@@ -17788,7 +17753,6 @@ object ArbCatalog {
         "semesterStartUnsetBullet" -> "開學日期：未設定"
         "semesterWeekCountAction" -> "{count} 週"
         "sendFailedWithError" -> "發送失敗: {error}"
-        "serviceMsgAccessDenied" -> "Access denied."
         "serviceMsgAiCourseCustomWeeksEmpty" -> "courses[{index}].customWeeks cannot be empty."
         "serviceMsgAiCourseDayOfWeekInvalid" -> "courses[{index}].dayOfWeek must be between 1 and 7."
         "serviceMsgAiCourseEndSectionInvalid" -> "courses[{index}].endSection cannot be less than startSection."
@@ -17810,14 +17774,10 @@ object ArbCatalog {
         "serviceMsgAtLeastOnePeriodSection" -> "At least one period must have sections."
         "serviceMsgAtLeastOneScheduleSlot" -> "At least one class time slot must be kept."
         "serviceMsgAtLeastOneSectionRequired" -> "At least one section time must be kept."
-        "serviceMsgAuthFailed" -> "Invalid username or password."
         "serviceMsgBackupContentRequired" -> "Backup content cannot be empty."
         "serviceMsgBreakDurationMustNonNegative" -> "Break duration cannot be less than 0."
-        "serviceMsgCertificateError" -> "Certificate validation failed."
         "serviceMsgClassDurationMustPositive" -> "Class duration must be greater than 0."
         "serviceMsgClassWeeksRequired" -> "Class weeks cannot be empty."
-        "serviceMsgConnectionFailed" -> "Could not connect to the server."
-        "serviceMsgConnectionTimeout" -> "Connection timed out."
         "serviceMsgCourseNameRequired" -> "Course name cannot be empty."
         "serviceMsgCourseNotFoundForDelete" -> "Course to delete was not found."
         "serviceMsgCourseNotFoundForReschedule" -> "Course to reschedule was not found."
@@ -17844,7 +17804,6 @@ object ArbCatalog {
         "serviceMsgIncompleteGithubRepoUrl" -> "GitHub repository URL is incomplete."
         "serviceMsgIncompleteRawGithubUrl" -> "raw.githubusercontent.com URL is incomplete."
         "serviceMsgInvalidRepositoryUrl" -> "Repository URL format is invalid."
-        "serviceMsgInvalidResponse" -> "Invalid server response."
         "serviceMsgInvalidTimeFormat" -> "Time format is invalid."
         "serviceMsgInvalidUrl" -> "Invalid URL."
         "serviceMsgLinkedCourseNotFound" -> "Linked course was not found."
@@ -17852,15 +17811,15 @@ object ArbCatalog {
         "serviceMsgMacroElementNotFound" -> "Element not found: {selector}"
         "serviceMsgMacroFillSelectorEmpty" -> "Fill-field selector is empty."
         "serviceMsgMacroManualInputDefault" -> "Manual action required."
-        else -> null
-    }
-    private fun lookupzhTW9(key: String): String? = when (key) {
         "serviceMsgMacroNavigateUrlEmpty" -> "Navigation URL is empty."
         "serviceMsgMacroNavigateUrlInvalid" -> "Invalid URL: {url}"
         "serviceMsgMacroNoSteps" -> "No recorded steps."
         "serviceMsgMacroPollTimeout" -> "{stepLabel} 超時 {timeoutSeconds} 秒 {lastError}"
         "serviceMsgMacroReplayClick" -> "Clicking…"
         "serviceMsgMacroReplayDelay" -> "Waiting…"
+        else -> null
+    }
+    private fun lookupzhTW9(key: String): String? = when (key) {
         "serviceMsgMacroReplayExecuteScript" -> "Running import script…"
         "serviceMsgMacroReplayFailed" -> "Failed: {detail}"
         "serviceMsgMacroReplayFillField" -> "Filling form…"
@@ -17903,7 +17862,6 @@ object ArbCatalog {
         "serviceMsgStartWeekMustBeAtLeast1" -> "Start week must be at least 1."
         "serviceMsgStatisticsShareFailed" -> "Share failed: {detail}"
         "serviceMsgSupportDonorsLoadFailed" -> "Failed to load supporters list: {detail}"
-        "serviceMsgSyncFailed" -> "Sync failed."
         "serviceMsgSyncSnapshotChecksumFailed" -> "備份檔案校驗失敗"
         "serviceMsgSyncSnapshotNoProfiles" -> "備份檔案裡沒有可恢復的課表"
         "serviceMsgSyncSnapshotUnrecognized" -> "備份檔案無法識別"
@@ -18155,9 +18113,6 @@ object ArbCatalog {
         "supportMethodTitle" -> "選擇支持方式"
         "supportRunningBadge" -> "運行中"
         "supportSaveShort" -> "保存"
-        else -> null
-    }
-    private fun lookupzhTW10(key: String): String? = when (key) {
         "supportTapQrHint" -> "點擊放大掃碼"
         "supportWeChatHint" -> "使用微信掃一掃支持作者"
         "supportedFilesImageHint" -> "課表截圖請返回上一頁使用識圖導入"
@@ -18165,6 +18120,9 @@ object ArbCatalog {
         "supportedFilesTitle" -> "支持的檔案"
         "surfaceCourseCard" -> "課程卡片"
         "surfaceMaterialSectionTitle" -> "各表面當前材質"
+        else -> null
+    }
+    private fun lookupzhTW10(key: String): String? = when (key) {
         "surfaceSubpageHeader" -> "子頁頂欄"
         "suspendAllWeeks" -> "全部週次停課"
         "suspendAllWeeksDesc" -> "套用到所有週次"
@@ -18458,9 +18416,6 @@ object ArbCatalog {
         "wechatLabel" -> "微信"
         "weekGridShowExamsSubtitle" -> "長按加課會跳過考試時段"
         "weekGridShowExamsTitle" -> "週檢視顯示考試"
-        else -> null
-    }
-    private fun lookupzhTW11(key: String): String? = when (key) {
         "weekGridShowSchedulesSubtitle" -> "按時間落位，跨天佔整列"
         "weekGridShowSchedulesTitle" -> "週檢視顯示日程"
         "weekLabel" -> "第 {week} 週"
@@ -18468,6 +18423,9 @@ object ArbCatalog {
         "weekPickerCalendarTooltip" -> "使用日曆選擇"
         "weekPickerTitle" -> "選擇上課週次"
         "weekdayFri" -> "週五"
+        else -> null
+    }
+    private fun lookupzhTW11(key: String): String? = when (key) {
         "weekdayInkContrastBodyDark" -> "信息欄文字在深色背景下對比度不足，已自動提升亮度。可在 課表頁面 文字顏色 中調整或恢復默認。"
         "weekdayInkContrastBodyLight" -> "信息欄文字在淺色背景下對比度不足，已自動降低亮度。可在 課表頁面 文字顏色 中調整或恢復默認。"
         "weekdayInkContrastTitle" -> "文字對比度不足"

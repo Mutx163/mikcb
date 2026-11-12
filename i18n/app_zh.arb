@@ -4447,13 +4447,6 @@
       }
     }
   },
-  "serviceMsgAuthFailed": "账号或密码错误",
-  "serviceMsgAccessDenied": "没有访问权限",
-  "serviceMsgCertificateError": "证书校验失败",
-  "serviceMsgConnectionTimeout": "连接超时",
-  "serviceMsgConnectionFailed": "无法连接服务器",
-  "serviceMsgInvalidResponse": "服务器响应无效",
-  "serviceMsgSyncFailed": "同步失败",
   "serviceMsgUsageTypeOverride": "副时间模板",
   "serviceMsgUsageTypeProfile": "课表主时间模板",
   "dataTransferProfileShareText": "这是轻屿课表当前课表的完整备份文件，导入后可直接恢复课程和设置",

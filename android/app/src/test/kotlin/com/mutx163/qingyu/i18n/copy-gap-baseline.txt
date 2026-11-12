@@ -446,7 +446,6 @@ A|ja|scheduleDateRuleSectionTitle
 A|ja|scheduleDateRuleStartDate
 A|ja|sectionTimeDisplayStartAndEnd
 A|ja|sectionTimeDisplayStartOnly
-A|ja|serviceMsgAccessDenied
 A|ja|serviceMsgAiCourseCustomWeeksEmpty
 A|ja|serviceMsgAiCourseDayOfWeekInvalid
 A|ja|serviceMsgAiCourseEndSectionInvalid
@@ -468,14 +467,10 @@ A|ja|serviceMsgAlreadyLatest
 A|ja|serviceMsgAtLeastOnePeriodSection
 A|ja|serviceMsgAtLeastOneScheduleSlot
 A|ja|serviceMsgAtLeastOneSectionRequired
-A|ja|serviceMsgAuthFailed
 A|ja|serviceMsgBackupContentRequired
 A|ja|serviceMsgBreakDurationMustNonNegative
-A|ja|serviceMsgCertificateError
 A|ja|serviceMsgClassDurationMustPositive
 A|ja|serviceMsgClassWeeksRequired
-A|ja|serviceMsgConnectionFailed
-A|ja|serviceMsgConnectionTimeout
 A|ja|serviceMsgCourseNameRequired
 A|ja|serviceMsgCourseNotFoundForDelete
 A|ja|serviceMsgCourseNotFoundForReschedule
@@ -499,7 +494,6 @@ A|ja|serviceMsgImportUseOverwriteForFullBackup
 A|ja|serviceMsgIncompleteGithubRepoUrl
 A|ja|serviceMsgIncompleteRawGithubUrl
 A|ja|serviceMsgInvalidRepositoryUrl
-A|ja|serviceMsgInvalidResponse
 A|ja|serviceMsgInvalidTimeFormat
 A|ja|serviceMsgLinkedCourseNotFound
 A|ja|serviceMsgMacroClickSelectorEmpty
@@ -547,7 +541,6 @@ A|ja|serviceMsgStartWeekExceedsSemester
 A|ja|serviceMsgStartWeekMustBeAtLeast1
 A|ja|serviceMsgStatisticsShareFailed
 A|ja|serviceMsgSupportDonorsLoadFailed
-A|ja|serviceMsgSyncFailed
 A|ja|serviceMsgSyncSnapshotChecksumFailed
 A|ja|serviceMsgSyncSnapshotNoProfiles
 A|ja|serviceMsgSyncSnapshotUnrecognized
@@ -1045,7 +1038,6 @@ A|ko|scheduleDateRuleSectionTitle
 A|ko|scheduleDateRuleStartDate
 A|ko|sectionTimeDisplayStartAndEnd
 A|ko|sectionTimeDisplayStartOnly
-A|ko|serviceMsgAccessDenied
 A|ko|serviceMsgAiCourseCustomWeeksEmpty
 A|ko|serviceMsgAiCourseDayOfWeekInvalid
 A|ko|serviceMsgAiCourseEndSectionInvalid
@@ -1067,14 +1059,10 @@ A|ko|serviceMsgAlreadyLatest
 A|ko|serviceMsgAtLeastOnePeriodSection
 A|ko|serviceMsgAtLeastOneScheduleSlot
 A|ko|serviceMsgAtLeastOneSectionRequired
-A|ko|serviceMsgAuthFailed
 A|ko|serviceMsgBackupContentRequired
 A|ko|serviceMsgBreakDurationMustNonNegative
-A|ko|serviceMsgCertificateError
 A|ko|serviceMsgClassDurationMustPositive
 A|ko|serviceMsgClassWeeksRequired
-A|ko|serviceMsgConnectionFailed
-A|ko|serviceMsgConnectionTimeout
 A|ko|serviceMsgCourseNameRequired
 A|ko|serviceMsgCourseNotFoundForDelete
 A|ko|serviceMsgCourseNotFoundForReschedule
@@ -1098,7 +1086,6 @@ A|ko|serviceMsgImportUseOverwriteForFullBackup
 A|ko|serviceMsgIncompleteGithubRepoUrl
 A|ko|serviceMsgIncompleteRawGithubUrl
 A|ko|serviceMsgInvalidRepositoryUrl
-A|ko|serviceMsgInvalidResponse
 A|ko|serviceMsgInvalidTimeFormat
 A|ko|serviceMsgLinkedCourseNotFound
 A|ko|serviceMsgMacroClickSelectorEmpty
@@ -1146,7 +1133,6 @@ A|ko|serviceMsgStartWeekExceedsSemester
 A|ko|serviceMsgStartWeekMustBeAtLeast1
 A|ko|serviceMsgStatisticsShareFailed
 A|ko|serviceMsgSupportDonorsLoadFailed
-A|ko|serviceMsgSyncFailed
 A|ko|serviceMsgSyncSnapshotChecksumFailed
 A|ko|serviceMsgSyncSnapshotNoProfiles
 A|ko|serviceMsgSyncSnapshotUnrecognized

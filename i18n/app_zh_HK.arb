@@ -4128,13 +4128,6 @@
       }
     }
   },
-  "serviceMsgAuthFailed": "Invalid username or password.",
-  "serviceMsgAccessDenied": "Access denied.",
-  "serviceMsgCertificateError": "Certificate validation failed.",
-  "serviceMsgConnectionTimeout": "Connection timed out.",
-  "serviceMsgConnectionFailed": "Could not connect to the server.",
-  "serviceMsgInvalidResponse": "Invalid server response.",
-  "serviceMsgSyncFailed": "Sync failed.",
   "serviceMsgUsageTypeOverride": "副時間模板",
   "serviceMsgUsageTypeProfile": "課表主時間模板",
   "dataTransferProfileShareText": "這是輕嶼課表當前課表的完整備份文件，導入後可直接恢復課程和設置",
