@@ -37,10 +37,13 @@ class HomeWidgetSnapshotService {
         /**
          * 当前查看周里周六或周日**排了课**（含停课）。
          *
-         * 默认 `false` 只为测试调用方便；生产调用点必须传真实值——
-         * 漏传的后果是「周末满课的人周五仍看到『周末要开始了』」（2026-11 用户实报）。
+         * **故意不给默认值**：`= false` 会把「调用方忘记传」变成静默的旧行为——
+         * 周末满课的人继续看到「周末要开始了」，而且没有任何报错。
+         * 去掉默认值后，任何没更新的调用点都会**当场编译失败**，这正是我们要的
+         * 「忘记会当场红」。测试侧需要省略时走各自的 `buildForTest` 显式补丁，
+         * 生产入口不留口子。
          */
-        hasCourseOnWeekend: Boolean = false,
+        hasCourseOnWeekend: Boolean,
     ): HomeWidgetSnapshot {
         // 假期态：清空课程，但仍带下一场考试（卡片倒计时不能在假期消失）。
         if (isHoliday) {

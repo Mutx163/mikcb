@@ -323,7 +323,8 @@ fun buildCoupleMergedHomeWidgetSnapshot(
         originalTodayCourseCount = if (todayIsHoliday) 0 else originalTodayCount,
         isAdjustedWorkdayToday = todayIsAdjustedWorkday,
         isAdjustedWorkdayTomorrow = tomorrowIsAdjustedWorkday,
-        // 合并视图同理：我方或 TA 任何一边周末排了课（含停课），周五都不宣布周末。
+        // 规则：**卡片用什么课程集算，就用同一个集合判「周末有没有课」。**
+        // 合并卡片显示两方合并后的课表 ⇒ 判定也用合并集（我方 ∪ TA 周末课，含停课）。
         hasCourseOnWeekend = host.getCoursesForDay(6, targetWeek).isNotEmpty() ||
             host.getCoursesForDay(7, targetWeek).isNotEmpty() ||
             partnerWeekendCourseCount(partner.courses, targetWeek, coupleBinding.weekOffset) > 0,

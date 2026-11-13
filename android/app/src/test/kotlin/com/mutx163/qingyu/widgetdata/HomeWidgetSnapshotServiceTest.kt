@@ -20,6 +20,55 @@ class HomeWidgetSnapshotServiceTest {
 
     private val service = HomeWidgetSnapshotService()
 
+    /**
+     * 测试专用入口：生产 `build()` 的 `hasCourseOnWeekend` **故意没有默认值**——
+     * 有默认值就等于把「忘记传」变成静默的旧行为（周末满课仍显示「周末要开始了」，
+     * 且没有任何报错）。去掉默认值后漏传会当场编译失败。
+     *
+     * 本文件绝大多数用例与周末文案无关，统一走这里补 `false`；
+     * 真要测周末的用例直接调 `service.buildForTest(..., hasCourseOnWeekend = …)`。
+     */
+    private fun HomeWidgetSnapshotService.buildForTest(
+        profileId: String,
+        profileName: String,
+        currentWeek: Int,
+        settings: WidgetSettingsFace,
+        todayCourses: List<Course>,
+        now: LocalDateTime,
+        countdownLeadMinutes: Int = 20,
+        countdownTextStyle: String = "smart",
+        nextExam: ExamFace? = null,
+        isHoliday: Boolean = false,
+        holidayName: String? = null,
+        tomorrowCourses: List<Course> = emptyList(),
+        tomorrowWeek: Int = 0,
+        tomorrowDayOfWeek: Int = 0,
+        showTomorrowCourses: Boolean = true,
+        originalTodayCourseCount: Int = 0,
+        isAdjustedWorkdayToday: Boolean = false,
+        isAdjustedWorkdayTomorrow: Boolean = false,
+    ) = build(
+        profileId = profileId,
+        profileName = profileName,
+        currentWeek = currentWeek,
+        settings = settings,
+        todayCourses = todayCourses,
+        now = now,
+        countdownLeadMinutes = countdownLeadMinutes,
+        countdownTextStyle = countdownTextStyle,
+        nextExam = nextExam,
+        isHoliday = isHoliday,
+        holidayName = holidayName,
+        tomorrowCourses = tomorrowCourses,
+        tomorrowWeek = tomorrowWeek,
+        tomorrowDayOfWeek = tomorrowDayOfWeek,
+        showTomorrowCourses = showTomorrowCourses,
+        originalTodayCourseCount = originalTodayCourseCount,
+        isAdjustedWorkdayToday = isAdjustedWorkdayToday,
+        isAdjustedWorkdayTomorrow = isAdjustedWorkdayTomorrow,
+        hasCourseOnWeekend = false,
+    )
+
     private val now: LocalDateTime = LocalDateTime.of(2026, 3, 27, 14, 30) // 周五
 
     private fun course(
@@ -47,7 +96,7 @@ class HomeWidgetSnapshotServiceTest {
             widgetHeightAdjustment = 8.0,
             widgetCornerRadius = 16.0,
         )
-        val snapshot = service.build(
+        val snapshot = service.buildForTest(
             profileId = "profile-1",
             profileName = "默认课表",
             currentWeek = 6,
@@ -73,7 +122,7 @@ class HomeWidgetSnapshotServiceTest {
     fun exactEndTimeCountsAsFinished() { // [Dart抄录] 09:40 整点 = 已结束
         val settings = WidgetSettingsFace()
         val testNow = LocalDateTime.of(2026, 3, 27, 9, 40)
-        val snapshot = service.build(
+        val snapshot = service.buildForTest(
             profileId = "profile-1",
             profileName = "默认课表",
             currentWeek = 6,
@@ -108,12 +157,12 @@ class HomeWidgetSnapshotServiceTest {
                 dayOfWeek = 1, startSection = 1, endSection = 2, startTime = "08:00", endTime = "09:40",
             ),
         )
-        val first = service.build(
+        val first = service.buildForTest(
             profileId = "profile-1", profileName = "默认课表", currentWeek = 6,
             settings = settings, todayCourses = courses,
             now = LocalDateTime.of(2026, 3, 27, 8, 0),
         )
-        val second = service.build(
+        val second = service.buildForTest(
             profileId = "profile-1", profileName = "默认课表", currentWeek = 6,
             settings = settings, todayCourses = courses,
             now = LocalDateTime.of(2026, 3, 27, 8, 1),
@@ -129,7 +178,7 @@ class HomeWidgetSnapshotServiceTest {
         val modes = listOf(WidgetCourseAccentModeData.OFF, WidgetCourseAccentModeData.BAR, WidgetCourseAccentModeData.BAR_AND_TEXT)
         for (mode in modes) {
             val settings = WidgetSettingsFace().copy(widgetCourseAccentMode = mode)
-            val snapshot = service.build(
+            val snapshot = service.buildForTest(
                 profileId = "profile-1", profileName = "默认课表", currentWeek = 6,
                 settings = settings,
                 todayCourses = listOf(course("first", "高等数学", startTime = "08:00", endTime = "09:35", color = "#22C55E")),
@@ -142,7 +191,7 @@ class HomeWidgetSnapshotServiceTest {
             assertEquals("#22C55E", firstCourse["color"])
         }
         // 假期分支同样带档位
-        val holiday = service.build(
+        val holiday = service.buildForTest(
             profileId = "profile-1", profileName = "默认课表", currentWeek = 6,
             settings = WidgetSettingsFace().copy(widgetCourseAccentMode = WidgetCourseAccentModeData.BAR),
             todayCourses = emptyList(),
@@ -161,7 +210,7 @@ class HomeWidgetSnapshotServiceTest {
             dateTime = LocalDateTime.of(2026, 4, 2, 0, 0),
             startTime = "09:00", endTime = "11:00", location = "S101",
         )
-        val snapshot = service.build(
+        val snapshot = service.buildForTest(
             profileId = "profile-1", profileName = "默认课表", currentWeek = 6,
             settings = WidgetSettingsFace(),
             todayCourses = listOf(ongoing),
@@ -183,7 +232,7 @@ class HomeWidgetSnapshotServiceTest {
 
     @Test
     fun holidayWithoutNameFallsBackToPlaceholder() { // [Dart抄录] holidayName ?? 'Holiday'
-        val snapshot = service.build(
+        val snapshot = service.buildForTest(
             profileId = "profile-1", profileName = "默认课表", currentWeek = 6,
             settings = WidgetSettingsFace(), todayCourses = emptyList(),
             now = now, isHoliday = true,
@@ -208,7 +257,7 @@ class HomeWidgetSnapshotServiceTest {
         isHoliday: Boolean = false,
         isAdjustedWorkdayToday: Boolean = false,
         isAdjustedWorkdayTomorrow: Boolean = false,
-    ): HomeWidgetSnapshot = service.build(
+    ): HomeWidgetSnapshot = service.buildForTest(
         profileId = "profile-1",
         profileName = "默认课表",
         currentWeek = 6,
@@ -341,7 +390,7 @@ class HomeWidgetSnapshotServiceTest {
 
     @Test
     fun showTomorrowFalseStripsTomorrowCourses() { // [Dart推演] showTomorrowCourses=false → 空列表
-        val snapshot = service.build(
+        val snapshot = service.buildForTest(
             profileId = "profile-1", profileName = "默认课表", currentWeek = 6,
             settings = WidgetSettingsFace(),
             todayCourses = emptyList(),
@@ -358,7 +407,7 @@ class HomeWidgetSnapshotServiceTest {
     fun countdownLeadGate() { // [Dart推演] upcoming + lead 分钟内才开倒计时
         // 07:50（08:00 课前 10 分钟，threshold=07:40）：已进入 lead=20 窗口 → 开
         val settings = WidgetSettingsFace().copy(widgetShowCountdown = true, widgetCountdownLeadMinutes = 20)
-        val early = service.build(
+        val early = service.buildForTest(
             profileId = "p", profileName = "n", currentWeek = 6, settings = settings,
             todayCourses = listOf(course("c", "高数", startTime = "08:00", endTime = "09:40")),
             now = LocalDateTime.of(2026, 3, 27, 7, 50),
@@ -366,7 +415,7 @@ class HomeWidgetSnapshotServiceTest {
         assertEquals(HomeWidgetSnapshotState.UPCOMING, early.state)
         assertTrue(early.showCountdown)
         // 07:30（threshold=07:40 之前）：窗口外 → 关
-        val outside = service.build(
+        val outside = service.buildForTest(
             profileId = "p", profileName = "n", currentWeek = 6, settings = settings,
             todayCourses = listOf(course("c", "高数", startTime = "08:00", endTime = "09:40")),
             now = LocalDateTime.of(2026, 3, 27, 7, 30),
@@ -374,7 +423,7 @@ class HomeWidgetSnapshotServiceTest {
         assertEquals(HomeWidgetSnapshotState.UPCOMING, outside.state)
         assertFalse(outside.showCountdown)
         // 07:45：08:00 前最后 15 分钟 → 已进入 lead 窗口
-        val within = service.build(
+        val within = service.buildForTest(
             profileId = "p", profileName = "n", currentWeek = 6, settings = settings,
             todayCourses = listOf(course("c", "高数", startTime = "08:00", endTime = "09:40")),
             now = LocalDateTime.of(2026, 3, 27, 7, 45),
@@ -382,7 +431,7 @@ class HomeWidgetSnapshotServiceTest {
         assertTrue(within.showCountdown)
         // lead = 0 → 恒开（upcoming 态）。lead 是显式入参（宿主把设置值传进来），
         // 与 Dart build(countdownLeadMinutes: host.settings.widgetCountdownLeadMinutes) 同形。
-        val leadZero = service.build(
+        val leadZero = service.buildForTest(
             profileId = "p", profileName = "n", currentWeek = 6,
             settings = WidgetSettingsFace().copy(widgetShowCountdown = true),
             todayCourses = listOf(course("c", "高数", startTime = "08:00", endTime = "09:40")),
@@ -391,7 +440,7 @@ class HomeWidgetSnapshotServiceTest {
         )
         assertTrue(leadZero.showCountdown)
         // 默认省电档：开关没开，即使 lead=0 也不显示倒计时（实时必须用户显式选）。
-        val defaultOff = service.build(
+        val defaultOff = service.buildForTest(
             profileId = "p", profileName = "n", currentWeek = 6,
             settings = WidgetSettingsFace(),
             todayCourses = listOf(course("c", "高数", startTime = "08:00", endTime = "09:40")),
@@ -428,7 +477,7 @@ class HomeWidgetSnapshotServiceTest {
     fun malformedClockExcludedFromVisibilityAndTriggers() { // [Dart抄录] 25:00 必须解析失败
         val settings = WidgetSettingsFace().copy(widgetHideCompletedCourses = true)
         // 课挂在 25:00-26:00：解析失败 → 视为已结束被隐藏，且不产触发点
-        val snapshot = service.build(
+        val snapshot = service.buildForTest(
             profileId = "p", profileName = "n", currentWeek = 6, settings = settings,
             todayCourses = listOf(course("bad", "坏课", startTime = "25:00", endTime = "26:00")),
             now = now,
@@ -449,7 +498,7 @@ class HomeWidgetSnapshotServiceTest {
             dateTime = LocalDateTime.of(2026, 4, 2, 0, 0),
             startTime = "09:00", endTime = "11:00", location = "S101",
         )
-        val snapshot = service.build(
+        val snapshot = service.buildForTest(
             profileId = "p", profileName = "n", currentWeek = 6,
             settings = WidgetSettingsFace(), todayCourses = emptyList(),
             now = LocalDateTime.of(2026, 3, 27, 14, 30),
@@ -469,7 +518,7 @@ class HomeWidgetSnapshotServiceTest {
                 dateTime = LocalDateTime.of(2026, 4, 2, 0, 0),
                 startTime = "09:00", endTime = "11:00", location = "S101",
             )
-            val snapshot = service.build(
+            val snapshot = service.buildForTest(
                 profileId = "p", profileName = "n", currentWeek = 6,
                 settings = WidgetSettingsFace(), todayCourses = emptyList(),
                 now = now, nextExam = exam,
