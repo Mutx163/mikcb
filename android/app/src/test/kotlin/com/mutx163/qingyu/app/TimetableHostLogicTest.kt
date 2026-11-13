@@ -24,6 +24,20 @@ import java.time.LocalDateTime
  * - `lib/services/storage_service.dart:1645`（首启档案名「默认课表」）
  * - `lib/screens/add_course_screen.dart:2044-2064`（保存三分支）/ `:448-473`、`:1406-1425`（删除两分支）
  */
+/**
+ * ## 跨层说明（这是形态，不是债）
+ *
+ * 本文件在 `app/`，刻意引用了 `pages/course` 的表单模型（`AddCourseFormLogic` /
+ * `AddCourseGroupData` / `AddCourseSaveMode`）：
+ *
+ * - `core`：`Course` / `SectionTime` / `TimeScheme` / `TimetableProfile`；
+ * - `pages/course`：加课表单的纯逻辑（默认值、保存模式、分组）；
+ * - `app`：宿主把「页面表单逻辑」接到「课表仓储」的那段编排（本测试的被测对象）。
+ *
+ * 要钉的是**接线**：页面层的表单模型产出的东西，经宿主编排之后，落进仓储的形状对不对
+ * （周次、默认时间、覆盖/新建分支）。只测 `pages/course` 会是「表单自己正确」，
+ * 只测 `app` 会是「仓储自己正确」，两者都对但接错线时全绿——那正是本文件存在的理由。
+ */
 class TimetableHostLogicTest {
 
     private val baseTime = LocalDateTime.of(2026, 10, 28, 8, 0)

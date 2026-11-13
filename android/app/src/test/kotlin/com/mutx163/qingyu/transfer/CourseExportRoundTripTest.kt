@@ -15,6 +15,19 @@ import org.junit.Test
  * （ics_export_service.dart:323-336），Kotlin 曾只写裸行，导入只能按位置猜。
  * 本测试只验证导出侧修复后的往返，**不允许改导入去猜**。
  */
+/**
+ * ## 跨层说明（这是形态，不是债）
+ *
+ * 本文件在 `transfer/`，刻意引用了 `pages/import` 的 `IcsImportModel`：
+ *
+ * - `transfer`：ICS 导出侧（`IcsSerializer` 及其前缀/换行口径）；
+ * - `pages/import`：ICS 导入侧模型（解析入口）；
+ * - `core`：课程数据模型（往返比对的对象）。
+ *
+ * 为什么跨层：这条测试的判据是**往返一致**（导出再导入后，`Teacher:` / `Location:` 等
+ * 前缀信息不丢）。只测导出侧看不出「导出了但导入读不到」，只测导入侧看不出「导入解析对
+ * 但导出从没写过那个前缀」——两边都对、接起来丢字段，正是这条往返要抓的。
+ */
 class CourseExportRoundTripTest {
 
     private val fixedNow = LocalDateTime.of(2026, 11, 4, 12, 0)

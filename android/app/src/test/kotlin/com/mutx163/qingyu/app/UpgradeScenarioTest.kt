@@ -25,6 +25,22 @@ import org.junit.Test
  *
  * 与 Lead 描述的差异已写进相关用例 KDoc（尤其第 5 格的「旧 key 是否保留」）。
  */
+/**
+ * ## 跨层说明（这是形态，不是债）
+ *
+ * 本文件在 `app/`，但**刻意**跨了四层：
+ *
+ * - `core`：课表/档案数据模型与 `MiniJson`（升级后要读的还是同一份盘上格式）；
+ * - `pages/import`（`IcsImportModel`）与 `transfer`（`IcsSerializer` / `collectCourseEvents`）：
+ *   升级前后的「导出 → 再导入」要能自洽；
+ * - `pages/sync`（`CloudSyncLogic`）与 `platform`（`SecretCipher` / `WebdavConfigStoreImpl`）：
+ *   升级不得让已保存的云同步凭据失效；
+ * - `app`：升级协调逻辑本身（本层是这条链的宿主）。
+ *
+ * 为什么必须在一个文件里跨层：这个场景的**本质**就是「旧版本写下的盘上数据，被新版本的
+ * 跨层读写路径重新消费」。拆成四个单元测试就只能各测各的层，测不到「升级后还能用」。
+ * 所以这不是层次倒挂，而是把升级链当成一个整体来钉；放在 `app/` 是因为协调者是 `app`。
+ */
 class UpgradeScenarioTest {
 
     // ==================================================================

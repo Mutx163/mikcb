@@ -1,8 +1,8 @@
-package com.mutx163.qingyu.app
+package com.mutx163.qingyu.pages.task
 
+import com.mutx163.qingyu.app.AddTaskFormReducer
 import com.mutx163.qingyu.core.Course
 import com.mutx163.qingyu.core.CourseTask
-import com.mutx163.qingyu.pages.task.TaskStrings
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
@@ -13,6 +13,10 @@ import java.time.LocalDateTime
 
 /**
  * 作业表单状态机单测（T1 收尾：从课程操作弹层「作业」进来要预选那门课，且表单真的能存）。
+ *
+ * **这个测试跟被测对象同包**：`AddTaskFormReducer` 已搬到 `pages/task/`，测试原先留在
+ * `app/` 是搬家漏（同一批还有 `TaskModel` / `TaskStrings`）。留错位置的实际代价：`pages/task`
+ * 的 L0（`-Module pages/task`）收不到它，等于这条测试长期不在最常跑的那条通道上。
  *
  * 期望值手推，出处：`TaskModel.kt:93-118`（`TaskFormDefaults`）与 `:395-422`（`TaskFormLogic.buildTask`），
  * 以及 Dart `lib/screens/add_task_screen.dart:115-124`（`_dueDate` / `_hasDueDate` 的初始化）。

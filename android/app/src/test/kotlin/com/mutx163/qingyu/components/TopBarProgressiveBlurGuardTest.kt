@@ -1,6 +1,5 @@
 package com.mutx163.qingyu.components
 
-import com.mutx163.qingyu.pages.shell.HomeBackgroundModel
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
@@ -47,6 +46,19 @@ import java.io.File
  * - 把 `LightTintAlpha` 改回 0.62 / `DarkVeilAlpha` 改回 0.24 → `numbers` 必红。
  */
 class TopBarProgressiveBlurGuardTest {
+
+    /**
+     * miuix 的「半径 → sigma」换算系数：`BLUR_RADIUS_TO_SIGMA = 0.45f`
+     * （`top.yukonga.miuix.kmp.blur` 的 `blur/internal/BlurEffect.kt:22`，
+     * `BackdropEffects.blur` 直接乘它）。
+     *
+     * **为什么在这里内联、不 import `HomeBackgroundModel.MIUIX_BLUR_SIGMA_PER_RADIUS`**：
+     * 本守卫要能独立回答「顶栏的 sigma 读数有没有漂」。如果期望值直接引用被测模块的常量，
+     * 那个常量被改掉时期望值会跟着一起漂，守卫永远绿——那不是守卫，是复读机。
+     * 生产值的登记处仍是 `pages/shell/HomeBackgroundModel.kt`（那边已注明本守卫内联了它，
+     * 改值时两边一起看）。
+     */
+    private val miuixBlurSigmaPerRadius = 0.45
 
     private fun scaffoldSource(): String {
         var dir: File? = File(System.getProperty("user.dir") ?: ".").absoluteFile
@@ -227,7 +239,7 @@ class TopBarProgressiveBlurGuardTest {
         // miuix: sigma = radius × 0.45；σ22 会把内容抹成一块颜色，“上糊下清”看不出来。
         assertEquals(
             11.7,
-            QingyuTopBarBlur.MaxRadiusDp.toDouble() * HomeBackgroundModel.MIUIX_BLUR_SIGMA_PER_RADIUS,
+            QingyuTopBarBlur.MaxRadiusDp.toDouble() * miuixBlurSigmaPerRadius,
             0.2,
         )
     }

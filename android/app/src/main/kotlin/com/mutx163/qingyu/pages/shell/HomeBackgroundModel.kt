@@ -248,6 +248,10 @@ object HomeBackgroundModel {
      * 为什么需要这一条：Dart 的 `ImageFilter.blur(sigmaX:)` 直接吃 **sigma**（逻辑像素），
      * 而 miuix 的 `blur(radiusX)` 吃的是 **半径**（像素）。把 sigma 当半径传，糊度会
      * 偏小约 2.2 倍，设置页读数与屏幕观感对不上。
+     *
+     * ⚠️ **被守卫引用**：`components/TopBarProgressiveBlurGuardTest` 内联了同一个 `0.45`
+     * 当期望值（它不 import 本常量——引用被测模块的常量会让「漂移」也一起漂，守卫就失效了）。
+     * 改这里的值时，去那边同步，并顺手确认那个守卫仍能红。
      */
     const val MIUIX_BLUR_SIGMA_PER_RADIUS = 0.45
 

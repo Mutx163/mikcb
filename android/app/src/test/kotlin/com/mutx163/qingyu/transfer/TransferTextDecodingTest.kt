@@ -22,6 +22,21 @@ import org.junit.Test
  * 4. BOM（`EF BB BF`）**是合法 UTF-8**，解码不拒；拦截点仍是 JSON 门，报
  *    `transfer_package_json_invalid`（与 Dart `jsonDecode` 同口径）
  */
+/**
+ * ## 跨层说明（这是形态，不是债）
+ *
+ * 本文件在 `transfer/`，刻意引用了 `pages/transfer` 的导入模型
+ * （`DataTransferImportLogic` / `TransferImportParseResult`）：
+ *
+ * - `transfer`：文件通道的严格 UTF-8 解码（`TransferTextDecoding`，本测试的**主对象**）；
+ * - `pages/transfer`：拿到字节之后那半段——解析结果怎么接回导入模型；
+ * - `platform`（未直接 import）：Android 的 `AndroidTransferDocumentAdapter` 是这条链的
+ *   真实入口，但它在 JVM 单测里跑不起来（Android 依赖），所以用「按同样契约构造的字节流」
+ *   替代它作为上游。
+ *
+ * 为什么跨层：真正会出问题的是**边界**——解码失败时导入模型是否也被正确告知「这不是文本」。
+ * 只测解码会漏掉「抛了但被上层吞掉」，只测导入模型会漏掉「畸形字节根本没抛」。
+ */
 class TransferTextDecodingTest {
 
     /** 合法单课表包（与 `DataTransferImportLogicTest` 同构，手敲 JSON）。 */
