@@ -88,7 +88,11 @@ class WarehouseMacroReplayer(
             importUrl = macro.importUrl,
         )
         if (acceleratedSteps.size < fullSteps.size) {
-            val acceleratedSucceeded = runSteps(acceleratedSteps, reportFailureToHost = false)
+            val acceleratedSucceeded = runSteps(
+                acceleratedSteps,
+                reportFailureToHost = false,
+                importUrl = macro.importUrl,
+            )
             if (acceleratedSucceeded) return
             // 快捷路径失败：提示 + 重载入口页后走全量（失败静默，全量才报给宿主）。
             callbacks.onShowTip(WarehouseMacroReplayStrings.macroReplayAcceleratedFallbackTip.text)
@@ -104,11 +108,24 @@ class WarehouseMacroReplayer(
             }
         }
 
-        runSteps(fullSteps, reportFailureToHost = true)
+        runSteps(fullSteps, reportFailureToHost = true, importUrl = macro.importUrl)
     }
 
-    /** 顺序执行步骤；全成功返回 true。失败细节见类注释。 */
-    private suspend fun runSteps(steps: List<WarehouseMacroStep>, reportFailureToHost: Boolean): Boolean {
+    /**
+     * 顺序执行步骤；全成功返回 true。失败细节见类注释。
+     *
+     * @param importUrl 入口页地址——登录前缀内 fill/等元素步的容忍判据要拿它跟当前 href 比，
+     *   判断「文档是不是已经离开登录页」（见 [shouldSkipWarehouseAuthFillStep]）。
+     */
+    private suspend fun runSteps(
+        steps: List<WarehouseMacroStep>,
+        reportFailureToHost: Boolean,
+        importUrl: String,
+    ): Boolean {
+        // 登录前缀的步数（前缀内最后一个下标 + 1）：前缀内的 fill/waitForSelector 才允许
+        // 「元素不在 + 已离开入口登录页」时跳过。用与加速回放同一个前缀判据（同一个口径，
+        // 不另写一份定义）；识别不出前缀时为 0 ⇒ 一条都不跳。
+        val authPrefixEnd = warehouseMacroAuthPrefixSteps(steps).size
         // 上一步点击有没有把文档带走（作废步骤判据的第三条件）。
         var previousClickNavigated = false
         for (i in steps.indices) {
@@ -147,6 +164,31 @@ class WarehouseMacroReplayer(
                         "selector=${step.selector} reason=element_not_found_after_navigation",
                 )
                 previousClickNavigated = false
+                continue
+            }
+
+            // 登录前缀内的填充/等待选择器：元素不在、且当前文档已经离开入口登录页时跳过。
+            // 与上面 click 那条**并列**，不是替换——click 的作废判据仍然原样生效。
+            // 前缀外一律 false（照旧红）；还在登录页（pastLoginPage=false）也一律 false：
+            // 判不准就往红走，跳过登录后的某一步会让回放假装成功、数据其实没取到。
+            // pastLoginPage 只在 fill/等元素步的失败路径上算，别的步骤不多读一次 href。
+            val authFillSkippable =
+                (step.type == WarehouseMacroStepType.FILL_FIELD ||
+                    step.type == WarehouseMacroStepType.WAIT_FOR_SELECTOR) &&
+                    shouldSkipWarehouseAuthFillStep(
+                        stepIndex = i,
+                        authPrefixEnd = authPrefixEnd,
+                        elementNotFound = detail.startsWith("macro_element_not_found"),
+                        pastLoginPage = warehouseMacroDocumentChanged(importUrl, currentDocumentHref()),
+                    )
+            if (authFillSkippable) {
+                // 少做一步必须有日志可查（同 stale click 那条）：将来「导入成功但数据不对」
+                // 要能解释是这里放过的。
+                onSkipLog(
+                    "playback skipped auth prefix step=${i + 1}/${steps.size} " +
+                        "type=${step.type.wireName} selector=${step.selector} " +
+                        "reason=element_not_found_in_auth_prefix",
+                )
                 continue
             }
 

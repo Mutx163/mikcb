@@ -165,6 +165,79 @@ fun shouldSkipWarehouseStaleClickStep(
 ): Boolean = stepIsClick && elementNotFound && previousClickNavigated
 
 /**
+ * 甲：会话有效时，回放可以整段丢弃登录前缀。
+ *
+ * **只有 [WarehouseSessionProbeVerdict.ACTIVE] 才返回 true**；UNKNOWN / INACTIVE / TIMEOUT / null
+ * 一律 false。这与 [sessionProbeMayStillSettle] 是同一个取向——**不确定不冒险**：
+ *
+ * - 探测还在飞、答「不知道」（UNKNOWN）、没答话（TIMEOUT）或压根没配探测（null）时，
+ *   会话到底还有效没有是**未知**。未知就按「要登录」处理：多走一遍登录前缀最坏多花几秒；
+ *   跳错了则是整条导入拿不到数据（人还停在登录页，后面每一步都「元素不存在」）。
+ * - INACTIVE 是明确失效，更不能跳。
+ *
+ * ## 甲当前**尚未接线**（2026-11-12 全仓核实）
+ *
+ * 会话探针在本仓**只有判据、没有生产端**：[WarehouseSessionProbeVerdict] 枚举
+ * （`WarehouseImportPolicy.kt:72`）、settle 策略 [sessionProbeMayStillSettle]（同文件 :179）与它的
+ * 唯一消费点（:185）之外，**找不到任何产生 verdict 的 producer**——发起探测、回写裁决、超时兜底
+ * 三处都没有调用方。是否有意为之**未核实**。
+ *
+ * 所以本函数目前**没有生产调用点**，接线待 verdict producer 落地。
+ *
+ * 在那之前**不要**在这里伪造数据源（比如看 cookie 在不在、URL 像不像登录页去猜一个 verdict）：
+ * 猜出来的 ACTIVE 会让上面「不确定不冒险」的取舍当场失效，而丢错登录前缀的后果是整条导入拿不到
+ * 数据。注意「已离开登录页」这个信号**已经另作他用**了——它只够放宽**登录段内单步**的容忍
+ * （见 [shouldSkipWarehouseAuthFillStep]），**不足以**证明会话仍然有效到可以整段跳登录。
+ *
+ * @param verdict 会话探针裁决；null = 没有结果，等同于未知。
+ */
+fun shouldDropAuthPrefixOnReplay(verdict: WarehouseSessionProbeVerdict?): Boolean =
+    verdict == WarehouseSessionProbeVerdict.ACTIVE
+
+/**
+ * 乙：登录前缀内的 fill / waitForSelector 在「元素不在且当前文档已离开入口登录页」时可以跳过。
+ *
+ * ## 为什么需要
+ *
+ * 宏回放里 `fill` / `waitForSelector` **没有**「元素不在就跳过」的容忍（只有 click 有，见
+ * [shouldSkipWarehouseStaleClickStep]）。教务页一改版、或者用户其实已经登录好了（登录框本来
+ * 就不在），整条宏就卡在登录前缀第 N 步红掉。
+ *
+ * ## [pastLoginPage] 这个信号是什么，以及它为什么「只是够用」
+ *
+ * 调用方用 [warehouseMacroDocumentChanged]（入口 URL vs 当前 href）算它：不是同一份文档
+ * ⇒ 已离开入口登录页 ⇒ 登录那几步多半已经不需要了。
+ *
+ * **它有已知的误判面**：302 跳转、统一认证中间页、`?ticket=…` 之类的落地页都会让「文档变了」
+ * 成立，而用户其实**还没登录**（中间页上照样有登录框或等元素）。所以本函数只把它当成
+ * 「单步容错」的证据，**不**当成会话有效的证据（那就是 [shouldDropAuthPrefixOnReplay] 的活，
+ * 而它需要真正的 verdict）。方向不能反：判不准的时候必须回到「红」。
+ *
+ * ## 为什么只在前缀内
+ *
+ * [stepIndex] 必须 `>= 0` 且 `< authPrefixEnd`：**前缀外一律 false，仍然必须红**。
+ * 登录前缀之外（菜单点击、切 tab、导出按钮……）元素不在，意味着录制和当前页面真的对不上；
+ * 跳过它会让回放**假装成功**，而数据根本没取到——那比失败更难查。
+ * `authPrefixEnd`（前缀步数）识别不出来时为 0 ⇒ 全部返回 false，等同不启用。
+ *
+ * ## 不动的部分
+ *
+ * 只放宽**登录段内的 fill / 等选择器**这两类步。点击的作废判据、前缀外的每一步、导航与
+ * 等 URL 的失败语义全部保持原样——都还在红。
+ *
+ * @param stepIndex 当前步骤下标（0 基）；负数一律不跳（越界写法不许被当成「前缀内」）。
+ * @param authPrefixEnd 登录前缀的步数（前缀内最后一个下标 + 1）；0 = 识别不出前缀，一律不跳。
+ * @param elementNotFound 脚本是否**明确**回报元素没找到（`found: false`）。
+ * @param pastLoginPage 当前文档是否已离开入口登录页（见上；false = 不确定/仍在登录页 ⇒ 不跳）。
+ */
+fun shouldSkipWarehouseAuthFillStep(
+    stepIndex: Int,
+    authPrefixEnd: Int,
+    elementNotFound: Boolean,
+    pastLoginPage: Boolean,
+): Boolean = pastLoginPage && elementNotFound && stepIndex >= 0 && stepIndex < authPrefixEnd
+
+/**
  * 等待元素的结果判定：只有明确回报 `found: true` 才算真的找到了。
  * 读不懂（脚本抛错、上下文被导航销毁、空串）一律「还没找到」，继续轮到超时——
  * 绝不把「读不懂」当成「做成了」。
