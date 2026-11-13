@@ -99,7 +99,10 @@ if [ -n "$arb_files" ]; then
   while IFS= read -r f; do
     [ -z "$f" ] && continue
     if [ -n "$python_bin" ]; then
-      if ! index_blob "$f" | "$python_bin" -c 'import json,sys; json.load(sys.stdin)' 2>/dev/null; then
+      # 显式按 UTF-8 解码：`json.load(sys.stdin)` 在 GBK 控制台（Windows 默认）下会按
+      # cp936 解 UTF-8 字节，把合法的韩文/日文 ARB 解成乱码后报「不是合法 JSON」——
+      # 错误信息还指着 ARB。ARB 按 RFC 8259 就是 UTF-8，别让宿主的区域设置当判据。
+      if ! index_blob "$f" | "$python_bin" -c 'import json,sys; json.loads(sys.stdin.buffer.read().decode("utf-8"))' 2>/dev/null; then
         reject "ARB 不是合法 JSON：$f（按索引内容校验）"
       fi
     fi
