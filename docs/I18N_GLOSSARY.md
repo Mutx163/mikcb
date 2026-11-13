@@ -26,9 +26,21 @@
 | 日志 | 日志 | log | ログ | 로그 | 日誌 | 日誌 | `warehouseImportExecutionLogTitle` |
 | 重试 | 重试 | Retry | 再試行 | 재시도 | 重試 | 重試 | `cloudBackupRetryAction` |
 | 校区 | 校区 | campus | キャンパス | 캠퍼스 | 校區 | 校區 | `executeStageAwaitSelection` |
+| 超级岛 | 超级岛 | Live Island | Live Island | Live Island | 超級島 | 超級島 | `liveIslandPreviewTitle`、`liveDiagnosticsViewerTitle` |
 
 「校区」是 3.0.1 才进文案的新概念：仓库里原来只有代码注释用「校区」，六份 ARB 一次都没出现过，
 所以这六种写法是**新定**的，不是沿用旧口径。
+
+### 超级岛：`Live Island`（2026-11-13 定名）
+
+- **全称 `Live Island`**：标题、首次出现、设置项名、日志与分享文案的标题。
+- **行内短句可写 `the Island`**：这是**可接受的简写**，不是「两种都行」——同一屏里首次出现仍要给全称。
+- ja / ko 保留英文 `Live Island`（功能名不译），繁中用「超級島」。
+- 为什么不是 `Live Capsule`：形态更准，但 ja / ko 已各 19 处写作 `Live Island`，改它要三语一起迁 59 处；
+  「会不会被当成 iPhone 的功能」用一句说明就能挡住，不值得换名。
+- **待清理**：en 里还有 8 处写成 `Super Island`——`appLogsSourceNative`、`liveIslandPreviewTitle`、
+  `courseShortNameHelper`、`liveDiagnosticsUnavailable`、`liveDiagnosticsViewerTitle`、
+  `liveDiagnosticsShareText`、`liveDiagnosticsShareSubject`、`guidePermissionsSubtitle`。下一批改。
 
 ## 两个容易写错的字
 
@@ -54,4 +66,4 @@
 | 概念 | 现状 | 处置 |
 | --- | --- | --- |
 | 导出（繁中） | 已定 `匯出`；`導出` 仍有 8~9 处（`liveTestingExportAction` 等） | 下一批改 |
-| 超级岛（英文） | `Live Island` 21 / `Super Island` 8 / 裸 `Island` 57（en） | 英文名待拍板，候选已提交 |
+| 超级岛（英文） | 已定 `Live Island`；en 仍有 8 处 `Super Island` | 下一批改（键名见上节） |
