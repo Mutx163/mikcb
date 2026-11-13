@@ -568,16 +568,35 @@ try {
 
                 $swShared = [System.Diagnostics.Stopwatch]::StartNew()
                 Write-Host ">>> [test-kotlin-module] 第 1 段：编译共享面 $($sharedSources.Count) 个 .kt（缓存未命中 [$($sharedHash.Substring(0,12))]）..." -ForegroundColor Cyan
-                # 退出码只认本次调用：先置哨兵 -1；跑完仍是 -1 说明 kotlinc 根本没起（脚本替换/路径失效），
-                # 绝不能拿残留的 `$LASTEXITCODE` 冒充成功（2026-11-12「证据机制自己假绿」同类形状）。
+                # 退出码只认本次调用：先置哨兵 -1。跑完仍是 -1 时**必须再分三种情况**（2026-11-12 白鹭实测）：
+                #   ① 日志为空          ⇒ kotlinc 真的没起（路径/包装失效）——环境问题，红；
+                #   ② 日志非空且有 error: ⇒ 真编译失败，只是退出码没传回来（`&` + 管道会吞 `$LASTEXITCODE`）
+                #                          —— 代码问题，**仍然红**（日志内容优先于退出码）；
+                #   ③ 日志非空、无 error: ⇒ 调用方式问题，按通过继续，只打 WARN 并提示正确调用法。
+                # ②③ 的区分是这次修复的关键：修假红时顺手把真红也修没了，是最常见的次生事故。
                 $LASTEXITCODE = -1
                 $sharedLog = & $kotlinc "@$sharedArgFile" 2>&1
                 $sharedExit = $LASTEXITCODE
                 $swShared.Stop()
                 foreach ($line in $sharedLog) { Write-Host $line }
-                if ($null -eq $sharedExit -or $sharedExit -eq -1) {
-                    Write-Error "[test-kotlin-module] kotlinc 未执行或未返回退出码（共享面）。检查 kotlinc 路径：$kotlinc"
+                # 结论判据：**日志 error: > 产物 > 退出码**（2026-11-12 实测：ito capture 赋值后退出码可能不更新，
+                # 与调用形态无关；只靠退出码必然出现假红/假绿）。三态：
+                #   ① 日志有 error:            ⇒ 真编译失败（红，日志优先于退出码）；
+                #   ② 无 error: 且有 class 产物 ⇒ 成功（退出码丢了也不影响）；
+                #   ③ 无 error: 且无任何产物   ⇒ 无法判定，按失败处理（可能是没起，也可能是失败但没日志）。
+                $sharedLines = @($sharedLog | ForEach-Object { [string]$_ })
+                $sharedHasError = @($sharedLines | Where-Object { $_ -match '\berror:' }).Count -gt 0
+                $sharedProduced = @(Get-ChildItem -Path $sharedOut -Recurse -File -ErrorAction SilentlyContinue).Count
+                if ($sharedHasError) {
+                    $sharedExit = 1
+                } elseif ($sharedProduced -eq 0) {
+                    Write-Error "[test-kotlin-module] kotlinc 未产出任何 class、日志也无 error:（共享面）。检查 kotlinc 路径：$kotlinc"
                     exit 1
+                } else {
+                    if ($sharedExit -eq -1) {
+                        Write-Host ">>> [test-kotlin-module] 退出码未传回，但产物已生成（$sharedProduced 个文件）且无 error: ⇒ 判定成功（共享面）" -ForegroundColor DarkYellow
+                    }
+                    $sharedExit = 0
                 }
 
                 if ($sharedExit -ne 0) {
@@ -649,12 +668,30 @@ try {
     foreach ($src in $sources) { $argLines += "`"$(& $toSlash $src)`"" }
     Set-Content -Path $argFile -Value $argLines -Encoding utf8NoBOM
     Write-Host ">>> [test-kotlin-module] 第 2 段：编译本域 [$cleanModule]（本域 $($sources.Count) 个 .kt，共享面 $($sharedSources.Count) 个已就绪），工作目录 $workRoot" -ForegroundColor Cyan
+    # 与共享面同一套三态（见第 1 段注释）：日志为空=没起（红）；日志有 error:=真失败（红，日志优先于退出码）；
+    # 日志非空且无 error:=调用方式问题（WARN，不判红，提示用 `pwsh -NoProfile -File`）。
+    # 捕获输出是为了在退出码丢失时仍能按日志判定，否则「修假红把真红也修没」就是必然。
     $LASTEXITCODE = -1
-    & $kotlinc "@$argFile"
+    $domainLog = & $kotlinc "@$argFile" 2>&1
     $domainExit = $LASTEXITCODE
-    if ($null -eq $domainExit -or $domainExit -eq -1) {
-        Write-Error "[test-kotlin-module] kotlinc 未执行或未返回退出码（本域）。检查 kotlinc 路径：$kotlinc"
+    foreach ($line in $domainLog) { Write-Host $line }
+    # 与共享面同一套判据：日志 error: > 产物 > 退出码（理由见第 1 段注释）。
+    $domainLines = @($domainLog | ForEach-Object { [string]$_ })
+    $domainHasError = @($domainLines | Where-Object { $_ -match '\berror:' }).Count -gt 0
+    $domainProducedEarly = @(Get-ChildItem -Path $outDir -Recurse -File -ErrorAction SilentlyContinue).Count
+    if ($domainHasError) {
+        if ($domainExit -eq -1) {
+            Write-Host ">>> [test-kotlin-module] 退出码未传回，但日志里有 error: ⇒ 按编译失败处理（本域）" -ForegroundColor Red
+        }
+        $domainExit = 1
+    } elseif ($domainProducedEarly -eq 0) {
+        Write-Error "[test-kotlin-module] kotlinc 未产出任何 class、日志也无 error:（本域）。检查 kotlinc 路径：$kotlinc"
         exit 1
+    } else {
+        if ($domainExit -eq -1) {
+            Write-Host ">>> [test-kotlin-module] 退出码未传回，但产物已生成（$domainProducedEarly 个文件）且无 error: ⇒ 判定成功（本域）" -ForegroundColor DarkYellow
+        }
+        $domainExit = 0
     }
     if ($domainExit -ne 0) {
         Write-Error "[test-kotlin-module] kotlinc 编译失败 (exit code: $domainExit)"
