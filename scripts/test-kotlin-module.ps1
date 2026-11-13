@@ -792,8 +792,18 @@ try {
     # 共享面的 classes 必须在运行期 classpath 上：本域 classes 只是引用它，不重复打包。
     $runClasspath = if ($sharedClassesDir) { "$outDir;$sharedClassesDir;$junitJar;$hamcrestJar;$stdlibJar" } else { "$outDir;$junitJar;$hamcrestJar;$stdlibJar" }
     
-    java -cp $runClasspath org.junit.runner.JUnitCore @testClasses
+    # JUnit 段同用「哨兵 + 汇总行判定」（2026-11-12 修假红）。
+    # 原实现只认 `$LASTEXITCODE`，而 `java` 的退出码在部分调用形态下同样传不回来：
+    # 上一段编译把 `$LASTEXITCODE` 置成哨兵 -1 后没复位，成功跑也会走到末尾 `exit -1`（上层读成 1）
+    # ——实测 406 例全绿却返回 1。所以这里先置哨兵，把输出**捕获**下来逐行打印（观感不变），
+    # 再按 JUnit 自己的汇总行判成败：日志优先于退出码，与编译段同一哲学。
+    $LASTEXITCODE = -1
+    $junitLog = & java -cp $runClasspath org.junit.runner.JUnitCore @testClasses 2>&1
     $testExitCode = $LASTEXITCODE
+    foreach ($line in $junitLog) { Write-Host $line }
+    $junitLines = @($junitLog | ForEach-Object { [string]$_ })
+    $junitFailed = @($junitLines | Where-Object { $_ -match 'FAILURES!!!' }).Count -gt 0
+    $junitOk = @($junitLines | Where-Object { $_ -match '^OK \(\d+ tests?\)' }).Count -gt 0
 
     # 汇总 WARN（2026-11-10，Chief 要求）：只要本次排除了 main 源集里的 Compose/miuix 文件，
     # 这一跑就**不是**「该域全绿」——黄字必须醒目到不能当绿灯用。正式结论以 L1/L2 为准。
@@ -813,9 +823,29 @@ try {
         Write-Host ""
     }
 
-    if ($testExitCode -ne 0) {
-        exit $testExitCode
+    # 成败判据与编译段同源：**JUnit 汇总行优先于退出码**。
+    #   · 输出含 `FAILURES!!!`  ⇒ 失败（哪怕退出码是 0 也不算过）；
+    #   · 输出含 `OK (n tests)` ⇒ 成功，**显式 exit 0**（不靠脚本自然结束，也不让哨兵 -1 漏到上层）；
+    #   · 两者都没有            ⇒ 回退退出码：>0 就用它，否则 exit 1，并说明「没有汇总行也没有退出码」。
+    if ($junitFailed) {
+        $failCode = if ($testExitCode -gt 0) { $testExitCode } else { 1 }
+        Write-Host ">>> [test-kotlin-module] ✗ JUnit 有失败（输出含 FAILURES!!!）⇒ 按失败处理（exit $failCode）" -ForegroundColor Red
+        exit $failCode
     }
+    if ($junitOk) {
+        exit 0
+    }
+    # 两个汇总行都没有 ⇒ **不许放行**（「没看到失败」不等于「成功」）：
+    #   · 退出码 >0            ⇒ 用它；
+    #   · 退出码是哨兵 -1（没传回）或任何 <=0 的值 ⇒ 判「环境/调用异常」，exit 1。
+    if ($testExitCode -gt 0) {
+        $fallbackCode = $testExitCode
+        Write-Host ">>> [test-kotlin-module] ✗ JUnit 输出里既没有「OK (n tests)」也没有「FAILURES!!!」，只拿到退出码 $fallbackCode ⇒ 无法确认成败，按失败处理（exit $fallbackCode）" -ForegroundColor Red
+    } else {
+        $fallbackCode = 1
+        Write-Host ">>> [test-kotlin-module] ✗ JUnit 输出里既没有「OK (n tests)」也没有「FAILURES!!!」，退出码也没传回（$testExitCode = 哨兵）⇒ 判「环境/调用异常」，按失败处理（exit $fallbackCode）" -ForegroundColor Red
+    }
+    exit $fallbackCode
 } finally {
     # 先删本次运行私有的临时目录，再放锁：清理也留在锁内，排队者不会和清理抢同一块盘。
     if ($workRoot -and (Test-Path $workRoot)) {
