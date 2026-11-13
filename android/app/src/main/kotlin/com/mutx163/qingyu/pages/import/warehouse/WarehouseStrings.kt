@@ -106,6 +106,8 @@ object WarehouseStrings {
     val deleteDebugRecordTitle = WarehouseArbText("deleteDebugRecordTitle", "删除调试记录")
     val deletedDebugRecord = WarehouseArbText("deletedDebugRecord", "已删除调试记录：{name}")
     val dontRememberAction = WarehouseArbText("dontRememberAction", "不记住")
+    /** 执行日志面板底栏的「复制」（复用既有 ARB 键 `duplicateAction`，不新增文案）。 */
+    val duplicateAction = WarehouseArbText("duplicateAction", "复制")
     val editAction = WarehouseArbText("editAction", "编辑")
     val editCustomLoginAddressAction = WarehouseArbText("editCustomLoginAddressAction", "修改自定义地址")
     val editDebugRecordTitle = WarehouseArbText("editDebugRecordTitle", "编辑调试记录")
@@ -129,9 +131,8 @@ object WarehouseStrings {
     /**
      * 「查看日志」（`executeViewLogAction`）。
      *
-     * **只收成访问器、故意不接**：日志查看面板还没移植，接上去就是一颗点了没反应的死按钮
-     * （壳侧「更多」菜单里当初就没接「导入执行日志」，同一理由）。源码守卫
-     * [WarehouseTimeoutWiringGuardTest] 钉着宿主里不许出现它的引用——等面板落地再接。
+     * 面板已落地：宿主超时弹窗的第三颗按钮引它打开 `WarehouseImportLogPage`（与顶栏那颗
+     * 日志图标同一个面板），源码守卫 `WarehouseImportLogEntryGuardTest` 钉着这条接线。
      */
     val executeViewLogAction = WarehouseArbText("executeViewLogAction", "查看日志")
     val fillRememberedTooltip = WarehouseArbText("fillRememberedTooltip", "填充已记住账号")
@@ -282,6 +283,8 @@ object WarehouseStrings {
         "serviceMsgWarehouseFetchFailedMirror",
         "无法连接适配仓，已尝试 {candidatesCount} 条线路，请检查网络或切换镜像线路",
     )
+    /** 执行日志面板底栏的「分享」（复用导出域既有 ARB 键 `icsExportActionShare`，不新增文案）。 */
+    val shareToOthersAction = WarehouseArbText("icsExportActionShare", "分享给别人")
     val startDebugAction = WarehouseArbText("startDebugAction", "开始调试")
     val startRecordingTooltip = WarehouseArbText("startRecordingTooltip", "录制操作")
     val stopRecordingTooltip = WarehouseArbText("stopRecordingTooltip", "停止录制")
@@ -298,7 +301,23 @@ object WarehouseStrings {
     val warehouseCustomDebugTitle = WarehouseArbText("warehouseCustomDebugTitle", "自定义调试")
     val warehouseFeedbackMissingSchoolTitle = WarehouseArbText("warehouseFeedbackMissingSchoolTitle", "缺少学校？去反馈")
     val warehouseImportedTimeSchemeName = WarehouseArbText("warehouseImportedTimeSchemeName", "{schoolName} 导入节次")
+    /**
+     * 执行日志面板的五个键（2026-11-13 文案批次先落 ARB，本笔接读取端；**值由 B2 收口**）。
+     *
+     * 面板标题 / 面板入口的无障碍文案 / 空态 / 分享正文模板 / 分享主题，一页用到的字都在这；
+     * 面板不再自拼任何文案（源码守卫 `WarehouseImportLogEntryGuardTest` 盯着这条）。
+     */
+    val warehouseImportExecutionLogEmpty = WarehouseArbText(
+        "warehouseImportExecutionLogEmpty",
+        "暂无导入执行记录。请先打开教务网页并执行导入脚本，再回来查看。这里只记录本机最近一次导入过程；系统级错误仍需设备日志。",
+    )
     val warehouseImportExecutionLogMenuLabel = WarehouseArbText("warehouseImportExecutionLogMenuLabel", "课表导入执行日志")
+    val warehouseImportExecutionLogShareSubject = WarehouseArbText("warehouseImportExecutionLogShareSubject", "轻屿课表 - 课表导入执行日志")
+    val warehouseImportExecutionLogShareText = WarehouseArbText(
+        "warehouseImportExecutionLogShareText",
+        "这是轻屿课表导出的教务导入执行日志，包含脚本注入、桥接消息、超时与导入结果等过程记录，可直接反馈给开发人员排查问题",
+    )
+    val warehouseImportExecutionLogTitle = WarehouseArbText("warehouseImportExecutionLogTitle", "课表导入执行日志")
 
     // ── 拉取失败的「四档原因」+ 脚本读不到（2026-11-05 ARB 窗口落地）──
     // 四档对应 `WarehouseLoadIssue` 的四档：页面对用户只说这一句，不摆原始码。
@@ -435,6 +454,7 @@ object WarehouseStrings {
         deleteDebugRecordTitle,
         deletedDebugRecord,
         dontRememberAction,
+        duplicateAction,
         editAction,
         editCustomLoginAddressAction,
         editDebugRecordTitle,
@@ -574,6 +594,7 @@ object WarehouseStrings {
         searchSchoolSuggestion,
         selectQuickImportTitle,
         serviceMsgWarehouseFetchFailedMirror,
+        shareToOthersAction,
         startDebugAction,
         startRecordingTooltip,
         stopRecordingTooltip,
@@ -589,7 +610,11 @@ object WarehouseStrings {
         warehouseCustomDebugTitle,
         warehouseFeedbackMissingSchoolTitle,
         warehouseImportedTimeSchemeName,
+        warehouseImportExecutionLogEmpty,
         warehouseImportExecutionLogMenuLabel,
+        warehouseImportExecutionLogShareSubject,
+        warehouseImportExecutionLogShareText,
+        warehouseImportExecutionLogTitle,
         warehouseLoadIssueInvalidFormat,
         warehouseLoadIssueNetworkUnreachable,
         warehouseLoadIssueShowingCached,

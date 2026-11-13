@@ -21,6 +21,7 @@ import top.yukonga.miuix.kmp.basic.IconButton
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.AppRecording
+import top.yukonga.miuix.kmp.icon.extended.ListView
 import top.yukonga.miuix.kmp.icon.extended.More
 import top.yukonga.miuix.kmp.icon.extended.Phone
 import top.yukonga.miuix.kmp.icon.extended.Refresh
@@ -92,6 +93,17 @@ fun WarehouseWebLoginPage(
     onDismissSaveLogin: () -> Unit = {},
     onToggleMacroRecording: () -> Unit = {},
     onExecuteImport: () -> Unit = {},
+    /**
+     * 执行日志面板是否展开（宿主持有状态）。
+     *
+     * 面板是**叠在登录页之上**的一层，不替换登录页：底层 WebView 必须留在组合里，
+     * 一旦被替换就会 `onRelease` → `destroy()`，回来时登录态与正在跑的脚本一起没了。
+     */
+    showImportLog: Boolean = false,
+    /** 顶栏「执行日志」按钮点击（宿主置 [showImportLog] 为真）。 */
+    onOpenImportLog: () -> Unit = {},
+    /** 面板顶栏返回（宿主置 [showImportLog] 为假）。 */
+    onCloseImportLog: () -> Unit = {},
 ) {
     // 与 Dart 侧 warehouse_adapter_web_login_screen.dart:841-844 对齐
     // （title: SizedBox.shrink()、collapsibleLargeTitle: false）：这一页滚动发生在 WebView
@@ -168,6 +180,15 @@ fun WarehouseWebLoginPage(
                 onReload()
             }) {
                 Icon(imageVector = MiuixIcons.Refresh, contentDescription = WarehouseStrings.reloadAction.text)
+            }
+            // 执行日志入口（actions 里第 4 颗：左边是刷新，右边是「更多」；回放期间前两颗
+            // 隐藏时它是第 3 颗）。图标用 ListView（一条条日志 = 列表），无障碍文案复用
+            // 面板标题那一个键（不新增文案）。面板由宿主控制显隐，见 onOpenImportLog。
+            IconButton(onClick = onOpenImportLog) {
+                Icon(
+                    imageVector = MiuixIcons.ListView,
+                    contentDescription = WarehouseStrings.warehouseImportExecutionLogMenuLabel.text,
+                )
             }
             IconButton(onClick = onMoreOptions) {
                 Icon(imageVector = MiuixIcons.More, contentDescription = WarehouseStrings.moreActionsTooltip.text)
@@ -306,10 +327,16 @@ fun WarehouseWebLoginPage(
         }
     }
 
+    // 执行日志面板：与登录页并列叠在同一个父容器里（宿主把它放进 fillMaxSize 的 Box），
+    // 后组合的一层盖在前面；登录页（含 WebView）仍留在组合中，不会被 onRelease 销毁。
+    if (showImportLog) {
+        WarehouseImportLogPage(onBack = onCloseImportLog)
+    }
+
     // 「记住密码」确认弹窗（发布版是 showAppConfirmDialog）。旧实现是底栏卡片：
     // 两个小按钮挤在一行、还和主按钮抢底部高度，用户实报「有点怪」。
     WarehouseRememberPasswordDialog(
-        show = sessionState.shouldPromptSave,
+        show = sessionState.shouldPromptSave && !showImportLog,
         username = sessionState.candidateAccount.username,
         onDismiss = onDismissSaveLogin,
         onConfirm = onSaveRememberedLogin,
@@ -319,8 +346,8 @@ fun WarehouseWebLoginPage(
     // 旧实现是底栏「已记住账号：X」卡片，两个小按钮挤一行，与主按钮抢高度。
     WarehouseAutofillLoginDialog(
         // 回放中不弹模态框（发布版 `macroRecord != null` 时直接填充、不问）。
-        // 模态比原卡片更挡人：它会把正在无人值守跑的回放盖住。
-        show = sessionState.shouldPromptAutofill && !foregroundReplayActive,
+        // 模态比原卡片更挡人：它会把正在无人值守跑的回放盖住；日志面板展开时同理不叠。
+        show = sessionState.shouldPromptAutofill && !foregroundReplayActive && !showImportLog,
         username = sessionState.rememberedAccount?.username.orEmpty(),
         onDismiss = onDismissAutofill,
         onConfirm = onAutofillLogin,

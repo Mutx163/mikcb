@@ -22,7 +22,8 @@ import org.junit.Test
  * 2. 超时收尾体里**不再**出现 `cancelPendingDialog(...)`（不变量 ②：新模型下不可达，
  *    真到了就是 ① 该抓到的事）；
  * 3. 六条阶段文案 + 超时标题/建议 + 两个真按钮都真的在宿主里被引用（否则等于只落了 ARB）；
- * 4. 「查看日志」**没有被接上**（面板没做，接上去就是死按钮）。
+ * 4. 「查看日志」**已接上**（B1 面板落地）：第三颗按钮引 `executeViewLogAction` 并打开
+ *    宿主统一的 `showImportLog`；接线细节由 `WarehouseImportLogEntryGuardTest` 钉。
  *
  * 读源码一律走 `readKotlinSourceNormalized`（剥注释、保留字符串内容）：把接线注释掉不算接线，
  * 但判据里有几处是在判「某个文案键被引用」，字符串档位不能抹掉。
@@ -142,13 +143,15 @@ class WarehouseTimeoutWiringGuardTest {
     }
 
     /**
-     * 「查看日志」只收进文案访问器，**不许**先接在宿主上。
+     * 「查看日志」必须接在超时弹窗里（2026-11-13 B1：面板落地）。
      *
-     * 日志面板还没移植（壳侧「更多」菜单当初也是这个理由没接「导入执行日志」）；
-     * 接上去就是一颗点了没反应的死按钮，比没有这颗按钮更差。
+     * 以前这条是反的（面板没做、接上去就是死按钮）。现在面板有了，第三颗按钮是「继续这一轮」
+     * 之外唯一的排障入口：脚本卡住时先看桥事件与 console，再决定重试还是手动。
+     * 弹窗里**不许再写一套自己的日志打开逻辑**：必须走宿主统一的 `showImportLog`。
      */
     @Test
-    fun `查看日志不许先接上`() {
-        assertSourceLacks(hostSource, "executeViewLogAction", label = "宿主（面板未落地，禁止先接）")
+    fun `查看日志必须接上`() {
+        assertSourceContains(hostSource, "executeViewLogAction", label = "宿主超时弹窗（第三颗按钮）")
+        assertSourceContains(hostSource, "onViewLog = { showImportLog = true }", label = "宿主（统一面板状态）")
     }
 }

@@ -13,10 +13,10 @@ enum class WarehouseLogCategory {
     /** 「现在能不能执行导入脚本」的闸门裁决（Ready 或拒绝原因）。 */
     GATE,
 
-    /** 适配脚本侧事件（目前只有失败点；桥与 console 钩子留到第 2 步）。 */
+    /** 适配脚本侧事件 + 网页 console（写入点见 `WarehouseLogHooks.recordWarehouseConsoleMessage`）。 */
     SCRIPT,
 
-    /** 网页桥接事件（**本批还没有接点**，枚举先占位，第 2 步接 composeP1 时用）。 */
+    /** 网页桥接事件（写入点见 `WarehouseLogHooks` 的四个 BRIDGE 记录函数）。 */
     BRIDGE,
 
     /** 一次导入失败的服务消息原文（`code|k=v`）。 */
@@ -78,7 +78,7 @@ data class WarehouseImportLogSnapshot(
  *
  * 用户不会看 logcat。导入失败时，「哪一步、哪个闸门、什么码」这些东西现在只进
  * `Log.*`，所以对用户来说等于没有。这个 buffer 把它们留成可导出的一段文本
- * （落盘见 `WarehouseImportLogFileWriter`，UI 面板是下一步）。
+ * （落盘见 `WarehouseImportLogFileWriter`，读取与展示见 `WarehouseImportLogPage`）。
  *
  * ## 保留语义（**不是 takeLast**）
  *

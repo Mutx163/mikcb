@@ -602,6 +602,15 @@ fun WarehouseWebLoginHost(
     var showExecutionTimeoutDialog by remember { mutableStateOf(false) }
 
     /**
+     * 执行日志面板是否展开。
+     *
+     * 面板由页面侧叠在登录页之上（见 `WarehouseWebLoginPage.showImportLog`），宿主只持有这个
+     * 布尔：顶栏图标与超时弹窗的「查看日志」都只是置真，关闭由面板自己的返回键回写。
+     * 面板展开期间超时弹窗先收起（否则它压在日志上），关闭面板后自动恢复。
+     */
+    var showImportLog by remember { mutableStateOf(false) }
+
+    /**
      * 执行窗口当前该显示的那一句阶段提示（null = 这一页此刻没什么要说的）。
      *
      * 由下面的 ticker 按「阶段 + 有没有挂起弹窗 + 剩余预算」算出；页面只负责把它渲染在
@@ -2106,6 +2115,10 @@ fun WarehouseWebLoginHost(
                 }
             },
             onExecuteImport = { executeImportScript() },
+            // 执行日志：顶栏图标与超时弹窗共用同一个面板状态（同一页，不是两个入口两套实现）。
+            showImportLog = showImportLog,
+            onOpenImportLog = { showImportLog = true },
+            onCloseImportLog = { showImportLog = false },
         )
 
         // 网页对话框原生界面（F32）：挂在页面之上，常驻组合、show 由 pendingDialog 驱动。
@@ -2231,21 +2244,24 @@ fun WarehouseWebLoginHost(
             },
         )
 
-        // 执行窗口超时弹窗：两个真按钮（重试 / 改用手动导入），无第三个。
+        // 执行窗口超时弹窗：三颗真按钮（重试 / 改用手动导入 / 查看日志）。
         // 为什么不再用 Toast：超时是「这一轮结束了，你来选下一步」，一句话的 Toast 留不下
-        // 任何可点的东西，用户只能自己找按钮；也不能放「查看日志」——日志面板还没移植，
-        // 那就是一颗点了没反应的死按钮（`executeViewLogAction` 因此只收进文案、不接）。
+        // 任何可点的东西。第三颗「查看日志」接的是 `WarehouseImportLogPage`（与顶栏那颗日志
+        // 图标同一个面板），点下去就有东西看，不再是占位的死按钮。
+        // 面板展开期间先收起弹窗（否则弹窗压在新面板上）；关闭面板后弹窗状态还在，自动恢复。
         WarehouseExecutionTimeoutDialog(
-            show = showExecutionTimeoutDialog,
+            show = showExecutionTimeoutDialog && !showImportLog,
             onRetry = { retryAfterExecutionTimeout() },
             onSwitchToManual = { switchToManualImportAfterTimeout() },
+            onViewLog = { showImportLog = true },
         )
 
         // 「更多」菜单（发布版 `HyperosAnchorMenuPopup` 的 Compose 等价形态）：唯一入口是
         // 顶栏最后一颗图标（页面只回调 `onMoreOptions`，凭据动作都留在宿主）。
         // 发布版六项里只接四项：
         // - 「执行导入脚本」已有底栏整宽主按钮，菜单里再来一份就是两套入口；
-        // - 「导入执行日志」的生产端还没移植（查看器未接，留假入口等于死点击）；
+        // - 「导入执行日志」不在菜单里：顶栏已有独立图标入口（同一个面板），菜单再来一份
+        //   会让用户猜哪个才是完整的；
         // - 记住账号三项正好补上「清除」这个全仓都没有调用方的能力（2026-11-10 审核）。
         // 弹层用 miuix 官方 `OverlayDialog` + `TextButton`，与宏选择器/完成 sheet 同一套件。
         OverlayDialog(
@@ -2408,19 +2424,21 @@ private fun warehouseExecutionStageHint(
 }
 
 /**
- * 执行窗口超时的用户可见出口：标题带秒数、正文给建议、**两个真按钮**。
+ * 执行窗口超时的用户可见出口：标题带秒数、正文给建议、**三个真按钮**。
  *
  * ## 为什么是弹窗而不是 Toast（2026-11-13）
  *
- * 超时的语义是「这一轮结束了，你选下一步」：重试 / 改用手动导入。一句话的 Toast 既留不下
- * 可点的东西，也会在用户低头看网页时自己消失。老实现的 Toast 与 `executeFailedWithError`
- * 的错误行一起弹，用户看到的是「导入失败：timeout」加一句英文样的东西，学不到任何对策。
+ * 超时的语义是「这一轮结束了，你选下一步」：重试 / 改用手动导入 / 查看日志。一句话的 Toast
+ * 既留不下可点的东西，也会在用户低头看网页时自己消失。老实现的 Toast 与
+ * `executeFailedWithError` 的错误行一起弹，用户看到的是「导入失败：timeout」加一句英文样的
+ * 东西，学不到任何对策。
  *
- * ## 为什么只有两个按钮
+ * ## 为什么现在有三颗
  *
- * 文案侧准备了三个键（重试 / 改用手动导入 / 查看日志），但**日志面板还没移植**：接上去就是
- * 一颗点了不动的按钮。`executeViewLogAction` 只收进 `WarehouseStrings`，不接——
- * 源码守卫 `WarehouseTimeoutWiringGuardTest` 钉着宿主里不许出现它。
+ * 前两颗是「继续这一轮」（重试 / 改用手动导入），第三颗「查看日志」（`executeViewLogAction`）
+ * 打开 `WarehouseImportLogPage` —— 超时最常见的原因是脚本卡在某一步，用户先看日志里的
+ * 桥事件与 console 再决定重试还是手动，比盲点重试有用。顶栏那颗日志图标打开的是同一个面板，
+ * 两处入口共用宿主里的一个 `showImportLog`，不是两套实现。
  *
  * ## 为什么挡住点外部关闭
  *
@@ -2432,6 +2450,7 @@ private fun WarehouseExecutionTimeoutDialog(
     show: Boolean,
     onRetry: () -> Unit,
     onSwitchToManual: () -> Unit,
+    onViewLog: () -> Unit,
 ) {
     OverlayDialog(
         insideMargin = DpSize(16.dp, 16.dp),
@@ -2458,6 +2477,12 @@ private fun WarehouseExecutionTimeoutDialog(
                 modifier = Modifier.fillMaxWidth(),
                 text = WarehouseStrings.executeSwitchToManualAction.text,
                 onClick = onSwitchToManual,
+            )
+            // 第三颗 = 查看日志（面板已落地：打开 `WarehouseImportLogPage`，不是占位按钮）。
+            TextButton(
+                modifier = Modifier.fillMaxWidth(),
+                text = WarehouseStrings.executeViewLogAction.text,
+                onClick = onViewLog,
             )
         }
     }
