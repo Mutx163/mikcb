@@ -92,8 +92,15 @@ object DiagnosticsStrings {
     )
     val warehouseImportExecutionLogShareSubject =
         ArbText("warehouseImportExecutionLogShareSubject", "轻屿课表 - 课表导入执行日志")
+    /**
+     * 本 key 在 `DiagnosticsStrings` 与 `WarehouseStrings` 各声明一份内联默认值；
+     * 改 ARB 时必须两处同步（去重复定义待后续）。
+     */
     val warehouseImportExecutionLogEmpty =
-        ArbText("warehouseImportExecutionLogEmpty", "暂无导入执行记录。请先打开教务网页并执行导入脚本，再回来查看。")
+        ArbText(
+            "warehouseImportExecutionLogEmpty",
+            "暂无导入执行记录。请先打开教务网页并执行导入脚本，再回来查看。这里只记录本机最近一次导入过程；系统级错误仍需设备日志。",
+        )
 
     /** 所有 ARB 文案清单，用于机械化单测逐字对拍。 */
     val allTexts: List<ArbText> by lazy {
