@@ -93,6 +93,23 @@ assertTrue(..., "homeViewMode" !in enabledLine)   // 锚点一改名 ⇒ enabled
 
 ---
 
+## 七、圆形容器的 `clickable` 必须先 `clip`（`MiuixIndication` 画的是**矩形**覆盖）
+
+miuix 的默认 `Indication` **不是**圆形 ripple，而是**按压 / 悬停 / 长按时的矩形 alpha 覆盖**——
+`miuix-ui` 源码 `utils/MiuixIndication.kt:36` 原话：「draws a **rectangular** overlay when pressed」。
+它自己不认形状，**完全靠外层 `clip` / `squircleSurface` 把它裁圆**。
+
+- **判据**：任何「圆形容器 + `Modifier.clickable`」的组合，`clickable` 之前必须已经 `clip(CircleShape)`
+  （或带 mask 的 `squircleSurface` / 等价写法）；否则按下时圆里会出现一块**方形覆盖**。
+- 已核对合规的三处：`pages/timetable/TimetableTopBar.kt:222-231`、
+  `components/QingyuPageScaffold.kt:213-226`、miuix `IconButton.kt:68-76`（`.squircleSurface(...).then(clickable)`）。
+- 守卫建议（源码层，成本低）：对 `*Ball*` / `*RoundButton*` / 圆形容器附近的 `Modifier` 链做文本判据——
+  同一个 `clickable(` 之前 15 行内必须出现 `clip(CircleShape)` 或 `squircleSurface(`；
+  **先做点名清单 + 例外登记，别一次全仓硬红**（存量是否全部合规未核）。
+- 别把「按下反馈的宽度」当成设计参数：它恒等于节点 bounds，形状完全由裁剪决定。
+
+---
+
 ## 与其它文档的关系
 
 - 行为/契约测试怎么写：`testing-policy`（本机私有）+ `AGENTS.md`「测试与验证策略」。
