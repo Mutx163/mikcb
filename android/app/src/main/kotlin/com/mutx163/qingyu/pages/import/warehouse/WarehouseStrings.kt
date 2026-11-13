@@ -283,8 +283,6 @@ object WarehouseStrings {
         "serviceMsgWarehouseFetchFailedMirror",
         "无法连接适配仓，已尝试 {candidatesCount} 条线路，请检查网络或切换镜像线路",
     )
-    /** 执行日志面板底栏的「分享」（复用导出域既有 ARB 键 `icsExportActionShare`，不新增文案）。 */
-    val shareToOthersAction = WarehouseArbText("icsExportActionShare", "分享给别人")
     val startDebugAction = WarehouseArbText("startDebugAction", "开始调试")
     val startRecordingTooltip = WarehouseArbText("startRecordingTooltip", "录制操作")
     val stopRecordingTooltip = WarehouseArbText("stopRecordingTooltip", "停止录制")
@@ -302,16 +300,17 @@ object WarehouseStrings {
     val warehouseFeedbackMissingSchoolTitle = WarehouseArbText("warehouseFeedbackMissingSchoolTitle", "缺少学校？去反馈")
     val warehouseImportedTimeSchemeName = WarehouseArbText("warehouseImportedTimeSchemeName", "{schoolName} 导入节次")
     /**
-     * 执行日志面板的五个键（2026-11-13 文案批次先落 ARB，本笔接读取端；**值由 B2 收口**）。
+     * 执行日志面板的六个键（2026-11-13 文案批次先落 ARB，本笔接读取端；**值由 B2 收口**）。
      *
-     * 面板标题 / 面板入口的无障碍文案 / 空态 / 分享正文模板 / 分享主题，一页用到的字都在这；
-     * 面板不再自拼任何文案（源码守卫 `WarehouseImportLogEntryGuardTest` 盯着这条）。
+     * 面板标题 / 面板入口的无障碍文案 / 底栏「分享」/ 分享正文模板 / 分享主题 / 空态，一页用到的
+     * 字都在这；面板不再自拼任何文案（源码守卫 `WarehouseImportLogEntryGuardTest` 盯着这条）。
      */
     val warehouseImportExecutionLogEmpty = WarehouseArbText(
         "warehouseImportExecutionLogEmpty",
         "暂无导入执行记录。请先打开教务网页并执行导入脚本，再回来查看。这里只记录本机最近一次导入过程；系统级错误仍需设备日志。",
     )
     val warehouseImportExecutionLogMenuLabel = WarehouseArbText("warehouseImportExecutionLogMenuLabel", "课表导入执行日志")
+    val warehouseImportExecutionLogShareAction = WarehouseArbText("warehouseImportExecutionLogShareAction", "分享")
     val warehouseImportExecutionLogShareSubject = WarehouseArbText("warehouseImportExecutionLogShareSubject", "轻屿课表 - 课表导入执行日志")
     val warehouseImportExecutionLogShareText = WarehouseArbText(
         "warehouseImportExecutionLogShareText",
@@ -594,7 +593,6 @@ object WarehouseStrings {
         searchSchoolSuggestion,
         selectQuickImportTitle,
         serviceMsgWarehouseFetchFailedMirror,
-        shareToOthersAction,
         startDebugAction,
         startRecordingTooltip,
         stopRecordingTooltip,
@@ -612,6 +610,7 @@ object WarehouseStrings {
         warehouseImportedTimeSchemeName,
         warehouseImportExecutionLogEmpty,
         warehouseImportExecutionLogMenuLabel,
+        warehouseImportExecutionLogShareAction,
         warehouseImportExecutionLogShareSubject,
         warehouseImportExecutionLogShareText,
         warehouseImportExecutionLogTitle,

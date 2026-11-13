@@ -333,10 +333,12 @@ fun WarehouseImportPickerHost(
         onCustomDebugClick = { onOpenPage(WarehouseRoutes.CUSTOM_DEBUG) },
         // 「执行日志」入口不接（2026-11-05 死控件收口）：WarehouseCourseImportPage 的
         // onExecutionLogClick 参数在页面正文里**没有任何 UI 消费**（无按钮/菜单项渲染），
-        // 之前这里传的 toastUnavailable lambda 是永远走不到的死代码。导入执行日志
-        // 的生产端（WarehouseImportSessionLog，F08-8c）未移植，等移植时再把页面里的
-        // 入口 UI 画出来、这里接真路由（诊断页 LogViewerEntryModel 的
-        // AppLogSource.WAREHOUSE_IMPORT 配置已就位，接的就是它）。
+        // 之前这里传的 toastUnavailable lambda 是永远走不到的死代码。
+        // 现状（2026-11-13）：配置项存在（诊断页 LogViewerEntryModel 的
+        // AppLogSource.WAREHOUSE_IMPORT），但 DiagnosticsLogHost 对非 LIVE 源一律走
+        // AppLogStore.readMergedText()，**源级读取尚未实现**，因此这条路由暂不接；
+        // 导入过程另由 WarehouseImportLogPage 展示，并会向 AppLogStore 追加一条
+        // warehouse.import 记录（两个入口看的是同一份脱敏文本）。
     )
 
     WarehouseQuickImportPickerDialog(

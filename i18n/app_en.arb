@@ -6105,7 +6105,5 @@
   "executeTimeoutAdvice": "Tap Retry, switch to manual import, or try again on Wi-Fi",
   "executeSwitchToManualAction": "Switch to manual import",
   "executeViewLogAction": "View log",
-  "warehouseImportLogTitle": "Import log",
-  "warehouseImportLogEmpty": "No import logs yet. This records only the most recent import run on this device; system-level errors still require device logs.",
-  "warehouseImportLogShareAction": "Share"
+  "warehouseImportExecutionLogShareAction": "Share"
 }

@@ -103,7 +103,7 @@ fun WarehouseImportLogPage(
                 )
                 TextButton(
                     modifier = Modifier.weight(1f),
-                    text = WarehouseStrings.shareToOthersAction.text,
+                    text = WarehouseStrings.warehouseImportExecutionLogShareAction.text,
                     onClick = { shareLog(context, share) },
                 )
             }

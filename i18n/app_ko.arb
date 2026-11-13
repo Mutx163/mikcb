@@ -6105,7 +6105,5 @@
   "executeTimeoutAdvice": "재시도를 누르거나, 수동 가져오기로 전환하거나, Wi-Fi에서 다시 시도해 보세요",
   "executeSwitchToManualAction": "수동 가져오기로 전환",
   "executeViewLogAction": "로그 보기",
-  "warehouseImportLogTitle": "가져오기 로그",
-  "warehouseImportLogEmpty": "아직 가져오기 로그가 없습니다. 여기에는 이 기기에서 마지막으로 실행한 가져오기 과정만 기록됩니다. 시스템 수준 오류는 계속 기기 로그에서 확인해야 합니다.",
-  "warehouseImportLogShareAction": "공유"
+  "warehouseImportExecutionLogShareAction": "공유"
 }

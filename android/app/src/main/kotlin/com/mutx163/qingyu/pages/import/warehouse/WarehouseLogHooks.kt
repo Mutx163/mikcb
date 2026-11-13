@@ -3,11 +3,11 @@ package com.mutx163.qingyu.pages.import.warehouse
 import com.mutx163.qingyu.core.MiniJson
 
 /**
- * 导入日志的**采集侧钩子**（第 1 步 A 半：只采证据，不做面板）。
+ * 导入日志的**采集侧钩子**：把网页桥与 console 的事件写进 [WarehouseImportLogBuffer]。
  *
- * 面板与导出消费在第 2 步（B 半）；本文件只把两件事落进 [WarehouseImportLogBuffer]：
- * 网页桥收到了什么 / 回答了谁（[WarehouseLogCategory.BRIDGE]），
+ * 本文件只负责「采证据」：网页桥收到了什么 / 回答了谁（[WarehouseLogCategory.BRIDGE]），
  * 网页 console 说了什么（[WarehouseLogCategory.SCRIPT]，`error` 级另记一条 FAILURE）。
+ * 落盘见 `WarehouseImportLogFileWriter`，读取与展示见 `WarehouseImportLogPage`。
  *
  * ## 硬约束一：BRIDGE 事件不带 payload
  *

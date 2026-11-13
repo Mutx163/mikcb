@@ -6105,7 +6105,5 @@
   "executeTimeoutAdvice": "可以點擊重試、改用手動匯入，或換到 Wi-Fi 再試",
   "executeSwitchToManualAction": "改用手動匯入",
   "executeViewLogAction": "查看日誌",
-  "warehouseImportLogTitle": "匯入日誌",
-  "warehouseImportLogEmpty": "暫無匯入日誌。這裡只記錄本機最近一次匯入過程；系統層級錯誤仍需裝置日誌。",
-  "warehouseImportLogShareAction": "分享"
+  "warehouseImportExecutionLogShareAction": "分享"
 }

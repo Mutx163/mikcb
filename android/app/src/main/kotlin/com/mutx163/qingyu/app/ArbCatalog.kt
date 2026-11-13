@@ -23,7 +23,7 @@ object ArbCatalog {
         else -> null
     }
 
-    // ── en（3052 条）──
+    // ── en（3050 条）──
     private fun lookupen(key: String): String? = lookupen1(key) ?: lookupen2(key) ?: lookupen3(key) ?: lookupen4(key) ?: lookupen5(key) ?: lookupen6(key) ?: lookupen7(key) ?: lookupen8(key) ?: lookupen9(key) ?: lookupen10(key) ?: lookupen11(key)
     private fun lookupen1(key: String): String? = when (key) {
         "aboutAdvancedOptionsTitle" -> "Advanced options"
@@ -2970,12 +2970,10 @@ object ArbCatalog {
         "warehouseFeedbackMissingSchoolTitle" -> "Missing school? Go to feedback"
         "warehouseImportExecutionLogEmpty" -> "No import execution records yet. Open the academic-system page, run the import script, then check again. This records only the most recent import run on this device; system-level errors still require device logs."
         "warehouseImportExecutionLogMenuLabel" -> "Import execution log"
+        "warehouseImportExecutionLogShareAction" -> "Share"
         "warehouseImportExecutionLogShareSubject" -> "Qingyu Timetable - Import execution log"
         "warehouseImportExecutionLogShareText" -> "This is the academic-system import execution log exported from Qingyu Timetable. It includes script injection, bridge messages, timeouts, and import results for troubleshooting."
         "warehouseImportExecutionLogTitle" -> "Import execution log"
-        "warehouseImportLogEmpty" -> "No import logs yet. This records only the most recent import run on this device; system-level errors still require device logs."
-        "warehouseImportLogShareAction" -> "Share"
-        "warehouseImportLogTitle" -> "Import log"
         "warehouseImportedTimeSchemeName" -> "{schoolName} imported sections"
         "warehouseLoadIssueInvalidFormat" -> "The adapter repository returned data we cannot read, please report it to the maintainers"
         "warehouseLoadIssueNetworkUnreachable" -> "Network unavailable, check your network or proxy and try again"
@@ -3053,11 +3051,11 @@ object ArbCatalog {
         "weatherTemperatureValue" -> "{temperature}°"
         "weatherThunderstorm" -> "Thunderstorm"
         "weatherThunderstormHail" -> "Thunderstorm with hail"
+        "weatherUseCurrentLocation" -> "Use my location"
+        "webAddressHint" -> "Enter web address"
         else -> null
     }
     private fun lookupen11(key: String): String? = when (key) {
-        "weatherUseCurrentLocation" -> "Use my location"
-        "webAddressHint" -> "Enter web address"
         "webLoginImport" -> "Web login import"
         "webdavPasswordReentryBody" -> "This update changed how the password is stored on this device. Please re-enter your app-specific password once; your server address, account and sync settings have been kept."
         "wechatLabel" -> "WeChat"
@@ -3111,7 +3109,7 @@ object ArbCatalog {
         else -> null
     }
 
-    // ── ja（3052 条）──
+    // ── ja（3050 条）──
     private fun lookupja(key: String): String? = lookupja1(key) ?: lookupja2(key) ?: lookupja3(key) ?: lookupja4(key) ?: lookupja5(key) ?: lookupja6(key) ?: lookupja7(key) ?: lookupja8(key) ?: lookupja9(key) ?: lookupja10(key) ?: lookupja11(key)
     private fun lookupja1(key: String): String? = when (key) {
         "aboutAdvancedOptionsTitle" -> "高度なオプション"
@@ -6058,12 +6056,10 @@ object ArbCatalog {
         "warehouseFeedbackMissingSchoolTitle" -> "学校がない？フィードバックへ"
         "warehouseImportExecutionLogEmpty" -> "インポート実行記録はまだありません。教務ページを開き、インポートスクリプトを実行してから再度確認してください。ここには、この端末で最後に行ったインポート処理のみが記録されます。システム側のエラーは、引き続き端末のログで確認してください。"
         "warehouseImportExecutionLogMenuLabel" -> "時間割インポート実行ログ"
+        "warehouseImportExecutionLogShareAction" -> "共有"
         "warehouseImportExecutionLogShareSubject" -> "軽屿時間割 - 時間割インポート実行ログ"
         "warehouseImportExecutionLogShareText" -> "軽屿時間割から書き出した教務インポート実行ログです。スクリプト注入、ブリッジ通信、タイムアウト、インポート結果などの過程記録が含まれ、開発者へのフィードバックに使えます。"
         "warehouseImportExecutionLogTitle" -> "時間割インポート実行ログ"
-        "warehouseImportLogEmpty" -> "インポートログはまだありません。ここには、この端末で最後に行ったインポート処理のみが記録されます。システム側のエラーは、引き続き端末のログで確認してください。"
-        "warehouseImportLogShareAction" -> "共有"
-        "warehouseImportLogTitle" -> "インポートログ"
         "warehouseImportedTimeSchemeName" -> "{schoolName}インポート時限"
         "warehouseLoadIssueInvalidFormat" -> "取得した内容を認識できません。適応倉庫のメンテナーに報告してください"
         "warehouseLoadIssueNetworkUnreachable" -> "ネットワークに接続できません。ネットワークかプロキシを確認して再試行してください"
@@ -6141,11 +6137,11 @@ object ArbCatalog {
         "weatherTemperatureValue" -> "{temperature}°"
         "weatherThunderstorm" -> "雷雨"
         "weatherThunderstormHail" -> "ひょうを伴う雷雨"
+        "weatherUseCurrentLocation" -> "現在地を使う"
+        "webAddressHint" -> "Webアドレスを入力"
         else -> null
     }
     private fun lookupja11(key: String): String? = when (key) {
-        "weatherUseCurrentLocation" -> "現在地を使う"
-        "webAddressHint" -> "Webアドレスを入力"
         "webLoginImport" -> "Webログインインポート"
         "webdavPasswordReentryBody" -> "今回の更新でパスワードの保存方法が変更されたため、アプリ専用パスワードをもう一度入力してください。サーバーアドレス、アカウント、同期設定は保持されています。"
         "wechatLabel" -> "WeChat"
@@ -6199,7 +6195,7 @@ object ArbCatalog {
         else -> null
     }
 
-    // ── ko（3052 条）──
+    // ── ko（3050 条）──
     private fun lookupko(key: String): String? = lookupko1(key) ?: lookupko2(key) ?: lookupko3(key) ?: lookupko4(key) ?: lookupko5(key) ?: lookupko6(key) ?: lookupko7(key) ?: lookupko8(key) ?: lookupko9(key) ?: lookupko10(key) ?: lookupko11(key)
     private fun lookupko1(key: String): String? = when (key) {
         "aboutAdvancedOptionsTitle" -> "고급 옵션"
@@ -9146,12 +9142,10 @@ object ArbCatalog {
         "warehouseFeedbackMissingSchoolTitle" -> "학교가 없으신가요? 피드백으로"
         "warehouseImportExecutionLogEmpty" -> "가져오기 실행 기록이 아직 없습니다. 교무 웹페이지를 열고 가져오기 스크립트를 실행한 뒤 다시 확인하세요. 여기에는 이 기기에서 마지막으로 실행한 가져오기 과정만 기록됩니다. 시스템 수준 오류는 계속 기기 로그에서 확인해야 합니다."
         "warehouseImportExecutionLogMenuLabel" -> "시간표 가져오기 실행 로그"
+        "warehouseImportExecutionLogShareAction" -> "공유"
         "warehouseImportExecutionLogShareSubject" -> "경屿 시간표 - 시간표 가져오기 실행 로그"
         "warehouseImportExecutionLogShareText" -> "경屿 시간표에서 내보낸 교무 가져오기 실행 로그입니다. 스크립트 주입, 브리지 메시지, 시간 초과, 가져오기 결과 등 과정 기록이 포함되어 개발자에게 피드백할 수 있습니다."
         "warehouseImportExecutionLogTitle" -> "시간표 가져오기 실행 로그"
-        "warehouseImportLogEmpty" -> "아직 가져오기 로그가 없습니다. 여기에는 이 기기에서 마지막으로 실행한 가져오기 과정만 기록됩니다. 시스템 수준 오류는 계속 기기 로그에서 확인해야 합니다."
-        "warehouseImportLogShareAction" -> "공유"
-        "warehouseImportLogTitle" -> "가져오기 로그"
         "warehouseImportedTimeSchemeName" -> "{schoolName} 가져온 교시"
         "warehouseLoadIssueInvalidFormat" -> "받아온 내용을 인식할 수 없습니다. 적응 저장소 관리자에게 알려 주세요"
         "warehouseLoadIssueNetworkUnreachable" -> "네트워크를 사용할 수 없습니다. 네트워크나 프록시를 확인한 뒤 다시 시도하세요"
@@ -9229,11 +9223,11 @@ object ArbCatalog {
         "weatherTemperatureValue" -> "{temperature}°"
         "weatherThunderstorm" -> "뇌우"
         "weatherThunderstormHail" -> "우박을 동반한 뇌우"
+        "weatherUseCurrentLocation" -> "현재 위치 사용"
+        "webAddressHint" -> "웹 주소 입력"
         else -> null
     }
     private fun lookupko11(key: String): String? = when (key) {
-        "weatherUseCurrentLocation" -> "현재 위치 사용"
-        "webAddressHint" -> "웹 주소 입력"
         "webLoginImport" -> "웹 로그인 가져오기"
         "webdavPasswordReentryBody" -> "이번 업데이트로 비밀번호 저장 방식이 변경되었습니다. 앱 비밀번호를 한 번 다시 입력해 주세요. 서버 주소, 계정 및 동기화 설정은 유지됩니다."
         "wechatLabel" -> "WeChat"
@@ -9287,7 +9281,7 @@ object ArbCatalog {
         else -> null
     }
 
-    // ── zh（3052 条）──
+    // ── zh（3050 条）──
     private fun lookupzh(key: String): String? = lookupzh1(key) ?: lookupzh2(key) ?: lookupzh3(key) ?: lookupzh4(key) ?: lookupzh5(key) ?: lookupzh6(key) ?: lookupzh7(key) ?: lookupzh8(key) ?: lookupzh9(key) ?: lookupzh10(key) ?: lookupzh11(key)
     private fun lookupzh1(key: String): String? = when (key) {
         "aboutAdvancedOptionsTitle" -> "高级选项"
@@ -12234,12 +12228,10 @@ object ArbCatalog {
         "warehouseFeedbackMissingSchoolTitle" -> "缺少学校？去反馈"
         "warehouseImportExecutionLogEmpty" -> "暂无导入执行记录。请先打开教务网页并执行导入脚本，再回来查看。这里只记录本机最近一次导入过程；系统级错误仍需设备日志。"
         "warehouseImportExecutionLogMenuLabel" -> "课表导入执行日志"
+        "warehouseImportExecutionLogShareAction" -> "分享"
         "warehouseImportExecutionLogShareSubject" -> "轻屿课表 - 课表导入执行日志"
         "warehouseImportExecutionLogShareText" -> "这是轻屿课表导出的教务导入执行日志，包含脚本注入、桥接消息、超时与导入结果等过程记录，可直接反馈给开发人员排查问题"
         "warehouseImportExecutionLogTitle" -> "课表导入执行日志"
-        "warehouseImportLogEmpty" -> "暂无导入日志。这里只记录本机最近一次导入过程；系统级错误仍需设备日志。"
-        "warehouseImportLogShareAction" -> "分享"
-        "warehouseImportLogTitle" -> "导入日志"
         "warehouseImportedTimeSchemeName" -> "{schoolName} 导入节次"
         "warehouseLoadIssueInvalidFormat" -> "适配仓返回的内容无法识别，请反馈给适配仓维护者"
         "warehouseLoadIssueNetworkUnreachable" -> "网络不可用，请检查网络或代理后重试"
@@ -12317,11 +12309,11 @@ object ArbCatalog {
         "weatherTemperatureValue" -> "{temperature}°"
         "weatherThunderstorm" -> "雷阵雨"
         "weatherThunderstormHail" -> "雷阵雨伴冰雹"
+        "weatherUseCurrentLocation" -> "使用当前位置"
+        "webAddressHint" -> "输入网页地址"
         else -> null
     }
     private fun lookupzh11(key: String): String? = when (key) {
-        "weatherUseCurrentLocation" -> "使用当前位置"
-        "webAddressHint" -> "输入网页地址"
         "webLoginImport" -> "网页登录导入"
         "webdavPasswordReentryBody" -> "本次更新更改了密码的本地保存方式，需要重新输入一次应用专用密码；服务器地址、账号与同步设置均已保留。"
         "wechatLabel" -> "微信"
@@ -12375,7 +12367,7 @@ object ArbCatalog {
         else -> null
     }
 
-    // ── zh_HK（3052 条）──
+    // ── zh_HK（3050 条）──
     private fun lookupzhHK(key: String): String? = lookupzhHK1(key) ?: lookupzhHK2(key) ?: lookupzhHK3(key) ?: lookupzhHK4(key) ?: lookupzhHK5(key) ?: lookupzhHK6(key) ?: lookupzhHK7(key) ?: lookupzhHK8(key) ?: lookupzhHK9(key) ?: lookupzhHK10(key) ?: lookupzhHK11(key)
     private fun lookupzhHK1(key: String): String? = when (key) {
         "aboutAdvancedOptionsTitle" -> "高級選項"
@@ -15322,12 +15314,10 @@ object ArbCatalog {
         "warehouseFeedbackMissingSchoolTitle" -> "缺少學校？去反饋"
         "warehouseImportExecutionLogEmpty" -> "暫無匯入執行記錄。請先開啟教務網頁並執行匯入腳本，再回來查看。這裡只記錄本機最近一次匯入過程；系統層級錯誤仍需裝置日誌。"
         "warehouseImportExecutionLogMenuLabel" -> "課表匯入執行日誌"
+        "warehouseImportExecutionLogShareAction" -> "分享"
         "warehouseImportExecutionLogShareSubject" -> "輕嶼課表 - 課表匯入執行日誌"
         "warehouseImportExecutionLogShareText" -> "這是輕嶼課表匯出的教務匯入執行日誌，包含腳本注入、橋接訊息、逾時與匯入結果等過程記錄，可直接回饋給開發人員排查問題"
         "warehouseImportExecutionLogTitle" -> "課表匯入執行日誌"
-        "warehouseImportLogEmpty" -> "暫無匯入日誌。這裡只記錄本機最近一次匯入過程；系統層級錯誤仍需裝置日誌。"
-        "warehouseImportLogShareAction" -> "分享"
-        "warehouseImportLogTitle" -> "匯入日誌"
         "warehouseImportedTimeSchemeName" -> "{schoolName} 匯入節次"
         "warehouseLoadIssueInvalidFormat" -> "適配倉回傳的內容無法辨識，請回報給適配倉維護者"
         "warehouseLoadIssueNetworkUnreachable" -> "網絡不可用，請檢查網絡或代理後重試"
@@ -15405,11 +15395,11 @@ object ArbCatalog {
         "weatherTemperatureValue" -> "{temperature}°"
         "weatherThunderstorm" -> "雷陣雨"
         "weatherThunderstormHail" -> "雷陣雨伴冰雹"
+        "weatherUseCurrentLocation" -> "使用目前位置"
+        "webAddressHint" -> "輸入網頁地址"
         else -> null
     }
     private fun lookupzhHK11(key: String): String? = when (key) {
-        "weatherUseCurrentLocation" -> "使用目前位置"
-        "webAddressHint" -> "輸入網頁地址"
         "webLoginImport" -> "網頁登入匯入"
         "webdavPasswordReentryBody" -> "本次更新更改了密碼的本機儲存方式，需要重新輸入一次應用程式專用密碼；伺服器位址、帳號與同步設定均已保留。"
         "wechatLabel" -> "微信"
@@ -15463,7 +15453,7 @@ object ArbCatalog {
         else -> null
     }
 
-    // ── zh_TW（3052 条）──
+    // ── zh_TW（3050 条）──
     private fun lookupzhTW(key: String): String? = lookupzhTW1(key) ?: lookupzhTW2(key) ?: lookupzhTW3(key) ?: lookupzhTW4(key) ?: lookupzhTW5(key) ?: lookupzhTW6(key) ?: lookupzhTW7(key) ?: lookupzhTW8(key) ?: lookupzhTW9(key) ?: lookupzhTW10(key) ?: lookupzhTW11(key)
     private fun lookupzhTW1(key: String): String? = when (key) {
         "aboutAdvancedOptionsTitle" -> "高級選項"
@@ -18410,12 +18400,10 @@ object ArbCatalog {
         "warehouseFeedbackMissingSchoolTitle" -> "缺少學校？去反饋"
         "warehouseImportExecutionLogEmpty" -> "暫無匯入執行記錄。請先開啟教務網頁並執行匯入腳本，再回來查看。這裡只記錄本機最近一次匯入過程；系統層級錯誤仍需裝置日誌。"
         "warehouseImportExecutionLogMenuLabel" -> "課表匯入執行日誌"
+        "warehouseImportExecutionLogShareAction" -> "分享"
         "warehouseImportExecutionLogShareSubject" -> "輕嶼課表 - 課表匯入執行日誌"
         "warehouseImportExecutionLogShareText" -> "這是輕嶼課表匯出的教務匯入執行日誌，包含腳本注入、橋接訊息、逾時與匯入結果等過程記錄，可直接回饋給開發人員排查問題"
         "warehouseImportExecutionLogTitle" -> "課表匯入執行日誌"
-        "warehouseImportLogEmpty" -> "暫無匯入日誌。這裡只記錄本機最近一次匯入過程；系統層級錯誤仍需裝置日誌。"
-        "warehouseImportLogShareAction" -> "分享"
-        "warehouseImportLogTitle" -> "匯入日誌"
         "warehouseImportedTimeSchemeName" -> "{schoolName} 匯入節次"
         "warehouseLoadIssueInvalidFormat" -> "適配倉回傳的內容無法辨識，請回報給適配倉維護者"
         "warehouseLoadIssueNetworkUnreachable" -> "網路不可用，請檢查網路或代理後重試"
@@ -18493,11 +18481,11 @@ object ArbCatalog {
         "weatherTemperatureValue" -> "{temperature}°"
         "weatherThunderstorm" -> "雷陣雨"
         "weatherThunderstormHail" -> "雷陣雨伴冰雹"
+        "weatherUseCurrentLocation" -> "使用目前位置"
+        "webAddressHint" -> "輸入網頁地址"
         else -> null
     }
     private fun lookupzhTW11(key: String): String? = when (key) {
-        "weatherUseCurrentLocation" -> "使用目前位置"
-        "webAddressHint" -> "輸入網頁地址"
         "webLoginImport" -> "網頁登入匯入"
         "webdavPasswordReentryBody" -> "本次更新更改了密碼的本機儲存方式，需要重新輸入一次應用程式專用密碼；伺服器位址、帳號與同步設定均已保留。"
         "wechatLabel" -> "微信"
