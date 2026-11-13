@@ -113,12 +113,15 @@ enum class WidgetWeekendMood(val value: String) {
  * [dayOfWeek] 1=周一 … 7=周日（与 `calendarDayToWeekday` 一致）。
  *
  * 「有课」含**停课当天**：那天确实排了课（只是全停了），不该冒出一句
- * 「周末愉快」把停课这件事盖掉。
+ * 「周末愉快」把停课这件事盖掉。同口径也适用于 [hasCourseOnWeekend]：
+ * **周六/周日只要排了课（停课也算），周五就不能宣布「周末要开始了」**
+ * ——用户 2026-11 实报的 bug（周末满课、周五仍弹）就是缺这个输入。
  */
 internal fun widgetResolveWeekendMood(
     dayOfWeek: Int,
     hasAnyCourse: Boolean,
     hasRemainingCourse: Boolean,
+    hasCourseOnWeekend: Boolean,
     isHolidayToday: Boolean,
     isAdjustedWorkdayToday: Boolean,
     isAdjustedWorkdayTomorrow: Boolean,
@@ -134,7 +137,8 @@ internal fun widgetResolveWeekendMood(
         return WidgetWeekendMood.REST
     }
     if (dayOfWeek == 5) {
-        if (isAdjustedWorkdayTomorrow || hasRemainingCourse) {
+        // 周末排了课（含停课）就不算「周末要开始了」——这是 2026-11 用户实报的漏判。
+        if (isAdjustedWorkdayTomorrow || hasRemainingCourse || hasCourseOnWeekend) {
             return WidgetWeekendMood.NONE
         }
         return WidgetWeekendMood.AHEAD

@@ -154,4 +154,36 @@ class WidgetWeekendMoodTest {
         assertTrue(TodayWidgetSupport.isExamOngoing(examOngoing))
         assertFalse(TodayWidgetSupport.isShowingTomorrowCourses(examOngoing))
     }
+
+    @Test
+    fun fridayBeforeAFullWeekendDoesNotAnnounceTheWeekend() {
+        // 用户实报（2026-11）：周末满课（周六周日都有课），周五仍弹「周末要开始了」。
+        // 旧判据只问「今天有没有正在上/没上完的课」+「明天补不补班」，
+        // 从来没问过「周末到底排没排课」——这里把它钉住。
+        assertEquals(
+            WidgetWeekendMood.NONE,
+            widgetResolveWeekendMood(
+                dayOfWeek = 5,
+                hasAnyCourse = false,
+                hasRemainingCourse = false,
+                hasCourseOnWeekend = true,
+                isHolidayToday = false,
+                isAdjustedWorkdayToday = false,
+                isAdjustedWorkdayTomorrow = false,
+            ),
+        )
+        // 反向：周末真的没课，周五该显示（防止把判据改成一刀切）。
+        assertEquals(
+            WidgetWeekendMood.AHEAD,
+            widgetResolveWeekendMood(
+                dayOfWeek = 5,
+                hasAnyCourse = false,
+                hasRemainingCourse = false,
+                hasCourseOnWeekend = false,
+                isHolidayToday = false,
+                isAdjustedWorkdayToday = false,
+                isAdjustedWorkdayTomorrow = false,
+            ),
+        )
+    }
 }

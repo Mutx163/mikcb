@@ -133,6 +133,10 @@ fun buildHomeWidgetSnapshot(
         originalTodayCourseCount = if (todayIsHoliday) 0 else originalTodayCount,
         isAdjustedWorkdayToday = todayIsAdjustedWorkday,
         isAdjustedWorkdayTomorrow = tomorrowIsAdjustedWorkday,
+        // 周末（六/日）排了课就不能在周五宣布「周末要开始了」；getCoursesForDay
+        // 含停课（与 hasAnyCourseToday / originalTodayCount 同口径）。
+        hasCourseOnWeekend = host.getCoursesForDay(6, targetWeek).isNotEmpty() ||
+            host.getCoursesForDay(7, targetWeek).isNotEmpty(),
     )
 }
 
@@ -218,6 +222,9 @@ fun buildHomeWidgetSnapshotForProfile(
         originalTodayCourseCount = if (todayIsHoliday) 0 else originalTodayCount,
         isAdjustedWorkdayToday = todayIsAdjustedWorkday,
         isAdjustedWorkdayTomorrow = tomorrowIsAdjustedWorkday,
+        // 停课也算「排了课」：activeOnly = false，与 originalTodayCount 同口径。
+        hasCourseOnWeekend = coursesForDay(6, targetWeek, activeOnly = false).isNotEmpty() ||
+            coursesForDay(7, targetWeek, activeOnly = false).isNotEmpty(),
     )
 }
 
@@ -235,6 +242,21 @@ fun partnerOriginalCourseCount(
 ): Int {
     val partnerWeek = CoupleTimetableData.partnerWeekForMyWeek(myWeek, weekOffset)
     return partnerCourses.count { it.dayOfWeek == dayOfWeek && it.isInWeek(partnerWeek) }
+}
+
+/**
+ * TA 侧周末（周六或周日）排了课的条数（含停课，`isInWeek` 与
+ * [partnerOriginalCourseCount] 同口径）——合并视图判断「周五能不能宣布周末」用。
+ */
+fun partnerWeekendCourseCount(
+    partnerCourses: List<Course>,
+    myWeek: Int,
+    weekOffset: Int,
+): Int {
+    val partnerWeek = CoupleTimetableData.partnerWeekForMyWeek(myWeek, weekOffset)
+    return partnerCourses.count {
+        (it.dayOfWeek == 6 || it.dayOfWeek == 7) && it.isInWeek(partnerWeek)
+    }
 }
 
 /**
@@ -301,6 +323,10 @@ fun buildCoupleMergedHomeWidgetSnapshot(
         originalTodayCourseCount = if (todayIsHoliday) 0 else originalTodayCount,
         isAdjustedWorkdayToday = todayIsAdjustedWorkday,
         isAdjustedWorkdayTomorrow = tomorrowIsAdjustedWorkday,
+        // 合并视图同理：我方或 TA 任何一边周末排了课（含停课），周五都不宣布周末。
+        hasCourseOnWeekend = host.getCoursesForDay(6, targetWeek).isNotEmpty() ||
+            host.getCoursesForDay(7, targetWeek).isNotEmpty() ||
+            partnerWeekendCourseCount(partner.courses, targetWeek, coupleBinding.weekOffset) > 0,
     )
 }
 

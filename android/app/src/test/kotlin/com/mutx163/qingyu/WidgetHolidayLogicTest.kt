@@ -200,6 +200,7 @@ class WidgetHolidayLogicTest {
         dayOfWeek: Int,
         hasAnyCourse: Boolean = false,
         hasRemainingCourse: Boolean = false,
+        hasCourseOnWeekend: Boolean = false,
         isHolidayToday: Boolean = false,
         isAdjustedWorkdayToday: Boolean = false,
         isAdjustedWorkdayTomorrow: Boolean = false,
@@ -207,6 +208,7 @@ class WidgetHolidayLogicTest {
         dayOfWeek = dayOfWeek,
         hasAnyCourse = hasAnyCourse,
         hasRemainingCourse = hasRemainingCourse,
+        hasCourseOnWeekend = hasCourseOnWeekend,
         isHolidayToday = isHolidayToday,
         isAdjustedWorkdayToday = isAdjustedWorkdayToday,
         isAdjustedWorkdayTomorrow = isAdjustedWorkdayTomorrow,
@@ -254,6 +256,18 @@ class WidgetHolidayLogicTest {
             WidgetWeekendMood.NONE,
             mood(dayOfWeek = 5, hasAnyCourse = true, hasRemainingCourse = true),
         )
+    }
+
+    @Test
+    fun fridayBeforeAFullWeekendDoesNotAnnounceTheWeekend() {
+        // 用户实报（2026-11）：周末满课，周五仍弹「周末要开始了」。旧判据只看
+        // 「今天有没有课上完 / 明天补不补班」，**从来没看周末排没排课**。
+        // 停课也算「排了课」，与 hasAnyCourse 同口径（输入本身已是这个语义）。
+        assertEquals(WidgetWeekendMood.NONE, mood(dayOfWeek = 5, hasCourseOnWeekend = true))
+        // 反向：周末真没课，周五照旧显示（防止一刀切）。
+        assertEquals(WidgetWeekendMood.AHEAD, mood(dayOfWeek = 5, hasCourseOnWeekend = false))
+        // 周末当天有课时的既有口径不受影响。
+        assertEquals(WidgetWeekendMood.NONE, mood(dayOfWeek = 6, hasAnyCourse = true))
     }
 
     @Test

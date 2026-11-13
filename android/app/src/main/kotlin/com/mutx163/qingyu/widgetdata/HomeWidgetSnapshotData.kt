@@ -34,6 +34,13 @@ class HomeWidgetSnapshotService {
         originalTodayCourseCount: Int = 0,
         isAdjustedWorkdayToday: Boolean = false,
         isAdjustedWorkdayTomorrow: Boolean = false,
+        /**
+         * 当前查看周里周六或周日**排了课**（含停课）。
+         *
+         * 默认 `false` 只为测试调用方便；生产调用点必须传真实值——
+         * 漏传的后果是「周末满课的人周五仍看到『周末要开始了』」（2026-11 用户实报）。
+         */
+        hasCourseOnWeekend: Boolean = false,
     ): HomeWidgetSnapshot {
         // 假期态：清空课程，但仍带下一场考试（卡片倒计时不能在假期消失）。
         if (isHoliday) {
@@ -75,11 +82,13 @@ class HomeWidgetSnapshotService {
 
         val hasCoursesScheduled = todayCourses.isNotEmpty() || originalTodayCourseCount > 0
         // 周末文案档位：必须在 currentCourse/upcomingCourse 之后算——周五那句
-        // 「周末要开始了」的门槛就是这两个都为空（weekend_mood_logic 调用点注释）。
+        // 「周末要开始了」的门槛是「今天没课/课上完 + 明天不补班 + **周末没排课**」。
+        // 最后一个条件是 2026-11 用户实报后补的：周末满课时不能宣布周末。
         val weekendMood = WeekendMoodLogic.resolve(
             dayOfWeek = now.dayOfWeek.value,
             hasAnyCourseToday = hasCoursesScheduled,
             hasRemainingCourseToday = currentCourse != null || upcomingCourse != null,
+            hasCourseOnWeekend = hasCourseOnWeekend,
             isHolidayToday = isHoliday,
             isAdjustedWorkdayToday = isAdjustedWorkdayToday,
             isAdjustedWorkdayTomorrow = isAdjustedWorkdayTomorrow,

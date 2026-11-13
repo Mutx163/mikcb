@@ -401,6 +401,9 @@ object TodayWidgetSupport {
         }
         // 周末文案档位：与 Dart resolveWeekendMood 同口径，独立算一遍（App 没跑过时
         // 也要对）。调休补班标记不看 profile 开关，只认全局假期数据。
+        //
+        // hasCourseOnWeekend：当前查看周里周六/周日**排了**课（含停课）就不能算「周末」。
+        // 用户 2026-11 实报：周末满课的人周五仍弹「周末要开始了」——旧判据只看今天有没有课上完。
         val weekendMood = resolveWeekendMood(
             context = context,
             nowCalendar = nowCalendar,
@@ -410,6 +413,7 @@ object TodayWidgetSupport {
             todayWeekday = todayWeekday,
             hasAnyCourseToday = todayCourses.isNotEmpty() || originalTodayCourseCount > 0,
             hasRemainingCourseToday = currentCourse != null || upcomingCourse != null,
+            hasCourseOnWeekend = allCourses.any { it.dayOfWeek == 6 || it.dayOfWeek == 7 },
         )
         val widgetShowCountdown = settingsJson.optBoolean("widgetShowCountdown", false)
         val countdownLeadMinutes = settingsJson.optInt("widgetCountdownLeadMinutes", 20)
@@ -1483,6 +1487,7 @@ internal fun findNextRefreshAtMillis(
         todayWeekday: Int,
         hasAnyCourseToday: Boolean,
         hasRemainingCourseToday: Boolean,
+        hasCourseOnWeekend: Boolean,
     ): WidgetWeekendMood {
         if (isHolidayToday) {
             return WidgetWeekendMood.NONE
@@ -1509,6 +1514,7 @@ internal fun findNextRefreshAtMillis(
             dayOfWeek = todayWeekday,
             hasAnyCourse = hasAnyCourseToday,
             hasRemainingCourse = hasRemainingCourseToday,
+            hasCourseOnWeekend = hasCourseOnWeekend,
             isHolidayToday = isHolidayToday,
             isAdjustedWorkdayToday = isAdjustedWorkdayToday,
             isAdjustedWorkdayTomorrow = isAdjustedWorkdayTomorrow,

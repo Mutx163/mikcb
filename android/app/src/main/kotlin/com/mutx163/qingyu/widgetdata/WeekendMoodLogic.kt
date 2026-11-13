@@ -19,6 +19,9 @@ object WeekendMoodLogic {
      * @param dayOfWeek 1=周一 … 7=周日
      * @param hasAnyCourseToday 当天**排了**课（含已停课）——停课也算「排了课」。
      * @param hasRemainingCourseToday 今天还有正在上或还没开始的课。
+     * @param hasCourseOnWeekend 当前查看周里，**周六或周日排了课**（含停课，口径同上）。
+     *   没有这个输入时，周五那句「周末要开始了」只看「今天有没有课上完」，
+     *   周末满课的人照样会被告知「周末要开始了」（用户 2026-11 实报）。
      * @param isHolidayToday 法定假期/调休休息（假期有自己的文案，不叠加）。
      * @param isAdjustedWorkdayToday/Tomorrow 调休补班日（补班的周六日要上班）。
      */
@@ -26,6 +29,7 @@ object WeekendMoodLogic {
         dayOfWeek: Int,
         hasAnyCourseToday: Boolean,
         hasRemainingCourseToday: Boolean,
+        hasCourseOnWeekend: Boolean,
         isHolidayToday: Boolean,
         isAdjustedWorkdayToday: Boolean,
         isAdjustedWorkdayTomorrow: Boolean,
@@ -36,9 +40,12 @@ object WeekendMoodLogic {
             if (isAdjustedWorkdayToday || hasAnyCourseToday) return WeekendMoodData.NONE
             return WeekendMoodData.REST
         }
-        // 周五：明天必然是周六或周日（星期跨月跨年连续），只看明天是不是补班。
+        // 周五：明天必然是周六或周日（星期跨月跨年连续），看明天是不是补班，
+        // **更要看周末到底有没有课**——周末满课时宣布「周末要开始了」是错的。
         if (dayOfWeek == 5) {
-            if (isAdjustedWorkdayTomorrow || hasRemainingCourseToday) return WeekendMoodData.NONE
+            if (isAdjustedWorkdayTomorrow || hasRemainingCourseToday || hasCourseOnWeekend) {
+                return WeekendMoodData.NONE
+            }
             return WeekendMoodData.AHEAD
         }
         return WeekendMoodData.NONE
