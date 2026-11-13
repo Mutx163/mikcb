@@ -1,5 +1,6 @@
 package com.mutx163.qingyu.pages.import.warehouse
 
+import android.os.Build
 import android.os.SystemClock
 import android.util.Log
 import android.widget.Toast
@@ -22,6 +23,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import com.mutx163.qingyu.app.TimetableRepository
+import com.mutx163.qingyu.BuildConfig
 import com.mutx163.qingyu.components.QingyuCard
 import com.mutx163.qingyu.components.QingyuCardDefaults
 import com.mutx163.qingyu.components.QingyuPageCardMargin
@@ -36,6 +38,7 @@ import com.mutx163.qingyu.pages.time_scheme.TimeSchemeServiceMessages
 import com.mutx163.qingyu.platform.KeystoreSecretCipher
 import com.mutx163.qingyu.platform.PrefsKeyValueStore
 import com.mutx163.qingyu.transfer.MAX_ALLOWED_SEMESTER_WEEK_COUNT
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -664,6 +667,12 @@ fun WarehouseWebLoginHost(
             WarehouseWebLoginStage.LOADED
         }
         session = session.withStage(stage, errorMessage)
+        // 【第 1 步触点，**未验**】快照 → 脱敏 → 覆盖写 `files/warehouse_import_log/last.txt`。
+        // 同步写是刻意的：`scope` 随组合销毁，点返回时的收尾不该被连带取消（最需要日志的一条）。
+        writeWarehouseImportLogFile(
+            context.filesDir,
+            WarehouseDeviceInfo(Build.MODEL, Build.VERSION.RELEASE, BuildConfig.VERSION_NAME),
+        )
     }
 
     fun resetPlaybackUi() {
@@ -905,24 +914,48 @@ fun WarehouseWebLoginHost(
         importTimeoutJob?.cancel()
         executionTimer.start(SystemClock.elapsedRealtime())
         importTimeoutJob = scope.launch {
-            while (isActive) {
-                delay(EXECUTION_TIMER_POLL_INTERVAL_MS)
-                // 宿主至多一个挂起弹窗（脚本 await 串行发问）；这里算的是**当下**的值。
-                val pendingDialogCount = if (pendingDialog != null) 1 else 0
-                // 自愈：弹窗挂着而预算没暂停（说明挂起点漏了 pause）→ 这一拍补上。
-                // 宁可晚一拍暂停，也不许把「用户读弹窗的时间」算进预算。
-                if (pendingDialogCount > 0 && !executionTimer.paused) {
-                    executionTimer.pause(SystemClock.elapsedRealtime())
+            try {
+                while (isActive) {
+                    delay(EXECUTION_TIMER_POLL_INTERVAL_MS)
+                    // 宿主至多一个挂起弹窗（脚本 await 串行发问）；这里算的是**当下**的值。
+                    val pendingDialogCount = if (pendingDialog != null) 1 else 0
+                    // 自愈：弹窗挂着而预算没暂停（说明挂起点漏了 pause）→ 这一拍补上。
+                    // 宁可晚一拍暂停，也不许把「用户读弹窗的时间」算进预算。
+                    if (pendingDialogCount > 0 && !executionTimer.paused) {
+                        executionTimer.pause(SystemClock.elapsedRealtime())
+                    }
+                    val fire = executionTimer.shouldFire(
+                        nowMs = SystemClock.elapsedRealtime(),
+                        limitMs = SCRIPT_EXECUTION_TIMEOUT_MS,
+                        pendingDialogCount = pendingDialogCount,
+                    )
+                    if (fire) {
+                        onScriptExecutionTimeout()
+                        return@launch
+                    }
                 }
-                val fire = executionTimer.shouldFire(
-                    nowMs = SystemClock.elapsedRealtime(),
-                    limitMs = SCRIPT_EXECUTION_TIMEOUT_MS,
-                    pendingDialogCount = pendingDialogCount,
+            } catch (t: Throwable) {
+                // 取消必须**第一步**原样放行：吞掉它 = 留下一条无法取消的轮询协程，
+                // 用户退出页面后它还在跑，下一轮导入可能撞上游离的超时定时器
+                // （「修崩溃时顺手引入泄漏」的经典形态）。
+                if (t is CancellationException) throw t
+                // 走到这里 = 不变量（onScriptExecutionTimeout 开头的 check）真被踩了。
+                // `scope` 没有 CoroutineExceptionHandler，冒出去就是未捕获异常（FATAL）；
+                // 用户看到的不该是「App 崩了」，而是与超时**同一个**失败出口。
+                Log.e(LOG_TAG, "import budget invariant violated", t)
+                WarehouseImportLog.record(
+                    WarehouseLogCategory.INTERNAL,
+                    linkedMapOf(
+                        "where" to "armImportTimeout",
+                        "error" to (t.message ?: t.javaClass.simpleName),
+                    ),
                 )
-                if (fire) {
-                    onScriptExecutionTimeout()
-                    return@launch
-                }
+                // 文案复用超时出口的那一句（不新增键）：用户动作建议与超时相同。
+                val message = WarehouseStrings.executeFailedWithError.filled("error", "timeout")
+                cancelImportTimeout()
+                endScriptWindow(errorMessage = message)
+                finishPlaybackWaitingWithError(message)
+                showExecutionTimeoutDialog = true
             }
         }
     }

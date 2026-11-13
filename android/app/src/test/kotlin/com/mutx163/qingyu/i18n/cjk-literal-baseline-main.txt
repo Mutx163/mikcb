@@ -77,6 +77,11 @@ com/mutx163/qingyu/pages/settings/SettingsPageModel.kt:3
 com/mutx163/qingyu/pages/settings/SettingsRecentWallpaperPage.kt:3
 com/mutx163/qingyu/pages/statistics/charts/QrEncodeModel.kt:3
 com/mutx163/qingyu/share/camera/ScanResultDeduplicator.kt:3
+# 2026-11-12 教务导入 P0 日志第 1 步登记（0→3）：`WarehouseLogRedaction.kt` 里的
+# 「口令」「账号」「手机号」是**脱敏规则的键名 token**，不是屏上文案——它们必须与业
+# 务侧可能写出来的中文键名逐字一致才遮得住；走 ArbText 会随语言变化，非中文语言下
+# 这几条规则直接失效（等于漏遮）。日志正文只落英文键与掩码形态。
+com/mutx163/qingyu/pages/import/warehouse/WarehouseLogRedaction.kt:3
 com/mutx163/qingyu/core/TimetableProfile.kt:2
 com/mutx163/qingyu/pages/settings/SettingsAppearanceEditorPage.kt:2
 com/mutx163/qingyu/pages/settings/SettingsCourseCardPage.kt:2
@@ -98,6 +103,11 @@ com/mutx163/qingyu/pages/exam/ExamListModel.kt:1
 com/mutx163/qingyu/pages/export/IcsShareModel.kt:1
 com/mutx163/qingyu/pages/export/IcsShareWiring.kt:1
 com/mutx163/qingyu/pages/import/warehouse/WarehouseRepositoryParsers.kt:1
+# 2026-11-12 教务导入 P0 日志第 1 步登记（0→1）：`WarehouseImportLogExport.kt` 的
+# 「已截断」是**落盘文件正文里的截断注记**（用户把 last.txt 贴出来时要一眼看见「这份
+# 不完整」），不属于可切换语言的界面文案：日志是排障物证，同一份日志在不同语言版本下
+# 措辞必须一致，走 ArbText 反而让两份日志无法逐行比对。
+com/mutx163/qingyu/pages/import/warehouse/WarehouseImportLogExport.kt:1
 com/mutx163/qingyu/pages/settings/SettingsTimetablePageSettingsPage.kt:1
 com/mutx163/qingyu/pages/sync/CoupleTimetableSettingsModel.kt:1
 # 2026-11-10 云同步设备名（美化十二）：

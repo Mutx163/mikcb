@@ -67,20 +67,44 @@ fun warehouseAdapterScriptPath(
  *
  * 顺序：先判「有没有脚本」（用户能去反馈页解决），再判「页面加载完没有」（稍等即可）。
  * 只有 [WarehouseWebLoginStage.LOADED] 放行——LOADING / ERROR / 执行中都不行。
+ *
+ * 每次判定都往 [log] 记一条 [WarehouseLogCategory.GATE]（Ready 或拒绝原因）。
+ * 为什么判定点也要日志：用户点「执行导入脚本」没反应时，**是闸门拒的还是脚本没回**
+ * 决定了完全不同的处置，而这一句是唯一能把两件事分开的地方。
+ *
+ * @param log 日志缓冲（默认进程内全局那只；测试注入自己的）
  */
 fun planWarehouseScriptExecution(
     stage: WarehouseWebLoginStage,
     school: WarehouseSchoolEntry?,
     adapter: WarehouseAdapterEntry?,
+    log: WarehouseImportLogBuffer = WarehouseImportLog.buffer,
 ): WarehouseScriptExecutionPlan {
     val path = warehouseAdapterScriptPath(school, adapter)
-    if (path.isEmpty()) {
-        return WarehouseScriptExecutionPlan.Blocked(WarehouseScriptBlockReason.NO_SCRIPT_PATH)
+    val plan = when {
+        path.isEmpty() -> WarehouseScriptExecutionPlan.Blocked(WarehouseScriptBlockReason.NO_SCRIPT_PATH)
+        stage != WarehouseWebLoginStage.LOADED ->
+            WarehouseScriptExecutionPlan.Blocked(WarehouseScriptBlockReason.PAGE_NOT_LOADED)
+        else -> WarehouseScriptExecutionPlan.Ready(path)
     }
-    if (stage != WarehouseWebLoginStage.LOADED) {
-        return WarehouseScriptExecutionPlan.Blocked(WarehouseScriptBlockReason.PAGE_NOT_LOADED)
-    }
-    return WarehouseScriptExecutionPlan.Ready(path)
+    log.record(
+        WarehouseLogCategory.GATE,
+        linkedMapOf(
+            "decision" to when (plan) {
+                is WarehouseScriptExecutionPlan.Ready -> "ready"
+                is WarehouseScriptExecutionPlan.Blocked -> "blocked"
+            },
+            "reason" to when (plan) {
+                is WarehouseScriptExecutionPlan.Ready -> "none"
+                is WarehouseScriptExecutionPlan.Blocked -> plan.reason.name
+            },
+            "stage" to stage.name,
+            "school" to (school?.resourceFolder.orEmpty()),
+            "adapter" to (adapter?.id.orEmpty()),
+            "script" to path,
+        ),
+    )
+    return plan
 }
 
 /**

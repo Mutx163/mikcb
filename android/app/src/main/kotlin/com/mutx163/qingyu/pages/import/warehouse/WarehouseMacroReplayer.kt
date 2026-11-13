@@ -30,6 +30,13 @@ import java.util.concurrent.CancellationException
  * 失败全部以 `code|k=v` 服务消息抛出（[WarehouseMacroReplayStrings.localize] 负责人话），
  * 不静默吞——「卡在第几步、卡在哪个元素」必须能讲清楚。
  *
+ * ## 导入日志（P0 验证通道的第 1 步）
+ *
+ * 每一步的状态 / 耗时 / 跳过原因、以及失败时那条 `code|k=v` 服务消息，都会经
+ * [importLog] 记进 [WarehouseImportLog]（落盘见 `WarehouseImportLogFileWriter`）。
+ * 为什么在这里接：`onProgress` 是**唯一**知道「现在跑到第几步、刚才那步花了多久」的地方，
+ * 而用户报障时不看 logcat——只认「能导出的一段文本」。
+ *
  * 纯 JVM：不 import `android.*`；WebView 平台桥在 composeP1 宿主里。
  */
 class WarehouseMacroReplayer(
@@ -50,6 +57,13 @@ class WarehouseMacroReplayer(
     private val defaultElementWaitMs: Int = DEFAULT_MACRO_ELEMENT_WAIT_MS,
     /** 作废步骤跳过留痕（宿主接 Log.w 进导入日志；本类不依赖 android.util.Log）。 */
     private val onSkipLog: (String) -> Unit = {},
+    /**
+     * 导入日志缓冲（`MACRO_STEP` / `FAILURE` 落这里）。
+     *
+     * 默认是进程内全局那只（[WarehouseImportLog]）；测试注入自己新建的一只，
+     * 才能断言「第几步、什么状态、耗时、跳过原因」真的被记下来。
+     */
+    private val importLog: WarehouseImportLogBuffer = WarehouseImportLog.buffer,
 ) {
     /** 回放引擎回调（Dart `ReplayCallbacks` 同形）。 */
     interface Callbacks {
@@ -71,7 +85,10 @@ class WarehouseMacroReplayer(
         // 旧宏可能含逐字 fillField；先压缩，避免「已填满又重输」。
         val fullSteps = WarehouseMacroRecordingConverter.compactMacroFillSteps(macro.steps)
         if (fullSteps.isEmpty()) {
-            callbacks.onComplete(false, encodeMacroServiceMessage("macro_no_steps"))
+            val message = encodeMacroServiceMessage("macro_no_steps")
+            // 失败点钩子：用户要的「为什么没导进来」就是这一条原文。
+            importLog.record(WarehouseLogCategory.FAILURE, "code" to message)
+            callbacks.onComplete(false, message)
             return
         }
 
@@ -133,6 +150,8 @@ class WarehouseMacroReplayer(
             callbacks.onProgress(
                 WarehouseReplayProgress(i, steps.size, step, ReplayStepStatus.RUNNING),
             )
+            // 一步的耗时从「进度摆到 RUNNING」这一刻算起（用户看到的那一拍）。
+            val stepStartedAt = nowMs()
 
             val hrefBeforeStep = if (step.type == WarehouseMacroStepType.CLICK) currentDocumentHref() else null
             val detail: String = try {
@@ -141,6 +160,7 @@ class WarehouseMacroReplayer(
                     previousClickNavigated =
                         warehouseMacroDocumentChanged(hrefBeforeStep, currentDocumentHref())
                 }
+                logMacroStep(i, steps.size, step, status = STEP_STATUS_OK, durationMs = nowMs() - stepStartedAt)
                 callbacks.onProgress(
                     WarehouseReplayProgress(i, steps.size, step, ReplayStepStatus.SUCCEEDED),
                 )
@@ -162,6 +182,14 @@ class WarehouseMacroReplayer(
                 onSkipLog(
                     "playback skipped stale click step=${i + 1}/${steps.size} " +
                         "selector=${step.selector} reason=element_not_found_after_navigation",
+                )
+                logMacroStep(
+                    i,
+                    steps.size,
+                    step,
+                    status = STEP_STATUS_SKIPPED,
+                    durationMs = nowMs() - stepStartedAt,
+                    skipReason = SKIP_REASON_STALE_CLICK,
                 )
                 previousClickNavigated = false
                 continue
@@ -189,9 +217,25 @@ class WarehouseMacroReplayer(
                         "type=${step.type.wireName} selector=${step.selector} " +
                         "reason=element_not_found_in_auth_prefix",
                 )
+                logMacroStep(
+                    i,
+                    steps.size,
+                    step,
+                    status = STEP_STATUS_SKIPPED,
+                    durationMs = nowMs() - stepStartedAt,
+                    skipReason = SKIP_REASON_AUTH_PREFIX,
+                )
                 continue
             }
 
+            logMacroStep(
+                i,
+                steps.size,
+                step,
+                status = STEP_STATUS_FAILED,
+                durationMs = nowMs() - stepStartedAt,
+                detail = detail,
+            )
             callbacks.onProgress(
                 WarehouseReplayProgress(
                     i,
@@ -202,15 +246,15 @@ class WarehouseMacroReplayer(
                 ),
             )
             if (reportFailureToHost) {
-                callbacks.onComplete(
-                    false,
-                    encodeMacroServiceMessage(
-                        "macro_step_failed",
-                        "stepIndex" to (i + 1),
-                        "totalSteps" to steps.size,
-                        "detail" to detail,
-                    ),
+                val failureMessage = encodeMacroServiceMessage(
+                    "macro_step_failed",
+                    "stepIndex" to (i + 1),
+                    "totalSteps" to steps.size,
+                    "detail" to detail,
                 )
+                // 失败点钩子：`code|k=v` 原文进日志（脱敏在 buffer 入队时做）。
+                importLog.record(WarehouseLogCategory.FAILURE, "code" to failureMessage)
+                callbacks.onComplete(false, failureMessage)
             }
             return false
         }
@@ -428,9 +472,48 @@ class WarehouseMacroReplayer(
 
     private suspend fun currentDocumentHref(): String? = currentDocumentState()?.first
 
+    /**
+     * 记一条 [WarehouseLogCategory.MACRO_STEP]。
+     *
+     * 字段就是报障时最需要的五样：步号、类型、selector、状态、耗时；跳过再带 `skipReason`，
+     * 失败再带 `detail`（后两者互斥）。
+     *
+     * **刻意不记 fill 的值**：填进去的可能是口令。少一个字段比「脱敏后再记」更安全——
+     * 脱敏规则将来改坏也不会把口令漏出去。
+     */
+    private fun logMacroStep(
+        stepIndex: Int,
+        totalSteps: Int,
+        step: WarehouseMacroStep,
+        status: String,
+        durationMs: Long,
+        detail: String? = null,
+        skipReason: String? = null,
+    ) {
+        val fields = LinkedHashMap<String, String>()
+        fields["step"] = "${stepIndex + 1}/$totalSteps"
+        fields["type"] = step.type.wireName
+        step.selector?.takeIf { it.isNotEmpty() }?.let { fields["selector"] = it }
+        step.fieldType?.takeIf { it.isNotEmpty() }?.let { fields["fieldType"] = it }
+        fields["status"] = status
+        fields["ms"] = durationMs.toString()
+        skipReason?.let { fields["skipReason"] = it }
+        detail?.let { fields["detail"] = it }
+        importLog.record(WarehouseLogCategory.MACRO_STEP, fields)
+    }
+
     companion object {
         const val MANUAL_INPUT_DEFAULT_CODE = "macro_manual_input_default"
         const val CODE_USER_CANCELLED = "macro_user_cancelled"
+
+        /** [logMacroStep] 的 status 取值（落盘里就这几个词）。 */
+        const val STEP_STATUS_OK = "ok"
+        const val STEP_STATUS_FAILED = "failed"
+        const val STEP_STATUS_SKIPPED = "skipped"
+
+        /** 两种「少做一步」的原因，与 `onSkipLog` 里写的 reason 逐字一致。 */
+        const val SKIP_REASON_STALE_CLICK = "element_not_found_after_navigation"
+        const val SKIP_REASON_AUTH_PREFIX = "element_not_found_in_auth_prefix"
 
         /**
          * 填充一步的脚本（Dart `_executeFillField` 的 spec 逐字）：
