@@ -72,7 +72,32 @@
 
 它们随去 Flutter 化 P4-C 删除。历史上引用过它们的位置已改为指向 `AGENTS.md` 文案段（`SettingsSpecTestSupport.kt`、`SettingsCopyWidthTest.kt`）。
 
-## 5. 相关但不在本文
+## 5. 发版工具链（可验证事实，2026-11-13 实读/实跑）
 
-- 版本号闸与 tag 换算：`docs/RELEASE.md` 第四、六节；脚本 `tool/verify_release_version.sh`、`tool/release_preflight.sh`、`tool/check_release_highlights.py`。
+**版本源**：`android/version.properties`（`versionName` / `versionCodeBase`）。2026-11-13 实读值：`versionName=3.0.0-0`、`versionCodeBase=150`。`android/app/build.gradle` 读它（`:15-19`），`versionCode = appVersionCodeBase + 100000`（`:69`）、`versionName` 可被 `OVERRIDE_VERSION_NAME` 覆盖（`:38`、`:70`）。
+
+**三条发版前命令**（均在仓库根执行，均为本机实跑过的命令形态）：
+
+```bash
+bash tool/verify_release_version.sh prerelease   # 正式版用 release
+bash tool/release_preflight.sh                   # 要 0 FAIL；WARN 逐条看
+python tool/check_release_highlights.py          # Windows 用 python；python3 是商店空壳
+```
+
+**tag 换算**唯一实现位置 `.github/workflows/android-build.yml:85` 的 `sed -E 's/-0$//; s/-([0-9]+)$/.\1/'`；`tool/check_release_highlights.py:36-47` 与 `tool/release_preflight.sh` 有同口径副本，边界不完全一致（py 对 `-beta` 这类非数字后缀会拼成 `vA.B.C.beta`）。
+
+**notes 镜像**：`docs/releases/v*.md` 改动必须同笔同步 `android/app/src/main/assets/docs/releases/`（逐字节），由 `FlutterAssetsDecouplingGuardTest` 守；三份 `3.0.0-1-*` 内部文档故意不进镜像。
+
+**判据与流程正文**在 `docs/RELEASE.md`（第四节版本与 tag 规则、第六节前置检查、第七节步骤、第八节 post-tag 验证、第十二节 Tag recovery）。
+
+**未核实**：`gh` 系命令（`gh run list/watch`、`gh release view`）本机无凭据，未实跑；平台侧同步行为只读代码未对远端核实。
+
+## 6. 技能参考文档的位置（注意：不入库）
+
+`mikcb-release` 技能的参考文档在 `.agents/skills/mikcb-release/`，且 **`.agents/` 被 `.gitignore` 忽略**（见 §4 的同类问题）：新克隆拿不到它们。
+
+因此**以仓库内文档为准**：本文 + `docs/RELEASE.md`。技能文档只是本机助手，口径与本文冲突时以本文与代码为准，并回来改本文。
+
+## 7. 其他相关
+
 - 样式门禁细则：`docs/reference/compose-page-style-rules.md`。
