@@ -57,9 +57,10 @@ class WarehouseImportLogFileWriterTest {
         readBack.lineSequence().take(8).forEach { println("[warehouse-log] $it") }
     }
 
-    /** 单份上限 256 KiB：超了截断，并在文末写「已截断」。 */
+    /** 单份上限 256 KiB（真实文件往返）：超了截断、表头 `truncated: true`、文末 ASCII 标记。 */
     @Test
-    fun `超过256KiB的日志会截断并注明已截断`() {
+    fun `超过256KiB的日志截断后写盘 表头与文末两处标记都在`() {
+        val dir = newTempDir("truncated")
         val log = WarehouseImportLogBuffer()
         log.beginRun("run-big", SCHOOL, ADAPTER)
         repeat(6000) { index ->
@@ -75,12 +76,22 @@ class WarehouseImportLogFileWriterTest {
             )
         }
         val text = WarehouseImportLogExport.buildText(log.snapshot(), DEVICE, nowMs = FIXED_MS)
-        val bytes = text.toByteArray(Charsets.UTF_8).size
-        assertTrue("截断后仍有 $bytes 字节，超过 256 KiB", bytes <= WarehouseImportLogExport.MAX_TEXT_BYTES)
+        val writer = WarehouseImportLogFileWriter(baseDir = dir, log = log)
+        val target = writer.targetFile()
+        assertTrue("写入真实文件失败：${target.absolutePath}", writer.write(text))
+
+        val readBack = target.readText(Charsets.UTF_8)
+        val bytes = readBack.toByteArray(Charsets.UTF_8).size
+        assertTrue("落盘后仍有 $bytes 字节，超过 256 KiB", bytes <= WarehouseImportLogExport.MAX_TEXT_BYTES)
         assertTrue(
-            "文末没有「已截断」注记，用户会以为这份日志是完整的",
-            text.trimEnd().endsWith(WarehouseImportLogExport.TRUNCATED_NOTE),
+            "表头没有报 truncated: true（机器读的那一处缺失）",
+            readBack.contains("truncated: true"),
         )
+        assertTrue(
+            "文末缺少 ASCII 标记 ${WarehouseImportLogExport.TRUNCATED_NOTE}（人看的那一处缺失）",
+            readBack.trimEnd().endsWith(WarehouseImportLogExport.TRUNCATED_NOTE),
+        )
+        println("[warehouse-log-truncated] file=${target.absolutePath} bytes=$bytes")
     }
 
     /** 写失败：**不抛**、返回 false，并记一条 INTERNAL（第 2 步 UI 必须能显示它）。 */
