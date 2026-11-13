@@ -230,6 +230,12 @@ fun DayAgendaInfoRow(
     ink: Color,
     modifier: Modifier = Modifier,
     textModifier: Modifier = Modifier,
+    /**
+     * 最多几行。默认 1（保持既有「教师 / 节次」等行不变）；
+     * 地点与天气行传 2：地点带「地点：」前缀、天气是「现象 · 温度 · 概率」三段拼接，
+     * 单行在窄屏或大字体会被省略号截断（真机反馈教室与降水概率看不全）。
+     */
+    maxLines: Int = 1,
 ) {
     Row(
         modifier = modifier,
@@ -246,7 +252,7 @@ fun DayAgendaInfoRow(
             text = text,
             style = MiuixTheme.textStyles.footnote1,
             color = ink.copy(alpha = 0.85f),
-            maxLines = 1,
+            maxLines = maxLines,
             overflow = TextOverflow.Ellipsis,
             modifier = textModifier,
         )

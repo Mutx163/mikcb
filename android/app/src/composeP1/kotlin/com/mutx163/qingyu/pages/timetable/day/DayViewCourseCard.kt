@@ -414,6 +414,8 @@ fun DayViewCourseCard(
                     FontWeight.Normal,
                     ink.copy(alpha = 0.85f),
                 ),
+                // 地点带「地点：」前缀、校区名可能很长：允许折 2 行，别用省略号砍掉教室号。
+                maxLines = 2,
             )
 
             // 天气
@@ -444,6 +446,8 @@ fun DayViewCourseCard(
                         } else {
                             Modifier
                         },
+                        // 「现象 · 温度 · 概率」三段拼接，单行会被截断成「小雨 · 23° · 6…」。
+                        maxLines = 2,
                     )
                 }
             }

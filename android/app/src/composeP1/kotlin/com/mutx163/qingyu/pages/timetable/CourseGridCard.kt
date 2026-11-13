@@ -375,15 +375,21 @@ fun CourseGridCard(
             }
             if (style.showLocation && course.location.isNotBlank()) {
                 hasAnyField = true
+                // 单列只有 40–50dp：「教三305」这类 5 字在 1 行放不下（真机反馈教室被截断）。
+                // span ≥ 2 时给 2 行，字号再降 1sp（下限 7sp）换宽度——约定由
+                // `CourseGridCardLocationLinesGuardTest` 钉住，别改回单行。
+                val locationMaxLines = if (span >= 2) 2 else 1
+                val locationFontSize = (detailFontSize - 1f).coerceAtLeast(7f)
                 CardDetailLine(
                     text = course.location.trim(),
-                    fontSize = detailFontSize,
+                    fontSize = locationFontSize,
                     color = detailInk,
                     textAlign = textAlign,
+                    maxLines = locationMaxLines,
                     modifier = flightAnchor(
                         "location",
                         course.location.trim(),
-                        detailFontSize,
+                        locationFontSize,
                         FontWeight.Normal,
                         detailInk,
                     ),
