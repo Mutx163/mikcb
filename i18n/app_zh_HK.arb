@@ -338,7 +338,7 @@
   },
   "icsStep1Subtitle": "先在其他課表應用裡匯出 .ics 日歷檔案",
   "icsStep2Subtitle": "在此選擇文件，可追加導入或替換現有課程",
-  "icsStep3Subtitle": "匯入前還會讓你確認開學日期，以及課表第 1 週對應校歷第幾週",
+  "icsStep3Subtitle": "匯入前還會讓你確認開學日期，以及課表第 1 週對應校曆第幾週",
   "supportedFilesTitle": "支持的檔案",
   "supportedFilesSuffix": "檔案後綴必須是 .ics",
   "supportedFilesImageHint": "課表截圖請返回上一頁使用識圖導入",
@@ -1943,7 +1943,7 @@
     }
   },
   "pasteAction": "貼上",
-  "importConfirmSemesterMappingSubtitleWarehouse": "已獲取課程週次，請確認校歷開學日期。若開學前幾週無課，可將第 1 週對應至校歷實際週次。",
+  "importConfirmSemesterMappingSubtitleWarehouse": "已獲取課程週次，請確認校曆開學日期。若開學前幾週無課，可將第 1 週對應至校曆實際週次。",
   "aiPreviewCourseCount": "課程數量：{count}",
   "@aiPreviewCourseCount": {
     "placeholders": {
