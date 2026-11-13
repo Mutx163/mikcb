@@ -2200,7 +2200,7 @@
   "warehouseImportExecutionLogMenuLabel": "Import execution log",
   "warehouseImportExecutionLogShareText": "This is the academic-system import execution log exported from Qingyu Timetable. It includes script injection, bridge messages, timeouts, and import results for troubleshooting.",
   "warehouseImportExecutionLogShareSubject": "Qingyu Timetable - Import execution log",
-  "warehouseImportExecutionLogEmpty": "No import execution records yet. Open the academic-system page, run the import script, then check again.",
+  "warehouseImportExecutionLogEmpty": "No import execution records yet. Open the academic-system page, run the import script, then check again. This records only the most recent import run on this device; system-level errors still require device logs.",
   "warehouseRootLoadFailedTitle": "Unable to read the adapter repository right now",
   "searchSchoolHint": "Search schools or adapter names",
   "clearSearchTooltip": "Clear",

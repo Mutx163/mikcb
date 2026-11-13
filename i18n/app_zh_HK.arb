@@ -1980,7 +1980,7 @@
   "warehouseImportExecutionLogMenuLabel": "課表匯入執行日誌",
   "warehouseImportExecutionLogShareText": "這是輕嶼課表匯出的教務匯入執行日誌，包含腳本注入、橋接訊息、逾時與匯入結果等過程記錄，可直接回饋給開發人員排查問題",
   "warehouseImportExecutionLogShareSubject": "輕嶼課表 - 課表匯入執行日誌",
-  "warehouseImportExecutionLogEmpty": "暫無匯入執行記錄。請先開啟教務網頁並執行匯入腳本，再回來查看。",
+  "warehouseImportExecutionLogEmpty": "暫無匯入執行記錄。請先開啟教務網頁並執行匯入腳本，再回來查看。這裡只記錄本機最近一次匯入過程；系統層級錯誤仍需裝置日誌。",
   "warehouseRootLoadFailedTitle": "暫時無法讀取適配倉",
   "searchSchoolHint": "搜尋學校或適配器名稱",
   "clearSearchTooltip": "清空",

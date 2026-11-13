@@ -1987,7 +1987,7 @@
   "warehouseImportExecutionLogMenuLabel": "時間割インポート実行ログ",
   "warehouseImportExecutionLogShareText": "軽屿時間割から書き出した教務インポート実行ログです。スクリプト注入、ブリッジ通信、タイムアウト、インポート結果などの過程記録が含まれ、開発者へのフィードバックに使えます。",
   "warehouseImportExecutionLogShareSubject": "軽屿時間割 - 時間割インポート実行ログ",
-  "warehouseImportExecutionLogEmpty": "インポート実行記録はまだありません。教務ページを開き、インポートスクリプトを実行してから再度確認してください。",
+  "warehouseImportExecutionLogEmpty": "インポート実行記録はまだありません。教務ページを開き、インポートスクリプトを実行してから再度確認してください。ここには、この端末で最後に行ったインポート処理のみが記録されます。システム側のエラーは、引き続き端末のログで確認してください。",
   "warehouseRootLoadFailedTitle": "適応倉庫を一時的に読み込めません",
   "searchSchoolHint": "学校名またはアダプター名で検索",
   "clearSearchTooltip": "クリア",
