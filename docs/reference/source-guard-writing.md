@@ -13,13 +13,17 @@
 
 **为什么**：读成空串时「没找到」和「没这段代码」无法区分，断言恒真。
 
-**活例**（2026-11-12 审计，全仓唯一坐实的一条）：
-`pages/shell/HomePullQuickImportWiringGuardTest.kt:63`
+**活例**（2026-11-12 审计，全仓唯一坐实的一条）：`pages/shell/HomePullQuickImportWiringGuardTest.kt`
+的**历史形态**——快照 `25595fb7a` 的 `:60-63`：
+
 ```kotlin
 val enabledLine = source.lineSequence()
     .firstOrNull { it.contains("val pullImportEnabled =") }.orEmpty()
 assertTrue(..., "homeViewMode" !in enabledLine)   // 锚点一改名 ⇒ enabledLine="" ⇒ 恒真
 ```
+
+> **该洞已修**：`522c4f3af` 补了 `enabledLine != null` 前置断言（消息原文「下面那条判据在空串上会恒真，等于没守」）。
+> 当前 HEAD 里 `:63` 早就不是那条断言了——**活例指向已修代码是最容易误导后来人的一种过期**，所以这里只留历史快照 + 修复提交（见第六条）。
 
 **推荐写法**：直接用 `testutil/SourceAssertions.kt`
 - `assertSourceContains(source, needle, label)` —— 必须出现，空读即红；
@@ -38,7 +42,9 @@ assertTrue(..., "homeViewMode" !in enabledLine)   // 锚点一改名 ⇒ enabled
 - `pages/sync/TimetableSnapshotBridgeMacroFailureTest.kt`：`assertTrue(raw.contains("remote"))` 在空读时先红，紧随的 `assertFalse(raw.contains("local"))` 被兜住。
 
 > 审计时必须**连相邻正向断言一起看**：只判「操作数能否为空」，会把有兜底的断言算成恒真。
-> 参考分母（2026-11-12，748 个 `*Test.kt`）：否定式断言 624 条 → 读文件的 82 条 → 真正空读即静默通过的 **1 条**。
+> 参考分母（**快照 `25595fb7a`**，2026-11-12 实测）：748 个 `*Test.kt` → 否定式断言 624 条 → 读文件的 82 条 → 真正空读即静默通过的 **1 条**。
+> 复现量法：`git ls-tree -r --name-only 25595fb7a -- android/app/src/test | grep 'Test.kt$' | wc -l`。
+> 当前 HEAD（`2f45b9121`）是 **749** 个 `*Test.kt`；624 / 82 / 1 三个数**未在 HEAD 复测**，引用时请连快照一起引。
 
 ---
 
@@ -74,6 +80,16 @@ assertTrue(..., "homeViewMode" !in enabledLine)   // 锚点一改名 ⇒ enabled
 在守卫里等于**静默免检**。守卫宁可红，也不许在缺输入时变成通过。
 
 例外只有一种：**同一用例里前面已经显式断言了输入非空**（见第二条），此时跳过分支不可达。
+
+---
+
+## 六、本文这类文档的引用纪律
+
+引用「当前代码」的文档，**要么带快照 HEAD，要么带可复现命令**；两者都没有的引用，半年后一定会漂。
+
+- 行号一律写成 `提交:文件:行`（例：快照 `25595fb7a` 的 `HomePullQuickImportWiringGuardTest.kt:60-63`），不要只写 `文件:行`；
+- 数字写清快照 HEAD 与量法（例：`git ls-tree -r --name-only <sha> -- android/app/src/test | grep 'Test.kt$' | wc -l`）；
+- 被引用的代码修掉之后**别删历史形态**：标成「历史形态（`<旧sha>`）+ 已由 `<新sha>` 修复」。活例指向已修代码，是最容易误导后来人的一种过期。
 
 ---
 
