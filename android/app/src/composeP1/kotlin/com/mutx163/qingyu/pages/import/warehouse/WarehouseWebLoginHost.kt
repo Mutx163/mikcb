@@ -676,12 +676,19 @@ fun WarehouseWebLoginHost(
             WarehouseWebLoginStage.LOADED
         }
         session = session.withStage(stage, errorMessage)
-        // 【第 1 步触点，**未验**】快照 → 脱敏 → 覆盖写 `files/warehouse_import_log/last.txt`。
-        // 同步写是刻意的：`scope` 随组合销毁，点返回时的收尾不该被连带取消（最需要日志的一条）。
-        writeWarehouseImportLogFile(
-            context.filesDir,
-            WarehouseDeviceInfo(Build.MODEL, Build.VERSION.RELEASE, BuildConfig.VERSION_NAME),
+        // 收尾要落两处、正文是同一份：`last.txt`（导出用）与应用日志一条 `warehouse.import`
+        // （诊断页按 category 也能看到）。同步写是刻意的：`scope` 随组合销毁，点返回时的
+        // 收尾不该被连带取消（最需要日志的一条）。
+        // 顺序是硬要求：**先脱敏、再 append**——应用日志是第三个出口，多一个出口就多一次
+        // 「把没脱敏的文本递进去」的机会；8 KiB 截断与写失败兜底在
+        // appendWarehouseImportLogToAppLog 里（它内部还会再脱敏一次）。
+        val logSnapshot = WarehouseImportLog.snapshot()
+        val logDeviceInfo = WarehouseDeviceInfo(Build.MODEL, Build.VERSION.RELEASE, BuildConfig.VERSION_NAME)
+        val appLogText = WarehouseLogRedaction.redactText(
+            WarehouseImportLogExport.buildText(logSnapshot, logDeviceInfo),
         )
+        writeWarehouseImportLogFile(context.filesDir, logDeviceInfo)
+        appendWarehouseImportLogToAppLog(snapshot = logSnapshot, text = appLogText)
     }
 
     fun resetPlaybackUi() {

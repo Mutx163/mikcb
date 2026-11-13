@@ -44,6 +44,10 @@ class WarehouseImportLogEntryGuardTest {
     /** 原文（含注释）：判「旧措辞已不存在」，剥注释会让否定式断言恒真。 */
     private val rawHost: String by lazy { readSourceNormalized(HOST_PATH) }
     private val rawWriter: String by lazy { readSourceNormalized(WRITER_PATH) }
+    private val rawLogHooks: String by lazy { readSourceNormalized(LOG_HOOKS_PATH) }
+
+    /** C 的落点文件（纯逻辑，剥注释 + 中性化字符串判结构）。 */
+    private val writerSource: String by lazy { readKotlinSourceNoStrings(WRITER_PATH) }
 
     /** 先自证三份源码都读到了（路径写错时下面几条会一起红，不如这里先红得清楚）。 */
     @Test
@@ -168,6 +172,53 @@ class WarehouseImportLogEntryGuardTest {
         assertSourceContains(rawWriter, "WarehouseImportLogPage", "WarehouseImportLogFileWriter")
     }
 
+    /**
+     * C：应用日志的 append 调用点必须在脱敏之后（相对位置判据）。
+     *
+     * 顺序反了（先 append 再脱敏）= 应用日志拿到的是原文；这不是审美问题，是「面板干净、
+     * 应用日志脏」的那条新增风险。判据按 `indexOf` 的相对位置，不依赖行号。
+     */
+    @Test
+    fun `app log append site sits after the redaction step`() {
+        assertSourceContains(hostSource, "writeWarehouseImportLogFile(", "WarehouseWebLoginHost")
+        assertSourceContains(hostSource, "appendWarehouseImportLogToAppLog(", "WarehouseWebLoginHost")
+
+        val redactAt = hostSource.indexOf("WarehouseLogRedaction.redactText(")
+        val appendAt = hostSource.indexOf("appendWarehouseImportLogToAppLog(")
+        assertTrue(
+            "host: appendWarehouseImportLogToAppLog( must sit after WarehouseLogRedaction.redactText(; " +
+                "redactAt=$redactAt appendAt=$appendAt",
+            redactAt >= 0 && appendAt > redactAt,
+        )
+    }
+
+    /** C：8 KiB 上限、未初始化跳过、写失败记 INTERNAL、第二道脱敏——四条都在落点文件里。 */
+    @Test
+    fun `app log helper keeps the cap the gate and the internal fallback`() {
+        assertSourceContains(
+            writerSource,
+            "WAREHOUSE_IMPORT_APP_LOG_MAX_BYTES: Int = 8 * 1024",
+            "WarehouseImportLogFileWriter (cap)",
+        )
+        assertSourceContains(
+            writerSource,
+            "WAREHOUSE_IMPORT_APP_LOG_TRUNCATED_NOTE",
+            "WarehouseImportLogFileWriter (truncation marker)",
+        )
+        assertSourceContains(writerSource, "AppLogStore.isInitialized()", "WarehouseImportLogFileWriter")
+        assertSourceContains(writerSource, "AppLogStore.append(", "WarehouseImportLogFileWriter")
+        assertSourceContains(writerSource, "WarehouseLogRedaction.redactText(", "WarehouseImportLogFileWriter")
+        assertSourceContains(writerSource, "WarehouseLogCategory.INTERNAL", "WarehouseImportLogFileWriter")
+    }
+
+    /** B2：采集钩子的文件头不许再留「第 2 步 / B 半」这类阶段说法（读原文，注释也算）。 */
+    @Test
+    fun `log hooks file no longer mentions the second step`() {
+        listOf("第 2 步", "B 半").forEach { phrase ->
+            assertSourceLacks(rawLogHooks, phrase, "WarehouseLogHooks (raw)")
+        }
+    }
+
     private companion object {
         const val PAGE_PATH =
             "android/app/src/composeP1/kotlin/com/mutx163/qingyu/pages/import/warehouse/WarehouseWebLoginPage.kt"
@@ -177,5 +228,7 @@ class WarehouseImportLogEntryGuardTest {
             "android/app/src/composeP1/kotlin/com/mutx163/qingyu/pages/import/warehouse/WarehouseImportLogPage.kt"
         const val WRITER_PATH =
             "android/app/src/main/kotlin/com/mutx163/qingyu/pages/import/warehouse/WarehouseImportLogFileWriter.kt"
+        const val LOG_HOOKS_PATH =
+            "android/app/src/main/kotlin/com/mutx163/qingyu/pages/import/warehouse/WarehouseLogHooks.kt"
     }
 }

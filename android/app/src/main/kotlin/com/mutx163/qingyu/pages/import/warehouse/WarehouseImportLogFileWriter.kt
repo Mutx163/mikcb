@@ -1,5 +1,6 @@
 package com.mutx163.qingyu.pages.import.warehouse
 
+import com.mutx163.qingyu.infra.AppLogStore
 import java.io.File
 
 /**
@@ -85,4 +86,107 @@ fun writeWarehouseImportLogFile(
 ): Boolean {
     val text = WarehouseImportLogExport.buildText(log.snapshot(), deviceInfo, nowMs)
     return WarehouseImportLogFileWriter(baseDir = filesDir, log = log).write(text)
+}
+
+// ---------------------------------------------------------------------------
+// C：同一份脱敏文本也进应用日志（诊断页 / 日志面板两个入口看同一条记录）
+// ---------------------------------------------------------------------------
+
+/** 应用日志里这条导入记录的分类（诊断页按 category 过滤）。 */
+const val WAREHOUSE_IMPORT_APP_LOG_CATEGORY: String = "warehouse.import"
+
+/**
+ * 应用日志单条上限：**8 KiB**（UTF-8 字节）。
+ *
+ * `last.txt` 单份可到 256 KiB，但应用日志是**滚动文件**（512 KiB 全文件，超了保留后一半）：
+ * 一条 200 KiB 的导入日志会把文件里其它应用日志整段挤掉。所以这里先自己截，
+ * 不把「单条多大」交给 [com.mutx163.qingyu.infra.AppLogStore] 的文件级滚动。
+ */
+const val WAREHOUSE_IMPORT_APP_LOG_MAX_BYTES: Int = 8 * 1024
+
+/** 截断标记（ASCII，与 [WarehouseImportLogExport.TRUNCATED_NOTE] 同一记号，跨语言可比）。 */
+const val WAREHOUSE_IMPORT_APP_LOG_TRUNCATED_NOTE: String = "[TRUNCATED]"
+
+/**
+ * 应用日志条目正文：**再过一次** [WarehouseLogRedaction.redactText]（第二道闸），再按 UTF-8
+ * 字节截到 [maxBytes]，超出追加一行 [WAREHOUSE_IMPORT_APP_LOG_TRUNCATED_NOTE]。
+ *
+ * 为什么脱敏要在这里再做一遍：面板/`last.txt` 的干净只证明**那两条出口**干净；
+ * 应用日志是第三个出口，多一个出口就多一次「上游把没脱敏的文本递进来」的机会。
+ * 这里不信任调用方给的文本（幂等，多跑一次没有副作用）。
+ *
+ * @param maxBytes 上限（测试可注入小值）
+ */
+fun warehouseImportAppLogMessage(
+    text: String,
+    maxBytes: Int = WAREHOUSE_IMPORT_APP_LOG_MAX_BYTES,
+): String {
+    val redacted = WarehouseLogRedaction.redactText(text)
+    val bytes = redacted.toByteArray(Charsets.UTF_8)
+    if (bytes.size <= maxBytes) return redacted
+    return truncateUtf8Bytes(redacted, maxBytes).trimEnd('\n') +
+        "\n" + WAREHOUSE_IMPORT_APP_LOG_TRUNCATED_NOTE
+}
+
+/**
+ * C 的落点：把一次导入收尾的正文追加进应用日志（`AppLogStore`）。
+ *
+ * 三件事按顺序做，顺序本身就是纪律：
+ * 1. `AppLogStore.isInitialized()` 为假（Android 反射取不到 `filesDir`）→ **跳过、不抛**；
+ * 2. 正文再脱敏 + 8 KiB 截断（[warehouseImportAppLogMessage]）；
+ * 3. `AppLogStore.append`；写失败只用 buffer 记一条 `INTERNAL`，与 `last.txt` 写失败同一口径。
+ *
+ * @param snapshot 这次收尾的快照（决定 level / extras：失败 ERROR、其余 INFO）
+ * @param text 导出用的同一份正文（宿主已过一遍脱敏；这里再兜一次）
+ * @return true = 这次写没抛；false = 未初始化 / 写失败
+ */
+fun appendWarehouseImportLogToAppLog(
+    snapshot: WarehouseImportLogSnapshot,
+    text: String,
+    log: WarehouseImportLogBuffer = WarehouseImportLog.buffer,
+): Boolean {
+    if (!AppLogStore.isInitialized()) return false
+    val endReason = snapshot.lastFailureReason
+        ?: snapshot.currentRun?.endReason
+        ?: ""
+    val written = AppLogStore.append(
+        level = if (snapshot.hasFailure) APP_LOG_LEVEL_ERROR else APP_LOG_LEVEL_INFO,
+        category = WAREHOUSE_IMPORT_APP_LOG_CATEGORY,
+        message = warehouseImportAppLogMessage(text),
+        extras = linkedMapOf(
+            "endReason" to endReason.ifEmpty { END_REASON_NONE },
+            "entries" to snapshot.entryCount,
+        ),
+    )
+    if (!written) {
+        log.record(
+            WarehouseLogCategory.INTERNAL,
+            linkedMapOf(
+                "where" to "appendWarehouseImportLogToAppLog",
+                "error" to "app_log_append_failed",
+            ),
+        )
+    }
+    return written
+}
+
+/** `AppLogStore.append` 的级别取值（`infra/LogGate.kt` 的 `normalizeLogLevel` 认这两个）。 */
+private const val APP_LOG_LEVEL_ERROR: String = "error"
+private const val APP_LOG_LEVEL_INFO: String = "info"
+
+/** 没有失败原因 / 还没收尾时的占位（extras 里空值看不出是「没记」还是「丢了」）。 */
+private const val END_REASON_NONE: String = "none"
+
+/**
+ * 按 UTF-8 字节截断，**回退到字符边界**（多字节字符被切一半会写进半截字节）。
+ *
+ * 与 [WarehouseImportLogExport] 的截断同口径：找最后一个完整字符的右边界。
+ */
+private fun truncateUtf8Bytes(text: String, maxBytes: Int): String {
+    val bytes = text.toByteArray(Charsets.UTF_8)
+    if (bytes.size <= maxBytes) return text
+    var end = maxBytes
+    // UTF-8 续字节形如 10xxxxxx；落在续字节上说明这个字符还没写完整，往左退一个字符。
+    while (end > 0 && (bytes[end].toInt() and 0xC0) == 0x80) end--
+    return String(bytes, 0, end, Charsets.UTF_8)
 }
