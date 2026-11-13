@@ -6291,5 +6291,16 @@
   "stopRecordingWithCount": "停止录制 ({count})",
   "@stopRecordingWithCount": {"placeholders":{"count":{"type":"int"}}},
   "timetableProfileActiveBadge": "已激活",
-  "webdavPasswordReentryBody": "本次更新更改了密码的本地保存方式，需要重新输入一次应用专用密码；服务器地址、账号与同步设置均已保留。"
+  "webdavPasswordReentryBody": "本次更新更改了密码的本地保存方式，需要重新输入一次应用专用密码；服务器地址、账号与同步设置均已保留。",
+  "executeStageWaitingPage": "正在等待网页加载完成",
+  "executeStageAwaitConfirm": "正在等待你确认",
+  "executeStageAwaitSelection": "正在等待你选择学期或校区",
+  "executeStageAwaitInput": "正在等待你输入",
+  "executeStageFetching": "正在抓取课表，请稍候",
+  "executeStageSlowNetwork": "网络较慢时会久一些，请再等一下",
+  "executeTimeoutTitle": "导入超时：网页在 {seconds} 秒内没有完成",
+  "@executeTimeoutTitle": {"placeholders":{"seconds":{"type":"int"}}},
+  "executeTimeoutAdvice": "可以点重试、改用手动导入，或换到 Wi-Fi 再试",
+  "executeSwitchToManualAction": "改用手动导入",
+  "executeViewLogAction": "查看日志"
 }

@@ -6094,5 +6094,15 @@
   "stopRecordingWithCount": "Stop recording ({count})",
   "@stopRecordingWithCount": {"placeholders":{"count":{"type":"int"}}},
   "timetableProfileActiveBadge": "Active",
-  "webdavPasswordReentryBody": "This update changed how the password is stored on this device. Please re-enter your app-specific password once; your server address, account and sync settings have been kept."
+  "webdavPasswordReentryBody": "This update changed how the password is stored on this device. Please re-enter your app-specific password once; your server address, account and sync settings have been kept.",
+  "executeStageWaitingPage": "Waiting for the page to load",
+  "executeStageAwaitConfirm": "Waiting for you to confirm",
+  "executeStageAwaitSelection": "Waiting for you to pick a semester or campus",
+  "executeStageAwaitInput": "Waiting for your input",
+  "executeStageFetching": "Fetching your timetable, please wait",
+  "executeStageSlowNetwork": "A slow connection makes this take longer, so please hold on",
+  "executeTimeoutTitle": "Import took too long: the page didn't finish within {seconds} seconds",
+  "executeTimeoutAdvice": "Tap Retry, switch to manual import, or try again on Wi-Fi",
+  "executeSwitchToManualAction": "Switch to manual import",
+  "executeViewLogAction": "View log"
 }

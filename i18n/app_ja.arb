@@ -5935,6 +5935,16 @@
   "stopRecordingWithCount": "録画停止 ({count})",
   "@stopRecordingWithCount": {"placeholders":{"count":{"type":"int"}}},
   "timetableProfileActiveBadge": "有効",
-  "webdavPasswordReentryBody": "今回の更新でパスワードの保存方法が変更されたため、アプリ専用パスワードをもう一度入力してください。サーバーアドレス、アカウント、同期設定は保持されています。"
+  "webdavPasswordReentryBody": "今回の更新でパスワードの保存方法が変更されたため、アプリ専用パスワードをもう一度入力してください。サーバーアドレス、アカウント、同期設定は保持されています。",
+  "executeStageWaitingPage": "ページの読み込みを待っています",
+  "executeStageAwaitConfirm": "確認を待っています",
+  "executeStageAwaitSelection": "学期またはキャンパスの選択を待っています",
+  "executeStageAwaitInput": "入力を待っています",
+  "executeStageFetching": "時間割を取得しています。しばらくお待ちください",
+  "executeStageSlowNetwork": "通信が遅いと時間がかかります。もうしばらくお待ちください",
+  "executeTimeoutTitle": "{seconds}秒以内にページの読み込みが終わらず、インポートを中止しました",
+  "executeTimeoutAdvice": "再試行するか、手動インポートに切り替えるか、Wi-Fi でもう一度お試しください",
+  "executeSwitchToManualAction": "手動インポートに切り替える",
+  "executeViewLogAction": "ログを見る"
 }
 

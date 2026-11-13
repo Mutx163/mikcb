@@ -6094,5 +6094,15 @@
   "stopRecordingWithCount": "녹화 중지 ({count})",
   "@stopRecordingWithCount": {"placeholders":{"count":{"type":"int"}}},
   "timetableProfileActiveBadge": "활성",
-  "webdavPasswordReentryBody": "이번 업데이트로 비밀번호 저장 방식이 변경되었습니다. 앱 비밀번호를 한 번 다시 입력해 주세요. 서버 주소, 계정 및 동기화 설정은 유지됩니다."
+  "webdavPasswordReentryBody": "이번 업데이트로 비밀번호 저장 방식이 변경되었습니다. 앱 비밀번호를 한 번 다시 입력해 주세요. 서버 주소, 계정 및 동기화 설정은 유지됩니다.",
+  "executeStageWaitingPage": "페이지가 로드되기를 기다리는 중입니다",
+  "executeStageAwaitConfirm": "확인을 기다리는 중입니다",
+  "executeStageAwaitSelection": "학기 또는 캠퍼스 선택을 기다리는 중입니다",
+  "executeStageAwaitInput": "입력을 기다리는 중입니다",
+  "executeStageFetching": "시간표를 가져오는 중입니다. 잠시만 기다려 주세요",
+  "executeStageSlowNetwork": "네트워크가 느리면 시간이 더 걸립니다. 조금만 더 기다려 주세요",
+  "executeTimeoutTitle": "{seconds}초 안에 페이지 로드가 끝나지 않아 가져오기를 중단했습니다",
+  "executeTimeoutAdvice": "재시도를 누르거나, 수동 가져오기로 전환하거나, Wi-Fi에서 다시 시도해 보세요",
+  "executeSwitchToManualAction": "수동 가져오기로 전환",
+  "executeViewLogAction": "로그 보기"
 }

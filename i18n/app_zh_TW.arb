@@ -6094,5 +6094,15 @@
   "stopRecordingWithCount": "停止錄製 ({count})",
   "@stopRecordingWithCount": {"placeholders":{"count":{"type":"int"}}},
   "timetableProfileActiveBadge": "已啟用",
-  "webdavPasswordReentryBody": "本次更新更改了密碼的本機儲存方式，需要重新輸入一次應用程式專用密碼；伺服器位址、帳號與同步設定均已保留。"
+  "webdavPasswordReentryBody": "本次更新更改了密碼的本機儲存方式，需要重新輸入一次應用程式專用密碼；伺服器位址、帳號與同步設定均已保留。",
+  "executeStageWaitingPage": "正在等待網頁載入完成",
+  "executeStageAwaitConfirm": "正在等待你確認",
+  "executeStageAwaitSelection": "正在等待你選擇學期或校區",
+  "executeStageAwaitInput": "正在等待你輸入",
+  "executeStageFetching": "正在擷取課表，請稍候",
+  "executeStageSlowNetwork": "網路較慢時會久一些，請再等一下",
+  "executeTimeoutTitle": "匯入逾時：網頁在 {seconds} 秒內沒有完成",
+  "executeTimeoutAdvice": "可以點擊重試、改用手動匯入，或換到 Wi-Fi 再試",
+  "executeSwitchToManualAction": "改用手動匯入",
+  "executeViewLogAction": "查看日誌"
 }
