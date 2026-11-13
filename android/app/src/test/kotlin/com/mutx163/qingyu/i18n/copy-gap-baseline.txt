@@ -1208,8 +1208,6 @@ B|ko|homeWidgetPinUnsupportedManual
 B|ko|icsExportShareSubject
 B|ko|icsExportShareText
 B|ko|icsExportSyncCalendarName
-B|ko|importConfirmSemesterMappingSubtitleWarehouse
-B|ko|importCourseWeeksTrimmed
 B|ko|keepAliveServiceTitle
 B|ko|liveCountdownTextStyleMinuteOnlyCn
 B|ko|liveCountdownTextStyleMinuteSecondCn

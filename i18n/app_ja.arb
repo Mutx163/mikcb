@@ -1888,7 +1888,7 @@
       }
     }
   },
-  "importCourseWeeksTrimmed": "また {count} 件の科目の週のうち一部を認識できませんでした。教务の画面と照合してください。",
+  "importCourseWeeksTrimmed": "また {count} 件の科目の週のうち一部を認識できませんでした。教務システムの画面と照合してください。",
   "@importCourseWeeksTrimmed": {
     "placeholders": {
       "count": {
