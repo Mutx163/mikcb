@@ -112,6 +112,28 @@ object WarehouseStrings {
     val executeFailedWithError = WarehouseArbText("executeFailedWithError", "执行失败：{error}")
     val executeImportScriptAction = WarehouseArbText("executeImportScriptAction", "执行导入脚本")
     val executeLocalDebugScriptAction = WarehouseArbText("executeLocalDebugScriptAction", "执行本地调试脚本")
+    // 执行窗口的六条阶段提示 + 超时标题/建议 + 两个动作（a36bb9f69 落的 10 个 ARB 键）。
+    //
+    // 六条阶段文案是「暂停即不可能超时」模型的对用户可见那一半：弹窗挂起期间预算暂停，
+    // 状态行必须说清现在到底在等谁——以前只有一句「等待页面加载」，用户分不清是网页慢
+    // 还是 App 在等自己点确认。键名与 ARB 一字不改，取值由 [WarehouseStringsParityTest] 对拍。
+    val executeStageAwaitConfirm = WarehouseArbText("executeStageAwaitConfirm", "正在等待你确认")
+    val executeStageAwaitInput = WarehouseArbText("executeStageAwaitInput", "正在等待你输入")
+    val executeStageAwaitSelection = WarehouseArbText("executeStageAwaitSelection", "正在等待你选择学期或校区")
+    val executeStageFetching = WarehouseArbText("executeStageFetching", "正在抓取课表，请稍候")
+    val executeStageSlowNetwork = WarehouseArbText("executeStageSlowNetwork", "网络较慢时会久一些，请再等一下")
+    val executeStageWaitingPage = WarehouseArbText("executeStageWaitingPage", "正在等待网页加载完成")
+    val executeSwitchToManualAction = WarehouseArbText("executeSwitchToManualAction", "改用手动导入")
+    val executeTimeoutAdvice = WarehouseArbText("executeTimeoutAdvice", "可以点重试、改用手动导入，或换到 Wi-Fi 再试")
+    val executeTimeoutTitle = WarehouseArbText("executeTimeoutTitle", "导入超时：网页在 {seconds} 秒内没有完成")
+    /**
+     * 「查看日志」（`executeViewLogAction`）。
+     *
+     * **只收成访问器、故意不接**：日志查看面板还没移植，接上去就是一颗点了没反应的死按钮
+     * （壳侧「更多」菜单里当初就没接「导入执行日志」，同一理由）。源码守卫
+     * [WarehouseTimeoutWiringGuardTest] 钉着宿主里不许出现它的引用——等面板落地再接。
+     */
+    val executeViewLogAction = WarehouseArbText("executeViewLogAction", "查看日志")
     val fillRememberedTooltip = WarehouseArbText("fillRememberedTooltip", "填充已记住账号")
     val fillUrlThenImport = WarehouseArbText("fillUrlThenImport", "填写网址后导入")
     val fillUrlThenRecord = WarehouseArbText("fillUrlThenRecord", "填写网址后录制")
@@ -419,6 +441,16 @@ object WarehouseStrings {
         executeFailedWithError,
         executeImportScriptAction,
         executeLocalDebugScriptAction,
+        executeStageAwaitConfirm,
+        executeStageAwaitInput,
+        executeStageAwaitSelection,
+        executeStageFetching,
+        executeStageSlowNetwork,
+        executeStageWaitingPage,
+        executeSwitchToManualAction,
+        executeTimeoutAdvice,
+        executeTimeoutTitle,
+        executeViewLogAction,
         fillRememberedTooltip,
         fillUrlThenImport,
         fillUrlThenRecord,

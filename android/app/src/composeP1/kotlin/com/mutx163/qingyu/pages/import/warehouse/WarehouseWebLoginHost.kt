@@ -1,5 +1,6 @@
 package com.mutx163.qingyu.pages.import.warehouse
 
+import android.os.SystemClock
 import android.util.Log
 import android.widget.Toast
 import androidx.compose.foundation.layout.Arrangement
@@ -38,8 +39,11 @@ import com.mutx163.qingyu.transfer.MAX_ALLOWED_SEMESTER_WEEK_COUNT
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import top.yukonga.miuix.kmp.basic.Button
+import top.yukonga.miuix.kmp.basic.ButtonDefaults
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TextButton
 import top.yukonga.miuix.kmp.overlay.OverlayDialog
@@ -106,13 +110,27 @@ private class WarehouseMacroSavePrompt(
 private const val LOG_TAG = "WarehouseWebLogin"
 
 /**
- * 一次「执行导入脚本」的预算（毫秒）。**逐字对齐 Dart**：
- * `warehouse_adapter_web_login_screen.dart` 的 `_importTimeout = Duration(seconds: 30)`。
+ * 一次「执行导入脚本」的预算（毫秒）：**只累计没有用户交互的时间**。
  *
- * 为什么要它：脚本在网页里挂死时没有任何回调会回来；没有这道计时，界面就永久停在
- * 「执行中」，而 stage 卡在 EXECUTING 之后连重试都会被闸门拒掉（用户唯一出路是刷新）。
+ * 原来是 `30_000` 且自述「逐字对齐 Dart `_importTimeout = Duration(seconds: 30)`」。改成 60 秒
+ * 是因为那个 30 秒把**用户读弹窗的时间**也算进了预算：弹窗挂着时超时照跑，到点还会把用户
+ * 正在看的对话框按「取消」掐掉——用户看到对话框自己消失，脚本拿到一个他从没给过的回答。
+ *
+ * 新模型见 [WarehouseExecutionTimerPolicy] 文件头：预算挂在「没有用户交互」的时间上，
+ * 暂停期间不走表。60 秒仍是硬上限（网页真挂死时必须有反馈），只是不再替用户读弹窗。
  */
-private const val SCRIPT_EXECUTION_TIMEOUT_MS = 30_000L
+private const val SCRIPT_EXECUTION_TIMEOUT_MS = 60_000L
+
+/** 执行预算的轮询间隔：每拍问一次 [WarehouseExecutionTimerPolicy.shouldFire]。 */
+private const val EXECUTION_TIMER_POLL_INTERVAL_MS = 250L
+
+/**
+ * 预算只剩这么多时把状态行换成「网络较慢」那句（`executeStageSlowNetwork`）。
+ *
+ * 为什么要有它：60 秒里前 50 秒用户看到的一直是「正在抓取课表」，到 50 秒换成
+ * 「网络较慢时会久一些，请再等一下」——让他知道是慢、不是卡住，而不是等到超时才说。
+ */
+private const val EXECUTION_SLOW_NETWORK_REMAINING_MS = 10_000L
 
 /**
  * 一次待用户确认的脚本课程包（courses 写回前的两步确认期间持有）。
@@ -547,7 +565,7 @@ fun WarehouseWebLoginHost(
             }
         }
 
-    // ---- 执行窗口：一个收尾出口 + 30 秒超时（放在这里的原因见下）----
+    // ---- 执行窗口：一个收尾出口 + 执行预算（放在这里的原因见下）----
     // 「执行导入脚本」进来之后的所有收尾（complete / error / 落盘完成 / 用户取消 /
     // 取消回放 / 重试回放 / 超时）都必须复位执行态，否则 stage 停在 EXECUTING，而重执行
     // 闸门 `planWarehouseScriptExecution` 硬要求 `stage == LOADED` ⇒ 一次导入完成后
@@ -559,13 +577,60 @@ fun WarehouseWebLoginHost(
     // `retryMacroPlayback` 之前（它们也要走这条收尾）；而 `onScriptExecutionTimeout`
     // 依赖后面的 `cancelPendingDialog`，所以那两个函数留在 `executeImportScript` 之前。
 
-    /** 当前这一轮脚本执行的 30 秒超时计时；null = 没有在执行。 */
+    /**
+     * 当前这一轮脚本执行的预算计时（每 250ms 轮询一次 [WarehouseExecutionTimerPolicy]）；
+     * null = 没有在执行。
+     */
     var importTimeoutJob by remember { mutableStateOf<Job?>(null) }
 
-    /** 停掉 30 秒计时（不动 stage / scriptActive：换页等场景各自还要走自己的收尾）。 */
+    /**
+     * 执行预算的纯逻辑：累计「没有用户交互」的时间、暂停/恢复、判断该不该收尾。
+     *
+     * 刻意**不是** Compose state：计时靠协程轮询，不靠重组驱动；会变化、且要影响界面的
+     * 只有「剩余多少」，那一个值由下面的阶段提示 ticker 单独落到 state 上。
+     */
+    val executionTimer = remember { WarehouseExecutionTimerPolicy() }
+
+    /**
+     * 超时弹窗是否在屏上（「重试 / 改用手动导入」两个真按钮）。
+     *
+     * 只做一次性提示：用户选任一个动作后置假；挡住点外部关闭，不许「关了但还是超时态」。
+     */
+    var showExecutionTimeoutDialog by remember { mutableStateOf(false) }
+
+    /**
+     * 执行窗口当前该显示的那一句阶段提示（null = 这一页此刻没什么要说的）。
+     *
+     * 由下面的 ticker 按「阶段 + 有没有挂起弹窗 + 剩余预算」算出；页面只负责把它渲染在
+     * 状态行里（`WarehouseWebLoginPage(executionStageHint = …)`）。
+     */
+    var executionStageHint by remember { mutableStateOf<WarehouseArbText?>(null) }
+
+    /** 停掉预算轮询（不动 stage / scriptActive：换页等场景各自还要走自己的收尾）。 */
     fun cancelImportTimeout() {
         importTimeoutJob?.cancel()
         importTimeoutJob = null
+        executionTimer.reset()
+    }
+
+    /**
+     * 挂起的原生弹窗出现 → 预算暂停（**用户读弹窗的时间不计入**）。
+     *
+     * 暂停写在这里而不是渲染层：宿主是唯一创建挂起请求的地方（`pendingDialog = request`），
+     * 「有没有弹窗挡着用户」只有它知道。
+     */
+    fun pauseExecutionBudget() {
+        executionTimer.pause(SystemClock.elapsedRealtime())
+    }
+
+    /**
+     * 用户应答 / 弹层被排空 → 预算恢复（**不重置**累计，见 [WarehouseExecutionTimerPolicy]）。
+     *
+     * 两个清理点都必须调：`answerAndClose`（用户作答）与 [cancelPendingDialog]（窗口结束排空）。
+     * 漏掉后者，脚本窗口结束时正好挂着弹窗的那一轮会永远停在暂停态。
+     */
+    fun resumeExecutionBudget() {
+        executionTimer.resume(SystemClock.elapsedRealtime())
     }
 
     /**
@@ -586,7 +651,7 @@ fun WarehouseWebLoginHost(
      * @param errorMessage 本轮结束时的错误文案（失败路径传；成功/取消传 null 清掉旧错误）。
      */
     fun endScriptWindow(errorMessage: String? = null) {
-        // 回放等课程期间**不许**把 30 秒兜底拆掉：脚本窗口可能先结束（页面导航换页、
+        // 回放等课程期间**不许**把预算兜底拆掉：脚本窗口可能先结束（页面导航换页、
         // 文档被重建……）而课程还没回来，此时这个计时是唯一还能把「正在执行导入脚本」
         // 收掉的东西（2026-11-10 W1 / P0-1）。正常写盘在 finalizeCoursesImport 里显式
         // 停表——那一步有自己的成败收尾，不该被「脚本没回课程」的文案误伤。
@@ -628,7 +693,7 @@ fun WarehouseWebLoginHost(
         playbackWaitingForCourses = false
         // 回放完成后的「自动执行导入」请求可能还排着：本轮已定局，别让它再起一次。
         autoExecuteRequested = false
-        // 结果已由这里报出：30 秒兜底到此为止，否则同一轮晚期会再报一次 timeout。
+        // 结果已由这里报出：预算兜底到此为止，否则同一轮晚期会再报一次 timeout。
         cancelImportTimeout()
         playbackUiState = WarehousePlaybackUiState.ERROR
         playbackProgress = playbackProgress?.copy(
@@ -640,11 +705,11 @@ fun WarehouseWebLoginHost(
     fun cancelMacroPlayback() {
         playbackJob?.cancel()
         playbackJob = null
-        // 先放掉等待标志：`endScriptWindow` 会按「还在等课程」把 30 秒兜底留着
+        // 先放掉等待标志：`endScriptWindow` 会按「还在等课程」把预算兜底留着
         // （见它的注释），用户主动取消时不该留一颗迟到的 timeout 在后台。
         playbackWaitingForCourses = false
         // 取消回放也要收掉**脚本执行窗口**：回放完成后 `executeImportScript` 可能已经起了
-        // 30 秒预算，不并入同一条收尾的话，用户取消之后超时仍会跑——屏上冒一条
+        // 执行预算，不并入同一条收尾的话，用户取消之后超时仍会跑——屏上冒一条
         // 「导入失败：timeout」，而 stage 还挂在 EXECUTING 让重试被拒。
         endScriptWindow()
         // 取消路径必须续跑闸也释放（协程已取消，resume(false) 会被 cont.isActive 拦下，
@@ -738,7 +803,7 @@ fun WarehouseWebLoginHost(
         playbackJob?.cancel()
         playbackJob = null
         // 重试 = 上一轮作废：先放掉等待标志（理由同 cancelMacroPlayback），再走同样的
-        // 收尾语义（停 30 秒预算、stage 回 LOADED），否则旧一轮的计时会在新一轮中途
+        // 收尾语义（停执行预算、stage 回 LOADED），否则旧一轮的计时会在新一轮中途
         // 误报超时。
         playbackWaitingForCourses = false
         endScriptWindow()
@@ -750,6 +815,9 @@ fun WarehouseWebLoginHost(
     /** 把一条回答 resolve 给网页并收起挂起弹层（requestId 不可信时脚本是空串，注入为安全 no-op）。 */
     fun answerAndClose(answer: WarehouseBridgeDialogAnswer) {
         pendingDialog = null
+        // 用户答完了：预算恢复走表。**累计值不重置**——「应答本身不重置预算」是刻意口径
+        // （每次应答都重开满额，用户多点几下就等于没有上限）。
+        resumeExecutionBudget()
         val script = warehouseBridgeResolveScript(answer.requestId, answer.jsonValue)
         if (script.isNotEmpty()) {
             controller.injectJavaScript(script)
@@ -761,10 +829,16 @@ fun WarehouseWebLoginHost(
      * 脚本窗口结束（complete / error / 新导航 / 重新执行）时排空挂起弹层：
      * 按旧版「用户取消」的同一回传结构回话——旧版导入超时不回话，脚本 Promise
      * 悬死到页面关闭；这里补上明确回应（回传结构与用户取消完全一致）。
+     *
+     * ⚠️ **超时不再走这里**：新模型下「到点时还挂着弹窗」不可达（见
+     * [WarehouseExecutionTimerPolicy] 的不变量 ①），超时分支不许再排空弹层——那等于替用户
+     * 把正在读的对话框按了「取消」。
      */
     fun cancelPendingDialog(reason: String) {
         val pending = pendingDialog ?: return
         pendingDialog = null
+        // 弹层被排空 = 没有东西再挡着用户：预算恢复（累计值不重置，同 answerAndClose）。
+        resumeExecutionBudget()
         val answer = warehouseBridgeDialogCancelAnswer(pending)
         val script = warehouseBridgeResolveScript(answer.requestId, answer.jsonValue)
         if (script.isNotEmpty()) {
@@ -773,12 +847,29 @@ fun WarehouseWebLoginHost(
         Log.i(LOG_TAG, "bridge dialog ${pending.kind.messageType} cancelled at script window end ($reason)")
     }
 
-    /** 超时收尾：文案按 Dart 的两个分叉，然后统一走 [endScriptWindow]。 */
+    /**
+     * 超时收尾：文案按 Dart 的两个分叉，然后统一走 [endScriptWindow]。
+     *
+     * 与老实现的两处差别就是新模型的两条不变量：
+     * - **不变量 ①**：进来先断言此刻没有挂起的原生弹窗（`pendingDialogCount == 0`）。暂停逻辑
+     *   真失效时这里当场失败，而不是替用户把正在读的对话框关掉；
+     * - **不变量 ②**：不再排空挂起弹层（老代码这里是 `cancelPendingDialog(...)`）。暂停模型下
+     *   「到点时还挂着弹窗」不可达；真到了就是 ① 该抓到的事，不该静默收场。
+     *
+     * 用户可见出口也从一条 Toast 换成两个真按钮的超时弹窗（重试 / 改用手动导入）。
+     */
     fun onScriptExecutionTimeout() {
         // 回放等课程期间脚本窗口可能已由 endScriptWindow 收掉（scriptActive 已 false），
         // 但覆盖层还停在 EXECUTING_IMPORT——这时计时器仍必须能报出失败，否则又回到
         // 「永远停在正在执行导入脚本」那个洞（W1 / P0-1 第 3 条）。
         if (!scriptActive && !playbackWaitingForCourses) return
+        // 不变量 ①：进入超时收尾时 pendingDialogCount 必须为 0。shouldFire 已经把
+        // 「还有弹窗」挡在外面，这道断言是第二道闸——挂起点忘了 pause 这类实现 bug
+        // 会在这里当场炸，而不是悄悄把用户正在读的对话框按「取消」关掉。
+        val pendingDialogCount = if (pendingDialog != null) 1 else 0
+        check(pendingDialogCount == 0) { "timeout fired while dialog pending" }
+        // 预算用完了：停表（本函数余下部分无挂起点，自取消不会截断它们）。
+        cancelImportTimeout()
         // 回放完成后在等课程：Dart 用 `courseImportScriptNoCourses`（脚本没回课程数据），
         // 其余（脚本卡死）用 `executeFailedWithError('timeout')`。
         val waitingForCourses = playbackWaitingForCourses
@@ -789,30 +880,50 @@ fun WarehouseWebLoginHost(
         }
         Log.w(
             LOG_TAG,
-            "import script timeout after ${SCRIPT_EXECUTION_TIMEOUT_MS / 1000}s " +
+            "import script timeout after ${SCRIPT_EXECUTION_TIMEOUT_MS / 1000}s without user input " +
                 "waitingForCourses=$waitingForCourses",
         )
-        cancelPendingDialog("timeout")
         endScriptWindow(errorMessage = message)
         // 回放覆盖层收干净：与其它失败出口走同一个助手（切 ERROR + 把原因写进进度行、
         // 复位等待与自动执行标志）。手动导入没有覆盖层时它是 no-op。
         finishPlaybackWaitingWithError(message)
-        Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
+        // 超时弹窗（标题带秒数、正文给建议、两个真按钮）就是这次的用户可见出口：
+        // 不再叠一条 Toast——同一件事两个表面，用户还得自己找哪个才是结论。
+        showExecutionTimeoutDialog = true
     }
 
     // ⚠️ 顺序要求：局部函数**先声明后使用**，所以 onScriptExecutionTimeout 必须排在
     // armImportTimeout 之前。
     /**
-     * 起 30 秒导入超时（对齐 Dart `_importTimeout = Duration(seconds: 30)`）。
+     * 起执行预算：每 [EXECUTION_TIMER_POLL_INTERVAL_MS] 轮询一次，**不再一次 delay 到点收尾**。
      *
-     * Dart 的 30 秒从脚本开始执行算起，超时给明确文案并复位执行态；不移植的话脚本
-     * 一挂死就永久无反馈，叠加「stage 卡在 EXECUTING」连重试都被拒。
+     * 为什么要轮询而不是 `delay(60_000)`：预算要能暂停。弹窗挂着时 `executionTimer` 停在
+     * 暂停态、`shouldFire` 恒假；用户答完 resume，剩下的预算接着走（不重开满额）。
+     * 每一拍都现读 `pendingDialog` 再问 `shouldFire`——挂起数是即时的，不是缓存的。
      */
     fun armImportTimeout() {
         importTimeoutJob?.cancel()
+        executionTimer.start(SystemClock.elapsedRealtime())
         importTimeoutJob = scope.launch {
-            delay(SCRIPT_EXECUTION_TIMEOUT_MS)
-            onScriptExecutionTimeout()
+            while (isActive) {
+                delay(EXECUTION_TIMER_POLL_INTERVAL_MS)
+                // 宿主至多一个挂起弹窗（脚本 await 串行发问）；这里算的是**当下**的值。
+                val pendingDialogCount = if (pendingDialog != null) 1 else 0
+                // 自愈：弹窗挂着而预算没暂停（说明挂起点漏了 pause）→ 这一拍补上。
+                // 宁可晚一拍暂停，也不许把「用户读弹窗的时间」算进预算。
+                if (pendingDialogCount > 0 && !executionTimer.paused) {
+                    executionTimer.pause(SystemClock.elapsedRealtime())
+                }
+                val fire = executionTimer.shouldFire(
+                    nowMs = SystemClock.elapsedRealtime(),
+                    limitMs = SCRIPT_EXECUTION_TIMEOUT_MS,
+                    pendingDialogCount = pendingDialogCount,
+                )
+                if (fire) {
+                    onScriptExecutionTimeout()
+                    return@launch
+                }
+            }
         }
     }
 
@@ -877,7 +988,7 @@ fun WarehouseWebLoginHost(
                             )
                             session = session.withStage(WarehouseWebLoginStage.EXECUTING)
                             scriptActive = true
-                            // 30 秒执行预算：脚本挂死时必须有反馈，且要能把 stage 放回
+                            // 执行预算：脚本挂死时必须有反馈，且要能把 stage 放回
                             // LOADED（否则用户连重试都被闸门拒掉）。
                             armImportTimeout()
                         }
@@ -911,6 +1022,42 @@ fun WarehouseWebLoginHost(
         for (message in messages) {
             Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
         }
+    }
+
+    // ---- 超时弹窗的两个真按钮 ----
+    // 刻意都排在这里：它们要调 executeImportScript / retryMacroPlayback，而 Kotlin 的局部
+    // 函数**先声明后使用**，放在这两个函数之前等于编译不过。
+
+    /**
+     * 超时弹窗的「重试」：回到**同一条**既有重试口径，不另开新路。
+     *
+     * 回放会话里重跑回放（[retryMacroPlayback]：重载入口地址 + 从头回放）；手动导入则重新
+     * 执行导入脚本（[executeImportScript]：超时收尾已把 stage 放回 LOADED，闸门是开的）。
+     */
+    fun retryAfterExecutionTimeout() {
+        showExecutionTimeoutDialog = false
+        val record = playbackMacroRecord
+        if (record != null && playbackUiState != null) {
+            retryMacroPlayback()
+        } else {
+            executeImportScript()
+        }
+    }
+
+    /**
+     * 超时弹窗的「改用手动导入」：放弃脚本这条路，**重进登录页且不带任何自动动作**。
+     *
+     * 复用的就是列表页那条既有路径（[WarehouseRoutes.WEB_LOGIN]）：交接件只带「学校 + 适配器」，
+     * 不带 `autoRecordMacro` / `playbackMacro` ⇒ 新页面不会自动开录、也不会自动回放，
+     * 用户自己在网页上手动完成这次导入。先停掉这一轮的计时与回放，免得旧协程跟着带进新页。
+     */
+    fun switchToManualImportAfterTimeout() {
+        showExecutionTimeoutDialog = false
+        playbackWaitingForCourses = false
+        autoExecuteRequested = false
+        cancelMacroPlayback()
+        WarehouseImportHandoff.publish(school, adapter)
+        onOpenPage(WarehouseRoutes.WEB_LOGIN)
     }
 
     // ---- 登录态观察（「记住账号 / 密码」的数据源，对齐 Dart `_handleLoginStateMessage`）----
@@ -1156,7 +1303,7 @@ fun WarehouseWebLoginHost(
         // 课程已收齐、开始落盘：本轮脚本窗口到此结束（stage 回 LOADED，可再次导入）。
         endScriptWindow()
         // 脚本阶段到此为止：写盘有自己的成败收尾（Done / Failed 两个分支都在下面），
-        // 别再让「脚本没回课程」的 30 秒兜底挂在头上——写盘超过 30 秒会误报失败，
+        // 别再让「脚本没回课程」的预算兜底挂在头上——写盘超过预算会误报失败，
         // 而课程其实已经收齐了（W1 / P0-1 第 3 条）。
         cancelImportTimeout()
         // 写盘窗口置位：页面据此换「导入中……」并禁用主按钮（发布版 `_isExecutingImport`
@@ -1362,7 +1509,7 @@ fun WarehouseWebLoginHost(
             }
             if (parsed == null) {
                 // 载荷不是数组：对齐旧版直接报格式错误，不进弹窗。回放等课程时
-                // 同属「脚本没给出可用课程」，覆盖层收掉而不是干等 30 秒兜底。
+                // 同属「脚本没给出可用课程」，覆盖层收掉而不是干等预算兜底。
                 val message = WarehouseStrings.invalidCourseDataFormat.text
                 showToasts(listOf(message))
                 finishPlaybackWaitingWithError(message)
@@ -1703,6 +1850,9 @@ fun WarehouseWebLoginHost(
                             } else {
                                 rememberPendingDialogKey(raw)
                                 pendingDialog = request
+                                // 弹窗挡住用户了：执行预算从这里开始暂停（用户读多久都不算），
+                                // 直到 answerAndClose / cancelPendingDialog 清掉它再恢复。
+                                pauseExecutionBudget()
                             }
                         }
                     }
@@ -1778,6 +1928,29 @@ fun WarehouseWebLoginHost(
         }
     }
 
+    // ---- 执行窗口的阶段提示（六条 ARB 阶段文案接到现有状态）----
+    // 为什么要有这一行字：以前执行期状态行只有一句「等待页面加载」，用户分不清是网页慢、
+    // 还是 App 正在等他点确认/选择/输入。暂停模型下「谁在占着时间」正是最该说清的事。
+    //
+    // 只写一次变化量：每拍都写 state 会让整页 4Hz 重组（WebView 就在里面），所以文本真的变了
+    // 才落 state（一个执行窗口通常只变 3~4 次）。ticker 只在执行窗口开着时跑。
+    val executionWindowActive = scriptActive || playbackWaitingForCourses
+    LaunchedEffect(session.stage, pendingDialog, executionWindowActive) {
+        while (true) {
+            val hint = warehouseExecutionStageHint(
+                stage = session.stage,
+                dialogKind = pendingDialog?.kind,
+                remainingMs = executionTimer.remainingMs(
+                    nowMs = SystemClock.elapsedRealtime(),
+                    limitMs = SCRIPT_EXECUTION_TIMEOUT_MS,
+                ),
+            )
+            if (hint?.key != executionStageHint?.key) executionStageHint = hint
+            if (!executionWindowActive) break
+            delay(EXECUTION_TIMER_POLL_INTERVAL_MS)
+        }
+    }
+
     Box(modifier = Modifier.fillMaxSize()) {
         WarehouseWebLoginPage(
             // 对齐发布版（Dart `title: const SizedBox.shrink()`）：校名一律被截成两三个字，
@@ -1791,6 +1964,7 @@ fun WarehouseWebLoginHost(
             trustedLoginUrls = trustedLoginUrls,
             foregroundReplayActive = isMacroReplaying(),
             importWriting = importWriting,
+            executionStageHint = executionStageHint?.text,
             onBack = onBack,
             onWebProgress = { progress ->
                 session = session.withStage(WarehouseWebLoginWebState.stageForProgress(progress))
@@ -1802,7 +1976,7 @@ fun WarehouseWebLoginHost(
                 // 导航一开始就置真：`endScriptWindow` 据此只落 LOADING（闸门关着），
                 // 不让脚本注入到即将被销毁的旧文档（否则用户白等 30 秒才见一条 timeout）。
                 pageNavigating = true
-                // 旧脚本窗口的 30 秒预算必须一起停：否则计时在下一拍还会替新页面误报超时。
+                // 旧脚本窗口的执行预算必须一起停：否则计时在下一拍还会替新页面误报超时。
                 // 走统一收尾（导航中 → 只落 LOADING），加载完/失败由下面两个回调推进。
                 endScriptWindow()
                 appliedSectionsSignature = null
@@ -2016,6 +2190,16 @@ fun WarehouseWebLoginHost(
             },
         )
 
+        // 执行窗口超时弹窗：两个真按钮（重试 / 改用手动导入），无第三个。
+        // 为什么不再用 Toast：超时是「这一轮结束了，你来选下一步」，一句话的 Toast 留不下
+        // 任何可点的东西，用户只能自己找按钮；也不能放「查看日志」——日志面板还没移植，
+        // 那就是一颗点了没反应的死按钮（`executeViewLogAction` 因此只收进文案、不接）。
+        WarehouseExecutionTimeoutDialog(
+            show = showExecutionTimeoutDialog,
+            onRetry = { retryAfterExecutionTimeout() },
+            onSwitchToManual = { switchToManualImportAfterTimeout() },
+        )
+
         // 「更多」菜单（发布版 `HyperosAnchorMenuPopup` 的 Compose 等价形态）：唯一入口是
         // 顶栏最后一颗图标（页面只回调 `onMoreOptions`，凭据动作都留在宿主）。
         // 发布版六项里只接四项：
@@ -2145,3 +2329,96 @@ internal fun WarehouseNoTargetPage(title: String, onBack: () -> Unit) {
         }
     }
 }
+
+/**
+ * 执行窗口「现在在等谁」的一句话（六条 ARB 阶段文案的唯一映射点）。
+ *
+ * 优先级按**谁在占着时间**排，不按状态机枚举排：
+ * 1. 有原生弹窗挂着 → 那一定在等用户（确认 / 选择 / 输入），其余状态说什么都不对；
+ * 2. 脚本执行中 → 抓取中；只剩 ≤10 秒才能说「网络较慢」（提前说的话是把慢当结论）；
+ * 3. 页面加载 / 注入中 → 等网页；
+ * 4. 其余（LOADED / SUCCESS / ERROR / IDLE）→ 不说（状态行有自己的错误/空闲文案）。
+ *
+ * 为什么这六句必须落在宿主里（而不是渲染层）：它们描述的是**宿主的执行窗口**，
+ * 页面只拿到算好的一句字；源码守卫 `WarehouseTimeoutWiringGuardTest` 钉着这六处引用。
+ */
+private fun warehouseExecutionStageHint(
+    stage: WarehouseWebLoginStage,
+    dialogKind: WarehouseBridgeDialogKind?,
+    remainingMs: Long,
+): WarehouseArbText? = when {
+    dialogKind == WarehouseBridgeDialogKind.CONFIRM -> WarehouseStrings.executeStageAwaitConfirm
+    dialogKind == WarehouseBridgeDialogKind.SINGLE_SELECTION -> WarehouseStrings.executeStageAwaitSelection
+    // 表单（saveCourseConfig）本质也是「等你填」，与 prompt 同一句：不新增文案。
+    dialogKind == WarehouseBridgeDialogKind.PROMPT ||
+        dialogKind == WarehouseBridgeDialogKind.SAVE_COURSE_CONFIG ->
+        WarehouseStrings.executeStageAwaitInput
+
+    stage == WarehouseWebLoginStage.EXECUTING -> if (remainingMs <= EXECUTION_SLOW_NETWORK_REMAINING_MS) {
+        WarehouseStrings.executeStageSlowNetwork
+    } else {
+        WarehouseStrings.executeStageFetching
+    }
+
+    stage == WarehouseWebLoginStage.LOADING ||
+        stage == WarehouseWebLoginStage.INJECTING_SCRIPT -> WarehouseStrings.executeStageWaitingPage
+
+    else -> null
+}
+
+/**
+ * 执行窗口超时的用户可见出口：标题带秒数、正文给建议、**两个真按钮**。
+ *
+ * ## 为什么是弹窗而不是 Toast（2026-11-13）
+ *
+ * 超时的语义是「这一轮结束了，你选下一步」：重试 / 改用手动导入。一句话的 Toast 既留不下
+ * 可点的东西，也会在用户低头看网页时自己消失。老实现的 Toast 与 `executeFailedWithError`
+ * 的错误行一起弹，用户看到的是「导入失败：timeout」加一句英文样的东西，学不到任何对策。
+ *
+ * ## 为什么只有两个按钮
+ *
+ * 文案侧准备了三个键（重试 / 改用手动导入 / 查看日志），但**日志面板还没移植**：接上去就是
+ * 一颗点了不动的按钮。`executeViewLogAction` 只收进 `WarehouseStrings`，不接——
+ * 源码守卫 `WarehouseTimeoutWiringGuardTest` 钉着宿主里不许出现它。
+ *
+ * ## 为什么挡住点外部关闭
+ *
+ * `onDismissRequest` 给空实现：点遮罩就让弹窗自己消失的话，用户会停在「超时了但什么都没选」
+ * 的状态，看不出还可以重试。要离开必须点一个真按钮。
+ */
+@Composable
+private fun WarehouseExecutionTimeoutDialog(
+    show: Boolean,
+    onRetry: () -> Unit,
+    onSwitchToManual: () -> Unit,
+) {
+    OverlayDialog(
+        insideMargin = DpSize(16.dp, 16.dp),
+        show = show,
+        // 秒数与预算常量同源：改预算这里跟着变，不会出现「文案 30 秒、实际 60 秒」。
+        title = WarehouseStrings.executeTimeoutTitle
+            .filled("seconds", (SCRIPT_EXECUTION_TIMEOUT_MS / 1000L).toString()),
+        summary = WarehouseStrings.executeTimeoutAdvice.text,
+        onDismissRequest = {},
+    ) {
+        Column(
+            modifier = Modifier.fillMaxWidth(),
+            verticalArrangement = Arrangement.spacedBy(10.dp),
+        ) {
+            // 主按钮 = 重试（复用快捷导入的同一条重试路径，文案也是同一个键）。
+            Button(
+                onClick = onRetry,
+                modifier = Modifier.fillMaxWidth(),
+                colors = ButtonDefaults.buttonColorsPrimary(),
+            ) {
+                Text(text = WarehouseStrings.quickImportRetryAction.text)
+            }
+            TextButton(
+                modifier = Modifier.fillMaxWidth(),
+                text = WarehouseStrings.executeSwitchToManualAction.text,
+                onClick = onSwitchToManual,
+            )
+        }
+    }
+}
+

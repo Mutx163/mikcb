@@ -166,11 +166,19 @@ class WarehouseWebLoginHostWiringGuardTest {
         }
     }
 
+    /**
+     * 执行预算：**60 秒 + 每 250ms 轮询**，文案仍按 Dart 的两分支给。
+     *
+     * 2026-11-13 模型换了：老的「30 秒一次 delay 到点收尾」把**用户读弹窗的时间**也算进预算，
+     * 超时还会把用户正在看的对话框按「取消」掐掉。现在预算挂在
+     * [WarehouseExecutionTimerPolicy] 上，暂停期间不走表。判据跟着模型走——
+     * 常量在、注入成功后仍起计时、**轮询问的是策略对象**，而不是退回一次 delay。
+     */
     @Test
-    fun `执行导入必须有 30 秒超时并按 Dart 两分支给文案`() {
+    fun `执行导入必须有 60 秒预算并按 Dart 两分支给文案`() {
         assertTrue(
-            "必须定义 30 秒预算常量（Dart _importTimeout = Duration(seconds: 30)）",
-            hostSource.contains("SCRIPT_EXECUTION_TIMEOUT_MS"),
+            "必须定义预算常量 SCRIPT_EXECUTION_TIMEOUT_MS = 60_000L（暂停模型下的硬上限）",
+            hostSource.contains("SCRIPT_EXECUTION_TIMEOUT_MS = 60_000L"),
         )
         // 判据必须落在**调用点**：只查 "armImportTimeout()" 会被函数定义行
         // `fun armImportTimeout() {` 自己满足，等于没钉住（2026-11-05 咬合探针实测发现）。
@@ -181,7 +189,12 @@ class WarehouseWebLoginHostWiringGuardTest {
             ready.contains("armImportTimeout()"),
         )
         val arming = blockAfter(hostSource, "fun armImportTimeout(")
-        assertTrue("计时器必须真的 delay 到预算再收尾", arming.contains("delay(SCRIPT_EXECUTION_TIMEOUT_MS)"))
+        assertTrue(
+            "计时器必须按拍轮询执行预算策略（delay 轮询 + shouldFire）；" +
+                "退回「一次 delay 到预算再收尾」就等于把暂停模型拆了",
+            arming.contains("delay(EXECUTION_TIMER_POLL_INTERVAL_MS)") &&
+                arming.contains("shouldFire("),
+        )
 
         val timeout = blockAfter(hostSource, "fun onScriptExecutionTimeout(")
         assertTrue("超时必须走统一收尾 endScriptWindow", timeout.contains("endScriptWindow("))

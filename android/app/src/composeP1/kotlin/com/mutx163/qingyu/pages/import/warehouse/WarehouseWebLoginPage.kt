@@ -74,6 +74,14 @@ fun WarehouseWebLoginPage(
      * `WarehouseWebLoginHostWiringGuardTest` 钉着（置位 / finally 清零 / 调用点传参）。
      */
     importWriting: Boolean = false,
+    /**
+     * 执行窗口的阶段提示（由宿主按「导航中 / 等确认 / 等选择 / 等输入 / 抓取中 / 网络较慢」
+     * 算好的一句话，见 `WarehouseWebLoginHost.warehouseExecutionStageHint`）。
+     *
+     * 页面不判阶段、不取文案：这里是纯渲染，把宿主算出的那**一句**画进状态行。
+     * null = 这一页此刻没什么要说的（错误行与执行期按钮文案各自有优先级）。
+     */
+    executionStageHint: String? = null,
     onBack: () -> Unit = {},
     onReload: () -> Unit = {},
     onToggleDesktopMode: () -> Unit = {},
@@ -193,6 +201,15 @@ fun WarehouseWebLoginPage(
                         text = issue,
                         style = MiuixTheme.textStyles.footnote2,
                         color = MiuixTheme.colorScheme.error,
+                    )
+
+                    // 执行窗口的阶段提示（六条 ARB 文案）：说清「现在在等谁」——等网页、
+                    // 等你确认/选择/输入、正在抓取，还是网络较慢。排在错误行之后：有错时
+                    // 先读错，没错才读进度。
+                    executionStageHint != null -> Text(
+                        text = executionStageHint,
+                        style = MiuixTheme.textStyles.footnote2,
+                        color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
                     )
 
                     stage == WarehouseWebLoginStage.INJECTING_SCRIPT -> Text(
