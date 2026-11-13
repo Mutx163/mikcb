@@ -830,6 +830,8 @@ fun WarehouseWebLoginHost(
         val script = warehouseBridgeResolveScript(answer.requestId, answer.jsonValue)
         if (script.isNotEmpty()) {
             controller.injectJavaScript(script)
+            // 真回话了才记：requestId 不可信时脚本是空串、网页什么都没拿到，记 resolved 是假证据。
+            recordWarehouseBridgeResolved(answer.requestId)
         }
         Log.i(LOG_TAG, "bridge dialog ${answer.kind.messageType} answered via native dialog")
     }
@@ -852,6 +854,8 @@ fun WarehouseWebLoginHost(
         val script = warehouseBridgeResolveScript(answer.requestId, answer.jsonValue)
         if (script.isNotEmpty()) {
             controller.injectJavaScript(script)
+            // 排空也是真回话：reason 记实际原因（complete / error / page navigation / re-execute）。
+            recordWarehouseBridgeDrain(answer.requestId, reason)
         }
         Log.i(LOG_TAG, "bridge dialog ${pending.kind.messageType} cancelled at script window end ($reason)")
     }
@@ -1621,6 +1625,8 @@ fun WarehouseWebLoginHost(
         val script = warehouseBridgeResolveScript(answer.requestId, answer.jsonValue)
         if (script.isEmpty()) return
         controller.injectJavaScript(script)
+        // 兜底回答不是用户选的：单独标 fallback=true，日志里一眼能分清「他点的」与「替他的」。
+        recordWarehouseBridgeFallback(answer.requestId)
         Log.i(
             LOG_TAG,
             "bridge dialog ${answer.kind.messageType} answered with fallback value",
@@ -1681,6 +1687,8 @@ fun WarehouseWebLoginHost(
         val script = warehouseBridgeResolveScript(requestId, jsonValue)
         if (script.isNotEmpty()) {
             controller.injectJavaScript(script)
+            // 与 answerAndClose 同一类证据：真回话了才记 resolved。
+            recordWarehouseBridgeResolved(requestId)
         }
         Log.i(LOG_TAG, "bridge $kind answered with $jsonValue")
     }

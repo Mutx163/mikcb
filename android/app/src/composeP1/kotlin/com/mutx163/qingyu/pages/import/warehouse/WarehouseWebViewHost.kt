@@ -459,6 +459,10 @@ private fun createWarehouseWebView(
     val bridgeProxy = WarehouseBridgeProxy()
     bridgeProxy.onMessage = { message ->
         mainHandler.post {
+            // BRIDGE 事件记录放在这条已有的主线程投递里（JavaBridge 线程只负责投递）：
+            // 解析、脱敏、加锁一概不在这里做，也不在 postMessage 本体里做。
+            // 只记 requestId 与 type，网页正文（口令 / 账号 / 课表）不进日志。
+            recordWarehouseBridgeRequest(message)
             controller.onBridgeMessage?.invoke(message)
         }
     }
@@ -526,10 +530,12 @@ private fun createWarehouseWebView(
         /** Dart: setOnConsoleMessage——网页 console 进导入执行日志，排障全靠它。 */
         override fun onConsoleMessage(consoleMessage: ConsoleMessage?): Boolean {
             val message = consoleMessage ?: return false
-            onConsoleMessage(
-                message.messageLevel().name.lowercase(),
-                message.message().orEmpty(),
-            )
+            val level = message.messageLevel().name.lowercase()
+            val text = message.message().orEmpty()
+            // SCRIPT 一条（截断 500 字 + URL 只留 host 在纯逻辑层做，见 WarehouseConsoleLog）；
+            // error 级另记一条 FAILURE，面板只看失败列也不会漏掉网页自己报的错。
+            recordWarehouseConsoleMessage(level, text)
+            onConsoleMessage(level, text)
             return false
         }
     }
