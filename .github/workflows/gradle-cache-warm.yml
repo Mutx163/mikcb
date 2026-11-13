@@ -13,11 +13,12 @@ on:
     branches:
       - main
     paths:
+      # 依赖集合变化只可能来自这几类文件：Gradle 脚本 / wrapper / 全局属性。
+      # 原 `pubspec.yaml` / `pubspec.lock` 两条已随 Flutter 迁移删除（文件不存在，
+      # paths 过滤永远不会命中它们，属代码残留）——2026-11-12 清理，触发源不缩小。
       - 'android/**/*.gradle*'
       - 'android/gradle/wrapper/gradle-wrapper.properties'
       - 'android/gradle.properties'
-      - 'pubspec.yaml'
-      - 'pubspec.lock'
   schedule:
     # 每周一 03:17 UTC 兜底刷新：缓存 7 天未被访问会被 LRU 驱逐，发版间隔拉长时靠它保温
     - cron: '17 3 * * 1'

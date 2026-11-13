@@ -37,6 +37,21 @@
     从写死 composeUi 改为按变体推导）。Flutter Gradle 插件移除后，收集列表恒空、
     开关无任何效果，两样都成了死代码，本版整段删除。**现在闸门不追加任何 `-x`。**
 
+    【探针生命周期：改仓库的验证必须 `try/finally` 清理】（2026-11-12，两次事故后立的规矩）
+    今天的探针事故发生了两次，形状一样——**清理没跑到**：
+      · `ZzCanary.kt` 被误放进 `composeP1`，进了 Gradle 编译面，`compilePerfBenchKotlin` 一片
+        `Unresolved reference`；它未进 git，手清后 `git status`/历史都不留痕；
+      · 验证脚本把 `ZzBrokenGuard.kt` 放进测试源集，中途 `Write-Error` 提前终止，
+        **末尾的 `Remove-Item` 没执行** ⇒ 下一轮被当成本域第 8 个 .kt 编进编译面。
+    规矩：
+      1. **优先不碰仓库**：能在临时目录/参数化纯函数里验的，就别往 `android/app/src` 放文件
+         （`CanaryFileGuardTest` 就是改成 `Files.createTempDirectory` + 纯函数后验的）；
+      2. 必须碰仓库时，备份→改动→**验证完的还原/删除写在 `try/finally` 里**，不依赖"执行到最后一行"；
+         失败分支同样要清理；
+      3. 清理后**自证**：`git diff --stat` 为空 + 关键文件 sha256 与基线一致，再报结果；
+      4. 探针文件名带上本次任务标记，命中了也能一眼认出是探针（但别用 `probe/canary` 之外的
+         白名单外名字，`CanaryFileGuardTest` 会红——那是它该干的）。
+
 .EXAMPLE
     pwsh -File scripts/safe-gradle.ps1 :app:compileDevDebugKotlin
     pwsh -File scripts/safe-gradle.ps1 :app:testDevDebugUnitTest

@@ -77,6 +77,19 @@
     4. 排除是**过渡手段**：正解是把误落的渲染层文件挪回 `composeP1`（纯数学部分拆回
        main 让测试回 L0）。挪动涉及 main 代码，要单独授权。
 
+    【探针生命周期：改仓库的验证必须 `try/finally` 清理】（2026-11-12，两次事故后立的规矩）
+    两次探针事故形状一样——**清理没跑到**：
+      · `ZzCanary.kt` 误落 `composeP1` ⇒ 进 Gradle 编译面，`compilePerfBenchKotlin` 一片未解析；
+      · 验证脚本的 `ZzBrokenGuard.kt` 因中途 `Write-Error` 提前终止，末尾删除没执行 ⇒
+        下一轮被当成第 8 个 .kt 编进本域（`(本域 8 个 .kt)` 就是这么来的）。
+    对 L0 验证的具体要求：
+      1. 预期红/绿的样本**优先走参数/临时目录**（例如把扫描逻辑抽成纯函数 + `createTempDirectory`），
+         别把坏文件放进 `android/app/src`；
+      2. 必须放时：备份 → 改动 → 跑 → **`finally` 里还原/删除**；`Write-Error`/`exit` 都会跳过
+         末尾清理，所以不能把清理写在脚本尾部；
+      3. 还原后自证：`git diff --stat` 为空 + 目标文件 sha256 与基线一致；
+      4. `(本域 N 个 .kt)` 的数字突变是探针残留的强信号——今天的残留就是靠它发现的。
+
 .EXAMPLE
     pwsh -File scripts/test-kotlin-module.ps1 -Module "pages/showcase"
     pwsh -File scripts/test-kotlin-module.ps1 -Module "pages/live"
