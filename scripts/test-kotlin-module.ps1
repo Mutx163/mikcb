@@ -168,6 +168,11 @@ $repoRoot = Split-Path -Parent $PSScriptRoot
 # -TestDir 只接**测试面**：main 源集不在这里收集，主源仍全部来自下方的共享面。
 # 这样「锁粒度、临时目录、缓存键」全都自动跟着 $slug 走，-Module 一条路都不用改。
 $testDirs = @()
+# ⚠️ 名字陷阱（2026-11-12 踩过）：PowerShell 变量名**大小写不敏感**，`$TestDir`（参数）与
+# `-Module` 路径用的 `$testDir`（单个目录）是**同一个变量**。下面第 3 步会把 `$testDir` 覆盖成
+# `pages/<模块>` 路径并置空，所以 -TestDir 的目录名必须在这里先抄一份到 `$testDirNames`，
+# 后面（登记表并入、日志）一律用副本，别再读 `$TestDir`。
+$testDirNames = @()
 if ($TestDir.Count -gt 0) {
     if ($Module) {
         Write-Error "[test-kotlin-module] -Module 与 -TestDir 互斥，只能给一个（-TestDir 只用于按顶层测试目录跑）。"
@@ -186,6 +191,7 @@ if ($TestDir.Count -gt 0) {
         }
         $testDirs += $absTestDir
     }
+    $testDirNames = @($TestDir)
     $cleanModule = $null
     # 锁粒度 = 顶层目录：不同目录各一把锁，可并行；同一目录仍然串行。
     $slug = "testdir_" + (($TestDir | ForEach-Object { $_ -replace "[^A-Za-z0-9_.\-]", "_" }) -join "_")
@@ -466,6 +472,100 @@ if ($cleanModule -and $moduleSourceFiles.ContainsKey($cleanModule)) {
         }
         if ($sources -notcontains $absModuleFile) { $sources += $absModuleFile }
     }
+}
+
+# ── -TestDir 登记表（2026-11-12 新增；与上面的 `$moduleSourceFiles` 同一模式）──────────────
+#
+# 为什么要有这张表：`-TestDir <顶层目录>` 的 main 面**不新增收集**（主源全来自共享面），
+# 而像 `test/.../qingyu/app` 这种顶层目录，测试会直接引用共享面之外的域外 main 文件。
+# 这类补充**必须看得见**：写进本表 ⇒ 可 review、可缩减、下一个人不用重新猜一遍；
+# 用 `-ExtraSources` 临时糊 ⇒ 结论不可复现，换个人就得再猜。
+#
+# 【怎么复核表里的任意一项（可执行）】把该项从本表删掉/注释掉，然后跑：
+#     pwsh -NoProfile -File scripts/test-kotlin-module.ps1 -TestDir app
+# 会出现
+#     <文件>:<行>:<列>: error: unresolved reference '<该项提供的符号>'
+# 把该项恢复后再跑同一条命令 ⇒ 转绿 + **exit 0**。
+# 判据是**符号名**，不是固定行列：红点常先落在首个消费方（往往是同族的中间 main 文件，
+# 例如删掉 `SettingsCourseCardPage.kt` 时首条是 `pages/settings/SettingsPageBridge.kt:23:42`，
+# 之后才是测试文件的 import 行）——2026-11-12 实跑验证过这条路径。
+# 每项注释 = `<该项提供的符号>` + 「该项**首次被需要时**抓到的红点」（从无到有的增量口径，
+# 属历史记录：多数在测试文件，少数先落在同族中间文件）。
+# 收录条件与 `$moduleSourceFiles` 一致：① 文件零 `android.*` / `androidx.compose` / miuix 导入；
+# ② 被该目录下的测试真实引用。渲染层（Compose 页）一律不收。
+$testDirExtraSources = @{
+    "app" = @(
+        # ── 测试直连的域外引用 ───────────────────────────────────────────────────────
+        "pages/task/TaskStrings.kt",                        # 首次需要时的红点 app/AddTaskFormReducerTest.kt:43:22 unresolved reference 'TaskStrings'
+        "pages/task/TaskModel.kt",                          # (传递) 首次需要时的红点 pages/task/AddTaskFormReducer.kt:7 unresolved reference 'AddTaskViewState'
+        "pages/task/AddTaskFormReducer.kt",                 # 首次需要时的红点 app/AddTaskFormReducerTest.kt:29:21 unresolved reference 'AddTaskFormReducer'
+        "pages/export/ExportStrings.kt",                    # 首次需要时的红点 app/AppLocaleRuntimeTest.kt:47:30 unresolved reference 'ExportStrings'
+        "pages/course/AddCourseFormModel.kt",               # 首次需要时的红点 app/TimetableHostLogicTest.kt:462:22 unresolved reference 'AddCourseSaveMode'
+        "pages/course/CourseOverviewStrings.kt",            # (传递) 同包 typealias ArbText；首次需要时的红点 pages/course/AddCourseStrings.kt:28 unresolved reference 'ArbText'
+        "pages/import/IcsImportModel.kt",                   # 首次需要时的红点 app/UpgradeScenarioTest.kt:372:24 unresolved reference 'IcsImportModel'
+        "pages/sync/CloudSyncModel.kt",                     # 首次需要时的红点 app/UpgradeScenarioTest.kt:293:13 unresolved reference 'CloudSyncLogic'
+        "pages/sync/CloudSyncPorts.kt",                     # (传递) 首次需要时的红点 platform/WebdavConfigStoreImpl.kt:6 unresolved reference 'WebdavConfigStore'
+        "platform/SecretCipher.kt",                         # 首次需要时的红点 app/UpgradeScenarioTest.kt:486:42 unresolved reference 'SecretCipher'
+        "platform/WebdavConfigStoreImpl.kt",                # 首次需要时的红点 app/UpgradeScenarioTest.kt:286:27 unresolved reference 'WebdavConfigStoreImpl'
+        # ── SettingsActionDispatcherTest 拉进来的 pages/settings 规格族 ─────────────────
+        "pages/settings/SettingsPageModel.kt",              # 首次需要时的红点 app/SettingsActionDispatcherTest.kt:98:22 unresolved reference 'SettingsAction'
+        "pages/settings/SettingsAppearancePage.kt",         # 首次需要时的红点 app/SettingsActionDispatcherTest.kt:41:39 unresolved reference 'SettingsAppearancePage'
+        "pages/settings/SettingsCourseCardPage.kt",         # 提供 SettingsCourseCardPage；首次需要时的红点：app/SettingsActionDispatcherTest.kt:63:43
+        "pages/settings/SettingsGeneralPage.kt",            # 首次需要时的红点 app/SettingsActionDispatcherTest.kt:487:17 unresolved reference 'SettingsGeneralPage'
+        "pages/settings/SettingsPageBridge.kt",             # 首次需要时的红点 app/SettingsActionDispatcherTest.kt:98:51 unresolved reference 'SettingsPageBridge'
+        "pages/settings/SettingsPageState.kt",              # 首次需要时的红点 pages/settings/SettingsAppearancePage.kt:64:21 unresolved reference 'SettingsPageState'
+        "pages/settings/SettingsStrings.kt",                # 首次需要时的红点 pages/settings/SettingsAppearancePage.kt:73:24 unresolved reference 'SettingsStrings'
+        "pages/settings/SettingsMaterialModel.kt",          # 首次需要时的红点 pages/settings/SettingsPageBridge.kt:132:19 unresolved reference 'MaterialPanelState'
+        "pages/settings/SettingsAppearanceEditorPage.kt",   # 首次需要时的红点 pages/settings/SettingsPageBridge.kt:81:9 unresolved reference 'SettingsAppearanceEditorPage'
+        "pages/settings/SettingsMaterialPanels.kt",         # 首次需要时的红点 pages/settings/SettingsPageBridge.kt:82:9 unresolved reference 'SettingsMaterialGeneralPage'
+        "pages/settings/SettingsBackdropFlowPage.kt",       # 首次需要时的红点 pages/settings/SettingsPageBridge.kt:84:9 unresolved reference 'SettingsBackdropFlowPage'
+        "pages/settings/SettingsLivePage.kt",               # 首次需要时的红点 pages/settings/SettingsPageBridge.kt:143:9 unresolved reference 'SettingsLivePage'
+        "pages/settings/SettingsRecentWallpaperPage.kt",    # 首次需要时的红点 pages/settings/SettingsPageBridge.kt:152:37 unresolved reference 'SettingsRecentWallpaperSection'
+        "pages/settings/SettingsResetPage.kt",              # 首次需要时的红点 pages/settings/SettingsPageBridge.kt:141:9 unresolved reference 'SettingsResetPage'
+        "pages/settings/SettingsGlassDockIconEditorPage.kt",# 首次需要时的红点 pages/settings/SettingsPageBridge.kt:142:9 unresolved reference 'SettingsGlassDockIconEditorPage'
+        "pages/settings/SettingsLiveSelfCheckPage.kt",      # 首次需要时的红点 pages/settings/SettingsPageBridge.kt:144:9 unresolved reference 'SettingsLiveSelfCheckPage'
+        "pages/settings/SettingsTimetablePageSettingsPage.kt", # 首次需要时的红点 pages/settings/SettingsPageBridge.kt:171:9 unresolved reference 'SettingsTimetablePageSettingsPage'
+        "pages/settings/SettingsP3B2States.kt",             # 首次需要时的红点 pages/settings/SettingsPageBridge.kt:273:8 unresolved reference 'SettingsHomeWidgetState'
+        "pages/settings/SettingsGlassDockEditorPage.kt",    # 首次需要时的红点 pages/settings/SettingsPageBridge.kt:225:8 unresolved reference 'GlassDockEditorState'
+        "pages/settings/AppearanceEditorState.kt",          # 首次需要时的红点 pages/settings/SettingsPageBridge.kt:529:40 unresolved reference 'WallpaperPanelState'
+        "pages/settings/SettingsStringsExt1.kt",            # 首次需要时的红点 pages/settings/SettingsAppearanceEditorPage.kt:48:25 unresolved reference 'SettingsStringsExt1'
+        "pages/settings/SettingsStringsExt2.kt",            # 首次需要时的红点 pages/settings/SettingsTimetablePageSettingsPage.kt:249:24 unresolved reference 'SettingsStringsExt2'
+        "pages/settings/SettingsStringsExt3.kt",            # 首次需要时的红点 pages/settings/SettingsLivePage.kt:52:17 unresolved reference 'SettingsStringsExt3'
+        "pages/settings/SettingsStringsExt4.kt",            # 首次需要时的红点 pages/settings/SettingsGlassDockEditorPage.kt:62:38 unresolved reference 'SettingsStringsExt4'
+        "pages/settings/SettingsStringsExt5.kt",            # 首次需要时的红点 pages/settings/SettingsTimetablePageSettingsPage.kt:98:23 unresolved reference 'SettingsStringsExt5'
+        "pages/settings/GlassDockIconCatalog.kt",           # 首次需要时的红点 pages/settings/SettingsGlassDockIconEditorPage.kt:79:59 unresolved reference 'GlassDockIconCatalog'
+        "pages/settings/SettingsHomeWidgetPage.kt",         # 首次需要时的红点 pages/settings/SettingsP3B2States.kt:45:36 unresolved reference 'SettingsHomeWidgetPage'
+        "pages/settings/SemesterSettingsLogic.kt",          # 首次需要时的红点 pages/settings/SettingsP3B2States.kt:230:16 unresolved reference 'SemesterSettingsLogic'
+        # ── pages/sync 族 ────────────────────────────────────────────────────────────
+        "pages/sync/CloudBackupListModel.kt",               # 首次需要时的红点 pages/sync/CloudSyncModel.kt:414:23 unresolved reference 'CloudBackupEntryModel'
+        "pages/sync/SyncResultToasts.kt",                   # 首次需要时的红点 pages/sync/CloudSyncModel.kt:176:56 unresolved reference 'SyncToast'
+        "pages/sync/SyncStrings.kt",                        # 首次需要时的红点 pages/sync/CloudSyncModel.kt:179:55 unresolved reference 'SyncStrings'
+        "pages/sync/DeviceLabelResolver.kt",                # 首次需要时的红点 pages/sync/CloudBackupListModel.kt:156:24 unresolved reference 'DeviceLabelResolver'
+        "pages/sync/BackupFileStrings.kt",                  # 首次需要时的红点 pages/sync/SyncStrings.kt:219:43 unresolved reference 'BackupFileStrings'
+        # ── pages/import、pages/course 族 ────────────────────────────────────────────
+        "pages/import/IcsHeaderKeywords.kt",                # 首次需要时的红点 pages/import/IcsImportModel.kt:52:20 unresolved reference 'IcsHeaderKeywords'
+        "pages/course/AddCourseStrings.kt"                  # 首次需要时的红点 pages/course/AddCourseFormModel.kt:437:36 unresolved reference 'AddCourseStrings'
+    )
+}
+
+# 登记表并入 `$sources`：**只在 -TestDir 模式生效**，`-Module` 路径一行不碰。
+# 与用户显式 `-ExtraSources` 合并去重（同一文件只编一次）；表项缺失只 WARN 跳过
+# （与 `$moduleSourceFiles` 同一兜底口径），最后打印补入条数，方便一眼核对表是否生效。
+if ($testDirs.Count -gt 0) {
+    $registeredAdded = 0
+    $registeredMissing = @()
+    foreach ($tdName in $testDirNames) {
+        if (-not $testDirExtraSources.ContainsKey($tdName)) { continue }
+        foreach ($relRegistered in $testDirExtraSources[$tdName]) {
+            $absRegistered = Join-Path $repoRoot "android/app/src/main/kotlin/com/mutx163/qingyu/$relRegistered"
+            if (-not (Test-Path $absRegistered)) { $registeredMissing += $relRegistered; continue }
+            if ($sources -notcontains $absRegistered) { $sources += $absRegistered; $registeredAdded++ }
+        }
+    }
+    foreach ($missRegistered in $registeredMissing) {
+        Write-Host ">>> [test-kotlin-module] ⚠️ 登记表文件不存在，已跳过：$missRegistered" -ForegroundColor DarkYellow
+    }
+    Write-Host ">>> [test-kotlin-module] -TestDir 登记表补入 $registeredAdded 个 main 文件（-TestDir 目录：$($testDirNames -join ',')）" -ForegroundColor DarkCyan
 }
 
 # 纯接口 JVM 桩（2026-11-05 新增，**按需加载**）。
