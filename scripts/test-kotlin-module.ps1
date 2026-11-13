@@ -94,12 +94,32 @@
     pwsh -File scripts/test-kotlin-module.ps1 -Module "pages/showcase"
     pwsh -File scripts/test-kotlin-module.ps1 -Module "pages/live"
     pwsh -File scripts/test-kotlin-module.ps1 -Module "pages/import/warehouse"
+
+    # 顶层测试目录档（-Module 语义不变，两者互斥）：只收 test/.../qingyu/app/**/*Test.kt，
+    # 主源仍全部来自共享面；缺 main 符号时用 -ExtraSources 逐文件补。
+    pwsh -File scripts/test-kotlin-module.ps1 -TestDir app
+    pwsh -NoProfile -Command "& ./scripts/test-kotlin-module.ps1 -TestDir app -ExtraSources @('android/app/src/main/kotlin/com/mutx163/qingyu/NotificationLaunchTarget.kt')"
 #>
 
 [CmdletBinding()]
 param(
-    [Parameter(Mandatory = $true, Position = 0)]
+    # 页面模块档（如 `pages/sheetguard`）。与 -TestDir 二选一，两者互斥。
+    # 为了 -TestDir 能单独使用，这里不再 Mandatory；两个都不给时脚本自己报错退出（见下方模式分支）。
+    [Parameter(Mandatory = $false, Position = 0)]
     [string]$Module,
+
+    # 顶层测试目录档（如 `app`）：只收 `test/.../qingyu/<dir>/**/*Test.kt`。
+    #
+    # 语义（2026-11-12 新增，与 -Module 严格互斥）：
+    #   · 测试面 = 该目录递归下所有 `*Test.kt`（外加始终并入的 `testutil/` 与 `-ExtraSources`）；
+    #   · **主源不新增收集**——全部仍来自第 1 段的共享面（13 个共享目录 + 根包白名单 + 按需桩），
+    #     所以缺 main 符号时用 `-ExtraSources` 逐文件点名补，脚本里不为任何目录开特例；
+    #   · 空集保护：目录下没有任何 `*Test.kt` ⇒ 报错退出，禁止「0 个测试却绿」；
+    #   · 锁粒度按目录（slug = `testdir_<dir>`），不同目录可并行。
+    # `-Module` 的路径规整、`pages/<模块>` 目录、共享目录清单、根包白名单、moduleSourceFiles、
+    # Compose 排除、JVM 桩、JUnit 运行段一律不动。
+    [Parameter(Mandatory = $false)]
+    [string[]]$TestDir = @(),
 
     [Parameter(Mandatory = $false)]
     [string[]]$ExtraSources = @(),
@@ -143,6 +163,40 @@ $cleanModule = $Module -replace "^android/app/src/(main|test)/kotlin/com/mutx163
 $slug = $cleanModule -replace "[^A-Za-z0-9_.\-]", "_"
 
 $repoRoot = Split-Path -Parent $PSScriptRoot
+
+# ── 模式分支：-TestDir（顶层测试目录档）/ -Module（页面模块档），两者互斥 ────────────────
+# -TestDir 只接**测试面**：main 源集不在这里收集，主源仍全部来自下方的共享面。
+# 这样「锁粒度、临时目录、缓存键」全都自动跟着 $slug 走，-Module 一条路都不用改。
+$testDirs = @()
+if ($TestDir.Count -gt 0) {
+    if ($Module) {
+        Write-Error "[test-kotlin-module] -Module 与 -TestDir 互斥，只能给一个（-TestDir 只用于按顶层测试目录跑）。"
+        exit 1
+    }
+    foreach ($d in $TestDir) {
+        $absTestDir = Join-Path $repoRoot "android/app/src/test/kotlin/com/mutx163/qingyu/$d"
+        if (-not (Test-Path $absTestDir)) {
+            Write-Error "[test-kotlin-module] -TestDir 目录不存在：$absTestDir"
+            exit 1
+        }
+        # 空集保护：一个 *Test.kt 都没有就直接失败——「0 个测试却绿」比红更有害。
+        if (@(Get-ChildItem -Path $absTestDir -Filter "*Test.kt" -Recurse -File).Count -eq 0) {
+            Write-Error "[test-kotlin-module] -TestDir $d 下没有任何 *Test.kt，拒绝空跑（$absTestDir）。"
+            exit 1
+        }
+        $testDirs += $absTestDir
+    }
+    $cleanModule = $null
+    # 锁粒度 = 顶层目录：不同目录各一把锁，可并行；同一目录仍然串行。
+    $slug = "testdir_" + (($TestDir | ForEach-Object { $_ -replace "[^A-Za-z0-9_.\-]", "_" }) -join "_")
+} elseif (-not $Module) {
+    Write-Error "[test-kotlin-module] 必须给 -Module 或 -TestDir 之一。"
+    exit 1
+}
+
+# 日志与报错里的「本域」标签：-Module 模式仍是模块名（输出与旧版逐字一致），
+# -TestDir 模式用 slug（如 `testdir_app`）。
+$domainLabel = if ($cleanModule) { $cleanModule } else { $slug }
 
 # 1. 定位 kotlinc（顺序：显式参数 → 仓库便携 → PATH → Android Studio 内置）
 #    旧版把「Android Studio 内置」当默认、PATH 当兜底，本机没装 Studio 就直接红灯，
@@ -196,10 +250,20 @@ if (-not (Test-Path $stdlibJar)) {
 $mainDir = Join-Path $repoRoot "android/app/src/main/kotlin/com/mutx163/qingyu/pages/$cleanModule"
 $testDir = Join-Path $repoRoot "android/app/src/test/kotlin/com/mutx163/qingyu/pages/$cleanModule"
 
-if (-not (Test-Path $mainDir) -and -not (Test-Path $testDir)) {
+# -TestDir 模式：上面两行（`pages/$cleanModule`）在 -Module 路径上**一字未动**；
+# 本模式下 $cleanModule 为 $null，所以把这两个「页面模块目录」置空，测试面交给 $testDirs，
+# **main 面不新增任何收集**（主源仍全部来自共享面）。
+if ($testDirs.Count -gt 0) { $mainDir = $null; $testDir = $null }
+
+$hasMainDir = [bool]($mainDir -and (Test-Path $mainDir))
+$hasTestDir = [bool]($testDir -and (Test-Path $testDir))
+if (-not $hasMainDir -and -not $hasTestDir -and $testDirs.Count -eq 0) {
     Write-Error "[test-kotlin-module] 未找到模块源码目录：$mainDir 或测试目录：$testDir"
     exit 1
 }
+
+# 本次要扫的测试目录：-TestDir 给的每个顶层目录；否则就是 -Module 的单一 $testDir。
+$testScanDirs = @(if ($testDirs.Count -gt 0) { $testDirs } elseif ($hasTestDir) { @($testDir) } else { @() })
 
 $sources = @()
 # 共享面（第 1 段的输入）：与「本域」严格分开收集，两段各编各的。
@@ -208,7 +272,7 @@ $sharedSources = @()
 # 模块（如 `pages/sheetguard` 只有 test/）在读汇总行时会拿到 $null。
 $composeMainFiles = @()
 $skippedTests = @()
-if (Test-Path $mainDir) {
+if ($hasMainDir) {
     # main 源集里的 Compose/miuix 文件（2026-11-10 新增过滤）。
     #
     # 本脚本的编译面是**纯 JVM**（JUnit + stdlib + 纯接口桩），而 main 源集按约定只放
@@ -249,7 +313,7 @@ if (Test-Path $mainDir) {
         }
     }
 }
-if (Test-Path $testDir) {
+if ($testScanDirs.Count -gt 0) {
     # 依赖「已被排除的 main 文件」的测试类同样退出编译面（否则 unresolved reference）。
     # 判据：同包里，测试文件正文引用了被排除文件里的**顶层声明名 + 调用括号**。
     $excludedDeclsByPackage = @{}
@@ -266,7 +330,9 @@ if (Test-Path $testDir) {
         $excludedDeclsByPackage[$pkg] += @($decls | Select-Object -Unique)
     }
     $skippedTests = @()
-    foreach ($file in @(Get-ChildItem -Path $testDir -Filter "*.kt" -Recurse)) {
+    # -Module 模式：$testScanDirs 只有一个元素（= $testDir），行为与旧版逐字一致；
+    # -TestDir 模式：每个 -TestDir 顶层目录各扫一遍（如 `app` 含 app/imagecache 子目录）。
+    foreach ($file in @($testScanDirs | ForEach-Object { Get-ChildItem -Path $_ -Filter "*.kt" -Recurse })) {
         $raw = Get-Content -Path $file.FullName -Raw
         $pkgMatch = [regex]::Match($raw, "(?m)^\s*package\s+([a-zA-Z0-9_\.]+)")
         $pkg = if ($pkgMatch.Success) { $pkgMatch.Groups[1].Value } else { "" }
@@ -391,7 +457,7 @@ $moduleSourceFiles = @{
         "platform/CouplePartnerPortImpl.kt"
     )
 }
-if ($moduleSourceFiles.ContainsKey($cleanModule)) {
+if ($cleanModule -and $moduleSourceFiles.ContainsKey($cleanModule)) {
     foreach ($moduleFile in $moduleSourceFiles[$cleanModule]) {
         $absModuleFile = Join-Path $repoRoot "android/app/src/main/kotlin/com/mutx163/qingyu/$moduleFile"
         if (-not (Test-Path $absModuleFile)) {
@@ -445,7 +511,7 @@ foreach ($stub in $jvmStubs) {
 $allSources = @($sources) + @($sharedSources)
 
 if ($allSources.Count -eq 0) {
-    Write-Error "[test-kotlin-module] 模块 $cleanModule 下未找到任何 .kt 文件。"
+    Write-Error "[test-kotlin-module] 模块 $domainLabel 下未找到任何 .kt 文件。"
     exit 1
 }
 
@@ -502,7 +568,7 @@ try {
     }
 
     if (-not $acquired) {
-        Write-Error "[test-kotlin-module] 等待同模块锁超时（已等 10 分钟）：模块 [$cleanModule] 有另一个 Agent 长期占用，放弃本次执行。"
+        Write-Error "[test-kotlin-module] 等待同模块锁超时（已等 10 分钟）：模块 [$domainLabel] 有另一个 Agent 长期占用，放弃本次执行。"
         exit 1
     }
 
@@ -627,7 +693,7 @@ try {
                     $named = @($named | Select-Object -Unique)
                     Write-Host ""
                     Write-Host "──────────────────────────────────────────────────────────────" -ForegroundColor Red
-                    Write-Host "✗ 共享面编译失败：不是 [$cleanModule] 这一域的问题（exit 78 = EX_CONFIG）。" -ForegroundColor Red
+                    Write-Host "✗ 共享面编译失败：不是 [$domainLabel] 这一域的问题（exit 78 = EX_CONFIG）。" -ForegroundColor Red
                     Write-Host "  先别在本域瞎改去绕；共享件归所有者，跨域共编同一文件按 AGENTS.md 避让。" -ForegroundColor Red
                     if ($named.Count -gt 0) {
                         Write-Host "  报错的共享面文件（$($named.Count) 处，点名如下）：" -ForegroundColor Red
@@ -680,7 +746,7 @@ try {
     }
     foreach ($src in $sources) { $argLines += "`"$(& $toSlash $src)`"" }
     Set-Content -Path $argFile -Value $argLines -Encoding utf8NoBOM
-    Write-Host ">>> [test-kotlin-module] 第 2 段：编译本域 [$cleanModule]（本域 $($sources.Count) 个 .kt，共享面 $($sharedSources.Count) 个已就绪），工作目录 $workRoot" -ForegroundColor Cyan
+    Write-Host ">>> [test-kotlin-module] 第 2 段：编译本域 [$domainLabel]（本域 $($sources.Count) 个 .kt，共享面 $($sharedSources.Count) 个已就绪），工作目录 $workRoot" -ForegroundColor Cyan
     # 与共享面同一套三态（见第 1 段注释）：日志为空=没起（红）；日志有 error:=真失败（红，日志优先于退出码）；
     # 日志非空且无 error:=调用方式问题（WARN，不判红，提示用 `pwsh -NoProfile -File`）。
     # 捕获输出是为了在退出码丢失时仍能按日志判定，否则「修假红把真红也修没」就是必然。
