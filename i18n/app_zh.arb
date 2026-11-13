@@ -6302,5 +6302,8 @@
   "@executeTimeoutTitle": {"placeholders":{"seconds":{"type":"int"}}},
   "executeTimeoutAdvice": "可以点重试、改用手动导入，或换到 Wi-Fi 再试",
   "executeSwitchToManualAction": "改用手动导入",
-  "executeViewLogAction": "查看日志"
+  "executeViewLogAction": "查看日志",
+  "warehouseImportLogTitle": "导入日志",
+  "warehouseImportLogEmpty": "暂无导入日志。这里只记录本机最近一次导入过程；系统级错误仍需设备日志。",
+  "warehouseImportLogShareAction": "分享"
 }

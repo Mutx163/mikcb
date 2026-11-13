@@ -5945,6 +5945,9 @@
   "executeTimeoutTitle": "{seconds}秒以内にページの読み込みが終わらず、インポートを中止しました",
   "executeTimeoutAdvice": "再試行するか、手動インポートに切り替えるか、Wi-Fi でもう一度お試しください",
   "executeSwitchToManualAction": "手動インポートに切り替える",
-  "executeViewLogAction": "ログを見る"
+  "executeViewLogAction": "ログを見る",
+  "warehouseImportLogTitle": "インポートログ",
+  "warehouseImportLogEmpty": "インポートログはまだありません。ここには、この端末で最後に行ったインポート処理のみが記録されます。システム側のエラーは、引き続き端末のログで確認してください。",
+  "warehouseImportLogShareAction": "共有"
 }
 
