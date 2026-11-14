@@ -465,7 +465,7 @@ class ShellWiring(context: Context) {
      */
     val holiday: HolidayProvider by lazy {
         HolidayProvider(
-            service = HolidayService(),
+            service = HolidayService(http = com.mutx163.qingyu.platform.OkHttpHolidayHttp()),
             preferences = HolidayPreferences(keyValueStore),
             builtinJson = ::builtinHolidayJson,
         )

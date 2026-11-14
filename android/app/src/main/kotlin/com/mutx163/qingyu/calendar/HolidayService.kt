@@ -2,8 +2,6 @@ package com.mutx163.qingyu.calendar
 
 import com.mutx163.qingyu.core.MiniJson
 import java.io.IOException
-import java.net.HttpURLConnection
-import java.net.URL
 
 /**
  * 节假日**远程取数**接缝（[HolidayService] 的实现契约，单测注入假网关）。
@@ -39,52 +37,16 @@ interface HolidayRemoteGateway {
 data class HolidayHttpResponse(val statusCode: Int, val body: String)
 
 /**
- * 一个「GET 一个 URL」的最小接缝（真实实现走 [JdkHolidayHttp]）。
+ * 一个「GET 一个 URL」的最小接缝（真实实现是 `platform/OkHttpHolidayHttp`）。
  *
  * 返回 null 表示**连不上 / 超时 / 读不到 body**（Dart 侧的 `ClientException` 家族），
  * 不是「服务器回了空」——后者是 200 + 空 body，要进解析分支。
+ *
+ * 实现不放本目录：`calendar` 在 L0 共享面，classpath 里没有 okhttp jar；
+ * 真实实现（OkHttp + `QingyuHttp`）在 `platform/`，由壳层构造时注入。
  */
 interface HolidayHttp {
     fun get(url: String): HolidayHttpResponse?
-}
-
-/**
- * 真实 HTTP 实现：JDK [HttpURLConnection]（零新依赖，与 `weather/WeatherService.kt`
- * 的 `JdkWeatherHttp` 同一写法，理由见那儿的注释）。
- *
- * 两个细节与 Dart 对齐：
- * - 超时 8 秒（Dart `.timeout(const Duration(seconds: 8))`，`holiday_service.dart:279`）；
- * - 请求头 `Accept: application/json` + `User-Agent: mikcb-holiday-sync`（`:274-277`）。
- */
-class JdkHolidayHttp(
-    private val timeoutMillis: Int = HolidayService.TIMEOUT_MILLIS,
-) : HolidayHttp {
-
-    override fun get(url: String): HolidayHttpResponse? {
-        val connection = try {
-            (URL(url).openConnection() as HttpURLConnection).apply {
-                requestMethod = "GET"
-                connectTimeout = timeoutMillis
-                readTimeout = timeoutMillis
-                setRequestProperty("Accept", "application/json")
-                setRequestProperty("User-Agent", "mikcb-holiday-sync")
-            }
-        } catch (_: Exception) {
-            return null
-        }
-        return try {
-            val status = connection.responseCode
-            // 非 200 时 errorStream 才是正文；Dart 的 http 包也是这么读的，这里不解析它，
-            // 只把状态码带回去（调用方只记状态码）。
-            val stream = if (status == 200) connection.inputStream else connection.errorStream
-            val body = stream?.use { String(it.readBytes(), Charsets.UTF_8) } ?: ""
-            HolidayHttpResponse(statusCode = status, body = body)
-        } catch (_: Exception) {
-            null
-        } finally {
-            connection.disconnect()
-        }
-    }
 }
 
 /**
@@ -111,7 +73,7 @@ class JdkHolidayHttp(
  * 「本地缓存命中」处短路，远程一直坏就永远读不到新数据。
  */
 class HolidayService(
-    private val http: HolidayHttp = JdkHolidayHttp(),
+    private val http: HolidayHttp,
 ) : HolidayRemoteGateway {
 
     companion object {

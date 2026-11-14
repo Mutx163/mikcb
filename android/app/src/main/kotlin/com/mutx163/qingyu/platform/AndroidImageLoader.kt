@@ -9,8 +9,6 @@ import com.mutx163.qingyu.app.imagecache.ImageCacheKey
 import com.mutx163.qingyu.app.imagecache.ImageRetryBackoff
 import com.mutx163.qingyu.app.imagecache.ImageSizeSelector
 import com.mutx163.qingyu.app.imagecache.InFlightDeduplicator
-import java.net.HttpURLConnection
-import java.net.URL
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
@@ -19,8 +17,9 @@ import java.util.concurrent.Executors
  * 网络图片加载器（P35-B4 · 网络图片加载层）。
  *
  * 台账 §4.3 第 5 条：Bing 壁纸画廊、打赏二维码图此前没有任何图片加载层，界面空白/一直转圈。
- * 本类是那层的 Android 实现，**只用现有依赖**（`java.net` + `android.graphics` + `android.util`），
- * 不引入 Coil/Glide。
+ * 本类是那层的 Android 实现，**不引入 Coil/Glide**：网络走统一入口 [QingyuHttp]
+ * （OkHttp，`category=network` 日志、统一超时），解码用 `android.graphics`，缓存用
+ * `android.util.LruCache`（2026-11-14 起不再手写 `HttpURLConnection`）。
  *
  * 复用 `app/imagecache/` 的纯逻辑（JVM 单测覆盖）：
  * - [ImageCacheKey]：内存缓存键 = 规范化 URL + 尺寸桶；
@@ -139,43 +138,34 @@ class AndroidImageLoader(
 
     /** 一次下载 + 两遍解码（先量尺寸，再按 inSampleSize 解码）。失败返回 null。 */
     private fun tryDownloadDecode(url: String, targetWidthPx: Int, targetHeightPx: Int): Bitmap? {
-        var conn: HttpURLConnection? = null
         return try {
-            val connection = openConnection(url)
-            conn = connection
-            val code = connection.responseCode
-            if (code !in 200..299) {
+            // 走统一入口（QingyuHttp 负责超时、UA 兜底与 `category=network` 日志）。
+            // 必须用 getBytes：图片是二进制，getText 会按 UTF-8 解码把它弄坏。
+            val result = QingyuHttp.getBytes(
+                QingyuHttp.HttpCallSpec(
+                    url = url,
+                    connectTimeoutMs = CONNECT_TIMEOUT_MS.toLong(),
+                    readTimeoutMs = READ_TIMEOUT_MS.toLong(),
+                ),
+            )
+            val bytes = result.data
+            if (bytes == null || bytes.isEmpty()) {
                 null
             } else {
-                val bytes = connection.inputStream.use { it.readBytes() }
-                if (bytes.isEmpty()) {
-                    null
-                } else {
-                    // 第一遍：只量尺寸，不解码像素
-                    val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
-                    BitmapFactory.decodeByteArray(bytes, 0, bytes.size, bounds)
-                    val sample = ImageSizeSelector.inSampleSize(
-                        bounds.outWidth, bounds.outHeight, targetWidthPx, targetHeightPx,
-                    )
-                    // 第二遍：按采样解码
-                    val opts = BitmapFactory.Options().apply { inSampleSize = sample }
-                    BitmapFactory.decodeByteArray(bytes, 0, bytes.size, opts)
-                }
+                // 第一遍：只量尺寸，不解码像素
+                val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
+                BitmapFactory.decodeByteArray(bytes, 0, bytes.size, bounds)
+                val sample = ImageSizeSelector.inSampleSize(
+                    bounds.outWidth, bounds.outHeight, targetWidthPx, targetHeightPx,
+                )
+                // 第二遍：按采样解码
+                val opts = BitmapFactory.Options().apply { inSampleSize = sample }
+                BitmapFactory.decodeByteArray(bytes, 0, bytes.size, opts)
             }
         } catch (e: Throwable) {
             null
-        } finally {
-            conn?.disconnect()
         }
     }
-
-    private fun openConnection(url: String): HttpURLConnection =
-        (URL(url).openConnection() as HttpURLConnection).apply {
-            connectTimeout = CONNECT_TIMEOUT_MS
-            readTimeout = READ_TIMEOUT_MS
-            instanceFollowRedirects = true
-            requestMethod = "GET"
-        }
 
     private fun postToMain(callback: (Bitmap?) -> Unit, bitmap: Bitmap?) {
         mainHandler.post { callback(bitmap) }
