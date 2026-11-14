@@ -1020,7 +1020,12 @@ fun TimetableWeekPage(
                             menuItems = homeMenuItems,
                             onMenuSelect = onHomeMenuSelect,
                             // 「更多」玻璃球的采样源 = 顶栏玻璃带自己在用的那一层（同一个对象）。
-                            backdrop = pageBackdrop,
+                            // 但实体档 / 无壁纸 / 无 shader 时带子根本不画玻璃（见
+                            // `TimetableChromeBandGlass`），那层也就没录进任何内容；球若照旧走
+                            // 玻璃分支就是在「模糊空气」，模糊会把它自己圆形蒙版的边缘量化成
+                            // 多边形（2026-11-14 用户实报）。所以这种档位传 null，走
+                            // `HomeTopBarActionBallChrome` 已有的实心圆退化分支。
+                            backdrop = pageBackdrop.takeIf { bandBlurActive },
                         )
                     }
 

@@ -491,7 +491,9 @@ fun MonthViewPage(
                             menuItems = homeMenuItems,
                             onMenuSelect = onHomeMenuSelect,
                             // 「更多」玻璃球的采样源 = 顶栏玻璃带自己在用的那一层（同一个对象）。
-                            backdrop = pageBackdrop,
+                            // 带子不画玻璃的档位（实体 / 无壁纸 / 无 shader）里这层没录内容，
+                            // 球必须退回实心圆，否则就是「模糊空气」+ 蒙版边缘量化（2026-11-14）。
+                            backdrop = pageBackdrop.takeIf { bandBlurActive },
                             // 根页（底栏栈底）不画返回键；从「更多功能」等处推入时画出。
                             navigationIcon = if (rememberShellShouldShowBackButton()) {
                                 { QingyuBackIconButton(onBack = onBack) }
