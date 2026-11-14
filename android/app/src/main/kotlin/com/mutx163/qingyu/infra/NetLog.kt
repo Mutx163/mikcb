@@ -47,6 +47,12 @@ object NetLog {
      */
     const val FAILURE_CANCELLED: String = "cancelled"
 
+    /**
+     * 响应体超过调用方给的上限（HttpCallSpec.maxBytes）：**不是网络失败**，是我们主动不读。
+     * 记这个值才能把「服务端回了异常大响应」与「连不上 / 超时」分开。
+     */
+    const val FAILURE_TOO_LARGE: String = "too_large"
+
     /** detail 单条上限（字段名 + 行号，不需要更长）。 */
     const val MAX_DETAIL_CHARS: Int = 160
 
@@ -115,3 +121,5 @@ object NetLog {
     private const val LEVEL_INFO: String = "info"
     private const val LEVEL_WARN: String = "warn"
 }
+
+

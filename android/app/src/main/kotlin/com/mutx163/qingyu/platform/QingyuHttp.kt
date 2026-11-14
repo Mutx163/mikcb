@@ -1,6 +1,7 @@
 package com.mutx163.qingyu.platform
 
 import com.mutx163.qingyu.infra.NetLog
+import java.io.ByteArrayOutputStream
 import java.io.IOException
 import java.io.InterruptedIOException
 import java.net.SocketTimeoutException
@@ -11,6 +12,7 @@ import okhttp3.Callback
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
 import okhttp3.Request
+import okhttp3.ResponseBody
 import okhttp3.RequestBody
 import okhttp3.RequestBody.Companion.toRequestBody
 import okhttp3.Response
@@ -74,6 +76,8 @@ object QingyuHttp {
         val body: RequestBody? = null,
         val connectTimeoutMs: Long = DEFAULT_CONNECT_TIMEOUT_MS,
         val readTimeoutMs: Long = DEFAULT_READ_TIMEOUT_MS,
+        /** 响应体上限（字节）；0 = 不限。超限按失败收口，**不把超大响应整段读进内存**。 */
+        val maxBytes: Long = 0L,
         /** 诊断标签（竞速各路的来源，如 `github` / `gitcode`）。 */
         val tag: String? = null,
     )
@@ -124,9 +128,22 @@ object QingyuHttp {
         }
         return try {
             buildClient(spec).newCall(request).execute().use { response ->
-                val raw = response.body?.bytes()
-                val size = raw?.size?.toLong()
-                if (!response.isSuccessful) {
+                val bounded = response.body?.let { readBounded(it, spec.maxBytes) }
+                val raw = bounded?.bytes
+                val size = bounded?.readBytes ?: 0L
+                if (bounded?.tooLarge == true) {
+                    respond(
+                        HttpResult(
+                            status = response.code,
+                            bytes = size,
+                            elapsedMs = elapsed(),
+                            failure = NetLog.FAILURE_TOO_LARGE,
+                            errorClass = MAX_BYTES_MARKER,
+                            url = spec.url,
+                            method = spec.method,
+                        ),
+                    )
+                } else if (!response.isSuccessful) {
                     respond(
                         HttpResult(
                             status = response.code,
@@ -173,8 +190,19 @@ object QingyuHttp {
         }
         return try {
             buildClient(spec).newCall(request).execute().use { response ->
-                val raw = response.body?.bytes()
-                val result = if (!response.isSuccessful) {
+                val bounded = response.body?.let { readBounded(it, spec.maxBytes) }
+                val raw = bounded?.bytes
+                val result = if (bounded?.tooLarge == true) {
+                    HttpBinaryResult(
+                        status = response.code,
+                        bytes = bounded.readBytes,
+                        failure = NetLog.FAILURE_TOO_LARGE,
+                        errorClass = MAX_BYTES_MARKER,
+                        url = spec.url,
+                        method = spec.method,
+                        elapsedMs = elapsed(),
+                    )
+                } else if (!response.isSuccessful) {
                     HttpBinaryResult(
                         status = response.code,
                         bytes = raw?.size?.toLong(),
@@ -257,6 +285,14 @@ object QingyuHttp {
                                 onChunk(buffer, read)
                                 received += read
                                 onProgress(received, total)
+                                if (spec.maxBytes > 0L && received > spec.maxBytes) {
+                                    call.cancel()
+                                    val tooLarge = fail(
+                                        spec, response.code, received, elapsed(),
+                                        NetLog.FAILURE_TOO_LARGE, null,
+                                    )
+                                    return HttpCall(call) to tooLarge
+                                }
                             }
                             read = source.read(buffer)
                         }
@@ -355,8 +391,19 @@ object QingyuHttp {
 
                     override fun onResponse(call: Call, response: Response) {
                         val result = response.use { resp ->
-                            val raw = resp.body?.bytes()
-                            if (!resp.isSuccessful) {
+                            val bounded = resp.body?.let { readBounded(it, spec.maxBytes) }
+                            val raw = bounded?.bytes
+                            if (bounded?.tooLarge == true) {
+                                HttpResult(
+                                    status = resp.code,
+                                    bytes = bounded.readBytes,
+                                    elapsedMs = elapsed(),
+                                    failure = NetLog.FAILURE_TOO_LARGE,
+                                    errorClass = MAX_BYTES_MARKER,
+                                    url = spec.url,
+                                    method = spec.method,
+                                )
+                            } else if (!resp.isSuccessful) {
                                 HttpResult(
                                     status = resp.code,
                                     bytes = raw?.size?.toLong(),
@@ -442,12 +489,35 @@ object QingyuHttp {
         )
     }
 
+    /** 有界读取：超限立刻停，绝不把超大响应整段读进内存。 */
+    private fun readBounded(body: ResponseBody, maxBytes: Long): BoundedBody {
+        val source = body.byteStream()
+        val collector = ByteArrayOutputStream()
+        val buffer = ByteArray(BUFFER_BYTES)
+        var total = 0L
+        while (true) {
+            val read = source.read(buffer)
+            if (read < 0) break
+            total += read
+            if (maxBytes > 0L && total > maxBytes) {
+                return BoundedBody(bytes = null, readBytes = total, tooLarge = true)
+            }
+            collector.write(buffer, 0, read)
+        }
+        return BoundedBody(bytes = collector.toByteArray(), readBytes = total, tooLarge = false)
+    }
+
+    /** [readBounded] 的结果：超限时 [bytes] 为 null、[readBytes] 是已读到的字节数。 */
+    private data class BoundedBody(val bytes: ByteArray?, val readBytes: Long, val tooLarge: Boolean)
     /** 给少数 POST 用；GET 不会用到。 */
     fun jsonBody(json: String): RequestBody = json.toRequestBody(JSON_MEDIA_TYPE)
 
     // ---------- 内部 ----------
 
     private const val BUFFER_BYTES: Int = 8 * 1024
+
+    /** 超 [HttpCallSpec.maxBytes] 时 rrorClass 的固定标记。 */
+    private const val MAX_BYTES_MARKER: String = "maxBytes"
 
     /** 非 200 时 `errorClass` 的固定标记（与天气实现同口径）。 */
     private const val HTTP_STATUS_MARKER: String = "HTTP"
@@ -535,6 +605,10 @@ object QingyuHttp {
         return result
     }
 }
+
+
+
+
 
 
 
