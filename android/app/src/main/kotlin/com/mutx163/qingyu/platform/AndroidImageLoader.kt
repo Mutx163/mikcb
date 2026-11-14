@@ -1,60 +1,78 @@
 package com.mutx163.qingyu.platform
 
+import android.content.Context
 import android.graphics.Bitmap
-import android.graphics.BitmapFactory
+import android.graphics.Canvas
+import android.graphics.drawable.BitmapDrawable
+import android.graphics.drawable.Drawable
 import android.os.Handler
 import android.os.Looper
-import android.util.LruCache
-import com.mutx163.qingyu.app.imagecache.ImageCacheKey
+import coil3.BitmapImage
+import coil3.DrawableImage
+import coil3.ImageLoader
+import coil3.network.okhttp.OkHttpNetworkFetcherFactory
+import coil3.request.ImageRequest
 import com.mutx163.qingyu.app.imagecache.ImageRetryBackoff
-import com.mutx163.qingyu.app.imagecache.ImageSizeSelector
-import com.mutx163.qingyu.app.imagecache.InFlightDeduplicator
-import java.util.concurrent.ConcurrentHashMap
-import java.util.concurrent.ExecutorService
-import java.util.concurrent.Executors
 
 /**
- * 网络图片加载器（P35-B4 · 网络图片加载层）。
+ * 网络图片加载器（P35-B4 网络图片加载层）。
  *
- * 台账 §4.3 第 5 条：Bing 壁纸画廊、打赏二维码图此前没有任何图片加载层，界面空白/一直转圈。
- * 本类是那层的 Android 实现，**不引入 Coil/Glide**：网络走统一入口 [QingyuHttp]
- * （OkHttp，`category=network` 日志、统一超时），解码用 `android.graphics`，缓存用
- * `android.util.LruCache`（2026-11-14 起不再手写 `HttpURLConnection`）。
+ * ## 2026-11-14：内部换 Coil 3，对外面不变
  *
- * 复用 `app/imagecache/` 的纯逻辑（JVM 单测覆盖）：
- * - [ImageCacheKey]：内存缓存键 = 规范化 URL + 尺寸桶；
- * - [InFlightDeduplicator]：同键并发请求收敛成一次加载（LEADER 下载，FOLLOWER 等待）；
- * - [ImageRetryBackoff]：失败有界指数退避重试；
- * - [ImageSizeSelector]：`BitmapFactory.inSampleSize` 的 2 的幂下采样值。
+ * 原来这里是自己写的 LruCache + 线程池 + 在途去重 + `BitmapFactory` 两次解码（183 行，
+ * **零测试**）。用户拍板后换成 Coil 3（Apache-2.0）：缓存、在途去重、按尺寸采样都是它的
+ * 标准职责，我们只为它提供「唯一那个 OkHttp 客户端」。
  *
- * 线程模型：网络与解码在 [executor] 的后台线程；回调统一 post 到主线程。
- * 回调在**主线程**触发（这是 UI 安全的前提）。
+ * **对外契约一点没动**，`BingGalleryHost` / `MemoryStatsCollector` 一行不用改：
+ * - [shared] 进程级单例；[load] 回调在主线程、失败给 null；
+ * - [memoryCacheBytes] / [memoryCacheEntryCount] / [memoryCacheMaxBytes] 三个口径保留；
+ * - [clear] / [shutdown] 保留。
  *
- * 用法（本批不接线，调用点在 `pages/`，属别批写作用域）：
- * ```
- * AndroidImageLoader.shared.load(url, w, h) { bmp -> imageBitmap = bmp?.asImageBitmap() }
- * ```
+ * 两个刻意的决定（改之前先看）：
+ * - **`diskCache(null)`**：我们已有壁纸受管目录与 `filesDir/logs` 两处磁盘数据，再叠一层
+ *   Coil 磁盘缓存等于多一份用户数据、多一条清理路径。
+ * - **内存上限仍按构造参数（默认 16 MB）**：Coil 默认按可用内存百分比算 `maxSize`，
+ *   那会让诊断页「已用 / 上限」的分母跳一档、历史数值不可比。这里显式钉回固定上限。
+ *
+ * ## 为什么需要 [install]
+ *
+ * Coil 的 `ImageLoader` 必须拿到 `Context`，而本类原本是无参单例。组合根
+ * （`ShellWiring.init`）在壳构造时调一次 `AndroidImageLoader.shared.install(context)`；
+ * 没装就调 [load] 会立刻报错——宁可当场红，也不要静默显示空白图。
  */
 class AndroidImageLoader(
     private val maxCacheBytes: Int = DEFAULT_MAX_CACHE_BYTES,
-    threadCount: Int = DEFAULT_THREAD_COUNT,
 ) {
 
-    private val cache: LruCache<String, Bitmap> = object : LruCache<String, Bitmap>(maxCacheBytes) {
-        override fun sizeOf(key: String, value: Bitmap): Int = value.byteCount
-    }
+    @Volatile
+    private var imageLoader: ImageLoader? = null
 
-    private val dedup = InFlightDeduplicator()
-    private val executor: ExecutorService = Executors.newFixedThreadPool(threadCount)
+    /** install 时记下的 applicationContext（`ImageRequest` 需要它）。 */
+    @Volatile
+    private var appContext: Context? = null
+
     private val mainHandler = Handler(Looper.getMainLooper())
 
-    /** key → 等待该 key 加载结果的回调列表。所有读写都在 [listenersLock] 下进行。 */
-    private val listeners = ConcurrentHashMap<String, MutableList<(Bitmap?) -> Unit>>()
-    private val listenersLock = Any()
+    /**
+     * 组合根安装：用**唯一那个 OkHttp 客户端**（[QingyuHttp.client]）做网络层，不另建 client。
+     *
+     * 幂等：已安装则只更新 context，不重建加载器（避免把内存缓存清掉）。
+     */
+    fun install(context: Context) {
+        appContext = context.applicationContext
+        if (imageLoader != null) return
+        imageLoader = ImageLoader.Builder(context.applicationContext)
+            .components {
+                add(OkHttpNetworkFetcherFactory(callFactory = { QingyuHttp.client }))
+            }
+            .diskCache(null)
+            .memoryCache { maxSize(maxCacheBytes.toLong()) }
+            .build()
+    }
 
     /**
-     * 加载图片。命中内存缓存立即回调；否则发起/加入一次加载。
-     * 回调在主线程触发，参数为解码后的 Bitmap，失败时为 null。
+     * 加载图片。命中内存缓存立即回调；否则交给 Coil。回调在主线程触发，
+     * 参数为解码后的 Bitmap，失败时为 null。
      */
     fun load(
         url: String,
@@ -62,122 +80,105 @@ class AndroidImageLoader(
         targetHeightPx: Int,
         callback: (Bitmap?) -> Unit,
     ) {
-        val key = ImageCacheKey.of(url, targetWidthPx, targetHeightPx)
-        synchronized(listenersLock) {
-            val cached = cache.get(key)
-            if (cached != null) {
-                postToMain(callback, cached)
-                return
-            }
-            val role = dedup.begin(key)
-            listeners.getOrPut(key) { mutableListOf() }.add(callback)
-            if (role == InFlightDeduplicator.Role.LEADER) {
-                executor.execute { runLoad(key, url, targetWidthPx, targetHeightPx) }
-            }
-        }
+        val loader = imageLoader ?: error(NOT_INSTALLED)
+        val context = appContext ?: error(NOT_INSTALLED)
+        enqueueWithRetry(loader, context, url, targetWidthPx, targetHeightPx, attempt = 1, callback)
     }
 
     /** 清空内存缓存（内存吃紧 / 页面销毁时调用）。 */
     fun clear() {
-        cache.evictAll()
+        imageLoader?.memoryCache?.clear()
     }
 
-    /**
-     * 内存缓存**当前占用**（字节）。
-     *
-     * 口径：`LruCache.size()` 返回的是 `sizeOf` 之和，而本类的 `sizeOf` 就是
-     * `Bitmap.byteCount`，所以这里直接是字节数。
-     */
-    fun memoryCacheBytes(): Int = cache.size()
+    /** 内存缓存**当前占用**（字节）。 */
+    fun memoryCacheBytes(): Int = imageLoader?.memoryCache?.size?.toInt() ?: 0
 
-    /** 内存缓存条目数（`snapshot()` 是 LruCache 提供的一致性读快照）。 */
-    fun memoryCacheEntryCount(): Int = cache.snapshot().size
+    /** 内存缓存条目数。 */
+    fun memoryCacheEntryCount(): Int = imageLoader?.memoryCache?.keys?.size ?: 0
 
     /** 内存缓存上限（字节），即构造时给的 [maxCacheBytes]。 */
-    fun memoryCacheMaxBytes(): Int = maxCacheBytes
+    fun memoryCacheMaxBytes(): Int = imageLoader?.memoryCache?.maxSize?.toInt() ?: maxCacheBytes
 
-    /** 关闭后台线程池（宿主退出时调用）。 */
+    /** 关闭加载器（宿主退出时调用）：清内存缓存；Coil 没有需要手动关的后台线程池。 */
     fun shutdown() {
-        executor.shutdown()
+        clear()
     }
 
-    // ---- 内部：真正下载 + 解码 + 回发（后台线程） ----
+    // ---------- 内部 ----------
 
-    private fun runLoad(key: String, url: String, targetWidthPx: Int, targetHeightPx: Int) {
-        var bitmap: Bitmap? = null
-        try {
-            var attempt = 1
-            while (true) {
-                bitmap = tryDownloadDecode(url, targetWidthPx, targetHeightPx)
-                if (bitmap != null) break
-                if (!ImageRetryBackoff.shouldRetry(attempt)) break
-                try {
-                    Thread.sleep(ImageRetryBackoff.delayMillis(attempt))
-                } catch (e: InterruptedException) {
-                    Thread.currentThread().interrupt()
-                    break
-                }
-                attempt++
-            }
-        } finally {
-            val result = bitmap
-            synchronized(listenersLock) {
-                if (result != null) {
-                    cache.put(key, result)
-                    dedup.complete(key)
-                } else {
-                    dedup.fail(key)
-                }
-                val callbacks = listeners.remove(key)
-                if (callbacks != null && callbacks.isNotEmpty()) {
-                    mainHandler.post { callbacks.forEach { it(result) } }
-                }
-            }
-        }
-    }
-
-    /** 一次下载 + 两遍解码（先量尺寸，再按 inSampleSize 解码）。失败返回 null。 */
-    private fun tryDownloadDecode(url: String, targetWidthPx: Int, targetHeightPx: Int): Bitmap? {
-        return try {
-            // 走统一入口（QingyuHttp 负责超时、UA 兜底与 `category=network` 日志）。
-            // 必须用 getBytes：图片是二进制，getText 会按 UTF-8 解码把它弄坏。
-            val result = QingyuHttp.getBytes(
-                QingyuHttp.HttpCallSpec(
-                    url = url,
-                    connectTimeoutMs = CONNECT_TIMEOUT_MS.toLong(),
-                    readTimeoutMs = READ_TIMEOUT_MS.toLong(),
-                ),
+    private fun enqueueWithRetry(
+        loader: ImageLoader,
+        context: Context,
+        url: String,
+        targetWidthPx: Int,
+        targetHeightPx: Int,
+        attempt: Int,
+        callback: (Bitmap?) -> Unit,
+    ) {
+        val request = ImageRequest.Builder(context)
+            .data(url)
+            .size(targetWidthPx, targetHeightPx)
+            .target(
+                onSuccess = { result ->
+                    val bitmap = result.image.toBitmapOrNull()
+                    mainHandler.post { callback(bitmap) }
+                },
+                onError = {
+                    if (ImageRetryBackoff.shouldRetry(attempt)) {
+                        mainHandler.postDelayed(
+                            {
+                                enqueueWithRetry(
+                                    loader = loader,
+                                    context = context,
+                                    url = url,
+                                    targetWidthPx = targetWidthPx,
+                                    targetHeightPx = targetHeightPx,
+                                    attempt = attempt + 1,
+                                    callback = callback,
+                                )
+                            },
+                            ImageRetryBackoff.delayMillis(attempt),
+                        )
+                    } else {
+                        mainHandler.post { callback(null) }
+                    }
+                },
             )
-            val bytes = result.data
-            if (bytes == null || bytes.isEmpty()) {
-                null
-            } else {
-                // 第一遍：只量尺寸，不解码像素
-                val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
-                BitmapFactory.decodeByteArray(bytes, 0, bytes.size, bounds)
-                val sample = ImageSizeSelector.inSampleSize(
-                    bounds.outWidth, bounds.outHeight, targetWidthPx, targetHeightPx,
-                )
-                // 第二遍：按采样解码
-                val opts = BitmapFactory.Options().apply { inSampleSize = sample }
-                BitmapFactory.decodeByteArray(bytes, 0, bytes.size, opts)
-            }
-        } catch (e: Throwable) {
-            null
-        }
-    }
-
-    private fun postToMain(callback: (Bitmap?) -> Unit, bitmap: Bitmap?) {
-        mainHandler.post { callback(bitmap) }
+            .build()
+        loader.enqueue(request)
     }
 
     companion object {
         private const val DEFAULT_MAX_CACHE_BYTES = 16 * 1024 * 1024 // 16 MB
-        private const val DEFAULT_THREAD_COUNT = 3
-        private const val CONNECT_TIMEOUT_MS = 10_000
-        private const val READ_TIMEOUT_MS = 15_000
+
+        // 提示语用英文：CJK 字面量棘轮只降不升，屏上文案一律走 ArbText。
+        private const val NOT_INSTALLED =
+            "AndroidImageLoader is not installed: composition root should call shared.install(context)"
 
         /** 进程级共享实例（调用点直接用，不必各自 new）。 */
         val shared: AndroidImageLoader by lazy { AndroidImageLoader() }
     }
+}
+
+/** Coil 的 `Image` 两种形态都收成 Bitmap；拿不到就返回 null（回调按失败处理）。 */
+private fun coil3.Image.toBitmapOrNull(): Bitmap? = when (this) {
+    is BitmapImage -> bitmap
+    is DrawableImage -> drawable.toBitmapOrNull()
+    else -> null
+}
+
+/** Drawable → Bitmap：不引额外依赖（androidx.core 的 `toBitmap` 不在 classpath 保证内）。 */
+private fun Drawable.toBitmapOrNull(): Bitmap? {
+    if (this is BitmapDrawable) {
+        val existing = bitmap ?: return null
+        return if (existing.isMutable) existing else existing.copy(Bitmap.Config.ARGB_8888, false)
+    }
+    val width = intrinsicWidth
+    val height = intrinsicHeight
+    if (width <= 0 || height <= 0) return null
+    val bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
+    val canvas = Canvas(bitmap)
+    setBounds(0, 0, canvas.width, canvas.height)
+    draw(canvas)
+    return bitmap
 }

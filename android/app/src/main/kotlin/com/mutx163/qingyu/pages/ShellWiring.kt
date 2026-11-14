@@ -548,6 +548,8 @@ class ShellWiring(context: Context) {
         com.mutx163.qingyu.share.qr.QrEncoder.install(
             com.mutx163.qingyu.platform.ZxingTransferQrEncoder,
         )
+        // 图片加载（Coil）：Coil 需要 Context，组合根在壳构造时装一次；网络层复用唯一 OkHttp 客户端。
+        com.mutx163.qingyu.platform.AndroidImageLoader.shared.install(context)
     }
 
     /**
