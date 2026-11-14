@@ -347,11 +347,6 @@ class GuardSourceStrippingPolicyTest {
                 reason = "扩节与回滚等十条是模型用例；末条读 WarehouseWebLoginHost.kt，判 requiredSectionCount(、WarehouseSectionExpansionDialog(、apply( 三处接线均在",
                 reviewTrigger = LEGACY_REVIEW_TRIGGER,
             ),
-            "com/mutx163/qingyu/pages/import/warehouse/WarehouseWebLoginUiGuardTest.kt" to LegacyMeta(
-                introducedAt = "34b7a9296 2026-11-10",
-                reason = "读 WarehouseWebLoginPage.kt 与 WarehouseMacroPlaybackUi.kt，判错误文案上屏、执行态换导入中、回放遮罩拦触摸；blockAfter 截块后原文 contains",
-                reviewTrigger = LEGACY_REVIEW_TRIGGER,
-            ),
             "com/mutx163/qingyu/pages/settings/SettingsPreviewCutoutGuardTest.kt" to LegacyMeta(
                 introducedAt = "5ecf2df02 2026-11-03",
                 reason = "读 SettingsWeekPreview、TimetableWeekPage、AppearanceEditorScreen 等预览槽，先过私有 codeOf（去块注释 + 去行尾 //）再判挖洞件接线与假缩略图不许复活",
@@ -397,11 +392,6 @@ class GuardSourceStrippingPolicyTest {
                 reason = "读壳、ShellNavigationRail、HomeGlassDock、DayViewPage，判 Rail 出现时坞不组合、条目点击先弹回主屏；codeOnly 剥注释",
                 reviewTrigger = LEGACY_REVIEW_TRIGGER,
             ),
-            "com/mutx163/qingyu/pages/sync/ButtonContrastGuardTest.kt" to LegacyMeta(
-                introducedAt = "73b923ef7 2026-11-02",
-                reason = "读 CoupleTimetableSettingsPage.kt 与 CoupleWebDavConnectSheet.kt，用 callArguments 与 topLevelArgument 切出着色调用，判不许 primarySurface 底配 primary 字",
-                reviewTrigger = LEGACY_REVIEW_TRIGGER,
-            ),
             "com/mutx163/qingyu/pages/timetable/day/DayViewColorTokenGuardTest.kt" to LegacyMeta(
                 introducedAt = "010c2e21f 2026-11-04",
                 reason = "只读 DayViewCourseCard.kt，判非本周灰复用 WeekGridCourseMapping.NON_CURRENT_WEEK_COLOR_HEX；readSource 直接 readText，另带守卫空转自检",
@@ -415,11 +405,6 @@ class GuardSourceStrippingPolicyTest {
             "com/mutx163/qingyu/pages/topbar/TopBarActionGlassGuardTest.kt" to LegacyMeta(
                 introducedAt = "925da76af 2026-11-05",
                 reason = "扫二十余个页面顶栏的 actions 与 navigationIcon，判不许裸写 IconButton、待迁移颗数精确；文件先过私有 codeOf（块注释与行注释两条正则）",
-                reviewTrigger = LEGACY_REVIEW_TRIGGER,
-            ),
-            "com/mutx163/qingyu/pages/transfer/PickupCodesPageGuardTest.kt" to LegacyMeta(
-                introducedAt = "d29d73490 2026-11-02",
-                reason = "读 PickupCodesPage.kt 与 PickupCodesHost.kt，判入口行走官方组件、忙碌态传到渲染层、无障碍标签接线；readAndroidSource 直接 readText",
                 reviewTrigger = LEGACY_REVIEW_TRIGGER,
             ),
             "com/mutx163/qingyu/WidgetWakeupSourceGuardTest.kt" to LegacyMeta(

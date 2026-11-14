@@ -1,9 +1,9 @@
 package com.mutx163.qingyu.pages.transfer
 
+import com.mutx163.qingyu.testutil.readKotlinSourceNoStrings
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
-import java.io.File
 
 /**
  * 取件码页「交互不许在最后一跳丢掉」守卫（2026-11-02 建立）。
@@ -96,15 +96,18 @@ class PickupCodesPageGuardTest {
         )
     }
 
+    /**
+     * 读目标源码，走**中性化档**（剥注释 + 抹掉字符串内容）。
+     *
+     * 2026-11-14：原来直接 `readText()`，把宿主的 `busyTitleKey = busyTitleKey` 那行
+     * **注释掉**，文本仍留在注释里，`contains` 照样成立——实测 `pages/transfer`
+     * 375 例全绿。接线判据要的是代码骨架而不是文案，所以换中性化档。
+     */
     private fun readAndroidSource(relative: String): String {
-        var dir: File? = File("").absoluteFile
-        while (dir != null) {
-            val candidate = File(dir, relative)
-            if (candidate.isFile) return candidate.readText(Charsets.UTF_8)
-            dir = dir.parentFile
-        }
-        // 找不到就失败，不静默跳过——跳过等于守卫不存在。
-        throw AssertionError("找不到 $relative —— 守卫无法验证，按失败处理")
+        val source = readKotlinSourceNoStrings(relative)
+        // 否定式断言（不许出现 Toast.makeText、裸 Row(）在空串上恒真：读空就先红。
+        assertTrue("源码没读到内容（$relative）", source.isNotBlank())
+        return source
     }
 
     private companion object {

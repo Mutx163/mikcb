@@ -1,9 +1,10 @@
 package com.mutx163.qingyu.pages.import.warehouse
 
+import com.mutx163.qingyu.testutil.readKotlinSourceNoStrings
+import com.mutx163.qingyu.testutil.readSourceNormalized
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
-import java.io.File
 
 /**
  * **网页登录页 / 回放覆盖层的 UI 契约守卫**（W2，2026-11-10）。
@@ -21,22 +22,36 @@ import java.io.File
  */
 class WarehouseWebLoginUiGuardTest {
 
-    private val pageSource: String by lazy {
-        readSource("android/app/src/composeP1/kotlin/com/mutx163/qingyu/pages/import/warehouse/WarehouseWebLoginPage.kt")
+    private val pageCode: String by lazy {
+        readCode("android/app/src/composeP1/kotlin/com/mutx163/qingyu/pages/import/warehouse/WarehouseWebLoginPage.kt")
     }
-    private val overlaySource: String by lazy {
-        readSource("android/app/src/composeP1/kotlin/com/mutx163/qingyu/pages/import/warehouse/WarehouseMacroPlaybackUi.kt")
+    private val overlayCode: String by lazy {
+        readCode("android/app/src/composeP1/kotlin/com/mutx163/qingyu/pages/import/warehouse/WarehouseMacroPlaybackUi.kt")
+    }
+
+    /**
+     * **原文**视图（第三档，只归一行尾、不剥任何东西）。
+     *
+     * 只有「KDoc 不许再写某句话」这条判据用得到它：那句话本身就在注释里，
+     * 剥了注释这条断言就恒真。用原文的否定式断言必须先判非空。
+     */
+    private val rawPage: String by lazy {
+        val raw = readSourceNormalized(
+            "android/app/src/composeP1/kotlin/com/mutx163/qingyu/pages/import/warehouse/WarehouseWebLoginPage.kt",
+        )
+        assertTrue("页面原文没读到内容（路径写错？）", raw.isNotBlank())
+        raw
     }
 
     @Test
     fun `网页错误文案必须上屏_ERROR 态不许整条静默`() {
         val marker = "val issue = sessionState.errorMessage"
-        assertTrue("错误文案必须从 sessionState.errorMessage 取：$marker", pageSource.contains(marker))
+        assertTrue("错误文案必须从 sessionState.errorMessage 取：$marker", pageCode.contains(marker))
 
         // 状态行必须真的渲染它（不是只取不用），且用错误色。
         // 注意：marker 行本身带 `takeIf { … }` 的 `{`，不能直接从 marker 起配平；
         // 先跳到它后面的 `when {` 再取整块。
-        val statusBlock = blockAfter(pageSource.substringAfter(marker), "when {")
+        val statusBlock = blockAfter(pageCode.substringAfter(marker), "when {")
         assertTrue("取到 errorMessage 后必须在状态行里显示", statusBlock.contains("issue != null ->"))
         assertTrue(
             "错误状态行必须用主题错误色（R5：不许写死颜色）",
@@ -46,12 +61,12 @@ class WarehouseWebLoginUiGuardTest {
         // 旧写法在 ERROR 时把整条提示藏掉（只剩一颗灰按钮）——不许回来。
         assertFalse(
             "ERROR 态不许再把状态行整条藏掉（`stage != WarehouseWebLoginStage.ERROR`）",
-            pageSource.contains("stage != WarehouseWebLoginStage.ERROR"),
+            pageCode.contains("stage != WarehouseWebLoginStage.ERROR"),
         )
         // 加载完成与否的提示只允许落在「非执行期」，执行期由按钮自己说「导入中……」。
         assertTrue(
             "「等待页面加载」只许在非执行期出现（执行期错文案是审核 8b 的另一半）",
-            pageSource.contains("!scriptReady && !executing"),
+            pageCode.contains("!scriptReady && !executing"),
         )
     }
 
@@ -59,35 +74,36 @@ class WarehouseWebLoginUiGuardTest {
     fun `执行态必须换导入中并 loading_写盘期禁用主按钮`() {
         assertTrue(
             "页面必须暴露写盘期契约（宿主传 true 时按钮显示导入中并禁用）",
-            pageSource.contains("importWriting: Boolean = false"),
+            pageCode.contains("importWriting: Boolean = false"),
         )
         assertTrue(
             "执行期（注入 / 执行脚本）与写盘期的按钮文案必须换成 importingAction",
-            pageSource.contains("label = if (executing || importWriting)"),
+            pageCode.contains("label = if (executing || importWriting)"),
         )
         assertTrue(
             "按钮 loading 必须由 executing / importWriting 驱动",
-            pageSource.contains("loading = executing || importWriting"),
+            pageCode.contains("loading = executing || importWriting"),
         )
         assertTrue(
             "写盘期必须禁用按钮（防重复导入）",
-            pageSource.contains("enabled = scriptReady && !importWriting"),
+            pageCode.contains("enabled = scriptReady && !importWriting"),
         )
         assertTrue(
             "「导入中……」文案键必须是 ARB 已有的 importingAction",
-            pageSource.contains("WarehouseStrings.importingAction.text"),
+            pageCode.contains("WarehouseStrings.importingAction.text"),
         )
         // 上一版 KDoc 把契约写成「宿主目前没有写盘中状态」，Host 接线后成了误导
         // （Review 会照着它判断实现没做）。这行注解决定别人怎么读这份契约，钉住别再回来。
+        // 判据是**注释原文**，所以读 rawPage（第三档）：剥了注释这条就恒真。
         assertFalse(
             "KDoc 不许再写「宿主目前没有写盘中状态」——Host 已在 finalize 置 true、finally 清 false",
-            pageSource.contains("宿主目前没有"),
+            rawPage.contains("宿主目前没有"),
         )
     }
 
     @Test
     fun `回放期间必须隐藏录制与桌面切换`() {
-        val actions = blockAfter(pageSource, "actions = {")
+        val actions = blockAfter(pageCode, "actions = {")
         assertTrue("取不到顶栏 actions 块（守卫自身失效）", actions.isNotEmpty())
         val guarded = blockAfter(actions, "if (!foregroundReplayActive) {")
         assertTrue("顶栏动作必须按 foregroundReplayActive 收口", guarded.isNotEmpty())
@@ -103,7 +119,7 @@ class WarehouseWebLoginUiGuardTest {
 
     @Test
     fun `回放遮罩必须拦触摸_暂停态放行_执行态有取消`() {
-        val scrim = blockAfter(overlaySource, "private fun PlaybackScrim(")
+        val scrim = blockAfter(overlayCode, "private fun PlaybackScrim(")
         assertTrue("取不到 PlaybackScrim（守卫自身失效）", scrim.isNotEmpty())
         assertTrue(
             "遮罩必须装 pointerInput 参与命中（审核 8d：不拦就穿透到 WebView / 顶栏）",
@@ -115,7 +131,7 @@ class WarehouseWebLoginUiGuardTest {
         )
 
         // 暂停态走 PausedBottomCard、不用 PlaybackScrim：用户要在网页里填验证码。
-        val pausedLine = overlaySource.lineSequence()
+        val pausedLine = overlayCode.lineSequence()
             .firstOrNull { it.contains("PAUSED_FOR_INPUT ->") }
         assertTrue("取不到暂停态分支（守卫自身失效）", pausedLine != null)
         assertTrue("暂停态必须是放行的底部卡片", pausedLine!!.contains("PausedBottomCard("))
@@ -124,13 +140,13 @@ class WarehouseWebLoginUiGuardTest {
             pausedLine.contains("PlaybackScrim"),
         )
 
-        val executingBranch = blockAfter(overlaySource, "EXECUTING_IMPORT -> PlaybackScrim")
+        val executingBranch = blockAfter(overlayCode, "EXECUTING_IMPORT -> PlaybackScrim")
         assertTrue("取不到执行态分支（守卫自身失效）", executingBranch.isNotEmpty())
         assertTrue(
             "执行态必须把取消回调传给内容（发布版这一态没有出口，审核后补）",
             executingBranch.contains("ExecutingContent(schoolName, adapterName, onCancel)"),
         )
-        val executing = blockAfter(overlaySource, "private fun ExecutingContent(")
+        val executing = blockAfter(overlayCode, "private fun ExecutingContent(")
         assertTrue("取不到 ExecutingContent（守卫自身失效）", executing.isNotEmpty())
         assertTrue(
             "执行态卡片必须有「取消导入」按钮",
@@ -143,14 +159,17 @@ class WarehouseWebLoginUiGuardTest {
     // 工具
     // -----------------------------------------------------------------------
 
-    private fun readSource(relative: String): String {
-        var dir: File? = File("").absoluteFile
-        repeat(10) {
-            val candidate = File(dir, relative)
-            if (candidate.isFile) return candidate.readText(Charsets.UTF_8)
-            dir = dir?.parentFile
-        }
-        error("找不到源码 $relative（当前目录 ${File("").absolutePath}）")
+    /**
+     * 读源码的**中性化档**（剥注释 + 抹掉字符串内容）。
+     *
+     * 2026-11-14：原来直接 `readText()`，把判据行注释掉文本仍留在注释里、判据照样成立。
+     * 接线 / 结构判据要的是代码骨架，不是文案。
+     */
+    private fun readCode(relative: String): String {
+        val source = readKotlinSourceNoStrings(relative)
+        // 否定式断言（ERROR 态不许整条藏掉、暂停态不许套遮罩）在空串上恒真：读空就先红。
+        assertTrue("源码没读到内容（$relative）", source.isNotBlank())
+        return source
     }
 
     /** 取 `marker` 之后**第一对配平的 `{}`**（含两端）；marker 自身带 `{` 时从它开始配平。 */

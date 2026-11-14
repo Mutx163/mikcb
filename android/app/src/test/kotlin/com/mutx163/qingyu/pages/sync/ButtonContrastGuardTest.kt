@@ -1,8 +1,8 @@
 package com.mutx163.qingyu.pages.sync
 
+import com.mutx163.qingyu.testutil.readKotlinSourceNoStrings
 import org.junit.Assert.assertTrue
 import org.junit.Test
-import java.io.File
 
 /**
  * 「同色底 + 同色字」按钮守卫（2026-11-02 建立）。
@@ -41,15 +41,7 @@ class ButtonContrastGuardTest {
 
     @Test
     fun `扫描器必须真的扫到按钮配色调用`() {
-        val scanned = GUARDED_FILES.map { path ->
-            val file = File(repoRoot(), path)
-            assertTrue(
-                "守卫目标文件不存在：${file.absolutePath}（user.dir=${System.getProperty("user.dir")}）。" +
-                    "文件改名/移动后必须同步更新本守卫，否则它会空跑假绿。",
-                file.isFile,
-            )
-            file.readText()
-        }
+        val scanned = GUARDED_FILES.map { path -> readGuardedFile(path) }
         val callCount = scanned.sumOf { callArguments(it).size }
         assertTrue(
             "两个目标文件里一个 `buttonColors(` 调用都没扫到，判据已失效（门禁空跑会假绿）",
@@ -61,7 +53,7 @@ class ButtonContrastGuardTest {
     fun `不允许 primarySurface 底配 primary 字`() {
         val violations = mutableListOf<String>()
         for (path in GUARDED_FILES) {
-            val text = File(repoRoot(), path).readText()
+            val text = readGuardedFile(path)
             for (call in callArguments(text)) {
                 val color = topLevelArgument(call.arguments, "color")
                 val contentColor = topLevelArgument(call.arguments, "contentColor")
@@ -164,25 +156,18 @@ class ButtonContrastGuardTest {
         return null
     }
 
-    private fun repoRoot(): String {
-        var dir: File? = File(System.getProperty("user.dir") ?: ".").absoluteFile
-        while (dir != null) {
-            if (File(dir, "android/app/src").isDirectory) {
-                var up: File? = dir
-                while (up != null) {
-                    if (File(up, "lib/screens").isDirectory && File(up, "pubspec.yaml").isFile) {
-                        return up.path
-                    }
-                    up = up.parentFile
-                }
-                return dir.path
-            }
-            dir = dir.parentFile
-        }
-        throw AssertionError(
-            "找不到仓库根（android/app/src）—— 守卫无法验证，按失败处理（不许静默跳过）。" +
-                "当前工作目录：${System.getProperty("user.dir")}",
-        )
+    /**
+     * 读受守的页面源码，走**中性化档**（剥注释 + 抹掉字符串内容）。
+     *
+     * 2026-11-14：原来直接 `readText()`，把 `color = Color(QingyuTheme.error(dark))` 这类
+     * 判据行**注释掉**，文本仍留在注释里，括号配平照样扫得到——实测 `pages/sync`
+     * 413 例全绿。判据要的是代码骨架，不是文案。
+     */
+    private fun readGuardedFile(path: String): String {
+        val source = readKotlinSourceNoStrings(path)
+        // 空读时上面的空跑哨兵也会假绿：读空就先红在这里。
+        assertTrue("守卫目标文件没读到内容：$path（改名/移动后必须同步更新本守卫）", source.isNotBlank())
+        return source
     }
 
     private companion object {
