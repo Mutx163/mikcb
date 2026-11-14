@@ -143,8 +143,11 @@ fun CourseNoteSheet(
     QingyuSheet(
         show = show && course != null,
         // 内容自己给左右 16，所以框架侧横向内边距归零（否则单边 24+16 = 40，
-        // 内容会被挤成中间窄条）。顶部不再另加 16dp：miuix 上游无标题时本就留
-        // 42dp（把手 24 + 空标题行 18，见 QingyuSheet KDoc），再叠就是 58dp。
+        // 内容会被挤成中间窄条）。
+        // 顶部不再另加 16dp。留白算式：42 = 24dp 把手 + 6+12dp 标题行（miuix
+        // `BottomSheetContentLayout` 的 `DragHandleArea` + `TitleAndActionsRow`）；
+        // 本弹层 title / startAction / endAction **三空** ⇒ 改库批次落地后标题行不再画，
+        // 空档只剩 24dp 把手。在内容顶部再垫 16dp 会变成 58dp（改库后 40dp），都更糟。
         // 底部让位与键盘让位由套件统一处理。
         contentPadsHorizontally = true,
         // 限高上限：屏高 × 0.88（Dart `:209-212` 的上界）。

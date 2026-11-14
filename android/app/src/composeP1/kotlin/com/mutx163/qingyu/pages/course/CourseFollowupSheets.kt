@@ -1014,8 +1014,13 @@ fun CourseRescheduleSheet(
  * 调课弹层正文列表的最大高度占屏高比例。
  *
  * Dart 整弹层限 `屏高 × 0.88`（`course_followup_sheets.dart` 容器）；本层的列表只占
- * 弹层的一部分 —— 扣掉 miuix 顶部把手/空标题（42dp）、底部固定按钮行、12dp 间距与
+ * 弹层的一部分 —— 扣掉 miuix 顶部留白、底部固定按钮行、12dp 间距与
  * 手势区让位后约为 0.72，与同域 `AddCoursePage.kt` 的正文限高比例同源。按比例而不是
  * 写死 dp，矮屏（分屏 / 小屏设备）时列表自己缩，底部按钮始终留在屏内。
+ *
+ * 顶部留白算式：**42 = 24dp 把手 + 6+12dp 标题行**（miuix `BottomSheetContentLayout` 的
+ * `DragHandleArea` + `TitleAndActionsRow`）。本弹层不传 `title`、也不给 start/end 动作，
+ * 属 **三空** ⇒ 改库批次落地后标题行不再画，空档从 42 变 24dp。`0.72` 仍按更保守的
+ * 42dp 扣算，改库后只会更松，**不随改库调整**（要放宽另立一笔，别顺手改）。
  */
 private const val RESCHEDULE_LIST_HEIGHT_FRACTION = 0.72f
