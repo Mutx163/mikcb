@@ -440,10 +440,10 @@ fun ShellPageContent(
         "a.licenses" -> OpenSourceLicensesHost(onBack = onBack)
         // 2026-10-29（F09）：此前 `donorData = null, onReload = {}` ⇒ 名单恒空、刷新点了没反应。
         // 现在宿主自己拉（官方 raw 主 / GitCode 直连备），失败显示真原因 + 可重试。
-        "a.support" -> SupportCreatorHostPage(onBack = onBack)
+        "a.support" -> SupportCreatorHostPage(onBack = onBack, aboutHttp = wiring.aboutHttp)
         // 2026-10-29（F09）：此前 `maintainers = emptyList(), onReload = {}` ⇒ 恒空态。
         // 现在读 root_index + 每校 adapters.yaml，缓存优先并标注缓存时间，失败可重试。
-        "a.contributors" -> ContributorsHostPage(onBack = onBack)
+        "a.contributors" -> ContributorsHostPage(onBack = onBack, aboutHttp = wiring.aboutHttp)
         // 版本更新页（`a.update`）：由「版本更新页 1:1 复刻」批次交付。
         // 宿主装配层（真实检查更新 / 系统下载 / 设置读写 / 镜像测速）在 AboutUpdateHostPage。
         "a.update" -> AboutUpdateHostPage(onBack = onBack)

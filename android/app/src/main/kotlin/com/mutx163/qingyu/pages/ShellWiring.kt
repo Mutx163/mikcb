@@ -101,7 +101,11 @@ import com.mutx163.qingyu.pages.import.warehouse.WarehouseSchoolEntry
 import com.mutx163.qingyu.pages.import.warehouse.WarehouseFetch
 import com.mutx163.qingyu.pages.import.warehouse.WarehouseStrings
 import com.mutx163.qingyu.pages.import.warehouse.resolveWarehouseWebLoginTarget
+import com.mutx163.qingyu.pages.about.AboutHttp
+import com.mutx163.qingyu.platform.OkHttpAboutHttp
 import com.mutx163.qingyu.platform.OkHttpWarehouseFetch
+import com.mutx163.qingyu.platform.OkHttpWebdavHttpCaller
+import com.mutx163.qingyu.sync.WebdavHttpCallers
 import com.mutx163.qingyu.platform.AndroidWeatherLocationSource
 import com.mutx163.qingyu.platform.OkHttpWeatherHttp
 import com.mutx163.qingyu.platform.PrefsKeyValueStore
@@ -529,6 +533,8 @@ class ShellWiring(context: Context) {
      */
     init {
         weather.loadCached()
+        // WebDAV 生产发送实现：组合根安装一次，传输层只拿接口（页面层不 import platform）。
+        WebdavHttpCallers.installed = OkHttpWebdavHttpCaller()
     }
 
     /**
@@ -537,6 +543,12 @@ class ShellWiring(context: Context) {
      * 2026-11-14「页面只依赖接口、实现集中在 platform/」那条架构规矩的落地。
      */
     val warehouseFetch: WarehouseFetch by lazy { OkHttpWarehouseFetch() }
+
+    /**
+     * 关于页 HTTP 的**唯一构造点**（组合根）：OkHttpAboutHttp 实现页面依赖的 [AboutHttp]。
+     * 页面宿主只收 aboutHttp: AboutHttp，不在页面层 new 实现类——同 [warehouseFetch] 的架构口径。
+     */
+    val aboutHttp: AboutHttp by lazy { OkHttpAboutHttp() }
 
     /**
      * 从课表空档进加课页时要预填的 `(星期, 节次)`。
@@ -1775,4 +1787,6 @@ private fun AddSheetTile(
         }
     }
 }
+
+
 
