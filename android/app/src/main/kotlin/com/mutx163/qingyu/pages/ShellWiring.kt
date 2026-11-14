@@ -102,7 +102,11 @@ import com.mutx163.qingyu.pages.import.warehouse.WarehouseFetch
 import com.mutx163.qingyu.pages.import.warehouse.WarehouseStrings
 import com.mutx163.qingyu.pages.import.warehouse.resolveWarehouseWebLoginTarget
 import com.mutx163.qingyu.pages.about.AboutHttp
+import com.mutx163.qingyu.pages.settings.BingGalleryBinaryHttp
+import com.mutx163.qingyu.pages.settings.BingGalleryHttp
 import com.mutx163.qingyu.platform.OkHttpAboutHttp
+import com.mutx163.qingyu.platform.OkHttpBingGalleryBinaryHttp
+import com.mutx163.qingyu.platform.OkHttpBingGalleryHttp
 import com.mutx163.qingyu.platform.OkHttpWarehouseFetch
 import com.mutx163.qingyu.platform.OkHttpWebdavHttpCaller
 import com.mutx163.qingyu.sync.WebdavHttpCallers
@@ -549,6 +553,12 @@ class ShellWiring(context: Context) {
      * 页面宿主只收 aboutHttp: AboutHttp，不在页面层 new 实现类——同 [warehouseFetch] 的架构口径。
      */
     val aboutHttp: AboutHttp by lazy { OkHttpAboutHttp() }
+    /**
+     * Bing 壁纸两处 HTTP 的**唯一构造点**（组合根）：清单 JSON 走 [BingGalleryHttp]，
+     * 原图流式走 [BingGalleryBinaryHttp]。页面宿主只收接口，不在页面层 new 实现类。
+     */
+    val bingGalleryHttp: BingGalleryHttp by lazy { OkHttpBingGalleryHttp() }
+    val bingGalleryBinaryHttp: BingGalleryBinaryHttp by lazy { OkHttpBingGalleryBinaryHttp() }
 
     /**
      * 从课表空档进加课页时要预填的 `(星期, 节次)`。
@@ -1787,6 +1797,8 @@ private fun AddSheetTile(
         }
     }
 }
+
+
 
 
 
