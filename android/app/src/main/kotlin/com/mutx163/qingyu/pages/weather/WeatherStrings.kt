@@ -47,6 +47,14 @@ object WeatherStrings {
     val weatherLocationAddressUnavailable = ArbText("weatherLocationAddressUnavailable", "已定位，但解析不出地名，请改用手动搜索城市")
     val weatherLocationEstimated = ArbText("weatherLocationEstimated", "已按网络位置估算，可能不精确")
 
+    /**
+     * 首页天气行的失败态（2026-11-14：拿不到数据时不再整块空白）。
+     *
+     * **复用设置页已有的 ARB 键** `weatherStatusFailed`（「上次更新失败」），不新增词条：
+     * 六语齐、语义一致，也免得为一句话再走一轮文案域。
+     */
+    val weatherUnavailable = ArbText("weatherStatusFailed", "上次更新失败")
+
     // ── 天气现象与取值格式（ARB 逐字对拍，供卡片/详情弹窗天气行使用）──
     val weatherClear = ArbText("weatherClear", "晴")
     val weatherMainlyClear = ArbText("weatherMainlyClear", "晴间多云")
