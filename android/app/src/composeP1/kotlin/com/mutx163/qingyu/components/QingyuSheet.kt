@@ -50,16 +50,17 @@ import top.yukonga.miuix.kmp.theme.MiuixTheme
  *
  * ## 标题为什么塞进 `startAction` 槽（S3）
  *
- * miuix 的标题由它私有的 `TitleAndActionsRow` 画死（`BottomSheetContentLayout.kt:798-825`：
+ * miuix 的标题由它私有的 `TitleAndActionsRow` 画死（`BottomSheetContentLayout.kt:798` 起：
  * `fontSize = title4`、`FontWeight.Medium`、`TextAlign.Center`），**没有任何样式口子**。
  * 想对齐发布版的 17 / w400 / 左对齐，只有两条路：
  *
- * 1. 不传 `title`，自己在正文顶部画一行标题 —— 代价是 miuix 那行空标题位（6+12dp）
- *    仍然占着，正文再叠一行标题，顶部比现在**更高**；用户已经抱怨过这 42dp 空档，不能加。
+ * 1. 不传 `title`，自己在正文顶部画一行标题 —— 2026-11-14 改库批次**之前**，代价是 miuix
+ *    那行空的标题位（6+12dp）仍然占着，正文再叠一行标题，顶部比现在**更高**；该批次修好
+ *    「三空不画标题行」之后这 18dp 惩罚已经没有了，但仍会丢掉官方标题行的行高与动作槽结构。
  * 2. 不传 `title`，把标题当作 `startAction` 交给同一个槽位 —— 行高与今天**完全一致**
  *    （6 + 文本 + 12），左对齐、字号字重随我们，且没有绕开官方组件的槽位语义。
  *
- * 本套件走第 2 条。所以：**不要再用 `startAction` 放别的东西**（该参数已删除，
+ * 本套件仍走第 2 条：**不要再用 `startAction` 放别的东西**（该参数已删除，
  * 全仓 0 个调用点用它是删掉的前提，见 `.agents/notes/proposed/2026-11-10-sheet-suite-visual-scale.md`）。
  *
  * ## 内边距：标题与内容共用同一份 16dp
@@ -97,9 +98,15 @@ import top.yukonga.miuix.kmp.theme.MiuixTheme
  * ## 与 Dart 的一处刻意不同
  *
  * Dart 把把手条**悬浮**在内容之上（`dragHandleOverlaysContent`），所以内容从面板上沿开始；
- * miuix Compose 0.9.4 的 `OverlayBottomSheet` 没有这个开关，把手条恒占 24dp、且无标题时
- * 还会多出一条 18dp 的空标题行。这 42dp 顶部留白是**组件能力缺口**，不是本套件能消掉的
- *（审核报告 §五 已登记）。所以别把内容自己的顶部间距再加一遍。
+ * miuix Compose 0.9.4 的 `OverlayBottomSheet` 没有这个开关，把手条恒占 24dp。上游另外还会在
+ * **无标题时**照画一行 18dp 的空标题行（`padding(top = 6.dp, bottom = 12.dp)`），合计 42dp ——
+ * 那是 0.9.4 的行为，**本仓 fork 已于 2026-11-14 改掉**（`BottomSheetContentLayout.kt` 的
+ * `TitleAndActionsRow`：无标题、无起止动作时整行不画）。现在两种形态是：
+ *
+ * - 无标题弹层：顶部只剩把手 24dp；
+ * - 有标题弹层：24dp 把手 + 标题行（6 + 标题 + 12）。
+ *
+ * 两种都**不要**再由内容自己补顶部间距 —— 补了就是比发布版更高。
  *
  * @param show 是否显示。
  * @param onDismissRequest 点空白 / 返回键时回调。

@@ -800,6 +800,12 @@ private fun TitleAndActionsRow(
     startAction: (@Composable () -> Unit)?,
     endAction: (@Composable () -> Unit)?,
 ) {
+    // 本仓 fork 新增（2026-11-14 改库批次）：三空 ⇒ 整行不画。
+    //
+    // 判据必须是「无标题**且**无起止动作」，不能只判 `title == null`：调用侧
+    // `components/QingyuSheet.kt` 把标题塞在 `startAction` 槽里（给每个有标题的弹层都传
+    // `title = null` + `startAction = 标题`），只判 title 会把 48 个有标题弹层的标题行一起砍掉。
+    if (title == null && startAction == null && endAction == null) return
     Box(
         modifier = Modifier
             .fillMaxWidth()
