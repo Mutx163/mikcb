@@ -1,9 +1,12 @@
 package com.mutx163.qingyu.weather
 
+import com.mutx163.qingyu.infra.AppLogStore
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import java.nio.file.Files
 import java.time.LocalDateTime
 
 /**
@@ -158,5 +161,135 @@ class WeatherServiceTest {
         val (svc, _) = service()
         val location = WeatherLocation("杭州", 30.29, 120.16)
         assertNull(svc.fetchForecast(location))
+    }
+
+    // ---------- 失败分类与网络日志（2026-11-14 A 类：打开就能看到原因）----------
+
+    private class ClassifiedHttp(private val result: WeatherHttpResult) : WeatherHttp {
+        override fun get(url: String): String? = result.body
+        override fun getDetailed(url: String): WeatherHttpResult = result
+    }
+
+    @Test
+    fun timeout_is_reported_with_elapsed_and_error_class() {
+        val http = ClassifiedHttp(
+            WeatherHttpResult(
+                failure = WeatherFetchFailure.TIMEOUT,
+                elapsedMs = 20_000,
+                errorClass = "SocketTimeoutException",
+            ),
+        )
+        val result = WeatherService(http, now = { fixedNow })
+            .fetchForecastWithDiagnostics(WeatherLocation("北京", 39.91, 116.4))
+
+        assertNull(result.forecast)
+        assertEquals(WeatherFetchFailure.TIMEOUT, result.diagnostics.failure)
+        assertEquals(20_000L, result.diagnostics.elapsedMs)
+        assertEquals("SocketTimeoutException", result.diagnostics.errorClass)
+    }
+
+    @Test
+    fun non_200_is_reported_with_status_code() {
+        val http = ClassifiedHttp(
+            WeatherHttpResult(
+                httpStatus = 503,
+                failure = WeatherFetchFailure.HTTP_STATUS,
+                elapsedMs = 42,
+                bodyBytes = 0,
+                errorClass = "HTTP",
+            ),
+        )
+        val result = WeatherService(http, now = { fixedNow })
+            .fetchForecastWithDiagnostics(WeatherLocation("北京", 39.91, 116.4))
+
+        assertNull(result.forecast)
+        assertEquals(WeatherFetchFailure.HTTP_STATUS, result.diagnostics.failure)
+        assertEquals(503, result.diagnostics.httpStatus)
+    }
+
+    @Test
+    fun not_json_reports_body_line() {
+        val (svc, _) = service("api.open-meteo.com/v1/forecast" to "<html>502</html>")
+        val result = svc.fetchForecastWithDiagnostics(WeatherLocation("北京", 39.91, 116.4))
+
+        assertNull(result.forecast)
+        assertEquals(WeatherFetchFailure.NOT_JSON, result.diagnostics.failure)
+        val detail = result.diagnostics.detail!!
+        assertTrue("detail 必须写字段：$detail", detail.contains("field=body"))
+        assertTrue("detail 必须写响应行：$detail", detail.contains("line=1"))
+    }
+
+    @Test
+    fun missing_hourly_reports_field_and_code_line() {
+        val json = """{"latitude":39.91,"longitude":116.4}"""
+        val (svc, _) = service("api.open-meteo.com/v1/forecast" to json)
+        val result = svc.fetchForecastWithDiagnostics(WeatherLocation("北京", 39.91, 116.4))
+
+        assertNull(result.forecast)
+        assertEquals(WeatherFetchFailure.PARSE, result.diagnostics.failure)
+        val detail = result.diagnostics.detail!!
+        assertTrue("缺 hourly 必须写字段：$detail", detail.contains("field=hourly"))
+        assertTrue("解析失败必须写代码行：$detail", detail.contains("at=WeatherForecast.kt"))
+    }
+
+    @Test
+    fun empty_hourly_reports_field() {
+        val json = """{"latitude":30.25,"longitude":120.16,"hourly":{"time":[]}}"""
+        val (svc, _) = service("api.open-meteo.com/v1/forecast" to json)
+        val result = svc.fetchForecastWithDiagnostics(WeatherLocation("杭州", 30.29, 120.16))
+
+        assertNull(result.forecast)
+        assertEquals(WeatherFetchFailure.EMPTY, result.diagnostics.failure)
+        assertTrue(result.diagnostics.detail!!.contains("field=hourly.time"))
+    }
+
+    @Test
+    fun success_writes_one_network_log_line_without_query() {
+        val dir = Files.createTempDirectory("mikcb-weather-netlog-ok").toFile()
+        AppLogStore.initialize(dir)
+        AppLogStore.clear()
+        val json = """
+            {"latitude":30.25,"longitude":120.16,"hourly":{
+              "time":["2026-10-28T09:00"],
+              "temperature_2m":[20.4],
+              "precipitation_probability":[80],
+              "precipitation":[0],
+              "snowfall":[0],
+              "weather_code":[61]
+            }}
+        """.trimIndent()
+        val (svc, _) = service("api.open-meteo.com/v1/forecast" to json)
+        svc.fetchForecast(WeatherLocation("杭州", 30.29, 120.16, timezone = "Asia/Shanghai"))
+
+        val text = AppLogStore.readText()
+        assertTrue("没有写网络日志：$text", text.contains("category=network"))
+        assertTrue(text, text.contains("host=api.open-meteo.com"))
+        assertTrue(text, text.contains("path=/v1/forecast"))
+        assertTrue(text, text.contains("failure=none"))
+        // 隐私：query 里的经纬度不能进日志。
+        assertFalse("坐标进了日志：$text", text.contains("latitude="))
+        assertFalse("坐标进了日志：$text", text.contains("longitude="))
+    }
+
+    @Test
+    fun timeout_writes_failure_line_with_four_fields() {
+        val dir = Files.createTempDirectory("mikcb-weather-netlog-timeout").toFile()
+        AppLogStore.initialize(dir)
+        AppLogStore.clear()
+        val http = ClassifiedHttp(
+            WeatherHttpResult(
+                failure = WeatherFetchFailure.TIMEOUT,
+                elapsedMs = 20_000,
+                errorClass = "SocketTimeoutException",
+            ),
+        )
+        WeatherService(http, now = { fixedNow })
+            .fetchForecast(WeatherLocation("北京", 39.91, 116.4))
+
+        val text = AppLogStore.readText()
+        assertTrue("缺失败分类：$text", text.contains("failure=timeout"))
+        assertTrue("缺耗时：$text", text.contains("elapsedMs=20000"))
+        assertTrue("缺异常类名：$text", text.contains("errorClass=SocketTimeoutException"))
+        assertTrue("没拿到响应时 status 必须写 none：$text", text.contains("status=none"))
     }
 }

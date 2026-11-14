@@ -85,6 +85,25 @@ class WeatherProvider(
     var lastLocateWasEstimated: Boolean = false
         private set
 
+    /** 最近一次取数失败的分类（成功取数后清空）；界面与诊断页据此说清「为什么没有」。 */
+    var lastFetchFailure: WeatherFetchFailure? = null
+        private set
+
+    /** 最近一次取数用的数据源（`open-meteo` / `met.no`；还没取过为 null）。 */
+    var lastFetchSource: String? = null
+        private set
+
+    /** 最近一次失败时的 HTTP 状态码（只有非 200 才有；网络/解析失败为 null）。 */
+    var lastFetchHttpStatus: Int? = null
+        private set
+
+    /**
+     * 「天气开着、城市也有，但这次没拿到数据」——首页据此显示一行可读失败状态，
+     * 而不是整块空白（2026-11-14：老板问「首页为什么什么都不显示」）。
+     */
+    val weatherUnavailable: Boolean
+        get() = enabled && location != null && forecast == null && state == WeatherState.FAILED
+
     /** 状态变化监听（Compose 宿主用它在变化后触发重组）；可挂多个。 */
     private val listeners = ArrayList<() -> Unit>()
 
@@ -148,7 +167,7 @@ class WeatherProvider(
         refresh()
     }
 
-    /** 手动重试：清掉退避并忽略 TTL，立刻拉一次。 */
+    /** 手动重试：清掉退避并忽略 TTL，立刻拉一次（取数日志由 WeatherService 统一写）。 */
     fun retry() {
         nextRetryNotBefore = null
         ensureFresh(force = true)
@@ -242,7 +261,9 @@ class WeatherProvider(
         state = WeatherState.LOADING
         notifyChanged()
         try {
-            val fetched = service.fetchForecast(requested)
+            // 带诊断的取数：主源失败会自动切备源，失败分类写进应用日志（诊断页可见）。
+            val result = service.fetchForecastWithDiagnostics(requested)
+            val fetched = result.forecast
             val selected = location
             if (selected != null && !requested.isSamePlaceAs(selected)) {
                 // 等响应时用户换了城市：旧城市预报既不能进内存也不能落盘。就地按新城市重发。
@@ -250,13 +271,20 @@ class WeatherProvider(
                 refresh()
                 return
             }
+            lastFetchSource = result.diagnostics.source
             if (fetched == null) {
                 state = WeatherState.FAILED
                 nextRetryNotBefore = clock().plus(failureRetryDelay)
+                // 失败原因已由 WeatherService 按统一字段写进应用日志（NetLog）；
+                // 这里只留状态给界面/诊断页读。
+                lastFetchFailure = result.diagnostics.failure ?: WeatherFetchFailure.UNKNOWN
+                lastFetchHttpStatus = result.diagnostics.httpStatus
             } else {
                 forecast = fetched
                 state = WeatherState.READY
                 nextRetryNotBefore = null
+                lastFetchFailure = null
+                lastFetchHttpStatus = null
                 preferences.saveForecast(fetched)
             }
         } finally {

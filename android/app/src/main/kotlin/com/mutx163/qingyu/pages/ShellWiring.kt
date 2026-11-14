@@ -101,9 +101,9 @@ import com.mutx163.qingyu.pages.import.warehouse.WarehouseSchoolEntry
 import com.mutx163.qingyu.pages.import.warehouse.WarehouseStrings
 import com.mutx163.qingyu.pages.import.warehouse.resolveWarehouseWebLoginTarget
 import com.mutx163.qingyu.platform.AndroidWeatherLocationSource
+import com.mutx163.qingyu.platform.OkHttpWeatherHttp
 import com.mutx163.qingyu.platform.PrefsKeyValueStore
 import com.mutx163.qingyu.widgetdata.CoupleOverlaySource
-import com.mutx163.qingyu.weather.JdkWeatherHttp
 import com.mutx163.qingyu.weather.WeatherPreferences
 import com.mutx163.qingyu.weather.WeatherProvider
 import com.mutx163.qingyu.weather.WeatherService
@@ -499,7 +499,9 @@ class ShellWiring(context: Context) {
      * 它同时被三处消费：设置页 `b.weather`、选城页 `j.weatherCity`、课表操作弹层。
      */
     val weather: WeatherProvider by lazy {
-        val service = WeatherService(JdkWeatherHttp())
+        // 用户 2026-11-14 决定：全软件网络请求改走 OkHttp。天气先用 platform/ 的
+        // OkHttpWeatherHttp（宽超时 + 失败分类）；等 infra/QingyuHttp 地基落地后切过去复用。
+        val service = WeatherService(OkHttpWeatherHttp())
         WeatherProvider(
             service = service,
             preferences = WeatherPreferences(PrefsKeyValueStore(context)),
