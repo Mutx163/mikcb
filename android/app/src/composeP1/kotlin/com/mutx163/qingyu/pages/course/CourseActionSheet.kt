@@ -170,10 +170,10 @@ fun CourseActionSheet(
         // 所以子弹层一取消就原地回到课程弹层。取舍：保住「只有一层底栏」的观感，
         // 又不用为一次取消重走「点课卡」。
         show = course != null && stage == CourseSheetStage.NONE,
-        // 顶部留白（本弹层标题自绘，不传 `title`）：算式 42 = 24dp 把手 + 6+12dp 标题行
-        //（miuix `BottomSheetContentLayout` 的 `DragHandleArea` + `TitleAndActionsRow`）；
-        // title / startAction / endAction **三空** ⇒ 改库批次落地后标题行不再画，空档只剩
-        // 24dp 把手。所以内容顶部**不要再**补自己的间距（补了就是 58 / 40dp）。
+        // 顶部留白（本弹层标题自绘，不传 `title`）：本仓 fork 的 miuix 在「title / startAction /
+        // endAction 三空」时整行标题位不画（2026-11-14 改库批次，`BottomSheetContentLayout` 的
+        // `TitleAndActionsRow`），所以这里只剩 24dp 把手。改库前是 42dp
+        //（24dp 把手 + 6+12dp 标题行）。内容顶部**不要再**补自己的间距。
         // 限高 80% 屏高（Dart `:168-171`）+ 滚动 + 底部让出手势区，三件事都由套件给
         //（见 `QingyuSheet` KDoc 的 S1 / S2；内容**不**自己滚动，所以 contentScrolls 走默认 false，
         // 套件会把「系统手势区 + 16」垫在滚动内容末尾，而不是垫在视口外面）。

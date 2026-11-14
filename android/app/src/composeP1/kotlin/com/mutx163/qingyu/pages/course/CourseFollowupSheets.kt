@@ -1020,7 +1020,7 @@ fun CourseRescheduleSheet(
  *
  * 顶部留白算式：**42 = 24dp 把手 + 6+12dp 标题行**（miuix `BottomSheetContentLayout` 的
  * `DragHandleArea` + `TitleAndActionsRow`）。本弹层不传 `title`、也不给 start/end 动作，
- * 属 **三空** ⇒ 改库批次落地后标题行不再画，空档从 42 变 24dp。`0.72` 仍按更保守的
- * 42dp 扣算，改库后只会更松，**不随改库调整**（要放宽另立一笔，别顺手改）。
+ * 属 **三空** ⇒ 本仓 fork 自 2026-11-14 改库批次起整行标题位不画，空档从 42 收到 24dp。
+ * `0.72` 仍按更保守的 42dp 扣算（现在预算只会更松），**不随改库调整**（要放宽另立一笔）。
  */
 private const val RESCHEDULE_LIST_HEIGHT_FRACTION = 0.72f
