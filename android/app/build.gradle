@@ -414,6 +414,16 @@ dependencies {
     implementation 'com.umeng.umsdk:apm:2.1.0'
     implementation 'com.umeng.umsdk:uyumao:1.1.2'
     implementation 'com.squareup.okhttp3:okhttp:4.12.0'
+    // ── 自研基础设施换成熟库（2026-11-14 用户拍板，审计只批准这两项）──────────────
+    // 二维码编码：手写编码器（版本选择 / 纠错等级 / 掩码 / RS）换成 ZXing core。
+    // 纯 Java、无 Android 依赖 ⇒ JVM 单测里可以「编码 → 用 ZXing 解码」做往返验证。
+    implementation 'com.google.zxing:core:3.5.4'
+    // 图片加载：手写 LruCache + 线程池 + 在途去重 + BitmapFactory 换 Coil 3。
+    // 网络层引 coil-network-okhttp，但**必须复用全软件唯一的 QingyuHttp.client**
+    // （Coil 自建客户端会被门禁官的 NetworkArchitectureGuardTest 判红）。
+    // 3.6.3 的 coil-network-okhttp 依赖 okhttp 4.12.0，与本行上面的版本一致，无冲突。
+    implementation 'io.coil-kt.coil3:coil-compose:3.6.3'
+    implementation 'io.coil-kt.coil3:coil-network-okhttp:3.6.3'
     implementation 'androidx.work:work-runtime-ktx:2.10.1'
     testImplementation 'junit:junit:4.13.2'
 
