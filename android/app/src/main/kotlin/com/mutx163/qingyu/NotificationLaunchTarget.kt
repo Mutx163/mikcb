@@ -121,6 +121,11 @@ object NotificationLaunchTarget {
         openLanEdit = intent?.getBooleanExtra(EXTRA_OPEN_LAN_EDIT, false) == true,
     )
 
+    // 「这次 onCreate 该不该投递」的判据**不在这里**：本对象 import 了 android.content.Intent，
+    // 进不了 L0 的 JVM classpath。判据放在纯 Kotlin 的
+    // `core/ShellLaunchLanding.shouldPostLaunchPage`（L0 可测），壳调用它、这里只保留
+    // 解析与投递。2026-11-14 收紧 R09 边缘时拆的，别把判据挪回来。
+
     /**
      * 壳在 `onCreate` / `onNewIntent` 调用的唯一入口：解析后投进
      * [ShellExternalEntryHub]，由壳里既有的消费钩子推页。

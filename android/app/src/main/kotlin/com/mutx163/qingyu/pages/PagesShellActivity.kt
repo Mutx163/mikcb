@@ -58,6 +58,7 @@ import com.mutx163.qingyu.LiveUpdateScheduler
 import com.mutx163.qingyu.ExamReminderCoordinator
 import com.mutx163.qingyu.ScheduleReminderCoordinator
 import com.mutx163.qingyu.NotificationLaunchTarget
+import com.mutx163.qingyu.core.ShellLaunchLanding
 import com.mutx163.qingyu.UmengApplication
 import com.mutx163.qingyu.app.AppFontMode
 import com.mutx163.qingyu.app.AppLocaleRuntime
@@ -202,6 +203,15 @@ class PagesShellActivity : ComponentActivity() {
         AppLocaleRuntime.setSystemLocaleTag(systemLocaleTagOf())
     }
 
+    /**
+     * 本次进程里 [onCreate] 已投递过的落点页 id（见
+     * [ShellLaunchLanding.shouldPostLaunchPage]）。
+     *
+     * 只做一件事：写进 [onSaveInstanceState]，让进程恢复时能判出「恢复的是同一份启动」
+     * 还是「同时点了新通知」。不参与界面，也不跨进程存活。
+     */
+    private var postedLaunchPageId: String? = null
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
@@ -209,16 +219,21 @@ class PagesShellActivity : ComponentActivity() {
         // ShellExternalEntryHub；壳里既有的 ShellExternalEntryEffect 负责推页
         //（组合树尚未建立也能落页，hub 是进程级状态）。无页面参数时是空操作。
         //
-        // 守卫为什么是 savedInstanceState == null：本 Activity 在 manifest 的
-        // configChanges 已含 orientation|screenSize，**旋转 / 分屏不重建 Activity**，
-        // 所以这里防的不是旋转，而是「进程被系统回收后按原任务恢复」——那会把用户
-        // 已经关掉的页面重新推出来。非空 savedInstanceState 只在恢复场景出现，故跳过。
-        //
-        // ⚠️ 已知边缘（真机确认项，别当没有）：进程死亡后用户从通知栏点一条**新**通知
-        // 冷启，若系统同时带回非空 savedInstanceState，本守卫会把这条新落点一起吞掉，
-        // 表现为「点通知回到壳却没进对应页」。需真机复现「杀进程 → 点通知」确认；
-        // 若命中，改用「该 Intent 是否真的携带页面 extra」而非 savedInstanceState 作判据。
-        if (savedInstanceState == null) {
+        // 判据（2026-11-14 收紧）：不再用「savedInstanceState == null」——那会把
+        // 「进程被回收后按原任务恢复、同时点了**新**通知」整条路径吞掉（非空
+        // savedInstanceState + 带页面 extra 的新 Intent 同时出现）。现在只看
+        // 「这次 Intent 解析出的落点」与「上次启动已投递的落点」是否相同：
+        // 恢复同一份启动时相等 ⇒ 跳过（保护「用户已关的页面不被推回来」）；
+        // 落点不同 ⇒ 投递（新通知照常落页）。判据本体在
+        // [ShellLaunchLanding.shouldPostLaunchPage]，JVM 单测可断言。
+        val launchPageId = NotificationLaunchTarget.pageIdForIntent(intent)
+        if (
+            ShellLaunchLanding.shouldPostLaunchPage(
+                launchPageId = launchPageId,
+                restoredPageId = savedInstanceState?.getString(STATE_POSTED_LAUNCH_PAGE),
+            )
+        ) {
+            postedLaunchPageId = launchPageId
             NotificationLaunchTarget.postLaunchPage(intent)
         }
 
@@ -415,6 +430,17 @@ class PagesShellActivity : ComponentActivity() {
             // 见 setContent 里的 `LaunchedEffect(firstRunDone)`——避免系统权限框
             // 盖在隐私页前面，把「先同意再要权限」的次序打乱。
         }
+    }
+
+    /**
+     * 进程恢复时把「已投递的落点」带给下一次 `onCreate`。
+     *
+     * 没有它就只能退回旧的 `savedInstanceState == null` 一刀切：那样「恢复 + 新通知」
+     * 会被一起吞掉（R09 真机边缘）。值只在 [postedLaunchPageId] 非空时写。
+     */
+    override fun onSaveInstanceState(outState: Bundle) {
+        super.onSaveInstanceState(outState)
+        postedLaunchPageId?.let { outState.putString(STATE_POSTED_LAUNCH_PAGE, it) }
     }
 
     /**
@@ -1437,6 +1463,12 @@ private fun NavTransition.scaledToUserSpeed(speed: Double): NavTransition {
 /** 通知权限「是否已问过」的 prefs 名与键：与业务设置分开，设置重置不影响它。 */
 private const val NOTIFICATION_PERMISSION_PREFS = "shell_notification_permission"
 private const val KEY_NOTIFICATION_PERMISSION_ASKED = "asked"
+
+/**
+ * 进程恢复时携带「上次已投递的通知落点页 id」的实例状态键（判据见
+ * `core/ShellLaunchLanding`，本键只负责把值带过重建）。
+ */
+private const val STATE_POSTED_LAUNCH_PAGE = "qingyu.postedLaunchPage"
 
 /** 转场速度滑杆的下限（`TimetableSettings.minPageTransitionSpeed`）。 */
 private const val MIN_PAGE_TRANSITION_SPEED = 0.5
