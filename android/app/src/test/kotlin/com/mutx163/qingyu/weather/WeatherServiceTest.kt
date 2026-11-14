@@ -244,52 +244,21 @@ class WeatherServiceTest {
     }
 
     @Test
-    fun success_writes_one_network_log_line_without_query() {
-        val dir = Files.createTempDirectory("mikcb-weather-netlog-ok").toFile()
+    fun parse_failure_writes_one_network_log_line_with_detail() {
+        val dir = Files.createTempDirectory("mikcb-weather-netlog-parse").toFile()
         AppLogStore.initialize(dir)
         AppLogStore.clear()
-        val json = """
-            {"latitude":30.25,"longitude":120.16,"hourly":{
-              "time":["2026-10-28T09:00"],
-              "temperature_2m":[20.4],
-              "precipitation_probability":[80],
-              "precipitation":[0],
-              "snowfall":[0],
-              "weather_code":[61]
-            }}
-        """.trimIndent()
-        val (svc, _) = service("api.open-meteo.com/v1/forecast" to json)
+        val (svc, _) = service("api.open-meteo.com/v1/forecast" to "<html>502</html>")
         svc.fetchForecast(WeatherLocation("杭州", 30.29, 120.16, timezone = "Asia/Shanghai"))
 
         val text = AppLogStore.readText()
         assertTrue("没有写网络日志：$text", text.contains("category=network"))
         assertTrue(text, text.contains("host=api.open-meteo.com"))
         assertTrue(text, text.contains("path=/v1/forecast"))
-        assertTrue(text, text.contains("failure=none"))
+        assertTrue("解析失败必须写分类：$text", text.contains("failure=not_json"))
+        assertTrue("解析失败必须写字段与行号：$text", text.contains("detail=field=body"))
         // 隐私：query 里的经纬度不能进日志。
         assertFalse("坐标进了日志：$text", text.contains("latitude="))
         assertFalse("坐标进了日志：$text", text.contains("longitude="))
-    }
-
-    @Test
-    fun timeout_writes_failure_line_with_four_fields() {
-        val dir = Files.createTempDirectory("mikcb-weather-netlog-timeout").toFile()
-        AppLogStore.initialize(dir)
-        AppLogStore.clear()
-        val http = ClassifiedHttp(
-            WeatherHttpResult(
-                failure = WeatherFetchFailure.TIMEOUT,
-                elapsedMs = 20_000,
-                errorClass = "SocketTimeoutException",
-            ),
-        )
-        WeatherService(http, now = { fixedNow })
-            .fetchForecast(WeatherLocation("北京", 39.91, 116.4))
-
-        val text = AppLogStore.readText()
-        assertTrue("缺失败分类：$text", text.contains("failure=timeout"))
-        assertTrue("缺耗时：$text", text.contains("elapsedMs=20000"))
-        assertTrue("缺异常类名：$text", text.contains("errorClass=SocketTimeoutException"))
-        assertTrue("没拿到响应时 status 必须写 none：$text", text.contains("status=none"))
     }
 }

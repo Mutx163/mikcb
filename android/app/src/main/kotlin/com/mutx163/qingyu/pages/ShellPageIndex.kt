@@ -141,6 +141,7 @@ import com.mutx163.qingyu.pages.import.SpreadsheetImportHost
 import com.mutx163.qingyu.pages.import.warehouse.AiImageCourseImportHost
 import com.mutx163.qingyu.pages.import.warehouse.WarehouseAdapterDetailHost
 import com.mutx163.qingyu.pages.import.warehouse.WarehouseCustomDebugHost
+import com.mutx163.qingyu.pages.import.warehouse.WarehouseFetch
 import com.mutx163.qingyu.pages.import.warehouse.WarehouseImportHandoff
 import com.mutx163.qingyu.pages.import.warehouse.WarehouseImportPickerHost
 import com.mutx163.qingyu.pages.import.warehouse.WarehouseImportPrefs
@@ -2233,12 +2234,14 @@ fun ShellPageContent(
             prefs = warehousePrefs,
             onBack = onBack,
             onOpenPage = onOpenPage,
+            fetch = wiring.warehouseFetch,
         )
         "g2.schoolAdapters" -> WarehouseImportBranch(
             state = warehouseState,
             prefs = warehousePrefs,
             onBack = onBack,
             onOpenPage = onOpenPage,
+            fetch = wiring.warehouseFetch,
         )
         // 详情页要学校 + 适配器两份暂存：交给宿主自己取交接件（[WarehouseImportHandoff]），
         // 拿不到时宿主显示诚实空态；壳里若改画选校页，用户会以为「点详情被弹回了列表」。
@@ -2247,6 +2250,7 @@ fun ShellPageContent(
             prefs = warehousePrefs,
             onBack = onBack,
             onOpenPage = onOpenPage,
+            fetch = wiring.warehouseFetch,
         )
         // 2026-11-01 F28：换成真宿主。地址链路（自定义覆盖 > 适配器 import_url）在宿主里，
         // 没有可用地址时由宿主自己显示诚实空态；抓回来的课表暂只记类型日志（见 F28 认领）。
@@ -2259,6 +2263,7 @@ fun ShellPageContent(
             // 导入落盘成功 → 直接回首页（发布版 pop 到栈底，不留在网页页）。
             onImported = onBackToRoot,
             onOpenPage = onOpenPage,
+            fetch = wiring.warehouseFetch,
         )
         // 2026-11-01 F26：这两页原先只传 onBack，所有按钮都是空回调（点了没反应）。
         // 自定义调试：保存/删除真落盘（prefs 键与 Dart 同键），执行诚实报「不可用」。
@@ -2917,6 +2922,7 @@ private fun WarehouseImportBranch(
     prefs: WarehouseImportPrefs,
     onBack: () -> Unit,
     onOpenPage: (String) -> Unit,
+    fetch: WarehouseFetch,
 ) {
     // 先看**交接件**、再判本条目的 `state`：
     // 上面两个 id 共用本函数，而壳给**每个路由条目独立**的 WarehouseShellState。
@@ -2933,12 +2939,14 @@ private fun WarehouseImportBranch(
             prefs = prefs,
             onBack = onBack,
             onOpenPage = onOpenPage,
+            fetch = fetch,
         )
     } else {
         WarehouseSchoolAdaptersHost(
             state = state,
             onBack = onBack,
             onOpenPage = onOpenPage,
+            fetch = fetch,
         )
     }
 }

@@ -98,8 +98,10 @@ import com.mutx163.qingyu.pages.import.warehouse.WarehouseImportPrefs
 import com.mutx163.qingyu.pages.import.warehouse.WarehouseMacroStore
 import com.mutx163.qingyu.pages.import.warehouse.WarehouseRoutes
 import com.mutx163.qingyu.pages.import.warehouse.WarehouseSchoolEntry
+import com.mutx163.qingyu.pages.import.warehouse.WarehouseFetch
 import com.mutx163.qingyu.pages.import.warehouse.WarehouseStrings
 import com.mutx163.qingyu.pages.import.warehouse.resolveWarehouseWebLoginTarget
+import com.mutx163.qingyu.platform.OkHttpWarehouseFetch
 import com.mutx163.qingyu.platform.AndroidWeatherLocationSource
 import com.mutx163.qingyu.platform.OkHttpWeatherHttp
 import com.mutx163.qingyu.platform.PrefsKeyValueStore
@@ -528,6 +530,13 @@ class ShellWiring(context: Context) {
     init {
         weather.loadCached()
     }
+
+    /**
+     * 适配仓抓取的**唯一构造点**（组合根）：`OkHttpWarehouseFetch` 实现页面依赖的
+     * [WarehouseFetch] 接口。页面宿主只收接口，不在页面层 new OkHttp 实现——这是
+     * 2026-11-14「页面只依赖接口、实现集中在 platform/」那条架构规矩的落地。
+     */
+    val warehouseFetch: WarehouseFetch by lazy { OkHttpWarehouseFetch() }
 
     /**
      * 从课表空档进加课页时要预填的 `(星期, 节次)`。

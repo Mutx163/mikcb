@@ -181,7 +181,7 @@ fun WarehouseWebLoginHost(
     onImported: () -> Unit = onBack,
     onOpenPage: (String) -> Unit,
     repository: TimetableRepository? = null,
-    fetch: WarehouseFetch = remember { WarehouseJdkFetch() },
+    fetch: WarehouseFetch,
 ) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()

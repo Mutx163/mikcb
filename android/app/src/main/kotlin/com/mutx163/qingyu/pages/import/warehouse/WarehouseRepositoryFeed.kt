@@ -9,7 +9,8 @@ import com.mutx163.qingyu.infra.defaultMirrorUrlPrefix
  *
  * ## 分层（为什么拆成接口 + 纯函数）
  *
- * - [WarehouseFetch]：只负责「GET 一个地址，拿回状态码 + 正文」。真实现见 [WarehouseJdkFetch]，
+ * - [WarehouseFetch]：只负责「GET 一个地址，拿回状态码 + 正文」。真实现见
+ *   `platform/OkHttpWarehouseFetch`（统一入口 `QingyuHttp`），
  *   **不得抛异常**（拿不到就回 `null`），这样「超时 / 连不上」与「服务器回了 404」
  *   在调用方是两件可区分的事。
  * - [WarehouseRepositoryService]：候选链 + 解码 + 解析 + 错误分类。**全部可 JVM 直测**，
@@ -125,7 +126,7 @@ sealed class WarehouseLoad<out T> {
      * @param transport 这条链上**最后一次能分清原因**的传输层失败（全是
      *   [WarehouseTransportFailure.UNKNOWN] 时就是 UNKNOWN）。渲染层要区分
      *   「网不通 / 超时 / 仓库全挂」靠它，不必再去问 [WarehouseFetch]——
-     *   那个答案只在「刚失败的那一瞬」有效（见 `WarehouseJdkFetch.lastTransportFailure`）。
+     *   那个答案只在「刚失败的那一瞬」有效（见 `OkHttpWarehouseFetch.lastTransportFailure`）。
      */
     data class Failed(
         val code: String,

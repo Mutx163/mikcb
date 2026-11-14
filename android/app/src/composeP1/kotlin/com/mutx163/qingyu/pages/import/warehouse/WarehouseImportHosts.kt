@@ -127,7 +127,7 @@ fun WarehouseImportPickerHost(
     prefs: WarehouseImportPrefs,
     onBack: () -> Unit,
     onOpenPage: (String) -> Unit,
-    fetch: WarehouseFetch = remember { WarehouseJdkFetch() },
+    fetch: WarehouseFetch,
 ) {
     val context = LocalContext.current
     // 拉取偏好（更新下载渠道 → GitCode / 镜像前缀）。按设置的「渠道」选源，
@@ -358,7 +358,7 @@ fun WarehouseSchoolAdaptersHost(
     state: WarehouseShellState,
     onBack: () -> Unit,
     onOpenPage: (String) -> Unit,
-    fetch: WarehouseFetch = remember { WarehouseJdkFetch() },
+    fetch: WarehouseFetch,
 ) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
@@ -530,6 +530,7 @@ fun WarehouseAdapterDetailHost(
     prefs: WarehouseImportPrefs,
     onBack: () -> Unit,
     onOpenPage: (String) -> Unit,
+    fetch: WarehouseFetch,
 ) {
     val context = LocalContext.current
     // 壳给每页的是独立实例：目标经交接件带过来（见 [WarehouseImportHandoff]）。
@@ -559,8 +560,8 @@ fun WarehouseAdapterDetailHost(
     val fetchOptions = remember(context) {
         readWarehouseFetchOptions(PrefsKeyValueStore(context))
     }
-    val scriptService = remember(fetchOptions) {
-        WarehouseRepositoryService(WarehouseJdkFetch(), options = fetchOptions)
+    val scriptService = remember(fetch, fetchOptions) {
+        WarehouseRepositoryService(fetch, options = fetchOptions)
     }
     var scriptStatus by remember(school.id, adapter.id) {
         mutableStateOf<WarehouseScriptStatus>(WarehouseScriptStatus.Loading)

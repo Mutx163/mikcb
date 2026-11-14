@@ -252,16 +252,24 @@ class WeatherService(
         )
         val response = http.getDetailed(url)
         val result = interpret(response)
-        NetLog.record(
-            url = url,
-            method = "GET",
-            status = response.httpStatus,
-            elapsedMs = response.elapsedMs,
-            bytes = response.bodyBytes,
-            failure = result.diagnostics.failure?.toNetLogFailure(),
-            errorClass = response.errorClass,
-            detail = result.diagnostics.detail,
-        )
+        // 传输层（连不上 / 超时 / 非 200）的日志由统一入口 QingyuHttp 记；这里只补
+        // **解析层**那一类（拿到 200 但结构不对）——同一条失败只留一行，不重复。
+        val failure = result.diagnostics.failure
+        if (failure == WeatherFetchFailure.NOT_JSON ||
+            failure == WeatherFetchFailure.PARSE ||
+            failure == WeatherFetchFailure.EMPTY
+        ) {
+            NetLog.record(
+                url = url,
+                method = "GET",
+                status = response.httpStatus,
+                elapsedMs = response.elapsedMs,
+                bytes = response.bodyBytes,
+                failure = failure.toNetLogFailure(),
+                errorClass = response.errorClass,
+                detail = result.diagnostics.detail,
+            )
+        }
         return result
     }
 
