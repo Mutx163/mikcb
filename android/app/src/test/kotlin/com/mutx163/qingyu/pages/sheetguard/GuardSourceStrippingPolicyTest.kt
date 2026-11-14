@@ -307,19 +307,9 @@ class GuardSourceStrippingPolicyTest {
          * 所以往里填元数据不会改变任何一条判定的宽严。
          */
         val LEGACY_UNSTRIPPED: Map<String, LegacyMeta> = mapOf(
-            "com/mutx163/qingyu/app/SettingsActionDispatcherTest.kt" to LegacyMeta(
-                introducedAt = "432727375 2026-10-28",
-                reason = "主体是 dispatcher 模型用例；末条读 SettingsPageRenderers.kt，用 functionBody 截函数体 + 内联 codeOnly 行级剥注释，chips/controlCard 的 contains 仍打在原文上",
-                reviewTrigger = LEGACY_REVIEW_TRIGGER,
-            ),
             "com/mutx163/qingyu/architecture/SilentFailureCatchGuardTest.kt" to LegacyMeta(
                 introducedAt = "1d0413169 2026-11-03",
                 reason = "空 catch 判据委托共享词法器 KotlinCatchScanner（分词时已跳注释与字符串）；触发本扫描的 contains 打在 relativePath 上，判的是关键写路径白名单",
-                reviewTrigger = LEGACY_REVIEW_TRIGGER,
-            ),
-            "com/mutx163/qingyu/core/QingyuAdaptiveRulesTest.kt" to LegacyMeta(
-                introducedAt = "499b28d86 2026-11-03",
-                reason = "读 QingyuPageScaffold.kt 与 QingyuPageList.kt 判自适应接线，codeOnly 剥注释后看 rememberQingyuWindowAdaptive() 与 widthIn(max = cap) 是否还在",
                 reviewTrigger = LEGACY_REVIEW_TRIGGER,
             ),
             "com/mutx163/qingyu/pages/import/IcsImportModelTest.kt" to LegacyMeta(
@@ -330,16 +320,6 @@ class GuardSourceStrippingPolicyTest {
             "com/mutx163/qingyu/pages/import/warehouse/WarehouseCoursesImportApplyTest.kt" to LegacyMeta(
                 introducedAt = "1f95d17ee 2026-11-03",
                 reason = "扩节与回滚等十条是模型用例；末条读 WarehouseWebLoginHost.kt，判 requiredSectionCount(、WarehouseSectionExpansionDialog(、apply( 三处接线均在",
-                reviewTrigger = LEGACY_REVIEW_TRIGGER,
-            ),
-            "com/mutx163/qingyu/pages/settings/SettingsPreviewCutoutGuardTest.kt" to LegacyMeta(
-                introducedAt = "5ecf2df02 2026-11-03",
-                reason = "读 SettingsWeekPreview、TimetableWeekPage、AppearanceEditorScreen 等预览槽，先过私有 codeOf（去块注释 + 去行尾 //）再判挖洞件接线与假缩略图不许复活",
-                reviewTrigger = LEGACY_REVIEW_TRIGGER,
-            ),
-            "com/mutx163/qingyu/pages/settings/SettingsSharedParityTest.kt" to LegacyMeta(
-                introducedAt = "459d7cebc 2026-10-27",
-                reason = "Dart 共享件对拍（十二键登记表、locale 归一、colorFromHex 回退色）；读 SettingsRowRenderTable.kt 用 in 运算符，触发本扫描的 contains 打在文案键集合上",
                 reviewTrigger = LEGACY_REVIEW_TRIGGER,
             ),
             "com/mutx163/qingyu/pages/shell/DockInkFallbackGuardTest.kt" to LegacyMeta(

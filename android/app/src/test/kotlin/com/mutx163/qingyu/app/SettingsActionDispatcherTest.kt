@@ -15,6 +15,8 @@ import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
+import com.mutx163.qingyu.testutil.readKotlinSourceNoStrings
+import com.mutx163.qingyu.testutil.readKotlinSourceNormalized
 import org.junit.Test
 import java.io.File
 
@@ -674,15 +676,10 @@ class SettingsActionDispatcherTest {
             controlCard.contains("controlCardWiring(action.key)"),
         )
         assertTrue(controlCard.contains("onAction("))
-        // 「还有没有空 lambda」只看**代码行**：注释里提到旧实现不算（与 CjkLiteralGateTest
-        // 跳过注释行同一套口径）。
-        val codeOnly = source.lines()
-            .filterNot { line ->
-                val t = line.trimStart()
-                t.startsWith("*") || t.startsWith("//") || t.startsWith("/*")
-            }
-            .joinToString("\n")
-        assertFalse("渲染层不许再有空的 onClick = { }", codeOnly.contains("onClick = { }"))
+        // 「还有没有空 lambda」只看**代码**（中性化档）：注释里的旧实现不算，字符串里出现
+        // 同样文本也不算——注释掉的接线不是接线。
+        val code = rendererCode()
+        assertFalse("渲染层不许再有空的 onClick = { }", code.contains("onClick = { }"))
 
         // 翻译表本身：两个按钮各自的 rowId 与 ARB 键
         val wiring = functionBody(source, "private fun controlCardWiring(")
@@ -1237,12 +1234,15 @@ class SettingsActionDispatcherTest {
             .firstOrNull { it.id == rowId }
 
     // ---- 源码守卫用的读取工具（与 CjkLiteralGateTest 同一套定位法）----
+    //
+    // 2026-11-14：原来直接 readText()，把判据行注释掉文本仍在注释里；空 lambda 判据用的还是
+    // 「按行 trimStart 后跳过 * / // / /* 开头」的弱剥离——跨行块注释里不以 * 开头的行会漏。
+    // 现在按判据性质分两个视图：
+    // - rendererSource() = 默认档（剥注释、保留字符串）：本文件有字面量判据（"themeResetToPreset"）；
+    // - rendererCode()   = 中性化档（剥注释 + 抹字符串）：判「有没有空的 onClick = { }」。
+    private fun rendererSource(): String = readKotlinSourceNormalized(RENDERER_PATH)
 
-    private fun rendererSource(): String =
-        File(
-            repoRoot(),
-            "android/app/src/composeP1/kotlin/com/mutx163/qingyu/pages/settings/SettingsPageRenderers.kt",
-        ).readText(Charsets.UTF_8)
+    private fun rendererCode(): String = readKotlinSourceNoStrings(RENDERER_PATH)
 
     /** 从 [signature] 起截出函数体（按花括号配平，含签名行本身）。 */
     private fun functionBody(source: String, signature: String): String {
@@ -1263,12 +1263,9 @@ class SettingsActionDispatcherTest {
         error("`$signature` 的花括号没有闭合")
     }
 
-    private fun repoRoot(): File {
-        var dir: File? = File("").absoluteFile
-        repeat(8) {
-            if (File(dir, "i18n/app_zh.arb").isFile) return dir!!
-            dir = dir?.parentFile
-        }
-        error("找不到仓库根（未定位到 i18n/app_zh.arb）")
+    private companion object {
+        /** 渲染层源码的仓库相对路径（`readSourceNormalized` 自己向上找仓库根）。 */
+        const val RENDERER_PATH =
+            "android/app/src/composeP1/kotlin/com/mutx163/qingyu/pages/settings/SettingsPageRenderers.kt"
     }
 }

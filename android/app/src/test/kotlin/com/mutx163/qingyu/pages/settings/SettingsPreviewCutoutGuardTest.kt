@@ -1,6 +1,7 @@
 package com.mutx163.qingyu.pages.settings
 
 import com.mutx163.qingyu.core.PreviewCutoutGeometry
+import com.mutx163.qingyu.testutil.stripKotlinComments
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
@@ -76,10 +77,15 @@ class SettingsPreviewCutoutGuardTest {
         return file.readText()
     }
 
-    /** 去掉块注释与行注释再判（KDoc 里摆的示例/说明不能算违规）。 */
-    private fun codeOf(source: String): String = source
-        .replace(Regex("""/\*[\s\S]*?\*/"""), "")
-        .replace(Regex("""//[^\n]*"""), "")
+    /**
+     * 去掉注释再判（KDoc 里摆的示例/说明不能算违规）。
+     *
+     * 2026-11-14：原来两条正则（块注释 + `//[^\n]*`）——`//` 在字符串里（URL / 路径）也会被
+     * 当成注释切掉，嵌套块注释只去一层。现在走共享剥离器的**中性化档**（剥注释 + 抹字符串）：
+     * 本条判的全是接线调用与表达式，属代码骨架。
+     */
+    private fun codeOf(source: String): String =
+        stripKotlinComments(source, neutralizeStrings = true)
 
     /** 全部 Kotlin 源（main + composeP1）→ 代码文本（已剥注释）。 */
     private fun allKotlinCode(): List<Pair<String, String>> {

@@ -1,5 +1,6 @@
 package com.mutx163.qingyu.pages.settings
 
+import com.mutx163.qingyu.testutil.readKotlinSourceNormalized
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
@@ -142,7 +143,7 @@ class SettingsSharedParityTest {
     fun `colorFromHex 的坏串回退色与 Dart 一致`() {
         // settings_shared.dart:128-130 `Color(0xFF2563EB)`；Kotlin 侧在 composeP1 的
         // SettingsRowRenderTable（测试源集看不到，只能读源码）。
-        val table = composeP1File("SettingsRowRenderTable.kt").readText()
+        val table = rowRenderTableSource()
         assertTrue(
             "颜色解析的回退色应当是品牌蓝 0xFF2563EB（Dart :129）",
             "0xFF2563EB" in table,
@@ -161,7 +162,7 @@ class SettingsSharedParityTest {
     fun `行尾取值槽位在渲染层统一走 details 优先`() {
         // settings_shared.dart:258-268 把值塞进官方 ArrowPreference 的 endActions，
         // 值本身由调用方给；Kotlin 侧由 SettingsRowRenderTable.trailingText 统一取。
-        val table = composeP1File("SettingsRowRenderTable.kt").readText()
+        val table = rowRenderTableSource()
         assertTrue(
             "trailingText 应存在（渲染层的取值槽位唯一入口）",
             "fun trailingText(" in table,
@@ -257,16 +258,16 @@ class SettingsSharedParityTest {
 
     // ------------------------------------------------------------------ 支撑
 
-    private fun composeP1File(name: String): File =
-        repoFile("android/app/src/composeP1/kotlin/com/mutx163/qingyu/pages/settings/$name")
-
-    private fun repoFile(relative: String): File {
-        var dir: File? = File("").absoluteFile
-        repeat(8) {
-            val candidate = File(dir, relative)
-            if (candidate.exists()) return candidate
-            dir = dir?.parentFile
-        }
-        error("找不到 $relative（工作目录 ${File("").absolutePath}）")
-    }
+    /**
+     * `SettingsRowRenderTable.kt` 的源码，走**默认档**（剥注释、保留字符串）。
+     *
+     * 2026-11-14：原来直接 `readText()`——把 `fun colorFromHex(` / `row.details ?: row.value`
+     * 这类判据行注释掉，文本仍留在注释里，`in table` 照样成立。
+     * 这里必须用默认档而不是中性化档：本文件有字面量判据（`startsWith("#")`），
+     * 中性化会把那个 `"#"` 擦掉、让断言恒假。
+     */
+    private fun rowRenderTableSource(): String =
+        readKotlinSourceNormalized(
+            "android/app/src/composeP1/kotlin/com/mutx163/qingyu/pages/settings/SettingsRowRenderTable.kt",
+        )
 }

@@ -1,5 +1,6 @@
 package com.mutx163.qingyu.core
 
+import com.mutx163.qingyu.testutil.stripKotlinComments
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
@@ -212,12 +213,14 @@ class QingyuAdaptiveWiringGuardTest {
         return file.readText()
     }
 
-    /** 只留代码：剥掉块注释与行注释，防止 KDoc 里的历史描述把守卫喂假绿/假红。 */
-    private fun codeOnly(source: String): String = source
-        .replace(Regex("""/\*[\s\S]*?\*/"""), "")
-        .lineSequence()
-        .map { it.substringBefore("//") }
-        .joinToString("\n")
+    /**
+     * 只留代码：走共享剥离器的**中性化档**（剥注释 + 抹掉字符串内容）。
+     *
+     * 2026-11-14：原来是正则去块注释 + 按行 `substringBefore("//")`——字符串里的 `//` 会被当
+     * 注释切掉、嵌套块注释只去一层。本质检判的是接线调用与回退表达式，属代码骨架。
+     */
+    private fun codeOnly(source: String): String =
+        stripKotlinComments(source, neutralizeStrings = true)
 
     @Test
     fun `骨架接线必须消费自适应取值`() {
