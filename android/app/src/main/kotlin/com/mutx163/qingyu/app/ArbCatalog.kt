@@ -6072,7 +6072,7 @@ object ArbCatalog {
         "warehouseSchoolTapHint" -> "タップしてアダプタを選びインポート"
         "warehouseScriptLoadFailed" -> "アダプターのスクリプトを読み込めません"
         "warehouseScriptLoadFailedWithSources" -> "アダプターのスクリプトを読み込めません：{sources} を試しました"
-        "warehouseSessionAlreadyActive" -> "教务システムにはまだログインしています。そのままインポートできます"
+        "warehouseSessionAlreadyActive" -> "教務システムにはまだログインしています。そのままインポートできます"
         "warehouseSourceGitCode" -> "GitCode チャンネル"
         "warehouseSourceGitHubRaw" -> "GitHub 直結"
         "warehouseSourceWithMirrors" -> "{source} + ミラー {mirrorCount} 件"

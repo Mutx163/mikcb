@@ -5755,7 +5755,7 @@
   "appearanceEditorMaterialAction": "マテリアル",
   "appearanceEditorEntrySubtitle": "縮小プレビューで壁紙と素材を調整",
   "commonLoadingLabel": "読み込み中",
-  "warehouseSessionAlreadyActive": "教务システムにはまだログインしています。そのままインポートできます",
+  "warehouseSessionAlreadyActive": "教務システムにはまだログインしています。そのままインポートできます",
   "warehouseSourceGitCode": "GitCode チャンネル",
   "warehouseSourceGitHubRaw": "GitHub 直結",
   "warehouseSourceWithMirrors": "{source} + ミラー {mirrorCount} 件",
