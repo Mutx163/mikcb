@@ -357,16 +357,6 @@ class GuardSourceStrippingPolicyTest {
                 reason = "读壳、ShellNavigationRail、HomeGlassDock、DayViewPage，判 Rail 出现时坞不组合、条目点击先弹回主屏；codeOnly 剥注释",
                 reviewTrigger = LEGACY_REVIEW_TRIGGER,
             ),
-            "com/mutx163/qingyu/pages/timetable/day/DayViewColorTokenGuardTest.kt" to LegacyMeta(
-                introducedAt = "010c2e21f 2026-11-04",
-                reason = "只读 DayViewCourseCard.kt，判非本周灰复用 WeekGridCourseMapping.NON_CURRENT_WEEK_COLOR_HEX；readSource 直接 readText，另带守卫空转自检",
-                reviewTrigger = LEGACY_REVIEW_TRIGGER,
-            ),
-            "com/mutx163/qingyu/pages/timetable/day/DayViewStringsParityTest.kt" to LegacyMeta(
-                introducedAt = "b5b8bba2f 2026-10-27",
-                reason = "日视图文案逐字对拍 app_zh.arb；读 DayViewStrings.kt 只用正则抽 ArbText( 声明比集合，触发本扫描的 contains 打在 ARB 模板串上",
-                reviewTrigger = LEGACY_REVIEW_TRIGGER,
-            ),
             "com/mutx163/qingyu/pages/topbar/TopBarActionGlassGuardTest.kt" to LegacyMeta(
                 introducedAt = "925da76af 2026-11-05",
                 reason = "扫二十余个页面顶栏的 actions 与 navigationIcon，判不许裸写 IconButton、待迁移颗数精确；文件先过私有 codeOf（块注释与行注释两条正则）",

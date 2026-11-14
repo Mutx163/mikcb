@@ -1,9 +1,9 @@
 package com.mutx163.qingyu.pages.timetable.day
 
+import com.mutx163.qingyu.testutil.readKotlinSourceNoStrings
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
-import java.io.File
 
 /**
  * 非本周课固定灰必须走域内 token（2026-11-04，样式基线欠账清理）。
@@ -44,14 +44,11 @@ class DayViewColorTokenGuardTest {
         )
     }
 
-    /** 从工作目录向上找仓库根再定位文件；找不到仍判失败，不静默跳过。 */
-    private fun readSource(relative: String): String {
-        var dir: File? = File("").absoluteFile
-        repeat(8) {
-            val candidate = File(dir, relative)
-            if (candidate.isFile) return candidate.readText(Charsets.UTF_8)
-            dir = dir?.parentFile
-        }
-        error("找不到 $relative（工作目录 ${File("").absolutePath}）")
-    }
+    /**
+     * 读日卡源码，走**中性化档**（剥注释 + 抹掉字符串内容）。
+     *
+     * 2026-11-14：原来直接 `readText()`，把 `WeekGridCourseMapping.NON_CURRENT_WEEK_COLOR_HEX`
+     * 那行注释掉文本仍在注释里，`contains` 照样成立。判据是 token 引用与写死颜色，属代码骨架。
+     */
+    private fun readSource(relative: String): String = readKotlinSourceNoStrings(relative)
 }

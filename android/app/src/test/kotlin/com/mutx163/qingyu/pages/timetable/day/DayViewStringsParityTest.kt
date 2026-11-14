@@ -1,6 +1,7 @@
 package com.mutx163.qingyu.pages.timetable.day
 
 import com.mutx163.qingyu.core.MiniJson
+import com.mutx163.qingyu.testutil.readKotlinSourceNormalized
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -98,15 +99,13 @@ class DayViewStringsParityTest {
         }
     }
 
-    private fun readRepoFile(relative: String): String {
-        var dir: File? = File("").absoluteFile
-        repeat(8) {
-            val candidate = File(dir, relative)
-            if (candidate.isFile) return candidate.readText(Charsets.UTF_8)
-            dir = dir?.parentFile
-        }
-        error("找不到 $relative（工作目录 ${File("").absolutePath}）")
-    }
+    /**
+     * 读 DayViewStrings.kt，走**默认档**（剥注释、保留字符串）。
+     *
+     * 2026-11-14：原来直接 `readText()`。本判据抽的是 `ArbText("键", …)` 声明——键本身就是
+     * 字面量，所以不能中性化；但注释必须剥：注释掉的旧声明不该被算成「声明了没登记」。
+     */
+    private fun readRepoFile(relative: String): String = readKotlinSourceNormalized(relative)
 
     private fun loadArbZh(): Map<String, String> {
         var dir: File? = File("").absoluteFile
