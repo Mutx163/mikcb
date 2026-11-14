@@ -49,7 +49,6 @@ com/mutx163/qingyu/pages/about/ChangelogModel.kt:5
 com/mutx163/qingyu/pages/settings/SettingsAppearancePage.kt:5
 com/mutx163/qingyu/pages/settings/SettingsHomeWidgetPage.kt:5
 com/mutx163/qingyu/pages/transfer/QrFountainLt.kt:5
-com/mutx163/qingyu/share/qr/QrEncoder.kt:5
 com/mutx163/qingyu/pages/ShellPageIndex.kt:4
 # 2026-11-10 导出线登记（1→4）：`IcsExportModel.kt` 这 4 条是 `formatDate` 的日期格式 pattern
 # `y年M月d日`（ja / zh / zh_HK / zh_TW 四个标签共用同一条），**不是屏上可翻译文案**：
@@ -62,6 +61,7 @@ com/mutx163/qingyu/pages/import/ImportTemplateModel.kt:4
 com/mutx163/qingyu/pages/import/warehouse/AiImageImportModel.kt:4
 com/mutx163/qingyu/pages/import/warehouse/WarehouseRepositoryModels.kt:4
 com/mutx163/qingyu/pages/settings/SettingsGeneralPage.kt:4
+com/mutx163/qingyu/share/qr/QrEncoder.kt:4
 # 2026-11-10 官网调研 lane 登记（2→3）：`TimetableRepository.kt` 新增第 3 条是
 # `IMPORT_TIME_SCHEME_SUPPLEMENT_SUFFIX = "（导入补齐）"`。理由：该串是**持久化到时间模板名**、
 # 会显示在模板列表的用户可见名，发布版就是硬编码常量（import_export_service.dart:10）；

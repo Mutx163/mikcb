@@ -544,6 +544,10 @@ class ShellWiring(context: Context) {
         com.mutx163.qingyu.pages.statistics.charts.QrEncodeModel.install(
             com.mutx163.qingyu.platform.ZxingQrEncoder,
         )
+        // 局域网页二维码（share/qr）同款：接口留域内，ZXing 实现在 platform/。
+        com.mutx163.qingyu.share.qr.QrEncoder.install(
+            com.mutx163.qingyu.platform.ZxingTransferQrEncoder,
+        )
     }
 
     /**
