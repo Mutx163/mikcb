@@ -62,6 +62,28 @@ data class DiagnosticsLevelChip(
     val selected: Boolean,
 )
 
+/**
+ * 网络日志的类别键（`category=network`）。
+ *
+ * **权威定义在 `infra/NetLog`**（由开发官维护）：写日志的一方用它打类别标记，这里只读
+ * 同一个 token 做筛选。两边一旦分叉，筛选会静默筛不到东西（界面显示「无匹配」而不是红），
+ * 所以不许在本文件另起名字。
+ */
+const val NETWORK_LOG_CATEGORY: String = "network"
+
+/**
+ * 类别筛选芯片（当前只有「网络」一个）。
+ *
+ * 标签直接用类别 token 本身（`network N`），不加 ARB 键：条目里 `categoryLabel` 显示的
+ * 也是这个原值（`buildDiagnosticsLogEntryView` 直接取 `entry.category`），两边一致才不会
+ * 让用户以为是两个不同的东西。哪天要做中文名，由文案官加键后再换这一处 label。
+ */
+data class DiagnosticsCategoryChip(
+    val label: String,
+    val count: Int,
+    val selected: Boolean,
+)
+
 /** 键值展示行（设备信息 chip 与条目详情行共用）。 */
 data class DiagnosticsKeyValueRow(
     val label: String,
@@ -91,6 +113,8 @@ data class DiagnosticsLogViewState(
     val timeSort: DiagnosticsLogTimeSort,
     val selectedLevel: DiagnosticsLogLevel,
     val levelChips: List<DiagnosticsLevelChip>,
+    /** 类别筛选芯片（`network`）；计数恒为全量里的网络条目数，不随等级筛选变化。 */
+    val categoryChip: DiagnosticsCategoryChip,
     val entries: List<DiagnosticsLogEntryView>,
     val headerRows: List<DiagnosticsKeyValueRow>,
     val isDeviceInfoExpanded: Boolean,
@@ -251,8 +275,21 @@ fun <T> DiagnosticsLogViewport.slice(items: List<T>): List<T> {
 fun chronologicalDiagnosticsEntries(
     parsed: DiagnosticsLogSnapshot,
     level: DiagnosticsLogLevel,
-): List<DiagnosticsLogEntry> =
-    sortDiagnosticsEntries(filterDiagnosticsEntries(parsed.entries, level), ascending = true)
+    /**
+     * 只看网络条目（`category == [NETWORK_LOG_CATEGORY]`）。
+     *
+     * **必须在分页之前过滤**：先筛再排再切窗口，窗口与计数才和屏幕上看到的一致；
+     * 若在渲染后过滤，`显示 200 / 300` 和「加载更早」会按未筛全量算，越翻越对不上。
+     */
+    networkOnly: Boolean = false,
+): List<DiagnosticsLogEntry> {
+    val scoped = if (networkOnly) networkEntries(parsed.entries) else parsed.entries
+    return sortDiagnosticsEntries(filterDiagnosticsEntries(scoped, level), ascending = true)
+}
+
+/** 全量里的网络条目（不排序、不按等级筛）：类别筛选的范围口径只此一处。 */
+private fun networkEntries(entries: List<DiagnosticsLogEntry>): List<DiagnosticsLogEntry> =
+    entries.filter { it.category == NETWORK_LOG_CATEGORY }
 
 /**
  * 复制 / 导出用的全量文本（Dart `_buildFullLogText` 963-968 行）。
@@ -352,6 +389,7 @@ fun buildDiagnosticsLogViewState(
     viewMode: DiagnosticsLogViewMode = DiagnosticsLogViewMode.STRUCTURED,
     timeSort: DiagnosticsLogTimeSort = DiagnosticsLogTimeSort.ASCENDING,
     selectedLevel: DiagnosticsLogLevel = DiagnosticsLogLevel.ALL,
+    networkOnly: Boolean = false,
     expandedEntryIds: Set<String> = emptySet(),
     isDeviceInfoExpanded: Boolean = false,
     isRecordingEnabled: Boolean? = null,
@@ -363,7 +401,7 @@ fun buildDiagnosticsLogViewState(
     canExport: Boolean = true,
     canClear: Boolean = true,
 ): DiagnosticsLogViewState {
-    val chronological = chronologicalDiagnosticsEntries(parsed, selectedLevel)
+    val chronological = chronologicalDiagnosticsEntries(parsed, selectedLevel, networkOnly)
     val resolved = DiagnosticsLogPaging.resolve(chronological.size, viewport)
     val visible = resolved.slice(chronological)
     // 倒序渲染：正序窗口反转显示（最新条目 = 窗口末端 = 视口顶部）。
@@ -385,8 +423,18 @@ fun buildDiagnosticsLogViewState(
         timeSort = timeSort,
         selectedLevel = selectedLevel,
         levelChips = DiagnosticsLogPaging.buildLevelChips(
-            counts = countDiagnosticsLevels(parsed.entries),
+            // 等级计数按「类别筛后的集合」算：网络筛选开着时显示「全部 3」却只列 3 条，
+            // 与屏幕一致；关掉时集合就是全量，行为与此前完全相同。
+            counts = countDiagnosticsLevels(
+                if (networkOnly) networkEntries(parsed.entries) else parsed.entries,
+            ),
             selected = selectedLevel,
+        ),
+        // 计数恒取全量网络条目：筛选开着与否，这枚芯片上的数字都不跳动。
+        categoryChip = DiagnosticsCategoryChip(
+            label = "$NETWORK_LOG_CATEGORY ${networkEntries(parsed.entries).size}",
+            count = networkEntries(parsed.entries).size,
+            selected = networkOnly,
         ),
         entries = entryViews,
         headerRows = buildDiagnosticsHeaderRows(parsed),

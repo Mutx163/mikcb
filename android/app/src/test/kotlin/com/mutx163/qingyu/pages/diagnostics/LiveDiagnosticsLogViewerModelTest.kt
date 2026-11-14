@@ -339,6 +339,123 @@ class LiveDiagnosticsLogViewerModelTest {
     }
 
     // ==========================================
+    // 3.5 类别筛选（category=network）
+    // ==========================================
+
+    @Test
+    fun `网络筛选只留 category=network，且能与等级筛选叠加`() {
+        val parsed = snapshot(
+            listOf(
+                entry(1_000, DiagnosticsLogLevel.ERROR, "网络超时", category = NETWORK_LOG_CATEGORY),
+                entry(2_000, DiagnosticsLogLevel.ERROR, "本地错误", category = "app_logger"),
+                entry(3_000, DiagnosticsLogLevel.INFO, "网络成功", category = NETWORK_LOG_CATEGORY),
+            ),
+        )
+
+        val networkOnly = buildDiagnosticsLogViewState(
+            title = "应用日志",
+            parsed = parsed,
+            viewport = DiagnosticsLogViewport(),
+            networkOnly = true,
+        )
+        assertEquals(listOf("网络超时", "网络成功"), networkOnly.entries.map { it.message })
+
+        // 类别与等级正交：网络 + 错误 只剩一条，不是二选一。
+        val networkErrors = buildDiagnosticsLogViewState(
+            title = "应用日志",
+            parsed = parsed,
+            viewport = DiagnosticsLogViewport(),
+            selectedLevel = DiagnosticsLogLevel.ERROR,
+            networkOnly = true,
+        )
+        assertEquals(listOf("网络超时"), networkErrors.entries.map { it.message })
+    }
+
+    @Test
+    fun `网络芯片计数取全量，开关前后不跳动`() {
+        val parsed = snapshot(
+            listOf(
+                entry(1_000, DiagnosticsLogLevel.INFO, "网络一", category = NETWORK_LOG_CATEGORY),
+                entry(2_000, DiagnosticsLogLevel.ERROR, "网络二", category = NETWORK_LOG_CATEGORY),
+                entry(3_000, DiagnosticsLogLevel.INFO, "普通", category = "app_logger"),
+            ),
+        )
+
+        val off = buildDiagnosticsLogViewState(
+            title = "应用日志",
+            parsed = parsed,
+            viewport = DiagnosticsLogViewport(),
+        )
+        val on = buildDiagnosticsLogViewState(
+            title = "应用日志",
+            parsed = parsed,
+            viewport = DiagnosticsLogViewport(),
+            networkOnly = true,
+        )
+
+        // 标签直接用类别 token（不加 ARB 键），计数是「全量里的网络条目数」。
+        assertEquals("network 2", off.categoryChip.label)
+        assertEquals("network 2", on.categoryChip.label)
+        assertEquals(2, off.categoryChip.count)
+        assertFalse(off.categoryChip.selected)
+        assertTrue(on.categoryChip.selected)
+    }
+
+    @Test
+    fun `网络筛选开着时等级计数按筛后集合算`() {
+        val parsed = snapshot(
+            listOf(
+                entry(1_000, DiagnosticsLogLevel.ERROR, "网络错误", category = NETWORK_LOG_CATEGORY),
+                entry(2_000, DiagnosticsLogLevel.INFO, "网络信息", category = NETWORK_LOG_CATEGORY),
+                entry(3_000, DiagnosticsLogLevel.INFO, "普通信息", category = "app_logger"),
+            ),
+        )
+
+        val on = buildDiagnosticsLogViewState(
+            title = "应用日志",
+            parsed = parsed,
+            viewport = DiagnosticsLogViewport(),
+            networkOnly = true,
+        )
+
+        // 筛后只剩 2 条：若仍按全量算会显示「全部 3」，用户会以为丢了日志。
+        assertEquals("全部 2", on.levelChips.first().label)
+        assertEquals("错误 1", on.levelChips[1].label)
+    }
+
+    @Test
+    fun `网络筛选下分页按筛后条数算，且没有网络条目时给出无匹配`() {
+        // 250 条网络 + 250 条普通：筛后 250 条、一页 200 ⇒ 贴最新端窗口是 [50, 250)。
+        val entries = (0 until 250).map {
+            entry(it.toLong(), DiagnosticsLogLevel.INFO, "网络$it", category = NETWORK_LOG_CATEGORY)
+        } + (0 until 250).map {
+            entry(1_000L + it, DiagnosticsLogLevel.INFO, "普通$it", category = "app_logger")
+        }
+        val parsed = snapshot(entries)
+
+        val state = buildDiagnosticsLogViewState(
+            title = "应用日志",
+            parsed = parsed,
+            viewport = DiagnosticsLogViewport(),
+            networkOnly = true,
+        )
+        assertEquals(200, state.entries.size)
+        assertEquals(50, state.currentStartIndex)
+
+        val none = buildDiagnosticsLogViewState(
+            title = "应用日志",
+            parsed = snapshot(
+                listOf(entry(1_000, DiagnosticsLogLevel.INFO, "普通", category = "app_logger")),
+            ),
+            viewport = DiagnosticsLogViewport(),
+            networkOnly = true,
+        )
+        // 有条目但筛不出来 ⇒ 无匹配态，而不是「没有日志」的空态。
+        assertTrue(none.showNoMatching)
+        assertFalse(none.isEmpty)
+    }
+
+    // ==========================================
     // 4. 单条日志的展示模型
     // ==========================================
 

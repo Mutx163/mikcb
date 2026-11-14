@@ -104,6 +104,9 @@ fun DiagnosticsLogHost(
     var viewMode by remember { mutableStateOf(DiagnosticsLogViewMode.STRUCTURED) }
     var timeSort by remember { mutableStateOf(DiagnosticsLogTimeSort.ASCENDING) }
     var selectedLevel by remember { mutableStateOf(DiagnosticsLogLevel.ALL) }
+    // 类别筛选（`category=network`）：与等级筛选正交，可叠加（网络 + 错误）。
+    // 复制 / 导出**不跟它走**：导出要的是现场全量，被筛掉的往往才是最需要的。
+    var networkOnly by remember { mutableStateOf(false) }
     var viewport by remember { mutableStateOf(DiagnosticsLogViewport()) }
     var expandedEntryIds by remember { mutableStateOf(emptySet<String>()) }
     var deviceInfoExpanded by remember { mutableStateOf(false) }
@@ -173,9 +176,9 @@ fun DiagnosticsLogHost(
 
     // 窗口每个组合帧都重算一次：`buildDiagnosticsLogViewState` 内部的 resolve 结果
     // 不会回写宿主状态，而「加载更早 / 贴最新端」要读**当下**的窗口起点。
-    val resolvedViewport = remember(feed.parsed, selectedLevel, viewport) {
+    val resolvedViewport = remember(feed.parsed, selectedLevel, networkOnly, viewport) {
         DiagnosticsLogPaging.resolve(
-            total = chronologicalDiagnosticsEntries(feed.parsed, selectedLevel).size,
+            total = chronologicalDiagnosticsEntries(feed.parsed, selectedLevel, networkOnly).size,
             state = viewport,
         )
     }
@@ -187,6 +190,7 @@ fun DiagnosticsLogHost(
         viewMode = viewMode,
         timeSort = timeSort,
         selectedLevel = selectedLevel,
+        networkOnly = networkOnly,
         expandedEntryIds = expandedEntryIds,
         isDeviceInfoExpanded = deviceInfoExpanded,
         isRecordingEnabled = recordingEnabled,
@@ -260,6 +264,13 @@ fun DiagnosticsLogHost(
         }
         selectedLevel = level
         // Dart 605-615：换筛选时解开起点与末端冻结，回到贴最新一页。
+        viewport = resetWindowForFilter(resolvedViewport)
+    }
+
+    fun toggleNetwork() {
+        networkOnly = !networkOnly
+        // 与换等级同一口径：筛选范围变了就回到贴最新一页。窗口是按「筛后条数」算的，
+        // 不重置的话 200 条窗口可能整个落在筛后的短列表之外，表现为列表突然空一下。
         viewport = resetWindowForFilter(resolvedViewport)
     }
 
@@ -380,6 +391,7 @@ fun DiagnosticsLogHost(
         listState = listState,
         onBack = onBack,
         onSelectLevel = ::selectLevel,
+        onToggleNetwork = ::toggleNetwork,
         onLoadEarlier = ::loadEarlier,
         onToggleEntry = { id ->
             expandedEntryIds = if (expandedEntryIds.contains(id)) {

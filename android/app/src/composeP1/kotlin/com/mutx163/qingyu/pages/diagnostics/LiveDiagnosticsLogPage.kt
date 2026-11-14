@@ -101,6 +101,13 @@ fun LiveDiagnosticsLogPage(
     viewState: DiagnosticsLogViewState,
     onBack: () -> Unit,
     onSelectLevel: (DiagnosticsLogLevel) -> Unit,
+    /**
+     * 类别筛选（`category=network`）的开关回调。
+     *
+     * 开关状态由宿主持有、已算进 [viewState] 的 `categoryChip`；这里只把点击换成回调。
+     * 不传也能画（显示全量网络条目数），只是点了不生效——所以正式接线必须传。
+     */
+    onToggleNetwork: () -> Unit = {},
     onLoadEarlier: () -> Unit,
     onToggleEntry: (String) -> Unit,
     onToggleDeviceInfo: () -> Unit,
@@ -222,6 +229,8 @@ fun LiveDiagnosticsLogPage(
                     // 属于固定头部，不随日志列表滚动）。
                     DiagnosticsLevelFilterBar(
                         chips = viewState.levelChips,
+                        networkChip = viewState.categoryChip,
+                        onToggleNetwork = onToggleNetwork,
                         isParsing = viewState.isParsing,
                         onSelectLevel = onSelectLevel,
                         dark = dark,
@@ -349,10 +358,12 @@ fun LiveDiagnosticsLogPage(
     }
 }
 
-/** 等级筛选芯片条（Dart `_buildLevelFilterBar`）。 */
+/** 等级筛选芯片条（Dart `_buildLevelFilterBar`）+ 类别筛选芯片（`network`）。 */
 @Composable
 private fun DiagnosticsLevelFilterBar(
     chips: List<DiagnosticsLevelChip>,
+    networkChip: DiagnosticsCategoryChip,
+    onToggleNetwork: () -> Unit,
     isParsing: Boolean,
     onSelectLevel: (DiagnosticsLogLevel) -> Unit,
     dark: Boolean,
@@ -371,11 +382,20 @@ private fun DiagnosticsLevelFilterBar(
         ) {
             chips.forEach { chip ->
                 DiagnosticsFilterChip(
-                    chip = chip,
+                    label = chip.label,
+                    selected = chip.selected,
                     onClick = { onSelectLevel(chip.level) },
                     dark = dark,
                 )
             }
+            // 类别芯片排在等级芯片之后：等级是「哪一类严重度」，类别是「哪一来源」，
+            // 两者正交、可同时生效（网络 + 错误）。
+            DiagnosticsFilterChip(
+                label = networkChip.label,
+                selected = networkChip.selected,
+                onClick = onToggleNetwork,
+                dark = dark,
+            )
         }
         if (isParsing) {
             // 档 B3（D1 统一）：行尾极小角标 14dp / 2dp。
@@ -386,16 +406,17 @@ private fun DiagnosticsLevelFilterBar(
 
 @Composable
 private fun DiagnosticsFilterChip(
-    chip: DiagnosticsLevelChip,
+    label: String,
+    selected: Boolean,
     onClick: () -> Unit,
     dark: Boolean,
 ) {
-    val background = if (chip.selected) {
+    val background = if (selected) {
         Color(QingyuTheme.primary(dark = dark)).copy(alpha = if (dark) 0.22f else 0.12f)
     } else {
         Color(QingyuTheme.card(dark))
     }
-    val textColor = if (chip.selected) {
+    val textColor = if (selected) {
         Color(QingyuTheme.primary(dark = dark))
     } else {
         Color(QingyuTheme.secondaryText(dark))
@@ -410,9 +431,9 @@ private fun DiagnosticsFilterChip(
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Text(
-            text = chip.label,
+            text = label,
             style = MiuixTheme.textStyles.footnote1.shiftWeight(
-                if (chip.selected) QingyuWeightDelta.SEMIBOLD else 0,
+                if (selected) QingyuWeightDelta.SEMIBOLD else 0,
             ),
             color = textColor,
         )
