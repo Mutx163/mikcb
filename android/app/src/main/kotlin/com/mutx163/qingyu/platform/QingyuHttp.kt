@@ -4,17 +4,16 @@ import com.mutx163.qingyu.infra.NetLog
 import java.io.IOException
 import java.io.InterruptedIOException
 import java.net.SocketTimeoutException
-import java.util.concurrent.Callable
-import java.util.concurrent.ExecutionException
-import java.util.concurrent.Executors
-import java.util.concurrent.Future
+import java.util.concurrent.LinkedBlockingQueue
 import java.util.concurrent.TimeUnit
 import okhttp3.Call
+import okhttp3.Callback
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.RequestBody
 import okhttp3.RequestBody.Companion.toRequestBody
+import okhttp3.Response
 
 /**
  * 全软件网络请求的**统一入口**（2026-11-14 用户决定：所有网络请求都改走 OkHttp）。
@@ -41,7 +40,8 @@ import okhttp3.RequestBody.Companion.toRequestBody
  * 3. [stream]：**流式**读，逐块交给调用方 + 进度回调，返回 [HttpCall] 可 `cancel()`；
  * 4. [firstSuccess]：多路竞速，先成功者胜，**败者立刻 `Call.cancel()`**。
  *
- * UA / Accept / 超时全部**逐请求传**：[HttpCallSpec] 里有 `headers`、`connectTimeoutMs`、
+ * ## 一处一个客户端\n *\n * 全局只有 [client] 这一个 OkHttpClient；[buildClient] 用 
+ewBuilder() 派生只改超时的副本，\n * 连接池 / dispatcher / 线程池按 OkHttp 契约**与父客户端共享**，不是第二个客户端。\n * 实现方（platform/OkHttp*.kt）一律通过本对象发请求，不许各建一个 OkHttpClient。\n *\n * UA / Accept / 超时全部**逐请求传**：[HttpCallSpec] 里有 `headers`、`connectTimeoutMs`、
  * `readTimeoutMs`；地基只给兜底 UA（[DEFAULT_USER_AGENT]），不写死任何业务头。
  *
  * @see NetLog
@@ -56,11 +56,6 @@ object QingyuHttp {
 
     /** 默认读取超时（毫秒）。 */
     const val DEFAULT_READ_TIMEOUT_MS: Long = 15_000L
-
-    /** 竞速并发池：最多 4 路（更新清单 2~3 路，留余量）。 */
-    private val racePool = Executors.newFixedThreadPool(4) { runnable ->
-        Thread(runnable, "qingyu-http").apply { isDaemon = true }
-    }
 
     /** 进程级单例：连接池与线程池共享一份（「统一入口」的意义之一）。 */
     val client: OkHttpClient by lazy {
@@ -283,37 +278,87 @@ object QingyuHttp {
         }
     }
 
+    /** 竞速里的一路成功：带上它的 spec，宿主据此判断「同版本 + 直连渠道」等业务条件。 */
+    data class RacedSuccess(val spec: HttpCallSpec, val result: HttpResult)
+
     /**
-     * 多路竞速：先拿到成功结果的一路胜出，其余**立刻 cancel**（不等满 readTimeout）。
-     *
-     * 全失败时返回最后完成的那一个失败结果（至少带得出错误类与耗时）。
+     * 竞速结果：[winner] = 首个成功（全失败时是最后一个失败结果）；[successes] = 按**到达顺序**
+     * 记录的全部成功，第 0 个就是 winner。
      */
-    fun firstSuccess(specs: List<HttpCallSpec>): HttpResult {
+    data class RacedResult(
+        val winner: HttpResult?,
+        val successes: List<RacedSuccess>,
+    ) {
+        val hasWinner: Boolean get() = winner?.isSuccess == true
+    }
+
+    /**
+     * 多路竞速。**用 OkHttp 自己的异步回调**（`enqueue`），不另建线程池——全局就一个
+     * [client]（其 dispatcher / 连接池共享），这是「一处一个 OkHttpClient」的硬规矩。
+     *
+     * 语义由 [lingerMs] 分两段：
+     *
+     * - [lingerMs] == 0（默认）：赢家一出现**立刻 cancel** 其余路。
+     * - [lingerMs] > 0：赢家出现后保留缓冲窗口，跑完的兄弟路按到达顺序收进
+     *   [RacedResult.successes]；窗口一到，未完成的立刻 cancel。检查更新靠它：Release 页 HTML
+     *   赢家没有 SHA 摘要，要在窗口内等同版本 + 直连渠道的兄弟路补上。
+     *
+     * **窗口宽度不由地基决定**：这类业务值（如摘要回填窗口）必须由宿主传有名常量，地基默认 0、
+     * 也不许写死具体数字——否则「窗口由谁定」没法用守卫钉住。
+     *
+     * 全失败时 [RacedResult.successes] 为空，[RacedResult.winner] 是最后完成的失败结果。
+     */
+    fun firstSuccess(specs: List<HttpCallSpec>, lingerMs: Long = 0L): RacedResult {
         require(specs.isNotEmpty()) { "firstSuccess requires at least one spec" }
+        val results = arrayOfNulls<HttpResult>(specs.size)
+        val arrivals = LinkedBlockingQueue<Int>(specs.size)
         val calls = ArrayList<Call>(specs.size)
         val lock = Any()
-        val futures: List<Future<HttpResult>> = specs.map { spec ->
-            racePool.submit(
-                Callable {
-                    val started = System.nanoTime()
-                    fun elapsed(): Long = (System.nanoTime() - started) / 1_000_000
-                    val request = runCatching { buildRequest(spec) }.getOrNull()
-                    if (request == null) {
-                        return@Callable HttpResult(
-                            failure = NetLog.FAILURE_NETWORK,
-                            errorClass = "BuildRequest",
-                            url = spec.url,
-                            method = spec.method,
+
+        fun recordArrival(index: Int, result: HttpResult) {
+            results[index] = result
+            arrivals.offer(index)
+        }
+
+        specs.forEachIndexed { index, spec ->
+            val startedAt = System.nanoTime()
+            fun elapsed(): Long = (System.nanoTime() - startedAt) / 1_000_000
+            val request = runCatching { buildRequest(spec) }.getOrNull()
+            if (request == null) {
+                recordArrival(
+                    index,
+                    HttpResult(
+                        failure = NetLog.FAILURE_NETWORK,
+                        errorClass = "BuildRequest",
+                        url = spec.url,
+                        method = spec.method,
+                    ),
+                )
+                return@forEachIndexed
+            }
+            val call = buildClient(spec).newCall(request)
+            synchronized(lock) { calls += call }
+            call.enqueue(
+                object : Callback {
+                    override fun onFailure(call: Call, e: IOException) {
+                        recordArrival(
+                            index,
+                            HttpResult(
+                                failure = failureOf(e),
+                                errorClass = e.javaClass.simpleName,
+                                url = spec.url,
+                                method = spec.method,
+                                elapsedMs = elapsed(),
+                            ),
                         )
                     }
-                    val call = buildClient(spec).newCall(request)
-                    synchronized(lock) { calls += call }
-                    try {
-                        call.execute().use { response ->
-                            val raw = response.body?.bytes()
-                            if (!response.isSuccessful) {
+
+                    override fun onResponse(call: Call, response: Response) {
+                        val result = response.use { resp ->
+                            val raw = resp.body?.bytes()
+                            if (!resp.isSuccessful) {
                                 HttpResult(
-                                    status = response.code,
+                                    status = resp.code,
                                     bytes = raw?.size?.toLong(),
                                     elapsedMs = elapsed(),
                                     failure = NetLog.FAILURE_HTTP_STATUS,
@@ -323,7 +368,7 @@ object QingyuHttp {
                                 )
                             } else {
                                 HttpResult(
-                                    status = response.code,
+                                    status = resp.code,
                                     body = raw?.toString(Charsets.UTF_8).orEmpty(),
                                     bytes = raw?.size?.toLong(),
                                     elapsedMs = elapsed(),
@@ -332,45 +377,50 @@ object QingyuHttp {
                                 )
                             }
                         }
-                    } catch (error: Exception) {
-                        HttpResult(
-                            failure = failureOf(error),
-                            errorClass = error.javaClass.simpleName,
-                            url = spec.url,
-                            method = spec.method,
-                            elapsedMs = elapsed(),
-                        )
+                        recordArrival(index, result)
                     }
                 },
             )
         }
-        var lastFailure: HttpResult? = null
-        for (future in futures) {
-            val result = try {
-                future.get()
-            } catch (_: ExecutionException) {
-                continue
-            } catch (_: InterruptedException) {
-                Thread.currentThread().interrupt()
-                continue
-            }
-            if (result.isSuccess) {
-                // 胜者出现，败者立刻停——这就是 cancel 相对旧 readTimeout 的优势。
-                synchronized(lock) { calls.forEach { call -> if (!call.isCanceled()) call.cancel() } }
-                record(result)
-                return result
-            }
-            lastFailure = result
-        }
-        val failure = lastFailure ?: HttpResult(
-            failure = NetLog.FAILURE_NETWORK,
-            url = specs.first().url,
-            method = specs.first().method,
-        )
-        record(failure)
-        return failure
-    }
 
+        val successes = ArrayList<RacedSuccess>(specs.size)
+        var winnerIndex = -1
+        var remaining = specs.size
+        while (remaining-- > 0 && winnerIndex < 0) {
+            val index = arrivals.take()
+            val result = results[index] ?: continue
+            if (result.isSuccess) {
+                winnerIndex = index
+                successes += RacedSuccess(specs[index], result)
+            }
+        }
+
+        if (winnerIndex >= 0 && lingerMs > 0L) {
+            val deadline = System.nanoTime() + lingerMs * 1_000_000L
+            while (true) {
+                val left = deadline - System.nanoTime()
+                if (left <= 0L) break
+                val index = arrivals.poll(left, TimeUnit.NANOSECONDS) ?: break
+                val result = results[index] ?: continue
+                if (result.isSuccess) successes += RacedSuccess(specs[index], result)
+            }
+        }
+
+        synchronized(lock) { calls.forEach { call -> if (!call.isCanceled()) call.cancel() } }
+
+        if (winnerIndex < 0) {
+            val failure = results.filterNotNull().lastOrNull() ?: HttpResult(
+                failure = NetLog.FAILURE_NETWORK,
+                url = specs.first().url,
+                method = specs.first().method,
+            )
+            record(failure)
+            return RacedResult(winner = failure, successes = emptyList())
+        }
+        val winnerResult = results[winnerIndex]!!
+        record(winnerResult)
+        return RacedResult(winner = winnerResult, successes = successes)
+    }
     /**
      * 解析失败也要落一条（`failure=parse` / `not_json`，`detail` 里放字段名与行号）。
      *
@@ -485,6 +535,12 @@ object QingyuHttp {
         return result
     }
 }
+
+
+
+
+
+
 
 
 
