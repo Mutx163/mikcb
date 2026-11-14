@@ -108,14 +108,18 @@ private const val DOWNLOADING_SCRIM_ALPHA = 0.45f
 fun BingGalleryHost(
     store: TimetableSettingsModelStore,
     onBack: () -> Unit,
-    /** 清单数据源（测试/预览可注入假件；默认真网络）。 */
-    dataSource: BingGalleryDataSource? = null,
+    /**
+     * 两处 HTTP 接缝由**组合根**注入（`ShellWiring` 构造 `platform/OkHttpBingGallery*`，
+     * `ShellPageIndex` 传进来）：页面只依赖接口，实现类不进 `pages/`。
+     */
+    bingHttp: BingGalleryHttp,
+    bingBinaryHttp: BingGalleryBinaryHttp,
 ) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     // 只读：溢出回收前拿盘上所有档案的壁纸路径（与外观编辑页同一份 prefs 口径）。
     val profilesPrefs = remember(context) { PrefsKeyValueStore(context) }
-    val source = dataSource ?: remember { BingGalleryDataSource() }
+    val source = remember(bingHttp) { BingGalleryDataSource(bingHttp) }
     val today = remember { LocalDate.now() }
 
     var state by remember { mutableStateOf(BingGalleryState(today = today)) }
@@ -125,8 +129,8 @@ fun BingGalleryHost(
     var busy by remember { mutableStateOf(false) }
     var queued by remember { mutableStateOf<BingWallpaperItem?>(null) }
 
-    val downloader = remember {
-        BingGalleryDownloader(File(context.filesDir, WALLPAPER_DIR_NAME))
+    val downloader = remember(bingBinaryHttp) {
+        BingGalleryDownloader(File(context.filesDir, WALLPAPER_DIR_NAME), bingBinaryHttp)
     }
     // 屏幕像素：档位是下限，屏幕更大时抬到屏幕（模型层口径，宿主只负责把数给它）。
     val screen = remember {

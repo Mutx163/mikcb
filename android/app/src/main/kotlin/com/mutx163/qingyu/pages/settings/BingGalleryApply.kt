@@ -11,8 +11,6 @@ import com.mutx163.qingyu.weather.isMissingTierFailure
 import com.mutx163.qingyu.weather.pushWallpaperHistory
 import java.io.File
 import java.io.IOException
-import java.net.HttpURLConnection
-import java.net.URL
 import java.time.LocalDate
 
 /**
@@ -62,60 +60,15 @@ interface BingGalleryBinaryHttp {
 }
 
 /**
- * 真实实现：JDK [HttpURLConnection] + 流式读，边读边回调进度（Dart 的 `onProgress` 同口径）。
- *
- * 断网/超时统一返回 `statusCode = -1` 的空 body —— 与 Dart 用 `-1` 表示「拿不到响应」一致。
- */
-class JdkBingGalleryBinaryHttp(
-    private val connectTimeoutMs: Int = 10_000,
-    private val readTimeoutMs: Int = 30_000,
-) : BingGalleryBinaryHttp {
-
-    override fun get(url: String, progress: BingGalleryProgress): BingGalleryBytes = try {
-        val connection = (URL(url).openConnection() as HttpURLConnection).apply {
-            requestMethod = "GET"
-            connectTimeout = connectTimeoutMs
-            readTimeout = readTimeoutMs
-            setRequestProperty("User-Agent", "qingyu-kb-compose/1.0")
-        }
-        try {
-            val code = connection.responseCode
-            if (code !in 200..299) {
-                BingGalleryBytes(code, ByteArray(0))
-            } else {
-                val total = connection.contentLengthLong
-                val out = java.io.ByteArrayOutputStream(if (total > 0) total.toInt() else 64 * 1024)
-                connection.inputStream.use { input ->
-                    val buffer = ByteArray(16 * 1024)
-                    var received = 0L
-                    while (true) {
-                        val read = input.read(buffer)
-                        if (read <= 0) break
-                        out.write(buffer, 0, read)
-                        received += read
-                        progress.onProgress(received, total)
-                    }
-                }
-                BingGalleryBytes(code, out.toByteArray())
-            }
-        } finally {
-            connection.disconnect()
-        }
-    } catch (e: IOException) {
-        BingGalleryBytes(-1, ByteArray(0))
-    } catch (e: RuntimeException) {
-        BingGalleryBytes(-1, ByteArray(0))
-    }
-}
-
-/**
  * 下载并落盘。**不碰界面、不碰设置**：只回答「文件在哪」或「失败码是多少」。
  *
  * @param dir 受管目录（宿主传 `context.filesDir/wallpapers`）。
+ * @param http 真实 HTTP 实现由组合根注入（`platform/OkHttpBingGalleryBinaryHttp`）；
+ *   本文件保持纯 JVM，单测注入假件。
  */
 class BingGalleryDownloader(
     private val dir: File,
-    private val http: BingGalleryBinaryHttp = JdkBingGalleryBinaryHttp(),
+    private val http: BingGalleryBinaryHttp,
 ) {
 
     /**

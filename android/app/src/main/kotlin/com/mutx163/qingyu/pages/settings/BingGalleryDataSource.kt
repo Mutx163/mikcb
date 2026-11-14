@@ -2,10 +2,6 @@ package com.mutx163.qingyu.pages.settings
 
 import com.mutx163.qingyu.core.MiniJson
 import com.mutx163.qingyu.weather.BingWallpaperItem
-import java.io.IOException
-import java.net.HttpURLConnection
-import java.net.URL
-import java.nio.charset.StandardCharsets
 
 /**
  * Bing 每日壁纸图库的**清单数据源**（`lib/services/bing_wallpaper_service.dart` 的
@@ -26,9 +22,11 @@ import java.nio.charset.StandardCharsets
  *    接口回 `{}`，在用户眼里都是「一屏空白」，所以统一退回失败页 + 重试；
  * 3. **解析失败不抛**：这一层对上层只回答「拿到了几张」，不制造异常。图库是装饰性
  *    功能，抛异常只会把整个设置页带崩；
- * 4. **零新依赖**：只用 JDK `HttpURLConnection` + 仓内 `MiniJson`，与本包其余文件一样
- *    保持**纯 JVM**（`pages/settings` 不许出现 `android.*`，否则 `scripts/test-kotlin-module.ps1`
- *    会把整个目录跳过，全队这个模块的 L0 都会静默失效）。
+ * 4. **纯 JVM、零 Android 依赖**：本文件只做「接口 + 解析」，真实 HTTP 实现是
+ *    `platform/OkHttpBingGalleryHttp`（2026-11-14 起全软件网络请求统一走 OkHttp）。
+ *    实现不进本目录有两个原因：`pages/settings` 不许出现 `android.*`（否则
+ *    `scripts/test-kotlin-module.ps1` 会把整个目录跳过），且 L0 的 classpath 里没有
+ *    okhttp jar。构造点由组合根注入，页面层只收 [BingGalleryHttp] 接口。
  */
 
 /** 图库一次展示几天（`kBingWallpaperDays`）。 */
@@ -52,47 +50,12 @@ interface BingGalleryHttp {
 }
 
 /**
- * 真实 HTTP 实现：JDK [HttpURLConnection]。
- *
- * 显式按 UTF-8 读 body（中文版权说明落 latin1 会变乱码）；任何异常返回 null —— 上层把
- * null 与「解析不出条目」一视同仁当成失败，不需要区分是超时还是被墙。
- */
-class JdkBingGalleryHttp(
-    private val connectTimeoutMs: Int = 10_000,
-    private val readTimeoutMs: Int = 15_000,
-) : BingGalleryHttp {
-
-    override fun get(url: String): String? = try {
-        val connection = (URL(url).openConnection() as HttpURLConnection).apply {
-            requestMethod = "GET"
-            connectTimeout = connectTimeoutMs
-            readTimeout = readTimeoutMs
-            // Bing 对没有 UA 的请求偶尔回 403；带一个能识别来源的串就够。
-            setRequestProperty("User-Agent", "qingyu-kb-compose/1.0")
-        }
-        try {
-            if (connection.responseCode !in 200..299) {
-                null
-            } else {
-                connection.inputStream.use { String(it.readBytes(), StandardCharsets.UTF_8) }
-            }
-        } finally {
-            connection.disconnect()
-        }
-    } catch (e: IOException) {
-        null
-    } catch (e: RuntimeException) {
-        null
-    }
-}
-
-/**
  * 清单数据源：`fetch()` 一次 = 一次网络请求。
  *
  * 不做缓存：图库页在**进页/下拉刷新**各调一次，而「显示的是上次那份」这条提示由宿主
  * 拿本次结果与上一次结果比出来（见 [BingGalleryApplyPlanner.stateAfterFetch]）。
  */
-class BingGalleryDataSource(private val http: BingGalleryHttp = JdkBingGalleryHttp()) {
+class BingGalleryDataSource(private val http: BingGalleryHttp) {
 
     /** 拉最近 [BING_GALLERY_DAYS] 天；失败与空清单都返回空表。 */
     fun fetch(): List<BingWallpaperItem> = parse(http.get(BING_GALLERY_LIST_URL))

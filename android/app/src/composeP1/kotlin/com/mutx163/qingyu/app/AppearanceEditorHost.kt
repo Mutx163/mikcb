@@ -32,9 +32,11 @@ import com.mutx163.qingyu.pages.homeTopMenuItems
 import com.mutx163.qingyu.pages.settings.AppearanceEditorBridge
 import com.mutx163.qingyu.pages.settings.AppearanceEditorScreen
 import com.mutx163.qingyu.pages.settings.BingGalleryApplyPlanner
+import com.mutx163.qingyu.pages.settings.BingGalleryBinaryHttp
 import com.mutx163.qingyu.pages.settings.BingGalleryDataSource
 import com.mutx163.qingyu.pages.settings.BingGalleryDownloadResult
 import com.mutx163.qingyu.pages.settings.BingGalleryDownloader
+import com.mutx163.qingyu.pages.settings.BingGalleryHttp
 import com.mutx163.qingyu.pages.settings.BingWallpaperStore
 import com.mutx163.qingyu.pages.settings.BackdropFlowState
 import com.mutx163.qingyu.pages.settings.MaterialSheetBody
@@ -217,6 +219,14 @@ fun AppearanceEditorHost(
      * 卡片高度与折行也会跟着不同（2026-11-07 用户实报）。
      */
     weatherProvider: WeatherProvider? = null,
+    /**
+     * Bing 壁纸两处 HTTP 接缝（组合根注入，页面层只依赖接口）。
+     *
+     * 本页的「Bing 每日壁纸」选择要拉清单、下载原图，与图库页共用同一套实现；
+     * 实现类在 `platform/OkHttpBingGallery*`，`pages/` 里不许出现。
+     */
+    bingHttp: BingGalleryHttp,
+    bingBinaryHttp: BingGalleryBinaryHttp,
 ) {
     // 草稿：一进页就从盘上读一份。
     var model by remember(store) { mutableStateOf(store.load()) }
@@ -293,11 +303,13 @@ fun AppearanceEditorHost(
     }
     val autoApplySnapshot = remember(bingStore, bingRevision) { bingStore.snapshot() }
 
-    val bingSource = remember { BingGalleryDataSource() }
+    val bingSource = remember(bingHttp) { BingGalleryDataSource(bingHttp) }
     // 受管壁纸目录（App 私有，卸载即清）。真源在 `ManagedWallpaperStore`：取景页
     // 就地「换壁纸」与本页选图必须落进同一个目录，不能各拼一份。
     val wallpaperDir = remember(context) { ManagedWallpaperStore.directory(context) }
-    val bingDownloader = remember(wallpaperDir) { BingGalleryDownloader(wallpaperDir) }
+    val bingDownloader = remember(wallpaperDir, bingBinaryHttp) {
+        BingGalleryDownloader(wallpaperDir, bingBinaryHttp)
+    }
     val screenSize = remember(context) {
         val metrics = context.resources.displayMetrics
         WallpaperTargetSize(metrics.widthPixels, metrics.heightPixels)
