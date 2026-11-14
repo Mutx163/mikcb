@@ -184,6 +184,18 @@ try {
         & $writeEvidence "=== HEAD before: $headBefore"
         & $writeEvidence ("=== STATUS before: " + $(if ($statusLines.Count -eq 0) { '<clean>' } else { "$($statusLines.Count) 条" }))
         foreach ($l in $statusLines) { & $writeEvidence "=== STATUS before: $l" }
+        # WORKTREE-DIRTY（2026-11-14 门禁定案）：闸门此前只比「跑前 vs 跑后」，于是**跑前本来就脏**
+        # 的情况不告警——那会让一份「绿」归属到 HEAD，而实际编/测的是「HEAD + 未提交改动」的混合树。
+        # 2026-11-13 三红三绿就是这类：守门读到别人改到一半的文件。未跟踪（`??`）不算脏：
+        # 本仓常态有 `?? .botharness/`，把它算脏会让每条证据都带噪。
+        $dirtyBefore = @($statusLines | Where-Object { $_ -notmatch '^\?\?' })
+        if ($dirtyBefore.Count -gt 0) {
+            & $writeEvidence ("=== WARN: WORKTREE-DIRTY 跑前工作区已脏（$($dirtyBefore.Count) 条已跟踪改动；未跟踪不计）")
+            & $writeEvidence "=== WARN: 本次结果对应「HEAD + 未提交改动」，不能当作该 HEAD 的证据；要背书/发版请先提交或还原再跑"
+            foreach ($l in $dirtyBefore) { & $writeEvidence "=== DIRTY-BEFORE: $l" }
+        } else {
+            & $writeEvidence "=== CLEAN-BEFORE: 跑前无已跟踪改动（未跟踪不计）"
+        }
     } else {
         & $writeEvidence "=== HEAD before: <git 不可用，无法记录>"
     }
