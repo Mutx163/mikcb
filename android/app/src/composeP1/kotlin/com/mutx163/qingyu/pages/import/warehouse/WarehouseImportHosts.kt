@@ -196,6 +196,8 @@ fun WarehouseImportPickerHost(
             // 返回 = 回到选校列表：这是本条目内换页，栈深度没变，不能靠壳弹栈。
             onBack = { state.school = null },
             onOpenPage = onOpenPage,
+            // 接缝是必填：这处是本条目内换页，不会经过壳的注入点，必须把外层 fetch 传下去。
+            fetch = fetch,
         )
         return
     }
