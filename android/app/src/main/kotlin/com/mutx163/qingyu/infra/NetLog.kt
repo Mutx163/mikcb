@@ -39,6 +39,14 @@ object NetLog {
     const val FAILURE_PARSE: String = "parse"
     const val FAILURE_EMPTY: String = "empty"
 
+    /**
+     * 请求被**主动取消**（不是失败）：多路竞速里的败者、用户离开页面中断的下载。
+     *
+     * 与 [FAILURE_TIMEOUT] 分开是必要的：超时说明「等不到」，取消说明「我们不要了」；
+     * 混成一个值会让日志读不出到底是谁的锅（2026-11-14 定口径时加的第七档）。
+     */
+    const val FAILURE_CANCELLED: String = "cancelled"
+
     /** detail 单条上限（字段名 + 行号，不需要更长）。 */
     const val MAX_DETAIL_CHARS: Int = 160
 
