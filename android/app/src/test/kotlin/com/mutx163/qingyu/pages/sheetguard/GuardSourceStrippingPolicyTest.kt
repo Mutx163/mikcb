@@ -221,6 +221,10 @@ class GuardSourceStrippingPolicyTest {
         text.contains("stripKotlinComments(") ||
             text.contains("readKotlinSourceNormalized(") ||
             text.contains("readKotlinSourceNoStrings(") ||
+            // 共享词法器：`KotlinCatchScanner` 在分词阶段就跳过注释与字符串，等价于「已走剥离」。
+            // 2026-11-14：`SilentFailureCatchGuardTest` 一直是这种读法，只是检测器认不出，
+            // 于是被当成存量豁免挂在表里——那是误报，不是真债。
+            text.contains("KotlinCatchScanner") ||
             OWN_STRIPPER_PATTERN.containsMatchIn(text)
 
     private fun testSources(): List<File> =
@@ -307,12 +311,6 @@ class GuardSourceStrippingPolicyTest {
          * 所以往里填元数据不会改变任何一条判定的宽严。
          */
         val LEGACY_UNSTRIPPED: Map<String, LegacyMeta> = mapOf(
-            "com/mutx163/qingyu/architecture/SilentFailureCatchGuardTest.kt" to LegacyMeta(
-                introducedAt = "1d0413169 2026-11-03",
-                reason = "空 catch 判据委托共享词法器 KotlinCatchScanner（分词时已跳注释与字符串）；触发本扫描的 contains 打在 relativePath 上，判的是关键写路径白名单",
-                reviewTrigger = LEGACY_REVIEW_TRIGGER,
-            ),
-
             "com/mutx163/qingyu/pages/shell/DockInkFallbackGuardTest.kt" to LegacyMeta(
                 introducedAt = "2117a73a3 2026-11-04",
                 reason = "读 HomeGlassDock.kt 与 HomeWallpaperBackdrop.kt，判亮度未知时取浅墨兜底与缓存回读；codeOnly 剥注释后再用 replace 造负例自测",
