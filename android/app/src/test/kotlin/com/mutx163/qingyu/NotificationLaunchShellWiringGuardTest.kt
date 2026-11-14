@@ -11,15 +11,17 @@ import org.junit.Test
  * R09 壳接线咬合守卫（A + B）。落地路径即本文件所在处。
  *
  * ## A 防的是哪类退化
- * R09 曾「假绿」：只断言 onCreate/onNewIntent 里出现过 `postLaunchPage(intent)`。
- * 但真正要保证的是——**投递必须落在 `if (savedInstanceState == null)` 块内**；
- * 一旦有人把调用挪到 if 外（无条件投递，进程恢复场景会把已关页面重新推出来），
- * 只 contains 的断言仍然绿。故 A 用花括号配平取出该 if 块，断言调用在其内部。
  *
- * ## 为什么守卫是 savedInstanceState == null（不是「旋转重建」）
- * `PagesShellActivity` 在 manifest 里 configChanges 已含 `orientation|screenSize`，
- * 旋转 / 分屏**不会**重建 Activity。非空 savedInstanceState 只在「进程被系统回收后
- * 按原任务恢复」时出现——那才是要跳过重投的场景（避免把用户已关的页面推回来）。
+ * R09 曾「假绿」：只断言 onCreate/onNewIntent 里出现过 `postLaunchPage(intent)`。
+ * 2026-11-14 判据收紧（`ShellLaunchLanding.shouldPostLaunchPage`）：旧的
+ * `if (savedInstanceState == null)` 一刀切会把「进程被回收后按原任务恢复、同时点了**新**通知」
+ * 整条路径吞掉。现在判的是「本次 Intent 的落点」与「上次启动已投递的落点」是否相同。
+ *
+ * 所以 A 钉四件事：① onCreate 解析落点；② `postLaunchPage(intent)` 必须落在
+ * `shouldPostLaunchPage(...)` 的 if 块**内部**（配平取块，不是 contains 全文）；
+ * ③ onCreate 里**不许**再出现旧的 `savedInstanceState == null` 判据（反向钉，防回退）；
+ * ④ `onSaveInstanceState` 必须把本次落点写进 `STATE_POSTED_LAUNCH_PAGE`，否则进程恢复时
+ * 无从判断「是不是同一份启动」。onNewIntent 的投递照旧必须存在。
  *
  * ## B 防的是哪类退化
  * 落点页 id 是契约常量（d3.examList / g3.lanEdit）。壳分派表 ShellPageIndex 一旦改名
@@ -28,16 +30,13 @@ import org.junit.Test
 class NotificationLaunchShellWiringGuardTest {
 
     @Test
-    fun `A 壳 onCreate 的投递必须落在 savedInstanceState==null 块内，且 onNewIntent 也投递`() {
+    fun `A 壳 onCreate 的投递必须由落点判据门控，且 onNewIntent 也投递`() {
         // ── 选档：**中性化字符串档**（`neutralizeStrings = true`）──
-        // A 判的是「某个调用在不在这块里」（`postLaunchPage(intent)` 是否写在
-        // `if (savedInstanceState == null) { … }` 内部），属接线型。字符串内容必须抹掉，
-        // 否则一句日志 / 提示语里出现同样的调用字样就能把 contains 喂饱（假绿）。
+        // A 判的是「某个调用在不在这块里」以及「某个旧判据还在不在」，属接线型。
+        // 字符串内容必须抹掉，否则一句日志 / 提示语里出现同样的调用字样就能把 contains 喂饱。
         //
         // ── 顺序：**先切片、再对切片剥离** ──
-        // 块定位靠 `methodBody` / `guardedBlock` 的花括号配平，剥离会改变文本长度（块注释
-        // 内容被丢掉），剥完再切片就对不上原件；剥离也可能把将来新增的块边界标记吃掉。
-        // 所以：原件（只归一行尾）切块 → 切割出来的那一段再逐段剥离。
+        // 块定位靠花括号配平，剥离会改变文本长度。所以：原件切块 → 切出来那段再剥离。
         val activity = readSourceNormalized(ACTIVITY_PATH)
 
         // (1) 必须覆写 onNewIntent：singleTop 复用（通知都带 SINGLE_TOP/NEW_TASK）走这条路。
@@ -46,22 +45,6 @@ class NotificationLaunchShellWiringGuardTest {
             stripKotlinComments(activity, neutralizeStrings = true)
                 .contains("override fun onNewIntent("),
         )
-
-        // (2) onCreate 的投递必须**落在 if (savedInstanceState == null) { ... } 内部**。
-        //     不是「文件里出现过就算」——用花括号配平把该 if 块切出来再判。
-        val onCreateBody = methodBody(activity, "override fun onCreate(")
-        val guardBlock = stripKotlinComments(
-            guardedBlock(onCreateBody, "if (savedInstanceState == null)"),
-            neutralizeStrings = true,
-        )
-        assertTrue(
-            "onCreate 里的 NotificationLaunchTarget.postLaunchPage(intent) 必须写在 " +
-                "if (savedInstanceState == null) { ... } 块内部；写在块外属退化" +
-                "（进程恢复时会把已关页面重新推出来）。实际取到的守卫块：\n$guardBlock",
-            guardBlock.contains("NotificationLaunchTarget.postLaunchPage(intent)"),
-        )
-
-        // (3) onNewIntent 也必须投递（后台 singleTop 复用路径）。
         val onNewIntentBody = stripKotlinComments(
             methodBody(activity, "override fun onNewIntent("),
             neutralizeStrings = true,
@@ -69,6 +52,60 @@ class NotificationLaunchShellWiringGuardTest {
         assertTrue(
             "onNewIntent 必须调用 NotificationLaunchTarget.postLaunchPage(intent)",
             onNewIntentBody.contains("NotificationLaunchTarget.postLaunchPage(intent)"),
+        )
+
+        // (2) onCreate 必须解析本次落点，并把「恢复的落点」交给判据。
+        val onCreateBody = methodBody(activity, "override fun onCreate(")
+        val onCreateCode = stripKotlinComments(onCreateBody, neutralizeStrings = true)
+        assertTrue(
+            "onCreate 必须解析本次通知落点：缺少 NotificationLaunchTarget.pageIdForIntent(intent)",
+            onCreateCode.contains("NotificationLaunchTarget.pageIdForIntent(intent)"),
+        )
+        assertTrue(
+            "onCreate 必须把「上次已投递的落点」交给判据：" +
+                "缺少 restoredPageId = savedInstanceState?.getString(STATE_POSTED_LAUNCH_PAGE)",
+            onCreateCode.contains(
+                "restoredPageId = savedInstanceState?.getString(STATE_POSTED_LAUNCH_PAGE)",
+            ),
+        )
+
+        // (3) 投递必须落在 shouldPostLaunchPage(...) 的 if 块**内部**（配平取块，不是全文 contains）。
+        val gateBlock = stripKotlinComments(
+            guardedBlock(onCreateBody, "ShellLaunchLanding.shouldPostLaunchPage("),
+            neutralizeStrings = true,
+        )
+        assertTrue(
+            "onCreate 里的 NotificationLaunchTarget.postLaunchPage(intent) 必须写在 " +
+                "ShellLaunchLanding.shouldPostLaunchPage(...) 的 if 块内部；写在块外属退化" +
+                "（进程恢复 / 无落点时会无条件投递）。实际取到的守卫块：\n$gateBlock",
+            gateBlock.contains("NotificationLaunchTarget.postLaunchPage(intent)"),
+        )
+        assertTrue(
+            "守卫块里必须把本次落点记为已投递（postedLaunchPageId = launchPageId），" +
+                "否则进程恢复时判不出「同一份启动」。实际：\n$gateBlock",
+            gateBlock.contains("postedLaunchPageId = launchPageId"),
+        )
+
+        // (4) 反向钉：旧的 savedInstanceState == null 一刀切不许回来（那会吞掉「恢复 + 新通知」）。
+        assertTrue(
+            "onCreate 里又出现了旧的 savedInstanceState == null 判据：它会把" +
+                "「进程恢复 + 点了新通知」的落页吞掉；判据应只走 ShellLaunchLanding.shouldPostLaunchPage",
+            !onCreateCode.contains("savedInstanceState == null"),
+        )
+
+        // (5) 恢复时要知道「上次投递的是哪一页」：必须写进 onSaveInstanceState。
+        val saveBody = stripKotlinComments(
+            methodBody(activity, "override fun onSaveInstanceState("),
+            neutralizeStrings = true,
+        )
+        assertTrue(
+            "onSaveInstanceState 必须把本次落点写进 STATE_POSTED_LAUNCH_PAGE，否则恢复时判断不了同一份启动",
+            saveBody.contains("STATE_POSTED_LAUNCH_PAGE"),
+        )
+        assertTrue(
+            "STATE_POSTED_LAUNCH_PAGE 的键值必须钉死为 qingyu.postedLaunchPage（改动即等于换契约）",
+            readKotlinSourceNormalized(ACTIVITY_PATH)
+                .contains("const val STATE_POSTED_LAUNCH_PAGE = \"qingyu.postedLaunchPage\""),
         )
     }
 
