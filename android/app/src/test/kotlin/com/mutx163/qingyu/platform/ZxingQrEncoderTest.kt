@@ -4,7 +4,7 @@ import com.google.zxing.BinaryBitmap
 import com.google.zxing.DecodeHintType
 import com.google.zxing.RGBLuminanceSource
 import com.google.zxing.common.HybridBinarizer
-import com.google.zxing.qrcode.QRCodeReader
+import com.google.zxing.MultiFormatReader
 import com.mutx163.qingyu.pages.statistics.charts.QrEncodeModel
 import com.mutx163.qingyu.pages.statistics.charts.QrMatrix
 import org.junit.Assert.assertEquals
@@ -49,7 +49,7 @@ class ZxingQrEncoderTest {
         val source = RGBLuminanceSource(side, side, pixels)
         val bitmap = BinaryBitmap(HybridBinarizer(source))
         val hints = mapOf(DecodeHintType.CHARACTER_SET to "UTF-8")
-        return QRCodeReader().decode(bitmap, hints).text
+        return MultiFormatReader().apply { setHints(hints) }.decode(bitmap).text
     }
 
     // ========== 编码 → 解码往返（这条才是「真能扫」） ==========
