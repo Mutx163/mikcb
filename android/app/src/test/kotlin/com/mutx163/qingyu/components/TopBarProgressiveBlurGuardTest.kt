@@ -1,5 +1,6 @@
 package com.mutx163.qingyu.components
 
+import com.mutx163.qingyu.testutil.stripKotlinComments
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
@@ -83,16 +84,16 @@ class TopBarProgressiveBlurGuardTest {
     }
 
     /**
-     * 只留代码：先把块注释 / KDoc 和行注释剥掉。
+     * 只留代码：剥掉块注释 / KDoc 和行注释。
      *
      * 负向断言（不许出现 `bottomFadeBrush` 等）**必须**只看代码——注释里留一句历史说明
      * 不该把守卫判红。`PageScaffoldGuardTest` 也踩过同类假红。
+     *
+     * 2026-11-14：换成共享剥离器，但走**默认档（保留字符串）**——本文件有字面量判据
+     * （`"QingyuVerticalFade"`、`setFloatUniform("in_topY", …)`），中性化档会把它们擦掉、
+     * 让那几条断言恒假。原来是自己写的弱剥离：字符串里的 `//` 会被当注释切掉、嵌套块注释只去一层。
      */
-    private fun codeOnly(source: String): String = source
-        .replace(Regex("""/\*[\s\S]*?\*/"""), "")
-        .lineSequence()
-        .map { it.substringBefore("//") }
-        .joinToString("\n")
+    private fun codeOnly(source: String): String = stripKotlinComments(source)
 
     private fun glassSurfaceSource(): String {
         var dir: File? = File(System.getProperty("user.dir") ?: ".").absoluteFile

@@ -1,5 +1,6 @@
 package com.mutx163.qingyu.components
 
+import com.mutx163.qingyu.testutil.stripKotlinComments
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -60,12 +61,14 @@ class QingyuPageThemeSlotsGuardTest {
         )
     }
 
-    /** 只留代码：剥掉块注释 / KDoc 与行注释，避免注释里的示例文本干扰括号配对。 */
-    private fun codeOnly(source: String): String = source
-        .replace(Regex("""/\*[\s\S]*?\*/"""), "")
-        .lineSequence()
-        .map { it.substringBefore("//") }
-        .joinToString("\n")
+    /**
+     * 只留代码：走共享剥离器的**中性化档**（剥注释 + 抹掉字符串内容）。
+     *
+     * 2026-11-14：原来是自己写的弱剥离——正则去块注释 + 按行 `substringBefore("//")`。
+     * 字符串里的 `//` 会被误当注释切掉，嵌套块注释只去一层。判据是槽位赋值，属代码结构。
+     */
+    private fun codeOnly(source: String): String =
+        stripKotlinComments(source, neutralizeStrings = true)
 
     /** 从 [open] 处的左括号开始，返回与之配对的右括号下标。 */
     private fun matchDelimiter(code: String, open: Int, left: Char, right: Char): Int {

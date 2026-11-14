@@ -1,5 +1,6 @@
 package com.mutx163.qingyu.components
 
+import com.mutx163.qingyu.testutil.stripKotlinComments
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import java.io.File
@@ -102,11 +103,15 @@ class GlassSingleChainGuardTest {
         )
     }
 
-    private fun codeOnly(source: String): String = source
-        .replace(Regex("""/\*[\s\S]*?\*/"""), "")
-        .lineSequence()
-        .map { it.substringBefore("//") }
-        .joinToString("\n")
+    /**
+     * 只留代码：走共享剥离器的**中性化档**（剥注释 + 抹掉字符串内容）。
+     *
+     * 2026-11-14：原来是自己写的弱剥离——正则去块注释 + 按行 `substringBefore("//")`。
+     * 两个已知漏洞：字符串里的 `//`（URL、路径）会把后半行当成注释切掉；嵌套块注释只去一层。
+     * 判据是「文件里有没有这些调用」，要代码骨架不要文案，所以用中性化档。
+     */
+    private fun codeOnly(source: String): String =
+        stripKotlinComments(source, neutralizeStrings = true)
 
     private fun relativePath(file: File, root: File): String =
         file.absolutePath.removePrefix(root.absolutePath).trimStart('\\', '/').replace('\\', '/')

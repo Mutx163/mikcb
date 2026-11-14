@@ -317,21 +317,6 @@ class GuardSourceStrippingPolicyTest {
                 reason = "空 catch 判据委托共享词法器 KotlinCatchScanner（分词时已跳注释与字符串）；触发本扫描的 contains 打在 relativePath 上，判的是关键写路径白名单",
                 reviewTrigger = LEGACY_REVIEW_TRIGGER,
             ),
-            "com/mutx163/qingyu/components/GlassSingleChainGuardTest.kt" to LegacyMeta(
-                introducedAt = "320adfa71 2026-11-03",
-                reason = "扫 glass 链 API 前先过私有 codeOnly（去块注释 + 按行截 //），判的字符串是 QingyuGlassSurface 与 GlassSpec(",
-                reviewTrigger = LEGACY_REVIEW_TRIGGER,
-            ),
-            "com/mutx163/qingyu/components/QingyuPageThemeSlotsGuardTest.kt" to LegacyMeta(
-                introducedAt = "181b6e085 2026-11-02",
-                reason = "读 QingyuPageTheme.kt 的亮/暗两个 colorScheme 函数体，codeOnly 剥注释后用 slotCount 数槽位，函数体由 matchDelimiter 自己截",
-                reviewTrigger = LEGACY_REVIEW_TRIGGER,
-            ),
-            "com/mutx163/qingyu/components/TopBarProgressiveBlurGuardTest.kt" to LegacyMeta(
-                introducedAt = "7d9ba9b99 2026-11-02",
-                reason = "读 QingyuPageScaffold.kt 与 QingyuGlassSurface.kt 钉模糊与渐变数值，codeOnly 剥注释后逐条 contains，含暗色不许退回 #565656 的负例",
-                reviewTrigger = LEGACY_REVIEW_TRIGGER,
-            ),
             "com/mutx163/qingyu/core/QingyuAdaptiveRulesTest.kt" to LegacyMeta(
                 introducedAt = "499b28d86 2026-11-03",
                 reason = "读 QingyuPageScaffold.kt 与 QingyuPageList.kt 判自适应接线，codeOnly 剥注释后看 rememberQingyuWindowAdaptive() 与 widthIn(max = cap) 是否还在",
