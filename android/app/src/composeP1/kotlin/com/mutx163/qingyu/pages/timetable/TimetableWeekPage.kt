@@ -871,15 +871,16 @@ fun TimetableWeekPage(
             materialSpec?.dock == SurfaceMaterialState.FROST)
     val pageBackdropActive = bandBlurActive || cardGlassActive || dayFabGlassActive
 
-    // ── 宽屏内容列（R17 收尾）──────────────────────────────────────────────
-    // 只在宽屏档收宽：判据在 core/QingyuAdaptiveRules（≥840dp，或 ≥600dp 且横扁）；
+    // ── 限宽内容列（R17 收尾）──────────────────────────────────────────────
+    // 中宽档与宽屏档都收宽（判据在 core/QingyuAdaptiveRules：内容区宽 ≥600dp 即限宽，
+    // 与全站 `shouldLimitContentWidth` 同口径）；这里**直接取**注入值，不再自己加门：
+    // 注入层已把「紧凑档 ⇒ null / 限宽档 ⇒ 640dp」算好，页内再判一次档位就是第二套口径
+    // ——首页又会变成全站唯一「某一档通栏」的页。
     // 壳层有 Rail 时注入的是**内容区宽**（窗口宽 − Rail 宽），不是窗口宽。
-    // 紧凑档 / 中宽档这里取到 null ⇒ 通栏，手机上逐像素不变。
+    // 紧凑档（<600dp，手机竖屏）取到 null ⇒ 通栏，手机上逐像素不变。
     // 星期栏（玻璃带里）与周 / 日 / 月三个视图共用这一个值——各算一套必然错位
     // （日期列对不上课卡列）。
-    val wideContentCap: Dp? = rememberQingyuWindowAdaptive().let { adaptive ->
-        if (adaptive.isWideScreen) adaptive.maxContentWidth else null
-    }
+    val wideContentCap: Dp? = rememberQingyuWindowAdaptive().maxContentWidth
 
     Scaffold(
         // 有壁纸时底色必须透明，否则不透明主题底会把壁纸整张盖掉。
@@ -1085,8 +1086,8 @@ fun TimetableWeekPage(
                             // 预览 / 月视图不弹周次选择。
                             if (!previewMode && !monthMode) showWeekSelectorDialog = true
                         },
-                        // 宽屏档：星期栏与正文列同宽（同一个 wideContentCap），由外层 Column
-                        // 居中；通栏档传 Plain Modifier，星期栏自己 fillMaxWidth 铺满。
+                        // 限宽档（中宽 / 宽屏）：星期栏与正文列同宽（同一个 wideContentCap），
+                        // 由外层 Column 居中；紧凑档传 Plain Modifier，星期栏自己 fillMaxWidth 铺满。
                         modifier = if (wideContentCap != null) {
                             Modifier.widthIn(max = wideContentCap)
                         } else {
@@ -1117,9 +1118,9 @@ fun TimetableWeekPage(
             }
 
             // 下方内容：从玻璃带底部开始，占满剩余高度（底部仍铺到屏幕最底）。
-            // 宽屏档按 wideContentCap 收成居中的一列——周 pager、日视图展开层、月视图层
+            // 限宽档按 wideContentCap 收成居中的一列——周 pager、日视图展开层、月视图层
             // 都是这个盒子的 `matchParentSize` / `fillMaxSize` 孩子，所以三个视图像素同宽，
-            // 转场里 `size.width` 的口径也只剩这一个；紧凑 / 中宽档 cap = null ⇒ 与改前一样通栏。
+            // 转场里 `size.width` 的口径也只剩这一个；紧凑档（<600dp）cap = null ⇒ 与改前一样通栏。
             Box(
                 modifier = Modifier
                     .weight(1f)
