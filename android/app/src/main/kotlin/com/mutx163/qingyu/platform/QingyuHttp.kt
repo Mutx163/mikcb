@@ -78,6 +78,12 @@ object QingyuHttp {
         val readTimeoutMs: Long = DEFAULT_READ_TIMEOUT_MS,
         /** 响应体上限（字节）；0 = 不限。超限按失败收口，**不把超大响应整段读进内存**。 */
         val maxBytes: Long = 0L,
+        /**
+         * 是否跟随重定向（逐请求）。默认 true；WebDAV 必须传 false——它有一道凭据安全门：
+         * 跨 host、https→http 降级的跳转一律不跟随（每跳都会重发 Basic 凭据），所以跳转只许
+         * 由调用方自己判 Location 后决定跟不跟。
+         */
+        val followRedirects: Boolean = true,
         /** 诊断标签（竞速各路的来源，如 `github` / `gitcode`）。 */
         val tag: String? = null,
     )
@@ -92,6 +98,11 @@ object QingyuHttp {
         val errorClass: String? = null,
         val url: String = "",
         val method: String = "GET",
+        /**
+         * 响应头（不强求存在）。给 WebDAV 这类要读 Location / ETag 的调用方用；
+         * **不打进网络日志**（日志只写 host+path），因为头里可能有凭据类信息。
+         */
+        val headers: Map<String, List<String>> = emptyMap(),
     ) {
         val isSuccess: Boolean get() = failure == null && status != null
     }
@@ -106,6 +117,8 @@ object QingyuHttp {
         val errorClass: String? = null,
         val url: String = "",
         val method: String = "GET",
+        /** 响应头（同 [HttpResult.headers]）；不打进网络日志。 */
+        val headers: Map<String, List<String>> = emptyMap(),
     ) {
         val isSuccess: Boolean get() = failure == null && status != null
     }
@@ -128,6 +141,7 @@ object QingyuHttp {
         }
         return try {
             buildClient(spec).newCall(request).execute().use { response ->
+                val responseHeaders = response.headers.toMultimap()
                 val bounded = response.body?.let { readBounded(it, spec.maxBytes) }
                 val raw = bounded?.bytes
                 val size = bounded?.readBytes ?: 0L
@@ -141,6 +155,7 @@ object QingyuHttp {
                             errorClass = MAX_BYTES_MARKER,
                             url = spec.url,
                             method = spec.method,
+                            headers = responseHeaders,
                         ),
                     )
                 } else if (!response.isSuccessful) {
@@ -153,6 +168,7 @@ object QingyuHttp {
                             errorClass = HTTP_STATUS_MARKER,
                             url = spec.url,
                             method = spec.method,
+                            headers = responseHeaders,
                         ),
                     )
                 } else {
@@ -164,6 +180,7 @@ object QingyuHttp {
                             elapsedMs = elapsed(),
                             url = spec.url,
                             method = spec.method,
+                            headers = responseHeaders,
                         ),
                     )
                 }
@@ -190,6 +207,7 @@ object QingyuHttp {
         }
         return try {
             buildClient(spec).newCall(request).execute().use { response ->
+                val responseHeaders = response.headers.toMultimap()
                 val bounded = response.body?.let { readBounded(it, spec.maxBytes) }
                 val raw = bounded?.bytes
                 val result = if (bounded?.tooLarge == true) {
@@ -200,6 +218,7 @@ object QingyuHttp {
                         errorClass = MAX_BYTES_MARKER,
                         url = spec.url,
                         method = spec.method,
+                        headers = responseHeaders,
                         elapsedMs = elapsed(),
                     )
                 } else if (!response.isSuccessful) {
@@ -210,6 +229,7 @@ object QingyuHttp {
                         errorClass = HTTP_STATUS_MARKER,
                         url = spec.url,
                         method = spec.method,
+                        headers = responseHeaders,
                         elapsedMs = elapsed(),
                     )
                 } else {
@@ -219,6 +239,7 @@ object QingyuHttp {
                         bytes = raw?.size?.toLong(),
                         url = spec.url,
                         method = spec.method,
+                        headers = responseHeaders,
                         elapsedMs = elapsed(),
                     )
                 }
@@ -537,13 +558,15 @@ object QingyuHttp {
 
     private fun buildClient(spec: HttpCallSpec): OkHttpClient =
         if (spec.connectTimeoutMs == DEFAULT_CONNECT_TIMEOUT_MS &&
-            spec.readTimeoutMs == DEFAULT_READ_TIMEOUT_MS
+            spec.readTimeoutMs == DEFAULT_READ_TIMEOUT_MS &&
+            spec.followRedirects
         ) {
             client
         } else {
             client.newBuilder()
                 .connectTimeout(spec.connectTimeoutMs, TimeUnit.MILLISECONDS)
                 .readTimeout(spec.readTimeoutMs, TimeUnit.MILLISECONDS)
+                .followRedirects(spec.followRedirects)
                 .build()
         }
 
@@ -605,6 +628,9 @@ object QingyuHttp {
         return result
     }
 }
+
+
+
 
 
 
