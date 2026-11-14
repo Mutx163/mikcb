@@ -1,5 +1,6 @@
 package com.mutx163.qingyu.pages.shell
 
+import com.mutx163.qingyu.testutil.stripKotlinComments
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -175,51 +176,10 @@ class HomeDockInkBandsWiringGuardTest {
     }
 
     /** 去掉 `//` 与 `/* */` 注释，保留换行；只用于源码断言，不参与编译。 */
-    private fun codeOnly(source: String): String {
-        val out = StringBuilder(source.length)
-        var i = 0
-        var inLine = false
-        var inBlock = false
-        while (i < source.length) {
-            val c = source[i]
-            val next = source.getOrNull(i + 1)
-            when {
-                inLine -> {
-                    if (c == '\n') {
-                        inLine = false
-                        out.append(c)
-                    }
-                    i++
-                }
-
-                inBlock -> {
-                    if (c == '*' && next == '/') {
-                        inBlock = false
-                        i += 2
-                    } else {
-                        if (c == '\n') out.append('\n')
-                        i++
-                    }
-                }
-
-                c == '/' && next == '/' -> {
-                    inLine = true
-                    i += 2
-                }
-
-                c == '/' && next == '*' -> {
-                    inBlock = true
-                    i += 2
-                }
-
-                else -> {
-                    out.append(c)
-                    i++
-                }
-            }
-        }
-        return out.toString()
-    }
+    private fun codeOnly(source: String): String =
+        // 2026-11-14：改走共享剥离器，但用**默认档**（剥注释、保留字符串）。
+        // 本守卫的键字段判据看的就是插值串（`"$path"` 这类），中性化会把它们擦掉、让断言恒假。
+        stripKotlinComments(source)
 
     private fun memberBlock(source: String, marker: String): String {
         val start = source.indexOf(marker)

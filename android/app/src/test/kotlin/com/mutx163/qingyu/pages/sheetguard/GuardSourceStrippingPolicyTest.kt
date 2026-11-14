@@ -40,13 +40,12 @@ import java.io.File
  * **已知盲区**（本判据故意不覆盖，不要为它把正则写复杂）：`readBytes` / `bufferedReader`
  * 等其它读法、以及把路径拆成几段拼出来的写法。
  *
- * ## 例外表怎么维护
+ * ## 例外表怎么维护（2026-11-14 已清空）
  *
- * [LEGACY_UNSTRIPPED] 是**存量迁移表**：本轮迁移课程 / 日程 / 设置 / 课表 12 份守卫
- * （三路分工）＋ time_scheme 5 份，其余存量按批次收。**迁移一份就把对应一行删掉**；
- * 新守卫不许加行。删行时不用改判据——文件不再命中，留着就会被下面的 stale 断言点名。
+ * [LEGACY_UNSTRIPPED] 是**存量迁移表**，R21 收尾时已迁到 **0 份**（B3–B5 分批完成）。
+ * 规则不变：**新守卫不许加行**，一律先走共享剥离；真需要豁免 = 改这份代码 + 走 review。
  *
- * ### 每条豁免都带元数据（2026-11-12）
+ * ### 每条豁免都带元数据（2026-11-12 定，表空后仍适用）
  *
  * 表是 `Map<路径, LegacyMeta>`，一条豁免必须回答三个问题：**什么时候进来的**
  * （[LegacyMeta.introducedAt]，首次出现的 commit + 日期）、**为什么它算例外**
@@ -310,42 +309,15 @@ class GuardSourceStrippingPolicyTest {
          * 判据只读这份表的 **key**（`rel !in LEGACY_UNSTRIPPED` 判 key，`stale` 也只按 key 过滤），
          * 所以往里填元数据不会改变任何一条判定的宽严。
          */
-        val LEGACY_UNSTRIPPED: Map<String, LegacyMeta> = mapOf(
-            "com/mutx163/qingyu/pages/shell/DockInkFallbackGuardTest.kt" to LegacyMeta(
-                introducedAt = "2117a73a3 2026-11-04",
-                reason = "读 HomeGlassDock.kt 与 HomeWallpaperBackdrop.kt，判亮度未知时取浅墨兜底与缓存回读；codeOnly 剥注释后再用 replace 造负例自测",
-                reviewTrigger = LEGACY_REVIEW_TRIGGER,
-            ),
-            "com/mutx163/qingyu/pages/shell/DockInkGuardTest.kt" to LegacyMeta(
-                introducedAt = "b35e425ec 2026-11-03",
-                reason = "读玻璃坞、HomeGlassDock、DockInkRule 与壳，判坞墨色只走 DockInkRule.resolve( 且不含 onBackground；codeOnly 剥注释，另带守卫空转自检",
-                reviewTrigger = LEGACY_REVIEW_TRIGGER,
-            ),
-            "com/mutx163/qingyu/pages/shell/DockPagerWiringGuardTest.kt" to LegacyMeta(
-                introducedAt = "c65208abb 2026-11-03",
-                reason = "读 PagesShellActivity.kt 与 ShellRoute.kt，判底栏切换必须 HorizontalPager( 加 springAnimateToPage(、不许自研转场；codeOnly 剥注释后逐条 contains",
-                reviewTrigger = LEGACY_REVIEW_TRIGGER,
-            ),
-            "com/mutx163/qingyu/pages/shell/HomeBackToRootGuardTest.kt" to LegacyMeta(
-                introducedAt = "893790123 2026-11-04",
-                reason = "读 PagesShellActivity.kt 判系统返回回首页根，codeOnly 剥注释后判 systemBackBlock 内不许出现 selectRoot(ROOT_WEEK)",
-                reviewTrigger = LEGACY_REVIEW_TRIGGER,
-            ),
-            "com/mutx163/qingyu/pages/shell/HomeDockInkBandsWiringGuardTest.kt" to LegacyMeta(
-                introducedAt = "518437ff0 2026-11-08",
-                reason = "读壳、坞、壁纸背板与 HomeInkBandsStore，判亮度带按视口取景落盘、三个冷读点都带 store；codeOnly 是逐字符状态机，能正确处理字符串里的双斜杠",
-                reviewTrigger = LEGACY_REVIEW_TRIGGER,
-            ),
-            "com/mutx163/qingyu/pages/shell/RootEntryBackGuardTest.kt" to LegacyMeta(
-                introducedAt = "cfb12cd90 2026-11-03",
-                reason = "读 QingyuPageScaffold 与四个手拼顶栏根页，判返回键只由 rememberShellShouldShowBackButton() 决定、骨架签名不许加页面级显隐参数；codeOnly 剥注释",
-                reviewTrigger = LEGACY_REVIEW_TRIGGER,
-            ),
-            "com/mutx163/qingyu/pages/shell/ShellRailWiringGuardTest.kt" to LegacyMeta(
-                introducedAt = "e2e335838 2026-11-03",
-                reason = "读壳、ShellNavigationRail、HomeGlassDock、DayViewPage，判 Rail 出现时坞不组合、条目点击先弹回主屏；codeOnly 剥注释",
-                reviewTrigger = LEGACY_REVIEW_TRIGGER,
-            ),
-        )
+        /**
+         * 存量守卫例外表：**已清空（2026-11-14，R21 收尾）**。
+         *
+         * 曾经挂过 44 份「读 .kt 做 contains 却没剥注释」的守卫，分 B3–B5 全部迁到共享剥离器。
+         * 现在这里是空的：**新守卫一律走 stripKotlinComments / readKotlinSourceNormalized /
+         * readKotlinSourceNoStrings**，不许再加行。
+         *
+         * 判据只读这份表的 key（`rel !in LEGACY_UNSTRIPPED` 判 key，`stale` 也只按 key 过滤）。
+         */
+        val LEGACY_UNSTRIPPED: Map<String, LegacyMeta> = emptyMap()
     }
 }

@@ -1,5 +1,6 @@
 package com.mutx163.qingyu.pages.shell
 
+import com.mutx163.qingyu.testutil.stripKotlinComments
 import java.io.File
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -158,11 +159,10 @@ class RootEntryBackGuardTest {
     // ------------------------------------------------------------------ 定位
 
     /** 只留代码：剥掉块注释与行注释，历史注释里的旧写法不参与判定。 */
-    private fun codeOnly(source: String): String = source
-        .replace(Regex("""/\*[\s\S]*?\*/"""), "")
-        .lineSequence()
-        .map { it.substringBefore("//") }
-        .joinToString("\n")
+    private fun codeOnly(source: String): String =
+        // 2026-11-14：改走共享剥离器（中性化档：剥注释 + 抹字符串内容）。
+        // 原来的私有实现两处漏判：字符串里的 // 会被当注释切掉、嵌套块注释只去一层。
+        stripKotlinComments(source, neutralizeStrings = true)
 
     /** 从工作目录向上找仓库根，再读文件；与同目录守卫测试同一套做法。 */
     private fun source(relativePath: String): String {
