@@ -25,6 +25,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.requiredSize
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
@@ -80,6 +81,7 @@ import com.mutx163.qingyu.components.BackToTodayFab
 import com.mutx163.qingyu.components.FAB_SHADOW_REACH_DP
 import com.mutx163.qingyu.components.liquid.lens
 import com.mutx163.qingyu.components.liquid.vibrancy
+import com.mutx163.qingyu.components.rememberQingyuWindowAdaptive
 import com.mutx163.qingyu.core.Course
 import com.mutx163.qingyu.core.CourseSessionNote
 import com.mutx163.qingyu.pages.settings.HomeMaterialRenderSpec
@@ -869,6 +871,16 @@ fun TimetableWeekPage(
             materialSpec?.dock == SurfaceMaterialState.FROST)
     val pageBackdropActive = bandBlurActive || cardGlassActive || dayFabGlassActive
 
+    // ── 宽屏内容列（R17 收尾）──────────────────────────────────────────────
+    // 只在宽屏档收宽：判据在 core/QingyuAdaptiveRules（≥840dp，或 ≥600dp 且横扁）；
+    // 壳层有 Rail 时注入的是**内容区宽**（窗口宽 − Rail 宽），不是窗口宽。
+    // 紧凑档 / 中宽档这里取到 null ⇒ 通栏，手机上逐像素不变。
+    // 星期栏（玻璃带里）与周 / 日 / 月三个视图共用这一个值——各算一套必然错位
+    // （日期列对不上课卡列）。
+    val wideContentCap: Dp? = rememberQingyuWindowAdaptive().let { adaptive ->
+        if (adaptive.isWideScreen) adaptive.maxContentWidth else null
+    }
+
     Scaffold(
         // 有壁纸时底色必须透明，否则不透明主题底会把壁纸整张盖掉。
         containerColor = if (backdrop == null) scaffoldBg else Color.Transparent,
@@ -940,6 +952,10 @@ fun TimetableWeekPage(
                     start = innerPadding.calculateStartPadding(LocalLayoutDirection.current),
                     end = innerPadding.calculateEndPadding(LocalLayoutDirection.current),
                 ),
+            // 宽屏档的正文列由下面的 content Box 自带宽上限并居中；顶栏与玻璃带这条
+            // 仍然通栏（本批不动顶栏）。居中交给 [Alignment.CenterHorizontally]，
+            // 通栏档（wideContentCap = null）子项本来占满宽度，对齐设置不改变任何像素。
+            horizontalAlignment = Alignment.CenterHorizontally,
         ) {
             // 玻璃节点是**带子盒子的孩子**，而带子盒子被左右安全区内缩过（下面 Column 的
             // `padding(start/end)`）。横屏挖孔时只推「作用带 + 1」还压不住屏幕边 ——
@@ -981,7 +997,12 @@ fun TimetableWeekPage(
                 },
             ) {
 
-                Column(modifier = Modifier.fillMaxWidth()) {
+                Column(
+                    modifier = Modifier.fillMaxWidth(),
+                    // 顶栏（`TimetableTopBar`）与玻璃带照旧通栏；只有星期栏跟着正文列收宽，
+                    // 否则宽屏上日期列与下面的课卡列错位。
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                ) {
                     // 预览模式（2026-11-04）：不画状态栏留白与顶栏「轻屿课表」，
                     // 让星期栏当首行（对齐 Flutter `TimetableWeekPreview` 的 includeAppHeader=false）。
                     if (!previewMode) {
@@ -1064,6 +1085,13 @@ fun TimetableWeekPage(
                             // 预览 / 月视图不弹周次选择。
                             if (!previewMode && !monthMode) showWeekSelectorDialog = true
                         },
+                        // 宽屏档：星期栏与正文列同宽（同一个 wideContentCap），由外层 Column
+                        // 居中；通栏档传 Plain Modifier，星期栏自己 fillMaxWidth 铺满。
+                        modifier = if (wideContentCap != null) {
+                            Modifier.widthIn(max = wideContentCap)
+                        } else {
+                            Modifier
+                        },
                     )
                 }
             }
@@ -1089,10 +1117,21 @@ fun TimetableWeekPage(
             }
 
             // 下方内容：从玻璃带底部开始，占满剩余高度（底部仍铺到屏幕最底）。
+            // 宽屏档按 wideContentCap 收成居中的一列——周 pager、日视图展开层、月视图层
+            // 都是这个盒子的 `matchParentSize` / `fillMaxSize` 孩子，所以三个视图像素同宽，
+            // 转场里 `size.width` 的口径也只剩这一个；紧凑 / 中宽档 cap = null ⇒ 与改前一样通栏。
             Box(
                 modifier = Modifier
                     .weight(1f)
-                    .fillMaxWidth(),
+                    .then(
+                        if (wideContentCap != null) {
+                            Modifier.widthIn(max = wideContentCap)
+                        } else {
+                            Modifier
+                        },
+                    )
+                    .fillMaxWidth()
+                    .align(Alignment.CenterHorizontally),
             ) {
                 if (previewMode) {
                     // 预览：单周、不接 pager（预览不可横滑），也不淡出。
