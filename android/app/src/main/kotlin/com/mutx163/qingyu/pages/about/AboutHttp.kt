@@ -1,6 +1,5 @@
 package com.mutx163.qingyu.pages.about
 
-import java.net.HttpURLConnection
 import java.net.URL
 
 /**
@@ -14,12 +13,15 @@ import java.net.URL
  * 更关键的是 **L0 模块隔离**：`scripts/test-kotlin-module.ps1 -Module "pages/about"` 只收
  * `pages/about/` + 共享纯逻辑目录（`app / core / infra / sync / weather / …`），
  * 把别的域的接缝当公共接口用，会让本模块的单测无故依赖别人的改动。
- * 所以这里按同一条约定办：**接口 + JDK 实现都由本域持有，零新依赖**（只用 [HttpURLConnection]）。
+ * 所以这里按同一条约定办：**接口由本域持有，实现走统一入口**。2026-11-14 起真实实现是
+ * `platform/OkHttpAboutHttp`（全软件网络请求统一改走 OkHttp），它放在 `platform/`
+ * 而不是本目录：`platform/` 不进 L0 共享面，`import okhttp3` 因此不会让 24 个模块
+ * 一起报 `Unresolved reference`（同 `OkHttpHolidayHttp` 的边界）。
  *
  * ## 测试口径
  *
- * 真实实现 [JdkAboutHttp] 需要真网络，单测一律注入假件；因此本文件里可被单测钉住的
- * 只有「怎么解释状态码 / 怎么解 GitCode 信封」（[isGitCodeContentsUrl]、
+ * 真实实现需要真网络，单测一律注入假件；因此本文件里可被单测钉住的只有
+ * 「怎么解释状态码 / 怎么解 GitCode 信封」（[isGitCodeContentsUrl]、
  * [decodeGitCodeContentsBody]），真正的 IO 不进 JVM 单测。
  */
 data class AboutHttpResponse(val statusCode: Int, val body: String)
@@ -28,49 +30,6 @@ data class AboutHttpResponse(val statusCode: Int, val body: String)
 interface AboutHttp {
     /** 返回 null = 传输层失败（DNS / 连接被拒 / 超时 / TLS 失败），与「服务器回了 404」必须能区分。 */
     fun get(url: String): AboutHttpResponse?
-}
-
-/**
- * 真实 HTTP 实现：JDK [HttpURLConnection]，零新依赖。
- *
- * - 显式按 UTF-8 读 body（GitCode 信封里是中文名单，按 latin1 读会变乱码）；
- * - 任何异常（含超时）一律回 `null`，不向上抛——上层拿 `null` 判「网络不可用」，
- *   这样「超时」与「404」在结论上不会被混成一句「加载失败」；
- * - 非 2xx 也回响应（带上状态码、body 留空），304 才判得出来。
- */
-class JdkAboutHttp(
-    private val timeoutMillis: Int = 10_000,
-    private val userAgent: String = "mikcb-about",
-) : AboutHttp {
-
-    override fun get(url: String): AboutHttpResponse? {
-        val connection = try {
-            (URL(url).openConnection() as HttpURLConnection).apply {
-                requestMethod = "GET"
-                connectTimeout = timeoutMillis
-                readTimeout = timeoutMillis
-                setRequestProperty("Accept", "application/json, text/yaml, text/plain, */*")
-                setRequestProperty("User-Agent", userAgent)
-                instanceFollowRedirects = true
-            }
-        } catch (_: Exception) {
-            return null
-        }
-        return try {
-            val code = connection.responseCode
-            if (code == 200) {
-                val bytes = connection.inputStream.use { it.readBytes() }
-                AboutHttpResponse(code, String(bytes, Charsets.UTF_8))
-            } else {
-                // 错误流不读：我们只需要状态码。读它会把「半死的镜像」拖成又一次等待。
-                AboutHttpResponse(code, "")
-            }
-        } catch (_: Exception) {
-            null
-        } finally {
-            connection.disconnect()
-        }
-    }
 }
 
 /** GitCode v5 contents API（Gitee 兼容）的主机名；这条地址回的是 base64 信封。 */

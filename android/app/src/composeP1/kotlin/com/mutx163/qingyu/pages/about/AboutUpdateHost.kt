@@ -20,7 +20,6 @@ import com.mutx163.qingyu.DiagnosticLogMessages
 import com.mutx163.qingyu.app.DiagnosticsLogHost
 import com.mutx163.qingyu.app.TimetableStore
 import com.mutx163.qingyu.infra.AppLogStore
-import com.mutx163.qingyu.infra.AppReleaseInfo
 import com.mutx163.qingyu.infra.AppUpdateCheckResult
 import com.mutx163.qingyu.infra.AppUpdateDotShare
 import com.mutx163.qingyu.infra.AppUpdateDownloadChannel
@@ -33,15 +32,13 @@ import com.mutx163.qingyu.infra.isTrustedManifestUrl
 import com.mutx163.qingyu.infra.recordingEnabledFromPrefs
 import com.mutx163.qingyu.pages.settings.SettingsStringsExt2
 import com.mutx163.qingyu.platform.PrefsKeyValueStore
+import com.mutx163.qingyu.platform.QingyuHttp
 import com.mutx163.qingyu.isTrustedSystemDownloadUrl
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import kotlinx.coroutines.withTimeoutOrNull
-import java.net.HttpURLConnection
-import java.net.URL
 
 /**
  * 版本更新页的**宿主装配层**：把 [AboutUpdatePage] / [AdvancedOptionsPage] 接到真实的
@@ -502,89 +499,73 @@ private fun readHostPackageInfo(context: Context): HostPackageInfo? = runCatchin
  * + GitCode API** 三路并行，谁先拿到可用版本用谁；渠道只决定顺序（见
  * [appUpdateManifestCandidates]），**不裁源**。
  *
- * ## 为什么不用 `coroutineScope`（2026-11-11 R-1 修复：用户报「检查更新一直转」）
+ * ## 2026-11-14：竞速交给统一入口（用户拍板「全部网络请求改走 OkHttp」）
  *
- * `coroutineScope` 必须等**全部**子协程结束才返回；而 `cancel()` 打不断阻塞的 socket 读
- * （`inputStream.read`），未胜出的那两路要等满 `readTimeout`（6s）才收尾。国内丢包时
- * 明明 GitCode 200ms 就拿到了结果，用户仍要干等 4s 以上。
- *
- * 发布版 `raceFutures`（`async_utils.dart:42-66`）的语义是「首个成功立即返回、**不 join
- * 落败者**」，所以这里把三路放进**独立 scope**（`SupervisorJob + Dispatchers.IO`）：
- * 胜负一分就返回；落败者在后台跑完或到超时自行收尾，摘要回填窗口内照样往
- * [RaceHandle.successes] 写入。
+ * 竞速由 `QingyuHttp.firstSuccess(..., lingerMs = DIGEST_BACKFILL_WINDOW_MS)` 完成：
+ * 赢家一出现就返回，但**保留一个窗口**让跑完的兄弟路把结果收进 `successes`（按到达顺序），
+ * 窗口到点再取消未完成的。原来手写的线程池内核（`UpdateManifestRace.kt`）连同它的单测
+ * 一并删除——它的语义已被地基完整覆盖，留着就是「生产代码零调用、却有一组断言守着」的死代码。
  *
  * ## 摘要回填
  *
- * Release 页 HTML 拿不到 asset 级摘要；若胜者没有摘要，按发布版同口径在
- * [DIGEST_BACKFILL_DEADLINE_MS] 内轮询兄弟策略的结果，找到**同版本 + 直连渠道**的摘要就补上
- *（安装闸门据此决定「直接装」还是「引导去 Release 页」）。窗口用协程时钟
- *（`withTimeoutOrNull`，单调）而不是墙上时钟，理由见 [mergeDigestFromSiblings]。
+ * Release 页 HTML 赢家没有 asset 级摘要；兄弟路若在窗口内到达且**同版本 + 直连渠道**，
+ * 就把它的 SHA 补上（安装闸门据此决定「直接装」还是「引导去 Release 页」）。
+ * 窗口宽度由宿主用 [DIGEST_BACKFILL_WINDOW_MS] 定，地基只认参数、不写死数字。
  */
 private suspend fun checkForUpdatesAcrossManifestSources(
     currentVersion: String,
     channel: AppUpdateDownloadChannel,
     includePrerelease: Boolean,
 ): AppUpdateCheckResult? = withContext(Dispatchers.IO) {
-    val candidates = appUpdateManifestCandidates(channel)
+    // 信任根兜底：清单只认官方直连（镜像候选永远不该出现在这条链里）。
+    val candidates = appUpdateManifestCandidates(channel).filter { candidate ->
+        isTrustedManifestUrl(candidate.url)
+    }
     if (candidates.isEmpty()) return@withContext null
-    // 竞速内核（main 层 [startRaceFirstSuccess]，有 JVM 单测钉「首胜不等慢兄弟」）：
-    // 三路各占一个线程，`awaitWinner()` 只等首个成功，不 join 落败者。
-    val race = startRaceFirstSuccess(candidates) { candidate ->
-        fetchManifestBody(candidate)?.let { body ->
-            parseManifestBody(candidate, currentVersion, body, includePrerelease)
-                ?.takeIf { it.hasRelease }
+    val byUrl = candidates.associateBy { it.url }
+    val raced = QingyuHttp.firstSuccess(
+        specs = candidates.map { candidate -> candidate.toManifestSpec() },
+        lingerMs = DIGEST_BACKFILL_WINDOW_MS,
+    )
+    val winner = raced.winner
+        ?.takeIf { it.isSuccess }
+        ?.let { result ->
+            byUrl[result.url]?.let { candidate ->
+                parseCandidate(candidate, currentVersion, result.body.orEmpty(), includePrerelease)
+            }
         }
+        ?: return@withContext null
+    // 兄弟路（含赢家，按到达顺序）：窗口内到达的成功结果解析后交给摘要回填。
+    // 超限（failure=too_large）与非 2xx 的路不在这里——它们没有可用正文。
+    val successes = LinkedHashMap<AppUpdateManifestCandidate, AppUpdateCheckResult>()
+    raced.successes.forEach { success ->
+        if (!success.result.isSuccess) return@forEach
+        val candidate = byUrl[success.result.url] ?: return@forEach
+        parseCandidate(candidate, currentVersion, success.result.body.orEmpty(), includePrerelease)
+            ?.let { parsed -> successes[candidate] = parsed }
     }
-    try {
-        val winner = race.awaitWinner()
-        // 摘要回填窗口里，落败者仍可继续往 successes 写入（发布版同口径 120ms×1600ms）。
-        winner?.let { mergeDigestFromSiblings(it, race.successes) }
-    } finally {
-        // 回填结束后停掉后台竞速；阻塞读不保证立刻停，但已经没有人等它。
-        race.cancel()
-    }
+    mergeDigestFromSiblings(winner, successes)
 }
 
 /**
- * 胜者没有摘要时，从兄弟策略回填（同版本 + 直连渠道才有资格）。
+ * 胜者没有摘要时，从窗口内到达的兄弟路回填（同版本 + 直连渠道才有资格）。
  *
- * 与发布版一致：120ms 轮询、最多等 1600ms —— 不为摘要把「检查更新」拖成十几秒。
- *
- * @param successes 竞速内核的「已成功结果」表；键是候选（[AppUpdateManifestCandidate]），
- *   本函数只读 values，所以按 `Map<*, AppUpdateCheckResult>` 收，键类型由内核决定。
+ * 窗口本身由 `QingyuHttp.firstSuccess` 的 `lingerMs` 控制，这里只做纯查表——不再有
+ * 120ms 轮询与 `withTimeoutOrNull`：**等待发生在竞速里，不在这里**。
  */
-private suspend fun mergeDigestFromSiblings(
+private fun mergeDigestFromSiblings(
     winner: AppUpdateCheckResult,
     successes: Map<*, AppUpdateCheckResult>,
 ): AppUpdateCheckResult {
     val release = winner.latestRelease ?: return winner
     if (release.expectedApkSha256 != null) return winner
-
-    // 2026-11-11 R-4（评审四建议级）：窗口用**协程时钟**（`withTimeoutOrNull`），不再拿
-    // `System.currentTimeMillis()` 算 deadline。墙上时钟会被拨——NTP 校正、用户改时间、
-    // 时区工具走一遭，这个 1600ms 窗口就会提前结束（摘要补不上 ⇒ 安装闸门退化成
-    // 「引导去 Release 页」）或突然拉长（多等好几秒）。协程超时走单调时钟，且随调用方取消一起收。
-    //
-    // 必须是 ***OrNull*** 版本：裸 `withTimeout` 超时会抛 `TimeoutCancellationException`
-    //（`CancellationException` 的子类），被 [runCheck] 的「取消原样抛出」分支重抛 ⇒ `result`
-    // 不赋值，界面停在上一版，等于这次检查白做。`withTimeoutOrNull` 只是「没等到」。
-    val sibling: AppReleaseInfo? = withTimeoutOrNull(DIGEST_BACKFILL_DEADLINE_MS) {
-        var found: AppReleaseInfo? = null
-        while (found == null) {
-            found = successes.values.firstNotNullOfOrNull { other ->
-                other.latestRelease?.takeIf {
-                    it.version == release.version &&
-                        it.digestFromDirectChannel &&
-                        it.expectedApkSha256 != null
-                }
-            }
-            // 第一轮就是「兄弟可能已经写好了」；之后每 120ms 再看一次。
-            if (found == null) delay(DIGEST_BACKFILL_POLL_MS)
+    val sibling = successes.values.firstNotNullOfOrNull { other ->
+        other.latestRelease?.takeIf {
+            it.version == release.version &&
+                it.digestFromDirectChannel &&
+                it.expectedApkSha256 != null
         }
-        found
-    }
-    if (sibling == null) return winner
-
+    } ?: return winner
     return buildCheckResult(
         currentVersion = winner.currentVersion,
         release = release.copy(
@@ -594,53 +575,55 @@ private suspend fun mergeDigestFromSiblings(
     )
 }
 
-/** 拉一条清单候选；非 2xx / 传输失败 / 非信任根 / 超体积一律返回 null。 */
-private fun fetchManifestBody(candidate: AppUpdateManifestCandidate): String? = runCatching {
-    // 信任根兜底：清单只认官方直连（镜像候选永远不该出现在这条链里）。
-    if (!isTrustedManifestUrl(candidate.url)) return null
-    val conn = (URL(candidate.url).openConnection() as HttpURLConnection).apply {
-        requestMethod = "GET"
-        connectTimeout = 4000
-        readTimeout = 6000
-        setRequestProperty("User-Agent", "mikcb-android")
-        when (candidate.source) {
-            AppUpdateManifestSource.GITHUB_API -> setRequestProperty("Accept", "application/vnd.github+json")
-            AppUpdateManifestSource.GITCODE_API -> setRequestProperty("Accept", "application/json")
-            AppUpdateManifestSource.RELEASES_PAGE_HTML -> setRequestProperty("Accept", "text/html")
-        }
-    }
-    try {
-        if (conn.responseCode !in 200..299) return null
-        // 2026-11-11 R-5：清单是 JSON/HTML，正常几十 KB。别让一个异常响应（或中间设备
-        // 塞进来的大文件）无上限读进内存——Content-Length 可信就先挡，否则边读边数。
-        val declared = conn.getHeaderField("Content-Length")?.trim()?.toLongOrNull()
-        if (declared != null && declared > MAX_MANIFEST_BODY_BYTES) return null
-        conn.inputStream.use { stream ->
-            val out = java.io.ByteArrayOutputStream()
-            val chunk = ByteArray(16 * 1024)
-            var total = 0L
-            while (true) {
-                val read = stream.read(chunk)
-                if (read < 0) break
-                total += read
-                if (total > MAX_MANIFEST_BODY_BYTES) return null
-                out.write(chunk, 0, read)
-            }
-            out.toString(Charsets.UTF_8.name())
-        }
-    } finally {
-        conn.disconnect()
-    }
-}.getOrNull()
+/** 一条清单候选 → 统一入口的请求参数（超时 / UA / Accept / 体积上限与迁移前逐项一致）。 */
+private fun AppUpdateManifestCandidate.toManifestSpec(): QingyuHttp.HttpCallSpec =
+    QingyuHttp.HttpCallSpec(
+        url = url,
+        headers = mapOf(
+            "User-Agent" to ABOUT_UPDATE_USER_AGENT,
+            "Accept" to when (source) {
+                AppUpdateManifestSource.GITHUB_API -> "application/vnd.github+json"
+                AppUpdateManifestSource.GITCODE_API -> "application/json"
+                AppUpdateManifestSource.RELEASES_PAGE_HTML -> "text/html"
+            },
+        ),
+        connectTimeoutMs = MANIFEST_CONNECT_TIMEOUT_MS,
+        readTimeoutMs = MANIFEST_READ_TIMEOUT_MS,
+        // 体积上限交给地基做有界读：超限那一路落 failure=too_large，兄弟路照常竞速。
+        maxBytes = MANIFEST_MAX_BYTES,
+    )
+
+/** 解析一路清单：没有发布版本（`hasRelease == false`）不算赢家。 */
+private fun parseCandidate(
+    candidate: AppUpdateManifestCandidate,
+    currentVersion: String,
+    body: String,
+    includePrerelease: Boolean,
+): AppUpdateCheckResult? =
+    parseManifestBody(candidate, currentVersion, body, includePrerelease)
+        ?.takeIf { it.hasRelease }
 
 /**
  * 清单响应体上限（2MB）。
  *
  * 三条来源的正文都在几十 KB 量级；2MB 是「够宽松、又能挡住异常大响应」的折中值。
- * 超限按该路失败处理（让兄弟策略接手），不 partial 解析——半截 JSON/HTML 解析出来的
- * 版本号与摘要都不可信。
+ * 2026-11-14 起这个上限**交给统一入口做有界读**（`HttpCallSpec.maxBytes`）：超限那一路
+ * 落 `failure=too_large`、按该路失败让兄弟接手，绝不 partial 解析——半截 JSON/HTML 解析
+ * 出来的版本号与摘要都不可信。宿主里不再有手写流式计数与 `Content-Length` 预检。
  */
-private const val MAX_MANIFEST_BODY_BYTES = 2L * 1024L * 1024L
+private const val MANIFEST_MAX_BYTES: Long = 2L * 1024L * 1024L
+
+/** 清单竞速的逐请求超时（迁移前就是 4s 连接 / 6s 读，不改）。 */
+private const val MANIFEST_CONNECT_TIMEOUT_MS: Long = 4_000L
+private const val MANIFEST_READ_TIMEOUT_MS: Long = 6_000L
+
+/**
+ * 摘要回填窗口：赢家出现后，兄弟路还能在这个窗口内把结果补进来（发布版同值 1600ms）。
+ *
+ * 这个数**只属于宿主**：地基 `firstSuccess` 的 `lingerMs` 默认 0、不许写死数字，
+ * 窗口宽度由调用点显式传（守卫按「两边引用同一个常量名」钉）。
+ */
+private const val DIGEST_BACKFILL_WINDOW_MS: Long = 1600L
 
 /** 按来源分派到对应的纯解析核；解析不出来返回 null（该路让位给兄弟策略）。 */
 private fun parseManifestBody(
@@ -700,33 +683,47 @@ private fun queryDownload(manager: DownloadManager, id: Long): DownloadProgressS
     }
 }
 
-/** HEAD 请求测速：2xx/3xx 视为成功，记录耗时。 */
-private fun probeUrlHead(url: String): DownloadProbeResult {
-    val start = System.nanoTime()
-    return runCatching {
-        val conn = (URL(url).openConnection() as HttpURLConnection).apply {
-            requestMethod = "HEAD"
-            connectTimeout = 4000
-            readTimeout = 4000
-            instanceFollowRedirects = true
-            setRequestProperty("User-Agent", "mikcb-android")
-        }
-        try {
-            val code = conn.responseCode
-            val elapsed = (System.nanoTime() - start) / 1_000_000
-            DownloadProbeResult(
-                isSuccess = code in 200..399,
-                elapsedMillis = elapsed,
-                statusCode = code,
-            )
-        } finally {
-            conn.disconnect()
-        }
-    }.getOrElse {
+/**
+ * HEAD 请求测速：2xx/3xx 视为成功，记录耗时。
+ *
+ * 2026-11-14 起走统一入口 [QingyuHttp]（不再自带 `HttpURLConnection`）：失败四类
+ * 与耗时都由地基写进 `AppLogStore` 的 `category=network`，诊断页可筛。
+ */
+private fun probeUrlHead(url: String): DownloadProbeResult = runCatching {
+    val result = QingyuHttp.getText(
+        QingyuHttp.HttpCallSpec(
+            url = url,
+            method = "HEAD",
+            headers = mapOf("User-Agent" to ABOUT_UPDATE_USER_AGENT),
+            connectTimeoutMs = PROBE_TIMEOUT_MS,
+            readTimeoutMs = PROBE_TIMEOUT_MS,
+        ),
+    )
+    val code = result.status
+    if (code == null) {
+        // 传输层失败（DNS / 超时 / TLS）：message 带上失败档位与错误类，别只留一句「失败」。
         DownloadProbeResult(
             isSuccess = false,
-            elapsedMillis = (System.nanoTime() - start) / 1_000_000,
-            message = it.message,
+            elapsedMillis = result.elapsedMs,
+            message = listOfNotNull(result.failure, result.errorClass).joinToString(":"),
+        )
+    } else {
+        DownloadProbeResult(
+            isSuccess = code in 200..399,
+            elapsedMillis = result.elapsedMs,
+            statusCode = code,
         )
     }
+}.getOrElse {
+    DownloadProbeResult(
+        isSuccess = false,
+        elapsedMillis = 0L,
+        message = it.message,
+    )
 }
+
+/** 测速的超时（旧实现在 `connectTimeout` / `readTimeout` 上都写 4000，迁移不改）。 */
+private const val PROBE_TIMEOUT_MS: Long = 4000L
+
+/** 更新检查的 UA（GitHub / GitCode 都要求可识别来源）。 */
+private const val ABOUT_UPDATE_USER_AGENT: String = "mikcb-android"

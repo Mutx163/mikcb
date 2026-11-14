@@ -35,9 +35,17 @@ import kotlinx.coroutines.withContext
  * - 只声明「编译通过 / JVM 单测通过」，真机联网路径归用户验收。
  */
 @Composable
-fun SupportCreatorHostPage(onBack: () -> Unit) {
+fun SupportCreatorHostPage(
+    onBack: () -> Unit,
+    /**
+     * HTTP 接缝由**组合根**注入（`ShellWiring` 构造 `OkHttpAboutHttp`，`ShellPageIndex` 传进来）。
+     *
+     * 页面只依赖接口、不 import `platform.OkHttp*`：这是 2026-11-14 定下的架构规矩——
+     * 页面层出现实现类，等于把「换传输层」的成本摊回到每个页面。
+     */
+    aboutHttp: AboutHttp,
+) {
     val context = LocalContext.current
-    val http = remember { JdkAboutHttp() }
     // 渠道联动（发布版 `preferGitCode`）：与版本更新页读**同一把**设置键
     //（`appUpdateDownloadChannel`），不在本页另立一套「国内/海外」判断。
     val store = remember(context) { TimetableStore(PrefsKeyValueStore(context)) }
@@ -45,8 +53,8 @@ fun SupportCreatorHostPage(onBack: () -> Unit) {
         AppUpdateSettings.fromJson(store.loadSettingsJson()).downloadChannel ==
             AppUpdateDownloadChannel.GITCODE
     }
-    val feed = remember(http, preferGitCode) {
-        SupportDonorsFeed(http, preferGitCode = preferGitCode)
+    val feed = remember(aboutHttp, preferGitCode) {
+        SupportDonorsFeed(aboutHttp, preferGitCode = preferGitCode)
     }
 
     var donorData by remember { mutableStateOf<SupportDonorData?>(null) }

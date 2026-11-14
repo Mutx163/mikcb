@@ -325,7 +325,8 @@ class WarehouseMaintainersFeed(
      * 取一份索引/清单文本：按 [candidateUrls] 顺序试，但**最多试 [attemptBudget] 跳**。
      *
      * 2026-11-11 R-7（评审四建议级）：候选链最长可到 6 跳（主地址 + GitHub raw 回退 +
-     * 4 个镜像外壳，去重后仍有 5~6 条），而 [JdkAboutHttp] 每条候选最坏要吃满 10s 超时。
+     * 4 个镜像外壳，去重后仍有 5~6 条），而 `AboutHttp` 的实现（现为 `platform/OkHttpAboutHttp`）
+     * 每条候选最坏要吃满 10s 超时。
      * 直连丢包时单校最坏 = 5~6 次超时 ≈ 60s，而 222 所学校只能 [parallelism] 路并行 ⇒
      * 一次「读取代码贡献者」能被拖成十几分钟，用户只看到转圈。所以给每次取数一个**跳数总预算**：
      * 根索引 [MAX_ROOT_INDEX_ATTEMPTS] 跳（它失败 = 整页失败，值得多给一跳），

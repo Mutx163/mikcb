@@ -37,11 +37,17 @@ import java.time.ZoneId
  * - 只声明「编译通过 / JVM 单测通过」，真机联网路径归用户验收。
  */
 @Composable
-fun ContributorsHostPage(onBack: () -> Unit) {
+fun ContributorsHostPage(
+    onBack: () -> Unit,
+    /**
+     * HTTP 接缝由**组合根**注入（`ShellWiring` 构造、`ShellPageIndex` 传入）。
+     * 页面只依赖接口，不 import `platform.OkHttp*`——理由见 `SupportCreatorHostPage`。
+     */
+    aboutHttp: AboutHttp,
+) {
     val context = LocalContext.current
     val store = remember(context) { PrefsKeyValueStore(context) }
-    val http = remember { JdkAboutHttp() }
-    val feed = remember(http) { WarehouseMaintainersFeed(http) }
+    val feed = remember(aboutHttp) { WarehouseMaintainersFeed(aboutHttp) }
 
     var maintainers by remember { mutableStateOf<List<MaintainerGroup>>(emptyList()) }
     var isLoading by remember { mutableStateOf(true) }
