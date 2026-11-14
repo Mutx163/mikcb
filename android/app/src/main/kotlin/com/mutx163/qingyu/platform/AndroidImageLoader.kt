@@ -10,6 +10,7 @@ import android.os.Looper
 import coil3.BitmapImage
 import coil3.DrawableImage
 import coil3.ImageLoader
+import coil3.memory.MemoryCache
 import coil3.network.okhttp.OkHttpNetworkFetcherFactory
 import coil3.request.ImageRequest
 import com.mutx163.qingyu.app.imagecache.ImageRetryBackoff
@@ -63,10 +64,16 @@ class AndroidImageLoader(
         if (imageLoader != null) return
         imageLoader = ImageLoader.Builder(context.applicationContext)
             .components {
+                // 3.6.3 的 Kotlin 入口是 OkHttpNetworkFetcherFactory(...)；JVM 字节码里它落在
+                // OkHttpNetworkFetcher.factory(...)（从 coil-network-okhttp-3.6.3 的 aar 里查的）。
                 add(OkHttpNetworkFetcherFactory(callFactory = { QingyuHttp.client }))
             }
             .diskCache(null)
-            .memoryCache { maxSize(maxCacheBytes.toLong()) }
+            .memoryCache(
+                MemoryCache.Builder()
+                    .maxSizeBytes(maxCacheBytes.toLong())
+                    .build(),
+            )
             .build()
     }
 
@@ -119,8 +126,9 @@ class AndroidImageLoader(
             .data(url)
             .size(targetWidthPx, targetHeightPx)
             .target(
-                onSuccess = { result ->
-                    val bitmap = result.image.toBitmapOrNull()
+                // 3.6.3 的 target 成功回调收的是 coil3.Image（不是 SuccessResult）。
+                onSuccess = { image ->
+                    val bitmap = image.toBitmapOrNull()
                     mainHandler.post { callback(bitmap) }
                 },
                 onError = {
