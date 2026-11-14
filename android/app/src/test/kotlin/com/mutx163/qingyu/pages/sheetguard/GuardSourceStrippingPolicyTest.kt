@@ -347,11 +347,6 @@ class GuardSourceStrippingPolicyTest {
                 reason = "扩节与回滚等十条是模型用例；末条读 WarehouseWebLoginHost.kt，判 requiredSectionCount(、WarehouseSectionExpansionDialog(、apply( 三处接线均在",
                 reviewTrigger = LEGACY_REVIEW_TRIGGER,
             ),
-            "com/mutx163/qingyu/pages/import/warehouse/WarehouseWebLoginPageWiringGuardTest.kt" to LegacyMeta(
-                introducedAt = "383df7435 2026-10-28",
-                reason = "读 WarehouseWebLoginPage.kt 判桥接消息过 shouldDeliverBridgeMessage( 门禁、占位块不许回来；blockAfter 按花括号配平截块但不剥注释",
-                reviewTrigger = LEGACY_REVIEW_TRIGGER,
-            ),
             "com/mutx163/qingyu/pages/import/warehouse/WarehouseWebLoginUiGuardTest.kt" to LegacyMeta(
                 introducedAt = "34b7a9296 2026-11-10",
                 reason = "读 WarehouseWebLoginPage.kt 与 WarehouseMacroPlaybackUi.kt，判错误文案上屏、执行态换导入中、回放遮罩拦触摸；blockAfter 截块后原文 contains",
@@ -362,19 +357,9 @@ class GuardSourceStrippingPolicyTest {
                 reason = "读 SettingsWeekPreview、TimetableWeekPage、AppearanceEditorScreen 等预览槽，先过私有 codeOf（去块注释 + 去行尾 //）再判挖洞件接线与假缩略图不许复活",
                 reviewTrigger = LEGACY_REVIEW_TRIGGER,
             ),
-            "com/mutx163/qingyu/pages/settings/SettingsRowRenderingCapabilityGuardTest.kt" to LegacyMeta(
-                introducedAt = "2083fa081 2026-10-29",
-                reason = "只读 SettingsPageRenderers.kt，判行渲染能力 ROW_DIMMED_ALPHA、combinedClickable、bottomBar = footerSlot、topBarAction 逐条落在渲染层",
-                reviewTrigger = LEGACY_REVIEW_TRIGGER,
-            ),
             "com/mutx163/qingyu/pages/settings/SettingsSharedParityTest.kt" to LegacyMeta(
                 introducedAt = "459d7cebc 2026-10-27",
                 reason = "Dart 共享件对拍（十二键登记表、locale 归一、colorFromHex 回退色）；读 SettingsRowRenderTable.kt 用 in 运算符，触发本扫描的 contains 打在文案键集合上",
-                reviewTrigger = LEGACY_REVIEW_TRIGGER,
-            ),
-            "com/mutx163/qingyu/pages/settings/WallpaperEvictionWiringGuardTest.kt" to LegacyMeta(
-                introducedAt = "c26be91fd 2026-11-01",
-                reason = "只读 AppearanceEditorHost.kt，判删除入口从档案原始 JSON 收集全部壁纸路径并调 WallpaperEvictionSources.planEviction(，hostSource 直接 readText",
                 reviewTrigger = LEGACY_REVIEW_TRIGGER,
             ),
             "com/mutx163/qingyu/pages/shell/DockInkFallbackGuardTest.kt" to LegacyMeta(

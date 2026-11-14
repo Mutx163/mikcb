@@ -1,9 +1,10 @@
 package com.mutx163.qingyu.pages.import.warehouse
 
+import com.mutx163.qingyu.testutil.readKotlinSourceNoStrings
+import com.mutx163.qingyu.testutil.readSourceNormalized
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
-import java.io.File
 
 /**
  * **页面接线守卫**（task-21）：读 `WarehouseWebLoginPage.kt` 的源码，钉住三件事。
@@ -18,14 +19,34 @@ import java.io.File
  *
  * ⚠️ 守卫的牙齿来自「改坏必须红」：把页面里那次 `shouldDeliverBridgeMessage(...)` 调用
  * 删掉、或把占位块放回去，这里立刻红（2026-10-28 实测做过一次反向验证）。
+ *
+ * ## 两档读法（2026-11-14）
+ *
+ * 原来整份文件只有 `readText()` 一个原文视图：把 `onProgress = onWebProgress` 那行
+ * **注释掉**，文本还留在注释里，`contains` 照样为真——实测 `pages/import/warehouse`
+ * 583 例全绿。现在按判据性质分开：
+ *
+ * - **接线判据**（门禁调用、进度/错误回写、刷新与桌面切换、绕过写法）走 [pageCode]
+ *   = 中性化档：剥注释 + 抹掉字符串内容，注释掉的接线不再算接线；
+ * - **「某段被删掉的原文不许回来」**走 [rawPage] = 原文（第三档）：这类判据要的正是
+ *   那句文案/注释本身，剥掉就恒真。用原文的否定式断言**必须先判原文非空**。
  */
 class WarehouseWebLoginPageWiringGuardTest {
 
-    private val pageSource: String by lazy { readPageSource() }
+    /** 接线视图：剥注释 + 字符串内容中性化。 */
+    private val pageCode: String by lazy { readKotlinSourceNoStrings(PAGE_SOURCE) }
+
+    /** 原文视图：只归一行尾，不剥任何东西（判「被删掉的原文不许回来」）。 */
+    private val rawPage: String by lazy {
+        val raw = readSourceNormalized(PAGE_SOURCE)
+        // 否定式断言在空串上恒真：原文读不到就先红在这里。
+        assertTrue("页面原文没读到内容（路径写错？）", raw.isNotBlank())
+        raw
+    }
 
     @Test
     fun `桥接消息必须过 6_2 门禁才交给调用方`() {
-        val block = blockAfter(pageSource, "onBridgeMessage = {")
+        val block = blockAfter(pageCode, "onBridgeMessage = {")
         assertTrue(
             "页面必须给宿主接 onBridgeMessage（否则适配脚本回不了话）",
             block.isNotEmpty(),
@@ -70,7 +91,7 @@ class WarehouseWebLoginPageWiringGuardTest {
         for (bypass in bypasses) {
             assertFalse(
                 "发现绕过门禁的直通写法：`$bypass`",
-                pageSource.contains(bypass),
+                pageCode.contains(bypass),
             )
         }
     }
@@ -79,16 +100,18 @@ class WarehouseWebLoginPageWiringGuardTest {
     fun `占位块必须已被真宿主替换且不许回来`() {
         assertTrue(
             "页面必须渲染真 WebView 宿主 WarehouseWebViewHost(...)",
-            pageSource.contains("WarehouseWebViewHost("),
+            pageCode.contains("WarehouseWebViewHost("),
         )
+        // 下面两条判的是「被删掉的那段原文」本身（注释标题 / 硬编码文案），必须读原文：
+        // 剥了注释或字符串，这两句就再也命中不了，断言恒真。
         assertFalse(
             "「WebView 视口占位与引导」那段占位代码不许回来（它意味着这一页又不加载网页了）",
-            pageSource.contains("WebView 视口占位与引导"),
+            rawPage.contains("WebView 视口占位与引导"),
         )
         // 占位块里的引导文案是硬编码中文，随占位块一起消失
         assertFalse(
             "占位块的引导文案不该再出现在页面里",
-            pageSource.contains("请在上方登录教务系统"),
+            rawPage.contains("请在上方登录教务系统"),
         )
     }
 
@@ -96,11 +119,11 @@ class WarehouseWebLoginPageWiringGuardTest {
     fun `进度与错误必须回写给调用方`() {
         assertTrue(
             "加载进度要回写（调用方据此更新 sessionState.stage）",
-            pageSource.contains("onProgress = onWebProgress"),
+            pageCode.contains("onProgress = onWebProgress"),
         )
         assertTrue(
             "主框架错误要回写",
-            pageSource.contains("onError = onWebError"),
+            pageCode.contains("onError = onWebError"),
         )
     }
 
@@ -108,11 +131,11 @@ class WarehouseWebLoginPageWiringGuardTest {
     fun `刷新与桌面切换必须作用在真视图上`() {
         assertTrue(
             "顶栏刷新必须调 controller.reload()（原来只调外部回调，页面根本没在动）",
-            pageSource.contains("webViewController.reload()"),
+            pageCode.contains("webViewController.reload()"),
         )
         assertTrue(
             "桌面/移动切换必须调 controller.toggleDesktopMode()",
-            pageSource.contains("webViewController.toggleDesktopMode()"),
+            pageCode.contains("webViewController.toggleDesktopMode()"),
         )
     }
 
@@ -120,16 +143,10 @@ class WarehouseWebLoginPageWiringGuardTest {
     // 工具
     // -----------------------------------------------------------------------
 
-    /** 从当前目录向上找仓库根，再定位页面源码（不依赖 cwd）。 */
-    private fun readPageSource(): String {
-        val relative = "android/app/src/composeP1/kotlin/com/mutx163/qingyu/pages/import/warehouse/WarehouseWebLoginPage.kt"
-        var dir: File? = File("").absoluteFile
-        repeat(8) {
-            val candidate = File(dir, relative)
-            if (candidate.isFile) return candidate.readText(Charsets.UTF_8)
-            dir = dir?.parentFile
-        }
-        error("找不到页面源码 $relative（当前目录 ${File("").absolutePath}）")
+    private companion object {
+        /** 仓库根相对路径：`readSourceNormalized` 会自己向上找仓库根，不依赖 cwd。 */
+        const val PAGE_SOURCE =
+            "android/app/src/composeP1/kotlin/com/mutx163/qingyu/pages/import/warehouse/WarehouseWebLoginPage.kt"
     }
 
     /**

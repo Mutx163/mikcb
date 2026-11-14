@@ -1,9 +1,9 @@
 package com.mutx163.qingyu.pages.settings
 
+import com.mutx163.qingyu.testutil.readKotlinSourceNoStrings
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
-import java.io.File
 
 /**
  * 壁纸删除白名单的**接线守卫**。
@@ -13,23 +13,22 @@ import java.io.File
  * 「函数支持多档案、调用点只传当前课表」才漏掉的。宿主在 `composeP1` 源集，
  * `src/test` 编不进来，所以按 `SettingsRouteWiringGuardTest` 的同一套办法读源码文本；
  * 找不到文件**判失败而不是跳过**。
+ *
+ * ## 为什么走中性化档（2026-11-14）
+ *
+ * 原来 `hostSource()` 直接 `readText()`：把 `profilesJson = profilesJson` 那行**注释掉**，
+ * 文本还留在注释里，`contains` 照样为真——实测 `pages/settings` 1089 例全绿。
+ * 接线判据要代码骨架，所以换 [readKotlinSourceNoStrings]（剥注释 + 抹掉字符串内容）。
  */
 class WallpaperEvictionWiringGuardTest {
 
     private fun hostSource(): String {
-        var dir: File? = File(System.getProperty("user.dir")).absoluteFile
-        while (dir != null) {
-            val candidate = File(
-                dir,
-                "android/app/src/composeP1/kotlin/com/mutx163/qingyu/app/AppearanceEditorHost.kt",
-            )
-            if (candidate.isFile) return candidate.readText()
-            dir = dir.parentFile
-        }
-        throw AssertionError(
-            "找不到 AppearanceEditorHost.kt —— 守卫无法验证，按失败处理。当前工作目录：" +
-                System.getProperty("user.dir"),
+        val source = readKotlinSourceNoStrings(
+            "android/app/src/composeP1/kotlin/com/mutx163/qingyu/app/AppearanceEditorHost.kt",
         )
+        // 否定式断言在空串上恒真：读不到就先红在这里，别让下面的 assertFalse 静默通过。
+        assertTrue("宿主源码没读到内容（中性化档把整段擦掉了？）", source.isNotBlank())
+        return source
     }
 
     @Test

@@ -1,10 +1,10 @@
 package com.mutx163.qingyu.pages.settings
 
+import com.mutx163.qingyu.testutil.readKotlinSourceNoStrings
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
-import java.io.File
 
 /**
  * 渲染层**四项新能力的接线守卫**（2026-10-29 · 节假日页补齐）。
@@ -26,38 +26,25 @@ import java.io.File
  *
  * ## 两条纪律（与 `SettingsRouteWiringGuardTest` 同口径）
  *
- * 1. 路径从工作目录向上找 `android/app/src`，不写死盘符（CI 也能跑）；
- * 2. 找不到文件**失败而不是跳过**——跳过等于这条守卫不存在。
+ * 1. 源码统一走 [readKotlinSourceNoStrings]（中性化档），路径从仓库根寻址，不写死盘符；
+ * 2. 找不到文件**失败而不是跳过**——`readSourceNormalized` 直接抛错，跳过等于这条守卫不存在。
  *
  * 它读的是 `composeP1` 源集里的渲染层（那一层不能在 JVM 里跑 Compose），所以只能做
  * **源码接线断言**；能做成行为断言的（模型字段是否真的落到 `SettingsRow` 上）在
  * [modelFieldsReachTheRow] 里用构造 + 取值断言，不靠字符串匹配。
+ *
+ * ## 为什么必须走中性化档（2026-11-14）
+ *
+ * 原来这里是 `file.readText()`：把 `bottomBar = footerSlot` 那行**注释掉**，文本仍留在
+ * 注释里，`contains` 照样为真——实测 `pages/settings` 1089 例全绿。接线判据要的是代码
+ * 骨架而不是文案，所以换中性化档（剥注释 + 抹掉字符串内容）：**注释掉的接线不算接线**。
  */
 class SettingsRowRenderingCapabilityGuardTest {
 
-    private fun androidSrc(): File {
-        var dir: File? = File(System.getProperty("user.dir")).absoluteFile
-        while (dir != null) {
-            val candidate = File(dir, "android/app/src")
-            if (candidate.isDirectory) return candidate
-            val direct = File(dir, "app/src")
-            if (direct.isDirectory && File(dir, "app/build.gradle").isFile) return direct
-            dir = dir.parentFile
-        }
-        throw AssertionError(
-            "找不到 android/app/src —— 守卫无法验证，按失败处理（不许静默跳过）。" +
-                "当前工作目录：${System.getProperty("user.dir")}",
+    private fun renderersSource(): String =
+        readKotlinSourceNoStrings(
+            "android/app/src/composeP1/kotlin/com/mutx163/qingyu/pages/settings/SettingsPageRenderers.kt",
         )
-    }
-
-    private fun renderersSource(): String {
-        val file = File(
-            androidSrc(),
-            "composeP1/kotlin/com/mutx163/qingyu/pages/settings/SettingsPageRenderers.kt",
-        )
-        assertTrue("渲染层源码不存在：${file.path}", file.isFile)
-        return file.readText()
-    }
 
     // ------------------------------------------------------------ 行为断言（模型）
 
