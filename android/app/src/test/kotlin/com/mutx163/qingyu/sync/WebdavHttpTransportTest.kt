@@ -321,6 +321,32 @@ class WebdavHttpTransportTest {
         assertTrue(isCredentialSafeRedirect("http://nas.local:8080/dav/a", "https://nas.local/dav/b"))
     }
 
+    // 2026-11-14 用户/Chief 要求：三组凭据安全门各一条独立用例（不只是代码审查）。
+
+    @Test
+    fun `凭据安全门 跨host不跟随`() {
+        assertFalse(
+            "跨 host 的 302 会让 Authorization 送到别的服务",
+            isCredentialSafeRedirect("https://nas.local/dav/a", "https://evil.example.com/dav/b"),
+        )
+    }
+
+    @Test
+    fun `凭据安全门 https降级http不跟随`() {
+        assertFalse(
+            "https→http 降级等于把 Basic 凭据送上明文线",
+            isCredentialSafeRedirect("https://nas.local/dav/a", "http://nas.local/dav/b"),
+        )
+    }
+
+    @Test
+    fun `凭据安全门 同host跟随`() {
+        assertTrue(
+            "同 host 同 scheme 同端口的 302（集合路径规范化）必须继续跟随",
+            isCredentialSafeRedirect("https://nas.local/dav/a", "https://nas.local/dav/b"),
+        )
+    }
+
     /**
      * 跨 origin 302 端到端：源站 302 到另一台假服务器，门必须拦下——
      * **目标服务器零请求**（凭据根本没离开源站，`Authorization` 无处可送），

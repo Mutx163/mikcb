@@ -64,6 +64,14 @@ class WebdavHttpTransport(
     val timeoutMillis: Long = DEFAULT_OPERATION_TIMEOUT_MILLIS,
     val maxResponseBytes: Long = DEFAULT_MAX_RESPONSE_BYTES,
     val maxRedirects: Int = DEFAULT_MAX_REDIRECTS,
+    /**
+     * HTTP 发送实现（生产 = `platform/OkHttpWebdavHttpCaller`，OkHttp 统一入口）。
+     *
+     * `null` 仅保留给迁移期的 JDK 内置实现（本地单测的本地服务器用）；**生产构造点必须传**
+     * ——组合根 `pages/sync/WebdavRemoteTransport.kt` 两处都显式注入。等测试桩抽走后再删
+     * 这条默认路径（见 `WebdavHttpCaller` 的 KDoc）。
+     */
+    private val caller: WebdavHttpCaller? = null,
 ) {
 
     /** 远端路径 → 可发出的绝对 URL。 */
@@ -402,10 +410,41 @@ class WebdavHttpTransport(
         body: ByteArray?,
         headers: Map<String, String>,
         timeoutMillis: Long,
-    ): RawResponse = if (method.wire in URL_CONNECTION_METHODS) {
-        connectionAttempt(method, url, body, headers, timeoutMillis)
-    } else {
-        rawSocketAttempt(method, url, body, headers, timeoutMillis)
+    ): RawResponse {
+        val injected = caller ?: WebdavHttpCallers.installed
+        if (injected != null) {
+            // 生产路径：UA / Basic 凭据在这里合并好，所有重定向判定仍留在本类
+            // （每次跳转都会重发凭据，安全门必须在能拿到 Location 的上层）。
+            val bounded = timeoutMillis.coerceIn(1L, Int.MAX_VALUE.toLong()).toInt()
+            val merged = LinkedHashMap<String, String>(headers.size + 2)
+            merged["User-Agent"] = WEBDAV_USER_AGENT
+            if (endpoint.username.isNotEmpty() || endpoint.password.isNotEmpty()) {
+                merged["Authorization"] = basicAuthorizationHeader(endpoint.username, endpoint.password)
+            }
+            merged.putAll(headers)
+            val exchange = injected.exchange(
+                method = method.wire,
+                url = url,
+                headers = merged,
+                body = body,
+                connectTimeoutMs = bounded.coerceAtMost(DEFAULT_CONNECT_TIMEOUT_MILLIS.toInt()),
+                readTimeoutMs = bounded,
+                maxResponseBytes = maxResponseBytes,
+            )
+            return RawResponse(
+                statusCode = exchange.statusCode,
+                body = exchange.body,
+                headers = exchange.headers,
+                truncated = exchange.truncated,
+                failureKind = exchange.failureKind,
+                failureMessage = exchange.failureMessage,
+            )
+        }
+        return if (method.wire in URL_CONNECTION_METHODS) {
+            connectionAttempt(method, url, body, headers, timeoutMillis)
+        } else {
+            rawSocketAttempt(method, url, body, headers, timeoutMillis)
+        }
     }
 
     /** `HttpURLConnection` 路径（标准方法；JDK 只放行 [URL_CONNECTION_METHODS]）。 */
