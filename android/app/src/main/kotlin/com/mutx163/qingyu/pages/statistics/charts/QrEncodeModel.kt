@@ -46,8 +46,15 @@ object QrEncodeModel {
     /** 版本 2 = 17 + 4 × 2 = 25 个模块。 */
     const val SIZE = 17 + 4 * VERSION
 
-    /** 版本 2-L 的字节模式容量：272 位数据减去 4 位模式 + 8 位长度 = 260 位 → 32 字节。 */
-    const val MAX_BYTES = 32
+    /**
+     * 版本 2-L、字节模式、UTF-8 的**实测**容量上限：**31 字节**。
+     *
+     * 不是规范里的 32：ZXing 在 `CHARACTER_SET=UTF-8` 时会写入 12 bit 的 ECI 头，
+     * 4（模式）+ 8（长度）+ 8×n + 12 ≤ 272 ⇒ n ≤ 31。2026-11-14 用 `core-3.5.4.jar`
+     * 实测：31 字节 OK、32 字节抛 `Data too big for requested version`；若去掉字符集提示
+     * （ISO-8859-1，不写 ECI）才是 32 字节——我们保留 UTF-8 以保证中文内容不被写坏。
+     */
+    const val MAX_BYTES = 31
 
     @Volatile
     private var installed: QrEncoder? = null

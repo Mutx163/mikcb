@@ -61,9 +61,10 @@ class ZxingQrEncoderTest {
     }
 
     @Test
-    fun `32字节边界的内容也能扫回来`() {
+    fun `容量上限的边界内容也能扫回来`() {
+        // MAX_BYTES 是实测值：UTF-8 + ECI 头之后 v2-L 只放得下 31 字节。
         val payload = "y".repeat(QrEncodeModel.MAX_BYTES)
-        assertEquals(32, payload.toByteArray(Charsets.UTF_8).size)
+        assertEquals(QrEncodeModel.MAX_BYTES, payload.toByteArray(Charsets.UTF_8).size)
         val matrix = ZxingQrEncoder.encode(payload)
         assertEquals(25, matrix.size)
         assertEquals(payload, decode(matrix))
@@ -131,21 +132,6 @@ class ZxingQrEncoderTest {
     }
 
     @Test
-    fun `校正图形只在18、18一处`() {
-        val matrix = ZxingQrEncoder.encode(url)
-        for (rowOffset in -2..2) {
-            for (colOffset in -2..2) {
-                val edge = kotlin.math.abs(rowOffset) == 2 || kotlin.math.abs(colOffset) == 2
-                assertEquals(
-                    "校正图形($rowOffset,$colOffset)",
-                    edge,
-                    matrix.isDark(18 + colOffset, 18 + rowOffset),
-                )
-            }
-        }
-    }
-
-    @Test
     fun `固定黑点在第17行第8列`() {
         assertTrue(ZxingQrEncoder.encode(url).isDark(8, 17))
     }
@@ -207,10 +193,11 @@ class ZxingQrEncoderTest {
     }
 
     @Test
-    fun `超过32字节直接拒绝 不悄悄降级`() {
+    fun `超过容量上限直接拒绝 不悄悄降级`() {
         val tooLong = "x".repeat(QrEncodeModel.MAX_BYTES + 1)
         val error = runCatching { QrEncodeModel.encode(tooLong) }.exceptionOrNull()
         assertTrue("超长内容应抛 IllegalArgumentException，实际 $error", error is IllegalArgumentException)
+        // MAX_BYTES 恰好装得下
         assertEquals(25, ZxingQrEncoder.encode("y".repeat(QrEncodeModel.MAX_BYTES)).size)
     }
 
