@@ -49,11 +49,13 @@ import top.yukonga.miuix.kmp.theme.MiuixTheme
  * - 0.8.8 没有 preference 模块（那套在 0.9.4 且要 Kotlin 2.4），列表用 QingyuCard + Row，
  *   与已合入的开源许可页同口径。
  *
- * ## 尚未接线（诚实标注）
+ * ## 接线现状（2026-11-14 核对，早先的「尚未接线」已过期）
  *
- * - `onOpenCourse` 只回调课程 id；Dart 侧「找到课程所在分组再打开编辑页」属于仓库/导航层，
- *   本批不接（页面也还没有 App 入口）。
- * - 真机同屏截图对照待接壳后进行；本批只做本地测试 + 编译验证。
+ * - 壳入口 `k.conflict`（`ShellPageIndex.kt:2458-2491`）已接**真数据 + 真落点**：视图由
+ *   `buildCourseConflictView(snapshot.courses)` 算出，`onOpenCourse` 取到课程后连同
+ *   **同名整组**写进 `pendingEditCourse` / `pendingEditGroup`（同时清掉加课种子与来源周次），
+ *   再跳 `d1.addCourse`——与 Dart `course_conflict_screen.dart:104-125` 同口径。
+ * - 仍未做：`dev` 壳里真机同屏对照（R01 / L4）。那是验收动作，不是代码缺口。
  */
 @Composable
 fun CourseConflictPage(

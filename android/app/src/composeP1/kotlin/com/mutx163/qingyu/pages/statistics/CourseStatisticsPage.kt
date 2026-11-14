@@ -124,7 +124,12 @@ fun CourseStatisticsPage(
     onTabSelected: (Int) -> Unit,
     onOpenSettings: () -> Unit,
     /**
-     * 分享统计成果图；`null` = 本端还没有这项能力（当前 Kotlin 侧缺「光栅化 + 系统分享」）。
+     * 分享统计成果图；`null` = 宿主没接 ⇒ **不画**入口（不画点了没反应的假按钮）。
+     *
+     * 能力本身**已在**（2026-11-14 核对）：光栅化 `StatisticsShareImageRender.renderPng`、
+     * `FileProvider`、`ACTION_SEND` 全在 `StatisticsShareIntent.kt`；壳 `e.statistics` 传的是
+     * `onOpenShare = { showExportSheet = true }`（`ShellPageIndex.kt:1862`，先弹「导出模块」
+     * 弹层、选完再渲染长图）。早先这里写「当前 Kotlin 侧缺光栅化 + 系统分享」，已不符。
      *
      * 2026-10-30 质量审核 P0-4：原先壳传 `onOpenShare = {}`，图标照常显示、点了什么都不发生。
      * 按本仓既定口径（`CourseActionSheetModel` 对「单节课提醒」一行同款）：

@@ -58,17 +58,25 @@ import top.yukonga.miuix.kmp.icon.extended.TopDownloads
  * （[StatisticsAnalysisModel.cells]），渲染层只按 [AnalysisCell] 逐格画——
  * 于是「哪个模块摆哪几张卡」在 JVM 单测里被钉住，而不是散在 Compose 的 when 里。
  *
- * ## 卡片内容
+ * ## 卡片内容（2026-11-14 核对后的事实）
  *
- * 六张卡（趋势 / 热力图 / 时间利用 / 教室 / 教师 / 排行 / 对比）各自的完整图表与
- * 明细都是 `lib/widgets/statistics` 目录下的大件，Phase 3 本批不迁这些 widget 文件
- * （台账 §5 P3-E 的写作用域只到 `pages/statistics/`）。因此这里画的是**结构一致的骨架**：
- * 卡片标题 + 该模块的核心读数行。差异记录在认领文件「差异与风险」，不做静默省略。
+ * - **趋势**：真折线图 —— `TrendChartCard`（面积 + 曲线 + 圆点 + 未来周浅色虚线），
+ *   规格由 `TrendChartModel.build` 按**当前教学周**切实线/虚线段；
+ * - **热力图**：真格子 —— `SemesterHeatmapCard`（7 行 × N 列、四档主色透明度、周数多时横滚），
+ *   规格由 `HeatmapModel.build` 裁剪未来周；
+ * - **时间利用 / 教室 / 教师 / 排行 / 对比**：读数行（左标签 + 右读数）；排行行尾按
+ *   `rankingOpenableNames` 逐行判定可点并画箭头；
+ * - **仍未迁的只有 Dart 排行卡的「展开详情」区**：Dart 是「点行 → 展开详情 → 编辑课程」，
+ *   本页直接落到课程编辑页（见认领文件 F30 与 `RankingRows` 的注释）。
+ *
+ * 先前这里写「六张卡只是结构一致的骨架、本批不迁图表」，属过期口径——2026-11-05 审核那批
+ * 已把趋势与热力图换成真图。
  *
  * @param viewState 已算好的读数（渲染层不做业务计算）
  * @param onBack 返回
  * @param onOpenCourse 排行页点课程名 → 进课程编辑。
- *   **`null` = 还没接落点**（审核 misc-wiring P1-3）。此时排版**不可点**——
+ *   **`null` = 没接落点**（审核 misc-wiring P1-3）。壳 `e.analysis` 已传
+ *   （`ShellPageIndex.kt:2018`），线上这一路可点；只有没传时才退化为纯展示，**不可点**：
  *   2026-10-29 之前这里是默认空 lambda，行看着能点、点了没反应，属 rubric 判 P0 的
  *   「点了没反应」。现在改成「没有落点就没有可点性」：壳一旦传入真处理函数，
  *   排行行自动变可点；不传则保持纯展示。Dart 原件
