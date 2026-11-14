@@ -2,6 +2,7 @@ package com.mutx163.qingyu.platform
 
 import com.google.zxing.BarcodeFormat
 import com.google.zxing.EncodeHintType
+import com.google.zxing.WriterException
 import com.google.zxing.qrcode.QRCodeWriter
 import com.google.zxing.qrcode.decoder.ErrorCorrectionLevel
 import com.mutx163.qingyu.pages.statistics.charts.QrEncodeModel
@@ -30,18 +31,23 @@ import com.mutx163.qingyu.pages.statistics.charts.QrMatrix
 object ZxingQrEncoder : QrEncoder {
 
     override fun encode(text: String): QrMatrix {
-        val bitMatrix = QRCodeWriter().encode(
-            text,
-            BarcodeFormat.QR_CODE,
-            QrEncodeModel.SIZE,
-            QrEncodeModel.SIZE,
-            mapOf(
-                EncodeHintType.CHARACTER_SET to "UTF-8",
-                EncodeHintType.ERROR_CORRECTION to ErrorCorrectionLevel.L,
-                EncodeHintType.QR_VERSION to QrEncodeModel.VERSION,
-                EncodeHintType.MARGIN to 0,
-            ),
-        )
+        val bitMatrix = try {
+            QRCodeWriter().encode(
+                text,
+                BarcodeFormat.QR_CODE,
+                QrEncodeModel.SIZE,
+                QrEncodeModel.SIZE,
+                mapOf(
+                    EncodeHintType.CHARACTER_SET to "UTF-8",
+                    EncodeHintType.ERROR_CORRECTION to ErrorCorrectionLevel.L,
+                    EncodeHintType.QR_VERSION to QrEncodeModel.VERSION,
+                    EncodeHintType.MARGIN to 0,
+                ),
+            )
+        } catch (error: WriterException) {
+            // 第三方异常不外泄：接口契约是 IllegalArgumentException（提示语用英文，避开 CJK 棘轮）。
+            throw IllegalArgumentException("qr content does not fit version ${QrEncodeModel.VERSION}: ${error.message}", error)
+        }
         // 尺寸提示是 25×25 且静区 0，ZXing 按 1:1 输出；仍校验一次，
         // 免得将来有人把 MARGIN 改回默认 4 之后版式悄悄变宽。
         // 提示语用英文：CJK 字面量棘轮只降不升，屏上文案一律走 ArbText。

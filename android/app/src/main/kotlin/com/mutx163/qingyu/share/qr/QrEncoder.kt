@@ -33,22 +33,6 @@ class QrMatrix(
     /** 黑块个数（单测断言用）。 */
     val darkCount: Int get() = dark.sumOf { row -> row.count { it } }
 
-    /** 按行优先压成 4bit/字符的十六进制串（末尾不足 4bit 的位补 0），便于与参考值逐位比对。 */
-    fun toHexString(): String {
-        val sb = StringBuilder(size * size)
-        for (y in 0 until size) for (x in 0 until size) sb.append(if (dark[y][x]) '1' else '0')
-        while (sb.length % 4 != 0) sb.append('0')
-        val out = StringBuilder(sb.length / 4)
-        var i = 0
-        while (i < sb.length) {
-            var value = 0
-            for (k in 0 until 4) value = (value shl 1) or (if (sb[i + k] == '1') 1 else 0)
-            out.append(HEX[value])
-            i += 4
-        }
-        return out.toString()
-    }
-
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
         if (other !is QrMatrix) return false
@@ -58,10 +42,6 @@ class QrMatrix(
     }
 
     override fun hashCode(): Int = 31 * size + dark.fold(0) { acc, row -> 31 * acc + row.contentHashCode() }
-
-    private companion object {
-        const val HEX = "0123456789abcdef"
-    }
 }
 
 /**

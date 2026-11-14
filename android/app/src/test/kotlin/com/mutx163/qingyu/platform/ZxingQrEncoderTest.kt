@@ -201,6 +201,16 @@ class ZxingQrEncoderTest {
         assertEquals(25, ZxingQrEncoder.encode("y".repeat(QrEncodeModel.MAX_BYTES)).size)
     }
 
+    @Test
+    fun `编码器自身也拒绝超出容量的内容`() {
+        // 上面那条走的是 QrEncodeModel 的 require 前置检查；这条直接打 platform 实现，
+        // 证明 ZXing 的 WriterException 确实被转成 IllegalArgumentException，不会漏出第三方异常。
+        val error = runCatching {
+            ZxingQrEncoder.encode("x".repeat(QrEncodeModel.MAX_BYTES + 1))
+        }.exceptionOrNull()
+        assertTrue("编码器应抛 IllegalArgumentException，实际 $error", error is IllegalArgumentException)
+    }
+
     private companion object {
         const val BLACK = 0xFF000000.toInt()
         const val WHITE = 0xFFFFFFFF.toInt()
