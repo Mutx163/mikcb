@@ -12,7 +12,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import com.mutx163.qingyu.components.QingyuGlassIconButton
 import com.mutx163.qingyu.components.QingyuPageScaffold
 import com.mutx163.qingyu.components.QingyuWeightDelta
 import com.mutx163.qingyu.components.shiftWeight
@@ -22,7 +21,6 @@ import top.yukonga.miuix.kmp.basic.IconButton
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.AppRecording
-import top.yukonga.miuix.kmp.icon.extended.ListView
 import top.yukonga.miuix.kmp.icon.extended.More
 import top.yukonga.miuix.kmp.icon.extended.Phone
 import top.yukonga.miuix.kmp.icon.extended.Refresh
@@ -101,8 +99,6 @@ fun WarehouseWebLoginPage(
      * 一旦被替换就会 `onRelease` → `destroy()`，回来时登录态与正在跑的脚本一起没了。
      */
     showImportLog: Boolean = false,
-    /** 顶栏「执行日志」按钮点击（宿主置 [showImportLog] 为真）。 */
-    onOpenImportLog: () -> Unit = {},
     /** 面板顶栏返回（宿主置 [showImportLog] 为假）。 */
     onCloseImportLog: () -> Unit = {},
 ) {
@@ -182,15 +178,10 @@ fun WarehouseWebLoginPage(
             }) {
                 Icon(imageVector = MiuixIcons.Refresh, contentDescription = WarehouseStrings.reloadAction.text)
             }
-            // 执行日志入口（actions 里第 4 颗：左边是刷新，右边是「更多」；回放期间前两颗
-            // 隐藏时它是第 3 颗）。与另外几颗动作键同款玻璃圆底（`QingyuGlassIconButton`）：
-            // 图标用 ListView（一条条日志 = 列表），无障碍文案复用面板标题那一个键（不新增文案）。
-            // 面板由宿主控制显隐，见 onOpenImportLog。
-            QingyuGlassIconButton(
-                onClick = onOpenImportLog,
-                contentDescription = WarehouseStrings.warehouseImportExecutionLogMenuLabel.text,
-                icon = MiuixIcons.ListView,
-            )
+            // 执行日志入口**不在这里**：它已收进顶栏最后一颗「更多」的菜单里
+            // （`WarehouseWebLoginHost` 的 `OverlayDialog`，一行 miuix `TextButton`）。
+            // 2026-11-14 用户实报：顶栏单独一颗玻璃球长得跟同页其它动作键不一样，
+            // 且与「更多」并列两套入口，用户要猜哪个是完整的。入口只留菜单一处。
             IconButton(onClick = onMoreOptions) {
                 Icon(imageVector = MiuixIcons.More, contentDescription = WarehouseStrings.moreActionsTooltip.text)
             }

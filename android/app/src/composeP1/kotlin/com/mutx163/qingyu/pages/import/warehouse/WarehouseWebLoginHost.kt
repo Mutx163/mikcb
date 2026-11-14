@@ -2122,9 +2122,9 @@ fun WarehouseWebLoginHost(
                 }
             },
             onExecuteImport = { executeImportScript() },
-            // 执行日志：顶栏图标与超时弹窗共用同一个面板状态（同一页，不是两个入口两套实现）。
+            // 执行日志：入口在顶栏「更多」菜单里（与超时弹窗共用同一个面板状态——
+            // 同一页，不是两个入口两套实现）。
             showImportLog = showImportLog,
-            onOpenImportLog = { showImportLog = true },
             onCloseImportLog = { showImportLog = false },
         )
 
@@ -2265,10 +2265,11 @@ fun WarehouseWebLoginHost(
 
         // 「更多」菜单（发布版 `HyperosAnchorMenuPopup` 的 Compose 等价形态）：唯一入口是
         // 顶栏最后一颗图标（页面只回调 `onMoreOptions`，凭据动作都留在宿主）。
-        // 发布版六项里只接四项：
+        // 发布版六项里只接五项：
         // - 「执行导入脚本」已有底栏整宽主按钮，菜单里再来一份就是两套入口；
-        // - 「导入执行日志」不在菜单里：顶栏已有独立图标入口（同一个面板），菜单再来一份
-        //   会让用户猜哪个才是完整的；
+        // - 「导入执行日志」**在这里**（2026-11-14 用户实报：顶栏单独一颗玻璃球跟同页
+        //   其它动作键长得不一样，又多出第二套入口。入口只留这一行 miuix `TextButton`，
+        //   顶栏不再画那颗按钮，见 `WarehouseWebLoginPage` 的动作区）；
         // - 记住账号三项正好补上「清除」这个全仓都没有调用方的能力（2026-11-10 审核）。
         // 弹层用 miuix 官方 `OverlayDialog` + `TextButton`，与宏选择器/完成 sheet 同一套件。
         OverlayDialog(
@@ -2314,6 +2315,16 @@ fun WarehouseWebLoginHost(
                     onClick = {
                         showMoreMenu = false
                         copyCurrentWarehouseUrl()
+                    },
+                )
+                // 导入执行日志：文案复用面板标题那一个键（不新增 ARB），面板状态即
+                // 超时弹窗第三颗按钮用的同一个 `showImportLog`。
+                TextButton(
+                    modifier = Modifier.fillMaxWidth(),
+                    text = WarehouseStrings.warehouseImportExecutionLogMenuLabel.text,
+                    onClick = {
+                        showMoreMenu = false
+                        showImportLog = true
                     },
                 )
                 TextButton(

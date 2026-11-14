@@ -21,7 +21,8 @@ import org.junit.Test
  * ## 钉的五条
  *
  * 1. 入口：`WarehouseWebLoginPage` 里调 `WarehouseImportLogPage(...)`，显隐由宿主的
- *    `showImportLog` 驱动（顶栏图标置真、面板返回置假）；
+ *    `showImportLog` 驱动（顶栏「更多」菜单项置真、面板返回置假）；顶栏**不再**有
+ *    单独一颗入口按钮（2026-11-14 用户实报：那颗玻璃球风格特殊、且与菜单两套入口并存）；
  * 2. 数据源：面板页持有 `WarehouseImportLogBuffer` 并调 `snapshot()`（不是自己编数据）；
  * 3. 复用：面板的分组/行格式/分享文本**只来自** `WarehouseImportLogView`——UI 文件里不许
  *    再出现 `RUN ` 组头拼接、`snapshot.runs` 遍历、`formatEntryLine(` 或 `LogSection(`；
@@ -79,18 +80,33 @@ class WarehouseImportLogEntryGuardTest {
             "panel must be composed after the page scaffold (scaffoldAt=$scaffoldAt panelAt=$panelAt)",
             scaffoldAt >= 0 && panelAt > scaffoldAt,
         )
-        // 顶栏入口：图标 + 无障碍文案（复用面板标题那个键，不新增文案）。
-        assertSourceContains(pageSource, "onOpenImportLog", "WarehouseWebLoginPage (top bar action)")
+        // 入口只有一处：顶栏「更多」菜单里的一行 miuix `TextButton`
+        // （2026-11-14 用户实报：顶栏那颗独立玻璃球与同页其它动作键不同款，且与
+        // 「更多」菜单并存两套入口，用户要猜哪个才是完整的）。
+        val moreMenu = SourceSlice.between(
+            hostSource,
+            "WarehouseStrings.moreActionsTooltip.text",
+            "WarehouseStrings.cancelAction.text",
+        )
+        assertSourceContains(
+            moreMenu,
+            "WarehouseStrings.warehouseImportExecutionLogMenuLabel.text",
+            "更多菜单（执行日志项）",
+        )
+        assertSourceContains(moreMenu, "showImportLog = true", "更多菜单（执行日志项打开面板）")
+        // 反向：顶栏不许再画那颗独立入口——参数与按钮本体都必须消失。
+        assertSourceLacks(pageSource, "onOpenImportLog", "WarehouseWebLoginPage (no standalone entry param)")
+        assertSourceLacks(pageSource, "QingyuGlassIconButton(", "WarehouseWebLoginPage (no special-style ball)")
+        // 顶栏动作区只剩 miuix 标准 `IconButton`（含「更多」那颗）。
         assertSourceContains(
             pageSource,
-            "WarehouseStrings.warehouseImportExecutionLogMenuLabel.text",
-            "WarehouseWebLoginPage (content description)",
+            "IconButton(onClick = onMoreOptions)",
+            "WarehouseWebLoginPage (standard more icon)",
         )
 
-        // 宿主侧：状态位 + 顶栏置真 / 面板返回置假。
+        // 宿主侧：状态位 + 面板返回置假。
         assertSourceContains(hostSource, "var showImportLog by remember", "WarehouseWebLoginHost (state)")
         assertSourceContains(hostSource, "showImportLog = showImportLog", "WarehouseWebLoginHost (pass state)")
-        assertSourceContains(hostSource, "onOpenImportLog = { showImportLog = true }", "WarehouseWebLoginHost")
         assertSourceContains(hostSource, "onCloseImportLog = { showImportLog = false }", "WarehouseWebLoginHost")
     }
 
