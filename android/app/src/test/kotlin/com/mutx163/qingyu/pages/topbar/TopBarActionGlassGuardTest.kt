@@ -1,5 +1,6 @@
 package com.mutx163.qingyu.pages.topbar
 
+import com.mutx163.qingyu.testutil.stripKotlinComments
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
@@ -667,10 +668,15 @@ class TopBarActionGlassGuardTest {
         return out.map { it.trim() }.filter { it.isNotEmpty() }
     }
 
-    /** 去掉块注释与行注释再判：KDoc / 行内说明里提到的写法不能算违规。 */
-    private fun codeOf(source: String): String = source
-        .replace(BLOCK_COMMENT, "")
-        .replace(LINE_COMMENT, "")
+    /**
+     * 去掉注释再判：KDoc / 行内说明里提到的写法不能算违规。
+     *
+     * 2026-11-14：原来两条正则（块注释 + `//[^\n]*`）——`//` 在字符串里（URL / 路径）也会被
+     * 当注释切掉，嵌套块注释只去一层。改走共享剥离器的**中性化档**：本守卫数的是裸
+     * `IconButton(` / 迁移颗数这类代码结构，字符串里的同名片段不该被算成违规。
+     */
+    private fun codeOf(source: String): String =
+        stripKotlinComments(source, neutralizeStrings = true)
 
     private fun composeRoot(): File = File(androidSrc(), "composeP1/kotlin/com/mutx163/qingyu")
 

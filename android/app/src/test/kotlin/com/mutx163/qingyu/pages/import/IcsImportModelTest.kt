@@ -1,5 +1,6 @@
 package com.mutx163.qingyu.pages.import
 
+import com.mutx163.qingyu.testutil.readKotlinSourceNormalized
 import java.io.File
 import java.time.LocalDateTime
 import org.junit.Assert.assertEquals
@@ -617,9 +618,10 @@ class IcsImportModelTest {
 
     @Test
     fun `ICS 表头关键字集中在常量文件 且解析器不再含中文字面量`() {
-        val modelSource = repoFile(
+        // 默认档（剥注释、保留字符串）：本判据数的是**中文字面量**，字符串必须留着。
+        val modelSource = readKotlinSourceNormalized(
             "android/app/src/main/kotlin/com/mutx163/qingyu/pages/import/IcsImportModel.kt",
-        ).readText()
+        )
         assertTrue(
             "解析器仍有中文字面量：${cjkLiteralsIn(modelSource)}",
             cjkLiteralsIn(modelSource).isEmpty(),
@@ -628,7 +630,9 @@ class IcsImportModelTest {
         val keywordsFile = repoFile(
             "android/app/src/main/kotlin/com/mutx163/qingyu/pages/import/IcsHeaderKeywords.kt",
         )
-        val keywordsSource = keywordsFile.readText()
+        val keywordsSource = readKotlinSourceNormalized(
+            "android/app/src/main/kotlin/com/mutx163/qingyu/pages/import/IcsHeaderKeywords.kt",
+        )
         // 门禁按文件名排除整文件；撞 Strings/Arb 会让基线行悬空并隐身。
         assertFalse(keywordsFile.name.contains("Strings"))
         assertFalse(keywordsFile.name.contains("Arb"))

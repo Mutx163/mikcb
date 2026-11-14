@@ -11,6 +11,7 @@ import com.mutx163.qingyu.core.SectionTime
 import com.mutx163.qingyu.core.TimetableProfile
 import com.mutx163.qingyu.core.TimetableSettings
 import com.mutx163.qingyu.core.WeekCalculator
+import com.mutx163.qingyu.testutil.readKotlinSourceNormalized
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
@@ -364,16 +365,17 @@ class WarehouseCoursesImportApplyTest {
         assertTrue("失败的服务码必须本地化", source.contains("TimeSchemeServiceMessages.localize("))
     }
 
-    private fun readSource(fileName: String): String {
-        val relative = "android/app/src/composeP1/kotlin/com/mutx163/qingyu/pages/import/warehouse/$fileName"
-        var dir: File? = File("").absoluteFile
-        repeat(8) {
-            val candidate = File(dir, relative)
-            if (candidate.isFile) return candidate.readText(Charsets.UTF_8)
-            dir = dir?.parentFile
-        }
-        error("找不到源码 $relative（当前目录 ${File("").absolutePath}）")
-    }
+    /**
+     * 读 composeP1 宿主源码，走**默认档**（剥注释、保留字符串）。
+     *
+     * 2026-11-14：原来直接 `readText()`——把 `WarehouseSectionExpansionDialog(` 这类接线
+     * 注释掉，文本仍留在注释里，`contains` 照样成立。本文件必须保留字符串：宿主那条 R5
+     * 反例数的是**写死的十六进制色值**（`"#RRGGBB"` 字面量），中性化会把它擦掉。
+     */
+    private fun readSource(fileName: String): String =
+        readKotlinSourceNormalized(
+            "android/app/src/composeP1/kotlin/com/mutx163/qingyu/pages/import/warehouse/$fileName",
+        )
 
     /**
      * J6：空课表导入必须像发布版一样**在第一次写入前 return 0**

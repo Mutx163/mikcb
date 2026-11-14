@@ -1,5 +1,6 @@
 package com.mutx163.qingyu
 
+import com.mutx163.qingyu.testutil.readKotlinSourceNoStrings
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertTrue
@@ -374,11 +375,14 @@ class WidgetWakeupSourceGuardTest {
         throw AssertionError("找不到 android/app/src，守卫无法验证")
     }
 
-    private fun source(relative: String): String {
-        val f = File(root(), "main/kotlin/com/mutx163/qingyu/$relative")
-        if (!f.isFile) throw AssertionError("找不到源文件：$relative")
-        return f.readText()
-    }
+    /**
+     * 读 main 源集源码，走**中性化档**（剥注释 + 抹掉字符串内容）。
+     *
+     * 2026-11-14：原来直接 `readText()`——把 `HomeWidgetStorage.rescheduleRefresh(` 这类
+     * 接线注释掉，文本仍留在注释里，`contains` 照样成立。本守卫九条判据全是调用结构。
+     */
+    private fun source(relative: String): String =
+        readKotlinSourceNoStrings("android/app/src/main/kotlin/com/mutx163/qingyu/$relative")
 
     private fun widgetProviderSource(): String = source("BaseQingyuWidgetProvider.kt")
     private fun widgetStorageSource(): String = source("HomeWidgetStorage.kt")
