@@ -462,6 +462,19 @@ $moduleSourceFiles = @{
         "pages/transfer/TransferStrings.kt",
         "platform/CouplePartnerPortImpl.kt"
     )
+    # 2026-11-14（R17/B7 前置，Chief 批准）：`pages/timetable/day` 的 `DayViewDataAssembler.kt`
+    # 引用父包 `pages/timetable/` 的四个纯 Kotlin 文件。整目录收不行——同目录里
+    # `TimetableBandUnderlap.kt`（Compose Modifier）与 `HomeViewExpandMotion.kt`（Easing）
+    # 会把 Android 依赖带进 JVM classpath，所以仍按文件点名。
+    # 之前该域不带 `-ExtraSources` 编不过（`TimetableDateLogic` → `WeekAgendaLogic` /
+    # `WeekGridCourseMapping` → `WeekViewStyle` 依次 unresolved）；补齐后 `OK (88 tests)`，
+    # `pages/timetable/month` 不受影响（`OK (135 tests)`）。
+    "timetable/day" = @(
+        "pages/timetable/TimetableDateLogic.kt",
+        "pages/timetable/WeekAgendaModel.kt",
+        "pages/timetable/WeekGridCourseMapping.kt",
+        "pages/timetable/WeekViewStyle.kt"
+    )
 }
 if ($cleanModule -and $moduleSourceFiles.ContainsKey($cleanModule)) {
     foreach ($moduleFile in $moduleSourceFiles[$cleanModule]) {
