@@ -42,13 +42,15 @@ object MaterialSheetPages {
 private const val MATERIAL_SHEET_MAX_HEIGHT_FACTOR = 0.5f
 
 /**
- * 官方弹层载体头的高度：把手条 24（`DragHandleArea`）+ 空标题行 18。
+ * 官方弹层载体头的高度：只剩把手条 24（`DragHandleArea`）。
  *
- * 载体（`OverlayBottomSheet` / `WindowBottomSheet` 共用的 `BottomSheetContentLayout`）把这两段
- * 排在**内容之外**，所以正文上限要扣掉它们，面板整体才等于 Dart 的「最多半屏」（:120、:162-166）。
+ * 2026-11-14 改库后，`title` / `startAction` / `endAction` **三空**时载体不再画那行 6+12dp 的
+ * 空标题行（原先合计 42）。载体（`OverlayBottomSheet` / `WindowBottomSheet` 共用的
+ * `BottomSheetContentLayout`）把把手条排在**内容之外**，所以正文上限只扣这 24，
+ * 面板整体才等于 Dart 的「最多半屏」（:120、:162-166）。
  * 宿主必须传 `title = null`——页签行自己就是标题（:2312-2314）。
  */
-private val MATERIAL_SHEET_CARRIER_CHROME = 42.dp
+private val MATERIAL_SHEET_CARRIER_CHROME = 24.dp
 
 /**
  * 材质弹层的正文：顶上「通用 / 课程卡片」翻页页签（**自己就是标题**），下面一层可左右滑
@@ -158,8 +160,8 @@ fun MaterialSheetBody(
     )
     val scope = rememberCoroutineScope()
 
-    // Dart :120 / :162-166：面板整体最多半屏（顶部那圈 chrome 现在是 0）。载体把把手条与空标题行
-    // 排在内容之外，正文上限要扣掉这两段，面板整体才等于「屏高 × 0.5」；否则面板会比原版高 42。
+    // Dart :120 / :162-166：面板整体最多半屏（顶部那圈 chrome 现在是 0）。载体把把手条
+    // 排在内容之外，正文上限扣掉这 24，面板整体才等于「屏高 × 0.5」；否则面板会比原版高 24。
     val maxHeight = (rememberSheetMaxHeight(MATERIAL_SHEET_MAX_HEIGHT_FACTOR) -
         MATERIAL_SHEET_CARRIER_CHROME).coerceAtLeast(0.dp)
 

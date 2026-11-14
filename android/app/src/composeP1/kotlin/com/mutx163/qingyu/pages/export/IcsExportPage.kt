@@ -276,7 +276,9 @@ fun IcsExportPage(
 
     // ── 导出成功后的二选一（Dart `_buildExportActionMenu`） ──
     // 拍板 #8：改底部 `QingyuSheet`，去标题、去右箭头（Dart 是按钮锚点菜单，
-    // 本仓统一收成底部动作弹层，两个动作铺满整宽）。#7 的 42dp 顶部空档按拍板保留。
+    // 本仓统一收成底部动作弹层，两个动作铺满整宽）。#7 记的「42dp 顶部空档」已不成立：
+    // 2026-11-14 改库后，title / startAction / endAction 三空时不再画那行空标题行 18，
+    // 顶部只剩把手条 24。
     QingyuSheet(
         show = viewState.exportActionMenuVisible,
         onDismissRequest = onDismissExportMenu,

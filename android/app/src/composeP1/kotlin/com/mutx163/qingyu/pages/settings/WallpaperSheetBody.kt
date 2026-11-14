@@ -40,11 +40,11 @@ import top.yukonga.miuix.kmp.basic.TabRowWithContour
  * **这是本文件唯一一处刻意偏离 Dart 的数字**（Dart 与材质面板同用 0.5，`:831-841`）。
  * 理由是可算的：
  *
- * - 0.5 下正文上限 = 屏高×0.5 − 42（载体），页签再吃 65 ⇒ 列表视口在 800dp 高的窗口上只有
- *   293dp；
- * - 第一页的真实内容（预览块 182 + 最近使用 160 + 底部让位 40）≈ 382dp ⇒ **永远要滚 89dp**，
+ * - 0.5 下正文上限 = 屏高×0.5 − 24（载体），页签再吃 65 ⇒ 列表视口在 800dp 高的窗口上只有
+ *   311dp；
+ * - 第一页的真实内容（预览块 182 + 最近使用 160 + 底部让位 40）≈ 382dp ⇒ **永远要滚 71dp**，
  *   而滚动前那一屏正好停在缩略图条中间——“打开就看到半张图”。
- * - 0.62 在同样窗口上给 389dp 视口，第一页刚好一屏；仍留 38% 屏高能看到背后的预览，
+ * - 0.62 在同样窗口上给 407dp 视口，第一页刚好一屏；仍留 38% 屏高能看到背后的预览，
  *   两张面板也不会同屏出现（开一块就关另一块）。
  *
  * 代价诚实写下：第二页只有三行控件，在变高的面板里会多出一段空白。
@@ -54,13 +54,16 @@ import top.yukonga.miuix.kmp.basic.TabRowWithContour
 internal const val WALLPAPER_SHEET_MAX_HEIGHT_FACTOR = 0.62f
 
 /**
- * 官方弹层载体在**内容之外**占掉的高度：把手条 24 + 无标题时的空标题行 18
- * （`third_party/miuix-ui/.../layout/BottomSheetContentLayout.kt:643-657` 与 `:798-830`）。
+ * 官方弹层载体在**内容之外**占掉的高度：只剩把手条 24
+ * （`third_party/miuix-ui/.../layout/BottomSheetContentLayout.kt:643-651`）。
+ *
+ * 2026-11-14 改库后，`title` / `startAction` / `endAction` **三空**时不再画那行 6+12dp 的
+ * 空标题行（原先合计 42），所以这里从 42 收成 24。
  *
  * 与 [MaterialSheetBody] 的 `MATERIAL_SHEET_CARRIER_CHROME` 是同一个数：两块面板必须扣同一份，
  * 否则并排看一高一矮（壁纸面板一度就是高的那一块）。
  */
-private const val SHEET_CARRIER_CHROME_DP = 42f
+private const val SHEET_CARRIER_CHROME_DP = 24f
 
 /**
  * 壁纸面板往外发动作时用的 target 串（宿主 / 分派器按这些串认）。
@@ -362,10 +365,9 @@ fun WallpaperSheetBody(
     )
 
     // 面板整体最多 [WALLPAPER_SHEET_MAX_HEIGHT_FACTOR]（理由 / 与 Dart 的差异见该常量）。
-    // 载体把把手条 24 + 无标题时的空标题行 18 排在**内容之外**
-    // （`BottomSheetContentLayout.kt:643-657` / `:798-830`），所以正文上限要扣掉这 42 ——
-    // 不扣的话面板高度 = 屏高×比例 + 42，内容不满时底下还会多一块永远空的玻璃板
-    // （材质面板同一处口径：`MaterialSheetBody.kt:51,164-165`）。
+    // 载体把把手条 24 排在**内容之外**（`BottomSheetContentLayout.kt:643-651`），
+    // 所以正文上限要扣掉这 24 —— 不扣的话面板高度 = 屏高×比例 + 24，内容不满时底下
+    // 还会多一块永远空的玻璃板（材质面板同一处口径：`MaterialSheetBody.kt:51,164-165`）。
     val sheetMaxHeight = (
         rememberSheetMaxHeight(WALLPAPER_SHEET_MAX_HEIGHT_FACTOR).value -
             SHEET_CARRIER_CHROME_DP
