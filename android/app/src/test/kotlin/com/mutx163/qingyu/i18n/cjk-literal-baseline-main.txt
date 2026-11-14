@@ -71,12 +71,6 @@ com/mutx163/qingyu/app/TimetableRepository.kt:3
 com/mutx163/qingyu/pages/ShellPageIndexScreen.kt:3
 com/mutx163/qingyu/pages/diagnostics/LiveTestingFixtureActions.kt:3
 com/mutx163/qingyu/pages/import/warehouse/WarehouseFormLabels.kt:3
-com/mutx163/qingyu/pages/settings/SettingsBackdropFlowPage.kt:3
-com/mutx163/qingyu/pages/settings/SettingsHolidayAdvancedPage.kt:3
-com/mutx163/qingyu/pages/settings/SettingsPageModel.kt:3
-com/mutx163/qingyu/pages/settings/SettingsRecentWallpaperPage.kt:3
-com/mutx163/qingyu/pages/statistics/charts/QrEncodeModel.kt:3
-com/mutx163/qingyu/share/camera/ScanResultDeduplicator.kt:3
 # 2026-11-12 教务导入 P0 日志第 1 步登记（0→3）：`WarehouseLogRedaction.kt` 里的
 # 「口令」「账号」「手机号」是**脱敏规则的键名 token**，不是屏上文案——它们必须与业
 # 务侧可能写出来的中文键名逐字一致才遮得住；走 ArbText 会随语言变化，非中文语言下
@@ -84,6 +78,11 @@ com/mutx163/qingyu/share/camera/ScanResultDeduplicator.kt:3
 # 过期条件：若将来业务侧日志改用结构化键名（英文常量键，不再出现中文键），本登记
 # 应一并撤销（连同上面这整段理由）。
 com/mutx163/qingyu/pages/import/warehouse/WarehouseLogRedaction.kt:3
+com/mutx163/qingyu/pages/settings/SettingsBackdropFlowPage.kt:3
+com/mutx163/qingyu/pages/settings/SettingsHolidayAdvancedPage.kt:3
+com/mutx163/qingyu/pages/settings/SettingsPageModel.kt:3
+com/mutx163/qingyu/pages/settings/SettingsRecentWallpaperPage.kt:3
+com/mutx163/qingyu/share/camera/ScanResultDeduplicator.kt:3
 com/mutx163/qingyu/core/TimetableProfile.kt:2
 com/mutx163/qingyu/pages/settings/SettingsAppearanceEditorPage.kt:2
 com/mutx163/qingyu/pages/settings/SettingsCourseCardPage.kt:2
@@ -92,6 +91,7 @@ com/mutx163/qingyu/pages/settings/SettingsHomeMenuEditorPage.kt:2
 com/mutx163/qingyu/pages/settings/SettingsHomeNavigationPage.kt:2
 com/mutx163/qingyu/pages/settings/SettingsResetPage.kt:2
 com/mutx163/qingyu/pages/statistics/StatisticsSettingsModel.kt:2
+com/mutx163/qingyu/pages/statistics/charts/QrEncodeModel.kt:2
 com/mutx163/qingyu/pages/statistics/charts/StatsInfoModels.kt:2
 com/mutx163/qingyu/pages/task/TaskModel.kt:2
 com/mutx163/qingyu/statistics/ExportBrandModel.kt:2

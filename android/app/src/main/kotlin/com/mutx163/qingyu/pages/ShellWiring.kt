@@ -539,6 +539,11 @@ class ShellWiring(context: Context) {
         weather.loadCached()
         // WebDAV 生产发送实现：组合根安装一次，传输层只拿接口（页面层不 import platform）。
         WebdavHttpCallers.installed = OkHttpWebdavHttpCaller()
+        // 二维码编码实现（ZXing）：同款安装一次。QrEncodeModel 在 pages/statistics 只留接口，
+        // 实现放 platform/，这样 L0 共享面不必把 zxing jar 塞进 classpath。
+        com.mutx163.qingyu.pages.statistics.charts.QrEncodeModel.install(
+            com.mutx163.qingyu.platform.ZxingQrEncoder,
+        )
     }
 
     /**
