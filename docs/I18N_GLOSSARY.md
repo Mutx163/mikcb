@@ -38,9 +38,10 @@
 - ja / ko 保留英文 `Live Island`（功能名不译），繁中用「超級島」。
 - 为什么不是 `Live Capsule`：形态更准，但 ja / ko 已各 19 处写作 `Live Island`，改它要三语一起迁 59 处；
   「会不会被当成 iPhone 的功能」用一句说明就能挡住，不值得换名。
-- **待清理**：en 里还有 8 处写成 `Super Island`——`appLogsSourceNative`、`liveIslandPreviewTitle`、
-  `courseShortNameHelper`、`liveDiagnosticsUnavailable`、`liveDiagnosticsViewerTitle`、
-  `liveDiagnosticsShareText`、`liveDiagnosticsShareSubject`、`guidePermissionsSubtitle`。下一批改。
+- **已清理（2026-11-14）**：en 最后 8 处 `Super Island` 已改为 `Live Island`——`appLogsSourceNative`、
+  `liveIslandPreviewTitle`、`courseShortNameHelper`、`liveDiagnosticsUnavailable`、`liveDiagnosticsViewerTitle`、
+  `liveDiagnosticsShareText`、`liveDiagnosticsShareSubject`、`guidePermissionsSubtitle`。
+  其中 `liveDiagnosticsShareText` 第二句保留简写 `the Island`（前一句已给全称）。
 
 ## 两个容易写错的字
 
@@ -66,4 +67,3 @@
 | 概念 | 现状 | 处置 |
 | --- | --- | --- |
 | 导出（繁中） | 已定 `匯出`；`導出` 仍有 8~9 处（`liveTestingExportAction` 等） | 下一批改 |
-| 超级岛（英文） | 已定 `Live Island`；en 仍有 8 处 `Super Island` | 下一批改（键名见上节） |
