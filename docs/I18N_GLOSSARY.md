@@ -21,7 +21,7 @@
 | 周次 | 周次 | week | 週次 | 주차 | 週次 | 週次 | `importCourseWeeksTrimmed` |
 | 节次 | 节次 | section | 時限 | 교시 | 節次 | 節次 | `aiPreviewMaxSection` |
 | 导入 | 导入 | Import | インポート | 가져오기 | 匯入 | 匯入 | `importFromFileAction` |
-| 导出 | 导出 | Export | エクスポート | 내보내기 | 匯出 | 匯出 | `appLogsExportAction`（2026-11-13 定；`導出` 待清理） |
+| 导出 | 导出 | Export | エクスポート | 내보내기 | 匯出 | 匯出 | `appLogsExportAction`（2026-11-13 定；繁中 `導出` 2026-11-14 清完） |
 | 教务系统 | 教务系统 | School system | 教務システム | 교무 시스템 | 教務系統 | 教務系統 | `importMethodWarehouseTitle` |
 | 日志 | 日志 | log | ログ | 로그 | 日誌 | 日誌 | `warehouseImportExecutionLogTitle` |
 | 重试 | 重试 | Retry | 再試行 | 재시도 | 重試 | 重試 | `cloudBackupRetryAction` |
@@ -64,6 +64,5 @@
 
 ## 已知不一致（还没清理，别照着抄）
 
-| 概念 | 现状 | 处置 |
-| --- | --- | --- |
-| 导出（繁中） | 已定 `匯出`；`導出` 仍有 8~9 处（`liveTestingExportAction` 等） | 下一批改 |
+（截至 2026-11-14 无未清理项：英文「超级岛」与繁中「导出」两处已清完，见上表与上一节。
+繁中 `導入 → 匯入` 的 28 处仍待清理，属另一批次，未记在此表。）
