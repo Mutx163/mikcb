@@ -297,6 +297,13 @@ fun WarehouseWebLoginHost(
         )
     }
 
+    // 导入日志的会话边界：同学校 + 同适配器共用一只 buffer，换目标才清（见
+    // WarehouseImportLogLifecycle 的三条语义）。放在这里而不是执行入口，是因为执行入口
+    // 每点一次都跑，重置会把同一会话里的重试现场吞掉。
+    LaunchedEffect(school.id, adapter.id) {
+        WarehouseImportLogLifecycle.beginSession("${school.id}/${adapter.id}")
+    }
+
     // ---- 宏录制（P1）：录制态 / 事件缓冲 / 弹窗应答存入 ----
     // 存储与适配器列表宿主同一套键（Dart SharedPreferences 同键共读，D1）。
     val macroStore = remember(context) { WarehouseMacroStore(PrefsKeyValueStore(context)) }
@@ -658,6 +665,28 @@ fun WarehouseWebLoginHost(
     var pageNavigating by remember { mutableStateOf(false) }
 
     /**
+     * 把当前快照落两处：`last.txt`（导出用）与应用日志一条 `warehouse.import`（诊断页按
+     * category 也能看到）。同步写是刻意的：`scope` 随组合销毁，点返回时的收尾不该被连带取消
+     * （最需要日志的一条）。
+     *
+     * 抽成独立函数的原因：定局点不止 [endScriptWindow]。写库结果回调、闸门拒绝都发生在
+     * 脚本窗口之外，那几处改完 run 状态后也要把**同一份**终稿落盘，否则文件里还写着 running。
+     *
+     * 顺序是硬要求：**先脱敏、再 append**——应用日志是第三个出口，多一个出口就多一次
+     * 「把没脱敏的文本递进去」的机会；8 KiB 截断与写失败兜底在
+     * [appendWarehouseImportLogToAppLog] 里（它内部还会再脱敏一次）。
+     */
+    fun persistImportLog() {
+        val logSnapshot = WarehouseImportLog.snapshot()
+        val logDeviceInfo = WarehouseDeviceInfo(Build.MODEL, Build.VERSION.RELEASE, BuildConfig.VERSION_NAME)
+        val appLogText = WarehouseLogRedaction.redactText(
+            WarehouseImportLogExport.buildText(logSnapshot, logDeviceInfo),
+        )
+        writeWarehouseImportLogFile(context.filesDir, logDeviceInfo)
+        appendWarehouseImportLogToAppLog(snapshot = logSnapshot, text = appLogText)
+    }
+
+    /**
      * 结束本轮脚本执行窗口：停超时、清执行期、**按页面实际状态**放回 `LOADED` 或 `LOADING`。
      *
      * @param errorMessage 本轮结束时的错误文案（失败路径传；成功/取消传 null 清掉旧错误）。
@@ -676,19 +705,8 @@ fun WarehouseWebLoginHost(
             WarehouseWebLoginStage.LOADED
         }
         session = session.withStage(stage, errorMessage)
-        // 收尾要落两处、正文是同一份：`last.txt`（导出用）与应用日志一条 `warehouse.import`
-        // （诊断页按 category 也能看到）。同步写是刻意的：`scope` 随组合销毁，点返回时的
-        // 收尾不该被连带取消（最需要日志的一条）。
-        // 顺序是硬要求：**先脱敏、再 append**——应用日志是第三个出口，多一个出口就多一次
-        // 「把没脱敏的文本递进去」的机会；8 KiB 截断与写失败兜底在
-        // appendWarehouseImportLogToAppLog 里（它内部还会再脱敏一次）。
-        val logSnapshot = WarehouseImportLog.snapshot()
-        val logDeviceInfo = WarehouseDeviceInfo(Build.MODEL, Build.VERSION.RELEASE, BuildConfig.VERSION_NAME)
-        val appLogText = WarehouseLogRedaction.redactText(
-            WarehouseImportLogExport.buildText(logSnapshot, logDeviceInfo),
-        )
-        writeWarehouseImportLogFile(context.filesDir, logDeviceInfo)
-        appendWarehouseImportLogToAppLog(snapshot = logSnapshot, text = appLogText)
+        // 收尾落两处、正文同一份（见 persistImportLog 的 KDoc）。
+        persistImportLog()
     }
 
     fun resetPlaybackUi() {
@@ -733,6 +751,8 @@ fun WarehouseWebLoginHost(
         // 先放掉等待标志：`endScriptWindow` 会按「还在等课程」把预算兜底留着
         // （见它的注释），用户主动取消时不该留一颗迟到的 timeout 在后台。
         playbackWaitingForCourses = false
+        // 用户取消 = 这一轮正常结束（不是失败）：日志按 cancelled 收口，别留 running。
+        WarehouseImportLogLifecycle.endIfOpen("cancelled")
         // 取消回放也要收掉**脚本执行窗口**：回放完成后 `executeImportScript` 可能已经起了
         // 执行预算，不并入同一条收尾的话，用户取消之后超时仍会跑——屏上冒一条
         // 「导入失败：timeout」，而 stage 还挂在 EXECUTING 让重试被拒。
@@ -912,6 +932,14 @@ fun WarehouseWebLoginHost(
             "import script timeout after ${SCRIPT_EXECUTION_TIMEOUT_MS / 1000}s without user input " +
                 "waitingForCourses=$waitingForCourses",
         )
+        // 超时是失败收尾：endReason=timeout，且这条 FAILURE 是用户导出后能看懂的那一行
+        // （以前超时只进 Log.w，日志面板里那一轮永远停在 running）。
+        WarehouseImportLogLifecycle.recordFailure(
+            "timeout",
+            "waitingForCourses" to waitingForCourses.toString(),
+            "budgetMs" to SCRIPT_EXECUTION_TIMEOUT_MS.toString(),
+        )
+        WarehouseImportLogLifecycle.failIfOpen("timeout")
         endScriptWindow(errorMessage = message)
         // 回放覆盖层收干净：与其它失败出口走同一个助手（切 ERROR + 把原因写进进度行、
         // 复位等待与自动执行标志）。手动导入没有覆盖层时它是 no-op。
@@ -970,6 +998,9 @@ fun WarehouseWebLoginHost(
                         "error" to (t.message ?: t.javaClass.simpleName),
                     ),
                 )
+                // 不变量被踩 = 这一轮已经收不了尾：按失败定局，别让 verdict 永远 running。
+                WarehouseImportLogLifecycle.recordFailure("timeout.invariant")
+                WarehouseImportLogLifecycle.failIfOpen("timeout")
                 // 文案复用超时出口的那一句（不新增键）：用户动作建议与超时相同。
                 val message = WarehouseStrings.executeFailedWithError.filled("error", "timeout")
                 cancelImportTimeout()
@@ -982,6 +1013,9 @@ fun WarehouseWebLoginHost(
 
     fun executeImportScript() {
         if (isExecuting) return
+        // 每次执行 = 一轮 run：先开轮把表头（school / adapter）填上，再让闸门 / 桥 / console
+        // 的记录落进这一轮。此前 beginRun 在生产里零调用，所有尝试都挤进 auto-1（表头为空）。
+        WarehouseImportLogLifecycle.beginAttempt(school.name, adapter.id)
         when (val plan = planWarehouseScriptExecution(session.stage, school, adapter)) {
             is WarehouseScriptExecutionPlan.Blocked -> {
                 Log.w(LOG_TAG, "execute import blocked: ${plan.reason}")
@@ -995,6 +1029,16 @@ fun WarehouseWebLoginHost(
                         WarehouseStrings.macroReplayWaitPageLoad.text
                 }
                 Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
+                // 闸门拒了也是「这一轮没跑起来」：日志必须落到 failure 而不是永远 running，
+                // 且表头已经有 school / adapter（beginAttempt 在进闸门之前）。
+                WarehouseImportLogLifecycle.recordFailure(
+                    "gate.blocked",
+                    "reason" to plan.reason.name,
+                    "stage" to session.stage.name,
+                )
+                WarehouseImportLogLifecycle.failIfOpen("blocked:${plan.reason.name}")
+                // 闸门拒绝发生在脚本窗口之外：这里也要把终稿落盘，否则 last.txt 还是 running。
+                persistImportLog()
                 // 回放完成后的自动执行被闸门挡住：覆盖层必须收掉。以前这里只弹 toast，
                 // 「回放完成，正在执行导入脚本」就永远停着（W1 / P0-1 第 1 条）；
                 // 手动导入没有覆盖层，助手是 no-op。
@@ -1018,6 +1062,8 @@ fun WarehouseWebLoginHost(
                     if (evalJsNormalized(WAREHOUSE_IMPORT_RUNNING_PROBE_JS) == "true") {
                         Log.w(LOG_TAG, "execute import skipped: previous script instance still running")
                         val message = WarehouseStrings.courseImportScriptStillRunning.text
+                        WarehouseImportLogLifecycle.recordFailure("script.previous-instance-running")
+                        WarehouseImportLogLifecycle.failIfOpen("previous-script-running")
                         endScriptWindow(message)
                         // 回放等课程阶段的「上一轮脚本还活着」也是失败出口之一：
                         // 只弹 toast 的话覆盖层会一直转（W1 / P0-1 同类）。
@@ -1051,6 +1097,14 @@ fun WarehouseWebLoginHost(
                                 LOG_TAG,
                                 "adapter script load failed code=${loaded.code} attempts=${loaded.attempts}",
                             )
+                            // 脚本没拉下来 = 这一轮的真实失败原因，必须进日志（以前只有 Log.w，
+                            // 用户导出后只看得到 table 头和一个 running）。
+                            WarehouseImportLogLifecycle.recordFailure(
+                                "script.load-failed",
+                                "detail" to loaded.code,
+                                "attempts" to loaded.attempts.toString(),
+                            )
+                            WarehouseImportLogLifecycle.failIfOpen("script-load-failed")
                             // 拉脚本失败也走统一收尾：stage 回到 LOADED（页面本身是好的），
                             // 网络恢复后用户可以直接再点一次，不用先刷新页面。
                             //
@@ -1316,6 +1370,8 @@ fun WarehouseWebLoginHost(
         // 助手同时复位等待/自动执行标志——其后到达的 complete 走 IGNORE，不把取消翻成
         // 成功（N10 的定局口径）。
         finishPlaybackWaitingWithError(message)
+        // 用户中止 = 这一轮正常结束（不是失败）：日志按 cancelled 收口，别留 running。
+        WarehouseImportLogLifecycle.endIfOpen("cancelled")
         // 取消也是「执行窗口结束」：走统一收尾，stage 回 LOADED，用户可以直接重试。
         endScriptWindow()
         Log.i(LOG_TAG, "courses import cancelled by user interrupted=$interrupted")
@@ -1385,6 +1441,9 @@ fun WarehouseWebLoginHost(
                             withContext(Dispatchers.IO) { prefs.recordRecentSchool(school.id) }
                         }
                         Log.i(LOG_TAG, "courses import done importedCount=${result.importedCount}")
+                        // 写库成功 = 这一轮的真正终点（complete 可能先到或后到，两边都用
+                        // endIfOpen，已定局时是 no-op——N10 的「迟到 complete 不改写」）。
+                        if (WarehouseImportLogLifecycle.endIfOpen("complete")) persistImportLog()
                         showToasts(doneMessagesFor(plan, result.importedCount))
                         // 普通导入成功（非录制、非回放）：对齐发布版 `navigator.pop(true)`，
                         // 立即离开网页页。录制/回放各有自己的收尾（保存询问 / 完成 sheet），
@@ -1434,6 +1493,12 @@ fun WarehouseWebLoginHost(
                             ?.let { TimeSchemeServiceMessages.localize(it) }
                             ?: WarehouseStrings.importFailedStatus.text
                         Log.w(LOG_TAG, "courses import failed serviceMessage=${result.serviceMessage}")
+                        // 写库失败 = 失败收尾：原因先落 FAILURE（服务码原样、脱敏在 buffer 入队时做）。
+                        WarehouseImportLogLifecycle.recordFailure(
+                            "import.apply-failed",
+                            "service" to (result.serviceMessage ?: "none"),
+                        )
+                        if (WarehouseImportLogLifecycle.failIfOpen("import-apply-failed")) persistImportLog()
                         showToasts(listOf(text))
                         // 回放等课程期间的写回失败：覆盖层切 ERROR（失败可重试/关闭），
                         // 等待标志复位——其后到达的 complete 走 IGNORE，不再翻成成功。
@@ -1518,6 +1583,9 @@ fun WarehouseWebLoginHost(
         val payload = warehouseBridgeCoursesPayload(raw)
         if (payload == null) {
             Log.w(LOG_TAG, "courses message without payload; treated as empty course list")
+            // 脚本回了空载荷 = 这一轮拿不到课程，日志按失败定局（以前只有 toast）。
+            WarehouseImportLogLifecycle.recordFailure("courses.empty-payload")
+            WarehouseImportLogLifecycle.failIfOpen("no-courses")
             val message = WarehouseStrings.noImportableCoursesFromScript.text
             showToasts(listOf(message))
             finishPlaybackWaitingWithError(message)
@@ -1527,6 +1595,8 @@ fun WarehouseWebLoginHost(
         if (repo == null) {
             // 壳没传仓储：不许假装导入成功（回放等课程时也要把覆盖层收掉）。
             Log.w(LOG_TAG, "courses received but repository is not wired")
+            WarehouseImportLogLifecycle.recordFailure("courses.repository-missing")
+            WarehouseImportLogLifecycle.failIfOpen("repository-missing")
             val message = WarehouseStrings.importFailedStatus.text
             showToasts(listOf(message))
             finishPlaybackWaitingWithError(message)
@@ -1564,6 +1634,8 @@ fun WarehouseWebLoginHost(
                 // 载荷不是数组：对齐旧版直接报格式错误，不进弹窗。回放等课程时
                 // 同属「脚本没给出可用课程」，覆盖层收掉而不是干等预算兜底。
                 val message = WarehouseStrings.invalidCourseDataFormat.text
+                WarehouseImportLogLifecycle.recordFailure("courses.invalid-payload")
+                WarehouseImportLogLifecycle.failIfOpen("invalid-course-data")
                 showToasts(listOf(message))
                 finishPlaybackWaitingWithError(message)
                 return@launch
@@ -1572,6 +1644,11 @@ fun WarehouseWebLoginHost(
             if (courses.isEmpty()) {
                 // 对齐旧版：解析后一门都没有 → 提示 + 丢弃计数，不进弹窗。
                 val message = WarehouseStrings.noImportableCoursesFromScript.text
+                WarehouseImportLogLifecycle.recordFailure(
+                    "courses.none-importable",
+                    "dropped" to dropped.toString(),
+                )
+                WarehouseImportLogLifecycle.failIfOpen("no-importable-courses")
                 val toasts = mutableListOf(message)
                 if (dropped > 0) {
                     toasts.add(
@@ -1946,6 +2023,13 @@ fun WarehouseWebLoginHost(
                     WarehouseImportCompletionAction.FINALIZE -> {
                         // 脚本报完成 = 本轮执行窗口结束。**必须复位 stage**，
                         // 否则 page 没跳转时 stage 停在 EXECUTING，重执行闸门会一直拒。
+                        //
+                        // 日志收尾有前提：complete 可能在课程写回**之前**到（saveImportedCourses
+                        // 是 fire-and-forget）。还在等用户确认 / 正在写盘时这里不收尾，交给写库
+                        // 结果回调；否则 write-back 的条目会落进下一只 auto run（N10 的同一个坑）。
+                        if (coursesSession == null && !importWriting) {
+                            WarehouseImportLogLifecycle.endIfOpen("complete")
+                        }
                         endScriptWindow()
                         Log.i(LOG_TAG, "bridge complete: finalize")
                     }
@@ -1968,6 +2052,12 @@ fun WarehouseWebLoginHost(
                 val errorText = warehouseBridgeMessageText(raw)
                     ?: WarehouseStrings.courseImportScriptFailed.text
                 Log.w(LOG_TAG, "bridge error reported by adapter script")
+                // 脚本自报 error = 失败收尾，原因先落 FAILURE 再定局（endScriptWindow 随后落盘）。
+                WarehouseImportLogLifecycle.recordFailure(
+                    "bridge.error",
+                    "message" to errorText,
+                )
+                WarehouseImportLogLifecycle.failIfOpen("bridge.error")
                 endScriptWindow(errorMessage = errorText)
                 // 回放等课程阶段脚本自报 error：同一套错误出口。以前只弹 toast，
                 // 覆盖层会永远停在「正在执行导入脚本」（W1 / P0-1 第 1 条）。
@@ -2022,7 +2112,11 @@ fun WarehouseWebLoginHost(
             foregroundReplayActive = isMacroReplaying(),
             importWriting = importWriting,
             executionStageHint = executionStageHint?.text,
-            onBack = onBack,
+            onBack = {
+                // 用户主动离开：还开着的 run 按 left-page 收口，不把 running 丢给下一次打开。
+                if (WarehouseImportLogLifecycle.endIfOpen("left-page")) persistImportLog()
+                onBack()
+            },
             onWebProgress = { progress ->
                 session = session.withStage(WarehouseWebLoginWebState.stageForProgress(progress))
             },
@@ -2033,6 +2127,11 @@ fun WarehouseWebLoginHost(
                 // 导航一开始就置真：`endScriptWindow` 据此只落 LOADING（闸门关着），
                 // 不让脚本注入到即将被销毁的旧文档（否则用户白等 30 秒才见一条 timeout）。
                 pageNavigating = true
+                // 换文档 = 旧脚本上下文没了：这一轮按 page-navigation 收口（否则它永远 running）。
+                // 课程写回还挂着时先不收——结果随后会到，由写库结果回调收尾。
+                if (coursesSession == null && !importWriting) {
+                    WarehouseImportLogLifecycle.endIfOpen("page-navigation")
+                }
                 // 旧脚本窗口的执行预算必须一起停：否则计时在下一拍还会替新页面误报超时。
                 // 走统一收尾（导航中 → 只落 LOADING），加载完/失败由下面两个回调推进。
                 endScriptWindow()
