@@ -312,16 +312,7 @@ class GuardSourceStrippingPolicyTest {
                 reason = "空 catch 判据委托共享词法器 KotlinCatchScanner（分词时已跳注释与字符串）；触发本扫描的 contains 打在 relativePath 上，判的是关键写路径白名单",
                 reviewTrigger = LEGACY_REVIEW_TRIGGER,
             ),
-            "com/mutx163/qingyu/pages/import/IcsImportModelTest.kt" to LegacyMeta(
-                introducedAt = "1b58806b0 2026-10-27",
-                reason = "四十六条是 ICS 解析模型用例；末条读 IcsHeaderKeywords.kt 与解析器，用私有 cjkLiteralsIn 先滤掉星号、//、块注释开头的行再数中文字面量",
-                reviewTrigger = LEGACY_REVIEW_TRIGGER,
-            ),
-            "com/mutx163/qingyu/pages/import/warehouse/WarehouseCoursesImportApplyTest.kt" to LegacyMeta(
-                introducedAt = "1f95d17ee 2026-11-03",
-                reason = "扩节与回滚等十条是模型用例；末条读 WarehouseWebLoginHost.kt，判 requiredSectionCount(、WarehouseSectionExpansionDialog(、apply( 三处接线均在",
-                reviewTrigger = LEGACY_REVIEW_TRIGGER,
-            ),
+
             "com/mutx163/qingyu/pages/shell/DockInkFallbackGuardTest.kt" to LegacyMeta(
                 introducedAt = "2117a73a3 2026-11-04",
                 reason = "读 HomeGlassDock.kt 与 HomeWallpaperBackdrop.kt，判亮度未知时取浅墨兜底与缓存回读；codeOnly 剥注释后再用 replace 造负例自测",
@@ -355,16 +346,6 @@ class GuardSourceStrippingPolicyTest {
             "com/mutx163/qingyu/pages/shell/ShellRailWiringGuardTest.kt" to LegacyMeta(
                 introducedAt = "e2e335838 2026-11-03",
                 reason = "读壳、ShellNavigationRail、HomeGlassDock、DayViewPage，判 Rail 出现时坞不组合、条目点击先弹回主屏；codeOnly 剥注释",
-                reviewTrigger = LEGACY_REVIEW_TRIGGER,
-            ),
-            "com/mutx163/qingyu/pages/topbar/TopBarActionGlassGuardTest.kt" to LegacyMeta(
-                introducedAt = "925da76af 2026-11-05",
-                reason = "扫二十余个页面顶栏的 actions 与 navigationIcon，判不许裸写 IconButton、待迁移颗数精确；文件先过私有 codeOf（块注释与行注释两条正则）",
-                reviewTrigger = LEGACY_REVIEW_TRIGGER,
-            ),
-            "com/mutx163/qingyu/WidgetWakeupSourceGuardTest.kt" to LegacyMeta(
-                introducedAt = "978a24d33 2026-11-07",
-                reason = "读小组件 Provider、HomeWidgetStorage、WidgetRefreshWorker 与 LiveUpdateService，判广播重排、onDisabled、doWork 零实例、KEEP 周期等九条行为",
                 reviewTrigger = LEGACY_REVIEW_TRIGGER,
             ),
         )
