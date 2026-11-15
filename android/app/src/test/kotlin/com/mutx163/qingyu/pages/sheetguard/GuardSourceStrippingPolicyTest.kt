@@ -97,6 +97,37 @@ class GuardSourceStrippingPolicyTest {
         )
     }
 
+    /**
+     * 扫描口径自测：**认仓库路径，不认裸文件名**（2026-11-15）。
+     *
+     * 背景：判据原来连 `"at=WeatherForecast.kt"` 这种日志字段值都吃，把
+     * `weather/WeatherServiceTest` 误报成「读源码没剥注释」——8207 例全量里唯一的红。
+     * 判据比类注释写的「路径字面量」宽，是偏差；这条自测把边界钉死，两边都管：
+     *
+     * - 带仓库相对路径 + `readText(` + `.contains(` ⇒ **必须认出来**（否则判据变松，真违规会漏）；
+     * - 读日志 + 断言里有裸文件名 ⇒ **不许认**（否则又会误报）。
+     */
+    @Test
+    fun `路径字面量判据 认仓库路径 不认裸文件名`() {
+        val sourceGuard = """
+            val code = File("android/app/src/main/kotlin/com/mutx163/qingyu/pages/ShellWiring.kt").readText()
+            assertTrue(code.contains("init"))
+        """.trimIndent()
+        assertTrue(
+            "带仓库相对路径的源码守卫必须被认出来；认不出=判据松了，真违规会漏",
+            looksLikeSourceReadingGuard(sourceGuard),
+        )
+
+        val logAssertion = """
+            val text = AppLogStore.readText()
+            assertTrue(text.contains("at=WeatherForecast.kt"))
+        """.trimIndent()
+        assertFalse(
+            "读 App 日志 + 断言里出现裸文件名，不是读源码的守卫（2026-11-15 误报根因）",
+            looksLikeSourceReadingGuard(logAssertion),
+        )
+    }
+
     // ───────────────────────── 2. 剥离器本体自测 ─────────────────────────
 
     @Test
@@ -211,7 +242,7 @@ class GuardSourceStrippingPolicyTest {
     // ───────────────────────── 判据 ─────────────────────────
 
     /** 三件事同时成立才算「读源码的守卫」，见类注释的扫描口径。 */
-    private fun looksLikeSourceReadingGuard(text: String): Boolean =
+    internal fun looksLikeSourceReadingGuard(text: String): Boolean =
         KOTLIN_PATH_LITERAL.containsMatchIn(text) &&
             (text.contains("readText(") || text.contains("readSourceNormalized(")) &&
             text.contains(".contains(")
@@ -264,8 +295,16 @@ class GuardSourceStrippingPolicyTest {
         /** 不是守卫、按设计不受本条扫描的文件（剥离器本体）。 */
         val NOT_GUARDS = setOf("com/mutx163/qingyu/testutil/SourceText.kt")
 
-        /** 带引号的 `*.kt` 路径字面量：`"…/Foo.kt"`。 */
-        val KOTLIN_PATH_LITERAL = Regex("\"[^\"\\n]*\\.kt\"")
+        /** 带引号的 `*.kt` **路径**字面量：`"…/Foo.kt"`。
+         *
+         * 2026-11-15 修正：原来写成 `"[^"\n]*\.kt"`，连裸文件名 `"at=WeatherForecast.kt"`
+         * 都吃——于是 `WeatherServiceTest`（`AppLogStore.readText()` 读的是 App 日志、
+         * 断言里出现 `.kt` 字段值）被误报成「读源码没剥注释」，8207 例全量里那条红就是它。
+         * 读源码必然给仓库相对路径，所以判据要求字面量里含 `/`：与类注释写的
+         * 「路径字面量（`"…/Foo.kt"`）」对齐，比原来**窄**，不是放宽。
+         * 会不会因此漏掉真违规？读源码的守卫不可能只写裸文件名——路径对不上就是读不到文件。
+         * 这条边界由下面 `路径字面量判据 认仓库路径 不认裸文件名` 钉住。 */
+        val KOTLIN_PATH_LITERAL = Regex("\"[^\"\\n]*/[^\"\\n]*\\.kt\"")
 
         /** 自带私有剥离器（`fun strip…(`）视为已处理。 */
         val OWN_STRIPPER_PATTERN = Regex("""fun\s+strip[A-Za-z0-9_]*\s*\(""")
