@@ -229,7 +229,9 @@ object MemoryStatsCollector {
             stats = memoryStatsMap,
             totalPssKb = totalPssKb,
         )
-        // 图片缓存：Compose 壳里真实的图片内存缓存（`AndroidImageLoader` 的 LruCache）。
+        // 图片缓存：Compose 壳里真实的图片内存缓存。类仍是自有封装 `AndroidImageLoader`，
+        // 内部自 2026-11-14 起由 Coil 3 的 `MemoryCache` 承接（上限仍钉 16MB），
+        // 三个访问器的含义与实现前一致：占用 / 上限 / 条目数。
         // 迁移前这行写死 0，分析结论因此永远说「图片缓存为 0」——那是拿 Flutter 运行时的
         // 旧口径在描述一个已经不存在的对象（Dart 侧图片缓存随引擎走，Kotlin 侧一直是另一个）。
         val imageCacheBytes = AndroidImageLoader.shared.memoryCacheBytes().toLong()
