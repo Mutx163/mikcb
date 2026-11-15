@@ -505,11 +505,14 @@ fun CourseGridCard(
 
                 // 加载小圈：只占一行、不参与 hasAnyField（否则七个字段全关的卡会因此
                 // 不画课名兜底，取数失败后卡上就只剩留白）。
-                WeatherCardSlotState.LOADING -> Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.Start,
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
+                //
+                // ⚠️ 这一行**不撑满、不固定靠左**：卡内横向对齐跟用户设置走
+                //（`style.horizontalAlign` → Column 的 `horizontalAlignment`），文字行
+                //（`CardDetailLine`）也是靠这一层对齐的。挂 `fillMaxWidth` +
+                // `Arrangement.Start` 会让「居中 / 靠右」的卡里小圈单独跑到左边，
+                // 与上面几行错位。
+                WeatherCardSlotState.LOADING -> {
+                    Spacer(modifier = Modifier.height(WeekCardMetrics.LINE_GAP_DP.dp))
                     QingyuLoadingInline(slot = QingyuLoadingSlot.WeatherCard)
                 }
 
