@@ -1,6 +1,8 @@
 package com.mutx163.qingyu
 
 import com.mutx163.qingyu.app.LiveUpdateStageLogic
+import com.mutx163.qingyu.app.liveNotificationCourseName
+import com.mutx163.qingyu.app.liveNotificationSubText
 import android.Manifest
 import android.app.Activity
 import android.app.Application
@@ -1770,6 +1772,13 @@ class LiveUpdateService : Service() {
 
     private fun buildMiuiFocusParam(
         title: String,
+        /**
+         * 超级岛标题下方的副标题槽：放阶段前缀（即将上课 / 即将下课 / 上课中）。
+         *
+         * 2026-11-15 用户口径：标题只放课名（原样、不截断），阶段文案挪到这里。
+         * 空串 = 不显示副标题。
+         */
+        islandSubTitle: String,
         remainingText: String,
         timeRangeText: String,
         bodyContent: String,
@@ -1836,7 +1845,8 @@ class LiveUpdateService : Service() {
                         put("type", 2)
                         put("title", title)
                         put("content", bodyContent.ifBlank { remainingText })
-                        put("subTitle", "")
+                        // 阶段前缀（即将上课 / 即将下课 / 上课中）落在副标题槽：标题只放课名。
+                        put("subTitle", islandSubTitle)
                         put("extraTitle", "")
                         put("specialTitle", "")
                         put("subContent", "")
@@ -2379,17 +2389,18 @@ class LiveUpdateService : Service() {
         val classProgress = if (stage == "duringClass") buildDuringClassProgress(now) else null
         val usesProgressExpandedStyle = Build.VERSION.SDK_INT >= 36 && classProgress != null
 
-        val titleCourseName = if (useShortNameInIsland && shortCourseNameRaw.isNotBlank()) {
-            shortCourseNameRaw
-        } else if (courseName.length > 8) {
-            courseName.substring(0, 8) + ".."
-        } else {
-            courseName
-        }
-        val nameToUse = if (useShortNameInIsland && shortCourseNameRaw.isNotBlank()) shortCourseNameRaw else courseName
-        val islandCourseName = if (showCourseNameInIsland) {
-            if (nameToUse.length > 5) nameToUse.substring(0, 5) else nameToUse
-        } else ""
+        // ── 标题只放课名，前缀进副标题槽（2026-11-15）──
+        // 原来课名在这里被截成 8 字 + ".."，岛上再截成 5 字：括号里的教室号会被吃掉，
+        // 用户读到的课名与输入不一致。现在两处截断都删了，放不下交给系统末尾省略
+        //（`liveNotificationCourseName`）。阶段前缀（即将上课 / 即将下课 / 上课中）
+        // 在下面的 `subText` 与岛的 `baseInfo.subTitle` 里。
+        val titleCourseName = liveNotificationCourseName(
+            courseName = courseName,
+            shortName = shortCourseNameRaw,
+            useShortName = useShortNameInIsland,
+        )
+        val nameToUse = titleCourseName
+        val islandCourseName = if (showCourseNameInIsland) nameToUse else ""
         val visibleLocation = if (showLocationInIsland) location else ""
         val islandLocation = visibleLocation
         val miuiIslandLabelText = when (miuiIslandLabelContent) {
@@ -2418,18 +2429,16 @@ class LiveUpdateService : Service() {
             !showCountdown -> ""
             else -> remainingText.ifBlank { stageTitle }
         }
-        val title = when (stage) {
-            "beforeClass" -> getString(R.string.title_before_class, titleCourseName)
-            "beforeEnd" -> getString(R.string.title_before_end, titleCourseName)
-            else -> titleCourseName
-        }
+        // 标题只剩**课名**（原样，不截断）：阶段前缀挪进副标题槽，见下面 `subText`
+        // 与超级岛 `baseInfo.subTitle`（2026-11-15 用户口径）。
+        val title = titleCourseName
         val shortNameLabel = shortCourseNameRaw.takeIf { it.isNotBlank() && it != courseName }
         val timeRangeText = if (startTimeText.isNotBlank() || endTimeText.isNotBlank()) {
             "$startTimeText - $endTimeText".trim()
         } else {
             ""
         }
-        val subText = if (isUpcoming) {
+        val subTextDetail = if (isUpcoming) {
             listOf(
                 timeRangeText.takeIf { it.isNotBlank() }?.let { getString(R.string.label_class_start_time, it) },
                 visibleLocation.takeIf { it.isNotBlank() }?.let { getString(R.string.label_location, it) }
@@ -2442,6 +2451,8 @@ class LiveUpdateService : Service() {
         } else {
             ""
         }
+        // 阶段前缀（即将上课 / 即将下课 / 上课中）进副标题槽：标题只放课名（用户口径 2026-11-15）。
+        val subText = liveNotificationSubText(prefix = stageTitle, detail = subTextDetail)
         val summaryText = if ((isDuringClass || isEndingSoon) && classProgress != null && showCountdown) {
             listOf(
                 classProgress.nextMilestoneDisplayText,
@@ -2556,6 +2567,8 @@ class LiveUpdateService : Service() {
         } else {
             buildMiuiFocusParam(
                 title = title,
+                // 阶段前缀进副标题槽（用户口径 2026-11-15）：标题只放课名。
+                islandSubTitle = stageTitle,
                 remainingText = miuiFocusHintText,
                 timeRangeText = timeRangeText,
                 bodyContent = promotedContentText,
