@@ -23,7 +23,7 @@ object ArbCatalog {
         else -> null
     }
 
-    // ── en（3050 条）──
+    // ── en（3053 条）──
     private fun lookupen(key: String): String? = lookupen1(key) ?: lookupen2(key) ?: lookupen3(key) ?: lookupen4(key) ?: lookupen5(key) ?: lookupen6(key) ?: lookupen7(key) ?: lookupen8(key) ?: lookupen9(key) ?: lookupen10(key) ?: lookupen11(key)
     private fun lookupen1(key: String): String? = when (key) {
         "aboutAdvancedOptionsTitle" -> "Advanced options"
@@ -1588,6 +1588,9 @@ object ArbCatalog {
         "liveStagePreviewStageDuringClass" -> "in class"
         "liveStagePreviewStartedToast" -> "Island preview started"
         "liveStagePreviewStoppedToast" -> "Island preview stopped"
+        "liveTestingAnalyticsOptOutDescription" -> "After you turn this off, the app stops initializing Umeng analytics and crash reporting, so we no longer receive crash or performance data. Crash logs are still recorded on this device, and you can export them yourself from App logs. The change takes effect the next time you start the app."
+        "liveTestingAnalyticsOptOutSummary" -> "Stops crash reports"
+        "liveTestingAnalyticsOptOutTitle" -> "Error reporting"
         "liveTestingAnrAction" -> "ANR test"
         "liveTestingAnrSoon" -> "A ~30-second main-thread freeze is about to be triggered. Test outside flutter run, then reopen the app afterward to check Umeng."
         "liveTestingAutoRefreshOffReason" -> "So you can inspect the current state more steadily."
@@ -1838,12 +1841,12 @@ object ArbCatalog {
         "logFieldFrom" -> "from"
         "logFieldHasNotificationPermission" -> "has Notification Permission"
         "logFieldHasPromotedPermissionDeclared" -> "has Promoted Permission Declared"
-        "logFieldHideFromRecentsEnabled" -> "hide From Recents Enabled"
-        "logFieldIgnoringBatteryOptimizations" -> "ignoring Battery Optimizations"
-        "logFieldIntentIsNull" -> "intent Is Null"
         else -> null
     }
     private fun lookupen7(key: String): String? = when (key) {
+        "logFieldHideFromRecentsEnabled" -> "hide From Recents Enabled"
+        "logFieldIgnoringBatteryOptimizations" -> "ignoring Battery Optimizations"
+        "logFieldIntentIsNull" -> "intent Is Null"
         "logFieldKeepAliveAccessibilityEnabled" -> "keep Alive Accessibility Enabled"
         "logFieldLastTaskRemovedAt" -> "last Task Removed At"
         "logFieldLiveClassReminderStartMinutes" -> "live Class Reminder Start Minutes"
@@ -2141,12 +2144,12 @@ object ArbCatalog {
         "qrTransferPlaintextWarning" -> "QR transfer is plaintext. Nearby cameras may read it. Review the source before importing; nothing is overwritten without your confirmation."
         "qrTransferRawLengthMismatch" -> "Received data length verification failed. Please restart."
         "qrTransferReceiveComplete" -> "Data received, importing…"
-        "qrTransferReceiveProgress" -> "{received} frames received · {decoded}/{total} decoded"
-        "qrTransferReceiveSpeed" -> "Receive Speed"
-        "qrTransferResourceLimit" -> "Received data exceeded the QR transfer resource limit. Restart and use a smaller backup."
         else -> null
     }
     private fun lookupen8(key: String): String? = when (key) {
+        "qrTransferReceiveProgress" -> "{received} frames received · {decoded}/{total} decoded"
+        "qrTransferReceiveSpeed" -> "Receive Speed"
+        "qrTransferResourceLimit" -> "Received data exceeded the QR transfer resource limit. Restart and use a smaller backup."
         "qrTransferRestart" -> "Restart"
         "qrTransferSampleFps" -> "Sample FPS"
         "qrTransferScanHint" -> "Point the camera at the other phone's screen and hold steady until progress completes"
@@ -2444,12 +2447,12 @@ object ArbCatalog {
         "serviceMsgImportUseOverwriteForFullBackup" -> "This is a full data backup. Please import using overwrite current timetable."
         "serviceMsgIncompleteGithubRepoUrl" -> "GitHub repository URL is incomplete."
         "serviceMsgIncompleteRawGithubUrl" -> "raw.githubusercontent.com URL is incomplete."
-        "serviceMsgInvalidRepositoryUrl" -> "Repository URL format is invalid."
-        "serviceMsgInvalidTimeFormat" -> "Time format is invalid."
-        "serviceMsgInvalidUrl" -> "Invalid URL."
         else -> null
     }
     private fun lookupen9(key: String): String? = when (key) {
+        "serviceMsgInvalidRepositoryUrl" -> "Repository URL format is invalid."
+        "serviceMsgInvalidTimeFormat" -> "Time format is invalid."
+        "serviceMsgInvalidUrl" -> "Invalid URL."
         "serviceMsgLinkedCourseNotFound" -> "Linked course was not found."
         "serviceMsgMacroClickSelectorEmpty" -> "Click selector is empty."
         "serviceMsgMacroElementNotFound" -> "Element not found: {selector}"
@@ -2747,12 +2750,12 @@ object ArbCatalog {
         "supportChipFixes" -> "Bug Fixes"
         "supportChipPolish" -> "Polish"
         "supportCompleteThanks" -> "Thanks for supporting Qingyu Timetable ❤️"
-        "supportConfirmedShort" -> "Supported"
-        "supportCreatorTitle" -> "Buy the Creator a Coffee"
-        "supportHeroSubtitle" -> "Your support goes directly into timetable maintenance, academic adapter updates, and overall experience improvements"
         else -> null
     }
     private fun lookupen10(key: String): String? = when (key) {
+        "supportConfirmedShort" -> "Supported"
+        "supportCreatorTitle" -> "Buy the Creator a Coffee"
+        "supportHeroSubtitle" -> "Your support goes directly into timetable maintenance, academic adapter updates, and overall experience improvements"
         "supportHeroTitle" -> "Support Qingyu Timetable"
         "supportMethodTitle" -> "Choose a Support Method"
         "supportRunningBadge" -> "Active"
@@ -3050,12 +3053,12 @@ object ArbCatalog {
         "weatherSummarySeparator" -> " · "
         "weatherTemperatureValue" -> "{temperature}°"
         "weatherThunderstorm" -> "Thunderstorm"
-        "weatherThunderstormHail" -> "Thunderstorm with hail"
-        "weatherUseCurrentLocation" -> "Use my location"
-        "webAddressHint" -> "Enter web address"
         else -> null
     }
     private fun lookupen11(key: String): String? = when (key) {
+        "weatherThunderstormHail" -> "Thunderstorm with hail"
+        "weatherUseCurrentLocation" -> "Use my location"
+        "webAddressHint" -> "Enter web address"
         "webLoginImport" -> "Web login import"
         "webdavPasswordReentryBody" -> "This update changed how the password is stored on this device. Please re-enter your app-specific password once; your server address, account and sync settings have been kept."
         "wechatLabel" -> "WeChat"
@@ -3109,7 +3112,7 @@ object ArbCatalog {
         else -> null
     }
 
-    // ── ja（3050 条）──
+    // ── ja（3053 条）──
     private fun lookupja(key: String): String? = lookupja1(key) ?: lookupja2(key) ?: lookupja3(key) ?: lookupja4(key) ?: lookupja5(key) ?: lookupja6(key) ?: lookupja7(key) ?: lookupja8(key) ?: lookupja9(key) ?: lookupja10(key) ?: lookupja11(key)
     private fun lookupja1(key: String): String? = when (key) {
         "aboutAdvancedOptionsTitle" -> "高度なオプション"
@@ -4674,6 +4677,9 @@ object ArbCatalog {
         "liveStagePreviewStageDuringClass" -> "授業中"
         "liveStagePreviewStartedToast" -> "スーパー島プレビューを開始しました"
         "liveStagePreviewStoppedToast" -> "スーパー島プレビューを停止しました"
+        "liveTestingAnalyticsOptOutDescription" -> "オフにすると、アプリは Umeng の統計とクラッシュ報告を初期化しなくなり、クラッシュやパフォーマンスのデータは届かなくなります。端末内のクラッシュログは引き続き記録され、「アプリログ」から自分で書き出せます。変更は次回アプリ起動時に反映されます。"
+        "liveTestingAnalyticsOptOutSummary" -> "オフで送信しません"
+        "liveTestingAnalyticsOptOutTitle" -> "エラー送信"
         "liveTestingAnrAction" -> "異常フリーズテスト"
         "liveTestingAnrSoon" -> "約30秒のメインスレッドフリーズをトリガーします。flutter runから離れてテストし、フリーズ後にアプリを再起動してUmengバックグラウンドを確認。"
         "liveTestingAutoRefreshOffReason" -> "現在のステータスを安定して確認可能。"
@@ -4924,12 +4930,12 @@ object ArbCatalog {
         "logFieldFrom" -> "from"
         "logFieldHasNotificationPermission" -> "has Notification Permission"
         "logFieldHasPromotedPermissionDeclared" -> "has Promoted Permission Declared"
-        "logFieldHideFromRecentsEnabled" -> "hide From Recents Enabled"
-        "logFieldIgnoringBatteryOptimizations" -> "ignoring Battery Optimizations"
-        "logFieldIntentIsNull" -> "intent Is Null"
         else -> null
     }
     private fun lookupja7(key: String): String? = when (key) {
+        "logFieldHideFromRecentsEnabled" -> "hide From Recents Enabled"
+        "logFieldIgnoringBatteryOptimizations" -> "ignoring Battery Optimizations"
+        "logFieldIntentIsNull" -> "intent Is Null"
         "logFieldKeepAliveAccessibilityEnabled" -> "keep Alive Accessibility Enabled"
         "logFieldLastTaskRemovedAt" -> "last Task Removed At"
         "logFieldLiveClassReminderStartMinutes" -> "live Class Reminder Start Minutes"
@@ -5227,12 +5233,12 @@ object ArbCatalog {
         "qrTransferPlaintextWarning" -> "QR転送は平文です。近くのカメラで読み取られる可能性があります。送信元を確認してから読み込んでください。確認なしに上書きはしません。"
         "qrTransferRawLengthMismatch" -> "受信データの長さを検証できませんでした。最初からやり直してください"
         "qrTransferReceiveComplete" -> "データを受信しました。インポート中…"
-        "qrTransferReceiveProgress" -> "受信 {received} フレーム · 解読 {decoded}/{total}"
-        "qrTransferReceiveSpeed" -> "受信速度"
-        "qrTransferResourceLimit" -> "受信データがQR転送のリソース上限を超えました。最初からやり直し、小さいバックアップを使ってください。"
         else -> null
     }
     private fun lookupja8(key: String): String? = when (key) {
+        "qrTransferReceiveProgress" -> "受信 {received} フレーム · 解読 {decoded}/{total}"
+        "qrTransferReceiveSpeed" -> "受信速度"
+        "qrTransferResourceLimit" -> "受信データがQR転送のリソース上限を超えました。最初からやり直し、小さいバックアップを使ってください。"
         "qrTransferRestart" -> "最初からやり直す"
         "qrTransferSampleFps" -> "サンプルFPS"
         "qrTransferScanHint" -> "相手の画面にカメラを向け、完了まで安定して構えてください"
@@ -5530,12 +5536,12 @@ object ArbCatalog {
         "serviceMsgImportUseOverwriteForFullBackup" -> "This is a full data backup. Please import using overwrite current timetable."
         "serviceMsgIncompleteGithubRepoUrl" -> "GitHub repository URL is incomplete."
         "serviceMsgIncompleteRawGithubUrl" -> "raw.githubusercontent.com URL is incomplete."
-        "serviceMsgInvalidRepositoryUrl" -> "Repository URL format is invalid."
-        "serviceMsgInvalidTimeFormat" -> "Time format is invalid."
-        "serviceMsgInvalidUrl" -> "Invalid URL."
         else -> null
     }
     private fun lookupja9(key: String): String? = when (key) {
+        "serviceMsgInvalidRepositoryUrl" -> "Repository URL format is invalid."
+        "serviceMsgInvalidTimeFormat" -> "Time format is invalid."
+        "serviceMsgInvalidUrl" -> "Invalid URL."
         "serviceMsgLinkedCourseNotFound" -> "Linked course was not found."
         "serviceMsgMacroClickSelectorEmpty" -> "Click selector is empty."
         "serviceMsgMacroElementNotFound" -> "Element not found: {selector}"
@@ -5833,12 +5839,12 @@ object ArbCatalog {
         "supportChipFixes" -> "問題修正"
         "supportChipPolish" -> "UX改善"
         "supportCompleteThanks" -> "軽屿時間割の継続的な改善を支援していただきありがとうございます ❤️"
-        "supportConfirmedShort" -> "支援済み"
-        "supportCreatorTitle" -> "作者にコーヒーをおごる"
-        "supportHeroSubtitle" -> "あなたの支援は時間割のメンテナンス、教務インポート適応とUX改善に直接活用されます"
         else -> null
     }
     private fun lookupja10(key: String): String? = when (key) {
+        "supportConfirmedShort" -> "支援済み"
+        "supportCreatorTitle" -> "作者にコーヒーをおごる"
+        "supportHeroSubtitle" -> "あなたの支援は時間割のメンテナンス、教務インポート適応とUX改善に直接活用されます"
         "supportHeroTitle" -> "軽屿時間割の継続的更新を支援"
         "supportMethodTitle" -> "支援方法を選択"
         "supportRunningBadge" -> "稼働中"
@@ -6136,12 +6142,12 @@ object ArbCatalog {
         "weatherSummarySeparator" -> " · "
         "weatherTemperatureValue" -> "{temperature}°"
         "weatherThunderstorm" -> "雷雨"
-        "weatherThunderstormHail" -> "ひょうを伴う雷雨"
-        "weatherUseCurrentLocation" -> "現在地を使う"
-        "webAddressHint" -> "Webアドレスを入力"
         else -> null
     }
     private fun lookupja11(key: String): String? = when (key) {
+        "weatherThunderstormHail" -> "ひょうを伴う雷雨"
+        "weatherUseCurrentLocation" -> "現在地を使う"
+        "webAddressHint" -> "Webアドレスを入力"
         "webLoginImport" -> "Webログインインポート"
         "webdavPasswordReentryBody" -> "今回の更新でパスワードの保存方法が変更されたため、アプリ専用パスワードをもう一度入力してください。サーバーアドレス、アカウント、同期設定は保持されています。"
         "wechatLabel" -> "WeChat"
@@ -6195,7 +6201,7 @@ object ArbCatalog {
         else -> null
     }
 
-    // ── ko（3050 条）──
+    // ── ko（3053 条）──
     private fun lookupko(key: String): String? = lookupko1(key) ?: lookupko2(key) ?: lookupko3(key) ?: lookupko4(key) ?: lookupko5(key) ?: lookupko6(key) ?: lookupko7(key) ?: lookupko8(key) ?: lookupko9(key) ?: lookupko10(key) ?: lookupko11(key)
     private fun lookupko1(key: String): String? = when (key) {
         "aboutAdvancedOptionsTitle" -> "고급 옵션"
@@ -7760,6 +7766,9 @@ object ArbCatalog {
         "liveStagePreviewStageDuringClass" -> "수업 중"
         "liveStagePreviewStartedToast" -> "슈퍼 아일랜드 미리보기를 시작했습니다"
         "liveStagePreviewStoppedToast" -> "슈퍼 아일랜드 미리보기를 중지했습니다"
+        "liveTestingAnalyticsOptOutDescription" -> "이 기능을 끄면 앱이 Umeng 통계와 크래시 보고를 초기화하지 않아 크래시 및 성능 데이터가 전달되지 않습니다. 기기의 크래시 로그는 계속 기록되며 앱 로그에서 직접 내보낼 수 있습니다. 변경 사항은 다음에 앱을 시작할 때 적용됩니다."
+        "liveTestingAnalyticsOptOutSummary" -> "끄면 전송하지 않습니다"
+        "liveTestingAnalyticsOptOutTitle" -> "오류 보고"
         "liveTestingAnrAction" -> "비정상 프리즈 테스트"
         "liveTestingAnrSoon" -> "약 30초간 메인 스레드 프리즈를 트리거합니다. flutter run에서 벗어나 테스트하고, 프리즈 후 앱을 다시 열어 Umeng 백그라운드를 확인하세요."
         "liveTestingAutoRefreshOffReason" -> "현재 상태를 안정적으로 확인할 수 있습니다."
@@ -8010,12 +8019,12 @@ object ArbCatalog {
         "logFieldFrom" -> "from"
         "logFieldHasNotificationPermission" -> "has Notification Permission"
         "logFieldHasPromotedPermissionDeclared" -> "has Promoted Permission Declared"
-        "logFieldHideFromRecentsEnabled" -> "hide From Recents Enabled"
-        "logFieldIgnoringBatteryOptimizations" -> "ignoring Battery Optimizations"
-        "logFieldIntentIsNull" -> "intent Is Null"
         else -> null
     }
     private fun lookupko7(key: String): String? = when (key) {
+        "logFieldHideFromRecentsEnabled" -> "hide From Recents Enabled"
+        "logFieldIgnoringBatteryOptimizations" -> "ignoring Battery Optimizations"
+        "logFieldIntentIsNull" -> "intent Is Null"
         "logFieldKeepAliveAccessibilityEnabled" -> "keep Alive Accessibility Enabled"
         "logFieldLastTaskRemovedAt" -> "last Task Removed At"
         "logFieldLiveClassReminderStartMinutes" -> "live Class Reminder Start Minutes"
@@ -8313,12 +8322,12 @@ object ArbCatalog {
         "qrTransferPlaintextWarning" -> "QR 전송은 평문입니다. 가까운 카메라가 내용을 읽을 수 있습니다. 가져오기 전에 출처를 확인하며, 확인 없이 덮어쓰지 않습니다."
         "qrTransferRawLengthMismatch" -> "수신 데이터 길이 검증에 실패했습니다. 다시 시작해 주세요"
         "qrTransferReceiveComplete" -> "데이터 수신 완료, 가져오는 중…"
-        "qrTransferReceiveProgress" -> "{received}프레임 수신 · {decoded}/{total} 복호화됨"
-        "qrTransferReceiveSpeed" -> "수신 속도"
-        "qrTransferResourceLimit" -> "수신 데이터가 QR 전송 리소스 한도를 초과했습니다. 다시 시작하고 더 작은 백업을 사용하세요."
         else -> null
     }
     private fun lookupko8(key: String): String? = when (key) {
+        "qrTransferReceiveProgress" -> "{received}프레임 수신 · {decoded}/{total} 복호화됨"
+        "qrTransferReceiveSpeed" -> "수신 속도"
+        "qrTransferResourceLimit" -> "수신 데이터가 QR 전송 리소스 한도를 초과했습니다. 다시 시작하고 더 작은 백업을 사용하세요."
         "qrTransferRestart" -> "다시 시작"
         "qrTransferSampleFps" -> "샘플 FPS"
         "qrTransferScanHint" -> "상대방 화면에 카메라를 대고 완료될 때까지 유지하세요"
@@ -8616,12 +8625,12 @@ object ArbCatalog {
         "serviceMsgImportUseOverwriteForFullBackup" -> "This is a full data backup. Please import using overwrite current timetable."
         "serviceMsgIncompleteGithubRepoUrl" -> "GitHub repository URL is incomplete."
         "serviceMsgIncompleteRawGithubUrl" -> "raw.githubusercontent.com URL is incomplete."
-        "serviceMsgInvalidRepositoryUrl" -> "Repository URL format is invalid."
-        "serviceMsgInvalidTimeFormat" -> "Time format is invalid."
-        "serviceMsgInvalidUrl" -> "Invalid URL."
         else -> null
     }
     private fun lookupko9(key: String): String? = when (key) {
+        "serviceMsgInvalidRepositoryUrl" -> "Repository URL format is invalid."
+        "serviceMsgInvalidTimeFormat" -> "Time format is invalid."
+        "serviceMsgInvalidUrl" -> "Invalid URL."
         "serviceMsgLinkedCourseNotFound" -> "Linked course was not found."
         "serviceMsgMacroClickSelectorEmpty" -> "Click selector is empty."
         "serviceMsgMacroElementNotFound" -> "Element not found: {selector}"
@@ -8919,12 +8928,12 @@ object ArbCatalog {
         "supportChipFixes" -> "문제 수정"
         "supportChipPolish" -> "UX 개선"
         "supportCompleteThanks" -> "경屿 시간표의 지속적인 개선을 지원해 주셔서 감사합니다 ❤️"
-        "supportConfirmedShort" -> "후원함"
-        "supportCreatorTitle" -> "개발자에게 커피 한 잔"
-        "supportHeroSubtitle" -> "여러분의 지원은 시간표 유지보수, 교무 가져오기 적응 및 UX 개선에 직접 사용됩니다"
         else -> null
     }
     private fun lookupko10(key: String): String? = when (key) {
+        "supportConfirmedShort" -> "후원함"
+        "supportCreatorTitle" -> "개발자에게 커피 한 잔"
+        "supportHeroSubtitle" -> "여러분의 지원은 시간표 유지보수, 교무 가져오기 적응 및 UX 개선에 직접 사용됩니다"
         "supportHeroTitle" -> "경屿 시간표의 지속적 업데이트를 지원"
         "supportMethodTitle" -> "지원 방법 선택"
         "supportRunningBadge" -> "운영 중"
@@ -9222,12 +9231,12 @@ object ArbCatalog {
         "weatherSummarySeparator" -> " · "
         "weatherTemperatureValue" -> "{temperature}°"
         "weatherThunderstorm" -> "뇌우"
-        "weatherThunderstormHail" -> "우박을 동반한 뇌우"
-        "weatherUseCurrentLocation" -> "현재 위치 사용"
-        "webAddressHint" -> "웹 주소 입력"
         else -> null
     }
     private fun lookupko11(key: String): String? = when (key) {
+        "weatherThunderstormHail" -> "우박을 동반한 뇌우"
+        "weatherUseCurrentLocation" -> "현재 위치 사용"
+        "webAddressHint" -> "웹 주소 입력"
         "webLoginImport" -> "웹 로그인 가져오기"
         "webdavPasswordReentryBody" -> "이번 업데이트로 비밀번호 저장 방식이 변경되었습니다. 앱 비밀번호를 한 번 다시 입력해 주세요. 서버 주소, 계정 및 동기화 설정은 유지됩니다."
         "wechatLabel" -> "WeChat"
@@ -9281,7 +9290,7 @@ object ArbCatalog {
         else -> null
     }
 
-    // ── zh（3050 条）──
+    // ── zh（3053 条）──
     private fun lookupzh(key: String): String? = lookupzh1(key) ?: lookupzh2(key) ?: lookupzh3(key) ?: lookupzh4(key) ?: lookupzh5(key) ?: lookupzh6(key) ?: lookupzh7(key) ?: lookupzh8(key) ?: lookupzh9(key) ?: lookupzh10(key) ?: lookupzh11(key)
     private fun lookupzh1(key: String): String? = when (key) {
         "aboutAdvancedOptionsTitle" -> "高级选项"
@@ -10846,6 +10855,9 @@ object ArbCatalog {
         "liveStagePreviewStageDuringClass" -> "课中"
         "liveStagePreviewStartedToast" -> "已开启超级岛预览"
         "liveStagePreviewStoppedToast" -> "已停止超级岛预览"
+        "liveTestingAnalyticsOptOutDescription" -> "关闭后，应用不再初始化友盟统计与崩溃上报，我们收不到崩溃和性能数据；设备本地的崩溃日志仍会记录，你可以在「应用日志」里自行导出。改动在下次启动应用后生效。"
+        "liveTestingAnalyticsOptOutSummary" -> "关闭后不再上报崩溃"
+        "liveTestingAnalyticsOptOutTitle" -> "错误上报"
         "liveTestingAnrAction" -> "异常卡顿测试"
         "liveTestingAnrSoon" -> "即将触发约 30 秒主线程卡死，请脱离 flutter run 测试，并在卡死后重新打开应用查看友盟后台"
         "liveTestingAutoRefreshOffReason" -> "便于稳定查看当前状态"
@@ -11096,12 +11108,12 @@ object ArbCatalog {
         "logFieldFrom" -> "来源页面"
         "logFieldHasNotificationPermission" -> "通知权限"
         "logFieldHasPromotedPermissionDeclared" -> "已声明提升通知权限"
-        "logFieldHideFromRecentsEnabled" -> "从最近任务隐藏"
-        "logFieldIgnoringBatteryOptimizations" -> "忽略电池优化"
-        "logFieldIntentIsNull" -> "Intent 为空"
         else -> null
     }
     private fun lookupzh7(key: String): String? = when (key) {
+        "logFieldHideFromRecentsEnabled" -> "从最近任务隐藏"
+        "logFieldIgnoringBatteryOptimizations" -> "忽略电池优化"
+        "logFieldIntentIsNull" -> "Intent 为空"
         "logFieldKeepAliveAccessibilityEnabled" -> "无障碍保活已启用"
         "logFieldLastTaskRemovedAt" -> "上次任务移除时间"
         "logFieldLiveClassReminderStartMinutes" -> "上课提醒开始分钟"
@@ -11399,12 +11411,12 @@ object ArbCatalog {
         "qrTransferPlaintextWarning" -> "二维码传输是明文，附近摄像头可能读取内容。请确认来源，未经确认不会覆盖数据。"
         "qrTransferRawLengthMismatch" -> "接收数据长度校验失败，请重新开始"
         "qrTransferReceiveComplete" -> "数据接收完成，正在导入……"
-        "qrTransferReceiveProgress" -> "已接收 {received} 帧 · 已解出 {decoded}/{total}"
-        "qrTransferReceiveSpeed" -> "接收速度"
-        "qrTransferResourceLimit" -> "接收数据超过二维码传输资源上限，请重新开始并使用更小的备份。"
         else -> null
     }
     private fun lookupzh8(key: String): String? = when (key) {
+        "qrTransferReceiveProgress" -> "已接收 {received} 帧 · 已解出 {decoded}/{total}"
+        "qrTransferReceiveSpeed" -> "接收速度"
+        "qrTransferResourceLimit" -> "接收数据超过二维码传输资源上限，请重新开始并使用更小的备份。"
         "qrTransferRestart" -> "重新开始"
         "qrTransferSampleFps" -> "采样帧率"
         "qrTransferScanHint" -> "将摄像头对准对方手机屏幕，保持稳定，等待进度完成"
@@ -11702,12 +11714,12 @@ object ArbCatalog {
         "serviceMsgImportUseOverwriteForFullBackup" -> "此文件为完整备份，请使用覆盖方式导入"
         "serviceMsgIncompleteGithubRepoUrl" -> "GitHub 仓库地址不完整"
         "serviceMsgIncompleteRawGithubUrl" -> "raw.githubusercontent.com 地址不完整"
-        "serviceMsgInvalidRepositoryUrl" -> "仓库地址格式不正确"
-        "serviceMsgInvalidTimeFormat" -> "时间格式不正确"
-        "serviceMsgInvalidUrl" -> "地址无效"
         else -> null
     }
     private fun lookupzh9(key: String): String? = when (key) {
+        "serviceMsgInvalidRepositoryUrl" -> "仓库地址格式不正确"
+        "serviceMsgInvalidTimeFormat" -> "时间格式不正确"
+        "serviceMsgInvalidUrl" -> "地址无效"
         "serviceMsgLinkedCourseNotFound" -> "关联的课程不存在"
         "serviceMsgMacroClickSelectorEmpty" -> "点击元素的选择器为空"
         "serviceMsgMacroElementNotFound" -> "未找到元素：{selector}"
@@ -12005,12 +12017,12 @@ object ArbCatalog {
         "supportChipFixes" -> "修复问题"
         "supportChipPolish" -> "体验优化"
         "supportCompleteThanks" -> "感谢你支持轻屿课表继续打磨"
-        "supportConfirmedShort" -> "已支持"
-        "supportCreatorTitle" -> "请作者喝杯咖啡"
-        "supportHeroSubtitle" -> "你的支持会直接用于维护课表、教务导入适配与体验优化"
         else -> null
     }
     private fun lookupzh10(key: String): String? = when (key) {
+        "supportConfirmedShort" -> "已支持"
+        "supportCreatorTitle" -> "请作者喝杯咖啡"
+        "supportHeroSubtitle" -> "你的支持会直接用于维护课表、教务导入适配与体验优化"
         "supportHeroTitle" -> "支持轻屿课表继续更新"
         "supportMethodTitle" -> "选择支持方式"
         "supportRunningBadge" -> "运行中"
@@ -12308,12 +12320,12 @@ object ArbCatalog {
         "weatherSummarySeparator" -> " · "
         "weatherTemperatureValue" -> "{temperature}°"
         "weatherThunderstorm" -> "雷阵雨"
-        "weatherThunderstormHail" -> "雷阵雨伴冰雹"
-        "weatherUseCurrentLocation" -> "使用当前位置"
-        "webAddressHint" -> "输入网页地址"
         else -> null
     }
     private fun lookupzh11(key: String): String? = when (key) {
+        "weatherThunderstormHail" -> "雷阵雨伴冰雹"
+        "weatherUseCurrentLocation" -> "使用当前位置"
+        "webAddressHint" -> "输入网页地址"
         "webLoginImport" -> "网页登录导入"
         "webdavPasswordReentryBody" -> "本次更新更改了密码的本地保存方式，需要重新输入一次应用专用密码；服务器地址、账号与同步设置均已保留。"
         "wechatLabel" -> "微信"
@@ -12367,7 +12379,7 @@ object ArbCatalog {
         else -> null
     }
 
-    // ── zh_HK（3050 条）──
+    // ── zh_HK（3053 条）──
     private fun lookupzhHK(key: String): String? = lookupzhHK1(key) ?: lookupzhHK2(key) ?: lookupzhHK3(key) ?: lookupzhHK4(key) ?: lookupzhHK5(key) ?: lookupzhHK6(key) ?: lookupzhHK7(key) ?: lookupzhHK8(key) ?: lookupzhHK9(key) ?: lookupzhHK10(key) ?: lookupzhHK11(key)
     private fun lookupzhHK1(key: String): String? = when (key) {
         "aboutAdvancedOptionsTitle" -> "高級選項"
@@ -13932,6 +13944,9 @@ object ArbCatalog {
         "liveStagePreviewStageDuringClass" -> "課中"
         "liveStagePreviewStartedToast" -> "已開啟超級島預覽"
         "liveStagePreviewStoppedToast" -> "已停止超級島預覽"
+        "liveTestingAnalyticsOptOutDescription" -> "關閉後，應用程式不再初始化友盟統計與當機回報，我們收不到當機和效能資料；裝置本地的當機日誌仍會記錄，你可以在「應用日誌」裡自行匯出。變更在下次啟動應用程式後生效。"
+        "liveTestingAnalyticsOptOutSummary" -> "關閉後不再回報當機"
+        "liveTestingAnalyticsOptOutTitle" -> "錯誤回報"
         "liveTestingAnrAction" -> "異常卡頓測試"
         "liveTestingAnrSoon" -> "即將觸發約 30 秒主線程卡死，請脫離 flutter run 測試，並在卡死後重新打開應用查看友盟後台"
         "liveTestingAutoRefreshOffReason" -> "便於穩定查看目前狀態"
@@ -14182,12 +14197,12 @@ object ArbCatalog {
         "logFieldFrom" -> "來源頁面"
         "logFieldHasNotificationPermission" -> "通知權限"
         "logFieldHasPromotedPermissionDeclared" -> "已聲明提升通知權限"
-        "logFieldHideFromRecentsEnabled" -> "從最近任務隱藏"
-        "logFieldIgnoringBatteryOptimizations" -> "忽略電池優化"
-        "logFieldIntentIsNull" -> "Intent 為空"
         else -> null
     }
     private fun lookupzhHK7(key: String): String? = when (key) {
+        "logFieldHideFromRecentsEnabled" -> "從最近任務隱藏"
+        "logFieldIgnoringBatteryOptimizations" -> "忽略電池優化"
+        "logFieldIntentIsNull" -> "Intent 為空"
         "logFieldKeepAliveAccessibilityEnabled" -> "無障礙保活已啟用"
         "logFieldLastTaskRemovedAt" -> "上次任務移除時間"
         "logFieldLiveClassReminderStartMinutes" -> "上課提醒開始分鐘"
@@ -14485,12 +14500,12 @@ object ArbCatalog {
         "qrTransferPlaintextWarning" -> "QR 碼傳輸是明文，附近相機可能讀取內容。請先確認來源，未經確認不會覆蓋資料。"
         "qrTransferRawLengthMismatch" -> "接收資料長度校驗失敗，請重新開始"
         "qrTransferReceiveComplete" -> "資料接收完成，正在匯入…"
-        "qrTransferReceiveProgress" -> "已接收 {received} 幀 · 已解出 {decoded}/{total}"
-        "qrTransferReceiveSpeed" -> "接收速度"
-        "qrTransferResourceLimit" -> "接收資料超過 QR 碼傳輸資源上限，請重新開始並使用較小的備份。"
         else -> null
     }
     private fun lookupzhHK8(key: String): String? = when (key) {
+        "qrTransferReceiveProgress" -> "已接收 {received} 幀 · 已解出 {decoded}/{total}"
+        "qrTransferReceiveSpeed" -> "接收速度"
+        "qrTransferResourceLimit" -> "接收資料超過 QR 碼傳輸資源上限，請重新開始並使用較小的備份。"
         "qrTransferRestart" -> "重新開始"
         "qrTransferSampleFps" -> "取樣幀率"
         "qrTransferScanHint" -> "將相機對準對方手機螢幕，保持穩定，等待進度完成"
@@ -14788,12 +14803,12 @@ object ArbCatalog {
         "serviceMsgImportUseOverwriteForFullBackup" -> "此文件為完整備份，請使用覆蓋方式導入"
         "serviceMsgIncompleteGithubRepoUrl" -> "GitHub repository URL is incomplete."
         "serviceMsgIncompleteRawGithubUrl" -> "raw.githubusercontent.com URL is incomplete."
-        "serviceMsgInvalidRepositoryUrl" -> "Repository URL format is invalid."
-        "serviceMsgInvalidTimeFormat" -> "Time format is invalid."
-        "serviceMsgInvalidUrl" -> "Invalid URL."
         else -> null
     }
     private fun lookupzhHK9(key: String): String? = when (key) {
+        "serviceMsgInvalidRepositoryUrl" -> "Repository URL format is invalid."
+        "serviceMsgInvalidTimeFormat" -> "Time format is invalid."
+        "serviceMsgInvalidUrl" -> "Invalid URL."
         "serviceMsgLinkedCourseNotFound" -> "Linked course was not found."
         "serviceMsgMacroClickSelectorEmpty" -> "Click selector is empty."
         "serviceMsgMacroElementNotFound" -> "Element not found: {selector}"
@@ -15091,12 +15106,12 @@ object ArbCatalog {
         "supportChipFixes" -> "修複問題"
         "supportChipPolish" -> "體驗優化"
         "supportCompleteThanks" -> "感謝你支持輕嶼課表繼續打磨 ❤️"
-        "supportConfirmedShort" -> "已支持"
-        "supportCreatorTitle" -> "請作者喝杯咖啡"
-        "supportHeroSubtitle" -> "你的支持會直接用於維護課表、教務匯入適配與體驗優化"
         else -> null
     }
     private fun lookupzhHK10(key: String): String? = when (key) {
+        "supportConfirmedShort" -> "已支持"
+        "supportCreatorTitle" -> "請作者喝杯咖啡"
+        "supportHeroSubtitle" -> "你的支持會直接用於維護課表、教務匯入適配與體驗優化"
         "supportHeroTitle" -> "支持輕嶼課表繼續更新"
         "supportMethodTitle" -> "選擇支持方式"
         "supportRunningBadge" -> "運行中"
@@ -15394,12 +15409,12 @@ object ArbCatalog {
         "weatherSummarySeparator" -> " · "
         "weatherTemperatureValue" -> "{temperature}°"
         "weatherThunderstorm" -> "雷陣雨"
-        "weatherThunderstormHail" -> "雷陣雨伴冰雹"
-        "weatherUseCurrentLocation" -> "使用目前位置"
-        "webAddressHint" -> "輸入網頁地址"
         else -> null
     }
     private fun lookupzhHK11(key: String): String? = when (key) {
+        "weatherThunderstormHail" -> "雷陣雨伴冰雹"
+        "weatherUseCurrentLocation" -> "使用目前位置"
+        "webAddressHint" -> "輸入網頁地址"
         "webLoginImport" -> "網頁登入匯入"
         "webdavPasswordReentryBody" -> "本次更新更改了密碼的本機儲存方式，需要重新輸入一次應用程式專用密碼；伺服器位址、帳號與同步設定均已保留。"
         "wechatLabel" -> "微信"
@@ -15453,7 +15468,7 @@ object ArbCatalog {
         else -> null
     }
 
-    // ── zh_TW（3050 条）──
+    // ── zh_TW（3053 条）──
     private fun lookupzhTW(key: String): String? = lookupzhTW1(key) ?: lookupzhTW2(key) ?: lookupzhTW3(key) ?: lookupzhTW4(key) ?: lookupzhTW5(key) ?: lookupzhTW6(key) ?: lookupzhTW7(key) ?: lookupzhTW8(key) ?: lookupzhTW9(key) ?: lookupzhTW10(key) ?: lookupzhTW11(key)
     private fun lookupzhTW1(key: String): String? = when (key) {
         "aboutAdvancedOptionsTitle" -> "高級選項"
@@ -17018,6 +17033,9 @@ object ArbCatalog {
         "liveStagePreviewStageDuringClass" -> "課中"
         "liveStagePreviewStartedToast" -> "已開啟超級島預覽"
         "liveStagePreviewStoppedToast" -> "已停止超級島預覽"
+        "liveTestingAnalyticsOptOutDescription" -> "關閉後，應用程式不再初始化友盟統計與當機回報，我們收不到當機和效能資料；裝置本地的當機日誌仍會記錄，你可以在「應用日誌」裡自行匯出。變更在下次啟動應用程式後生效。"
+        "liveTestingAnalyticsOptOutSummary" -> "關閉後不再回報當機"
+        "liveTestingAnalyticsOptOutTitle" -> "錯誤回報"
         "liveTestingAnrAction" -> "異常卡頓測試"
         "liveTestingAnrSoon" -> "即將觸發約 30 秒主線程卡死，請脫離 flutter run 測試，並在卡死後重新開啟應用檢視友盟背景"
         "liveTestingAutoRefreshOffReason" -> "便於穩定查看目前狀態"
@@ -17268,12 +17286,12 @@ object ArbCatalog {
         "logFieldFrom" -> "來源頁面"
         "logFieldHasNotificationPermission" -> "通知權限"
         "logFieldHasPromotedPermissionDeclared" -> "已聲明提升通知權限"
-        "logFieldHideFromRecentsEnabled" -> "從最近工作隱藏"
-        "logFieldIgnoringBatteryOptimizations" -> "忽略電池最佳化"
-        "logFieldIntentIsNull" -> "Intent 為空"
         else -> null
     }
     private fun lookupzhTW7(key: String): String? = when (key) {
+        "logFieldHideFromRecentsEnabled" -> "從最近工作隱藏"
+        "logFieldIgnoringBatteryOptimizations" -> "忽略電池最佳化"
+        "logFieldIntentIsNull" -> "Intent 為空"
         "logFieldKeepAliveAccessibilityEnabled" -> "無障礙保活已啟用"
         "logFieldLastTaskRemovedAt" -> "上次工作移除時間"
         "logFieldLiveClassReminderStartMinutes" -> "上課提醒開始分鐘"
@@ -17571,12 +17589,12 @@ object ArbCatalog {
         "qrTransferPlaintextWarning" -> "QR 碼傳輸是明文，附近相機可能讀取內容。請先確認來源，未經確認不會覆蓋資料。"
         "qrTransferRawLengthMismatch" -> "接收資料長度校驗失敗，請重新開始"
         "qrTransferReceiveComplete" -> "資料接收完成，正在匯入…"
-        "qrTransferReceiveProgress" -> "已接收 {received} 幀 · 已解出 {decoded}/{total}"
-        "qrTransferReceiveSpeed" -> "接收速度"
-        "qrTransferResourceLimit" -> "接收資料超過 QR 碼傳輸資源上限，請重新開始並使用較小的備份。"
         else -> null
     }
     private fun lookupzhTW8(key: String): String? = when (key) {
+        "qrTransferReceiveProgress" -> "已接收 {received} 幀 · 已解出 {decoded}/{total}"
+        "qrTransferReceiveSpeed" -> "接收速度"
+        "qrTransferResourceLimit" -> "接收資料超過 QR 碼傳輸資源上限，請重新開始並使用較小的備份。"
         "qrTransferRestart" -> "重新開始"
         "qrTransferSampleFps" -> "取樣幀率"
         "qrTransferScanHint" -> "將相機對準對方手機螢幕，保持穩定，等待進度完成"
@@ -17874,12 +17892,12 @@ object ArbCatalog {
         "serviceMsgImportUseOverwriteForFullBackup" -> "此文件為完整備份，請使用覆蓋方式導入"
         "serviceMsgIncompleteGithubRepoUrl" -> "GitHub repository URL is incomplete."
         "serviceMsgIncompleteRawGithubUrl" -> "raw.githubusercontent.com URL is incomplete."
-        "serviceMsgInvalidRepositoryUrl" -> "Repository URL format is invalid."
-        "serviceMsgInvalidTimeFormat" -> "Time format is invalid."
-        "serviceMsgInvalidUrl" -> "Invalid URL."
         else -> null
     }
     private fun lookupzhTW9(key: String): String? = when (key) {
+        "serviceMsgInvalidRepositoryUrl" -> "Repository URL format is invalid."
+        "serviceMsgInvalidTimeFormat" -> "Time format is invalid."
+        "serviceMsgInvalidUrl" -> "Invalid URL."
         "serviceMsgLinkedCourseNotFound" -> "Linked course was not found."
         "serviceMsgMacroClickSelectorEmpty" -> "Click selector is empty."
         "serviceMsgMacroElementNotFound" -> "Element not found: {selector}"
@@ -18177,12 +18195,12 @@ object ArbCatalog {
         "supportChipFixes" -> "修複問題"
         "supportChipPolish" -> "體驗優化"
         "supportCompleteThanks" -> "感謝你支持輕嶼課表繼續打磨 ❤️"
-        "supportConfirmedShort" -> "已支持"
-        "supportCreatorTitle" -> "請作者喝杯咖啡"
-        "supportHeroSubtitle" -> "你的支持會直接用於維護課表、教務匯入適配與體驗優化"
         else -> null
     }
     private fun lookupzhTW10(key: String): String? = when (key) {
+        "supportConfirmedShort" -> "已支持"
+        "supportCreatorTitle" -> "請作者喝杯咖啡"
+        "supportHeroSubtitle" -> "你的支持會直接用於維護課表、教務匯入適配與體驗優化"
         "supportHeroTitle" -> "支持輕嶼課表繼續更新"
         "supportMethodTitle" -> "選擇支持方式"
         "supportRunningBadge" -> "運行中"
@@ -18480,12 +18498,12 @@ object ArbCatalog {
         "weatherSummarySeparator" -> " · "
         "weatherTemperatureValue" -> "{temperature}°"
         "weatherThunderstorm" -> "雷陣雨"
-        "weatherThunderstormHail" -> "雷陣雨伴冰雹"
-        "weatherUseCurrentLocation" -> "使用目前位置"
-        "webAddressHint" -> "輸入網頁地址"
         else -> null
     }
     private fun lookupzhTW11(key: String): String? = when (key) {
+        "weatherThunderstormHail" -> "雷陣雨伴冰雹"
+        "weatherUseCurrentLocation" -> "使用目前位置"
+        "webAddressHint" -> "輸入網頁地址"
         "webLoginImport" -> "網頁登入匯入"
         "webdavPasswordReentryBody" -> "本次更新更改了密碼的本機儲存方式，需要重新輸入一次應用程式專用密碼；伺服器位址、帳號與同步設定均已保留。"
         "wechatLabel" -> "微信"
