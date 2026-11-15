@@ -518,6 +518,23 @@ private fun PrivacyPage(
     ) {
         item(key = "header") { GuideHeader(title, pageIndex, onBack) }
 
+        if (!requireConsent) {
+            // 复看模式（从设置进来看）：用户容易以为「又要我重新同意一次」。
+            // 这两句 ARB 六语早就备好了（`guidePrivacyViewOnly` / `guidePrivacyHelperViewOnly`），
+            // 此前全仓零渲染——这里补上，说明「本页只做查看，不会再次采集同意」。
+            item(key = "viewOnlyNote") {
+                QingyuCard(
+                    modifier = Modifier.fillMaxWidth(),
+                    insideMargin = QingyuCardDefaults.ContentInsideMargin,
+                ) {
+                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        GuideGroupTitle(GuideStrings.guidePrivacyViewOnly.text, dark)
+                        GuideParagraph(GuideStrings.guidePrivacyHelperViewOnly.text, dark)
+                    }
+                }
+            }
+        }
+
         item(key = "privacy") {
             QingyuCard(
                 modifier = Modifier.fillMaxWidth(),
