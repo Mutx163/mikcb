@@ -45,6 +45,8 @@ class WeatherProviderTest {
             HourlyWeatherPoint(LocalDateTime.of(2026, 10, 28, 9, 0), 20.0, 60, null, null, 61),
             HourlyWeatherPoint(LocalDateTime.of(2026, 10, 28, 10, 0), 22.0, 70, null, null, 63),
         ),
+        requestedLatitude = 30.29,
+        requestedLongitude = 120.16,
     )
 
     private fun provider(
@@ -86,6 +88,8 @@ class WeatherProviderTest {
             HourlyWeatherPoint(fetchedAt.plusHours(1).withMinute(0).withSecond(0), 20.0, 60, null, null, 61),
             HourlyWeatherPoint(fetchedAt.plusDays(3).withMinute(0).withSecond(0), 22.0, 70, null, null, 63),
         ),
+        requestedLatitude = 30.29,
+        requestedLongitude = 120.16,
     )
 
     @Test
@@ -335,6 +339,8 @@ class WeatherProviderTest {
             104.07,
             now,
             listOf(HourlyWeatherPoint(now.plusHours(1), 20.0, 60, null, null, 61)),
+            requestedLatitude = 30.57,
+            requestedLongitude = 104.07,
         )
         WeatherPreferences(store).apply {
             setEnabled(true)
@@ -354,5 +360,115 @@ class WeatherProviderTest {
         // 缓存城市与所选城市不一致 → 必须丢弃并重拉。
         assertEquals("杭州", provider.location?.name)
         assertEquals(1, gateway.fetchCount)
+    }
+
+    // ---------- 冷启动重试与加载判据（2026-11-15） ----------
+
+    /** 可编排每次结果、并在取数瞬间回调的网关（冷启动重试 / isLoadingWeather 用）。 */
+    private class DiagnosticGateway(
+        private val outcomes: MutableList<WeatherFetchResult>,
+    ) : WeatherGateway {
+        var fetchCount = 0
+        var onFetch: (() -> Unit)? = null
+        override fun fetchForecast(location: WeatherLocation): WeatherForecast? = null
+        override fun fetchForecastWithDiagnostics(location: WeatherLocation): WeatherFetchResult {
+            fetchCount++
+            onFetch?.invoke()
+            return if (outcomes.size > 1) outcomes.removeAt(0) else outcomes.first()
+        }
+        override fun searchLocations(query: String): List<WeatherLocation>? = emptyList()
+        override fun reverseGeocode(latitude: Double, longitude: Double): WeatherLocation? = null
+        override fun networkGeocode(): WeatherLocation? = null
+    }
+
+    private fun failure(failure: WeatherFetchFailure) = WeatherFetchResult(
+        forecast = null,
+        diagnostics = WeatherFetchDiagnostics(source = WeatherSource.OPEN_METEO, failure = failure),
+    )
+
+    private fun success(now: LocalDateTime) = WeatherFetchResult(
+        forecast = forecastAt(now),
+        diagnostics = WeatherFetchDiagnostics(source = WeatherSource.OPEN_METEO, failure = null),
+    )
+
+    @Test
+    fun cold_start_network_failure_retries_once_immediately() {
+        var now = LocalDateTime.of(2026, 10, 28, 8, 0)
+        val gateway = DiagnosticGateway(
+            mutableListOf(failure(WeatherFetchFailure.NETWORK), success(now)),
+        )
+        val provider = provider(gateway, clock = { now })
+
+        provider.setEnabled(true)
+        provider.setLocation(hangzhou)
+
+        assertEquals(2, gateway.fetchCount) // 冷启动第一次失败 → 同调用内立刻再试一次
+        assertEquals(WeatherState.READY, provider.state)
+        assertNotNull(provider.forecast)
+    }
+
+    @Test
+    fun cold_start_timeout_retries_once_immediately() {
+        var now = LocalDateTime.of(2026, 10, 28, 8, 0)
+        val gateway = DiagnosticGateway(
+            mutableListOf(failure(WeatherFetchFailure.TIMEOUT), success(now)),
+        )
+        val provider = provider(gateway, clock = { now })
+
+        provider.setEnabled(true)
+        provider.setLocation(hangzhou)
+
+        assertEquals(2, gateway.fetchCount)
+        assertEquals(WeatherState.READY, provider.state)
+    }
+
+    @Test
+    fun cold_start_http_status_does_not_retry() {
+        var now = LocalDateTime.of(2026, 10, 28, 8, 0)
+        val gateway = DiagnosticGateway(
+            mutableListOf(failure(WeatherFetchFailure.HTTP_STATUS)),
+        )
+        val provider = provider(gateway, clock = { now })
+
+        provider.setEnabled(true)
+        provider.setLocation(hangzhou)
+
+        assertEquals(1, gateway.fetchCount) // 4xx 是确定性失败，重试只会再错一次
+        assertEquals(WeatherState.FAILED, provider.state)
+        assertEquals(WeatherFetchFailure.HTTP_STATUS, provider.lastFetchFailure)
+    }
+
+    @Test
+    fun retry_after_cold_start_is_still_single_request() {
+        var now = LocalDateTime.of(2026, 10, 28, 8, 0)
+        val gateway = DiagnosticGateway(
+            mutableListOf(failure(WeatherFetchFailure.NETWORK), failure(WeatherFetchFailure.NETWORK)),
+        )
+        val provider = provider(gateway, clock = { now })
+
+        provider.setEnabled(true)
+        provider.setLocation(hangzhou)
+        assertEquals(2, gateway.fetchCount) // 冷启动那一次的重试已用掉
+
+        now = now.plusMinutes(20)
+        provider.retry()
+        assertEquals(3, gateway.fetchCount) // 手动重试不再附带“冷启动第二次”
+    }
+
+    @Test
+    fun isLoadingWeather_true_only_while_fetching() {
+        var now = LocalDateTime.of(2026, 10, 28, 8, 0)
+        val gateway = DiagnosticGateway(mutableListOf(success(now)))
+        lateinit var provider: WeatherProvider
+        val observed = mutableListOf<Boolean>()
+        gateway.onFetch = { observed.add(provider.isLoadingWeather) }
+        provider = provider(gateway, clock = { now })
+
+        provider.setEnabled(true)
+        provider.setLocation(hangzhou)
+
+        assertEquals(listOf(true), observed) // 取数瞬间是加载态
+        assertFalse(provider.isLoadingWeather) // 拿到数据后立刻退出加载态
+        assertNotNull(provider.forecast)
     }
 }

@@ -257,8 +257,10 @@ class WeatherService(
                 "forecast_days" to FORECAST_DAYS.toString(),
             ),
         )
+        val requestedLatitude = coarsenCoordinate(location.latitude)
+        val requestedLongitude = coarsenCoordinate(location.longitude)
         val response = http.getDetailed(url)
-        val result = interpret(response)
+        val result = interpret(response, requestedLatitude, requestedLongitude)
         // 传输层（连不上 / 超时 / 非 200）的日志由统一入口 QingyuHttp 记；这里只补
         // **解析层**那一类（拿到 200 但结构不对）——同一条失败只留一行，不重复。
         val failure = result.diagnostics.failure
@@ -282,7 +284,11 @@ class WeatherService(
 
     // ---------- 内部 ----------
 
-    private fun interpret(response: WeatherHttpResult): WeatherFetchResult {
+    private fun interpret(
+        response: WeatherHttpResult,
+        requestedLatitude: Double,
+        requestedLongitude: Double,
+    ): WeatherFetchResult {
         val diagnostics = WeatherFetchDiagnostics(
             source = WeatherSource.OPEN_METEO,
             failure = response.failure,
@@ -305,7 +311,14 @@ class WeatherService(
             )
         }
         return try {
-            val forecast = WeatherForecast.fromOpenMeteoResponse(typed(parsed.json), now())
+            // 请求坐标（取整）随预报落盘：冷启动缓存比对必须用同一坐标系，
+            // 不能用响应回填的格点中心（差 0.02 左右，1e-4 容差永远不相等）。
+            val forecast = WeatherForecast.fromOpenMeteoResponse(
+                json = typed(parsed.json),
+                fetchedAt = now(),
+                requestedLatitude = requestedLatitude,
+                requestedLongitude = requestedLongitude,
+            )
             if (forecast.hourly.isEmpty()) {
                 WeatherFetchResult(
                     null,

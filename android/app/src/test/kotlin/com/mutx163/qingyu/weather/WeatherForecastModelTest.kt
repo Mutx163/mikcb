@@ -207,15 +207,35 @@ class WeatherForecastModelTest {
     }
 
     @Test
-    fun `matchesLocation coarsens before comparing`() { // [Dart推演] 同 isSamePlaceAs 口径
+    fun `matchesLocation compares requested coordinates not grid center`() {
+        // 2026-11-15 根因：格点中心（响应回填）与用户取整坐标差 0.02，1e-4 容差永远不等。
+        // 现在比对**请求坐标**（同一坐标系）。
         val forecast = WeatherForecast(
+            latitude = 30.2546, // 假想接口回填的格点中心
+            longitude = 120.1634,
+            fetchedAt = LocalDateTime.of(2026, 9, 18, 6, 0),
+            hourly = listOf(point("2026-09-18T08:00")),
+            requestedLatitude = 30.29,
+            requestedLongitude = 120.16,
+        )
+        assertTrue(forecast.matchesLocation(hangzhou))
+        assertTrue(!forecast.matchesLocation(gazhu))
+        // 格点中心本身比不相等：如果谁把实现改回用 latitude/longitude，这条会红。
+        assertTrue(
+            kotlin.math.abs(forecast.latitude - forecast.requestedLatitude!!) > 0.01,
+        )
+    }
+
+    @Test
+    fun `legacy cache without requested coordinates is a miss`() {
+        // 旧缓存（2026-11-15 之前落盘）没有请求坐标 → 当一次 miss，下次取数补上。
+        val legacy = WeatherForecast(
             latitude = 30.29,
             longitude = 120.16,
             fetchedAt = LocalDateTime.of(2026, 9, 18, 6, 0),
             hourly = listOf(point("2026-09-18T08:00")),
         )
-        assertTrue(forecast.matchesLocation(hangzhou))
-        assertTrue(!forecast.matchesLocation(gazhu))
+        assertFalse(legacy.matchesLocation(hangzhou))
     }
 
     // ---------- 列式 JSON 契约 ----------
@@ -243,6 +263,8 @@ class WeatherForecastModelTest {
                 "latitude", "longitude", "fetchedAt", "time",
                 "temperature_2m", "precipitation_probability", "precipitation",
                 "snowfall", "weather_code",
+                // 2026-11-15：请求坐标随缓存落盘（旧缓存无此键 = miss）。
+                "requestedLatitude", "requestedLongitude",
             ),
             json.keys.toList(),
         )

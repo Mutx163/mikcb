@@ -122,11 +122,30 @@ class WeatherProvider(
     private var refreshing = false
 
     /**
+     * 本进程是否还没跑过第一次取数（冷启动重试用）。
+     *
+     * 只在**第一次**取数且失败分类是 NETWORK / TIMEOUT 时重试一次：进程刚起时网络
+     * （Wi-Fi 关联 / DNS / TLS）可能尚未就绪，这一次失败不代表服务不可用；用户手动
+     * 重试时网络已好，所以「点重试就好」不是错觉。HTTP 4xx / 解析失败不重试
+     * （确定性失败，重试只会再错一次），也不进退避之外的额外状态。
+     */
+    private var firstFetchInProcess = true
+
+    /**
      * 「这一格该有天气、但数据还没到手」——三处显示面据此预留等高空位（防闪动）。
      * 四个前提缺一不可，且刻意不含「已初始化」（初始化前 enabled 还是默认关）。
      */
     val isAwaitingData: Boolean
         get() = enabled && location != null && forecast == null && state != WeatherState.FAILED
+
+    /**
+     * 「正在取数」——页面据此画加载小圈（2026-11-15 用户要求：课卡上给一个很小的圈）。
+     *
+     * 与 [isAwaitingData] 的区别：本判据只在 `LOADING` 为真；失败后为 false（由
+     * [weatherUnavailable] 表达）。天气关着 / 没城市 / 已有数据也都为 false。
+     */
+    val isLoadingWeather: Boolean
+        get() = enabled && location != null && forecast == null && state == WeatherState.LOADING
 
     /** 读本地配置进内存，然后补一次「过期就刷」。幂等。 */
     fun initialize() {
@@ -261,8 +280,32 @@ class WeatherProvider(
         state = WeatherState.LOADING
         notifyChanged()
         try {
-            // 带诊断的取数：主源失败会自动切备源，失败分类写进应用日志（诊断页可见）。
-            val result = service.fetchForecastWithDiagnostics(requested)
+            val coldStart = firstFetchInProcess
+            firstFetchInProcess = false
+            // 带诊断的取数：失败分类写进应用日志（诊断页可见）。
+            var result = service.fetchForecastWithDiagnostics(requested)
+            val firstFailure = result.diagnostics.failure
+            if (coldStart &&
+                result.forecast == null &&
+                (firstFailure == WeatherFetchFailure.NETWORK ||
+                    firstFailure == WeatherFetchFailure.TIMEOUT)
+            ) {
+                // 冷启动第一次失败（网络/超时）→ 同一次调用内立刻再试一次，每次启动最多一次。
+                // 不 sleep、不占后台协程：调用方本来就在 IO 线程上，第二次请求用的是同一份配置。
+                val retried = service.fetchForecastWithDiagnostics(requested)
+                result = if (retried.forecast != null) {
+                    retried
+                } else {
+                    retried.copy(
+                        diagnostics = retried.diagnostics.copy(
+                            detail = listOfNotNull(
+                                "coldStartFirst=${firstFailure.name.lowercase()}",
+                                retried.diagnostics.detail,
+                            ).joinToString(separator = "; "),
+                        ),
+                    )
+                }
+            }
             val fetched = result.forecast
             val selected = location
             if (selected != null && !requested.isSamePlaceAs(selected)) {

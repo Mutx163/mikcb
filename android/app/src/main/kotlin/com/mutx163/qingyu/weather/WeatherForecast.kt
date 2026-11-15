@@ -139,6 +139,16 @@ class WeatherForecast(
     /** 抓取时刻（本地墙钟）。 */
     val fetchedAt: java.time.LocalDateTime,
     hourly: List<HourlyWeatherPoint>,
+    /**
+     * 当初**请求**用的取整坐标（与 [WeatherLocation.coarsened] 同一坐标系）。
+     *
+     * 2026-11-15 加：`latitude`/`longitude` 是接口回填的格点中心（示例请求 39.91 →
+     * 响应 39.89455），与用户取整坐标差 0.02 左右，用 1e-4 容差比对永远不相等 ⇒
+     * 每次冷启动都把缓存当「换城」丢掉。现在缓存比对用请求坐标（同一坐标系），
+     * 格点中心只用于数据本身。旧缓存没有这两个字段（null）⇒ 视为一次 miss。
+     */
+    val requestedLatitude: Double? = null,
+    val requestedLongitude: Double? = null,
 ) {
     /** 拷贝并按时间升序排序（不可变）。 */
     val hourly: List<HourlyWeatherPoint> = hourly.sortedBy { it.time }.toList()
@@ -164,12 +174,21 @@ class WeatherForecast(
         return now.isAfter(end)
     }
 
-    /** 是否是 [location] 的预报（取整坐标比较）。 */
-    fun matchesLocation(location: WeatherLocation): Boolean =
-        kotlin.math.abs(coarsenCoordinate(latitude) - coarsenCoordinate(location.latitude)) <
+    /**
+     * 是否是 [location] 的预报：**用当初的请求坐标比**（同一坐标系、取整后应完全相等）。
+     *
+     * 不能用 [latitude]/[longitude]（格点中心）比——那套坐标与用户取整坐标差 0.02 左右，
+     * 1e-4 的容差永远判不相等，冷启动就会把缓存丢掉重拉（2026-11-15 实报的根因）。
+     * 旧缓存没有请求坐标 ⇒ 视为 miss（丢一次可接受，下次取数会补上）。
+     */
+    fun matchesLocation(location: WeatherLocation): Boolean {
+        val requestedLat = requestedLatitude ?: return false
+        val requestedLon = requestedLongitude ?: return false
+        return kotlin.math.abs(requestedLat - coarsenCoordinate(location.latitude)) <
             WeatherLocation.SAME_PLACE_TOLERANCE &&
-            kotlin.math.abs(coarsenCoordinate(longitude) - coarsenCoordinate(location.longitude)) <
+            kotlin.math.abs(requestedLon - coarsenCoordinate(location.longitude)) <
             WeatherLocation.SAME_PLACE_TOLERANCE
+    }
 
     /** 列式序列化：逐小时字段拆成 6 个平行数组（键序与 Dart 一致）。 */
     fun toJson(): Map<String, Any?> = linkedMapOf(
@@ -182,6 +201,9 @@ class WeatherForecast(
         "precipitation" to hourly.map { it.precipitationMm },
         "snowfall" to hourly.map { it.snowfallCm },
         "weather_code" to hourly.map { it.weatherCode },
+        // 2026-11-15：请求坐标随缓存落盘，冷启动比对用同一坐标系（旧缓存无此键 = miss）。
+        "requestedLatitude" to requestedLatitude,
+        "requestedLongitude" to requestedLongitude,
     )
 
     fun toJsonString(): String = MiniJson.encode(toJson())
@@ -199,6 +221,9 @@ class WeatherForecast(
                 longitude = longitude,
                 fetchedAt = DartTime.fromEpochMillis(fetchedAtMs),
                 columns = json,
+                // 旧缓存没有这两个键 → null → matchesLocation 恒 false（当作一次 miss）。
+                requestedLatitude = (json["requestedLatitude"] as? Number)?.toDouble(),
+                requestedLongitude = (json["requestedLongitude"] as? Number)?.toDouble(),
             )
         }
 
@@ -211,6 +236,9 @@ class WeatherForecast(
         fun fromOpenMeteoResponse(
             json: Map<String, Any?>,
             fetchedAt: java.time.LocalDateTime,
+            /** 本次**请求**的取整坐标；缓存比对用，缺省 null = 不做缓存命中（测试/旧路径）。 */
+            requestedLatitude: Double? = null,
+            requestedLongitude: Double? = null,
         ): WeatherForecast {
             val hourly = json["hourly"] as? Map<*, *>
                 ?: throw DartFormatException("weather forecast: missing hourly block")
@@ -220,7 +248,14 @@ class WeatherForecast(
                 ?: throw DartFormatException("weather forecast: missing coordinates")
             val columns = LinkedHashMap<String, Any?>()
             for ((k, v) in hourly) columns[k.toString()] = v
-            return fromColumns(latitude, longitude, fetchedAt, columns)
+            return fromColumns(
+                latitude = latitude,
+                longitude = longitude,
+                fetchedAt = fetchedAt,
+                columns = columns,
+                requestedLatitude = requestedLatitude,
+                requestedLongitude = requestedLongitude,
+            )
         }
 
         private fun fromColumns(
@@ -228,6 +263,8 @@ class WeatherForecast(
             longitude: Double,
             fetchedAt: java.time.LocalDateTime,
             columns: Map<String, Any?>,
+            requestedLatitude: Double? = null,
+            requestedLongitude: Double? = null,
         ): WeatherForecast {
             val times = column(columns["time"])
             val temperatures = column(columns["temperature_2m"])
@@ -257,6 +294,8 @@ class WeatherForecast(
                 longitude = longitude,
                 fetchedAt = fetchedAt,
                 hourly = points,
+                requestedLatitude = requestedLatitude,
+                requestedLongitude = requestedLongitude,
             )
         }
 
