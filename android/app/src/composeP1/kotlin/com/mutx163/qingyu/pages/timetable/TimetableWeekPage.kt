@@ -1252,6 +1252,12 @@ fun TimetableWeekPage(
                         } else {
                             0.dp
                         },
+                        // 带下沿缝：与日视图首卡那道缝**同一个常数**（`DAY_VIEW_TOP_SEAM_DP`）。
+                        // 玻璃第二遍比带子多录 24dp；第 1 节紧贴带下沿时那 24dp 正好录进
+                        // 第 1 节课卡，于是带子下半截被卡片染色、卡片本身被带下沿横切
+                        // （2026-11-15 用户实报「周视图玻璃很奇怪 / 切视图颜色会变」）。
+                        // 缝只加在留白里，不参与节高基准（见 `WeekPageContent` 的算式）。
+                        topSeamDp = if (bandStripActive) DAY_VIEW_TOP_SEAM_DP.dp else 0.dp,
                         holidayOf = holidayOf,
                         weatherOf = weatherOf,
                         onCourseClick = onCourseClick,
@@ -1658,6 +1664,20 @@ private fun WeekPageContent(
      * （与座标同错）。预览不传（默认 0）。
      */
     underlapHeightDp: Dp = 0.dp,
+    /**
+     * 带子下沿与第一节课卡之间的缝（dp）：与日视图首个列表项那道缝**同一个数值**
+     * （`DAY_VIEW_TOP_SEAM_DP` = 14dp），由调用方传入，本函数不另写数字。
+     *
+     * 为什么必须有：玻璃带第二遍玻璃会比带子多录 24dp（`TIMETABLE_BAND_STRIP_MARGIN_DP`）。
+     * 第 1 节紧贴带下沿时，那 24dp 正好录到第 1 节课卡（饱和底色 + 文字），于是
+     * ① 带子下半截被卡片的颜色染上（切周/日视图时玻璃颜色会变）；
+     * ② 卡片被带下沿横切，玻璃里是糊的卡、玻璃底下还透着一份锐利的卡边。
+     * 日视图首卡离带下沿 14dp，切割线落在空白上，所以从来没有这个观感。
+     *
+     * **只加在留白里，不参与 [underlapHeightDp] 的节高基准**（见 `weekGridSectionBasisDp`）。
+     * 0 = 不留缝（预览 / 带子不画玻璃时）。
+     */
+    topSeamDp: Dp = 0.dp,
     /** 内容层外壳（缓存图层挂在这里，见 pager 调用处的说明）。 */
     modifier: Modifier = Modifier,
 ) {
@@ -1707,9 +1727,13 @@ private fun WeekPageContent(
             style = style,
             // 预览：用壳给的首页基准；真页面：就用这个盒子的高。
             // 下穿那一截是**多出来**的视口（在带子底下），不属于可见网格区，减回去。
-            availableHeightDp = (
-                sectionHeightBasisDp ?: (maxHeight - underlapHeightDp).coerceAtLeast(0.dp)
-                ).value,
+            // ⚠️ 只减下穿带高，**不减** [topSeamDp] —— 缝是留白里的额外空间，
+            // 在这里再减一次会让每节矮 14dp（算式与理由见 `weekGridSectionBasisDp`）。
+            availableHeightDp = sectionHeightBasisDp?.value
+                ?: weekGridSectionBasisDp(
+                    contentHeightDp = maxHeight.value,
+                    bandUnderlapDp = underlapHeightDp.value,
+                ),
             weekdayHeaderHeightDp = 0f,
             sectionCount = sectionCount,
         ).dp
@@ -1726,6 +1750,11 @@ private fun WeekPageContent(
             // 下穿留白：视口被接到屏幕顶部了，这截把第 1 节顶回带子下沿（可滚走）。
             if (underlapHeightDp > 0.dp) {
                 Spacer(modifier = Modifier.height(underlapHeightDp))
+                // 带下沿缝（与日视图同口径）：让玻璃第二遍的切割线落在空白上，
+                // 而不是横切第 1 节课卡。理由见参数 [topSeamDp] 的 KDoc。
+                if (topSeamDp > 0.dp) {
+                    Spacer(modifier = Modifier.height(topSeamDp))
+                }
             }
             Row(
                 modifier = Modifier

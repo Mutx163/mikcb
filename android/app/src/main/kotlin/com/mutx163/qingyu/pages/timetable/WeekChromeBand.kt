@@ -24,3 +24,23 @@ fun chromeDisplayedPage(
     isScrollInProgress: Boolean,
     previousPage: Int,
 ): Int = if (isScrollInProgress) previousPage else currentPage
+
+/**
+ * 周网格「自动充满」节高的可用高基准（dp）：**只减下穿带高，不减带下沿缝**。
+ *
+ * 下穿那一截是视口多出来的、被玻璃盖住的部分，不属于可见网格区，必须减回去，
+ * 否则每一节都会被撑高。带下沿缝（与 `DAY_VIEW_TOP_SEAM_DP` 同口径的 14dp）是
+ * 排在留白里的额外空间，**不许**从这里再减一次 —— 减了每节就矮 14dp，一屏十几节
+ * 累积下来底部长出一条空带。
+ *
+ * 纯函数（在 main 源集、无 Compose 依赖），供 JVM 单测钉住：`TimetableWeekBandSeamTest`。
+ *
+ * @param contentHeightDp 网格盒子高（dp）
+ * @param bandUnderlapDp 下穿带高（dp，0 = 没下穿）
+ */
+fun weekGridSectionBasisDp(contentHeightDp: Float, bandUnderlapDp: Float): Float {
+    val content = contentHeightDp.coerceAtLeast(0f)
+    val underlap = bandUnderlapDp.coerceIn(0f, content)
+    return content - underlap
+}
+
