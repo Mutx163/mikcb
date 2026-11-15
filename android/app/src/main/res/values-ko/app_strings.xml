@@ -41,8 +41,6 @@
     <string name="stage_before_class">곧 수업 시작</string>
     <string name="stage_before_end">곧 수업 종료</string>
 
-    <string name="title_before_class">곧 시작: %1$s</string>
-    <string name="title_before_end">곧 종료: %1$s</string>
 
     <string name="label_class_start_time">시작 시간: %1$s</string>
     <string name="label_class_end_time">종료 시간: %1$s</string>

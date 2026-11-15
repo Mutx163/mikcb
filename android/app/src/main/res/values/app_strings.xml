@@ -43,8 +43,6 @@
     <string name="stage_before_class">即将上课</string>
     <string name="stage_before_end">下课提醒</string>
 
-    <string name="title_before_class">即将上课：%1$s</string>
-    <string name="title_before_end">下课提醒：%1$s</string>
 
     <string name="label_class_start_time">上课时间：%1$s</string>
     <string name="label_class_end_time">下课时间：%1$s</string>

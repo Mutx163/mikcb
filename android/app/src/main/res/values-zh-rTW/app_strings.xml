@@ -41,8 +41,6 @@
     <string name="stage_before_class">即將上課</string>
     <string name="stage_before_end">下課提醒</string>
 
-    <string name="title_before_class">即將上課：%1$s</string>
-    <string name="title_before_end">下課提醒：%1$s</string>
 
     <string name="label_class_start_time">上課時間：%1$s</string>
     <string name="label_class_end_time">下課時間：%1$s</string>

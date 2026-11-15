@@ -41,8 +41,6 @@
     <string name="stage_before_class">まもなく授業</string>
     <string name="stage_before_end">終了間近</string>
 
-    <string name="title_before_class">まもなく授業：%1$s</string>
-    <string name="title_before_end">終了間近：%1$s</string>
 
     <string name="label_class_start_time">開始時刻：%1$s</string>
     <string name="label_class_end_time">終了時刻：%1$s</string>

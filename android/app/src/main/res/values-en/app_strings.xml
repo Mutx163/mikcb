@@ -41,8 +41,6 @@
     <string name="stage_before_class">Class starting soon</string>
     <string name="stage_before_end">Class ending soon</string>
 
-    <string name="title_before_class">Starting soon: %1$s</string>
-    <string name="title_before_end">Ending soon: %1$s</string>
 
     <string name="label_class_start_time">Start time: %1$s</string>
     <string name="label_class_end_time">End time: %1$s</string>
