@@ -146,8 +146,15 @@ class WeatherService(
         const val HOURLY_VARIABLES =
             "temperature_2m,precipitation_probability,precipitation,snowfall,weather_code"
 
-        /** 回溯 1 天：当天已上完的课也能显示天气。 */
-        const val PAST_DAYS = 1
+        /**
+         * 回溯 7 天：覆盖周视图能翻到的历史范围（当天已上完的课也都能显示）。
+         *
+         * 2026-11-15 由 1 提到 7：用户实报「前几天的课没有天气」，原因是请求只带回昨天一天，
+         * 更早的小时数据后端根本没返回。接口上限是 93 天（实测 `past_days=120` 回 400
+         * `Allowed range 0 to 93`）；7 天让响应从 15.7KB 涨到 21.1KB（+5.4KB / +34%），
+         * 解析、缓存格式与 TTL 都不受影响，所以不取更长的窗口。
+         */
+        const val PAST_DAYS = 7
 
         /** 预报窗口 16 天（接口上限）。 */
         const val FORECAST_DAYS = 16
