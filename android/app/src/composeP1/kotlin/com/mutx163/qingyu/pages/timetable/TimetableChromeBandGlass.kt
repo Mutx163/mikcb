@@ -8,6 +8,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -81,10 +82,20 @@ fun TimetableChromeBandGlass(
             hasBackdrop &&
             isRuntimeShaderSupported()
     }
-    // 染色强度就是材质面板那根 `tintAlpha`（0 = 全透，0.9 = 最厚）。
-    val tint = MiuixTheme.colorScheme.surface.copy(
-        alpha = material?.liquidTintAlpha ?: 1f,
-    )
+    // ── 染色：分两层叠，合成值 = 材质面板那根 `tintAlpha`（0 = 全透，0.9 = 最厚）──
+    // 为什么拆两层（2026-11-15，用户实报「透过玻璃看课卡：字糊、边锐」，并观察到
+    // 「日视图从本日滑到非本日时带子会暗一下，那一瞬间的模糊是对的」）：
+    //   · 那「暗一下」= 第二遍玻璃这一帧还没录到内容，带子上只剩第一遍的
+    //     「壁纸模糊 + 70% 染色」——也就是**被压过色**的样子；
+    //   · 稳态时第二遍把课卡糊进来，但这一遍以前**不染色**，于是带子里露出的是
+    //     没被压色的原色课卡（截图里就是一条条鲜艳色柱），和周围那圈染过的壁纸
+    //     对不上，读作「字糊、边锐」。
+    // 现在第二遍画完再补一层色（[bandTintLayerAlphas] 拆出来的第二层），稳态与那
+    // 「暗一下」的瞬间同一个观感；第一遍仍保留自己的那一层，合成后总强度不变。
+    val totalTintAlpha = material?.liquidTintAlpha ?: 1f
+    val (bandTintFirstAlpha, bandTintTopAlpha) = bandTintLayerAlphas(totalTintAlpha)
+    val tint = MiuixTheme.colorScheme.surface.copy(alpha = bandTintFirstAlpha)
+    val tintTop = MiuixTheme.colorScheme.surface.copy(alpha = bandTintTopAlpha)
 
     // 形状必须是 `CornerBasedShape`：`lens()` 靠它取四角半径，传 `RectangleShape`
     // 会整段 return、一点折射都没有。0dp 圆角与直角同形，观感不变。
@@ -149,14 +160,17 @@ fun TimetableChromeBandGlass(
                                 )
                             }
                         },
+                        // 第一遍只上薄薄一层（两成不到）：它盖在壁纸那块，
+                        // 课卡那遍看不到它；剩下的色在第二遍之上补（见 tintTop）。
                         onDrawSurface = { drawRect(tint) },
                     ),
             ) {
                 // ── 第二遍：钻到带子底下的课卡（2026-11-08）──
-                // 只做「采样 + 高斯 + 振奋」，**不染色、不折射**：
-                //   · 不染色 —— 第一遍已经铺了不透明的「壁纸模糊 + 染色」，这一遍只负责把
-                //     卡片糊出来盖在上面；再染一次会把整条带压厚一倍；
-                //   · 不折射 —— 卡片在交界处本来就在动，再叠一层位移只会读成「卡片被撕开」。
+                // 只做「采样 + 高斯 + 振奋」，**不折射**：
+                //   · 折射 —— 卡片在交界处本来就在动，再叠一层位移只会读成「卡片被撕开」；
+                //   · 染色 —— 2026-11-15 起改由下方统一的 tint 层负责（两遍都过同一层色），
+                //     以前这一遍不染、第一遍染，带子下半截里的卡片区域就成了「没染过的
+                //     原色」，用户读作「字糊、边锐，两样东西没融在一起」（周/日两视图都中）。
                 // 采样源的录制范围由调用方夹在「带高 + 下沿余量」（见 `TimetableBandUnderlap`），
                 // 这一层本身不额外扩大开销。
                 val underlay = underlayBackdrop?.takeIf { isRuntimeShaderSupported() }
@@ -175,6 +189,18 @@ fun TimetableChromeBandGlass(
                             ),
                     )
                 }
+
+                // ── 染色补层（2026-11-15）──
+                // 画在**两遍玻璃之上**：带子颜色从此只由材质（`tintAlpha`）决定，
+                // 不再随底下录到的是课卡、还是空白而变。这就是用户说的「滑动时暗一下、
+                // 那个瞬间模糊才是对的」那一层，现在稳态也一直有。
+                // 合成值 = `tint` + `tintTop` = 材质面板那根 `tintAlpha`（见 `bandTintLayerAlphas`）。
+                Box(
+                    modifier = Modifier
+                        .matchParentSize()
+                        .bandGlassOverhang(overdrawDp)
+                        .drawBehind { drawRect(tintTop) },
+                )
             }
 
             else -> Box(
