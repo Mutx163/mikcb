@@ -52,7 +52,7 @@ class AndroidImageLoader(
     @Volatile
     private var appContext: Context? = null
 
-    private val mainHandler = Handler(Looper.getMainLooper())
+    private val mainHandler: Handler by lazy { Handler(Looper.getMainLooper()) }
 
     /**
      * 组合根安装：用**唯一那个 OkHttp 客户端**（[QingyuHttp.client]）做网络层，不另建 client。
@@ -98,13 +98,14 @@ class AndroidImageLoader(
     }
 
     /** 内存缓存**当前占用**（字节）。 */
-    fun memoryCacheBytes(): Int = imageLoader?.memoryCache?.size?.toInt() ?: 0
+    fun memoryCacheBytes(): Int = MemoryCacheStats.bytes(imageLoader?.memoryCache)
 
     /** 内存缓存条目数。 */
-    fun memoryCacheEntryCount(): Int = imageLoader?.memoryCache?.keys?.size ?: 0
+    fun memoryCacheEntryCount(): Int = MemoryCacheStats.entries(imageLoader?.memoryCache)
 
     /** 内存缓存上限（字节），即构造时给的 [maxCacheBytes]。 */
-    fun memoryCacheMaxBytes(): Int = imageLoader?.memoryCache?.maxSize?.toInt() ?: maxCacheBytes
+    fun memoryCacheMaxBytes(): Int =
+        MemoryCacheStats.maxBytes(imageLoader?.memoryCache, maxCacheBytes)
 
     /** 关闭加载器（宿主退出时调用）：清内存缓存；Coil 没有需要手动关的后台线程池。 */
     fun shutdown() {
@@ -190,3 +191,20 @@ private fun Drawable.toBitmapOrNull(): Bitmap? {
     draw(canvas)
     return bitmap
 }
+
+/**
+ * 内存口径映射：Coil 的 [MemoryCache] → 诊断页的三个数（占用 / 上限 / 条目数）。
+ *
+ * 单独抽出来是为了能在 JVM 单测里用假 cache 断言「这三个数就是 size / maxSize / keys.size」，
+ * 而不是靠“我觉得对”。[maxBytes] 在没有 cache（未安装）时回落到构造参数（默认 16MB），
+ * 这也是「上限钉死、不随 Coil 默认百分比跳档」那条契约的落点。
+ */
+internal object MemoryCacheStats {
+
+    fun bytes(cache: MemoryCache?): Int = cache?.size?.toInt() ?: 0
+
+    fun maxBytes(cache: MemoryCache?, fallback: Int): Int = cache?.maxSize?.toInt() ?: fallback
+
+    fun entries(cache: MemoryCache?): Int = cache?.keys?.size ?: 0
+}
+
