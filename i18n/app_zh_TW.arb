@@ -5733,8 +5733,6 @@
   "liveIslandPreviewSampleTeacher": "張老師",
   "liveIslandPreviewSampleNextClass": "大學物理",
   "liveIslandPreviewSampleNote": "帶教材與習題冊",
-  "liveIslandPreviewTitleBeforeClass": "即將上課：{course}",
-  "liveIslandPreviewTitleBeforeEnd": "下課提醒：{course}",
   "liveExpandedDetailLineShortName": "簡稱：{value}",
   "liveExpandedDetailLineProgressNext": "下一節點：{value}",
   "liveExpandedDetailLineProgressFinal": "整節下課：{value}",
@@ -5744,20 +5742,6 @@
   "liveExpandedDetailLineTeacher": "教師：{value}",
   "liveExpandedDetailLineNext": "下一節：{value}",
   "liveExpandedDetailLineNote": "備註：{value}",
-  "@liveIslandPreviewTitleBeforeClass": {
-    "placeholders": {
-      "course": {
-        "type": "String"
-      }
-    }
-  },
-  "@liveIslandPreviewTitleBeforeEnd": {
-    "placeholders": {
-      "course": {
-        "type": "String"
-      }
-    }
-  },
   "@liveExpandedDetailLineShortName": {
     "placeholders": {
       "value": {

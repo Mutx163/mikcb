@@ -5733,8 +5733,6 @@
   "liveIslandPreviewSampleTeacher": "장 선생님",
   "liveIslandPreviewSampleNextClass": "대학 물리",
   "liveIslandPreviewSampleNote": "교재와 문제집 지참",
-  "liveIslandPreviewTitleBeforeClass": "곧 수업: {course}",
-  "liveIslandPreviewTitleBeforeEnd": "종료 알림: {course}",
   "liveExpandedDetailLineShortName": "약칭: {value}",
   "liveExpandedDetailLineProgressNext": "다음 지점: {value}",
   "liveExpandedDetailLineProgressFinal": "수업 종료: {value}",
@@ -5744,20 +5742,6 @@
   "liveExpandedDetailLineTeacher": "선생님: {value}",
   "liveExpandedDetailLineNext": "다음 수업: {value}",
   "liveExpandedDetailLineNote": "메모: {value}",
-  "@liveIslandPreviewTitleBeforeClass": {
-    "placeholders": {
-      "course": {
-        "type": "String"
-      }
-    }
-  },
-  "@liveIslandPreviewTitleBeforeEnd": {
-    "placeholders": {
-      "course": {
-        "type": "String"
-      }
-    }
-  },
   "@liveExpandedDetailLineShortName": {
     "placeholders": {
       "value": {

@@ -5853,8 +5853,6 @@
   "liveIslandPreviewSampleTeacher": "张老师",
   "liveIslandPreviewSampleNextClass": "大学物理",
   "liveIslandPreviewSampleNote": "带教材与习题册",
-  "liveIslandPreviewTitleBeforeClass": "即将上课：{course}",
-  "liveIslandPreviewTitleBeforeEnd": "下课提醒：{course}",
   "liveExpandedDetailLineShortName": "简称：{value}",
   "liveExpandedDetailLineProgressNext": "下一节点：{value}",
   "liveExpandedDetailLineProgressFinal": "整节下课：{value}",
@@ -5864,20 +5862,6 @@
   "liveExpandedDetailLineTeacher": "教师：{value}",
   "liveExpandedDetailLineNext": "下一节：{value}",
   "liveExpandedDetailLineNote": "备注：{value}",
-  "@liveIslandPreviewTitleBeforeClass": {
-    "placeholders": {
-      "course": {
-        "type": "String"
-      }
-    }
-  },
-  "@liveIslandPreviewTitleBeforeEnd": {
-    "placeholders": {
-      "course": {
-        "type": "String"
-      }
-    }
-  },
   "@liveExpandedDetailLineShortName": {
     "placeholders": {
       "value": {

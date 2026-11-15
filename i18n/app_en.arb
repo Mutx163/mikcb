@@ -5733,8 +5733,6 @@
   "liveIslandPreviewSampleTeacher": "Mr. Zhang",
   "liveIslandPreviewSampleNextClass": "Physics",
   "liveIslandPreviewSampleNote": "Bring textbook and workbook",
-  "liveIslandPreviewTitleBeforeClass": "Before class: {course}",
-  "liveIslandPreviewTitleBeforeEnd": "Before end: {course}",
   "liveExpandedDetailLineShortName": "Short name: {value}",
   "liveExpandedDetailLineProgressNext": "Next milestone: {value}",
   "liveExpandedDetailLineProgressFinal": "Class ends: {value}",
@@ -5744,20 +5742,6 @@
   "liveExpandedDetailLineTeacher": "Teacher: {value}",
   "liveExpandedDetailLineNext": "Next: {value}",
   "liveExpandedDetailLineNote": "Note: {value}",
-  "@liveIslandPreviewTitleBeforeClass": {
-    "placeholders": {
-      "course": {
-        "type": "String"
-      }
-    }
-  },
-  "@liveIslandPreviewTitleBeforeEnd": {
-    "placeholders": {
-      "course": {
-        "type": "String"
-      }
-    }
-  },
   "@liveExpandedDetailLineShortName": {
     "placeholders": {
       "value": {
