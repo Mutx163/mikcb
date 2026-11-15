@@ -229,6 +229,18 @@ object SettingsLiveSelfCheckPage {
             nodes += SettingsGap("liveSelfCheck.gap.rawJson")
         }
 
+        // ── 区块 5.5：错误上报开关（2026-11-15 用户批准；真门控在 UmengApplication）
+        nodes += SettingsGroup(
+            id = "liveSelfCheck.group.analyticsOptOut",
+            children = listOf(analyticsOptOutRow(data)),
+        )
+        nodes += SettingsDescription(
+            id = "liveSelfCheck.desc.analyticsOptOut",
+            textKey = s.liveTestingAnalyticsOptOutDescription.key,
+            text = s.liveTestingAnalyticsOptOutDescription.text,
+        )
+        nodes += SettingsGap("liveSelfCheck.gap.analyticsOptOut")
+
         // ── 区块 6：本地诊断日志（:1149-1183，永远最后且没有段后空档）
         nodes += SettingsInline(
             id = "liveSelfCheck.card.localLogs",
@@ -267,6 +279,25 @@ object SettingsLiveSelfCheckPage {
                 s.liveTestingHolidayOverridePurpose
             },
             switchValue = data.holidayOverrideEnabled,
+            action = SettingsAction.WRITE_SETTING,
+        )
+    }
+
+    /**
+     * 错误上报开关（2026-11-15 用户批准）。
+     *
+     * 开关语义是「**上报开着**」：开 = 正常初始化友盟；关 = 不初始化（本地崩溃日志照留）。
+     * 存储用的是一枚独立的 opt-out 键（`analytics_opt_out`），不复用隐私同意键——那枚键同时是
+     * 首启门的钥匙，复用会把「关上报」变成「重开隐私门」。
+     */
+    private fun analyticsOptOutRow(data: LiveSelfCheckData): SettingsRow {
+        val s = SettingsStringsExt3
+        return settingsRow(
+            id = "liveSelfCheck.analyticsOptOut",
+            component = MiuixRowComponent.SWITCH,
+            title = s.liveTestingAnalyticsOptOutTitle,
+            subtitle = s.liveTestingAnalyticsOptOutSummary,
+            switchValue = !data.analyticsOptOutEnabled,
             action = SettingsAction.WRITE_SETTING,
         )
     }
@@ -490,6 +521,8 @@ data class LiveSelfCheckData(
     /** 正式构建：假期覆盖与崩溃/卡顿按钮都不出现（:672 / :804）。 */
     val isReleaseBuild: Boolean = false,
     val holidayOverrideEnabled: Boolean = false, // timetable_settings.holidayOverrideEnabled 默认 false
+    /** 用户关掉了错误上报（独立键 `analytics_opt_out`；开关 UI 上显示为「错误上报」关闭）。 */
+    val analyticsOptOutEnabled: Boolean = false,
     /** 自检测试会话（预设课覆盖层）是否挂着。 */
     val sessionActive: Boolean = false,
     /** 课中测试进行中的课程名；null = 没在测。 */

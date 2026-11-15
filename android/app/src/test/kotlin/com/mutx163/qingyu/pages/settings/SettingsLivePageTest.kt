@@ -317,6 +317,10 @@ class SettingsLivePageTest {
                 "liveSelfCheck.section.timeCorrection",
                 "liveSelfCheck.group.timeCorrection",
                 "liveSelfCheck.gap.timeCorrection",
+                // 2026-11-15：错误上报开关（用户批准；真门控在 UmengApplication）
+                "liveSelfCheck.group.analyticsOptOut",
+                "liveSelfCheck.desc.analyticsOptOut",
+                "liveSelfCheck.gap.analyticsOptOut",
                 "liveSelfCheck.card.localLogs",
             ),
             selfCheck().topLevelIds(),
@@ -731,6 +735,10 @@ class SettingsLivePageTest {
         }
         expected += "liveSelfCheck.card.rawJson"
         expected += "liveSelfCheck.gap.rawJson"
+        // 2026-11-15：错误上报开关排在调试卡之后、本地日志卡之前。
+        expected += "liveSelfCheck.group.analyticsOptOut"
+        expected += "liveSelfCheck.desc.analyticsOptOut"
+        expected += "liveSelfCheck.gap.analyticsOptOut"
         assertEquals(expected, debugPart)
         assertEquals("liveSelfCheck.card.localLogs", ids.last())
     }

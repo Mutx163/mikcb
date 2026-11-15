@@ -6,6 +6,7 @@ import android.os.SystemClock
 import com.mutx163.qingyu.infra.AppLogStore
 import com.mutx163.qingyu.infra.CrashLogInstaller
 import com.mutx163.qingyu.pages.diagnostics.PerfProbeCore
+import com.mutx163.qingyu.pages.guide.AnalyticsOptOutPreferences
 import com.mutx163.qingyu.pages.guide.PrivacyConsentPreferences
 import com.mutx163.qingyu.platform.PrefsKeyValueStore
 import com.umeng.commonsdk.UMConfigure
@@ -46,11 +47,18 @@ class UmengApplication : Application() {
 
         // 友盟 SDK 的 UMLog/MobclickAgent 在 debug 下会大量刷屏；诊断走应用内日志文件。
         UMConfigure.setLogEnabled(false)
-        UMConfigure.preInit(
-            this,
-            BuildConfig.UMENG_APP_KEY,
-            BuildConfig.UMENG_CHANNEL
-        )
+        // 错误上报开关（独立键 `analytics_opt_out`）：关掉时连 preInit 也不跑——
+        // 对「preInit 会不会采集数据」没有查到的行为，取最保守的默认，而不是最宽松的。
+        val analyticsOptedOut = AnalyticsOptOutPreferences(
+            PrefsKeyValueStore(applicationContext),
+        ).isOptedOut()
+        if (!analyticsOptedOut) {
+            UMConfigure.preInit(
+                this,
+                BuildConfig.UMENG_APP_KEY,
+                BuildConfig.UMENG_CHANNEL
+            )
+        }
     }
 
     override fun onLowMemory() {
@@ -61,6 +69,10 @@ class UmengApplication : Application() {
     companion object {
         @Volatile
         private var initialized = false
+
+        /** 本地崩溃落盘是否已装（关掉上报时也会装一次，避免重复包 handler）。 */
+        @Volatile
+        private var crashLogInstalled = false
 
         fun isAnalyticsInitialized(): Boolean = initialized
 
@@ -88,20 +100,43 @@ class UmengApplication : Application() {
             // 结构保证（B1 复核补）：raw 入口也先查同意键——调试页 / 未来任何新调用点
             // 都绕不过隐私门；`UMConfigure.init` 与崩溃落盘（`CrashLogInstaller`）都只
             // 可能发生在同意之后。行为约定升级成代码保证。
-            if (!PrivacyConsentPreferences(PrefsKeyValueStore(context)).hasAcceptedPrivacyPolicy()) {
+            val appContext = context.applicationContext
+            val prefs = PrefsKeyValueStore(appContext)
+            if (!PrivacyConsentPreferences(prefs).hasAcceptedPrivacyPolicy()) {
                 return false
             }
+            // 错误上报开关（独立键，与同意键解耦）：关掉时**不初始化友盟**，但本地崩溃
+            // 落盘照留——用户仍能在「应用日志」里自己导出，界面上那句「本地日志仍会记录」
+            // 因此是事实而不是承诺。
+            val analyticsOptedOut = AnalyticsOptOutPreferences(prefs).isOptedOut()
             if (initialized) {
                 return false
             }
+            // 本地崩溃落盘在本文件里**只许出现这一处调用**（`FirstRunPrivacyWiringGuardTest`
+            // 钉着 1 处、且在 initializeAnalyticsIfNeeded 里）：上报开着时装在 U-APM 之后，
+            // 上报关掉时装在它之前（那时没有 U-APM handler 会覆盖它）。用局部函数收口，
+            // 保证只有一个真实调用点、且只装一次。
+            fun installCrashLogOnce() {
+                if (crashLogInstalled) {
+                    return
+                }
+                CrashLogInstaller.install()
+                crashLogInstalled = true
+            }
 
             synchronized(this) {
+                if (analyticsOptedOut) {
+                    // 关掉上报：不初始化友盟（preInit 也不跑），但本地崩溃日志照留——
+                    // 用户仍能在「应用日志」里自己导出，界面上那句「本地日志仍会记录」才算数。
+                    installCrashLogOnce()
+                    return false
+                }
                 if (initialized) {
                     return false
                 }
 
                 UMConfigure.init(
-                    context.applicationContext,
+                    appContext,
                     BuildConfig.UMENG_APP_KEY,
                     BuildConfig.UMENG_CHANNEL,
                     UMConfigure.DEVICE_TYPE_PHONE,
@@ -116,7 +151,7 @@ class UmengApplication : Application() {
                     UmengCrashRedaction.install()
                     // U-APM init 已换掉默认 handler：在脱敏层外面再包一层本地落盘，
                     // 保证崩溃先写进 app_runtime.log，再交给 U-APM 的脱敏 handler。
-                    CrashLogInstaller.install()
+                    installCrashLogOnce()
                 } catch (_: Throwable) {
                 }
                 return true

@@ -65,6 +65,7 @@ import com.mutx163.qingyu.pages.settings.SettingsLiveSelfCheckPage
 import com.mutx163.qingyu.pages.settings.SettingsPageScreen
 import com.mutx163.qingyu.pages.settings.SettingsPageState
 import com.mutx163.qingyu.pages.settings.SettingsStrings
+import com.mutx163.qingyu.pages.guide.AnalyticsOptOutPreferences
 import com.mutx163.qingyu.pages.settings.SettingsStringsExt2
 import com.mutx163.qingyu.pages.settings.SettingsStringsExt3
 import com.mutx163.qingyu.pages.timetable.day.parseHexColorOrFallback
@@ -103,6 +104,9 @@ private const val ROW_ISLAND_EXPORT = "liveSelfCheck.island.export"
 
 /** 假期覆盖开关的节点 id（`SettingsLiveSelfCheckPage.holidaySwitchRow`）。 */
 private const val ROW_HOLIDAY_SWITCH = "liveSelfCheck.holidaySwitch"
+
+/** 错误上报开关的节点 id（`SettingsLiveSelfCheckPage.analyticsOptOutRow`）。 */
+private const val ROW_ANALYTICS_OPT_OUT = "liveSelfCheck.analyticsOptOut"
 
 /** 测试通知卡「崩溃测试 / 异常卡顿测试」（仅 debug 构建渲染）。 */
 private const val ROW_NOTIFICATION_CRASH = "liveSelfCheck.notification.crashTest"
@@ -302,6 +306,15 @@ fun LiveSelfCheckHost(
     var exportingDiagnostics by remember { mutableStateOf(false) }
     var holidayOverrideEnabled by remember { mutableStateOf(false) }
 
+    /**
+     * 错误上报开关：true = 用户关掉了（独立键 `analytics_opt_out`）。
+     *
+     * 与假期覆盖同一条路：进页读一次盘，切换时写盘 + 读回校验；真门控在
+     * `UmengApplication`，那边每次进程启动都会重新读这枚键（`initialized` 是静态标志，
+     * 所以界面上那句「下次启动生效」是事实）。
+     */
+    var analyticsOptOutEnabled by remember { mutableStateOf(false) }
+
     // 刷新按钮 → 自增一次，让下面的轮询 effect 立刻重跑一轮。
     var reloadTick by remember { mutableIntStateOf(0) }
 
@@ -309,6 +322,9 @@ fun LiveSelfCheckHost(
     LaunchedEffect(timetableStore) {
         holidayOverrideEnabled = withContext(Dispatchers.IO) {
             readHolidayOverride(timetableStore)
+        }
+        analyticsOptOutEnabled = withContext(Dispatchers.IO) {
+            AnalyticsOptOutPreferences(PrefsKeyValueStore(context)).isOptedOut()
         }
     }
 
@@ -393,6 +409,30 @@ fun LiveSelfCheckHost(
     }
 
     /**
+     * 错误上报开关（独立键 `analytics_opt_out`；与隐私同意键解耦）。
+     *
+     * 写盘后**读回校验**：没落进去就拨回原值并提示——否则界面显示「已关闭」而友盟下次
+     * 启动照旧初始化，就是我们清了一整天的「假控件」。
+     */
+    fun setAnalyticsOptOut(optedOut: Boolean) {
+        val previous = analyticsOptOutEnabled
+        analyticsOptOutEnabled = optedOut
+        scope.launch {
+            val landed = withContext(Dispatchers.IO) {
+                runCatching {
+                    val prefs = AnalyticsOptOutPreferences(PrefsKeyValueStore(context))
+                    prefs.setOptedOut(optedOut)
+                    prefs.isOptedOut() == optedOut
+                }.getOrDefault(false)
+            }
+            if (!landed && analyticsOptOutEnabled == optedOut) {
+                analyticsOptOutEnabled = previous
+                showToast(context, SettingsStringsExt2.saveFailed.text)
+            }
+        }
+    }
+
+    /**
      * 假期覆盖开关。
      *
      * 真值在 `timetable_settings.holidayOverrideEnabled`（Dart `TimetableSettings`
@@ -462,6 +502,7 @@ fun LiveSelfCheckHost(
     val data = LiveSelfCheckData(
         isReleaseBuild = !BuildConfig.DEBUG,
         holidayOverrideEnabled = holidayOverrideEnabled,
+        analyticsOptOutEnabled = analyticsOptOutEnabled,
         sessionActive = sessionActive,
         courseTestLabel = courseTestLabel,
         semesterUnset = semesterUnset,
@@ -491,6 +532,7 @@ fun LiveSelfCheckHost(
                 ROW_ISLAND_AUTO_REFRESH -> autoRefreshEnabled = !autoRefreshEnabled
                 ROW_ISLAND_EXPORT -> exportDiagnostics()
                 ROW_HOLIDAY_SWITCH -> setHolidayOverride(!holidayOverrideEnabled)
+                ROW_ANALYTICS_OPT_OUT -> setAnalyticsOptOut(!analyticsOptOutEnabled)
                 // 测试通知卡：会话起停 / 停止走真触发管线；「选课测试」先选课、再选阶段，
                 // 两个弹层都关闭后才真正投递（避免弹层还在时岛先弹起来）。
                 LiveSelfCheckNotificationRows.START,
