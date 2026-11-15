@@ -214,6 +214,52 @@ if ($TestDir.Count -gt 0) {
 # -TestDir 模式用 slug（如 `testdir_app`）。
 $domainLabel = if ($cleanModule) { $cleanModule } else { $slug }
 
+# 0. L0 证据归档（2026-11-15 硬要求：不接受二手输出）
+#
+# ⚠️ 必须开在**第 1 步之前**：以前这一段排在第 5 步，于是 kotlinc 定位失败 / 源码收集
+# 报错 / 测试类解析炸掉这几种「最早的失败」根本不在归档里——事后只看到 console 里一段
+# 红字，没法复核到底哪一步炸的。现在一进来就开录，finally 里 `Stop-Transcript` 收尾，
+# 整个执行链（含最前面的探测与收集）全部落在同一个文件里。
+#
+# 文件名：`.agents/diag/l0-<域|TestDir>-<时间戳>-<HEAD>.log`
+# 文件头：COMMAND / HEAD / STATUS / TIME / JAVA_TOOL_OPTIONS；正文：完整 UTF-8 stdout。
+# 归档失败**不阻断测试**，但会显式 WARN 一行（拿不到归档的结果不算证据）。
+$l0Label = if ($cleanModule) {
+    $cleanModule -replace '[\\/]', '-'
+} elseif ($testDirNames.Count -gt 0) {
+    ($testDirNames -join '_')
+} else {
+    'unknown'
+}
+$l0Head = (git -C $repoRoot rev-parse --short=9 HEAD 2>$null)
+if (-not $l0Head) { $l0Head = 'nohead' }
+$l0StatusRaw = @(git -C $repoRoot status --porcelain 2>$null) -join '; '
+$l0Status = if ([string]::IsNullOrWhiteSpace($l0StatusRaw)) { '(clean)' } else { $l0StatusRaw }
+$l0Stamp = Get-Date -Format 'yyyyMMdd-HHmmss'
+$l0DiagDir = Join-Path $repoRoot '.agents/diag'
+$script:l0TranscriptActive = $false
+try {
+    New-Item -ItemType Directory -Path $l0DiagDir -Force | Out-Null
+    Start-Transcript -Path (Join-Path $l0DiagDir "l0-$l0Label-$l0Stamp-$l0Head.log") -UseMinimalHeader -Force | Out-Null
+    $script:l0TranscriptActive = $true
+} catch {
+    Write-Host ">>> [test-kotlin-module] ⚠️ L0 归档失败（$($_.Exception.Message)）；本次输出不会落盘，报告里必须写明" -ForegroundColor Yellow
+}
+if ($script:l0TranscriptActive) {
+    $l0Command = if ($cleanModule) {
+        "pwsh -File scripts/test-kotlin-module.ps1 -Module '$cleanModule'"
+    } else {
+        "pwsh -File scripts/test-kotlin-module.ps1 -TestDir '$($testDirNames -join ',')'"
+    }
+    Write-Host "# COMMAND: $l0Command"
+    Write-Host "# HEAD: $l0Head"
+    Write-Host "# STATUS: $l0Status"
+    Write-Host "# TIME: $(Get-Date -Format o)"
+    Write-Host "# JAVA_TOOL_OPTIONS: $env:JAVA_TOOL_OPTIONS"
+    Write-Host "# ARCHIVE: $l0DiagDir/l0-$l0Label-$l0Stamp-$l0Head.log"
+    Write-Host ""
+}
+
 # 1. 定位 kotlinc（顺序：显式参数 → 仓库便携 → PATH → Android Studio 内置）
 #    旧版把「Android Studio 内置」当默认、PATH 当兜底，本机没装 Studio 就直接红灯，
 #    逼得各代理手搓包装脚本（不可复现）。现在以仓库便携工具链为首选。
@@ -657,49 +703,7 @@ foreach ($file in $testFiles) {
     }
 }
 
-# 5. L0 证据归档（2026-11-15 硬要求：不接受二手输出）
-#
-# 文件名：`.agents/diag/l0-<域|TestDir>-<时间戳>-<HEAD>.log`
-# 文件头：COMMAND / HEAD / STATUS / TIME / JAVA_TOOL_OPTIONS；正文：完整 UTF-8 stdout。
-# 为什么内置到脚本：此前群里的「OK (n tests)」全是控制台二手输出，事后换个人无法复核，
-# 与「编译通过 ≠ 已验证」是同一类毛病。归档失败**不阻断测试**，但会显式 WARN 一行。
-$l0Label = if ($cleanModule) {
-    $cleanModule -replace '[\\/]', '-'
-} elseif ($testDirNames.Count -gt 0) {
-    ($testDirNames -join '_')
-} else {
-    'unknown'
-}
-$l0Head = (git -C $repoRoot rev-parse --short=9 HEAD 2>$null)
-if (-not $l0Head) { $l0Head = 'nohead' }
-$l0StatusRaw = @(git -C $repoRoot status --porcelain 2>$null) -join '; '
-$l0Status = if ([string]::IsNullOrWhiteSpace($l0StatusRaw)) { '(clean)' } else { $l0StatusRaw }
-$l0Stamp = Get-Date -Format 'yyyyMMdd-HHmmss'
-$l0DiagDir = Join-Path $repoRoot '.agents/diag'
-$script:l0TranscriptActive = $false
-try {
-    New-Item -ItemType Directory -Path $l0DiagDir -Force | Out-Null
-    Start-Transcript -Path (Join-Path $l0DiagDir "l0-$l0Label-$l0Stamp-$l0Head.log") -UseMinimalHeader -Force | Out-Null
-    $script:l0TranscriptActive = $true
-} catch {
-    Write-Host ">>> [test-kotlin-module] ⚠️ L0 归档失败（$($_.Exception.Message)）；本次输出不会落盘，报告里必须写明" -ForegroundColor Yellow
-}
-if ($script:l0TranscriptActive) {
-    $l0Command = if ($cleanModule) {
-        "pwsh -File scripts/test-kotlin-module.ps1 -Module '$cleanModule'"
-    } else {
-        "pwsh -File scripts/test-kotlin-module.ps1 -TestDir '$($testDirNames -join ',')'"
-    }
-    Write-Host "# COMMAND: $l0Command"
-    Write-Host "# HEAD: $l0Head"
-    Write-Host "# STATUS: $l0Status"
-    Write-Host "# TIME: $(Get-Date -Format o)"
-    Write-Host "# JAVA_TOOL_OPTIONS: $env:JAVA_TOOL_OPTIONS"
-    Write-Host "# ARCHIVE: $l0DiagDir/l0-$l0Label-$l0Stamp-$l0Head.log"
-    Write-Host ""
-}
-
-# 6. 同模块互斥锁（粒度 = 模块；不同模块互不阻塞）
+# 5. 同模块互斥锁（粒度 = 模块；不同模块互不阻塞）
 #    与 scripts/safe-gradle.ps1 同一套写法：先试 Global\，建不出来降级 Local\；
 #    AbandonedMutexException 表示前一个持有者异常退出，锁归当前进程。
 #    注意：同一台机器上所有调用方必须落到同一个命名空间才互斥——同一用户、同一会话的
