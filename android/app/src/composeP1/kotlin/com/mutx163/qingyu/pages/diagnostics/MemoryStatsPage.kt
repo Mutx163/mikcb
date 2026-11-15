@@ -97,7 +97,8 @@ import top.yukonga.miuix.kmp.theme.MiuixTheme
  * 1. **去掉 Flutter 运行时指标**：原「Dart / Flutter 图片缓存」行与弹层里的
  *    `Dart RSS` / `Dart max RSS` 读的是 `dartVm` / `flutterImageCache`——那是 Flutter
  *    引擎通过通道补进快照的，Compose 壳里恒为 `—`。现在改读采集器新增的 `imageCache`
- *    块（[com.mutx163.qingyu.platform.AndroidImageLoader] 的真实 LruCache）。
+ *    块（[com.mutx163.qingyu.platform.AndroidImageLoader] 的三个口径：占用 / 上限 / 条目数。
+ *    该类对外不变，内部自 2026-11-14 起由 Coil 3 的 `MemoryCache` 承接，上限仍钉 16MB）。
  * 2. **观感换成官方 demo 配方**：一个分组 = 一个 `item`（`QingyuSectionTitle` → `QingyuCard`
  *    → 组内多行），卡片用设置组圆角 24dp，行用官方 `SwitchPreference` / `ArrowPreference`
  *    （行内 16dp、行尾读数 + 右箭头、官方按压反馈），而不是手搓 `Row`。

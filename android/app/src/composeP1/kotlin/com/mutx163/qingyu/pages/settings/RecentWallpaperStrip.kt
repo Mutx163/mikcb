@@ -465,10 +465,11 @@ private fun RecentWallpaperCard(
  * 「长得像壁纸」的假图：解不出来就退成一块中性底色 + 一个图片符号，用户看得出
  * 「这里本该有图、但这张读不出来」。
  *
- * ⚠️ `platform/AndroidImageLoader` 只吃 http(s) URL（内部是 `HttpURLConnection`），
- * 而「最近使用」的条目键是**本地绝对路径**，所以本地缩略图走 `BitmapFactory` +
+ * ⚠️ `platform/AndroidImageLoader` 只吃 http(s) URL（网络层走统一入口 `QingyuHttp`，
+ * 2026-11-14 起内部实现换成 Coil 3，已不再有手写的 `HttpURLConnection`），
+ * 而「最近使用」的条目键是**本地绝对路径**，所以本地缩略图仍走 `BitmapFactory` +
  * `ImageSizeSelector`（后者是 `app/imagecache` 的纯逻辑，算 2 的幂采样值，与
- * `AndroidImageLoader` 用的是同一个）。
+ * `AndroidImageLoader` 用的是同一套算法）。
  * 2026-11-07：拆成「解码一次 + 位图入参」，因为卡片要先拿到宽高比再定宽，
  * 不能为同一张图解两遍。
  */

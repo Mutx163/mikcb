@@ -18,8 +18,10 @@ import java.util.Locale
  * Dart 页面的「图片缓存」行读的是 `dartVm` / `flutterImageCache`——那是 Flutter 引擎
  * 通过平台通道补进快照的（`memory_stats_service.dart:82-94`）。Compose 壳里已经没有
  * Flutter 运行时，继续显示那两行只会恒为 `—`，等于在页面上挂着两个永远没有数的技术字段。
- * 所以这里改成读采集器产出的 `imageCache` 块（Compose 图片加载器 `AndroidImageLoader`
- * 的真实 LruCache：占用 / 上限 / 条目数）。
+ * 所以这里改成读采集器产出的 `imageCache` 块。那三个数来自自有封装
+ * `platform/AndroidImageLoader`：类与访问器都没变（调用点不动），内部自 2026-11-14 起
+ * 换成 Coil 3 的 `MemoryCache`（`size / maxSize / keys.size`），上限仍显式钉在 16MB，
+ * 所以诊断页「已用 / 上限」的量级与历史数据继续可比。
  */
 
 /** 单位换算与时间格式（Dart `MemoryStatsService` 的四个静态格式化函数）。 */
