@@ -1,9 +1,11 @@
 package com.mutx163.qingyu.pages.timetable
 
+import com.mutx163.qingyu.testutil.assertSourceContains
+import com.mutx163.qingyu.testutil.assertSourceLacks
+import com.mutx163.qingyu.testutil.readKotlinSourceNoStrings
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
-import java.io.File
 
 /**
  * 顶栏玻璃带「染色层位置」测试（2026-11-15）。
@@ -16,18 +18,33 @@ import java.io.File
  * 原色课卡（截图里是一条条鲜艳色柱）。修法：第一遍保留自己那层薄色，**第二遍画完
  * 再补一层色**，两层合成后仍等于材质面板那根 `tintAlpha`（算式见 `bandTintLayerAlphas`）。
  *
- * 本测试钉四件事：① 第一遍的 `onDrawSurface` 染色仍在（既有守卫的口径）；② 补色层
- * 只有一处、画在第二遍之后；③ 补色层在带子内容之前；④ 两层 alpha 来自同一个纯函数。
+ * 本测试钉四件事：① 第一遍的 `onDrawSurface` 染色仍在（既有守卫
+ * `BandGlassFirstFrameGuardTest` 的口径，两层拆分不能把它顺手删掉）；② 补色层只有一处、
+ * 画在第二遍之后；③ 补色层在带子内容之前；④ 两层 alpha 来自同一个纯函数。
+ *
+ * ## 读法（R21 口径，2026-11-15）
+ *
+ * 判的是**接线 / 挂载**，不是文案，所以走 [readKotlinSourceNoStrings]（剥注释 + 字符串
+ * 内容中性化）：生产代码里只要有一句含同样片段的日志或 KDoc 示例，`contains` 就会被它
+ * 满足而假绿。断言统一用 [assertSourceContains] / [assertSourceLacks]——读不到源码时
+ * 直接红，不许静默通过。
  */
 class TimetableBandGlassTintOrderTest {
 
     @Test
     fun `第一遍仍在自己的玻璃表面上染色`() {
-        assertTrue(
-            "第一遍 onDrawSurface 的染色被删了 —— 带子底部（没内容钻进来的那一块）" +
-                "会变成没有底色的生采样。",
-            bandGlassSource().contains("onDrawSurface = { drawRect(tint) }"),
+        assertSourceContains(
+            bandGlassSource(),
+            "onDrawSurface = { drawRect(tint) }",
+            LABEL,
         )
+    }
+
+    @Test
+    fun `第一遍不许退化成空染色`() {
+        // 否证侧：只剩补色层、第一遍空着的话，带子下沿（没内容钻进来的那块）会变成
+        // 没有底色的生采样，观感就退回「两层色各画各的」。
+        assertSourceLacks(bandGlassSource(), "onDrawSurface = { }", LABEL)
     }
 
     @Test
@@ -62,27 +79,15 @@ class TimetableBandGlassTintOrderTest {
     @Test
     fun `两层 alpha 来自同一个纯函数`() {
         val source = bandGlassSource()
-        assertTrue(
-            "没看到 bandTintLayerAlphas( —— 两层色各写各的数值，合成后不再等于总强度。",
-            source.contains("bandTintLayerAlphas("),
-        )
-        assertTrue("第一层的变量名不对（应为 bandTintFirstAlpha）。", source.contains("bandTintFirstAlpha"))
-        assertTrue("补色层的变量名不对（应为 bandTintTopAlpha）。", source.contains("bandTintTopAlpha"))
+        assertSourceContains(source, "bandTintLayerAlphas(", LABEL)
+        assertSourceContains(source, "bandTintFirstAlpha", LABEL)
+        assertSourceContains(source, "bandTintTopAlpha", LABEL)
     }
 
-    private fun bandGlassSource(): String = readAndroidSource(BAND_GLASS_PATH)
-
-    private fun readAndroidSource(relative: String): String {
-        var dir: File? = File("").absoluteFile
-        while (dir != null) {
-            val candidate = File(dir, relative)
-            if (candidate.isFile) return candidate.readText(Charsets.UTF_8)
-            dir = dir.parentFile
-        }
-        throw AssertionError("找不到 $relative —— 测试无法验证，按失败处理")
-    }
+    private fun bandGlassSource(): String = readKotlinSourceNoStrings(BAND_GLASS_PATH)
 
     private companion object {
+        const val LABEL = "TimetableChromeBandGlass"
         const val BAND_GLASS_PATH =
             "android/app/src/composeP1/kotlin/com/mutx163/qingyu/pages/timetable/TimetableChromeBandGlass.kt"
     }
