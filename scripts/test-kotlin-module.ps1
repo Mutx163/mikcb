@@ -164,6 +164,16 @@ $slug = $cleanModule -replace "[^A-Za-z0-9_.\-]", "_"
 
 $repoRoot = Split-Path -Parent $PSScriptRoot
 
+# ── 归档可复核前提：Java 输出编码（2026-11-15）──────────────────────────────
+# Windows 上 java 默认按系统代码页（本机 GBK）写 stdout，中文用例名会变成乱码，
+# 归档出去也无法复核。这里只在调用方没设过时补 UTF-8 三件套，不覆盖用户显式配置。
+if ($env:JAVA_TOOL_OPTIONS -notmatch 'stdout\.encoding') {
+    $env:JAVA_TOOL_OPTIONS = ((@(
+        $env:JAVA_TOOL_OPTIONS,
+        '-Dfile.encoding=UTF-8 -Dstdout.encoding=UTF-8 -Dstderr.encoding=UTF-8'
+    ) | Where-Object { $_ }) -join ' ')
+}
+
 # ── 模式分支：-TestDir（顶层测试目录档）/ -Module（页面模块档），两者互斥 ────────────────
 # -TestDir 只接**测试面**：main 源集不在这里收集，主源仍全部来自下方的共享面。
 # 这样「锁粒度、临时目录、缓存键」全都自动跟着 $slug 走，-Module 一条路都不用改。
@@ -647,7 +657,49 @@ foreach ($file in $testFiles) {
     }
 }
 
-# 5. 同模块互斥锁（粒度 = 模块；不同模块互不阻塞）
+# 5. L0 证据归档（2026-11-15 硬要求：不接受二手输出）
+#
+# 文件名：`.agents/diag/l0-<域|TestDir>-<时间戳>-<HEAD>.log`
+# 文件头：COMMAND / HEAD / STATUS / TIME / JAVA_TOOL_OPTIONS；正文：完整 UTF-8 stdout。
+# 为什么内置到脚本：此前群里的「OK (n tests)」全是控制台二手输出，事后换个人无法复核，
+# 与「编译通过 ≠ 已验证」是同一类毛病。归档失败**不阻断测试**，但会显式 WARN 一行。
+$l0Label = if ($cleanModule) {
+    $cleanModule -replace '[\\/]', '-'
+} elseif ($testDirNames.Count -gt 0) {
+    ($testDirNames -join '_')
+} else {
+    'unknown'
+}
+$l0Head = (git -C $repoRoot rev-parse --short=9 HEAD 2>$null)
+if (-not $l0Head) { $l0Head = 'nohead' }
+$l0StatusRaw = @(git -C $repoRoot status --porcelain 2>$null) -join '; '
+$l0Status = if ([string]::IsNullOrWhiteSpace($l0StatusRaw)) { '(clean)' } else { $l0StatusRaw }
+$l0Stamp = Get-Date -Format 'yyyyMMdd-HHmmss'
+$l0DiagDir = Join-Path $repoRoot '.agents/diag'
+$script:l0TranscriptActive = $false
+try {
+    New-Item -ItemType Directory -Path $l0DiagDir -Force | Out-Null
+    Start-Transcript -Path (Join-Path $l0DiagDir "l0-$l0Label-$l0Stamp-$l0Head.log") -UseMinimalHeader -Force | Out-Null
+    $script:l0TranscriptActive = $true
+} catch {
+    Write-Host ">>> [test-kotlin-module] ⚠️ L0 归档失败（$($_.Exception.Message)）；本次输出不会落盘，报告里必须写明" -ForegroundColor Yellow
+}
+if ($script:l0TranscriptActive) {
+    $l0Command = if ($cleanModule) {
+        "pwsh -File scripts/test-kotlin-module.ps1 -Module '$cleanModule'"
+    } else {
+        "pwsh -File scripts/test-kotlin-module.ps1 -TestDir '$($testDirNames -join ',')'"
+    }
+    Write-Host "# COMMAND: $l0Command"
+    Write-Host "# HEAD: $l0Head"
+    Write-Host "# STATUS: $l0Status"
+    Write-Host "# TIME: $(Get-Date -Format o)"
+    Write-Host "# JAVA_TOOL_OPTIONS: $env:JAVA_TOOL_OPTIONS"
+    Write-Host "# ARCHIVE: $l0DiagDir/l0-$l0Label-$l0Stamp-$l0Head.log"
+    Write-Host ""
+}
+
+# 6. 同模块互斥锁（粒度 = 模块；不同模块互不阻塞）
 #    与 scripts/safe-gradle.ps1 同一套写法：先试 Global\，建不出来降级 Local\；
 #    AbandonedMutexException 表示前一个持有者异常退出，锁归当前进程。
 #    注意：同一台机器上所有调用方必须落到同一个命名空间才互斥——同一用户、同一会话的
@@ -960,6 +1012,13 @@ try {
     }
     exit $fallbackCode
 } finally {
+    # 归档收尾：无论成功 / 失败 / 提前 exit，都先把 transcript 关掉再放锁。
+    if ($script:l0TranscriptActive) {
+        Write-Host ""
+        Write-Host "# EXIT-TIME: $(Get-Date -Format o)"
+        try { Stop-Transcript | Out-Null } catch { }
+        $script:l0TranscriptActive = $false
+    }
     # 先删本次运行私有的临时目录，再放锁：清理也留在锁内，排队者不会和清理抢同一块盘。
     if ($workRoot -and (Test-Path $workRoot)) {
         Remove-Item -Recurse -Force $workRoot -ErrorAction SilentlyContinue
@@ -971,3 +1030,5 @@ try {
         $mutex.Dispose()
     }
 }
+
+
