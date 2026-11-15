@@ -642,15 +642,17 @@ object LiveDisplayLogic {
     }
 
     /**
-     * islandCourseName：课程名（受 showCourseName / useShortName 门控，原生 5 字截断）。
+     * islandCourseName：课程名（受 showCourseName / useShortName 门控）。
+     *
+     * **不再做 5 字硬切**（2026-11-15）：用户要求课名原样显示，宽度放不下只能由渲染层末尾
+     * 省略。原来这里的 `substring(0, 5)` 会把名字砍成半截、还可能劈开括号。
      *
      * 空串表示该段不参与拼接。
      */
     fun islandCourseName(state: LiveDisplayState, info: LiveIslandPreviewInfo): String {
         if (!state.showCourseName) return ""
         val short = info.courseShortName?.trim()
-        val name = if (state.useShortName && !short.isNullOrEmpty()) short else info.courseName
-        return if (name.length > 5) name.substring(0, 5) else name
+        return if (state.useShortName && !short.isNullOrEmpty()) short else info.courseName
     }
 
     /**
@@ -735,27 +737,35 @@ object LiveDisplayLogic {
     // ── 展开态预览文本拼装 ─────────────────────────────────────────
 
     /** 展开态标题课程名：useShortName 门控 + 8 字截断（超出补 `..`）。 */
+    /**
+     * titleCourseName：**完整课名**，不做字数截断（2026-11-15 与真通知同口径）。
+     *
+     * 用户要求：课名原样显示，放不下只能末尾省略（省略号由渲染层的
+     * `maxLines = 1 + TextOverflow.Ellipsis` 产出），绝不删改原文、不劈开括号。
+     */
     fun titleCourseName(state: LiveDisplayState, info: LiveIslandPreviewInfo): String {
         val short = info.courseShortName?.trim()
-        val name = if (state.useShortName && !short.isNullOrEmpty()) short else info.courseName
-        return if (name.length > 8) name.substring(0, 8) + ".." else name
+        return if (state.useShortName && !short.isNullOrEmpty()) short else info.courseName
     }
 
-    /** notificationTitle：课前/下课提醒带阶段前缀，课中只有课程名。 */
+    /**
+     * 展开态副标题：课/下课提醒的阶段前缀（**标题只放完整课名**，前缀不再拼进标题）。
+     *
+     * 复用既有的阶段串（`liveIslandPreviewStage*`，六语齐、无冒号），不新增 ARB 键。
+     * 课中没有前缀（与真通知一致：`DURING_CLASS` 标题只有课名）。
+     */
+    fun expandedSubtitle(stage: LivePreviewStage): String = when (stage) {
+        LivePreviewStage.BEFORE_CLASS -> DisplaySettingsStrings.stageBeforeClass.text
+        LivePreviewStage.BEFORE_END -> DisplaySettingsStrings.stageBeforeEnd.text
+        LivePreviewStage.DURING_CLASS -> ""
+    }
+
+    /** notificationTitle：课中只有课程名；课前/下课的阶段前缀走 [expandedSubtitle]。 */
     fun expandedTitle(
         state: LiveDisplayState,
         stage: LivePreviewStage,
         info: LiveIslandPreviewInfo,
-    ): String {
-        val course = titleCourseName(state, info)
-        return when (stage) {
-            LivePreviewStage.BEFORE_CLASS ->
-                DisplaySettingsStrings.previewTitleBeforeClass.filled("course", course)
-            LivePreviewStage.BEFORE_END ->
-                DisplaySettingsStrings.previewTitleBeforeEnd.filled("course", course)
-            LivePreviewStage.DURING_CLASS -> course
-        }
-    }
+    ): String = titleCourseName(state, info)
 
     /** 课中时间显示文案：`start - end`（课程钟面）。 */
     fun timeRangeText(info: LiveIslandPreviewInfo): String = "${info.startTime} - ${info.endTime}"

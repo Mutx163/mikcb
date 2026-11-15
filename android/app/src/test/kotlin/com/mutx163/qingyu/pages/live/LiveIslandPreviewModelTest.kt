@@ -121,7 +121,7 @@ class LiveIslandPreviewModelTest {
     }
 
     @Test
-    fun `课程名五字截断且可切简称`() {
+    fun `岛课程名不截断且可切简称`() {
         val longInfo = LiveIslandPreviewInfo(
             courseName = "高等数学分析",
             courseShortName = null,
@@ -131,10 +131,19 @@ class LiveIslandPreviewModelTest {
             endTime = "08:45",
             anchorMillis = anchor,
         )
-        // useShortName 但没简称 → 用全称并截 5 字。
-        assertEquals("高等数学分", LiveDisplayLogic.islandCourseName(LiveDisplayState(useShortName = true), longInfo))
-        // 关掉简称 → 也截 5 字。
-        assertEquals("高等数学分", LiveDisplayLogic.islandCourseName(LiveDisplayState(useShortName = false), longInfo))
+        // 2026-11-15 口径：课名原样显示，放不下只由渲染层末尾省略，模型不再切字。
+        // useShortName 但没简称 → 用全称（完整）。
+        assertEquals("高等数学分析", LiveDisplayLogic.islandCourseName(LiveDisplayState(useShortName = true), longInfo))
+        // 关掉简称 → 同样是完整全称。
+        assertEquals("高等数学分析", LiveDisplayLogic.islandCourseName(LiveDisplayState(useShortName = false), longInfo))
+        // 有简称时仍按开关切换。
+        assertEquals(
+            "高数",
+            LiveDisplayLogic.islandCourseName(
+                LiveDisplayState(useShortName = true),
+                longInfo.copy(courseShortName = "高数"),
+            ),
+        )
         // 显示课程名关掉 → 空串。
         assertEquals("", LiveDisplayLogic.islandCourseName(LiveDisplayState(showCourseName = false), longInfo))
     }
@@ -142,14 +151,20 @@ class LiveIslandPreviewModelTest {
     // ── 展开态 ──
 
     @Test
-    fun `展开标题课前带前缀课中只有课程名`() {
+    fun `展开标题只放课名前缀走副标题`() {
         val state = LiveDisplayState()
-        assertEquals("即将上课：高数", LiveDisplayLogic.expandedTitle(state, LivePreviewStage.BEFORE_CLASS, info()))
+        // 标题：完整课名；前缀不进标题（原来拼成「即将上课：高数」，已过期）。
+        assertEquals("高数", LiveDisplayLogic.expandedTitle(state, LivePreviewStage.BEFORE_CLASS, info()))
+        // 前缀改由副标题承接，复用既有阶段串（无冒号）。
+        assertEquals("即将上课", LiveDisplayLogic.expandedSubtitle(LivePreviewStage.BEFORE_CLASS))
+        assertEquals("下课提醒", LiveDisplayLogic.expandedSubtitle(LivePreviewStage.BEFORE_END))
+        // 课中：标题只有课名，副标题为空（与真通知一致）。
         assertEquals("高数", LiveDisplayLogic.expandedTitle(state, LivePreviewStage.DURING_CLASS, info()))
+        assertEquals("", LiveDisplayLogic.expandedSubtitle(LivePreviewStage.DURING_CLASS))
     }
 
     @Test
-    fun `展开标题课程名八字截断补两点`() {
+    fun `展开标题放完整课名不截断`() {
         val longInfo = LiveIslandPreviewInfo(
             courseName = "马克思主义基本原理概论",
             courseShortName = null,
@@ -159,8 +174,18 @@ class LiveIslandPreviewModelTest {
             endTime = "08:45",
             anchorMillis = anchor,
         )
-        // "马克思主义基本原理概论" 前 8 字 = "马克思主义基本原" + ".."
-        assertEquals("马克思主义基本原..", LiveDisplayLogic.titleCourseName(LiveDisplayState(useShortName = false), longInfo))
+        // 2026-11-15：模型不再拼 ".."、不再切 8 字；省略由渲染层 `maxLines = 1 + Ellipsis` 负责。
+        // 原断言「马克思主义基本原..」断言的是被删掉的手写截断内核，不是被削弱的判据。
+        assertEquals(
+            "马克思主义基本原理概论",
+            LiveDisplayLogic.titleCourseName(LiveDisplayState(useShortName = false), longInfo),
+        )
+        // 括号内容不许删、不许劈开：整串原样返回。
+        val bracketed = longInfo.copy(courseName = "人工智能(AIGC)")
+        assertEquals(
+            "人工智能(AIGC)",
+            LiveDisplayLogic.titleCourseName(LiveDisplayState(useShortName = false), bracketed),
+        )
     }
 
     @Test

@@ -181,6 +181,7 @@ fun LiveIslandExpandedPreviewCard(
             }
             ExpandedNotificationCard(
                 title = LiveDisplayLogic.expandedTitle(state, stage, info),
+                subtitle = LiveDisplayLogic.expandedSubtitle(stage),
                 summary = LiveDisplayLogic.expandedSummaryLine(state, stage, info, nowMillis),
                 detailLines = LiveDisplayLogic.expandedDetailLines(state, stage, info, nowMillis),
                 emptyHint = DisplaySettingsStrings.expandedPreviewEmptyHint.text,
@@ -352,10 +353,17 @@ private fun CameraHole() {
     }
 }
 
-/** 提升通知展开后的卡片观感：深色圆角卡片 + 标题 + 正文 + 分隔线 + 详情行。 */
+/**
+ * 提升通知展开后的卡片观感：深色圆角卡片 + 副标题（阶段前缀）+ 标题 + 正文 + 分隔线 + 详情行。
+ *
+ * 2026-11-15：标题只放**完整课名**（不放前缀、不做字数截断），阶段前缀挪到上方副标题槽——
+ * 与真通知同口径（`LiveUpdateService` 的 `param_v2.baseInfo.subTitle`）。这样「预览说 A、
+ * 实机是 B」不会再出现。
+ */
 @Composable
 private fun ExpandedNotificationCard(
     title: String,
+    subtitle: String,
     summary: String,
     detailLines: List<LiveDetailLine>,
     emptyHint: String,
@@ -374,6 +382,16 @@ private fun ExpandedNotificationCard(
             .border(1.dp, Color.White.copy(alpha = 0.07f), RoundedCornerShape(22.dp))
             .padding(start = 16.dp, top = 14.dp, end = 16.dp, bottom = 14.dp),
     ) {
+        if (subtitle.isNotEmpty()) {
+            Text(
+                text = subtitle,
+                style = MiuixTheme.textStyles.footnote2,
+                color = captionColor,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+            Spacer(modifier = Modifier.height(3.dp))
+        }
         Text(
             text = title,
             style = MiuixTheme.textStyles.body2.shiftWeight(QingyuWeightDelta.SEMIBOLD),
