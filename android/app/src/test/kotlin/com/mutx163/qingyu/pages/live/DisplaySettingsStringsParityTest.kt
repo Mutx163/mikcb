@@ -43,8 +43,6 @@ class DisplaySettingsStringsParityTest {
             DisplaySettingsStrings.stageBeforeEnd to LiveStrings.liveIslandPreviewStageBeforeEnd,
             DisplaySettingsStrings.untilClassStart to LiveStrings.liveIslandPreviewUntilClassStart,
             DisplaySettingsStrings.untilClassEnd to LiveStrings.liveIslandPreviewUntilClassEnd,
-            DisplaySettingsStrings.previewTitleBeforeClass to LiveStrings.liveIslandPreviewTitleBeforeClass,
-            DisplaySettingsStrings.previewTitleBeforeEnd to LiveStrings.liveIslandPreviewTitleBeforeEnd,
             DisplaySettingsStrings.islandExpandedPreviewTitle to LiveStrings.liveIslandExpandedPreviewTitle,
             DisplaySettingsStrings.islandVisualTitle to LiveStrings.liveIslandVisualTitle,
             DisplaySettingsStrings.showCountdownTitle to LiveStrings.showCountdownTitle,

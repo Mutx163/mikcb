@@ -53,8 +53,8 @@ object LiveStrings {
     val liveIslandPreviewSampleTeacher = ArbText("liveIslandPreviewSampleTeacher", "张老师")
     val liveIslandPreviewSampleNextClass = ArbText("liveIslandPreviewSampleNextClass", "大学物理")
     val liveIslandPreviewSampleNote = ArbText("liveIslandPreviewSampleNote", "带教材与习题册")
-    val liveIslandPreviewTitleBeforeClass = ArbText("liveIslandPreviewTitleBeforeClass", "即将上课：{course}")
-    val liveIslandPreviewTitleBeforeEnd = ArbText("liveIslandPreviewTitleBeforeEnd", "下课提醒：{course}")
+    // 2026-11-15：`liveIslandPreviewTitleBeforeClass` / `BeforeEnd` 已删（标题改放完整课名，
+    // 前缀进副标题槽、复用 liveIslandPreviewStage* 键），ARB 侧同步删除。
 
     // ── 通用操作 ──
     val resetDefaultAction = ArbText("resetDefaultAction", "恢复默认")
@@ -106,8 +106,6 @@ object LiveStrings {
         liveIslandPreviewSampleTeacher,
         liveIslandPreviewSampleNextClass,
         liveIslandPreviewSampleNote,
-        liveIslandPreviewTitleBeforeClass,
-        liveIslandPreviewTitleBeforeEnd,
         resetDefaultAction,
         saveFailed,
         cancelAction,

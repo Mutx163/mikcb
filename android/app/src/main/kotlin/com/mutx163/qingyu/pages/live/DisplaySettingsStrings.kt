@@ -121,8 +121,8 @@ object DisplaySettingsStrings {
     val sampleTeacher = ArbText("liveIslandPreviewSampleTeacher", "张老师")
     val sampleNextClass = ArbText("liveIslandPreviewSampleNextClass", "大学物理")
     val sampleNote = ArbText("liveIslandPreviewSampleNote", "带教材与习题册")
-    val previewTitleBeforeClass = ArbText("liveIslandPreviewTitleBeforeClass", "即将上课：{course}")
-    val previewTitleBeforeEnd = ArbText("liveIslandPreviewTitleBeforeEnd", "下课提醒：{course}")
+    // 2026-11-15：`liveIslandPreviewTitleBeforeClass` / `BeforeEnd` 已随「标题只放完整课名、
+    // 前缀进副标题槽」删除（标题不再拼接前缀，副标题复用下面的 liveIslandPreviewStage* 键）。
     val expandedPreviewCaption = ArbText(
         "liveIslandExpandedPreviewCaption",
         "Android 16 课中带进度条时，展开态由系统绘制，本设置不生效",
@@ -275,8 +275,6 @@ object DisplaySettingsStrings {
         sampleTeacher,
         sampleNextClass,
         sampleNote,
-        previewTitleBeforeClass,
-        previewTitleBeforeEnd,
         expandedPreviewCaption,
         expandedPreviewEmptyHint,
         unfilledSuffix,
