@@ -187,6 +187,13 @@ fun TimetableWeekPage(
      * 为 null（宿主没接天气）或返回 null（设置关 / 没数据）时卡面不出现天气行。
      */
     weatherOf: ((week: Int, dayOfWeek: Int, Course) -> String?)? = null,
+    /**
+     * 天气还没到手（`WeatherProvider.isLoadingWeather`，宿主已按「周卡天气开关」门控）。
+     *
+     * 只影响天气那一行：没文字时画 10dp 小圈，出现/消失不顶课名与地点。三态判据
+     * 在 `weatherCardSlotState`（与日卡共用）。preview 恒 false。
+     */
+    weatherAwaiting: Boolean = false,
     onLongPressEmptySlot: (dayOfWeek: Int, section: Int) -> Unit = { _, _ -> },
     onDayClick: (dayOfWeek: Int) -> Unit = {},
     onSwitchProfileClick: () -> Unit = {},
@@ -1260,6 +1267,7 @@ fun TimetableWeekPage(
                         topSeamDp = if (bandStripActive) DAY_VIEW_TOP_SEAM_DP.dp else 0.dp,
                         holidayOf = holidayOf,
                         weatherOf = weatherOf,
+                        weatherAwaiting = weatherAwaiting,
                         onCourseClick = onCourseClick,
                         onAgendaClick = onAgendaClick,
                         onLongPressEmptySlot = onLongPressEmptySlot,
@@ -1635,6 +1643,8 @@ private fun WeekPageContent(
     bottomInset: Dp,
     holidayOf: (week: Int, dayOfWeek: Int) -> Boolean,
     weatherOf: ((week: Int, dayOfWeek: Int, Course) -> String?)?,
+    /** 天气还没到手：转给网格，卡上天气行画小圈（见 [TimetableWeekPage.weatherAwaiting]）。 */
+    weatherAwaiting: Boolean = false,
     onCourseClick: (Course) -> Unit,
     onAgendaClick: (WeekAgendaCardModel) -> Unit,
     onLongPressEmptySlot: (dayOfWeek: Int, section: Int) -> Unit,
@@ -1786,6 +1796,7 @@ private fun WeekPageContent(
                     modifier = Modifier.weight(1f),
                     material = material,
                     cardGlassBackdrop = cardGlassBackdrop,
+                    weatherAwaiting = weatherAwaiting,
                 )
             }
         }

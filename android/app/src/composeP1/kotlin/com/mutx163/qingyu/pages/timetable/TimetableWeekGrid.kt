@@ -102,6 +102,11 @@ fun TimetableWeekGrid(
      * null = 各卡走原有透明度填充；非空时所有卡片采同一层，不额外建录像带。
      */
     cardGlassBackdrop: Backdrop? = null,
+    /**
+     * 天气还没到手（`WeatherProvider.isLoadingWeather`）：转给每张卡的 `weatherAwaiting`，
+     * 让卡上天气那一行画小圈而不是留空。判据在卡里（`weatherCardSlotState`）。
+     */
+    weatherAwaiting: Boolean = false,
 ) {
     val totalHeight = sectionHeight * sectionCount
     val dayCount = visibleDays.size.coerceAtLeast(1)
@@ -356,6 +361,7 @@ fun TimetableWeekGrid(
                                 onClick = { onCourseClick(card.course) },
                                 material = material,
                                 glassBackdrop = cardGlassBackdrop,
+                                weatherAwaiting = weatherAwaiting,
                             )
                         }
                     }

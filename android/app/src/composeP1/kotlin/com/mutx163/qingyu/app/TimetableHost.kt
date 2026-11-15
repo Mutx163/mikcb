@@ -424,6 +424,11 @@ fun TimetableHost(
             lookup
         }
     }
+    // 周卡天气行「正在取数」：provider 的公开判据（天气开 + 有城市 + 无预报 + LOADING），
+    // 再叠页面自己的「周卡天气」开关（`weatherOf` 为 null 的同一条件）。
+    // 读它的人必须同时读 `weatherTick`（上面那个 remember 已经读了），否则状态变化不会重组。
+    val weatherCardAwaiting = weatherProvider?.isLoadingWeather == true &&
+        settingsModel?.weatherShowOnWeekCard != false
 
     // ── 首页壁纸背景 + 材质 + 顶栏墨色（Dart `lib/utils/home_page_background.dart` 那整条链）──
     // 三样东西的推导只在 [rememberHomeBackdropChrome] 一份：日视图走同一条路，
@@ -519,6 +524,10 @@ fun TimetableHost(
         onCourseClick = onOpenCourse,
         holidayOf = holidayOf,
         weatherOf = weatherOf,
+        // 天气还没到手：周卡天气行画 10dp 小圈（判据与门控在页面里的 `weatherCardSlotState`）。
+        // 只认 provider 的公开判据 `isLoadingWeather`，不碰它内部；失败时该判据为 false，
+        // 所以失败不会留下一个一直转的圈。
+        weatherAwaiting = weatherCardAwaiting,
         // 长按空白格加课：Dart 判据是「开关打开 + 这一格要有跨度」
         // （`timetable_empty_slot_layer.dart:46`），开关本身由 style 下传，页面只在
         // 开关开着时才装长按手势。

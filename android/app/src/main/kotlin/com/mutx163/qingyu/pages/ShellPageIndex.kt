@@ -1071,10 +1071,12 @@ fun ShellPageContent(
                             weatherOf = weatherOf?.let { resolve ->
                                 { date, course -> resolve(week, date, course) }
                             },
-                            // 预报还没到（开关开着 + 已选城市 + 未失败）：日卡先占住天气那一行的高度，
-                            // 到货后淡入。不这样的话数据到达那一刻整张卡会突然长高一行（用户实报）。
+                            // 预报还没到（开关开着 + 已选城市 + 未失败 + state == LOADING）：
+                            // 日卡天气行画 10dp 小圈并占住那一行的高度，到货后换文字。
+                            // 用 provider 的公开判据 `isLoadingWeather`，不读它内部；
+                            // 失败时该判据为 false，所以失败不会留下一直转的圈。
                             weatherAwaiting = appSettings.weatherShowOnDayCard &&
-                                weatherProvider.isAwaitingData,
+                                weatherProvider.isLoadingWeather,
                             // 情侣课表叠加（B1 · 2026-11-06）：TA 课追加进当天议程并带
                             // 「TA的课」徽标（`DayViewCourseCard` 的渲染已就位）。null =
                             // 未绑定，装配层走旧路径。外观编辑页预览（独立调用点）不传它，

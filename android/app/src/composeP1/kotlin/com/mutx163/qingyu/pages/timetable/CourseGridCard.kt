@@ -31,6 +31,8 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.mutx163.qingyu.components.QingyuLoadingInline
+import com.mutx163.qingyu.components.QingyuLoadingSlot
 import com.mutx163.qingyu.components.QingyuWeightDelta
 import com.mutx163.qingyu.components.glass.courseCardGlassSurface
 import com.mutx163.qingyu.components.shiftWeight
@@ -166,6 +168,13 @@ fun CourseGridCard(
      * `course_surface.dart:197-208` 同一条性能口径）。
      */
     glassBackdrop: Backdrop? = null,
+    /**
+     * 天气还没到手（`WeatherProvider.isLoadingWeather`，由宿主按「周卡天气开关」门控）。
+     *
+     * 只影响天气那一行：没文字时画一个小圈占位，出现/消失不顶课名与地点。
+     * 判据走纯函数 [weatherCardSlotState]，与日卡同一份。
+     */
+    weatherAwaiting: Boolean = false,
 ) {
     val course = model.course
     val dark = isSystemInDarkTheme()
@@ -472,22 +481,39 @@ fun CourseGridCard(
             }
             // ── 天气一行（Dart `weather:` → `CourseWeatherDisplay`；受
             //    `weatherShowOnWeekCard` 与现象/温度/概率三开关控制）──
-            val weatherText = model.weatherText
-            if (weatherText != null) {
-                hasAnyField = true
-                CardDetailLine(
-                    text = weatherText,
-                    fontSize = detailFontSize,
-                    color = detailInk,
-                    textAlign = textAlign,
-                    modifier = flightAnchor(
-                        "weather",
-                        weatherText,
-                        detailFontSize,
-                        FontWeight.Normal,
-                        detailInk,
-                    ),
-                )
+            // 三态：有文字画文字；没文字且正在取数画 10dp 小圈（共享件槽位
+            // `QingyuLoadingSlot.WeatherCard`，页面不自己构造官方控件）；否则不画。
+            // 判据与日卡共用 `weatherCardSlotState`。
+            when (weatherCardSlotState(model.weatherText, weatherAwaiting)) {
+                WeatherCardSlotState.TEXT -> {
+                    val weatherText = model.weatherText!!
+                    hasAnyField = true
+                    CardDetailLine(
+                        text = weatherText,
+                        fontSize = detailFontSize,
+                        color = detailInk,
+                        textAlign = textAlign,
+                        modifier = flightAnchor(
+                            "weather",
+                            weatherText,
+                            detailFontSize,
+                            FontWeight.Normal,
+                            detailInk,
+                        ),
+                    )
+                }
+
+                // 加载小圈：只占一行、不参与 hasAnyField（否则七个字段全关的卡会因此
+                // 不画课名兜底，取数失败后卡上就只剩留白）。
+                WeatherCardSlotState.LOADING -> Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.Start,
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    QingyuLoadingInline(slot = QingyuLoadingSlot.WeatherCard)
+                }
+
+                WeatherCardSlotState.HIDDEN -> Unit
             }
             // Dart 的兜底：七个字段全关也必须有课名，否则卡上只剩留白。
             if (!hasAnyField) {

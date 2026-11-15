@@ -25,7 +25,6 @@ import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.graphics.Color
@@ -35,9 +34,13 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.mutx163.qingyu.components.QingyuLoadingInline
+import com.mutx163.qingyu.components.QingyuLoadingSlot
 import com.mutx163.qingyu.components.QingyuWeightDelta
 import com.mutx163.qingyu.pages.settings.HomeMaterialRenderSpec
 import com.mutx163.qingyu.pages.timetable.CourseCardInk
+import com.mutx163.qingyu.pages.timetable.WeatherCardSlotState
+import com.mutx163.qingyu.pages.timetable.weatherCardSlotState
 import com.mutx163.qingyu.pages.timetable.WeekGridCourseMapping
 import com.mutx163.qingyu.theme.QingyuTheme
 import top.yukonga.miuix.kmp.basic.Icon
@@ -73,9 +76,13 @@ fun DayViewCourseCard(
     hasTask: Boolean = false,
     weatherInfo: String? = null,
     /**
-     * 天气预报「该有、但还没到」：先占住天气那一行的高度（图标 / 文字都不可见），
-     * 到货后淡入。不加这一项时卡片会在数据到达那一刻突然长高一行，
-     * 下方所有卡片跟着往下跳 —— 用户读到的就是「突然冒出一个天气字段」。
+     * 天气预报「该有、但还没到」（`WeatherProvider.isLoadingWeather`）：天气那一行画
+     * 10dp 加载小圈（共享件 `QingyuLoadingSlot.WeatherCard`），行高与真文字行一致。
+     *
+     * 2026-11-15 改口径：原先这里是一行**不可见**占位、数据到了才淡入；用户要求
+     * 「等的时候给个很小的圈」，于是占位变成小圈。不加这一项时卡片会在数据到达那一刻
+     * 突然长高一行，下方卡片跟着往下跳 —— 用户读到的就是「突然冒出一个天气字段」。
+     * 三态判据与周卡共用 `weatherCardSlotState`。
      */
     weatherAwaiting: Boolean = false,
     /** 「课卡显示冲突角标」开关（Dart `showConflictBadgeOnTimetable`）。关掉只藏角标，边框仍在。 */
@@ -419,37 +426,45 @@ fun DayViewCourseCard(
             )
 
             // 天气
-            // 「该有但还没拿到」时用一行等高的不可见占位把位置占住，文字到了才淡入：
-            // 既不跳版（卡片不会突然长高一行），也不会硬生生弹出一行字。
+            // 三态（判据与周卡共用纯函数 `weatherCardSlotState`）：
+            //  · 有文字 → 淡入文字行（原行为）；
+            //  · 没文字、正在取数 → 行首图标位换成 10dp 小圈，行高与真文字行一致，
+            //    不跳版、也不会硬生生弹出一行字；
+            //  · 都没有（开关关 / 没城市 / 失败）→ 整行不画。
             val weatherText = weatherInfo?.takeIf { it.isNotBlank() }
-            if (weatherText != null || weatherAwaiting) {
-                Spacer(modifier = Modifier.height(4.dp))
-                val weatherAlpha by animateFloatAsState(
-                    targetValue = if (weatherText != null) 1f else 0f,
-                    animationSpec = tween(durationMillis = WEATHER_ROW_FADE_MS),
-                    label = "weatherRowFade",
-                )
-                Box(modifier = Modifier.alpha(weatherAlpha)) {
+            when (weatherCardSlotState(weatherText, weatherAwaiting)) {
+                WeatherCardSlotState.TEXT -> {
+                    Spacer(modifier = Modifier.height(4.dp))
                     DayAgendaInfoRow(
                         icon = MiuixIcons.Background,
-                        // 占位时给空串：整行高度由图标与字号决定，与真文字一致。
                         text = weatherText.orEmpty(),
                         ink = ink,
-                        textModifier = if (weatherText != null) {
-                            flightAnchor(
-                                "weather",
-                                weatherText,
-                                infoFontSize,
-                                FontWeight.Normal,
-                                ink.copy(alpha = 0.85f),
-                            )
-                        } else {
-                            Modifier
-                        },
+                        textModifier = flightAnchor(
+                            "weather",
+                            weatherText.orEmpty(),
+                            infoFontSize,
+                            FontWeight.Normal,
+                            ink.copy(alpha = 0.85f),
+                        ),
                         // 「现象 · 温度 · 概率」三段拼接，单行会被截断成「小雨 · 23° · 6…」。
                         maxLines = 2,
                     )
                 }
+
+                WeatherCardSlotState.LOADING -> {
+                    Spacer(modifier = Modifier.height(4.dp))
+                    DayAgendaInfoRow(
+                        icon = MiuixIcons.Background,
+                        // 空串：整行高度由图标位与字号决定，与真文字行一致。
+                        text = "",
+                        ink = ink,
+                        leading = {
+                            QingyuLoadingInline(slot = QingyuLoadingSlot.WeatherCard)
+                        },
+                    )
+                }
+
+                WeatherCardSlotState.HIDDEN -> Unit
             }
 
             // 单周备注预览
@@ -472,6 +487,3 @@ fun DayViewCourseCard(
         }
     }
 }
-
-/** 日卡天气行的淡入时长（ms）：短一点，只为了让「一行字出现」不显突然。 */
-private const val WEATHER_ROW_FADE_MS = 180

@@ -236,17 +236,29 @@ fun DayAgendaInfoRow(
      * 单行在窄屏或大字体会被省略号截断（真机反馈教室与降水概率看不全）。
      */
     maxLines: Int = 1,
+    /**
+     * 用自定义内容替换行首那一枚 13dp 图标；null = 照旧画 [icon]（默认，谁都没变）。
+     *
+     * 唯一用途：日卡天气行「正在取数」时，行首改成 10dp 加载小圈
+     * （`QingyuLoadingSlot.WeatherCard`）——圈占的是图标位，行高与真文字行一致，
+     * 出现/消失不顶下面的单周备注。
+     */
+    leading: (@Composable () -> Unit)? = null,
 ) {
     Row(
         modifier = modifier,
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Icon(
-            imageVector = icon,
-            contentDescription = null,
-            modifier = Modifier.size(13.dp),
-            tint = ink.copy(alpha = 0.85f),
-        )
+        if (leading != null) {
+            leading()
+        } else {
+            Icon(
+                imageVector = icon,
+                contentDescription = null,
+                modifier = Modifier.size(13.dp),
+                tint = ink.copy(alpha = 0.85f),
+            )
+        }
         Spacer(modifier = Modifier.width(6.dp))
         Text(
             text = text,

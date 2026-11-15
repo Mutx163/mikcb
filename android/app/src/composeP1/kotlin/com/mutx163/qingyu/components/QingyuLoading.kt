@@ -125,6 +125,19 @@ object QingyuLoadingDefaults {
 
     /** 行首方块位线宽。 */
     val AccentGlyphStrokeWidth = 2.2.dp
+
+    /**
+     * 课卡天气行的小圈：10dp。
+     *
+     * 尺寸来由：课卡里那一行天气文字只有 10~11sp 高（`CourseGridCard` 的
+     * `detailFontSize` / 日卡的 `infoFontSize`），18dp 的 [InlineLargeSize] 会把卡片
+     * 撑出一截；比 [BadgeSize]（14dp，行尾角标）再小一档才落得进那一行。
+     * 0.70 的 tint 玻璃上它只是"正在取数"的信号，不需要可读性。
+     */
+    val WeatherCardSize = 10.dp
+
+    /** 课卡天气行小圈的线宽：10dp 直径配 1.5dp 才不会糊成一坨。 */
+    val WeatherCardStrokeWidth = 1.5.dp
 }
 
 /** 档 B 的四个槽位：尺寸不同是因为构图位置不同，不是随便挑一个。 */
@@ -153,6 +166,15 @@ enum class QingyuLoadingSlot(val size: Dp, val strokeWidth: Dp) {
      * 这个槽位**不能**用 [QingyuLoadingInline]——那里不许传颜色；走 [QingyuLoadingAccentGlyph]。
      */
     AccentGlyph(QingyuLoadingDefaults.AccentGlyphSize, QingyuLoadingDefaults.AccentGlyphStrokeWidth),
+
+    /**
+     * 课卡天气行的加载小圈（10 / 1.5）：天气还没到手、天气那一行又必须占住高度时用。
+     *
+     * 与 [Badge] 的区别是尺寸与用途：角标 14dp 挂在行尾、跟行内文字同排；这一档塞在
+     * 课卡正文的一行小字位置，比角标再小一档。数值由
+     * [QingyuLoadingDefaults.WeatherCardSize] 一处定义，页面不许自己写 10。
+     */
+    WeatherCard(QingyuLoadingDefaults.WeatherCardSize, QingyuLoadingDefaults.WeatherCardStrokeWidth),
 }
 
 /**
