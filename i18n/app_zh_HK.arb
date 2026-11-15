@@ -1585,7 +1585,7 @@
   "liveStagePreviewStageDuringClass": "課中",
   "liveTestingInFlight": "測試進行中，請勿重複點擊，請稍後再試",
   "liveTestingNotificationSent": "測試通知已發送",
-  "sendFailedWithError": "發送失敗: {error}",
+  "sendFailedWithError": "發送失敗：{error}",
   "@sendFailedWithError": {
     "placeholders": {
       "error": {
@@ -4120,7 +4120,7 @@
       }
     }
   },
-  "serviceMsgTimetableShareFailed": "分享失敗: {detail}",
+  "serviceMsgTimetableShareFailed": "分享失敗：{detail}",
   "@serviceMsgTimetableShareFailed": {
     "placeholders": {
       "detail": {
@@ -4295,7 +4295,7 @@
   "holidayNameQingming": "清明節",
   "holidayNameDragonBoat": "端午節",
   "holidayNameMidAutumn": "中秋節",
-  "macroReplayStatusFailed": "失敗: {error}",
+  "macroReplayStatusFailed": "失敗：{error}",
   "@macroReplayStatusFailed": {
     "placeholders": {
       "error": {
@@ -4303,7 +4303,7 @@
       }
     }
   },
-  "macroReplayStatusPaused": "等待手動操作: {reason}",
+  "macroReplayStatusPaused": "等待手動操作：{reason}",
   "@macroReplayStatusPaused": {
     "placeholders": {
       "reason": {
@@ -4320,7 +4320,7 @@
   "macroReplayStepExecuteScript": "正在執行匯入腳本...",
   "macroReplayStepDelay": "等待中...",
   "macroReplayAcceleratedFallbackTip": "快捷路徑失敗，正在使用完整錄制步驟重試…",
-  "macroReplayWaitUrlPattern": "等待 URL 匹配: {pattern}",
+  "macroReplayWaitUrlPattern": "等待 URL 匹配：{pattern}",
   "@macroReplayWaitUrlPattern": {
     "placeholders": {
       "pattern": {
@@ -4328,7 +4328,7 @@
       }
     }
   },
-  "macroReplayWaitSelector": "等待元素: {selector}",
+  "macroReplayWaitSelector": "等待元素：{selector}",
   "@macroReplayWaitSelector": {
     "placeholders": {
       "selector": {
@@ -5730,17 +5730,17 @@
   "liveIslandPreviewSampleTeacher": "張老師",
   "liveIslandPreviewSampleNextClass": "大學物理",
   "liveIslandPreviewSampleNote": "帶教材與習題冊",
-  "liveIslandPreviewTitleBeforeClass": "即將上課: {course}",
-  "liveIslandPreviewTitleBeforeEnd": "下課提醒: {course}",
-  "liveExpandedDetailLineShortName": "簡稱: {value}",
-  "liveExpandedDetailLineProgressNext": "下一節點: {value}",
-  "liveExpandedDetailLineProgressFinal": "整節下課: {value}",
-  "liveExpandedDetailLineStatus": "狀態: {value}",
-  "liveExpandedDetailLineTime": "時間: {value}",
-  "liveExpandedDetailLineLocation": "地點: {value}",
-  "liveExpandedDetailLineTeacher": "教師: {value}",
-  "liveExpandedDetailLineNext": "下一節: {value}",
-  "liveExpandedDetailLineNote": "備註: {value}",
+  "liveIslandPreviewTitleBeforeClass": "即將上課：{course}",
+  "liveIslandPreviewTitleBeforeEnd": "下課提醒：{course}",
+  "liveExpandedDetailLineShortName": "簡稱：{value}",
+  "liveExpandedDetailLineProgressNext": "下一節點：{value}",
+  "liveExpandedDetailLineProgressFinal": "整節下課：{value}",
+  "liveExpandedDetailLineStatus": "狀態：{value}",
+  "liveExpandedDetailLineTime": "時間：{value}",
+  "liveExpandedDetailLineLocation": "地點：{value}",
+  "liveExpandedDetailLineTeacher": "教師：{value}",
+  "liveExpandedDetailLineNext": "下一節：{value}",
+  "liveExpandedDetailLineNote": "備註：{value}",
   "@liveIslandPreviewTitleBeforeClass": {
     "placeholders": {
       "course": {

@@ -22,7 +22,7 @@
     <string name="notification_schedule_reminder_default_title">日程提醒</string>
     <string name="notification_schedule_reminder_default_body">你有一個即將開始的日程</string>
 
-    <string name="notification_course_reminder_title">課程提醒: %1$s</string>
+    <string name="notification_course_reminder_title">課程提醒：%1$s</string>
     <string name="notification_fgs_fallback_text">超級島未能啟動，已改用普通通知提醒</string>
     <string name="notification_preparing_reminder">正在準備課程提醒</string>
     <string name="action_enable_silent">開啟靜音</string>
@@ -41,21 +41,21 @@
     <string name="stage_before_class">即將上課</string>
     <string name="stage_before_end">下課提醒</string>
 
-    <string name="title_before_class">即將上課: %1$s</string>
-    <string name="title_before_end">下課提醒: %1$s</string>
+    <string name="title_before_class">即將上課：%1$s</string>
+    <string name="title_before_end">下課提醒：%1$s</string>
 
-    <string name="label_class_start_time">上課時間: %1$s</string>
-    <string name="label_class_end_time">下課時間: %1$s</string>
-    <string name="label_location">地點: %1$s</string>
+    <string name="label_class_start_time">上課時間：%1$s</string>
+    <string name="label_class_end_time">下課時間：%1$s</string>
+    <string name="label_location">地點：%1$s</string>
 
-    <string name="detail_short_name">簡稱: %1$s</string>
-    <string name="detail_next_milestone">下一節點: %1$s</string>
-    <string name="detail_final_dismiss">整節下課: %1$s</string>
-    <string name="detail_status">狀態: %1$s</string>
-    <string name="detail_time">時間: %1$s</string>
-    <string name="detail_teacher">教師: %1$s</string>
-    <string name="detail_next_course">下一節: %1$s</string>
-    <string name="detail_note">備註: %1$s</string>
+    <string name="detail_short_name">簡稱：%1$s</string>
+    <string name="detail_next_milestone">下一節點：%1$s</string>
+    <string name="detail_final_dismiss">整節下課：%1$s</string>
+    <string name="detail_status">狀態：%1$s</string>
+    <string name="detail_time">時間：%1$s</string>
+    <string name="detail_teacher">教師：%1$s</string>
+    <string name="detail_next_course">下一節：%1$s</string>
+    <string name="detail_note">備註：%1$s</string>
 
     <string name="remaining_until_class_start">距上課%1$s</string>
     <string name="remaining_until_class_end">距下課%1$s</string>
