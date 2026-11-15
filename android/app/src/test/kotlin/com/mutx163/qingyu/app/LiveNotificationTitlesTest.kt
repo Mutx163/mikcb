@@ -1,10 +1,12 @@
 package com.mutx163.qingyu.app
 
+import com.mutx163.qingyu.testutil.assertSourceContains
+import com.mutx163.qingyu.testutil.assertSourceLacks
+import com.mutx163.qingyu.testutil.readKotlinSourceNoStrings
+import com.mutx163.qingyu.testutil.readKotlinSourceNormalized
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
-import org.junit.Assert.assertTrue
 import org.junit.Test
-import java.io.File
 
 /**
  * 通知 / 超级岛标题口径（2026-11-15）。
@@ -66,29 +68,22 @@ class LiveNotificationTitlesTest {
 
     @Test
     fun `通知服务里不再出现硬截课名`() {
-        val source = readAndroidSource(LIVE_SERVICE_PATH)
-        assertTrue("读不到 LiveUpdateService.kt，判据不可信。", source.isNotEmpty())
+        // 走共享剥离器（R21 口径）：不剥注释的读法会被「把目标行注释掉」静默骗绿。
+        val source = readKotlinSourceNoStrings(LIVE_SERVICE_PATH)
         for (pattern in HARD_CUT_PATTERNS) {
-            assertFalse(
-                "LiveUpdateService 里仍有硬截课名的写法（$pattern）—— 用户输入的名字会被改写。",
-                source.contains(pattern),
-            )
+            assertSourceLacks(source, pattern, LIVE_SERVICE_PATH)
         }
         // 反向兜底：标题拼装与副标题槽确实在用这两个纯函数（否则上面只是「删掉了」）。
-        assertTrue(source.contains("liveNotificationCourseName("))
-        assertTrue(source.contains("liveNotificationSubText(", ignoreCase = false))
-        assertTrue(source.contains("islandSubTitle = stageTitle"))
-        assertTrue(source.contains(""""subTitle", islandSubTitle"""))
-    }
-
-    private fun readAndroidSource(relative: String): String {
-        var dir: File? = File("").absoluteFile
-        while (dir != null) {
-            val candidate = File(dir, relative)
-            if (candidate.isFile) return candidate.readText(Charsets.UTF_8)
-            dir = dir.parentFile
-        }
-        throw AssertionError("找不到 $relative —— 测试无法验证，按失败处理")
+        assertSourceContains(source, "liveNotificationCourseName(", LIVE_SERVICE_PATH)
+        assertSourceContains(source, "liveNotificationSubText(", LIVE_SERVICE_PATH)
+        assertSourceContains(source, "islandSubTitle = stageTitle", LIVE_SERVICE_PATH)
+        // 这一条判的是 JSON 键名（字符串字面量）：必须用保留字符串的默认档，
+        // 中性化档会把 "subTitle" 抹成空格、断言永远不成立。
+        assertSourceContains(
+            readKotlinSourceNormalized(LIVE_SERVICE_PATH),
+            """"subTitle", islandSubTitle""",
+            LIVE_SERVICE_PATH,
+        )
     }
 
     private companion object {

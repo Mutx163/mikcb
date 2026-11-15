@@ -1,9 +1,10 @@
 package com.mutx163.qingyu.pages.timetable
 
+import com.mutx163.qingyu.testutil.assertSourceContains
+import com.mutx163.qingyu.testutil.readKotlinSourceNoStrings
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
-import java.io.File
 
 /**
  * 周视图「带下沿缝」几何测试（2026-11-15）。
@@ -32,10 +33,7 @@ class TimetableWeekBandSeamTest {
             Regex("""topSeamDp\s*=\s*if \(bandStripActive\)\s*DAY_VIEW_TOP_SEAM_DP\.dp\s*else\s*0\.dp""")
                 .containsMatchIn(source),
         )
-        assertTrue(
-            "周页自己写了一个数字缝、没复用 DAY_VIEW_TOP_SEAM_DP —— 日/周两处口径会漂开。",
-            source.contains("DAY_VIEW_TOP_SEAM_DP.dp"),
-        )
+        assertSourceContains(source, "DAY_VIEW_TOP_SEAM_DP.dp", WEEK_PAGE_PATH)
     }
 
     @Test
@@ -43,23 +41,21 @@ class TimetableWeekBandSeamTest {
         val source = weekPageSource()
         val bandSpacer = "Spacer(modifier = Modifier.height(underlapHeightDp))"
         val seamSpacer = "Spacer(modifier = Modifier.height(topSeamDp))"
-        assertTrue("WeekPageContent 里找不到带下沿缝的 Spacer —— 缝没画出来。", source.contains(seamSpacer))
-        assertTrue("带高留白被删了 —— 第 1 节会钻进带子里。", source.contains(bandSpacer))
+        assertSourceContains(source, seamSpacer, WEEK_PAGE_PATH)
+        assertSourceContains(source, bandSpacer, WEEK_PAGE_PATH)
         assertTrue(
             "带下沿缝排在了带高留白之前 —— 缝会落在带子底下被吃掉，第 1 节仍紧贴带下沿。",
             source.indexOf(seamSpacer) > source.indexOf(bandSpacer),
         )
-        assertTrue(
-            "WeekPageContent 没有 topSeamDp 参数 —— 调用方传不进来。",
-            source.contains("topSeamDp: Dp = 0.dp"),
-        )
+        assertSourceContains(source, "topSeamDp: Dp = 0.dp", WEEK_PAGE_PATH)
     }
 
     @Test
     fun `日视图那道缝仍是 14dp`() {
-        assertTrue(
-            "日视图 DAY_VIEW_TOP_SEAM_DP 不再是 14f —— 周视图的缝跟着变，两边口径要一起改。",
-            daySource().contains("internal const val DAY_VIEW_TOP_SEAM_DP = 14f"),
+        assertSourceContains(
+            daySource(),
+            "internal const val DAY_VIEW_TOP_SEAM_DP = 14f",
+            DAY_SCROLL_CONTENT_PATH,
         )
     }
 
@@ -76,19 +72,10 @@ class TimetableWeekBandSeamTest {
         assertEquals(0f, weekGridSectionBasisDp(contentHeightDp = -20f, bandUnderlapDp = 0f), 1e-4f)
     }
 
-    private fun weekPageSource(): String = readAndroidSource(WEEK_PAGE_PATH)
+    /** 走共享剥离器（R21 口径）：不剥注释的读法会被「把目标行注释掉」静默骗绿。 */
+    private fun weekPageSource(): String = readKotlinSourceNoStrings(WEEK_PAGE_PATH)
 
-    private fun daySource(): String = readAndroidSource(DAY_SCROLL_CONTENT_PATH)
-
-    private fun readAndroidSource(relative: String): String {
-        var dir: File? = File("").absoluteFile
-        while (dir != null) {
-            val candidate = File(dir, relative)
-            if (candidate.isFile) return candidate.readText(Charsets.UTF_8)
-            dir = dir.parentFile
-        }
-        throw AssertionError("找不到 $relative —— 测试无法验证，按失败处理")
-    }
+    private fun daySource(): String = readKotlinSourceNoStrings(DAY_SCROLL_CONTENT_PATH)
 
     private companion object {
         const val WEEK_PAGE_PATH =
