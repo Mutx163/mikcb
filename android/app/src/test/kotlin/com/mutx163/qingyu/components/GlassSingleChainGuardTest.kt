@@ -59,10 +59,6 @@ class GlassSingleChainGuardTest {
             "回今日/本周浮钮：本轮未迁；下一批迁 QingyuGlassSurface",
         ),
         Pending(
-            "pages/timetable/TimetableChromeBandGlass.kt",
-            "课表顶栏玻璃带：课表域在改，按用户要求本轮不碰",
-        ),
-        Pending(
             "pages/timetable/TimetableWeekPage.kt",
             "周视图预糊采样层：课表域在改，按用户要求本轮不碰",
         ),
