@@ -80,6 +80,7 @@ import com.mutx163.qingyu.app.HomeTitleStyle
 import com.mutx163.qingyu.components.BackToTodayFab
 import com.mutx163.qingyu.components.FAB_SHADOW_REACH_DP
 import com.mutx163.qingyu.components.liquid.lens
+import com.mutx163.qingyu.components.liquid.rememberCombinedBackdrop
 import com.mutx163.qingyu.components.liquid.vibrancy
 import com.mutx163.qingyu.components.rememberQingyuWindowAdaptive
 import com.mutx163.qingyu.core.Course
@@ -708,11 +709,17 @@ fun TimetableWeekPage(
     // [壁纸 + 预糊层 + 内容 Column]（不含浮钮自己），浮钮摘成录制层外的兄弟再采它。
     val contentBackdrop = rememberLayerBackdrop()
     // ── 顶栏玻璃的**独立内容采样层**（2026-11-16 P0 后补）──
-    // 底栏能出折射、顶栏出不来的最后一条差异就是采样内容：底栏采「壁纸 + 内容」，
-    // 顶栏原来只采壁纸（纯色壁纸上位移看不出）。但**不能**让它采 contentBackdrop——
-    // 那一层把带子自己也录了进去，等于 shader 读自己正在写的图层（13:57 真机 SIGSEGV）。
-    // 所以单开一层，只录「带子以下的内容区域」，带子读它、且不在它里面。
+    // 这一层只录「带子以下的内容区域」（网格 / 日页 / 月页，随滚动更新），带子不在里面。
+    // **不能**让带子采 contentBackdrop——那一层把带子自己也录了进去，等于 shader 读
+    // 自己正在写的图层（13:57 真机 SIGSEGV）。
+    // ⚠️ 但它也**不含壁纸**：壁纸画在另一个兄弟盒子里（layerBackdrop 只录自己这层）。
+    // 带子静止时这一截录到的是透明留白，单采它 = 糊空气（2026-11-16 晚定位的根因）。
+    // 所以带子的采样源是下面合成的 bandGlassSource = 壁纸层 + 这一层。
     val bandContentBackdrop = rememberLayerBackdrop()
+    // 带子的合成采样源：先画壁纸（pageBackdrop，全屏不透明），再画内容
+    //（bandContentBackdrop，带子以下）。与底栏同语义：采「壁纸 + 真实内容」。
+    // 两层都不含带子自己 ⇒ 不会复现「读自己正在写的图层」的原生崩溃。
+    val bandGlassSource = rememberCombinedBackdrop(pageBackdrop, bandContentBackdrop)
     val materialSpec = material
     // 玻璃带是否处于「液态档 + 真有壁纸 + 设备支持」，判据与渲染层同一份
     //（`TimetableChromeBandGlass` 里那段 `when`）；这里单独留一份只是为了给
@@ -940,9 +947,10 @@ fun TimetableWeekPage(
             TimetableChromeBandGlass(
                 material = materialSpec,
                 hasBackdrop = hasBackdrop,
-                // 采样源 = 独立内容层（只录带子以下的内容），与底栏同一模式：内容录 A 层、玻璃读 A 层。
-                // ⚠️ 绝不能传 contentBackdrop：那一层带着带子自己 ⇒ shader 读自己正在写的图层，
-                backdrop = bandContentBackdrop,
+                // 采样源 = 壁纸 + 带子以下的内容（合成层，见上方 bandGlassSource）。
+                // 单采内容层会糊空气（那一层不含壁纸）；单采壁纸层折射看不出。
+                // ⚠️ 绝不能传 contentBackdrop：那一层带着带子自己 ⇒ shader 读自己正在写的图层。
+                backdrop = bandGlassSource,
                 solidColor = bandSolidColor,
                 overdrawDp = (bandOverdrawBaseDp.dp + maxOf(
                     innerPadding.calculateStartPadding(LocalLayoutDirection.current),
@@ -983,7 +991,7 @@ fun TimetableWeekPage(
                             // 玻璃分支就是在「模糊空气」，模糊会把它自己圆形蒙版的边缘量化成
                             // 多边形（2026-11-14 用户实报）。所以这种档位传 null，走
                             // `HomeTopBarActionBallChrome` 已有的实心圆退化分支。
-                            backdrop = pageBackdrop.takeIf { bandBlurActive },
+                            backdrop = bandGlassSource.takeIf { bandBlurActive },
                         )
                     }
 
@@ -1827,8 +1835,8 @@ private fun MonthContentMountSignal(onMounted: () -> Unit) {
  * 日视图正文的挂载壳（2026-11-16：条带录制删除后只剩全屏盒 + 内容）。
  *
  * 以前这里是 `DayStripHost`：把日页正文录进 `dayStripBackdrop` 给顶栏「第二遍玻璃」采样。
- * 顶栏改成单遍玻璃、采独立内容层 `bandContentBackdrop` 之后，那层录制没有任何采样方，
- * 已随重做删除；这里保留一个薄壳只为统一两支挂载点的缩进与后续扩展。
+ * 顶栏改成单遍玻璃、采「壁纸 + 带子以下内容」的合成层（`bandGlassSource`）之后，
+ * 那条条带录制没有任何采样方，已随重做删除；这里保留一个薄壳只为统一两支挂载点。
  */
 @Composable
 private fun DayContentHost(content: @Composable () -> Unit) {

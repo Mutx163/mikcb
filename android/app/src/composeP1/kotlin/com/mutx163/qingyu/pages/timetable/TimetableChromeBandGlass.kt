@@ -72,8 +72,10 @@ fun TimetableChromeBandGlass(
             hasBackdrop &&
             isRuntimeShaderSupported()
     }
-    // 压色：材质面板那根 `tintAlpha`，颜色取主题 surface（与底栏同一个色源）。
-    val tint = MiuixTheme.colorScheme.surface.copy(
+    // 压色：材质面板那根 `tintAlpha`，颜色取主题 surfaceContainer —— 与底栏**真正**
+    // 同一个色源（底栏 GlassDockNavigationBar 用的就是 surfaceContainer；这里原先写
+    // surface，是「同一套参数两处效果」的漂移之一，2026-11-16 对齐）。
+    val tint = MiuixTheme.colorScheme.surfaceContainer.copy(
         alpha = material?.liquidTintAlpha ?: 1f,
     )
 
@@ -88,12 +90,11 @@ fun TimetableChromeBandGlass(
                 backdrop = glassBackdrop,
                 // 玻璃参数只在一处解释：设置快照 → GlassTuning → GlassSpecResolver.resolve
                 // （GlassSingleChainGuardTest 咬的就是这条：页面不许自己拼 GlassSpec）。
-                // 带子用 andGlassTuning()（与坞同一份旋钮），排查期把色散覆盖成 0：
-                // 色散着色器里有 (x*y)/(halfSize.x*halfSize.y)，首帧 size 为 0 会算出 NaN/Inf
-                // 采样坐标（RenderThread 原生崩溃的候选之一）；崩溃确认不复现后再开回。
-                spec = GlassSpecResolver.resolve(
-                    material.bandGlassTuning().copy(dispersion = 0f),
-                ),
+                // 带子用 bandGlassTuning()（与坞同一份旋钮）。色散曾排查期覆盖成 0（除零风险），
+                // 现由 LiquidLens 的零尺寸守卫兜底，已开回（见下方 spec 处注释）。
+                // 色散随材质快照走（2026-11-16 开回）：首帧 size=0 的除零路径已由
+                // LiquidLens 入口的零尺寸守卫挡住，不再需要在这里覆盖成 0。
+                spec = GlassSpecResolver.resolve(material.bandGlassTuning()),
                 // 外溢几何仍在这边算：节点推到屏幕外一圈，只让底边参与折射。
                 modifier = Modifier
                     .matchParentSize()

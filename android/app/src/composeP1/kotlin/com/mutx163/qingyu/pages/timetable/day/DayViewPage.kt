@@ -51,6 +51,7 @@ import com.mutx163.qingyu.app.HomeTitleStyle
 import com.mutx163.qingyu.components.BackToTodayFab
 import com.mutx163.qingyu.components.FAB_SHADOW_REACH_DP
 import com.mutx163.qingyu.components.liquid.lens
+import com.mutx163.qingyu.components.liquid.rememberCombinedBackdrop
 import com.mutx163.qingyu.components.liquid.vibrancy
 import com.mutx163.qingyu.core.Course
 import com.mutx163.qingyu.core.CourseTask
@@ -609,6 +610,11 @@ fun DayViewPage(
     // 这一层录 [壁纸(非嵌入时) + 预糊层 + 内容 Column]（不含浮钮自己），浮钮摘成录制层外的
     // 兄弟再采它。嵌入日程时本页不画壁纸，录到的是日卡本身，浮钮即透出它压着的卡片内容。
     val contentBackdrop = rememberLayerBackdrop()
+    // ── 顶栏玻璃的独立内容采样层（2026-11-16，与周页同方案）──
+    // 只录「带子以下的内容」（日列表），带子不在里面；壁纸在另一个兄弟层，
+    // 所以带子的采样源是「壁纸 + 这一层」的合成（bandGlassSource），不是单层。
+    val bandContentBackdrop = rememberLayerBackdrop()
+    val bandGlassSource = rememberCombinedBackdrop(pageBackdrop, bandContentBackdrop)
     // 玻璃带是否「液态档 + 真有壁纸 + 设备支持」：判据与渲染层同一份
     //（`TimetableChromeBandGlass` 里那段 `when`）。这里留一份只为给下面的
     // `pageBackdropActive`（要不要挂录像层）用，不参与画玻璃。
@@ -831,7 +837,9 @@ fun DayViewPage(
             TimetableChromeBandGlass(
                 material = material,
                 hasBackdrop = hasBackdrop,
-                backdrop = pageBackdrop,
+                // 采样源 = 壁纸 + 带子以下的内容（与周页同方案）。单采壁纸层折射看不出；
+                // 内容层不含壁纸，单采它会糊空气。两层都不含带子自己，无自采样崩溃风险。
+                backdrop = bandGlassSource,
                 solidColor = bandSolidColor,
                 overdrawDp = (bandOverdrawBaseDp.dp + maxOf(
                     innerPadding.calculateStartPadding(LocalLayoutDirection.current),
@@ -855,7 +863,7 @@ fun DayViewPage(
                             // 「更多」玻璃球的采样源 = 顶栏玻璃带自己在用的那一层（同一个对象）。
                             // 带子不画玻璃的档位（实体 / 无壁纸 / 无 shader）里这层没录内容，
                             // 球必须退回实心圆，否则就是「模糊空气」+ 蒙版边缘量化（2026-11-14）。
-                            backdrop = pageBackdrop.takeIf { bandBlurActive },
+                            backdrop = bandGlassSource.takeIf { bandBlurActive },
                         )
                     }
                     // 顶部星期日期条（Dart 日视图叠在首页上，这一条一直可见）：
@@ -905,7 +913,16 @@ fun DayViewPage(
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .weight(1f),
+                    .weight(1f)
+                    // 顶栏玻璃的内容采样源：这一层只含带子以下的日列表，不含带子。
+                    // 只在带子真画玻璃时录（录制 = 离屏重画一帧，门控与周页同口径）。
+                    .then(
+                        if (bandBlurActive) {
+                            Modifier.layerBackdrop(bandContentBackdrop)
+                        } else {
+                            Modifier
+                        },
+                    ),
             ) {
                 HorizontalPager(
                     state = pagerState,

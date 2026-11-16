@@ -51,6 +51,7 @@ import androidx.compose.ui.unit.dp
 import com.mutx163.qingyu.app.HomeMenuStyle
 import com.mutx163.qingyu.app.HomeTitleStyle
 import com.mutx163.qingyu.components.LocalGlassDockScrollRelief
+import com.mutx163.qingyu.components.liquid.rememberCombinedBackdrop
 import com.mutx163.qingyu.components.QingyuBackIconButton
 import com.mutx163.qingyu.components.rememberShellShouldShowBackButton
 import com.mutx163.qingyu.pages.timetable.TimetableMenuItem
@@ -266,6 +267,11 @@ fun MonthViewPage(
     val dark = androidx.compose.foundation.isSystemInDarkTheme()
     val scaffoldBg = Color(QingyuTheme.scaffoldBackground(dark))
     val pageBackdrop = rememberLayerBackdrop()
+    // ── 顶栏玻璃的独立内容采样层（2026-11-16，与周 / 日页同方案）──
+    // 只录「带子以下的内容」（日历卡 + 信息面板），带子不在里面；壁纸在另一个兄弟层，
+    // 所以带子的采样源是「壁纸 + 这一层」的合成（bandGlassSource），不是单层。
+    val bandContentBackdrop = rememberLayerBackdrop()
+    val bandGlassSource = rememberCombinedBackdrop(pageBackdrop, bandContentBackdrop)
     // 玻璃带是否「液态档 + 真有壁纸 + 设备支持」：判据与渲染层同一份
     //（`TimetableChromeBandGlass` 里那段 `when`）。这里留一份决定要不要挂录像层。
     val bandBlurActive = material?.band == SurfaceMaterialState.LIQUID_GLASS &&
@@ -334,6 +340,13 @@ fun MonthViewPage(
             showWeekNumbers = showWeekNumbers,
             showChrome = !embedded,
             innerBottomPadding = bottomInset,
+            // 顶栏玻璃的内容采样源：只录带子以下的正文（日历卡 + 面板），不含带子。
+            // 嵌入态不录（宿主周页有自己的 bandContentBackdrop，带子由宿主画）。
+            bandRecordModifier = if (bandBlurActive && !embedded) {
+                Modifier.layerBackdrop(bandContentBackdrop)
+            } else {
+                Modifier
+            },
             dragState = dragState,
             onPreviousMonth = { shiftMonth(-1) },
             onNextMonth = { shiftMonth(1) },
@@ -471,7 +484,9 @@ fun MonthViewPage(
             TimetableChromeBandGlass(
                 material = material,
                 hasBackdrop = hasBackdrop,
-                backdrop = pageBackdrop,
+                // 采样源 = 壁纸 + 带子以下的内容（与周 / 日页同方案）。单采壁纸层折射看不出；
+                // 内容层不含壁纸，单采它会糊空气。两层都不含带子自己，无自采样崩溃风险。
+                backdrop = bandGlassSource,
                 solidColor = bandSolidColor,
                 overdrawDp = bandOverdrawBaseDp.dp + maxOf(
                     innerPadding.calculateStartPadding(LocalLayoutDirection.current),
@@ -493,7 +508,7 @@ fun MonthViewPage(
                             // 「更多」玻璃球的采样源 = 顶栏玻璃带自己在用的那一层（同一个对象）。
                             // 带子不画玻璃的档位（实体 / 无壁纸 / 无 shader）里这层没录内容，
                             // 球必须退回实心圆，否则就是「模糊空气」+ 蒙版边缘量化（2026-11-14）。
-                            backdrop = pageBackdrop.takeIf { bandBlurActive },
+                            backdrop = bandGlassSource.takeIf { bandBlurActive },
                             // 根页（底栏栈底）不画返回键；从「更多功能」等处推入时画出。
                             navigationIcon = if (rememberShellShouldShowBackButton()) {
                                 { QingyuBackIconButton(onBack = onBack) }
@@ -575,6 +590,8 @@ private fun MonthViewBody(
     showChrome: Boolean,
     /** Scaffold 的底部内边距（系统栏内边距）：与坞避让取 max 去重，不双计。 */
     innerBottomPadding: Dp,
+    /** 顶栏玻璃的内容录制修饰（layerBackdrop）；嵌入态 / 非液态档传 Plain Modifier。 */
+    bandRecordModifier: Modifier = Modifier,
     dragState: MonthPanelDragState,
     onPreviousMonth: () -> Unit,
     onNextMonth: () -> Unit,
@@ -592,7 +609,7 @@ private fun MonthViewBody(
     SideEffect { MonthScrollProbe.bump(MonthScrollProbe.C_BODY) }
 
     androidx.compose.foundation.layout.BoxWithConstraints(
-        modifier = Modifier.fillMaxSize(),
+        modifier = Modifier.fillMaxSize().then(bandRecordModifier),
     ) {
         val availableWidthDp = maxWidth.value.toDouble()
         val availableHeightDp = maxHeight.value.toDouble()

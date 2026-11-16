@@ -51,7 +51,8 @@ import top.yukonga.miuix.kmp.theme.MiuixTheme
  * `vibrancy`、`progressiveTextureBlurEffect`。调用方只给：
  *
  * 1. [spec]：口径唯一来源（`GlassSpecResolver.resolve` 的产物）；
- * 2. [backdrop]：采样源（全站统一为「页面内容合成层」）；
+ * 2. [backdrop]：采样源（全站统一为「壁纸 + 页面内容」的合成层；只录内容不含壁纸
+ *    会在静止时糊空气，只录壁纸则折射看不出——见 TimetableWeekPage.bandGlassSource）；
  * 3. 形状与几何（形状差异属几何，不是配方）。
  *
  * 这样「同一份参数 ⇒ 同一效果」才有落地点：参数只在 [spec] 里被解释一次。

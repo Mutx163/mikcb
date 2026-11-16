@@ -48,6 +48,11 @@ fun BackdropEffectScope.lens(
     // > 0 判定，把 padding 设成 Inf 再写进 uniform ⇒ 采样地址非法，RenderThread 原生崩溃。
     if (!refractionHeight.isFinite() || !refractionAmount.isFinite()) return
     if (refractionHeight <= 0f || refractionAmount <= 0f) return
+    // 首帧尺寸可能为 0：色散着色器里有 (x*y)/(halfSize.x*halfSize.y)，零尺寸会除零，
+    // 算出 NaN/Inf 采样坐标 ⇒ RenderThread 原生崩溃（SEGV_ACCERR）。这一帧直接不挂
+    // 折射（effects 每帧重跑，尺寸到位的下一帧自然恢复）；无配色分支的 normalize(0)
+    // 同样未定义，一并挡住。
+    if (size.width <= 0f || size.height <= 0f) return
 
     if (padding < refractionAmount) {
         padding = refractionAmount
