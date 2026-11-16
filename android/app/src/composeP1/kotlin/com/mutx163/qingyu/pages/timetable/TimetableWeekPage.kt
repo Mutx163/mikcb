@@ -903,7 +903,7 @@ fun TimetableWeekPage(
             modifier = Modifier
                 .fillMaxSize()
                 .then(
-                    if (floatingGlassActive) {
+                    if (pageBackdropActive || floatingGlassActive) {
                         Modifier.layerBackdrop(contentBackdrop)
                     } else {
                         Modifier
@@ -983,7 +983,9 @@ fun TimetableWeekPage(
             TimetableChromeBandGlass(
                 material = materialSpec,
                 hasBackdrop = hasBackdrop,
-                backdrop = pageBackdrop,
+                // 2026-11-16 重做：采**真实内容层**（壁纸 + 课卡 + 文字），与底栏同一采样源。
+                // 旧版采 pageBackdrop（只录壁纸），折射作用在纯色壁纸上等于没效果。
+                backdrop = contentBackdrop,
                 solidColor = bandSolidColor,
                 overdrawDp = (bandOverdrawBaseDp.dp + maxOf(
                     innerPadding.calculateStartPadding(LocalLayoutDirection.current),
@@ -994,15 +996,7 @@ fun TimetableWeekPage(
                     .zIndex(1f)
                     // 带高是下穿量 / 顶部 Spacer / 录制条带三处的共同基准，量一次给三处用。
                     .onSizeChanged { bandHeightPxState.intValue = it.height },
-                // 第二遍玻璃只糊「带子底下正在穿过去的内容」，不染色（第一遍已经铺底）。
-                // 日视图落定后采日页条带（日卡钻到带子底下）；其余时候采周网格条带。
-                // 日页展开/收起过程中不采它：面板裁剪高度还在变，条带只录到半截，
-                // 带子下沿会采到透明像素、读成一条发黑的边。
-                underlayBackdrop = if (dayVisible && dayExpandSettled) {
-                    dayStripBackdrop.takeIf { bandStripActive }
-                } else {
-                    bandStripBackdrop.takeIf { bandStripActive }
-                },
+
             ) {
 
                 Column(

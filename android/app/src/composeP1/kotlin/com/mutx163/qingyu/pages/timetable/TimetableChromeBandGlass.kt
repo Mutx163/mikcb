@@ -2,67 +2,57 @@ package com.mutx163.qingyu.pages.timetable
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import com.mutx163.qingyu.components.liquid.lens
-import com.mutx163.qingyu.components.liquid.vibrancy
+import com.mutx163.qingyu.components.glass.QingyuGlassSurface
+import com.mutx163.qingyu.core.GlassSpec
 import com.mutx163.qingyu.pages.settings.HomeMaterialRenderSpec
 import com.mutx163.qingyu.pages.settings.SurfaceMaterialState
 import top.yukonga.miuix.kmp.blur.Backdrop
-import top.yukonga.miuix.kmp.blur.blur
-import top.yukonga.miuix.kmp.blur.drawBackdrop
 import top.yukonga.miuix.kmp.blur.isRuntimeShaderSupported
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 /**
  * 课表三视图（周 / 日 / 月）共用的**顶栏玻璃带玻璃层**。
  *
- * ## 它补的是什么
+ * ## 2026-11-16 重做：不再自己拼 drawBackdrop
  *
- * 周视图与日视图各写了一份一模一样的「玻璃节点画到盒子之外 + drawBackdrop +
- * vibrancy + blur + lens + 染色」的代码块（2026-11-01 逐行 diff 过，只有注释不同），
- * 月视图要补同一条带就成了**第三份**。三份各自演化必然漂开 —— 所以抽成这一个
- * 组件，三处共用一份口径。
+ * 用户实测：同一套材质参数，**底栏是完美玻璃、顶栏折射毫无作用**；顶栏模糊拉到 0 直接透明。
+ * 根因不是材质，而是顶栏这条**独立实现**采的是一层「只有壁纸」的录像层
+ * （`pageBackdrop`），而底栏采的是**真实内容**（卡、字、色块都在里面）——
+ * 折射位移作用在纯色壁纸上自然看不出任何变化。
  *
- * ## 谁负责什么
+ * 现在顶栏**不再自己拼** `drawBackdrop + vibrancy + blur + lens + 染色`，而是直接调共享件
+ * [QingyuGlassSurface]（坞、浮钮、卡片、页面球用的都是它），参数全部来自同一份材质快照：
  *
- * 本组件只管**玻璃这一层**（采样、高斯、折射、染色、实体降级）。带子里的内容
- * （状态栏留白 / 标题行 / 星期栏 / 月份栏）由调用方排，装在同一个
- * `Box(fillMaxWidth)` 里传进来当 [content] —— 玻璃必须与内容**同处一个盒子**，
- * 否则外溢几何按错尺寸算。
- *
- * ## 三档（判据与数值全部来自 [material]）
- *
- * | 档 | 画什么 |
+ * | 量 | 来源 |
  * |---|---|
- * | `OFF` / [material] 为 null | 什么也不画（内容照常上屏） |
- * | `LIQUID_GLASS` + 有采样源 + 设备支持 | 玻璃：外溢到屏幕外 + 高斯 + 折射 + 染色 |
- * | 其它（实体档 / 无 shader 后端） | 不透明页底色条，**不是**半透明水洗 |
+ * | 模糊 σ | `material.liquidBlurSigma` |
+ * | 染色 | `material.liquidTintAlpha`（`MiuixTheme.surface` 压色） |
+ * | 折射作用带 / 位移 / 色散 | `material.liquidRefractionBand` / `liquidRefraction` / `liquidDispersion` |
  *
- * 液态档**首帧就画玻璃**：带子尺寸在同一次布局里由 `Modifier.matchParentSize()` 的固定
- * 约束给出，`bandGlassOverhang` 直接读约束算外溢几何（2026-11-08 之前靠 `onSizeChanged`
- * 回填状态，首帧恒为 0，只能「什么都不画」⇒ 进外观编辑页时星期栏那条带裸透一帧）。
- * 也不许改回「首帧落实体条」：那样每切一次视图都会先闪一条不透明页面底色（浅色主题 = 白条）。
+ * 调用方只要把**录了真实内容**的 backdrop 传进来（周页传 `contentBackdrop`），
+ * 顶栏就与底栏走同一处实现、同一种采样源。
+ *
+ * ## 形状与外溢
+ *
+ * 带子上 / 左 / 右三条边压在屏幕边上，`lens()` 在这些边朝外推会采到画布之外
+ * （真机读成一条淡竖边）。[bandGlassOverhang] 把玻璃节点整体推到屏幕外一圈，
+ * 于是可见区里只有**底边**在折射——这一层几何仍在，与布局无关（带子尺寸、高度、
+ * 内容与交互都不受影响）。
  *
  * @param material 材质快照（`SettingsMaterialModel.renderSpecOf`）。null = 老行为。
  * @param hasBackdrop 有没有可用壁纸。没有壁纸时液态档不退化成玻璃（那会模糊空气）。
- * @param backdrop 背景采样源（页面自己的 `rememberLayerBackdrop()`）。null = 没采样源。
+ * @param backdrop 背景采样源：**必须是录了真实内容的那一层**（周页 `contentBackdrop`）。
  * @param solidColor 无壁纸 / 实体档的页底色（`pageColorArgb` → 色，缺省给主题底）。
- * @param overdrawDp 形状边界要往屏幕外推多少（逻辑 dp）。理由见
- *   `SettingsMaterialModel.bandGlassOverdrawDp`；屏幕左右还要叠安全区，那一步在调用方算。
- * @param underlayBackdrop 「带子底下正在穿过去的内容」的采样源（2026-11-08）。周视图把
- *   周网格顶到带子底下之后，课卡是画在壁纸**上面**的另一层，`backdrop` 那层只录壁纸，
- *   看不出课卡。这里再挂一片只做高斯、**不染色**的第二遍玻璃：卡片区域糊出来，
- *   空隙保持透明 ⇒ 底下的第一遍（壁纸玻璃）原样透出。null = 老行为（只有一遍）。
- * @param content 带子里的内容。
+ * @param overdrawDp 形状边界要往屏幕外推多少（逻辑 dp）；左右还要叠安全区，那一步在调用方算。
+ * @param content 带子里的内容（状态栏留白 / 标题行 / 星期栏 / 月份栏）。
  */
 @Composable
 fun TimetableChromeBandGlass(
@@ -72,136 +62,50 @@ fun TimetableChromeBandGlass(
     solidColor: Color,
     overdrawDp: Dp,
     modifier: Modifier = Modifier,
-    underlayBackdrop: Backdrop? = null,
     content: @Composable () -> Unit,
 ) {
     val bandSurface = material?.band
     // 液态档 + 真有壁纸 + 设备支持 runtime shader，三件事同时成立才画玻璃。
-    val blurBackdrop = backdrop?.takeIf {
+    val glassBackdrop = backdrop?.takeIf {
         bandSurface == SurfaceMaterialState.LIQUID_GLASS &&
             hasBackdrop &&
             isRuntimeShaderSupported()
     }
-    // ── 染色：分两层叠，合成值 = 材质面板那根 `tintAlpha`（0 = 全透，0.9 = 最厚）──
-    // 为什么拆两层（2026-11-15，用户实报「透过玻璃看课卡：字糊、边锐」，并观察到
-    // 「日视图从本日滑到非本日时带子会暗一下，那一瞬间的模糊是对的」）：
-    //   · 那「暗一下」= 第二遍玻璃这一帧还没录到内容，带子上只剩第一遍的
-    //     「壁纸模糊 + 70% 染色」——也就是**被压过色**的样子；
-    //   · 稳态时第二遍把课卡糊进来，但这一遍以前**不染色**，于是带子里露出的是
-    //     没被压色的原色课卡（截图里就是一条条鲜艳色柱），和周围那圈染过的壁纸
-    //     对不上，读作「字糊、边锐」。
-    // 现在第二遍画完再补一层色（[bandTintLayerAlphas] 拆出来的第二层），稳态与那
-    // 「暗一下」的瞬间同一个观感；第一遍仍保留自己的那一层，合成后总强度不变。
-    val totalTintAlpha = material?.liquidTintAlpha ?: 1f
-    val (bandTintFirstAlpha, bandTintTopAlpha) = bandTintLayerAlphas(totalTintAlpha)
-    val tint = MiuixTheme.colorScheme.surface.copy(alpha = bandTintFirstAlpha)
-    val tintTop = MiuixTheme.colorScheme.surface.copy(alpha = bandTintTopAlpha)
-
-    // 形状必须是 `CornerBasedShape`：`lens()` 靠它取四角半径，传 `RectangleShape`
-    // 会整段 return、一点折射都没有。0dp 圆角与直角同形，观感不变。
-    val shape = remember { RoundedCornerShape(0.dp) }
+    // 压色：材质面板那根 `tintAlpha`，颜色取主题 surface（与底栏同一个色源）。
+    val tint = MiuixTheme.colorScheme.surface.copy(
+        alpha = material?.liquidTintAlpha ?: 1f,
+    )
 
     Box(
-        modifier = modifier
-            .fillMaxWidth(),
+        modifier = modifier.fillMaxWidth(),
     ) {
         when {
             material == null || bandSurface == SurfaceMaterialState.OFF -> Unit
 
-            // ⚠️ 玻璃节点挂 `matchParentSize()`：Box 会在**同一次测量**里先定下带子的最终
-            // 尺寸，再用固定约束量这个子节点。`bandGlassOverhang` 就是拿这份约束算外溢
-            // 几何的 —— 于是玻璃首帧就有正确尺寸，不存在「等尺寸回填」的空窗。
-            blurBackdrop != null -> Box(
+            // 液态档：与底栏同一处实现（共享件 `QingyuGlassSurface`）。
+            glassBackdrop != null -> QingyuGlassSurface(
+                backdrop = glassBackdrop,
+                spec = GlassSpec(
+                    blurSigmaDp = material.liquidBlurSigma,
+                    tintAlpha = material.liquidTintAlpha,
+                    // 与旧版 `vibrancy()` 默认值一致（官方 colorControls saturation = 1.5）。
+                    vibrancy = BAND_VIBRANCY,
+                    // 带子不画边光（旧版也没有）：highlight 传 null，这两项只为填满 spec。
+                    rimStrength = 0f,
+                    rimWidthDp = 0f,
+                    refractionBandDp = material.liquidRefractionBand,
+                    refractionAmountDp = material.liquidRefraction,
+                    dispersion = material.liquidDispersion,
+                ),
+                // 外溢几何仍在这边算：节点推到屏幕外一圈，只让底边参与折射。
                 modifier = Modifier
                     .matchParentSize()
-                    .bandGlassOverhang(overdrawDp)
-                    .drawBackdrop(
-                        backdrop = blurBackdrop,
-                        shape = { shape },
-                        effects = {
-                            // ── 折射收窄（2026-11-03）──
-                            // 用户口径：作用带一宽，交界处的画面被弯得上下对不上
-                            // （读作「壁纸错位」）。作用带与位移都先过夹具
-                            // [timetableBandRefraction]：作用带压到紧贴交界的一小条
-                            // （≤8dp），位移压到 ≤8dp；位移拖到 0 时输出 (0,0)，
-                            // 整段不挂折射、严格零偏移。周/日/月三视图共用本组件，
-                            // 同一套参数只有这一处。
-                            // 带盒高（**不含**顶部外溢）从绘制期尺寸反推：`size` 是这一帧
-                            // 节点自己的 px 尺寸（= 带子 + 外溢），首帧就有值。
-                            // 非有限值只出现在 draw 之前那次预构建（miuix 在 `onAttach`
-                            // 里也会跑一遍 effects），此时按 0 处理 ⇒ 不挂折射，绘制帧
-                            // 会带着真尺寸重跑。
-                            val bandHeightDp = if (size.height.isFinite()) {
-                                (size.height - overdrawDp.roundToPx()).coerceAtLeast(0f) / density
-                            } else {
-                                0f
-                            }
-                            val refraction = timetableBandRefraction(
-                                bandBoxHeightDp = bandHeightDp,
-                                requestedBandDp = material.liquidRefractionBand,
-                                requestedAmountDp = material.liquidRefraction,
-                            )
-                            val refractionPx = refraction.amountDp.dp.toPx()
-                            // 折射朝形状外采样：先把采样层按位移量撑起来。
-                            // ⚠️ 必须在 blur() 读 padding 之前抬 —— 事后抬会让 miuix
-                            // 把整段 effects 重跑一遍。
-                            padding = maxOf(padding, refractionPx)
-                            // `vibrancy()` = 官方 `colorControls(saturation = 1.5)`：
-                            // 少了它玻璃会发灰。
-                            vibrancy()
-                            blur(material.liquidBlurSigma.dp.toPx())
-                            // 夹具输出为 0（位移拖到 0 / 作用带为 0）时整段不挂折射。
-                            val bandPx = refraction.bandDp.dp.toPx()
-                            if (bandPx > 0f && refractionPx > 0f) {
-                                lens(
-                                    refractionHeight = bandPx,
-                                    refractionAmount = refractionPx,
-                                    chromaticAberration = material.liquidDispersion,
-                                )
-                            }
-                        },
-                        // 第一遍只上薄薄一层（两成不到）：它盖在壁纸那块，
-                        // 课卡那遍看不到它；剩下的色在第二遍之上补（见 tintTop）。
-                        onDrawSurface = { drawRect(tint) },
-                    ),
-            ) {
-                // ── 第二遍：钻到带子底下的课卡（2026-11-08）──
-                // 只做「采样 + 高斯 + 振奋」，**不折射**：
-                //   · 折射 —— 卡片在交界处本来就在动，再叠一层位移只会读成「卡片被撕开」；
-                //   · 染色 —— 2026-11-15 起改由下方统一的 tint 层负责（两遍都过同一层色），
-                //     以前这一遍不染、第一遍染，带子下半截里的卡片区域就成了「没染过的
-                //     原色」，用户读作「字糊、边锐，两样东西没融在一起」（周/日两视图都中）。
-                // 采样源的录制范围由调用方夹在「带高 + 下沿余量」（见 `TimetableBandUnderlap`），
-                // 这一层本身不额外扩大开销。
-                val underlay = underlayBackdrop?.takeIf { isRuntimeShaderSupported() }
-                if (underlay != null) {
-                    Box(
-                        modifier = Modifier
-                            .matchParentSize()
-                            .bandGlassOverhang(overdrawDp)
-                            .drawBackdrop(
-                                backdrop = underlay,
-                                shape = { shape },
-                                effects = {
-                                    vibrancy()
-                                    blur(material.liquidBlurSigma.dp.toPx())
-                                },
-                            ),
-                    )
-                }
-
-                // ── 染色补层（2026-11-15）──
-                // 画在**两遍玻璃之上**：带子颜色从此只由材质（`tintAlpha`）决定，
-                // 不再随底下录到的是课卡、还是空白而变。这就是用户说的「滑动时暗一下、
-                // 那个瞬间模糊才是对的」那一层，现在稳态也一直有。
-                // 合成值 = `tint` + `tintTop` = 材质面板那根 `tintAlpha`（见 `bandTintLayerAlphas`）。
-                Box(
-                    modifier = Modifier
-                        .matchParentSize()
-                        .bandGlassOverhang(overdrawDp)
-                        .drawBehind { drawRect(tintTop) },
-                )
-            }
+                    .bandGlassOverhang(overdrawDp),
+                shape = RoundedCornerShape(0.dp),
+                // 与底栏同一口径：采样层抬到 40dp，折射才取得到外圈像素。
+                samplingPaddingDp = BAND_SAMPLING_PADDING_DP,
+                tintBrush = SolidColor(tint),
+            )
 
             else -> Box(
                 modifier = Modifier
@@ -212,3 +116,9 @@ fun TimetableChromeBandGlass(
         content()
     }
 }
+
+/** 顶栏玻璃的鲜活度：与旧版 `vibrancy()` 默认值一致（saturation 1.5），少它玻璃会发灰。 */
+private const val BAND_VIBRANCY = 1.5f
+
+/** 采样 padding（dp）：与底栏 GlassDockGeometry.SamplingPaddingReachDp 同值 40。 */
+private const val BAND_SAMPLING_PADDING_DP = 40f

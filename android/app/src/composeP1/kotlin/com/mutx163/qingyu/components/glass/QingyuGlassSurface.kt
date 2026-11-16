@@ -108,6 +108,14 @@ fun QingyuGlassSurface(
     spec: GlassSpec,
     modifier: Modifier = Modifier,
     shape: Shape = RectangleShape,
+    /**
+     * 采样 padding（dp）：0 = 用 miuix 按模糊/折射自动抬的量。
+     *
+     * `lens()` 会把采样点朝形状**外**推一个位移量，采样层不够大时那圈像素取不到，
+     * 观感就是「折射拉满没反应」。玻璃坞那边固定 40dp（`GlassDockGeometry.SamplingPaddingReachDp`），
+     * 顶栏带同样传 40，别让两处各写一个。
+     */
+    samplingPaddingDp: Float = 0f,
     progressive: ProgressiveBlur? = null,
     /**
      * 可选：给**模糊结果**乘一条纵向 alpha 权重（顶 1.0 → 底 0，`y = 0` 是顶边）。
@@ -132,6 +140,10 @@ fun QingyuGlassSurface(
             backdrop = backdrop,
             shape = { shape },
             effects = {
+                // 采样要够大：lens 会朝形状外取像素（与底栏同一条口径，先抬再 blur）。
+                if (samplingPaddingDp > 0f) {
+                    padding = maxOf(padding, with(density) { samplingPaddingDp.dp.toPx() })
+                }
                 if (spec.blurSigmaDp > 0f) {
                     if (progressive != null) {
                         // 渐进档用 miuix 自带的 colorControls 通道表达鲜活度（1 = 原样）。
