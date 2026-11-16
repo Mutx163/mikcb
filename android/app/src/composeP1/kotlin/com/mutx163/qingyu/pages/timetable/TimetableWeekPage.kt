@@ -942,7 +942,7 @@ fun TimetableWeekPage(
                 hasBackdrop = hasBackdrop,
                 // 采样源 = 独立内容层（只录带子以下的内容），与底栏同一模式：内容录 A 层、玻璃读 A 层。
                 // ⚠️ 绝不能传 contentBackdrop：那一层带着带子自己 ⇒ shader 读自己正在写的图层，
-                backdrop = contentBackdrop,
+                backdrop = bandContentBackdrop,
                 solidColor = bandSolidColor,
                 overdrawDp = (bandOverdrawBaseDp.dp + maxOf(
                     innerPadding.calculateStartPadding(LocalLayoutDirection.current),
