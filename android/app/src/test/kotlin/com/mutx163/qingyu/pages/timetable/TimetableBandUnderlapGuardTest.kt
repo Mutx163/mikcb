@@ -24,6 +24,9 @@ class TimetableBandUnderlapGuardTest {
     private val weekPageSource: String by lazy {
         stripKotlinComments(readAndroidSource(WEEK_PAGE_PATH))
     }
+    private val liquidLensSource: String by lazy {
+        stripKotlinComments(readAndroidSource(LIQUID_LENS_PATH))
+    }
     private val bandGlassSource: String by lazy {
         stripKotlinComments(readAndroidSource(BAND_GLASS_PATH))
     }
@@ -54,13 +57,20 @@ class TimetableBandUnderlapGuardTest {
     }
 
     @Test
-    fun `带子必须采独立内容层 不许采自己所在的录制层`() {
+    fun `带子必须采壁纸加内容的合成层 不许采自己所在的录制层`() {
         // 2026-11-16 P0（367e86ec4 的漏 + 修正笔）：顶栏玻璃就在 contentBackdrop 的录制子树里。
-        // 唯一正确采样源是 bandContentBackdrop —— 那一层只录「带子以下的内容」，不含带子自己。
         // 采 contentBackdrop = shader 读自己正在写的层 ⇒ 真机 SIGSEGV（SEGV_ACCERR）。
+        // 同日二次定位：bandContentBackdrop 不含壁纸（layerBackdrop 只录自己这层），
+        // 静止时带子那一截是透明留白 ⇒ 单采它 = 糊空气（本日锐利 / 折射无效的根因）。
+        // 正解 = 壁纸层 + 内容层合成（bandGlassSource），两层都不含带子自己。
         assertTrue(
-            "周页没有把 bandContentBackdrop（不含带子的内容层）交给带子。",
-            weekPageSource.contains("backdrop = bandContentBackdrop"),
+            "周页没有把合成采样源 bandGlassSource（壁纸 + 内容）交给带子。",
+            weekPageSource.contains("backdrop = bandGlassSource"),
+        )
+        assertTrue(
+            "合成采样源不是 rememberCombinedBackdrop(pageBackdrop, bandContentBackdrop) —— " +
+                "缺壁纸层会糊空气，缺内容层折射看不出。",
+            weekPageSource.contains("rememberCombinedBackdrop(pageBackdrop, bandContentBackdrop)"),
         )
         // 判据要钉「带子这一次调用」而不是全文件：回本周浮钮仍合法地采 contentBackdrop。
         val bandCall = weekPageSource.substringAfter("TimetableChromeBandGlass(", "")
@@ -74,9 +84,9 @@ class TimetableBandUnderlapGuardTest {
             "带子组件不再收 backdrop 参数（backdrop: Backdrop?）——采样源没有交接点。",
             bandGlassSource.contains("backdrop: Backdrop?"),
         )
-        assertTrue(
-            "色散没有先关掉（dispersion = 0f）——色散着色器有除 halfSize 的路径，" +
-                "首帧 size 为 0 会算出非法坐标。",
+        assertFalse(
+            "色散又被强制关闭（dispersion = 0f）——除零路径已由 LiquidLens 的零尺寸守卫兜底，" +
+                "色散应按材质快照走；要关请先更新这条判据并跑探针。",
             bandGlassSource.contains("dispersion = 0f"),
         )
         assertTrue(
@@ -84,6 +94,55 @@ class TimetableBandUnderlapGuardTest {
                 "日视图上滑仍会在带子下沿硬切。",
             weekPageSource.contains("LocalEmbeddedDayUnderlapBand") &&
                 weekPageSource.contains(".bandUnderlap {"),
+        )
+    }
+
+    /**
+     * 带子采样的**任何一层**里都不许含带子自己（2026-11-16 第三次定位的硬约束）。
+     *
+     * 合成层只能由两个兄弟层组成：`pageBackdrop`（壁纸，画在带子之外）与
+     * `bandContentBackdrop`（带子以下的内容，带子不在其中）。一旦把 `contentBackdrop`
+     * 掺进来——它录的是整页、带子就在这棵树里——就回到“shader 读自己正在写的层”，
+     * 13:57 真机 `SEGV_ACCERR` 就是这么来的。
+     */
+    @Test
+    fun `带子采样的任何一层里都不许含带子自己`() {
+        val combinedLine = weekPageSource.lineSequence()
+            .firstOrNull { it.contains("rememberCombinedBackdrop(") }
+            .orEmpty()
+        assertTrue(
+            "周页找不到 rememberCombinedBackdrop( 调用 —— 带子采的不是合成层，" +
+                "静止时会糊空气（本日锐利 / 折射无效）。",
+            combinedLine.isNotBlank(),
+        )
+        assertTrue("合成层缺壁纸页层 pageBackdrop。", combinedLine.contains("pageBackdrop"))
+        assertTrue(
+            "合成层缺带子以下的内容层 bandContentBackdrop。",
+            combinedLine.contains("bandContentBackdrop"),
+        )
+        assertFalse(
+            "合成层里混进了 contentBackdrop —— 那一层录的是整页、带子就在里面，" +
+                "等于让 shader 读自己正在写的图层（真机 SIGSEGV 根因）。",
+            combinedLine.contains("contentBackdrop"),
+        )
+    }
+
+    /**
+     * 色散开回的前提：首帧尺寸为 0 时必须跳过折射（2026-11-16）。
+     *
+     * 色散着色器里有 `(x*y)/(halfSize.x*halfSize.y)`，`size` 为 0 会算出 NaN/Inf 采样坐标；
+     * 之前靠 `dispersion = 0f` 回避，现在按材质快照走，就必须在 `lens` 入口挡住零尺寸。
+     */
+    @Test
+    fun `色散开回的前提是零尺寸跳过折射`() {
+        assertFalse(
+            "带子又把色散强制关成 0f 了 —— 要关必须先改这条判据并跑探针，不能悄悄关。",
+            bandGlassSource.contains("dispersion = 0f"),
+        )
+        assertTrue(
+            "LiquidLens 没有零尺寸守卫（size.width/height <= 0f 就 return）——" +
+                "色散着色器会除零，算出 NaN/Inf 采样坐标（RenderThread 原生崩溃）。",
+            liquidLensSource.contains("if (size.width <= 0f || size.height <= 0f) return"),
         )
     }
 
@@ -171,6 +230,8 @@ class TimetableBandUnderlapGuardTest {
     private companion object {
         const val WEEK_PAGE_PATH =
             "android/app/src/composeP1/kotlin/com/mutx163/qingyu/pages/timetable/TimetableWeekPage.kt"
+        const val LIQUID_LENS_PATH =
+            "android/app/src/composeP1/kotlin/com/mutx163/qingyu/components/liquid/LiquidLens.kt"
         const val BAND_GLASS_PATH =
             "android/app/src/composeP1/kotlin/com/mutx163/qingyu/pages/timetable/TimetableChromeBandGlass.kt"
     }

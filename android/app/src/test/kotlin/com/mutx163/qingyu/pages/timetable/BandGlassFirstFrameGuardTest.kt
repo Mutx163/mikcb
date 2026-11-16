@@ -137,11 +137,15 @@ class BandGlassFirstFrameGuardTest {
             "带子又开始手拼 GlassSpec( —— 玻璃参数必须只在 resolver 里解释一次。",
             bandGlassSource.contains("GlassSpec("),
         )
-        assertTrue(
-            "色散当前必须显式关闭（dispersion = 0f）——色散着色器有除 halfSize 的路径，" +
-                "首帧 size 为 0 会算出 NaN/Inf 坐标（真机 SIGSEGV 的候选之一）。" +
-                "要开回，必须同时更新这条判据并跑一遍探针。",
+        assertFalse(
+            "色散又被强制关闭（dispersion = 0f）——2026-11-16 已开回：除 halfSize 的除零路径" +
+                "由 LiquidLens 入口的零尺寸守卫兜底（size ≤ 0 这一帧不挂折射）。" +
+                "要关请先更新这条判据并跑一遍探针。",
             bandGlassSource.contains("dispersion = 0f"),
+        )
+        assertTrue(
+            "LiquidLens 的零尺寸守卫不在场——首帧 size=0 时色散着色器会除 halfSize 出非法坐标。",
+            stripComments(readAndroidSource(LENS_PATH)).contains("if (size.width <= 0f || size.height <= 0f) return"),
         )
         assertFalse(
             "带子又开始自己调 timetableBandRefraction 了——折射统一走共享件的 lens。",
@@ -209,5 +213,7 @@ class BandGlassFirstFrameGuardTest {
             "android/app/src/composeP1/kotlin/com/mutx163/qingyu/pages/timetable/TimetableChromeBandGlass.kt"
         const val OVERHANG_PATH =
             "android/app/src/composeP1/kotlin/com/mutx163/qingyu/pages/timetable/BandGlassOverhang.kt"
+        const val LENS_PATH =
+            "android/app/src/composeP1/kotlin/com/mutx163/qingyu/components/liquid/LiquidLens.kt"
     }
 }

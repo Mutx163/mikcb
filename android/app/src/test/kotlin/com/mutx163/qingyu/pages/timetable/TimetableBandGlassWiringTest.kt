@@ -50,14 +50,21 @@ class TimetableBandGlassWiringTest {
     }
 
     @Test
-    fun `周页的采样源不得是带子自己所在的录制层`() {
+    fun `周页的采样源必须是壁纸加内容的合成层 且不含带子自己`() {
         // 2026-11-16 真机 SIGSEGV 的根因：带子就在 contentBackdrop 的录制子树里，
-        // 拿它当 shader 输入 = 读自己正在写的图层。取样源必须是**兄弟层**（壁纸层）。
+        // 拿它当 shader 输入 = 读自己正在写的图层。取样源必须是**不含带子的兄弟层**。
+        // 同日二次定位：单采 bandContentBackdrop 会糊空气（那层不含壁纸，静止时是透明留白）。
+        // 正解 = rememberCombinedBackdrop(pageBackdrop, bandContentBackdrop)：先壁纸后内容。
         val weekPage = readKotlinSourceNoStrings(WEEK_PAGE_PATH)
-        assertSourceContains(weekPage, "backdrop = bandContentBackdrop", LABEL)
+        assertSourceContains(weekPage, "backdrop = bandGlassSource", LABEL)
+        assertSourceContains(
+            weekPage,
+            "rememberCombinedBackdrop(pageBackdrop, bandContentBackdrop)",
+            LABEL,
+        )
         assertSourceLacks(weekPage, "backdrop = contentBackdrop", LABEL)
         assertSourceLacks(weekPage, "underlayBackdrop =", LABEL)
-        // 独立采样层必须真的挂到内容区（只录带子以下的内容），否则带子采到的是空层。
+        // 独立内容采样层必须真的挂到内容区（只录带子以下的内容），否则合成层里只有壁纸。
         assertSourceContains(weekPage, "layerBackdrop(bandContentBackdrop)", LABEL)
     }
 
@@ -71,9 +78,12 @@ class TimetableBandGlassWiringTest {
         assertSourceContains(surface, "if (safePaddingDp > 0f)", LABEL)
         val lens = readKotlinSourceNoStrings(LIQUID_LENS_PATH)
         assertSourceContains(lens, "if (!refractionHeight.isFinite() || !refractionAmount.isFinite()) return", LABEL)
-        // 排查期色散关闭（色散 shader 里有除 halfSize 的路径）。
+        // 色散已开回（2026-11-16）：除 halfSize 的除零路径改由 lens 入口的零尺寸守卫兜底。
+        // 首帧 size=0 这一帧不挂折射，下一帧尺寸到位自然恢复。
+        assertSourceContains(lens, "if (size.width <= 0f || size.height <= 0f) return", LABEL)
         val band = readKotlinSourceNoStrings(BAND_GLASS_PATH)
-        assertSourceContains(band, "dispersion = 0f", LABEL)
+        assertSourceLacks(band, "dispersion = 0f", LABEL)
+        assertSourceContains(band, "GlassSpecResolver.resolve(material.bandGlassTuning())", LABEL)
     }
 
     private companion object {

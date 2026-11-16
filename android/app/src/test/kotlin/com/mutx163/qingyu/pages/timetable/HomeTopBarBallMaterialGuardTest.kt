@@ -67,15 +67,19 @@ class HomeTopBarBallMaterialGuardTest {
         val source = readKotlinSourceNoStrings(path)
         // ① 门要有真实来源：本页确实按材质判过带子要不要画玻璃。
         assertSourceContains(source, "val bandBlurActive =", path)
-        // ② 顶栏调用块里的采样源必须带门。
-        val block = topBarCallBlock(source, path)
+        // ② 球与带子必须引用**同一个对象**：2026-11-16 起带子采的是壁纸+内容合成层
+        //（`bandGlassSource`），球若还单独采 `pageBackdrop`，同一根带子里就有两套口径。
+        assertSourceContains(source, "val bandGlassSource = rememberCombinedBackdrop(", path)
         assertSourceContains(
-            block,
-            "backdrop = pageBackdrop.takeIf { bandBlurActive }",
+            topBarCallBlock(source, path),
+            "backdrop = bandGlassSource.takeIf { bandBlurActive }",
             "$path 的 TimetableTopBar 调用",
         )
-        // ③ 反向：不许退回无条件裸传（那正是实体档「模糊空气」的写法）。
-        assertSourceLacks(block, "backdrop = pageBackdrop,", "$path 的 TimetableTopBar 调用")
+        // ③ 反向：不许退回无条件裸传（那正是实体档「模糊空气」的写法），
+        //    也不许退回只采壁纸层的旧口径。
+        val block = topBarCallBlock(source, path)
+        assertSourceLacks(block, "backdrop = bandGlassSource,", "$path 的 TimetableTopBar 调用")
+        assertSourceLacks(block, "backdrop = pageBackdrop", "$path 的 TimetableTopBar 调用")
     }
 
     /** 从 `TimetableTopBar(` 起到本页文件末尾——只有一处调用，切到文件尾即可判全。 */
