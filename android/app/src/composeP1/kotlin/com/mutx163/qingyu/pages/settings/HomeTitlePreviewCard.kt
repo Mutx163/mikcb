@@ -13,6 +13,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import com.mutx163.qingyu.app.HomeBackdropChrome
+import com.mutx163.qingyu.components.liquid.rememberCombinedBackdrop
 import com.mutx163.qingyu.pages.timetable.TimetableChromeBandGlass
 import com.mutx163.qingyu.pages.timetable.TimetableTopBar
 import com.mutx163.qingyu.theme.QingyuTheme
@@ -67,8 +68,16 @@ internal fun HomeTitlePreviewCard(
     // 无壁纸 / 快照缺失时的底色：真页此刻就是页底色（主题底），不是白卡。
     val pageColor = chrome.pageColorArgb?.let { Color(it) }
         ?: Color(QingyuTheme.scaffoldBackground(dark = dark))
-    // 录样层：只管「壁纸这一层」，带子画在它上面（录自己会递归）。
+    // 录样层：① 壁纸（与真页 `pageBackdrop` 同语义，只管「壁纸这一层」，录自己会递归）。
     val wallpaperBackdrop = rememberLayerBackdrop()
+    // ② 内容层：真顶栏采样的是「壁纸 + 内容」合成层
+    //（`TimetableWeekPage.kt:722` 的 `bandGlassSource = rememberCombinedBackdrop(pageBackdrop, bandContentBackdrop)`），
+    // 原因见那里：静止时带子下方那一截只有透明留白，单采它等于糊空气。
+    //
+    // 本卡片带子下面是 40dp 壁纸、没有课表内容，所以这一层录到空；**像素不变**，
+    // 但结构与真顶栏一致——将来卡片里加课卡（让玻璃采样到内容）时不用再改采样口径。
+    val bandContentBackdrop = rememberLayerBackdrop()
+    val bandGlassSource = rememberCombinedBackdrop(wallpaperBackdrop, bandContentBackdrop)
 
     Box(
         modifier = modifier
@@ -89,7 +98,7 @@ internal fun HomeTitlePreviewCard(
         TimetableChromeBandGlass(
             material = chrome.material,
             hasBackdrop = chrome.hasBackdrop,
-            backdrop = wallpaperBackdrop,
+            backdrop = bandGlassSource,
             solidColor = pageColor,
             // 卡片外沿已由 `clip` 裁掉：玻璃不需要往屏幕外推。
             overdrawDp = 0.dp,
