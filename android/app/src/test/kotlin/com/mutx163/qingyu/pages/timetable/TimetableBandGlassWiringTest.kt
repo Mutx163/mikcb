@@ -21,13 +21,13 @@ import org.junit.Test
 class TimetableBandGlassWiringTest {
 
     @Test
-    fun `带子走共享件且参数来自材质快照`() {
+    fun `带子走共享件且参数来自统一解析器`() {
         val source = readKotlinSourceNoStrings(BAND_GLASS_PATH)
         assertSourceContains(source, "QingyuGlassSurface(", LABEL)
-        assertSourceContains(source, "GlassSpec(", LABEL)
-        assertSourceContains(source, "blurSigmaDp = material.liquidBlurSigma", LABEL)
-        assertSourceContains(source, "refractionBandDp = material.liquidRefractionBand", LABEL)
-        assertSourceContains(source, "refractionAmountDp = material.liquidRefraction", LABEL)
+        // 玻璃参数只在一处解释：必须是 resolve(bandGlassTuning()...)，页面不许自己拼 GlassSpec。
+        assertSourceContains(source, "GlassSpecResolver.resolve(", LABEL)
+        assertSourceContains(source, "material.bandGlassTuning()", LABEL)
+        assertSourceLacks(source, "GlassSpec(", LABEL)
         assertSourceContains(source, "tintBrush = SolidColor(tint)", LABEL)
     }
 

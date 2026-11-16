@@ -11,7 +11,8 @@ import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.mutx163.qingyu.components.glass.QingyuGlassSurface
-import com.mutx163.qingyu.core.GlassSpec
+import com.mutx163.qingyu.core.GlassSpecResolver
+import com.mutx163.qingyu.core.bandGlassTuning
 import com.mutx163.qingyu.pages.settings.HomeMaterialRenderSpec
 import com.mutx163.qingyu.pages.settings.SurfaceMaterialState
 import top.yukonga.miuix.kmp.blur.Backdrop
@@ -85,20 +86,13 @@ fun TimetableChromeBandGlass(
             // 液态档：与底栏同一处实现（共享件 `QingyuGlassSurface`）。
             glassBackdrop != null -> QingyuGlassSurface(
                 backdrop = glassBackdrop,
-                spec = GlassSpec(
-                    blurSigmaDp = material.liquidBlurSigma,
-                    tintAlpha = material.liquidTintAlpha,
-                    // 与旧版 `vibrancy()` 默认值一致（官方 colorControls saturation = 1.5）。
-                    vibrancy = BAND_VIBRANCY,
-                    // 带子不画边光（旧版也没有）：highlight 传 null，这两项只为填满 spec。
-                    rimStrength = 0f,
-                    rimWidthDp = 0f,
-                    refractionBandDp = material.liquidRefractionBand,
-                    refractionAmountDp = material.liquidRefraction,
-                    // ⚠️ 排查期先关色散：色散着色器里有 (x*y)/(halfSize.x*halfSize.y)，
-                    // 首帧 size 为 0 时会算出 NaN/Inf 坐标（RenderThread 原生崩溃的候选之一）。
-                    // 崩溃确认不复现后再决定是否开回。
-                    dispersion = 0f,
+                // 玻璃参数只在一处解释：设置快照 → GlassTuning → GlassSpecResolver.resolve
+                // （GlassSingleChainGuardTest 咬的就是这条：页面不许自己拼 GlassSpec）。
+                // 带子用 andGlassTuning()（与坞同一份旋钮），排查期把色散覆盖成 0：
+                // 色散着色器里有 (x*y)/(halfSize.x*halfSize.y)，首帧 size 为 0 会算出 NaN/Inf
+                // 采样坐标（RenderThread 原生崩溃的候选之一）；崩溃确认不复现后再开回。
+                spec = GlassSpecResolver.resolve(
+                    material.bandGlassTuning().copy(dispersion = 0f),
                 ),
                 // 外溢几何仍在这边算：节点推到屏幕外一圈，只让底边参与折射。
                 modifier = Modifier
@@ -119,9 +113,6 @@ fun TimetableChromeBandGlass(
         content()
     }
 }
-
-/** 顶栏玻璃的鲜活度：与旧版 `vibrancy()` 默认值一致（saturation 1.5），少它玻璃会发灰。 */
-private const val BAND_VIBRANCY = 1.5f
 
 /** 采样 padding（dp）：与底栏 GlassDockGeometry.SamplingPaddingReachDp 同值 40。 */
 private const val BAND_SAMPLING_PADDING_DP = 40f
