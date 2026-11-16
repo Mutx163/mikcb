@@ -50,18 +50,35 @@ class TimetableBandGlassWiringTest {
     }
 
     @Test
-    fun `周页把真实内容层交给带子`() {
+    fun `周页的采样源不得是带子自己所在的录制层`() {
+        // 2026-11-16 真机 SIGSEGV 的根因：带子就在 contentBackdrop 的录制子树里，
+        // 拿它当 shader 输入 = 读自己正在写的图层。取样源必须是**兄弟层**（壁纸层）。
         val weekPage = readKotlinSourceNoStrings(WEEK_PAGE_PATH)
-        assertSourceContains(weekPage, "backdrop = contentBackdrop", LABEL)
+        assertSourceContains(weekPage, "backdrop = pageBackdrop", LABEL)
+        assertSourceLacks(weekPage, "backdrop = contentBackdrop", LABEL)
         assertSourceLacks(weekPage, "underlayBackdrop =", LABEL)
-        // 内容录制层不能只在「回本周浮钮」可见时挂——顶栏也要吃它。
-        assertSourceContains(weekPage, "if (pageBackdropActive || floatingGlassActive)", LABEL)
+    }
+
+    @Test
+    fun `参数硬保护必须在场`() {
+        // NaN / ±Inf / 负值进 shader 就是非法采样地址（原生崩溃）；padding 也要有上限。
+        val surface = readKotlinSourceNoStrings(GLASS_SURFACE_PATH)
+        assertSourceContains(surface, "fun safe(value: Float): Float = if (value.isFinite() && value > 0f) value else 0f", LABEL)
+        assertSourceContains(surface, "val safePaddingDp = safe(samplingPaddingDp).coerceAtMost(64f)", LABEL)
+        assertSourceContains(surface, "if (safePaddingDp > 0f)", LABEL)
+        val lens = readKotlinSourceNoStrings(LIQUID_LENS_PATH)
+        assertSourceContains(lens, "if (!refractionHeight.isFinite() || !refractionAmount.isFinite()) return", LABEL)
+        // 排查期色散关闭（色散 shader 里有除 halfSize 的路径）。
+        val band = readKotlinSourceNoStrings(BAND_GLASS_PATH)
+        assertSourceContains(band, "dispersion = 0f", LABEL)
     }
 
     private companion object {
         const val LABEL = "TimetableChromeBandGlass"
         const val BAND_GLASS_PATH =
             "android/app/src/composeP1/kotlin/com/mutx163/qingyu/pages/timetable/TimetableChromeBandGlass.kt"
+        const val GLASS_SURFACE_PATH = "android/app/src/composeP1/kotlin/com/mutx163/qingyu/components/glass/QingyuGlassSurface.kt"
+        const val LIQUID_LENS_PATH = "android/app/src/composeP1/kotlin/com/mutx163/qingyu/components/liquid/LiquidLens.kt"
         const val WEEK_PAGE_PATH =
             "android/app/src/composeP1/kotlin/com/mutx163/qingyu/pages/timetable/TimetableWeekPage.kt"
     }

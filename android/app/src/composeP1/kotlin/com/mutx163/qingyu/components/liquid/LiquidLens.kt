@@ -44,6 +44,9 @@ fun BackdropEffectScope.lens(
     chromaticAberration: Float = 0f,
 ) {
     if (!isRuntimeShaderSupported()) return
+    // 2026-11-16 P0：NaN 与任何数比较都是 false，逐一 <= 0 挡不住它；Inf 也会漏过
+    // > 0 判定，把 padding 设成 Inf 再写进 uniform ⇒ 采样地址非法，RenderThread 原生崩溃。
+    if (!refractionHeight.isFinite() || !refractionAmount.isFinite()) return
     if (refractionHeight <= 0f || refractionAmount <= 0f) return
 
     if (padding < refractionAmount) {

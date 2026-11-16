@@ -132,23 +132,32 @@ fun QingyuGlassSurface(
     content: @Composable () -> Unit = {},
 ) {
     val density = LocalDensity.current
-    val blurRadiusPx = with(density) { spec.blurSigmaDp.dp.toPx() }
-    val refractionBandPx = with(density) { spec.refractionBandDp.dp.toPx() }
-    val refractionAmountPx = with(density) { spec.refractionAmountDp.dp.toPx() }
+    // ── 参数硬保护（2026-11-16 P0）──
+    // 任何非有限值（NaN / ±Inf）或负值，一旦进 shader 就是非法采样地址 —— 真机表现是
+    // RenderThread SIGSEGV（SEGV_ACCERR），不是 Java 异常，堆栈里看不到我们。
+    // 这里统一按「这一项不启用」处理（0），并把采样 padding 钳到 0..64dp。
+    fun safe(value: Float): Float = if (value.isFinite() && value > 0f) value else 0f
+    val safeBlurDp = safe(spec.blurSigmaDp)
+    val safeBandDp = safe(spec.refractionBandDp)
+    val safeAmountDp = safe(spec.refractionAmountDp)
+    val safePaddingDp = safe(samplingPaddingDp).coerceAtMost(64f)
+    val blurRadiusPx = with(density) { safeBlurDp.dp.toPx() }
+    val refractionBandPx = with(density) { safeBandDp.dp.toPx() }
+    val refractionAmountPx = with(density) { safeAmountDp.dp.toPx() }
     Box(
         modifier = modifier.drawBackdrop(
             backdrop = backdrop,
             shape = { shape },
             effects = {
                 // 采样要够大：lens 会朝形状外取像素（与底栏同一条口径，先抬再 blur）。
-                if (samplingPaddingDp > 0f) {
-                    padding = maxOf(padding, with(density) { samplingPaddingDp.dp.toPx() })
+                if (safePaddingDp > 0f) {
+                    padding = maxOf(padding, with(density) { safePaddingDp.dp.toPx() })
                 }
-                if (spec.blurSigmaDp > 0f) {
+                if (safeBlurDp > 0f) {
                     if (progressive != null) {
                         // 渐进档用 miuix 自带的 colorControls 通道表达鲜活度（1 = 原样）。
                         progressiveTextureBlurEffect(
-                            blurRadiusX = spec.blurSigmaDp,
+                            blurRadiusX = safeBlurDp,
                             gradient = progressive,
                             colors = BlurColors(saturation = spec.vibrancy),
                         )
@@ -157,7 +166,7 @@ fun QingyuGlassSurface(
                         if (spec.vibrancy > 1f) vibrancy(spec.vibrancy)
                     }
                 }
-                if (refractionBandPx > 0f && refractionAmountPx > 0f) {
+                if (refractionBandPx > 0f && refractionAmountPx > 0f && refractionBandPx.isFinite() && refractionAmountPx.isFinite()) {
                     lens(
                         refractionHeight = refractionBandPx,
                         refractionAmount = refractionAmountPx,

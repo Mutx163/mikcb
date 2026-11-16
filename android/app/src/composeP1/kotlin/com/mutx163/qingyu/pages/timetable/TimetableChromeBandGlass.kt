@@ -95,7 +95,10 @@ fun TimetableChromeBandGlass(
                     rimWidthDp = 0f,
                     refractionBandDp = material.liquidRefractionBand,
                     refractionAmountDp = material.liquidRefraction,
-                    dispersion = material.liquidDispersion,
+                    // ⚠️ 排查期先关色散：色散着色器里有 (x*y)/(halfSize.x*halfSize.y)，
+                    // 首帧 size 为 0 时会算出 NaN/Inf 坐标（RenderThread 原生崩溃的候选之一）。
+                    // 崩溃确认不复现后再决定是否开回。
+                    dispersion = 0f,
                 ),
                 // 外溢几何仍在这边算：节点推到屏幕外一圈，只让底边参与折射。
                 modifier = Modifier

@@ -726,60 +726,11 @@ fun TimetableWeekPage(
     // 下一帧测量拿到真值。下穿量与滚动内容顶部的等高 Spacer 用的是同一个数，两者
     // 相抵，所以第 1 节始终停在带子下沿，不会因为这里晚一帧而跳一下。
     val bandHeightPxState = remember { mutableIntStateOf(0) }
-    val bandStripMarginPx = with(density) { TIMETABLE_BAND_STRIP_MARGIN_DP.dp.roundToPx() }
-    // 时间列宽（px）：第二遍玻璃**不录**这一列。
-    //
-    // 时间列是 34dp 宽、几乎只有深色小字、没有卡片底色。第二遍玻璃只做模糊、不染色，
-    // 把这一列录进去以后，小字被高斯糊成一条连续黑灰带，读起来就是「左边节次时间表
-    // 变超黑」（2026-11-08 用户实报）。它是坐标轴，不是内容：只让第一遍的
-    // 「壁纸模糊 + 染色」盖住它，滑到带子下沿干净消失即可。
-    val timeColumnWidthPx = with(density) { style.timeColumnWidthDp.dp.toPx() }
-    val isRtlLayout = LocalLayoutDirection.current == LayoutDirection.Rtl
-    // 录制层只录「带子那一条」（带高 + 下沿余量）：录制 = 整屏离屏重画一帧，而带子
-    // 只需要它自己盖住的那几十 dp。`clipRect` 把重画范围夹住，条带以外的像素不下笔。
-    // 自定义 `onDraw` 里 `drawContent()` 会被 miuix 重定向进图层（`LayoutNodeDrawScope.record`
-    // 换的是绘制画布），和官方 `Modifier.layerBackdrop` 是同一条路。
-    val bandStripBackdrop = rememberLayerBackdrop(
-        onDraw = {
-            // 必须先把 ContentDrawScope 抱出来：`clipRect` 的 lambda 会把隐式接收者换成
-            // 普通 DrawScope，那里没有 `drawContent()`（K2 报 DSL_SCOPE_VIOLATION）。
-            val content = this
-            val strip = timetableBandStripPx(
-                bandHeightPx = bandHeightPxState.intValue,
-                marginPx = bandStripMarginPx,
-                contentHeightPx = size.height.toInt(),
-            )
-            // 左边界从时间列右沿开始：节次时间列不进第二遍玻璃（见 `timeColumnWidthPx`）。
-            // RTL 下时间列在右边，改成从右沿裁掉同样一列；否则会把网格裁掉、把时间列录进去。
-            val left = if (isRtlLayout) 0f else timeColumnWidthPx.coerceIn(0f, size.width)
-            val right = if (isRtlLayout) {
-                (size.width - timeColumnWidthPx).coerceIn(0f, size.width)
-            } else {
-                size.width
-            }
-            if (strip > 0 && right > left) {
-                clipRect(left, 0f, right, strip.toFloat()) { content.drawContent() }
-            }
-        },
-    )
-    // 日视图自己的条带录制层（2026-11-08）：日页列表也接到带子底下，第二遍玻璃要
-    // 采到日卡。日页没有时间列，所以整条都录。只有日视图落定后才把它交给带子
-    //（展开/收起过程中面板的裁剪高度还在变，采到的是半条，交界会发黑）。
-    val dayStripBackdrop = rememberLayerBackdrop(
-        onDraw = {
-            val content = this
-            val strip = timetableBandStripPx(
-                bandHeightPx = bandHeightPxState.intValue,
-                marginPx = bandStripMarginPx,
-                contentHeightPx = size.height.toInt(),
-            )
-            if (strip > 0) {
-                clipRect(0f, 0f, size.width, strip.toFloat()) { content.drawContent() }
-            }
-        },
-    )
-    // 预览不参与：预览框是独立窗口，往上顶会画出框外。
-    val bandStripActive = bandBlurActive && !previewMode
+    // 2026-11-16 重做后：顶栏只挂一遍玻璃、采真实内容层（contentBackdrop），
+    // 原先「条带第二遍玻璃」的录制层（bandStripBackdrop / dayStripBackdrop）与
+    // 时间列裁剪全部删除——没有任何地方再采样它们。
+    // 剩下的这个门控只决定「网格 / 日页要不要下穿到带子底下」。
+    val bandUnderlapActive = bandBlurActive && !previewMode
     val bandSolidColor = pageColorArgb?.let { Color(it) } ?: scaffoldBg
     // 形状边界要往屏幕外推多少（逻辑 dp，只算作用带那一份）：取值理由见
     // `SettingsMaterialModel.bandGlassOverdrawDp`。左右还要再叠上安全区，
@@ -903,7 +854,7 @@ fun TimetableWeekPage(
             modifier = Modifier
                 .fillMaxSize()
                 .then(
-                    if (pageBackdropActive || floatingGlassActive) {
+                    if (floatingGlassActive) {
                         Modifier.layerBackdrop(contentBackdrop)
                     } else {
                         Modifier
@@ -1248,7 +1199,7 @@ fun TimetableWeekPage(
                         },
                         // 网格顶上去了多少（= 带高）：滚动内容顶部补等高留白，第 1 节仍停在
                         // 带子下沿；节高计算再把这截减回去（见 `WeekPageContent`）。
-                        underlapHeightDp = if (bandStripActive) {
+                        underlapHeightDp = if (bandUnderlapActive) {
                             with(density) { bandHeightPxState.intValue.toDp() }
                         } else {
                             0.dp
@@ -1258,7 +1209,7 @@ fun TimetableWeekPage(
                         // 第 1 节课卡，于是带子下半截被卡片染色、卡片本身被带下沿横切
                         // （2026-11-15 用户实报「周视图玻璃很奇怪 / 切视图颜色会变」）。
                         // 缝只加在留白里，不参与节高基准（见 `WeekPageContent` 的算式）。
-                        topSeamDp = if (bandStripActive) DAY_VIEW_TOP_SEAM_DP.dp else 0.dp,
+                        topSeamDp = if (bandUnderlapActive) DAY_VIEW_TOP_SEAM_DP.dp else 0.dp,
                         holidayOf = holidayOf,
                         weatherOf = weatherOf,
                         weatherAwaiting = weatherAwaiting,
@@ -1293,22 +1244,10 @@ fun TimetableWeekPage(
                             modifier = Modifier
                                 .fillMaxSize()
                                 .bandUnderlap {
-                                    if (bandStripActive) bandHeightPxState.intValue else 0
+                                    if (bandUnderlapActive) bandHeightPxState.intValue else 0
                                 },
                         ) {
-                            Box(
-                                modifier = Modifier
-                                    .fillMaxSize()
-                                    .then(
-                                        if (bandStripActive) {
-                                            Modifier.layerBackdrop(bandStripBackdrop)
-                                        } else {
-                                            Modifier
-                                        },
-                                    ),
-                            ) {
-                                weekPager()
-                            }
+                            weekPager()
                         }
                     }
                     if (weekScrollWrapper != null) weekScrollWrapper(weekGrid) else weekGrid()
@@ -1343,9 +1282,9 @@ fun TimetableWeekPage(
                                 // 日页也接到带子底下（2026-11-08）：横滑展开时面板是全高，
                                 // 多量一截带高并向上移，列表才能滑进玻璃带。
                                 // 只在带子真的画玻璃时下穿：实体档没有第二遍采样，下穿只会
-                                // 把内容藏到不透明色条底下（与周网格 `bandStripActive` 同口径）。
+                                // 把内容藏到不透明色条底下（与周网格 `bandUnderlapActive` 同口径）。
                                 .bandUnderlap {
-                                    if (dayVisible && bandStripActive) bandHeightPxState.intValue else 0
+                                    if (dayVisible && bandUnderlapActive) bandHeightPxState.intValue else 0
                                 }
                                 .clipToBounds()
                                 .graphicsLayer {
@@ -1363,13 +1302,13 @@ fun TimetableWeekPage(
                                 LocalEmbeddedDayTransitionSettled provides dayExpandSettled,
                                 LocalEmbeddedDayWallpaperBackdrop provides pageBackdrop,
                                 LocalDaySelectionBridge provides daySelectionBridge,
-                                LocalEmbeddedDayUnderlapBand provides if (bandStripActive) {
+                                LocalEmbeddedDayUnderlapBand provides if (bandUnderlapActive) {
                                     with(density) { bandHeightPxState.intValue.toDp() }
                                 } else {
                                     0.dp
                                 },
                             ) {
-                                DayStripHost(backdrop = dayStripBackdrop.takeIf { bandStripActive }) {
+                                DayContentHost {
                                     // 首组合打点（两支都要有）：组合落地后置真 ⇒ 外面那个 effect
                                     // 重进一次才开播。写重复值不进快照（结构化相等），不会多一轮重组。
                                     DayContentMountSignal { dayContentComposed = true }
@@ -1401,7 +1340,7 @@ fun TimetableWeekPage(
                                 // 上报尺寸不变，展开窗口的几何账仍按原内容区算。
                                 // 与周网格同口径：只有带子真画玻璃时才下穿。
                                 .bandUnderlap {
-                                    if (dayVisible && bandStripActive) bandHeightPxState.intValue else 0
+                                    if (dayVisible && bandUnderlapActive) bandHeightPxState.intValue else 0
                                 }
                                 .clipToBounds()
                                 .then(hitGate),
@@ -1417,7 +1356,7 @@ fun TimetableWeekPage(
                                         maxHeight = maxH,
                                         // 面板向上多出来的那一截（带高）：高度账里把它固定加上，
                                         // 下沿仍按原进度长；band 那截被玻璃盖住。
-                                        underlap = if (bandStripActive) {
+                                        underlap = if (bandUnderlapActive) {
                                             with(density) { bandHeightPxState.intValue.toDp() }
                                         } else {
                                             0.dp
@@ -1440,13 +1379,13 @@ fun TimetableWeekPage(
                                         LocalEmbeddedDayTransitionSettled provides dayExpandSettled,
                                         LocalEmbeddedDayWallpaperBackdrop provides pageBackdrop,
                                         LocalDaySelectionBridge provides daySelectionBridge,
-                                        LocalEmbeddedDayUnderlapBand provides if (bandStripActive) {
+                                        LocalEmbeddedDayUnderlapBand provides if (bandUnderlapActive) {
                                             with(density) { bandHeightPxState.intValue.toDp() }
                                         } else {
                                             0.dp
                                         },
                                     ) {
-                                        DayStripHost(backdrop = dayStripBackdrop.takeIf { bandStripActive }) {
+                                        DayContentHost {
                                             // 首组合打点（两支都要有）：组合落地后置真 ⇒
                                             // 外面那个 effect 重进一次才开播。
                                             DayContentMountSignal { dayContentComposed = true }
@@ -1877,15 +1816,8 @@ private fun MonthContentMountSignal(onMounted: () -> Unit) {
  * 范围（`dayStripBackdrop` 的 `onDraw`），不整屏离屏重画。
  */
 @Composable
-private fun DayStripHost(
-    backdrop: LayerBackdrop?,
-    content: @Composable () -> Unit,
-) {
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .then(if (backdrop != null) Modifier.layerBackdrop(backdrop) else Modifier),
-    ) {
+private fun DayContentHost(content: @Composable () -> Unit) {
+    Box(modifier = Modifier.fillMaxSize()) {
         content()
     }
 }
