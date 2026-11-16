@@ -1,5 +1,7 @@
 package com.mutx163.qingyu.pages.timetable
 
+import com.mutx163.qingyu.testutil.assertSourceContains
+import com.mutx163.qingyu.testutil.readKotlinSourceNoStrings
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -26,19 +28,24 @@ class TimetableBandRefractionGuardTest {
     private val clampSource: String by lazy { stripKotlinComments(readAndroidSource(CLAMP_PATH)) }
 
     @Test
-    fun `带子折射必须过夹具`() {
+    fun `带子的折射必须交给共享件`() {
+        // 2026-11-16 重做：折射不再经过 8dp 夹具，也不再由带子自己调 lens；
+        // 三项参数进 GlassSpec，由共享件 QingyuGlassSurface 统一调 lens。
         assertTrue(
-            "TimetableChromeBandGlass 没有调用 timetableBandRefraction——折射绕开了夹具，" +
-                "整条带都会参与弯折（用户口径「壁纸错位」会复发）。",
-            bandGlassSource.contains("timetableBandRefraction("),
+            "TimetableChromeBandGlass 没有走共享件 QingyuGlassSurface —— 折射又回到顶栏私有链路。",
+            bandGlassSource.contains("QingyuGlassSurface("),
         )
         assertTrue(
-            "lens 的作用带参数没有来自夹具输出（bandPx）——作用带被直接用用户值喂进去了。",
-            bandGlassSource.contains(Regex("""refractionHeight\s*=\s*bandPx""")),
+            "作用带参数没有进 GlassSpec（refractionBandDp = material.liquidRefractionBand）。",
+            bandGlassSource.contains("refractionBandDp = material.liquidRefractionBand"),
+        )
+        assertTrue(
+            "折射位移参数没有进 GlassSpec（refractionAmountDp = material.liquidRefraction）。",
+            bandGlassSource.contains("refractionAmountDp = material.liquidRefraction"),
         )
         assertFalse(
-            "lens 的参数里出现了 liquidRefractionBand 直传——作用带绕开夹具。",
-            bandGlassSource.contains(Regex("""liquidRefractionBand\.dp\.toPx\(\)""")),
+            "带子又开始自己调 lens( —— 折射必须只在共享件里发生一次。",
+            bandGlassSource.contains("lens("),
         )
     }
 
@@ -53,6 +60,50 @@ class TimetableBandRefractionGuardTest {
             "夹具上限常量不在场——作用带/位移的 8dp 上限丢了。",
             clampSource.contains("TIMETABLE_BAND_REFRACTION_MAX_BAND_DP") &&
                 clampSource.contains("TIMETABLE_BAND_REFRACTION_MAX_AMOUNT_DP"),
+        )
+    }
+
+    /**
+     * 非法值不许进 shader（2026-11-16 P0 追加，真机 SIGSEGV / 顶栏透明那次的处方之一）。
+     *
+     * 三类漏洞，少一条就会复发：
+     * 1. `spec` 里的 dp 值可能 NaN / ±Inf / 负——`toPx()` 不校验，直接进 uniform；
+     * 2. `NaN` 与任何数比较都是 false，所以 `> 0f` 这种守卫**挡不住 NaN**，必须在调用点
+     *    再用 `isFinite()` 守一次；
+     * 3. 采样 padding 必须钳上限（现在 64dp），否则采样坐标越出录制层边界。
+     */
+    @Test
+    fun `折射参数必须过有限性保护 才进 shader`() {
+        val surface = readKotlinSourceNoStrings(GLASS_SURFACE_PATH)
+        assertSourceContains(
+            surface,
+            "fun safe(value: Float): Float = if (value.isFinite() && value > 0f) value else 0f",
+            GLASS_SURFACE_PATH,
+        )
+        assertSourceContains(surface, "coerceAtMost(64f)", GLASS_SURFACE_PATH)
+
+        // 调用点必须**自己也**守一次：`safe()` 只保证进 spec 的值干净，`lens(` 这一处
+        // 仍要显式 isFinite，否则以后有人拿别处的值直接调 lens 就又漏了。
+        assertSourceContains(
+            surface,
+            "refractionBandPx.isFinite() && refractionAmountPx.isFinite()",
+            GLASS_SURFACE_PATH,
+        )
+
+        val lensIndex = surface.indexOf("lens(")
+        assertTrue("QingyuGlassSurface 里已经没有 lens( 调用 —— 折射链被删了。", lensIndex >= 0)
+        assertSourceContains(
+            surface.substring(0, lensIndex),
+            "isFinite()",
+            "$GLASS_SURFACE_PATH 的 lens( 之前",
+        )
+
+        // 底层再守一次：NaN 骗得过 `<= 0`，所以入口必须显式 isFinite 拒绝。
+        val lensSource = readKotlinSourceNoStrings(LIQUID_LENS_PATH)
+        assertSourceContains(
+            lensSource,
+            "if (!refractionHeight.isFinite() || !refractionAmount.isFinite()) return",
+            LIQUID_LENS_PATH,
         )
     }
 
@@ -143,5 +194,9 @@ class TimetableBandRefractionGuardTest {
             "android/app/src/composeP1/kotlin/com/mutx163/qingyu/pages/timetable/TimetableChromeBandGlass.kt"
         const val CLAMP_PATH =
             "android/app/src/main/kotlin/com/mutx163/qingyu/pages/timetable/TimetableBandRefraction.kt"
+        const val GLASS_SURFACE_PATH =
+            "android/app/src/composeP1/kotlin/com/mutx163/qingyu/components/glass/QingyuGlassSurface.kt"
+        const val LIQUID_LENS_PATH =
+            "android/app/src/composeP1/kotlin/com/mutx163/qingyu/components/liquid/LiquidLens.kt"
     }
 }

@@ -121,16 +121,26 @@ class BandGlassFirstFrameGuardTest {
     }
 
     @Test
-    fun `折射作用带用绘制期高度`() {
+    fun `折射三参数必须来自同一份材质快照`() {
+        // 2026-11-16 重做：带子不再自己算「作用带 / 位移 / 色散」，三项直接取材质快照，
+        // 与底栏走同一条 `GlassSpec`。旧夹具 `timetableBandRefraction` 不再作用于带子。
         assertTrue(
-            "折射夹具的带盒高必须由绘制期尺寸反推（size.height - overdrawDp.roundToPx()）——" +
-                "这是「首帧就有值」的唯一来源。",
-            Regex("""size\.height\s*-\s*overdrawDp\.roundToPx\(\)""").containsMatchIn(bandGlassSource),
+            "作用带没有取自材质快照（refractionBandDp = material.liquidRefractionBand）。",
+            bandGlassSource.contains("refractionBandDp = material.liquidRefractionBand"),
         )
         assertTrue(
-            "带盒高仍然要过折射夹具 timetableBandRefraction(bandBoxHeightDp = …)。",
-            bandGlassSource.contains("timetableBandRefraction(") &&
-                bandGlassSource.contains("bandBoxHeightDp = bandHeightDp"),
+            "折射位移没有取自材质快照（refractionAmountDp = material.liquidRefraction）。",
+            bandGlassSource.contains("refractionAmountDp = material.liquidRefraction"),
+        )
+        assertTrue(
+            "色散当前必须显式关闭（dispersion = 0f）——色散着色器有除 halfSize 的路径，" +
+                "首帧 size 为 0 会算出 NaN/Inf 坐标（真机 SIGSEGV 的候选之一）。" +
+                "要开回，必须同时更新这条判据并跑一遍探针。",
+            bandGlassSource.contains("dispersion = 0f"),
+        )
+        assertFalse(
+            "带子又开始自己调 timetableBandRefraction 了——重做后折射统一走共享件的 lens，",
+            bandGlassSource.contains("timetableBandRefraction("),
         )
         assertFalse(
             "带盒高又改回了非绘制期来源（bandSize / IntSize）——首帧会拿到 0。",
@@ -140,17 +150,28 @@ class BandGlassFirstFrameGuardTest {
 
     @Test
     fun `玻璃链本身没被掏空`() {
+        // 2026-11-16 重做：顶栏不再自己拼 drawBackdrop + vibrancy + blur + lens + 染色，
+        // 改为调共享件 QingyuGlassSurface（坞 / 浮钮 / 卡片 / 页面球同一处实现）。
         assertTrue(
-            "玻璃节点必须仍然走 drawBackdrop( —— 删掉它等于这条带不再采样壁纸。",
+            "顶栏没有走共享件 QingyuGlassSurface —— 又回到自己拼玻璃链的老路（折射会再次失效）。",
+            bandGlassSource.contains("QingyuGlassSurface("),
+        )
+        assertTrue(
+            "采样 padding 没有交给共享件（samplingPaddingDp = BAND_SAMPLING_PADDING_DP）——" +
+                "折射会再次取不到外圈像素。",
+            bandGlassSource.contains("samplingPaddingDp = BAND_SAMPLING_PADDING_DP"),
+        )
+        assertFalse(
+            "顶栏又出现了自己拼的 drawBackdrop( —— 那是重做前那条独立实现。",
             bandGlassSource.contains("drawBackdrop("),
         )
-        assertTrue(
-            "底边折射必须仍然挂 lens( —— 删掉它等于材质面板的折射滑杆失效。",
+        assertFalse(
+            "顶栏又出现了自己拼的 lens( —— 折射必须走共享件。",
             bandGlassSource.contains("lens("),
         )
-        assertTrue(
-            "染色必须仍然画在玻璃表面上（onDrawSurface）。",
-            bandGlassSource.contains("onDrawSurface = { drawRect(tint) }"),
+        assertFalse(
+            "顶栏又出现了自己拼的染色（onDrawSurface）—— 染色改走共享件的 tintBrush。",
+            bandGlassSource.contains("onDrawSurface"),
         )
     }
 

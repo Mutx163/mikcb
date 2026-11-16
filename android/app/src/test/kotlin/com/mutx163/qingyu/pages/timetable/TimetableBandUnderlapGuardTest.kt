@@ -54,41 +54,36 @@ class TimetableBandUnderlapGuardTest {
     }
 
     @Test
-    fun `带子必须采第二遍玻璃`() {
+    fun `带子必须采独立内容层 不许采自己所在的录制层`() {
+        // 2026-11-16 P0（367e86ec4 的漏 + 修正笔）：顶栏玻璃就在 contentBackdrop 的录制子树里。
+        // 唯一正确采样源是 bandContentBackdrop —— 那一层只录「带子以下的内容」，不含带子自己。
+        // 采 contentBackdrop = shader 读自己正在写的层 ⇒ 真机 SIGSEGV（SEGV_ACCERR）。
         assertTrue(
-            "周页面没有把录制层交给带子的 underlayBackdrop —— 玻璃只看得到壁纸，看不到课卡。",
-            weekPageSource.contains(Regex("""underlayBackdrop\s*=""")) &&
-                weekPageSource.contains("bandStripBackdrop.takeIf"),
+            "周页没有把 bandContentBackdrop（不含带子的内容层）交给带子。",
+            weekPageSource.contains("backdrop = bandContentBackdrop"),
+        )
+        // 判据要钉「带子这一次调用」而不是全文件：回本周浮钮仍合法地采 contentBackdrop。
+        val bandCall = weekPageSource.substringAfter("TimetableChromeBandGlass(", "")
+            .substringBefore("overdrawDp", "")
+        assertFalse(
+            "带子又开始采 contentBackdrop —— 它就在那层的录制子树里，" +
+                "这是真机 SIGSEGV 的根因（渲染线程读自己正在写的层）。",
+            bandCall.contains("contentBackdrop"),
         )
         assertTrue(
-            "日视图没有自己的条带录制层（dayStripBackdrop）—— 日卡滑进星期栏也看不到玻璃。",
-            weekPageSource.contains("dayStripBackdrop") &&
-                weekPageSource.contains("dayStripBackdrop.takeIf"),
+            "带子组件不再收 backdrop 参数（backdrop: Backdrop?）——采样源没有交接点。",
+            bandGlassSource.contains("backdrop: Backdrop?"),
+        )
+        assertTrue(
+            "色散没有先关掉（dispersion = 0f）——色散着色器有除 halfSize 的路径，" +
+                "首帧 size 为 0 会算出非法坐标。",
+            bandGlassSource.contains("dispersion = 0f"),
         )
         assertTrue(
             "日页没有接到带子底下（bandUnderlap / LocalEmbeddedDayUnderlapBand 缺一）—— " +
                 "日视图上滑仍会在带子下沿硬切。",
             weekPageSource.contains("LocalEmbeddedDayUnderlapBand") &&
                 weekPageSource.contains(".bandUnderlap {"),
-        )
-        assertTrue(
-            "时间列没有被排除出第二遍条带（clipRect 左边界仍从 0 起）—— 节次时间表会糊成黑柱。",
-            weekPageSource.contains("timeColumnWidthPx") &&
-                weekPageSource.contains("clipRect(left, 0f, right, strip.toFloat())"),
-        )
-        assertTrue(
-            "录制层没有按带子高度夹住（clipRect / timetableBandStripPx 不在场）—— " +
-                "会退化成整屏离屏重画。",
-            weekPageSource.contains("timetableBandStripPx(") &&
-                weekPageSource.contains("clipRect("),
-        )
-        assertTrue(
-            "TimetableChromeBandGlass 没有 underlayBackdrop 参数 —— 第二遍玻璃被删了。",
-            bandGlassSource.contains("underlayBackdrop: Backdrop? = null"),
-        )
-        assertFalse(
-            "第二遍玻璃把折射也挂上了 —— 卡片在交界处会读成被撕开。",
-            bandGlassSource.contains(Regex("""underlay[\s\S]{0,600}?lens\(""")),
         )
     }
 
