@@ -54,9 +54,9 @@ class TimetableBandGlassWiringTest {
         // 2026-11-16 真机 SIGSEGV 的根因：带子就在 contentBackdrop 的录制子树里，
         // 拿它当 shader 输入 = 读自己正在写的图层。取样源必须是**兄弟层**（壁纸层）。
         val weekPage = readKotlinSourceNoStrings(WEEK_PAGE_PATH)
-        assertSourceContains(weekPage, "backdrop = pageBackdrop", LABEL)
+        assertSourceContains(weekPage, "backdrop = bandContentBackdrop", LABEL)
         assertSourceLacks(weekPage, "backdrop = contentBackdrop", LABEL)
-        assertSourceLacks(weekPage, "underlayBackdrop =", LABEL)
+        assertSourceLacks(weekPage, "underlayBackdrop =", LABEL)`n        // 独立采样层必须真的挂到内容区（只录带子以下的内容），否则带子采到的是空层。`n        assertSourceContains(weekPage, "layerBackdrop(bandContentBackdrop)", LABEL)
     }
 
     @Test

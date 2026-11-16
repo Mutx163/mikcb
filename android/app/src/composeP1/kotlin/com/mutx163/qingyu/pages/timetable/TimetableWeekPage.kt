@@ -707,6 +707,12 @@ fun TimetableWeekPage(
     // 浮钮原采 pageBackdrop（只录壁纸），即便下面压着课卡也只看得到壁纸。这一层录
     // [壁纸 + 预糊层 + 内容 Column]（不含浮钮自己），浮钮摘成录制层外的兄弟再采它。
     val contentBackdrop = rememberLayerBackdrop()
+    // ── 顶栏玻璃的**独立内容采样层**（2026-11-16 P0 后补）──
+    // 底栏能出折射、顶栏出不来的最后一条差异就是采样内容：底栏采「壁纸 + 内容」，
+    // 顶栏原来只采壁纸（纯色壁纸上位移看不出）。但**不能**让它采 contentBackdrop——
+    // 那一层把带子自己也录了进去，等于 shader 读自己正在写的图层（13:57 真机 SIGSEGV）。
+    // 所以单开一层，只录「带子以下的内容区域」，带子读它、且不在它里面。
+    val bandContentBackdrop = rememberLayerBackdrop()
     val materialSpec = material
     // 玻璃带是否处于「液态档 + 真有壁纸 + 设备支持」，判据与渲染层同一份
     //（`TimetableChromeBandGlass` 里那段 `when`）；这里单独留一份只是为了给
@@ -934,9 +940,9 @@ fun TimetableWeekPage(
             TimetableChromeBandGlass(
                 material = materialSpec,
                 hasBackdrop = hasBackdrop,
-                // 2026-11-16 重做：采**真实内容层**（壁纸 + 课卡 + 文字），与底栏同一采样源。
-                // 旧版采 pageBackdrop（只录壁纸），折射作用在纯色壁纸上等于没效果。
-                backdrop = contentBackdrop,
+                // 采样源 = 独立内容层（只录带子以下的内容），与底栏同一模式：内容录 A 层、玻璃读 A 层。
+                // ⚠️ 绝不能传 contentBackdrop：那一层带着带子自己 ⇒ shader 读自己正在写的图层，
+                backdrop = bandContentBackdrop,
                 solidColor = bandSolidColor,
                 overdrawDp = (bandOverdrawBaseDp.dp + maxOf(
                     innerPadding.calculateStartPadding(LocalLayoutDirection.current),
@@ -1084,6 +1090,14 @@ fun TimetableWeekPage(
                     .then(
                         if (wideContentCap != null) {
                             Modifier.widthIn(max = wideContentCap)
+                        } else {
+                            Modifier
+                        },
+                    )
+                    // 顶栏玻璃的唯一采样源：这一层只含带子以下的内容，不含带子。
+                    .then(
+                        if (bandBlurActive && !previewMode) {
+                            Modifier.layerBackdrop(bandContentBackdrop)
                         } else {
                             Modifier
                         },
