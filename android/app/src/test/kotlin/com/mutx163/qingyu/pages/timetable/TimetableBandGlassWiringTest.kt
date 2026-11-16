@@ -56,8 +56,11 @@ class TimetableBandGlassWiringTest {
         val weekPage = readKotlinSourceNoStrings(WEEK_PAGE_PATH)
         assertSourceContains(weekPage, "backdrop = bandContentBackdrop", LABEL)
         assertSourceLacks(weekPage, "backdrop = contentBackdrop", LABEL)
-        assertSourceLacks(weekPage, "underlayBackdrop =", LABEL)`n        // 独立采样层必须真的挂到内容区（只录带子以下的内容），否则带子采到的是空层。`n        assertSourceContains(weekPage, "layerBackdrop(bandContentBackdrop)", LABEL)
+        assertSourceLacks(weekPage, "underlayBackdrop =", LABEL)
+        // 独立采样层必须真的挂到内容区（只录带子以下的内容），否则带子采到的是空层。
+        assertSourceContains(weekPage, "layerBackdrop(bandContentBackdrop)", LABEL)
     }
+
 
     @Test
     fun `参数硬保护必须在场`() {

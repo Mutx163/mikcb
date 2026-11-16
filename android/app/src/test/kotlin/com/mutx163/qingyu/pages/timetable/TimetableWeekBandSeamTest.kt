@@ -30,7 +30,7 @@ class TimetableWeekBandSeamTest {
         assertTrue(
             "周页没有把带下沿缝交给 WeekPageContent —— 第 1 节课卡又会紧贴带下沿，" +
                 "玻璃下半截重新被课卡染色。",
-            Regex("""topSeamDp\s*=\s*if \(bandStripActive\)\s*DAY_VIEW_TOP_SEAM_DP\.dp\s*else\s*0\.dp""")
+            Regex("""topSeamDp\s*=\s*if \(bandUnderlapActive\)\s*DAY_VIEW_TOP_SEAM_DP\.dp\s*else\s*0\.dp""")
                 .containsMatchIn(source),
         )
         assertSourceContains(source, "DAY_VIEW_TOP_SEAM_DP.dp", WEEK_PAGE_PATH)
