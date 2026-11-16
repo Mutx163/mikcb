@@ -29,19 +29,17 @@ class TimetableBandRefractionGuardTest {
 
     @Test
     fun `带子的折射必须交给共享件`() {
-        // 2026-11-16 重做：折射不再经过 8dp 夹具，也不再由带子自己调 lens；
-        // 三项参数进 GlassSpec，由共享件 QingyuGlassSurface 统一调 lens。
+        // 2026-11-16 重做 + 单链收敛：折射不再经过 8dp 夹具、也不由带子自己调 lens；
+        // 参数从材质快照经 `GlassSpecResolver.resolve(material.bandGlassTuning()…)` 解释一次，
+        // 由共享件 QingyuGlassSurface 统一调 lens。
         assertTrue(
             "TimetableChromeBandGlass 没有走共享件 QingyuGlassSurface —— 折射又回到顶栏私有链路。",
             bandGlassSource.contains("QingyuGlassSurface("),
         )
         assertTrue(
-            "作用带参数没有进 GlassSpec（refractionBandDp = material.liquidRefractionBand）。",
-            bandGlassSource.contains("refractionBandDp = material.liquidRefractionBand"),
-        )
-        assertTrue(
-            "折射位移参数没有进 GlassSpec（refractionAmountDp = material.liquidRefraction）。",
-            bandGlassSource.contains("refractionAmountDp = material.liquidRefraction"),
+            "折射参数没有经 resolver 从材质快照解释（GlassSpecResolver.resolve( + material.bandGlassTuning()）。",
+            bandGlassSource.contains("GlassSpecResolver.resolve(") &&
+                bandGlassSource.contains("material.bandGlassTuning()"),
         )
         assertFalse(
             "带子又开始自己调 lens( —— 折射必须只在共享件里发生一次。",

@@ -122,15 +122,20 @@ class BandGlassFirstFrameGuardTest {
 
     @Test
     fun `折射三参数必须来自同一份材质快照`() {
-        // 2026-11-16 重做：带子不再自己算「作用带 / 位移 / 色散」，三项直接取材质快照，
-        // 与底栏走同一条 `GlassSpec`。旧夹具 `timetableBandRefraction` 不再作用于带子。
+        // 2026-11-16 重做 + 单链收敛：带子不再手拼 GlassSpec，改为
+        // `GlassSpecResolver.resolve(material.bandGlassTuning()… )` —— 参数只在 resolver 里解释一次，
+        // 与底栏/页面脚手架同一条链（`GlassSingleChainGuardTest` 钉的就是这条）。
         assertTrue(
-            "作用带没有取自材质快照（refractionBandDp = material.liquidRefractionBand）。",
-            bandGlassSource.contains("refractionBandDp = material.liquidRefractionBand"),
+            "带子没有走 GlassSpecResolver.resolve( —— 又回到手拼 GlassSpec 的老路。",
+            bandGlassSource.contains("GlassSpecResolver.resolve("),
         )
         assertTrue(
-            "折射位移没有取自材质快照（refractionAmountDp = material.liquidRefraction）。",
-            bandGlassSource.contains("refractionAmountDp = material.liquidRefraction"),
+            "带子没有从材质快照取参数（material.bandGlassTuning()）—— 玻璃参数会与底栏漂开。",
+            bandGlassSource.contains("material.bandGlassTuning()"),
+        )
+        assertFalse(
+            "带子又开始手拼 GlassSpec( —— 玻璃参数必须只在 resolver 里解释一次。",
+            bandGlassSource.contains("GlassSpec("),
         )
         assertTrue(
             "色散当前必须显式关闭（dispersion = 0f）——色散着色器有除 halfSize 的路径，" +
@@ -139,7 +144,7 @@ class BandGlassFirstFrameGuardTest {
             bandGlassSource.contains("dispersion = 0f"),
         )
         assertFalse(
-            "带子又开始自己调 timetableBandRefraction 了——重做后折射统一走共享件的 lens，",
+            "带子又开始自己调 timetableBandRefraction 了——折射统一走共享件的 lens。",
             bandGlassSource.contains("timetableBandRefraction("),
         )
         assertFalse(
