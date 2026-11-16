@@ -942,7 +942,7 @@ fun TimetableWeekPage(
                 hasBackdrop = hasBackdrop,
                 // 采样源 = 独立内容层（只录带子以下的内容），与底栏同一模式：内容录 A 层、玻璃读 A 层。
                 // ⚠️ 绝不能传 contentBackdrop：那一层带着带子自己 ⇒ shader 读自己正在写的图层，
-                backdrop = bandContentBackdrop,
+                backdrop = contentBackdrop,
                 solidColor = bandSolidColor,
                 overdrawDp = (bandOverdrawBaseDp.dp + maxOf(
                     innerPadding.calculateStartPadding(LocalLayoutDirection.current),
@@ -1824,10 +1824,11 @@ private fun MonthContentMountSignal(onMounted: () -> Unit) {
 }
 
 /**
- * 日页条带的**录制壳**：把日视图正文录进 `dayStripBackdrop`，给顶栏第二遍玻璃采样。
+ * 日视图正文的挂载壳（2026-11-16：条带录制删除后只剩全屏盒 + 内容）。
  *
- * 只录不画：`layerBackdrop` 负责把子部树录进图层，子部树照常上屏。按带高夹住录制
- * 范围（`dayStripBackdrop` 的 `onDraw`），不整屏离屏重画。
+ * 以前这里是 `DayStripHost`：把日页正文录进 `dayStripBackdrop` 给顶栏「第二遍玻璃」采样。
+ * 顶栏改成单遍玻璃、采独立内容层 `bandContentBackdrop` 之后，那层录制没有任何采样方，
+ * 已随重做删除；这里保留一个薄壳只为统一两支挂载点的缩进与后续扩展。
  */
 @Composable
 private fun DayContentHost(content: @Composable () -> Unit) {
