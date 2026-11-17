@@ -1,10 +1,10 @@
 {
-  "updatedAt": "2026-11-16T08:27:42+00:00",
+  "updatedAt": "2026-11-17T09:39:54+00:00",
   "source": "https://github.com/Mutx163/qingyu_warehouse",
   "sourceRef": "main",
   "counts": {
-    "total": 279,
-    "schools": 274,
+    "total": 281,
+    "schools": 276,
     "generic": 5
   },
   "schools": [
@@ -356,6 +356,13 @@
       "name": "佛山大学",
       "initial": "F",
       "resourceFolder": "FOSU",
+      "category": "school"
+    },
+    {
+      "id": "FSPT",
+      "name": "佛山职业技术学院",
+      "initial": "F",
+      "resourceFolder": "FSPT",
       "category": "school"
     },
     {
@@ -1938,6 +1945,13 @@
       "name": "肇庆学院",
       "initial": "Z",
       "resourceFolder": "ZQU",
+      "category": "school"
+    },
+    {
+      "id": "ZZUCVC",
+      "name": "郑州城建职业学院",
+      "initial": "Z",
+      "resourceFolder": "ZZUCVC",
       "category": "school"
     },
     {
