@@ -315,7 +315,7 @@
   "importMethodSpreadsheetSubtitle": "填寫 Excel / CSV 模板後匯入",
   "spreadsheetImportTitle": "表格匯入",
   "spreadsheetScenarioIntro": "輕嶼模板依表頭辨識欄位：必填為課程名、星期、開始節、結束節及週次；其餘為可選，可下載完整模板，或只保留必要欄，亦相容 WakeUp 7 欄格式",
-  "spreadsheetStep1Subtitle": "下載完整模板填寫，或僅填寫必填列與上課週導入",
+  "spreadsheetStep1Subtitle": "下載完整模板填寫，或僅填寫必填列與上課週匯入",
   "spreadsheetStep2Subtitle": "填寫完成後另存為 .csv 或直接保留 .xlsx",
   "spreadsheetStep3Subtitle": "選擇檔案匯入；如有識別提醒會先展示，再選擇追加或替換",
   "spreadsheetSupportedFilesSuffix": "支持 .csv 與 .xlsx，僅讀取首個工作表",
@@ -337,11 +337,11 @@
     }
   },
   "icsStep1Subtitle": "先在其他課表應用裡匯出 .ics 日歷檔案",
-  "icsStep2Subtitle": "在此選擇文件，可追加導入或替換現有課程",
+  "icsStep2Subtitle": "在此選擇文件，可追加匯入或替換現有課程",
   "icsStep3Subtitle": "匯入前還會讓你確認開學日期，以及課表第 1 週對應校曆第幾週",
   "supportedFilesTitle": "支持的檔案",
   "supportedFilesSuffix": "檔案後綴必須是 .ics",
-  "supportedFilesImageHint": "課表截圖請返回上一頁使用識圖導入",
+  "supportedFilesImageHint": "課表截圖請返回上一頁使用識圖匯入",
   "chooseIcsFileAction": "選擇 .ics 檔案",
   "timetableAppName": "輕嶼課表",
   "switchProfileHint": "點擊切換課表",
@@ -695,7 +695,7 @@
   "supportConfirmedShort": "已支持",
   "scanQrWechatTitle": "使用微信掃描二維碼",
   "scanQrAlipayTitle": "使用支付寶掃描二維碼",
-  "scanQrSubtitle": "截圖並導入掃一掃，感謝支持！",
+  "scanQrSubtitle": "截圖並匯入掃一掃，感謝支持！",
   "courseOverviewTitle": "課程總覽與編輯",
   "addNewCourseTooltip": "添加新課程",
   "emptyCourseOverviewHint": "長按課表或點擊右上角添加課程",
@@ -795,9 +795,9 @@
   "aboutPositioningBullet4": "支持多課表、時間範本、主題色和卡片樣式自定義",
   "aboutImportMigrationTitle": "匯入與遷移",
   "aboutImportMigrationSubtitle": "目前匯入方式、備份還原和遷移建議",
-  "aboutImportMigrationBullet1": "支持教務系統網頁登錄導入。進入 導入課程 > 教務系統導入 選擇學校即可。",
+  "aboutImportMigrationBullet1": "支持教務系統網頁登錄匯入。進入 匯入課程 > 教務系統匯入 選擇學校即可。",
   "aboutImportMigrationBullet2": "如果你的學校暫時還沒有適配，仍然可以先在其他課表應用裡匯入課程，再匯出為日歷格式，然後在本應用匯入",
-  "aboutImportMigrationBullet3": "若已有他人使用，可匯出完整備份文件，在 數據備份與遷移 中導入恢復。",
+  "aboutImportMigrationBullet3": "若已有他人使用，可匯出完整備份文件，在 數據備份與遷移 中匯入恢復。",
   "aboutImportMigrationBullet4": "如果你會抓包、網頁偵錯或 JavaScript，也歡迎去 qingyu_warehouse 參與教務適配補充",
   "aboutContributorsTitle": "代碼貢獻者",
   "aboutContributorsSubtitle": "開發人員與教務匯入適配者名單",
@@ -844,7 +844,7 @@
   "shareTimeSchemeTitle": "分享時間範本",
   "shareTimeSchemeViaSystem": "系統分享檔案",
   "shareTimeSchemeViaQr": "二維碼分享",
-  "timeSchemeShareText": "輕嶼課表時間模板 {name}，導入後即可使用",
+  "timeSchemeShareText": "輕嶼課表時間模板 {name}，匯入後即可使用",
   "@timeSchemeShareText": {
     "placeholders": {
       "name": {
@@ -1454,12 +1454,12 @@
   "guideShortNameRecommendedExample": "高數 / 概率 / 數控",
   "guideShortNameNotRecommendedExample": "高等數學A(1) / 數控技術及應用",
   "guideSetCourseShortNameAction": "去設定課程簡稱",
-  "guideImportMethodsTitle": "課表導入方式",
+  "guideImportMethodsTitle": "課表匯入方式",
   "guideImportMethodsSubtitle": "目前版本已經支持部分學校的教務系統網頁登入匯入；如果你的學校還沒適配，也還有其他遷移方式",
-  "guideImportMethodStep1": "建議進入 導入課程 > 教務系統導入，選擇學校並在應用內登錄完成導入。",
+  "guideImportMethodStep1": "建議進入 匯入課程 > 教務系統匯入，選擇學校並在應用內登錄完成匯入。",
   "guideImportMethodStep2": "如果你的學校暫時沒有適配，可以先在其他課表應用裡匯入教務系統課程，再匯出日歷格式，最後回到本應用匯入。",
-  "guideImportMethodStep3": "如果別人已經在用本應用，也可以讓對方匯出完整備份文件，你直接導入就能恢複課程和設定。",
-  "guideImportMethodExtra": "如果你會抓包、網頁偵錯或 JavaScript，也歡迎參與學校教務適配補充，讓更多學校能直接導入。",
+  "guideImportMethodStep3": "如果別人已經在用本應用，也可以讓對方匯出完整備份文件，你直接匯入就能恢複課程和設定。",
+  "guideImportMethodExtra": "如果你會抓包、網頁偵錯或 JavaScript，也歡迎參與學校教務適配補充，讓更多學校能直接匯入。",
   "guideFinalTipsTitle": "最後再看這 3 條",
   "guideFinalTip1": "1. HyperOS 3.0.300 及以上才支持超級島；如果系統版本不夠，應用仍可正常發普通提醒。",
   "guideFinalTip2": "2. 可在設置中調整上課前彈出與課中提醒時間。",
@@ -1468,13 +1468,13 @@
   "guidePrivacyHelperViewOnly": "這裡保留與首次啟動一致的隱私、第三方 SDK 與免責說明，方便你隨時查看；目前頁面不需要再次勾選同意",
   "guidePrivacySectionTitle": "隱私、第三方 SDK 與免責說明",
   "guidePrivacyParagraph1": "本應用主體功能按本地運行方式設計，課表、時間模板、課程記錄和大部分設定預設保存在你的裝置本地。",
-  "guidePrivacyParagraph2": "只有在你主動使用檢查更新、下載更新、導入匯出等聯網功能，或你勾選同意後初始化友盟相關 SDK 時，應用才會與外部服務發生資料交互。",
+  "guidePrivacyParagraph2": "只有在你主動使用檢查更新、下載更新、匯入匯出等聯網功能，或你勾選同意後初始化友盟相關 SDK 時，應用才會與外部服務發生資料交互。",
   "guidePrivacyParagraph3": "本應用接入友盟移動統計 SDK、友盟應用性能監控 SDK 以及高級運營分析依賴庫。它們的服務用途包括移動統計分析、應用性能監控以及高級運營分析相關能力；只有在你勾選同意後，這些 SDK 才會正式初始化。",
   "guidePrivacyParagraph4": "按友盟官方說明，這些 SDK 可能處理的資訊包括：裝置資訊（如 IMEI、MAC、Android ID、OAID、IDFA、OpenUDID、GUID、SIM 卡 IMSI 等）、網絡狀態、裝置標識，以及高級運營分析依賴庫涉及的應用列表和地理位置相關資訊。",
   "guideRiskTitle": "免責與風險提示",
   "guideRiskParagraph1": "1. 超級島、焦點通知、後臺提醒和保活效果依賴系統版本、機型、廠商策略、權限、自啟動、電池策略等外部條件，無法保證所有裝置表現完全一致。",
   "guideRiskParagraph2": "2. 檢查更新、鏡像下載、系統下載器、匯入匯出與分享等能力依賴網絡環境、第三方服務和系統檔案能力；若出現失敗、限速或檔案異常，請以 Release 頁面、你自己儲存的備份檔案和系統提示為準。",
-  "guideRiskParagraph3": "3. 在遷移、導入或覆蓋資料前，請先自行確認備份文件完整可用，並妥善保管含有課表資訊的文件；因用戶自行刪除、覆蓋、分享或保管不當造成的資料問題，需要由用戶自行承擔相應風險。",
+  "guideRiskParagraph3": "3. 在遷移、匯入或覆蓋資料前，請先自行確認備份文件完整可用，並妥善保管含有課表資訊的文件；因用戶自行刪除、覆蓋、分享或保管不當造成的資料問題，需要由用戶自行承擔相應風險。",
   "guideUmengPrivacyLink": "友盟隱私政策：https://www.umeng.com/page/policy",
   "liveDiagnosticsUnavailable": "目前還沒有可檢視的超級島診斷日誌",
   "liveDiagnosticsViewerTitle": "超級島診斷日誌",
@@ -1845,7 +1845,7 @@
   },
   "importCleartextBlockedHint": "該站點暫不支持 HTTPS 訪問且未在明文白名單內，無法在此打開",
   "importReplaceExistingTitle": "匯入課程",
-  "importReplaceExistingMessage": "導入 {name} 時是否替換現有課程？此操作將同時清空自習等獨立日程。",
+  "importReplaceExistingMessage": "匯入 {name} 時是否替換現有課程？此操作將同時清空自習等獨立日程。",
   "@importReplaceExistingMessage": {
     "placeholders": {
       "name": {
@@ -1873,7 +1873,7 @@
       }
     }
   },
-  "importCourseRecordsDropped": "共收到 {imported} 門課程，其中 {dropped} 門數據有誤未能導入",
+  "importCourseRecordsDropped": "共收到 {imported} 門課程，其中 {dropped} 門數據有誤未能匯入",
   "@importCourseRecordsDropped": {
     "placeholders": {
       "dropped": {
@@ -1991,7 +1991,7 @@
   "noAvailableSchools": "暫無可用學校",
   "searchSchoolSuggestion": "可輸入學校全稱、適配器名稱如 WakeUp 或學校代碼",
   "deleteDebugRecordTitle": "刪除偵錯記錄",
-  "deleteDebugRecordMessage": "確認刪除記錄 {name}？已導入課程不受影響",
+  "deleteDebugRecordMessage": "確認刪除記錄 {name}？已匯入課程不受影響",
   "@deleteDebugRecordMessage": {
     "placeholders": {
       "name": {
@@ -3550,7 +3550,7 @@
   "appUpdateDownloadChannelGitcodeDescription": "GitCode 發行版直連下載，國內速度快",
   "holidayStatutoryLabel": "法定假日",
   "serviceMsgImportFileUnrecognized": "Import failed. The file content could not be recognized.",
-  "serviceMsgImportUseOverwriteForFullBackup": "此文件為完整備份，請使用覆蓋方式導入",
+  "serviceMsgImportUseOverwriteForFullBackup": "此文件為完整備份，請使用覆蓋方式匯入",
   "serviceMsgImportNoProfilesInBackup": "No recoverable timetables were found in the backup file.",
   "serviceMsgImportRollbackIncomplete": "匯入失敗，匯入前的資料未能完整還原，請重試或檢查裝置儲存空間",
   "serviceMsgUnrecognizedMikcbDataFile": "Not a recognizable mikcb data file.",
@@ -4133,7 +4133,7 @@
   },
   "serviceMsgUsageTypeOverride": "副時間模板",
   "serviceMsgUsageTypeProfile": "課表主時間模板",
-  "dataTransferProfileShareText": "這是輕嶼課表當前課表的完整備份文件，導入後可直接恢復課程和設置",
+  "dataTransferProfileShareText": "這是輕嶼課表當前課表的完整備份文件，匯入後可直接恢復課程和設置",
   "dataTransferProfileShareSubject": "輕嶼課表備份",
   "dataTransferProfileShareSubjectNamed": "{profileName} - 輕嶼課表備份",
   "@dataTransferProfileShareSubjectNamed": {
@@ -4422,7 +4422,7 @@
   "hyperosShowcaseRootShellLabel": "根頁殼層",
   "hyperosShowcasePushSubtitle": "HyperosNavigation.push 進入",
   "hyperosShowcaseSampleText": "示例文本",
-  "courseImportQuickImportDescription": "快捷導入 {schoolName} {adapterName}",
+  "courseImportQuickImportDescription": "快捷匯入 {schoolName} {adapterName}",
   "@courseImportQuickImportDescription": {
     "placeholders": {
       "schoolName": {
@@ -4442,7 +4442,7 @@
   "courseImportRecordingEmptyStatus": "未錄制到任何操作",
   "courseImportRecordingEmptyTip": "未錄制到任何操作",
   "courseImportSaveRecordingTitle": "保存錄制",
-  "courseImportSaveRecordingMessage": "錄制了 {count} 個操作步驟，是否保存為快捷導入？",
+  "courseImportSaveRecordingMessage": "錄制了 {count} 個操作步驟，是否保存為快捷匯入？",
   "@courseImportSaveRecordingMessage": {
     "placeholders": {
       "count": {
@@ -4492,9 +4492,9 @@
     }
   },
   "courseImportUpdateRecommendedAction": "更新課表 推薦",
-  "courseImportOverwriteAction": "覆蓋導入",
+  "courseImportOverwriteAction": "覆蓋匯入",
   "courseImportSectionCountInsufficientTitle": "時間模板節次不足",
-  "courseImportSectionCountInsufficientMessage": "當前課表時間模板只有 {current} 節，但導入數據需要到第 {required} 節，是否自動補齊後繼續導入？",
+  "courseImportSectionCountInsufficientMessage": "當前課表時間模板只有 {current} 節，但匯入數據需要到第 {required} 節，是否自動補齊後繼續匯入？",
   "@courseImportSectionCountInsufficientMessage": {
     "placeholders": {
       "current": {
@@ -4505,7 +4505,7 @@
       }
     }
   },
-  "courseImportAutoFillAndImportAction": "自動補齊並導入",
+  "courseImportAutoFillAndImportAction": "自動補齊並匯入",
   "courseImportPortalUrlTitle": "輸入教務網址",
   "courseImportPortalUrlSaveContinue": "保存並繼續",
   "courseImportPortalUrlLabel": "教務網址",
@@ -4553,11 +4553,11 @@
   "logLanEditCourseUpdated": "局域網編輯：已更新課程",
   "logLanEditCourseDeleted": "局域網編輯：已刪除課程",
   "logLanEditCourseGroupSaved": "局域網編輯：已保存課程組",
-  "logLanEditMergeImported": "局域網編輯：已導入合並備份",
+  "logLanEditMergeImported": "局域網編輯：已匯入合並備份",
   "logLanEditCoursesBatchDeleted": "局域網編輯：已批量刪除課程",
   "logLanEditCurrentWeekSet": "局域網編輯：已設置當前週次",
   "logLanEditProfileSwitched": "局域網編輯：已切換課表",
-  "logLanEditSpreadsheetImported": "局域網編輯：已導入表格",
+  "logLanEditSpreadsheetImported": "局域網編輯：已匯入表格",
   "logLanEditSessionStarted": "局域網編輯：會話已啟動",
   "logLanEditSessionStopped": "局域網編輯：會話已停止",
   "logLiveUpdateTestRequested": "用戶請求手動超級島測試通知",
@@ -4570,7 +4570,7 @@
   "logLiveUpdateTestPresetArmed": "手動超級島測試：已注入自檢預設課程",
   "logLiveUpdateTestPresetSkipped": "手動超級島測試：跳過自檢預設課程",
   "logWallpaperHistoryGlobalMigrationFailed": "壁紙最近使用遷移失敗 下次載入重試",
-  "logWallpaperHistoryImportMergeFailed": "導入壁紙歷史合併失敗",
+  "logWallpaperHistoryImportMergeFailed": "匯入壁紙歷史合併失敗",
   "logAppGlobalSettingsMigrationFailed": "應用偏好設置遷移失敗",
   "logLiveUpdateSettingsSynced": "Flutter 超級島設置已同步：課前={beforeClass}，課中={duringClass}，下課前={beforeEnd}，提升={promote}，通知={notification}，倒計時={countdown}，課程名={courseName}，地點={location}",
   "@logLiveUpdateSettingsSynced": {
@@ -4722,10 +4722,10 @@
   "logCatLanEditCourseUpdated": "局域網編輯：更新課程",
   "logCatLanEditCourseDeleted": "局域網編輯：刪除課程",
   "logCatLanEditCourseGroupSaved": "局域網編輯：保存課程組",
-  "logCatLanEditMergeImported": "局域網編輯：合並導入",
+  "logCatLanEditMergeImported": "局域網編輯：合並匯入",
   "logCatLanEditCoursesBatchDeleted": "局域網編輯：批量刪除",
   "logCatLanEditCurrentWeekSet": "局域網編輯：設置週次",
-  "logCatLanEditSpreadsheetImported": "局域網編輯：表格導入",
+  "logCatLanEditSpreadsheetImported": "局域網編輯：表格匯入",
   "logCatLanEditSessionStarted": "局域網編輯：會話啟動",
   "logCatLanEditSessionStopped": "局域網編輯：會話停止",
   "logCatLiveUpdateTestRequested": "超級島測試：請求",

@@ -315,7 +315,7 @@
   "importMethodSpreadsheetSubtitle": "填寫 Excel / CSV 模板後匯入",
   "spreadsheetImportTitle": "表格匯入",
   "spreadsheetScenarioIntro": "輕嶼模板依表頭辨識欄位：必填為課程名、星期、開始節、結束節及週次；其餘為可選，可下載完整模板，或只保留必要欄，亦相容 WakeUp 7 欄格式",
-  "spreadsheetStep1Subtitle": "下載完整模板填寫，或僅填寫必填列與上課週導入",
+  "spreadsheetStep1Subtitle": "下載完整模板填寫，或僅填寫必填列與上課週匯入",
   "spreadsheetStep2Subtitle": "填寫完成後另存為 .csv 或直接保留 .xlsx",
   "spreadsheetStep3Subtitle": "選擇檔案匯入；如有識別提醒會先展示，再選擇追加或替換",
   "spreadsheetSupportedFilesSuffix": "支持 .csv 與 .xlsx，僅讀取首個工作表",
@@ -337,11 +337,11 @@
     }
   },
   "icsStep1Subtitle": "先在其他課表應用裡匯出 .ics 日歷檔案",
-  "icsStep2Subtitle": "在此選擇文件，可追加導入或替換現有課程",
+  "icsStep2Subtitle": "在此選擇文件，可追加匯入或替換現有課程",
   "icsStep3Subtitle": "匯入前還會讓你確認開學日期，以及課表第 1 週對應校曆第幾週",
   "supportedFilesTitle": "支持的檔案",
   "supportedFilesSuffix": "檔案後綴必須是 .ics",
-  "supportedFilesImageHint": "課表截圖請返回上一頁使用識圖導入",
+  "supportedFilesImageHint": "課表截圖請返回上一頁使用識圖匯入",
   "chooseIcsFileAction": "選擇 .ics 檔案",
   "timetableAppName": "輕嶼課表",
   "switchProfileHint": "點擊切換課表",
@@ -695,7 +695,7 @@
   "supportConfirmedShort": "已支持",
   "scanQrWechatTitle": "使用微信掃描二維碼",
   "scanQrAlipayTitle": "使用支付寶掃描二維碼",
-  "scanQrSubtitle": "截圖並導入掃一掃，感謝支持！",
+  "scanQrSubtitle": "截圖並匯入掃一掃，感謝支持！",
   "courseOverviewTitle": "課程總覽與編輯",
   "addNewCourseTooltip": "添加新課程",
   "emptyCourseOverviewHint": "長按課表或點擊右上角添加課程",
@@ -795,9 +795,9 @@
   "aboutPositioningBullet4": "支持多課表、時間範本、主題色和卡片樣式自定義",
   "aboutImportMigrationTitle": "匯入與遷移",
   "aboutImportMigrationSubtitle": "目前匯入方式、備份還原和遷移建議",
-  "aboutImportMigrationBullet1": "支持教務系統網頁登錄導入。進入 導入課程 > 教務系統導入 選擇學校即可。",
+  "aboutImportMigrationBullet1": "支持教務系統網頁登錄匯入。進入 匯入課程 > 教務系統匯入 選擇學校即可。",
   "aboutImportMigrationBullet2": "如果你的學校暫時還沒有適配，仍然可以先在其他課表應用裡匯入課程，再匯出為日歷格式，然後在本應用匯入",
-  "aboutImportMigrationBullet3": "若已有他人使用，可匯出完整備份文件，在 數據備份與遷移 中導入恢復。",
+  "aboutImportMigrationBullet3": "若已有他人使用，可匯出完整備份文件，在 數據備份與遷移 中匯入恢復。",
   "aboutImportMigrationBullet4": "如果你會抓包、網頁偵錯或 JavaScript，也歡迎去 qingyu_warehouse 參與教務適配補充",
   "aboutContributorsTitle": "代碼貢獻者",
   "aboutContributorsSubtitle": "開發人員與教務匯入適配者名單",
@@ -844,7 +844,7 @@
   "shareTimeSchemeTitle": "分享時間範本",
   "shareTimeSchemeViaSystem": "系統分享檔案",
   "shareTimeSchemeViaQr": "二維碼分享",
-  "timeSchemeShareText": "輕嶼課表時間模板 {name}，導入後即可使用",
+  "timeSchemeShareText": "輕嶼課表時間模板 {name}，匯入後即可使用",
   "@timeSchemeShareText": {
     "placeholders": {
       "name": {
@@ -1454,9 +1454,9 @@
   "guideShortNameRecommendedExample": "高數 / 概率 / 數控",
   "guideShortNameNotRecommendedExample": "高等數學A(1) / 數控技術及應用",
   "guideSetCourseShortNameAction": "去設定課程簡稱",
-  "guideImportMethodsTitle": "課表導入方式",
+  "guideImportMethodsTitle": "課表匯入方式",
   "guideImportMethodsSubtitle": "目前版本已經支援部分學校的教務系統網頁登入匯入；如果你的學校還沒適配，也還有其他遷移方式",
-  "guideImportMethodStep1": "建議進入 導入課程 > 教務系統導入，選擇學校並在應用內登錄完成導入。",
+  "guideImportMethodStep1": "建議進入 匯入課程 > 教務系統匯入，選擇學校並在應用內登錄完成匯入。",
   "guideImportMethodStep2": "如果你的學校暫時沒有適配，可以先在其他課表應用裡匯入教務系統課程，再匯出日歷格式，最後回到本應用匯入。",
   "guideImportMethodStep3": "如果別人已經在用本應用，也可以讓對方匯出完整備份檔案，你直接匯入就能恢復課程和設定。",
   "guideImportMethodExtra": "如果你會抓包、網頁偵錯或 JavaScript，也歡迎參與學校教務適配補充，讓更多學校能直接匯入。",
@@ -1845,7 +1845,7 @@
   },
   "importCleartextBlockedHint": "該站點暫不支援 HTTPS 存取且未在明文白名單內，無法在此開啟",
   "importReplaceExistingTitle": "匯入課程",
-  "importReplaceExistingMessage": "導入 {name} 時是否替換現有課程？此操作將同時清空自習等獨立日程。",
+  "importReplaceExistingMessage": "匯入 {name} 時是否替換現有課程？此操作將同時清空自習等獨立日程。",
   "@importReplaceExistingMessage": {
     "placeholders": {
       "name": {
@@ -1873,7 +1873,7 @@
       }
     }
   },
-  "importCourseRecordsDropped": "共收到 {imported} 門課程，其中 {dropped} 門數據有誤未能導入",
+  "importCourseRecordsDropped": "共收到 {imported} 門課程，其中 {dropped} 門數據有誤未能匯入",
   "@importCourseRecordsDropped": {
     "placeholders": {
       "dropped": {
@@ -1991,7 +1991,7 @@
   "noAvailableSchools": "暫無可用學校",
   "searchSchoolSuggestion": "可輸入學校全稱、適配器名稱如 WakeUp 或學校代碼",
   "deleteDebugRecordTitle": "刪除偵錯記錄",
-  "deleteDebugRecordMessage": "確認刪除記錄 {name}？已導入課程不受影響",
+  "deleteDebugRecordMessage": "確認刪除記錄 {name}？已匯入課程不受影響",
   "@deleteDebugRecordMessage": {
     "placeholders": {
       "name": {
@@ -3550,7 +3550,7 @@
   "appUpdateDownloadChannelGitcodeDescription": "GitCode 發行版直連下載，國內速度快",
   "holidayStatutoryLabel": "法定假日",
   "serviceMsgImportFileUnrecognized": "Import failed. The file content could not be recognized.",
-  "serviceMsgImportUseOverwriteForFullBackup": "此文件為完整備份，請使用覆蓋方式導入",
+  "serviceMsgImportUseOverwriteForFullBackup": "此文件為完整備份，請使用覆蓋方式匯入",
   "serviceMsgImportNoProfilesInBackup": "No recoverable timetables were found in the backup file.",
   "serviceMsgImportRollbackIncomplete": "匯入失敗，匯入前的資料未能完整還原，請重試或檢查裝置儲存空間",
   "serviceMsgUnrecognizedMikcbDataFile": "Not a recognizable mikcb data file.",
@@ -4570,7 +4570,7 @@
   "logLiveUpdateTestPresetArmed": "手動超級島測試：已注入自檢預設課程",
   "logLiveUpdateTestPresetSkipped": "手動超級島測試：跳過自檢預設課程",
   "logWallpaperHistoryGlobalMigrationFailed": "壁紙最近使用遷移失敗 下次載入重試",
-  "logWallpaperHistoryImportMergeFailed": "導入壁紙歷史合併失敗",
+  "logWallpaperHistoryImportMergeFailed": "匯入壁紙歷史合併失敗",
   "logAppGlobalSettingsMigrationFailed": "應用偏好設置遷移失敗",
   "logLiveUpdateSettingsSynced": "Flutter 超級島設定已同步：課前={beforeClass}，課中={duringClass}，下課前={beforeEnd}，提升={promote}，通知={notification}，倒數計時={countdown}，課程名={courseName}，地點={location}",
   "@logLiveUpdateSettingsSynced": {
