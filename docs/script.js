@@ -242,6 +242,34 @@ function ensureGoogleAnalytics() {
   return googleAnalyticsSetupPromise;
 }
 
+// Microsoft Clarity 与 Google Analytics 复用同一个同意开关（mikcb_analytics_consent）
+// 与「禁止跟踪」门：未同意、点拒绝、或 DNT 打开时都不加载。
+const microsoftClarityProjectId = "zewwj6durg";
+let hasRequestedMicrosoftClarity = false;
+
+function canSendMicrosoftClarity() {
+  return !isDoNotTrackEnabled && hasAnalyticsConsent();
+}
+
+function ensureMicrosoftClarity() {
+  if (hasRequestedMicrosoftClarity || !canSendMicrosoftClarity()) {
+    return;
+  }
+  hasRequestedMicrosoftClarity = true;
+  window.clarity =
+    window.clarity ||
+    function clarityQueue() {
+      (window.clarity.q = window.clarity.q || []).push(arguments);
+    };
+  const script = document.createElement("script");
+  script.async = true;
+  script.src = `https://www.clarity.ms/tag/${encodeURIComponent(
+    microsoftClarityProjectId
+  )}`;
+  script.dataset.microsoftClarityLoader = "true";
+  document.head.appendChild(script);
+}
+
 function getDownloadFileName(url) {
   try {
     const pathname = new URL(url, window.location.href).pathname;
@@ -321,6 +349,7 @@ function buildDownloadAnalyticsPayload(source, url, channel = "stable") {
 }
 
 void ensureGoogleAnalytics();
+void ensureMicrosoftClarity();
 
 const analyticsSiteVariant = "docs";
 const analyticsSessionStorageKey = "mikcb-docs-analytics-session";

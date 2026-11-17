@@ -1,4 +1,5 @@
 import type { Metadata, Viewport } from 'next';
+import Script from 'next/script';
 import './globals.css';
 import { Provider } from './provider';
 import { siteConfig, siteUrl } from '@/lib/site';
@@ -73,6 +74,28 @@ export default function RootLayout({ children }: LayoutProps<'/'>) {
   return (
     <html lang="zh-CN" suppressHydrationWarning>
       <body className="flex min-h-screen flex-col">
+        <Script id="microsoft-clarity" strategy="afterInteractive">
+          {`(function () {
+  try {
+    var consent = localStorage.getItem('mikcb_analytics_consent');
+    var dnt =
+      navigator.doNotTrack === '1' ||
+      window.doNotTrack === '1' ||
+      navigator.msDoNotTrack === '1';
+    if (consent !== 'granted' || dnt) return;
+    (function (c, l, a, r, i, t, y) {
+      c[a] = c[a] || function () { (c[a].q = c[a].q || []).push(arguments); };
+      t = l.createElement(r);
+      t.async = 1;
+      t.src = 'https://www.clarity.ms/tag/' + i;
+      y = l.getElementsByTagName(r)[0];
+      y.parentNode.insertBefore(t, y);
+    })(window, document, 'clarity', 'script', 'zewwj6durg');
+  } catch (error) {
+    /* 存储不可用时静默跳过，与官网同一口径 */
+  }
+})();`}
+        </Script>
         <Provider>{children}</Provider>
       </body>
     </html>
