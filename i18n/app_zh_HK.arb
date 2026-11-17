@@ -1503,7 +1503,7 @@
   "liveTestingRefreshing": "刷新中",
   "liveTestingAnalyticsOptOutTitle": "錯誤回報",
   "liveTestingAnalyticsOptOutSummary": "關閉後不再回報當機",
-  "liveTestingAnalyticsOptOutDescription": "關閉後，應用程式不再初始化友盟統計與當機回報，我們收不到當機和效能資料；裝置本地的當機日誌仍會記錄，你可以在「應用日誌」裡自行匯出。變更在下次啟動應用程式後生效。",
+  "liveTestingAnalyticsOptOutDescription": "錯誤回報預設開啟。關閉後，應用程式不再初始化友盟統計與當機回報，我們收不到當機和效能資料；裝置本地的當機日誌仍會記錄，你可以在「應用日誌」裡自行匯出。變更在下次啟動應用程式後生效。",
   "liveTestingExportAction": "匯出並分享日誌",
   "liveTestingExporting": "匯出中",
   "liveTestingAutoRefreshTitle": "自動刷新",
