@@ -488,11 +488,18 @@ fun CourseGridCard(
                 WeatherCardSlotState.TEXT -> {
                     val weatherText = model.weatherText!!
                     hasAnyField = true
+                    // 单列只有 40–50dp、字号 8sp ⇒ 一行只放得下 5 个汉字。天气串是
+                    // 「晴间多云 · 23° · 60%」（约 16 字），单行时四个字的现象就把整行吃满，
+                    // 温度与概率永远落在省略号后面（真机反馈只看到「晴间多云…」）。
+                    // 与上面教室行同一口径：span ≥ 2 给 2 行。单列（span 1）格子本身装不下
+                    // 第二行，仍按 1 行省略——那里只能看到现象，是格子高度决定的。
+                    val weatherMaxLines = if (span >= 2) 2 else 1
                     CardDetailLine(
                         text = weatherText,
                         fontSize = detailFontSize,
                         color = detailInk,
                         textAlign = textAlign,
+                        maxLines = weatherMaxLines,
                         modifier = flightAnchor(
                             "weather",
                             weatherText,
