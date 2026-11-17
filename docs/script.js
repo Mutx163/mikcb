@@ -744,6 +744,9 @@ const fallbackReleasePage = "https://github.com/Mutx163/mikcb/releases";
 const fallbackTrustStats = { stars: 62, releaseCount: 110 };
 const trustStatsCacheKey = "mikcb_trust_stats_v1";
 const trustStatsCacheTtlMs = 7 * 24 * 60 * 60 * 1000;
+// 同域静态统计：由 .github/workflows/update-site-stats.yml 定时抓取后写入，
+// 浏览器只请求 163366.xyz 自己的文件，不访问 api.github.com（国内常不通）。
+const siteStatsUrl = "./site-stats.json";
 const defaultMirrorPrefix = "https://ghfast.top/";
 const globalMirrorProbeKey = "mikcb-docs-fastest-mirror:__global__";
 function getMirrorCandidates() {
@@ -1348,6 +1351,33 @@ async function loadTrustSignals(releases = 0) {
   }
 
   trustSignalsPromise = (async () => {
+    // 第一优先：同域静态文件（CI 定时抓好了，国内也能拿到）
+    try {
+      const statsResponse = await fetchWithTimeout(
+        siteStatsUrl,
+        { cache: "no-store" },
+        4000
+      );
+      if (statsResponse.ok) {
+        const stats = await statsResponse.json();
+        const fileStars = Number(stats?.stars || 0);
+        const fileReleases = Number(stats?.releaseCount || 0);
+        if (fileStars > 0) {
+          stars = fileStars;
+        }
+        if (fileReleases > 0) {
+          resolvedReleaseCount = fileReleases;
+        }
+        renderTrustSignals({
+          stars,
+          releaseCount: resolvedReleaseCount,
+          showStars: true,
+        });
+      }
+    } catch {
+      // 同域文件拿不到时继续用缓存或兜底值，下面的实时接口只是锦上添花
+    }
+
     try {
       const response = await fetchWithTimeout(repoApiUrl, {
         cache: "no-store",
