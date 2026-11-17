@@ -227,10 +227,10 @@ object SettingsStringsExt3 {
     // ---- 错误上报开关（2026-11-15 用户批准；ARB 六语见 c452128b9） ----
 
     val liveTestingAnalyticsOptOutTitle = ArbText("liveTestingAnalyticsOptOutTitle", "错误上报")
-    val liveTestingAnalyticsOptOutSummary = ArbText("liveTestingAnalyticsOptOutSummary", "关闭后不再上报崩溃")
+    val liveTestingAnalyticsOptOutSummary = ArbText("liveTestingAnalyticsOptOutSummary", "默认开启，可在设置里随时关闭")
     val liveTestingAnalyticsOptOutDescription = ArbText(
         "liveTestingAnalyticsOptOutDescription",
-        "关闭后，应用不再初始化友盟统计与崩溃上报，我们收不到崩溃和性能数据；" +
+        "错误上报默认开启，你可以在设置里随时关闭。关闭后，应用不再初始化友盟统计与崩溃上报，我们收不到崩溃和性能数据；" +
             "设备本地的崩溃日志仍会记录，你可以在「应用日志」里自行导出。改动在下次启动应用后生效。",
     )
 }
