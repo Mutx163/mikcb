@@ -597,6 +597,15 @@ button {
   color: var(--text);
 }
 
+/* 手机布局下 hero 标题固定占两行的高度。轮换尾句（「同步到云上」这类）长短不一，
+   窄屏上有时折成两行、有时一行，标题高度会跟着跳；这里用 line-height × 2 锁死两行，
+   短句也保留两行空间。桌面宽屏仍按内容自然高度，不加这一层。 */
+@media (max-width: 780px) {
+  .hero-title {
+    min-height: 2.2em;
+  }
+}
+
 /* ---------- Hero 标题尾句轮换 ----------
 
    结构（全部由 home.js 生成，不写死在 HTML 里——i18n 是用 textContent 覆盖
