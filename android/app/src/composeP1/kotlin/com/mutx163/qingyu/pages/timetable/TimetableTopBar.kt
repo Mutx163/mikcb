@@ -821,6 +821,10 @@ private fun TimetableMenuTile(
                 },
             )
             Spacer(modifier = Modifier.height(7.dp))
+            // 文案高度**恒定两行**（2026-11-17 用户口径）：标签长短不一——
+            // 「添加」两字只占一行、「分享课表图片」六个字折成两行——只写 maxLines=2
+            // 时短标签的瓷贴比长标签矮一截，同一行里的卡片高低不齐、翻页时看着在跳。
+            // `minLines = 2` 让只有一行的标签也占两行高度，四列永远一条水平线。
             Text(
                 text = item.label,
                 style = MiuixTheme.textStyles.footnote2,
@@ -828,6 +832,7 @@ private fun TimetableMenuTile(
                 modifier = Modifier.fillMaxWidth(),
                 textAlign = TextAlign.Center,
                 maxLines = 2,
+                minLines = 2,
                 overflow = TextOverflow.Ellipsis,
             )
         }
