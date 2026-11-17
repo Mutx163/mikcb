@@ -323,6 +323,7 @@ def document(
     <link rel="icon" href="{prefix}favicon-192.png" type="image/png" sizes="192x192" />
     <link rel="apple-touch-icon" href="{prefix}apple-touch-icon.png" sizes="180x180" />
     <link rel="stylesheet" href="{prefix}styles.css" />
+    <script src="{prefix}clarity-consent.js" defer></script>
     <script type="application/ld+json">{json_ld(structured_data)}</script>
     <script>
       document.addEventListener("DOMContentLoaded", function () {{
