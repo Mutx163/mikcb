@@ -738,6 +738,12 @@ const repoApiUrl = "https://api.github.com/repos/Mutx163/mikcb";
 const releasesApiUrl = "./releases/latest.json";
 const releaseFeedApiUrl = "./releases/feed.json";
 const fallbackReleasePage = "https://github.com/Mutx163/mikcb/releases";
+// 国内直连 api.github.com 经常超时（页面会显示成「—」）。这里放一份静态兜底，
+// 抓不到就显示它、抓到了就用实时值覆盖，成功结果还会缓存 7 天。
+// 发版时把这两个数字更新成当时的真实值即可。
+const fallbackTrustStats = { stars: 62, releaseCount: 110 };
+const trustStatsCacheKey = "mikcb_trust_stats_v1";
+const trustStatsCacheTtlMs = 7 * 24 * 60 * 60 * 1000;
 const defaultMirrorPrefix = "https://ghfast.top/";
 const globalMirrorProbeKey = "mikcb-docs-fastest-mirror:__global__";
 function getMirrorCandidates() {
@@ -1257,16 +1263,62 @@ function renderTrustSignals({
   releaseCount = 0,
   showStars = true,
 } = {}) {
+  // 兜底：任何情况下都显示数字，不显示「—」。
+  // 国内直连 api.github.com 会超时，抓不到时用静态兜底值或上次成功缓存。
+  const safeStars =
+    Number.isFinite(Number(stars)) && Number(stars) > 0
+      ? Number(stars)
+      : fallbackTrustStats.stars;
+  const safeReleases =
+    Number.isFinite(Number(releaseCount)) && Number(releaseCount) > 0
+      ? Number(releaseCount)
+      : fallbackTrustStats.releaseCount;
   if (trustStars) {
-    trustStars.textContent = showStars ? formatCompactCount(stars) : "—";
+    trustStars.textContent = formatCompactCount(safeStars);
   }
   if (navStarCount) {
-    // 导航里那个数字是「求 star」的一部分，抓不到就不占位，免得显示一个假的 0
-    navStarCount.textContent = showStars ? formatCompactCount(stars) : "";
+    navStarCount.textContent = showStars ? formatCompactCount(safeStars) : "";
     navStarCount.hidden = !showStars;
   }
-  if (trustReleases && Number(releaseCount) > 0) {
-    trustReleases.textContent = formatCompactCount(releaseCount);
+  if (trustReleases) {
+    trustReleases.textContent = formatCompactCount(safeReleases);
+  }
+}
+
+function readTrustStatsCache() {
+  try {
+    const raw = localStorage.getItem(trustStatsCacheKey);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    const savedAt = Number(parsed?.savedAt || 0);
+    if (!savedAt || Date.now() - savedAt > trustStatsCacheTtlMs) return null;
+    const stars = Number(parsed?.stars || 0);
+    const releaseCount = Number(parsed?.releaseCount || 0);
+    return stars > 0 || releaseCount > 0 ? { stars, releaseCount } : null;
+  } catch {
+    return null;
+  }
+}
+
+function writeTrustStatsCache(stars, releaseCount) {
+  try {
+    localStorage.setItem(
+      trustStatsCacheKey,
+      JSON.stringify({ stars, releaseCount, savedAt: Date.now() })
+    );
+  } catch {
+    // 存储不可用时忽略：页面仍显示本次抓到的数字
+  }
+}
+
+// GitHub 接口在国内经常几十秒不返回；6 秒拿不到就当失败，用兜底值。
+async function fetchWithTimeout(url, options = {}, timeoutMs = 6000) {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    return await fetch(url, { ...options, signal: controller.signal });
+  } finally {
+    clearTimeout(timer);
   }
 }
 
@@ -1278,9 +1330,15 @@ async function loadTrustSignals(releases = 0) {
   const releaseCount = Array.isArray(releases)
     ? releases.length
     : Number(releases || 0) || 0;
-  if (trustReleases && releaseCount > 0) {
-    trustReleases.textContent = formatCompactCount(releaseCount);
-  }
+  const cached = readTrustStatsCache();
+  let stars = cached?.stars || fallbackTrustStats.stars;
+  let resolvedReleaseCount =
+    releaseCount > 0
+      ? releaseCount
+      : cached?.releaseCount || fallbackTrustStats.releaseCount;
+
+  // 先渲染兜底值：脚本拿到数据前也不会出现横杠或空白。
+  renderTrustSignals({ stars, releaseCount: resolvedReleaseCount, showStars: true });
 
   if (trustSignalsLoaded) {
     return;
@@ -1290,46 +1348,53 @@ async function loadTrustSignals(releases = 0) {
   }
 
   trustSignalsPromise = (async () => {
-    let stars = 0;
-    let showStars = false;
-
     try {
-      const response = await fetch(repoApiUrl, {
+      const response = await fetchWithTimeout(repoApiUrl, {
         cache: "no-store",
         headers: {
           Accept: "application/vnd.github+json",
           "X-GitHub-Api-Version": "2022-11-28",
         },
       });
-      if (!response.ok) {
+      if (response.ok) {
+        const repo = await response.json();
+        const fetched = Number(repo?.stargazers_count || 0);
+        if (fetched > 0) {
+          stars = fetched;
+        }
+      } else {
         throw new Error(`HTTP ${response.status}`);
       }
-      const repo = await response.json();
-      stars = Number(repo?.stargazers_count || 0);
-      showStars = true;
     } catch (error) {
       try {
-        const badgeResponse = await fetch(
+        const badgeResponse = await fetchWithTimeout(
           "https://img.shields.io/github/stars/Mutx163/mikcb.json",
-          { cache: "no-store" }
+          { cache: "no-store" },
+          4000
         );
         if (badgeResponse.ok) {
           const badge = await badgeResponse.json();
           const raw = badge?.message || badge?.value;
           if (raw) {
             const parsed = Number(String(raw).replace(/,/g, ""));
-            if (!Number.isNaN(parsed)) {
+            if (!Number.isNaN(parsed) && parsed > 0) {
               stars = parsed;
-              showStars = true;
             }
           }
         }
       } catch {
-        // ignore
+        // 两路都失败：保留缓存或静态兜底值，不显示横杠
       }
     }
 
-    renderTrustSignals({ stars, releaseCount, showStars });
+    if (stars > 0) {
+      writeTrustStatsCache(stars, resolvedReleaseCount);
+    }
+    renderTrustSignals({
+      stars,
+      releaseCount: resolvedReleaseCount,
+      showStars: true,
+    });
     trustSignalsLoaded = true;
     trustSignalsPromise = null;
   })();
