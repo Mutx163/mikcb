@@ -1,10 +1,10 @@
 {
-  "updatedAt": "2026-11-17T09:39:54+00:00",
+  "updatedAt": "2026-11-18T08:58:39+00:00",
   "source": "https://github.com/Mutx163/qingyu_warehouse",
   "sourceRef": "main",
   "counts": {
-    "total": 281,
-    "schools": 276,
+    "total": 282,
+    "schools": 277,
     "generic": 5
   },
   "schools": [
@@ -916,6 +916,13 @@
       "name": "吉利学院",
       "initial": "J",
       "resourceFolder": "GUC",
+      "category": "school"
+    },
+    {
+      "id": "JLUCT",
+      "name": "吉林化工大学",
+      "initial": "J",
+      "resourceFolder": "JLUCT",
       "category": "school"
     },
     {
