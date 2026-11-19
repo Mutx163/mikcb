@@ -1,10 +1,10 @@
 {
-  "updatedAt": "2026-11-18T08:58:39+00:00",
+  "updatedAt": "2026-11-19T09:17:42+00:00",
   "source": "https://github.com/Mutx163/qingyu_warehouse",
   "sourceRef": "main",
   "counts": {
-    "total": 282,
-    "schools": 277,
+    "total": 283,
+    "schools": 278,
     "generic": 5
   },
   "schools": [
@@ -804,6 +804,13 @@
       "name": "湖北汽车工业学院",
       "initial": "H",
       "resourceFolder": "HUAT",
+      "category": "school"
+    },
+    {
+      "id": "HBPU",
+      "name": "湖北理工学院",
+      "initial": "H",
+      "resourceFolder": "HBPU",
       "category": "school"
     },
     {
