@@ -1,6 +1,6 @@
 # 页面索引
 
-**共 90 个页面，`Ctrl+F` 搜中文，按住 `Ctrl` 点名字直接打开源码。**
+**共 91 个页面，`Ctrl+F` 搜中文，按住 `Ctrl` 点名字直接打开源码。**
 
 按功能分区成块排列：课表 → 课程 → 日程与任务 → 时间与考试 → 统计 → 导入 → 迁移与导出 → 同步与备份 → 实时显示 → 设置 → 帮助与展示 → 诊断 → 关于 → 设置二级页 → 实时显示子屏。
 
@@ -30,51 +30,51 @@
 
 [AI 课表图片识别导入][p23] · [.ics 日历导入][p24] · [导入课程][p25] · [表格导入][p26] · [适配器详情][p27] · [教务系统导入][p28]
 
-[自定义脚本调试记录管理][p29] · [教务导入中转][p30] · [学校适配器列表][p31] · [网页登录导入][p32]
+[自定义脚本调试记录管理][p29] · [课表导入执行日志][p30] · [教务导入中转][p31] · [学校适配器列表][p32] · [网页登录导入][p33]
 
 ### 迁移与导出
 
-[导出日历][p33] · [数据备份与迁移][p34] · [局域网编辑][p35] · [取件码][p36] · [二维码扫码接收][p37] · [二维码发送][p38]
+[导出日历][p34] · [数据备份与迁移][p35] · [局域网编辑][p36] · [取件码][p37] · [二维码扫码接收][p38] · [二维码发送][p39]
 
 ### 同步与备份
 
-[云备份列表][p39] · [云同步][p40] · [情侣课表设置][p41]
+[云备份列表][p40] · [云同步][p41] · [情侣课表设置][p42]
 
 ### 实时显示
 
-[超级岛][p42] · [后台保活子屏][p43] · [提醒时间子屏][p44]
+[超级岛][p43] · [后台保活子屏][p44] · [提醒时间子屏][p45]
 
 ### 设置
 
-[外观编辑][p45] · [玻璃坞底栏按钮编辑器][p46] · [坞站图标选择][p47] · [八宫格菜单按钮编辑器][p48] · [设置（通用）][p49] · [选择城市][p50]
+[外观编辑][p46] · [玻璃坞底栏按钮编辑器][p47] · [坞站图标选择][p48] · [八宫格菜单按钮编辑器][p49] · [设置（通用）][p50] · [选择城市][p51]
 
 ### 帮助与展示
 
-[澎湃 UI 组件库][p51] · [全部功能目录全览][p52] · [启动引导流程页面][p53] · [用户指南 / 新手引导][p54] · [Miuix 展示册][p55]
+[澎湃 UI 组件库][p52] · [全部功能目录全览][p53] · [启动引导流程页面][p54] · [用户指南 / 新手引导][p55] · [Miuix 展示册][p56]
 
 ### 诊断
 
-[诊断日志查看器][p56] · [临时测试课程][p57] · [内存统计][p58] · [性能报告][p59]
+[诊断日志查看器][p57] · [临时测试课程][p58] · [内存统计][p59] · [性能报告][p60]
 
 ### 关于
 
-[关于软件][p60] · [版本更新][p61] · [高级选项][p62] · [更新日志][p63] · [代码贡献者][p64] · [开源许可详情][p65] · [开源许可][p66] · [支持作者][p67]
+[关于软件][p61] · [版本更新][p62] · [高级选项][p63] · [更新日志][p64] · [代码贡献者][p65] · [开源许可详情][p66] · [开源许可][p67] · [支持作者][p68]
 
-[问题反馈][p68]
+[问题反馈][p69]
 
 ### 设置二级页
 
-[设置 · 外观][p69] · [外观 · 首页背景（壁纸面板）][p70] · [Bing 壁纸画廊][p71] · [课程卡片设置][p72] · [设置 · 诊断][p73]
+[设置 · 外观][p70] · [外观 · 首页背景（壁纸面板）][p71] · [Bing 壁纸画廊][p72] · [课程卡片设置][p73] · [设置 · 诊断][p74]
 
-[设置 · 节假日（高级）][p74] · [设置 · 节假日][p75] · [首页与导航][p76] · [首页小组件][p77] · [设置 · 实时活动][p78] · [实时活动自检][p79]
+[设置 · 节假日（高级）][p75] · [设置 · 节假日][p76] · [首页与导航][p77] · [首页小组件][p78] · [设置 · 实时活动][p79] · [实时活动自检][p80]
 
-[外观 · 材质（课程卡页签）][p80] · [外观 · 材质（通用页签）][p81] · [设置 · 重置][p82] · [设置 · 主题管理][p83]
+[外观 · 材质（课程卡页签）][p81] · [外观 · 材质（通用页签）][p82] · [设置 · 重置][p83] · [设置 · 主题管理][p84]
 
-[设置首页（课表设置）][p84] · [课表页面设置][p85] · [设置 · 学期][p86] · [壁纸取景][p87] · [设置 · 天气][p88]
+[设置首页（课表设置）][p85] · [课表页面设置][p86] · [设置 · 学期][p87] · [壁纸取景][p88] · [设置 · 天气][p89]
 
 ### 实时显示子屏
 
-[上课前显示子屏][p89] · [下课前显示子屏][p90]
+[上课前显示子屏][p90] · [下课前显示子屏][p91]
 
 
 [p1]: ../../app/src/composeP1/kotlin/com/mutx163/qingyu/pages/timetable/day/DayViewPage.kt
@@ -106,64 +106,65 @@
 [p27]: ../../app/src/composeP1/kotlin/com/mutx163/qingyu/pages/import/warehouse/WarehouseAdapterDetailPage.kt
 [p28]: ../../app/src/composeP1/kotlin/com/mutx163/qingyu/pages/import/warehouse/WarehouseCourseImportPage.kt
 [p29]: ../../app/src/composeP1/kotlin/com/mutx163/qingyu/pages/import/warehouse/WarehouseCustomDebugPage.kt
-[p30]: ../../app/src/composeP1/kotlin/com/mutx163/qingyu/pages/import/warehouse/WarehouseWebLoginHost.kt
-[p31]: ../../app/src/composeP1/kotlin/com/mutx163/qingyu/pages/import/warehouse/WarehouseSchoolAdaptersPage.kt
-[p32]: ../../app/src/composeP1/kotlin/com/mutx163/qingyu/pages/import/warehouse/WarehouseWebLoginPage.kt
-[p33]: ../../app/src/composeP1/kotlin/com/mutx163/qingyu/pages/export/IcsExportPage.kt
-[p34]: ../../app/src/composeP1/kotlin/com/mutx163/qingyu/pages/transfer/DataTransferPage.kt
-[p35]: ../../app/src/composeP1/kotlin/com/mutx163/qingyu/pages/transfer/LanEditPage.kt
-[p36]: ../../app/src/composeP1/kotlin/com/mutx163/qingyu/pages/transfer/PickupCodesPage.kt
-[p37]: ../../app/src/composeP1/kotlin/com/mutx163/qingyu/pages/transfer/QrTransferScanPage.kt
-[p38]: ../../app/src/composeP1/kotlin/com/mutx163/qingyu/pages/transfer/QrTransferSendPage.kt
-[p39]: ../../app/src/composeP1/kotlin/com/mutx163/qingyu/pages/sync/CloudBackupListPage.kt
-[p40]: ../../app/src/composeP1/kotlin/com/mutx163/qingyu/pages/sync/CloudSyncPage.kt
-[p41]: ../../app/src/composeP1/kotlin/com/mutx163/qingyu/pages/sync/CoupleTimetableSettingsPage.kt
-[p42]: ../../app/src/composeP1/kotlin/com/mutx163/qingyu/pages/live/DisplaySettingsPage.kt
-[p43]: ../../app/src/composeP1/kotlin/com/mutx163/qingyu/pages/live/LiveKeepAliveSettingsPage.kt
-[p44]: ../../app/src/composeP1/kotlin/com/mutx163/qingyu/pages/live/ReminderTimingPage.kt
-[p45]: ../../app/src/composeP1/kotlin/com/mutx163/qingyu/pages/settings/AppearanceEditorScreen.kt
-[p46]: ../../app/src/composeP1/kotlin/com/mutx163/qingyu/pages/settings/DockMenuEditors.kt
-[p47]: ../../app/src/composeP1/kotlin/com/mutx163/qingyu/pages/settings/GlassDockIconPickerScreen.kt
-[p48]: ../../app/src/composeP1/kotlin/com/mutx163/qingyu/pages/settings/DockMenuEditors.kt
-[p49]: ../../app/src/composeP1/kotlin/com/mutx163/qingyu/pages/settings/SettingsPageRenderers.kt
-[p50]: ../../app/src/composeP1/kotlin/com/mutx163/qingyu/pages/weather/WeatherCityPickerPage.kt
-[p51]: ../../app/src/composeP1/kotlin/com/mutx163/qingyu/pages/guide/HyperosShowcasePage.kt
-[p52]: ../../app/src/composeP1/kotlin/com/mutx163/qingyu/pages/guide/MoreFeaturesPage.kt
-[p53]: ../../app/src/composeP1/kotlin/com/mutx163/qingyu/pages/guide/StartupFlowPage.kt
-[p54]: ../../app/src/composeP1/kotlin/com/mutx163/qingyu/pages/guide/UserGuidePage.kt
-[p55]: ../../app/src/composeP1/kotlin/com/mutx163/qingyu/pages/showcase/MiuixShowcasePage.kt
-[p56]: ../../app/src/composeP1/kotlin/com/mutx163/qingyu/pages/diagnostics/LiveDiagnosticsLogPage.kt
-[p57]: ../../app/src/composeP1/kotlin/com/mutx163/qingyu/pages/diagnostics/LiveTestingFixturePage.kt
-[p58]: ../../app/src/composeP1/kotlin/com/mutx163/qingyu/pages/diagnostics/MemoryStatsPage.kt
-[p59]: ../../app/src/composeP1/kotlin/com/mutx163/qingyu/pages/diagnostics/PerfReportPage.kt
-[p60]: ../../app/src/composeP1/kotlin/com/mutx163/qingyu/pages/about/AboutStaticPage.kt
-[p61]: ../../app/src/composeP1/kotlin/com/mutx163/qingyu/pages/about/AboutUpdatePage.kt
-[p62]: ../../app/src/composeP1/kotlin/com/mutx163/qingyu/pages/about/AdvancedOptionsPage.kt
-[p63]: ../../app/src/composeP1/kotlin/com/mutx163/qingyu/pages/about/ChangelogPage.kt
-[p64]: ../../app/src/composeP1/kotlin/com/mutx163/qingyu/pages/about/ContributorsPage.kt
-[p65]: ../../app/src/composeP1/kotlin/com/mutx163/qingyu/pages/about/OpenSourceLicensesPage.kt
+[p30]: ../../app/src/composeP1/kotlin/com/mutx163/qingyu/pages/import/warehouse/WarehouseImportLogPage.kt
+[p31]: ../../app/src/composeP1/kotlin/com/mutx163/qingyu/pages/import/warehouse/WarehouseWebLoginHost.kt
+[p32]: ../../app/src/composeP1/kotlin/com/mutx163/qingyu/pages/import/warehouse/WarehouseSchoolAdaptersPage.kt
+[p33]: ../../app/src/composeP1/kotlin/com/mutx163/qingyu/pages/import/warehouse/WarehouseWebLoginPage.kt
+[p34]: ../../app/src/composeP1/kotlin/com/mutx163/qingyu/pages/export/IcsExportPage.kt
+[p35]: ../../app/src/composeP1/kotlin/com/mutx163/qingyu/pages/transfer/DataTransferPage.kt
+[p36]: ../../app/src/composeP1/kotlin/com/mutx163/qingyu/pages/transfer/LanEditPage.kt
+[p37]: ../../app/src/composeP1/kotlin/com/mutx163/qingyu/pages/transfer/PickupCodesPage.kt
+[p38]: ../../app/src/composeP1/kotlin/com/mutx163/qingyu/pages/transfer/QrTransferScanPage.kt
+[p39]: ../../app/src/composeP1/kotlin/com/mutx163/qingyu/pages/transfer/QrTransferSendPage.kt
+[p40]: ../../app/src/composeP1/kotlin/com/mutx163/qingyu/pages/sync/CloudBackupListPage.kt
+[p41]: ../../app/src/composeP1/kotlin/com/mutx163/qingyu/pages/sync/CloudSyncPage.kt
+[p42]: ../../app/src/composeP1/kotlin/com/mutx163/qingyu/pages/sync/CoupleTimetableSettingsPage.kt
+[p43]: ../../app/src/composeP1/kotlin/com/mutx163/qingyu/pages/live/DisplaySettingsPage.kt
+[p44]: ../../app/src/composeP1/kotlin/com/mutx163/qingyu/pages/live/LiveKeepAliveSettingsPage.kt
+[p45]: ../../app/src/composeP1/kotlin/com/mutx163/qingyu/pages/live/ReminderTimingPage.kt
+[p46]: ../../app/src/composeP1/kotlin/com/mutx163/qingyu/pages/settings/AppearanceEditorScreen.kt
+[p47]: ../../app/src/composeP1/kotlin/com/mutx163/qingyu/pages/settings/DockMenuEditors.kt
+[p48]: ../../app/src/composeP1/kotlin/com/mutx163/qingyu/pages/settings/GlassDockIconPickerScreen.kt
+[p49]: ../../app/src/composeP1/kotlin/com/mutx163/qingyu/pages/settings/DockMenuEditors.kt
+[p50]: ../../app/src/composeP1/kotlin/com/mutx163/qingyu/pages/settings/SettingsPageRenderers.kt
+[p51]: ../../app/src/composeP1/kotlin/com/mutx163/qingyu/pages/weather/WeatherCityPickerPage.kt
+[p52]: ../../app/src/composeP1/kotlin/com/mutx163/qingyu/pages/guide/HyperosShowcasePage.kt
+[p53]: ../../app/src/composeP1/kotlin/com/mutx163/qingyu/pages/guide/MoreFeaturesPage.kt
+[p54]: ../../app/src/composeP1/kotlin/com/mutx163/qingyu/pages/guide/StartupFlowPage.kt
+[p55]: ../../app/src/composeP1/kotlin/com/mutx163/qingyu/pages/guide/UserGuidePage.kt
+[p56]: ../../app/src/composeP1/kotlin/com/mutx163/qingyu/pages/showcase/MiuixShowcasePage.kt
+[p57]: ../../app/src/composeP1/kotlin/com/mutx163/qingyu/pages/diagnostics/LiveDiagnosticsLogPage.kt
+[p58]: ../../app/src/composeP1/kotlin/com/mutx163/qingyu/pages/diagnostics/LiveTestingFixturePage.kt
+[p59]: ../../app/src/composeP1/kotlin/com/mutx163/qingyu/pages/diagnostics/MemoryStatsPage.kt
+[p60]: ../../app/src/composeP1/kotlin/com/mutx163/qingyu/pages/diagnostics/PerfReportPage.kt
+[p61]: ../../app/src/composeP1/kotlin/com/mutx163/qingyu/pages/about/AboutStaticPage.kt
+[p62]: ../../app/src/composeP1/kotlin/com/mutx163/qingyu/pages/about/AboutUpdatePage.kt
+[p63]: ../../app/src/composeP1/kotlin/com/mutx163/qingyu/pages/about/AdvancedOptionsPage.kt
+[p64]: ../../app/src/composeP1/kotlin/com/mutx163/qingyu/pages/about/ChangelogPage.kt
+[p65]: ../../app/src/composeP1/kotlin/com/mutx163/qingyu/pages/about/ContributorsPage.kt
 [p66]: ../../app/src/composeP1/kotlin/com/mutx163/qingyu/pages/about/OpenSourceLicensesPage.kt
-[p67]: ../../app/src/composeP1/kotlin/com/mutx163/qingyu/pages/about/SupportCreatorPage.kt
-[p68]: ../../app/src/composeP1/kotlin/com/mutx163/qingyu/pages/feedback/FeedbackPage.kt
-[p69]: ../../app/src/main/kotlin/com/mutx163/qingyu/pages/settings/SettingsAppearancePage.kt
-[p70]: ../../app/src/main/kotlin/com/mutx163/qingyu/pages/settings/SettingsBackdropFlowPage.kt
-[p71]: ../../app/src/main/kotlin/com/mutx163/qingyu/pages/settings/SettingsBingWallpaperGalleryPage.kt
-[p72]: ../../app/src/main/kotlin/com/mutx163/qingyu/pages/settings/SettingsCourseCardPage.kt
-[p73]: ../../app/src/main/kotlin/com/mutx163/qingyu/pages/settings/SettingsDiagnosticsPage.kt
-[p74]: ../../app/src/main/kotlin/com/mutx163/qingyu/pages/settings/SettingsHolidayAdvancedPage.kt
-[p75]: ../../app/src/main/kotlin/com/mutx163/qingyu/pages/settings/SettingsHolidayPage.kt
-[p76]: ../../app/src/main/kotlin/com/mutx163/qingyu/pages/settings/SettingsHomeNavigationPage.kt
-[p77]: ../../app/src/main/kotlin/com/mutx163/qingyu/pages/settings/SettingsHomeWidgetPage.kt
-[p78]: ../../app/src/main/kotlin/com/mutx163/qingyu/pages/settings/SettingsLivePage.kt
-[p79]: ../../app/src/main/kotlin/com/mutx163/qingyu/pages/settings/SettingsLiveSelfCheckPage.kt
-[p80]: ../../app/src/main/kotlin/com/mutx163/qingyu/pages/settings/SettingsMaterialPanels.kt
+[p67]: ../../app/src/composeP1/kotlin/com/mutx163/qingyu/pages/about/OpenSourceLicensesPage.kt
+[p68]: ../../app/src/composeP1/kotlin/com/mutx163/qingyu/pages/about/SupportCreatorPage.kt
+[p69]: ../../app/src/composeP1/kotlin/com/mutx163/qingyu/pages/feedback/FeedbackPage.kt
+[p70]: ../../app/src/main/kotlin/com/mutx163/qingyu/pages/settings/SettingsAppearancePage.kt
+[p71]: ../../app/src/main/kotlin/com/mutx163/qingyu/pages/settings/SettingsBackdropFlowPage.kt
+[p72]: ../../app/src/main/kotlin/com/mutx163/qingyu/pages/settings/SettingsBingWallpaperGalleryPage.kt
+[p73]: ../../app/src/main/kotlin/com/mutx163/qingyu/pages/settings/SettingsCourseCardPage.kt
+[p74]: ../../app/src/main/kotlin/com/mutx163/qingyu/pages/settings/SettingsDiagnosticsPage.kt
+[p75]: ../../app/src/main/kotlin/com/mutx163/qingyu/pages/settings/SettingsHolidayAdvancedPage.kt
+[p76]: ../../app/src/main/kotlin/com/mutx163/qingyu/pages/settings/SettingsHolidayPage.kt
+[p77]: ../../app/src/main/kotlin/com/mutx163/qingyu/pages/settings/SettingsHomeNavigationPage.kt
+[p78]: ../../app/src/main/kotlin/com/mutx163/qingyu/pages/settings/SettingsHomeWidgetPage.kt
+[p79]: ../../app/src/main/kotlin/com/mutx163/qingyu/pages/settings/SettingsLivePage.kt
+[p80]: ../../app/src/main/kotlin/com/mutx163/qingyu/pages/settings/SettingsLiveSelfCheckPage.kt
 [p81]: ../../app/src/main/kotlin/com/mutx163/qingyu/pages/settings/SettingsMaterialPanels.kt
-[p82]: ../../app/src/main/kotlin/com/mutx163/qingyu/pages/settings/SettingsResetPage.kt
-[p83]: ../../app/src/main/kotlin/com/mutx163/qingyu/pages/settings/SettingsAppearancePage.kt
-[p84]: ../../app/src/main/kotlin/com/mutx163/qingyu/pages/settings/SettingsTimetablePage.kt
-[p85]: ../../app/src/main/kotlin/com/mutx163/qingyu/pages/settings/SettingsTimetablePageSettingsPage.kt
-[p86]: ../../app/src/main/kotlin/com/mutx163/qingyu/pages/settings/SettingsTimetablePage.kt
-[p87]: ../../app/src/main/kotlin/com/mutx163/qingyu/pages/settings/SettingsWallpaperPositionPage.kt
-[p88]: ../../app/src/main/kotlin/com/mutx163/qingyu/pages/settings/SettingsWeatherPage.kt
-[p89]: ../../app/src/composeP1/kotlin/com/mutx163/qingyu/pages/live/DisplaySettingsPage.kt
+[p82]: ../../app/src/main/kotlin/com/mutx163/qingyu/pages/settings/SettingsMaterialPanels.kt
+[p83]: ../../app/src/main/kotlin/com/mutx163/qingyu/pages/settings/SettingsResetPage.kt
+[p84]: ../../app/src/main/kotlin/com/mutx163/qingyu/pages/settings/SettingsAppearancePage.kt
+[p85]: ../../app/src/main/kotlin/com/mutx163/qingyu/pages/settings/SettingsTimetablePage.kt
+[p86]: ../../app/src/main/kotlin/com/mutx163/qingyu/pages/settings/SettingsTimetablePageSettingsPage.kt
+[p87]: ../../app/src/main/kotlin/com/mutx163/qingyu/pages/settings/SettingsTimetablePage.kt
+[p88]: ../../app/src/main/kotlin/com/mutx163/qingyu/pages/settings/SettingsWallpaperPositionPage.kt
+[p89]: ../../app/src/main/kotlin/com/mutx163/qingyu/pages/settings/SettingsWeatherPage.kt
 [p90]: ../../app/src/composeP1/kotlin/com/mutx163/qingyu/pages/live/DisplaySettingsPage.kt
+[p91]: ../../app/src/composeP1/kotlin/com/mutx163/qingyu/pages/live/DisplaySettingsPage.kt

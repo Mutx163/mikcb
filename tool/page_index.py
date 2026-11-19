@@ -34,6 +34,7 @@ ALIAS = {
     "AboutUpdatePage": "版本更新",
     "OpenSourceLicenseDetailPage": "开源许可详情",
     "WarehouseNoTargetPage": "教务导入中转",
+    "WarehouseImportLogPage": "课表导入执行日志",
     "WarehouseWebLoginPage": "教务网页登录",
     "CourseStatisticsPage": "课程统计",
     "LocationTimeMatchPage": "地点作息匹配",

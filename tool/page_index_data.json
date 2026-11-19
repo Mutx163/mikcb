@@ -211,6 +211,13 @@
  },
  {
   "domain": "import",
+  "title": "课表导入执行日志",
+  "entry": "WarehouseImportLogPage",
+  "file": "import/warehouse/WarehouseImportLogPage.kt",
+  "previews": 0
+ },
+ {
+  "domain": "import",
   "title": "学校适配器列表",
   "entry": "WarehouseSchoolAdaptersPage",
   "file": "import/warehouse/WarehouseSchoolAdaptersPage.kt",
