@@ -1,10 +1,10 @@
 {
-  "updatedAt": "2026-11-19T09:17:42+00:00",
+  "updatedAt": "2026-11-20T08:59:41+00:00",
   "source": "https://github.com/Mutx163/qingyu_warehouse",
   "sourceRef": "main",
   "counts": {
-    "total": 283,
-    "schools": 278,
+    "total": 284,
+    "schools": 279,
     "generic": 5
   },
   "schools": [
@@ -1567,6 +1567,13 @@
       "name": "天津城建大学",
       "initial": "T",
       "resourceFolder": "TCU",
+      "category": "school"
+    },
+    {
+      "id": "TJUT",
+      "name": "天津理工大学",
+      "initial": "T",
+      "resourceFolder": "TJUT",
       "category": "school"
     },
     {
