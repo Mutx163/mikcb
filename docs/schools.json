@@ -1,10 +1,10 @@
 {
-  "updatedAt": "2026-11-20T08:59:41+00:00",
+  "updatedAt": "2026-11-21T08:40:28+00:00",
   "source": "https://github.com/Mutx163/qingyu_warehouse",
   "sourceRef": "main",
   "counts": {
-    "total": 284,
-    "schools": 279,
+    "total": 286,
+    "schools": 281,
     "generic": 5
   },
   "schools": [
@@ -321,6 +321,13 @@
       "name": "大连工程学院",
       "initial": "D",
       "resourceFolder": "DLUTCI",
+      "category": "school"
+    },
+    {
+      "id": "DLNU",
+      "name": "大连民族大学",
+      "initial": "D",
+      "resourceFolder": "DLNU",
       "category": "school"
     },
     {
@@ -1287,6 +1294,13 @@
       "name": "曲阜师范大学",
       "initial": "Q",
       "resourceFolder": "QFNU",
+      "category": "school"
+    },
+    {
+      "id": "QJNU",
+      "name": "曲靖师范学院",
+      "initial": "Q",
+      "resourceFolder": "QJNU",
       "category": "school"
     },
     {
