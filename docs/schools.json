@@ -1,10 +1,10 @@
 {
-  "updatedAt": "2026-11-21T08:40:28+00:00",
+  "updatedAt": "2026-11-22T08:39:38+00:00",
   "source": "https://github.com/Mutx163/qingyu_warehouse",
   "sourceRef": "main",
   "counts": {
-    "total": 286,
-    "schools": 281,
+    "total": 287,
+    "schools": 282,
     "generic": 5
   },
   "schools": [
@@ -1063,6 +1063,13 @@
       "name": "喀什大学",
       "initial": "K",
       "resourceFolder": "KSU",
+      "category": "school"
+    },
+    {
+      "id": "KUST",
+      "name": "昆明理工大学",
+      "initial": "K",
+      "resourceFolder": "KUST",
       "category": "school"
     },
     {
