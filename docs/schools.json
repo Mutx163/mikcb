@@ -1,10 +1,10 @@
 {
-  "updatedAt": "2026-11-22T08:39:38+00:00",
+  "updatedAt": "2026-11-23T09:36:44+00:00",
   "source": "https://github.com/Mutx163/qingyu_warehouse",
   "sourceRef": "main",
   "counts": {
-    "total": 287,
-    "schools": 282,
+    "total": 288,
+    "schools": 283,
     "generic": 5
   },
   "schools": [
@@ -349,6 +349,13 @@
       "name": "德州学院",
       "initial": "D",
       "resourceFolder": "DZU",
+      "category": "school"
+    },
+    {
+      "id": "WYNU",
+      "name": "滇西科技师范学院",
+      "initial": "D",
+      "resourceFolder": "WYNU",
       "category": "school"
     },
     {
