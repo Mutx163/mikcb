@@ -1,10 +1,10 @@
 {
-  "updatedAt": "2026-11-25T10:17:37+00:00",
+  "updatedAt": "2026-11-26T09:56:35+00:00",
   "source": "https://github.com/Mutx163/qingyu_warehouse",
   "sourceRef": "main",
   "counts": {
-    "total": 288,
-    "schools": 283,
+    "total": 290,
+    "schools": 285,
     "generic": 5
   },
   "schools": [
@@ -307,6 +307,13 @@
       "name": "东北林业大学",
       "initial": "D",
       "resourceFolder": "NEFU",
+      "category": "school"
+    },
+    {
+      "id": "DJTU",
+      "name": "大连交通大学",
+      "initial": "D",
+      "resourceFolder": "DJTU",
       "category": "school"
     },
     {
@@ -1294,6 +1301,13 @@
       "name": "南阳师范学院",
       "initial": "N",
       "resourceFolder": "NYNU",
+      "category": "school"
+    },
+    {
+      "id": "NYIST",
+      "name": "南阳理工学院",
+      "initial": "N",
+      "resourceFolder": "NYIST",
       "category": "school"
     },
     {
