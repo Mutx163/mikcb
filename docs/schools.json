@@ -1,10 +1,10 @@
 {
-  "updatedAt": "2026-11-26T09:56:35+00:00",
+  "updatedAt": "2026-11-27T10:00:57+00:00",
   "source": "https://github.com/Mutx163/qingyu_warehouse",
   "sourceRef": "main",
   "counts": {
-    "total": 290,
-    "schools": 285,
+    "total": 291,
+    "schools": 286,
     "generic": 5
   },
   "schools": [
@@ -398,6 +398,13 @@
       "name": "福州职业技术大学",
       "initial": "F",
       "resourceFolder": "FVTI",
+      "category": "school"
+    },
+    {
+      "id": "FZACC",
+      "name": "福州英华职业学院",
+      "initial": "F",
+      "resourceFolder": "FZACC",
       "category": "school"
     },
     {
